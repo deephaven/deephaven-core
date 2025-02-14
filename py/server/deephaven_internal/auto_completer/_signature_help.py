@@ -3,30 +3,54 @@
 #
 from __future__ import annotations
 from inspect import Parameter
-from typing import Any
+from typing import Any, TypedDict, Union
 from docstring_parser import parse, Docstring
 from jedi.api.classes import Signature
 
 
-IGNORE_PARAM_NAMES = ("", "/", "*")
-MAX_DISPLAY_SIG_LEN = 128  # 3 lines is 150, but there could be overflow so 150 could result in 4 lines
-POSITIONAL_KINDS = (Parameter.POSITIONAL_ONLY, Parameter.POSITIONAL_OR_KEYWORD, Parameter.VAR_POSITIONAL)
+_IGNORE_PARAM_NAMES = ("", "/", "*")
+_MAX_DISPLAY_SIG_LEN = 128  # 3 lines is 150, but there could be overflow so 150 could result in 4 lines
+_POSITIONAL_KINDS = (Parameter.POSITIONAL_ONLY, Parameter.POSITIONAL_OR_KEYWORD, Parameter.VAR_POSITIONAL)
 
 # key: result from _hash
 # value: another dictionary that has the following keys:
 #   description: The markdown description (result from _generate_description_markdown)
 #   param_docs: A list of param markdown descriptions (result from _generate_param_markdowns)
-result_cache = {}
+_result_cache = {}
 
-
-def _hash(signature: Signature) -> str:
-    """A simple way to identify signatures"""
-    return f"{signature.to_string()}\n{signature.docstring(raw=True)}"
-
-
-def _get_params(signature: Signature, docs: Docstring) -> list[Any]:
+class ParameterDetails(TypedDict):
     """
-    Combines all available parameter information from the signature and docstring.
+    Details of a parameter of a function
+    """
+    name: str
+    """
+    Name of the parameter
+    """
+
+    description: str
+    """
+    Description of the parameter
+    """
+
+    type: Union[str, None]
+    """
+    Type of the parameter
+    """
+
+    default: Union[str, None]
+    """
+    Default value of the parameter
+    """
+
+
+def _get_params(signature: Signature, docs: Docstring) -> list[ParameterDetails]:
+    """
+    Returns all available parameter information from the signature and docstring.
+
+    Combines information from the docstring and signature.
+    Uses the type in the signature if it exists, falls back to the type in the docstring if that exists.
+    Also includes the default value if it exists in the signature.
+
 
     Args:
         signature: The signature from `jedi`
@@ -75,7 +99,18 @@ def _get_params(signature: Signature, docs: Docstring) -> list[Any]:
     return params
 
 
-def _generate_description_markdown(docs: Docstring, params: list[Any]) -> str:
+def _generate_description_markdown(docs: Docstring, params: list[ParameterDetails]) -> str:
+    """
+    Generate the description markdown for the signature help. This includes the description, parameters, returns, raises,
+    and examples.
+
+    Args:
+        docs: The parsed docstring from `docstring_parser`
+        params: The list of parameters from `_get_params`
+
+    Returns:
+        The markdown description
+    """
     if docs.description is None:
         description = ""
     else:
@@ -84,7 +119,7 @@ def _generate_description_markdown(docs: Docstring, params: list[Any]) -> str:
     if len(params) > 0:
         description += "#### **Parameters**\n\n"
         for param in params:
-            if param['name'] in IGNORE_PARAM_NAMES:
+            if param['name'] in _IGNORE_PARAM_NAMES:
                 continue
 
             description += f"> **{param['name']}**"
@@ -135,7 +170,7 @@ def _generate_display_sig(signature: Signature) -> str:
     display the current argument.
     """
 
-    if len(signature.to_string()) <= MAX_DISPLAY_SIG_LEN:
+    if len(signature.to_string()) <= _MAX_DISPLAY_SIG_LEN:
         return signature.to_string()
     
     # Use 0 as default to display start of signature
@@ -147,13 +182,13 @@ def _generate_display_sig(signature: Signature) -> str:
 
     # If current arg is positional, display next 2 args
     # If current arg is keyword, only display current args
-    if signature.params[index].kind in POSITIONAL_KINDS:
+    if signature.params[index].kind in _POSITIONAL_KINDS:
         # Clamp index so that 3 args are shown, even at last index
         index = max(min(index, len(signature.params) - 3), 0)
         end_index = index + 3
         # If the next arg is not positional, do not show the one after it
         # Otherwise, this arg will show 2 ahead, and then next arg will show 0 ahead
-        if signature.params[index + 1].kind not in POSITIONAL_KINDS:
+        if signature.params[index + 1].kind not in _POSITIONAL_KINDS:
             end_index -= 1
         display_sig += ", ".join([param.to_string() for param in signature.params[index:end_index]])
         if index + 3 < len(signature.params):
@@ -173,7 +208,7 @@ def _generate_param_markdowns(signature: Signature, params: list[Any]) -> list[A
 
     param_docs = []
     for i in range(len(signature.params)):
-        if signature.params[i].to_string().strip() in IGNORE_PARAM_NAMES:
+        if signature.params[i].to_string().strip() in _IGNORE_PARAM_NAMES:
             continue
 
         param = params[i]
@@ -190,7 +225,7 @@ def _generate_param_markdowns(signature: Signature, params: list[Any]) -> list[A
     return param_docs
 
 
-def _get_signature_help(signature: Signature) -> list[Any]:
+def get_signature_help(signature: Signature) -> list[Any]:
     """ Gets the result of a signature to be used by `do_signature_help`
 
     If no docstring information is parsed, then the signature will be displayed in Markdown but with plaintext style
@@ -201,17 +236,22 @@ def _get_signature_help(signature: Signature) -> list[Any]:
     """
 
     docstring = signature.docstring(raw=True)
-    cache_key = _hash(signature)
+
+    # The results are cached based on the signature and docstring
+    # Even if there is another method in another package with the same signature,
+    # if the docstring also matches it's fine to use the same cache, as the result will be the same.
+    cache_key = f"{signature.to_string()}\n{docstring}"
 
     # Check cache
-    if cache_key in result_cache:
-        result = result_cache[cache_key]
+    if cache_key in _result_cache:
+        result = _result_cache[cache_key]
         return [
             _generate_display_sig(signature),
             result["description"],
             result["param_docs"],
             signature.index if signature.index is not None else -1,
         ]
+
 
     # Parse the docstring to extract information
     docs = parse(docstring)
@@ -223,7 +263,7 @@ def _get_signature_help(signature: Signature) -> list[Any]:
         return [
             signature.to_string(),
             # Since signature is a markdown, replace whitespace in a way to preserve how it originally looks
-            signature.docstring(raw=True).replace(" ", "&nbsp;").replace("\n", "  \n"),
+            docstring.replace(" ", "&nbsp;").replace("\n", "  \n"),
             [[param.to_string().strip(), ""] for param in signature.params],
             signature.index if signature.index is not None else -1,
         ]
@@ -232,7 +272,7 @@ def _get_signature_help(signature: Signature) -> list[Any]:
     params = _get_params(signature, docs)
     description = _generate_description_markdown(docs, params)
     param_docs = _generate_param_markdowns(signature, params)
-    result_cache[cache_key] = {
+    _result_cache[cache_key] = {
         "description": description,
         "param_docs": param_docs,
     }

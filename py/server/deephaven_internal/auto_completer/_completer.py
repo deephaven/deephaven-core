@@ -6,7 +6,7 @@ from enum import Enum
 from typing import Any, Union, List
 from jedi import Interpreter, Script
 from jedi.api.classes import Completion, Signature
-from ._signature_help import _get_signature_help
+from ._signature_help import get_signature_help
 import sys
 import warnings
 
@@ -216,7 +216,7 @@ class Completer:
             # keep checking the latest version as we run, so updated doc can cancel us
             if not self._versions[uri] == version:
                 return []
-            results.append(_get_signature_help(signature))
+            results.append(get_signature_help(signature))
 
         return results
 
