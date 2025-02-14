@@ -33,8 +33,8 @@ public class ChartDataTestGwt extends AbstractAsyncGwtTestCase {
                     "my_col_defs = {\"ID\": dht.int32, \"Value\": dht.string, \"Deleted\": dht.bool_}",
                     "ug = jpy.get_type('io.deephaven.engine.updategraph.impl.EventDrivenUpdateGraph').newBuilder('test').existingOrBuild()",
                     "exec_ctx = ExecutionContext(get_exec_ctx().j_object.withUpdateGraph(ug))",
-                    "with exec_ctx:",
-                    "    input = input_table(col_defs=my_col_defs, key_cols=\"ID\")",
+                    "with exec_ctx:\n" +
+                    "    input = input_table(col_defs=my_col_defs, key_cols=\"ID\")\n" +
                     "    result = input.without_attributes('InputTable').where(\"!Deleted\").sort(\"ID\")");
 
     @Override
