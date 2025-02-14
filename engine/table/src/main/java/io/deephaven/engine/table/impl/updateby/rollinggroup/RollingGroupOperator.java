@@ -234,8 +234,7 @@ public class RollingGroupOperator extends UpdateByOperator {
             @NotNull final String[] affectingColumns,
             @Nullable final String timestampColumnName,
             final long reverseWindowScaleUnits,
-            final long forwardWindowScaleUnits,
-            @NotNull final TableDefinition tableDef) {
+            final long forwardWindowScaleUnits) {
         super(pairs[0], affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, true);
 
         this.pairs = pairs;

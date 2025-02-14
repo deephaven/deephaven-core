@@ -12,6 +12,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.UpdateErrorReporter;
 import io.deephaven.engine.table.impl.util.AsyncClientErrorNotifier;
+import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.EvalNugget;
 import io.deephaven.engine.table.impl.TableDefaults;
@@ -29,6 +30,7 @@ import io.deephaven.util.ExceptionDetails;
 import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -36,11 +38,11 @@ import org.junit.experimental.categories.Category;
 import java.time.Duration;
 import java.util.*;
 
+import static io.deephaven.api.updateby.UpdateByOperation.*;
 import static io.deephaven.engine.testutil.GenerateTableUpdates.generateAppends;
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.testutil.testcase.RefreshingTableTestCase.simulateShiftAwareStep;
-import static io.deephaven.engine.util.TableTools.col;
-import static io.deephaven.engine.util.TableTools.intCol;
+import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.time.DateTimeUtils.MINUTE;
 
 @Category(OutOfBandTest.class)
@@ -138,9 +140,9 @@ public class TestUpdateByGeneral extends BaseUpdateByTest implements UpdateError
                                 UpdateByOperation.RollingMin("ts", Duration.ofMinutes(5), Duration.ofMinutes(5),
                                         makeOpColNames(columnNamesArray, "_rollmintimerev", "Sym", "ts", "boolCol")),
 
-                                UpdateByOperation.RollingMax(50, 50,
+                                RollingMax(50, 50,
                                         makeOpColNames(columnNamesArray, "_rollmaxticksrev", "Sym", "ts", "boolCol")),
-                                UpdateByOperation.RollingMax("ts", Duration.ofMinutes(5), Duration.ofMinutes(5),
+                                RollingMax("ts", Duration.ofMinutes(5), Duration.ofMinutes(5),
                                         makeOpColNames(columnNamesArray, "_rollmaxtimerev", "Sym", "ts", "boolCol")),
 
                                 // Excluding 'bigDecimalCol' because we need fuzzy matching which doesn't exist for BD
@@ -154,8 +156,8 @@ public class TestUpdateByGeneral extends BaseUpdateByTest implements UpdateError
                                 UpdateByOperation.Ema(skipControl, "ts", 10 * MINUTE,
                                         makeOpColNames(columnNamesArray, "_ema", "Sym", "ts", "boolCol")),
                                 UpdateByOperation.CumSum(makeOpColNames(columnNamesArray, "_sum", "Sym", "ts")),
-                                UpdateByOperation.CumMin(makeOpColNames(columnNamesArray, "_min", "boolCol")),
-                                UpdateByOperation.CumMax(makeOpColNames(columnNamesArray, "_max", "boolCol")),
+                                CumMin(makeOpColNames(columnNamesArray, "_min", "boolCol")),
+                                CumMax(makeOpColNames(columnNamesArray, "_max", "boolCol")),
                                 UpdateByOperation
                                         .CumProd(makeOpColNames(columnNamesArray, "_prod", "Sym", "ts", "boolCol")));
                         final UpdateByControl control = UpdateByControl.builder().useRedirection(redirected).build();
@@ -272,38 +274,36 @@ public class TestUpdateByGeneral extends BaseUpdateByTest implements UpdateError
         final Collection<? extends UpdateByOperation> clauses = List.of(
                 UpdateByOperation.Fill(),
 
-                UpdateByOperation.RollingGroup(50, 50,
+                RollingGroup(50, 50,
                         makeOpColNames(columnNamesArray, "_rollgroupfwdrev", "Sym", "ts")),
-                UpdateByOperation.RollingGroup("ts", Duration.ofMinutes(5), Duration.ofMinutes(5),
+                RollingGroup("ts", Duration.ofMinutes(5), Duration.ofMinutes(5),
                         makeOpColNames(columnNamesArray, "_rollgrouptimefwdrev", "Sym", "ts")),
 
-                UpdateByOperation.RollingSum(100, 0,
+                RollingSum(100, 0,
                         makeOpColNames(columnNamesArray, "_rollsumticksrev", "Sym", "ts", "boolCol")),
-                UpdateByOperation.RollingSum("ts", Duration.ofMinutes(15), Duration.ofMinutes(0),
+                RollingSum("ts", Duration.ofMinutes(15), Duration.ofMinutes(0),
                         makeOpColNames(columnNamesArray, "_rollsumtimerev", "Sym", "ts", "boolCol")),
 
-                UpdateByOperation.RollingAvg(100, 0,
+                RollingAvg(100, 0,
                         makeOpColNames(columnNamesArray, "_rollavgticksrev", "Sym", "ts", "boolCol")),
-                UpdateByOperation.RollingAvg("ts", Duration.ofMinutes(15), Duration.ofMinutes(0),
+                RollingAvg("ts", Duration.ofMinutes(15), Duration.ofMinutes(0),
                         makeOpColNames(columnNamesArray, "_rollavgtimerev", "Sym", "ts", "boolCol")),
 
-                UpdateByOperation.RollingMin(100, 0,
+                RollingMin(100, 0,
                         makeOpColNames(columnNamesArray, "_rollminticksrev", "Sym", "ts", "boolCol")),
-                UpdateByOperation.RollingMin("ts", Duration.ofMinutes(5), Duration.ofMinutes(0),
+                RollingMin("ts", Duration.ofMinutes(5), Duration.ofMinutes(0),
                         makeOpColNames(columnNamesArray, "_rollmintimerev", "Sym", "ts", "boolCol")),
 
-                UpdateByOperation.RollingMax(100, 0,
+                RollingMax(100, 0,
                         makeOpColNames(columnNamesArray, "_rollmaxticksrev", "Sym", "ts", "boolCol")),
-                UpdateByOperation.RollingMax("ts", Duration.ofMinutes(5), Duration.ofMinutes(0),
+                RollingMax("ts", Duration.ofMinutes(5), Duration.ofMinutes(0),
                         makeOpColNames(columnNamesArray, "_rollmaxtimerev", "Sym", "ts", "boolCol")),
 
-                UpdateByOperation.Ema(skipControl, "ts", 10 * MINUTE,
-                        makeOpColNames(columnNamesArray, "_ema", "Sym", "ts", "boolCol")),
-                UpdateByOperation.CumSum(makeOpColNames(columnNamesArray, "_sum", "Sym", "ts")),
-                UpdateByOperation.CumMin(makeOpColNames(columnNamesArray, "_min", "boolCol")),
-                UpdateByOperation.CumMax(makeOpColNames(columnNamesArray, "_max", "boolCol")),
-                UpdateByOperation
-                        .CumProd(makeOpColNames(columnNamesArray, "_prod", "Sym", "ts", "boolCol")));
+                Ema(skipControl, "ts", 10 * MINUTE, makeOpColNames(columnNamesArray, "_ema", "Sym", "ts", "boolCol")),
+                CumSum(makeOpColNames(columnNamesArray, "_sum", "Sym", "ts")),
+                CumMin(makeOpColNames(columnNamesArray, "_min", "boolCol")),
+                CumMax(makeOpColNames(columnNamesArray, "_max", "boolCol")),
+                CumProd(makeOpColNames(columnNamesArray, "_prod", "Sym", "ts", "boolCol")));
         final UpdateByControl control = UpdateByControl.builder().useRedirection(false).build();
 
         final Table table = result.t.updateBy(control, clauses, ColumnName.from("Sym"));
@@ -321,5 +321,77 @@ public class TestUpdateByGeneral extends BaseUpdateByTest implements UpdateError
                 TestCase.fail(t.getMessage());
             }
         });
+    }
+
+    @Test
+    public void testResultColumnOrdering() {
+        final Table source = emptyTable(5).update("X=ii");
+
+        final ColumnHolder<?> x = longCol("X", 0, 1, 2, 3, 4);
+        final ColumnHolder<?> cumMin = longCol("cumMin", 0, 0, 0, 0, 0);
+        final ColumnHolder<?> cumMax = longCol("cumMax", 0, 1, 2, 3, 4);
+        final ColumnHolder<?> rollingMin = longCol("rollingMin", 0, 0, 1, 2, 3);
+        final ColumnHolder<?> rollingMax = longCol("rollingMax", 0, 1, 2, 3, 4);
+
+        final Table result_1 = source.updateBy(List.of(
+                CumMin("cumMin=X"),
+                CumMax("cumMax=X"),
+                RollingMin(2, "rollingMin=X"),
+                RollingMax(2, "rollingMax=X")));
+        final Table expected_1 = TableTools.newTable(x, cumMin, cumMax, rollingMin, rollingMax);
+        Assert.assertEquals("", diff(result_1, expected_1, 10));
+
+        final Table result_2 = source.updateBy(List.of(
+                CumMax("cumMax=X"),
+                CumMin("cumMin=X"),
+                RollingMax(2, "rollingMax=X"),
+                RollingMin(2, "rollingMin=X")));
+        final Table expected_2 = TableTools.newTable(x, cumMax, cumMin, rollingMax, rollingMin);
+        Assert.assertEquals("", diff(result_2, expected_2, 10));
+
+        final Table result_3 = source.updateBy(List.of(
+                RollingMin(2, "rollingMin=X"),
+                RollingMax(2, "rollingMax=X"),
+                CumMin("cumMin=X"),
+                CumMax("cumMax=X")));
+        final Table expected_3 = TableTools.newTable(x, rollingMin, rollingMax, cumMin, cumMax);
+        Assert.assertEquals("", diff(result_3, expected_3, 10));
+
+        final Table result_4 = source.updateBy(List.of(
+                RollingMax(2, "rollingMax=X"),
+                RollingMin(2, "rollingMin=X"),
+                CumMax("cumMax=X"),
+                CumMin("cumMin=X")));
+        final Table expected_4 = TableTools.newTable(x, rollingMax, rollingMin, cumMax, cumMin);
+        Assert.assertEquals("", diff(result_4, expected_4, 10));
+
+        final Table result_5 = source.updateBy(List.of(
+                CumMin("cumMin=X"),
+                RollingMin(2, "rollingMin=X"),
+                CumMax("cumMax=X"),
+                RollingMax(2, "rollingMax=X")));
+        final Table expected_5 = TableTools.newTable(x, cumMin, rollingMin, cumMax, rollingMax);
+        Assert.assertEquals("", diff(result_5, expected_5, 10));
+
+        // Trickiest one, since we internally combine groupBy operations.
+        final Table source_2 = source.update("Y=ii % 2");
+        final Table result_6 = source_2.updateBy(List.of(
+                CumMin("cumMin=X"),
+                RollingGroup(2, "rollingGroupY=Y"),
+                RollingMin(2, "rollingMin=X"),
+                CumMax("cumMax=X"),
+                RollingGroup(2, "rollingGroupX=X"),
+                RollingMax(2, "rollingMax=X")));
+
+        Assert.assertArrayEquals(result_6.getDefinition().getColumnNamesArray(),
+                new String[] {
+                        "X",
+                        "Y",
+                        "cumMin",
+                        "rollingGroupY",
+                        "rollingMin",
+                        "cumMax",
+                        "rollingGroupX",
+                        "rollingMax"});
     }
 }

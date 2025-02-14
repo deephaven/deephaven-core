@@ -54,6 +54,8 @@ import java.util.Map;
 import java.util.List;
 import java.util.stream.Collectors;
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
+import static io.deephaven.engine.util.TableTools.col;
+import static io.deephaven.engine.util.TableTools.doubleCol;
 import static org.apache.parquet.schema.LogicalTypeAnnotation.intType;
 import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.DOUBLE;
 import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.INT32;
@@ -283,10 +285,79 @@ public abstract class SqliteCatalogBase {
             tableWriter.append(IcebergWriteInstructions.builder()
                     .addTables(appendTable)
                     .build());
-            failBecauseExceptionWasNotThrown(UncheckedDeephavenException.class);
+            failBecauseExceptionWasNotThrown(TableDefinition.IncompatibleTableDefinitionException.class);
         } catch (TableDefinition.IncompatibleTableDefinitionException e) {
             // Table definition mismatch between table writer and append table
-            assertThat(e).hasMessageContaining("Table definition");
+            assertThat(e).hasMessageContaining("Actual table definition is not compatible with the " +
+                    "expected definition");
+        }
+    }
+
+    @Test
+    void appendWithWrongDefinition() {
+        final Table source = TableTools.newTable(
+                col("dateCol", java.time.LocalDate.now()),
+                doubleCol("doubleCol", 2.5));
+        final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
+
+        final IcebergTableAdapter tableAdapter = catalogAdapter.createTable(tableIdentifier, source.getDefinition());
+        final IcebergTableWriter tableWriter = tableAdapter.tableWriter(writerOptionsBuilder()
+                .tableDefinition(source.getDefinition())
+                .build());
+        tableWriter.append(IcebergWriteInstructions.builder()
+                .addTables(source)
+                .build());
+
+        // Try to build a writer with an unknown column
+        try {
+            tableAdapter.tableWriter(writerOptionsBuilder()
+                    .tableDefinition(TableDefinition.of(ColumnDefinition.of("instantCol", Type.instantType())))
+                    .build());
+            failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
+        } catch (IllegalArgumentException e) {
+            assertThat(e).hasMessageContaining("Column instantCol not found in the schema");
+        }
+
+        // Try to build a writer with incorrect type
+        try {
+            tableAdapter.tableWriter(writerOptionsBuilder()
+                    .tableDefinition(TableDefinition.of(ColumnDefinition.of("dateCol", Type.instantType())))
+                    .build());
+            failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
+        } catch (IllegalArgumentException e) {
+            assertThat(e).hasMessageContaining("Column dateCol has type class java.time.Instant in table " +
+                    "definition but type date in Iceberg schema");
+        }
+
+        // Try to write a table with the incorrect type using a correct writer
+        {
+            final Table appendTableWithIncorrectType = TableTools.newTable(
+                    col("dateCol", java.time.Instant.now()));
+            try {
+                tableWriter.append(IcebergWriteInstructions.builder()
+                        .addTables(appendTableWithIncorrectType)
+                        .build());
+                failBecauseExceptionWasNotThrown(TableDefinition.IncompatibleTableDefinitionException.class);
+            } catch (TableDefinition.IncompatibleTableDefinitionException e) {
+                assertThat(e).hasMessageContaining("Actual table definition is not compatible with the " +
+                        "expected definition");
+            }
+        }
+
+        // Make a tableWriter with a proper subset of the definition, but then try to append with the full definition
+        {
+            final IcebergTableWriter tableWriterWithSubset = tableAdapter.tableWriter(writerOptionsBuilder()
+                    .tableDefinition(TableDefinition.of(ColumnDefinition.of("doubleCol", Type.doubleType())))
+                    .build());
+            try {
+                tableWriterWithSubset.append(IcebergWriteInstructions.builder()
+                        .addTables(source)
+                        .build());
+                failBecauseExceptionWasNotThrown(TableDefinition.IncompatibleTableDefinitionException.class);
+            } catch (TableDefinition.IncompatibleTableDefinitionException e) {
+                assertThat(e).hasMessageContaining("Actual table definition is not compatible with the " +
+                        "expected definition");
+            }
         }
     }
 

@@ -48,6 +48,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
+import static io.deephaven.iceberg.base.IcebergUtils.convertToIcebergType;
 import static io.deephaven.iceberg.base.IcebergUtils.verifyPartitioningColumns;
 import static io.deephaven.iceberg.base.IcebergUtils.verifyRequiredFields;
 
@@ -189,7 +190,7 @@ public class IcebergTableWriter {
 
             // To be populated by the end of this block for each column, else throw an exception
             Integer fieldId = null;
-            Types.NestedField nestedField;
+            Types.NestedField nestedField = null;
 
             // Check in the schema.name_mapping.default map
             if (nameMappingDefault == null) {
@@ -213,9 +214,16 @@ public class IcebergTableWriter {
                 }
             }
 
-            if (fieldId == null) {
+            if (nestedField == null) {
                 throw new IllegalArgumentException("Column " + columnName + " not found in the schema or " +
                         "the name mapping for the table");
+            }
+            final Type expectedIcebergType = nestedField.type();
+            final Class<?> dhType = columnDefinition.getDataType();
+            final Type convertedIcebergType = convertToIcebergType(dhType);
+            if (!expectedIcebergType.equals(convertedIcebergType)) {
+                throw new IllegalArgumentException("Column " + columnName + " has type " + dhType + " in table " +
+                        "definition but type " + expectedIcebergType + " in Iceberg schema");
             }
 
             fieldIdToColumnName.put(fieldId, columnName);
@@ -297,7 +305,13 @@ public class IcebergTableWriter {
             @NotNull final Iterable<Table> tables,
             @NotNull final TableDefinition expectedDefinition) {
         for (final Table table : tables) {
-            expectedDefinition.checkMutualCompatibility(table.getDefinition());
+            try {
+                expectedDefinition.checkMutualCompatibility(table.getDefinition());
+            } catch (final Exception e) {
+                throw new TableDefinition.IncompatibleTableDefinitionException("Actual table definition is not " +
+                        "compatible with the expected definition, actual = " + table.getDefinition() + ", expected = "
+                        + expectedDefinition, e);
+            }
         }
     }
 

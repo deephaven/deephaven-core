@@ -673,7 +673,9 @@ public class TestParquetTools {
         // This is somewhat fragile, but has been manually verified to contain the field_ids that we expect.
         // We may want to consider more explicit tests that verify our writing logic is consistent, as it would be good
         // to know whenever serialization changes in any way.
-        assertEquals("2ea68b0ddaeb432e9c2721f15460b6c42449a479c1960e836f6ebe3b14f33dc1", sha256sum(file.toPath()));
+        // For example, this test can fail when we upgrade the parquet version simply because the "createdBy" field
+        // captures this version.
+        assertEquals("208abbee39fc8034322d10032d07098ad7766c8fbf17c9e74e58ccd1ce278037", sha256sum(file.toPath()));
 
         // This test is a bit circular; but assuming we trust our reading code, we should have relative confidence that
         // we are writing it down correctly if we can read it correctly.
