@@ -21,10 +21,11 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.*;
 
 abstract class S3SeekableChannelSimpleTestBase extends S3SeekableChannelTestSetup {
 
@@ -144,6 +145,60 @@ abstract class S3SeekableChannelSimpleTestBase extends S3SeekableChannelTestSetu
                 buffer.flip();
                 assertThat(buffer).isEqualTo(ByteBuffer.wrap(contentBytes));
             }
+        }
+    }
+
+    @Test
+    void readWriteTestExpectWriteTimeout() throws IOException {
+        final URI uri = uri("writeReadTest.txt");
+        final String content = "Hello, world!";
+        final byte[] contentBytes = content.getBytes(StandardCharsets.UTF_8);
+        final S3Instructions.Builder s3InstructionsBuilder = S3Instructions.builder()
+                .writeTimeout(Duration.ofMillis(1));
+        try (
+                final SeekableChannelsProvider providerImpl = providerImpl(s3InstructionsBuilder);
+                final SeekableChannelsProvider provider = CachedChannelProvider.create(providerImpl, 32);
+                final CompletableOutputStream outputStream = provider.getOutputStream(uri, 0)) {
+            final int numBytes = 36 * 1024 * 1024; // 36 Mib -> Three 10-MiB parts + One 6-MiB part
+            final int numIters = numBytes / contentBytes.length;
+            for (int i = 0; i < numIters; ++i) {
+                outputStream.write(contentBytes);
+            }
+            outputStream.flush();
+            outputStream.done();
+            // Push data to S3 and expect a timeout
+            try {
+                outputStream.complete();
+                fail("Expected write timeout exception");
+            } catch (Exception e) {
+                final Throwable cause = e.getCause();
+                assertThat(cause.getClass().equals(ExecutionException.class)).isEqualTo(true);
+                final String s = cause.getMessage();
+                assertThat(s.contains("Client execution did not complete before the specified timeout configuration")).isEqualTo(true);
+            }
+        }
+    }
+
+    @Test
+    void readWriteTestNoWriteTimeout() throws IOException {
+        final URI uri = uri("writeReadTest.txt");
+        final String content = "Hello, world!";
+        final byte[] contentBytes = content.getBytes(StandardCharsets.UTF_8);
+        final S3Instructions.Builder s3InstructionsBuilder = S3Instructions.builder()
+                .writeTimeout(Duration.ofSeconds(20));
+        try (
+                final SeekableChannelsProvider providerImpl = providerImpl(s3InstructionsBuilder);
+                final SeekableChannelsProvider provider = CachedChannelProvider.create(providerImpl, 32);
+                final CompletableOutputStream outputStream = provider.getOutputStream(uri, 0)) {
+            final int numBytes = 36 * 1024 * 1024; // 36 Mib -> Three 10-MiB parts + One 6-MiB part
+            final int numIters = numBytes / contentBytes.length;
+            for (int i = 0; i < numIters; ++i) {
+                outputStream.write(contentBytes);
+            }
+            outputStream.flush();
+            outputStream.done();
+            // Push data to S3
+            outputStream.complete();
         }
     }
 }

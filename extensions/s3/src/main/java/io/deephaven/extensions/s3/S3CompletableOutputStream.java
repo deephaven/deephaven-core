@@ -21,8 +21,10 @@ import software.amazon.awssdk.services.s3.model.UploadPartResponse;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
@@ -261,12 +263,14 @@ class S3CompletableOutputStream extends CompletableOutputStream {
             throw new IllegalStateException("Request already in progress for uri " + uri + " with part number " +
                     nextPartNumber);
         }
-        final UploadPartRequest uploadPartRequest = UploadPartRequest.builder()
+        final UploadPartRequest.Builder builder = UploadPartRequest.builder()
                 .bucket(uri.bucket().orElseThrow())
                 .key(uri.key().orElseThrow())
                 .uploadId(uploadId)
-                .partNumber(nextPartNumber)
-                .build();
+                .partNumber(nextPartNumber);
+        final Optional<Duration> writeTimeout = s3Instructions.writeTimeout();
+        writeTimeout.ifPresent(duration -> builder.overrideConfiguration(b -> b.apiCallTimeout(duration)));
+        final UploadPartRequest uploadPartRequest = builder.build();
         request.buffer.flip();
         request.future = s3AsyncClient.uploadPart(uploadPartRequest,
                 AsyncRequestBody.fromByteBufferUnsafe(request.buffer));

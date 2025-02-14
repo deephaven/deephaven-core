@@ -76,6 +76,12 @@ public abstract class S3SeekableChannelTestSetup {
         return plugin.createProvider(SCHEME, instructions);
     }
 
+    protected final SeekableChannelsProvider providerImpl(final S3Instructions.Builder s3InstructionsBuilder) {
+        final S3SeekableChannelProviderPlugin plugin = new S3SeekableChannelProviderPlugin();
+        final S3Instructions instructions = s3Instructions(s3InstructionsBuilder).build();
+        return plugin.createProvider(SCHEME, instructions);
+    }
+
     protected static ByteBuffer readAll(ReadableByteChannel channel, int maxBytes) throws IOException {
         final ByteBuffer dst = ByteBuffer.allocate(maxBytes);
         while (dst.remaining() > 0 && channel.read(dst) != -1) {
