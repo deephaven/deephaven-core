@@ -9,7 +9,6 @@ from jedi.api.classes import Signature
 
 
 _IGNORE_PARAM_NAMES = ("", "/", "*")
-_MAX_DISPLAY_SIG_LEN = 128  # 3 lines is 150, but there could be overflow so 150 could result in 4 lines
 _POSITIONAL_KINDS = (Parameter.POSITIONAL_ONLY, Parameter.POSITIONAL_OR_KEYWORD, Parameter.VAR_POSITIONAL)
 
 # key: result from _hash
@@ -162,45 +161,6 @@ def _generate_description_markdown(docs: Docstring, params: list[ParameterDetail
 
     return description.strip()
 
-
-def _generate_display_sig(signature: Signature) -> str:
-    """
-    Generate the signature text for the signature help. Truncates the signature if it is too long. If the current
-    argument is positional, it will display the next 2 arguments. If the current argument is keyword, it will only
-    display the current argument.
-    """
-
-    if len(signature.to_string()) <= _MAX_DISPLAY_SIG_LEN:
-        return signature.to_string()
-    
-    # Use 0 as default to display start of signature
-    index = signature.index if signature.index is not None else 0
-    display_sig = f"{signature.name}("
-
-    if index > 0:
-        display_sig += "..., "
-
-    # If current arg is positional, display next 2 args
-    # If current arg is keyword, only display current args
-    if signature.params[index].kind in _POSITIONAL_KINDS:
-        # Clamp index so that 3 args are shown, even at last index
-        index = max(min(index, len(signature.params) - 3), 0)
-        end_index = index + 3
-        # If the next arg is not positional, do not show the one after it
-        # Otherwise, this arg will show 2 ahead, and then next arg will show 0 ahead
-        if signature.params[index + 1].kind not in _POSITIONAL_KINDS:
-            end_index -= 1
-        display_sig += ", ".join([param.to_string() for param in signature.params[index:end_index]])
-        if index + 3 < len(signature.params):
-            display_sig += ", ..."
-    else:
-        display_sig += signature.params[index].to_string()
-        if index + 1 < len(signature.params):
-            display_sig += ", ..."
-
-    return display_sig + ")"
-
-
 def _generate_param_markdowns(signature: Signature, params: list[Any]) -> list[Any]:
     """
     Generate markdown for each parameter in the signature. This will be shown on top of the description markdown.
@@ -246,7 +206,7 @@ def get_signature_help(signature: Signature) -> list[Any]:
     if cache_key in _result_cache:
         result = _result_cache[cache_key]
         return [
-            _generate_display_sig(signature),
+            signature.to_string(),
             result["description"],
             result["param_docs"],
             signature.index if signature.index is not None else -1,
@@ -278,7 +238,7 @@ def get_signature_help(signature: Signature) -> list[Any]:
     }
 
     return [
-        _generate_display_sig(signature),
+        signature.to_string(),
         description,
         param_docs,
         signature.index if signature.index is not None else -1,

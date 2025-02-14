@@ -7,7 +7,7 @@ from typing import Callable
 from docstring_parser import parse, Docstring
 from jedi import Script, Interpreter
 
-from deephaven_internal.auto_completer._signature_help import _get_params, _generate_description_markdown, _generate_display_sig
+from deephaven_internal.auto_completer._signature_help import _get_params, _generate_description_markdown
 from tests.testbase import BaseTestCase
 
 
@@ -52,25 +52,9 @@ class DocstringParser(BaseTestCase):
         interpreter_signature = self.get_interpreter_signature(func, func_call_append)
         interpreter_docstring = interpreter_signature.docstring(raw=True)
         self.assertEqual(
-            # Need to use _generate_display_sig for the original_signature ones, not this method... grr.
             _generate_description_markdown(parse(interpreter_docstring), _get_params(interpreter_signature, parse(interpreter_docstring))),
             expected_result
         )
-
-    def expect_signature(self, func: Callable, expected_result: str, func_call_append = ""):
-        """
-        Test whether the function passed in results in the expected signature. Tests both interpreter and script.
-
-        Args:
-            func: the function object. Will be used with Jedi Interpreter, and source used for Jedi Script
-            expected_result: the expected signature result
-            func_call_append: the string to append at the end of the function call
-        """
-        script_signature = self.get_script_signature(func, func_call_append)
-        self.assertEqual(_generate_display_sig(script_signature), expected_result)
-
-        interpreter_signature = self.get_interpreter_signature(func, func_call_append)
-        self.assertEqual(_generate_display_sig(interpreter_signature), expected_result)
 
     def test_args(self):
         def args(has_docs, has_type: str | int, *positional, has_default=1, has_type_default: str | int = 1, **keyword):
@@ -208,34 +192,3 @@ Description
 >>> Code
 Still code
 ```""")
-
-    def test_original_signature(self):
-        def original_signature(aaaaaa00, aaaaaa01, aaaaaa02, aaaaaa03, aaaaaa04, aaaaaa05, aaaaaa06, aaaaaa07, aaaaaa08, aaaaaa09):
-            """
-            :returns a: b
-            """
-
-        self.expect_signature(original_signature, "original_signature(aaaaaa00, aaaaaa01, aaaaaa02, aaaaaa03, aaaaaa04, aaaaaa05, aaaaaa06, aaaaaa07, aaaaaa08, aaaaaa09)")
-
-    def test_truncate_positional(self):
-        def truncate_positional(aaaaaa00, aaaaaa01, aaaaaa02, aaaaaa03, aaaaaa04, aaaaaa05, aaaaaa06, aaaaaa07, aaaaaa08, aaaaaa09,
-                                aaaaaa10, aaaaaa11, aaaaaa12):
-            """
-            :returns a: b
-            """
-
-        self.expect_signature(truncate_positional, "truncate_positional(aaaaaa00, aaaaaa01, aaaaaa02, ...)")
-        self.expect_signature(truncate_positional, "truncate_positional(..., aaaaaa01, aaaaaa02, aaaaaa03, ...)", "1, ")
-        self.expect_signature(truncate_positional, "truncate_positional(..., aaaaaa10, aaaaaa11, aaaaaa12)", "1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ")
-        self.expect_signature(truncate_positional, "truncate_positional(..., aaaaaa10, aaaaaa11, aaaaaa12)", "1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ")
-
-    def test_truncate_keyword(self):
-        def truncate_keyword(aaaaaa00, *, aaaaaa01=1, aaaaaa02=1, aaaaaa03=1, aaaaaa04=1, aaaaaa05=1, aaaaaa06=1, aaaaaa07=1, aaaaaa08=1, aaaaaa09=1,
-                             aaaaaa10=1, aaaaaa11=1, aaaaaa12=1):
-            """
-            :returns a: b
-            """
-
-        self.expect_signature(truncate_keyword, "truncate_keyword(aaaaaa00, aaaaaa01=1, ...)")
-        self.expect_signature(truncate_keyword, "truncate_keyword(..., aaaaaa01=1, ...)", "1, ")
-        self.expect_signature(truncate_keyword, "truncate_keyword(..., aaaaaa12=1)", "1, aaaaaa12=")
