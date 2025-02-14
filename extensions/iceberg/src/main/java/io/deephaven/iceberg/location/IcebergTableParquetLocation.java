@@ -78,8 +78,8 @@ public class IcebergTableParquetLocation extends ParquetTableLocation implements
                 sortColumn = SortColumn.desc(columnName);
             } else {
                 // TODO Check with Devin if this is okay, The assumption here is that deephaven sorts nulls first for
-                //  ascending order and nulls last for descending, so if we don't have the correct nulls order, we
-                //  cannot use the column as a sort column
+                // ascending order and nulls last for descending, so if we don't have the correct nulls order, we
+                // cannot use the column as a sort column
                 break;
             }
             sortColumns.add(sortColumn);

@@ -41,6 +41,15 @@ public abstract class IcebergWriteInstructions {
      */
     public abstract List<String> partitionPaths();
 
+    /**
+     * Whether to apply the {@link org.apache.iceberg.Table#sortOrder()} of the iceberg table. If true, the tables will
+     * be sorted before writing to the iceberg table. By default, this is false.
+     */
+    @Value.Default
+    public boolean applySortOrder() {
+        return false;
+    }
+
     // @formatter:off
     public interface Builder {
     // @formatter:on
@@ -55,6 +64,8 @@ public abstract class IcebergWriteInstructions {
         Builder addPartitionPaths(String... elements);
 
         Builder addAllPartitionPaths(Iterable<String> elements);
+
+        Builder applySortOrder(boolean applySortOrder);
 
         IcebergWriteInstructions build();
     }

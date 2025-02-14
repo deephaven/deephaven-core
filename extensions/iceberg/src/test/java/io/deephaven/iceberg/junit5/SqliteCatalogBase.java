@@ -1140,4 +1140,51 @@ public abstract class SqliteCatalogBase {
         }
         assertThat(actualSortOrders).containsExactlyInAnyOrderElementsOf(expectedSortOrders);
     }
+
+    @Test
+    void testEnforceSortOrder() {
+        final Table source = TableTools.newTable(
+                intCol("intCol", 15, 0, 32, 33, 19),
+                doubleCol("doubleCol", 10.5, 2.5, 3.5, 40.5, 0.5),
+                longCol("longCol", 20L, 50L, 0L, 10L, 5L));
+        final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
+        final IcebergTableAdapter tableAdapter = catalogAdapter.createTable(tableIdentifier, source.getDefinition());
+        final IcebergTableWriter tableWriter = tableAdapter.tableWriter(writerOptionsBuilder()
+                .tableDefinition(source.getDefinition())
+                .build());
+        tableWriter.append(IcebergWriteInstructions.builder()
+                .addTables(source)
+                .build());
+
+        // Verify that the data file is not sorted
+        verifySortOrder(tableAdapter, tableIdentifier, List.of(List.of()));
+
+        // Update the sort order of the underlying iceberg table
+        final org.apache.iceberg.Table icebergTable = tableAdapter.icebergTable();
+        assertThat(icebergTable.sortOrder().fields()).hasSize(0);
+        icebergTable.replaceSortOrder().asc("intCol").commit();
+        assertThat(icebergTable.sortOrder().fields()).hasSize(1);
+
+        // Append more unsorted data to the table with enforcing sort order
+        tableWriter.append(IcebergWriteInstructions.builder()
+                .addTables(source)
+                .applySortOrder(true)
+                .build());
+
+        // Verify that the new data file is sorted
+        verifySortOrder(tableAdapter, tableIdentifier, List.of(
+                List.of(),
+                List.of(SortColumn.asc(ColumnName.of("intCol")))));
+
+        // Append more unsorted data to the table without enforcing sort order
+        tableWriter.append(IcebergWriteInstructions.builder()
+                .addTables(source)
+                .build());
+
+        // Verify that the new data file is not sorted
+        verifySortOrder(tableAdapter, tableIdentifier, List.of(
+                List.of(),
+                List.of(SortColumn.asc(ColumnName.of("intCol"))),
+                List.of()));
+    }
 }
