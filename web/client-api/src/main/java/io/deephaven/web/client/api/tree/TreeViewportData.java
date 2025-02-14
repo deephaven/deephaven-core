@@ -9,6 +9,10 @@ import io.deephaven.web.client.api.TableData;
 import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
 
+/**
+ * Similar to {@link io.deephaven.web.client.api.subscription.ViewportData}, but with additional properties to reflect
+ * the tree structure.
+ */
 @JsType(namespace = "dh")
 public interface TreeViewportData extends TableData {
     @JsProperty
@@ -23,6 +27,12 @@ public interface TreeViewportData extends TableData {
     @JsProperty
     @Override
     JsArray<TableData.@TsTypeRef(TreeRow.class) Row> getRows();
+
+    /**
+     * The position of the first returned row within the tree.
+     */
+    @JsProperty
+    double getOffset();
 
     /**
      * Row implementation that also provides additional read-only properties. represents visible rows in the table, but

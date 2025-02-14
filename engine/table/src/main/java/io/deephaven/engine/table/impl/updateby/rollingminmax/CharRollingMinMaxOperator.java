@@ -164,4 +164,7 @@ public class CharRollingMinMaxOperator extends BaseCharUpdateByOperator {
         // endregion extra-copy-args
         );
     }
+
+    // region extra-methods
+    // endregion extra-methods
 }
