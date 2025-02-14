@@ -3,6 +3,7 @@
 //
 package io.deephaven.iceberg.util;
 
+import io.deephaven.api.SortColumn;
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.context.ExecutionContext;
@@ -11,6 +12,7 @@ import io.deephaven.engine.context.StandaloneQueryScope;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.SortedColumnsAttribute;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.parquet.table.CompletedParquetWrite;
 import io.deephaven.parquet.table.ParquetInstructions;
@@ -22,11 +24,14 @@ import org.apache.iceberg.DataFile;
 import org.apache.iceberg.DataFiles;
 import org.apache.iceberg.FileFormat;
 import org.apache.iceberg.HasTableOperations;
+import org.apache.iceberg.NullOrder;
 import org.apache.iceberg.PartitionData;
 import org.apache.iceberg.PartitionField;
 import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.Schema;
+import org.apache.iceberg.SortOrder;
 import org.apache.iceberg.TableMetadata;
+import org.apache.iceberg.TableOperations;
 import org.apache.iceberg.TableProperties;
 import org.apache.iceberg.Transaction;
 import org.apache.iceberg.encryption.EncryptedOutputFile;
@@ -295,7 +300,95 @@ public class IcebergTableWriter {
             final List<String[]> dhTableUpdateStrings = ret.getSecond();
             parquetFileInfo = writeParquet(partitionData, dhTableUpdateStrings, writeInstructions);
         }
-        return dataFilesFromParquet(parquetFileInfo, partitionData);
+
+        final List<SortOrder> sortOrders = addSortOrdersToTableMetadata(writeInstructions);
+        return dataFilesFromParquet(parquetFileInfo, partitionData, sortOrders);
+    }
+
+    /**
+     * Iterate over all the tables being written and add the corresponding sort orders to the iceberg table metadata.
+     *
+     * @return A list of sort orders, one for each table being written, or an empty list if no sort orders were added.
+     */
+    private List<SortOrder> addSortOrdersToTableMetadata(
+            @NotNull final IcebergWriteInstructions writeInstructions) {
+        final List<Table> dhTables = writeInstructions.tables();
+        final TableMetadata newMetadata;
+        final List<SortOrder> icebergSortOrders = new ArrayList<>();
+        if (table instanceof HasTableOperations) {
+            final TableOperations ops = ((HasTableOperations) table).operations();
+            final TableMetadata currentMetadata = ops.current();
+            final Schema schema = currentMetadata.schema();
+            final TableMetadata.Builder newMetadataBuilder = TableMetadata.buildFrom(currentMetadata);
+            final Collection<List<SortColumn>> dhSortColumns = new ArrayList<>(dhTables.size());
+            final Map<List<SortColumn>, SortOrder> sortOrders = new HashMap<>();
+            for (final Table dhTable : dhTables) {
+                final List<SortColumn> sortedColumns = SortedColumnsAttribute.getSortedColumns(dhTable);
+                dhSortColumns.add(sortedColumns);
+                if (sortedColumns.isEmpty()) {
+                    continue;
+                }
+
+                // TODO Handle column renames
+
+                // Note that the following sort order has sort ID set as the default (1). The real ID will get updated
+                // when we add the ID to the metadata.
+                final SortOrder sortOrder = sortOrders.computeIfAbsent(sortedColumns,
+                        key -> buildIcebergSortOrderForDhSortedColumn(schema, sortedColumns));
+                newMetadataBuilder.addSortOrder(sortOrder);
+            }
+            if (sortOrders.isEmpty()) {
+                return List.of();
+            }
+
+            newMetadata = newMetadataBuilder.build();
+            try {
+                ops.commit(currentMetadata, newMetadata);
+            } catch (final Exception e) {
+                // Failed to update the metadata, so assume no sort orders were added
+                return List.of();
+            }
+
+            // Now that the metadata has been updated, we can fetch the updated sort orders with IDs
+            final List<SortOrder> updatedSortOrders = newMetadata.sortOrders();
+            for (final Map.Entry<List<SortColumn>, SortOrder> entry : sortOrders.entrySet()) {
+                final SortOrder computed = entry.getValue();
+                for (final SortOrder updatedSortOrder : updatedSortOrders) {
+                    if (updatedSortOrder.sameOrder(computed)) {
+                        entry.setValue(updatedSortOrder);
+                    }
+                }
+            }
+
+            for (final List<SortColumn> sortedColumns : dhSortColumns) {
+                if (sortedColumns.isEmpty()) {
+                    icebergSortOrders.add(null);
+                }
+                if (!sortOrders.containsKey(sortedColumns)) {
+                    throw new IllegalStateException("Failed to add sort order for columns " + sortedColumns);
+                }
+                icebergSortOrders.add(sortOrders.get(sortedColumns));
+            }
+        }
+        return icebergSortOrders;
+    }
+
+    /**
+     * Build a {@link SortOrder} for the provided Deephaven sorted columns using the provided schema.
+     */
+    private static SortOrder buildIcebergSortOrderForDhSortedColumn(
+            @NotNull final Schema schema,
+            @NotNull final List<SortColumn> sortedColumns) {
+        final SortOrder.Builder sortOrderBuilder = SortOrder.builderFor(schema);
+        for (final SortColumn sortColumn : sortedColumns) {
+            final String columnName = sortColumn.column().name();
+            if (sortColumn.order() == SortColumn.Order.ASCENDING) {
+                sortOrderBuilder.asc(columnName, NullOrder.NULLS_FIRST);
+            } else {
+                sortOrderBuilder.desc(columnName, NullOrder.NULLS_LAST);
+            }
+        }
+        return sortOrderBuilder.build();
     }
 
     /**
@@ -500,8 +593,7 @@ public class IcebergTableWriter {
     /**
      * Commit the changes to the Iceberg table by creating a snapshot.
      */
-    private void commit(
-            @NotNull final Iterable<DataFile> dataFiles) {
+    private void commit(@NotNull final Iterable<DataFile> dataFiles) {
         final Transaction icebergTransaction = table.newTransaction();
 
         // Append the new data files to the table
@@ -518,7 +610,8 @@ public class IcebergTableWriter {
      */
     private List<DataFile> dataFilesFromParquet(
             @NotNull final List<CompletedParquetWrite> parquetFilesWritten,
-            @NotNull final List<PartitionData> partitionDataList) {
+            @NotNull final List<PartitionData> partitionDataList,
+            @NotNull final List<SortOrder> sortOrders) {
         final int numFiles = parquetFilesWritten.size();
         final List<DataFile> dataFiles = new ArrayList<>(numFiles);
         final PartitionSpec partitionSpec = tableSpec;
@@ -531,6 +624,9 @@ public class IcebergTableWriter {
                     .withFileSizeInBytes(completedWrite.numBytes());
             if (partitionSpec.isPartitioned()) {
                 dataFileBuilder.withPartition(partitionDataList.get(idx));
+            }
+            if (!sortOrders.isEmpty() && sortOrders.get(idx) != null) {
+                dataFileBuilder.withSortOrder(sortOrders.get(idx));
             }
             dataFiles.add(dataFileBuilder.build());
         }

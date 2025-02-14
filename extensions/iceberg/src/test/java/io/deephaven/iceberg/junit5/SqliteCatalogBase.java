@@ -66,6 +66,7 @@ import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
 import static io.deephaven.engine.util.TableTools.col;
 import static io.deephaven.engine.util.TableTools.doubleCol;
 import static io.deephaven.engine.util.TableTools.intCol;
+import static io.deephaven.engine.util.TableTools.longCol;
 import static io.deephaven.iceberg.base.IcebergUtils.dataFileUri;
 import static io.deephaven.iceberg.base.IcebergUtils.locationUri;
 import static org.apache.parquet.schema.LogicalTypeAnnotation.intType;
@@ -1053,8 +1054,9 @@ public abstract class SqliteCatalogBase {
     @Test
     void appendSortedTableBasicTest() {
         final Table source = TableTools.newTable(
-                intCol("intCol", 10, 20, 30, 40, 50),
-                doubleCol("doubleCol", 10.5, 20.5, 30.5, 40.5, 50.5));
+                intCol("intCol", 15, 0, 32, 33, 19),
+                doubleCol("doubleCol", 10.5, 2.5, 3.5, 40.5, 0.5),
+                longCol("longCol", 20L, 50L, 0L, 10L, 5L));
         final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
         final IcebergTableAdapter tableAdapter = catalogAdapter.createTable(tableIdentifier, source.getDefinition());
         final IcebergTableWriter tableWriter = tableAdapter.tableWriter(writerOptionsBuilder()
@@ -1067,16 +1069,43 @@ public abstract class SqliteCatalogBase {
         // Verify that the data file is not sorted
         verifySortOrder(tableAdapter, tableIdentifier, List.of(List.of()));
 
-        // Append a sorted table
-        final Table sortedSource = source.sort("intCol");
-        tableWriter.append(IcebergWriteInstructions.builder()
-                .addTables(sortedSource)
-                .build());
+        // Append a sorted table, and verify that the data file is sorted
+        {
+            final Table sortedSource = source.sort("intCol");
+            tableWriter.append(IcebergWriteInstructions.builder()
+                    .addTables(sortedSource)
+                    .build());
+            verifySortOrder(tableAdapter, tableIdentifier, List.of(
+                    List.of(SortColumn.asc(ColumnName.of("intCol"))),
+                    List.of()));
+        }
 
-        // Verify that one data file is sorted and one is not
-        verifySortOrder(tableAdapter, tableIdentifier, List.of(
-                List.of(SortColumn.asc(ColumnName.of("intCol"))),
-                List.of()));
+        {
+            final Table sortedSource = source.sortDescending("doubleCol");
+            tableWriter.append(IcebergWriteInstructions.builder()
+                    .addTables(sortedSource)
+                    .build());
+            verifySortOrder(tableAdapter, tableIdentifier, List.of(
+                    List.of(SortColumn.asc(ColumnName.of("intCol"))),
+                    List.of(),
+                    List.of(SortColumn.desc(ColumnName.of("doubleCol")))));
+        }
+
+        {
+            final Table sortedSource1 = source.sort("doubleCol");
+            final Table sortedSource2 = source.sortDescending("longCol", "intCol");
+            tableWriter.append(IcebergWriteInstructions.builder()
+                    .addTables(sortedSource1, sortedSource2)
+                    .build());
+            verifySortOrder(tableAdapter, tableIdentifier, List.of(
+                    List.of(SortColumn.asc(ColumnName.of("intCol"))),
+                    List.of(),
+                    List.of(SortColumn.desc(ColumnName.of("doubleCol"))),
+                    List.of(SortColumn.asc(ColumnName.of("doubleCol"))),
+                    List.of(SortColumn.desc(ColumnName.of("longCol")))));
+            // TODO(DH-18700): Currently we don't support marking a data file to be sorted on multiple columns, and will
+            // only consider the first column in the list. That is why we only have "longCol" in the last list above.
+        }
     }
 
     /**
