@@ -166,9 +166,21 @@ public abstract class AbstractAsyncGwtTestCase extends GWTTestCase {
     }
 
     private Promise<IdeSession> runAllScriptsInOrder(IdeSession session, List<String> code) {
-        String block = String.join("\n", code);
-        delayTestFinish(4000);
-        return session.runCode(block).then(ignore -> Promise.resolve(session));
+        Promise<IdeSession> result = Promise.resolve(session);
+        for (int i = 0; i < code.size(); i++) {
+            final int index = i;
+            result = result.then(ignore -> {
+                delayTestFinish(4000 + index);
+
+                return session.runCode(code.get(index));
+            }).then(r -> {
+                if (r.getError() != null) {
+                    return Promise.reject(r.getError());
+                }
+                return Promise.resolve(session);
+            });
+        }
+        return result;
     }
 
     public IThenable.ThenOnFulfilledCallbackFn<IdeSession, JsTable> table(String tableName) {
