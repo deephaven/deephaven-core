@@ -164,6 +164,13 @@ def _generate_description_markdown(docs: Docstring, params: list[ParameterDetail
 def _generate_param_markdowns(signature: Signature, params: list[Any]) -> list[Any]:
     """
     Generate markdown for each parameter in the signature. This will be shown on top of the description markdown.
+
+    Args:
+        signature: The signature from `jedi`
+        params: The list of parameters from `_get_params`
+
+    Returns:
+        A list of signature names and description pairs.
     """
 
     param_docs = []

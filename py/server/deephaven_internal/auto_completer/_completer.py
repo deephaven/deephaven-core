@@ -78,8 +78,6 @@ class Completer:
     def __init__(self):
         self._docs = {}
         self._versions = {}
-        # Cache for signature markdown
-        self.signature_cache = {}
         # we will replace this w/ top-level globals() when we open the document
         self.__scope = globals()
         # might want to make this a {uri: []} instead of []
