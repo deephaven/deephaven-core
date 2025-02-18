@@ -58,6 +58,7 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -65,6 +66,9 @@ import java.util.Map;
 import java.util.PrimitiveIterator;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import static io.deephaven.extensions.barrage.chunk.FactoryHelper.factorForTimeUnit;
+import static io.deephaven.extensions.barrage.chunk.FactoryHelper.maskIfOverflow;
 
 /**
  * JVM implementation of {@link ChunkReader.Factory}, suitable for use in Java clients and servers. This default
@@ -92,9 +96,8 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
                 final BarrageOptions options);
     }
 
-    // allow subclasses to modify this as they wish
     private final Map<ArrowType.ArrowTypeID, Map<Class<?>, ChunkReaderFactory>> registeredFactories =
-            new HashMap<>();
+            new EnumMap<>(ArrowType.ArrowTypeID.class);
 
     protected DefaultChunkReaderFactory() {
         register(ArrowType.ArrowTypeID.Timestamp, long.class, DefaultChunkReaderFactory::timestampToLong);
@@ -159,6 +162,11 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
         register(ArrowType.ArrowTypeID.Binary, Schema.class, DefaultChunkReaderFactory::binaryToSchema);
     }
 
+    protected Map<Class<?>, ChunkReaderFactory> lookupReaderFactory(
+            final ArrowType.ArrowTypeID typeId) {
+        return registeredFactories.get(typeId);
+    }
+
     @Override
     public <T extends WritableChunk<Values>> ChunkReader<T> newReader(
             @NotNull final BarrageTypeInfo<org.apache.arrow.flatbuf.Field> typeInfo,
@@ -169,6 +177,7 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
                 Field.convertField(typeInfo.arrowField()));
         return newReaderPojo(fieldTypeInfo, options, true);
     }
+
 
     public <T extends WritableChunk<Values>> ChunkReader<T> newReaderPojo(
             @NotNull final BarrageTypeInfo<Field> typeInfo,
@@ -195,7 +204,7 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
                     typeInfo.type().getCanonicalName()));
         }
 
-        final Map<Class<?>, ChunkReaderFactory> knownReaders = registeredFactories.get(typeId);
+        final Map<Class<?>, ChunkReaderFactory> knownReaders = lookupReaderFactory(typeId);
         if (knownReaders == null && !isSpecialType) {
             throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, String.format(
                     "No known Barrage ChunkReader for arrow type %s to %s.",
@@ -239,7 +248,16 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
 
             final BarrageTypeInfo<Field> componentTypeInfo;
             final boolean useVectorKernels = Vector.class.isAssignableFrom(typeInfo.type());
-            if (useVectorKernels) {
+            if (isTopLevel && options.columnsAsList()) {
+                // we'll check columns-as-list first; just in case they have an annotated type
+                final BarrageTypeInfo<Field> realTypeInfo = new BarrageTypeInfo<>(
+                        typeInfo.type(),
+                        typeInfo.componentType(),
+                        typeInfo.arrowField().getChildren().get(0));
+                final ChunkReader<WritableChunk<Values>> componentReader = newReaderPojo(realTypeInfo, options, false);
+                // noinspection unchecked
+                return (ChunkReader<T>) new SingleElementListHeaderReader<>(componentReader);
+            } else if (useVectorKernels) {
                 final Class<?> componentType =
                         VectorExpansionKernel.getComponentType(typeInfo.type(), typeInfo.componentType());
                 componentTypeInfo = new BarrageTypeInfo<>(
@@ -253,14 +271,6 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
                         componentType,
                         componentType.getComponentType(),
                         typeInfo.arrowField().getChildren().get(0));
-            } else if (isTopLevel && options.columnsAsList()) {
-                final BarrageTypeInfo<Field> realTypeInfo = new BarrageTypeInfo<>(
-                        typeInfo.type(),
-                        typeInfo.componentType(),
-                        typeInfo.arrowField().getChildren().get(0));
-                final ChunkReader<WritableChunk<Values>> componentReader = newReaderPojo(realTypeInfo, options, false);
-                // noinspection unchecked
-                return (ChunkReader<T>) new SingleElementListHeaderReader<>(componentReader);
             } else {
                 throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, String.format(
                         "No known Barrage ChunkReader for arrow type %s to %s. Expected destination type to be an array.",
@@ -282,7 +292,7 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
         }
 
         if (typeId == ArrowType.ArrowTypeID.Map) {
-            // TODO: https://github.com/deephaven/deephaven-core/issues/6637
+            // TODO (DH-18680): user controlled destination map type (such as immutable map)
             // should we allow the user to supply the collector?
             final Field structField = field.getChildren().get(0);
             final BarrageTypeInfo<Field> keyTypeInfo = BarrageUtil.getDefaultType(structField.getChildren().get(0));
@@ -295,7 +305,7 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
             return (ChunkReader<T>) new MapChunkReader<>(keyReader, valueReader);
         }
 
-        // TODO: struct support - https://github.com/deephaven/deephaven-core/issues/6636
+        // TODO (DH-18679): struct support
         // expose @FunctionInterface of Map<String, Chunk<Values>> -> T
         // maybe defaults to Map<String, Object>?
         // if (typeId == ArrowType.ArrowTypeID.Struct) {
@@ -408,21 +418,6 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
                                     dst.set(dstOffset + ii, TypeUtils.box(src.get(ii)));
                                 }
                             }));
-        }
-    }
-
-    private static long factorForTimeUnit(final TimeUnit unit) {
-        switch (unit) {
-            case NANOSECOND:
-                return 1;
-            case MICROSECOND:
-                return 1000;
-            case MILLISECOND:
-                return 1000 * 1000L;
-            case SECOND:
-                return 1000 * 1000 * 1000L;
-            default:
-                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, "Unexpected time unit value: " + unit);
         }
     }
 
@@ -1793,77 +1788,6 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
             rv = rv.add(new BigDecimal(BigInteger.ONE.shiftLeft(64)));
         }
         return rv;
-    }
-
-    /**
-     * Applies a mask to handle overflow for unsigned values by constraining the value to the range that can be
-     * represented with the specified number of bytes.
-     * <p>
-     * This method ensures that negative values (in the case of unsigned inputs) are masked to fit within the valid
-     * range for the given number of bytes, effectively wrapping them around to their equivalent unsigned
-     * representation.
-     * <p>
-     * Special handling is included to preserve the value of null-equivalent constants and to skip masking for signed
-     * values.
-     * <p>
-     * Note that short can only be sign extended from byte so we don't need to consider other numByte configurations.
-     *
-     * @param unsigned Whether the value should be treated as unsigned.
-     * @param value The input value to potentially mask.
-     * @return The masked value if unsigned and overflow occurs; otherwise, the original value.
-     */
-    @SuppressWarnings("SameParameterValue")
-    static short maskIfOverflow(final boolean unsigned, short value) {
-        if (unsigned && value != QueryConstants.NULL_SHORT) {
-            value &= (short) ((1L << 8) - 1);
-        }
-        return value;
-    }
-
-    /**
-     * Applies a mask to handle overflow for unsigned values by constraining the value to the range that can be
-     * represented with the specified number of bytes.
-     * <p>
-     * This method ensures that negative values (in the case of unsigned inputs) are masked to fit within the valid
-     * range for the given number of bytes, effectively wrapping them around to their equivalent unsigned
-     * representation.
-     * <p>
-     * Special handling is included to preserve the value of null-equivalent constants and to skip masking for signed
-     * values.
-     *
-     * @param unsigned Whether the value should be treated as unsigned.
-     * @param numBytes The number of bytes to constrain the value to (e.g., 1 for byte, 2 for short).
-     * @param value The input value to potentially mask.
-     * @return The masked value if unsigned and overflow occurs; otherwise, the original value.
-     */
-    static int maskIfOverflow(final boolean unsigned, final int numBytes, int value) {
-        if (unsigned && value != QueryConstants.NULL_INT) {
-            value &= (int) ((1L << (numBytes * 8)) - 1);
-        }
-        return value;
-    }
-
-    /**
-     * Applies a mask to handle overflow for unsigned values by constraining the value to the range that can be
-     * represented with the specified number of bytes.
-     * <p>
-     * This method ensures that negative values (in the case of unsigned inputs) are masked to fit within the valid
-     * range for the given number of bytes, effectively wrapping them around to their equivalent unsigned
-     * representation.
-     * <p>
-     * Special handling is included to preserve the value of null-equivalent constants and to skip masking for signed
-     * values.
-     *
-     * @param unsigned Whether the value should be treated as unsigned.
-     * @param numBytes The number of bytes to constrain the value to (e.g., 1 for byte, 2 for short).
-     * @param value The input value to potentially mask.
-     * @return The masked value if unsigned and overflow occurs; otherwise, the original value.
-     */
-    static long maskIfOverflow(final boolean unsigned, final int numBytes, long value) {
-        if (unsigned && value != QueryConstants.NULL_LONG) {
-            value &= ((1L << (numBytes * 8)) - 1);
-        }
-        return value;
     }
 
     public static <T, WIRE_CHUNK_TYPE extends WritableChunk<Values>, CR extends ChunkReader<WIRE_CHUNK_TYPE>> ChunkReader<WritableObjectChunk<T, Values>> transformToObject(

@@ -741,6 +741,7 @@ public class BarrageUtil {
             case Map:
                 return Map.class;
             case Union:
+            case Null:
                 return Object.class;
             default:
                 if (arrowField.getType().getTypeID() == ArrowType.ArrowTypeID.List

@@ -13,5 +13,6 @@
         <exclude name="UnionChunkWriter.java" />
         <exclude name="UnionChunkReader.java" />
         <exclude name="BigDecimalChunkWriter.java" />
+        <exclude name="FactoryHelper.java" />
     </source>
 </module>

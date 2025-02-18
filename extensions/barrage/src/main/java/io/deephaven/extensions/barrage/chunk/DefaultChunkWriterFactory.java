@@ -49,7 +49,6 @@ import org.apache.arrow.vector.types.pojo.ArrowType;
 import org.apache.arrow.vector.types.pojo.Field;
 import org.apache.arrow.vector.types.pojo.Schema;
 import org.jetbrains.annotations.NotNull;
-import org.jpy.PyObject;
 
 import java.io.DataOutput;
 import java.io.IOException;
@@ -72,7 +71,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static io.deephaven.extensions.barrage.chunk.DefaultChunkReaderFactory.maskIfOverflow;
+import static io.deephaven.extensions.barrage.chunk.FactoryHelper.factorForTimeUnit;
+import static io.deephaven.extensions.barrage.chunk.FactoryHelper.maskIfOverflow;
 
 /**
  * JVM implementation of {@link ChunkWriter.Factory}, suitable for use in Java clients and servers. This default
@@ -153,8 +153,6 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
                 DefaultChunkWriterFactory::intervalFromPeriodDuration);
 
         // These are DH custom wire formats
-        register(ArrowType.ArrowTypeID.Utf8, Object.class, DefaultChunkWriterFactory::utf8FromObject);
-        register(ArrowType.ArrowTypeID.Utf8, PyObject.class, DefaultChunkWriterFactory::utf8FromObject);
         register(ArrowType.ArrowTypeID.Utf8, ArrayPreview.class, DefaultChunkWriterFactory::utf8FromObject);
         register(ArrowType.ArrowTypeID.Utf8, DisplayWrapper.class, DefaultChunkWriterFactory::utf8FromObject);
         register(ArrowType.ArrowTypeID.Binary, String.class, DefaultChunkWriterFactory::utf8FromObject);
@@ -172,6 +170,11 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
      */
     public void disableToStringUnknownTypes() {
         toStringUnknownTypes = false;
+    }
+
+    protected Map<Class<?>, DefaultChunkWriterFactory.ArrowTypeChunkWriterSupplier> lookupWriterFactory(
+            final ArrowType.ArrowTypeID typeId) {
+        return registeredFactories.get(typeId);
     }
 
     @Override
@@ -204,7 +207,7 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
                     typeInfo.type().getCanonicalName()));
         }
 
-        final Map<Class<?>, ArrowTypeChunkWriterSupplier> knownWriters = registeredFactories.get(typeId);
+        final Map<Class<?>, ArrowTypeChunkWriterSupplier> knownWriters = lookupWriterFactory(typeId);
         if (knownWriters == null && !isSpecialType) {
             throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, String.format(
                     "No known Barrage ChunkWriter for arrow type %s from %s.",
@@ -306,7 +309,7 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
                     keyWriter, valueWriter, keyTypeInfo.chunkType(), valueTypeInfo.chunkType(), field.isNullable());
         }
 
-        // TODO: struct support - https://github.com/deephaven/deephaven-core/issues/6636
+        // TODO (DH-18679): struct support
         // expose @FunctionalInterface of Map<String, Chunk<Values>> -> T?
         // if (typeId == ArrowType.ArrowTypeID.Struct) {
 
@@ -381,21 +384,6 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
             registeredFactories.computeIfAbsent(arrowType, k -> new HashMap<>())
                     .put(Double.class, typeInfo -> DoubleChunkWriter.makeBoxed(
                             (ChunkWriter<DoubleChunk<Values>>) chunkWriterFactory.make(typeInfo)));
-        }
-    }
-
-    private static long factorForTimeUnit(final TimeUnit unit) {
-        switch (unit) {
-            case NANOSECOND:
-                return 1;
-            case MICROSECOND:
-                return 1000;
-            case MILLISECOND:
-                return 1000 * 1000L;
-            case SECOND:
-                return 1000 * 1000 * 1000L;
-            default:
-                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, "Unexpected time unit value: " + unit);
         }
     }
 

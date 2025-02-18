@@ -1341,7 +1341,7 @@ public class JettyBarrageChunkFactoryTest {
         }
     }
     protected enum TestNullMode {
-        EMPTY, ALL, NONE, SOME, NOT_NULLABLE
+        EMPTY, ALL, NONE, SOME, NOT_NULLABLE, NULL_WIRE
     }
     protected enum TestWrapMode {
         // @formatter:off
@@ -1553,7 +1553,14 @@ public class JettyBarrageChunkFactoryTest {
             final boolean isNullable = nullMode != TestNullMode.NOT_NULLABLE;
             final boolean hasNulls = isNullable && nullMode != TestNullMode.NONE;
             final int listItemLength;
+            final boolean resetIsDefault = isDefault && nullMode == TestNullMode.NULL_WIRE;
+            if (resetIsDefault) {
+                isDefault = false;
+            }
             Schema schema = newSchema(isNullable);
+            if (resetIsDefault) {
+                isDefault = true;
+            }
 
             if (wrapMode == TestWrapMode.NONE) {
                 listItemLength = 0;
@@ -1636,9 +1643,22 @@ public class JettyBarrageChunkFactoryTest {
                 }
             }
 
+            if (nullMode == TestNullMode.NULL_WIRE) {
+                final Field innerField = schema.getFields().get(0);
+
+                final Map<String, String> attrs = new LinkedHashMap<>(innerField.getMetadata());
+                if (innerField.getType().getTypeID() == ArrowType.ArrowTypeID.Map) {
+                    attrs.put(DH_TYPE_TAG, Map.class.getCanonicalName());
+                }
+                final ArrowType nullType = ArrowType.Null.INSTANCE;
+                final FieldType fieldType = new FieldType(true, nullType, null, attrs);
+
+                schema = new Schema(Collections.singletonList(new Field(COLUMN_NAME, fieldType, null)));
+            }
+
             try (final VectorSchemaRoot source = VectorSchemaRoot.create(schema, allocator)) {
                 source.allocateNew();
-                final FieldVector dataVector = getDataVector(wrapMode, source, listItemLength);
+                final FieldVector dataVector = getDataVector(wrapMode, nullMode, source, listItemLength);
 
                 if (nullMode == TestNullMode.EMPTY) {
                     source.setRowCount(0);
@@ -1646,10 +1666,15 @@ public class JettyBarrageChunkFactoryTest {
                     // pre-allocate buffers
                     source.setRowCount(NUM_ROWS);
 
-                    // noinspection unchecked
-                    int numRows = initializeRoot((T) dataVector);
+                    int numRows;
+                    if (nullMode != TestNullMode.NULL_WIRE) {
+                        // noinspection unchecked
+                        numRows = initializeRoot((T) dataVector);
+                    } else {
+                        numRows = NUM_ROWS;
+                    }
 
-                    if (nullMode == TestNullMode.ALL) {
+                    if (nullMode == TestNullMode.ALL || nullMode == TestNullMode.NULL_WIRE) {
                         for (int ii = 0; ii < source.getRowCount(); ++ii) {
                             dataVector.setNull(ii);
                         }
@@ -1661,7 +1686,9 @@ public class JettyBarrageChunkFactoryTest {
                         }
                     }
 
-                    if (wrapMode == TestWrapMode.UNION_DENSE) {
+                    if (nullMode == TestNullMode.NULL_WIRE) {
+                        // do nothing
+                    } else if (wrapMode == TestWrapMode.UNION_DENSE) {
                         final DenseUnionVector unionVec = (DenseUnionVector) source.getVector(0);
                         for (int ii = 0; ii < numRows; ++ii) {
                             unionVec.setTypeId(ii, (byte) 0);
@@ -1852,7 +1879,9 @@ public class JettyBarrageChunkFactoryTest {
                     while (doExch ? xStream.getReader().next() : stream.next()) {
                         assertEquals(source.getRowCount(), dest.getRowCount());
 
-                        if (wrapMode == TestWrapMode.UNION_DENSE) {
+                        if (nullMode == TestNullMode.NULL_WIRE) {
+                            // do nothing
+                        } else if (wrapMode == TestWrapMode.UNION_DENSE) {
                             validateDenseUnion(nullMode,
                                     (DenseUnionVector) source.getVector(0),
                                     (DenseUnionVector) dest.getVector(0));
@@ -1866,9 +1895,12 @@ public class JettyBarrageChunkFactoryTest {
                                     (BaseListVector) dest.getVector(0));
                         }
 
-                        if (wrapMode == TestWrapMode.NONE || wrapMode.isUnion()) {
+                        if (nullMode == TestNullMode.NULL_WIRE) {
+                            // no-op as long as we can round-trip the null wire type
+                        } else if (wrapMode == TestWrapMode.NONE || wrapMode.isUnion()) {
                             // noinspection unchecked
-                            validate(nullMode, (T) dataVector, (T) getDataVector(wrapMode, dest, listItemLength));
+                            validate(nullMode, (T) dataVector,
+                                    (T) getDataVector(wrapMode, nullMode, dest, listItemLength));
                         } else if (wrapMode.isView()) {
                             // TODO: rm this branch when https://github.com/apache/arrow-java/issues/471 is fixed
 
@@ -1922,7 +1954,7 @@ public class JettyBarrageChunkFactoryTest {
 
                                     // noinspection unchecked
                                     validate(nullMode, (T) valueVectors,
-                                            (T) getDataVector(wrapMode, dest, listItemLength));
+                                            (T) getDataVector(wrapMode, nullMode, dest, listItemLength));
                                 }
                             }
                         } else {
@@ -1977,7 +2009,7 @@ public class JettyBarrageChunkFactoryTest {
 
                                     // noinspection unchecked
                                     validate(nullMode, (T) valueVectors,
-                                            (T) getDataVector(wrapMode, dest, listItemLength));
+                                            (T) getDataVector(wrapMode, nullMode, dest, listItemLength));
                                 }
                             }
                         }
@@ -2396,9 +2428,11 @@ public class JettyBarrageChunkFactoryTest {
 
     private static FieldVector getDataVector(
             final TestWrapMode wrapMode,
+            final TestNullMode nullMode,
             final VectorSchemaRoot source,
             final int listItemLength) {
-        if (wrapMode == TestWrapMode.NONE) {
+
+        if (wrapMode == TestWrapMode.NONE || nullMode == TestNullMode.NULL_WIRE) {
             return source.getVector(0);
         } else if (wrapMode.isUnion()) {
             return ((AbstractContainerVector) source.getVector(0)).getChild(COLUMN_NAME);
