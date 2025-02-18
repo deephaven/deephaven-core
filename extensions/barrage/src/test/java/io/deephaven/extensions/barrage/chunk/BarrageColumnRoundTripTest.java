@@ -52,7 +52,10 @@ import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.PrimitiveIterator;
 import java.util.Random;
 import java.util.function.Consumer;
@@ -87,6 +90,42 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
         return DefaultChunkReaderFactory.INSTANCE
                 .newReader(BarrageTypeInfo.make(type, componentType, field), options)
                 .readChunk(fieldNodeIter, bufferInfoIter, is, outChunk, offset, totalRows);
+    }
+
+    public void testMapChunkSerialization() throws IOException {
+        final Random random = new Random(0);
+        for (final BarrageSubscriptionOptions opts : OPTIONS) {
+            testRoundTripSerialization(opts, Map.class, (utO) -> {
+                final WritableObjectChunk<Map<String, String>, Values> chunk = utO.asWritableObjectChunk();
+                for (int i = 0; i < chunk.size(); ++i) {
+                    if (i % 7 == 0) {
+                        chunk.set(i, null);
+                    } else {
+                        final Map<String, String> map = new LinkedHashMap<>();
+                        final int entryCount = random.nextInt(10) + 1;
+                        for (int j = 0; j < entryCount; j++) {
+                            map.put("key" + j, "value" + random.nextInt(1000));
+                        }
+                        chunk.set(i, map);
+                    }
+                }
+            }, (utO, utC, subset, offset) -> {
+                final WritableObjectChunk<Map<String, String>, Values> original = utO.asWritableObjectChunk();
+                final WritableObjectChunk<Map<String, String>, Values> computed = utC.asWritableObjectChunk();
+                if (subset == null) {
+                    for (int i = 0; i < original.size(); i++) {
+                        Assert.equals(original.get(i), "original.get(i)",
+                                computed.get(offset + i), "computed.get(i)");
+                    }
+                } else {
+                    final MutableInt off = new MutableInt();
+                    subset.forAllRowKeys(key -> Assert.equals(
+                            original.get((int) key), "original.get(key)",
+                            computed.get(offset + off.getAndIncrement()),
+                            "computed.get(offset + off.getAndIncrement())"));
+                }
+            });
+        }
     }
 
     public void testCharChunkSerialization() throws IOException {
