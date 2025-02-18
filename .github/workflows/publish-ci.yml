@@ -81,6 +81,7 @@ jobs:
             web/client-api/types/build/*.tgz
 
       - name: Publish deephaven-core to PyPi
+        id: publish-deephaven-core
         if: ${{ startsWith(github.ref, 'refs/heads/release/v') }}
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
@@ -88,6 +89,7 @@ jobs:
         continue-on-error: true
 
       - name: Publish deephaven-server to PyPi
+        id: publish-deephaven-server
         if: ${{ startsWith(github.ref, 'refs/heads/release/v') }}
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
@@ -95,6 +97,7 @@ jobs:
         continue-on-error: true
 
       - name: Publish pydeephaven to PyPi
+        id: publish-pydeephaven
         if: ${{ startsWith(github.ref, 'refs/heads/release/v') }}
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
@@ -102,6 +105,7 @@ jobs:
         continue-on-error: true
 
       - name: Publish pydeephaven-ticking to PyPi
+        id: publish-pydeephaven-ticking
         if: ${{ startsWith(github.ref, 'refs/heads/release/v') }}
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
@@ -109,8 +113,54 @@ jobs:
         continue-on-error: true
 
       - name: Publish @deephaven/jsapi-types to npmjs
+        id: publish-deephaven-jsapi-types
         if: ${{ startsWith(github.ref, 'refs/heads/release/v') }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.DEEPHAVENBOT_NPM_TOKEN }}
         run: npm publish --provenance --tag latest web/client-api/types/build/deephaven-jsapi-types-*.tgz
         continue-on-error: true
+
+      - uses: slackapi/slack-github-action@v2.0.0
+        if: ${{ steps.publish-deephaven-core.outcome == 'failure' }}
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL_PUBLISH_FAILURE }}
+          webhook-type: webhook-trigger
+          payload: |
+            step_id: "${{ steps.publish-deephaven-core.id }}"
+            action_url: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+      - uses: slackapi/slack-github-action@v2.0.0
+        if: ${{ steps.publish-deephaven-server.outcome == 'failure' }}
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL_PUBLISH_FAILURE }}
+          webhook-type: webhook-trigger
+          payload: |
+            step_id: "${{ steps.publish-deephaven-server.id }}"
+            action_url: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+      - uses: slackapi/slack-github-action@v2.0.0
+        if: ${{ steps.publish-pydeephaven.outcome == 'failure' }}
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL_PUBLISH_FAILURE }}
+          webhook-type: webhook-trigger
+          payload: |
+            step_id: "${{ steps.publish-pydeephaven.id }}"
+            action_url: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+      - uses: slackapi/slack-github-action@v2.0.0
+        if: ${{ steps.publish-pydeephaven-ticking.outcome == 'failure' }}
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL_PUBLISH_FAILURE }}
+          webhook-type: webhook-trigger
+          payload: |
+            step_id: "${{ steps.publish-pydeephaven-ticking.id }}"
+            action_url: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+      - uses: slackapi/slack-github-action@v2.0.0
+        if: ${{ steps.publish-deephaven-jsapi-types.outcome == 'failure' }}
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL_PUBLISH_FAILURE }}
+          webhook-type: webhook-trigger
+          payload: |
+            step_id: "${{ steps.publish-deephaven-jsapi-types.id }}"
+            action_url: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"

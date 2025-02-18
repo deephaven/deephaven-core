@@ -212,6 +212,21 @@ public class UpdateByOperatorFactory {
         @Override
         public Void visit(@NotNull final ColumnUpdateOperation clause) {
             final UpdateBySpec spec = clause.spec();
+            // Need to handle some specs uniquely
+            if (spec instanceof CumCountWhereSpec) {
+                outputColumns.add(((CumCountWhereSpec) spec).column().name());
+                return null;
+            }
+            if (spec instanceof RollingCountWhereSpec) {
+                outputColumns.add(((RollingCountWhereSpec) spec).column().name());
+                return null;
+            }
+            if (spec instanceof RollingFormulaSpec && ((RollingFormulaSpec) spec).paramToken().isEmpty()) {
+                // The presence of the paramToken indicates that this is a multi-column formula and we have a single
+                // output column in #selectable()
+                outputColumns.add(((RollingFormulaSpec) spec).selectable().newColumn().name());
+                return null;
+            }
             final MatchPair[] pairs =
                     createColumnsToAddIfMissing(tableDef, parseMatchPairs(clause.columns()), spec, groupByColumns);
             for (MatchPair pair : pairs) {
