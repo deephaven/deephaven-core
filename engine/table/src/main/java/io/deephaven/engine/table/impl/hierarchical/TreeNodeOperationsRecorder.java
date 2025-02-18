@@ -29,7 +29,7 @@ class TreeNodeOperationsRecorder extends BaseNodeOperationsRecorder<TreeTable.No
     private final Collection<? extends WhereFilter> recordedFilters;
 
     TreeNodeOperationsRecorder(@NotNull final TableDefinition definition) {
-        this(definition, List.of(), List.of(), List.of(), List.of());
+        this(definition, List.of(), List.of(), List.of(), List.of(), List.of());
     }
 
     private TreeNodeOperationsRecorder(
@@ -37,8 +37,9 @@ class TreeNodeOperationsRecorder extends BaseNodeOperationsRecorder<TreeTable.No
             @NotNull final Collection<? extends SelectColumn> recordedFormats,
             @NotNull final Collection<SortColumn> recordedSorts,
             @NotNull final Collection<? extends SelectColumn> recordedAbsoluteViews,
+            @NotNull final Collection<? extends SelectColumn> recordedViewColumns,
             @NotNull final Collection<? extends WhereFilter> recordedFilters) {
-        super(definition, recordedFormats, recordedSorts, recordedAbsoluteViews);
+        super(definition, recordedFormats, recordedSorts, recordedAbsoluteViews, recordedViewColumns);
         this.recordedFilters = recordedFilters;
     }
 
@@ -60,29 +61,46 @@ class TreeNodeOperationsRecorder extends BaseNodeOperationsRecorder<TreeTable.No
 
     @Override
     TreeTable.NodeOperationsRecorder withFormats(@NotNull final Stream<? extends SelectColumn> formats) {
-        return new TreeNodeOperationsRecorder(definition,
+        return new TreeNodeOperationsRecorder(getResultDefinition(),
                 mergeFormats(getRecordedFormats().stream(), formats),
-                getRecordedSorts(), getRecordedAbsoluteViews(), recordedFilters);
+                getRecordedSorts(),
+                getRecordedAbsoluteViews(),
+                getRecordedUpdateViews(),
+                recordedFilters);
     }
 
     @Override
     TreeTable.NodeOperationsRecorder withSorts(
             @NotNull final Stream<SortColumn> sorts,
             @NotNull final Stream<? extends SelectColumn> absoluteViews) {
-        return new TreeNodeOperationsRecorder(definition, getRecordedFormats(),
+        return new TreeNodeOperationsRecorder(getResultDefinition(),
+                getRecordedFormats(),
                 mergeSortColumns(getRecordedSorts().stream(), sorts),
                 mergeAbsoluteViews(getRecordedAbsoluteViews().stream(), absoluteViews),
+                getRecordedUpdateViews(),
                 getRecordedFilters());
     }
 
     TreeTable.NodeOperationsRecorder withFilters(@NotNull final Stream<? extends WhereFilter> filters) {
-        return new TreeNodeOperationsRecorder(definition, getRecordedFormats(), getRecordedSorts(),
+        return new TreeNodeOperationsRecorder(getResultDefinition(),
+                getRecordedFormats(),
+                getRecordedSorts(),
                 getRecordedAbsoluteViews(),
+                getRecordedUpdateViews(),
                 mergeFilters(getRecordedFilters().stream(), filters));
     }
 
+    TreeTable.NodeOperationsRecorder withUpdateView(@NotNull final Stream<? extends SelectColumn> columns) {
+        return new TreeNodeOperationsRecorder(getResultDefinition(),
+                getRecordedFormats(),
+                getRecordedSorts(),
+                getRecordedAbsoluteViews(),
+                mergeUpdateViews(getRecordedUpdateViews().stream(), columns),
+                recordedFilters);
+    }
+
     TreeNodeOperationsRecorder withOperations(@NotNull final TreeNodeOperationsRecorder other) {
-        if (!getResultDefinition().equals(other.definition)) {
+        if (!getResultDefinition().equals(other.getResultDefinition())) {
             throw new IllegalArgumentException(
                     "Incompatible operation recorders; compatible recorders must be created from the same table");
         }
@@ -92,10 +110,11 @@ class TreeNodeOperationsRecorder extends BaseNodeOperationsRecorder<TreeTable.No
         if (isEmpty()) {
             return other;
         }
-        return new TreeNodeOperationsRecorder(definition,
+        return new TreeNodeOperationsRecorder(getResultDefinition(),
                 mergeFormats(getRecordedFormats().stream(), other.getRecordedFormats().stream()),
                 mergeSortColumns(getRecordedSorts().stream(), other.getRecordedSorts().stream()),
                 mergeAbsoluteViews(getRecordedAbsoluteViews().stream(), other.getRecordedAbsoluteViews().stream()),
+                mergeUpdateViews(getRecordedUpdateViews().stream(), other.getRecordedUpdateViews().stream()),
                 mergeFilters(getRecordedFilters().stream(), other.getRecordedFilters().stream()));
     }
 
@@ -107,7 +126,7 @@ class TreeNodeOperationsRecorder extends BaseNodeOperationsRecorder<TreeTable.No
 
     @Override
     public TreeTable.NodeOperationsRecorder where(String... filters) {
-        final FilterRecordingTableAdapter adapter = new FilterRecordingTableAdapter(definition);
+        final FilterRecordingTableAdapter adapter = new FilterRecordingTableAdapter(getResultDefinition());
         adapter.where(filters);
         final List<? extends WhereFilter> f = adapter.whereFilters().collect(Collectors.toList());
         return f.isEmpty() ? self() : withFilters(f.stream());
@@ -115,7 +134,7 @@ class TreeNodeOperationsRecorder extends BaseNodeOperationsRecorder<TreeTable.No
 
     @Override
     public NodeOperationsRecorder where(Filter filter) {
-        final FilterRecordingTableAdapter adapter = new FilterRecordingTableAdapter(definition);
+        final FilterRecordingTableAdapter adapter = new FilterRecordingTableAdapter(getResultDefinition());
         adapter.where(filter);
         final List<? extends WhereFilter> whereFilters = adapter.whereFilters().collect(Collectors.toList());
         // Note: it's possible that whereFilters _is_ empty; this happens if filter == Filter.ofTrue()

@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl.hierarchical;
 
 import io.deephaven.api.ColumnName;
+import io.deephaven.api.Selectable;
 import io.deephaven.api.SortColumn;
 import io.deephaven.api.Strings;
 import io.deephaven.api.agg.Aggregation;
@@ -261,6 +262,17 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
                 availableColumnDefinitions);
     }
 
+    @Override
+    public RollupTable withUpdateView(@NotNull final String... columns) {
+        return withUpdateView(Selectable.from(columns));
+    }
+
+    @Override
+    public RollupTable withUpdateView(Collection<Selectable> columns) {
+        // TODO: Verify we aren't using illegal columns (virtual row variables, etc.)
+        return withNodeOperations(makeNodeOperationsRecorder(NodeType.Aggregated).updateView(columns));
+    }
+
     /**
      * Initialize and validate the supplied filters for this RollupTable.
      *
@@ -315,7 +327,8 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
                 continue;
             }
             final RollupNodeOperationsRecorder recorderTyped = (RollupNodeOperationsRecorder) recorder;
-            if (!recorderTyped.getRecordedFormats().isEmpty()) {
+            if (!recorderTyped.getRecordedFormats().isEmpty() || !recorderTyped.getRecordedUpdateViews().isEmpty()) {
+                // Need to rebuild the available column definitions.
                 newAvailableColumnDefinitions = null;
             }
             switch (recorderTyped.getNodeType()) {
@@ -694,7 +707,8 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
 
     @Override
     Table applyNodeFormatsAndFilters(final long nodeId, @NotNull final Table nodeBaseTable) {
-        return BaseNodeOperationsRecorder.applyFormats(nodeOperations(nodeId), nodeBaseTable);
+        Table result = BaseNodeOperationsRecorder.applyUpdateViews(nodeOperations(nodeId), nodeBaseTable);
+        return BaseNodeOperationsRecorder.applyFormats(nodeOperations(nodeId), result);
         // NB: There is no node-level filtering for rollups
     }
 

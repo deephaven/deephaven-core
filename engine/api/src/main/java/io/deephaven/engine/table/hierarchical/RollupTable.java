@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.hierarchical;
 
 import io.deephaven.api.ColumnName;
+import io.deephaven.api.Selectable;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.engine.table.Table;
@@ -89,11 +90,28 @@ public interface RollupTable extends HierarchicalTable<RollupTable> {
     RollupTable withFilter(Filter filter);
 
     /**
+     * Apply a view to this RollupTable in order to produce a new RollupTable with additional columns.
+     *
+     * @param columns The new columns to add
+     * @return The new RollupTable
+     */
+    RollupTable withUpdateView(Collection<Selectable> columns);
+
+    /**
+     * Apply a view to this RollupTable in order to produce a new RollupTable with additional columns.
+     *
+     * @param columns The new columns to add
+     * @return The new RollupTable
+     */
+    RollupTable withUpdateView(String... columns);
+
+    /**
      * Recorder for node-level operations to be applied when gathering snapshots.
      */
     interface NodeOperationsRecorder extends
             FormatOperationsRecorder<NodeOperationsRecorder>,
-            SortOperationsRecorder<NodeOperationsRecorder> {
+            SortOperationsRecorder<NodeOperationsRecorder>,
+            UpdateViewOperationsRecorder<NodeOperationsRecorder> {
 
         /**
          * Test if this NodeOperationsRecorder has recorded any operations.
@@ -134,5 +152,5 @@ public interface RollupTable extends HierarchicalTable<RollupTable> {
      * @return Node-level operations for constituent nodes
      */
     NodeOperationsRecorder translateAggregatedNodeOperationsForConstituentNodes(
-            @NotNull NodeOperationsRecorder aggregatedNodeOperationsToTranslate);
+            @NotNull RollupTable.NodeOperationsRecorder aggregatedNodeOperationsToTranslate);
 }

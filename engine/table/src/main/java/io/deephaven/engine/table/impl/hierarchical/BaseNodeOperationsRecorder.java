@@ -32,11 +32,12 @@ import java.util.stream.Stream;
  */
 abstract class BaseNodeOperationsRecorder<TYPE> {
 
-    final TableDefinition definition;
+    private final TableDefinition initialDefinition;
 
     private final Collection<? extends SelectColumn> recordedFormats;
     private final Collection<SortColumn> recordedSorts;
     private final Collection<? extends SelectColumn> recordedAbsoluteViews;
+    private final Collection<? extends SelectColumn> recordedUpdateViews;
 
     volatile TableDefinition resultDefinition;
 
@@ -44,15 +45,20 @@ abstract class BaseNodeOperationsRecorder<TYPE> {
             @NotNull final TableDefinition definition,
             @NotNull final Collection<? extends SelectColumn> recordedFormats,
             @NotNull final Collection<SortColumn> recordedSorts,
-            @NotNull final Collection<? extends SelectColumn> recordedAbsoluteViews) {
-        this.definition = definition;
+            @NotNull final Collection<? extends SelectColumn> recordedAbsoluteViews,
+            @NotNull final Collection<? extends SelectColumn> recordedUpdateViews) {
+        this.initialDefinition = definition;
         this.recordedFormats = recordedFormats;
         this.recordedSorts = recordedSorts;
         this.recordedAbsoluteViews = recordedAbsoluteViews;
+        this.recordedUpdateViews = recordedUpdateViews;
     }
 
     public boolean isEmpty() {
-        return recordedFormats.isEmpty() && recordedSorts.isEmpty();
+        return recordedFormats.isEmpty()
+                && recordedSorts.isEmpty()
+                && recordedAbsoluteViews.isEmpty()
+                && recordedUpdateViews.isEmpty();
     }
 
     Collection<? extends SelectColumn> getRecordedFormats() {
@@ -65,6 +71,10 @@ abstract class BaseNodeOperationsRecorder<TYPE> {
 
     Collection<? extends SelectColumn> getRecordedAbsoluteViews() {
         return recordedAbsoluteViews;
+    }
+
+    Collection<? extends SelectColumn> getRecordedUpdateViews() {
+        return recordedUpdateViews;
     }
 
     static Table applyFormats(
@@ -87,6 +97,15 @@ abstract class BaseNodeOperationsRecorder<TYPE> {
         return input;
     }
 
+    static Table applyUpdateViews(
+            @Nullable final BaseNodeOperationsRecorder<?> nodeOperations,
+            @NotNull final Table input) {
+        if (nodeOperations != null && !nodeOperations.getRecordedUpdateViews().isEmpty()) {
+            return input.updateView(nodeOperations.getRecordedUpdateViews());
+        }
+        return input;
+    }
+
     TableDefinition getResultDefinition() {
         TableDefinition localResult;
         if ((localResult = resultDefinition) != null) {
@@ -96,14 +115,20 @@ abstract class BaseNodeOperationsRecorder<TYPE> {
             if ((localResult = resultDefinition) != null) {
                 return localResult;
             }
-            if (getRecordedFormats().isEmpty()) {
-                return resultDefinition = definition;
+            if (getRecordedFormats().isEmpty() && getRecordedUpdateViews().isEmpty()) {
+                // No new column definitions will be created
+                return resultDefinition = initialDefinition;
             }
             try (final SafeCloseable ignored = LivenessScopeStack.open()) {
-                final Table emptyNode = new QueryTable(definition, RowSetFactory.empty().toTracking(),
-                        NullValueColumnSource.createColumnSourceMap(definition));
-                final Table emptyNodeFormatted = emptyNode.updateView(getRecordedFormats());
-                return resultDefinition = emptyNodeFormatted.getDefinition();
+                final Table emptyTable = new QueryTable(initialDefinition, RowSetFactory.empty().toTracking(),
+                        NullValueColumnSource.createColumnSourceMap(initialDefinition));
+                Table maybeUpdatedTable = !getRecordedFormats().isEmpty()
+                        ? emptyTable.updateView(getRecordedFormats())
+                        : emptyTable;
+                maybeUpdatedTable = !getRecordedUpdateViews().isEmpty()
+                        ? maybeUpdatedTable.updateView(getRecordedUpdateViews())
+                        : maybeUpdatedTable;
+                return resultDefinition = maybeUpdatedTable.getDefinition();
             }
         }
     }
@@ -118,6 +143,8 @@ abstract class BaseNodeOperationsRecorder<TYPE> {
     abstract TYPE withSorts(
             @NotNull Stream<SortColumn> sorts,
             @NotNull final Stream<? extends SelectColumn> absoluteViews);
+
+    abstract TYPE withUpdateView(@NotNull Stream<? extends SelectColumn> columns);
 
     static Collection<? extends SelectColumn> mergeFormats(
             @NotNull final Stream<? extends SelectColumn> fs1,
@@ -144,40 +171,63 @@ abstract class BaseNodeOperationsRecorder<TYPE> {
                 SelectColumn::getName, sc -> sc, (sc1, sc2) -> sc1, LinkedHashMap::new)).values());
     }
 
+    static Collection<? extends SelectColumn> mergeUpdateViews(
+            @NotNull final Stream<? extends SelectColumn> avs1, @NotNull final Stream<? extends SelectColumn> avs2) {
+        return new ArrayList<>(Stream.concat(avs1, avs2).collect(Collectors.toMap(
+                SelectColumn::getName, sc -> sc, (sc1, sc2) -> sc1, LinkedHashMap::new)).values());
+    }
+
     public TYPE formatColumns(String... columnFormats) {
-        final FormatRecordingTableAdapter adapter = new FormatRecordingTableAdapter(definition);
+        final FormatRecordingTableAdapter adapter = new FormatRecordingTableAdapter(getResultDefinition());
         adapter.formatColumns(columnFormats);
         return adapter.hasSelectColumns() ? withFormats(adapter.selectColumns()) : self();
     }
 
     public TYPE formatRowWhere(String condition, String formula) {
-        final FormatRecordingTableAdapter adapter = new FormatRecordingTableAdapter(definition);
+        final FormatRecordingTableAdapter adapter = new FormatRecordingTableAdapter(getResultDefinition());
         adapter.formatRowWhere(condition, formula);
         return adapter.hasSelectColumns() ? withFormats(adapter.selectColumns()) : self();
     }
 
     public TYPE formatColumnWhere(String columnName, String condition, String formula) {
-        final FormatRecordingTableAdapter adapter = new FormatRecordingTableAdapter(definition);
+        final FormatRecordingTableAdapter adapter = new FormatRecordingTableAdapter(getResultDefinition());
         adapter.formatColumnWhere(columnName, condition, formula);
         return adapter.hasSelectColumns() ? withFormats(adapter.selectColumns()) : self();
     }
 
     public TYPE sort(String... columnsToSortBy) {
-        final SortRecordingTableAdapter adapter = new SortRecordingTableAdapter(definition);
+        final SortRecordingTableAdapter adapter = new SortRecordingTableAdapter(getResultDefinition());
         adapter.sort(columnsToSortBy);
         return adapter.hasSortColumns() ? withSorts(adapter.sortColumns(), adapter.absoluteSelectColumns()) : self();
     }
 
     public TYPE sortDescending(String... columnsToSortBy) {
-        final SortRecordingTableAdapter adapter = new SortRecordingTableAdapter(definition);
+        final SortRecordingTableAdapter adapter = new SortRecordingTableAdapter(getResultDefinition());
         adapter.sortDescending(columnsToSortBy);
         return adapter.hasSortColumns() ? withSorts(adapter.sortColumns(), adapter.absoluteSelectColumns()) : self();
     }
 
     public TYPE sort(Collection<SortColumn> columnsToSortBy) {
-        final SortRecordingTableAdapter adapter = new SortRecordingTableAdapter(definition);
+        final SortRecordingTableAdapter adapter = new SortRecordingTableAdapter(getResultDefinition());
         adapter.sort(columnsToSortBy);
         return adapter.hasSortColumns() ? withSorts(adapter.sortColumns(), adapter.absoluteSelectColumns()) : self();
+    }
+
+    public TYPE updateView(String... columns) {
+        return updateView(Selectable.from(columns));
+    }
+
+    public TYPE updateView(Collection<Selectable> columns) {
+        final TableDefinition definition = getResultDefinition();
+        final Set<String> existingColumns = definition.getColumnNameSet();
+        for (final Selectable column : columns) {
+            if (existingColumns.contains(column.newColumn().name())) {
+                throw new IllegalArgumentException("Column " + column.newColumn().name() + " already exists");
+            }
+        }
+        final UpdateViewRecordingTableAdapter adapter = new UpdateViewRecordingTableAdapter(getResultDefinition());
+        adapter.updateView(columns);
+        return adapter.hasSelectColumns() ? withUpdateView(adapter.selectColumns()) : self();
     }
 
     static abstract class RecordingTableAdapter implements TableAdapter {
@@ -299,6 +349,31 @@ abstract class BaseNodeOperationsRecorder<TYPE> {
 
             compilationProcessor.compile();
             return Stream.of(columns);
+        }
+    }
+
+    private static final class UpdateViewRecordingTableAdapter extends RecordingTableAdapter {
+
+        private Collection<? extends Selectable> columns;
+
+        private UpdateViewRecordingTableAdapter(@NotNull final TableDefinition definition) {
+            super(definition);
+        }
+
+        @Override
+        public Table updateView(@NotNull final Collection<? extends Selectable> columns) {
+            this.columns = columns;
+            return this;
+        }
+
+        private boolean hasSelectColumns() {
+            return !columns.isEmpty();
+        }
+
+        private Stream<? extends SelectColumn> selectColumns() {
+            final SelectColumn[] selectColumns = SelectColumn.from(columns);
+            SelectAndViewAnalyzer.initializeSelectColumns(getDefinition().getColumnNameMap(), selectColumns);
+            return Stream.of(selectColumns);
         }
     }
 }

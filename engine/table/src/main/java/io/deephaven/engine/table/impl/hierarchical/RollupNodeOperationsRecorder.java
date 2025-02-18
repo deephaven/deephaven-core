@@ -23,7 +23,7 @@ class RollupNodeOperationsRecorder extends BaseNodeOperationsRecorder<RollupTabl
     RollupNodeOperationsRecorder(
             @NotNull final TableDefinition definition,
             @NotNull final RollupTable.NodeType nodeType) {
-        this(definition, nodeType, List.of(), List.of(), List.of());
+        this(definition, nodeType, List.of(), List.of(), List.of(), List.of());
     }
 
     private RollupNodeOperationsRecorder(
@@ -31,8 +31,9 @@ class RollupNodeOperationsRecorder extends BaseNodeOperationsRecorder<RollupTabl
             @NotNull final RollupTable.NodeType nodeType,
             @NotNull final Collection<? extends SelectColumn> recordedFormats,
             @NotNull final Collection<SortColumn> recordedSorts,
-            @NotNull final Collection<? extends SelectColumn> recordedAbsoluteViews) {
-        super(definition, recordedFormats, recordedSorts, recordedAbsoluteViews);
+            @NotNull final Collection<? extends SelectColumn> recordedAbsoluteViews,
+            @NotNull final Collection<? extends SelectColumn> updateViewColumns) {
+        super(definition, recordedFormats, recordedSorts, recordedAbsoluteViews, updateViewColumns);
         this.nodeType = nodeType;
     }
 
@@ -47,8 +48,11 @@ class RollupNodeOperationsRecorder extends BaseNodeOperationsRecorder<RollupTabl
 
     @Override
     RollupTable.NodeOperationsRecorder withFormats(@NotNull final Stream<? extends SelectColumn> formats) {
-        return new RollupNodeOperationsRecorder(definition, nodeType,
-                mergeFormats(getRecordedFormats().stream(), formats), getRecordedSorts(), getRecordedAbsoluteViews());
+        return new RollupNodeOperationsRecorder(getResultDefinition(), nodeType,
+                mergeFormats(getRecordedFormats().stream(), formats),
+                getRecordedSorts(),
+                getRecordedAbsoluteViews(),
+                getRecordedUpdateViews());
     }
 
     @Override
@@ -57,13 +61,24 @@ class RollupNodeOperationsRecorder extends BaseNodeOperationsRecorder<RollupTabl
             @NotNull final Stream<? extends SelectColumn> absoluteViews) {
         // Arguably, we might want to look for duplicate absolute views, but that would imply that there were also
         // duplicative sorts, which we don't really expect to happen.
-        return new RollupNodeOperationsRecorder(definition, nodeType, getRecordedFormats(),
+        return new RollupNodeOperationsRecorder(getResultDefinition(), nodeType,
+                getRecordedFormats(),
                 mergeSortColumns(getRecordedSorts().stream(), sorts),
-                mergeAbsoluteViews(getRecordedAbsoluteViews().stream(), absoluteViews));
+                mergeAbsoluteViews(getRecordedAbsoluteViews().stream(), absoluteViews),
+                getRecordedUpdateViews());
+    }
+
+    @Override
+    RollupTable.NodeOperationsRecorder withUpdateView(@NotNull final Stream<? extends SelectColumn> columns) {
+        return new RollupNodeOperationsRecorder(getResultDefinition(), nodeType,
+                getRecordedFormats(),
+                getRecordedSorts(),
+                getRecordedAbsoluteViews(),
+                mergeUpdateViews(getRecordedUpdateViews().stream(), columns));
     }
 
     RollupNodeOperationsRecorder withOperations(@NotNull final RollupNodeOperationsRecorder other) {
-        if (!getResultDefinition().equals(other.definition) || nodeType != other.nodeType) {
+        if (!getResultDefinition().equals(other.getResultDefinition()) || nodeType != other.nodeType) {
             throw new IllegalArgumentException(
                     "Incompatible operation recorders; compatible recorders must be created from the same table, with the same node type");
         }
@@ -73,9 +88,10 @@ class RollupNodeOperationsRecorder extends BaseNodeOperationsRecorder<RollupTabl
         if (isEmpty()) {
             return other;
         }
-        return new RollupNodeOperationsRecorder(definition, nodeType,
+        return new RollupNodeOperationsRecorder(getResultDefinition(), nodeType,
                 mergeFormats(getRecordedFormats().stream(), other.getRecordedFormats().stream()),
                 mergeSortColumns(getRecordedSorts().stream(), other.getRecordedSorts().stream()),
-                mergeAbsoluteViews(getRecordedAbsoluteViews().stream(), other.getRecordedAbsoluteViews().stream()));
+                mergeAbsoluteViews(getRecordedAbsoluteViews().stream(), other.getRecordedAbsoluteViews().stream()),
+                mergeUpdateViews(getRecordedUpdateViews().stream(), other.getRecordedUpdateViews().stream()));
     }
 }
