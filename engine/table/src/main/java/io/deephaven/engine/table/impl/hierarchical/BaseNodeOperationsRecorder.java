@@ -37,7 +37,6 @@ abstract class BaseNodeOperationsRecorder<TYPE> {
     private final Collection<? extends SelectColumn> recordedFormats;
     private final Collection<SortColumn> recordedSorts;
     private final Collection<? extends SelectColumn> recordedAbsoluteViews;
-    private final Collection<? extends SelectColumn> recordedUpdateViews;
 
     volatile TableDefinition resultDefinition;
 
@@ -45,20 +44,17 @@ abstract class BaseNodeOperationsRecorder<TYPE> {
             @NotNull final TableDefinition definition,
             @NotNull final Collection<? extends SelectColumn> recordedFormats,
             @NotNull final Collection<SortColumn> recordedSorts,
-            @NotNull final Collection<? extends SelectColumn> recordedAbsoluteViews,
-            @NotNull final Collection<? extends SelectColumn> recordedUpdateViews) {
+            @NotNull final Collection<? extends SelectColumn> recordedAbsoluteViews) {
         this.initialDefinition = definition;
         this.recordedFormats = recordedFormats;
         this.recordedSorts = recordedSorts;
         this.recordedAbsoluteViews = recordedAbsoluteViews;
-        this.recordedUpdateViews = recordedUpdateViews;
     }
 
     public boolean isEmpty() {
         return recordedFormats.isEmpty()
                 && recordedSorts.isEmpty()
-                && recordedAbsoluteViews.isEmpty()
-                && recordedUpdateViews.isEmpty();
+                && recordedAbsoluteViews.isEmpty();
     }
 
     Collection<? extends SelectColumn> getRecordedFormats() {
@@ -71,10 +67,6 @@ abstract class BaseNodeOperationsRecorder<TYPE> {
 
     Collection<? extends SelectColumn> getRecordedAbsoluteViews() {
         return recordedAbsoluteViews;
-    }
-
-    Collection<? extends SelectColumn> getRecordedUpdateViews() {
-        return recordedUpdateViews;
     }
 
     static Table applyFormats(
@@ -97,15 +89,6 @@ abstract class BaseNodeOperationsRecorder<TYPE> {
         return input;
     }
 
-    static Table applyUpdateViews(
-            @Nullable final BaseNodeOperationsRecorder<?> nodeOperations,
-            @NotNull final Table input) {
-        if (nodeOperations != null && !nodeOperations.getRecordedUpdateViews().isEmpty()) {
-            return input.updateView(nodeOperations.getRecordedUpdateViews());
-        }
-        return input;
-    }
-
     TableDefinition getResultDefinition() {
         TableDefinition localResult;
         if ((localResult = resultDefinition) != null) {
@@ -115,20 +98,14 @@ abstract class BaseNodeOperationsRecorder<TYPE> {
             if ((localResult = resultDefinition) != null) {
                 return localResult;
             }
-            if (getRecordedFormats().isEmpty() && getRecordedUpdateViews().isEmpty()) {
+            if (getRecordedFormats().isEmpty()) {
                 // No new column definitions will be created
                 return resultDefinition = initialDefinition;
             }
             try (final SafeCloseable ignored = LivenessScopeStack.open()) {
                 final Table emptyTable = new QueryTable(initialDefinition, RowSetFactory.empty().toTracking(),
                         NullValueColumnSource.createColumnSourceMap(initialDefinition));
-                Table maybeUpdatedTable = !getRecordedFormats().isEmpty()
-                        ? emptyTable.updateView(getRecordedFormats())
-                        : emptyTable;
-                maybeUpdatedTable = !getRecordedUpdateViews().isEmpty()
-                        ? maybeUpdatedTable.updateView(getRecordedUpdateViews())
-                        : maybeUpdatedTable;
-                return resultDefinition = maybeUpdatedTable.getDefinition();
+                return resultDefinition = emptyTable.updateView(getRecordedFormats()).getDefinition();
             }
         }
     }
@@ -143,8 +120,6 @@ abstract class BaseNodeOperationsRecorder<TYPE> {
     abstract TYPE withSorts(
             @NotNull Stream<SortColumn> sorts,
             @NotNull final Stream<? extends SelectColumn> absoluteViews);
-
-    abstract TYPE withUpdateView(@NotNull Stream<? extends SelectColumn> columns);
 
     static Collection<? extends SelectColumn> mergeFormats(
             @NotNull final Stream<? extends SelectColumn> fs1,
@@ -167,12 +142,6 @@ abstract class BaseNodeOperationsRecorder<TYPE> {
     static Collection<? extends SelectColumn> mergeAbsoluteViews(
             @NotNull final Stream<? extends SelectColumn> avs1, @NotNull final Stream<? extends SelectColumn> avs2) {
         // Note that we want one distinct result per name, and we are intentionally prioritizing "older" views
-        return new ArrayList<>(Stream.concat(avs1, avs2).collect(Collectors.toMap(
-                SelectColumn::getName, sc -> sc, (sc1, sc2) -> sc1, LinkedHashMap::new)).values());
-    }
-
-    static Collection<? extends SelectColumn> mergeUpdateViews(
-            @NotNull final Stream<? extends SelectColumn> avs1, @NotNull final Stream<? extends SelectColumn> avs2) {
         return new ArrayList<>(Stream.concat(avs1, avs2).collect(Collectors.toMap(
                 SelectColumn::getName, sc -> sc, (sc1, sc2) -> sc1, LinkedHashMap::new)).values());
     }
@@ -211,23 +180,6 @@ abstract class BaseNodeOperationsRecorder<TYPE> {
         final SortRecordingTableAdapter adapter = new SortRecordingTableAdapter(getResultDefinition());
         adapter.sort(columnsToSortBy);
         return adapter.hasSortColumns() ? withSorts(adapter.sortColumns(), adapter.absoluteSelectColumns()) : self();
-    }
-
-    public TYPE updateView(String... columns) {
-        return updateView(Selectable.from(columns));
-    }
-
-    public TYPE updateView(Collection<Selectable> columns) {
-        final TableDefinition definition = getResultDefinition();
-        final Set<String> existingColumns = definition.getColumnNameSet();
-        for (final Selectable column : columns) {
-            if (existingColumns.contains(column.newColumn().name())) {
-                throw new IllegalArgumentException("Column " + column.newColumn().name() + " already exists");
-            }
-        }
-        final UpdateViewRecordingTableAdapter adapter = new UpdateViewRecordingTableAdapter(getResultDefinition());
-        adapter.updateView(columns);
-        return adapter.hasSelectColumns() ? withUpdateView(adapter.selectColumns()) : self();
     }
 
     static abstract class RecordingTableAdapter implements TableAdapter {
@@ -349,31 +301,6 @@ abstract class BaseNodeOperationsRecorder<TYPE> {
 
             compilationProcessor.compile();
             return Stream.of(columns);
-        }
-    }
-
-    private static final class UpdateViewRecordingTableAdapter extends RecordingTableAdapter {
-
-        private Collection<? extends Selectable> columns;
-
-        private UpdateViewRecordingTableAdapter(@NotNull final TableDefinition definition) {
-            super(definition);
-        }
-
-        @Override
-        public Table updateView(@NotNull final Collection<? extends Selectable> columns) {
-            this.columns = columns;
-            return this;
-        }
-
-        private boolean hasSelectColumns() {
-            return !columns.isEmpty();
-        }
-
-        private Stream<? extends SelectColumn> selectColumns() {
-            final SelectColumn[] selectColumns = SelectColumn.from(columns);
-            SelectAndViewAnalyzer.initializeSelectColumns(getDefinition().getColumnNameMap(), selectColumns);
-            return Stream.of(selectColumns);
         }
     }
 }

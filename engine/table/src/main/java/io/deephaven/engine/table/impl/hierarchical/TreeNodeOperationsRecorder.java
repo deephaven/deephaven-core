@@ -29,7 +29,7 @@ class TreeNodeOperationsRecorder extends BaseNodeOperationsRecorder<TreeTable.No
     private final Collection<? extends WhereFilter> recordedFilters;
 
     TreeNodeOperationsRecorder(@NotNull final TableDefinition definition) {
-        this(definition, List.of(), List.of(), List.of(), List.of(), List.of());
+        this(definition, List.of(), List.of(), List.of(), List.of());
     }
 
     private TreeNodeOperationsRecorder(
@@ -37,9 +37,8 @@ class TreeNodeOperationsRecorder extends BaseNodeOperationsRecorder<TreeTable.No
             @NotNull final Collection<? extends SelectColumn> recordedFormats,
             @NotNull final Collection<SortColumn> recordedSorts,
             @NotNull final Collection<? extends SelectColumn> recordedAbsoluteViews,
-            @NotNull final Collection<? extends SelectColumn> recordedViewColumns,
             @NotNull final Collection<? extends WhereFilter> recordedFilters) {
-        super(definition, recordedFormats, recordedSorts, recordedAbsoluteViews, recordedViewColumns);
+        super(definition, recordedFormats, recordedSorts, recordedAbsoluteViews);
         this.recordedFilters = recordedFilters;
     }
 
@@ -65,7 +64,6 @@ class TreeNodeOperationsRecorder extends BaseNodeOperationsRecorder<TreeTable.No
                 mergeFormats(getRecordedFormats().stream(), formats),
                 getRecordedSorts(),
                 getRecordedAbsoluteViews(),
-                getRecordedUpdateViews(),
                 recordedFilters);
     }
 
@@ -77,7 +75,6 @@ class TreeNodeOperationsRecorder extends BaseNodeOperationsRecorder<TreeTable.No
                 getRecordedFormats(),
                 mergeSortColumns(getRecordedSorts().stream(), sorts),
                 mergeAbsoluteViews(getRecordedAbsoluteViews().stream(), absoluteViews),
-                getRecordedUpdateViews(),
                 getRecordedFilters());
     }
 
@@ -86,17 +83,7 @@ class TreeNodeOperationsRecorder extends BaseNodeOperationsRecorder<TreeTable.No
                 getRecordedFormats(),
                 getRecordedSorts(),
                 getRecordedAbsoluteViews(),
-                getRecordedUpdateViews(),
                 mergeFilters(getRecordedFilters().stream(), filters));
-    }
-
-    TreeTable.NodeOperationsRecorder withUpdateView(@NotNull final Stream<? extends SelectColumn> columns) {
-        return new TreeNodeOperationsRecorder(getResultDefinition(),
-                getRecordedFormats(),
-                getRecordedSorts(),
-                getRecordedAbsoluteViews(),
-                mergeUpdateViews(getRecordedUpdateViews().stream(), columns),
-                recordedFilters);
     }
 
     TreeNodeOperationsRecorder withOperations(@NotNull final TreeNodeOperationsRecorder other) {
@@ -114,7 +101,6 @@ class TreeNodeOperationsRecorder extends BaseNodeOperationsRecorder<TreeTable.No
                 mergeFormats(getRecordedFormats().stream(), other.getRecordedFormats().stream()),
                 mergeSortColumns(getRecordedSorts().stream(), other.getRecordedSorts().stream()),
                 mergeAbsoluteViews(getRecordedAbsoluteViews().stream(), other.getRecordedAbsoluteViews().stream()),
-                mergeUpdateViews(getRecordedUpdateViews().stream(), other.getRecordedUpdateViews().stream()),
                 mergeFilters(getRecordedFilters().stream(), other.getRecordedFilters().stream()));
     }
 

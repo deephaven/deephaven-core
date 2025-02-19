@@ -707,7 +707,7 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
 
     @Override
     Table applyNodeFormatsAndFilters(final long nodeId, @NotNull final Table nodeBaseTable) {
-        Table result = BaseNodeOperationsRecorder.applyUpdateViews(nodeOperations(nodeId), nodeBaseTable);
+        Table result = RollupNodeOperationsRecorder.applyUpdateViews(nodeOperations(nodeId), nodeBaseTable);
         return BaseNodeOperationsRecorder.applyFormats(nodeOperations(nodeId), result);
         // NB: There is no node-level filtering for rollups
     }
