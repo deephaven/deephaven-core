@@ -256,6 +256,70 @@ public class TestHierarchicalTableSnapshots {
         freeSnapshotTableChunks(snapshotSort);
     }
 
+    @Test
+    public void testRollupMultipleOps() throws CsvReaderException {
+        final String data = "A,B,C,N\n" +
+                "Apple,One,Alpha,1\n" +
+                "Apple,One,Alpha,2\n" +
+                "Apple,One,Bravo,3\n" +
+                "Apple,One,Bravo,4\n" +
+                "Apple,One,Bravo,5\n" +
+                "Apple,One,Bravo,6\n" +
+                "Banana,Two,Alpha,7\n" +
+                "Banana,Two,Alpha,8\n" +
+                "Banana,Two,Bravo,3\n" +
+                "Banana,Two,Bravo,4\n" +
+                "Banana,Three,Bravo,1\n" +
+                "Banana,Three,Bravo,1\n";
+        final Table source = CsvTools.readCsv(new ByteArrayInputStream(data.getBytes()));
+
+        // Make a simple rollup
+        final Collection<Aggregation> aggs = List.of(
+                AggCount("count"),
+                AggSum("sumN=N"));
+
+        final String[] arrayWithNull = new String[1];
+
+        final RollupTable rollupTable = source.rollup(aggs, false, "A", "B", "C");
+
+        // format, update multiple times, then sort by the final updateView column
+        final RollupTable customRollup = rollupTable.withNodeOperations(
+                rollupTable.makeNodeOperationsRecorder(RollupTable.NodeType.Aggregated)
+                        .formatColumns("sumN=`#00FF00`")
+                        .updateView("sumNPlus1 = sumN + 1")
+                        .formatColumns("sumNPlus1=`#FF0000`")
+                        .updateView("sumNPlus2 = sumNPlus1 + 1")
+                        .sort("sumNPlus2"));
+
+        final Table customKeyTable = newTable(
+                intCol(customRollup.getRowDepthColumn().name(), 0),
+                stringCol("A", arrayWithNull),
+                stringCol("B", arrayWithNull),
+                stringCol("C", arrayWithNull),
+                byteCol("Action", HierarchicalTable.KEY_TABLE_ACTION_EXPAND_ALL));
+
+        final HierarchicalTable.SnapshotState ssCustom = customRollup.makeSnapshotState();
+        final Table customSnapshot =
+                snapshotToTable(customRollup, ssCustom, customKeyTable, ColumnName.of("Action"), null,
+                        RowSetFactory.flat(30));
+        TableTools.showWithRowSet(customSnapshot);
+
+        final Table expected = newTable(
+                stringCol("A", null, "Apple", "Apple", "Apple", "Apple", "Banana", "Banana", "Banana", "Banana",
+                        "Banana", "Banana"),
+                stringCol("B", null, null, "One", "One", "One", null, "Three", "Three", "Two", "Two", "Two"),
+                stringCol("C", null, null, null, "Alpha", "Bravo", null, null, "Bravo", null, "Bravo", "Alpha"),
+                longCol("count", 12, 6, 6, 2, 4, 6, 2, 2, 4, 2, 2),
+                longCol("sumN", 45, 21, 21, 3, 18, 24, 2, 2, 22, 7, 15),
+                longCol("sumNPlus1", 46, 22, 22, 4, 19, 25, 3, 3, 23, 8, 16),
+                longCol("sumNPlus2", 47, 23, 23, 5, 20, 26, 4, 4, 24, 9, 17));
+
+        // Truncate the table and compare to expected.
+        assertTableEquals(expected, customSnapshot.view("A", "B", "C", "count", "sumN", "sumNPlus1", "sumNPlus2"));
+
+        freeSnapshotTableChunks(customSnapshot);
+    }
+
     @SuppressWarnings("SameParameterValue")
     static Table snapshotToTable(
             @NotNull final HierarchicalTable<?> hierarchicalTable,
