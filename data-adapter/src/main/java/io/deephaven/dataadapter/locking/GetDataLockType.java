@@ -73,9 +73,9 @@ public enum GetDataLockType {
 
                 boolean isRefreshing = false;
                 for (NotificationStepSource source : sources) {
-                    final boolean sourceIsNonRefreshingNode =
-                            source instanceof DynamicNode && !((DynamicNode) source).isRefreshing();
-                    isRefreshing |= sourceIsNonRefreshingNode;
+                    final boolean sourceIsRefreshingNode =
+                            source instanceof DynamicNode && ((DynamicNode) source).isRefreshing();
+                    isRefreshing |= sourceIsRefreshingNode;
                 }
 
                 final boolean notificationAware = false;

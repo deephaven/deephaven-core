@@ -5,9 +5,11 @@ package io.deephaven.dataadapter.rec.json;
 
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.deephaven.engine.table.Table;
+import io.deephaven.dataadapter.datafetch.bulk.TableDataArrayRetriever;
 import io.deephaven.dataadapter.datafetch.bulk.BaseMultiRowRecordAdapter;
 import io.deephaven.dataadapter.rec.desc.RecordAdapterDescriptor;
+import io.deephaven.engine.table.PartitionedTable;
+import io.deephaven.engine.table.Table;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -22,9 +24,9 @@ public abstract class BaseJsonRecordAdapter extends BaseMultiRowRecordAdapter<Ob
 
     private final List<String> colNames;
 
-    public BaseJsonRecordAdapter(Table sourceTable, RecordAdapterDescriptor<ObjectNode> descriptor,
-            String... colNames) {
-        super(sourceTable, descriptor);
+    public BaseJsonRecordAdapter(RecordAdapterDescriptor<ObjectNode> descriptor, final TableDataArrayRetriever tableDataArrayRetriever,
+                                 String... colNames) {
+        super(descriptor, tableDataArrayRetriever);
         this.colNames = Collections.unmodifiableList(Arrays.asList(colNames));
     }
 

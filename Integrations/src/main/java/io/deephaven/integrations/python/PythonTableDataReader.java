@@ -4,7 +4,7 @@
 package io.deephaven.integrations.python;
 
 import io.deephaven.dataadapter.ContextHolder;
-import io.deephaven.dataadapter.datafetch.bulk.TableDataArrayRetrieverImpl;
+import io.deephaven.dataadapter.datafetch.bulk.AbstractTableDataArrayRetrieverImpl;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.TableUpdate;
@@ -43,17 +43,18 @@ public class PythonTableDataReader {
             final boolean prev) {
         final int nRows = rowSeq.intSize();
 
-        final Object[] arrays = TableDataArrayRetrieverImpl.createDataArrays(rowSeq.intSize(), columnSources);
+        final Object[] arrays = AbstractTableDataArrayRetrieverImpl.createDataArrays(rowSeq.intSize(), columnSources);
 
         // TODO: why not just create the Context in this method?
 
-        TableDataArrayRetrieverImpl.fillDataArrays(
+        AbstractTableDataArrayRetrieverImpl.fillDataArrays(
                 prev,
                 rowSeq.asRowSet(),
                 columnSources,
                 arrays,
                 null,
-                context);
+                context,
+                0);
 
         return arrays;
     }

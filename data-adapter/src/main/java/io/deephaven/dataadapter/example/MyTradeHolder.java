@@ -36,7 +36,7 @@ public class MyTradeHolder {
 
     private static void example(Table tradesTable) {
         final KeyedRecordAdapter<String, MyTradeHolder> keyedRecordAdapter =
-                KeyedRecordAdapter.makeKeyedRecordAdapterSimpleKey(
+                KeyedRecordAdapter.makeRecordAdapterSimpleKey(
                         tradesTable,
                         myTradeHolderRecordAdapterDescriptor,
                         "USym",

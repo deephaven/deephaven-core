@@ -3,12 +3,12 @@
 //
 package io.deephaven.dataadapter.datafetch.bulk;
 
+import gnu.trove.list.TLongList;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.Table;
+import org.jetbrains.annotations.NotNull;
 
-import java.lang.reflect.Constructor;
 import java.util.List;
-import java.util.function.LongConsumer;
 
 /**
  * A TableDataArrayRetriever is a utility for retrieving multiple rows of data from a fixed set of columns in a
@@ -25,11 +25,11 @@ import java.util.function.LongConsumer;
 public interface TableDataArrayRetriever {
 
     /**
-     * Get the column sources this TableDataArrayRetriever was created for.
+     * Get the names of the columns this TableDataArrayRetriever was created for.
      *
      * @return The column sources whose data is retrieved.
      */
-    List<ColumnSource<?>> getColumnSources();
+    List<String> getColumnNames();
 
     /**
      * Create arrays to hold {@code len} rows of data. This should be called <b>without</b> the LiveTableMonitor lock.
@@ -45,7 +45,7 @@ public interface TableDataArrayRetriever {
     }
 
     /**
-     * Fills the {@code dataArrs} with data from {@link #getColumnSources()}, for the positions given by
+     * Fills the {@code dataArrs} with data from column sources, for the positions given by
      * {@code tableIndex}. This <b>must</b> be called <b>with</b> the LiveTableMonitor lock or under
      * {@link io.deephaven.engine.table.impl.remote.ConstructSnapshot ConstructSnapshot}.
      *
@@ -54,9 +54,9 @@ public interface TableDataArrayRetriever {
      * @param dataArrs Arrays to populate with table data (created by {@link #createDataArrays})
      * @param keyConsumer Consumer that will be passed all keys in {@code tableIndex}
      */
-    void fillDataArrays(boolean usePrev, RowSet tableIndex, Object[] dataArrs, LongConsumer keyConsumer);
+    void fillDataArrays(boolean usePrev, RowSet tableIndex, Object[] dataArrs, @NotNull TLongList keyConsumer);
 
-    static TableDataArrayRetriever makeDefault(final ColumnSource<?>... columnSources) {
-        return new TableDataArrayRetrieverImpl(columnSources);
+    static TableDataArrayRetriever makeDefault(final List<String> columnNames, Table table) {
+        return new TableDataArrayRetrieverImpl(columnNames, table);
     }
 }

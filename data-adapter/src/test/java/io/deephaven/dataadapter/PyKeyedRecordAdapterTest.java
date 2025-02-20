@@ -48,34 +48,48 @@ public class PyKeyedRecordAdapterTest extends RefreshingTableTestCase {
                         "DoubleCol"
                 });
 
-        PyKeyedRecordAdapter.RecordRetrievalResult record =
-                keyedRecordAdapter.getRecordsForPython(new Object[] {"KeyA"});
+        {
+            PyKeyedRecordAdapter.RecordRetrievalResult record =
+                    keyedRecordAdapter.getRecordsForPython(new Object[]{"KeyA"});
 
-        final long[] recordDataRowKeys = record.recordDataRowKeys;
-        final TLongIntMap rowKeyToDataKeyPositionalIndex = record.rowKeyToDataKeyPositionalIndex;
-        final Object[] recordDataArrs = record.recordDataArrs;
+            final long[] recordDataRowKeys = record.recordDataRowKeys;
+            final TLongIntMap rowKeyToDataKeyPositionalIndex = record.rowKeyToDataKeyPositionalIndex;
+            final Object[] recordDataArrs = record.recordDataArrs;
 
-        assertEquals(2, recordDataRowKeys[0]);
-        assertEquals(rowKeyToDataKeyPositionalIndex.get(2), 0);
+            assertEquals(0, recordDataRowKeys[0]);
+            assertEquals(0, rowKeyToDataKeyPositionalIndex.get(0));
 
-        assertEquals("Aa", ((String[]) recordDataArrs[0])[0]);
-        assertEquals('A', ((char[]) recordDataArrs[1])[0]);
-        assertEquals((byte) 0, ((byte[]) recordDataArrs[2])[0]);
-        assertEquals((short) 1, ((short[]) recordDataArrs[3])[0]);
-        assertEquals(100, ((int[]) recordDataArrs[4])[0]);
-        assertEquals(0.1f, ((float[]) recordDataArrs[5])[0]);
-        assertEquals(10_000_000_000L, ((long[]) recordDataArrs[6])[0]);
-        assertEquals(1.1d, ((double[]) recordDataArrs[7])[0]);
+            assertEquals("Aa", ((String[]) recordDataArrs[0])[0]);
+            assertEquals('A', ((char[]) recordDataArrs[1])[0]);
+            assertEquals((byte) 0, ((byte[]) recordDataArrs[2])[0]);
+            assertEquals((short) 1, ((short[]) recordDataArrs[3])[0]);
+            assertEquals(100, ((int[]) recordDataArrs[4])[0]);
+            assertEquals(0.1f, ((float[]) recordDataArrs[5])[0]);
+            assertEquals(10_000_000_000L, ((long[]) recordDataArrs[6])[0]);
+            assertEquals(1.1d, ((double[]) recordDataArrs[7])[0]);
+        }
 
-        // record = keyedRecordAdapter.getRecord("KeyB");
-        // assertNull(record.get("StringCol"));
-        // assertNull(record.get("CharCol"));
-        // assertNull(record.get("ByteCol"));
-        // assertNull(record.get("ShortCol"));
-        // assertNull(record.get("IntCol"));
-        // assertNull(record.get("FloatCol"));
-        // assertNull(record.get("LongCol"));
-        // assertNull(record.get("DoubleCol"));
+
+        {
+            PyKeyedRecordAdapter.RecordRetrievalResult record =
+                    keyedRecordAdapter.getRecordsForPython(new Object[]{"KeyB"});
+
+            final long[] recordDataRowKeys = record.recordDataRowKeys;
+            final TLongIntMap rowKeyToDataKeyPositionalIndex = record.rowKeyToDataKeyPositionalIndex;
+            final Object[] recordDataArrs = record.recordDataArrs;
+
+            assertEquals(1, recordDataRowKeys[0]);
+            assertEquals(0, rowKeyToDataKeyPositionalIndex.get(1));
+
+            assertNull(((String[]) recordDataArrs[0])[0]);
+            assertEquals(QueryConstants.NULL_CHAR, ((char[]) recordDataArrs[1])[0]);
+            assertEquals(QueryConstants.NULL_BYTE, ((byte[]) recordDataArrs[2])[0]);
+            assertEquals(QueryConstants.NULL_SHORT, ((short[]) recordDataArrs[3])[0]);
+            assertEquals(QueryConstants.NULL_INT, ((int[]) recordDataArrs[4])[0]);
+            assertEquals(QueryConstants.NULL_FLOAT, ((float[]) recordDataArrs[5])[0]);
+            assertEquals(QueryConstants.NULL_LONG, ((long[]) recordDataArrs[6])[0]);
+            assertEquals(QueryConstants.NULL_DOUBLE, ((double[]) recordDataArrs[7])[0]);
+        }
 
         // test missing key
         assertEquals(0, keyedRecordAdapter.getRecords(Collections.singletonList("MissingKey")).size());

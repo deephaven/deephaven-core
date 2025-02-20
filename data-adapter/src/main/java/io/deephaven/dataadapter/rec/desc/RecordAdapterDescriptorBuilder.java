@@ -3,6 +3,8 @@
 //
 package io.deephaven.dataadapter.rec.desc;
 
+import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
 import io.deephaven.dataadapter.datafetch.bulk.DefaultMultiRowRecordAdapter;
 import io.deephaven.dataadapter.rec.MultiRowRecordAdapter;
@@ -12,6 +14,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
@@ -25,8 +28,8 @@ public class RecordAdapterDescriptorBuilder<R> {
     private final Map<String, RecordUpdater<R, ?>> colNameToAdapterMap = new LinkedHashMap<>();
     private final Supplier<R> emptyRecordSupplier;
 
-    private BiFunction<Table, RecordAdapterDescriptor<R>, MultiRowRecordAdapter<R>> multiRowAdapterSupplier =
-            DefaultMultiRowRecordAdapter::create;
+    private BiFunction<Table, RecordAdapterDescriptor<R>, MultiRowRecordAdapter<R>> multiRowAdapterSupplier = DefaultMultiRowRecordAdapter::create;
+    private BiFunction<PartitionedTable, RecordAdapterDescriptor<R>, MultiRowRecordAdapter<R>> multiRowPartitionedTableAdapterSupplier = DefaultMultiRowRecordAdapter::create;
 
     private RecordAdapterDescriptorBuilder(Supplier<R> emptyRecordSupplier) {
         this.emptyRecordSupplier = emptyRecordSupplier;
@@ -55,6 +58,7 @@ public class RecordAdapterDescriptorBuilder<R> {
         final RecordAdapterDescriptorBuilder<T> copy = new RecordAdapterDescriptorBuilder<>(base::getEmptyRecord);
         copy.colNameToAdapterMap.putAll(base.getColumnAdapters());
         copy.multiRowAdapterSupplier = base.getMultiRowAdapterSupplier();
+        copy.multiRowPartitionedTableAdapterSupplier = base.getMultiRowPartitionedTableAdapterSupplier();
         return copy;
     }
 
@@ -131,11 +135,18 @@ public class RecordAdapterDescriptorBuilder<R> {
         this.multiRowAdapterSupplier = multiRowAdapterSupplier;
     }
 
+    public void setMultiRowPartitionedTableAdapterSupplier(
+            @NotNull BiFunction<PartitionedTable, RecordAdapterDescriptor<R>, MultiRowRecordAdapter<R>> multiRowPartitionedTableAdapterSupplier) {
+        this.multiRowPartitionedTableAdapterSupplier = multiRowPartitionedTableAdapterSupplier;
+    }
+
     public RecordAdapterDescriptor<R> build() {
         return new RecordAdapterDescriptorImpl<R>(
                 Collections.unmodifiableMap(new LinkedHashMap<>(colNameToAdapterMap)),
                 emptyRecordSupplier,
-                multiRowAdapterSupplier);
+                multiRowAdapterSupplier,
+                multiRowPartitionedTableAdapterSupplier
+                );
     }
 
     private static class RecordAdapterDescriptorImpl<R> implements RecordAdapterDescriptor<R> {
@@ -144,14 +155,18 @@ public class RecordAdapterDescriptorBuilder<R> {
         private final Supplier<R> emptyRecordSupplier;
 
         private final BiFunction<Table, RecordAdapterDescriptor<R>, MultiRowRecordAdapter<R>> multiRowAdapterSupplier;
+        private final BiFunction<PartitionedTable, RecordAdapterDescriptor<R>, MultiRowRecordAdapter<R>> multiRowPartitionedTableAdapterSupplier;
 
         private RecordAdapterDescriptorImpl(
                 Map<String, RecordUpdater<R, ?>> colNameToAdapterMap,
                 Supplier<R> emptyRecordSupplier,
-                BiFunction<Table, RecordAdapterDescriptor<R>, MultiRowRecordAdapter<R>> multiRowAdapterSupplier) {
-            this.colNameToAdapterMap = colNameToAdapterMap;
-            this.emptyRecordSupplier = emptyRecordSupplier;
-            this.multiRowAdapterSupplier = multiRowAdapterSupplier;
+                BiFunction<Table, RecordAdapterDescriptor<R>, MultiRowRecordAdapter<R>> multiRowAdapterSupplier,
+                BiFunction<PartitionedTable, RecordAdapterDescriptor<R>, MultiRowRecordAdapter<R>> multiRowPartitionedTableAdapterSupplier
+                ) {
+            this.colNameToAdapterMap = Objects.requireNonNull(colNameToAdapterMap, "colNameToAdapterMap");
+            this.emptyRecordSupplier = Objects.requireNonNull(emptyRecordSupplier, "emptyRecordSupplier");
+            this.multiRowAdapterSupplier = Objects.requireNonNull(multiRowAdapterSupplier, "multiRowAdapterSupplier");
+            this.multiRowPartitionedTableAdapterSupplier = Objects.requireNonNull(multiRowPartitionedTableAdapterSupplier, "multiRowPartitionedTableAdapterSupplier");
         }
 
         @Override
@@ -165,8 +180,14 @@ public class RecordAdapterDescriptorBuilder<R> {
             return emptyRecordSupplier.get();
         }
 
-        public BiFunction<Table, RecordAdapterDescriptor<R>, MultiRowRecordAdapter<R>> getMultiRowAdapterSupplier() {
-            return multiRowAdapterSupplier;
+        @Override
+        public BiFunction<Table, RecordAdapterDescriptor<R>, MultiRowRecordAdapter<R>> getMultiRowAdapterSupplier()  {
+           return multiRowAdapterSupplier;
+        }
+
+        @Override
+        public BiFunction<PartitionedTable, RecordAdapterDescriptor<R>, MultiRowRecordAdapter<R>> getMultiRowPartitionedTableAdapterSupplier()  {
+           return multiRowPartitionedTableAdapterSupplier;
         }
     }
 }

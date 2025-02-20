@@ -4,8 +4,6 @@
 package io.deephaven.dataadapter.datafetch.bulk;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.Table;
 import io.deephaven.dataadapter.rec.MultiRowRecordAdapter;
 import io.deephaven.dataadapter.rec.desc.RecordAdapterDescriptor;
 import io.deephaven.dataadapter.rec.json.JsonRecordAdapterGenerator;
@@ -35,11 +33,10 @@ public abstract class BaseMultiRowRecordAdapter<T> implements MultiRowRecordAdap
      */
     protected final TableDataArrayRetriever tableDataArrayRetriever;
 
-    public BaseMultiRowRecordAdapter(final Table sourceTable, final RecordAdapterDescriptor<T> descriptor) {
+    public BaseMultiRowRecordAdapter(final RecordAdapterDescriptor<T> descriptor, final TableDataArrayRetriever tableDataArrayRetriever) {
         // noinspection unchecked
         this(
-                TableDataArrayRetriever.makeDefault(descriptor.getColumnAdapters().keySet().stream()
-                        .map(sourceTable::getColumnSource).toArray(ColumnSource[]::new)),
+                tableDataArrayRetriever,
                 descriptor.getColumnAdapters().size(),
                 (Class<T>) descriptor.getEmptyRecord().getClass());
     }

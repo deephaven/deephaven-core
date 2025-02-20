@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
 import io.deephaven.dataadapter.rec.desc.RecordAdapterDescriptor;
 import io.deephaven.dataadapter.rec.desc.RecordAdapterDescriptorBuilder;
@@ -66,6 +67,23 @@ public class JsonRecordAdapterUtil {
 
             try {
                 return constructor.newInstance(table, descriptor);
+            } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
+                throw new RuntimeException("Could not instantiate generated JsonRecordAdapter", e);
+            }
+        });
+        descriptorBuilder.setMultiRowPartitionedTableAdapterSupplier((partitionedTable, descriptor) -> {
+
+            // Generate a class that creates JSON records from the data arrays
+            Class<? extends BaseJsonRecordAdapter> c = new JsonRecordAdapterGenerator(descriptor).generate();
+            final Constructor<? extends BaseJsonRecordAdapter> constructor;
+            try {
+                constructor = c.getConstructor(PartitionedTable.class, RecordAdapterDescriptor.class);
+            } catch (NoSuchMethodException e) {
+                throw new RuntimeException("Could not find constructor for generated JsonRecordAdapter", e);
+            }
+
+            try {
+                return constructor.newInstance(partitionedTable, descriptor);
             } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
                 throw new RuntimeException("Could not instantiate generated JsonRecordAdapter", e);
             }

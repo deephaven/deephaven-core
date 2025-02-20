@@ -3,7 +3,9 @@
 //
 package io.deephaven.dataadapter.rec.desc;
 
+import io.deephaven.api.agg.Partition;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
 import io.deephaven.dataadapter.datafetch.bulk.DefaultMultiRowRecordAdapter;
 import io.deephaven.dataadapter.rec.MultiRowRecordAdapter;
@@ -11,10 +13,7 @@ import io.deephaven.dataadapter.rec.updaters.RecordUpdater;
 import io.deephaven.dataadapter.rec.updaters.ObjRecordUpdater;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.function.BiFunction;
 
 /**
@@ -56,8 +55,8 @@ public interface RecordAdapterDescriptor<T> {
      */
     Map<String, RecordUpdater<T, ?>> getColumnAdapters();
 
-    default Set<String> getColumnNames() {
-        return getColumnAdapters().keySet();
+    default List<String> getColumnNames() {
+        return new ArrayList<>(getColumnAdapters().keySet());
     }
 
     /**
@@ -72,8 +71,12 @@ public interface RecordAdapterDescriptor<T> {
         return getMultiRowAdapterSupplier().apply(sourceTable, this);
     }
 
-    default BiFunction<Table, RecordAdapterDescriptor<T>, MultiRowRecordAdapter<T>> getMultiRowAdapterSupplier() {
-        return DefaultMultiRowRecordAdapter::create;
+    default MultiRowRecordAdapter<T>  createMultiRowRecordAdapter(PartitionedTable sourcePartitionedTable) {
+        return getMultiRowPartitionedTableAdapterSupplier().apply(sourcePartitionedTable, this);
     }
+
+    BiFunction<Table, RecordAdapterDescriptor<T>, MultiRowRecordAdapter<T>> getMultiRowAdapterSupplier();
+
+    BiFunction<PartitionedTable, RecordAdapterDescriptor<T>, MultiRowRecordAdapter<T>> getMultiRowPartitionedTableAdapterSupplier();
 
 }

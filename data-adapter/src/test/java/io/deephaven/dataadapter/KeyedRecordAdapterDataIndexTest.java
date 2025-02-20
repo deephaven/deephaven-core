@@ -4,19 +4,16 @@
 package io.deephaven.dataadapter;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.deephaven.dataadapter.rec.desc.RecordAdapterDescriptorBuilder;
+import io.deephaven.dataadapter.rec.json.JsonRecordAdapterUtil;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.DataIndex;
-import io.deephaven.engine.table.PartitionedTable;
-import io.deephaven.engine.table.impl.NoSuchColumnException;
 import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.table.impl.dataindex.TableBackedDataIndex;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.util.TableTools;
-import io.deephaven.dataadapter.rec.desc.RecordAdapterDescriptorBuilder;
-import io.deephaven.dataadapter.rec.json.JsonRecordAdapterUtil;
 import io.deephaven.util.QueryConstants;
 
 import java.util.*;
@@ -25,7 +22,7 @@ import java.util.concurrent.CountDownLatch;
 import static io.deephaven.engine.testutil.TstUtils.i;
 
 
-public class KeyedRecordAdapterTest extends RefreshingTableTestCase {
+public class KeyedRecordAdapterDataIndexTest extends RefreshingTableTestCase {
 
     /**
      * Test a KeyedRecordAdapter that just converts rows into HashMaps
@@ -45,6 +42,8 @@ public class KeyedRecordAdapterTest extends RefreshingTableTestCase {
                         40_000_000_000L),
                 TableTools.doubleCol("DoubleCol", 1.1d, QueryConstants.NULL_DOUBLE, 3.3d, 4.4d));
         TableTools.show(source);
+
+        final DataIndex dataIndex = DataIndexer.getDataIndex(source, "KeyCol1", "KeyCol2");
 
         final KeyedRecordAdapter<List<?>, Map<String, Object>> keyedRecordAdapter =
                 KeyedRecordAdapter.makeRecordAdapterCompositeKey(
@@ -125,211 +124,6 @@ public class KeyedRecordAdapterTest extends RefreshingTableTestCase {
         assertEquals(1.1d, record.get("DoubleCol").doubleValue());
 
         record = keyedRecordAdapter.getRecord(Arrays.asList("KeyB", 0));
-        assertEquals("KeyB", record.get("KeyCol1").textValue());
-        assertEquals(0, record.get("KeyCol2").intValue());
-        assertTrue(record.get("StringCol").isNull());
-        assertTrue(record.get("CharCol").isNull());
-        assertTrue(record.get("ByteCol").isNull());
-        assertTrue(record.get("ShortCol").isNull());
-        assertTrue(record.get("IntCol").isNull());
-        assertTrue(record.get("FloatCol").isNull());
-        assertTrue(record.get("LongCol").isNull());
-        assertTrue(record.get("DoubleCol").isNull());
-
-        // test missing key
-        assertNull(keyedRecordAdapter.getRecord(Arrays.asList("MissingKey", 0)));
-
-        // test invalid key
-        try {
-            keyedRecordAdapter.getRecord(Collections.singletonList("KeyA"));
-            fail("should have thrown an exception");
-        } catch (IllegalArgumentException ex) {
-            assertEquals("dataKey has 1 components; expected 2", ex.getMessage());
-        }
-    }
-
-    /**
-     * Test a KeyedRecordAdapter that just converts rows into ObjectNodes, from a table with a data index
-     */
-    public void testJsonKeyedRecordAdapterDataIndexSimpleKey() {
-        final QueryTable source = TstUtils.testRefreshingTable(
-                i(2, 4, 6, 8).copy().toTracking(),
-                TableTools.col("KeyCol1", "KeyA", "KeyB", "KeyA", "KeyB"),
-                TableTools.col("StringCol", "Aa", null, "Cc", "Dd"),
-                TableTools.charCol("CharCol", 'A', QueryConstants.NULL_CHAR, 'C', 'D'),
-                TableTools.byteCol("ByteCol", (byte) 0, QueryConstants.NULL_BYTE, (byte) 3, (byte) 4),
-                TableTools.shortCol("ShortCol", (short) 1, QueryConstants.NULL_SHORT, (short) 3, (short) 4),
-                TableTools.intCol("IntCol", 100, QueryConstants.NULL_INT, 300, 400),
-                TableTools.floatCol("FloatCol", 0.1f, QueryConstants.NULL_FLOAT, 0.3f, 0.4f),
-                TableTools.longCol("LongCol", 10_000_000_000L, QueryConstants.NULL_LONG, 30_000_000_000L,
-                        40_000_000_000L),
-                TableTools.doubleCol("DoubleCol", 1.1d, QueryConstants.NULL_DOUBLE, 3.3d, 4.4d));
-        final DataIndex dataIndex = DataIndexer.getOrCreateDataIndex(source, "KeyCol1");
-        TableTools.show(source);
-
-        final KeyedRecordAdapter<String, ObjectNode> keyedRecordAdapter =
-                KeyedRecordAdapter.makeRecordAdapterSimpleKey(
-                        source,
-                        (TableBackedDataIndex) dataIndex,
-                        JsonRecordAdapterUtil.createJsonRecordAdapterDescriptor(source,
-                                Arrays.asList("KeyCol1", "StringCol", "CharCol", "ByteCol", "ShortCol",
-                                        "IntCol", "FloatCol", "LongCol", "DoubleCol")),
-                        String.class
-                        );
-
-//        Map<List<?>, ObjectNode> records = keyedRecordAdapter.getRecords(Arrays.asList("KeyA"));
-
-        ObjectNode record = keyedRecordAdapter.getRecord("KeyA");
-
-        assertEquals("KeyA", record.get("KeyCol1").textValue());
-        assertEquals("Aa", record.get("StringCol").textValue());
-        assertEquals('A', record.get("CharCol").textValue().charAt(0));
-        assertEquals((byte) 0, (byte) record.get("ByteCol").shortValue());
-        assertEquals((short) 1, record.get("ShortCol").shortValue());
-        assertEquals(100, record.get("IntCol").intValue());
-        assertEquals(0.1f, record.get("FloatCol").floatValue());
-        assertEquals(10_000_000_000L, record.get("LongCol").longValue());
-        assertEquals(1.1d, record.get("DoubleCol").doubleValue());
-
-        record = keyedRecordAdapter.getRecord("KeyB");
-        assertEquals("KeyB", record.get("KeyCol1").textValue());
-        assertTrue(record.get("StringCol").isNull());
-        assertTrue(record.get("CharCol").isNull());
-        assertTrue(record.get("ByteCol").isNull());
-        assertTrue(record.get("ShortCol").isNull());
-        assertTrue(record.get("IntCol").isNull());
-        assertTrue(record.get("FloatCol").isNull());
-        assertTrue(record.get("LongCol").isNull());
-        assertTrue(record.get("DoubleCol").isNull());
-
-        // test missing key
-        assertNull(keyedRecordAdapter.getRecord("MissingKey"));
-    }
-
-    /**
-     * Test a KeyedRecordAdapter that just converts rows into ObjectNodes, from a table with a data index
-     */
-    public void testJsonKeyedRecordAdapterDataIndexCompositeKey() {
-        final QueryTable source = TstUtils.testRefreshingTable(
-                i(2, 4, 6, 8, 9, 10).copy().toTracking(),
-                TableTools.col("KeyCol1", "KeyA", "KeyB", "KeyA", "KeyB", "KeyA", "KeyB"),
-                TableTools.col("KeyCol2", 0, 0, 1, 1, 0, 1),
-                TableTools.col("StringCol", "Aa", null, "Cc", "Dd", "Xx", "Yy"),
-                TableTools.charCol("CharCol", 'A', QueryConstants.NULL_CHAR, 'C', 'D', 'X', 'Y'),
-                TableTools.byteCol("ByteCol", (byte) 0, QueryConstants.NULL_BYTE, (byte) 3, (byte) 4, (byte) 99, (byte) 100),
-                TableTools.shortCol("ShortCol", (short) 1, QueryConstants.NULL_SHORT, (short) 3, (short) 4, (short) 99, (short) 100),
-                TableTools.intCol("IntCol", 100, QueryConstants.NULL_INT, 300, 400, 900, 1000),
-                TableTools.floatCol("FloatCol", 0.1f, QueryConstants.NULL_FLOAT, 0.3f, 0.4f, 0.9f, 1.0f),
-                TableTools.longCol("LongCol", 10_000_000_000L, QueryConstants.NULL_LONG, 30_000_000_000L,
-                        40_000_000_000L, 90_000_000_000L, 100_000_000_000L),
-                TableTools.doubleCol("DoubleCol", 1.1d, QueryConstants.NULL_DOUBLE, 3.3d, 4.4d, 9.9d, 10.0d));
-        final DataIndex dataIndex = DataIndexer.getOrCreateDataIndex(source, "KeyCol1", "KeyCol2");
-        TableTools.show(source);
-
-        final KeyedRecordAdapter<List<?>, ObjectNode> keyedRecordAdapter =
-                KeyedRecordAdapter.makeRecordAdapterCompositeKey(
-                        source,
-                        (TableBackedDataIndex) dataIndex,
-                        JsonRecordAdapterUtil.createJsonRecordAdapterDescriptor(source,
-                                Arrays.asList("KeyCol1", "KeyCol2", "StringCol", "CharCol", "ByteCol", "ShortCol",
-                                        "IntCol", "FloatCol", "LongCol", "DoubleCol"))
-                        );
-
-        Map<List<?>, ObjectNode> records = keyedRecordAdapter.getRecords(Arrays.asList("KeyA", 0));
-
-        ObjectNode record = keyedRecordAdapter.getRecord(Arrays.asList("KeyA", 0));
-
-        assertEquals("KeyA", record.get("KeyCol1").textValue());
-        assertEquals(0, record.get("KeyCol2").intValue());
-        assertEquals("Aa", record.get("StringCol").textValue());
-        assertEquals('A', record.get("CharCol").textValue().charAt(0));
-        assertEquals((byte) 0, (byte) record.get("ByteCol").shortValue());
-        assertEquals((short) 1, record.get("ShortCol").shortValue());
-        assertEquals(100, record.get("IntCol").intValue());
-        assertEquals(0.1f, record.get("FloatCol").floatValue());
-        assertEquals(10_000_000_000L, record.get("LongCol").longValue());
-        assertEquals(1.1d, record.get("DoubleCol").doubleValue());
-
-        record = keyedRecordAdapter.getRecord(Arrays.asList("KeyB", 0));
-        assertEquals("KeyB", record.get("KeyCol1").textValue());
-        assertEquals(0, record.get("KeyCol2").intValue());
-        assertTrue(record.get("StringCol").isNull());
-        assertTrue(record.get("CharCol").isNull());
-        assertTrue(record.get("ByteCol").isNull());
-        assertTrue(record.get("ShortCol").isNull());
-        assertTrue(record.get("IntCol").isNull());
-        assertTrue(record.get("FloatCol").isNull());
-        assertTrue(record.get("LongCol").isNull());
-        assertTrue(record.get("DoubleCol").isNull());
-
-        // test missing key
-        assertNull(keyedRecordAdapter.getRecord(Arrays.asList("MissingKey", 0)));
-
-        // test invalid key
-        try {
-            keyedRecordAdapter.getRecord(Collections.singletonList("KeyA"));
-            fail("should have thrown an exception");
-        } catch (IllegalArgumentException ex) {
-            assertEquals("dataKey has 1 components; expected 2", ex.getMessage());
-        }
-    }
-
-    /**
-     * Test a KeyedRecordAdapter that just converts rows into ObjectNodes, from a partitioned table
-     */
-    public void testJsonKeyedRecordAdapterPartitionedTable() {
-        final QueryTable source = TstUtils.testRefreshingTable(
-                i(2, 4, 6, 8, 9, 10).copy().toTracking(),
-                TableTools.col("KeyCol1", "KeyA", "KeyB", "KeyA", "KeyB", "KeyA", "KeyB"),
-                TableTools.col("KeyCol2", 0, 0, 1, 1, 0, 1),
-                TableTools.col("StringCol", "Aa", null, "Cc", "Dd", "Xx", "Yy"),
-                TableTools.charCol("CharCol", 'A', QueryConstants.NULL_CHAR, 'C', 'D', 'X', 'Y'),
-                TableTools.byteCol("ByteCol", (byte) 0, QueryConstants.NULL_BYTE, (byte) 3, (byte) 4, (byte) 99, (byte) 100),
-                TableTools.shortCol("ShortCol", (short) 1, QueryConstants.NULL_SHORT, (short) 3, (short) 4, (short) 99, (short) 100),
-                TableTools.intCol("IntCol", 100, QueryConstants.NULL_INT, 300, 400, 900, 1000),
-                TableTools.floatCol("FloatCol", 0.1f, QueryConstants.NULL_FLOAT, 0.3f, 0.4f, 0.9f, 1.0f),
-                TableTools.longCol("LongCol", 10_000_000_000L, QueryConstants.NULL_LONG, 30_000_000_000L,
-                        40_000_000_000L, 90_000_000_000L, 100_000_000_000L),
-                TableTools.doubleCol("DoubleCol", 1.1d, QueryConstants.NULL_DOUBLE, 3.3d, 4.4d, 9.9d, 10.0d));
-        TableTools.show(source);
-
-        final PartitionedTable sourcePartitioned = source.partitionBy(true, "KeyCol1", "KeyCol2");
-        TableTools.show(sourcePartitioned.table());
-
-
-        final KeyedRecordAdapter<List<?>, ObjectNode> keyedRecordAdapter =
-                KeyedRecordAdapter.makeRecordAdapterCompositeKey(
-                        sourcePartitioned,
-                        JsonRecordAdapterUtil.createJsonRecordAdapterDescriptor(source,
-                                Arrays.asList("KeyCol1", "KeyCol2", "StringCol", "CharCol", "ByteCol", "ShortCol",
-                                        "IntCol", "FloatCol", "LongCol", "DoubleCol")));
-
-        List<ObjectNode> records = keyedRecordAdapter.getRecordList(Arrays.asList("KeyA", 0));
-        final ObjectNode record0 = records.get(0);
-        assertEquals("KeyA", record0.get("KeyCol1").textValue());
-        assertEquals(0, record0.get("KeyCol2").intValue());
-        assertEquals("Aa", record0.get("StringCol").textValue());
-        assertEquals('A', record0.get("CharCol").textValue().charAt(0));
-        assertEquals((byte) 0, (byte) record0.get("ByteCol").shortValue());
-        assertEquals((short) 1, record0.get("ShortCol").shortValue());
-        assertEquals(100, record0.get("IntCol").intValue());
-        assertEquals(0.1f, record0.get("FloatCol").floatValue());
-        assertEquals(10_000_000_000L, record0.get("LongCol").longValue());
-        assertEquals(1.1d, record0.get("DoubleCol").doubleValue());
-
-        final ObjectNode record1 = records.get(1);
-        assertEquals("KeyA", record1.get("KeyCol1").textValue());
-        assertEquals(0, record1.get("KeyCol2").intValue());
-        assertEquals("Xx", record1.get("StringCol").textValue());
-        assertEquals('X', record1.get("CharCol").textValue().charAt(0));
-        assertEquals((byte) 99, (byte) record1.get("ByteCol").shortValue());
-        assertEquals((short) 99, record1.get("ShortCol").shortValue());
-        assertEquals(900, record1.get("IntCol").intValue());
-        assertEquals(0.9f, record1.get("FloatCol").floatValue());
-        assertEquals(90_000_000_000L, record1.get("LongCol").longValue());
-        assertEquals(9.9d, record1.get("DoubleCol").doubleValue());
-
-        ObjectNode record = keyedRecordAdapter.getRecord(Arrays.asList("KeyB", 0));
         assertEquals("KeyB", record.get("KeyCol1").textValue());
         assertEquals(0, record.get("KeyCol2").intValue());
         assertTrue(record.get("StringCol").isNull());
@@ -798,82 +592,12 @@ public class KeyedRecordAdapterTest extends RefreshingTableTestCase {
                 Arrays.asList("KeyA", 1),
                 Arrays.asList("KeyB", 1));
 
-        // TODO: how do I know that the row for KeyA/1 is gone, even though I can still find its data??
+        // TODO: how do I know that the row is gone, even though I can still find its data??
         //   The data is still in the column source, and the AggregationRowLookup never forgets the slot?
         assertEquals(3, recordsAfterLTM.size());
         assertEquals(recordB, recordsAfterLTM.get(Arrays.asList("KeyB", 0)));
         assertNotNull(recordsAfterLTM.get(Arrays.asList("KeyA", 0)));
         assertNotNull(recordsAfterLTM.get(Arrays.asList("KeyB", 1)));
-
-    }
-
-    public void testInvalidRecordAdapterCreation() {
-        final QueryTable source = TstUtils.testRefreshingTable(
-                i(2, 4, 6, 8).copy().toTracking(),
-                TableTools.col("KeyCol1", "KeyA", "KeyB", "KeyA", "KeyB"),
-                TableTools.col("StringCol", "Aa", null, "Cc", "Dd")
-        );
-
-        {
-            // Creating composite-key KeyedRecordAdapter with only one key column
-            final DataIndex dataIndex = DataIndexer.getOrCreateDataIndex(source, "KeyCol1");
-            try {
-                KeyedRecordAdapter.makeRecordAdapterCompositeKey(
-                                source,
-                                (TableBackedDataIndex) dataIndex,
-                                JsonRecordAdapterUtil.createJsonRecordAdapterDescriptor(source, Arrays.asList("KeyCol1", "StringCol")));
-                fail("should have thrown an exception");
-            } catch (IllegalArgumentException ex) {
-                assertEquals("Attempting to create composite-key KeyedRecordAdapter but dataIndex has only one key column. Use makeRecordAdapterSimpleKey instead.", ex.getMessage());
-            }
-        }
-
-        {
-            // Creating simple-key KeyedRecordAdapter with multiple key columns
-            final DataIndex dataIndex = DataIndexer.getOrCreateDataIndex(source, "KeyCol1", "StringCol");
-            try {
-                KeyedRecordAdapter.makeRecordAdapterSimpleKey(
-                        source,
-                        (TableBackedDataIndex) dataIndex,
-                        JsonRecordAdapterUtil.createJsonRecordAdapterDescriptor(source, Arrays.asList("KeyCol1", "StringCol")),
-                        String.class
-                        );
-                fail("should have thrown an exception");
-            } catch (IllegalArgumentException ex) {
-                assertEquals("Attempting to create simple-key KeyedRecordAdapter but dataIndex has multiple key columns. Use makeRecordAdapterCompositeKey instead.", ex.getMessage());
-            }
-        }
-
-        {
-            // Creating simple-key KeyedRecordAdapter with invalid key type
-            final DataIndex dataIndex = DataIndexer.getOrCreateDataIndex(source, "KeyCol1");
-            try {
-                KeyedRecordAdapter.makeRecordAdapterSimpleKey(
-                        source,
-                        (TableBackedDataIndex) dataIndex,
-                        JsonRecordAdapterUtil.createJsonRecordAdapterDescriptor(source, List.of("KeyCol1")),
-                        Integer.class
-                );
-                fail("should have thrown an exception");
-            } catch (IllegalArgumentException ex) {
-                assertEquals("Key column type mismatch: expected type java.lang.Integer, found java.lang.String in dataIndex for column KeyCol1", ex.getMessage());
-            }
-        }
-
-        {
-            // Creating KeyedRecordAdapter with column in descriptor that doesn't exist in source table
-            try {
-                KeyedRecordAdapter.makeRecordAdapterSimpleKey(
-                        source,
-                        JsonRecordAdapterUtil.createJsonRecordAdapterDescriptor(source, Arrays.asList("KeyCol1", "MissingCol123ABC")),
-                        "KeyCol1",
-                        Integer.class
-                );
-                fail("should have thrown an exception");
-            } catch (NoSuchColumnException ex) {
-                assertTrue(ex.getMessage().contains("MissingCol123ABC"));
-            }
-        }
 
     }
 

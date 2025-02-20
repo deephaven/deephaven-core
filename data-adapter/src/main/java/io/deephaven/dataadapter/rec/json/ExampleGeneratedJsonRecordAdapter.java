@@ -4,15 +4,19 @@
 package io.deephaven.dataadapter.rec.json;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.deephaven.dataadapter.datafetch.bulk.TableDataArrayRetriever;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.dataadapter.rec.desc.RecordAdapterDescriptor;
+
+import java.util.ArrayList;
 
 public class ExampleGeneratedJsonRecordAdapter extends BaseJsonRecordAdapter {
 
     public ExampleGeneratedJsonRecordAdapter(Table sourceTable, RecordAdapterDescriptor<ObjectNode> descriptor) {
         super(
-                sourceTable,
                 descriptor,
+                TableDataArrayRetriever.makeDefault(descriptor.getColumnNames(), sourceTable),
                 "ByteCol",
                 "LongCol",
                 "StrCol",

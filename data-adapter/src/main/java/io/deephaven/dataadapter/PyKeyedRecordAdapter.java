@@ -7,6 +7,9 @@ import gnu.trove.list.TLongList;
 import gnu.trove.list.array.TLongArrayList;
 import gnu.trove.map.TLongIntMap;
 import io.deephaven.base.verify.Require;
+import io.deephaven.dataadapter.datafetch.bulk.DefaultMultiRowRecordAdapter;
+import io.deephaven.dataadapter.rec.MultiRowRecordAdapter;
+import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
 import io.deephaven.dataadapter.rec.desc.RecordAdapterDescriptor;
 import io.deephaven.dataadapter.rec.updaters.ObjRecordUpdater;
@@ -20,6 +23,7 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 /**
@@ -65,6 +69,16 @@ public class PyKeyedRecordAdapter<K> extends KeyedRecordAdapter<K, Object> {
             public Object getEmptyRecord() {
                 // dummy object just used to get a type while creating MultiRowRecordAdapter
                 return new Object();
+            }
+
+            @Override
+            public BiFunction<Table, RecordAdapterDescriptor<Object>, MultiRowRecordAdapter<Object>> getMultiRowAdapterSupplier() {
+                return DefaultMultiRowRecordAdapter::create;
+            }
+
+            @Override
+            public BiFunction<PartitionedTable, RecordAdapterDescriptor<Object>, MultiRowRecordAdapter<Object>> getMultiRowPartitionedTableAdapterSupplier() {
+                return DefaultMultiRowRecordAdapter::create;
             }
         }, keyColumns);
     }
@@ -119,7 +133,7 @@ public class PyKeyedRecordAdapter<K> extends KeyedRecordAdapter<K, Object> {
         final int nKeys = dataKeysList.size();
 
         // Convert data keys (object or List<?>) to map keys (object or tuple)
-        final List<Object> mapKeys = dataKeysListToMapKeys.apply(dataKeysList);
+        final List<Object> mapKeys = dataKeysListToLookupKeys.apply(dataKeysList);
 
         // create arrays to hold the result data
         final Object[] recordDataArrs = multiRowRecordAdapter.getTableDataArrayRetriever().createDataArrays(nKeys);

@@ -7,10 +7,14 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.AssertionFailure;
+import io.deephaven.dataadapter.datafetch.bulk.PartitionedTableDataArrayRetrieverImpl;
+import io.deephaven.dataadapter.datafetch.bulk.TableDataArrayRetriever;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryCompilerImpl;
 import io.deephaven.engine.context.QueryCompilerRequest;
 import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.table.PartitionedTable;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.util.codegen.CodeGenerator;
@@ -95,7 +99,10 @@ public class JsonRecordAdapterGenerator {
 
     private static String getImportStatements() {
         final Class<?>[] dhClasses = {
-                io.deephaven.engine.table.Table.class,
+                Table.class,
+                PartitionedTable.class,
+                TableDataArrayRetriever.class,
+                PartitionedTableDataArrayRetrieverImpl.class,
                 RecordAdapterDescriptor.class,
                 RowSequence.class,
                 ObjectNode.class,
@@ -113,16 +120,32 @@ public class JsonRecordAdapterGenerator {
                 "public $CLASSNAME$(Table sourceTable, RecordAdapterDescriptor<ObjectNode> descriptor)",
                 CodeGenerator.block(
                         "super(",
-                        "sourceTable,",
                         "descriptor,",
+                        "TableDataArrayRetriever.makeDefault(descriptor.getColumnNames(), sourceTable),",
                         CodeGenerator.repeated("columnName", "\"[[COL_NAME]]\"[[TRAILING_COMMA]]"),
-                        ");"));
+                        ");"),
+                "",
+                "public $CLASSNAME$(PartitionedTable sourceTable, RecordAdapterDescriptor<ObjectNode> descriptor)",
+                CodeGenerator.block(
+                        "super(",
+                        "descriptor,",
+                        "new PartitionedTableDataArrayRetrieverImpl(sourceTable, descriptor.getColumnNames()),",
+                        CodeGenerator.repeated("columnName2", "\"[[COL_NAME]]\"[[TRAILING_COMMA]]"),
+                        ");")
+                );
 
         for (int i = 0; i < colNames.length;) {
             String colName = colNames[i];
             final CodeGenerator listEntry = g.instantiateNewRepeated("columnName");
             listEntry.replace("COL_NAME", colName);
+            final boolean isEndOfList = ++i >= colNames.length;
+            listEntry.replace("TRAILING_COMMA", isEndOfList ? "" : ",");
+        }
 
+        for (int i = 0; i < colNames.length;) {
+            String colName = colNames[i];
+            final CodeGenerator listEntry = g.instantiateNewRepeated("columnName2");
+            listEntry.replace("COL_NAME", colName);
             final boolean isEndOfList = ++i >= colNames.length;
             listEntry.replace("TRAILING_COMMA", isEndOfList ? "" : ",");
         }

@@ -28,8 +28,9 @@ public interface MultiRowRecordAdapter<T> {
     TableDataArrayRetriever getTableDataArrayRetriever();
 
     /**
-     * Populates the {@code recordsArray} with records built from the data in the parallel {@code dataArrays}.
-     *
+     * Populates the {@code recordsArray} with records built from the data in the parallel {@code dataArrays}. (The
+     * elements of {@code dataArrays are typed arrays with the same length as {@code recordsArray}).
+     * <p>
      * @param recordsArray The array to populate with records
      * @param dataArrays The array of data to store in the records
      */
