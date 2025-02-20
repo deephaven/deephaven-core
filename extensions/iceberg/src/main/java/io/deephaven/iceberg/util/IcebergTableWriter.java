@@ -3,6 +3,8 @@
 //
 package io.deephaven.iceberg.util;
 
+import io.deephaven.api.ColumnName;
+import io.deephaven.api.SortColumn;
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.context.ExecutionContext;
@@ -11,6 +13,7 @@ import io.deephaven.engine.context.StandaloneQueryScope;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.SortedColumnsAttribute;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.parquet.table.CompletedParquetWrite;
 import io.deephaven.parquet.table.ParquetInstructions;
@@ -22,11 +25,16 @@ import org.apache.iceberg.DataFile;
 import org.apache.iceberg.DataFiles;
 import org.apache.iceberg.FileFormat;
 import org.apache.iceberg.HasTableOperations;
+import org.apache.iceberg.NullOrder;
 import org.apache.iceberg.PartitionData;
 import org.apache.iceberg.PartitionField;
 import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.Schema;
+import org.apache.iceberg.SortDirection;
+import org.apache.iceberg.SortField;
+import org.apache.iceberg.SortOrder;
 import org.apache.iceberg.TableMetadata;
+import org.apache.iceberg.TableOperations;
 import org.apache.iceberg.TableProperties;
 import org.apache.iceberg.Transaction;
 import org.apache.iceberg.encryption.EncryptedOutputFile;
@@ -70,7 +78,7 @@ public class IcebergTableWriter {
 
     /**
      * Store the partition spec of the Iceberg table at the time of creation of this writer instance and use it for all
-     * writes, so that even if the table spec, the writer will still work.
+     * writes, so that even if the table spec changes, the writer will still work.
      */
     private final PartitionSpec tableSpec;
 
@@ -93,6 +101,9 @@ public class IcebergTableWriter {
 
     /**
      * Mapping from Iceberg field IDs to Deephaven column names, populated inside the parquet file.
+     * <p>
+     * Use this map instead of the {@link TableWriterOptions#fieldIdToColumnName()} map after initialization to ensure
+     * that all columns in the table definition are accounted for.
      */
     private final Map<Integer, String> fieldIdToColumnName;
 
@@ -288,14 +299,104 @@ public class IcebergTableWriter {
         final List<CompletedParquetWrite> parquetFileInfo;
         // Start a new query scope to avoid polluting the existing query scope with new parameters added for
         // partitioning columns
+        List<SortOrder> sortOrders = new ArrayList<>();
         try (final SafeCloseable _ignore =
                 ExecutionContext.getContext().withQueryScope(new StandaloneQueryScope()).open()) {
             final Pair<List<PartitionData>, List<String[]>> ret = partitionDataFromPaths(tableSpec, partitionPaths);
             partitionData = ret.getFirst();
             final List<String[]> dhTableUpdateStrings = ret.getSecond();
-            parquetFileInfo = writeParquet(partitionData, dhTableUpdateStrings, writeInstructions);
+            parquetFileInfo = writeParquet(partitionData, dhTableUpdateStrings, writeInstructions, sortOrders);
         }
-        return dataFilesFromParquet(parquetFileInfo, partitionData);
+
+        if (sortOrders.isEmpty()) {
+            sortOrders = computeSortOrder(writeInstructions.tables());
+        }
+        return dataFilesFromParquet(parquetFileInfo, partitionData, sortOrders);
+    }
+
+    /**
+     * Iterate over all the tables being written and return a list of sort orders, one for each table. If none of the
+     * tables are sorted, return an empty list. Additionally, add the corresponding sort orders to the Iceberg table
+     * metadata.
+     */
+    private List<SortOrder> computeSortOrder(
+            @NotNull final List<Table> dhTables) {
+        final TableMetadata newMetadata;
+        final List<SortOrder> icebergSortOrders = new ArrayList<>();
+        if (table instanceof HasTableOperations) {
+            final TableOperations ops = ((HasTableOperations) table).operations();
+            final TableMetadata currentMetadata = ops.current();
+            final Schema schema = currentMetadata.schema();
+            final TableMetadata.Builder newMetadataBuilder = TableMetadata.buildFrom(currentMetadata);
+            final Collection<List<SortColumn>> dhSortColumns = new ArrayList<>(dhTables.size());
+            final Map<List<SortColumn>, SortOrder> sortOrders = new HashMap<>();
+            for (final Table dhTable : dhTables) {
+                final List<SortColumn> sortedColumns = SortedColumnsAttribute.getSortedColumns(dhTable);
+                dhSortColumns.add(sortedColumns);
+                if (sortedColumns.isEmpty()) {
+                    continue;
+                }
+
+                // TODO Handle column renames
+
+                // Note that the following sort order has sort ID set as the default (1). The real ID will get updated
+                // when we add the ID to the metadata.
+                final SortOrder sortOrder = sortOrders.computeIfAbsent(sortedColumns,
+                        key -> buildIcebergSortOrderForDhSortedColumn(schema, sortedColumns));
+                newMetadataBuilder.addSortOrder(sortOrder);
+            }
+            if (sortOrders.isEmpty()) {
+                return List.of();
+            }
+
+            newMetadata = newMetadataBuilder.build();
+            try {
+                ops.commit(currentMetadata, newMetadata);
+            } catch (final Exception e) {
+                // Failed to update the metadata, so assume no sort orders were added
+                return List.of();
+            }
+
+            // Now that the metadata has been updated, we can fetch the updated sort orders with IDs
+            final List<SortOrder> updatedSortOrders = newMetadata.sortOrders();
+            for (final Map.Entry<List<SortColumn>, SortOrder> entry : sortOrders.entrySet()) {
+                final SortOrder computed = entry.getValue();
+                for (final SortOrder updatedSortOrder : updatedSortOrders) {
+                    if (updatedSortOrder.sameOrder(computed)) {
+                        entry.setValue(updatedSortOrder);
+                    }
+                }
+            }
+
+            for (final List<SortColumn> sortedColumns : dhSortColumns) {
+                if (sortedColumns.isEmpty()) {
+                    icebergSortOrders.add(null);
+                }
+                if (!sortOrders.containsKey(sortedColumns)) {
+                    throw new IllegalStateException("Failed to add sort order for columns " + sortedColumns);
+                }
+                icebergSortOrders.add(sortOrders.get(sortedColumns));
+            }
+        }
+        return icebergSortOrders;
+    }
+
+    /**
+     * Build a {@link SortOrder} for the provided Deephaven sorted columns using the provided schema.
+     */
+    private static SortOrder buildIcebergSortOrderForDhSortedColumn(
+            @NotNull final Schema schema,
+            @NotNull final List<SortColumn> sortedColumns) {
+        final SortOrder.Builder sortOrderBuilder = SortOrder.builderFor(schema);
+        for (final SortColumn sortColumn : sortedColumns) {
+            final String columnName = sortColumn.column().name();
+            if (sortColumn.order() == SortColumn.Order.ASCENDING) {
+                sortOrderBuilder.asc(columnName, NullOrder.NULLS_FIRST);
+            } else {
+                sortOrderBuilder.desc(columnName, NullOrder.NULLS_LAST);
+            }
+        }
+        return sortOrderBuilder.build();
     }
 
     /**
@@ -438,11 +539,24 @@ public class IcebergTableWriter {
         return stringBuilder.toString();
     }
 
+    /**
+     * Write the provided Deephaven tables to parquet files and return a list of {@link CompletedParquetWrite} objects
+     * for each table written.
+     *
+     * @param partitionDataList The list of {@link PartitionData} objects for each table, empty if the table is not
+     *        partitioned.
+     * @param dhTableUpdateStrings The list of update strings to be applied using {@link Table#updateView}, empty if the
+     *        table is not partitioned.
+     * @param writeInstructions The instructions for customizations while writing.
+     * @param sortOrders The list of sort orders for each table, to be populated by this method if the tables being
+     *        written are sorted by this method.
+     */
     @NotNull
     private List<CompletedParquetWrite> writeParquet(
             @NotNull final List<PartitionData> partitionDataList,
             @NotNull final List<String[]> dhTableUpdateStrings,
-            @NotNull final IcebergWriteInstructions writeInstructions) {
+            @NotNull final IcebergWriteInstructions writeInstructions,
+            @NotNull final List<SortOrder> sortOrders) {
         final List<Table> dhTables = writeInstructions.tables();
         final boolean isPartitioned = tableSpec.isPartitioned();
         if (isPartitioned) {
@@ -461,6 +575,15 @@ public class IcebergTableWriter {
         final ParquetInstructions parquetInstructions = tableWriterOptions.toParquetInstructions(
                 onWriteCompleted, tableDefinition, fieldIdToColumnName);
 
+        final Collection<SortColumn> sortColumnNames;
+        if (writeInstructions.applySortOrder()) {
+            sortColumnNames = new ArrayList<>(getSortColumnNames());
+        } else {
+            sortColumnNames = List.of();
+        }
+
+        final SortOrder sortOrder = table.sortOrder();
+
         // Write the data to parquet files
         for (int idx = 0; idx < dhTables.size(); idx++) {
             Table dhTable = dhTables.get(idx);
@@ -475,10 +598,52 @@ public class IcebergTableWriter {
             } else {
                 newDataLocation = getDataLocation();
             }
+
+            if (!sortColumnNames.isEmpty()) {
+                try {
+                    dhTable = dhTable.sort(sortColumnNames);
+                } catch (final RuntimeException e) {
+                    throw new IllegalArgumentException("Failed to sort table " + dhTable + " by columns " +
+                            sortColumnNames + ", retry after disabling applying sort order in write instructions", e);
+                }
+                sortOrders.add(sortOrder);
+            }
+
             // TODO (deephaven-core#6343): Set writeDefault() values for required columns that not present in the table
             ParquetTools.writeTable(dhTable, newDataLocation, parquetInstructions);
         }
         return parquetFilesWritten;
+    }
+
+    private List<SortColumn> getSortColumnNames() {
+        final SortOrder sortOrder = table.sortOrder();
+        if (sortOrder.isUnsorted()) {
+            return List.of();
+        }
+        final List<SortField> sortFields = sortOrder.fields();
+        final List<SortColumn> sortColumns = new ArrayList<>(sortFields.size());
+        for (final SortField sortField : sortOrder.fields()) {
+            final boolean ascending;
+            if (sortField.nullOrder() == NullOrder.NULLS_FIRST && sortField.direction() == SortDirection.ASC) {
+                ascending = true;
+            } else if (sortField.nullOrder() == NullOrder.NULLS_LAST && sortField.direction() == SortDirection.DESC) {
+                ascending = false;
+            } else {
+                // Cannot enforce this order using deephaven
+                // TODO Verify this assumption with Devin
+                return List.of();
+            }
+            final int fieldId = sortField.sourceId();
+            final String columnName = fieldIdToColumnName.get(fieldId);
+            if (columnName == null) {
+                // Could not find the column name in current schema, so we cannot sort by it
+                return List.of();
+            }
+            final SortColumn sortColumn =
+                    ascending ? SortColumn.asc(ColumnName.of(columnName)) : SortColumn.desc(ColumnName.of(columnName));
+            sortColumns.add(sortColumn);
+        }
+        return sortColumns;
     }
 
     /**
@@ -500,8 +665,7 @@ public class IcebergTableWriter {
     /**
      * Commit the changes to the Iceberg table by creating a snapshot.
      */
-    private void commit(
-            @NotNull final Iterable<DataFile> dataFiles) {
+    private void commit(@NotNull final Iterable<DataFile> dataFiles) {
         final Transaction icebergTransaction = table.newTransaction();
 
         // Append the new data files to the table
@@ -518,7 +682,8 @@ public class IcebergTableWriter {
      */
     private List<DataFile> dataFilesFromParquet(
             @NotNull final List<CompletedParquetWrite> parquetFilesWritten,
-            @NotNull final List<PartitionData> partitionDataList) {
+            @NotNull final List<PartitionData> partitionDataList,
+            @NotNull final List<SortOrder> sortOrders) {
         final int numFiles = parquetFilesWritten.size();
         final List<DataFile> dataFiles = new ArrayList<>(numFiles);
         final PartitionSpec partitionSpec = tableSpec;
@@ -531,6 +696,9 @@ public class IcebergTableWriter {
                     .withFileSizeInBytes(completedWrite.numBytes());
             if (partitionSpec.isPartitioned()) {
                 dataFileBuilder.withPartition(partitionDataList.get(idx));
+            }
+            if (!sortOrders.isEmpty() && sortOrders.get(idx) != null) {
+                dataFileBuilder.withSortOrder(sortOrders.get(idx));
             }
             dataFiles.add(dataFileBuilder.build());
         }

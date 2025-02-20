@@ -3,14 +3,12 @@
 //
 package io.deephaven.iceberg.layout;
 
-import io.deephaven.base.FileUtils;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder;
 import io.deephaven.iceberg.base.IcebergUtils;
 import io.deephaven.iceberg.location.IcebergTableLocationKey;
 import io.deephaven.iceberg.location.IcebergTableParquetLocationKey;
-import io.deephaven.iceberg.relative.RelativeFileIO;
 import io.deephaven.iceberg.util.IcebergReadInstructions;
 import io.deephaven.iceberg.util.IcebergTableAdapter;
 import io.deephaven.parquet.table.ParquetInstructions;
@@ -20,19 +18,19 @@ import io.deephaven.util.channel.SeekableChannelsProviderLoader;
 import org.apache.iceberg.*;
 import org.apache.iceberg.catalog.Catalog;
 import org.apache.iceberg.catalog.TableIdentifier;
-import org.apache.iceberg.io.FileIO;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import static io.deephaven.iceberg.base.IcebergUtils.allManifestFiles;
+import static io.deephaven.iceberg.base.IcebergUtils.dataFileUri;
+import static io.deephaven.iceberg.base.IcebergUtils.locationUri;
 
 public abstract class IcebergBaseLayout implements TableLocationKeyFinder<IcebergTableLocationKey> {
     /**
@@ -162,18 +160,6 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
     }
 
     abstract IcebergTableLocationKey keyFromDataFile(ManifestFile manifestFile, DataFile dataFile, URI fileUri);
-
-    private static String path(String path, FileIO io) {
-        return io instanceof RelativeFileIO ? ((RelativeFileIO) io).absoluteLocation(path) : path;
-    }
-
-    private static URI locationUri(Table table) {
-        return FileUtils.convertToURI(path(table.location(), table.io()), true);
-    }
-
-    private static URI dataFileUri(Table table, DataFile dataFile) {
-        return FileUtils.convertToURI(path(dataFile.path().toString(), table.io()), false);
-    }
 
     @Override
     public synchronized void findKeys(@NotNull final Consumer<IcebergTableLocationKey> locationKeyObserver) {
