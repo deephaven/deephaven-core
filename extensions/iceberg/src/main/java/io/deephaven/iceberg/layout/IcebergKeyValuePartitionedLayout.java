@@ -10,6 +10,7 @@ import io.deephaven.iceberg.location.IcebergTableLocationKey;
 import io.deephaven.iceberg.util.IcebergReadInstructions;
 import io.deephaven.iceberg.util.IcebergTableAdapter;
 import io.deephaven.iceberg.internal.DataInstructionsProviderLoader;
+import io.deephaven.util.channel.SeekableChannelsProvider;
 import io.deephaven.util.type.TypeUtils;
 import org.apache.iceberg.*;
 import org.apache.iceberg.data.IdentityPartitionConverters;
@@ -82,7 +83,8 @@ public final class IcebergKeyValuePartitionedLayout extends IcebergBaseLayout {
     IcebergTableLocationKey keyFromDataFile(
             @NotNull final ManifestFile manifestFile,
             @NotNull final DataFile dataFile,
-            @NotNull final URI fileUri) {
+            @NotNull final URI fileUri,
+            @NotNull final SeekableChannelsProvider channelsProvider) {
         final Map<String, Comparable<?>> partitions = new LinkedHashMap<>();
 
         final PartitionData partitionData = (PartitionData) dataFile.partition();
@@ -103,6 +105,6 @@ public final class IcebergKeyValuePartitionedLayout extends IcebergBaseLayout {
             }
             partitions.put(colName, (Comparable<?>) colValue);
         }
-        return locationKey(manifestFile, dataFile, fileUri, partitions);
+        return locationKey(manifestFile, dataFile, fileUri, partitions, channelsProvider);
     }
 }
