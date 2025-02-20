@@ -759,7 +759,7 @@ public class JettyBarrageChunkFactoryTest {
     }
 
     @Test
-    public void testUint64() throws Exception {
+    public void testBint64() throws Exception {
         class Test extends IntRoundTripTest<UInt8Vector> {
             Test(Class<?> dhType) {
                 this(dhType, null, 0);
@@ -816,13 +816,20 @@ public class JettyBarrageChunkFactoryTest {
     @Test
     public void testDecimal128() throws Exception {
         // 128-bit tests
-        new DecimalRoundTripTest(BigDecimal.class, 1, 0).isDefault().runTest();
-        new DecimalRoundTripTest(BigDecimal.class, 19, 0).runTest();
-        new DecimalRoundTripTest(BigDecimal.class, 19, 9).runTest();
-        new DecimalRoundTripTest(BigDecimal.class, 38, 0).runTest();
-        new DecimalRoundTripTest(BigDecimal.class, 38, 19).runTest();
-        new DecimalRoundTripTest(BigDecimal.class, 38, 37).runTest();
-        new DecimalRoundTripTest(BigInteger.class, 38, 0).runTest();
+        for (int scale : new int[] {0, 9, 18, 27, 36}) {
+            if (scale < 1) {
+                new DecimalRoundTripTest(BigDecimal.class, 1, scale).isDefault().runTest();
+                new DecimalRoundTripTest(BigInteger.class, 1, scale).runTest();
+            }
+            if (scale < 19) {
+                new DecimalRoundTripTest(BigDecimal.class, 19, scale).runTest();
+                new DecimalRoundTripTest(BigInteger.class, 19, scale).skipMapKey().runTest();
+            }
+            if (scale < 38) {
+                new DecimalRoundTripTest(BigDecimal.class, 38, scale).runTest();
+                new DecimalRoundTripTest(BigInteger.class, 38, scale).skipMapKey().runTest();
+            }
+        }
 
         // test dh coercion
         new DecimalRoundTripTest(byte.class).runTest();
@@ -840,13 +847,20 @@ public class JettyBarrageChunkFactoryTest {
     @Test
     public void testDecimal256() throws Exception {
         // 256-bit tests
-        new Decimal256RoundTripTest(BigDecimal.class, 1, 0).isDefault().runTest();
-        new Decimal256RoundTripTest(BigDecimal.class, 38, 0).runTest();
-        new Decimal256RoundTripTest(BigDecimal.class, 38, 19).runTest();
-        new Decimal256RoundTripTest(BigDecimal.class, 76, 0).runTest();
-        new Decimal256RoundTripTest(BigDecimal.class, 76, 38).runTest();
-        new Decimal256RoundTripTest(BigDecimal.class, 76, 75).runTest();
-        new Decimal256RoundTripTest(BigInteger.class, 76, 0).runTest();
+        for (int scale : new int[] {0, 19, 38, 75}) {
+            if (scale < 1) {
+                new Decimal256RoundTripTest(BigDecimal.class, 1, scale).isDefault().runTest();
+                new Decimal256RoundTripTest(BigInteger.class, 1, scale).runTest();
+            }
+            if (scale < 38) {
+                new Decimal256RoundTripTest(BigDecimal.class, 38, scale).runTest();
+                new Decimal256RoundTripTest(BigInteger.class, 38, scale).skipMapKey().runTest();
+            }
+            if (scale < 76) {
+                new Decimal256RoundTripTest(BigDecimal.class, 76, scale).runTest();
+                new Decimal256RoundTripTest(BigInteger.class, 76, scale).skipMapKey().runTest();
+            }
+        }
 
         // test dh coercion
         new Decimal256RoundTripTest(byte.class).runTest();
@@ -2624,6 +2638,10 @@ public class JettyBarrageChunkFactoryTest {
             for (int ii = 0; ii < source.getValueCount(); ++ii) {
                 if (source.isNull(ii)) {
                     assertTrue(dest.isNull(ii));
+                } else if (dhType == BigInteger.class) {
+                    final BigInteger srcVal = source.getObject(ii).toBigInteger();
+                    final BigInteger dstVal = dest.getObject(ii).toBigInteger();
+                    assertEquals(srcVal, dstVal);
                 } else {
                     assertEquals(source.getObject(ii), dest.getObject(ii));
                 }
@@ -2688,6 +2706,10 @@ public class JettyBarrageChunkFactoryTest {
             for (int ii = 0; ii < source.getValueCount(); ++ii) {
                 if (source.isNull(ii)) {
                     assertTrue(dest.isNull(ii));
+                } else if (dhType == BigInteger.class) {
+                    final BigInteger srcVal = source.getObject(ii).toBigInteger();
+                    final BigInteger dstVal = dest.getObject(ii).toBigInteger();
+                    assertEquals(srcVal, dstVal);
                 } else {
                     assertEquals(source.getObject(ii), dest.getObject(ii));
                 }

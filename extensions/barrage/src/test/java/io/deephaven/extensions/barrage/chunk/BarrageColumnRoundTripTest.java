@@ -41,21 +41,25 @@ import io.deephaven.vector.LongVector;
 import io.deephaven.vector.LongVectorDirect;
 import org.apache.arrow.flatbuf.Field;
 import org.apache.arrow.flatbuf.Schema;
+import org.apache.arrow.vector.types.pojo.ArrowType;
+import org.apache.arrow.vector.types.pojo.FieldType;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.ByteArrayInputStream;
 import java.io.DataInput;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.PrimitiveIterator;
 import java.util.Random;
 import java.util.function.Consumer;
@@ -63,6 +67,12 @@ import java.util.function.IntFunction;
 import java.util.stream.LongStream;
 
 public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
+
+    private static final String DH_TYPE_TAG = BarrageUtil.ATTR_DH_PREFIX + BarrageUtil.ATTR_TYPE_TAG;
+    private static final String DH_COMPONENT_TYPE_TAG =
+            BarrageUtil.ATTR_DH_PREFIX + BarrageUtil.ATTR_COMPONENT_TYPE_TAG;
+    private static final int FIXED_LIST_LEN = 4;
+    private static final int MAX_LIST_LEN = 10;
 
     private static final BarrageSubscriptionOptions OPT_DEFAULT_DH_NULLS =
             BarrageSubscriptionOptions.builder()
@@ -95,14 +105,14 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
     public void testMapChunkSerialization() throws IOException {
         final Random random = new Random(0);
         for (final BarrageSubscriptionOptions opts : OPTIONS) {
-            testRoundTripSerialization(opts, Map.class, (utO) -> {
+            testRoundTripSerialization(SpecialMode.MAP, opts, Map.class, (utO) -> {
                 final WritableObjectChunk<Map<String, String>, Values> chunk = utO.asWritableObjectChunk();
                 for (int i = 0; i < chunk.size(); ++i) {
                     if (i % 7 == 0) {
                         chunk.set(i, null);
                     } else {
                         final Map<String, String> map = new LinkedHashMap<>();
-                        final int entryCount = random.nextInt(10) + 1;
+                        final int entryCount = random.nextInt(MAX_LIST_LEN) + 1;
                         for (int j = 0; j < entryCount; j++) {
                             map.put("key" + j, "value" + random.nextInt(1000));
                         }
@@ -114,24 +124,182 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
                 final WritableObjectChunk<Map<String, String>, Values> computed = utC.asWritableObjectChunk();
                 if (subset == null) {
                     for (int i = 0; i < original.size(); i++) {
-                        Assert.equals(original.get(i), "original.get(i)",
-                                computed.get(offset + i), "computed.get(i)");
+                        final Map<String, String> orig = original.get(i);
+                        final Map<String, String> comp = computed.get(offset + i);
+                        assertMapEquals(orig, comp, "map compare");
                     }
                 } else {
                     final MutableInt off = new MutableInt();
-                    subset.forAllRowKeys(key -> Assert.equals(
-                            original.get((int) key), "original.get(key)",
-                            computed.get(offset + off.getAndIncrement()),
-                            "computed.get(offset + off.getAndIncrement())"));
+                    subset.forAllRowKeys(key -> {
+                        final Map<String, String> orig = original.get((int) key);
+                        final Map<String, String> comp = computed.get(offset + off.getAndIncrement());
+                        assertMapEquals(orig, comp, "map compare");
+                    });
                 }
             });
+        }
+    }
+
+    /**
+     * Compares two maps for equality.
+     * <p>
+     * If both maps are {@code null}, they are considered equal. If one is {@code null} and the other is not, the
+     * assertion will fail. Otherwise, the method checks that both maps have the same size and that each key/value pair
+     * matches.
+     *
+     * @param expected the expected map
+     * @param actual the actual map
+     * @param context a description of the current comparison context for error reporting
+     */
+    private void assertMapEquals(Map<String, String> expected, Map<String, String> actual, String context) {
+        if (expected == null && actual == null) {
+            return;
+        }
+        if (expected == null || actual == null) {
+            Assert.statementNeverExecuted(
+                    context + ": One of the maps is null - expected: " + expected + ", actual: " + actual);
+        }
+        if (expected.size() != actual.size()) {
+            Assert.statementNeverExecuted(
+                    context + ": Map sizes differ - expected: " + expected.size() + ", actual: " + actual.size());
+        }
+        for (String key : expected.keySet()) {
+            if (!actual.containsKey(key)) {
+                Assert.statementNeverExecuted(
+                        context + ": Missing key '" + key + "' in actual map. Expected map: " + expected);
+            }
+            final String expectedValue = expected.get(key);
+            final String actualValue = actual.get(key);
+            if (!Objects.equals(expectedValue, actualValue)) {
+                Assert.statementNeverExecuted(context + ": Value mismatch for key '" + key + "' - expected: "
+                        + expectedValue + ", actual: " + actualValue);
+            }
+        }
+    }
+
+    public void testVarLenListChunkSerialization() throws IOException {
+        final Random random = new Random(0);
+        for (final BarrageSubscriptionOptions opts : OPTIONS) {
+            testRoundTripSerialization(SpecialMode.VAR_LEN_LIST, opts, String[].class, (utO) -> {
+                final WritableObjectChunk<String[], Values> chunk = utO.asWritableObjectChunk();
+                for (int i = 0; i < chunk.size(); ++i) {
+                    if (i % 7 == 0) {
+                        chunk.set(i, null);
+                    } else {
+                        final int rowLen = random.nextInt(MAX_LIST_LEN) + 1;
+                        final String[] list = new String[rowLen];
+                        for (int j = 0; j < rowLen; j++) {
+                            list[j] = "value" + random.nextInt(1000);
+                        }
+                        chunk.set(i, list);
+                    }
+                }
+            }, (utO, utC, subset, offset) -> {
+                final WritableObjectChunk<String[], Values> original = utO.asWritableObjectChunk();
+                final WritableObjectChunk<String[], Values> computed = utC.asWritableObjectChunk();
+                if (subset == null) {
+                    for (int i = 0; i < original.size(); i++) {
+                        final String[] orig = original.get(i);
+                        final String[] comp = computed.get(offset + i);
+                        assertListEquals(orig, comp, "list compare at index " + i);
+                    }
+                } else {
+                    final MutableInt off = new MutableInt();
+                    subset.forAllRowKeys(key -> {
+                        final String[] orig = original.get((int) key);
+                        final String[] comp = computed.get(offset + off.getAndIncrement());
+                        assertListEquals(orig, comp, "list compare for row key " + key);
+                    });
+                }
+            });
+        }
+    }
+
+    public void testFixedLenListChunkSerialization() throws IOException {
+        final Random random = new Random(0);
+        for (final BarrageSubscriptionOptions opts : OPTIONS) {
+            testRoundTripSerialization(SpecialMode.FIXED_LEN_LIST, opts, String[].class, (utO) -> {
+                final WritableObjectChunk<String[], Values> chunk = utO.asWritableObjectChunk();
+                for (int i = 0; i < chunk.size(); ++i) {
+                    if (i % 7 == 0) {
+                        chunk.set(i, null);
+                    } else {
+                        final int rowLen = random.nextInt(MAX_LIST_LEN) + 1;
+                        final String[] list = new String[rowLen];
+                        for (int j = 0; j < rowLen; j++) {
+                            list[j] = "value" + random.nextInt(1000);
+                        }
+                        chunk.set(i, list);
+                    }
+                }
+            }, (utO, utC, subset, offset) -> {
+                final WritableObjectChunk<String[], Values> original = utO.asWritableObjectChunk();
+                final WritableObjectChunk<String[], Values> computed = utC.asWritableObjectChunk();
+                if (subset == null) {
+                    for (int i = 0; i < original.size(); i++) {
+                        final String[] orig = original.get(i);
+                        final String[] comp = computed.get(offset + i);
+                        assertListEquals(FIXED_LIST_LEN, orig, comp, "list compare at index " + i);
+                    }
+                } else {
+                    final MutableInt off = new MutableInt();
+                    subset.forAllRowKeys(key -> {
+                        final String[] orig = original.get((int) key);
+                        final String[] comp = computed.get(offset + off.getAndIncrement());
+                        assertListEquals(FIXED_LIST_LEN, orig, comp, "list compare for row key " + key);
+                    });
+                }
+            });
+        }
+    }
+
+    /**
+     * Compares two lists of strings for equality.
+     *
+     * @param expected the expected list
+     * @param actual the actual list
+     * @param context a description of the current comparison context for error reporting
+     */
+    private static void assertListEquals(String[] expected, String[] actual, String context) {
+        assertListEquals(expected == null ? -1 : expected.length, expected, actual, context);
+    }
+
+    /**
+     * Compares two lists of strings for equality.
+     *
+     * @param expected the expected list
+     * @param actual the actual list
+     * @param context a description of the current comparison context for error reporting
+     */
+    private static void assertListEquals(int length, String[] expected, String[] actual, String context) {
+        if (expected == null && actual == null) {
+            return;
+        }
+        if (expected == null || actual == null) {
+            Assert.statementNeverExecuted(
+                    context + ": One of the lists is null - expected: " + expected + ", actual: " + actual);
+        }
+        if (length != actual.length) {
+            Assert.statementNeverExecuted(
+                    context + ": List sizes differ - expected: " + length + ", actual: " + actual.length);
+        }
+        for (int ii = 0; ii < Math.min(length, expected.length); ii++) {
+            final String expectedStr = expected[ii];
+            final String actualStr = actual[ii];
+            if (!Objects.equals(expectedStr, actualStr)) {
+                Assert.statementNeverExecuted(context + ": Mismatch at index " + ii + " - expected: " + expectedStr
+                        + ", actual: " + actualStr);
+            }
+        }
+        for (int ii = expected.length; ii < length; ++ii) {
+            Assert.eqNull(actual[ii], "actual[i]");
         }
     }
 
     public void testCharChunkSerialization() throws IOException {
         final Random random = new Random(0);
         for (final BarrageSubscriptionOptions opts : OPTIONS) {
-            testRoundTripSerialization(opts, char.class, (utO) -> {
+            testRoundTripSerialization(SpecialMode.NONE, opts, char.class, (utO) -> {
                 final WritableCharChunk<Values> chunk = utO.asWritableCharChunk();
                 for (int i = 0; i < chunk.size(); ++i) {
                     chunk.set(i, i % 7 == 0 ? QueryConstants.NULL_CHAR : (char) random.nextInt());
@@ -157,7 +325,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
     public void testBooleanChunkSerialization() throws IOException {
         final Random random = new Random(0);
         for (final BarrageSubscriptionOptions opts : OPTIONS) {
-            testRoundTripSerialization(opts, boolean.class, (utO) -> {
+            testRoundTripSerialization(SpecialMode.NONE, opts, boolean.class, (utO) -> {
                 final WritableByteChunk<Values> chunk = utO.asWritableByteChunk();
                 for (int i = 0; i < chunk.size(); ++i) {
                     chunk.set(i, BooleanUtils.booleanAsByte(i % 7 == 0 ? null : random.nextBoolean()));
@@ -182,7 +350,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
 
     public void testBooleanChunkSerializationNonStandardNulls() throws IOException {
         for (final BarrageSubscriptionOptions opts : OPTIONS) {
-            testRoundTripSerialization(opts, boolean.class, (utO) -> {
+            testRoundTripSerialization(SpecialMode.NONE, opts, boolean.class, (utO) -> {
                 final WritableByteChunk<Values> chunk = utO.asWritableByteChunk();
                 for (int i = 0; i < chunk.size(); ++i) {
                     chunk.set(i, (byte) i);
@@ -212,7 +380,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
     public void testByteChunkSerialization() throws IOException {
         final Random random = new Random(0);
         for (final BarrageSubscriptionOptions opts : OPTIONS) {
-            testRoundTripSerialization(opts, byte.class, (utO) -> {
+            testRoundTripSerialization(SpecialMode.NONE, opts, byte.class, (utO) -> {
                 final WritableByteChunk<Values> chunk = utO.asWritableByteChunk();
                 for (int i = 0; i < chunk.size(); ++i) {
                     chunk.set(i, i % 7 == 0 ? QueryConstants.NULL_BYTE : (byte) random.nextInt());
@@ -238,7 +406,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
     public void testShortChunkSerialization() throws IOException {
         final Random random = new Random(0);
         for (final BarrageSubscriptionOptions opts : OPTIONS) {
-            testRoundTripSerialization(opts, short.class, (utO) -> {
+            testRoundTripSerialization(SpecialMode.NONE, opts, short.class, (utO) -> {
                 final WritableShortChunk<Values> chunk = utO.asWritableShortChunk();
                 for (int i = 0; i < chunk.size(); ++i) {
                     chunk.set(i, i % 7 == 0 ? QueryConstants.NULL_SHORT : (short) random.nextInt());
@@ -264,7 +432,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
     public void testIntChunkSerialization() throws IOException {
         final Random random = new Random(0);
         for (final BarrageSubscriptionOptions opts : OPTIONS) {
-            testRoundTripSerialization(opts, int.class, (utO) -> {
+            testRoundTripSerialization(SpecialMode.NONE, opts, int.class, (utO) -> {
                 final WritableIntChunk<Values> chunk = utO.asWritableIntChunk();
                 for (int i = 0; i < chunk.size(); ++i) {
                     chunk.set(i, i % 7 == 0 ? QueryConstants.NULL_INT : random.nextInt());
@@ -290,7 +458,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
     public void testLongChunkSerialization() throws IOException {
         final Random random = new Random(0);
         for (final BarrageSubscriptionOptions opts : OPTIONS) {
-            testRoundTripSerialization(opts, long.class, (utO) -> {
+            testRoundTripSerialization(SpecialMode.NONE, opts, long.class, (utO) -> {
                 final WritableLongChunk<Values> chunk = utO.asWritableLongChunk();
                 for (int i = 0; i < chunk.size(); ++i) {
                     chunk.set(i, i % 7 == 0 ? QueryConstants.NULL_LONG : random.nextLong());
@@ -319,7 +487,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
     public void testFloatChunkSerialization() throws IOException {
         final Random random = new Random(0);
         for (final BarrageSubscriptionOptions opts : OPTIONS) {
-            testRoundTripSerialization(opts, float.class, (utO) -> {
+            testRoundTripSerialization(SpecialMode.NONE, opts, float.class, (utO) -> {
                 final WritableFloatChunk<Values> chunk = utO.asWritableFloatChunk();
                 for (int i = 0; i < chunk.size(); ++i) {
                     chunk.set(i, i % 7 == 0 ? QueryConstants.NULL_FLOAT : random.nextFloat());
@@ -345,7 +513,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
     public void testDoubleChunkSerialization() throws IOException {
         final Random random = new Random(0);
         for (final BarrageSubscriptionOptions opts : OPTIONS) {
-            testRoundTripSerialization(opts, double.class, (utO) -> {
+            testRoundTripSerialization(SpecialMode.NONE, opts, double.class, (utO) -> {
                 final WritableDoubleChunk<Values> chunk = utO.asWritableDoubleChunk();
                 for (int i = 0; i < chunk.size(); ++i) {
                     chunk.set(i, i % 7 == 0 ? QueryConstants.NULL_DOUBLE : random.nextDouble());
@@ -371,7 +539,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
     public void testInstantChunkSerialization() throws IOException {
         final Random random = new Random(0);
         for (final BarrageSubscriptionOptions opts : OPTIONS) {
-            testRoundTripSerialization(opts, Instant.class, (utO) -> {
+            testRoundTripSerialization(SpecialMode.NONE, opts, Instant.class, (utO) -> {
                 final WritableLongChunk<Values> chunk = utO.asWritableLongChunk();
                 for (int i = 0; i < chunk.size(); ++i) {
                     chunk.set(i, i % 7 == 0 ? QueryConstants.NULL_LONG : random.nextLong());
@@ -381,62 +549,69 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
     }
 
     public void testObjectSerialization() throws IOException {
-        testRoundTripSerialization(OPT_DEFAULT, Object.class, initObjectChunk(Integer::toString),
+        testRoundTripSerialization(SpecialMode.NONE, OPT_DEFAULT, Object.class, initObjectChunk(Integer::toString),
                 new ObjectIdentityValidator<>());
     }
 
     public void testStringSerializationDHNulls() throws IOException {
-        testRoundTripSerialization(OPT_DEFAULT_DH_NULLS, String.class, initObjectChunk(Integer::toString),
+        testRoundTripSerialization(SpecialMode.NONE, OPT_DEFAULT_DH_NULLS, String.class,
+                initObjectChunk(Integer::toString),
                 new ObjectIdentityValidator<>());
     }
 
     public void testStringSerialization() throws IOException {
-        testRoundTripSerialization(OPT_DEFAULT, Object.class, initObjectChunk(Integer::toString),
+        testRoundTripSerialization(SpecialMode.NONE, OPT_DEFAULT, Object.class, initObjectChunk(Integer::toString),
                 new ObjectIdentityValidator<>());
     }
 
     public void testUniqueToStringSerializationDHNulls() throws IOException {
-        testRoundTripSerialization(OPT_DEFAULT_DH_NULLS, Object.class, initObjectChunk(Unique::new),
+        testRoundTripSerialization(SpecialMode.NONE, OPT_DEFAULT_DH_NULLS, Object.class, initObjectChunk(Unique::new),
                 new ObjectToStringValidator<>());
     }
 
     public void testUniqueToStringSerialization() throws IOException {
-        testRoundTripSerialization(OPT_DEFAULT, Object.class, initObjectChunk(Unique::new),
+        testRoundTripSerialization(SpecialMode.NONE, OPT_DEFAULT, Object.class, initObjectChunk(Unique::new),
                 new ObjectToStringValidator<>());
     }
 
     public void testStringArrayDHNullsSerialization() throws IOException {
-        testRoundTripSerialization(OPT_DEFAULT_DH_NULLS, String[].class,
+        testRoundTripSerialization(SpecialMode.NONE, OPT_DEFAULT_DH_NULLS, String[].class,
                 BarrageColumnRoundTripTest::initStringArrayChunk, new ObjectIdentityValidator<>());
     }
 
     public void testStringArraySerialization() throws IOException {
-        testRoundTripSerialization(OPT_DEFAULT, String[].class, BarrageColumnRoundTripTest::initStringArrayChunk,
+        testRoundTripSerialization(SpecialMode.NONE, OPT_DEFAULT, String[].class,
+                BarrageColumnRoundTripTest::initStringArrayChunk,
                 new ObjectIdentityValidator<>());
     }
 
     public void testLongArraySerializationDHNulls() throws IOException {
-        testRoundTripSerialization(OPT_DEFAULT_DH_NULLS, long[].class, BarrageColumnRoundTripTest::initLongArrayChunk,
+        testRoundTripSerialization(SpecialMode.NONE, OPT_DEFAULT_DH_NULLS, long[].class,
+                BarrageColumnRoundTripTest::initLongArrayChunk,
                 new LongArrayIdentityValidator());
     }
 
     public void testLongArraySerialization() throws IOException {
-        testRoundTripSerialization(OPT_DEFAULT, long[].class, BarrageColumnRoundTripTest::initLongArrayChunk,
+        testRoundTripSerialization(SpecialMode.NONE, OPT_DEFAULT, long[].class,
+                BarrageColumnRoundTripTest::initLongArrayChunk,
                 new LongArrayIdentityValidator());
     }
 
     public void testLongVectorSerialization() throws IOException {
-        testRoundTripSerialization(OPT_DEFAULT, LongVector.class, BarrageColumnRoundTripTest::initLongVectorChunk,
+        testRoundTripSerialization(SpecialMode.NONE, OPT_DEFAULT, LongVector.class,
+                BarrageColumnRoundTripTest::initLongVectorChunk,
                 new LongVectorIdentityValidator());
     }
 
     public void testLocalDateVectorSerialization() throws IOException {
-        testRoundTripSerialization(OPT_DEFAULT, LocalDate.class, BarrageColumnRoundTripTest::initLocalDateVectorChunk,
+        testRoundTripSerialization(SpecialMode.NONE, OPT_DEFAULT, LocalDate.class,
+                BarrageColumnRoundTripTest::initLocalDateVectorChunk,
                 new LocalDateVectorIdentityValidator());
     }
 
     public void testLocalTimeVectorSerialization() throws IOException {
-        testRoundTripSerialization(OPT_DEFAULT, LocalTime.class, BarrageColumnRoundTripTest::initLocalTimeVectorChunk,
+        testRoundTripSerialization(SpecialMode.NONE, OPT_DEFAULT, LocalTime.class,
+                BarrageColumnRoundTripTest::initLocalTimeVectorChunk,
                 new LocalTimeVectorIdentityValidator());
     }
 
@@ -730,7 +905,12 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
         }
     }
 
+    private enum SpecialMode {
+        NONE, MAP, VAR_LEN_LIST, FIXED_LEN_LIST,
+    }
+
     private static <T> void testRoundTripSerialization(
+            final SpecialMode mode,
             final BarrageSubscriptionOptions options,
             Class<T> type,
             final Consumer<WritableChunk<Values>> initData,
@@ -752,10 +932,67 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
             readType = type;
         }
 
-        ByteString schemaBytes = BarrageUtil.schemaBytesFromTableDefinition(
-                TableDefinition.of(ColumnDefinition.of("col", Type.find(readType))), Collections.emptyMap(), false);
-        Schema schema = SchemaHelper.flatbufSchema(schemaBytes.asReadOnlyByteBuffer());
-        Field field = schema.fields(0);
+        Field field;
+        if (mode == SpecialMode.MAP) {
+            final Map<String, String> attributes = new LinkedHashMap<>();
+            attributes.put(DH_TYPE_TAG, Map.class.getCanonicalName());
+            final FieldType fieldType = new FieldType(true, new ArrowType.Map(false), null, attributes);
+
+            final List<org.apache.arrow.vector.types.pojo.Field> children = new ArrayList<>();
+            children.add(new org.apache.arrow.vector.types.pojo.Field("key",
+                    new FieldType(true, ArrowType.Utf8.INSTANCE, null, null), null));
+            children.add(new org.apache.arrow.vector.types.pojo.Field("value",
+                    new FieldType(true, ArrowType.Utf8.INSTANCE, null, null), null));
+            final org.apache.arrow.vector.types.pojo.Schema pojoSchema =
+                    new org.apache.arrow.vector.types.pojo.Schema(Collections.singletonList(
+                            new org.apache.arrow.vector.types.pojo.Field("col", fieldType, List.of(
+                                    new org.apache.arrow.vector.types.pojo.Field("struct",
+                                            new FieldType(false, ArrowType.Struct.INSTANCE, null, null), children)))));
+
+            byte[] schemaBytes = pojoSchema.serializeAsMessage();
+            Schema schema = SchemaHelper.flatbufSchema(ByteBuffer.wrap(schemaBytes));
+            field = schema.fields(0);
+        } else if (mode == SpecialMode.VAR_LEN_LIST) {
+            final Map<String, String> attributes = new LinkedHashMap<>();
+            attributes.put(DH_TYPE_TAG, String[].class.getCanonicalName());
+            attributes.put(DH_COMPONENT_TYPE_TAG, String.class.getCanonicalName());
+
+            final List<org.apache.arrow.vector.types.pojo.Field> children = new ArrayList<>();
+            children.add(new org.apache.arrow.vector.types.pojo.Field("element",
+                    new FieldType(true, ArrowType.Utf8.INSTANCE, null, null), null));
+
+            final FieldType fieldType = new FieldType(true, new ArrowType.List(), null, attributes);
+            final org.apache.arrow.vector.types.pojo.Schema pojoSchema =
+                    new org.apache.arrow.vector.types.pojo.Schema(Collections.singletonList(
+                            new org.apache.arrow.vector.types.pojo.Field("col", fieldType, children)));
+
+            byte[] schemaBytes = pojoSchema.serializeAsMessage();
+            Schema schema = SchemaHelper.flatbufSchema(ByteBuffer.wrap(schemaBytes));
+            field = schema.fields(0);
+        } else if (mode == SpecialMode.FIXED_LEN_LIST) {
+            final Map<String, String> attributes = new LinkedHashMap<>();
+            attributes.put(DH_TYPE_TAG, String[].class.getCanonicalName());
+            attributes.put(DH_COMPONENT_TYPE_TAG, String.class.getCanonicalName());
+
+            final List<org.apache.arrow.vector.types.pojo.Field> children = new ArrayList<>();
+            children.add(new org.apache.arrow.vector.types.pojo.Field("element",
+                    new FieldType(true, ArrowType.Utf8.INSTANCE, null, null), null));
+
+            final FieldType fieldType =
+                    new FieldType(true, new ArrowType.FixedSizeList(FIXED_LIST_LEN), null, attributes);
+            final org.apache.arrow.vector.types.pojo.Schema pojoSchema =
+                    new org.apache.arrow.vector.types.pojo.Schema(Collections.singletonList(
+                            new org.apache.arrow.vector.types.pojo.Field("col", fieldType, children)));
+
+            byte[] schemaBytes = pojoSchema.serializeAsMessage();
+            Schema schema = SchemaHelper.flatbufSchema(ByteBuffer.wrap(schemaBytes));
+            field = schema.fields(0);
+        } else {
+            ByteString schemaBytes = BarrageUtil.schemaBytesFromTableDefinition(
+                    TableDefinition.of(ColumnDefinition.of("col", Type.find(readType))), Collections.emptyMap(), false);
+            Schema schema = SchemaHelper.flatbufSchema(schemaBytes.asReadOnlyByteBuffer());
+            field = schema.fields(0);
+        }
 
         final WritableChunk<Values> srcData = chunkType.makeWritableChunk(NUM_ROWS);
         initData.accept(srcData);

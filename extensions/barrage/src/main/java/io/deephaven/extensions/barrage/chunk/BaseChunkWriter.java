@@ -8,8 +8,8 @@ import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.util.pools.PoolableChunk;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.extensions.barrage.BarrageOptions;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
@@ -103,7 +103,7 @@ public abstract class BaseChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>>
 
     abstract class BaseChunkInputStream<CONTEXT_TYPE extends Context> extends DrainableColumn {
         protected final CONTEXT_TYPE context;
-        protected final RowSequence subset;
+        protected final RowSet subset;
         protected final BarrageOptions options;
 
         protected boolean hasBeenRead = false;
@@ -117,10 +117,10 @@ public abstract class BaseChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>>
             context.incrementReferenceCount();
             this.options = options;
 
-            this.subset = context.size() == 0 ? RowSequenceFactory.EMPTY
+            this.subset = context.size() == 0 ? RowSetFactory.empty()
                     : subset != null
                             ? subset.copy()
-                            : RowSequenceFactory.forRange(0, context.size() - 1);
+                            : RowSetFactory.flat(context.size());
 
             // ignore the empty context as these are intentionally empty writers that should work for any subset
             if (context.size() > 0 && this.subset.lastRowKey() >= context.size()) {

@@ -87,7 +87,7 @@ public class BigDecimalChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>>
                 }
 
                 if (value.scale() != scale) {
-                    value = value.setScale(decimalType.getScale(), RoundingMode.HALF_UP);
+                    value = value.setScale(scale, RoundingMode.HALF_UP);
                 }
 
                 final BigInteger truncatedValue;

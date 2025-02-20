@@ -179,7 +179,7 @@ public class VarBinaryChunkWriter<T> extends BaseChunkWriter<ObjectChunk<T, Valu
 
         @Override
         public int drainTo(final OutputStream outputStream) throws IOException {
-            if (hasBeenRead || subset.isEmpty()) {
+            if (hasBeenRead) {
                 return 0;
             }
 

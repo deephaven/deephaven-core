@@ -127,7 +127,7 @@ public class ListChunkWriter<LIST_TYPE, COMPONENT_CHUNK_TYPE extends Chunk<Value
             super(context, mySubset, options);
 
             final int limit = LongSizedDataStructure.intSize(DEBUG_NAME, options.previewListLengthLimit());
-            if (context.offsets == null || ((subset == null || subset.size() == context.size()) && limit == 0)) {
+            if ((subset == null || subset.size() == context.size()) && limit == 0) {
                 // we are writing everything
                 myOffsets = null;
                 innerColumn = componentWriter.getInputStream(context.innerContext, null, options);
@@ -143,16 +143,23 @@ public class ListChunkWriter<LIST_TYPE, COMPONENT_CHUNK_TYPE extends Chunk<Value
 
                 final RowSetBuilderSequential innerSubsetBuilder = RowSetFactory.builderSequential();
                 final RowSet toUse = mySubset == null ? RowSetFactory.flat(context.getChunk().size()) : mySubset;
-                toUse.forAllRowKeys(key -> {
-                    int startOffset = context.offsets.get(LongSizedDataStructure.intSize(DEBUG_NAME, key));
-                    int endOffset = context.offsets.get(LongSizedDataStructure.intSize(DEBUG_NAME, key + 1));
-                    if (limit < 0) {
-                        startOffset = Math.max(startOffset, endOffset + limit);
-                    } else if (limit > 0) {
-                        endOffset = Math.min(endOffset, startOffset + limit);
-                    }
+                toUse.forAllRowKeys(lkey -> {
+                    int key = LongSizedDataStructure.intSize(DEBUG_NAME, lkey);
+
+                    int startOffset;
+                    int endOffset;
                     if (fixedSizeLength == 0) {
+                        startOffset = context.offsets.get(key);
+                        endOffset = context.offsets.get(key + 1);
+                        if (limit < 0) {
+                            startOffset = Math.max(startOffset, endOffset + limit);
+                        } else if (limit > 0) {
+                            endOffset = Math.min(endOffset, startOffset + limit);
+                        }
                         myOffsets.add(endOffset - startOffset + myOffsets.get(myOffsets.size() - 1));
+                    } else {
+                        startOffset = key * fixedSizeLength;
+                        endOffset = (key + 1) * fixedSizeLength;
                     }
                     if (endOffset > startOffset) {
                         innerSubsetBuilder.appendRange(startOffset, endOffset - 1);
@@ -242,7 +249,7 @@ public class ListChunkWriter<LIST_TYPE, COMPONENT_CHUNK_TYPE extends Chunk<Value
 
         @Override
         public int drainTo(final OutputStream outputStream) throws IOException {
-            if (hasBeenRead || subset.isEmpty()) {
+            if (hasBeenRead) {
                 return 0;
             }
 
