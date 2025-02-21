@@ -109,6 +109,13 @@ public abstract class S3Instructions implements LogOutputAppendable {
     }
 
     /**
+     * The amount of time to wait when writing a fragment before giving up and timing out. This is accomplished through
+     * calling the {@link software.amazon.awssdk.core.RequestOverrideConfiguration.Builder#apiCallTimeout(java.time.Duration)}
+     * method to time out api calls.
+     */
+    public abstract Optional<Duration>  writeTimeout();
+
+    /**
      * The credentials to use when reading or writing to S3. By default, uses {@link Credentials#resolving()}.
      */
     @Default
@@ -212,6 +219,8 @@ public abstract class S3Instructions implements LogOutputAppendable {
         Builder connectionTimeout(Duration connectionTimeout);
 
         Builder readTimeout(Duration connectionTimeout);
+
+        Builder writeTimeout(Duration connectionTimeout);
 
         Builder credentials(Credentials credentials);
 
