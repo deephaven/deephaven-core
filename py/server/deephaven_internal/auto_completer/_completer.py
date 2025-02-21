@@ -6,7 +6,7 @@ from enum import Enum
 from typing import Any, Union, List
 from jedi import Interpreter, Script
 from jedi.api.classes import Completion, Signature
-from importlib.metadata import version
+from ._signature_help import get_signature_help
 import sys
 import warnings
 
@@ -214,14 +214,7 @@ class Completer:
             # keep checking the latest version as we run, so updated doc can cancel us
             if not self._versions[uri] == version:
                 return []
-
-            result: list = [
-                signature.to_string(),
-                signature.docstring(raw=True),
-                [[param.to_string().strip(), param.docstring(raw=True).strip()] for param in signature.params],
-                signature.index if signature.index is not None else -1
-            ]
-            results.append(result)
+            results.append(get_signature_help(signature))
 
         return results
 
