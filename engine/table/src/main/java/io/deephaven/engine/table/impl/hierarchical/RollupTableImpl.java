@@ -356,7 +356,11 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
         RollupNodeOperationsRecorder constituent = makeNodeOperationsRecorder(NodeType.Constituent);
         final TableDefinition aggregatedTableDefinition = getNodeDefinition(NodeType.Aggregated);
         final TableDefinition constituentTableDefinition = getNodeDefinition(NodeType.Constituent);
+
         constituent = translateFormats(aggregated, constituent, aggregatedTableDefinition, constituentTableDefinition);
+        constituent =
+                translateUpdateViews(aggregated, constituent, aggregatedTableDefinition, constituentTableDefinition);
+
         final Map<String, String> aggregatedConstituentPairs = AggregationPairs.of(aggregations)
                 .collect(Collectors.toMap(p -> p.output().name(), p -> p.input().name()));
         final Set<String> groupByColumnNames =
@@ -391,6 +395,34 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
             return constituent;
         }
         return (RollupNodeOperationsRecorder) constituent.withFormats(constituentFormats.stream());
+    }
+
+    private static RollupNodeOperationsRecorder translateUpdateViews(
+            @NotNull final RollupNodeOperationsRecorder aggregated,
+            @NotNull final RollupNodeOperationsRecorder constituent,
+            @NotNull final TableDefinition aggregatedTableDefinition,
+            @NotNull final TableDefinition constituentTableDefinition) {
+        if (aggregated.getRecordedUpdateViews().isEmpty()) {
+            return constituent;
+        }
+        final List<Selectable> constituentViews = aggregated.getRecordedUpdateViews().stream()
+                .filter((final SelectColumn aggregatedView) -> Stream
+                        .concat(aggregatedView.getColumns().stream(), aggregatedView.getColumnArrays().stream())
+                        .allMatch((final String columnName) -> {
+                            final ColumnDefinition<?> constituentColumnDefinition =
+                                    constituentTableDefinition.getColumn(columnName);
+                            if (constituentColumnDefinition == null) {
+                                return false;
+                            }
+                            final ColumnDefinition<?> aggregatedColumnDefinition =
+                                    aggregatedTableDefinition.getColumn(columnName);
+                            return constituentColumnDefinition.isCompatible(aggregatedColumnDefinition);
+                        }))
+                .collect(Collectors.toList());
+        if (constituentViews.isEmpty()) {
+            return constituent;
+        }
+        return (RollupNodeOperationsRecorder) constituent.updateView(constituentViews);
     }
 
     private static RollupNodeOperationsRecorder translateSorts(

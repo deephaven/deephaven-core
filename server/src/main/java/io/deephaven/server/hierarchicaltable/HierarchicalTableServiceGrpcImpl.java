@@ -5,6 +5,7 @@ package io.deephaven.server.hierarchicaltable;
 
 import com.google.rpc.Code;
 import io.deephaven.api.ColumnName;
+import io.deephaven.api.Selectable;
 import io.deephaven.api.SortColumn;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.filter.Filter;
@@ -223,6 +224,13 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
                         final Collection<Condition> finishedConditions = request.getFiltersCount() == 0
                                 ? null
                                 : FilterTableGrpcImpl.finishConditions(request.getFiltersList());
+                        final Collection<Selectable> translatedUpdateViews =
+                                translateAndValidateUpdateView(request,
+                                        (BaseGridAttributes<?, ?>) inputHierarchicalTable);
+                        final Collection<Selectable> translatedFormat =
+                                translateAndValidateUpdateView(request,
+                                        (BaseGridAttributes<?, ?>) inputHierarchicalTable);
+
                         final Collection<SortColumn> translatedSorts =
                                 translateAndValidateSorts(request, (BaseGridAttributes<?, ?>) inputHierarchicalTable);
 
@@ -233,6 +241,7 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
                             // aggregated node definition here.
                             final TableDefinition nodeDefinition =
                                     rollupTable.getNodeDefinition(RollupTable.NodeType.Aggregated);
+                            // Order to follow is filter, updateView, format, sort
                             if (finishedConditions != null) {
                                 final Collection<? extends WhereFilter> filters =
                                         makeWhereFilters(finishedConditions, nodeDefinition);
@@ -242,6 +251,18 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
                                         filters,
                                         message -> Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, message));
                                 rollupTable = rollupTable.withFilter(Filter.and(filters));
+                            }
+                            if (translatedUpdateViews != null) {
+                                RollupTable.NodeOperationsRecorder aggregatedViews =
+                                        rollupTable.makeNodeOperationsRecorder(RollupTable.NodeType.Aggregated);
+                                aggregatedViews = aggregatedViews.updateView(translatedUpdateViews);
+                                if (rollupTable.includesConstituents()) {
+                                    final RollupTable.NodeOperationsRecorder constituentViews = rollupTable
+                                            .translateAggregatedNodeOperationsForConstituentNodes(aggregatedViews);
+                                    rollupTable = rollupTable.withNodeOperations(aggregatedViews, constituentViews);
+                                } else {
+                                    rollupTable = rollupTable.withNodeOperations(aggregatedViews);
+                                }
                             }
                             if (translatedSorts != null) {
                                 RollupTable.NodeOperationsRecorder aggregatedSorts =
@@ -330,6 +351,22 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
             }
         }
         return translatedSorts;
+    }
+
+    @Nullable
+    private static Collection<io.deephaven.api.Selectable> translateAndValidateUpdateView(
+            @NotNull final HierarchicalTableApplyRequest request,
+            @NotNull final BaseGridAttributes<?, ?> inputHierarchicalTable) {
+        if (request.getUpdateViewFormulasCount() == 0) {
+            return null;
+        }
+        final Collection<io.deephaven.api.Selectable> translated = request.getUpdateViewFormulasList().stream()
+                .map(AggregationAdapter::adapt)
+                .collect(Collectors.toList());
+
+        // TODO: what verification is needed here? We check illegal aliasing in the node recorder
+
+        return translated;
     }
 
     private static SortColumn translateSort(@NotNull final SortDescriptor sortDescriptor) {

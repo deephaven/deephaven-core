@@ -105,6 +105,12 @@ message HierarchicalTableApplyRequest {
   // input (constituent) columns as well. The appropriate (aggregated or constituent) sorts are applied to the nodes at
   // snapshot time.
   repeated SortDescriptor sorts = 4;
+
+  // TODO: document
+  repeated Selectable format_formulas = 5;
+
+  // TODO: document
+  repeated Selectable update_view_formulas = 6;
 }
 
 message HierarchicalTableApplyResponse {
