@@ -41,6 +41,7 @@ import io.deephaven.vector.LongVector;
 import io.deephaven.vector.LongVectorDirect;
 import org.apache.arrow.flatbuf.Field;
 import org.apache.arrow.flatbuf.Schema;
+import org.apache.arrow.vector.types.TimeUnit;
 import org.apache.arrow.vector.types.pojo.ArrowType;
 import org.apache.arrow.vector.types.pojo.FieldType;
 import org.jetbrains.annotations.Nullable;
@@ -52,6 +53,7 @@ import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -548,6 +550,28 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
         }
     }
 
+    public void testZDTAsLongChunkSerialization() throws IOException {
+        final Random random = new Random(0);
+        for (final BarrageSubscriptionOptions opts : OPTIONS) {
+            testRoundTripSerialization(SpecialMode.ZDT, opts, ZonedDateTime.class, (utO) -> {
+                final WritableLongChunk<Values> chunk = utO.asWritableLongChunk();
+                for (int i = 0; i < chunk.size(); ++i) {
+                    chunk.set(i, i % 7 == 0 ? QueryConstants.NULL_LONG : random.nextLong());
+                }
+            }, BarrageColumnRoundTripTest::longIdentityValidator);
+
+            testRoundTripSerialization(SpecialMode.ZDT_WITH_FACTOR, opts, ZonedDateTime.class, (utO) -> {
+                final WritableLongChunk<Values> chunk = utO.asWritableLongChunk();
+                for (int i = 0; i < chunk.size(); ++i) {
+                    // convert S to NS
+                    final long one_bil = 1_000_000_000L;
+                    long val = Math.abs(random.nextLong()) % one_bil;
+                    chunk.set(i, i % 7 == 0 ? QueryConstants.NULL_LONG : val * one_bil);
+                }
+            }, BarrageColumnRoundTripTest::longIdentityValidator);
+        }
+    }
+
     public void testObjectSerialization() throws IOException {
         testRoundTripSerialization(SpecialMode.NONE, OPT_DEFAULT, Object.class, initObjectChunk(Integer::toString),
                 new ObjectIdentityValidator<>());
@@ -906,7 +930,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
     }
 
     private enum SpecialMode {
-        NONE, MAP, VAR_LEN_LIST, FIXED_LEN_LIST,
+        NONE, MAP, VAR_LEN_LIST, FIXED_LEN_LIST, ZDT, ZDT_WITH_FACTOR
     }
 
     private static <T> void testRoundTripSerialization(
@@ -917,19 +941,26 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
             final Validator validator) throws IOException {
         final int NUM_ROWS = 8;
         final ChunkType chunkType;
-        // noinspection unchecked
-        type = (Class<T>) ReinterpretUtils.maybeConvertToPrimitiveDataType(type);
-        if (type == Boolean.class || type == boolean.class) {
-            chunkType = ChunkType.Byte;
-        } else {
-            chunkType = ChunkType.fromElementType(type);
-        }
         final Class<T> readType;
-        if (type == Object.class) {
+        if (type == ZonedDateTime.class) {
+            chunkType = ChunkType.Long;
             // noinspection unchecked
-            readType = (Class<T>) String.class;
+            readType = (Class<T>) long.class;
         } else {
-            readType = type;
+            // noinspection unchecked
+            type = (Class<T>) ReinterpretUtils.maybeConvertToPrimitiveDataType(type);
+            if (type == Boolean.class || type == boolean.class) {
+                chunkType = ChunkType.Byte;
+            } else {
+                chunkType = ChunkType.fromElementType(type);
+            }
+
+            if (type == Object.class) {
+                // noinspection unchecked
+                readType = (Class<T>) String.class;
+            } else {
+                readType = type;
+            }
         }
 
         Field field;
@@ -983,6 +1014,20 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
             final org.apache.arrow.vector.types.pojo.Schema pojoSchema =
                     new org.apache.arrow.vector.types.pojo.Schema(Collections.singletonList(
                             new org.apache.arrow.vector.types.pojo.Field("col", fieldType, children)));
+
+            byte[] schemaBytes = pojoSchema.serializeAsMessage();
+            Schema schema = SchemaHelper.flatbufSchema(ByteBuffer.wrap(schemaBytes));
+            field = schema.fields(0);
+        } else if (mode == SpecialMode.ZDT_WITH_FACTOR || mode == SpecialMode.ZDT) {
+            final Map<String, String> attributes = new LinkedHashMap<>();
+            attributes.put(DH_TYPE_TAG, ZonedDateTime.class.getCanonicalName());
+
+            final TimeUnit tu = (mode == SpecialMode.ZDT_WITH_FACTOR) ? TimeUnit.SECOND : TimeUnit.NANOSECOND;
+            final FieldType fieldType = new FieldType(
+                    true, new ArrowType.Timestamp(tu, "America/New_York"), null, attributes);
+            final org.apache.arrow.vector.types.pojo.Schema pojoSchema =
+                    new org.apache.arrow.vector.types.pojo.Schema(Collections.singletonList(
+                            new org.apache.arrow.vector.types.pojo.Field("col", fieldType, List.of())));
 
             byte[] schemaBytes = pojoSchema.serializeAsMessage();
             Schema schema = SchemaHelper.flatbufSchema(ByteBuffer.wrap(schemaBytes));

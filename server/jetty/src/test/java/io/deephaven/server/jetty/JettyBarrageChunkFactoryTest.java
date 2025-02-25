@@ -3,6 +3,7 @@
 //
 package io.deephaven.server.jetty;
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import dagger.Component;
 import dagger.Module;
 import dagger.Provides;
@@ -54,6 +55,7 @@ import io.deephaven.server.test.FlightMessageRoundTripTest;
 import io.deephaven.server.test.TestAuthModule;
 import io.deephaven.server.test.TestAuthorizationProvider;
 import io.deephaven.server.util.Scheduler;
+import io.deephaven.server.util.TestControlledScheduler;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.type.TypeUtils;
@@ -184,11 +186,11 @@ public class JettyBarrageChunkFactoryTest {
     @Singleton
     @Component(modules = {
             ExecutionContextUnitTestModule.class,
-            FlightMessageRoundTripTest.FlightTestModule.class,
+            FlightTestModule.class,
             JettyServerModule.class,
-            JettyFlightRoundTripTest.JettyTestConfig.class,
+            JettyTestConfig.class,
     })
-    public interface JettyTestComponent extends FlightMessageRoundTripTest.TestComponent {
+    public interface JettyTestComponent extends TestComponent {
     }
 
     @Module(includes = {
@@ -224,10 +226,19 @@ public class JettyBarrageChunkFactoryTest {
         }
 
         @Provides
+        @Singleton
         Scheduler provideScheduler() {
             return new Scheduler.DelegatingImpl(
-                    Executors.newSingleThreadExecutor(),
-                    Executors.newScheduledThreadPool(1),
+                    Executors.newSingleThreadExecutor(
+                            new ThreadFactoryBuilder()
+                                    .setDaemon(true)
+                                    .setNameFormat("test-scheduler-single-%d")
+                                    .build()),
+                    Executors.newScheduledThreadPool(1,
+                            new ThreadFactoryBuilder()
+                                    .setDaemon(true)
+                                    .setNameFormat("test-scheduler-multi-%d")
+                                    .build()),
                     Clock.system());
         }
 
@@ -295,6 +306,8 @@ public class JettyBarrageChunkFactoryTest {
         TestAuthorizationProvider authorizationProvider();
 
         Registration.Callback registration();
+
+        Scheduler serverScheduler();
     }
 
     private LogBuffer logBuffer;
@@ -308,7 +321,8 @@ public class JettyBarrageChunkFactoryTest {
     private SessionState currentSession;
     private SafeCloseable executionContext;
     private Location serverLocation;
-    private FlightMessageRoundTripTest.TestComponent component;
+    private TestComponent component;
+    private Scheduler.DelegatingImpl serverScheduler;
 
     private ManagedChannel clientChannel;
     private ScheduledExecutorService clientScheduler;
@@ -332,6 +346,7 @@ public class JettyBarrageChunkFactoryTest {
 
         server = component.server();
         server.start();
+        serverScheduler = (Scheduler.DelegatingImpl) component.serverScheduler();
         localPort = server.getPort();
 
         sessionService = component.sessionService();
@@ -359,7 +374,8 @@ public class JettyBarrageChunkFactoryTest {
                 .intercept(new TestAuthClientInterceptor(currentSession.getExpiration().token.toString()))
                 .build();
 
-        clientScheduler = Executors.newSingleThreadScheduledExecutor();
+        clientScheduler = Executors.newSingleThreadScheduledExecutor(
+                new ThreadFactoryBuilder().setDaemon(true).setNameFormat("test-client-scheduler-%d").build());
 
         clientSession = SessionImpl
                 .create(SessionImplConfig.from(SessionConfig.builder().build(), clientChannel, clientScheduler));
@@ -380,7 +396,7 @@ public class JettyBarrageChunkFactoryTest {
     }
 
     @After
-    public void teardown() {
+    public void teardown() throws InterruptedException {
         clientSession.close();
         clientScheduler.shutdownNow();
         clientChannel.shutdownNow();
@@ -389,7 +405,9 @@ public class JettyBarrageChunkFactoryTest {
         executionContext.close();
 
         closeClient();
+        server.beginShutdown();
         server.stopWithTimeout(1, java.util.concurrent.TimeUnit.MINUTES);
+        serverScheduler.shutdown();
 
         try {
             server.join();
@@ -759,7 +777,7 @@ public class JettyBarrageChunkFactoryTest {
     }
 
     @Test
-    public void testBint64() throws Exception {
+    public void testUint64() throws Exception {
         class Test extends IntRoundTripTest<UInt8Vector> {
             Test(Class<?> dhType) {
                 this(dhType, null, 0);

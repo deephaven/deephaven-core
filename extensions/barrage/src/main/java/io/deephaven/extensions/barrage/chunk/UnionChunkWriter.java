@@ -251,7 +251,7 @@ public class UnionChunkWriter<T> extends BaseChunkWriter<ObjectChunk<T, Values>>
 
         @Override
         public int drainTo(final OutputStream outputStream) throws IOException {
-            if (hasBeenRead || subset.isEmpty()) {
+            if (hasBeenRead) {
                 return 0;
             }
 

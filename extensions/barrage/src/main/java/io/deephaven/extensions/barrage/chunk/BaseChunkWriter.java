@@ -64,13 +64,15 @@ public abstract class BaseChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>>
         if (transformer == null) {
             return new Context(chunk, rowOffset);
         }
+        Context retContext = null;
         try {
-            return new Context(transformer.transform(chunk), rowOffset);
+            retContext = new Context(transformer.transform(chunk), rowOffset);
         } finally {
-            if (chunk instanceof PoolableChunk) {
+            if (chunk instanceof PoolableChunk && (retContext == null || retContext.getChunk() != chunk)) {
                 ((PoolableChunk<?>) chunk).close();
             }
         }
+        return retContext;
     }
 
     @Override

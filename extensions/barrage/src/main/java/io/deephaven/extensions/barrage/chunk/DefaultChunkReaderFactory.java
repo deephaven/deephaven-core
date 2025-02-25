@@ -438,7 +438,7 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
                     final int totalRows) throws IOException {
                 final WritableLongChunk<Values> values =
                         super.readChunk(fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows);
-                for (int ii = 0; ii < values.size(); ++ii) {
+                for (int ii = outOffset; ii < values.size(); ++ii) {
                     if (!values.isNull(ii)) {
                         values.set(ii, values.get(ii) * factor);
                     }

@@ -3,6 +3,7 @@
 //
 package io.deephaven.server.test;
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.protobuf.ByteString;
 import dagger.Module;
 import dagger.Provides;
@@ -149,10 +150,15 @@ public abstract class FlightMessageRoundTripTest {
         }
 
         @Provides
+        @Singleton
         Scheduler provideScheduler() {
             return new Scheduler.DelegatingImpl(
-                    Executors.newSingleThreadExecutor(),
-                    Executors.newScheduledThreadPool(1),
+                    Executors.newSingleThreadExecutor(
+                            new ThreadFactoryBuilder().setDaemon(true).setNameFormat("test-scheduler-single-%d")
+                                    .build()),
+                    Executors.newScheduledThreadPool(1,
+                            new ThreadFactoryBuilder().setDaemon(true).setNameFormat("test-scheduler-multi-%d")
+                                    .build()),
                     Clock.system());
         }
 
@@ -220,12 +226,15 @@ public abstract class FlightMessageRoundTripTest {
         TestAuthorizationProvider authorizationProvider();
 
         Registration.Callback registration();
+
+        Scheduler serverScheduler();
     }
 
     private LogBuffer logBuffer;
     private GrpcServer server;
     protected int localPort;
     private FlightClient flightClient;
+    private Scheduler.DelegatingImpl serverScheduler;
 
     protected SessionService sessionService;
 
@@ -255,6 +264,7 @@ public abstract class FlightMessageRoundTripTest {
         server = component.server();
         server.start();
         localPort = server.getPort();
+        serverScheduler = (Scheduler.DelegatingImpl) component.serverScheduler();
 
         sessionService = component.sessionService();
 
@@ -280,7 +290,8 @@ public abstract class FlightMessageRoundTripTest {
                 .intercept(new TestAuthClientInterceptor(currentSession.getExpiration().token.toString()))
                 .build();
 
-        clientScheduler = Executors.newSingleThreadScheduledExecutor();
+        clientScheduler = Executors.newSingleThreadScheduledExecutor(
+                new ThreadFactoryBuilder().setDaemon(true).setNameFormat("test-client-scheduler-%d").build());
 
         clientSession = SessionImpl
                 .create(SessionImplConfig.from(SessionConfig.builder().build(), clientChannel, clientScheduler));
@@ -312,7 +323,9 @@ public abstract class FlightMessageRoundTripTest {
         executionContext.close();
 
         closeClient();
+        server.beginShutdown();
         server.stopWithTimeout(1, TimeUnit.MINUTES);
+        serverScheduler.shutdown();
 
         try {
             server.join();

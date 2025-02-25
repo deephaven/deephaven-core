@@ -191,7 +191,9 @@ public class VarBinaryChunkWriter<T> extends BaseChunkWriter<ObjectChunk<T, Valu
             bytesWritten.add(writeValidityBuffer(dos));
 
             // write offsets array
-            dos.writeInt(0);
+            if (!subset.isEmpty()) {
+                dos.writeInt(0);
+            }
 
             final MutableInt logicalSize = new MutableInt();
             subset.forAllRowKeys((idx) -> {
@@ -203,9 +205,13 @@ public class VarBinaryChunkWriter<T> extends BaseChunkWriter<ObjectChunk<T, Valu
                     throw new UncheckedDeephavenException("couldn't drain data to OutputStream", e);
                 }
             });
-            bytesWritten.add(Integer.BYTES * (subset.size() + 1));
+            long size = subset.size();
+            if (size > 0) {
+                size += 1;
+            }
+            bytesWritten.add(Integer.BYTES * size);
 
-            if ((subset.size() & 0x1) == 0) {
+            if (subset.isNonempty() && (subset.size() & 0x1) == 0) {
                 // then we must pad to align next buffer
                 dos.writeInt(0);
                 bytesWritten.add(Integer.BYTES);
