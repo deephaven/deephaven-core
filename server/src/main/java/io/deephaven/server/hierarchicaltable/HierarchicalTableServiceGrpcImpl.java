@@ -5,6 +5,7 @@ package io.deephaven.server.hierarchicaltable;
 
 import com.google.rpc.Code;
 import io.deephaven.api.ColumnName;
+import io.deephaven.api.Selectable;
 import io.deephaven.api.SortColumn;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.filter.Filter;
@@ -56,6 +57,16 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
     private final SessionService sessionService;
     private final HierarchicalTableServiceContextualAuthWiring authWiring;
     private final TicketResolver.Authorization authTransformation;
+
+    private static class UpdateViewRequest {
+        final Selectable columnSpec;
+        final RollupTable.NodeType nodeType;
+
+        UpdateViewRequest(final Selectable columnSpec, final RollupTable.NodeType nodeType) {
+            this.columnSpec = columnSpec;
+            this.nodeType = nodeType;
+        }
+    }
 
     @Inject
     public HierarchicalTableServiceGrpcImpl(
@@ -223,6 +234,10 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
                         final Collection<Condition> finishedConditions = request.getFiltersCount() == 0
                                 ? null
                                 : FilterTableGrpcImpl.finishConditions(request.getFiltersList());
+                        final Collection<UpdateViewRequest> translatedUpdateViews =
+                                translateAndValidateUpdateViews(request,
+                                        (BaseGridAttributes<?, ?>) inputHierarchicalTable);
+
                         final Collection<SortColumn> translatedSorts =
                                 translateAndValidateSorts(request, (BaseGridAttributes<?, ?>) inputHierarchicalTable);
 
@@ -233,6 +248,31 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
                             // aggregated node definition here.
                             final TableDefinition nodeDefinition =
                                     rollupTable.getNodeDefinition(RollupTable.NodeType.Aggregated);
+                            // Order to follow is updateView, sort, filter
+                            if (translatedUpdateViews != null) {
+                                // extract the Aggregated update views
+                                final Collection<Selectable> aggregatedUpdateViews = translatedUpdateViews.stream()
+                                        .filter(uvr -> uvr.nodeType == RollupTable.NodeType.Aggregated)
+                                        .map(uvr -> uvr.columnSpec)
+                                        .collect(Collectors.toList());
+                                final RollupTable.NodeOperationsRecorder aggregatedViews =
+                                        rollupTable.makeNodeOperationsRecorder(RollupTable.NodeType.Aggregated)
+                                                .updateView(aggregatedUpdateViews);
+                                if (rollupTable.includesConstituents()) {
+                                    // extract the Constituent update views
+                                    final Collection<Selectable> constituentUpdateViews = translatedUpdateViews.stream()
+                                            .filter(uvr -> uvr.nodeType == RollupTable.NodeType.Constituent)
+                                            .map(uvr -> uvr.columnSpec)
+                                            .collect(Collectors.toList());
+
+                                    final RollupTable.NodeOperationsRecorder constituentViews =
+                                            rollupTable.makeNodeOperationsRecorder(RollupTable.NodeType.Aggregated)
+                                                    .updateView(constituentUpdateViews);
+                                    rollupTable = rollupTable.withNodeOperations(aggregatedViews, constituentViews);
+                                } else {
+                                    rollupTable = rollupTable.withNodeOperations(aggregatedViews);
+                                }
+                            }
                             if (finishedConditions != null) {
                                 final Collection<? extends WhereFilter> filters =
                                         makeWhereFilters(finishedConditions, nodeDefinition);
@@ -330,6 +370,35 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
             }
         }
         return translatedSorts;
+    }
+
+    private static RollupTable.NodeType translateNodeType(final RollupNodeType nodeType) {
+        switch (nodeType) {
+            case AGGREGATED:
+                return RollupTable.NodeType.Aggregated;
+            case CONSTITUENT:
+                return RollupTable.NodeType.Constituent;
+            default:
+                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
+                        "Unsupported or unknown node type: " + nodeType);
+        }
+    }
+
+    @Nullable
+    private static Collection<UpdateViewRequest> translateAndValidateUpdateViews(
+            @NotNull final HierarchicalTableApplyRequest request,
+            @NotNull final BaseGridAttributes<?, ?> inputHierarchicalTable) {
+        if (request.getUpdateViewsCount() == 0) {
+            return null;
+        }
+        final Collection<UpdateViewRequest> translated = request.getUpdateViewsList().stream()
+                .map(uvr -> new UpdateViewRequest(
+                        AggregationAdapter.adapt(uvr.getColumnSpec()),
+                        translateNodeType(uvr.getNodeType())))
+                .collect(Collectors.toList());
+
+        // TODO: what verification is needed here? We check illegal aliasing in the node recorder
+        return translated;
     }
 
     private static SortColumn translateSort(@NotNull final SortDescriptor sortDescriptor) {
