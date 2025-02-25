@@ -27,10 +27,10 @@ import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.updategraph.UpdateSourceCombiner;
 import io.deephaven.engine.util.TableDiff;
 import io.deephaven.engine.util.TableTools;
-import io.deephaven.extensions.barrage.BarrageStreamGenerator;
+import io.deephaven.extensions.barrage.BarrageMessageWriter;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.table.BarrageTable;
-import io.deephaven.extensions.barrage.util.BarrageStreamReader;
+import io.deephaven.extensions.barrage.util.BarrageMessageReaderImpl;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
 import io.deephaven.proto.flight.util.SchemaHelper;
 import io.deephaven.server.arrow.ArrowModule;
@@ -71,7 +71,7 @@ public class BarrageBlinkTableTest extends RefreshingTableTestCase {
             ArrowModule.class
     })
     public interface TestComponent {
-        BarrageStreamGenerator.Factory getStreamGeneratorFactory();
+        BarrageMessageWriter.Factory getStreamGeneratorFactory();
 
         @Component.Builder
         interface Builder {
@@ -182,7 +182,7 @@ public class BarrageBlinkTableTest extends RefreshingTableTestCase {
             final Schema flatbufSchema = SchemaHelper.flatbufSchema(schemaBytes.asReadOnlyByteBuffer());
             final BarrageUtil.ConvertedArrowSchema schema = BarrageUtil.convertArrowSchema(flatbufSchema);
             this.barrageTable = BarrageTable.make(updateSourceCombiner, ExecutionContext.getContext().getUpdateGraph(),
-                    null, schema.tableDef, schema.attributes, viewport == null, null);
+                    null, schema, viewport == null, null);
             this.barrageTable.addSourceToRegistrar();
 
             final BarrageSubscriptionOptions options = BarrageSubscriptionOptions.builder()
@@ -191,7 +191,7 @@ public class BarrageBlinkTableTest extends RefreshingTableTestCase {
             final BarrageDataMarshaller marshaller = new BarrageDataMarshaller(
                     options, schema.computeWireChunkTypes(), schema.computeWireTypes(),
                     schema.computeWireComponentTypes(),
-                    new BarrageStreamReader(barrageTable.getDeserializationTmConsumer()));
+                    new BarrageMessageReaderImpl(barrageTable.getDeserializationTmConsumer()));
             BarrageMessageRoundTripTest.DummyObserver dummyObserver =
                     new BarrageMessageRoundTripTest.DummyObserver(marshaller, commandQueue);
 

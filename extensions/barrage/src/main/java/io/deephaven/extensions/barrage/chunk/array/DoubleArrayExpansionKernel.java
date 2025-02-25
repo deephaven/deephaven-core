@@ -16,61 +16,106 @@ import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Any;
+import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
-public class DoubleArrayExpansionKernel implements ArrayExpansionKernel {
-    private final static double[] ZERO_LEN_ARRAY = new double[0];
-    public final static DoubleArrayExpansionKernel INSTANCE = new DoubleArrayExpansionKernel();
+public class DoubleArrayExpansionKernel implements ArrayExpansionKernel<double[]> {
+    public static final DoubleArrayExpansionKernel INSTANCE = new DoubleArrayExpansionKernel();
+
+    private static final String DEBUG_NAME = "DoubleArrayExpansionKernel";
+    private static final double[] ZERO_LEN_ARRAY = new double[0];
 
     @Override
-    public <T, A extends Any> WritableChunk<A> expand(final ObjectChunk<T, A> source,
-            final WritableIntChunk<ChunkPositions> perElementLengthDest) {
+    public <A extends Any> WritableChunk<A> expand(
+            @NotNull final ObjectChunk<double[], A> source,
+            final int fixedSizeLength,
+            @Nullable final WritableIntChunk<ChunkPositions> offsetsDest) {
         if (source.size() == 0) {
-            perElementLengthDest.setSize(0);
+            if (offsetsDest != null) {
+                offsetsDest.setSize(0);
+            }
             return WritableDoubleChunk.makeWritableChunk(0);
         }
 
-        final ObjectChunk<double[], A> typedSource = source.asObjectChunk();
-
         long totalSize = 0;
-        for (int i = 0; i < typedSource.size(); ++i) {
-            final double[] row = typedSource.get(i);
-            totalSize += row == null ? 0 : row.length;
+        if (fixedSizeLength != 0) {
+            totalSize = source.size() * (long) fixedSizeLength;
+        } else {
+            for (int ii = 0; ii < source.size(); ++ii) {
+                final double[] row = source.get(ii);
+                final int rowLen = row == null ? 0 : row.length;
+                totalSize += rowLen;
+            }
         }
         final WritableDoubleChunk<A> result = WritableDoubleChunk.makeWritableChunk(
-                LongSizedDataStructure.intSize("ExpansionKernel", totalSize));
+                LongSizedDataStructure.intSize(DEBUG_NAME, totalSize));
 
         int lenWritten = 0;
-        perElementLengthDest.setSize(source.size() + 1);
-        for (int i = 0; i < typedSource.size(); ++i) {
-            final double[] row = typedSource.get(i);
-            perElementLengthDest.set(i, lenWritten);
-            if (row == null) {
-                continue;
-            }
-            result.copyFromArray(row, 0, lenWritten, row.length);
-            lenWritten += row.length;
+        if (offsetsDest != null) {
+            offsetsDest.setSize(source.size() + 1);
         }
-        perElementLengthDest.set(typedSource.size(), lenWritten);
+        for (int ii = 0; ii < source.size(); ++ii) {
+            final double[] row = source.get(ii);
+            if (offsetsDest != null) {
+                offsetsDest.set(ii, lenWritten);
+            }
+            int written = 0;
+            if (row != null) {
+                if (fixedSizeLength != 0) {
+                    // limit length to fixedSizeLength
+                    written = Math.min(row.length, fixedSizeLength);
+                } else {
+                    written = row.length;
+                }
+                // copy the row into the result
+                result.copyFromArray(row, 0, lenWritten, written);
+            }
+            if (fixedSizeLength != 0) {
+                final int toNull = LongSizedDataStructure.intSize(
+                        DEBUG_NAME, Math.max(0, fixedSizeLength - written));
+                if (toNull > 0) {
+                    // fill the rest of the row with nulls
+                    result.fillWithNullValue(lenWritten + written, toNull);
+                    written += toNull;
+                }
+            }
+            lenWritten += written;
+        }
+        if (offsetsDest != null) {
+            offsetsDest.set(source.size(), lenWritten);
+        }
 
         return result;
     }
 
     @Override
-    public <T, A extends Any> WritableObjectChunk<T, A> contract(
-            final Chunk<A> source, final IntChunk<ChunkPositions> perElementLengthDest,
-            final WritableChunk<A> outChunk, final int outOffset, final int totalRows) {
-        if (perElementLengthDest.size() == 0) {
+    public <A extends Any> WritableObjectChunk<double[], A> contract(
+            @NotNull final Chunk<A> source,
+            int sizePerElement,
+            @Nullable final IntChunk<ChunkPositions> offsets,
+            @Nullable final IntChunk<ChunkLengths> lengths,
+            @Nullable final WritableChunk<A> outChunk,
+            final int outOffset,
+            final int totalRows) {
+        if (lengths != null && lengths.size() == 0
+                || lengths == null && offsets != null && offsets.size() <= 1) {
             if (outChunk != null) {
                 return outChunk.asWritableObjectChunk();
             }
-            return WritableObjectChunk.makeWritableChunk(totalRows);
+            final WritableObjectChunk<double[], A> chunk = WritableObjectChunk.makeWritableChunk(totalRows);
+            chunk.fillWithNullValue(0, totalRows);
+            return chunk;
         }
 
-        final int itemsInBatch = perElementLengthDest.size() - 1;
+        sizePerElement = Math.abs(sizePerElement);
+        final int itemsInBatch = offsets == null
+                ? source.size() / sizePerElement
+                : (offsets.size() - (lengths == null ? 1 : 0));
         final DoubleChunk<A> typedSource = source.asDoubleChunk();
-        final WritableObjectChunk<Object, A> result;
+        final WritableObjectChunk<double[], A> result;
         if (outChunk != null) {
             result = outChunk.asWritableObjectChunk();
         } else {
@@ -79,20 +124,18 @@ public class DoubleArrayExpansionKernel implements ArrayExpansionKernel {
             result.setSize(numRows);
         }
 
-        int lenRead = 0;
-        for (int i = 0; i < itemsInBatch; ++i) {
-            final int rowLen = perElementLengthDest.get(i + 1) - perElementLengthDest.get(i);
+        for (int ii = 0; ii < itemsInBatch; ++ii) {
+            final int offset = offsets == null ? ii * sizePerElement : offsets.get(ii);
+            final int rowLen = computeSize(ii, sizePerElement, offsets, lengths);
             if (rowLen == 0) {
-                result.set(outOffset + i, ZERO_LEN_ARRAY);
+                result.set(outOffset + ii, ZERO_LEN_ARRAY);
             } else {
                 final double[] row = new double[rowLen];
-                typedSource.copyToArray(lenRead, row, 0, rowLen);
-                lenRead += rowLen;
-                result.set(outOffset + i, row);
+                typedSource.copyToArray(offset, row, 0, rowLen);
+                result.set(outOffset + ii, row);
             }
         }
 
-        // noinspection unchecked
-        return (WritableObjectChunk<T, A>) result;
+        return result;
     }
 }

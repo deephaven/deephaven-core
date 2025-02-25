@@ -47,6 +47,7 @@ import org.apache.arrow.flight.sql.FlightSqlClient.Savepoint;
 import org.apache.arrow.flight.sql.FlightSqlClient.SubstraitPlan;
 import org.apache.arrow.flight.sql.FlightSqlClient.Transaction;
 import org.apache.arrow.flight.sql.FlightSqlUtils;
+import org.apache.arrow.flight.sql.impl.FlightSql;
 import org.apache.arrow.flight.sql.impl.FlightSql.ActionBeginSavepointRequest;
 import org.apache.arrow.flight.sql.impl.FlightSql.ActionBeginTransactionRequest;
 import org.apache.arrow.flight.sql.impl.FlightSql.ActionCancelQueryRequest;
@@ -61,7 +62,6 @@ import org.apache.arrow.flight.sql.impl.FlightSql.CommandGetDbSchemas;
 import org.apache.arrow.flight.sql.impl.FlightSql.CommandGetExportedKeys;
 import org.apache.arrow.flight.sql.impl.FlightSql.CommandGetImportedKeys;
 import org.apache.arrow.flight.sql.impl.FlightSql.CommandGetPrimaryKeys;
-import org.apache.arrow.flight.sql.impl.FlightSql.CommandGetSqlInfo;
 import org.apache.arrow.flight.sql.impl.FlightSql.CommandGetTableTypes;
 import org.apache.arrow.flight.sql.impl.FlightSql.CommandGetTables;
 import org.apache.arrow.flight.sql.impl.FlightSql.CommandGetXdbcTypeInfo;
@@ -73,6 +73,7 @@ import org.apache.arrow.flight.sql.impl.FlightSql.CommandStatementUpdate;
 import org.apache.arrow.flight.sql.util.TableRef;
 import org.apache.arrow.memory.BufferAllocator;
 import org.apache.arrow.memory.RootAllocator;
+import org.apache.arrow.vector.FieldVector;
 import org.apache.arrow.vector.types.Types.MinorType;
 import org.apache.arrow.vector.types.pojo.ArrowType.Utf8;
 import org.apache.arrow.vector.types.pojo.Field;
@@ -644,11 +645,33 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
     }
 
     @Test
-    public void getSqlInfo() {
-        getSchemaUnimplemented(() -> flightSqlClient.getSqlInfoSchema(), CommandGetSqlInfo.getDescriptor());
-        commandUnimplemented(() -> flightSqlClient.getSqlInfo(), CommandGetSqlInfo.getDescriptor());
-        misbehave(CommandGetSqlInfo.getDefaultInstance(), CommandGetSqlInfo.getDescriptor());
-        unpackable(CommandGetSqlInfo.getDescriptor(), CommandGetSqlInfo.class);
+    public void getSqlInfo() throws Exception {
+        final SchemaResult schemaResult = flightSqlClient.getSqlInfoSchema();
+        final FlightInfo info = flightSqlClient.getSqlInfo();
+        try (final FlightStream stream = flightSqlClient.getStream(endpoint(info).getTicket())) {
+            assertThat(schemaResult.getSchema()).isEqualTo(stream.getSchema());
+
+            int numRows = 0;
+            int flightCount = 0;
+            boolean found = false;
+            while (stream.next()) {
+                ++flightCount;
+                numRows += stream.getRoot().getRowCount();
+
+                // validate the data:
+                final List<FieldVector> vs = stream.getRoot().getFieldVectors();
+                for (int ii = 0; ii < stream.getRoot().getRowCount(); ++ii) {
+                    if (vs.get(0).getObject(ii).equals(FlightSql.SqlInfo.FLIGHT_SQL_SERVER_NAME_VALUE)) {
+                        found = true;
+                        assertThat(vs.get(1).getObject(ii).toString()).isEqualTo("Deephaven");
+                        break;
+                    }
+                }
+            }
+            assertThat(found).isTrue();
+            assertThat(flightCount).isEqualTo(1);
+            assertThat(numRows).isEqualTo(8);
+        }
     }
 
     @Test
