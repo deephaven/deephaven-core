@@ -119,10 +119,15 @@ message HierarchicalTableApplyRequest {
   // snapshot time.
   repeated SortDescriptor sorts = 4;
 
-  // User-supplied update_view and format operations to apply to the nodes of the table.
+  // format operations to apply to the nodes of the table.
   // For RollupTables, the update is applied only to the specified node types.
   // For TreeTables, the node type is ignored and the update is applied to all nodes.
-  repeated UpdateViewRequest update_views = 5;
+  repeated UpdateViewRequest format_views = 5;
+
+  // User-supplied update_view operations to apply to the nodes of the table.
+  // For RollupTables, the update is applied only to the specified node types.
+  // For TreeTables, the node type is ignored and the update is applied to all nodes.
+  repeated UpdateViewRequest update_views = 6;
 }
 
 message HierarchicalTableApplyResponse {
