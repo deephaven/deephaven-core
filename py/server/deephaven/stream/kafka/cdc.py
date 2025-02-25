@@ -98,7 +98,7 @@ def consume_raw(
         kafka_config = j_properties(kafka_config)
         if table_type is None:
             table_type = TableType.blink()
-        return Table(j_table=_JCdcTools.consumeRawToTable(kafka_config, cdc_spec.j_object, partitions, table_type))
+        return Table(j_table=_JCdcTools.consumeRawToTable(kafka_config, cdc_spec.j_object, partitions, table_type.j_object))
     except Exception as e:
         raise DHError(e, "failed to consume a raw CDC stream.") from e
 
