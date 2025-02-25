@@ -81,6 +81,19 @@ message TreeResponse {
   // a HierarchicalTableDescriptor. See HierarchicalTableDescriptor documentation for details.
 }
 
+enum RollupNodeType {
+  TYPE_NOT_SPECIFIED = 0;
+  AGGREGATED = 1;
+  CONSTITUENT = 2;
+}
+
+message UpdateViewRequest {
+  Selectable column_spec = 1;
+
+  // The node types that will have this update_view applied. Ignored for TreeTable
+  RollupNodeType node_type = 2;
+}
+
 message HierarchicalTableApplyRequest {
 
   // Ticket to use to hold the result HierarchicalTable (RollupTable or TreeTable) from the applying the operations
@@ -106,11 +119,10 @@ message HierarchicalTableApplyRequest {
   // snapshot time.
   repeated SortDescriptor sorts = 4;
 
-  // TODO: document
-  repeated Selectable format_formulas = 5;
-
-  // TODO: document
-  repeated Selectable update_view_formulas = 6;
+  // User-supplied update_view and format operations to apply to the nodes of the table.
+  // For RollupTables, the update is applied only to the specified node types.
+  // For TreeTables, the node type is ignored and the update is applied to all nodes.
+  repeated UpdateViewRequest update_views = 5;
 }
 
 message HierarchicalTableApplyResponse {

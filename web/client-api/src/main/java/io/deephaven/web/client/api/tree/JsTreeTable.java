@@ -52,8 +52,10 @@ import jsinterop.annotations.JsOverlay;
 import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
+import jsinterop.annotations.JsMethod;
 import jsinterop.base.Any;
 import jsinterop.base.Js;
+import jsinterop.base.JsPropertyMap;
 
 import java.util.*;
 import java.util.function.Function;
@@ -119,7 +121,11 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
      * all subsequent steps must be performed as well.
      */
     private enum RebuildStep {
-        FILTER, SORT, HIERARCHICAL_TABLE_VIEW, SUBSCRIPTION;
+        UPDATE_VIEW, FILTER, SORT, HIERARCHICAL_TABLE_VIEW, SUBSCRIPTION;
+    }
+
+    public enum RollupNodeType {
+        AGGREGATED, CONSTITUENT;
     }
 
     private final WorkerConnection connection;
@@ -142,8 +148,10 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
     private final JsLazy<Promise<JsTable>> sourceTable;
 
     // The current filter and sort state
+    private List<CustomColumn> updateColumns = new ArrayList<>();
     private List<FilterCondition> filters = new ArrayList<>();
     private List<Sort> sorts = new ArrayList<>();
+    private TicketAndPromise<?> updateViewTable;
     private TicketAndPromise<?> filteredTable;
     private TicketAndPromise<?> sortedTable;
 
@@ -155,8 +163,9 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
     private TicketAndPromise<ClientTableState> viewTicket;
     private Promise<TreeSubscription> stream;
 
-    // the "next" set of filters/sorts that we'll use. these either are "==" to the above fields, or are scheduled
-    // to replace them soon.
+    // the "next" set of filters/sorts/custom columns that we'll use. these either are "==" to the above fields, or are
+    // scheduled to replace them soon.
+    private List<CustomColumn> nextUpdateColumns = new ArrayList<>();
     private List<FilterCondition> nextFilters = new ArrayList<>();
     private List<Sort> nextSort = new ArrayList<>();
 
@@ -301,7 +310,27 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
         return connection;
     }
 
-    private TicketAndPromise<?> prepareFilter() {
+    private TicketAndPromise<?> prepareUpdateView() {
+        if (updateViewTable != null) {
+            return updateViewTable;
+        }
+        if (nextUpdateColumns.isEmpty()) {
+            return new TicketAndPromise<>(widget.getTicket(), connection);
+        }
+        Ticket ticket = connection.getTickets().newExportTicket();
+        updateViewTable = new TicketAndPromise<>(ticket, Callbacks.grpcUnaryPromise(c -> {
+
+            HierarchicalTableApplyRequest applyUpdates = new HierarchicalTableApplyRequest();
+            // applyFilter.setFiltersList(
+            // nextUpdateColumns.stream().map(FilterCondition::makeDescriptor).toArray(Condition[]::new));
+            applyUpdates.setInputHierarchicalTableId(widget.getTicket());
+            applyUpdates.setResultHierarchicalTableId(ticket);
+            connection.hierarchicalTableServiceClient().apply(applyUpdates, connection.metadata(), c::apply);
+        }), connection);
+        return updateViewTable;
+    }
+
+    private TicketAndPromise<?> prepareFilter(TicketAndPromise<?> prevTicket) {
         if (filteredTable != null) {
             return filteredTable;
         }
@@ -625,6 +654,11 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
         // Perform steps required to remove the existing intermediate tickets.
         // Fall-through between steps is deliberate.
         switch (step) {
+            case UPDATE_VIEW:
+                if (updateViewTable != null) {
+                    updateViewTable.release();
+                    updateViewTable = null;
+                }
             case FILTER:
                 if (filteredTable != null) {
                     filteredTable.release();
@@ -664,7 +698,8 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
         Promise<TreeSubscription> stream = Promise.resolve(defer())
                 .then(ignore -> {
                     makeKeyTable();
-                    TicketAndPromise<?> filter = prepareFilter();
+                    TicketAndPromise<?> update = prepareUpdateView();
+                    TicketAndPromise<?> filter = prepareFilter(update);
                     TicketAndPromise<?> sort = prepareSort(filter);
                     TicketAndPromise<ClientTableState> view = makeView(sort);
                     return Promise.all(
@@ -1030,6 +1065,32 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
         return getFilter();
     }
 
+    /**
+     * used when adding new filter and sort operations to the table, as long as they are present.
+     *
+     * @param customColumns
+     * @return {@link CustomColumn} array
+     */
+    @JsMethod
+    @SuppressWarnings("unusable-by-js")
+    public JsArray<CustomColumn> applyCustomColumns(JsArray<JsTable.CustomColumnArgUnionType> customColumns) {
+        nextUpdateColumns = new ArrayList<>();
+        customColumns.forEach((item, index) -> {
+            if (item.isCustomColumn()) {
+                nextUpdateColumns.add(item.asCustomColumn());
+            } else if (item.isString()) {
+                nextUpdateColumns.add(CustomColumn.from(item.asString()));
+            } else {
+                nextUpdateColumns.add(new CustomColumn((JsPropertyMap<Object>) item));
+            }
+            return true;
+        });
+
+        replaceSubscription(RebuildStep.UPDATE_VIEW);
+
+        return getUpdateColumns();
+    }
+
     @JsProperty
     @JsNullable
     public String getDescription() {
@@ -1089,6 +1150,16 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
     @JsProperty
     public JsArray<FilterCondition> getFilter() {
         return JsItr.slice(filters);
+    }
+
+    /**
+     * The current filter configuration of this Tree Table.
+     *
+     * @return {@link FilterCondition} array
+     */
+    @JsProperty
+    public JsArray<CustomColumn> getUpdateColumns() {
+        return JsItr.slice(updateColumns);
     }
 
     /**
