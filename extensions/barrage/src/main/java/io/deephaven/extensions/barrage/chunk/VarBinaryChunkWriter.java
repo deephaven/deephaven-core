@@ -211,7 +211,7 @@ public class VarBinaryChunkWriter<T> extends BaseChunkWriter<ObjectChunk<T, Valu
             }
             bytesWritten.add(Integer.BYTES * size);
 
-            if (subset.isNonempty() && (subset.size() & 0x1) == 0) {
+            if (!subset.isEmpty() && (subset.size() & 0x1) == 0) {
                 // then we must pad to align next buffer
                 dos.writeInt(0);
                 bytesWritten.add(Integer.BYTES);
