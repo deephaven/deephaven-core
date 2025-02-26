@@ -17,15 +17,13 @@ import org.apache.iceberg.SortDirection;
 import org.apache.iceberg.SortField;
 import org.apache.iceberg.SortOrder;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 public class IcebergTableParquetLocation extends ParquetTableLocation implements TableLocation {
-
-    private final IcebergTableAdapter tableAdapter;
-    private final DataFile dataFile;
 
     private volatile List<SortColumn> sortedColumns;
 
@@ -35,8 +33,7 @@ public class IcebergTableParquetLocation extends ParquetTableLocation implements
             @NotNull final IcebergTableParquetLocationKey tableLocationKey,
             @NotNull final ParquetInstructions readInstructions) {
         super(tableKey, tableLocationKey, readInstructions);
-        this.tableAdapter = tableAdapter;
-        this.dataFile = tableLocationKey.dataFile();
+        sortedColumns = computeSortedColumns(tableAdapter, tableLocationKey.dataFile());
     }
 
     @Override
@@ -50,27 +47,37 @@ public class IcebergTableParquetLocation extends ParquetTableLocation implements
             if ((local = sortedColumns) != null) {
                 return local;
             }
-            local = Collections.unmodifiableList(computeSortedColumns());
+            local = Collections.unmodifiableList(super.getSortedColumns());
             sortedColumns = local;
             return local;
         }
     }
 
-    private List<SortColumn> computeSortedColumns() {
+    @Nullable
+    private static List<SortColumn> computeSortedColumns(
+            @NotNull final IcebergTableAdapter tableAdapter,
+            @NotNull final DataFile dataFile) {
         final Integer sortOrderId = dataFile.sortOrderId();
-        // If sort order ID is missing, unknown or unsorted, we fall back to reading sort columns from the parquet file
+        // If sort order is missing or unknown, we cannot determine the sorted columns from the metadata and will
+        // check the underlying parquet file for the sorted columns, when the user asks for them.
         if (sortOrderId == null) {
-            return super.getSortedColumns();
+            return null;
         }
         final SortOrder sortOrder = tableAdapter.icebergTable().sortOrders().get(sortOrderId);
-        if (sortOrder == null || sortOrder.isUnsorted()) {
-            return super.getSortedColumns();
+        if (sortOrder == null) {
+            return null;
+        }
+        if (sortOrder.isUnsorted()) {
+            return Collections.emptyList();
         }
         final Schema schema = sortOrder.schema();
         final List<SortColumn> sortColumns = new ArrayList<>(sortOrder.fields().size());
         for (final SortField field : sortOrder.fields()) {
+            if (!field.transform().isIdentity()) {
+                // TODO (DH-18160): Improve support for handling non-identity transforms
+                break;
+            }
             final ColumnName columnName = ColumnName.of(schema.findColumnName(field.sourceId()));
-
             final SortColumn sortColumn;
             if (field.nullOrder() == NullOrder.NULLS_FIRST && field.direction() == SortDirection.ASC) {
                 sortColumn = SortColumn.asc(columnName);
@@ -84,6 +91,6 @@ public class IcebergTableParquetLocation extends ParquetTableLocation implements
             }
             sortColumns.add(sortColumn);
         }
-        return sortColumns;
+        return Collections.unmodifiableList(sortColumns);
     }
 }

@@ -28,6 +28,7 @@ import io.deephaven.iceberg.util.IcebergTableImpl;
 import io.deephaven.iceberg.util.IcebergTableWriter;
 import io.deephaven.iceberg.util.IcebergUpdateMode;
 import io.deephaven.iceberg.util.IcebergWriteInstructions;
+import io.deephaven.iceberg.util.SortOrderProvider;
 import io.deephaven.iceberg.util.TableParquetWriterOptions;
 import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.ParquetTools;
@@ -1051,63 +1052,6 @@ public abstract class SqliteCatalogBase {
         assertTableEquals(expected2, fromIcebergRefreshing.select());
     }
 
-    @Test
-    void appendSortedTableBasicTest() {
-        final Table source = TableTools.newTable(
-                intCol("intCol", 15, 0, 32, 33, 19),
-                doubleCol("doubleCol", 10.5, 2.5, 3.5, 40.5, 0.5),
-                longCol("longCol", 20L, 50L, 0L, 10L, 5L));
-        final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
-        final IcebergTableAdapter tableAdapter = catalogAdapter.createTable(tableIdentifier, source.getDefinition());
-        final IcebergTableWriter tableWriter = tableAdapter.tableWriter(writerOptionsBuilder()
-                .tableDefinition(source.getDefinition())
-                .build());
-        tableWriter.append(IcebergWriteInstructions.builder()
-                .addTables(source)
-                .build());
-
-        // Verify that the data file is not sorted
-        verifySortOrder(tableAdapter, tableIdentifier, List.of(List.of()));
-
-        // Append a sorted table, and verify that the data file is sorted
-        {
-            final Table sortedSource = source.sort("intCol");
-            tableWriter.append(IcebergWriteInstructions.builder()
-                    .addTables(sortedSource)
-                    .build());
-            verifySortOrder(tableAdapter, tableIdentifier, List.of(
-                    List.of(SortColumn.asc(ColumnName.of("intCol"))),
-                    List.of()));
-        }
-
-        {
-            final Table sortedSource = source.sortDescending("doubleCol");
-            tableWriter.append(IcebergWriteInstructions.builder()
-                    .addTables(sortedSource)
-                    .build());
-            verifySortOrder(tableAdapter, tableIdentifier, List.of(
-                    List.of(SortColumn.asc(ColumnName.of("intCol"))),
-                    List.of(),
-                    List.of(SortColumn.desc(ColumnName.of("doubleCol")))));
-        }
-
-        {
-            final Table sortedSource1 = source.sort("doubleCol");
-            final Table sortedSource2 = source.sortDescending("longCol", "intCol");
-            tableWriter.append(IcebergWriteInstructions.builder()
-                    .addTables(sortedSource1, sortedSource2)
-                    .build());
-            verifySortOrder(tableAdapter, tableIdentifier, List.of(
-                    List.of(SortColumn.asc(ColumnName.of("intCol"))),
-                    List.of(),
-                    List.of(SortColumn.desc(ColumnName.of("doubleCol"))),
-                    List.of(SortColumn.asc(ColumnName.of("doubleCol"))),
-                    List.of(SortColumn.desc(ColumnName.of("longCol")))));
-            // TODO(DH-18700): Currently we don't support marking a data file to be sorted on multiple columns, and will
-            // only consider the first column in the list. That is why we only have "longCol" in the last list above.
-        }
-    }
-
     /**
      * Verify that the sort order for the data files in the table match the expected sort order.
      */
@@ -1149,26 +1093,29 @@ public abstract class SqliteCatalogBase {
                 longCol("longCol", 20L, 50L, 0L, 10L, 5L));
         final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
         final IcebergTableAdapter tableAdapter = catalogAdapter.createTable(tableIdentifier, source.getDefinition());
-        final IcebergTableWriter tableWriter = tableAdapter.tableWriter(writerOptionsBuilder()
+        final IcebergTableWriter tableWriterWithoutSorting = tableAdapter.tableWriter(writerOptionsBuilder()
                 .tableDefinition(source.getDefinition())
                 .build());
-        tableWriter.append(IcebergWriteInstructions.builder()
+        tableWriterWithoutSorting.append(IcebergWriteInstructions.builder()
                 .addTables(source)
                 .build());
 
         // Verify that the data file is not sorted
         verifySortOrder(tableAdapter, tableIdentifier, List.of(List.of()));
 
-        // Update the sort order of the underlying iceberg table
+        // Update the default sort order of the underlying iceberg table
         final org.apache.iceberg.Table icebergTable = tableAdapter.icebergTable();
         assertThat(icebergTable.sortOrder().fields()).hasSize(0);
         icebergTable.replaceSortOrder().asc("intCol").commit();
         assertThat(icebergTable.sortOrder().fields()).hasSize(1);
 
         // Append more unsorted data to the table with enforcing sort order
-        tableWriter.append(IcebergWriteInstructions.builder()
+        final IcebergTableWriter tableWriterWithSorting = tableAdapter.tableWriter(writerOptionsBuilder()
+                .tableDefinition(source.getDefinition())
+                .sortOrderProvider(SortOrderProvider.useTableDefault())
+                .build());
+        tableWriterWithSorting.append(IcebergWriteInstructions.builder()
                 .addTables(source)
-                .applySortOrder(true)
                 .build());
 
         // Verify that the new data file is sorted
@@ -1177,7 +1124,7 @@ public abstract class SqliteCatalogBase {
                 List.of(SortColumn.asc(ColumnName.of("intCol")))));
 
         // Append more unsorted data to the table without enforcing sort order
-        tableWriter.append(IcebergWriteInstructions.builder()
+        tableWriterWithoutSorting.append(IcebergWriteInstructions.builder()
                 .addTables(source)
                 .build());
 

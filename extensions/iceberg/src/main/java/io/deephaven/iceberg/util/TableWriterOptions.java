@@ -61,6 +61,20 @@ public abstract class TableWriterOptions {
         return reversedMap;
     }
 
+    /**
+     * User for providing {@link org.apache.iceberg.SortOrder} to be used for sorting new data while writing to an
+     * iceberg table using this writer.
+     * <p>
+     * Users can specify how to extract the schema in multiple ways (like disable sorting, use table default, by ID).
+     * <p>
+     * Defaults to {@link SortOrderProvider#useTableDefault()}, which means sort new data using the table's default sort
+     * order.
+     */
+    @Value.Default
+    public SortOrderProvider sortOrderProvider() {
+        return SortOrderProvider.useTableDefault();
+    }
+
     // @formatter:off
     interface Builder<INSTRUCTIONS_BUILDER extends TableWriterOptions.Builder<INSTRUCTIONS_BUILDER>> {
         // @formatter:on
@@ -73,6 +87,8 @@ public abstract class TableWriterOptions {
         INSTRUCTIONS_BUILDER putFieldIdToColumnName(int value, String key);
 
         INSTRUCTIONS_BUILDER putAllFieldIdToColumnName(Map<Integer, ? extends String> entries);
+
+        INSTRUCTIONS_BUILDER sortOrderProvider(SortOrderProvider sortOrderProvider);
     }
 
     /**
