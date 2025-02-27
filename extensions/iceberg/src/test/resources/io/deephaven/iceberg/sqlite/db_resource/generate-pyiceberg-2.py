@@ -56,3 +56,20 @@ table = pa.Table.from_pylist(data)
 
 # Append the table to the Iceberg table
 tbl.append(table)
+
+######## Empty table testing ########
+
+tbl_empty = catalog.create_table(
+    identifier="trading.data_empty",
+    schema=schema,
+    partition_spec=partition_spec,
+)
+
+# Define an empty dataset according to your Iceberg schema
+data_empty = [ ]
+
+# Create a PyArrow Table
+table_empty = pa.Table.from_pylist(data_empty)
+
+# Append the table to the Iceberg table
+tbl_empty.append(table_empty)
