@@ -12,6 +12,7 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.locations.TableDataException;
+import io.deephaven.iceberg.internal.DataInstructionsProviderLoader;
 import io.deephaven.parquet.table.CompletedParquetWrite;
 import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.ParquetTools;
@@ -49,6 +50,7 @@ import java.util.Map;
 import java.util.Random;
 
 import static io.deephaven.iceberg.base.IcebergUtils.convertToIcebergType;
+import static io.deephaven.iceberg.base.IcebergUtils.locationUri;
 import static io.deephaven.iceberg.base.IcebergUtils.verifyPartitioningColumns;
 import static io.deephaven.iceberg.base.IcebergUtils.verifyRequiredFields;
 
@@ -102,14 +104,36 @@ public class IcebergTableWriter {
     private final OutputFileFactory outputFileFactory;
 
     /**
+     * The instructions to use for writing the parquet files, populated up-front and used for all writes.
+     */
+    private final ParquetInstructions parquetInstructions;
+
+    /**
+     * The list of completed writes to parquet files. This list is populated by the callback provided in the parquet
+     * instructions. This list will be cleared after each write operation to reuse for the next write.
+     */
+    private final List<CompletedParquetWrite> parquetFilesWritten;
+
+    /**
      * Characters to be used for generating random variable names of length {@link #VARIABLE_NAME_LENGTH}.
      */
     private static final String CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
     private static final int VARIABLE_NAME_LENGTH = 6;
 
+    /**
+     * Create a new Iceberg table writer instance.
+     *
+     * @param tableWriterOptions The options to configure the behavior of this writer instance.
+     * @param tableAdapter The Iceberg table adapter corresponding to the Iceberg table to write to.
+     * @param dataInstructionsProvider The provider for special instructions, to be used if special instructions not
+     *        provided in the {@code tableWriterOptions}.
+     * @param tableLocationUriScheme The URI scheme for the table location.
+     */
     IcebergTableWriter(
             final TableWriterOptions tableWriterOptions,
-            final IcebergTableAdapter tableAdapter) {
+            final IcebergTableAdapter tableAdapter,
+            final DataInstructionsProviderLoader dataInstructionsProvider,
+            final String tableLocationUriScheme) {
         this.tableWriterOptions = verifyWriterOptions(tableWriterOptions);
         this.table = tableAdapter.icebergTable();
 
@@ -131,6 +155,16 @@ public class IcebergTableWriter {
         outputFileFactory = OutputFileFactory.builderFor(table, 0, 0)
                 .format(FileFormat.PARQUET)
                 .build();
+
+        final Object specialInstructions = tableWriterOptions.dataInstructions()
+                .orElseGet(() -> dataInstructionsProvider.load(tableLocationUriScheme));
+
+        // Build the parquet instructions
+        parquetFilesWritten = new ArrayList<>();
+        final ParquetInstructions.OnWriteCompleted onWriteCompleted = parquetFilesWritten::add;
+        parquetInstructions = this.tableWriterOptions.toParquetInstructions(
+                onWriteCompleted, tableDefinition, fieldIdToColumnName, specialInstructions);
+
     }
 
     private static TableParquetWriterOptions verifyWriterOptions(
@@ -285,7 +319,6 @@ public class IcebergTableWriter {
         final List<String> partitionPaths = writeInstructions.partitionPaths();
         verifyPartitionPaths(tableSpec, partitionPaths);
         final List<PartitionData> partitionData;
-        final List<CompletedParquetWrite> parquetFileInfo;
         // Start a new query scope to avoid polluting the existing query scope with new parameters added for
         // partitioning columns
         try (final SafeCloseable _ignore =
@@ -293,9 +326,14 @@ public class IcebergTableWriter {
             final Pair<List<PartitionData>, List<String[]>> ret = partitionDataFromPaths(tableSpec, partitionPaths);
             partitionData = ret.getFirst();
             final List<String[]> dhTableUpdateStrings = ret.getSecond();
-            parquetFileInfo = writeParquet(partitionData, dhTableUpdateStrings, writeInstructions);
+            writeParquet(partitionData, dhTableUpdateStrings, writeInstructions);
         }
-        return dataFilesFromParquet(parquetFileInfo, partitionData);
+        final List<DataFile> dataFiles = dataFilesFromParquet(partitionData);
+
+        // Clear the list of parquet files written to reuse the same list for the next write
+        parquetFilesWritten.clear();
+
+        return dataFiles;
     }
 
     /**
@@ -439,7 +477,7 @@ public class IcebergTableWriter {
     }
 
     @NotNull
-    private List<CompletedParquetWrite> writeParquet(
+    private void writeParquet(
             @NotNull final List<PartitionData> partitionDataList,
             @NotNull final List<String[]> dhTableUpdateStrings,
             @NotNull final IcebergWriteInstructions writeInstructions) {
@@ -454,12 +492,6 @@ public class IcebergTableWriter {
             Require.eqZero(partitionDataList.size(), "partitionDataList.size()");
             Require.eqZero(dhTableUpdateStrings.size(), "dhTableUpdateStrings.size()");
         }
-
-        // Build the parquet instructions
-        final List<CompletedParquetWrite> parquetFilesWritten = new ArrayList<>(dhTables.size());
-        final ParquetInstructions.OnWriteCompleted onWriteCompleted = parquetFilesWritten::add;
-        final ParquetInstructions parquetInstructions = tableWriterOptions.toParquetInstructions(
-                onWriteCompleted, tableDefinition, fieldIdToColumnName);
 
         // Write the data to parquet files
         for (int idx = 0; idx < dhTables.size(); idx++) {
@@ -478,7 +510,11 @@ public class IcebergTableWriter {
             // TODO (deephaven-core#6343): Set writeDefault() values for required columns that not present in the table
             ParquetTools.writeTable(dhTable, newDataLocation, parquetInstructions);
         }
-        return parquetFilesWritten;
+        // At this point, the list of parquet files written should be populated by the callback
+        if (parquetFilesWritten.size() != dhTables.size()) {
+            throw new IllegalStateException("Expected " + dhTables.size() + " parquet files to be written, found " +
+                    parquetFilesWritten.size());
+        }
     }
 
     /**
@@ -517,7 +553,6 @@ public class IcebergTableWriter {
      * Generate a list of {@link DataFile} objects from a list of parquet files written.
      */
     private List<DataFile> dataFilesFromParquet(
-            @NotNull final List<CompletedParquetWrite> parquetFilesWritten,
             @NotNull final List<PartitionData> partitionDataList) {
         final int numFiles = parquetFilesWritten.size();
         final List<DataFile> dataFiles = new ArrayList<>(numFiles);

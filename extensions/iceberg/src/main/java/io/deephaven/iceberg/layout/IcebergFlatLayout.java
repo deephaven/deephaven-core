@@ -21,12 +21,16 @@ public final class IcebergFlatLayout extends IcebergBaseLayout {
     /**
      * @param tableAdapter The {@link IcebergTableAdapter} that will be used to access the table.
      * @param instructions The instructions for customizations while reading.
+     * @param dataInstructionsProvider The provider for special instructions, to be used if special instructions not
+     *        provided in the {@code instructions}.
+     * @param tableLocationUriScheme The URI scheme for the table location.
      */
     public IcebergFlatLayout(
             @NotNull final IcebergTableAdapter tableAdapter,
             @NotNull final IcebergReadInstructions instructions,
-            @NotNull final DataInstructionsProviderLoader dataInstructionsProvider) {
-        super(tableAdapter, instructions, dataInstructionsProvider);
+            @NotNull final DataInstructionsProviderLoader dataInstructionsProvider,
+            @NotNull final String tableLocationUriScheme) {
+        super(tableAdapter, instructions, dataInstructionsProvider, tableLocationUriScheme);
     }
 
     @Override

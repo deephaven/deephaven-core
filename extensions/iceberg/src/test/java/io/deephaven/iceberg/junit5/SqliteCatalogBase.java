@@ -35,7 +35,6 @@ import org.apache.iceberg.catalog.Namespace;
 import org.apache.iceberg.catalog.TableIdentifier;
 import org.apache.iceberg.types.Types;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
-import org.apache.parquet.schema.LogicalTypeAnnotation;
 import org.apache.parquet.schema.MessageType;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.AfterEach;
@@ -1036,5 +1035,43 @@ public abstract class SqliteCatalogBase {
 
         final Table expected2 = TableTools.merge(expected, part3.update("PC = `cat`"));
         assertTableEquals(expected2, fromIcebergRefreshing.select());
+    }
+
+    @Test
+    void appendTableWithAndWithoutDataInstructionsTest() {
+        final Table source = TableTools.emptyTable(10)
+                .update("intCol = (int) 2 * i + 10",
+                        "doubleCol = (double) 2.5 * i + 10");
+        final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
+        final IcebergTableAdapter tableAdapter = catalogAdapter.createTable(tableIdentifier, source.getDefinition());
+        {
+            // Following will add data instructions to the table writer
+            final IcebergTableWriter tableWriter = tableAdapter.tableWriter(writerOptionsBuilder()
+                    .tableDefinition(source.getDefinition())
+                    .build());
+            tableWriter.append(IcebergWriteInstructions.builder()
+                    .addTables(source)
+                    .build());
+        }
+
+        Table fromIceberg = tableAdapter.table();
+        Table expected = source;
+        assertTableEquals(expected, fromIceberg);
+        verifySnapshots(tableIdentifier, List.of("append"));
+
+        {
+            // Skip adding the data instructions to the table writer, should derive them from the catalog
+            final IcebergTableWriter tableWriter = tableAdapter.tableWriter(TableParquetWriterOptions.builder()
+                    .tableDefinition(source.getDefinition())
+                    .build());
+            tableWriter.append(IcebergWriteInstructions.builder()
+                    .addTables(source)
+                    .build());
+        }
+
+        fromIceberg = tableAdapter.table();
+        expected = TableTools.merge(source, source);
+        assertTableEquals(expected, fromIceberg);
+        verifySnapshots(tableIdentifier, List.of("append", "append"));
     }
 }

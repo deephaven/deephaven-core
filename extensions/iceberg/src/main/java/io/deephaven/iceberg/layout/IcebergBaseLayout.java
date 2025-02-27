@@ -10,7 +10,6 @@ import io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder;
 import io.deephaven.iceberg.base.IcebergUtils;
 import io.deephaven.iceberg.location.IcebergTableLocationKey;
 import io.deephaven.iceberg.location.IcebergTableParquetLocationKey;
-import io.deephaven.iceberg.relative.RelativeFileIO;
 import io.deephaven.iceberg.util.IcebergReadInstructions;
 import io.deephaven.iceberg.util.IcebergTableAdapter;
 import io.deephaven.parquet.table.ParquetInstructions;
@@ -20,19 +19,18 @@ import io.deephaven.util.channel.SeekableChannelsProviderLoader;
 import org.apache.iceberg.*;
 import org.apache.iceberg.catalog.Catalog;
 import org.apache.iceberg.catalog.TableIdentifier;
-import org.apache.iceberg.io.FileIO;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import static io.deephaven.iceberg.base.IcebergUtils.allManifestFiles;
+import static io.deephaven.iceberg.base.IcebergUtils.path;
 
 public abstract class IcebergBaseLayout implements TableLocationKeyFinder<IcebergTableLocationKey> {
     /**
@@ -113,11 +111,15 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
     /**
      * @param tableAdapter The {@link IcebergTableAdapter} that will be used to access the table.
      * @param instructions The instructions for customizations while reading.
+     * @param dataInstructionsProvider The provider for special instructions, to be used if special instructions not
+     *        provided in the {@code instructions}.
+     * @param tableLocationUriScheme The URI scheme for the table location.
      */
     public IcebergBaseLayout(
             @NotNull final IcebergTableAdapter tableAdapter,
             @NotNull final IcebergReadInstructions instructions,
-            @NotNull final DataInstructionsProviderLoader dataInstructionsProvider) {
+            @NotNull final DataInstructionsProviderLoader dataInstructionsProvider,
+            @NotNull final String tableLocationUriScheme) {
         this.tableAdapter = tableAdapter;
         {
             UUID uuid;
@@ -135,11 +137,11 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
 
         this.snapshot = tableAdapter.getSnapshot(instructions);
         this.tableDef = tableAdapter.definition(instructions);
-        this.uriScheme = locationUri(tableAdapter.icebergTable()).getScheme();
+        this.uriScheme = tableLocationUriScheme;
         // Add the data instructions if provided as part of the IcebergReadInstructions, or else attempt to create
         // data instructions from the properties collection and URI scheme.
         final Object specialInstructions = instructions.dataInstructions()
-                .orElseGet(() -> dataInstructionsProvider.load(uriScheme));
+                .orElseGet(() -> dataInstructionsProvider.load(tableLocationUriScheme));
         {
             // Start with user-supplied instructions (if provided).
             final ParquetInstructions.Builder builder = new ParquetInstructions.Builder();
@@ -158,18 +160,11 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
             }
             this.parquetInstructions = builder.build();
         }
-        this.channelsProvider = SeekableChannelsProviderLoader.getInstance().load(uriScheme, specialInstructions);
+        this.channelsProvider =
+                SeekableChannelsProviderLoader.getInstance().load(tableLocationUriScheme, specialInstructions);
     }
 
     abstract IcebergTableLocationKey keyFromDataFile(ManifestFile manifestFile, DataFile dataFile, URI fileUri);
-
-    private static String path(String path, FileIO io) {
-        return io instanceof RelativeFileIO ? ((RelativeFileIO) io).absoluteLocation(path) : path;
-    }
-
-    private static URI locationUri(Table table) {
-        return FileUtils.convertToURI(path(table.location(), table.io()), true);
-    }
 
     private static URI dataFileUri(Table table, DataFile dataFile) {
         return FileUtils.convertToURI(path(dataFile.path().toString(), table.io()), false);

@@ -43,6 +43,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static io.deephaven.iceberg.base.IcebergUtils.convertToDHType;
+import static io.deephaven.iceberg.base.IcebergUtils.locationUri;
 
 /**
  * This class manages an Iceberg {@link org.apache.iceberg.Table table} and provides methods to interact with it.
@@ -60,6 +61,12 @@ public class IcebergTableAdapter {
     private final org.apache.iceberg.Table table;
     private final TableIdentifier tableIdentifier;
     private final DataInstructionsProviderLoader dataInstructionsProviderLoader;
+
+    /**
+     * The URI scheme from the Table {@link org.apache.iceberg.Table#location() location}. This is computed lazily and
+     * should be accessed via {@link #getScheme()}.
+     */
+    private volatile String uriScheme;
 
     public IcebergTableAdapter(
             final Catalog catalog,
@@ -389,11 +396,12 @@ public class IcebergTableAdapter {
         final IcebergBaseLayout keyFinder;
         if (partitionSpec.isUnpartitioned()) {
             // Create the flat layout location key finder
-            keyFinder = new IcebergFlatLayout(this, updatedInstructions, dataInstructionsProviderLoader);
+            keyFinder = new IcebergFlatLayout(this, updatedInstructions, dataInstructionsProviderLoader,
+                    getScheme());
         } else {
             // Create the partitioning column location key finder
             keyFinder = new IcebergKeyValuePartitionedLayout(this, partitionSpec, updatedInstructions,
-                    dataInstructionsProviderLoader);
+                    dataInstructionsProviderLoader, getScheme());
         }
 
         if (updatedInstructions.updateMode().updateType() == IcebergUpdateMode.IcebergUpdateType.STATIC) {
@@ -584,6 +592,24 @@ public class IcebergTableAdapter {
      * @return A new instance of {@link IcebergTableWriter} configured with the provided options.
      */
     public IcebergTableWriter tableWriter(final TableWriterOptions tableWriterOptions) {
-        return new IcebergTableWriter(tableWriterOptions, this);
+        return new IcebergTableWriter(tableWriterOptions, this, dataInstructionsProviderLoader, getScheme());
+    }
+
+    /**
+     * Get the URI scheme from the Table {@link org.apache.iceberg.Table#location() location}.
+     */
+    private String getScheme() {
+        String localScheme;
+        if ((localScheme = uriScheme) != null) {
+            return localScheme;
+        }
+        synchronized (this) {
+            if ((localScheme = uriScheme) != null) {
+                return localScheme;
+            }
+            localScheme = locationUri(table).getScheme();
+            uriScheme = localScheme;
+            return localScheme;
+        }
     }
 }
