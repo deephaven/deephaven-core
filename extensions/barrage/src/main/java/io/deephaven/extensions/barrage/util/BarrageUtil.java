@@ -375,6 +375,42 @@ public class BarrageUtil {
         return wrapper.sizedByteArray();
     }
 
+    /**
+     * Create a snapshot request payload to be sent via DoExchange.
+     *
+     * @param ticketId the ticket id of the table to subscribe to
+     * @param options the barrage options
+     * @return the subscription request payload
+     */
+    public static byte[] createSerializationOptionsMetadataBytes(
+            @NotNull final byte[] ticketId,
+            @Nullable final BarrageSubscriptionOptions options) {
+        final FlatBufferBuilder metadata = new FlatBufferBuilder();
+
+        int optOffset = 0;
+        if (options != null) {
+            optOffset = options.appendTo(metadata);
+        }
+
+        final int ticOffset = BarrageSubscriptionRequest.createTicketVector(metadata, ticketId);
+        BarrageSubscriptionRequest.startBarrageSubscriptionRequest(metadata);
+        BarrageSubscriptionRequest.addColumns(metadata, 0);
+        BarrageSubscriptionRequest.addViewport(metadata, 0);
+        BarrageSubscriptionRequest.addSubscriptionOptions(metadata, optOffset);
+        BarrageSubscriptionRequest.addTicket(metadata, ticOffset);
+        BarrageSubscriptionRequest.addReverseViewport(metadata, false);
+        metadata.finish(BarrageSubscriptionRequest.endBarrageSubscriptionRequest(metadata));
+
+        final FlatBufferBuilder wrapper = new FlatBufferBuilder();
+        final int innerOffset = wrapper.createByteVector(metadata.dataBuffer());
+        wrapper.finish(BarrageMessageWrapper.createBarrageMessageWrapper(
+                wrapper,
+                BarrageUtil.FLATBUFFER_MAGIC,
+                BarrageMessageType.BarrageSerializationOptions,
+                innerOffset));
+        return wrapper.sizedByteArray();
+    }
+
     public static ByteString schemaBytesFromTable(@NotNull final Table table) {
         return schemaBytesFromTableDefinition(table.getDefinition(), table.getAttributes(), table.isFlat());
     }

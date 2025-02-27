@@ -47,6 +47,7 @@ import io.deephaven.util.SafeCloseable;
 import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 import org.apache.arrow.flatbuf.MessageHeader;
+import org.apache.arrow.flatbuf.Schema;
 import org.apache.arrow.flight.impl.Flight;
 import org.jetbrains.annotations.NotNull;
 
@@ -161,6 +162,7 @@ public class ArrowFlightUtil {
 
         private SessionState.ExportBuilder<Table> resultExportBuilder;
         private Flight.FlightDescriptor flightDescriptor;
+        private Schema schema;
 
         public DoPutObserver(
                 final SessionState session,
@@ -213,10 +215,13 @@ public class ArrowFlightUtil {
             }
 
             if (mi.header.headerType() == MessageHeader.Schema) {
-                configureWithSchema(parseArrowSchema(mi));
+                schema = parseArrowSchema(mi);
                 return;
             }
 
+            if (resultTable == null && schema != null) {
+                configureWithSchema(schema);
+            }
             if (resultTable == null) {
                 throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
                         "Schema must be processed before record-batch messages");
@@ -279,6 +284,9 @@ public class ArrowFlightUtil {
             if (resultExportBuilder == null) {
                 throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
                         "Result flight descriptor never provided");
+            }
+            if (resultTable == null && schema != null) {
+                configureWithSchema(schema);
             }
             if (resultTable == null) {
                 throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,

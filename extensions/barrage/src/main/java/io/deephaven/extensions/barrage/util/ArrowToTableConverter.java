@@ -221,6 +221,10 @@ public class ArrowToTableConverter {
                 throw new UncheckedDeephavenException(unexpected);
             }
 
+            if (options.columnsAsList() && ci == 0) {
+                // we need to ensure that the number of rows added is consistent across all columns
+                numRowsAdded = acd.data.get(0).size();
+            }
             if (acd.data.get(0).size() != numRowsAdded) {
                 throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
                         "Inconsistent num records per column: " + numRowsAdded + " != " + acd.data.get(0).size());
