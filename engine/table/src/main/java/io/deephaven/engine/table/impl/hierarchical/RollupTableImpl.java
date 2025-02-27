@@ -456,9 +456,18 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
 
     @Override
     public RollupTableImpl rebase(final Table newSource) {
-        final QueryTable newSourceQueryTable = (QueryTable) newSource;
+        if (!newSource.getDefinition().equals(source.getDefinition())) {
+            if (newSource.getDefinition().equalsIgnoreOrder(source.getDefinition())) {
+                throw new IllegalArgumentException(
+                        "Cannot rebase a RollupTable with a new source definition, column order is not identical.");
+            }
+            final String differenceDescription = newSource.getDefinition()
+                    .getDifferenceDescription(source.getDefinition(), "new source", "existing source", ",");
+            throw new IllegalArgumentException(
+                    "Cannot rebase a RollupTable with a new source definition: " + differenceDescription);
+        }
 
-        newSourceQueryTable.getDefinition().checkMutualCompatibility(source.getDefinition(), "newSource", "source");
+        final QueryTable newSourceQueryTable = (QueryTable) newSource;
 
         final int numLevels = groupByColumns.size() + 1;
         final QueryTable baseLevel = newSourceQueryTable.aggNoMemo(

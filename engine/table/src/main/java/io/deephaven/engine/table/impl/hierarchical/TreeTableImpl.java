@@ -224,10 +224,18 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
 
     @Override
     public TreeTable rebase(@NotNull final Table newSource) {
+        if (!newSource.getDefinition().equals(source.getDefinition())) {
+            if (newSource.getDefinition().equalsIgnoreOrder(source.getDefinition())) {
+                throw new IllegalArgumentException(
+                        "Cannot rebase a TreeTable without a new source definition, column order is not identical.");
+            }
+            final String differenceDescription = newSource.getDefinition()
+                    .getDifferenceDescription(source.getDefinition(), "new source", "existing source", ",");
+            throw new IllegalArgumentException(
+                    "Cannot rebase a TreeTable with a new source definition: " + differenceDescription);
+        }
+
         final QueryTable newSourceQueryTable = (QueryTable) newSource;
-
-        newSource.getDefinition().checkMutualCompatibility(source.getDefinition(), "newSource", "source");
-
         final QueryTable tree = computeTree(newSourceQueryTable, parentIdentifierColumn);
         final QueryTable sourceRowLookupTable = computeSourceRowLookupTable(newSourceQueryTable, identifierColumn);
         final TreeSourceRowLookup sourceRowLookup = new TreeSourceRowLookup(newSource, sourceRowLookupTable);
