@@ -88,7 +88,9 @@ public class HierarchicalTableTestTools {
             final WritableChunk<? extends Values> chunk = chunks[ci];
             final ChunkColumnSource<?> chunkColumnSource = ChunkColumnSource.make(
                     chunk.getChunkType(), columnDefinition.getDataType(), columnDefinition.getComponentType());
-            chunkColumnSource.addChunk(chunk);
+            if (snapshotSize > 0) {
+                chunkColumnSource.addChunk(chunk);
+            }
             final ColumnSource<?> source;
             if (columnDefinition.getDataType() == Boolean.class && chunkColumnSource.getType() == byte.class) {
                 // noinspection unchecked
