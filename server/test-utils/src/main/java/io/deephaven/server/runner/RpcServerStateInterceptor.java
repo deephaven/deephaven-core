@@ -37,7 +37,7 @@ import java.util.concurrent.atomic.AtomicReference;
 public final class RpcServerStateInterceptor implements ServerInterceptor {
 
     @dagger.Module
-    interface Module {
+    public interface Module {
         @Binds
         @IntoSet
         ServerInterceptor bindsInterceptor(RpcServerStateInterceptor interceptor);
@@ -86,6 +86,7 @@ public final class RpcServerStateInterceptor implements ServerInterceptor {
         private final AtomicReference<ClientInterceptor> clientInterceptor;
 
         private MethodDescriptor<?, ?> methodDescriptor;
+        private Context context;
 
         RpcServerState(String id) {
             this.startCall = new CountDownLatch(1);
@@ -136,6 +137,10 @@ public final class RpcServerStateInterceptor implements ServerInterceptor {
             }
         }
 
+        public Context getCapturedContext() {
+            return context;
+        }
+
         <RespT, ReqT> Listener<ReqT> intercept(ServerCall<ReqT, RespT> call, Metadata headers,
                 ServerCallHandler<ReqT, RespT> next) {
             final Context context = Context.current();
@@ -145,7 +150,7 @@ public final class RpcServerStateInterceptor implements ServerInterceptor {
             // client, in which case we might end up saving call, headers, context, or listener.
             // this.call = call;
             // this.headers = headers;
-            // this.context = context;
+            this.context = context;
             // this.listener = listener;
             // startCall happens in interceptCall
             startCall.countDown();
