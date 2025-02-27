@@ -222,6 +222,20 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
                 parentIdentifierColumn, nodeFilterColumns, nodeOperations, availableColumnDefinitions);
     }
 
+    @Override
+    public TreeTable rebase(@NotNull final Table newSource) {
+        final QueryTable newSourceQueryTable = (QueryTable) newSource;
+
+        newSource.getDefinition().checkMutualCompatibility(source.getDefinition(), "newSource", "source");
+
+        final QueryTable tree = computeTree(newSourceQueryTable, parentIdentifierColumn);
+        final QueryTable sourceRowLookupTable = computeSourceRowLookupTable(newSourceQueryTable, identifierColumn);
+        final TreeSourceRowLookup sourceRowLookup = new TreeSourceRowLookup(newSource, sourceRowLookupTable);
+
+        return new TreeTableImpl(getAttributes(), newSourceQueryTable, tree, sourceRowLookup, identifierColumn,
+                parentIdentifierColumn, nodeFilterColumns, nodeOperations, availableColumnDefinitions);
+    }
+
     public static TreeTable makeTree(
             @NotNull final QueryTable source,
             @NotNull final ColumnName identifierColumn,

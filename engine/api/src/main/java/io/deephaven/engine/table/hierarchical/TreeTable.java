@@ -108,6 +108,15 @@ public interface TreeTable extends HierarchicalTable<TreeTable> {
     TreeTable withNodeOperations(@NotNull NodeOperationsRecorder nodeOperations);
 
     /**
+     * Copy this TreeTable to the new table, replacing the source with newSource.
+     *
+     * @param newSource a new source table that must have the same definition as the source of this tree table
+     *
+     * @return The new TreeTable
+     */
+    TreeTable rebase(Table newSource);
+
+    /**
      * Adapt a {@code source} {@link Table} to be used for a {@link Table#tree(String, String) tree} to ensure that the
      * result will have no orphaned nodes. Nodes whose parents do not exist will become children of the root node in the
      * resulting tree. The expected usage pattern is:
