@@ -66,10 +66,10 @@ tbl_empty = catalog.create_table(
 )
 
 # Define an empty dataset according to your Iceberg schema
-data_empty = [ ]
+#data_empty = [ ]
 
 # Create a PyArrow Table
-table_empty = pa.Table.from_pylist(data_empty)
+#table_empty = pa.Table.from_pylist(data_empty)
 
 # Append the table to the Iceberg table
-tbl_empty.append(table_empty)
+#tbl_empty.append(table_empty)
