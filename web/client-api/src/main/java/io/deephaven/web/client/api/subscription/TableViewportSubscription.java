@@ -347,15 +347,16 @@ public class TableViewportSubscription extends AbstractTableSubscription {
                 .useDeephavenNulls(true)
                 .build();
 
-        WebBarrageSubscription snapshot = WebBarrageSubscription.subscribe(
-                SubscriptionType.SNAPSHOT, state(),
-                (serverViewport1, serverColumns, serverReverseViewport) -> {
-                },
-                (rowsAdded, rowsRemoved, totalMods, shifted, modifiedColumnSet) -> {
-                });
+        LazyPromise<TableData> promise = new LazyPromise<>();
+        state().onRunning(cts -> {
+            WebBarrageSubscription snapshot = WebBarrageSubscription.subscribe(
+                    SubscriptionType.SNAPSHOT, cts,
+                    (serverViewport1, serverColumns, serverReverseViewport) -> {
+                    },
+                    (rowsAdded, rowsRemoved, totalMods, shifted, modifiedColumnSet) -> {
+                    });
 
-        WebBarrageMessageReader reader = new WebBarrageMessageReader();
-        return new Promise<>((resolve, reject) -> {
+            WebBarrageMessageReader reader = new WebBarrageMessageReader();
 
             BiDiStream<FlightData, FlightData> doExchange = connection().<FlightData, FlightData>streamFactory().create(
                     headers -> connection().flightServiceClient().doExchange(headers),
@@ -421,19 +422,20 @@ public class TableViewportSubscription extends AbstractTableSubscription {
                     } else {
                         result = RangeSet.empty();
                     }
-                    resolve.onInvoke(new SubscriptionEventData(snapshot, rowStyleColumn, Js.uncheckedCast(columns),
+                    promise.succeed(new SubscriptionEventData(snapshot, rowStyleColumn, Js.uncheckedCast(columns),
                             result,
                             RangeSet.empty(),
                             RangeSet.empty(),
                             null));
                 } else {
-                    reject.onInvoke(status);
+                    promise.fail(status);
                 }
             });
 
             doExchange.send(payload);
             doExchange.end();
 
-        });
+        }, promise::fail, () -> promise.fail("Table was closed"));
+        return promise.asPromise();
     }
 }
