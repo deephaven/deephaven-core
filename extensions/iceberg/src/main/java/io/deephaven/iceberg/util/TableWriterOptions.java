@@ -62,8 +62,8 @@ public abstract class TableWriterOptions {
     }
 
     /**
-     * User for providing {@link org.apache.iceberg.SortOrder} to be used for sorting new data while writing to an
-     * iceberg table using this writer.
+     * Used for providing {@link org.apache.iceberg.SortOrder} to sort new data while writing to an iceberg table using
+     * this writer.
      * <p>
      * Users can specify how to extract the schema in multiple ways (like disable sorting, use table default, by ID).
      * <p>

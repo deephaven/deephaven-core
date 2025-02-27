@@ -18,6 +18,7 @@ _JIcebergUpdateMode = jpy.get_type("io.deephaven.iceberg.util.IcebergUpdateMode"
 _JIcebergReadInstructions = jpy.get_type("io.deephaven.iceberg.util.IcebergReadInstructions")
 _JIcebergWriteInstructions = jpy.get_type("io.deephaven.iceberg.util.IcebergWriteInstructions")
 _JSchemaProvider = jpy.get_type("io.deephaven.iceberg.util.SchemaProvider")
+_JSortOrderProvider = jpy.get_type("io.deephaven.iceberg.util.SortOrderProvider")
 _JTableParquetWriterOptions = jpy.get_type("io.deephaven.iceberg.util.TableParquetWriterOptions")
 _JIcebergCatalogAdapter = jpy.get_type("io.deephaven.iceberg.util.IcebergCatalogAdapter")
 _JIcebergTableAdapter = jpy.get_type("io.deephaven.iceberg.util.IcebergTableAdapter")
@@ -270,6 +271,62 @@ class SchemaProvider(JObjectWrapper):
         return cls(_JSchemaProvider.fromCurrentSnapshot())
 
 
+class SortOrderProvider(JObjectWrapper):
+    """
+    :class:`.SortOrderProvider` is used for providing SortOrder to be used for sorting new data while writing to an
+    iceberg table using this writer. Users can specify multiple ways to do so, for example, by sort ID, table default,
+    etc.
+    """
+
+    j_object_type = _JSortOrderProvider
+
+    def __init__(self, _j_object: jpy.JType):
+        """
+        Initializes the :class:`.SortOrderProvider` object.
+
+        Args:
+            _j_object (SortOrderProvider): the Java :class:`.SortOrderProvider` object.
+        """
+        self._j_object = _j_object
+
+    @property
+    def j_object(self) -> jpy.JType:
+        return self._j_object
+
+    @classmethod
+    def disable_sorting(cls) -> 'SortOrderProvider':
+        """
+        Used to disable sorting while writing new data to the iceberg table.
+
+        Returns:
+            the SortOrderProvider object.
+        """
+        return cls(_JSortOrderProvider.disableSorting())
+
+    @classmethod
+    def use_table_default(cls) -> 'SortOrderProvider':
+        """
+        Use the default sort order of the table while writing new data.
+
+        Returns:
+            the :class:`.SortOrderProvider` object.
+        """
+        return cls(_JSortOrderProvider.useTableDefault())
+
+    @classmethod
+    def from_sort_id(cls, sort_order_id: int) -> 'SortOrderProvider':
+        """
+        Use the sort order with the given ID to sort new data while writing to the iceberg table.
+
+        Args:
+            sort_order_id (int): the id of the sort order to use.
+
+        Returns:
+            the :class:`.SortOrderProvider` object.
+        """
+        return cls(_JSortOrderProvider.fromSortId(sort_order_id))
+
+
 class TableParquetWriterOptions(JObjectWrapper):
     """
     :class:`.TableParquetWriterOptions` provides specialized instructions for configuring :class:`.IcebergTableWriter`
@@ -286,6 +343,7 @@ class TableParquetWriterOptions(JObjectWrapper):
                  maximum_dictionary_keys: Optional[int] = None,
                  maximum_dictionary_size: Optional[int] = None,
                  target_page_size: Optional[int] = None,
+                 sort_order_provider: Optional[SortOrderProvider] = None,
                  data_instructions: Optional[s3.S3Instructions] = None):
         """
         Initializes the instructions using the provided parameters.
@@ -313,6 +371,9 @@ class TableParquetWriterOptions(JObjectWrapper):
                 `None`, which means use 2^20 (1,048,576)
             target_page_size (Optional[int]): the target Parquet file page size in bytes, if not specified. Defaults to
                 `None`, which means use 2^20 bytes (1 MiB)
+            sort_order_provider: Optional[SortOrderProvider]: Used to provide SortOrder to be used for sorting new data
+                while writing to an iceberg table using this writer. Users can specify multiple ways to do so, for
+                example, by sort ID, table default, etc. Defaults to `None`, which means use the table's default sort order.
 
         Raises:
             DHError: If unable to build the object.
@@ -341,6 +402,9 @@ class TableParquetWriterOptions(JObjectWrapper):
 
             if target_page_size:
                 builder.targetPageSize(target_page_size)
+
+            if sort_order_provider:
+                builder.sortOrderProvider(sort_order_provider.j_object)
 
             if data_instructions:
                 builder.dataInstructions(data_instructions.j_object)

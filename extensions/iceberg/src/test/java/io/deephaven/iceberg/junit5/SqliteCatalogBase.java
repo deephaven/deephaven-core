@@ -68,6 +68,7 @@ import static io.deephaven.engine.util.TableTools.col;
 import static io.deephaven.engine.util.TableTools.doubleCol;
 import static io.deephaven.engine.util.TableTools.intCol;
 import static io.deephaven.engine.util.TableTools.longCol;
+import static io.deephaven.engine.util.TableTools.merge;
 import static io.deephaven.iceberg.base.IcebergUtils.dataFileUri;
 import static io.deephaven.iceberg.base.IcebergUtils.locationUri;
 import static org.apache.parquet.schema.LogicalTypeAnnotation.intType;
@@ -1086,7 +1087,7 @@ public abstract class SqliteCatalogBase {
     }
 
     @Test
-    void testEnforceSortOrder() {
+    void testApplyDefaultSortOrder() {
         final Table source = TableTools.newTable(
                 intCol("intCol", 15, 0, 32, 33, 19),
                 doubleCol("doubleCol", 10.5, 2.5, 3.5, 40.5, 0.5),
@@ -1133,5 +1134,83 @@ public abstract class SqliteCatalogBase {
                 List.of(),
                 List.of(SortColumn.asc(ColumnName.of("intCol"))),
                 List.of()));
+    }
+
+    @Test
+    void testApplySortOrderByID() {
+        final Table source = TableTools.newTable(
+                intCol("intCol", 15, 0, 32, 33, 19),
+                doubleCol("doubleCol", 10.5, 2.5, 3.5, 40.5, 0.5),
+                longCol("longCol", 20L, 50L, 0L, 10L, 5L));
+        final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
+        final IcebergTableAdapter tableAdapter = catalogAdapter.createTable(tableIdentifier, source.getDefinition());
+
+        final org.apache.iceberg.Table icebergTable = tableAdapter.icebergTable();
+        assertThat(icebergTable.sortOrders()).hasSize(1); // Default unsorted sort order
+        assertThat(icebergTable.sortOrder().fields()).hasSize(0);
+
+        icebergTable.replaceSortOrder().asc("intCol").commit();
+        icebergTable.replaceSortOrder().asc("doubleCol").desc("longCol").commit();
+        assertThat(icebergTable.sortOrders()).hasSize(3);
+        assertThat(icebergTable.sortOrder().fields()).hasSize(2);
+
+        // Sort by default sort order
+        {
+            final IcebergTableWriter tableWriter = tableAdapter.tableWriter(writerOptionsBuilder()
+                    .tableDefinition(source.getDefinition())
+                    .sortOrderProvider(SortOrderProvider.useTableDefault())
+                    .build());
+            tableWriter.append(IcebergWriteInstructions.builder()
+                    .addTables(source)
+                    .build());
+            verifySortOrder(tableAdapter, tableIdentifier, List.of(
+                    List.of(SortColumn.asc(ColumnName.of("doubleCol")), SortColumn.desc(ColumnName.of("longCol")))));
+            final Table fromIceberg = tableAdapter.table();
+            final Table expected = source.sort(List.of(SortColumn.asc(ColumnName.of("doubleCol")),
+                    SortColumn.desc(ColumnName.of("longCol"))));
+            assertTableEquals(expected, fromIceberg);
+        }
+
+        // Sort based on sort order ID
+        {
+            final IcebergTableWriter tableWriter = tableAdapter.tableWriter(writerOptionsBuilder()
+                    .tableDefinition(source.getDefinition())
+                    .sortOrderProvider(SortOrderProvider.fromSortId(1))
+                    .build());
+            tableWriter.append(IcebergWriteInstructions.builder()
+                    .addTables(source)
+                    .build());
+            verifySortOrder(tableAdapter, tableIdentifier, List.of(
+                    List.of(SortColumn.asc(ColumnName.of("intCol"))),
+                    List.of(SortColumn.asc(ColumnName.of("doubleCol")), SortColumn.desc(ColumnName.of("longCol")))));
+            final Table fromIceberg = tableAdapter.table();
+            final Table expected = merge(
+                    source.sort(List.of(SortColumn.asc(ColumnName.of("doubleCol")),
+                            SortColumn.desc(ColumnName.of("longCol")))),
+                    source.sort(List.of(SortColumn.asc(ColumnName.of("intCol")))));
+            assertTableEquals(expected, fromIceberg);
+        }
+
+        // Disable sorting
+        {
+            final IcebergTableWriter tableWriter = tableAdapter.tableWriter(writerOptionsBuilder()
+                    .tableDefinition(source.getDefinition())
+                    .sortOrderProvider(SortOrderProvider.disableSorting())
+                    .build());
+            tableWriter.append(IcebergWriteInstructions.builder()
+                    .addTables(source)
+                    .build());
+            verifySortOrder(tableAdapter, tableIdentifier, List.of(
+                    List.of(SortColumn.asc(ColumnName.of("doubleCol")), SortColumn.desc(ColumnName.of("longCol"))),
+                    List.of(SortColumn.asc(ColumnName.of("intCol"))),
+                    List.of()));
+            final Table fromIceberg = tableAdapter.table();
+            final Table expected = merge(
+                    source.sort(List.of(SortColumn.asc(ColumnName.of("doubleCol")),
+                            SortColumn.desc(ColumnName.of("longCol")))),
+                    source.sort(List.of(SortColumn.asc(ColumnName.of("intCol")))),
+                    source);
+            assertTableEquals(expected, fromIceberg);
+        }
     }
 }
