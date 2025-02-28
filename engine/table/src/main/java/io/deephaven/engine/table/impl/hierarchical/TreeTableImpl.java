@@ -235,10 +235,10 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
                     "Cannot rebase a TreeTable with a new source definition: " + differenceDescription);
         }
 
-        final QueryTable newSourceQueryTable = (QueryTable) newSource;
+        final QueryTable newSourceQueryTable = (QueryTable) newSource.coalesce();
         final QueryTable tree = computeTree(newSourceQueryTable, parentIdentifierColumn);
         final QueryTable sourceRowLookupTable = computeSourceRowLookupTable(newSourceQueryTable, identifierColumn);
-        final TreeSourceRowLookup sourceRowLookup = new TreeSourceRowLookup(newSource, sourceRowLookupTable);
+        final TreeSourceRowLookup sourceRowLookup = new TreeSourceRowLookup(newSourceQueryTable, sourceRowLookupTable);
 
         return new TreeTableImpl(getAttributes(), newSourceQueryTable, tree, sourceRowLookup, identifierColumn,
                 parentIdentifierColumn, nodeFilterColumns, nodeOperations, availableColumnDefinitions);
