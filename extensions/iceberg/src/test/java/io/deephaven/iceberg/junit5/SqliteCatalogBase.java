@@ -55,6 +55,8 @@ import java.util.stream.Collectors;
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
 import static io.deephaven.engine.util.TableTools.col;
 import static io.deephaven.engine.util.TableTools.doubleCol;
+import static io.deephaven.engine.util.TableTools.intCol;
+import static io.deephaven.engine.util.TableTools.longCol;
 import static org.apache.parquet.schema.LogicalTypeAnnotation.intType;
 import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.DOUBLE;
 import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.INT32;
@@ -1039,9 +1041,10 @@ public abstract class SqliteCatalogBase {
 
     @Test
     void appendTableWithAndWithoutDataInstructionsTest() {
-        final Table source = TableTools.emptyTable(10)
-                .update("intCol = (int) 2 * i + 10",
-                        "doubleCol = (double) 2.5 * i + 10");
+        final Table source = TableTools.newTable(
+                intCol("intCol", 15, 0, 32, 33, 19),
+                doubleCol("doubleCol", 10.5, 2.5, 3.5, 40.5, 0.5),
+                longCol("longCol", 20L, 50L, 0L, 10L, 5L));
         final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
         final IcebergTableAdapter tableAdapter = catalogAdapter.createTable(tableIdentifier, source.getDefinition());
         {

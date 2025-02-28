@@ -50,7 +50,6 @@ import java.util.Map;
 import java.util.Random;
 
 import static io.deephaven.iceberg.base.IcebergUtils.convertToIcebergType;
-import static io.deephaven.iceberg.base.IcebergUtils.locationUri;
 import static io.deephaven.iceberg.base.IcebergUtils.verifyPartitioningColumns;
 import static io.deephaven.iceberg.base.IcebergUtils.verifyRequiredFields;
 
@@ -328,12 +327,7 @@ public class IcebergTableWriter {
             final List<String[]> dhTableUpdateStrings = ret.getSecond();
             writeParquet(partitionData, dhTableUpdateStrings, writeInstructions);
         }
-        final List<DataFile> dataFiles = dataFilesFromParquet(partitionData);
-
-        // Clear the list of parquet files written to reuse the same list for the next write
-        parquetFilesWritten.clear();
-
-        return dataFiles;
+        return dataFilesFromParquet(partitionData);
     }
 
     /**
@@ -476,7 +470,6 @@ public class IcebergTableWriter {
         return stringBuilder.toString();
     }
 
-    @NotNull
     private void writeParquet(
             @NotNull final List<PartitionData> partitionDataList,
             @NotNull final List<String[]> dhTableUpdateStrings,
@@ -491,6 +484,12 @@ public class IcebergTableWriter {
         } else {
             Require.eqZero(partitionDataList.size(), "partitionDataList.size()");
             Require.eqZero(dhTableUpdateStrings.size(), "dhTableUpdateStrings.size()");
+        }
+
+        // At this point, the list of parquet files written should be empty and will be populated by the callback
+        if (!parquetFilesWritten.isEmpty()) {
+            throw new IllegalStateException("List of parquet files written should be empty before writing new data, " +
+                    "found " + parquetFilesWritten.size() + " files");
         }
 
         // Write the data to parquet files
@@ -509,11 +508,6 @@ public class IcebergTableWriter {
             }
             // TODO (deephaven-core#6343): Set writeDefault() values for required columns that not present in the table
             ParquetTools.writeTable(dhTable, newDataLocation, parquetInstructions);
-        }
-        // At this point, the list of parquet files written should be populated by the callback
-        if (parquetFilesWritten.size() != dhTables.size()) {
-            throw new IllegalStateException("Expected " + dhTables.size() + " parquet files to be written, found " +
-                    parquetFilesWritten.size());
         }
     }
 
@@ -569,6 +563,10 @@ public class IcebergTableWriter {
             }
             dataFiles.add(dataFileBuilder.build());
         }
+
+        // Clear the list of parquet files written to reuse the same list for the next write
+        parquetFilesWritten.clear();
+
         return dataFiles;
     }
 }
