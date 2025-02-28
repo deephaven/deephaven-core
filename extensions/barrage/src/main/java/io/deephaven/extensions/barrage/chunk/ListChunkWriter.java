@@ -143,14 +143,13 @@ public class ListChunkWriter<LIST_TYPE, COMPONENT_CHUNK_TYPE extends Chunk<Value
 
                 final RowSetBuilderSequential innerSubsetBuilder = RowSetFactory.builderSequential();
                 final RowSet toUse = mySubset == null ? RowSetFactory.flat(context.getChunk().size()) : mySubset;
-                toUse.forAllRowKeys(lkey -> {
-                    int key = LongSizedDataStructure.intSize(DEBUG_NAME, lkey);
+                toUse.forAllRowKeys(key -> {
 
                     int startOffset;
                     int endOffset;
                     if (fixedSizeLength == 0) {
-                        startOffset = context.offsets.get(key);
-                        endOffset = context.offsets.get(key + 1);
+                        startOffset = context.offsets.get(LongSizedDataStructure.intSize(DEBUG_NAME, key));
+                        endOffset = context.offsets.get(LongSizedDataStructure.intSize(DEBUG_NAME, key + 1));
                         if (limit < 0) {
                             startOffset = Math.max(startOffset, endOffset + limit);
                         } else if (limit > 0) {
@@ -158,8 +157,8 @@ public class ListChunkWriter<LIST_TYPE, COMPONENT_CHUNK_TYPE extends Chunk<Value
                         }
                         myOffsets.add(endOffset - startOffset + myOffsets.get(myOffsets.size() - 1));
                     } else {
-                        startOffset = key * fixedSizeLength;
-                        endOffset = (key + 1) * fixedSizeLength;
+                        startOffset = LongSizedDataStructure.intSize(DEBUG_NAME, key * fixedSizeLength);
+                        endOffset = LongSizedDataStructure.intSize(DEBUG_NAME, (key + 1) * fixedSizeLength);
                     }
                     if (endOffset > startOffset) {
                         innerSubsetBuilder.appendRange(startOffset, endOffset - 1);

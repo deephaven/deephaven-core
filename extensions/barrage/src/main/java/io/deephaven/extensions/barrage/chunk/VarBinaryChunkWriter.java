@@ -205,11 +205,11 @@ public class VarBinaryChunkWriter<T> extends BaseChunkWriter<ObjectChunk<T, Valu
                     throw new UncheckedDeephavenException("couldn't drain data to OutputStream", e);
                 }
             });
-            long size = subset.size();
-            if (size > 0) {
-                size += 1;
+            long numRows = subset.size();
+            if (numRows > 0) {
+                numRows += 1;
             }
-            bytesWritten.add(Integer.BYTES * size);
+            bytesWritten.add(Integer.BYTES * numRows);
 
             if (!subset.isEmpty() && (subset.size() & 0x1) == 0) {
                 // then we must pad to align next buffer
