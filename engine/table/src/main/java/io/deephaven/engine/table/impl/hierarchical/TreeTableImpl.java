@@ -227,7 +227,7 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
         if (!newSource.getDefinition().equals(source.getDefinition())) {
             if (newSource.getDefinition().equalsIgnoreOrder(source.getDefinition())) {
                 throw new IllegalArgumentException(
-                        "Cannot rebase a TreeTable without a new source definition, column order is not identical.");
+                        "Cannot rebase a TreeTable with a new source definition, column order is not identical.");
             }
             final String differenceDescription = newSource.getDefinition()
                     .getDifferenceDescription(source.getDefinition(), "new source", "existing source", ",");

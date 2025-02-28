@@ -75,6 +75,8 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
     private final Collection<? extends ColumnName> groupByColumns;
 
     private final int numLevels;
+    @Nullable
+    private final WhereFilter[] lowestRollupKeyFilters;
     private final int constituentDepth;
     private final QueryTable[] levelTables;
     private final AggregationRowLookup[] levelRowLookups;
@@ -99,6 +101,7 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
             @Nullable final RollupNodeOperationsRecorder aggregatedNodeOperations,
             @Nullable final TableDefinition constituentNodeDefinition,
             @Nullable final RollupNodeOperationsRecorder constituentNodeOperations,
+            @Nullable final WhereFilter[] lowestRollupKeyFilters,
             @Nullable final List<ColumnDefinition<?>> availableColumnDefinitions) {
         super(initialAttributes, source, levelTables[0]);
 
@@ -111,6 +114,7 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
         // Note that we don't count the "root" as a level in this accounting; the root is levelTables[0], and its
         // children (depth 1, at level 0), are found in levelNodeTableSources[0].
         numLevels = groupByColumns.size() + 1;
+        this.lowestRollupKeyFilters = lowestRollupKeyFilters;
         constituentDepth = numLevels + 1;
         Require.eq(numLevels, "level count", levelTables.length, "levelTables.length");
         this.levelTables = levelTables;
@@ -254,10 +258,20 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
         final ColumnSource<Table>[] levelNodeTableSources = makeLevelNodeTableSourcesArray(
                 numLevels, filteredBaseLevel.getColumnSource(ROLLUP_COLUMN.name(), Table.class));
         rollupFromBase(levelTables, levelRowLookups, levelNodeTableSources, aggregations, groupByColumns);
+
+        final WhereFilter[] newFilters;
+        if (lowestRollupKeyFilters == null) {
+            newFilters = whereFilters;
+        } else {
+            newFilters = Arrays.copyOf(lowestRollupKeyFilters, lowestRollupKeyFilters.length + whereFilters.length);
+            System.arraycopy(whereFilters, 0, newFilters, lowestRollupKeyFilters.length, whereFilters.length);
+        }
+
         return new RollupTableImpl(getAttributes(), source, aggregations, includesConstituents, groupByColumns,
                 levelTables, levelRowLookups, levelNodeTableSources,
                 aggregatedNodeDefinition, aggregatedNodeOperations,
                 constituentNodeDefinition, constituentNodeOperations,
+                newFilters,
                 availableColumnDefinitions);
     }
 
@@ -332,7 +346,9 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
         }
         return new RollupTableImpl(getAttributes(), source, aggregations, includesConstituents, groupByColumns,
                 levelTables, levelRowLookups, levelNodeTableSources,
-                null, newAggregatedNodeOperations, null, newConstituentNodeOperations, newAvailableColumnDefinitions);
+                null, newAggregatedNodeOperations, null, newConstituentNodeOperations,
+                lowestRollupKeyFilters,
+                newAvailableColumnDefinitions);
     }
 
     @Override
@@ -451,6 +467,7 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
                 levelTables, levelRowLookups, levelNodeTableSources,
                 aggregatedNodeDefinition, aggregatedNodeOperations,
                 constituentNodeDefinition, constituentNodeOperations,
+                lowestRollupKeyFilters,
                 availableColumnDefinitions);
     }
 
@@ -467,7 +484,17 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
                     "Cannot rebase a RollupTable with a new source definition: " + differenceDescription);
         }
 
-        final QueryTable newSourceQueryTable = (QueryTable) newSource;
+        final QueryTable newSourceQueryTable;
+        if (lowestRollupKeyFilters != null) {
+            // if this rollup has had any key filters, then we apply them to the new source rather than generating
+            // buckets for keys which cannot be present in the result. Because these filters are applied, we pass
+            // in a null set of filters to the new RollupTableImpl we are creating.
+            final List<WhereFilter> keyFilter =
+                    Arrays.stream(lowestRollupKeyFilters).map(WhereFilter::copy).collect(Collectors.toList());
+            newSourceQueryTable = (QueryTable) newSource.where(Filter.and(keyFilter));
+        } else {
+            newSourceQueryTable = (QueryTable) newSource;
+        }
 
         final int numLevels = groupByColumns.size() + 1;
         final QueryTable baseLevel = newSourceQueryTable.aggNoMemo(
@@ -484,6 +511,7 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
                 levelTables, levelRowLookups, levelNodeTableSources,
                 aggregatedNodeDefinition, aggregatedNodeOperations,
                 constituentNodeDefinition, constituentNodeOperations,
+                null,
                 availableColumnDefinitions);
     }
 
@@ -504,7 +532,7 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
         final RollupTableImpl result = new RollupTableImpl(
                 source.getAttributes(ak -> shouldCopyAttribute(ak, CopyAttributeOperation.Rollup)),
                 source, aggregations, includeConstituents, groupByColumns,
-                levelTables, levelRowLookups, levelNodeTableSources, null, null, null, null, null);
+                levelTables, levelRowLookups, levelNodeTableSources, null, null, null, null, null, null);
         source.copySortableColumns(result, baseLevel.getDefinition().getColumnNameSet()::contains);
         result.setColumnDescriptions(AggregationDescriptions.of(aggregations));
         return result;
