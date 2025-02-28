@@ -352,8 +352,7 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
         return new RollupTableImpl(getAttributes(), source, aggregations, includesConstituents, groupByColumns,
                 levelTables, levelRowLookups, levelNodeTableSources,
                 null, newAggregatedNodeOperations, null, newConstituentNodeOperations,
-                rollupKeyFilters,
-                newAvailableColumnDefinitions);
+                rollupKeyFilters, newAvailableColumnDefinitions);
     }
 
     @Override
@@ -480,7 +479,7 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
         if (!newSource.getDefinition().equals(source.getDefinition())) {
             if (newSource.getDefinition().equalsIgnoreOrder(source.getDefinition())) {
                 throw new IllegalArgumentException(
-                        "Cannot rebase a RollupTable with a new source definition, column order is not identical.");
+                        "Cannot rebase a RollupTable with a new source definition, column order is not identical");
             }
             final String differenceDescription = newSource.getDefinition()
                     .getDifferenceDescription(source.getDefinition(), "new source", "existing source", ",");
