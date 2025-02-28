@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.pmt;
 
 import io.deephaven.engine.table.WritableColumnSource;
@@ -9,7 +12,7 @@ import java.time.Instant;
 /**
  * Null out a range from an WritableColumnSource.
  * <p>
- * This is done as an interface rather than using the set call with null to avoid per-cell virtual calls.  The
+ * This is done as an interface rather than using the set call with null to avoid per-cell virtual calls. The
  * WritableColumnSource implementations marks their set methods final so that they are avoided.
  */
 public interface ColumnSourceNuller {

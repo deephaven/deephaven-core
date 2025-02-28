@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.pmt;
 
 import io.deephaven.engine.context.ExecutionContext;
@@ -39,16 +42,14 @@ public class CommandLineDriver {
         new CommandLineDriver().start();
     }
 
-    private CommandLineDriver() {
-    }
+    private CommandLineDriver() {}
 
     private void start() throws ExecutionException, InterruptedException {
         final Scanner scanner = new Scanner(System.in);
 
         final TableDefinition definition = TableDefinition.from(
                 Arrays.asList("Sentinel", "Value"),
-                Arrays.asList(int.class, String.class)
-        );
+                Arrays.asList(int.class, String.class));
 
         final MutableObject<ArrayBackedPositionalMutableTable> tableHolder = new MutableObject<>();
         final MutableObject<TableUpdateListener> listenerHolder = new MutableObject<>();
@@ -59,7 +60,8 @@ public class CommandLineDriver {
             System.exit(1);
         });
 
-        final PeriodicUpdateGraph updateGraph = PeriodicUpdateGraph.newBuilder(BaseUpdateGraph.DEFAULT_UPDATE_GRAPH_NAME).build();
+        final PeriodicUpdateGraph updateGraph =
+                PeriodicUpdateGraph.newBuilder(BaseUpdateGraph.DEFAULT_UPDATE_GRAPH_NAME).build();
         final ExecutionContext executionContext;
         try {
             executionContext = ExecutionContext.newBuilder()
@@ -68,8 +70,7 @@ public class CommandLineDriver {
                     .newQueryScope()
                     .setQueryCompiler(QueryCompilerImpl.create(
                             Files.createTempDirectory("CommandLineDriver").resolve("cache").toFile(),
-                            ClassLoader.getSystemClassLoader()
-                    ))
+                            ClassLoader.getSystemClassLoader()))
                     .setOperationInitializer(OperationInitializer.NON_PARALLELIZABLE)
                     .setUpdateGraph(updateGraph)
                     .build();
@@ -80,27 +81,31 @@ public class CommandLineDriver {
         try (final SafeCloseable contextCloseable = executionContext.open()) {
 
             updateGraph.sharedLock().doLocked(() -> {
-                final ArrayBackedPositionalMutableTable arrayBackedPositionalMutableTable = new ArrayBackedPositionalMutableTable(definition);
+                final ArrayBackedPositionalMutableTable arrayBackedPositionalMutableTable =
+                        new ArrayBackedPositionalMutableTable(definition);
                 tableHolder.setValue(arrayBackedPositionalMutableTable);
 
-                final TableUpdateListener listener = new InstrumentedTableUpdateListenerAdapter(arrayBackedPositionalMutableTable, true) {
-                    @Override
-                    public void onUpdate(TableUpdate upstream) {
-                        System.out.println("Update: " + upstream);
-                    }
-                };
+                final TableUpdateListener listener =
+                        new InstrumentedTableUpdateListenerAdapter(arrayBackedPositionalMutableTable, true) {
+                            @Override
+                            public void onUpdate(TableUpdate upstream) {
+                                System.out.println("Update: " + upstream);
+                            }
+                        };
                 arrayBackedPositionalMutableTable.addUpdateListener(listener);
                 listenerHolder.setValue(listener);
 
                 final TableUpdateValidator tuv = TableUpdateValidator.make(arrayBackedPositionalMutableTable);
                 validatorHolder.setValue(tuv);
                 final QueryTable validatorResult = tuv.getResultTable();
-                final InstrumentedTableUpdateListenerAdapter validatorListener = new InstrumentedTableUpdateListenerAdapter("Validator Result Listener", validatorResult, false) {
-                    @Override
-                    public void onUpdate(TableUpdate upstream) {
-                        // uninteresting, we just want the failure behavior
-                    }
-                };
+                final InstrumentedTableUpdateListenerAdapter validatorListener =
+                        new InstrumentedTableUpdateListenerAdapter("Validator Result Listener", validatorResult,
+                                false) {
+                            @Override
+                            public void onUpdate(TableUpdate upstream) {
+                                // uninteresting, we just want the failure behavior
+                            }
+                        };
                 validatorResult.addUpdateListener(validatorListener);
                 validatorListenerHolder.setValue(validatorListener);
             });
@@ -109,8 +114,7 @@ public class CommandLineDriver {
 
             help(System.out);
 
-            LOOP:
-            while (true) {
+            LOOP: while (true) {
                 final String in = scanner.nextLine();
                 final String[] splits = in.split("\\s+");
                 final String command = splits[0];

@@ -1,5 +1,9 @@
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.pmt;
 
+import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryCompiler;
 import io.deephaven.engine.context.QueryCompilerImpl;
@@ -81,7 +85,7 @@ public class TestArrayBackedPositionalTable {
     @Before
     public void setup() {
         // TODO: ?? can't reuse graph name?
-//        updateGraph = PeriodicUpdateGraph.newBuilder("testUpdateGraph").build();
+        // updateGraph = PeriodicUpdateGraph.newBuilder("testUpdateGraph").build();
         updateGraph = PeriodicUpdateGraph.newBuilder("testUpdateGraph").existingOrBuild();
         updateGraph.enableUnitTestMode();
         updateGraph.resetForUnitTests(false);
@@ -92,14 +96,13 @@ public class TestArrayBackedPositionalTable {
                     .setUpdateGraph(updateGraph)
                     .setQueryCompiler(QueryCompilerImpl.create(
                             Files.createTempDirectory("CommandLineDriver").resolve("cache").toFile(),
-                            ClassLoader.getSystemClassLoader()
-                    ))
+                            ClassLoader.getSystemClassLoader()))
                     .setOperationInitializer(OperationInitializer.NON_PARALLELIZABLE)
                     .build();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        //noinspection resource
+        // noinspection resource
         contextCloseable = executionContext.open();
     }
 
@@ -123,12 +126,13 @@ public class TestArrayBackedPositionalTable {
             table = new ArrayBackedPositionalMutableTable(testDefinition);
             final TableUpdateValidator tuv = TableUpdateValidator.make(table);
             final QueryTable validatorResult = tuv.getResultTable();
-            validatorListener = new InstrumentedTableUpdateListenerAdapter("Validator Result Listener", validatorResult, false) {
-                @Override
-                public void onUpdate(TableUpdate upstream) {
-                    // uninteresting, we just want the failure behavior
-                }
-            };
+            validatorListener =
+                    new InstrumentedTableUpdateListenerAdapter("Validator Result Listener", validatorResult, false) {
+                        @Override
+                        public void onUpdate(TableUpdate upstream) {
+                            // uninteresting, we just want the failure behavior
+                        }
+                    };
             validatorResult.addUpdateListener(validatorListener);
             printListener = new PrintListener("table", table);
         }
@@ -166,7 +170,8 @@ public class TestArrayBackedPositionalTable {
                 stringCol("Value", "Miranda"),
                 doubleCol("Dub", QueryConstants.NULL_DOUBLE));
 
-        TestCase.assertEquals("", TableTools.diff(table, TableTools.merge(expected.head(1), newRow, expected.tail(1)), 10));
+        TestCase.assertEquals("",
+                TableTools.diff(table, TableTools.merge(expected.head(1), newRow, expected.tail(1)), 10));
 
         table.startBundle();
         table.deleteRow(0, 2);
@@ -282,7 +287,8 @@ public class TestArrayBackedPositionalTable {
     }
 
     private static Table getExpectedBase(int tableSize) {
-        return TableTools.emptyTable(tableSize).update("Value=i*10", "SV=Integer.toString(Value)", "Time=Instant.parse(`" + BASE_TIME_STRING + "`).plusMillis(Value)");
+        return TableTools.emptyTable(tableSize).update("Value=i*10", "SV=Integer.toString(Value)",
+                "Time=Instant.parse(`" + BASE_TIME_STRING + "`).plusMillis(Value)");
     }
 
     @NotNull
@@ -290,8 +296,7 @@ public class TestArrayBackedPositionalTable {
         final TableDefinition tableDefinition = TableDefinition.from(Arrays.asList(
                 ColumnHeader.of("Value", int.class),
                 ColumnHeader.of("SV", String.class),
-                ColumnHeader.of("Time", Instant.class)
-        ));
+                ColumnHeader.of("Time", Instant.class)));
         final ArrayBackedPositionalMutableTable table = new ArrayBackedPositionalMutableTable(tableDefinition);
         return table;
     }
@@ -339,8 +344,8 @@ public class TestArrayBackedPositionalTable {
             TstUtils.assertTableEquals(
                     TableTools.newTable(intCol("Value", 0, 10, 20, NULL_INT, NULL_INT, 30, 40, 50)).update(
                             "SV=isNull(Value) ? null : Integer.toString(Value)",
-                            "Time=isNull(Value) ? null : Instant.parse(`" + BASE_TIME_STRING + "`).plusMillis(Value)"
-                    ), table);
+                            "Time=isNull(Value) ? null : Instant.parse(`" + BASE_TIME_STRING + "`).plusMillis(Value)"),
+                    table);
 
             table.startBundle();
         }
@@ -363,8 +368,7 @@ public class TestArrayBackedPositionalTable {
                 TableTools.newTable(intCol("Value", 0, 10, 20, 100, 200, 30, 40, 50))
                         .update(
                                 "SV=Integer.toString(Value)",
-                                "Time=Instant.parse(`" + BASE_TIME_STRING + "`).plusMillis(Value)"
-                                ),
+                                "Time=Instant.parse(`" + BASE_TIME_STRING + "`).plusMillis(Value)"),
                 table);
     }
 
@@ -431,12 +435,14 @@ public class TestArrayBackedPositionalTable {
             positions = new ArrayBackedPositionalMutableTable(positionsDefinition);
             prices = new ArrayBackedPositionalMutableTable(priceDefinition);
 
-            decorated = positions.naturalJoin(prices, "Symbol", "Bid,Ask,QuoteTime=Time").update("Mid=(Bid+Ask)/2", "Notional=Mid*Quantity");
+            decorated = positions.naturalJoin(prices, "Symbol", "Bid,Ask,QuoteTime=Time").update("Mid=(Bid+Ask)/2",
+                    "Notional=Mid*Quantity");
 
             printListener = new PrintListener("Positions Decorated with Prices", decorated);
         }
 
-        final Table aggregated = decorated.aggBy(List.of(AggSum("Notional", "Quantity"), AggLast("Mid")), "Symbol", "Group");
+        final Table aggregated =
+                decorated.aggBy(List.of(AggSum("Notional", "Quantity"), AggLast("Mid")), "Symbol", "Group");
 
         TstUtils.assertTableEquals(
                 TableTools.newTable(
@@ -447,10 +453,8 @@ public class TestArrayBackedPositionalTable {
                         TableTools.doubleCol("Ask"),
                         TableTools.instantCol("QuoteTime"),
                         TableTools.doubleCol("Mid"),
-                        TableTools.doubleCol("Notional")
-                ),
-                decorated
-        );
+                        TableTools.doubleCol("Notional")),
+                decorated);
 
         TstUtils.assertTableEquals(
                 TableTools.newTable(
@@ -458,8 +462,7 @@ public class TestArrayBackedPositionalTable {
                         TableTools.stringCol("Group"),
                         TableTools.doubleCol("Notional"),
                         TableTools.longCol("Quantity"),
-                        TableTools.doubleCol("Mid")
-                ),
+                        TableTools.doubleCol("Mid")),
                 aggregated);
 
 
@@ -493,10 +496,8 @@ public class TestArrayBackedPositionalTable {
                         TableTools.doubleCol("Ask", NULL_DOUBLE),
                         TableTools.instantCol("QuoteTime", (Instant) null),
                         TableTools.doubleCol("Mid", NULL_DOUBLE),
-                        TableTools.doubleCol("Notional", NULL_DOUBLE)
-                ),
-                decorated
-        );
+                        TableTools.doubleCol("Notional", NULL_DOUBLE)),
+                decorated);
 
         TstUtils.assertTableEquals(
                 TableTools.newTable(
@@ -504,10 +505,8 @@ public class TestArrayBackedPositionalTable {
                         TableTools.stringCol("Group", "Avengers"),
                         TableTools.doubleCol("Notional", NULL_DOUBLE),
                         TableTools.longCol("Quantity", 1000),
-                        TableTools.doubleCol("Mid", NULL_DOUBLE)
-                ),
-                aggregated
-        );
+                        TableTools.doubleCol("Mid", NULL_DOUBLE)),
+                aggregated);
 
 
         prices.startBundle();
@@ -539,10 +538,8 @@ public class TestArrayBackedPositionalTable {
                         TableTools.doubleCol("Ask", 411.42),
                         TableTools.instantCol("QuoteTime", baseTime),
                         TableTools.doubleCol("Mid", spyMid),
-                        TableTools.doubleCol("Notional", spyMid * 1000)
-                ),
-                decorated
-        );
+                        TableTools.doubleCol("Notional", spyMid * 1000)),
+                decorated);
 
         TstUtils.assertTableEquals(
                 TableTools.newTable(
@@ -550,10 +547,8 @@ public class TestArrayBackedPositionalTable {
                         TableTools.stringCol("Group", "Avengers"),
                         TableTools.doubleCol("Notional", spyMid * 1000),
                         TableTools.longCol("Quantity", 1000),
-                        TableTools.doubleCol("Mid", spyMid)
-                ),
-                aggregated
-        );
+                        TableTools.doubleCol("Mid", spyMid)),
+                aggregated);
 
         positions.startBundle();
         positions.addRow(0, 4);
@@ -575,19 +570,18 @@ public class TestArrayBackedPositionalTable {
                         TableTools.doubleCol("Ask", 411.42, NULL_DOUBLE, NULL_DOUBLE, NULL_DOUBLE, 411.42),
                         TableTools.instantCol("QuoteTime", baseTime, null, null, null, baseTime),
                         TableTools.doubleCol("Mid", spyMid, NULL_DOUBLE, NULL_DOUBLE, NULL_DOUBLE, spyMid),
-                        TableTools.doubleCol("Notional", spyMid * -1500, NULL_DOUBLE, NULL_DOUBLE, NULL_DOUBLE, spyMid * 1000)
-                ),
-                decorated
-        );
+                        TableTools.doubleCol("Notional", spyMid * -1500, NULL_DOUBLE, NULL_DOUBLE, NULL_DOUBLE,
+                                spyMid * 1000)),
+                decorated);
 
         TstUtils.assertTableEquals(
                 TableTools.newTable(
                         TableTools.stringCol("Symbol", "SPY", "AAPL", "AAPL", "AAPL"),
                         TableTools.stringCol("Group", "Avengers", "Justice League", "Avengers", "Valhalla"),
-                        TableTools.doubleCol("Notional", (spyMid * -1500 + spyMid * 1000), NULL_DOUBLE, NULL_DOUBLE, NULL_DOUBLE),
+                        TableTools.doubleCol("Notional", (spyMid * -1500 + spyMid * 1000), NULL_DOUBLE, NULL_DOUBLE,
+                                NULL_DOUBLE),
                         longCol("Quantity", -500, 100, 200, 1500),
-                        TableTools.doubleCol("Mid", spyMid, NULL_DOUBLE, NULL_DOUBLE, NULL_DOUBLE)
-                ),
+                        TableTools.doubleCol("Mid", spyMid, NULL_DOUBLE, NULL_DOUBLE, NULL_DOUBLE)),
                 aggregated);
 
         prices.startBundle();
@@ -614,12 +608,11 @@ public class TestArrayBackedPositionalTable {
                         intCol("Quantity", -1500, 100, 200, 1500, 1000),
                         TableTools.doubleCol("Bid", 411.40, 122.60, 122.60, 122.60, 411.40),
                         TableTools.doubleCol("Ask", 411.42, 122.65, 122.65, 122.65, 411.42),
-                        TableTools.instantCol("QuoteTime", baseTime, baseTime.plusSeconds(1), baseTime.plusSeconds(1), baseTime.plusSeconds(1), baseTime),
+                        TableTools.instantCol("QuoteTime", baseTime, baseTime.plusSeconds(1), baseTime.plusSeconds(1),
+                                baseTime.plusSeconds(1), baseTime),
                         TableTools.doubleCol("Mid", spyMid, 122.625, 122.625, 122.625, spyMid),
-                        TableTools.doubleCol("Notional", spyMid * -1500, 12262.5, 24525, 183937.5, spyMid * 1000)
-                ),
-                decorated
-        );
+                        TableTools.doubleCol("Notional", spyMid * -1500, 12262.5, 24525, 183937.5, spyMid * 1000)),
+                decorated);
 
         TstUtils.assertTableEquals(
                 TableTools.newTable(
@@ -627,8 +620,7 @@ public class TestArrayBackedPositionalTable {
                         TableTools.stringCol("Group", "Avengers", "Justice League", "Avengers", "Valhalla"),
                         TableTools.doubleCol("Notional", (spyMid * -1500 + spyMid * 1000), 12262.5, 24525, 183937.5),
                         longCol("Quantity", -500, 100, 200, 1500),
-                        TableTools.doubleCol("Mid", spyMid, 122.625, 122.625, 122.625)
-                ),
+                        TableTools.doubleCol("Mid", spyMid, 122.625, 122.625, 122.625)),
                 aggregated);
     }
 
@@ -642,7 +634,40 @@ public class TestArrayBackedPositionalTable {
                 ColumnHeader.of("Float", float.class),
                 ColumnHeader.of("Short", short.class),
                 ColumnHeader.of("Boolean", boolean.class),
-                ColumnHeader.of("Timestamp", Instant.class)
-        )));
+                ColumnHeader.of("Timestamp", Instant.class))));
+    }
+
+    @Test
+    public void testIllegalStartBundle() throws InterruptedException, ExecutionException {
+
+        updateGraph.sharedLock().lock();
+        final ArrayBackedPositionalMutableTable table;
+        final InstrumentedTableUpdateListenerAdapter validatorListener;
+        final PrintListener printListener;
+        try (final SafeCloseable closeable = () -> updateGraph.sharedLock().unlock()) {
+            table = new ArrayBackedPositionalMutableTable(testDefinition);
+            final TableUpdateValidator tuv = TableUpdateValidator.make(table);
+            final QueryTable validatorResult = tuv.getResultTable();
+            validatorListener =
+                    new InstrumentedTableUpdateListenerAdapter("Validator Result Listener", validatorResult, false) {
+                        @Override
+                        public void onUpdate(TableUpdate upstream) {
+                            // uninteresting, we just want the failure behavior
+                        }
+                    };
+            validatorResult.addUpdateListener(validatorListener);
+            printListener = new PrintListener("table", table);
+        }
+
+        table.startBundle();
+        table.startBundle();
+
+        try {
+            updateGraph.runWithinUnitTestCycle(table::run);
+            Assert.statementNeverExecuted("Should have thrown an exception");
+        } catch (IllegalStateException ise) {
+            Assert.equals(ise.getMessage(), "ise.getMessage()",
+                    "Attempt to start a bundle while a bundle is already in progress");
+        }
     }
 }

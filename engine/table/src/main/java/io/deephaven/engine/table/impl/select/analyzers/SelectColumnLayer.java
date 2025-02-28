@@ -23,7 +23,6 @@ import io.deephaven.engine.table.impl.sources.ChunkedBackingStoreExposedWritable
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.util.ChunkUtils;
 import io.deephaven.engine.table.impl.util.JobScheduler;
-import io.deephaven.engine.table.impl.util.ShiftUtil;
 import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.updategraph.UpdateCommitterEx;
 import io.deephaven.engine.updategraph.UpdateGraph;
@@ -371,7 +370,23 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
             // apply shifts!
             if (!isRedirected && preMoveKeys.isNonempty()) {
                 assert !flattenedResult;
-                ShiftUtil.applyShift(writableSource, destContext, contextSize.applyAsInt(preMoveKeys.size()), preMoveKeys, postMoveKeys, PAGE_SIZE);
+                assert destContext != null;
+                // note: we cannot use a get context here as destination is identical to source
+                final int shiftContextSize = contextSize.applyAsInt(preMoveKeys.size());
+                try (final ChunkSource.FillContext srcContext = writableSource.makeFillContext(shiftContextSize);
+                        final WritableChunk<Values> chunk =
+                                writableSource.getChunkType().makeWritableChunk(shiftContextSize);
+                        final RowSequence.Iterator srcIter = preMoveKeys.getRowSequenceIterator();
+                        final RowSequence.Iterator destIter = postMoveKeys.getRowSequenceIterator()) {
+
+                    while (srcIter.hasMore()) {
+                        final RowSequence srcKeys = srcIter.getNextRowSequenceWithLength(PAGE_SIZE);
+                        final RowSequence destKeys = destIter.getNextRowSequenceWithLength(PAGE_SIZE);
+                        Assert.eq(srcKeys.size(), "srcKeys.size()", destKeys.size(), "destKeys.size()");
+                        writableSource.fillPrevChunk(srcContext, chunk, srcKeys);
+                        writableSource.fillFromChunk(destContext, chunk, destKeys);
+                    }
+                }
             }
 
             // apply modifies!

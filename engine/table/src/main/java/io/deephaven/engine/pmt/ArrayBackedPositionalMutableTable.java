@@ -1,5 +1,9 @@
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.pmt;
 
+import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.liveness.LivenessScopeStack;
@@ -8,8 +12,6 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
-import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
-import io.deephaven.engine.table.impl.util.ShiftUtil;
 import io.deephaven.engine.table.impl.util.UpdateCoalescer;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.util.SafeCloseable;
@@ -29,7 +31,7 @@ import java.util.concurrent.Future;
 
 public class ArrayBackedPositionalMutableTable extends QueryTable implements Runnable, PositionalMutableTable {
     /**
-     * How many elements we read from a set2D operation at once.  This happens to match the ArrayBackedColumnSource's
+     * How many elements we read from a set2D operation at once. This happens to match the ArrayBackedColumnSource's
      * internal array size.
      */
     private static final int CHUNK_SIZE = 2048;
@@ -51,7 +53,7 @@ public class ArrayBackedPositionalMutableTable extends QueryTable implements Run
     private final WritableColumnSource[] columnSources;
 
     /**
-     * When we are inserting rows in the middle we want to null them out.  For removing rows that contain objects, we
+     * When we are inserting rows in the middle we want to null them out. For removing rows that contain objects, we
      * must null them out to avoid holding onto garbage.
      */
     private final ColumnSourceNuller[] nullers;
@@ -65,18 +67,20 @@ public class ArrayBackedPositionalMutableTable extends QueryTable implements Run
     /**
      * Create an ArrayBackedPositionalMutableTable based on the desired definition.
      *
-     * <p>The table will start out empty, and ready for use either in queries or by calling {@link PositionalMutableTable}
-     * methods to update the data.</p>
+     * <p>
+     * The table will start out empty, and ready for use either in queries or by calling {@link PositionalMutableTable}
+     * methods to update the data.
+     * </p>
      *
      * @param definition the definition of this table
      */
     public ArrayBackedPositionalMutableTable(final @NotNull TableDefinition definition) {
-        //noinspection resource
+        // noinspection resource
         super(
                 RowSetFactory.empty().toTracking(),
-                makeColumns(definition)
-        );
-        columnSources = getColumnSourceMap().values().stream().map(cs -> (WritableColumnSource<?>) cs).toArray(WritableColumnSource[]::new);
+                makeColumns(definition));
+        columnSources = getColumnSourceMap().values().stream().map(cs -> (WritableColumnSource<?>) cs)
+                .toArray(WritableColumnSource[]::new);
         nullers = new ColumnSourceNuller[columnSources.length];
         objectNullers = new ColumnSourceNuller[columnSources.length];
         for (int cc = 0; cc < columnSources.length; cc++) {
@@ -87,7 +91,7 @@ public class ArrayBackedPositionalMutableTable extends QueryTable implements Run
             }
             columnSources[cc].startTrackingPrevValues();
         }
-        // our index is always 0...N, so we are flat.  This can enable some engine operations to process this table
+        // our index is always 0...N, so we are flat. This can enable some engine operations to process this table
         // more efficiently
         setFlat();
         getUpdateGraph().addSource(this);
@@ -96,9 +100,11 @@ public class ArrayBackedPositionalMutableTable extends QueryTable implements Run
     /**
      * Create the ArrayBackedColumnSources for this table from the definition.
      *
-     * <p>The ArrayBackedColumnSource uses a contiguous address space represented by segmented backing arrays (2K elements
-     * allocated together).  The arrays are segmented so that we can grow them without reallocation, and when recording
-     * previous values (used for incremental computation) we can create reasonably sized temporary segments.</p>
+     * <p>
+     * The ArrayBackedColumnSource uses a contiguous address space represented by segmented backing arrays (2K elements
+     * allocated together). The arrays are segmented so that we can grow them without reallocation, and when recording
+     * previous values (used for incremental computation) we can create reasonably sized temporary segments.
+     * </p>
      *
      * @param definition the definition of our table
      * @return the map of column names to ColumnSources.
@@ -129,7 +135,7 @@ public class ArrayBackedPositionalMutableTable extends QueryTable implements Run
         while ((update = updateQueue.poll()) != null) {
             if (update instanceof StartBundle) {
                 if (inBundle) {
-                    throw new IllegalStateException();
+                    throw new IllegalStateException("Attempt to start a bundle while a bundle is already in progress");
                 }
                 inBundle = true;
                 continue;
@@ -165,12 +171,13 @@ public class ArrayBackedPositionalMutableTable extends QueryTable implements Run
      * Process a bundle of updates.
      *
      * @param bundledUpdates the updates to process
-     * @param coalescer      the coalescer for these updates
+     * @param coalescer the coalescer for these updates
      */
-    private void processUpdates(final @NotNull LinkedList<Update> bundledUpdates, final @NotNull MutableObject<UpdateCoalescer> coalescer) {
+    private void processUpdates(final @NotNull LinkedList<Update> bundledUpdates,
+            final @NotNull MutableObject<UpdateCoalescer> coalescer) {
         // rather than coalescing a sequence of set cell operations using the coalescer we accumulate them into a random
-        // index builder and a modificed column set.  The coalescer operation is fairly expensive; whereas the
-        // Index random builder is less expensive.  Sequential builders are cheaper still, but we do not know what stream
+        // index builder and a modificed column set. The coalescer operation is fairly expensive; whereas the
+        // Index random builder is less expensive. Sequential builders are cheaper still, but we do not know what stream
         // of updates the users will choose to give us.
         RowSetBuilderRandom modifiedSetBuilder = null;
         ModifiedColumnSet modifiedColumnSet = null;
@@ -185,7 +192,7 @@ public class ArrayBackedPositionalMutableTable extends QueryTable implements Run
                         modifiedColumnSet.clear();
                     }
                     final SetCell setCell = (SetCell) update;
-                    //noinspection unchecked
+                    // noinspection unchecked
                     columnSources[setCell.column].set(setCell.rowPosition, setCell.value);
                     modifiedColumnSet.setColumnWithIndex(setCell.column);
                     modifiedSetBuilder.addKey(setCell.rowPosition);
@@ -217,7 +224,7 @@ public class ArrayBackedPositionalMutableTable extends QueryTable implements Run
                     final long startSize = getRowSet().size();
                     final long newSize = startSize + addUpdate.count;
                     // we udpate the index at the end (because we are always flat)
-                    //noinspection resource
+                    // noinspection resource
                     getRowSet().writableCast().insertRange(startSize, newSize - 1);
                     // and we need to make sure the columns are big enough
                     for (final WritableColumnSource<?> columnSource : columnSources) {
@@ -247,11 +254,12 @@ public class ArrayBackedPositionalMutableTable extends QueryTable implements Run
 
                     final long startSize = getRowSet().size();
                     // we remove from the end
-                    //noinspection resource
+                    // noinspection resource
                     getRowSet().writableCast().removeRange(startSize - deleteUpdate.count, startSize);
 
                     // but notify about the really removed rows
-                    newUpdate.removed = RowSetFactory.fromRange(deleteUpdate.row, deleteUpdate.row + deleteUpdate.count - 1);
+                    newUpdate.removed =
+                            RowSetFactory.fromRange(deleteUpdate.row, deleteUpdate.row + deleteUpdate.count - 1);
                     // and a corresponding shift (if in the middle)
                     if (startSize - deleteUpdate.count != deleteUpdate.row) {
                         final RowSetShiftData.Builder builder = new RowSetShiftData.Builder();
@@ -259,7 +267,8 @@ public class ArrayBackedPositionalMutableTable extends QueryTable implements Run
                         newUpdate.shifted = builder.build();
 
                         for (WritableColumnSource<?> columnSource : columnSources) {
-                            doShift(columnSource, deleteUpdate.row + deleteUpdate.count, startSize - 1, -deleteUpdate.count);
+                            doShift(columnSource, deleteUpdate.row + deleteUpdate.count, startSize - 1,
+                                    -deleteUpdate.count);
                         }
                     } else {
                         newUpdate.shifted = RowSetShiftData.EMPTY;
@@ -268,7 +277,8 @@ public class ArrayBackedPositionalMutableTable extends QueryTable implements Run
                     for (int cc = 0; cc < columnSources.length; ++cc) {
                         // we only need to null out object column sources which may hold onto garbage
                         if (objectNullers[cc] != null) {
-                            objectNullers[cc].nullColumnSource(columnSources[cc], startSize - deleteUpdate.count, deleteUpdate.count);
+                            objectNullers[cc].nullColumnSource(columnSources[cc], startSize - deleteUpdate.count,
+                                    deleteUpdate.count);
                         }
                     }
 
@@ -304,7 +314,7 @@ public class ArrayBackedPositionalMutableTable extends QueryTable implements Run
 
         long startPosition = set2D.rowPosition;
 
-        // The RowSequence interface is how we traverse a table's Index.  It has fewer operations, but importantly
+        // The RowSequence interface is how we traverse a table's Index. It has fewer operations, but importantly
         // has an iterator that lets us take views into an Index either by a fixed size at a time (used here to get
         // appropriately sized chunks) or based on keys (used elsewhere when a table's address space is divided into
         // multiple regions)
@@ -316,13 +326,14 @@ public class ArrayBackedPositionalMutableTable extends QueryTable implements Run
         // when creating contexts, we use a SharedContext that allows us to reuse things like redirections across
         // columns
         try (RowSequence.Iterator okit = tableToRead.getRowSet().getRowSequenceIterator();
-             final SafeCloseableArray<ChunkSource.GetContext> ignored = new SafeCloseableArray<>(getContextArray);
-             final SafeCloseableArray<ChunkSink.FillFromContext> ignored2 = new SafeCloseableArray<>(fillFromContextArray);
-             final SharedContext sharedContext = SharedContext.makeSharedContext()) {
+                final SafeCloseableArray<ChunkSource.GetContext> ignored = new SafeCloseableArray<>(getContextArray);
+                final SafeCloseableArray<ChunkSink.FillFromContext> ignored2 =
+                        new SafeCloseableArray<>(fillFromContextArray);
+                final SharedContext sharedContext = SharedContext.makeSharedContext()) {
             for (int cc = 0; cc < columns.size(); cc++) {
                 columnSourcesToRead[cc] = tableToRead.getColumnSource(columns.get(cc).getName());
                 getContextArray[cc] = columnSourcesToRead[cc].makeGetContext(chunkSize, sharedContext);
-                //noinspection resource
+                // noinspection resource
                 fillFromContextArray[cc] = columnSources[cc].makeFillFromContext(chunkSize);
             }
 
@@ -332,12 +343,16 @@ public class ArrayBackedPositionalMutableTable extends QueryTable implements Run
                 sharedContext.reset();
                 // get the keys to read from from the source iterator
                 final RowSequence sourceKeys = okit.getNextRowSequenceWithLength(CHUNK_SIZE);
-                // write them into a range determined by our set2D start position and how many rows we've already consumed
-                final RowSequence destinationKeys = RowSequenceFactory.forRange(startPosition, startPosition + sourceKeys.intSize() - 1);
-                // now for each column, get the values from the set2D source, and then write them into our local array backed column source
+                // write them into a range determined by our set2D start position and how many rows we've already
+                // consumed
+                final RowSequence destinationKeys =
+                        RowSequenceFactory.forRange(startPosition, startPosition + sourceKeys.intSize() - 1);
+                // now for each column, get the values from the set2D source, and then write them into our local array
+                // backed column source
                 for (int cc = 0; cc < columns.size(); ++cc) {
-                    final Chunk<? extends Values> dataChunk = columnSourcesToRead[cc].getChunk(getContextArray[cc], sourceKeys);
-                    //noinspection unchecked
+                    final Chunk<? extends Values> dataChunk =
+                            columnSourcesToRead[cc].getChunk(getContextArray[cc], sourceKeys);
+                    // noinspection unchecked
                     columnSources[cc].fillFromChunk(fillFromContextArray[cc], dataChunk, destinationKeys);
                 }
             }
@@ -347,11 +362,12 @@ public class ArrayBackedPositionalMutableTable extends QueryTable implements Run
     /**
      * If there are outstanding modifications, then build the Index and apply them to the coalescer.
      *
-     * @param coalescer          a MutableObject containing the coalescer for our update
+     * @param coalescer a MutableObject containing the coalescer for our update
      * @param modifiedSetBuilder the Index builder of modified rows
-     * @param originalRowSet     the row set at the beginning of this operation
+     * @param originalRowSet the row set at the beginning of this operation
      */
-    private void maybeApplyModifications(final @NotNull MutableObject<UpdateCoalescer> coalescer, final @Nullable RowSetBuilderRandom modifiedSetBuilder, final RowSet originalRowSet) {
+    private void maybeApplyModifications(final @NotNull MutableObject<UpdateCoalescer> coalescer,
+            final @Nullable RowSetBuilderRandom modifiedSetBuilder, final RowSet originalRowSet) {
         if (modifiedSetBuilder == null) {
             return;
         }
@@ -360,8 +376,7 @@ public class ArrayBackedPositionalMutableTable extends QueryTable implements Run
                 RowSetFactory.empty(),
                 modifiedSetBuilder.build(),
                 RowSetShiftData.EMPTY,
-                getModifiedColumnSetForUpdates()
-        );
+                getModifiedColumnSetForUpdates());
         applyUpdate(coalescer, newUpdate, originalRowSet);
     }
 
@@ -371,7 +386,8 @@ public class ArrayBackedPositionalMutableTable extends QueryTable implements Run
      * @param coalescer a MutableObject containing the coalescer for our update
      * @param newUpdate the new update to apply tot he coalescer
      */
-    private void applyUpdate(final @NotNull MutableObject<UpdateCoalescer> coalescer, final @NotNull TableUpdate newUpdate, final @NotNull RowSet originalRowSet) {
+    private void applyUpdate(final @NotNull MutableObject<UpdateCoalescer> coalescer,
+            final @NotNull TableUpdate newUpdate, final @NotNull RowSet originalRowSet) {
         UpdateCoalescer coalescerValue = coalescer.getValue();
         if (coalescerValue == null) {
             coalescer.setValue(new UpdateCoalescer(originalRowSet, newUpdate));
@@ -435,19 +451,44 @@ public class ArrayBackedPositionalMutableTable extends QueryTable implements Run
         return inBundle;
     }
 
-    private static void doShift(final WritableColumnSource<?> writableSource, final long start, final long end, final long offset) {
-        final WritableRowSet preMoveKeys = RowSetFactory.fromRange(start, end);
-        final WritableRowSet postMoveKeys = preMoveKeys.shift(offset);
-
-        final int PAGE_SIZE = 4096;
-
-        final long absOffset = Math.abs(offset);
-        final int contextSize = absOffset > PAGE_SIZE ? PAGE_SIZE : (int) absOffset;
-
-        try (final SafeCloseable ignored = LivenessScopeStack.open();
-             final ChunkSink.FillFromContext destContext = writableSource.makeFillFromContext(contextSize)) {
-            ShiftUtil.applyShift(writableSource, destContext, contextSize, preMoveKeys, postMoveKeys, PAGE_SIZE);
+    private static <T> void doShift(final WritableColumnSource<T> writableSource, final long start, final long end,
+            final long offset) {
+        final Class<T> colType = writableSource.getType();
+        final Shifter<T> shifter;
+        if (colType == char.class) {
+            shifter = (cs, src, dst) -> cs.set(dst, cs.getChar(src));
+        } else if (colType == byte.class) {
+            shifter = (cs, src, dst) -> cs.set(dst, cs.getByte(src));
+        } else if (colType == short.class) {
+            shifter = (cs, src, dst) -> cs.set(dst, cs.getShort(src));
+        } else if (colType == int.class) {
+            shifter = (cs, src, dst) -> cs.set(dst, cs.getInt(src));
+        } else if (colType == long.class) {
+            shifter = (cs, src, dst) -> cs.set(dst, cs.getLong(src));
+        } else if (colType == double.class) {
+            shifter = (cs, src, dst) -> cs.set(dst, cs.getDouble(src));
+        } else if (colType == float.class) {
+            shifter = (cs, src, dst) -> cs.set(dst, cs.getFloat(src));
+        } else {
+            shifter = (cs, src, dst) -> cs.set(dst, cs.get(src));
         }
+
+        // TODO: we could do this with contexts/chunks/whatever, but would that even be faster when just shifting an
+        // array?
+
+        if (offset > 0) {
+            for (long i = (int) end; i >= start; i--) {
+                shifter.shift(writableSource, i, i + offset);
+            }
+        } else {
+            for (int i = (int) start; i <= end; i++) {
+                shifter.shift(writableSource, i, i + offset);
+            }
+        }
+    }
+
+    private interface Shifter<T> {
+        void shift(WritableColumnSource<T> writableSource, long src, long dst);
     }
 
     /**
