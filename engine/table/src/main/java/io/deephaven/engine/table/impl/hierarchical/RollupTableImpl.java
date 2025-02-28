@@ -75,12 +75,18 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
     private final Collection<? extends ColumnName> groupByColumns;
 
     private final int numLevels;
-    @Nullable
-    private final WhereFilter[] lowestRollupKeyFilters;
     private final int constituentDepth;
     private final QueryTable[] levelTables;
     private final AggregationRowLookup[] levelRowLookups;
     private final ColumnSource<Table>[] levelNodeTableSources;
+
+    /**
+     * When {@link #withFilter(Filter)} is called, we apply the filters to the lowest level, and re-aggregate. We need
+     * them to keep it around, so that when we rebase to a new table we can re-apply them and preserve the semantics of
+     * our chain of rollup operations.
+     */
+    @Nullable
+    private final WhereFilter[] lowestRollupKeyFilters;
 
     private final TableDefinition aggregatedNodeDefinition;
     private final RollupNodeOperationsRecorder aggregatedNodeOperations;
