@@ -137,11 +137,14 @@ public interface RollupTable extends HierarchicalTable<RollupTable> {
             @NotNull NodeOperationsRecorder aggregatedNodeOperationsToTranslate);
 
     /**
-     * Copy this RollupTable to a new RollupTable, replacing the source with newSource.
-     *
-     * @param newSource a new source table that must have the same definition as the source of this rollup
+     * Create a new RollupTable based on {@code newSource}, inheriting this RollupTable's {@link #getAggregations()
+     * aggregations}, {@link #includesConstituents() constituent inclusion}, {@link #getGroupByColumns() group-by
+     * columns}, and {@link #withNodeOperations(NodeOperationsRecorder...) node operations}.
+     * 
+     * @param newSource A new source table that must have the same definition as the source of this rollup; that is
+     *        {@code newSource.getDefinition().equals(getSource().getDefinition())} must be {@code true}
      *
      * @return The new RollupTable
      */
-    RollupTable rebase(Table newSource);
+    RollupTable rebase(@NotNull Table newSource);
 }
