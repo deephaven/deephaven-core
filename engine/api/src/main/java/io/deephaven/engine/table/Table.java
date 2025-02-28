@@ -223,6 +223,12 @@ public interface Table extends
      * Set this attribute to enable collection of barrage performance stats.
      */
     String BARRAGE_PERFORMANCE_KEY_ATTRIBUTE = "BarragePerformanceTableKey";
+    /**
+     * Set an Apache Arrow POJO Schema to this attribute to control the column encoding used for barrage serialization.
+     * <p>
+     * See {@code org.apache.arrow.vector.types.pojo.Schema}.
+     */
+    String BARRAGE_SCHEMA_ATTRIBUTE = "BarrageSchema";
 
     // -----------------------------------------------------------------------------------------------------------------
     // ColumnSources for fetching data by row key

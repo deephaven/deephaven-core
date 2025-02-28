@@ -12,11 +12,13 @@ import io.deephaven.util.annotations.VisibleForTesting;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import org.apache.arrow.flight.impl.Flight.Ticket;
+import org.apache.arrow.flight.sql.impl.FlightSql;
 import org.apache.arrow.flight.sql.impl.FlightSql.CommandGetCatalogs;
 import org.apache.arrow.flight.sql.impl.FlightSql.CommandGetDbSchemas;
 import org.apache.arrow.flight.sql.impl.FlightSql.CommandGetExportedKeys;
 import org.apache.arrow.flight.sql.impl.FlightSql.CommandGetImportedKeys;
 import org.apache.arrow.flight.sql.impl.FlightSql.CommandGetPrimaryKeys;
+import org.apache.arrow.flight.sql.impl.FlightSql.CommandGetSqlInfo;
 import org.apache.arrow.flight.sql.impl.FlightSql.CommandGetTableTypes;
 import org.apache.arrow.flight.sql.impl.FlightSql.CommandGetTables;
 import org.apache.arrow.flight.sql.impl.FlightSql.TicketStatementQuery;
@@ -28,6 +30,7 @@ import static io.deephaven.server.flightsql.FlightSqlSharedConstants.COMMAND_GET
 import static io.deephaven.server.flightsql.FlightSqlSharedConstants.COMMAND_GET_EXPORTED_KEYS_TYPE_URL;
 import static io.deephaven.server.flightsql.FlightSqlSharedConstants.COMMAND_GET_IMPORTED_KEYS_TYPE_URL;
 import static io.deephaven.server.flightsql.FlightSqlSharedConstants.COMMAND_GET_PRIMARY_KEYS_TYPE_URL;
+import static io.deephaven.server.flightsql.FlightSqlSharedConstants.COMMAND_GET_SQL_INFO_TYPE_URL;
 import static io.deephaven.server.flightsql.FlightSqlSharedConstants.COMMAND_GET_TABLES_TYPE_URL;
 import static io.deephaven.server.flightsql.FlightSqlSharedConstants.COMMAND_GET_TABLE_TYPES_TYPE_URL;
 
@@ -61,6 +64,8 @@ final class FlightSqlTicketHelper {
         T visit(CommandGetPrimaryKeys ticket);
 
         T visit(CommandGetTables ticket);
+
+        T visit(CommandGetSqlInfo ticket);
 
         T visit(TicketStatementQuery ticket);
     }
@@ -109,6 +114,8 @@ final class FlightSqlTicketHelper {
                 return visitor.visit(unpack(ticket, CommandGetImportedKeys.class, logId));
             case COMMAND_GET_EXPORTED_KEYS_TYPE_URL:
                 return visitor.visit(unpack(ticket, CommandGetExportedKeys.class, logId));
+            case COMMAND_GET_SQL_INFO_TYPE_URL:
+                return visitor.visit(unpack(ticket, CommandGetSqlInfo.class, logId));
         }
         throw invalidTicket(logId);
     }
@@ -148,6 +155,11 @@ final class FlightSqlTicketHelper {
 
         @Override
         public Ticket visit(CommandGetTables ticket) {
+            return packedTicket(ticket);
+        }
+
+        @Override
+        public Ticket visit(CommandGetSqlInfo ticket) {
             return packedTicket(ticket);
         }
 

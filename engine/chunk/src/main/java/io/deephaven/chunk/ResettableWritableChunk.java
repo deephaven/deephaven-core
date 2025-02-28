@@ -11,7 +11,7 @@ import io.deephaven.chunk.util.pools.PoolableChunk;
  * {@link WritableChunk} or a native array.
  */
 public interface ResettableWritableChunk<ATTR_BASE extends Any>
-        extends ResettableChunk<ATTR_BASE>, WritableChunk<ATTR_BASE>, PoolableChunk {
+        extends ResettableChunk<ATTR_BASE>, WritableChunk<ATTR_BASE>, PoolableChunk<ATTR_BASE> {
 
     @Override
     <ATTR extends ATTR_BASE> WritableChunk<ATTR> resetFromChunk(WritableChunk<ATTR> other, int offset, int capacity);

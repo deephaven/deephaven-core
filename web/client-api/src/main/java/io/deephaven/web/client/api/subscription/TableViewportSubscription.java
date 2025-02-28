@@ -21,7 +21,7 @@ import io.deephaven.web.client.api.JsTable;
 import io.deephaven.web.client.api.TableData;
 import io.deephaven.web.client.api.WorkerConnection;
 import io.deephaven.web.client.api.barrage.WebBarrageMessage;
-import io.deephaven.web.client.api.barrage.WebBarrageStreamReader;
+import io.deephaven.web.client.api.barrage.WebBarrageMessageReader;
 import io.deephaven.web.client.api.barrage.WebBarrageUtils;
 import io.deephaven.web.client.api.barrage.data.WebBarrageSubscription;
 import io.deephaven.web.client.api.barrage.stream.BiDiStream;
@@ -356,7 +356,7 @@ public class TableViewportSubscription extends AbstractTableSubscription {
                     (rowsAdded, rowsRemoved, totalMods, shifted, modifiedColumnSet) -> {
                     });
 
-            WebBarrageStreamReader reader = new WebBarrageStreamReader();
+            WebBarrageMessageReader reader = new WebBarrageMessageReader();
 
             BiDiStream<FlightData, FlightData> doExchange = connection().<FlightData, FlightData>streamFactory().create(
                     headers -> connection().flightServiceClient().doExchange(headers),

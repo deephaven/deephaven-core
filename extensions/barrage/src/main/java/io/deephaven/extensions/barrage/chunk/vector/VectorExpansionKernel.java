@@ -3,15 +3,8 @@
 //
 package io.deephaven.extensions.barrage.chunk.vector;
 
-import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ChunkType;
-import io.deephaven.chunk.IntChunk;
-import io.deephaven.chunk.ObjectChunk;
-import io.deephaven.chunk.WritableChunk;
-import io.deephaven.chunk.WritableIntChunk;
-import io.deephaven.chunk.WritableObjectChunk;
-import io.deephaven.chunk.attributes.Any;
-import io.deephaven.chunk.attributes.ChunkPositions;
+import io.deephaven.extensions.barrage.chunk.ExpansionKernel;
 import io.deephaven.vector.ByteVector;
 import io.deephaven.vector.CharVector;
 import io.deephaven.vector.DoubleVector;
@@ -22,7 +15,16 @@ import io.deephaven.vector.ObjectVector;
 import io.deephaven.vector.ShortVector;
 import io.deephaven.vector.Vector;
 
-public interface VectorExpansionKernel {
+/**
+ * The {@code VectorExpansionKernel} interface provides a mechanism for expanding chunks containing {@link Vector}
+ * elements into a pair of {@code LongChunk} and {@code Chunk<T>}, enabling efficient handling of vector-typed columnar
+ * data. This interface is part of the Deephaven Barrage extensions for processing structured data in Flight/Barrage
+ * streams.
+ *
+ * <p>
+ * A {@code VectorExpansionKernel}
+ */
+public interface VectorExpansionKernel<T extends Vector<T>> extends ExpansionKernel<T> {
 
     static Class<?> getComponentType(final Class<?> type, final Class<?> componentType) {
         if (ByteVector.class.isAssignableFrom(type)) {
@@ -55,53 +57,30 @@ public interface VectorExpansionKernel {
     /**
      * @return a kernel that expands a {@code Chunk<VectorT>} to pair of {@code LongChunk, Chunk<T>}
      */
-    static <T> VectorExpansionKernel makeExpansionKernel(final ChunkType chunkType, final Class<T> componentType) {
+    @SuppressWarnings("unchecked")
+    static <T extends Vector<T>> VectorExpansionKernel<T> makeExpansionKernel(
+            final ChunkType chunkType, final Class<?> componentType) {
+        if (componentType == boolean.class || componentType == Boolean.class) {
+            return (VectorExpansionKernel<T>) BooleanVectorExpansionKernel.INSTANCE;
+        }
+
         switch (chunkType) {
             case Char:
-                return CharVectorExpansionKernel.INSTANCE;
+                return (VectorExpansionKernel<T>) CharVectorExpansionKernel.INSTANCE;
             case Byte:
-                return ByteVectorExpansionKernel.INSTANCE;
+                return (VectorExpansionKernel<T>) ByteVectorExpansionKernel.INSTANCE;
             case Short:
-                return ShortVectorExpansionKernel.INSTANCE;
+                return (VectorExpansionKernel<T>) ShortVectorExpansionKernel.INSTANCE;
             case Int:
-                return IntVectorExpansionKernel.INSTANCE;
+                return (VectorExpansionKernel<T>) IntVectorExpansionKernel.INSTANCE;
             case Long:
-                return LongVectorExpansionKernel.INSTANCE;
+                return (VectorExpansionKernel<T>) LongVectorExpansionKernel.INSTANCE;
             case Float:
-                return FloatVectorExpansionKernel.INSTANCE;
+                return (VectorExpansionKernel<T>) FloatVectorExpansionKernel.INSTANCE;
             case Double:
-                return DoubleVectorExpansionKernel.INSTANCE;
+                return (VectorExpansionKernel<T>) DoubleVectorExpansionKernel.INSTANCE;
             default:
-                return new ObjectVectorExpansionKernel<>(componentType);
+                return (VectorExpansionKernel<T>) new ObjectVectorExpansionKernel<>(componentType);
         }
     }
-
-    /**
-     * This expands the source from a {@code TVector} per element to a flat {@code T} per element. The kernel records
-     * the number of consecutive elements that belong to a row in {@code perElementLengthDest}. The returned chunk is
-     * owned by the caller.
-     *
-     * @param source the source chunk of TVector to expand
-     * @param perElementLengthDest the destination IntChunk for which {@code dest.get(i + 1) - dest.get(i)} is
-     *        equivalent to {@code source.get(i).length}
-     * @return an unrolled/flattened chunk of T
-     */
-    <A extends Any> WritableChunk<A> expand(ObjectChunk<Vector<?>, A> source,
-            WritableIntChunk<ChunkPositions> perElementLengthDest);
-
-    /**
-     * This contracts the source from a pair of {@code LongChunk} and {@code Chunk<T>} and produces a
-     * {@code Chunk<T[]>}. The returned chunk is owned by the caller.
-     *
-     * @param source the source chunk of T to contract
-     * @param perElementLengthDest the source IntChunk for which {@code dest.get(i + 1) - dest.get(i)} is equivalent to
-     *        {@code source.get(i).length}
-     * @param outChunk the returned chunk from an earlier record batch
-     * @param outOffset the offset to start writing into {@code outChunk}
-     * @param totalRows the total known rows for this column; if known (else 0)
-     * @return a result chunk of T[]
-     */
-    <A extends Any> WritableObjectChunk<Vector<?>, A> contract(
-            Chunk<A> source, IntChunk<ChunkPositions> perElementLengthDest,
-            WritableChunk<A> outChunk, int outOffset, int totalRows);
 }
