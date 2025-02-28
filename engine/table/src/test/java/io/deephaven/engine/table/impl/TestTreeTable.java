@@ -48,7 +48,8 @@ public class TestTreeTable extends RefreshingTableTestCase {
                 intCol("Sentinel", 101, 102, 103, 104, 105));
 
         final TreeTable tree1a = source1.tree("ID", "Parent");
-        final TreeTable.NodeOperationsRecorder recorder = tree1a.makeNodeOperationsRecorder().sortDescending("Sentinel");
+        final TreeTable.NodeOperationsRecorder recorder =
+                tree1a.makeNodeOperationsRecorder().sortDescending("Sentinel");
         final TreeTable tree = tree1a.withNodeOperations(recorder);
 
         final Table keyTable = newTable(
@@ -60,7 +61,9 @@ public class TestTreeTable extends RefreshingTableTestCase {
         final Table snapshot =
                 snapshotToTable(tree, ss1, keyTable, ColumnName.of("Action"), null, RowSetFactory.flat(30));
         TableTools.showWithRowSet(snapshot);
-        assertTableEquals(TableTools.newTable(intCol("ID", 3, 1, 5, 4), intCol("Parent", NULL_INT, NULL_INT, 1, 1), intCol("Sentinel", 103, 101, 105, 104)),
+        assertTableEquals(
+                TableTools.newTable(intCol("ID", 3, 1, 5, 4), intCol("Parent", NULL_INT, NULL_INT, 1, 1),
+                        intCol("Sentinel", 103, 101, 105, 104)),
                 snapshot.view("ID", "Parent", "Sentinel"));
         freeSnapshotTableChunks(snapshot);
 
@@ -72,7 +75,9 @@ public class TestTreeTable extends RefreshingTableTestCase {
         final Table snapshot2 =
                 snapshotToTable(rebased, ss2, keyTable, ColumnName.of("Action"), null, RowSetFactory.flat(30));
         TableTools.showWithRowSet(snapshot2);
-        assertTableEquals(TableTools.newTable(intCol("ID", 3, 2, 1, 5, 4), intCol("Parent", NULL_INT, NULL_INT, NULL_INT, 1, 1), intCol("Sentinel", 103, 102, 101, 105, 104)),
+        assertTableEquals(
+                TableTools.newTable(intCol("ID", 3, 2, 1, 5, 4), intCol("Parent", NULL_INT, NULL_INT, NULL_INT, 1, 1),
+                        intCol("Sentinel", 103, 102, 101, 105, 104)),
                 snapshot2.view("ID", "Parent", "Sentinel"));
         freeSnapshotTableChunks(snapshot2);
 
@@ -85,15 +90,21 @@ public class TestTreeTable extends RefreshingTableTestCase {
                 intCol("Sentinel", 101, 102, 103, 104, 105));
 
         final TreeTable tree1a = source1.tree("ID", "Parent");
-        final TreeTable.NodeOperationsRecorder recorder = tree1a.makeNodeOperationsRecorder().sortDescending("Sentinel");
+        final TreeTable.NodeOperationsRecorder recorder =
+                tree1a.makeNodeOperationsRecorder().sortDescending("Sentinel");
         final TreeTable tree = tree1a.withNodeOperations(recorder);
 
         final Table source2 = source1.view("Parent", "ID", "Sentinel");
-        final IllegalArgumentException iae = Assert.assertThrows(IllegalArgumentException.class, () -> tree.rebase(source2));
-        assertEquals("Cannot rebase a TreeTable with a new source definition, column order is not identical.", iae.getMessage());
+        final IllegalArgumentException iae =
+                Assert.assertThrows(IllegalArgumentException.class, () -> tree.rebase(source2));
+        assertEquals("Cannot rebase a TreeTable with a new source definition, column order is not identical.",
+                iae.getMessage());
 
         final Table source3 = source1.updateView("Extra=1");
-        final IllegalArgumentException iae2 = Assert.assertThrows(IllegalArgumentException.class, () -> tree.rebase(source3));
-        assertEquals("Cannot rebase a TreeTable with a new source definition: new source column 'Extra' is missing in existing source", iae2.getMessage());
+        final IllegalArgumentException iae2 =
+                Assert.assertThrows(IllegalArgumentException.class, () -> tree.rebase(source3));
+        assertEquals(
+                "Cannot rebase a TreeTable with a new source definition: new source column 'Extra' is missing in existing source",
+                iae2.getMessage());
     }
 }
