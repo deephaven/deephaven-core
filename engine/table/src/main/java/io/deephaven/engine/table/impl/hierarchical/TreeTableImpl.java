@@ -149,7 +149,7 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
     }
 
     @Override
-    public TreeTable withFilter(@NotNull Filter filter) {
+    public TreeTable withFilter(@NotNull final Filter filter) {
         final WhereFilter[] whereFilters = WhereFilter.fromInternal(filter);
         if (whereFilters.length == 0) {
             return noopResult();
@@ -227,7 +227,7 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
         if (!newSource.getDefinition().equals(source.getDefinition())) {
             if (newSource.getDefinition().equalsIgnoreOrder(source.getDefinition())) {
                 throw new IllegalArgumentException(
-                        "Cannot rebase a TreeTable with a new source definition, column order is not identical.");
+                        "Cannot rebase a TreeTable with a new source definition, column order is not identical");
             }
             final String differenceDescription = newSource.getDefinition()
                     .getDifferenceDescription(source.getDefinition(), "new source", "existing source", ",");
@@ -236,24 +236,34 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
         }
 
         final QueryTable newSourceQueryTable = (QueryTable) newSource.coalesce();
-        final QueryTable tree = computeTree(newSourceQueryTable, parentIdentifierColumn);
-        final QueryTable sourceRowLookupTable = computeSourceRowLookupTable(newSourceQueryTable, identifierColumn);
-        final TreeSourceRowLookup sourceRowLookup = new TreeSourceRowLookup(newSourceQueryTable, sourceRowLookupTable);
 
-        return new TreeTableImpl(getAttributes(), newSourceQueryTable, tree, sourceRowLookup, identifierColumn,
-                parentIdentifierColumn, nodeFilterColumns, nodeOperations, availableColumnDefinitions);
+        return makeTreeInternal(newSourceQueryTable, identifierColumn, parentIdentifierColumn, getAttributes(),
+                nodeFilterColumns, nodeOperations, availableColumnDefinitions);
     }
 
     public static TreeTable makeTree(
             @NotNull final QueryTable source,
             @NotNull final ColumnName identifierColumn,
             @NotNull final ColumnName parentIdentifierColumn) {
+        return makeTreeInternal(source, identifierColumn, parentIdentifierColumn,
+                source.getAttributes(ak -> shouldCopyAttribute(ak, BaseTable.CopyAttributeOperation.Tree)), Set.of(),
+                null, null);
+    }
+
+    private static @NotNull TreeTableImpl makeTreeInternal(@NotNull final QueryTable source,
+            @NotNull final ColumnName identifierColumn,
+            @NotNull final ColumnName parentIdentifierColumn,
+            @NotNull final Map<String, Object> attributes,
+            final Set<ColumnName> nodeFilterColumns,
+            @Nullable final TreeNodeOperationsRecorder nodeOperations,
+            @Nullable final List<ColumnDefinition<?>> availableColumnDefinitions) {
         final QueryTable tree = computeTree(source, parentIdentifierColumn);
         final QueryTable sourceRowLookupTable = computeSourceRowLookupTable(source, identifierColumn);
         final TreeSourceRowLookup sourceRowLookup = new TreeSourceRowLookup(source, sourceRowLookupTable);
         final TreeTableImpl result = new TreeTableImpl(
-                source.getAttributes(ak -> shouldCopyAttribute(ak, BaseTable.CopyAttributeOperation.Tree)),
-                source, tree, sourceRowLookup, identifierColumn, parentIdentifierColumn, Set.of(), null, null);
+                attributes,
+                source, tree, sourceRowLookup, identifierColumn, parentIdentifierColumn, nodeFilterColumns,
+                nodeOperations, availableColumnDefinitions);
         source.copySortableColumns(result, (final String columnName) -> true);
         return result;
     }
@@ -359,7 +369,7 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
     }
 
     @Override
-    boolean hasNodeFiltersToApply(long nodeId) {
+    boolean hasNodeFiltersToApply(final long nodeId) {
         return nodeOperations != null && !nodeOperations.getRecordedFilters().isEmpty();
     }
 

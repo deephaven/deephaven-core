@@ -97,7 +97,7 @@ public class TestTreeTable extends RefreshingTableTestCase {
         final Table source2 = source1.view("Parent", "ID", "Sentinel");
         final IllegalArgumentException iae =
                 Assert.assertThrows(IllegalArgumentException.class, () -> tree.rebase(source2));
-        assertEquals("Cannot rebase a TreeTable with a new source definition, column order is not identical.",
+        assertEquals("Cannot rebase a TreeTable with a new source definition, column order is not identical",
                 iae.getMessage());
 
         final Table source3 = source1.updateView("Extra=1");

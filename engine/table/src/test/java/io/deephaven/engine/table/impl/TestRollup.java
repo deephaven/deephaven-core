@@ -182,7 +182,7 @@ public class TestRollup extends RefreshingTableTestCase {
         final Table source2 = source1.view("Sentinel", "A");
         final IllegalArgumentException iae =
                 Assert.assertThrows(IllegalArgumentException.class, () -> rollup1.rebase(source2));
-        assertEquals("Cannot rebase a RollupTable with a new source definition, column order is not identical.",
+        assertEquals("Cannot rebase a RollupTable with a new source definition, column order is not identical",
                 iae.getMessage());
 
         final Table source3 = source1.updateView("A", "Sentinel", "Extra=1");

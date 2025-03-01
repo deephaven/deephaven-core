@@ -461,7 +461,7 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
         }
     }
 
-    private static <T> T unexpectedNodeType(@NotNull NodeType nodeType) {
+    private static <T> T unexpectedNodeType(@NotNull final NodeType nodeType) {
         throw new IllegalArgumentException("Unrecognized node type: " + nodeType);
     }
 
@@ -499,22 +499,9 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
             newSourceQueryTable = (QueryTable) newSource.coalesce();
         }
 
-        final int numLevels = groupByColumns.size() + 1;
-        final QueryTable baseLevel = newSourceQueryTable.aggNoMemo(
-                AggregationProcessor.forRollupBase(aggregations, includesConstituents, ROLLUP_COLUMN),
-                false, null, groupByColumns);
-        final QueryTable[] levelTables = makeLevelTablesArray(numLevels, baseLevel);
-        final AggregationRowLookup[] levelRowLookups = makeLevelRowLookupsArray(numLevels, getRowLookup(baseLevel));
-        final ColumnSource<Table>[] levelNodeTableSources = makeLevelNodeTableSourcesArray(
-                numLevels, baseLevel.getColumnSource(ROLLUP_COLUMN.name(), Table.class));
-        rollupFromBase(levelTables, levelRowLookups, levelNodeTableSources, aggregations, groupByColumns);
-
-        return new RollupTableImpl(getAttributes(), newSourceQueryTable, aggregations, includesConstituents,
-                groupByColumns,
-                levelTables, levelRowLookups, levelNodeTableSources,
-                aggregatedNodeDefinition, aggregatedNodeOperations,
-                constituentNodeDefinition, constituentNodeOperations,
-                null,
+        return makeRollupInternal(newSourceQueryTable, aggregations, includesConstituents, groupByColumns,
+                aggregatedNodeDefinition, aggregatedNodeOperations, constituentNodeDefinition,
+                constituentNodeOperations,
                 availableColumnDefinitions);
     }
 
@@ -523,6 +510,23 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
             @NotNull final Collection<? extends Aggregation> aggregations,
             final boolean includeConstituents,
             @NotNull final Collection<? extends ColumnName> groupByColumns) {
+        final RollupTableImpl result = makeRollupInternal(source, aggregations, includeConstituents, groupByColumns,
+                null, null, null, null, null);
+        final TableDefinition baseDefinition = result.levelTables[groupByColumns.size()].getDefinition();
+        source.copySortableColumns(result, baseDefinition.getColumnNameSet()::contains);
+        result.setColumnDescriptions(AggregationDescriptions.of(aggregations));
+        return result;
+    }
+
+    private static @NotNull RollupTableImpl makeRollupInternal(@NotNull final QueryTable source,
+            @NotNull final Collection<? extends Aggregation> aggregations,
+            final boolean includeConstituents,
+            @NotNull final Collection<? extends ColumnName> groupByColumns,
+            final TableDefinition aggregatedNodeDefinition,
+            final RollupNodeOperationsRecorder aggregatedNodeOperations,
+            final TableDefinition constituentNodeDefinition,
+            final RollupNodeOperationsRecorder constituentNodeOperations,
+            final List<ColumnDefinition<?>> availableColumnDefinitions) {
         final int numLevels = groupByColumns.size() + 1;
         final QueryTable baseLevel = source.aggNoMemo(
                 AggregationProcessor.forRollupBase(aggregations, includeConstituents, ROLLUP_COLUMN),
@@ -532,13 +536,12 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
         final ColumnSource<Table>[] levelNodeTableSources = makeLevelNodeTableSourcesArray(
                 numLevels, baseLevel.getColumnSource(ROLLUP_COLUMN.name(), Table.class));
         rollupFromBase(levelTables, levelRowLookups, levelNodeTableSources, aggregations, groupByColumns);
-        final RollupTableImpl result = new RollupTableImpl(
+
+        return new RollupTableImpl(
                 source.getAttributes(ak -> shouldCopyAttribute(ak, CopyAttributeOperation.Rollup)),
                 source, aggregations, includeConstituents, groupByColumns,
-                levelTables, levelRowLookups, levelNodeTableSources, null, null, null, null, null, null);
-        source.copySortableColumns(result, baseLevel.getDefinition().getColumnNameSet()::contains);
-        result.setColumnDescriptions(AggregationDescriptions.of(aggregations));
-        return result;
+                levelTables, levelRowLookups, levelNodeTableSources, aggregatedNodeDefinition, aggregatedNodeOperations,
+                constituentNodeDefinition, constituentNodeOperations, null, availableColumnDefinitions);
     }
 
     private static QueryTable[] makeLevelTablesArray(
@@ -752,7 +755,7 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
     }
 
     @Override
-    boolean hasNodeFiltersToApply(long nodeId) {
+    boolean hasNodeFiltersToApply(final long nodeId) {
         return false;
     }
 
