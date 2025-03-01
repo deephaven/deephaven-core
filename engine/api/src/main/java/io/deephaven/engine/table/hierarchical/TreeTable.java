@@ -108,13 +108,16 @@ public interface TreeTable extends HierarchicalTable<TreeTable> {
     TreeTable withNodeOperations(@NotNull NodeOperationsRecorder nodeOperations);
 
     /**
-     * Copy this TreeTable to the new table, replacing the source with newSource.
+     * Create a new TreeTable based on {@code newSource}, inheriting this TreeTable's {@link #getIdentifierColumn()
+     * identifier column}, {@link #getParentIdentifierColumn() parent column}, {@link #withNodeFilterColumns(Collection)
+     * node filter columns}, and {@link #withNodeOperations(NodeOperationsRecorder) node operations}.
      *
-     * @param newSource a new source table that must have the same definition as the source of this tree table
+     * @param newSource A new source table that must have the same definition as the source of this tree; that is
+     *        {@code newSource.getDefinition().equals(getSource().getDefinition())} must be {@code true}
      *
      * @return The new TreeTable
      */
-    TreeTable rebase(Table newSource);
+    TreeTable rebase(@NotNull Table newSource);
 
     /**
      * Adapt a {@code source} {@link Table} to be used for a {@link Table#tree(String, String) tree} to ensure that the
