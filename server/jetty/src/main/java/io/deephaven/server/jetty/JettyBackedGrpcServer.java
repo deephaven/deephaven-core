@@ -60,6 +60,7 @@ import org.eclipse.jetty.websocket.jakarta.server.internal.JakartaWebSocketServe
 import org.jetbrains.annotations.Nullable;
 
 import javax.inject.Inject;
+import javax.inject.Named;
 import javax.inject.Singleton;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -72,6 +73,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
@@ -84,15 +86,18 @@ public class JettyBackedGrpcServer implements GrpcServer {
     private static final String JS_PLUGINS_PATH_SPEC = "/" + JsPlugins.JS_PLUGINS + "/*";
 
     private final Server jetty;
+    private final ScheduledExecutorService executorService;
     private final boolean websocketsEnabled;
 
     @Inject
     public JettyBackedGrpcServer(
             final JettyConfig config,
             final GrpcFilter filter,
-            final JsPlugins jsPlugins) {
+            final JsPlugins jsPlugins,
+            @Named("grpc.server") final ScheduledExecutorService executorService) {
         jetty = new Server();
         jetty.addConnector(createConnector(jetty, config));
+        this.executorService = executorService;
 
         final ServletContextHandler context =
                 new ServletContextHandler(null, "/", null, null, null, new ErrorPageErrorHandler(), NO_SESSIONS);
@@ -274,6 +279,7 @@ public class JettyBackedGrpcServer implements GrpcServer {
         // Note that this would not apply correctly if we used WebSockets for some purpose other than gRPC transport.
         Collection<Graceful> gracefuls = jetty.getContainedBeans(Graceful.class);
         gracefuls.stream().filter(g -> !(g instanceof SessionTracker)).forEach(Graceful::shutdown);
+        executorService.shutdown();
     }
 
     @Override
@@ -305,6 +311,7 @@ public class JettyBackedGrpcServer implements GrpcServer {
             try {
                 jetty.setStopTimeout(millis);
                 jetty.stop();
+                shutdownAndAwaitTermination(executorService);
                 exceptions.ifExceptionThrow();
             } catch (Exception exception) {
                 exceptions.add(exception);
@@ -312,6 +319,24 @@ public class JettyBackedGrpcServer implements GrpcServer {
             exceptions.ifExceptionThrowRuntime();
         });
         shutdownThread.start();
+    }
+
+    private static void shutdownAndAwaitTermination(ScheduledExecutorService pool) {
+        pool.shutdown(); // Disable new tasks from being submitted
+        try {
+            // Wait a while for existing tasks to terminate
+            if (!pool.awaitTermination(60, TimeUnit.SECONDS)) {
+                pool.shutdownNow(); // Cancel currently executing tasks
+                // Wait a while for tasks to respond to being cancelled
+                if (!pool.awaitTermination(60, TimeUnit.SECONDS))
+                    System.err.println("Pool did not terminate");
+            }
+        } catch (InterruptedException ex) {
+            // (Re-)Cancel if current thread also interrupted
+            pool.shutdownNow();
+            // Preserve interrupt status
+            Thread.currentThread().interrupt();
+        }
     }
 
     @Override
