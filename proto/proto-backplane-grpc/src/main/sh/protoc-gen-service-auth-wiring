@@ -1,4 +1,0 @@
-#!/usr/bin/env sh
-
-# protoc-gen-contextual-auth-wiring
-java -cp /authzPlugin/*.jar io.deephaven.auth.codegen.GenerateServiceAuthWiring

@@ -10,8 +10,7 @@ COPY dependencies /dependencies
 
 COPY authzPlugin /authzPlugin
 
-RUN chmod +x /authzPlugin/protoc-gen-contextual-auth-wiring
-RUN chmod +x /authzPlugin/protoc-gen-service-auth-wiring
+RUN chmod +x /authzPlugin/protoc-gen-auth-wiring
 
 RUN set -eux; \
   mkdir -p /generated/java; \
@@ -26,12 +25,10 @@ RUN set -eux; \
   mkdir -p /generated/proto-doc/multi-md; \
   /opt/protoc/bin/protoc \
     --plugin=protoc-gen-grpc=/opt/java/bin/protoc-gen-grpc-java \
-    --plugin=protoc-gen-contextual-auth=/authzPlugin/protoc-gen-contextual-auth-wiring \
-    --plugin=protoc-gen-service-auth=/authzPlugin/protoc-gen-service-auth-wiring \
+    --plugin=protoc-gen-dh-auth=/authzPlugin/protoc-gen-auth-wiring \
     --java_out=/generated/java \
     --grpc_out=/generated/grpc \
-    --contextual-auth_out=/generated/java \
-    --service-auth_out=/generated/java \
+    --dh-auth_out=/generated/java \
     -I/dependencies \
     -I/includes \
     /dependencies/BrowserFlight.proto \

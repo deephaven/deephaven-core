@@ -4,7 +4,6 @@
 package io.deephaven.auth.codegen;
 
 import com.google.protobuf.DescriptorProtos;
-import com.google.protobuf.GeneratedMessage;
 import com.google.protobuf.compiler.PluginProtos;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.FieldSpec;
