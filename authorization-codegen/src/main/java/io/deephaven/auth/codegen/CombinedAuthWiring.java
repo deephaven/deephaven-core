@@ -26,6 +26,10 @@ public class CombinedAuthWiring {
 
         // Next, for each service, generate the auth wiring
         for (final DescriptorProtos.FileDescriptorProto file : request.getProtoFileList()) {
+            if (!request.getFileToGenerateList().contains(file.getName())) {
+                // Skip, this file wasn't requested to be generated, just included as a dependency
+                continue;
+            }
             final String realPackage = getRealPackage(file);
             for (final DescriptorProtos.ServiceDescriptorProto service : file.getServiceList()) {
                 if (service.getName().contains("TableService")) {

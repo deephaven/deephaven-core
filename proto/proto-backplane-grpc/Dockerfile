@@ -27,10 +27,11 @@ RUN set -eux; \
   /opt/protoc/bin/protoc \
     --plugin=protoc-gen-grpc=/opt/java/bin/protoc-gen-grpc-java \
     --plugin=protoc-gen-contextual-auth=/authzPlugin/protoc-gen-contextual-auth-wiring \
-    --plugin=protoc-gen-contextual-auth=/authzPlugin/protoc-gen-service-auth-wiring \
+    --plugin=protoc-gen-service-auth=/authzPlugin/protoc-gen-service-auth-wiring \
     --java_out=/generated/java \
     --grpc_out=/generated/grpc \
     --contextual-auth_out=/generated/java \
+    --service-auth_out=/generated/java \
     -I/dependencies \
     -I/includes \
     /dependencies/BrowserFlight.proto \

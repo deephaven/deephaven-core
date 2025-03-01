@@ -40,11 +40,6 @@ public interface AuthorizationProvider {
     StorageServiceAuthWiring getStorageServiceAuthWiring();
 
     /**
-     * @return the authorization provider for HealthService
-     */
-    HealthAuthWiring getHealthAuthWiring();
-
-    /**
      * @return the authorization provider for TableService
      */
     TableServiceContextualAuthWiring getTableServiceContextualAuthWiring();

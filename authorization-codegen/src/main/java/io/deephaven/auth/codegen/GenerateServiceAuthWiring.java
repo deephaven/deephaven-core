@@ -37,6 +37,10 @@ public class GenerateServiceAuthWiring {
 
         // for each service, generate the auth wiring
         for (final DescriptorProtos.FileDescriptorProto file : request.getProtoFileList()) {
+            if (!request.getFileToGenerateList().contains(file.getName())) {
+                // Skip, this file wasn't requested to be generated, just included as a dependency
+                continue;
+            }
             final String realPackage = getRealPackage(file);
             for (final DescriptorProtos.ServiceDescriptorProto service : file.getServiceList()) {
                 if (service.getName().contains("TableService")) {
@@ -62,7 +66,7 @@ public class GenerateServiceAuthWiring {
         final String serviceName = service.getName() + "AuthWiring";
         final ClassName resultInterface = ClassName.bestGuess(packageName + "." + serviceName);
 
-        System.err.println("Generating: " + packageName + "." + serviceName);
+        System.err.println("\tGenerating: " + packageName + "." + serviceName);
 
         // create a default implementation that is permissive
         final TypeSpec.Builder allowAllSpec = TypeSpec.classBuilder("AllowAll")
