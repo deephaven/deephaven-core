@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.select;
 
@@ -12,6 +12,7 @@ import io.deephaven.engine.table.DataIndex;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.BaseTable;
+import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.util.SafeCloseable;
@@ -57,16 +58,22 @@ public interface WhereFilter extends Filter {
         void requestRecompute();
 
         /**
-         * Notify the something about the filters has changed such that all unmatched rows of the source table should be
-         * re-evaluated.
+         * Notify that something about the filters has changed such that all unmatched rows of the source table should
+         * be re-evaluated.
          */
         void requestRecomputeUnmatched();
 
         /**
-         * Notify the something about the filters has changed such that all matched rows of the source table should be
+         * Notify that something about the filters has changed such that all matched rows of the source table should be
          * re-evaluated.
          */
         void requestRecomputeMatched();
+
+        /**
+         * Notify that something about the filters has changed such that the following rows of the source table should
+         * be re-evaluated. The rowSet ownership is not taken by requestRecompute.
+         */
+        void requestRecompute(RowSet rowSet);
 
         /**
          * Get the table underlying this listener.
@@ -82,10 +89,12 @@ public interface WhereFilter extends Filter {
         void setIsRefreshing(boolean refreshing);
     }
 
-    WhereFilter[] ZERO_LENGTH_SELECT_FILTER_ARRAY = new WhereFilter[0];
+    WhereFilter[] ZERO_LENGTH_WHERE_FILTER_ARRAY = new WhereFilter[0];
 
     /**
      * Get the columns required by this select filter.
+     * <p>
+     * This filter must already be initialized before calling this method.
      *
      * @return the columns used as input by this select filter.
      */
@@ -93,6 +102,8 @@ public interface WhereFilter extends Filter {
 
     /**
      * Get the array columns required by this select filter.
+     * <p>
+     * This filter must already be initialized before calling this method.
      *
      * @return the columns used as array input by this select filter.
      */
@@ -106,7 +117,22 @@ public interface WhereFilter extends Filter {
      * @apiNote Any {@link io.deephaven.engine.context.QueryLibrary}, {@link io.deephaven.engine.context.QueryScope}, or
      *          {@link QueryCompiler} usage needs to be resolved within init. Implementations must be idempotent.
      */
-    void init(TableDefinition tableDefinition);
+    void init(@NotNull TableDefinition tableDefinition);
+
+    /**
+     * Initialize this select filter given the table definition
+     *
+     * @param tableDefinition the definition of the table that will be filtered
+     * @param compilationProcessor the processor to use for compilation
+     * @apiNote Any {@link io.deephaven.engine.context.QueryLibrary}, {@link io.deephaven.engine.context.QueryScope}, or
+     *          {@link QueryCompiler} usage needs to be resolved within init. Implementations must be idempotent.
+     */
+    @SuppressWarnings("unused")
+    default void init(
+            @NotNull final TableDefinition tableDefinition,
+            @NotNull final QueryCompilerRequestProcessor compilationProcessor) {
+        init(tableDefinition);
+    }
 
     /**
      * Perform any operation-level initialization necessary using the {@link Table} that will be filtered with this
@@ -276,6 +302,13 @@ public interface WhereFilter extends Filter {
     }
 
     /**
+     * Returns true if this filter uses row virtual offset columns of {@code i}, {@code ii} or {@code k}.
+     */
+    default boolean hasVirtualRowVariables() {
+        return false;
+    }
+
+    /**
      * Create a copy of this WhereFilter.
      *
      * @return an independent copy of this WhereFilter.
@@ -305,7 +338,7 @@ public interface WhereFilter extends Filter {
 
     @Override
     default <T> T walk(Expression.Visitor<T> visitor) {
-        throw new UnsupportedOperationException("WhereFilters do not implement walk");
+        return visitor.visit(this);
     }
 
     @Override

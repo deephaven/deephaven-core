@@ -10,14 +10,15 @@ dependencies {
 
     api project(':engine-processor')
 
-    api 'org.apache.avro:avro:1.11.3'
+    // Expose Avro to the users of this extension.
+    api libs.avro
 
     // Using io.confluent dependencies requires code in the toplevel build.gradle to add their maven repository.
     // Note: the -ccs flavor is provided by confluent as their community edition. It is equivalent to the maven central
     // version, but has a different version to make it easier to keep confluent dependencies aligned.
-    api 'org.apache.kafka:kafka-clients:7.6.0-ccs'
-    api 'io.confluent:kafka-avro-serializer:7.6.0'
-    api 'io.confluent:kafka-protobuf-serializer:7.6.0'
+    api libs.confluent.kafka.clients
+    api libs.confluent.avro.serializer
+    api libs.confluent.protobuf.serializer
 
     // When updating the kafka implementation, it may be useful to test out the minimum kafka version that our code
     // compiles, tests, and runs with. If we want to offer more strict guarantees in these regards in the future, at
@@ -31,18 +32,19 @@ dependencies {
     implementation project(':engine-processor-function')
     implementation project(':Configuration')
     implementation project(':log-factory')
-    implementation depTrove3
-    implementation depCommonsLang3
+    implementation libs.trove
+    implementation libs.commons.lang3
 
-    Classpaths.inheritImmutables(project)
+    compileOnly project(':util-immutables')
+    annotationProcessor libs.immutables.value
 
-    testImplementation TestTools.projectDependency(project, 'engine-table')
-    Classpaths.inheritJUnitClassic(project, 'testImplementation')
+    testImplementation project(':engine-test-utils')
+    testImplementation libs.junit4
 
-    testRuntimeOnly project(':log-to-slf4j'),
-            project(path: ':configs'),
-            project(path: ':test-configs')
-    Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
+    testRuntimeOnly project(':log-to-slf4j')
+    testRuntimeOnly project(':configs')
+    testRuntimeOnly project(':test-configs')
+    testRuntimeOnly libs.slf4j.simple
 
-    Classpaths.inheritAssertJ(project)
+    testImplementation libs.assertj
 }

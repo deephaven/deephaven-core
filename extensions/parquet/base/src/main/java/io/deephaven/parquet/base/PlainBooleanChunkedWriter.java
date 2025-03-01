@@ -1,9 +1,9 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.parquet.base;
 
-import io.deephaven.util.QueryConstants;
+import io.deephaven.util.BooleanUtils;
 import org.apache.parquet.bytes.BytesInput;
 import org.apache.parquet.column.Encoding;
 import org.apache.parquet.column.statistics.Statistics;
@@ -90,11 +90,10 @@ final class PlainBooleanChunkedWriter extends AbstractBulkValuesWriter<ByteBuffe
             final int rowCount,
             @NotNull final Statistics<?> statistics) throws IOException {
         while (bulkValues.hasRemaining()) {
-            final byte next = bulkValues.get();
-            if (next != QueryConstants.NULL_BYTE) {
-                final boolean v = next == 1;
-                writeBoolean(v);
-                statistics.updateStats(v);
+            final Boolean next = BooleanUtils.byteAsBoolean(bulkValues.get());
+            if (next != null) {
+                writeBoolean(next);
+                statistics.updateStats(next);
                 dlEncoder.writeInt(DL_ITEM_PRESENT);
             } else {
                 statistics.incrementNumNulls();
@@ -111,11 +110,10 @@ final class PlainBooleanChunkedWriter extends AbstractBulkValuesWriter<ByteBuffe
         nullOffsets.clear();
         int i = 0;
         while (bulkValues.hasRemaining()) {
-            final byte next = bulkValues.get();
-            if (next != QueryConstants.NULL_BYTE) {
-                final boolean v = next == 1;
-                writeBoolean(v);
-                statistics.updateStats(v);
+            final Boolean next = BooleanUtils.byteAsBoolean(bulkValues.get());
+            if (next != null) {
+                writeBoolean(next);
+                statistics.updateStats(next);
             } else {
                 nullOffsets = Helpers.ensureCapacity(nullOffsets);
                 nullOffsets.put(i);

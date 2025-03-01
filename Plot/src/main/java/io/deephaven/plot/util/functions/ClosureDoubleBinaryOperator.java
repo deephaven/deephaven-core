@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.plot.util.functions;
 
@@ -10,7 +10,7 @@ import java.util.function.DoubleBinaryOperator;
 /**
  * A serializable closure which maps pair of doubles to doubles.
  */
-public class ClosureDoubleBinaryOperator<T extends Number> extends SerializableClosure<T>
+public class ClosureDoubleBinaryOperator<T extends Number> extends HasClosure<T>
         implements DoubleBinaryOperator {
 
     private static final long serialVersionUID = -6533578879266557626L;

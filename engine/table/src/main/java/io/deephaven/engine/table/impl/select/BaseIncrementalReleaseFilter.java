@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.select;
 
@@ -14,12 +14,13 @@ import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.ScriptApi;
 import org.jetbrains.annotations.NotNull;
 
+import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.util.Collections;
 import java.util.List;
 
 /**
  * Base class for filters that will release more rows of a table on each UGP cycle.
- *
+ * <p>
  * The use case is for benchmarks that want to replay a table in order to better understand incremental processing
  * capacity.
  */
@@ -67,7 +68,7 @@ public abstract class BaseIncrementalReleaseFilter
     }
 
     @Override
-    public void init(TableDefinition tableDefinition) {
+    public void init(@NotNull final TableDefinition tableDefinition) {
         initialized = true;
         if (!started) {
             return;
@@ -251,6 +252,7 @@ public abstract class BaseIncrementalReleaseFilter
         listener.requestRecompute();
     }
 
+    @OverridingMethodsMustInvokeSuper
     @Override
     protected void destroy() {
         super.destroy();

@@ -50,13 +50,24 @@ http.session.durationMs=300000
 AuthHandlers=io.deephaven.authentication.psk.PskAuthenticationHandler
 authentication.anonymous.warn=true
 
+web.storage.layout.directory=/layouts
+web.storage.notebook.directory=/notebooks
+
+# Enable WebGL support in the web interface, or forcibly disable it and prevent users from enabling it.
+web.webgl=true
+web.webgl.editable=true
+
+# Default to not flattening web viewports, but allow it as an option
+web.flattenViewports=false
+
 # List of configuration properties to provide to unauthenticated clients, so that they can decide how best to prove their
 # identity to the server.
 authentication.client.configuration.list=AuthHandlers
 
 # List of configuration properties to provide to authenticated clients, so they can interact with the server.
-client.configuration.list=java.version,deephaven.version,barrage.version,http.session.durationMs
+client.configuration.list=java.version,deephaven.version,barrage.version,groovy.version,python.version,http.session.durationMs,file.separator,web.storage.layout.directory,web.storage.notebook.directory,web.webgl,web.webgl.editable,web.flattenViewports
+
 # Version list to add to the configuration property list. Each `=`-delimited pair denotes a short name for a versioned
 # jar, and a class that is found in that jar. Any such keys will be made available to the client.configuration.list
 # as <key>.version.
-client.version.list=deephaven=io.deephaven.engine.table.Table,barrage=io.deephaven.barrage.flatbuf.BarrageMessageWrapper
+client.version.list=deephaven=io.deephaven.engine.table.Table,barrage=io.deephaven.barrage.flatbuf.BarrageMessageWrapper,groovy=groovy.lang.GroovyShell

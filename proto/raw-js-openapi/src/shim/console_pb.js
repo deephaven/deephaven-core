@@ -1,0 +1,1 @@
+Object.assign(exports, require('real/console_pb').io.deephaven.proto.backplane.script.grpc)

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.replicators;
 
@@ -397,8 +397,8 @@ public class ReplicateSourcesAndChunks {
                 "Object value", "T value");
         lines = ReplicationUtils.removeRegion(lines, "UnboxedSetter");
         lines = ReplicationUtils.replaceRegion(lines, "Constructor", Arrays.asList(
-                "    public ObjectSingleValueSource(Class<T> type) {",
-                "        super(type);",
+                "    public ObjectSingleValueSource(Class<T> type, Class<?> componentType) {",
+                "        super(type, componentType);",
                 "        current = null;",
                 "        prev = null;",
                 "    }"));
@@ -1098,7 +1098,7 @@ public class ReplicateSourcesAndChunks {
                 "                   data[segment][destOffset + jj] = converter.applyAsLong(chunk.get(offset + jj));",
                 "               }"));
         permuted = replaceRegion(permuted, "conditionalCopy", Arrays.asList(
-                "                final int chunkOffset = destOffset.intValue();",
+                "                final int chunkOffset = destOffset.get();",
                 "                long[] baseInput = (long[]) getBlock(blockNo);",
                 "                long[] overInput = (long[]) getPrevBlock(blockNo);",
                 "",
@@ -1157,8 +1157,12 @@ public class ReplicateSourcesAndChunks {
                 "ObjectChunk<[?] super Values>", "ObjectChunk<Boolean, ? super Values>");
         lines = simpleFixup(lines, "primitive get", "NULL_BOOLEAN", "NULL_BOOLEAN_AS_BYTE", "getBoolean", "getByte",
                 "getPrevBoolean", "getPrevByte");
-        lines = simpleFixup(lines, "nullByKeys", "NULL_BOOLEAN", "NULL_BOOLEAN_AS_BYTE");
-        lines = simpleFixup(lines, "nullByRanges", "NULL_BOOLEAN", "NULL_BOOLEAN_AS_BYTE");
+        lines = simpleFixup(lines, "nullByKeys",
+                "oldValue != NULL_BOOLEAN", "!BooleanUtils.isNull(oldValue)",
+                "NULL_BOOLEAN", "NULL_BOOLEAN_AS_BYTE");
+        lines = simpleFixup(lines, "nullByRanges",
+                "block\\[indexWithinBlock\\] != NULL_BOOLEAN", "!BooleanUtils.isNull(block[indexWithinBlock])",
+                "NULL_BOOLEAN", "NULL_BOOLEAN_AS_BYTE");
         lines = simpleFixup(lines, "setNull", "NULL_BOOLEAN", "NULL_BOOLEAN_AS_BYTE");
 
         lines = replaceRegion(lines, "copyFromTypedArray", Arrays.asList(

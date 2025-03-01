@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit CharRollingStdOperator and run "./gradlew replicateUpdateBy" to regenerate
@@ -109,9 +109,14 @@ public class ShortRollingStdOperator extends BaseDoubleUpdateByOperator {
 
         @Override
         public void writeToOutputChunk(int outIdx) {
-            if (valueBuffer.size() == 0) {
+            if (valueBuffer.isEmpty()) {
                 outputValues.set(outIdx, NULL_DOUBLE);
             } else {
+                if (nullCount == valueBuffer.size()) {
+                    outputValues.set(outIdx, NULL_DOUBLE);
+                    return;
+                }
+
                 final int count = valueBuffer.size() - nullCount;
 
                 if (count <= 1) {

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.web.client.api.widget.plot;
 
@@ -55,21 +55,21 @@ public class JsChartDescriptor {
         Map<Object, JsAxisDescriptor> axisMap = new HashMap<>();
         if (source.has("axes")) {
             JsArray<Object> axes = source.getAsAny("axes").cast();
-            this.axes = Js.uncheckedCast(axes.map((axisSource, index, all) -> {
+            this.axes = Js.uncheckedCast(axes.map((axisSource, index) -> {
                 if (axisSource instanceof JsAxisDescriptor) {
                     return (JsAxisDescriptor) axisSource;
                 } else {
                     return new JsAxisDescriptor((JsPropertyMap<Object>) axisSource);
                 }
             }));
-            this.axes.forEach((axis, i, all) -> axisMap.put(axes.getAt(i), axis));
+            this.axes.forEach((axis, i) -> axisMap.put(axes.getAt(i), axis));
         } else {
             throw new IllegalArgumentException("'axes' property must be set");
         }
 
         if (source.has("series")) {
             JsArray<Object> series = source.getAsAny("series").cast();
-            this.series = Js.uncheckedCast(series.map((seriesSource, index, all) -> {
+            this.series = Js.uncheckedCast(series.map((seriesSource, index) -> {
                 if (seriesSource instanceof JsSeriesDescriptor) {
                     return (JsSeriesDescriptor) seriesSource;
                 } else {

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.plot.util.functions;
 
@@ -10,7 +10,7 @@ import java.util.function.DoubleUnaryOperator;
 /**
  * A serializable closure which maps doubles to doubles.
  */
-public class ClosureDoubleUnaryOperator<T extends Number> extends SerializableClosure<T>
+public class ClosureDoubleUnaryOperator<T extends Number> extends HasClosure<T>
         implements DoubleUnaryOperator {
 
     private static final long serialVersionUID = -4092987117189101803L;

@@ -39,7 +39,7 @@ def webpackSources = Docker.registerDockerTask(project, 'webpackSources') {
         from ('.npmrc')
     }
     parentContainers = [ Docker.registryTask(project, 'node') ]
-    imageName = 'deephaven/js-out:local-build'
+    imageName = Docker.localImageName('js-out')
     containerOutPath = '/usr/src/app/raw-js-openapi/build/js-out'
     copyOut {
         include 'dh-internal.js'

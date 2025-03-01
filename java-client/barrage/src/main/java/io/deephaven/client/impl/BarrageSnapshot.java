@@ -1,11 +1,10 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.client.impl;
 
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
 import io.deephaven.qst.table.TableSpec;
 import org.jetbrains.annotations.Nullable;

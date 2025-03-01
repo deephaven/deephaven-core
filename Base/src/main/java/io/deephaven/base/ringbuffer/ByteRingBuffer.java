@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit CharRingBuffer and run "./gradlew replicateRingBuffers" to regenerate
@@ -7,8 +7,9 @@
 // @formatter:off
 package io.deephaven.base.ringbuffer;
 
-import io.deephaven.base.ArrayUtil;
+import io.deephaven.base.MathUtil;
 import io.deephaven.base.verify.Assert;
+import org.jetbrains.annotations.TestOnly;
 
 import java.io.Serializable;
 import java.util.NoSuchElementException;
@@ -19,9 +20,7 @@ import java.util.NoSuchElementException;
  * {@code long} values. Head and tail will not wrap around; instead we use storage arrays sized to 2^N to allow fast
  * determination of storage indices through a mask operation.
  */
-public class ByteRingBuffer implements Serializable {
-    /** Maximum capacity is the highest power of two that can be allocated (i.e. <= than ArrayUtil.MAX_ARRAY_SIZE). */
-    static final int RING_BUFFER_MAX_CAPACITY = Integer.highestOneBit(ArrayUtil.MAX_ARRAY_SIZE);
+public class ByteRingBuffer implements RingBuffer, Serializable {
     static final long FIXUP_THRESHOLD = 1L << 62;
     final boolean growable;
     byte[] storage;
@@ -34,7 +33,7 @@ public class ByteRingBuffer implements Serializable {
      *
      * @param capacity minimum capacity of the ring buffer
      */
-    public ByteRingBuffer(int capacity) {
+    public ByteRingBuffer(final int capacity) {
         this(capacity, true);
     }
 
@@ -44,22 +43,14 @@ public class ByteRingBuffer implements Serializable {
      * @param capacity minimum capacity of ring buffer
      * @param growable whether to allow growth when the buffer is full.
      */
-    public ByteRingBuffer(int capacity, boolean growable) {
-        Assert.leq(capacity, "ByteRingBuffer capacity", RING_BUFFER_MAX_CAPACITY);
+    public ByteRingBuffer(final int capacity, final boolean growable) {
+        Assert.leq(capacity, "ByteRingBuffer capacity", MathUtil.MAX_POWER_OF_2);
 
         this.growable = growable;
 
         // use next larger power of 2 for our storage
-        final int newCapacity;
-        if (capacity < 2) {
-            // sensibly handle the size=0 and size=1 cases
-            newCapacity = 1;
-        } else {
-            newCapacity = Integer.highestOneBit(capacity - 1) << 1;
-        }
-
         // reset the data structure members
-        storage = new byte[newCapacity];
+        storage = new byte[MathUtil.roundUpPowerOf2(capacity)];
         mask = storage.length - 1;
         tail = head = 0;
     }
@@ -69,13 +60,13 @@ public class ByteRingBuffer implements Serializable {
      * 
      * @param increase Increase amount. The ring buffer's capacity will be increased by at least this amount.
      */
-    protected void grow(int increase) {
+    protected void grow(final int increase) {
         final int size = size();
         final long newCapacity = (long) storage.length + increase;
         // assert that we are not asking for the impossible
-        Assert.leq(newCapacity, "ByteRingBuffer capacity", RING_BUFFER_MAX_CAPACITY);
+        Assert.leq(newCapacity, "ByteRingBuffer capacity", MathUtil.MAX_POWER_OF_2);
 
-        final byte[] newStorage = new byte[Integer.highestOneBit((int) newCapacity - 1) << 1];
+        final byte[] newStorage = new byte[MathUtil.roundUpPowerOf2((int) newCapacity)];
 
         // move the current data to the new buffer
         copyRingBufferToArray(newStorage);
@@ -93,7 +84,7 @@ public class ByteRingBuffer implements Serializable {
      * 
      * @param dest The destination buffer.
      */
-    protected void copyRingBufferToArray(byte[] dest) {
+    protected void copyRingBufferToArray(final byte[] dest) {
         final int size = size();
         final int storageHead = (int) (head & mask);
 
@@ -109,27 +100,35 @@ public class ByteRingBuffer implements Serializable {
         System.arraycopy(storage, 0, dest, firstCopyLen, secondCopyLen);
     }
 
+    @Override
     public boolean isFull() {
         return size() == storage.length;
     }
 
+    @Override
     public boolean isEmpty() {
         return tail == head;
     }
 
+    @Override
     public int size() {
         return Math.toIntExact(tail - head);
     }
 
+    @Override
     public int capacity() {
         return storage.length;
     }
 
+    @Override
     public int remaining() {
         return storage.length - size();
     }
 
+    @Override
     public void clear() {
+        // region object-bulk-clear
+        // endregion object-bulk-clear
         tail = head = 0;
     }
 
@@ -141,7 +140,7 @@ public class ByteRingBuffer implements Serializable {
      * @throws UnsupportedOperationException when {@code growable} is {@code false} and buffer is full
      * @return {@code true} if the byte was added successfully
      */
-    public boolean add(byte e) {
+    public boolean add(final byte e) {
         if (isFull()) {
             if (!growable) {
                 throw new UnsupportedOperationException("Ring buffer is full and growth is disabled");
@@ -161,7 +160,8 @@ public class ByteRingBuffer implements Serializable {
      * @param count the minimum number of empty entries in the buffer after this call
      * @throws UnsupportedOperationException when {@code growable} is {@code false} and buffer is full
      */
-    public void ensureRemaining(int count) {
+    @Override
+    public void ensureRemaining(final int count) {
         if (remaining() < count) {
             if (!growable) {
                 throw new UnsupportedOperationException("Ring buffer is full and growth is disabled");
@@ -178,7 +178,7 @@ public class ByteRingBuffer implements Serializable {
      *
      * @param e the value to add to the buffer
      */
-    public void addUnsafe(byte e) {
+    public void addUnsafe(final byte e) {
         // This is an extremely paranoid wrap check that in all likelihood will never run. With FIXUP_THRESHOLD at
         // 1 << 62, and the user pushing 2^32 values per second(!), it will take 68 years to wrap this counter .
         if (tail >= FIXUP_THRESHOLD) {
@@ -198,7 +198,7 @@ public class ByteRingBuffer implements Serializable {
      * @param notFullResult value to return is the buffer is not full
      * @return the overwritten entry if the buffer is full, the provided value otherwise
      */
-    public byte addOverwrite(byte e, byte notFullResult) {
+    public byte addOverwrite(final byte e, final byte notFullResult) {
         byte val = notFullResult;
         if (isFull()) {
             val = remove();
@@ -214,7 +214,7 @@ public class ByteRingBuffer implements Serializable {
      * @param e the byte to be added to the buffer
      * @return true if the value was added successfully, false otherwise
      */
-    public boolean offer(byte e) {
+    public boolean offer(final byte e) {
         if (isFull()) {
             return false;
         }
@@ -228,7 +228,7 @@ public class ByteRingBuffer implements Serializable {
      * @param count The number of elements to remove.
      * @throws NoSuchElementException if the buffer is empty
      */
-    public byte[] remove(int count) {
+    public byte[] remove(final int count) {
         final int size = size();
         if (size < count) {
             throw new NoSuchElementException();
@@ -274,7 +274,7 @@ public class ByteRingBuffer implements Serializable {
      * @param onEmpty the value to return if the ring buffer is empty
      * @return The removed element if the ring buffer was non-empty, otherwise the value of 'onEmpty'
      */
-    public byte poll(byte onEmpty) {
+    public byte poll(final byte onEmpty) {
         if (isEmpty()) {
             return onEmpty;
         }
@@ -301,7 +301,7 @@ public class ByteRingBuffer implements Serializable {
      * @param onEmpty the value to return if the ring buffer is empty
      * @return The head element if the ring buffer is non-empty, otherwise the value of 'onEmpty'
      */
-    public byte peek(byte onEmpty) {
+    public byte peek(final byte onEmpty) {
         if (isEmpty()) {
             return onEmpty;
         }
@@ -324,7 +324,7 @@ public class ByteRingBuffer implements Serializable {
      * @throws NoSuchElementException if the buffer is empty
      * @return The element at the specified offset
      */
-    public byte front(int offset) {
+    public byte front(final int offset) {
         if (offset < 0 || offset >= size()) {
             throw new NoSuchElementException();
         }
@@ -351,7 +351,7 @@ public class ByteRingBuffer implements Serializable {
      * @param onEmpty the value to return if the ring buffer is empty
      * @return The tail element if the ring buffer is non-empty, otherwise the value of 'onEmpty'
      */
-    public byte peekBack(byte onEmpty) {
+    public byte peekBack(final byte onEmpty) {
         if (isEmpty()) {
             return onEmpty;
         }
@@ -394,5 +394,15 @@ public class ByteRingBuffer implements Serializable {
         public void remove() {
             throw new UnsupportedOperationException();
         }
+    }
+
+    /**
+     * Get the storage array for this ring buffer. This is intended for testing and debugging purposes only.
+     *
+     * @return The storage array for this ring buffer.
+     */
+    @TestOnly
+    public byte[] getStorage() {
+        return storage;
     }
 }

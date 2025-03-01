@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
 
 """ This module defines the data types supported by the Deephaven engine.
@@ -85,8 +85,6 @@ long = DType(j_name="long", qst_type=_JQstType.longType(), is_primitive=True, np
 """Signed 64bit integer type"""
 int64 = long
 """Signed 64bit integer type"""
-int_ = long
-"""Signed 64bit integer type"""
 float32 = DType(j_name="float", qst_type=_JQstType.floatType(), is_primitive=True, np_type=np.float32)
 """Single-precision floating-point number type"""
 single = float32
@@ -95,12 +93,12 @@ float64 = DType(j_name="double", qst_type=_JQstType.doubleType(), is_primitive=T
 """Double-precision floating-point number type"""
 double = float64
 """Double-precision floating-point number type"""
-float_ = float64
-"""Double-precision floating-point number type"""
 string = DType(j_name="java.lang.String", qst_type=_JQstType.stringType(), np_type=np.str_)
 """String type"""
 Character = DType(j_name="java.lang.Character")
 """Character type"""
+BigInteger = DType(j_name="java.math.BigInteger")
+"""Java BigInteger type"""
 BigDecimal = DType(j_name="java.math.BigDecimal")
 """Java BigDecimal type"""
 StringSet = DType(j_name="io.deephaven.stringset.StringSet")
@@ -143,8 +141,6 @@ long_array = DType(j_name='[J')
 """64bit integer array type"""
 int64_array = long_array
 """64bit integer array type"""
-int_array = long_array
-"""64bit integer array type"""
 single_array = DType(j_name='[F')
 """Single-precision floating-point array type"""
 float32_array = single_array
@@ -152,8 +148,6 @@ float32_array = single_array
 double_array = DType(j_name='[D')
 """Double-precision floating-point array type"""
 float64_array = double_array
-"""Double-precision floating-point array type"""
-float_array = double_array
 """Double-precision floating-point array type"""
 string_array = DType(j_name='[Ljava.lang.String;')
 """Java String array type"""
@@ -176,7 +170,7 @@ _PRIMITIVE_DTYPE_NULL_MAP = {
 }
 
 _BUILDABLE_ARRAY_DTYPE_MAP = {
-    bool_: bool_array,
+    bool_: boolean_array,
     byte: int8_array,
     char: char_array,
     int16: int16_array,

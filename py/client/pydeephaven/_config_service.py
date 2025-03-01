@@ -1,10 +1,10 @@
 #
-# Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
 from typing import Any, Dict
 
 from pydeephaven.dherror import DHError
-from pydeephaven.proto import config_pb2, config_pb2_grpc
+from deephaven_core.proto import config_pb2, config_pb2_grpc
 
 
 class ConfigService:
@@ -15,9 +15,9 @@ class ConfigService:
     def get_configuration_constants(self) -> Dict[str, Any]:
         """Fetches the server configuration as a dict."""
         try:
-            response = self._grpc_app_stub.GetConfigurationConstants(config_pb2.ConfigurationConstantsRequest(),
-                                                                     metadata=self.session.grpc_metadata
-                                                                     )
+            response = self.session.wrap_rpc(
+                self._grpc_app_stub.GetConfigurationConstants,
+                config_pb2.ConfigurationConstantsRequest())
             return dict(response.config_values)
         except Exception as e:
             raise DHError("failed to get the configuration constants.") from e

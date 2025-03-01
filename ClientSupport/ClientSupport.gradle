@@ -2,14 +2,20 @@ plugins {
     id 'io.deephaven.project.register'
 }
 
-configurations {
-    implementation.extendsFrom dhConsole
-}
-
 dependencies {
     implementation project(':engine-table')
     implementation project(':engine-function')
     implementation project(':log-factory')
     implementation project(':Configuration')
-    implementation depCommonsLang3
+    implementation libs.commons.lang3
+
+    testImplementation project(':engine-test-utils')
+    testImplementation libs.junit4
+    testImplementation platform(libs.junit.bom)
+    testImplementation libs.assertj
+
+    testRuntimeOnly project(':log-to-slf4j'),
+            project(path: ':configs'),
+            project(path: ':test-configs')
+    testRuntimeOnly libs.slf4j.simple
 }

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit CharBlinkSortedFirstOrLastChunkedOperator and run "./gradlew replicateOperators" to regenerate
@@ -113,13 +113,10 @@ public class IntBlinkSortedFirstOrLastChunkedOperator extends CopyingPermutedBli
         for (int ii = newDestination ? 1 : 0; ii < length; ++ii) {
             final int chunkPos = start + ii;
             final int value = values.get(chunkPos);
-            final int comparison = IntComparisons.compare(value, bestValue);
-            // @formatter:off
             // No need to compare relative row keys. A stream's logical row set is always monotonically increasing.
-            final boolean better =
-                    ( isFirst && comparison <  0) ||
-                    (!isFirst && comparison >= 0)  ;
-            // @formatter:on
+            final boolean better = isFirst
+                    ? IntComparisons.lt(value, bestValue)
+                    : IntComparisons.geq(value, bestValue);
             if (better) {
                 bestChunkPos = chunkPos;
                 bestValue = value;

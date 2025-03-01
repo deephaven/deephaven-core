@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit RangeAggregateColumnSourceChar and run "./gradlew replicateSourcesAndChunks" to regenerate
@@ -15,7 +15,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.impl.vector.IntVectorColumnWrapper;
+import io.deephaven.engine.table.vectors.IntVectorColumnWrapper;
 import io.deephaven.vector.IntVector;
 import io.deephaven.vector.IntVectorSlice;
 import org.jetbrains.annotations.NotNull;

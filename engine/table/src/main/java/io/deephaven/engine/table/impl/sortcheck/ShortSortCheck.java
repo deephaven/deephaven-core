@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit CharSortCheck and run "./gradlew replicateSortCheck" to regenerate
@@ -36,12 +36,8 @@ public class ShortSortCheck implements SortCheck {
     }
 
     // region comparison functions
-    private static int doComparison(short lhs, short rhs) {
-        return ShortComparisons.compare(lhs, rhs);
+    private static boolean leq(short lhs, short rhs) {
+        return ShortComparisons.leq(lhs, rhs);
     }
     // endregion comparison functions
-
-    private static boolean leq(short lhs, short rhs) {
-        return doComparison(lhs, rhs) <= 0;
-    }
 }

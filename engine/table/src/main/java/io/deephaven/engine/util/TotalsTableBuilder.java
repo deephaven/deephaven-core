@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.util;
 
@@ -21,7 +21,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static io.deephaven.api.agg.Aggregation.*;
-import static io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_STRING_ARRAY;
 import static io.deephaven.engine.table.Table.TOTALS_TABLE_ATTRIBUTE;
 
 /**
@@ -591,7 +590,7 @@ public class TotalsTableBuilder {
             }
         });
 
-        return formatSpecs.toArray(ZERO_LENGTH_STRING_ARRAY);
+        return formatSpecs.toArray(String[]::new);
     }
 
 
@@ -635,7 +634,7 @@ public class TotalsTableBuilder {
         }
 
         return columnsByType.entrySet().stream()
-                .flatMap(e -> makeOperation(e.getKey(), e.getValue().toArray(ZERO_LENGTH_STRING_ARRAY)))
+                .flatMap(e -> makeOperation(e.getKey(), e.getValue().toArray(String[]::new)))
                 .collect(Collectors.toList());
     }
 

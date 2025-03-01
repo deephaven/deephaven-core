@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.replicators;
 
@@ -79,10 +79,10 @@ public class ReplicateParquetTransferObjects {
                 pairs);
 
         pairs = new String[][] {
-                {"io.deephaven.time.DateTimeUtils", "io.deephaven.parquet.table.util.TransferUtils"},
+                {"io.deephaven.time.DateTimeUtils", "io.deephaven.parquet.base.ParquetTimeUtils"},
                 {"InstantArrayTransfer", "LocalDateTimeArrayTransfer"},
                 {"InstantVectorTransfer", "LocalDateTimeVectorTransfer"},
-                {"DateTimeUtils.epochNanos", "TransferUtils.epochNanosUTC"},
+                {"DateTimeUtils.epochNanos", "ParquetTimeUtils.epochNanosUTC"},
                 {"Instant", "LocalDateTime"}
         };
         replaceAll(TASK, PARQUET_INSTANT_ARRAY_TRANSFER_PATH, PARQUET_LOCAL_DATE_TIME_ARRAY_TRANSFER_PATH, null,
@@ -91,10 +91,10 @@ public class ReplicateParquetTransferObjects {
                 NO_EXCEPTIONS, pairs);
 
         pairs = new String[][] {
-                {"io.deephaven.time.DateTimeUtils", "io.deephaven.parquet.table.util.TransferUtils"},
+                {"io.deephaven.time.DateTimeUtils", "io.deephaven.parquet.base.ParquetTimeUtils"},
                 {"TimeTransfer", "LocalDateTimeTransfer"},
                 {"LocalTime", "LocalDateTime"},
-                {"DateTimeUtils.nanosOfDay", "TransferUtils.epochNanosUTC"}
+                {"DateTimeUtils.nanosOfDay", "ParquetTimeUtils.epochNanosUTC"}
         };
         replaceAll(TASK, PARQUET_TIME_TRANSFER_PATH, PARQUET_LOCAL_DATE_TIME_TRANSFER_PATH, null, NO_EXCEPTIONS, pairs);
 

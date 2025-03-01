@@ -2,3 +2,7 @@ plugins {
     id 'java-library'
     id 'io.deephaven.project.register'
 }
+
+dependencies {
+    testImplementation libs.junit4
+}

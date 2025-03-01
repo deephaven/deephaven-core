@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.preview;
 
@@ -49,5 +49,10 @@ public class DisplayWrapper implements Serializable {
         }
 
         return false;
+    }
+
+    @Override
+    public int hashCode() {
+        return displayString.hashCode();
     }
 }

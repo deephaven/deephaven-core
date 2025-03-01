@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit CharRollingAvgOperator and run "./gradlew replicateUpdateBy" to regenerate
@@ -86,12 +86,12 @@ public class ShortRollingAvgOperator extends BaseDoubleUpdateByOperator {
 
         @Override
         public void writeToOutputChunk(int outIdx) {
-            if (shortWindowValues.size() == 0) {
+            if (shortWindowValues.isEmpty()) {
                 outputValues.set(outIdx, NULL_DOUBLE);
             } else {
                 final int count = shortWindowValues.size() - nullCount;
                 if (count == 0) {
-                    outputValues.set(outIdx, Double.NaN);
+                    outputValues.set(outIdx, NULL_DOUBLE);
                 } else {
                     outputValues.set(outIdx, curVal / (double) count);
                 }

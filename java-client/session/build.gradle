@@ -9,35 +9,39 @@ dependencies {
   api project(':qst')
   api project(':uri')
 
-  Classpaths.inheritGrpcPlatform(project, 'api')
-  api 'io.grpc:grpc-api'
-  implementation 'io.grpc:grpc-core'
-  implementation 'io.grpc:grpc-netty'
+  api platform(libs.grpc.bom)
+  api libs.grpc.api
+  implementation libs.grpc.core
+  implementation libs.grpc.netty
 
   // TODO(deephaven-core#1783): Make proto-backplane-grpc implementation dependency
   api project(':proto:proto-backplane-grpc')
 
   api project(':ssl-config')
   implementation project(':ssl-kickstart')
-  Classpaths.inheritSSLContext(project, 'sslcontext-kickstart-for-netty')
+  implementation libs.sslcontext.kickstart.netty
 
-  Classpaths.inheritImmutables(project)
-  Classpaths.inheritAutoService(project)
-  compileOnly 'javax.inject:javax.inject:1'
+  compileOnly project(':util-immutables')
+  annotationProcessor libs.immutables.value
 
-  Classpaths.inheritJUnitPlatform(project)
+  compileOnly libs.autoservice
+  annotationProcessor libs.autoservice.compiler
+  compileOnly libs.javax.inject
 
-  testImplementation 'org.junit.jupiter:junit-jupiter'
-  testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
-  testRuntimeOnly 'org.junit.vintage:junit-vintage-engine'
-  testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-  Classpaths.inheritJUnitClassic(project, 'testImplementation')
-  testImplementation 'io.grpc:grpc-testing'
+  testImplementation platform(libs.junit.bom)
+  testImplementation libs.junit.jupiter
+  testRuntimeOnly libs.junit.jupiter.engine
+  testRuntimeOnly libs.junit.vintage.engine
+  testRuntimeOnly libs.junit.platform.launcher
 
-  Classpaths.inheritAssertJ(project)
+  testImplementation libs.junit4
+  testImplementation libs.grpc.testing
+  testImplementation libs.grpc.inprocess
 
-  Classpaths.inheritSlf4j(project, 'slf4j-api', 'implementation')
-  Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
+  testImplementation libs.assertj
+
+  implementation libs.slf4j.api
+  testRuntimeOnly libs.slf4j.simple
 }
 
 test {

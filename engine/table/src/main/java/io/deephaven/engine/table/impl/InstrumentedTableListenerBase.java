@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl;
 
@@ -50,7 +50,7 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
     private final PerformanceEntry entry;
     private final boolean terminalListener;
 
-    private boolean failed = false;
+    protected boolean failed = false;
     private static volatile boolean verboseLogging = Configuration
             .getInstance()
             .getBooleanWithDefault("InstrumentedTableListenerBase.verboseLogging", false);

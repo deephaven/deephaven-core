@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.base.stats;
 
@@ -20,7 +20,7 @@ import java.util.function.LongFunction;
  */
 public class State extends Value {
 
-    public static char TYPE_TAG = 'S';
+    public static final char TYPE_TAG = 'S';
 
     public State(long now) {
         super(now);

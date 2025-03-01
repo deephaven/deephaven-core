@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.server.console.groovy;
 
@@ -14,6 +14,7 @@ import io.deephaven.engine.util.GroovyDeephavenSession;
 import io.deephaven.engine.util.GroovyDeephavenSession.RunScripts;
 import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.plugin.type.ObjectTypeLookup;
+import io.deephaven.server.console.ScriptSessionCacheInit;
 
 import javax.inject.Named;
 import java.io.IOException;
@@ -34,9 +35,10 @@ public class GroovyConsoleSessionModule {
             final OperationInitializer operationInitializer,
             final ObjectTypeLookup lookup,
             final ScriptSession.Listener listener,
-            final RunScripts runScripts) {
+            final RunScripts runScripts,
+            final ScriptSessionCacheInit ignored) {
         try {
-            return new GroovyDeephavenSession(updateGraph, operationInitializer, lookup, listener, runScripts);
+            return GroovyDeephavenSession.of(updateGraph, operationInitializer, lookup, listener, runScripts);
         } catch (final IOException e) {
             throw new UncheckedIOException(e);
         }

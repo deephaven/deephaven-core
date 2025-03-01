@@ -22,9 +22,12 @@ PublishingTools.setupPublications(project) { publication ->
   // This assumes that the shadow plugin is enabled, rather than using the vanilla java component.
 
   // Inlines the shadow.component call, which doesn't actually use components, and doesn't generate
-  // the pom late enough to pick up gradle's own artifactId wiring from our archivesBaseName changes
+  // the pom late enough to pick up gradle's own artifactId wiring from our archivesBaseName changes.
+  // Also un-sets the classifier for the shadow jar, since we want this to be the default artifact
 //  project.shadow.component(publication)
-  publication.artifact(project.tasks.named("shadowJar"))
+  publication.artifact(source: project.tasks.named('shadowJar'), classifier: '')
+  publication.artifact(source: project.tasks.named('sourcesJar'))
+  publication.artifact(source: project.tasks.named('javadocJar'))
   publication.pom {
     withXml {
       def root = asNode()

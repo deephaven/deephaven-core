@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.sources.regioned;
 
@@ -51,8 +51,8 @@ public class TestObjectVectorUngroup {
         assertEquals(String.class, ungroupedTable.getDefinition().getColumn("C").getDataType());
 
         File dest = new File(dataDirectory, "testUngroup.parquet");
-        ParquetTools.writeTable(groupedTable, dest);
-        final Table actual = ParquetTools.readTable(dest);
+        ParquetTools.writeTable(groupedTable, dest.getPath());
+        final Table actual = ParquetTools.readTable(dest.getPath());
 
         assertTrue(ObjectVector.class.isAssignableFrom(actual.getDefinition().getColumn("C").getDataType()));
         assertEquals(String.class, actual.getDefinition().getColumn("C").getComponentType());

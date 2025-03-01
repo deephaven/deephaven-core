@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.select.formula;
 
@@ -12,6 +12,7 @@ import java.util.Map;
 
 public interface FormulaFactory {
     Formula createFormula(
+            String columnName,
             TrackingRowSet rowSet,
             boolean initLazyMap, Map<String, ? extends ColumnSource> columnsToData,
             QueryScopeParam... params);

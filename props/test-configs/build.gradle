@@ -2,10 +2,9 @@ plugins {
     id 'io.deephaven.project.register'
 }
 
-configurations {
-    implementation.extendsFrom fishConfig
-}
-
 dependencies {
-    Classpaths.inheritAutoService(project)
+    compileOnly libs.autoservice
+    annotationProcessor libs.autoservice.compiler
+
+    implementation project(':Configuration')
 }

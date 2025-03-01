@@ -1,11 +1,12 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.client.impl;
 
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.Strings;
 import io.deephaven.api.Pair;
+import io.deephaven.api.filter.Filter;
 import io.deephaven.api.updateby.*;
 import io.deephaven.api.updateby.BadDataBehavior;
 import io.deephaven.api.updateby.spec.*;
@@ -17,6 +18,8 @@ import io.deephaven.qst.table.UpdateByTable;
 
 import java.math.MathContext;
 import java.math.RoundingMode;
+import java.util.Collection;
+import java.util.stream.Collectors;
 
 class UpdateByBuilder {
 
@@ -189,6 +192,19 @@ class UpdateByBuilder {
         }
 
         @Override
+        public UpdateByColumn.UpdateBySpec visit(CumCountWhereSpec spec) {
+            final Collection<String> filters = Filter.extractAnds(spec.filter()).stream()
+                    .map(Strings::of)
+                    .collect(Collectors.toList());
+            return UpdateByColumn.UpdateBySpec.newBuilder()
+                    .setCountWhere(UpdateByCumulativeCountWhere.newBuilder()
+                            .setResultColumn(spec.column().name())
+                            .addAllFilters(filters)
+                            .build())
+                    .build();
+        }
+
+        @Override
         public UpdateByColumn.UpdateBySpec visit(EmStdSpec spec) {
             UpdateByEmStd.Builder builder = UpdateByEmStd.newBuilder().setWindowScale(adapt(spec.windowScale()));
             spec.control().map(SpecVisitor::adapt).ifPresent(builder::setOptions);
@@ -283,6 +299,22 @@ class UpdateByBuilder {
         }
 
         @Override
+        public UpdateByColumn.UpdateBySpec visit(RollingCountWhereSpec rs) {
+            final Collection<String> filters = Filter.extractAnds(rs.filter()).stream()
+                    .map(Strings::of)
+                    .collect(Collectors.toList());
+            final UpdateByRollingCountWhere.Builder builder =
+                    UpdateByRollingCountWhere.newBuilder()
+                            .setReverseWindowScale(adapt(rs.revWindowScale()))
+                            .setForwardWindowScale(adapt(rs.fwdWindowScale()))
+                            .setResultColumn(rs.column().name())
+                            .addAllFilters(filters);
+            return UpdateByColumn.UpdateBySpec.newBuilder()
+                    .setRollingCountWhere(builder.build())
+                    .build();
+        }
+
+        @Override
         public UpdateByColumn.UpdateBySpec visit(RollingStdSpec rs) {
             final UpdateByRollingStd.Builder builder =
                     UpdateByRollingStd.newBuilder()
@@ -312,7 +344,7 @@ class UpdateByBuilder {
                             .setReverseWindowScale(adapt(rs.revWindowScale()))
                             .setForwardWindowScale(adapt(rs.fwdWindowScale()))
                             .setFormula(rs.formula())
-                            .setParamToken(rs.paramToken());
+                            .setParamToken(rs.paramToken().orElse(null));
             return UpdateByColumn.UpdateBySpec.newBuilder()
                     .setRollingFormula(builder.build())
                     .build();

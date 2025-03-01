@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.select;
 
@@ -74,7 +74,7 @@ public class SortedClockFilter extends ClockFilter {
     @Override
     @Nullable
     protected WritableRowSet updateAndGetAddedIndex() {
-        if (range.isEmpty()) {
+        if (range == null || range.isEmpty()) {
             return null;
         }
         final RowSetBuilderRandom addedBuilder =

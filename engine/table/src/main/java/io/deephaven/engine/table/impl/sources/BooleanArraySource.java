@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.sources;
 
@@ -194,19 +194,6 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]>
     @Override
     public Boolean getPrev(long rowKey) {
         return BooleanUtils.byteAsBoolean(getPrevByte(rowKey));
-    }
-
-    @Override
-    public void shift(long start, long end, long offset) {
-        if (offset > 0) {
-            for (long i = (int) end; i >= start; i--) {
-                set((i + offset), getByte(i));
-            }
-        } else {
-            for (int i = (int) start; i <= end; i++) {
-                set((i + offset), getByte(i));
-            }
-        }
     }
 
     @Override

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+ * Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
  */
 #include "deephaven/dhcore/ticking/barrage_processor.h"
 
@@ -295,7 +295,7 @@ std::optional<TickingUpdate> AwaitingMetadata::ProcessNextChunk(BarrageProcessor
 
   std::vector<std::shared_ptr<RowSequence>> per_column_modifies;
   per_column_modifies.reserve(mod_column_nodes.size());
-  for (size_t i = 0; i < mod_column_nodes.size(); ++i) {
+  for (flatbuffers::uoffset_t i = 0; i < mod_column_nodes.size(); ++i) {
     const auto &elt = mod_column_nodes.Get(i);
     DataInput di_modified(*elt->modified_rows());
     auto mod_rows = IndexDecoder::ReadExternalCompressedDelta(&di_modified);
@@ -330,10 +330,10 @@ AwaitingMetadata::ProcessRemoves(const RowSequence &removed_rows) {
   std::shared_ptr<ClientTable> after_removes;
   if (removed_rows.Empty()) {
     removed_rows_index_space = RowSequence::CreateEmpty();
-      after_removes = prev;
+    after_removes = prev;
   } else {
     removed_rows_index_space = table_state_.Erase(removed_rows);
-      after_removes = table_state_.Snapshot();
+    after_removes = table_state_.Snapshot();
   }
   return {std::move(prev), std::move(removed_rows_index_space), std::move(after_removes)};
 }
@@ -511,7 +511,7 @@ std::optional<TickingUpdate> AwaitingModifies::ProcessNextChunk(BarrageProcessor
 
   for (const auto &mr : modified_rows_remaining_) {
     if (!mr->Empty()) {
-      // Need more data from caller.
+      // Return an indication that at least one column is hungry for more data
       return {};
     }
   }

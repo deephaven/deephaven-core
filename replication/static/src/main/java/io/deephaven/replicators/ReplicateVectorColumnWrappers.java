@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.replicators;
 
@@ -19,9 +19,9 @@ public class ReplicateVectorColumnWrappers {
     private static final String TASK = "replicateVectorColumnWrappers";
 
     private static final String CHAR_IMPL_PATH =
-            "engine/table/src/main/java/io/deephaven/engine/table/impl/vector/CharVectorColumnWrapper.java";
+            "engine/api/src/main/java/io/deephaven/engine/table/vectors/CharVectorColumnWrapper.java";
     private static final String CHAR_TEST_PATH =
-            "engine/table/src/test/java/io/deephaven/engine/table/impl/vector/CharVectorColumnWrapperTest.java";
+            "engine/api/src/test/java/io/deephaven/engine/table/vectors/CharVectorColumnWrapperTest.java";
 
     public static void main(String[] args) throws IOException {
         charToAllButBoolean(TASK, CHAR_IMPL_PATH);

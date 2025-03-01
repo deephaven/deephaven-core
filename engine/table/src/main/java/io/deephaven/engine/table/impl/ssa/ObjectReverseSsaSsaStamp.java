@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit ObjectSsaSsaStamp and run "./gradlew replicateReverseSegmentedSortedArray" to regenerate
@@ -10,8 +10,10 @@
 package io.deephaven.engine.table.impl.ssa;
 
 import java.util.Objects;
+import io.deephaven.util.compare.ObjectComparisons;
 
 import java.util.Objects;
+import io.deephaven.util.compare.ObjectComparisons;
 
 import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
@@ -296,17 +298,7 @@ public class ObjectReverseSsaSsaStamp implements SsaSsaStamp {
     // region comparison functions
     // descending comparison
     private static int doComparison(Object lhs, Object rhs) {
-        if (lhs == rhs) {
-            return 0;
-        }
-        if (lhs == null) {
-            return 1;
-        }
-        if (rhs == null) {
-            return -1;
-        }
-        //noinspection unchecked,rawtypes
-        return ((Comparable)rhs).compareTo(lhs);
+        return ObjectComparisons.compare(rhs, lhs);
     }
     // endregion comparison functions
 

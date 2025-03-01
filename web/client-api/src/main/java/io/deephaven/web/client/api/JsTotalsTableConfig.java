@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.web.client.api;
 
@@ -7,25 +7,25 @@ import com.vertispan.tsdefs.annotations.TsTypeRef;
 import elemental2.core.Global;
 import elemental2.core.JsArray;
 import elemental2.core.JsObject;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.Table_pb;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.AggSpec;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.AggregateRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.Aggregation;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.aggregation.AggregationColumns;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.aggregation.AggregationCount;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.aggspec.AggSpecAbsSum;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.aggspec.AggSpecAvg;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.aggspec.AggSpecCountDistinct;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.aggspec.AggSpecDistinct;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.aggspec.AggSpecFirst;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.aggspec.AggSpecLast;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.aggspec.AggSpecMax;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.aggspec.AggSpecMin;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.aggspec.AggSpecNonUniqueSentinel;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.aggspec.AggSpecStd;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.aggspec.AggSpecSum;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.aggspec.AggSpecUnique;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.aggspec.AggSpecVar;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.Table_pb;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.AggSpec;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.AggregateRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.Aggregation;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.aggregation.AggregationColumns;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.aggregation.AggregationCount;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.aggspec.AggSpecAbsSum;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.aggspec.AggSpecAvg;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.aggspec.AggSpecCountDistinct;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.aggspec.AggSpecDistinct;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.aggspec.AggSpecFirst;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.aggspec.AggSpecLast;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.aggspec.AggSpecMax;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.aggspec.AggSpecMin;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.aggspec.AggSpecNonUniqueSentinel;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.aggspec.AggSpecStd;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.aggspec.AggSpecSum;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.aggspec.AggSpecUnique;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.aggspec.AggSpecVar;
 import io.deephaven.web.client.api.tree.enums.JsAggregationOperation;
 import io.deephaven.web.client.fu.JsLog;
 import jsinterop.annotations.JsIgnore;
@@ -133,7 +133,7 @@ public class JsTotalsTableConfig {
         if (source.has("operationMap")) {
             operationMap = source.getAsAny("operationMap").cast();
             operationMap.forEach(key -> {
-                operationMap.get(key).forEach((value, index, array) -> {
+                operationMap.get(key).forEach((value, index) -> {
                     checkOperation(Js.cast(value));
                     return null;
                 });
@@ -237,9 +237,9 @@ public class JsTotalsTableConfig {
         Map<String, LinkedHashSet<String>> aggs = new HashMap<>();
         List<String> colsNeedingCompoundNames = new ArrayList<>();
         Set<String> seenColNames = new HashSet<>();
-        groupBy.forEach((col, p1, p2) -> seenColNames.add(Js.cast(col)));
+        groupBy.forEach((col, p1) -> seenColNames.add(Js.cast(col)));
         this.operationMap.forEach(colName -> {
-            this.operationMap.get(colName).forEach((agg, index, arr) -> {
+            this.operationMap.get(colName).forEach((agg, index) -> {
                 if (!JsAggregationOperation.canAggregateType(agg, columnTypes.get(colName))) {
                     // skip this column. to follow DHE's behavior
                     return null;
@@ -272,7 +272,7 @@ public class JsTotalsTableConfig {
                     AggregationCount count = new AggregationCount();
                     count.setColumnName("Count");
                     agg.setCount(count);
-                    aggColumns.forEach((p0, p1, p2) -> {
+                    aggColumns.forEach((p0, p1) -> {
                         String colName = p0.split("=")[0].trim();
                         customColumns.push(colName + " = Count");
                         return null;
@@ -296,7 +296,7 @@ public class JsTotalsTableConfig {
                     columns.setSpec(spec);
                     columns.setMatchPairsList(aggColumns);
                     agg.setColumns(columns);
-                    aggColumns.forEach((p0, p1, p2) -> {
+                    aggColumns.forEach((p0, p1) -> {
                         String colName = p0.split("=")[0].trim();
                         customColumns.push(colName + "= `` + " + colName);
                         return null;

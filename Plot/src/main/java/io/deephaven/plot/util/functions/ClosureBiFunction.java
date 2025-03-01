@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.plot.util.functions;
 
@@ -8,7 +8,7 @@ import groovy.lang.Closure;
 /**
  * Wraps a {@link SerializableBiFunction} with the API of a function. <br/>
  */
-public class ClosureBiFunction<T, U, R> extends SerializableClosure<R> implements SerializableBiFunction<T, U, R> {
+public class ClosureBiFunction<T, U, R> extends HasClosure<R> implements SerializableBiFunction<T, U, R> {
     private static final long serialVersionUID = 697974379939190730L;
 
     /**

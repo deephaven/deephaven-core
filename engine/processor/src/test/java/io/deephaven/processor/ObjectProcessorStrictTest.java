@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.processor;
 
@@ -103,7 +103,7 @@ public class ObjectProcessorStrictTest {
     }
 
     @Test
-    public void testNotEnoughOutputSize() {
+    public void testNotEnoughOutputOutputSize() {
         ObjectProcessor<Object> delegate = ObjectProcessor.noop(List.of(Type.intType()), false);
         ObjectProcessor<Object> strict = ObjectProcessor.strict(delegate);
         try (
@@ -173,6 +173,11 @@ public class ObjectProcessorStrictTest {
             private final List<Type<?>> outputTypes = new ArrayList<>(List.of(Type.intType()));
 
             @Override
+            public int outputSize() {
+                return 1;
+            }
+
+            @Override
             public List<Type<?>> outputTypes() {
                 try {
                     return List.copyOf(outputTypes);
@@ -218,6 +223,32 @@ public class ObjectProcessorStrictTest {
             } catch (UncheckedDeephavenException e) {
                 assertThat(e).hasMessageContaining("Implementation did not increment chunk size correctly");
             }
+        }
+    }
+
+    @Test
+    public void testBadDelegateOutputSize() {
+        try {
+            ObjectProcessor.strict(new ObjectProcessor<>() {
+                @Override
+                public int outputSize() {
+                    return 2;
+                }
+
+                @Override
+                public List<Type<?>> outputTypes() {
+                    return List.of(Type.intType());
+                }
+
+                @Override
+                public void processAll(ObjectChunk<?, ?> in, List<WritableChunk<?>> out) {
+                    // ignore
+                }
+            });
+            failBecauseExceptionWasNotThrown(IllegalAccessException.class);
+        } catch (IllegalArgumentException e) {
+            assertThat(e).hasMessageContaining(
+                    "Inconsistent size. delegate.outputSize()=2, delegate.outputTypes().size()=1");
         }
     }
 }

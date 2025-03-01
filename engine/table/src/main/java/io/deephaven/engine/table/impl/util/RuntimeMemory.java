@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.util;
 
@@ -151,6 +151,18 @@ public class RuntimeMemory {
             totalMemory = s.totalMemory;
             totalCollections = s.totalCollections;
             totalCollectionTimeMs = s.totalCollectionTimeMs;
+        }
+
+        @Override
+        public String toString() {
+            final DecimalFormat format = new DecimalFormat("###,###");
+            return "Sample{" +
+                    "usedMemory (calculated)=" + format.format(totalMemory - freeMemory) +
+                    ", freeMemory=" + format.format(freeMemory) +
+                    ", totalMemory=" + format.format(totalMemory) +
+                    ", totalCollections=" + format.format(totalCollections) +
+                    ", totalCollectionTimeMs=" + format.format(totalCollectionTimeMs) +
+                    '}';
         }
     }
 

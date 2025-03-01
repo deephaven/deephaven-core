@@ -1,17 +1,17 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.rowset.WritableRowSet;
-import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.liveness.LiveSupplier;
+import io.deephaven.engine.liveness.ReferenceCountedLivenessNode;
+import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.perf.PerformanceEntry;
+import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.TestErrorNotification;
 import io.deephaven.engine.testutil.TestNotification;
@@ -24,8 +24,9 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableIntChunk;
-import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.qst.column.Column;
+import io.deephaven.util.type.ArrayTypeUtils;
+import io.deephaven.vector.ObjectVector;
 import org.jetbrains.annotations.NotNull;
 import org.jmock.api.Invocation;
 import org.jmock.lib.action.CustomAction;
@@ -33,6 +34,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.lang.ref.WeakReference;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -46,6 +48,38 @@ import static org.junit.Assert.assertArrayEquals;
  */
 @SuppressWarnings({"AutoBoxing", "JUnit4AnnotatedMethodInJUnit3TestCase", "AnonymousInnerClassMayBeStatic"})
 public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
+
+    private static class TestKeySupplier extends ReferenceCountedLivenessNode
+            implements LiveSupplier<ImmutableTableLocationKey> {
+
+        private final ImmutableTableLocationKey key;
+
+        private TableLocation tableLocation;
+
+        TestKeySupplier(
+                final ImmutableTableLocationKey key) {
+            super(false);
+            this.key = key;
+        }
+
+        @Override
+        public ImmutableTableLocationKey get() {
+            return key;
+        }
+
+        public synchronized void setTableLocation(final TableLocation tableLocation) {
+            Assert.eqNull(this.tableLocation, "this.tableLocation");
+            manage(tableLocation);
+            this.tableLocation = tableLocation;
+        }
+
+        @OverridingMethodsMustInvokeSuper
+        @Override
+        protected synchronized void destroy() {
+            super.destroy();
+            tableLocation = null;
+        }
+    }
 
     private static final int NUM_COLUMNS = 5;
     private static final ColumnDefinition<String> PARTITIONING_COLUMN_DEFINITION =
@@ -108,6 +142,15 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
             return mocked;
         }).toArray(ColumnSource[]::new);
         locationProvider = mock(TableLocationProvider.class);
+        checking(new Expectations() {
+            {
+                allowing(locationProvider).getUpdateMode();
+                will(returnValue(TableUpdateMode.ADD_REMOVE));
+                allowing(locationProvider).getLocationUpdateMode();
+                will(returnValue(TableUpdateMode.ADD_REMOVE));
+            }
+        });
+
         tableLocationKeys = IntStream.range(0, 6).mapToObj(tlki -> {
             final Map<String, Comparable<?>> partitions = new LinkedHashMap<>();
             partitions.put(PARTITIONING_COLUMN_DEFINITION.getName(), COLUMN_PARTITIONS[tlki]);
@@ -149,6 +192,10 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
                 allowing(columnSourceManager).getWeakReference();
                 will(returnValue(new WeakReference<>(columnSourceManager)));
                 allowing(columnSourceManager).dropReference();
+                allowing(columnSourceManager).getTableAttributes(with(any(TableUpdateMode.class)),
+                        with(any(TableUpdateMode.class)));
+                will(returnValue(Collections.EMPTY_MAP));
+
             }
         });
 
@@ -163,6 +210,7 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
     @Override
     public void tearDown() throws Exception {
         try {
+            allowLivenessRelease();
             super.tearDown();
         } finally {
             if (coalesced != null) {
@@ -170,6 +218,21 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
                 coalesced = null;
             }
         }
+    }
+
+    private void allowLivenessRelease() {
+        checking(new Expectations() {
+            {
+                allowing(locationProvider).supportsSubscriptions();
+                allowing(locationProvider).unsubscribe(with(any(TableLocationProvider.Listener.class)));
+                for (int li = 0; li < tableLocations.length; ++li) {
+                    final TableLocation tableLocation = tableLocations[li];
+                    allowing(tableLocation).supportsSubscriptions();
+                    will(returnValue(true));
+                    allowing(tableLocation).unsubscribe(with(any(TableLocation.Listener.class)));
+                }
+            }
+        });
     }
 
     private Map<String, ? extends ColumnSource<?>> getIncludedColumnsMap(final int... indices) {
@@ -248,7 +311,8 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
                     @Override
                     public Object invoke(Invocation invocation) {
                         subscriptionBuffer = (TableLocationSubscriptionBuffer) invocation.getParameter(0);
-                        Arrays.stream(tableLocationKeys).forEach(subscriptionBuffer::handleTableLocationKey);
+                        Arrays.stream(tableLocationKeys).map(TestKeySupplier::new)
+                                .forEach(subscriptionBuffer::handleTableLocationKeyAdded);
                         return null;
                     }
                 });
@@ -318,7 +382,8 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
         checking(new Expectations() {
             {
                 oneOf(columnSourceManager).refresh();
-                will(returnValue(toAdd.copy()));
+                will(returnValue(new TableUpdateImpl(toAdd.copy(), RowSetFactory.empty(), RowSetFactory.empty(),
+                        RowSetShiftData.EMPTY, ModifiedColumnSet.ALL)));
                 checking(new Expectations() {
                     {
                         oneOf(listener).getNotification(with(any(TableUpdateImpl.class)));
@@ -358,7 +423,9 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
         checking(new Expectations() {
             {
                 oneOf(columnSourceManager).refresh();
-                will(returnValue(RowSetFactory.empty()));
+                will(returnValue(
+                        new TableUpdateImpl(RowSetFactory.empty(), RowSetFactory.empty(), RowSetFactory.empty(),
+                                RowSetShiftData.EMPTY, ModifiedColumnSet.ALL)));
             }
         });
 
@@ -394,6 +461,7 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
         errorNotification.reset();
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.runWithinUnitTestCycle(() -> {
+            allowLivenessRelease();
             SUT.refresh();
             updateGraph.markSourcesRefreshedForUnitTests();
         }, false);
@@ -405,7 +473,8 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
 
     private void doAddLocationsRefreshCheck(final ImmutableTableLocationKey[] tableLocationKeys,
             final Set<TableLocation> expectPassFilters) {
-        Arrays.stream(tableLocationKeys).forEach(subscriptionBuffer::handleTableLocationKey);
+        Arrays.stream(tableLocationKeys).map(TestKeySupplier::new)
+                .forEach(subscriptionBuffer::handleTableLocationKeyAdded);
 
         expectPassFilters.forEach(tl -> checking(new Expectations() {
             {
@@ -612,10 +681,10 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
         });
         final Table result = SUT.selectDistinct(PARTITIONING_COLUMN_DEFINITION.getName());
         assertIsSatisfied();
-        final DataColumn<String> distinctDateColumn =
-                DataAccessHelpers.getColumn(result, PARTITIONING_COLUMN_DEFINITION.getName());
-        assertEquals(expectedDistinctDates.length, distinctDateColumn.size());
-        final String[] distinctDates = (String[]) distinctDateColumn.getDirect();
+        final String columnName = PARTITIONING_COLUMN_DEFINITION.getName();
+        final ObjectVector<String> distinctDatesVector = ColumnVectors.ofObject(result, columnName, String.class);
+        assertEquals(expectedDistinctDates.length, distinctDatesVector.size());
+        final String[] distinctDates = distinctDatesVector.toArray();
         Arrays.sort(expectedDistinctDates);
         Arrays.sort(distinctDates);
         assertArrayEquals(expectedDistinctDates, distinctDates);
@@ -695,7 +764,7 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
             }
         });
         assertRowSetEquals(expectedRowSet, SUT.where(INTEGER_COLUMN_DEFINITION.getName() + ">0")
-                .where(CollectionUtil.ZERO_LENGTH_STRING_ARRAY).getRowSet());
+                .where(ArrayTypeUtils.EMPTY_STRING_ARRAY).getRowSet());
         assertIsSatisfied();
     }
 

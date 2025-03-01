@@ -1,0 +1,26 @@
+plugins {
+    id 'java-library'
+    id 'io.deephaven.project.register'
+}
+
+dependencies {
+    api project(':extensions-json-jackson')
+    api project(':engine-processor')
+    api libs.undercouch.bson4jackson
+
+    compileOnly project(':util-immutables')
+    annotationProcessor libs.immutables.value
+
+    compileOnly libs.google.findbugs.jsr305
+
+    testImplementation platform(libs.jackson.bom)
+    testImplementation libs.jackson.databind
+
+    testImplementation libs.assertj
+    testImplementation platform(libs.junit.bom)
+    testImplementation libs.junit.jupiter
+}
+
+test {
+    useJUnitPlatform()
+}

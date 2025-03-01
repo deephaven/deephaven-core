@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.parquet.table.pagestore;
 
@@ -39,7 +39,7 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
     final PageCache<ATTR> pageCache;
     final ColumnChunkReader columnChunkReader;
     private final long mask;
-    private final ToPage<ATTR, ?> toPage;
+    final ToPage<ATTR, ?> toPage;
 
     private final long numRows;
 
@@ -108,8 +108,7 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
         final ColumnChunkPageStore<ATTR> columnChunkPageStore = canUseOffsetIndex
                 ? new OffsetIndexBasedColumnChunkPageStore<>(pageCache, columnChunkReader, mask, toPage)
                 : new VariablePageSizeColumnChunkPageStore<>(pageCache, columnChunkReader, mask, toPage);
-        final ToPage<DictionaryKeys, long[]> dictionaryKeysToPage =
-                toPage.getDictionaryKeysToPage();
+        final ToPage<DictionaryKeys, long[]> dictionaryKeysToPage = toPage.getDictionaryKeysToPage();
         final ColumnChunkPageStore<DictionaryKeys> dictionaryKeysColumnChunkPageStore =
                 dictionaryKeysToPage == null ? null
                         : canUseOffsetIndex

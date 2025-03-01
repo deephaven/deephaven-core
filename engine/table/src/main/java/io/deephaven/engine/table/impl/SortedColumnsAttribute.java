@@ -1,8 +1,10 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.api.ColumnName;
+import io.deephaven.api.SortColumn;
 import io.deephaven.engine.table.Table;
 
 import java.util.*;
@@ -93,6 +95,47 @@ public class SortedColumnsAttribute {
         final String oldAttribute = (String) table.getAttribute(Table.SORTED_COLUMNS_ATTRIBUTE);
         final String newAttribute = setOrderForColumn(oldAttribute, columnName, order);
         return table.withAttributes(Map.of(Table.SORTED_COLUMNS_ATTRIBUTE, newAttribute));
+    }
+
+    /**
+     * Ensure that the result table is marked as sorted by the given column.
+     *
+     * @param table the table to update
+     * @param columnName the column to update
+     * @param order the order that the column is sorted in
+     * @return {@code table}, or a copy of it with the necessary attribute set
+     */
+    public static Table withOrderForColumn(Table table, String columnName, SortingOrder order,
+            Map<String, ?> additionalAttributes) {
+        final String oldAttribute = (String) table.getAttribute(Table.SORTED_COLUMNS_ATTRIBUTE);
+        final String newAttribute = setOrderForColumn(oldAttribute, columnName, order);
+        if (additionalAttributes.isEmpty()) {
+            return table.withAttributes(Map.of(Table.SORTED_COLUMNS_ATTRIBUTE, newAttribute));
+        } else {
+            final Map<String, Object> attributesToAdd = new LinkedHashMap<>();
+            attributesToAdd.putAll(additionalAttributes);
+            attributesToAdd.put(Table.SORTED_COLUMNS_ATTRIBUTE, newAttribute);
+            return table.withAttributes(attributesToAdd);
+        }
+    }
+
+    /**
+     * Get the columns a {@link Table} is sorted by.
+     *
+     * @param table The table to interrogate
+     *
+     * @return A (possibly-empty) list of {@link SortColumn SortColumns} representing columns the table is sorted on and
+     *         their associated sort order
+     */
+    public static List<SortColumn> getSortedColumns(Table table) {
+        final String attribute = (String) table.getAttribute(Table.SORTED_COLUMNS_ATTRIBUTE);
+        if (attribute == null || attribute.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return stringToMap(attribute, true).entrySet().stream().map(e -> {
+            final ColumnName columnName = ColumnName.of(e.getKey());
+            return e.getValue().isAscending() ? SortColumn.asc(columnName) : SortColumn.desc(columnName);
+        }).collect(Collectors.toList());
     }
 
     private static Map<String, SortingOrder> stringToMap(String attribute, boolean writable) {

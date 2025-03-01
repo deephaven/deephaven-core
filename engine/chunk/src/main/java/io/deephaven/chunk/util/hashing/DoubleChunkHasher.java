@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit CharChunkHasher and run "./gradlew replicateHashing" to regenerate
@@ -12,6 +12,7 @@ import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.attributes.HashCodes;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.util.compare.DoubleComparisons;
 import io.deephaven.util.type.TypeUtils;
 
 import static io.deephaven.chunk.util.hashing.ChunkHasher.scrambleHash;
@@ -35,7 +36,7 @@ public class DoubleChunkHasher implements ChunkHasher {
     }
 
     public static int hashInitialSingle(double value) {
-        return scrambleHash(Double.hashCode(value));
+        return scrambleHash(DoubleComparisons.hashCode(value));
     }
 
     public static int hashUpdateSingle(int existing, double newValue) {

@@ -3,6 +3,9 @@ plugins {
     id 'io.deephaven.project.register'
 }
 
+evaluationDependsOn Docker.registryProject('localstack')
+evaluationDependsOn Docker.registryProject('minio')
+
 description 'Used to create a channel provider plugin for reading and writing files stored in S3.'
 
 dependencies {
@@ -11,34 +14,39 @@ dependencies {
     implementation project(':Base')
     implementation project(':Util')
     implementation project(':Configuration')
+    implementation project(':log-factory')
+    implementation project(':util-thread')
 
-    implementation platform('software.amazon.awssdk:bom:2.23.19')
-    implementation 'software.amazon.awssdk:s3'
-    implementation 'software.amazon.awssdk:aws-crt-client'
-    //implementation 'software.amazon.awssdk:netty-nio-client'
+    implementation platform(libs.awssdk.bom)
+    implementation libs.awssdk.s3
+    implementation libs.awssdk.crt.client
 
-    compileOnly depAnnotations
+    compileOnly libs.jetbrains.annotations
 
     // For OSUtil
     testImplementation project(':Stats')
 
-    Classpaths.inheritAutoService(project)
-    Classpaths.inheritImmutables(project)
+    compileOnly libs.autoservice
+    annotationProcessor libs.autoservice.compiler
 
-    Classpaths.inheritJUnitPlatform(project)
-    Classpaths.inheritAssertJ(project)
-    testImplementation 'org.junit.jupiter:junit-jupiter'
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
-    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    compileOnly project(':util-immutables')
+    annotationProcessor libs.immutables.value
 
-    testImplementation "org.testcontainers:testcontainers:1.19.4"
-    testImplementation "org.testcontainers:junit-jupiter:1.19.4"
-    testImplementation "org.testcontainers:localstack:1.19.4"
-    testImplementation "org.testcontainers:minio:1.19.4"
+    testImplementation libs.assertj
+    testImplementation platform(libs.junit.bom)
+    testImplementation libs.junit.jupiter
+    testRuntimeOnly libs.junit.jupiter.engine
+    testRuntimeOnly libs.junit.platform.launcher
+
+    testImplementation libs.awssdk.s3.transfer.manager
+    testImplementation libs.testcontainers
+    testImplementation libs.testcontainers.junit.jupiter
+    testImplementation libs.testcontainers.localstack
+    testImplementation libs.testcontainers.minio
 
     testRuntimeOnly project(':test-configs')
     testRuntimeOnly project(':log-to-slf4j')
-    Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
+    testRuntimeOnly libs.slf4j.simple
 }
 
 test {
@@ -51,7 +59,11 @@ tasks.register('testOutOfBand', Test) {
     useJUnitPlatform {
         includeTags("testcontainers")
     }
-    systemProperty 'testcontainers.localstack.image', project.property('testcontainers.localstack.image')
-    systemProperty 'testcontainers.minio.image', project.property('testcontainers.minio.image')
+
+    dependsOn Docker.registryTask(project, 'localstack')
+    systemProperty 'testcontainers.localstack.image', Docker.localImageName('localstack')
+
+    dependsOn Docker.registryTask(project, 'minio')
+    systemProperty 'testcontainers.minio.image', Docker.localImageName('minio')
 }
 

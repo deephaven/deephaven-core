@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
 
 import unittest
@@ -47,7 +47,7 @@ class DataIndexTestCase(BaseTestCase):
         self.assertEqual(["X", "Y"], self.data_index.keys)
 
     def test_backing_table(self):
-        self.assertEqual(3, len(self.data_index.table.columns))
+        self.assertEqual(3, len(self.data_index.table.definition))
         self.assertEqual(10, self.data_index.table.size)
         di = data_index(self.data_index.table, self.data_index.keys[0:1])
         self.assertEqual(1, len(di.keys))

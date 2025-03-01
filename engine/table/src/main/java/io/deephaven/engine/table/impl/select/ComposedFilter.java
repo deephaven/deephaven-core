@@ -1,10 +1,11 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
 import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.liveness.LivenessArtifact;
@@ -61,9 +62,18 @@ public abstract class ComposedFilter extends WhereFilterLivenessArtifactImpl imp
     }
 
     @Override
-    public void init(TableDefinition tableDefinition) {
+    public void init(@NotNull TableDefinition tableDefinition) {
+        final QueryCompilerRequestProcessor.BatchProcessor compilationProcessor = QueryCompilerRequestProcessor.batch();
+        init(tableDefinition, compilationProcessor);
+        compilationProcessor.compile();
+    }
+
+    @Override
+    public void init(
+            @NotNull final TableDefinition tableDefinition,
+            @NotNull final QueryCompilerRequestProcessor compilationProcessor) {
         for (WhereFilter filter : componentFilters) {
-            filter.init(tableDefinition);
+            filter.init(tableDefinition, compilationProcessor);
         }
     }
 

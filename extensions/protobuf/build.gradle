@@ -7,26 +7,29 @@ plugins {
 dependencies {
     api project(':qst-type')
     api project(':util-function')
-    api 'com.google.protobuf:protobuf-java:3.24.1'
+    api libs.protobuf.java
     implementation project(':engine-query-constants')
+    implementation project(':engine-time')
 
-    Classpaths.inheritImmutables(project)
+    compileOnly project(':util-immutables')
+    annotationProcessor libs.immutables.value
 
-    compileOnly depAnnotations
+    compileOnly libs.jetbrains.annotations
 
-    Classpaths.inheritJUnitPlatform(project)
-    Classpaths.inheritAssertJ(project)
+    testImplementation libs.assertj
 
-    testImplementation 'org.junit.jupiter:junit-jupiter'
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
-    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    testImplementation platform(libs.junit.bom)
+    testImplementation libs.junit.jupiter
+    testRuntimeOnly libs.junit.jupiter.engine
+    testRuntimeOnly libs.junit.platform.launcher
 
     testRuntimeOnly project(':log-to-slf4j')
     testRuntimeOnly project(':configs')
     testRuntimeOnly project(':test-configs')
-    Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
+    testRuntimeOnly libs.slf4j.simple
 
-    Classpaths.inheritAutoService(project, true)
+    testCompileOnly libs.autoservice
+    testAnnotationProcessor libs.autoservice.compiler
 }
 
 test {
@@ -43,6 +46,6 @@ spotless {
 
 protobuf {
     protoc {
-        artifact = 'com.google.protobuf:protoc:3.24.1'
+        artifact = "com.google.protobuf:protoc:${libs.versions.protobuf.get()}"
     }
 }

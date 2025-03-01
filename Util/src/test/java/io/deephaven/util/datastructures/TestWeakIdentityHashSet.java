@@ -1,10 +1,10 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.util.datastructures;
 
+import io.deephaven.util.mutable.MutableInt;
 import junit.framework.TestCase;
-import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -50,35 +50,35 @@ public class TestWeakIdentityHashSet {
             TestCase.assertNotNull(s);
             counter.increment();
         });
-        TestCase.assertEquals(0, counter.intValue());
+        TestCase.assertEquals(0, counter.get());
 
         Arrays.stream(values).forEach(v -> TestCase.assertTrue(set.add(v)));
         Arrays.stream(values).forEach(v -> TestCase.assertFalse(set.add(v)));
 
-        counter.setValue(0);
+        counter.set(0);
         set.forEach(s -> {
             TestCase.assertNotNull(s);
             counter.increment();
         });
-        TestCase.assertEquals(values.length, counter.intValue());
+        TestCase.assertEquals(values.length, counter.get());
 
         set.clear();
 
-        counter.setValue(0);
+        counter.set(0);
         set.forEach(s -> {
             TestCase.assertNotNull(s);
             counter.increment();
         });
-        TestCase.assertEquals(0, counter.intValue());
+        TestCase.assertEquals(0, counter.get());
 
         Arrays.stream(values).forEach(v -> TestCase.assertTrue(set.add(v)));
         Arrays.stream(values).forEach(v -> TestCase.assertFalse(set.add(v)));
 
-        counter.setValue(0);
+        counter.set(0);
         set.forEach(s -> {
             TestCase.assertNotNull(s);
             counter.increment();
         });
-        TestCase.assertEquals(values.length, counter.intValue());
+        TestCase.assertEquals(values.length, counter.get());
     }
 }

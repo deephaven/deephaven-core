@@ -1,22 +1,27 @@
 plugins {
+    id 'java-library'
     id 'io.deephaven.project.register'
 }
 
 dependencies {
+    api libs.trove
+
     implementation project(':Base')
-    implementation project(':DataStructures')
     implementation project(':IO')
     implementation project(':log-factory')
-    implementation depCommonsLang3
-    Classpaths.inheritJUnitClassic(project, 'testImplementation')
-    Classpaths.inheritJMock(project, 'testImplementation')
+    implementation libs.commons.lang3
+    testImplementation libs.junit4
+    testImplementation libs.jmock.junit4
+    testImplementation libs.jmock.imposters
 
-    Classpaths.inheritAutoService(project)
+    compileOnly libs.autoservice
+    annotationProcessor libs.autoservice.compiler
 
     testImplementation project(path: ':Base', configuration: 'tests')
+    testImplementation libs.commons.compress
 
     testRuntimeOnly project(':log-to-slf4j')
-    Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
+    testRuntimeOnly libs.slf4j.simple
 }
 
 sourceSets {

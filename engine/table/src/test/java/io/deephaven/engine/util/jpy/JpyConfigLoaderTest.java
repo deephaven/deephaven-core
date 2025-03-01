@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.util.jpy;
 
@@ -226,7 +226,7 @@ public class JpyConfigLoaderTest {
         // and Configuration not an interface...
         String existingValue = System.getProperty("Configuration.rootFile");
         System.setProperty("Configuration.rootFile", configFile);
-        Configuration config = Configuration.newConfigurationForTesting();
+        Configuration config = Configuration.newStandaloneConfiguration();
         if (existingValue != null) {
             System.setProperty("Configuration.rootFile", existingValue);
         } else {

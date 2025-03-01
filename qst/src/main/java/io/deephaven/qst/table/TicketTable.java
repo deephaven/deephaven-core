@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.qst.table;
 
@@ -33,7 +33,9 @@ public abstract class TicketTable extends TableBase {
      *
      * @param ticket the ticket string
      * @return the ticket table
+     * @deprecated prefer to be explicit and either use {@link #of(byte[])} or {@link #fromQueryScopeField(String)}
      */
+    @Deprecated
     public static TicketTable of(String ticket) {
         return ImmutableTicketTable.of(ticket.getBytes(StandardCharsets.UTF_8));
     }
@@ -45,7 +47,7 @@ public abstract class TicketTable extends TableBase {
      * @return the ticket table
      */
     public static TicketTable fromQueryScopeField(String fieldName) {
-        return of("s/" + fieldName);
+        return of(("s/" + fieldName).getBytes(StandardCharsets.UTF_8));
     }
 
     /**
@@ -56,7 +58,7 @@ public abstract class TicketTable extends TableBase {
      * @return the ticket table
      */
     public static TicketTable fromApplicationField(String applicationId, String fieldName) {
-        return of("a/" + applicationId + "/f/" + fieldName);
+        return of(("a/" + applicationId + "/f/" + fieldName).getBytes(StandardCharsets.UTF_8));
     }
 
     /**

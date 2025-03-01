@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.server.table.ops;
 
@@ -27,10 +27,10 @@ import io.deephaven.server.session.TicketRouter;
 import io.deephaven.server.table.ExportedTableUpdateListener;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.mutable.MutableInt;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
-import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 
 import javax.inject.Inject;
@@ -46,9 +46,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
-import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyComplete;
-import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyError;
-import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyOnNext;
+import static io.deephaven.extensions.barrage.util.GrpcUtil.*;
 
 public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase {
 
@@ -358,6 +356,13 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
         oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.UPDATE_BY, request, responseObserver);
     }
 
+    @Override
+    public void slice(
+            @NotNull final SliceRequest request,
+            @NotNull final StreamObserver<ExportedTableCreationResponse> responseObserver) {
+        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.SLICE, request, responseObserver);
+    }
+
     private Object getSeekValue(@NotNull final Literal literal, @NotNull final Class<?> dataType) {
         if (literal.hasStringValue()) {
             if (BigDecimal.class.isAssignableFrom(dataType)) {
@@ -448,10 +453,12 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
             final SessionState.ExportObject<Table> exportedTable =
                     ticketRouter.resolve(session, sourceId, "sourceId");
 
-            session.nonExport()
+            session.<SeekRowResponse>nonExport()
                     .queryPerformanceRecorder(queryPerformanceRecorder)
                     .require(exportedTable)
                     .onError(responseObserver)
+                    .onSuccess((final SeekRowResponse response) -> safelyOnNextAndComplete(responseObserver,
+                            response))
                     .submit(() -> {
                         final Table table = exportedTable.get();
                         authWiring.checkPermissionSeekRow(session.getAuthContext(), request,
@@ -459,15 +466,14 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
                         final String columnName = request.getColumnName();
                         final Class<?> dataType = table.getDefinition().getColumn(columnName).getDataType();
                         final Object seekValue = getSeekValue(request.getSeekValue(), dataType);
-                        final Long result = table.apply(new SeekRow(
+                        final long result = new SeekRow(
                                 request.getStartingRow(),
                                 columnName,
                                 seekValue,
                                 request.getInsensitive(),
                                 request.getContains(),
-                                request.getIsBackward()));
-                        SeekRowResponse.Builder rowResponse = SeekRowResponse.newBuilder();
-                        safelyComplete(responseObserver, rowResponse.setResultRow(result).build());
+                                request.getIsBackward()).seek(table);
+                        return SeekRowResponse.newBuilder().setResultRow(result).build();
                     });
         }
     }
@@ -518,17 +524,16 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
                 if (numRemaining > 0) {
                     return;
                 }
-
+                final StatusRuntimeException failure = firstFailure.get();
                 try (final SafeCloseable ignored2 = queryPerformanceRecorder.resumeQuery()) {
-                    final StatusRuntimeException failure = firstFailure.get();
-                    if (failure != null) {
-                        safelyError(responseObserver, failure);
-                    } else {
-                        safelyComplete(responseObserver);
-                    }
                     if (queryPerformanceRecorder.endQuery()) {
                         EngineMetrics.getInstance().logQueryProcessingResults(queryPerformanceRecorder, failure);
                     }
+                }
+                if (failure != null) {
+                    safelyError(responseObserver, failure);
+                } else {
+                    safelyComplete(responseObserver);
                 }
             };
 
@@ -604,23 +609,21 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
         try (final SafeCloseable ignored = queryPerformanceRecorder.startQuery()) {
             final SessionState.ExportObject<Object> export = ticketRouter.resolve(session, request, "request");
 
-            session.nonExport()
+            session.<ExportedTableCreationResponse>nonExport()
                     .queryPerformanceRecorder(queryPerformanceRecorder)
                     .require(export)
                     .onError(responseObserver)
+                    .onSuccess((final ExportedTableCreationResponse response) -> safelyOnNextAndComplete(
+                            responseObserver,
+                            response))
                     .submit(() -> {
                         final Object obj = export.get();
                         if (!(obj instanceof Table)) {
-                            responseObserver.onError(
-                                    Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
-                                            "Ticket is not a table"));
-                            return;
+                            throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION, "Ticket is not a table");
                         }
                         authWiring.checkPermissionGetExportedTableCreationResponse(
                                 session.getAuthContext(), request, Collections.singletonList((Table) obj));
-                        final ExportedTableCreationResponse response =
-                                ExportUtil.buildTableCreationResponse(request, (Table) obj);
-                        safelyComplete(responseObserver, response);
+                        return ExportUtil.buildTableCreationResponse(request, (Table) obj);
                     });
         }
     }
@@ -658,17 +661,15 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
                     .map(ref -> resolveOneShotReference(session, ref))
                     .collect(Collectors.toList());
 
-            session.newExport(resultId, "resultId")
+            session.<Table>newExport(resultId, "resultId")
                     .require(dependencies)
-                    .onError(responseObserver)
                     .queryPerformanceRecorder(queryPerformanceRecorder)
+                    .onError(responseObserver)
+                    .onSuccess((final Table result) -> safelyOnNextAndComplete(responseObserver,
+                            ExportUtil.buildTableCreationResponse(resultId, result)))
                     .submit(() -> {
                         operation.checkPermission(request, dependencies);
-                        final Table result = operation.create(request, dependencies);
-                        final ExportedTableCreationResponse response =
-                                ExportUtil.buildTableCreationResponse(resultId, result);
-                        safelyComplete(responseObserver, response);
-                        return result;
+                        return operation.create(request, dependencies);
                     });
         }
     }

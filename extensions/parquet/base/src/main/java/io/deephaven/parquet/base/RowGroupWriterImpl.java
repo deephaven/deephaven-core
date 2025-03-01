@@ -1,9 +1,11 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.parquet.base;
 
+import com.google.common.io.CountingOutputStream;
 import io.deephaven.parquet.compress.CompressorAdapter;
+import io.deephaven.parquet.impl.ParquetSchemaUtil;
 import org.apache.parquet.bytes.ByteBufferAllocator;
 import org.apache.parquet.hadoop.metadata.BlockMetaData;
 import org.apache.parquet.hadoop.metadata.ColumnChunkMetaData;
@@ -15,10 +17,11 @@ import org.apache.parquet.schema.Type;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 final class RowGroupWriterImpl implements RowGroupWriter {
-    private final PositionedBufferedOutputStream bufferedOutput;
-    private final MessageType type;
+    private final CountingOutputStream countingOutput;
+    private final MessageType schema;
     private final int targetPageSize;
     private final ByteBufferAllocator allocator;
     private ColumnWriterImpl activeWriter;
@@ -26,34 +29,34 @@ final class RowGroupWriterImpl implements RowGroupWriter {
     private final List<OffsetIndex> currentOffsetIndexes = new ArrayList<>();
     private final CompressorAdapter compressorAdapter;
 
-    RowGroupWriterImpl(PositionedBufferedOutputStream bufferedOutput,
-            MessageType type,
+    RowGroupWriterImpl(CountingOutputStream countingOutput,
+            MessageType schema,
             int targetPageSize,
             ByteBufferAllocator allocator,
             CompressorAdapter compressorAdapter) {
-        this(bufferedOutput, type, targetPageSize, allocator, new BlockMetaData(), compressorAdapter);
+        this(countingOutput, schema, targetPageSize, allocator, new BlockMetaData(), compressorAdapter);
     }
 
 
-    private RowGroupWriterImpl(PositionedBufferedOutputStream bufferedOutput,
-            MessageType type,
+    private RowGroupWriterImpl(CountingOutputStream countingOutput,
+            MessageType schema,
             int targetPageSize,
             ByteBufferAllocator allocator,
             BlockMetaData blockMetaData,
             CompressorAdapter compressorAdapter) {
-        this.bufferedOutput = bufferedOutput;
-        this.type = type;
+        this.countingOutput = Objects.requireNonNull(countingOutput);
+        this.schema = Objects.requireNonNull(schema);
         this.targetPageSize = targetPageSize;
-        this.allocator = allocator;
-        this.blockMetaData = blockMetaData;
-        this.compressorAdapter = compressorAdapter;
+        this.allocator = Objects.requireNonNull(allocator);
+        this.blockMetaData = Objects.requireNonNull(blockMetaData);
+        this.compressorAdapter = Objects.requireNonNull(compressorAdapter);
     }
 
     String[] getPrimitivePath(String columnName) {
         String[] result = {columnName};
 
         Type rollingType;
-        while (!(rollingType = type.getType(result)).isPrimitive()) {
+        while (!(rollingType = schema.getType(result)).isPrimitive()) {
             GroupType groupType = rollingType.asGroupType();
             if (groupType.getFieldCount() != 1) {
                 throw new UnsupportedOperationException("Encountered struct at:" + Arrays.toString(result));
@@ -72,8 +75,8 @@ final class RowGroupWriterImpl implements RowGroupWriter {
                             + " need to close that before opening a writer for " + columnName);
         }
         activeWriter = new ColumnWriterImpl(this,
-                bufferedOutput,
-                type.getColumnDescription(getPrimitivePath(columnName)),
+                countingOutput,
+                ParquetSchemaUtil.columnDescriptor(schema, getPrimitivePath(columnName)).orElseThrow(),
                 compressorAdapter,
                 targetPageSize,
                 allocator);

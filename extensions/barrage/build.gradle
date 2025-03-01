@@ -3,40 +3,38 @@ plugins {
     id 'io.deephaven.project.register'
 }
 
-configurations {
-    implementation.extendsFrom irisDb
-    testImplementation.extendsFrom irisDbTest
-}
-
 description = 'An extension integrating Barrage with Deephaven\'s Table Model'
 
 dependencies {
     implementation project(':Base')
     implementation project(':Util')
     implementation project(':Configuration')
-    implementation depCommonsLang3
+    implementation project(':util-function')
+    implementation libs.commons.lang3
 
     api project(':engine-table')
     implementation project(':proto:proto-backplane-grpc-flight')
     implementation project(':log-factory')
-    api 'io.deephaven.barrage:barrage-format:0.6.0'
-    implementation 'org.hdrhistogram:HdrHistogram:2.1.12'
+    api libs.deephaven.barrage.format
+    implementation libs.hdrhistogram
 
-    Classpaths.inheritFlatbuffer(project, 'implementation')
+    implementation libs.flatbuffers.java
 
-    Classpaths.inheritArrow(project, 'arrow-vector', 'implementation')
-    Classpaths.inheritArrow(project, 'arrow-format', 'implementation')
+    implementation libs.arrow.vector
+    implementation libs.arrow.format
+    implementation project(path: ':extensions-source-support')
 
-    Classpaths.inheritImmutables(project)
+    compileOnly project(':util-immutables')
+    annotationProcessor libs.immutables.value
 
-    testImplementation TestTools.projectDependency(project, 'engine-table'),
-            TestTools.projectDependency(project, 'Util')
+    testImplementation project(':engine-test-utils')
 
-    Classpaths.inheritSlf4j(project, 'slf4j-api', 'implementation')
-    Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
+    implementation libs.slf4j.api
+    testRuntimeOnly libs.slf4j.simple
     testRuntimeOnly project(':log-to-slf4j')
+    testRuntimeOnly project(':test-configs')
 
-    Classpaths.inheritJUnitPlatform(project)
-    Classpaths.inheritAssertJ(project)
-    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testImplementation libs.assertj
+    testImplementation platform(libs.junit.bom)
+    testImplementation libs.junit.jupiter
 }

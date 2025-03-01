@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.replicators;
 
@@ -44,11 +44,7 @@ public class ReplicateSortCheck {
                 simpleFixup(ascendingNameToDescendingName(path, FileUtils.readLines(file, Charset.defaultCharset())),
                         "initialize last", "MIN_VALUE", "MAX_VALUE");
 
-        if (path.contains("Object")) {
-            lines = ReplicateSortKernel.fixupObjectComparisons(lines, false);
-        } else {
-            lines = ReplicateSortKernel.invertComparisons(lines);
-        }
+        lines = ReplicateSortKernel.invertComparisons(lines);
 
         FileUtils.writeLines(new File(descendingPath), lines);
     }

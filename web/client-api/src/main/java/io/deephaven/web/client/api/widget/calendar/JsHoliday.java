@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.web.client.api.widget.calendar;
 
@@ -7,9 +7,8 @@ import com.vertispan.tsdefs.annotations.TsInterface;
 import com.vertispan.tsdefs.annotations.TsName;
 import elemental2.core.JsArray;
 import elemental2.core.JsObject;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.figuredescriptor.businesscalendardescriptor.Holiday;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.figuredescriptor.businesscalendardescriptor.Holiday;
 import io.deephaven.web.client.api.LocalDateWrapper;
-import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsProperty;
 
 @TsInterface
@@ -21,7 +20,7 @@ public class JsHoliday {
     public JsHoliday(Holiday holiday) {
         date = new LocalDateWrapper(holiday.getDate().getYear(), holiday.getDate().getMonth(),
                 holiday.getDate().getDay());
-        businessPeriods = holiday.getBusinessPeriodsList().map((p0, p1, p2) -> new JsBusinessPeriod(p0));
+        businessPeriods = holiday.getBusinessPeriodsList().map((p0, p1) -> new JsBusinessPeriod(p0));
         JsObject.freeze(businessPeriods);
     }
 

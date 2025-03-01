@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit CharSortCheck and run "./gradlew replicateSortCheck" to regenerate
@@ -36,12 +36,8 @@ public class FloatSortCheck implements SortCheck {
     }
 
     // region comparison functions
-    private static int doComparison(float lhs, float rhs) {
-        return FloatComparisons.compare(lhs, rhs);
+    private static boolean leq(float lhs, float rhs) {
+        return FloatComparisons.leq(lhs, rhs);
     }
     // endregion comparison functions
-
-    private static boolean leq(float lhs, float rhs) {
-        return doComparison(lhs, rhs) <= 0;
-    }
 }

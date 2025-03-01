@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit CharRangeFilter and run "./gradlew replicateChunkFilters" to regenerate
@@ -51,23 +51,23 @@ public class ByteRangeFilter extends AbstractRangeFilter {
         }
     }
 
-    static WhereFilter makeByteRangeFilter(String columnName, Condition condition, String value) {
+    static WhereFilter makeByteRangeFilter(String columnName, Condition condition, byte value) {
         switch (condition) {
             case LESS_THAN:
-                return lt(columnName, RangeConditionFilter.parseByteFilter(value));
+                return lt(columnName, value);
             case LESS_THAN_OR_EQUAL:
-                return leq(columnName, RangeConditionFilter.parseByteFilter(value));
+                return leq(columnName, value);
             case GREATER_THAN:
-                return gt(columnName, RangeConditionFilter.parseByteFilter(value));
+                return gt(columnName, value);
             case GREATER_THAN_OR_EQUAL:
-                return geq(columnName, RangeConditionFilter.parseByteFilter(value));
+                return geq(columnName, value);
             default:
-                throw new IllegalArgumentException("RangeConditionFilter does not support condition " + condition);
+                throw new IllegalArgumentException("RangeFilter does not support condition " + condition);
         }
     }
 
     @Override
-    public void init(TableDefinition tableDefinition) {
+    public void init(@NotNull final TableDefinition tableDefinition) {
         if (chunkFilter != null) {
             return;
         }

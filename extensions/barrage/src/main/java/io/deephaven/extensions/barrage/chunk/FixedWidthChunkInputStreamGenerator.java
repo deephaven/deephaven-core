@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.extensions.barrage.chunk;
 
@@ -40,7 +40,7 @@ public class FixedWidthChunkInputStreamGenerator {
      * @param <T> the result type
      * @return the resulting chunk of the buffer that is read
      */
-    static <T> WritableObjectChunk<T, Values> extractChunkFromInputStreamWithTypeConversion(
+    public static <T> WritableObjectChunk<T, Values> extractChunkFromInputStreamWithTypeConversion(
             final int elementSize,
             final StreamReaderOptions options,
             final TypeConversion<T> conversion,

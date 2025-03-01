@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.base;
 
@@ -59,8 +59,7 @@ public class TestLowGarbageArrayIntegerMap extends TestCase {
         try {
             integerToStringMap.put(-1, "negative one");
             fail("expected bad index to fail");
-        } catch (RequirementFailure requirementFailure) {
-            assertTrue(requirementFailure.isThisStackFrameCulprit(-1));
+        } catch (RequirementFailure expected) {
         }
 
         try {

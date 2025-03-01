@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.client.impl;
 
@@ -366,7 +366,7 @@ final class ExportStates implements ExportService {
 
         @Override
         public void onError(Throwable t) {
-            log.error(String.format("onError releasing export id %d", exportId), t);
+            log.error(String.format("onError releasing export id %d%n", exportId), t);
         }
 
         @Override

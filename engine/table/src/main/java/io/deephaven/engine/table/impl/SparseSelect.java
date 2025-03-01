@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.configuration.Configuration;
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.WritableChunk;
@@ -19,6 +18,7 @@ import io.deephaven.engine.table.impl.sources.SparseArrayColumnSource;
 import io.deephaven.util.SafeCloseableArray;
 import io.deephaven.util.SafeCloseablePair;
 import io.deephaven.util.thread.NamingThreadFactory;
+import io.deephaven.util.type.ArrayTypeUtils;
 
 import java.util.*;
 import java.util.concurrent.ExecutionException;
@@ -84,7 +84,7 @@ public class SparseSelect {
      * @return a copy of the source table with materialized column
      */
     public static Table sparseSelect(Table source, String... columnNames) {
-        return sparseSelect((QueryTable) source.coalesce(), CollectionUtil.ZERO_LENGTH_STRING_ARRAY, columnNames);
+        return sparseSelect((QueryTable) source.coalesce(), ArrayTypeUtils.EMPTY_STRING_ARRAY, columnNames);
     }
 
     /**
@@ -96,8 +96,8 @@ public class SparseSelect {
      * @return a copy of the source table with materialized column
      */
     public static Table sparseSelect(Table source, Collection<String> columnNames) {
-        return sparseSelect((QueryTable) source.coalesce(), CollectionUtil.ZERO_LENGTH_STRING_ARRAY,
-                columnNames.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
+        return sparseSelect((QueryTable) source.coalesce(), ArrayTypeUtils.EMPTY_STRING_ARRAY,
+                columnNames.toArray(String[]::new));
     }
 
     /**
@@ -111,7 +111,7 @@ public class SparseSelect {
      * @return a copy of the source table with materialized columns
      */
     public static Table partialSparseSelect(Table source, Collection<String> columnNames) {
-        return partialSparseSelect(source, columnNames.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
+        return partialSparseSelect(source, columnNames.toArray(String[]::new));
     }
 
     /**

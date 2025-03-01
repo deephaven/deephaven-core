@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.updateby.rollingformula.ringbuffervectorwrapper;
 
@@ -9,7 +9,7 @@ import io.deephaven.vector.ObjectVector;
 import io.deephaven.vector.ObjectVectorDirect;
 import io.deephaven.vector.ObjectVectorSlice;
 
-public class ObjectRingBufferVectorWrapper<T> implements ObjectVector<T>, RingBufferVectorWrapper {
+public class ObjectRingBufferVectorWrapper<T> implements ObjectVector<T>, RingBufferVectorWrapper<ObjectVector<T>> {
     private final ObjectRingBuffer<T> ringBuffer;
     private final Class<T> componentType;
 

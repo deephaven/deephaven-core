@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.sources.ring;
 
@@ -21,7 +21,7 @@ final class CharacterRingChunkSource extends AbstractRingChunkSource<Character, 
     }
 
     public CharacterRingChunkSource(int capacity) {
-        super(char.class, capacity);
+        super(new char[capacity]);
     }
 
     @Override

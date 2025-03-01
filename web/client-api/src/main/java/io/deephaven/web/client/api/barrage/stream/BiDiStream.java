@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.web.client.api.barrage.stream;
 
@@ -15,8 +15,6 @@ import jsinterop.base.Js;
 
 import java.util.function.IntSupplier;
 import java.util.function.Supplier;
-
-import static io.deephaven.web.client.api.barrage.WebGrpcUtils.USE_WEBSOCKETS;
 
 public abstract class BiDiStream<Req, Resp> {
     public interface BiDiStreamFactory {
@@ -38,10 +36,12 @@ public abstract class BiDiStream<Req, Resp> {
         void nextStreamMessage(Req nextPayload, BrowserHeaders headers, JsBiConsumer<Object, Object> callback);
     }
     public static class Factory<ReqT, RespT> {
+        private final boolean supportsClientStreaming;
         private final Supplier<BrowserHeaders> headers;
         private final IntSupplier nextIntTicket;
 
-        public Factory(Supplier<BrowserHeaders> headers, IntSupplier nextIntTicket) {
+        public Factory(boolean supportsClientStreaming, Supplier<BrowserHeaders> headers, IntSupplier nextIntTicket) {
+            this.supportsClientStreaming = supportsClientStreaming;
             this.headers = headers;
             this.nextIntTicket = nextIntTicket;
         }
@@ -51,8 +51,8 @@ public abstract class BiDiStream<Req, Resp> {
                 OpenStreamFactory<ReqT> openEmulatedStream,
                 NextStreamMessageFactory<ReqT> nextEmulatedStream,
                 ReqT emptyReq) {
-            if (USE_WEBSOCKETS) {
-                return websocket(bidirectionalStream.openBiDiStream(headers.get()));
+            if (supportsClientStreaming) {
+                return bidi(bidirectionalStream.openBiDiStream(headers.get()));
             } else {
                 return new EmulatedBiDiStream<>(
                         openEmulatedStream,
@@ -73,7 +73,7 @@ public abstract class BiDiStream<Req, Resp> {
             IntSupplier nextIntTicket,
             boolean useWebsocket) {
         if (useWebsocket) {
-            return websocket(bidirectionalStream.openBiDiStream(headers.get()));
+            return bidi(bidirectionalStream.openBiDiStream(headers.get()));
         } else {
             return new EmulatedBiDiStream<>(
                     openEmulatedStream,
@@ -84,7 +84,7 @@ public abstract class BiDiStream<Req, Resp> {
         }
     }
 
-    public static <Req, Resp> BiDiStream<Req, Resp> websocket(Object bidirectionalStream) {
+    public static <Req, Resp> BiDiStream<Req, Resp> bidi(Object bidirectionalStream) {
         return new WebsocketBiDiStream<>(Js.cast(bidirectionalStream));
     }
 
@@ -187,7 +187,7 @@ public abstract class BiDiStream<Req, Resp> {
         public void send(T payload) {
             if (responseStream == null) {
                 responseStream = responseStreamFactory.apply(payload);
-                pending.forEach((p0, p1, p2) -> {
+                pending.forEach((p0, p1) -> {
                     p0.apply(responseStream);
                     return null;
                 });

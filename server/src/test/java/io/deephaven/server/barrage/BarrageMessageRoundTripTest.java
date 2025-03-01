@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.server.barrage;
 
@@ -27,12 +27,11 @@ import io.deephaven.engine.updategraph.UpdateSourceCombiner;
 import io.deephaven.engine.util.TableDiff;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.extensions.barrage.BarrageStreamGenerator;
-import io.deephaven.extensions.barrage.BarrageStreamGeneratorImpl;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.table.BarrageTable;
-import io.deephaven.extensions.barrage.util.BarrageProtoUtil;
 import io.deephaven.extensions.barrage.util.BarrageStreamReader;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
+import io.deephaven.extensions.barrage.util.ExposedByteArrayOutputStream;
 import io.deephaven.server.arrow.ArrowModule;
 import io.deephaven.server.session.SessionService;
 import io.deephaven.server.util.Scheduler;
@@ -40,10 +39,9 @@ import io.deephaven.server.util.TestControlledScheduler;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.annotations.ReferentialIntegrity;
-import io.grpc.Drainable;
+import io.deephaven.util.mutable.MutableInt;
 import io.grpc.stub.StreamObserver;
 import junit.framework.TestCase;
-import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.junit.experimental.categories.Category;
 
@@ -76,7 +74,7 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
             ArrowModule.class
     })
     public interface TestComponent {
-        BarrageStreamGenerator.Factory<BarrageStreamGeneratorImpl.View> getStreamGeneratorFactory();
+        BarrageStreamGenerator.Factory getStreamGeneratorFactory();
 
         @Component.Builder
         interface Builder {
@@ -149,7 +147,7 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
 
         private final BarrageTable barrageTable;
         @ReferentialIntegrity
-        private final BarrageMessageProducer<BarrageStreamGeneratorImpl.View> barrageMessageProducer;
+        private final BarrageMessageProducer barrageMessageProducer;
 
         @ReferentialIntegrity
         private final TableUpdateValidator replicatedTUV;
@@ -163,14 +161,14 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
         // The replicated table's TableUpdateValidator will be confused if the table is a viewport. Instead we rely on
         // comparing the producer table to the consumer table to validate contents are correct.
         RemoteClient(final RowSet viewport, final BitSet subscribedColumns,
-                final BarrageMessageProducer<BarrageStreamGeneratorImpl.View> barrageMessageProducer,
+                final BarrageMessageProducer barrageMessageProducer,
                 final Table sourceTable, final String name) {
             // assume a forward viewport when not specified
             this(viewport, subscribedColumns, barrageMessageProducer, sourceTable, name, false, false);
         }
 
         RemoteClient(final RowSet viewport, final BitSet subscribedColumns,
-                final BarrageMessageProducer<BarrageStreamGeneratorImpl.View> barrageMessageProducer,
+                final BarrageMessageProducer barrageMessageProducer,
                 final Table sourceTable,
                 final String name, final boolean reverseViewport, final boolean deferSubscription) {
             this.viewport = viewport;
@@ -185,7 +183,7 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
             }
             this.barrageTable = BarrageTable.make(updateSourceCombiner,
                     ExecutionContext.getContext().getUpdateGraph(),
-                    null, barrageMessageProducer.getTableDefinition(), attributes, null);
+                    null, barrageMessageProducer.getTableDefinition(), attributes, viewport == null, null);
             this.barrageTable.addSourceToRegistrar();
 
             final BarrageSubscriptionOptions options = BarrageSubscriptionOptions.builder()
@@ -234,8 +232,6 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
             if (viewport != null) {
                 expected = expected
                         .getSubTable(expected.getRowSet().subSetForPositions(viewport, reverseViewport).toTracking());
-                toCheck = toCheck
-                        .getSubTable(toCheck.getRowSet().subSetForPositions(viewport, reverseViewport).toTracking());
             }
             if (subscribedColumns.cardinality() != expected.numColumns()) {
                 final List<Selectable> columns = new ArrayList<>();
@@ -248,10 +244,15 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
 
             // Data should be identical and in-order.
             TstUtils.assertTableEquals(expected, toCheck);
-            // Since key-space needs to be kept the same, the RowSets should also be identical between producer and
-            // consumer (not the RowSets between expected and consumer; as the consumer maintains the entire RowSet).
-            Assert.equals(barrageMessageProducer.getRowSet(), "barrageMessageProducer.build()",
-                    barrageTable.getRowSet(), ".build()");
+            if (viewport == null) {
+                // Since key-space needs to be kept the same, the RowSets should also be identical between producer and
+                // consumer (not RowSets between expected and consumer; as the consumer maintains the entire RowSet).
+                Assert.equals(barrageMessageProducer.getRowSet(), "barrageMessageProducer.getRowSet()",
+                        barrageTable.getRowSet(), "barrageTable.getRowSet()");
+            } else {
+                // otherwise, the RowSet should represent a flattened view of the viewport
+                Assert.eqTrue(barrageTable.getRowSet().isFlat(), "barrageTable.getRowSet().isFlat()");
+            }
         }
 
         private void showResult(final String label, final Table table) {
@@ -342,7 +343,7 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
 
         private final QueryTable originalTable;
         @ReferentialIntegrity
-        private final BarrageMessageProducer<BarrageStreamGeneratorImpl.View> barrageMessageProducer;
+        private final BarrageMessageProducer barrageMessageProducer;
 
         @ReferentialIntegrity
         private final TableUpdateValidator originalTUV;
@@ -354,7 +355,7 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
         RemoteNugget(final Supplier<Table> makeTable) {
             this.makeTable = makeTable;
             this.originalTable = (QueryTable) makeTable.get();
-            this.barrageMessageProducer = originalTable.getResult(new BarrageMessageProducer.Operation<>(scheduler,
+            this.barrageMessageProducer = originalTable.getResult(new BarrageMessageProducer.Operation(scheduler,
                     new SessionService.ObfuscatingErrorTransformer(), daggerRoot.getStreamGeneratorFactory(),
                     originalTable, UPDATE_INTERVAL, this::onGetSnapshot));
 
@@ -451,9 +452,9 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
         void runTest(final Runnable simulateSourceStep) {
             createTable();
             createNuggets();
-            final int maxSteps = numSteps.getValue();
+            final int maxSteps = numSteps.get();
             final RemoteNugget[] nuggetsToValidate = nuggets.toArray(new RemoteNugget[0]);
-            for (numSteps.setValue(0); numSteps.intValue() < maxSteps; numSteps.increment()) {
+            for (numSteps.set(0); numSteps.get() < maxSteps; numSteps.increment()) {
                 for (int rt = 0; rt < numConsumerCoalesce; ++rt) {
                     // coalesce updates in producer
                     for (int pt = 0; pt < numProducerCoalesce; ++pt) {
@@ -473,7 +474,7 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
                 TstUtils.validate("", nuggetsToValidate);
 
                 if (sourceTable.size() >= size) {
-                    numSteps.setValue(maxSteps); // pretend we finished
+                    numSteps.set(maxSteps); // pretend we finished
                     return;
                 }
             }
@@ -489,15 +490,15 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
         }
 
         void createNuggetsForTableMaker(final Supplier<Table> makeTable) {
-            nuggets.add(new RemoteNugget(makeTable));
             final BitSet subscribedColumns = new BitSet();
-            subscribedColumns.set(0, nuggets.get(nuggets.size() - 1).originalTable.numColumns());
+            subscribedColumns.set(0, makeTable.get().numColumns());
+
+            nuggets.add(new RemoteNugget(makeTable));
             nuggets.get(nuggets.size() - 1).newClient(null, subscribedColumns, "full");
 
             nuggets.add(new RemoteNugget(makeTable));
             nuggets.get(nuggets.size() - 1).newClient(RowSetFactory.fromRange(0, size / 10),
-                    subscribedColumns,
-                    "header");
+                    subscribedColumns, "header");
             nuggets.add(new RemoteNugget(makeTable));
             nuggets.get(nuggets.size() - 1).newClient(
                     RowSetFactory.fromRange(size / 2, size * 3L / 4),
@@ -536,17 +537,15 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
         }
 
         void createNuggetsForTableMaker(final Supplier<Table> makeTable) {
+            final BitSet subscribedColumns = new BitSet();
+            subscribedColumns.set(0, makeTable.get().numColumns());
+
             final RemoteNugget nugget = new RemoteNugget(makeTable);
             nuggets.add(nugget);
-
-            final BitSet subscribedColumns = new BitSet();
-            subscribedColumns.set(0, nugget.originalTable.numColumns());
-
             nugget.newClient(null, subscribedColumns, "full");
 
             nugget.newClient(RowSetFactory.fromRange(0, size / 10), subscribedColumns, "header");
-            nugget.newClient(RowSetFactory.fromRange(size / 2, size * 3L / 4), subscribedColumns,
-                    "floating");
+            nugget.newClient(RowSetFactory.fromRange(size / 2, size * 3L / 4), subscribedColumns, "floating");
 
             nugget.newClient(RowSetFactory.fromRange(0, size / 10), subscribedColumns, true, "footer");
             nugget.newClient(RowSetFactory.fromRange(size / 2, size * 3L / 4), subscribedColumns, true,
@@ -751,13 +750,13 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
         void runTest() {
             createTable();
             createNuggets();
-            final int maxSteps = numSteps.getValue();
+            final int maxSteps = numSteps.get();
             final RemoteNugget[] nuggetsToValidate = nuggets.toArray(new RemoteNugget[0]);
-            for (numSteps.setValue(0); numSteps.intValue() < maxSteps; numSteps.increment()) {
+            for (numSteps.set(0); numSteps.get() < maxSteps; numSteps.increment()) {
                 for (int rt = 0; rt < numConsumerCoalesce; ++rt) {
                     // coalesce updates in producer
                     for (int pt = 0; pt < numProducerCoalesce; ++pt) {
-                        maybeChangeSub(numSteps.intValue(), rt, pt);
+                        maybeChangeSub(numSteps.get(), rt, pt);
 
                         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
                         updateGraph.runWithinUnitTestCycle(() -> GenerateTableUpdates.generateShiftAwareTableUpdates(
@@ -1410,7 +1409,7 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
         }
     }
 
-    public static class DummyObserver implements StreamObserver<BarrageStreamGeneratorImpl.View> {
+    public static class DummyObserver implements StreamObserver<BarrageStreamGenerator.MessageView> {
         volatile boolean completed = false;
 
         private final BarrageDataMarshaller marshaller;
@@ -1422,12 +1421,11 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
         }
 
         @Override
-        public void onNext(final BarrageStreamGeneratorImpl.View messageView) {
+        public void onNext(final BarrageStreamGenerator.MessageView messageView) {
             try {
                 messageView.forEachStream(inputStream -> {
-                    try (final BarrageProtoUtil.ExposedByteArrayOutputStream baos =
-                            new BarrageProtoUtil.ExposedByteArrayOutputStream()) {
-                        ((Drainable) inputStream).drainTo(baos);
+                    try (final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream()) {
+                        inputStream.drainTo(baos);
                         inputStream.close();
                         final BarrageMessage message =
                                 marshaller.parse(new ByteArrayInputStream(baos.peekBuffer(), 0, baos.size()));

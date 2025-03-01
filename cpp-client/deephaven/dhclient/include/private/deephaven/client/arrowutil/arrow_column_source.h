@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+ * Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
  */
 #pragma once
 #include <string>
@@ -22,7 +22,21 @@ namespace internal {
 // null-ness by determining whether the optional has a value.
 // kTimestamp is its own special case, where nullness is determined by the underlying nanos
 // being equal to Deephaven's NULL_LONG.
-enum class ArrowProcessingStyle { kNormal, kBooleanOrString, kTimestamp };
+// kLocalDate and kLocalTime are similar to kTimestamp in nullness except they resolve to different
+// data types.
+enum class ArrowProcessingStyle { kNormal, kBooleanOrString, kTimestamp, kLocalDate, kLocalTime };
+
+/**
+ * When 'array' has dynamic type arrow::TimestampArray or arrow::Time64Array, look at the
+ * underlying time resolution of the arrow type and calculate a conversion factor from that unit
+ * to nanoseconds. For example if the underlying time unit is arrow::TimeUnit::MILLI, then the
+ * conversion factor would be 1_000_000, meaning that one needs to multiply incoming millisecond
+ * values by one million to convert them to nanoseconds. If 'array' is not one of those types,
+ * return 1.
+ * @param array The Arrow array
+ * @return For supported time types, the conversion factor to nanoseconds. Otherwise, 1.
+ */
+size_t CalcTimeNanoScaleFactor(const arrow::Array &array);
 
 template<ArrowProcessingStyle Style, typename TColumnSourceBase, typename TArrowArray, typename TChunk>
 class GenericArrowColumnSource final : public TColumnSourceBase {
@@ -30,11 +44,14 @@ class GenericArrowColumnSource final : public TColumnSourceBase {
   using Chunk = deephaven::dhcore::chunk::Chunk;
   using ColumnSourceVisitor = deephaven::dhcore::column::ColumnSourceVisitor;
   using DateTime = deephaven::dhcore::DateTime;
+  using LocalDate = deephaven::dhcore::LocalDate;
+  using LocalTime = deephaven::dhcore::LocalTime;
   using RowSequence = deephaven::dhcore::container::RowSequence;
   using UInt64Chunk = deephaven::dhcore::chunk::UInt64Chunk;
 
 public:
-  static std::shared_ptr<GenericArrowColumnSource> OfArrowArray(std::shared_ptr<TArrowArray> array) {
+  static std::shared_ptr<GenericArrowColumnSource>
+  OfArrowArray(std::shared_ptr<TArrowArray> array) {
     std::vector<std::shared_ptr<TArrowArray>> arrays{std::move(array)};
     return OfArrowArrayVec(std::move(arrays));
   }
@@ -45,7 +62,9 @@ public:
   }
 
   explicit GenericArrowColumnSource(std::vector<std::shared_ptr<TArrowArray>> arrays) :
-      arrays_(std::move(arrays)) {}
+      arrays_(std::move(arrays)) {
+    time_nano_scale_factor_ = arrays_.empty() ? 1 : CalcTimeNanoScaleFactor(*arrays_.front());
+  }
 
   ~GenericArrowColumnSource() final = default;
 
@@ -64,13 +83,14 @@ public:
 
     // This algorithm is a little tricky because the source data and RowSequence are both
     // segmented, perhaps in different ways.
-    auto *typed_dest = VerboseCast<TChunk*>(DEEPHAVEN_LOCATION_EXPR(dest_data));
+    auto *typed_dest = VerboseCast<TChunk *>(DEEPHAVEN_LOCATION_EXPR(dest_data));
     auto *destp = typed_dest->data();
     auto outerp = arrays_.begin();
     size_t src_segment_begin = 0;
     size_t src_segment_end = (*outerp)->length();
 
-    auto *null_destp = optional_dest_null_flags != nullptr ? optional_dest_null_flags->data() : nullptr;
+    auto *null_destp =
+        optional_dest_null_flags != nullptr ? optional_dest_null_flags->data() : nullptr;
 
     rows.ForEachInterval([&](uint64_t requested_segment_begin, uint64_t requested_segment_end) {
       while (true) {
@@ -97,6 +117,14 @@ public:
         auto relative_begin = requested_segment_begin - src_segment_begin;
         auto relative_end = min_end - src_segment_begin;
         const auto &innerp = *outerp;
+
+        static_assert(
+            Style == ArrowProcessingStyle::kNormal ||
+            Style == ArrowProcessingStyle::kBooleanOrString ||
+            Style == ArrowProcessingStyle::kTimestamp ||
+            Style == ArrowProcessingStyle::kLocalDate ||
+            Style == ArrowProcessingStyle::kLocalTime,
+            "Unexpected ArrowProcessingStyle");
 
         if constexpr (Style == ArrowProcessingStyle::kNormal) {
           // Process these types using pointer operations and the Deephaven Null convention
@@ -136,11 +164,41 @@ public:
           const auto *src_endp = innerp->raw_values() + relative_end;
 
           for (const auto *ip = src_beginp; ip != src_endp; ++ip) {
-            *destp = DateTime::FromNanos(*ip);
+            auto is_null = *ip == DeephavenTraits<int64_t>::kNullValue;
+            *destp = DateTime::FromNanos(is_null ? *ip : (*ip * time_nano_scale_factor_));
+            ++destp;
+
+            if (null_destp != nullptr) {
+              *null_destp = is_null;
+              ++null_destp;
+            }
+          }
+        } else if constexpr (Style == ArrowProcessingStyle::kLocalDate) {
+          // Process these types using pointer operations and the Deephaven Null convention
+          const auto *src_beginp = innerp->raw_values() + relative_begin;
+          const auto *src_endp = innerp->raw_values() + relative_end;
+
+          for (const auto *ip = src_beginp; ip != src_endp; ++ip) {
+            *destp = LocalDate::FromMillis(*ip);
             ++destp;
 
             if (null_destp != nullptr) {
               *null_destp = *ip == DeephavenTraits<int64_t>::kNullValue;
+              ++null_destp;
+            }
+          }
+        } else if constexpr (Style == ArrowProcessingStyle::kLocalTime) {
+          // Process these types using pointer operations and the Deephaven Null convention
+          const auto *src_beginp = innerp->raw_values() + relative_begin;
+          const auto *src_endp = innerp->raw_values() + relative_end;
+
+          for (const auto *ip = src_beginp; ip != src_endp; ++ip) {
+            auto is_null = *ip == DeephavenTraits<int64_t>::kNullValue;
+            *destp = LocalTime::FromNanos(is_null ? *ip : (*ip * time_nano_scale_factor_));
+            ++destp;
+
+            if (null_destp != nullptr) {
+              *null_destp = is_null;
               ++null_destp;
             }
           }
@@ -161,6 +219,18 @@ public:
 
 private:
   std::vector<std::shared_ptr<TArrowArray>> arrays_;
+  /**
+   * This value is valid for Style == ArrowProcessingStyle::kTimestamp and
+   * ArrowProcessingStyle::kLocalTime, and ignored for other ArrowProcessingStyle enumeration
+   * values.
+   *
+   * These ArrowProcessingStyles come into play when processing the arrow types
+   * arrow::TimestampType and arrow::Time64Type respectively.
+   *
+   * The value stores a conversion factor from whatever the input scale is to nanoseconds.
+   * For example, if the input timescale is milliseconds, this value will be 1_000_000.
+   */
+  size_t time_nano_scale_factor_ = 1;
 };
 }  // namespace internal
 
@@ -223,4 +293,16 @@ using DateTimeArrowColumnSource = internal::GenericArrowColumnSource<
     deephaven::dhcore::column::DateTimeColumnSource,
     arrow::TimestampArray,
     deephaven::dhcore::chunk::DateTimeChunk>;
+
+using LocalDateArrowColumnSource = internal::GenericArrowColumnSource<
+    internal::ArrowProcessingStyle::kLocalDate,
+    deephaven::dhcore::column::LocalDateColumnSource,
+    arrow::Date64Array,
+    deephaven::dhcore::chunk::LocalDateChunk>;
+
+using LocalTimeArrowColumnSource = internal::GenericArrowColumnSource<
+    internal::ArrowProcessingStyle::kLocalTime,
+    deephaven::dhcore::column::LocalTimeColumnSource,
+    arrow::Time64Array,
+    deephaven::dhcore::chunk::LocalTimeChunk>;
 }  // namespace deephaven::client::arrowutil

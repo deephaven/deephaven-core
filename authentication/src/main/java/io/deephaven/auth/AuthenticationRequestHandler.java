@@ -1,9 +1,10 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.auth;
 
 import java.nio.ByteBuffer;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -68,6 +69,15 @@ public interface AuthenticationRequestHandler {
      * @param targetUrl the base url of the hosted UI
      */
     void initialize(String targetUrl);
+
+    /**
+     * Provides URLs that may be used to authenticate with {@code this} authentication request handler.
+     *
+     * @param targetUrl the base url of the hosted UI
+     */
+    default List<String> urls(String targetUrl) {
+        return List.of();
+    }
 
     interface HandshakeResponseListener {
         void respond(long protocolVersion, ByteBuffer payload);

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.client;
 
@@ -30,8 +30,13 @@ public abstract class DeephavenFlightSessionTestBase extends DeephavenApiServerT
         register(channel);
         sessionScheduler = Executors.newScheduledThreadPool(2);
         bufferAllocator = new RootAllocator();
-        flightSession = DaggerDeephavenFlightRoot.create().factoryBuilder().allocator(bufferAllocator)
-                .managedChannel(channel).scheduler(sessionScheduler).build().newFlightSession();
+        flightSession = DaggerDeephavenFlightRoot.create()
+                .factoryBuilder()
+                .allocator(bufferAllocator)
+                .managedChannel(channel)
+                .scheduler(sessionScheduler)
+                .build()
+                .newFlightSession();
     }
 
     @Override

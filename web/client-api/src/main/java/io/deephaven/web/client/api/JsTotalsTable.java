@@ -1,22 +1,26 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.web.client.api;
 
 import com.vertispan.tsdefs.annotations.TsInterface;
 import com.vertispan.tsdefs.annotations.TsName;
+import com.vertispan.tsdefs.annotations.TsTypeRef;
 import elemental2.core.JsArray;
 import elemental2.core.JsString;
-import elemental2.dom.CustomEvent;
-import elemental2.dom.Event;
 import elemental2.promise.Promise;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.TypedTicket;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.ticket_pb.TypedTicket;
 import io.deephaven.web.client.api.console.JsVariableType;
+import io.deephaven.web.client.api.event.Event;
+import io.deephaven.web.client.api.event.EventFn;
 import io.deephaven.web.client.api.filter.FilterCondition;
+import io.deephaven.web.client.api.subscription.AbstractTableSubscription;
+import io.deephaven.web.client.api.subscription.ViewportData;
 import io.deephaven.web.client.state.ClientTableState;
 import io.deephaven.web.shared.fu.RemoverFn;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsMethod;
+import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsOptional;
 import jsinterop.annotations.JsProperty;
 import jsinterop.base.Js;
@@ -63,9 +67,14 @@ public class JsTotalsTable implements JoinableTable, ServerObject {
         this.groupBy = Js.uncheckedCast(groupBy.slice());
     }
 
+    @Override
+    public WorkerConnection getConnection() {
+        return wrappedTable.getConnection();
+    }
+
     public void refreshViewport() {
         if (firstRow != null && lastRow != null) {
-            setViewport(firstRow, lastRow, Js.uncheckedCast(columns), updateIntervalMs);
+            setViewport(firstRow, lastRow, Js.uncheckedCast(columns), updateIntervalMs, null);
         }
     }
 
@@ -108,12 +117,12 @@ public class JsTotalsTable implements JoinableTable, ServerObject {
      */
     @JsMethod
     public void setViewport(double firstRow, double lastRow, @JsOptional JsArray<Column> columns,
-            @JsOptional Double updateIntervalMs) {
+            @JsOptional Double updateIntervalMs, @JsOptional @JsNullable Boolean isReverseViewport) {
         this.firstRow = firstRow;
         this.lastRow = lastRow;
         this.columns = columns != null ? Js.uncheckedCast(columns.slice()) : null;
         this.updateIntervalMs = updateIntervalMs;
-        wrappedTable.setViewport(firstRow, lastRow, columns, updateIntervalMs);
+        wrappedTable.setViewport(firstRow, lastRow, columns, updateIntervalMs, isReverseViewport);
     }
 
     /**
@@ -123,7 +132,7 @@ public class JsTotalsTable implements JoinableTable, ServerObject {
      * @return Promise of {@link TableData}
      */
     @JsMethod
-    public Promise<TableData> getViewportData() {
+    public Promise<AbstractTableSubscription.@TsTypeRef(ViewportData.class) UpdateEventData> getViewportData() {
         return wrappedTable.getViewportData();
     }
 
@@ -220,7 +229,7 @@ public class JsTotalsTable implements JoinableTable, ServerObject {
     }
 
     @JsMethod
-    public <T> Promise<CustomEvent<T>> nextEvent(String eventName, Double timeoutInMillis) {
+    public <T> Promise<Event<T>> nextEvent(String eventName, Double timeoutInMillis) {
         return wrappedTable.nextEvent(eventName, timeoutInMillis);
     }
 
@@ -318,44 +327,43 @@ public class JsTotalsTable implements JoinableTable, ServerObject {
 
     @Override
     @JsMethod
-    public Promise<JsTable> snapshot(JsTable baseTable, @JsOptional Boolean doInitialSnapshot,
-            @JsOptional String[] stampColumns) {
+    public Promise<JsTable> snapshot(JsTable baseTable, @JsOptional @JsNullable Boolean doInitialSnapshot,
+            @JsOptional @JsNullable String[] stampColumns) {
         return wrappedTable.snapshot(baseTable, doInitialSnapshot, stampColumns);
     }
 
     @Override
-    @Deprecated
     @JsMethod
-    public Promise<JsTable> join(Object joinType, JoinableTable rightTable, JsArray<String> columnsToMatch,
-            @JsOptional JsArray<String> columnsToAdd, @JsOptional Object asOfMatchRule) {
+    public Promise<JsTable> join(String joinType, JoinableTable rightTable, JsArray<String> columnsToMatch,
+            @JsOptional JsArray<String> columnsToAdd, @JsOptional String asOfMatchRule) {
         return wrappedTable.join(joinType, rightTable, columnsToMatch, columnsToAdd, asOfMatchRule);
     }
 
     @Override
     @JsMethod
     public Promise<JsTable> asOfJoin(JoinableTable rightTable, JsArray<String> columnsToMatch,
-            @JsOptional JsArray<String> columnsToAdd, @JsOptional String asOfMatchRule) {
+            @JsOptional @JsNullable JsArray<String> columnsToAdd, @JsOptional @JsNullable String asOfMatchRule) {
         return wrappedTable.asOfJoin(rightTable, columnsToMatch, columnsToAdd, asOfMatchRule);
     }
 
     @Override
     @JsMethod
     public Promise<JsTable> crossJoin(JoinableTable rightTable, JsArray<String> columnsToMatch,
-            @JsOptional JsArray<String> columnsToAdd, @JsOptional Double reserve_bits) {
-        return wrappedTable.crossJoin(rightTable, columnsToMatch, columnsToAdd, reserve_bits);
+            @JsOptional @JsNullable JsArray<String> columnsToAdd, @JsOptional @JsNullable Double reserveBits) {
+        return wrappedTable.crossJoin(rightTable, columnsToMatch, columnsToAdd, reserveBits);
     }
 
     @Override
     @JsMethod
     public Promise<JsTable> exactJoin(JoinableTable rightTable, JsArray<String> columnsToMatch,
-            @JsOptional JsArray<String> columnsToAdd) {
+            @JsOptional @JsNullable JsArray<String> columnsToAdd) {
         return wrappedTable.exactJoin(rightTable, columnsToMatch, columnsToAdd);
     }
 
     @Override
     @JsMethod
     public Promise<JsTable> naturalJoin(JoinableTable rightTable, JsArray<String> columnsToMatch,
-            @JsOptional JsArray<String> columnsToAdd) {
+            @JsOptional @JsNullable JsArray<String> columnsToAdd) {
         return wrappedTable.naturalJoin(rightTable, columnsToMatch, columnsToAdd);
     }
 }

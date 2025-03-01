@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.web.client.api.widget.plot;
 
@@ -57,7 +57,7 @@ public class JsSeriesDescriptor {
         plotStyle = JsData.getRequiredStringProperty(source, "plotStyle");
         name = JsData.getStringProperty(source, "name");
         JsArray<JsPropertyMap<Object>> dataSources = JsData.getRequiredProperty(source, "dataSources").cast();
-        this.dataSources = dataSources.map((sourceSource, index, all) -> new JsSourceDescriptor(sourceSource, axisMap));
+        this.dataSources = dataSources.map((sourceSource, index) -> new JsSourceDescriptor(sourceSource, axisMap));
         linesVisible = JsData.getNullableBooleanProperty(source, "linesVisible");
         shapesVisible = JsData.getNullableBooleanProperty(source, "shapesVisible");
         gradientVisible = JsData.getNullableBooleanProperty(source, "gradientVisible");

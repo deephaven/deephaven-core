@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
 
 import unittest
@@ -630,6 +630,20 @@ class TimeTestCase(BaseTestCase):
         with self.assertRaises(TypeError):
             to_np_timedelta64(False)
             self.fail("Expected TypeError")
+
+    # endregion
+
+    # region: Utilities
+
+    def test_simple_date_format(self):
+        s = "12/10/2021 14:21:17 CST"
+        i = _JDateTimeUtils.parseInstant("2021-12-10T14:21:17 CT")
+        sdf = simple_date_format("MM/dd/yyyy HH:mm:ss z")
+        self.assertEqual(sdf.parse(s).toInstant(), i)
+
+        with self.assertRaises(DHError):
+            simple_date_format("junk")
+            self.fail("Expected DHError")
 
     # endregion
 

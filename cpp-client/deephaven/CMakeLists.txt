@@ -8,12 +8,11 @@ endif()
 
 project(deephaven)
 
+set(deephaven_VERSION 0.38.0)
 set(CMAKE_CXX_STANDARD 17)
 
 # for CMAKE_INSTALL_{dir}
 include(GNUInstallDirs)
-
-add_compile_options(-Wall -Werror -Wno-deprecated-declarations)
 
 # To enable address sanitizer, add `-DSANITIZE_ADDRESS=ON` to
 # the list of options you pass for running cmake.
@@ -41,16 +40,47 @@ if(NOT DHCORE_ONLY)
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
         )
 
-    install(TARGETS dhclient dhcore_static dhcore
-        EXPORT deephavenConfig
+    install(TARGETS dhclient dhcore dhcore_static dhclient_tests
+        EXPORT deephavenTargets
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
         INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
         )
 
-    install(EXPORT deephavenConfig
-        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/deephaven
+      include(CMakePackageConfigHelpers)
+      write_basic_package_version_file(
+        "${CMAKE_CURRENT_BINARY_DIR}/deephaven/deephavenConfigVersion.cmake"
+        VERSION ${deephaven_VERSION}
+        COMPATIBILITY AnyNewerVersion
+        )
+
+      export(EXPORT deephavenTargets
+        FILE "${CMAKE_CURRENT_BINARY_DIR}/deephaven/deephavenTargets.cmake"
         NAMESPACE deephaven::
         )
+      configure_file(cmake/deephavenConfig.cmake
+        "${CMAKE_CURRENT_BINARY_DIR}/deephaven/deephavenConfig.cmake"
+        COPYONLY
+        )
+
+      set(ConfigPackageLocation ${CMAKE_INSTALL_LIBDIR}/cmake/deephaven)
+      install(EXPORT deephavenTargets
+        FILE
+        deephavenTargets.cmake
+        NAMESPACE
+        deephaven::
+        DESTINATION
+        ${ConfigPackageLocation}
+        )
+      install(
+        FILES
+        cmake/deephavenConfig.cmake
+        "${CMAKE_CURRENT_BINARY_DIR}/deephaven/deephavenConfigVersion.cmake"
+        DESTINATION
+        ${ConfigPackageLocation}
+        COMPONENT
+        Devel
+        )
+      
 endif()

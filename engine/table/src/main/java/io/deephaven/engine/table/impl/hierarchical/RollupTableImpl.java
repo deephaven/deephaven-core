@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.hierarchical;
 
@@ -19,6 +19,7 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.hierarchical.RollupTable;
 import io.deephaven.engine.table.impl.BaseTable.CopyAttributeOperation;
 import io.deephaven.engine.table.impl.NotificationStepSource;
+import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.SortOperation;
 import io.deephaven.engine.table.impl.by.AggregationProcessor;
@@ -275,8 +276,9 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
             @NotNull final Collection<? extends Filter> filters,
             @NotNull final Function<String, ? extends RuntimeException> exceptionFactory) {
         final WhereFilter[] whereFilters = WhereFilter.from(filters);
+        final QueryCompilerRequestProcessor.BatchProcessor compilationProcessor = QueryCompilerRequestProcessor.batch();
         for (final WhereFilter whereFilter : whereFilters) {
-            whereFilter.init(source.getDefinition());
+            whereFilter.init(source.getDefinition(), compilationProcessor);
             final List<String> invalidColumnsUsed = whereFilter.getColumns().stream().map(ColumnName::of)
                     .filter(cn -> !groupByColumns.contains(cn)).map(ColumnName::name).collect(Collectors.toList());
             if (!invalidColumnsUsed.isEmpty()) {
@@ -290,6 +292,8 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
                         + " may not use column arrays, but uses column arrays from " + whereFilter.getColumnArrays());
             }
         }
+        compilationProcessor.compile();
+
         return whereFilters;
     }
 
@@ -811,6 +815,6 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
 
     @Override
     void maybeWaitForStructuralSatisfaction() {
-        // NB: It's sufficient to wait for the root node, which is done at the beginning of traversal.
+        maybeWaitForSatisfaction(getRoot());
     }
 }

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.locations.impl;
 
@@ -48,7 +48,7 @@ public final class StandaloneTableLocationKey implements ImmutableTableLocationK
         if (other instanceof StandaloneTableLocationKey) {
             return 0;
         }
-        throw new ClassCastException("Cannot compare " + getClass() + " to " + other.getClass());
+        return ImmutableTableLocationKey.super.compareTo(other);
     }
 
     @Override

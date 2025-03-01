@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit CharChunkedSumOperator and run "./gradlew replicateOperators" to regenerate
@@ -18,7 +18,7 @@ import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.sources.LongArraySource;
 import io.deephaven.chunk.*;
-import org.apache.commons.lang3.mutable.MutableInt;
+import io.deephaven.util.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collections;
@@ -81,7 +81,7 @@ public class ShortChunkedSumOperator implements IterativeChunkedAggregationOpera
     private boolean addChunk(ShortChunk<? extends Values> values, long destination, int chunkStart, int chunkSize) {
         final MutableInt nonNullCount = new MutableInt(0);
         final long sum = doSum(chunkStart, chunkSize, nonNullCount, values);
-        return updateInternal(destination, sum, nonNullCount.intValue());
+        return updateInternal(destination, sum, nonNullCount.get());
     }
 
     @Override
@@ -111,13 +111,13 @@ public class ShortChunkedSumOperator implements IterativeChunkedAggregationOpera
         final MutableInt newNonNullCount = new MutableInt(0);
         final long oldSum = doSum(chunkStart, chunkSize, oldNonNullCount, oldValues);
         final long newSum = doSum(chunkStart, chunkSize, newNonNullCount, newValues);
-        return updateInternal(destination, newSum - oldSum, oldNonNullCount.intValue(), newNonNullCount.intValue());
+        return updateInternal(destination, newSum - oldSum, oldNonNullCount.get(), newNonNullCount.get());
     }
 
     private boolean removeChunk(ShortChunk<? extends Values> values, long destination, int chunkStart, int chunkSize) {
         final MutableInt nonNullCount = new MutableInt(0);
         final long sum = doSum(chunkStart, chunkSize, nonNullCount, values);
-        return updateInternal(destination, -sum, -nonNullCount.intValue());
+        return updateInternal(destination, -sum, -nonNullCount.get());
     }
 
     private long doSum(int chunkStart, int chunkSize, MutableInt nonNullCount,

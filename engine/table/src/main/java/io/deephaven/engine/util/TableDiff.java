@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.util;
 
 import io.deephaven.base.Pair;
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.Context;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.Table;
@@ -62,9 +61,9 @@ public class TableDiff {
         final Map<String, ? extends ColumnSource<?>> actualNameToColumnSource = actualResult.getColumnSourceMap();
         final Map<String, ? extends ColumnSource<?>> expectedNameToColumnSource = expectedResult.getColumnSourceMap();
         final String[] actualColumnNames =
-                actualResult.getDefinition().getColumnNames().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+                actualResult.getDefinition().getColumnNames().toArray(String[]::new);
         final String[] expectedColumnNames =
-                expectedResult.getDefinition().getColumnNames().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+                expectedResult.getDefinition().getColumnNames().toArray(String[]::new);
 
         for (final String actualColumnName : actualColumnNames) {
             if (!expectedNameToColumnSource.containsKey(actualColumnName)) {
@@ -183,7 +182,7 @@ public class TableDiff {
          */
         DoublesExact,
         /**
-         * Columns that exist in both tables, but in diferent orders are not treated as differences.
+         * Columns that exist in both tables, but in different orders are not treated as differences.
          */
         ColumnsOrder,
         /**

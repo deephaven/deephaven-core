@@ -1,9 +1,8 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.rowset.impl;
 
-import gnu.trove.list.array.TLongArrayList;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.*;
@@ -17,7 +16,7 @@ import io.deephaven.engine.rowset.impl.singlerange.SingleRange;
 import io.deephaven.engine.rowset.impl.sortedranges.SortedRanges;
 import io.deephaven.util.datastructures.LongRangeAbortableConsumer;
 import io.deephaven.util.annotations.VisibleForTesting;
-import org.apache.commons.lang3.mutable.MutableLong;
+import io.deephaven.util.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.OverridingMethodsMustInvokeSuper;
@@ -260,11 +259,6 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
         return new WritableRowSetImpl(innerSet.ixInvertOnNew(getInnerSet(keys), maximumPosition));
     }
 
-    @Override
-    public final TLongArrayList[] findMissing(final RowSet keys) {
-        return RowSetUtils.findMissing(this, keys);
-    }
-
     @NotNull
     @Override
     public final WritableRowSet intersect(@NotNull final RowSet range) {
@@ -374,17 +368,17 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
         final RowSequence.Iterator iter = getRowSequenceIterator();
         final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
         positions.forEachRowKeyRange((start, end) -> {
-            if (currentOffset.longValue() < start) {
+            if (currentOffset.get() < start) {
                 // skip items until the beginning of this range
-                iter.getNextRowSequenceWithLength(start - currentOffset.longValue());
-                currentOffset.setValue(start);
+                iter.getNextRowSequenceWithLength(start - currentOffset.get());
+                currentOffset.set(start);
             }
             if (!iter.hasMore()) {
                 return false;
             }
-            iter.getNextRowSequenceWithLength(end + 1 - currentOffset.longValue())
+            iter.getNextRowSequenceWithLength(end + 1 - currentOffset.get())
                     .forAllRowKeyRanges(builder::appendRange);
-            currentOffset.setValue(end + 1);
+            currentOffset.set(end + 1);
             return iter.hasMore();
         });
         return builder.build();

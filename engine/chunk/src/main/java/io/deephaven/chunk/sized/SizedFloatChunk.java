@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit SizedCharChunk and run "./gradlew replicateSourcesAndChunks" to regenerate
@@ -10,6 +10,7 @@ package io.deephaven.chunk.sized;
 import io.deephaven.chunk.WritableFloatChunk;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.util.SafeCloseable;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * A wrapper for a float chunk that allows you to resize the chunk to a capacity.
@@ -28,8 +29,9 @@ public final class SizedFloatChunk<T extends Any> implements SafeCloseable {
     /**
      * Get the underlying chunk.
      *
-     * @return the underlying chunk.
+     * @return the underlying chunk. May be {@code null} if the chunk has not been initialized.
      */
+    @Nullable
     public WritableFloatChunk<T> get() {
         return chunk;
     }

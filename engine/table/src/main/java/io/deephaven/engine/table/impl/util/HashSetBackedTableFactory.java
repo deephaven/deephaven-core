@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.util;
 
@@ -23,6 +23,7 @@ import gnu.trove.map.hash.TObjectLongHashMap;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.tuple.ArrayTuple;
 
+import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -187,6 +188,7 @@ public class HashSetBackedTableFactory {
             }
         }
 
+        @OverridingMethodsMustInvokeSuper
         @Override
         public void destroy() {
             super.destroy();

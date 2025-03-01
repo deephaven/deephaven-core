@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.server.table.ops.filter;
 
@@ -278,7 +278,7 @@ public class FilterPrinter implements FilterVisitor<Void> {
                 sb.append(literal.getLongValue());
                 break;
             case NANO_TIME_VALUE:
-                sb.append("DateTimeUtils.epochNanosToInstant(").append(literal.getNanoTimeValue()).append(")");
+                sb.append("'").append(literal.getNanoTimeValue()).append("'");
                 break;
             case VALUE_NOT_SET:
             default:

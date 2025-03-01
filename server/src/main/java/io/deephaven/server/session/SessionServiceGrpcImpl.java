@@ -1,8 +1,10 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.server.session;
 
+import com.github.f4b6a3.uuid.UuidCreator;
+import com.github.f4b6a3.uuid.exception.InvalidUuidException;
 import com.google.protobuf.ByteString;
 import com.google.rpc.Code;
 import io.deephaven.auth.AuthContext;
@@ -15,9 +17,9 @@ import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.proto.backplane.grpc.*;
+import io.deephaven.proto.backplane.script.grpc.ConsoleServiceGrpc;
 import io.deephaven.proto.util.Exceptions;
 import io.deephaven.util.SafeCloseable;
-import io.deephaven.util.function.ThrowingRunnable;
 import io.grpc.Context;
 import io.grpc.ForwardingServerCall.SimpleForwardingServerCall;
 import io.grpc.ForwardingServerCallListener;
@@ -36,9 +38,13 @@ import org.jetbrains.annotations.Nullable;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.io.Closeable;
 import java.lang.Object;
+import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 
 public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImplBase {
@@ -49,6 +55,7 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
     public static final String DEEPHAVEN_SESSION_ID = Auth2Constants.AUTHORIZATION_HEADER;
     public static final Metadata.Key<String> SESSION_HEADER_KEY =
             Metadata.Key.of(Auth2Constants.AUTHORIZATION_HEADER, Metadata.ASCII_STRING_MARSHALLER);
+
     public static final Context.Key<SessionState> SESSION_CONTEXT_KEY =
             Context.key(Auth2Constants.AUTHORIZATION_HEADER);
 
@@ -180,11 +187,9 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
                     .queryPerformanceRecorder(queryPerformanceRecorder)
                     .require(source)
                     .onError(responseObserver)
-                    .submit(() -> {
-                        final Object o = source.get();
-                        GrpcUtil.safelyComplete(responseObserver, ExportResponse.getDefaultInstance());
-                        return o;
-                    });
+                    .onSuccess((final Object ignoredResult) -> GrpcUtil.safelyOnNextAndComplete(responseObserver,
+                            ExportResponse.getDefaultInstance()))
+                    .submit(source::get);
         }
     }
 
@@ -216,14 +221,10 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
 
             Ticket resultId = request.getResultId();
 
-            ticketRouter.publish(session, resultId, "resultId", () -> {
-                // when publish is complete, complete the gRPC request
-                GrpcUtil.safelyComplete(responseObserver, PublishResponse.getDefaultInstance());
-            })
-                    .queryPerformanceRecorder(queryPerformanceRecorder)
-                    .require(source)
-                    .onError(responseObserver)
-                    .submit(source::get);
+            ticketRouter.publish(session, resultId, "resultId",
+                    () -> GrpcUtil.safelyOnNextAndComplete(responseObserver, PublishResponse.getDefaultInstance()),
+                    SessionState.toErrorHandler(sre -> GrpcUtil.safelyError(responseObserver, sre)),
+                    source);
         }
     }
 
@@ -266,12 +267,17 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
         private final SessionService service;
         private final SessionState session;
         private final Map<Metadata.Key<String>, String> extraHeaders = new LinkedHashMap<>();
+        private final boolean setDeephavenAuthCookie;
 
-        private InterceptedCall(final SessionService service, final ServerCall<ReqT, RespT> call,
-                @Nullable final SessionState session) {
-            super(call);
-            this.service = service;
+        private InterceptedCall(
+                final SessionService service,
+                final ServerCall<ReqT, RespT> call,
+                @Nullable final SessionState session,
+                boolean setDeephavenAuthCookie) {
+            super(Objects.requireNonNull(call));
+            this.service = Objects.requireNonNull(service);
             this.session = session;
+            this.setDeephavenAuthCookie = setDeephavenAuthCookie;
         }
 
         @Override
@@ -307,6 +313,9 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
                 final SessionService.TokenExpiration exp = service.refreshToken(session);
                 if (exp != null) {
                     md.put(SESSION_HEADER_KEY, Auth2Constants.BEARER_PREFIX + exp.token.toString());
+                    if (setDeephavenAuthCookie) {
+                        AuthCookie.setDeephavenAuthCookie(md, exp.token);
+                    }
                 }
             }
         }
@@ -314,17 +323,26 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
 
     @Singleton
     public static class SessionServiceInterceptor implements ServerInterceptor {
+        private static final Status AUTHENTICATION_DETAILS_INVALID =
+                Status.UNAUTHENTICATED.withDescription("Authentication details invalid");
+
+        // We can't use just io.grpc.MethodDescriptor (unless we chose provide and inject the named method descriptors),
+        // some of our methods are overridden from stock gRPC; for example,
+        // io.deephaven.server.object.ObjectServiceGrpcBinding.bindService.
+        // The goal should be to migrate all of the existing RPC Session close management logic to here if possible.
+        private static final Set<String> CANCEL_RPC_ON_SESSION_CLOSE = Set.of(
+                ConsoleServiceGrpc.getSubscribeToLogsMethod().getFullMethodName(),
+                ObjectServiceGrpc.getMessageStreamMethod().getFullMethodName());
+
         private final SessionService service;
         private final SessionService.ErrorTransformer errorTransformer;
-        private static final Status authenticationDetailsInvalid =
-                Status.UNAUTHENTICATED.withDescription("Authentication details invalid");
 
         @Inject
         public SessionServiceInterceptor(
                 final SessionService service,
                 final SessionService.ErrorTransformer errorTransformer) {
-            this.service = service;
-            this.errorTransformer = errorTransformer;
+            this.service = Objects.requireNonNull(service);
+            this.errorTransformer = Objects.requireNonNull(errorTransformer);
         }
 
         @Override
@@ -337,29 +355,37 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
             final byte[] altToken = metadata.get(AuthConstants.TOKEN_KEY);
             if (altToken != null) {
                 try {
-                    session = service.getSessionForToken(UUID.fromString(new String(altToken)));
-                } catch (IllegalArgumentException ignored) {
+                    session = service.getSessionForToken(
+                            UuidCreator.fromString(new String(altToken, StandardCharsets.US_ASCII)));
+                } catch (IllegalArgumentException | InvalidUuidException ignored) {
                 }
             }
 
-            // Lookup the session using Flight Auth 2.0 token.
-            final String token = metadata.get(SESSION_HEADER_KEY);
-            if (session == null && token != null) {
-                try {
-                    session = service.getSessionForAuthToken(token);
-                } catch (AuthenticationException e) {
+            if (session == null) {
+                // Lookup the session using the auth cookie
+                final UUID uuid = AuthCookie.parseAuthCookie(metadata).orElse(null);
+                if (uuid != null) {
+                    session = service.getSessionForToken(uuid);
+                }
+            }
+
+            if (session == null) {
+                // Lookup the session using Flight Auth 2.0 token.
+                final String token = metadata.get(SESSION_HEADER_KEY);
+                if (token != null) {
                     try {
-                        call.close(authenticationDetailsInvalid, new Metadata());
-                    } catch (IllegalStateException ignored) {
-                        // could be thrown if the call was already closed. As an interceptor, we can't throw,
-                        // so ignoring this and just returning the no-op listener.
+                        session = service.getSessionForAuthToken(token);
+                    } catch (AuthenticationException e) {
+                        // As an interceptor, we can't throw, so ignoring this and just returning the no-op listener.
+                        safeClose(call, AUTHENTICATION_DETAILS_INVALID, new Metadata(), false);
+                        return new ServerCall.Listener<>() {};
                     }
-                    return new ServerCall.Listener<>() {};
                 }
             }
 
             // On the outer half of the call we'll install the context that includes our session.
-            final InterceptedCall<ReqT, RespT> serverCall = new InterceptedCall<>(service, call, session);
+            final InterceptedCall<ReqT, RespT> serverCall = new InterceptedCall<>(service, call, session,
+                    AuthCookie.hasDeephavenAuthCookieRequest(metadata));
             final Context context = Context.current().withValues(
                     SESSION_CONTEXT_KEY, session, SESSION_CALL_KEY, serverCall);
 
@@ -367,33 +393,61 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
 
             final MutableObject<SessionServiceCallListener<ReqT, RespT>> listener = new MutableObject<>();
             rpcWrapper(serverCall, context, finalSession, errorTransformer, () -> listener.setValue(
-                    new SessionServiceCallListener<>(serverCallHandler.startCall(serverCall, metadata), serverCall,
-                            context, finalSession, errorTransformer)));
+                    listener(serverCall, metadata, serverCallHandler, context, finalSession)));
             if (listener.getValue() == null) {
                 return new ServerCall.Listener<>() {};
             }
             return listener.getValue();
         }
+
+        private <ReqT, RespT> @NotNull SessionServiceCallListener<ReqT, RespT> listener(
+                InterceptedCall<ReqT, RespT> serverCall,
+                Metadata metadata,
+                ServerCallHandler<ReqT, RespT> serverCallHandler,
+                Context context,
+                SessionState session) {
+            return new SessionServiceCallListener<>(
+                    serverCallHandler.startCall(serverCall, metadata),
+                    serverCall,
+                    context,
+                    session,
+                    errorTransformer,
+                    CANCEL_RPC_ON_SESSION_CLOSE.contains(serverCall.getMethodDescriptor().getFullMethodName()));
+        }
     }
 
     private static class SessionServiceCallListener<ReqT, RespT> extends
-            ForwardingServerCallListener.SimpleForwardingServerCallListener<ReqT> {
+            ForwardingServerCallListener.SimpleForwardingServerCallListener<ReqT> implements Closeable {
+        private static final Status SESSION_CLOSED = Status.CANCELLED.withDescription("Session closed");
+
         private final ServerCall<ReqT, RespT> call;
         private final Context context;
         private final SessionState session;
         private final SessionService.ErrorTransformer errorTransformer;
+        private final boolean autoCancelOnSessionClose;
 
-        public SessionServiceCallListener(
+        SessionServiceCallListener(
                 ServerCall.Listener<ReqT> delegate,
                 ServerCall<ReqT, RespT> call,
                 Context context,
                 SessionState session,
-                SessionService.ErrorTransformer errorTransformer) {
+                SessionService.ErrorTransformer errorTransformer,
+                boolean autoCancelOnSessionClose) {
             super(delegate);
             this.call = call;
             this.context = context;
             this.session = session;
             this.errorTransformer = errorTransformer;
+            this.autoCancelOnSessionClose = autoCancelOnSessionClose;
+            if (autoCancelOnSessionClose && session != null) {
+                session.addOnCloseCallback(this);
+            }
+        }
+
+        @Override
+        public void close() {
+            // session.addOnCloseCallback
+            safeClose(call, SESSION_CLOSED, new Metadata(), false);
         }
 
         @Override
@@ -409,11 +463,17 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
         @Override
         public void onCancel() {
             rpcWrapper(call, context, session, errorTransformer, super::onCancel);
+            if (autoCancelOnSessionClose && session != null) {
+                session.removeOnCloseCallback(this);
+            }
         }
 
         @Override
         public void onComplete() {
             rpcWrapper(call, context, session, errorTransformer, super::onComplete);
+            if (autoCancelOnSessionClose && session != null) {
+                session.removeOnCloseCallback(this);
+            }
         }
 
         @Override
@@ -436,34 +496,44 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
             @NotNull final Context context,
             @Nullable final SessionState session,
             @NotNull final SessionService.ErrorTransformer errorTransformer,
-            @NotNull final ThrowingRunnable<InterruptedException> lambda) {
+            @NotNull final Runnable lambda) {
         Context previous = context.attach();
         // note: we'll open the execution context here so that it may be used by the error transformer
         try (final SafeCloseable ignored1 = session == null ? null : session.getExecutionContext().open()) {
             try (final SafeCloseable ignored2 = LivenessScopeStack.open()) {
                 lambda.run();
-            } catch (final InterruptedException err) {
-                Thread.currentThread().interrupt();
-                closeWithError(call, errorTransformer.transform(err));
-            } catch (final Throwable err) {
-                closeWithError(call, errorTransformer.transform(err));
-            } finally {
-                context.detach(previous);
+            } catch (final RuntimeException err) {
+                safeClose(call, errorTransformer.transform(err));
+            } catch (final Error error) {
+                // Indicates a very serious failure; debateable whether we should even try to send close.
+                safeClose(call, Status.INTERNAL, new Metadata(), false);
+                throw error;
             }
+        } finally {
+            context.detach(previous);
         }
     }
 
-    private static <ReqT, RespT> void closeWithError(
-            @NotNull final ServerCall<ReqT, RespT> call,
+    private static void safeClose(
+            @NotNull final ServerCall<?, ?> call,
             @NotNull final StatusRuntimeException err) {
+        Metadata metadata = Status.trailersFromThrowable(err);
+        if (metadata == null) {
+            metadata = new Metadata();
+        }
+        safeClose(call, Status.fromThrowable(err), metadata, true);
+    }
+
+    private static void safeClose(ServerCall<?, ?> call, Status status, Metadata trailers, boolean logOnError) {
         try {
-            Metadata metadata = Status.trailersFromThrowable(err);
-            if (metadata == null) {
-                metadata = new Metadata();
+            call.close(status, trailers);
+        } catch (IllegalStateException e) {
+            // IllegalStateException is explicitly documented as thrown if the call is already closed. It might be nice
+            // if there was a more explicit exception type, but this should suffice. We _could_ try and check the text
+            // "call already closed", but that is an undocumented implementation detail we should probably not rely on.
+            if (logOnError && log.isDebugEnabled()) {
+                log.debug().append("call.close error: ").append(e).endl();
             }
-            call.close(Status.fromThrowable(err), metadata);
-        } catch (final Exception unexpectedErr) {
-            log.debug().append("Unanticipated gRPC Error: ").append(unexpectedErr).endl();
         }
     }
 }

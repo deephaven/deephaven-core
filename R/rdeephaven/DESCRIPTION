@@ -1,10 +1,11 @@
 Package: rdeephaven
 Type: Package
 Title: R Client for Deephaven Core
-Version: 0.34.0
+Version: 0.38.0
 Date: 2023-05-12
 Author: Deephaven Data Labs
 Maintainer: Alex Peters <alexpeters@deephaven.io>
+URL: https://deephaven.io/core/client-api/r/
 Description: The `rdeephaven` package provides an R API for communicating with the Deephaven server and working with Deephaven tables.
              In this release, we support connecting to the Deephaven server with three authentication methods including anonymous,
              username/password, and general key/value authentication. Once the connection has been established, we provide the tools to

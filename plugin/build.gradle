@@ -5,4 +5,7 @@ plugins {
 
 description = 'The Deephaven plugin interface'
 
-Classpaths.inheritImmutables(project)
+dependencies {
+    compileOnly project(':util-immutables')
+    annotationProcessor libs.immutables.value
+}

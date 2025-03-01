@@ -1,5 +1,6 @@
 plugins {
-    id 'com.gradle.enterprise' version '3.13.1'
+    id 'com.gradle.develocity' version '3.19.1'
+    id 'org.gradle.toolchains.foojay-resolver-convention' version '0.9.0'
 }
 
 gradle.ext.buildStartTime = new Date()
@@ -50,6 +51,7 @@ project(':configs').projectDir = file('props/configs')
 include(':test-configs')
 project(':test-configs').projectDir = file('props/test-configs')
 
+include 'coverage'
 include 'combined-javadoc'
 
 include 'grpc-java:grpc-servlet-jakarta'
@@ -106,8 +108,8 @@ project(':ssl-config').projectDir = file('ssl/config')
 include(':ssl-kickstart')
 project(':ssl-kickstart').projectDir = file('ssl/kickstart')
 
-include(':server-test')
-project(':server-test').projectDir = file('server/test')
+include(':server-test-utils')
+project(':server-test-utils').projectDir = file('server/test-utils')
 
 include(':server-netty')
 project(':server-netty').projectDir = file('server/netty')
@@ -266,6 +268,21 @@ project(':extensions-trackedfile').projectDir = file('extensions/trackedfile')
 include(':extensions-s3')
 project(':extensions-s3').projectDir = file('extensions/s3')
 
+include(':extensions-iceberg')
+project(':extensions-iceberg').projectDir = file('extensions/iceberg')
+
+include(':extensions-iceberg-s3')
+project(':extensions-iceberg-s3').projectDir = file('extensions/iceberg/s3')
+
+include(':extensions-json')
+project(':extensions-json').projectDir = file('extensions/json')
+
+include(':extensions-json-jackson')
+project(':extensions-json-jackson').projectDir = file('extensions/json-jackson')
+
+include(':extensions-bson-jackson')
+project(':extensions-bson-jackson').projectDir = file('extensions/bson-jackson')
+
 include(':plugin')
 
 include(':plugin-dagger')
@@ -336,6 +353,15 @@ project(':util-function').projectDir = file('Util/function')
 include(':util-channel')
 project(':util-channel').projectDir = file('Util/channel')
 
+include(':util-processenvironment')
+project(':util-processenvironment').projectDir = file('Util/processenvironment')
+
+include(':util-thread')
+project(':util-thread').projectDir = file('Util/thread')
+
+include(':util-pool')
+project(':util-pool').projectDir = file('Util/pool')
+
 include(':deephaven-jpy-config')
 project(':deephaven-jpy-config').projectDir = file('py/jpy-config')
 
@@ -399,6 +425,16 @@ include ':clock-impl'
 
 include ':sql'
 
+include ':extensions-flight-sql'
+project(':extensions-flight-sql').projectDir = file('extensions/flight-sql')
+
+include(':codec-api')
+project(':codec-api').projectDir = file('codec/api')
+include(':codec-builtin')
+project(':codec-builtin').projectDir = file('codec/builtin')
+include(':codec-cache')
+project(':codec-cache').projectDir = file('codec/cache')
+
 file("${rootDir}/docker/registry").list().each { name ->
     if (file("${rootDir}/docker/registry/${name}/build.gradle").exists()) {
         include(":docker-${name}")
@@ -443,14 +479,14 @@ buildCache {
     }
 }
 
-def isCiServer = System.getenv('CI') == 'true'
-if (isCiServer) {
-    gradleEnterprise {
-        buildScan {
-            termsOfServiceUrl = 'https://gradle.com/terms-of-service'
-            termsOfServiceAgree = 'yes'
+develocity {
+    buildScan {
+        // buildScan will still publish when gradlew is explicitly invoked with `--scan`
+        publishing.onlyIf { false }
+        termsOfUseUrl = 'https://gradle.com/help/legal-terms-of-use'
+        termsOfUseAgree = 'yes'
+        if(System.getenv('CI') == 'true') {
             tag('CI')
         }
     }
 }
-

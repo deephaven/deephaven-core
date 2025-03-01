@@ -3,24 +3,20 @@ plugins {
     id 'java-library'
 }
 
-apply from: "$rootDir/gradle/web-common.gradle"
-
 GwtTools.gwtLib project
-
-configurations {
-    testImplementation.extendsFrom junit
-}
 
 dependencies {
     api project(':open-api-shared-fu')
 
-    Classpaths.inheritGuava(project, 'testImplementation')
+    testImplementation libs.junit4
+    testImplementation libs.guava
+
+    implementation libs.elemental.core
+    compileOnly libs.javax.validation.api
+
+    // upgrade inherited dependencies to become transitive
+    compileOnly libs.jsinterop.annotations
+
+    // non-transitive dependency
+    compileOnly libs.gwt.user
 }
-
-// non-transitive dependency
-Classpaths.inheritGwt project, 'gwt-user', 'compileOnly'
-
-// upgrade inherited dependencies to become transitive
-Classpaths.inheritJsInterop(project, 'jsinterop-annotations', 'compileOnly')
-Classpaths.inheritJavaxAnnotations(project, 'compileOnly')
-Classpaths.inheritElemental(project, 'elemental2-core', 'implementation')

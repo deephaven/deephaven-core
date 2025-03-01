@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.server.barrage;
 
@@ -28,7 +28,6 @@ import io.deephaven.engine.updategraph.UpdateSourceCombiner;
 import io.deephaven.engine.util.TableDiff;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.extensions.barrage.BarrageStreamGenerator;
-import io.deephaven.extensions.barrage.BarrageStreamGeneratorImpl;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.table.BarrageTable;
 import io.deephaven.extensions.barrage.util.BarrageStreamReader;
@@ -63,7 +62,7 @@ public class BarrageBlinkTableTest extends RefreshingTableTestCase {
     private QueryTable sourceTable;
     private TrackingWritableRowSet blinkRowSet;
     private QueryTable blinkTable;
-    private BarrageMessageProducer<BarrageStreamGeneratorImpl.View> barrageMessageProducer;
+    private BarrageMessageProducer barrageMessageProducer;
     private TableUpdateValidator originalTUV;
     private FailureListener originalTUVListener;
 
@@ -72,7 +71,7 @@ public class BarrageBlinkTableTest extends RefreshingTableTestCase {
             ArrowModule.class
     })
     public interface TestComponent {
-        BarrageStreamGenerator.Factory<BarrageStreamGeneratorImpl.View> getStreamGeneratorFactory();
+        BarrageStreamGenerator.Factory getStreamGeneratorFactory();
 
         @Component.Builder
         interface Builder {
@@ -101,7 +100,7 @@ public class BarrageBlinkTableTest extends RefreshingTableTestCase {
         blinkTable.setRefreshing(true);
         blinkTable.setAttribute(Table.BLINK_TABLE_ATTRIBUTE, true);
 
-        barrageMessageProducer = blinkTable.getResult(new BarrageMessageProducer.Operation<>(
+        barrageMessageProducer = blinkTable.getResult(new BarrageMessageProducer.Operation(
                 scheduler, new SessionService.ObfuscatingErrorTransformer(), daggerRoot.getStreamGeneratorFactory(),
                 blinkTable, UPDATE_INTERVAL, () -> {
                 }));
@@ -183,7 +182,7 @@ public class BarrageBlinkTableTest extends RefreshingTableTestCase {
             final Schema flatbufSchema = SchemaHelper.flatbufSchema(schemaBytes.asReadOnlyByteBuffer());
             final BarrageUtil.ConvertedArrowSchema schema = BarrageUtil.convertArrowSchema(flatbufSchema);
             this.barrageTable = BarrageTable.make(updateSourceCombiner, ExecutionContext.getContext().getUpdateGraph(),
-                    null, schema.tableDef, schema.attributes, null);
+                    null, schema.tableDef, schema.attributes, viewport == null, null);
             this.barrageTable.addSourceToRegistrar();
 
             final BarrageSubscriptionOptions options = BarrageSubscriptionOptions.builder()

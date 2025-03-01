@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.time.calendar;
 
@@ -36,6 +36,9 @@ public class TestBusinessCalendarXMLParser extends BaseArrayTestCase {
                 cal.calendarDay("2015-04-06").businessStart());
         assertEquals(DateTimeUtils.parseInstant("2015-04-06T16:46 Asia/Tokyo"),
                 cal.calendarDay("2015-04-06").businessEnd());
+
+        assertTrue(cal.calendarDay("2015-04-06").isInclusiveEnd());
+        assertFalse(cal.calendarDay("2015-04-07").isInclusiveEnd());
     }
 
     public void testLoad() throws URISyntaxException {

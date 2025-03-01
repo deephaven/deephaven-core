@@ -4,5 +4,5 @@ plugins {
 }
 
 dependencies {
-    compileOnlyApi 'org.immutables:value-annotations:2.9.2'
+    compileOnlyApi libs.immutables.value.annotations
 }

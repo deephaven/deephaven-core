@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit CharacterSingleValueSource and run "./gradlew replicateSourcesAndChunks" to regenerate
@@ -36,8 +36,8 @@ public class ObjectSingleValueSource<T> extends SingleValueColumnSource<T>
     private transient T prev;
 
     // region Constructor
-    public ObjectSingleValueSource(Class<T> type) {
-        super(type);
+    public ObjectSingleValueSource(Class<T> type, Class<?> componentType) {
+        super(type, componentType);
         current = null;
         prev = null;
     }

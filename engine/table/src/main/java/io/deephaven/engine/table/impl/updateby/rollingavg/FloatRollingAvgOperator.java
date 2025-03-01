@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.updateby.rollingavg;
 
@@ -83,7 +83,7 @@ public class FloatRollingAvgOperator extends BaseDoubleUpdateByOperator {
             } else {
                 final int count = aggSum.size() - nullCount;
                 if (count == 0) {
-                    outputValues.set(outIdx, Double.NaN);
+                    outputValues.set(outIdx, NULL_DOUBLE);
                 } else {
                     outputValues.set(outIdx, aggSum.evaluate() / (double) count);
                 }

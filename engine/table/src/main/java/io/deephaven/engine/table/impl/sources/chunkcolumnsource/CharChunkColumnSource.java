@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.sources.chunkcolumnsource;
 
@@ -16,7 +16,7 @@ import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
-import org.apache.commons.lang3.mutable.MutableInt;
+import io.deephaven.util.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -106,7 +106,7 @@ public class CharChunkColumnSource extends AbstractColumnSource<Character>
         destination.setSize(0);
         rowSequence.forAllRowKeyRanges((s, e) -> {
             while (s <= e) {
-                final int chunkIndex = getChunkIndex(s, searchStartChunkIndex.intValue());
+                final int chunkIndex = getChunkIndex(s, searchStartChunkIndex.get());
                 final int offsetWithinChunk = (int) (s - firstOffsetForData.get(chunkIndex));
                 Assert.geqZero(offsetWithinChunk, "offsetWithinChunk");
                 final CharChunk<? extends Values> charChunk = data.get(chunkIndex);
@@ -121,7 +121,7 @@ public class CharChunkColumnSource extends AbstractColumnSource<Character>
                 s += length;
                 if (s <= e) {
                     // We have more of this range to gather from a subsequent chunk.
-                    searchStartChunkIndex.setValue(chunkIndex + 1);
+                    searchStartChunkIndex.set(chunkIndex + 1);
                 }
             }
         });
@@ -185,7 +185,7 @@ public class CharChunkColumnSource extends AbstractColumnSource<Character>
     }
 
     @Override
-    public void clear() {
+    public synchronized void clear() {
         totalSize = 0;
         data.forEach(SafeCloseable::close);
         data.clear();

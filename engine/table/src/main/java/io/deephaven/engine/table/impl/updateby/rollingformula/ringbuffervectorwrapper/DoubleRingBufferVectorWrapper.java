@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit CharRingBufferVectorWrapper and run "./gradlew replicateUpdateBy" to regenerate
@@ -13,7 +13,7 @@ import io.deephaven.vector.DoubleVector;
 import io.deephaven.vector.DoubleVectorDirect;
 import io.deephaven.vector.DoubleVectorSlice;
 
-public class DoubleRingBufferVectorWrapper implements DoubleVector, RingBufferVectorWrapper {
+public class DoubleRingBufferVectorWrapper implements DoubleVector, RingBufferVectorWrapper<DoubleVector> {
     private final DoubleRingBuffer ringBuffer;
 
     public DoubleRingBufferVectorWrapper(final DoubleRingBuffer ringBuffer) {

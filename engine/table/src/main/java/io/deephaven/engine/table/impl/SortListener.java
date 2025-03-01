@@ -1,16 +1,16 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.ringbuffer.LongRingBuffer;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
+import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.datastructures.hash.HashMapK4V4;
 import io.deephaven.engine.table.impl.sort.LongSortKernel;
@@ -21,9 +21,9 @@ import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.engine.table.impl.util.*;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseableList;
+import io.deephaven.util.mutable.MutableInt;
 import gnu.trove.list.array.TLongArrayList;
-import io.deephaven.internal.log.LoggerFactory;
-import org.apache.commons.lang3.mutable.MutableInt;
+import io.deephaven.util.type.ArrayTypeUtils;
 
 import java.util.*;
 import java.util.function.LongUnaryOperator;
@@ -236,7 +236,7 @@ public class SortListener extends BaseTable.ListenerImpl {
                     null, addedAndModified, false, false).getArrayMapping();
             final long[] addedOutputKeys = new long[addedInputKeys.length];
             final long[] propagatedModOutputKeys = modifiedNeedsSorting ? new long[upstream.modified().intSize()]
-                    : CollectionUtil.ZERO_LENGTH_LONG_ARRAY;
+                    : ArrayTypeUtils.EMPTY_LONG_ARRAY;
 
             final RowSet.SearchIterator ait = resultRowSet.searchIterator();
             for (int ii = 0; ii < addedInputKeys.length; ++ii) {
@@ -922,7 +922,7 @@ public class SortListener extends BaseTable.ListenerImpl {
             final LongUnaryOperator transformer) {
         final MutableInt pos = new MutableInt(destIndex);
         src.forAllRowKeys((final long v) -> {
-            dest[pos.intValue()] = transformer.applyAsLong(v);
+            dest[pos.get()] = transformer.applyAsLong(v);
             pos.increment();
         });
     }

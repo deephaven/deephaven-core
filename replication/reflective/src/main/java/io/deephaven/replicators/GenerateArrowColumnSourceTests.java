@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.replicators;
 
@@ -181,7 +181,7 @@ public class GenerateArrowColumnSourceTests {
     }
 
     private static TypeName mutableInt() {
-        return ClassName.get("org.apache.commons.lang3.mutable", "MutableInt");
+        return ClassName.get("io.deephaven.util.mutable", "MutableInt");
     }
 
     private static TypeName staticAssert() {
@@ -241,7 +241,7 @@ public class GenerateArrowColumnSourceTests {
             Class<?> generatorClass = GenerateArrowColumnSourceTests.class;
             final String header = String.join("\n",
                     "//",
-                    "// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending",
+                    "// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending",
                     "//",
                     "// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY",
                     "// ****** Run " + generatorClass.getSimpleName() + " or \"./gradlew " + gradleTask

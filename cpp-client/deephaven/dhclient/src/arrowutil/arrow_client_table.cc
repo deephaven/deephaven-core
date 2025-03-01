@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+ * Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
  */
 #include "deephaven/client/arrowutil/arrow_column_source.h"
 #include "deephaven/client/arrowutil/arrow_client_table.h"
@@ -165,6 +165,18 @@ struct Visitor final : public arrow::TypeVisitor {
   arrow::Status Visit(const arrow::TimestampType &/*type*/) final {
     auto arrays = DowncastChunks<arrow::TimestampArray>(chunked_array_);
     result_ = DateTimeArrowColumnSource::OfArrowArrayVec(std::move(arrays));
+    return arrow::Status::OK();
+  }
+
+  arrow::Status Visit(const arrow::Date64Type &/*type*/) final {
+    auto arrays = DowncastChunks<arrow::Date64Array>(chunked_array_);
+    result_ = LocalDateArrowColumnSource::OfArrowArrayVec(std::move(arrays));
+    return arrow::Status::OK();
+  }
+
+  arrow::Status Visit(const arrow::Time64Type &/*type*/) final {
+    auto arrays = DowncastChunks<arrow::Time64Array>(chunked_array_);
+    result_ = LocalTimeArrowColumnSource::OfArrowArrayVec(std::move(arrays));
     return arrow::Status::OK();
   }
 

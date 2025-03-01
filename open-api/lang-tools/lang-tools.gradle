@@ -4,10 +4,8 @@ plugins {
     id 'java-library'
 }
 
-apply from: "$rootDir/gradle/web-common.gradle"
-
-Classpaths.inheritCommonsText(project, 'implementation')
 dependencies {
+    implementation libs.commons.text
 
     implementation project(':open-api-lang-parser')
     implementation project(':engine-table')
@@ -15,24 +13,24 @@ dependencies {
     implementation project(':IO')
     implementation project(':log-factory')
 
-    testImplementation 'org.spockframework:spock-core:2.0-groovy-3.0'
+    testImplementation libs.spockframework.core
 
-    Classpaths.inheritJUnitPlatform(project)
-    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testImplementation platform(libs.junit.bom)
+    testImplementation libs.junit.jupiter
 
-    Classpaths.inheritGroovy(project, 'groovy', 'testImplementation')
-    Classpaths.inheritGroovy(project, 'groovy-templates', 'testImplementation')
+    testImplementation libs.groovy
+    testImplementation libs.groovy.templates
 
-    testImplementation TestTools.projectDependency(project, 'engine-table')
+    testImplementation project(':engine-test-utils')
     testRuntimeOnly project(':configs')
-    testRuntimeOnly  project(':test-configs')
+    testRuntimeOnly project(':test-configs')
     testRuntimeOnly project(':Numerics')
     // intellij can be dumb and leave out our resources directory (sometimes)...
     // Do not cargo-cult this unless you have similar issues
     testRuntimeOnly files('build/resources/main')
 
     testRuntimeOnly project(':log-to-slf4j')
-    Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
+    testRuntimeOnly libs.slf4j.simple
 }
 
 test {

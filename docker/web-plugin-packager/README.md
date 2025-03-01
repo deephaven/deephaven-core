@@ -4,7 +4,7 @@ web-plugin-packager is a docker image used to package JS plugins for the Deephav
 
 ## Usage
 
-First, follow the instructions to [Launch Deephaven from pre-built images](https://deephaven.io/core/docs/tutorials/quickstart/#set-up-your-deephaven-deployment).
+First, follow the instructions to [Launch Deephaven from pre-built images](https://deephaven.io/core/docs/getting-started/quickstart/#set-up-your-deephaven-deployment).
 
 Once you have the `docker-compose.yml` file pulled down, define your own web docker image in `web/Dockerfile` that includes the plugins you would like to use. 
 

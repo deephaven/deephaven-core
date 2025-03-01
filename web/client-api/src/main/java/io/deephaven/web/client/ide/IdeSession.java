@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.web.client.ide;
 
@@ -7,17 +7,38 @@ import com.google.gwt.user.client.Timer;
 import com.vertispan.tsdefs.annotations.TsTypeRef;
 import elemental2.core.JsArray;
 import elemental2.core.JsSet;
-import elemental2.dom.CustomEventInit;
 import elemental2.promise.Promise;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Ticket;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.*;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.changedocumentrequest.TextDocumentContentChangeEvent;
-import io.deephaven.web.client.api.*;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.AutoCompleteRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.AutoCompleteResponse;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.BindTableToVariableRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.ChangeDocumentRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.CloseDocumentRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.CompletionContext;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.DocumentRange;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.ExecuteCommandRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.ExecuteCommandResponse;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.GetCompletionItemsRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.GetHoverRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.GetSignatureHelpRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.OpenDocumentRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.Position;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.TextDocumentItem;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.VersionedTextDocumentIdentifier;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.changedocumentrequest.TextDocumentContentChangeEvent;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.ticket_pb.Ticket;
+import io.deephaven.web.client.api.Callbacks;
+import io.deephaven.web.client.api.DateWrapper;
+import io.deephaven.web.client.api.JsPartitionedTable;
+import io.deephaven.web.client.api.JsTable;
+import io.deephaven.web.client.api.LogItem;
+import io.deephaven.web.client.api.ServerObject;
+import io.deephaven.web.client.api.WorkerConnection;
 import io.deephaven.web.client.api.barrage.stream.BiDiStream;
 import io.deephaven.web.client.api.console.JsCommandResult;
 import io.deephaven.web.client.api.console.JsVariableChanges;
 import io.deephaven.web.client.api.console.JsVariableDescriptor;
 import io.deephaven.web.client.api.console.JsVariableType;
+import io.deephaven.web.client.api.event.HasEventHandling;
 import io.deephaven.web.client.api.tree.JsTreeTable;
 import io.deephaven.web.client.api.widget.plot.JsFigure;
 import io.deephaven.web.client.fu.CancellablePromise;
@@ -104,9 +125,7 @@ public class IdeSession extends HasEventHandling {
     public Promise<JsTable> getTable(String name, @JsOptional Boolean applyPreviewColumns) {
         return connection.getVariableDefinition(name, JsVariableType.TABLE).then(varDef -> {
             final Promise<JsTable> table = connection.getTable(varDef, applyPreviewColumns);
-            final CustomEventInit event = CustomEventInit.create();
-            event.setDetail(table);
-            fireEvent(EVENT_TABLE_OPENED, event);
+            fireEvent(EVENT_TABLE_OPENED, table);
             return table;
         });
     }
@@ -149,9 +168,7 @@ public class IdeSession extends HasEventHandling {
 
     public Promise<JsTable> newTable(String[] columnNames, String[] types, String[][] data, String userTimeZone) {
         return connection.newTable(columnNames, types, data, userTimeZone, this).then(table -> {
-            final CustomEventInit event = CustomEventInit.create();
-            event.setDetail(table);
-            fireEvent(EVENT_TABLE_OPENED, event);
+            fireEvent(EVENT_TABLE_OPENED, table);
 
             return Promise.resolve(table);
         });
@@ -165,9 +182,7 @@ public class IdeSession extends HasEventHandling {
      */
     public Promise<JsTable> mergeTables(JsTable[] tables) {
         return connection.mergeTables(tables, this).then(table -> {
-            final CustomEventInit event = CustomEventInit.create();
-            event.setDetail(table);
-            fireEvent(EVENT_TABLE_OPENED, event);
+            fireEvent(EVENT_TABLE_OPENED, table);
 
             return Promise.resolve(table);
         });
@@ -181,6 +196,45 @@ public class IdeSession extends HasEventHandling {
                 .grpcUnaryPromise(c -> connection.consoleServiceClient().bindTableToVariable(bindRequest,
                         connection.metadata(), c::apply))
                 .then(ignore -> Promise.resolve((Void) null));
+    }
+
+    /**
+     * Makes the {@code object} available to another user or another client on this same server which knows the value of
+     * the {@code sharedTicketBytes}. Use that sharedTicketBytes value like a one-time use password - any other client
+     * which knows this value can read the same object.
+     * <p>
+     * Shared objects will remain available using the sharedTicketBytes until the client that first shared them
+     * releases/closes their copy of the object. Whatever side-channel is used to share the bytes, be sure to wait until
+     * the remote end has signaled that it has successfully fetched the object before releasing it from this client.
+     * <p>
+     * Be sure to use an unpredictable value for the shared ticket bytes, like a UUID or other large, random value to
+     * prevent access by unauthorized clients.
+     *
+     * @param object the object to share with another client/user
+     * @param sharedTicketBytes the value which another client/user must know to obtain the object. It may be a unicode
+     *        string (will be encoded as utf8 bytes), or a {@link elemental2.core.Uint8Array} value.
+     * @return A promise that will resolve to the value passed as sharedTicketBytes when the object is ready to be read
+     *         by another client, or will reject if an error occurs.
+     */
+    public Promise<SharedExportBytesUnion> shareObject(ServerObject.Union object,
+            SharedExportBytesUnion sharedTicketBytes) {
+        return connection.shareObject(object.asServerObject(), sharedTicketBytes);
+    }
+
+    /**
+     * Reads an object shared by another client to this server with the {@code sharedTicketBytes}. Until the other
+     * client releases this object (or their session ends), the object will be available on the server.
+     * <p>
+     * The type of the object must be passed so that the object can be read from the server correct - the other client
+     * should provide this information.
+     *
+     * @param sharedTicketBytes the value provided by another client/user to obtain the object. It may be a unicode
+     *        string (will be encoded as utf8 bytes), or a {@link elemental2.core.Uint8Array} value.
+     * @param type The type of the object, so it can be correctly read from the server
+     * @return A promise that will resolve to the shared object, or will reject with an error if it cannot be read.
+     */
+    public Promise<?> getSharedObject(SharedExportBytesUnion sharedTicketBytes, String type) {
+        return connection.getSharedObject(sharedTicketBytes, type);
     }
 
     public JsRunnable subscribeToFieldUpdates(JsConsumer<JsVariableChanges> callback) {
@@ -223,9 +277,7 @@ public class IdeSession extends HasEventHandling {
                 });
 
         CommandInfo commandInfo = new CommandInfo(code, result);
-        final CustomEventInit event = CustomEventInit.create();
-        event.setDetail(commandInfo);
-        fireEvent(IdeSession.EVENT_COMMANDSTARTED, event);
+        fireEvent(IdeSession.EVENT_COMMANDSTARTED, commandInfo);
 
         return result;
     }
@@ -251,9 +303,7 @@ public class IdeSession extends HasEventHandling {
         });
         currentStream.onStatus(status -> {
             if (!status.isOk()) {
-                CustomEventInit init = CustomEventInit.create();
-                init.setDetail(status.getDetails());
-                fireEvent(EVENT_REQUEST_FAILED, init);
+                fireEvent(EVENT_REQUEST_FAILED, status.getDetails());
                 pendingAutocompleteCalls.values().forEach(p -> {
                     p.fail("Connection error" + status.getDetails());
                 });
@@ -370,7 +420,7 @@ public class IdeSession extends HasEventHandling {
                 .timeout(JsTable.MAX_BATCH_TIME)
                 .asPromise()
                 .then(res -> Promise.resolve(
-                        res.getCompletionItems().getItemsList().map((item, index, arr) -> LspTranslate.toJs(item))),
+                        res.getCompletionItems().getItemsList().map((item, index) -> LspTranslate.toJs(item))),
                         fail -> {
                             // noinspection unchecked, rawtypes
                             return (Promise<JsArray<io.deephaven.web.shared.ide.lsp.CompletionItem>>) (Promise) Promise
@@ -398,7 +448,7 @@ public class IdeSession extends HasEventHandling {
                 .timeout(JsTable.MAX_BATCH_TIME)
                 .asPromise()
                 .then(res -> Promise.resolve(
-                        res.getSignatures().getSignaturesList().map((item, index, arr) -> LspTranslate.toJs(item))),
+                        res.getSignatures().getSignaturesList().map((item, index) -> LspTranslate.toJs(item))),
                         fail -> {
                             // noinspection unchecked, rawtypes
                             return (Promise<JsArray<io.deephaven.web.shared.ide.lsp.SignatureInformation>>) (Promise) Promise

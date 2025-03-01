@@ -1,12 +1,10 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.util.channel;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import java.net.URI;
 
 /**
  * A plugin interface for providing {@link SeekableChannelsProvider} implementations for different URI schemes, e.g. S3.
@@ -14,12 +12,12 @@ import java.net.URI;
  */
 public interface SeekableChannelsProviderPlugin {
     /**
-     * Check if this plugin is compatible with the given URI and config object.
+     * Check if this plugin is compatible with the given URI scheme and config object.
      */
-    boolean isCompatible(@NotNull URI uri, @Nullable Object config);
+    boolean isCompatible(@NotNull String uriScheme, @Nullable Object config);
 
     /**
-     * Create a {@link SeekableChannelsProvider} for the given URI and config object.
+     * Create a {@link SeekableChannelsProvider} for the given URI scheme and config object.
      */
-    SeekableChannelsProvider createProvider(@NotNull URI uri, @Nullable Object object);
+    SeekableChannelsProvider createProvider(@NotNull String uriScheme, @Nullable Object object);
 }

@@ -19,6 +19,16 @@ import static io.deephaven.function.Numeric.*;
 @SuppressWarnings({"RedundantCast", "RedundantArrayCreation", "PointlessArithmeticExpression", "ConstantConditions", "SimplifiableAssertion", "Convert2Diamond"})
 public class TestNumeric extends BaseArrayTestCase {
 
+    //////////////////////////// Constants ////////////////////////////
+
+    public void testE() {
+        assertEquals(Math.E, E, 0.0);
+    }
+
+    public void testPI() {
+        assertEquals(Math.PI, PI, 0.0);
+    }
+
     //////////////////////////// Object ////////////////////////////
 
     public void testObjMin() {
@@ -91,24 +101,33 @@ public class TestNumeric extends BaseArrayTestCase {
     public void test${pt.boxed}Avg() {
         assertEquals(50.0, avg(new ${pt.primitive}[]{40, 50, 60}));
         assertEquals(45.5, avg(new ${pt.primitive}[]{40, 51}));
-        assertTrue(Double.isNaN(avg(new ${pt.primitive}[]{})));
-        assertTrue(Double.isNaN(avg(new ${pt.primitive}[]{${pt.null}})));
+        assertEquals(NULL_DOUBLE, avg(new ${pt.primitive}[]{}));
+        assertEquals(NULL_DOUBLE, avg(new ${pt.primitive}[]{${pt.null}}));
         assertEquals(10.0, avg(new ${pt.primitive}[]{5, ${pt.null}, 15}));
         assertEquals(NULL_DOUBLE, avg((${pt.primitive}[])null));
 
         assertEquals(50.0, avg(new ${pt.boxed}[]{(${pt.primitive})40, (${pt.primitive})50, (${pt.primitive})60}));
         assertEquals(45.5, avg(new ${pt.boxed}[]{(${pt.primitive})40, (${pt.primitive})51}));
-        assertTrue(Double.isNaN(avg(new ${pt.boxed}[]{})));
-        assertTrue(Double.isNaN(avg(new ${pt.boxed}[]{${pt.null}})));
+        assertEquals(NULL_DOUBLE, avg(new ${pt.boxed}[]{}));
+        assertEquals(NULL_DOUBLE, avg(new ${pt.boxed}[]{${pt.null}}));
         assertEquals(10.0, avg(new ${pt.boxed}[]{(${pt.primitive})5, ${pt.null}, (${pt.primitive})15}));
         assertEquals(NULL_DOUBLE, avg((${pt.boxed}[])null));
 
         assertEquals(50.0, avg(new ${pt.vectorDirect}(new ${pt.primitive}[]{40, 50, 60})));
         assertEquals(45.5, avg(new ${pt.vectorDirect}(new ${pt.primitive}[]{40, 51})));
-        assertTrue(Double.isNaN(avg(new ${pt.vectorDirect}())));
-        assertTrue(Double.isNaN(avg(new ${pt.vectorDirect}(${pt.null}))));
+        assertEquals(NULL_DOUBLE, avg(new ${pt.vectorDirect}()));
+        assertEquals(NULL_DOUBLE, avg(new ${pt.vectorDirect}(${pt.null})));
         assertEquals(10.0, avg(new ${pt.vectorDirect}(new ${pt.primitive}[]{5, ${pt.null}, 15})));
         assertEquals(NULL_DOUBLE, avg((${pt.vectorDirect})null));
+
+        // verify the all-null case returns null
+        assertEquals(NULL_DOUBLE, avg(new ${pt.primitive}[]{${pt.null}, ${pt.null}, ${pt.null}}));
+        assertEquals(NULL_DOUBLE, avg(new ${pt.boxed}[]{${pt.null}, ${pt.null}, ${pt.null}}));
+
+        <#if pt.valueType.isFloat >
+        // verify the NaN short-circuit case
+        assertEquals(Double.NaN, avg(new ${pt.primitive}[]{40, ${pt.boxed}.NaN, 60}));
+        </#if>
 
         // check that functions can be resolved with varargs
         assertEquals(45.0, avg((${pt.primitive})40, (${pt.primitive})50));
@@ -117,24 +136,28 @@ public class TestNumeric extends BaseArrayTestCase {
     public void test${pt.boxed}AbsAvg() {
         assertEquals(50.0, absAvg(new ${pt.primitive}[]{40, (${pt.primitive}) 50, 60}));
         assertEquals(45.5, absAvg(new ${pt.primitive}[]{(${pt.primitive}) 40, 51}));
-        assertTrue(Double.isNaN(absAvg(new ${pt.primitive}[]{})));
-        assertTrue(Double.isNaN(absAvg(new ${pt.primitive}[]{${pt.null}})));
+        assertEquals(NULL_DOUBLE, absAvg(new ${pt.primitive}[]{}));
+        assertEquals(NULL_DOUBLE, absAvg(new ${pt.primitive}[]{${pt.null}}));
         assertEquals(10.0, absAvg(new ${pt.primitive}[]{(${pt.primitive}) 5, ${pt.null}, (${pt.primitive}) 15}));
         assertEquals(NULL_DOUBLE, absAvg((${pt.primitive}[])null));
 
         assertEquals(50.0, absAvg(new ${pt.boxed}[]{(${pt.primitive})40, (${pt.primitive}) 50, (${pt.primitive})60}));
         assertEquals(45.5, absAvg(new ${pt.boxed}[]{(${pt.primitive}) 40, (${pt.primitive})51}));
-        assertTrue(Double.isNaN(absAvg(new ${pt.boxed}[]{})));
-        assertTrue(Double.isNaN(absAvg(new ${pt.boxed}[]{${pt.null}})));
+        assertEquals(NULL_DOUBLE, absAvg(new ${pt.boxed}[]{}));
+        assertEquals(NULL_DOUBLE, absAvg(new ${pt.boxed}[]{${pt.null}}));
         assertEquals(10.0, absAvg(new ${pt.boxed}[]{(${pt.primitive}) 5, ${pt.null}, (${pt.primitive}) 15}));
         assertEquals(NULL_DOUBLE, absAvg((${pt.boxed}[])null));
 
         assertEquals(50.0, absAvg(new ${pt.vectorDirect}(new ${pt.primitive}[]{40, (${pt.primitive}) 50, 60})));
         assertEquals(45.5, absAvg(new ${pt.vectorDirect}(new ${pt.primitive}[]{(${pt.primitive}) 40, 51})));
-        assertTrue(Double.isNaN(absAvg(new ${pt.vectorDirect}())));
-        assertTrue(Double.isNaN(absAvg(new ${pt.vectorDirect}(${pt.null}))));
+        assertEquals(NULL_DOUBLE, absAvg(new ${pt.vectorDirect}()));
+        assertEquals(NULL_DOUBLE, absAvg(new ${pt.vectorDirect}(${pt.null})));
         assertEquals(10.0, absAvg(new ${pt.vectorDirect}((${pt.primitive}) 5, ${pt.null}, (${pt.primitive}) 15)));
         assertEquals(NULL_DOUBLE, absAvg((${pt.vectorDirect})null));
+
+        // verify the all-null case returns null
+        assertEquals(NULL_DOUBLE, absAvg(new ${pt.primitive}[]{${pt.null}, ${pt.null}, ${pt.null}}));
+        assertEquals(NULL_DOUBLE, absAvg(new ${pt.boxed}[]{${pt.null}, ${pt.null}, ${pt.null}}));
 
         // check that functions can be resolved with varargs
         assertEquals(45.0, absAvg((${pt.primitive})40, (${pt.primitive})50));
@@ -309,6 +332,18 @@ public class TestNumeric extends BaseArrayTestCase {
         assertEquals(var, var(new ${pt.vectorDirect}(v)));
         assertEquals(NULL_DOUBLE, var((${pt.vectorDirect})null));
 
+        // verify the all-null case returns null
+        assertEquals(NULL_DOUBLE, var(new ${pt.primitive}[]{${pt.null}, ${pt.null}, ${pt.null}}));
+        assertEquals(NULL_DOUBLE, var(new ${pt.boxed}[]{${pt.null}, ${pt.null}, ${pt.null}}));
+
+        // verify size==1
+        assertEquals(Double.NaN, var(new ${pt.primitive}[]{40}));
+
+        <#if pt.valueType.isFloat >
+        // verify the NaN short-circuit case
+        assertEquals(Double.NaN, var(new ${pt.primitive}[]{40, ${pt.boxed}.NaN, 60}));
+
+        </#if>
         // check that functions can be resolved with varargs
         assertEquals(var, var((${pt.primitive})0, (${pt.primitive})40, ${pt.null}, (${pt.primitive})50, (${pt.primitive})60, (${pt.primitive}) -1, (${pt.primitive})0));
     }
@@ -325,6 +360,10 @@ public class TestNumeric extends BaseArrayTestCase {
 
         assertEquals(Math.sqrt(var(new ${pt.vectorDirect}(v))), std(new ${pt.vectorDirect}(v)));
         assertEquals(NULL_DOUBLE, std((${pt.vectorDirect})null));
+
+        // verify the all-null case returns null
+        assertEquals(NULL_DOUBLE, std(new ${pt.primitive}[]{${pt.null}, ${pt.null}, ${pt.null}}));
+        assertEquals(NULL_DOUBLE, std(new ${pt.boxed}[]{${pt.null}, ${pt.null}, ${pt.null}}));
 
         // check that functions can be resolved with varargs
         assertEquals(std(v), std((${pt.primitive})0, (${pt.primitive})40, ${pt.null}, (${pt.primitive})50, (${pt.primitive})60, (${pt.primitive}) -1, (${pt.primitive})0));
@@ -343,6 +382,10 @@ public class TestNumeric extends BaseArrayTestCase {
         assertEquals(std(new ${pt.vectorDirect}(v)) / Math.sqrt(count(new ${pt.vectorDirect}(v))), ste(new ${pt.vectorDirect}(v)));
         assertEquals(NULL_DOUBLE, ste((${pt.vectorDirect})null));
 
+        // verify the all-null case returns null
+        assertEquals(NULL_DOUBLE, ste(new ${pt.primitive}[]{${pt.null}, ${pt.null}, ${pt.null}}));
+        assertEquals(NULL_DOUBLE, ste(new ${pt.boxed}[]{${pt.null}, ${pt.null}, ${pt.null}}));
+
         // check that functions can be resolved with varargs
         assertEquals(ste(v), ste((${pt.primitive})0, (${pt.primitive})40, ${pt.null}, (${pt.primitive})50, (${pt.primitive})60, (${pt.primitive}) -1, (${pt.primitive})0));
     }
@@ -359,6 +402,10 @@ public class TestNumeric extends BaseArrayTestCase {
 
         assertEquals(avg(new ${pt.vectorDirect}(v)) / ste(new ${pt.vectorDirect}(v)), tstat(new ${pt.vectorDirect}(v)));
         assertEquals(NULL_DOUBLE, tstat((${pt.vectorDirect})null));
+
+        // verify the all-null case returns null
+        assertEquals(NULL_DOUBLE, tstat(new ${pt.primitive}[]{${pt.null}, ${pt.null}, ${pt.null}}));
+        assertEquals(NULL_DOUBLE, tstat(new ${pt.boxed}[]{${pt.null}, ${pt.null}, ${pt.null}}));
 
         // check that functions can be resolved with varargs
         assertEquals(tstat(v), tstat((${pt.primitive})0, (${pt.primitive})40, ${pt.null}, (${pt.primitive})50, (${pt.primitive})60, (${pt.primitive}) -1, (${pt.primitive})0));
@@ -509,6 +556,19 @@ public class TestNumeric extends BaseArrayTestCase {
         assertEquals(NULL_DOUBLE, cov((${pt.vectorDirect})null, new ${pt2.vectorDirect}(b)));
         assertEquals(NULL_DOUBLE, cov((${pt.vectorDirect})null, (${pt2.vectorDirect})null));
 
+        // verify the all-null cases return null
+        assertEquals(NULL_DOUBLE, cov(new ${pt.primitive}[]{1, 2, 3}, new ${pt2.primitive}[]{${pt2.null}, ${pt2.null}, ${pt2.null}}));
+        assertEquals(NULL_DOUBLE, cov(new ${pt.primitive}[]{${pt.null}, ${pt.null}, ${pt.null}}, new ${pt2.primitive}[]{1, 2, 3}));
+        assertEquals(NULL_DOUBLE, cov(new ${pt.primitive}[]{${pt.null}, ${pt.null}, ${pt.null}}, new ${pt2.primitive}[]{${pt2.null}, ${pt2.null}, ${pt2.null}}));
+
+        <#if pt.valueType.isFloat >
+        // verify the NaN short-circuit case
+        assertEquals(Double.NaN, cov(new ${pt.primitive}[]{1, 2, ${pt.boxed}.NaN}, new ${pt2.primitive}[]{1, 2, 3}));
+        </#if>
+        <#if pt2.valueType.isFloat >
+        // verify the NaN short-circuit case
+        assertEquals(Double.NaN, cov(new ${pt.primitive}[]{1, 2, 3}, new ${pt2.primitive}[]{1, 2, ${pt2.boxed}.NaN}));
+        </#if>
 
         try {
             cov(new ${pt.vectorDirect}(new ${pt.primitive}[]{1,2,3,${pt.null},5}), new ${pt2.vectorDirect}(new ${pt2.primitive}[]{4,5}));
@@ -552,6 +612,20 @@ public class TestNumeric extends BaseArrayTestCase {
         assertEquals(NULL_DOUBLE, cor((${pt.vectorDirect})null, new ${pt2.vectorDirect}(b)));
         assertEquals(NULL_DOUBLE, cor((${pt.vectorDirect})null, (${pt2.vectorDirect})null));
 
+        // verify the all-null cases return null
+        assertEquals(NULL_DOUBLE, cor(new ${pt.primitive}[]{1, 2, 3}, new ${pt2.primitive}[]{${pt2.null}, ${pt2.null}, ${pt2.null}}));
+        assertEquals(NULL_DOUBLE, cor(new ${pt.primitive}[]{${pt.null}, ${pt.null}, ${pt.null}}, new ${pt2.primitive}[]{1, 2, 3}));
+        assertEquals(NULL_DOUBLE, cor(new ${pt.primitive}[]{${pt.null}, ${pt.null}, ${pt.null}}, new ${pt2.primitive}[]{${pt2.null}, ${pt2.null}, ${pt2.null}}));
+
+        <#if pt.valueType.isFloat >
+        // verify the NaN short-circuit case
+        assertEquals(Double.NaN, cor(new ${pt.primitive}[]{1, 2, ${pt.boxed}.NaN}, new ${pt2.primitive}[]{1, 2, 3}));
+        </#if>
+        <#if pt2.valueType.isFloat >
+        // verify the NaN short-circuit case
+        assertEquals(Double.NaN, cor(new ${pt.primitive}[]{1, 2, 3}, new ${pt2.primitive}[]{1, 2, ${pt2.boxed}.NaN}));
+        </#if>
+
         try {
             cor(new ${pt.vectorDirect}(new ${pt.primitive}[]{1,2,3,${pt.null},5}), new ${pt2.vectorDirect}(new ${pt2.primitive}[]{4,5}));
             fail("Mismatched arguments");
@@ -567,18 +641,42 @@ public class TestNumeric extends BaseArrayTestCase {
 
     public void test${pt.boxed}Sum1() {
         assertTrue(Math.abs(15 - sum(new ${pt.vectorDirect}(new ${pt.primitive}[]{4, 5, 6}))) == 0.0);
-        assertTrue(Math.abs(0 - sum(new ${pt.vectorDirect}())) == 0.0);
-        assertTrue(Math.abs(0 - sum(new ${pt.vectorDirect}(${pt.null}))) == 0.0);
         assertTrue(Math.abs(20 - sum(new ${pt.vectorDirect}(new ${pt.primitive}[]{5, ${pt.null}, 15}))) == 0.0);
-        assertEquals(${pt.null}, sum((${pt.vector}) null));
+    <#if pt.valueType.isFloat >
+        assertEquals(NULL_DOUBLE, sum((${pt.vector}) null));
+        assertEquals(NULL_DOUBLE, sum(new ${pt.vectorDirect}(new ${pt.primitive}[]{})));
+        assertEquals(NULL_DOUBLE, sum(new ${pt.vectorDirect}(new ${pt.primitive}[]{${pt.null}, ${pt.null}})));
+        assertEquals(Double.POSITIVE_INFINITY, sum(new ${pt.vectorDirect}(new ${pt.primitive}[]{4, Float.POSITIVE_INFINITY, 6})));
+        assertEquals(Double.POSITIVE_INFINITY, sum(new ${pt.vectorDirect}(new ${pt.primitive}[]{4, Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY})));
+        assertEquals(Double.NEGATIVE_INFINITY, sum(new ${pt.vectorDirect}(new ${pt.primitive}[]{4, Float.NEGATIVE_INFINITY, 6})));
+        assertEquals(Double.NEGATIVE_INFINITY, sum(new ${pt.vectorDirect}(new ${pt.primitive}[]{4, Float.NEGATIVE_INFINITY, Float.NEGATIVE_INFINITY})));
+        assertEquals(Double.NaN, sum(new ${pt.vectorDirect}(new ${pt.primitive}[]{4, Float.POSITIVE_INFINITY, Float.NEGATIVE_INFINITY})));
+        assertEquals(Double.NaN, sum(new ${pt.vectorDirect}(new ${pt.primitive}[]{4, Float.NaN, 6})));
+    <#else>
+        assertEquals(NULL_LONG, sum((${pt.vector}) null));
+        assertEquals(NULL_LONG, sum(new ${pt.vectorDirect}(new ${pt.primitive}[]{})));
+        assertEquals(NULL_LONG, sum(new ${pt.vectorDirect}(new ${pt.primitive}[]{${pt.null}, ${pt.null}})));
+    </#if>
     }
 
     public void test${pt.boxed}Sum2() {
         assertTrue(Math.abs(15 - sum(new ${pt.primitive}[]{4, 5, 6})) == 0.0);
-        assertTrue(Math.abs(0 - sum(new ${pt.primitive}[]{})) == 0.0);
-        assertTrue(Math.abs(0 - sum(new ${pt.primitive}[]{${pt.null}})) == 0.0);
         assertTrue(Math.abs(20 - sum(new ${pt.primitive}[]{5, ${pt.null}, 15})) == 0.0);
-        assertEquals(${pt.null}, sum((${pt.primitive}[]) null));
+    <#if pt.valueType.isFloat >
+        assertEquals(NULL_DOUBLE, sum((${pt.primitive}[]) null));
+        assertEquals(NULL_DOUBLE, sum(new ${pt.primitive}[]{}));
+        assertEquals(NULL_DOUBLE, sum(new ${pt.primitive}[]{${pt.null}, ${pt.null}}));
+        assertEquals(Double.POSITIVE_INFINITY, sum(new ${pt.primitive}[]{4, Float.POSITIVE_INFINITY, 6}));
+        assertEquals(Double.POSITIVE_INFINITY, sum(new ${pt.primitive}[]{4, Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY}));
+        assertEquals(Double.NEGATIVE_INFINITY, sum(new ${pt.primitive}[]{4, Float.NEGATIVE_INFINITY, 6}));
+        assertEquals(Double.NEGATIVE_INFINITY, sum(new ${pt.primitive}[]{4, Float.NEGATIVE_INFINITY, Float.NEGATIVE_INFINITY}));
+        assertEquals(Double.NaN, sum(new ${pt.primitive}[]{4, Float.POSITIVE_INFINITY, Float.NEGATIVE_INFINITY}));
+        assertEquals(Double.NaN, sum(new ${pt.primitive}[]{4, Float.NaN, 6}));
+    <#else>
+        assertEquals(NULL_LONG, sum((${pt.primitive}[]) null));
+        assertEquals(NULL_LONG, sum(new ${pt.primitive}[]{}));
+        assertEquals(NULL_LONG, sum(new ${pt.primitive}[]{${pt.null}, ${pt.null}}));
+    </#if>
     }
 
 //    public void test${pt.boxed}SumObjectVector() {
@@ -608,48 +706,77 @@ public class TestNumeric extends BaseArrayTestCase {
 //    }
 
     public void test${pt.boxed}Product() {
+        <#if pt.valueType.isFloat >
+        final double nullResult = NULL_DOUBLE;
+        final double zeroValue = 0.0;
+        <#else>
+        final long nullResult = NULL_LONG;
+        final long zeroValue = 0;
+        </#if>
+
         assertTrue(Math.abs(120 - product(new ${pt.primitive}[]{4, 5, 6})) == 0.0);
-        assertEquals(${pt.null}, product(new ${pt.primitive}[]{}));
-        assertEquals(${pt.null}, product(new ${pt.primitive}[]{${pt.null}}));
+        assertEquals(nullResult, product(new ${pt.primitive}[]{}));
+        assertEquals(nullResult, product(new ${pt.primitive}[]{${pt.null}}));
         assertTrue(Math.abs(75 - product(new ${pt.primitive}[]{5, ${pt.null}, 15})) == 0.0);
-        assertEquals(${pt.null}, product((${pt.primitive}[]) null));
+        assertEquals(nullResult, product((${pt.primitive}[]) null));
+        assertEquals(zeroValue, product(new ${pt.primitive}[]{4, 0, 5, 6}));
 
         assertTrue(Math.abs(120 - product(new ${pt.vectorDirect}(new ${pt.primitive}[]{4, 5, 6}))) == 0.0);
-        assertEquals(${pt.null}, product(new ${pt.vectorDirect}()));
-        assertEquals(${pt.null}, product(new ${pt.vectorDirect}(${pt.null})));
+        assertEquals(nullResult, product(new ${pt.vectorDirect}()));
+        assertEquals(nullResult, product(new ${pt.vectorDirect}(${pt.null})));
         assertTrue(Math.abs(75 - product(new ${pt.vectorDirect}(new ${pt.primitive}[]{5, ${pt.null}, 15}))) == 0.0);
-        assertEquals(${pt.null}, product((${pt.vector}) null));
+        assertEquals(nullResult, product((${pt.vector}) null));
+        assertEquals(zeroValue, product(new ${pt.vectorDirect}(new ${pt.primitive}[]{4, 0, 5, 6})));
+
+
+        <#if pt.valueType.isFloat >
+        assertEquals(Double.POSITIVE_INFINITY, product(new ${pt.primitive}[]{4, Float.POSITIVE_INFINITY, 6}));
+        assertEquals(Double.POSITIVE_INFINITY, product(new ${pt.primitive}[]{4, Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY}));
+        assertEquals(Double.NEGATIVE_INFINITY, product(new ${pt.primitive}[]{4, Float.NEGATIVE_INFINITY, 6}));
+        assertEquals(Double.POSITIVE_INFINITY, product(new ${pt.primitive}[]{4, Float.NEGATIVE_INFINITY, Float.NEGATIVE_INFINITY}));
+        assertEquals(Double.NEGATIVE_INFINITY, product(new ${pt.primitive}[]{4, Float.POSITIVE_INFINITY, Float.NEGATIVE_INFINITY}));
+
+        assertEquals(Double.POSITIVE_INFINITY, product(new ${pt.vectorDirect}(new ${pt.primitive}[]{4, Float.POSITIVE_INFINITY, 6})));
+        assertEquals(Double.POSITIVE_INFINITY, product(new ${pt.vectorDirect}(new ${pt.primitive}[]{4, Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY})));
+        assertEquals(Double.NEGATIVE_INFINITY, product(new ${pt.vectorDirect}(new ${pt.primitive}[]{4, Float.NEGATIVE_INFINITY, 6})));
+        assertEquals(Double.POSITIVE_INFINITY, product(new ${pt.vectorDirect}(new ${pt.primitive}[]{4, Float.NEGATIVE_INFINITY, Float.NEGATIVE_INFINITY})));
+        assertEquals(Double.NEGATIVE_INFINITY, product(new ${pt.vectorDirect}(new ${pt.primitive}[]{4, Float.POSITIVE_INFINITY, Float.NEGATIVE_INFINITY})));
+        </#if>
     }
 
 <#if pt.valueType.isFloat >
     public void test${pt.boxed}ProductOverflowAndNaN() {
+        <#if pt.primitive == "double" >
+
         final ${pt.primitive} LARGE_VALUE = Math.nextDown(${pt.boxed}.MAX_VALUE);
 
         final ${pt.primitive}[] overflow = new ${pt.primitive}[]{1, LARGE_VALUE, LARGE_VALUE};
-        final ${pt.primitive} overflowProduct = product(overflow);
-        assertTrue(${pt.boxed}.isInfinite(overflowProduct) && overflowProduct > 0);
+        final double overflowProduct = product(overflow);
+        assertTrue(Double.isInfinite(overflowProduct) && overflowProduct > 0);
 
         final ${pt.primitive}[] negOverflow = new ${pt.primitive}[]{1, LARGE_VALUE, -LARGE_VALUE};
-        final ${pt.primitive} negOverflowProduct = product(negOverflow);
-        assertTrue(${pt.boxed}.isInfinite(negOverflowProduct) && negOverflowProduct < 0);
+        final double negOverflowProduct = product(negOverflow);
+        assertTrue(Double.isInfinite(negOverflowProduct) && negOverflowProduct < 0);
 
         final ${pt.primitive}[] overflowWithZero = new ${pt.primitive}[]{1, LARGE_VALUE, LARGE_VALUE, 0};
         assertTrue(Math.abs(product(overflowWithZero)) == 0.0);
 
+        </#if>
+
         final ${pt.primitive}[] normalWithNaN = new ${pt.primitive}[]{1, 2, 3, ${pt.boxed}.NaN, 4, 5};
-        assertTrue(${pt.boxed}.isNaN(product(normalWithNaN)));
+        assertTrue(Double.isNaN(product(normalWithNaN)));
 
         final ${pt.primitive}[] posInfAndZero = new ${pt.primitive}[]{1, ${pt.boxed}.POSITIVE_INFINITY, 0};
-        assertTrue(${pt.boxed}.isNaN(product(posInfAndZero)));
+        assertTrue(Double.isNaN(product(posInfAndZero)));
 
         final ${pt.primitive}[] negInfAndZero = new ${pt.primitive}[]{1, ${pt.boxed}.NEGATIVE_INFINITY, 0};
-        assertTrue(${pt.boxed}.isNaN(product(negInfAndZero)));
+        assertTrue(Double.isNaN(product(negInfAndZero)));
 
         final ${pt.primitive}[] zeroAndPosInf = new ${pt.primitive}[]{1, 0, ${pt.boxed}.POSITIVE_INFINITY};
-        assertTrue(${pt.boxed}.isNaN(product(zeroAndPosInf)));
+        assertTrue(Double.isNaN(product(zeroAndPosInf)));
 
         final ${pt.primitive}[] zeroAndNegInf = new ${pt.primitive}[]{1, 0, ${pt.boxed}.NEGATIVE_INFINITY};
-        assertTrue(${pt.boxed}.isNaN(product(zeroAndNegInf)));
+        assertTrue(Double.isNaN(product(zeroAndNegInf)));
 
     }
 </#if>
@@ -747,41 +874,107 @@ public class TestNumeric extends BaseArrayTestCase {
         assertEquals(new ${pt.primitive}[]{5, 5, 5, 5, 5}, cummax((${pt.primitive})5, (${pt.primitive})4, (${pt.primitive})3, (${pt.primitive})2, (${pt.primitive})1));
     }
 
+<#if pt.valueType.isFloat >
     public void test${pt.boxed}CumSumArray() {
-        assertEquals(new ${pt.primitive}[]{1, 3, 6, 10, 15}, cumsum(new ${pt.primitive}[]{1, 2, 3, 4, 5}));
-        assertEquals(new ${pt.primitive}[]{1, 3, 6, 6, 11}, cumsum(new ${pt.primitive}[]{1, 2, 3, ${pt.null}, 5}));
-        assertEquals(new ${pt.primitive}[]{${pt.null}, 2, 5, 9, 14}, cumsum(new ${pt.primitive}[]{${pt.null}, 2, 3, 4, 5}));
-        assertEquals(new ${pt.primitive}[0], cumsum(new ${pt.primitive}[0]));
-        assertEquals(new ${pt.primitive}[0], cumsum(new ${pt.boxed}[0]));
+        assertEquals(new double[]{1, 3, 6, 10, 15}, cumsum(new ${pt.primitive}[]{1, 2, 3, 4, 5}));
+        assertEquals(new double[]{1, 3, 6, 6, 11}, cumsum(new ${pt.primitive}[]{1, 2, 3, ${pt.null}, 5}));
+        assertEquals(new double[]{NULL_DOUBLE, 2, 5, 9, 14}, cumsum(new ${pt.primitive}[]{${pt.null}, 2, 3, 4, 5}));
+        assertEquals(new double[]{NULL_DOUBLE, NULL_DOUBLE, 2, 5, 9, 14}, cumsum(new ${pt.primitive}[]{${pt.null}, ${pt.null}, 2, 3, 4, 5}));
+        assertEquals(new double[0], cumsum(new ${pt.primitive}[0]));
+        assertEquals(new double[0], cumsum(new ${pt.boxed}[0]));
         assertEquals(null, cumsum((${pt.primitive}[]) null));
 
-        assertEquals(new ${pt.primitive}[]{1, 3, 6, 10, 15}, cumsum(new ${pt.vectorDirect}(new ${pt.primitive}[]{1, 2, 3, 4, 5})));
-        assertEquals(new ${pt.primitive}[]{1, 3, 6, 6, 11}, cumsum(new ${pt.vectorDirect}(new ${pt.primitive}[]{1, 2, 3, ${pt.null}, 5})));
-        assertEquals(new ${pt.primitive}[]{${pt.null}, 2, 5, 9, 14}, cumsum(new ${pt.vectorDirect}(new ${pt.primitive}[]{${pt.null}, 2, 3, 4, 5})));
-        assertEquals(new ${pt.primitive}[0], cumsum(new ${pt.vectorDirect}()));
+        assertEquals(new double[]{1, 3, 6, 10, 15}, cumsum(new ${pt.vectorDirect}(new ${pt.primitive}[]{1, 2, 3, 4, 5})));
+        assertEquals(new double[]{1, 3, 6, 6, 11}, cumsum(new ${pt.vectorDirect}(new ${pt.primitive}[]{1, 2, 3, ${pt.null}, 5})));
+        assertEquals(new double[]{NULL_DOUBLE, 2, 5, 9, 14}, cumsum(new ${pt.vectorDirect}(new ${pt.primitive}[]{${pt.null}, 2, 3, 4, 5})));
+        assertEquals(new double[]{NULL_DOUBLE, NULL_DOUBLE, 2, 5, 9, 14}, cumsum(new ${pt.vectorDirect}(new ${pt.primitive}[]{${pt.null}, ${pt.null}, 2, 3, 4, 5})));
+        assertEquals(new double[0], cumsum(new ${pt.vectorDirect}()));
         assertEquals(null, cumsum((${pt.vector}) null));
 
         // check that functions can be resolved with varargs
-        assertEquals(new ${pt.primitive}[]{1, 3, 6, 10, 15}, cumsum((${pt.primitive})1, (${pt.primitive})2, (${pt.primitive})3, (${pt.primitive})4, (${pt.primitive})5));
-    }
+        assertEquals(new double[]{1, 3, 6, 10, 15}, cumsum((${pt.primitive})1, (${pt.primitive})2, (${pt.primitive})3, (${pt.primitive})4, (${pt.primitive})5));
 
+        assertEquals(new double[]{1, 3, 6, Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY}, cumsum(new ${pt.primitive}[]{1, 2, 3, Float.POSITIVE_INFINITY, 5}));
+        assertEquals(new double[]{1, 3, 6, Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY}, cumsum(new ${pt.primitive}[]{1, 2, 3, Float.POSITIVE_INFINITY, -5}));
+        assertEquals(new double[]{1, 3, 6, Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY}, cumsum(new ${pt.primitive}[]{1, 2, 3, Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY}));
+        assertEquals(new double[]{1, 3, 6, Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY}, cumsum(new ${pt.primitive}[]{1, 2, 3, Float.NEGATIVE_INFINITY, 5}));
+        assertEquals(new double[]{1, 3, 6, Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY}, cumsum(new ${pt.primitive}[]{1, 2, 3, Float.NEGATIVE_INFINITY, -5}));
+        assertEquals(new double[]{1, 3, 6, Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY}, cumsum(new ${pt.primitive}[]{1, 2, 3, Float.NEGATIVE_INFINITY, Float.NEGATIVE_INFINITY}));
+        assertEquals(new double[]{1, 3, 6, Double.POSITIVE_INFINITY, Double.NaN}, cumsum(new ${pt.primitive}[]{1, 2, 3, Float.POSITIVE_INFINITY, Float.NEGATIVE_INFINITY}));
+        assertEquals(new double[]{1, 3, 6, Double.NEGATIVE_INFINITY, Double.NaN}, cumsum(new ${pt.primitive}[]{1, 2, 3, Float.NEGATIVE_INFINITY, Float.POSITIVE_INFINITY}));
+    }
+<#else>
+    public void test${pt.boxed}CumSumArray() {
+        assertEquals(new long[]{1, 3, 6, 10, 15}, cumsum(new ${pt.primitive}[]{1, 2, 3, 4, 5}));
+        assertEquals(new long[]{1, 3, 6, 6, 11}, cumsum(new ${pt.primitive}[]{1, 2, 3, ${pt.null}, 5}));
+        assertEquals(new long[]{NULL_LONG, 2, 5, 9, 14}, cumsum(new ${pt.primitive}[]{${pt.null}, 2, 3, 4, 5}));
+        assertEquals(new long[]{NULL_LONG, NULL_LONG, 2, 5, 9, 14}, cumsum(new ${pt.primitive}[]{${pt.null}, ${pt.null}, 2, 3, 4, 5}));
+        assertEquals(new long[0], cumsum(new ${pt.primitive}[0]));
+        assertEquals(new long[0], cumsum(new ${pt.boxed}[0]));
+        assertEquals(null, cumsum((${pt.primitive}[]) null));
+
+        assertEquals(new long[]{1, 3, 6, 10, 15}, cumsum(new ${pt.vectorDirect}(new ${pt.primitive}[]{1, 2, 3, 4, 5})));
+        assertEquals(new long[]{1, 3, 6, 6, 11}, cumsum(new ${pt.vectorDirect}(new ${pt.primitive}[]{1, 2, 3, ${pt.null}, 5})));
+        assertEquals(new long[]{NULL_LONG, 2, 5, 9, 14}, cumsum(new ${pt.vectorDirect}(new ${pt.primitive}[]{${pt.null}, 2, 3, 4, 5})));
+        assertEquals(new long[]{NULL_LONG, NULL_LONG, 2, 5, 9, 14}, cumsum(new ${pt.vectorDirect}(new ${pt.primitive}[]{${pt.null}, ${pt.null}, 2, 3, 4, 5})));
+        assertEquals(new long[0], cumsum(new ${pt.vectorDirect}()));
+        assertEquals(null, cumsum((${pt.vector}) null));
+
+        // check that functions can be resolved with varargs
+        assertEquals(new long[]{1, 3, 6, 10, 15}, cumsum((${pt.primitive})1, (${pt.primitive})2, (${pt.primitive})3, (${pt.primitive})4, (${pt.primitive})5));
+    }
+</#if>
+
+<#if pt.valueType.isFloat >
     public void test${pt.boxed}CumProdArray() {
-        assertEquals(new ${pt.primitive}[]{1, 2, 6, 24, 120}, cumprod(new ${pt.primitive}[]{1, 2, 3, 4, 5}));
-        assertEquals(new ${pt.primitive}[]{1, 2, 6, 6, 30}, cumprod(new ${pt.primitive}[]{1, 2, 3, ${pt.null}, 5}));
-        assertEquals(new ${pt.primitive}[]{${pt.null}, 2, 6, 24, 120}, cumprod(new ${pt.primitive}[]{${pt.null}, 2, 3, 4, 5}));
-        assertEquals(new ${pt.primitive}[0], cumprod(new ${pt.primitive}[0]));
-        assertEquals(new ${pt.primitive}[0], cumprod(new ${pt.boxed}[0]));
+        assertEquals(new double[]{1, 2, 6, 24, 120}, cumprod(new ${pt.primitive}[]{1, 2, 3, 4, 5}));
+        assertEquals(new double[]{1, 2, 6, 6, 30}, cumprod(new ${pt.primitive}[]{1, 2, 3, ${pt.null}, 5}));
+        assertEquals(new double[]{NULL_DOUBLE, 2, 6, 24, 120}, cumprod(new ${pt.primitive}[]{${pt.null}, 2, 3, 4, 5}));
+        assertEquals(new double[]{NULL_DOUBLE, NULL_DOUBLE, 2, 6, 24, 120}, cumprod(new ${pt.primitive}[]{${pt.null}, ${pt.null}, 2, 3, 4, 5}));
+        assertEquals(new double[0], cumprod(new ${pt.primitive}[0]));
+        assertEquals(new double[0], cumprod(new ${pt.boxed}[0]));
+        assertEquals(null, cumprod((${pt.primitive}[]) null));
+        assertEquals(new double[]{1, Double.NaN, Double.NaN, Double.NaN, Double.NaN}, cumprod(new ${pt.primitive}[]{1, Float.NaN, 3, 4, 5}));
+
+        assertEquals(new double[]{1, 2, 6, 24, 120}, cumprod(new ${pt.vectorDirect}(new ${pt.primitive}[]{1, 2, 3, 4, 5})));
+        assertEquals(new double[]{1, 2, 6, 6, 30}, cumprod(new ${pt.vectorDirect}(new ${pt.primitive}[]{1, 2, 3, ${pt.null}, 5})));
+        assertEquals(new double[]{NULL_DOUBLE, 2, 6, 24, 120}, cumprod(new ${pt.vectorDirect}(new ${pt.primitive}[]{${pt.null}, 2, 3, 4, 5})));
+        assertEquals(new double[]{NULL_DOUBLE, NULL_DOUBLE, 2, 6, 24, 120}, cumprod(new ${pt.vectorDirect}(new ${pt.primitive}[]{${pt.null}, ${pt.null}, 2, 3, 4, 5})));
+        assertEquals(new double[0], cumprod(new ${pt.vectorDirect}()));
+        assertEquals(null, cumprod((${pt.vector}) null));
+        assertEquals(new double[]{1, Double.NaN, Double.NaN, Double.NaN, Double.NaN}, cumprod(new ${pt.vectorDirect}(new ${pt.primitive}[]{1, Float.NaN, 3, 4, 5})));
+
+        // check that functions can be resolved with varargs
+        assertEquals(new double[]{1, 2, 6, 24, 120}, cumprod((${pt.primitive})1, (${pt.primitive})2, (${pt.primitive})3, (${pt.primitive})4, (${pt.primitive})5));
+
+        assertEquals(new double[]{1, 2, 6, Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY}, cumprod(new ${pt.primitive}[]{1, 2, 3, Float.POSITIVE_INFINITY, 5}));
+        assertEquals(new double[]{1, 2, 6, Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY}, cumprod(new ${pt.primitive}[]{1, 2, 3, Float.POSITIVE_INFINITY, -5}));
+        assertEquals(new double[]{1, 2, 6, Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY}, cumprod(new ${pt.primitive}[]{1, 2, 3, Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY}));
+        assertEquals(new double[]{1, 2, 6, Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY}, cumprod(new ${pt.primitive}[]{1, 2, 3, Float.NEGATIVE_INFINITY, 5}));
+        assertEquals(new double[]{1, 2, 6, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY}, cumprod(new ${pt.primitive}[]{1, 2, 3, Float.NEGATIVE_INFINITY, -5}));
+        assertEquals(new double[]{1, 2, 6, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY}, cumprod(new ${pt.primitive}[]{1, 2, 3, Float.NEGATIVE_INFINITY, Float.NEGATIVE_INFINITY}));
+        assertEquals(new double[]{1, 2, 6, Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY}, cumprod(new ${pt.primitive}[]{1, 2, 3, Float.POSITIVE_INFINITY, Float.NEGATIVE_INFINITY}));
+        assertEquals(new double[]{1, 2, 6, Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY}, cumprod(new ${pt.primitive}[]{1, 2, 3, Float.NEGATIVE_INFINITY, Float.POSITIVE_INFINITY}));
+    }
+<#else>
+    public void test${pt.boxed}CumProdArray() {
+        assertEquals(new long[]{1, 2, 6, 24, 120}, cumprod(new ${pt.primitive}[]{1, 2, 3, 4, 5}));
+        assertEquals(new long[]{1, 2, 6, 6, 30}, cumprod(new ${pt.primitive}[]{1, 2, 3, ${pt.null}, 5}));
+        assertEquals(new long[]{NULL_LONG, 2, 6, 24, 120}, cumprod(new ${pt.primitive}[]{${pt.null}, 2, 3, 4, 5}));
+        assertEquals(new long[0], cumprod(new ${pt.primitive}[0]));
+        assertEquals(new long[0], cumprod(new ${pt.boxed}[0]));
         assertEquals(null, cumprod((${pt.primitive}[]) null));
 
-        assertEquals(new ${pt.primitive}[]{1, 2, 6, 24, 120}, cumprod(new ${pt.vectorDirect}(new ${pt.primitive}[]{1, 2, 3, 4, 5})));
-        assertEquals(new ${pt.primitive}[]{1, 2, 6, 6, 30}, cumprod(new ${pt.vectorDirect}(new ${pt.primitive}[]{1, 2, 3, ${pt.null}, 5})));
-        assertEquals(new ${pt.primitive}[]{${pt.null}, 2, 6, 24, 120}, cumprod(new ${pt.vectorDirect}(new ${pt.primitive}[]{${pt.null}, 2, 3, 4, 5})));
-        assertEquals(new ${pt.primitive}[0], cumprod(new ${pt.vectorDirect}()));
+        assertEquals(new long[]{1, 2, 6, 24, 120}, cumprod(new ${pt.vectorDirect}(new ${pt.primitive}[]{1, 2, 3, 4, 5})));
+        assertEquals(new long[]{1, 2, 6, 6, 30}, cumprod(new ${pt.vectorDirect}(new ${pt.primitive}[]{1, 2, 3, ${pt.null}, 5})));
+        assertEquals(new long[]{NULL_LONG, 2, 6, 24, 120}, cumprod(new ${pt.vectorDirect}(new ${pt.primitive}[]{${pt.null}, 2, 3, 4, 5})));
+        assertEquals(new long[0], cumprod(new ${pt.vectorDirect}()));
         assertEquals(null, cumprod((${pt.vector}) null));
 
         // check that functions can be resolved with varargs
-        assertEquals(new ${pt.primitive}[]{1, 2, 6, 24, 120}, cumprod((${pt.primitive})1, (${pt.primitive})2, (${pt.primitive})3, (${pt.primitive})4, (${pt.primitive})5));
+        assertEquals(new long[]{1, 2, 6, 24, 120}, cumprod((${pt.primitive})1, (${pt.primitive})2, (${pt.primitive})3, (${pt.primitive})4, (${pt.primitive})5));
     }
+</#if>
 
     public void test${pt.boxed}Abs() {
         ${pt.primitive} value = -5;
@@ -973,7 +1166,7 @@ public class TestNumeric extends BaseArrayTestCase {
     }
 
     public void test${pt.boxed}Median() {
-        assertEquals(Double.NaN, median(new ${pt.primitive}[]{}));
+        assertEquals(NULL_DOUBLE, median(new ${pt.primitive}[]{}));
 
         assertEquals(3.0, median(new ${pt.primitive}[]{4,2,3}));
         assertEquals(3.5, median(new ${pt.primitive}[]{5,4,2,3}));
@@ -987,20 +1180,37 @@ public class TestNumeric extends BaseArrayTestCase {
         assertEquals(3.5, median(new ${pt.vectorDirect}(new ${pt.primitive}[]{5,4,2,3})));
         assertEquals(NULL_DOUBLE, median((${pt.vector}) null));
 
+        // verify the all-null case returns null
+        assertEquals(NULL_DOUBLE, median(new ${pt.primitive}[]{${pt.null}, ${pt.null}, ${pt.null}}));
+        assertEquals(NULL_DOUBLE, median(new ${pt.boxed}[]{${pt.null}, ${pt.null}, ${pt.null}}));
+
+        // verify the mixed-null cases
+        assertEquals(3.0, median(new ${pt.primitive}[]{(${pt.primitive})4,(${pt.primitive})2,(${pt.primitive})3,${pt.null},${pt.null},${pt.null}}));
+        assertEquals(3.5, median(new ${pt.primitive}[]{(${pt.primitive})4,(${pt.primitive})2,(${pt.primitive})3,(${pt.primitive})5, ${pt.null},${pt.null},${pt.null}}));
+
+        assertEquals(3.0, median(new ${pt.boxed}[]{(${pt.primitive})4,(${pt.primitive})2,(${pt.primitive})3,${pt.null},${pt.null}}));
+        assertEquals(3.5, median(new ${pt.boxed}[]{(${pt.primitive})4,(${pt.primitive})2,(${pt.primitive})3,(${pt.primitive})5,${pt.null},${pt.null}}));
+
+    <#if pt.valueType.isFloat >
+        assertEquals(Double.NaN, median(new ${pt.primitive}[]{4,2,3, ${pt.boxed}.NaN}));
+        assertEquals(3.0, median(new ${pt.primitive}[]{4,2,3, ${pt.boxed}.POSITIVE_INFINITY, ${pt.null}, ${pt.null}, ${pt.boxed}.NEGATIVE_INFINITY}));
+        assertEquals(3.5, median(new ${pt.primitive}[]{4,2,3,5, ${pt.boxed}.POSITIVE_INFINITY, ${pt.null}, ${pt.null}, ${pt.boxed}.NEGATIVE_INFINITY}));
+    </#if>
+
         // check that functions can be resolved with varargs
         assertEquals(3.0, median((${pt.primitive})4, (${pt.primitive})2, (${pt.primitive})3));
     }
 
     public void test${pt.boxed}Percentile() {
-        assertEquals(2.0, percentile(0.00, new ${pt.primitive}[]{4,2,3}));
-        assertEquals(3.0, percentile(0.50, new ${pt.primitive}[]{4,2,3}));
-        assertEquals(NULL_DOUBLE, percentile(0.25, (${pt.primitive}[])null));
-        assertEquals(NULL_DOUBLE, percentile(0.25, new ${pt.primitive}[]{}));
+        assertEquals((${pt.primitive})2, percentile(0.00, new ${pt.primitive}[]{4,2,3}));
+        assertEquals((${pt.primitive})3, percentile(0.50, new ${pt.primitive}[]{4,2,3}));
+        assertEquals(${pt.null}, percentile(0.25, (${pt.primitive}[])null));
+        assertEquals(${pt.null}, percentile(0.25, new ${pt.primitive}[]{}));
 
-        assertEquals(2.0, percentile(0.00, new ${pt.vectorDirect}(new ${pt.primitive}[]{4,2,3})));
-        assertEquals(3.0, percentile(0.50, new ${pt.vectorDirect}(new ${pt.primitive}[]{4,2,3})));
-        assertEquals(NULL_DOUBLE, percentile(0.25, (${pt.vector}) null));
-        assertEquals(NULL_DOUBLE, percentile(0.50, new ${pt.vectorDirect}(new ${pt.primitive}[]{})));
+        assertEquals((${pt.primitive})2, percentile(0.00, new ${pt.vectorDirect}(new ${pt.primitive}[]{4,2,3})));
+        assertEquals((${pt.primitive})3, percentile(0.50, new ${pt.vectorDirect}(new ${pt.primitive}[]{4,2,3})));
+        assertEquals(${pt.null}, percentile(0.25, (${pt.vector}) null));
+        assertEquals(${pt.null}, percentile(0.50, new ${pt.vectorDirect}(new ${pt.primitive}[]{})));
 
         try {
             percentile(-1, new ${pt.primitive}[]{4,2,3});
@@ -1016,15 +1226,69 @@ public class TestNumeric extends BaseArrayTestCase {
             // pass
         }
 
+        // verify the all-null case returns null
+        assertEquals(${pt.null}, percentile(0.00, new ${pt.primitive}[]{${pt.null}, ${pt.null}, ${pt.null}}));
+        assertEquals(${pt.null}, percentile(0.25, new ${pt.primitive}[]{${pt.null}, ${pt.null}, ${pt.null}}));
+        assertEquals(${pt.null}, percentile(0.50, new ${pt.primitive}[]{${pt.null}, ${pt.null}, ${pt.null}}));
+
+        // verify the mixed-null cases
+        assertEquals((${pt.primitive})2, percentile(0.00, new ${pt.primitive}[]{4,2,3,${pt.null}}));
+        assertEquals((${pt.primitive})3, percentile(0.50, new ${pt.primitive}[]{4,2,3,${pt.null},${pt.null}}));
+        assertEquals((${pt.primitive})4, percentile(1.0, new ${pt.primitive}[]{4,2,3,${pt.null},${pt.null},${pt.null}}));
+
+        // verify the empty array case
+        assertEquals(${pt.null}, percentile(0.00, new ${pt.vectorDirect}(new ${pt.primitive}[]{})));
+
+    <#if pt.valueType.isFloat >
+        assertEquals(${pt.boxed}.NaN, percentile(1.0, new ${pt.primitive}[]{4,2,3, ${pt.boxed}.NaN}));
+
+        assertEquals(${pt.boxed}.NEGATIVE_INFINITY, percentile(0.0, new ${pt.primitive}[]{4,2,3, ${pt.boxed}.POSITIVE_INFINITY, ${pt.null}, ${pt.null}, ${pt.boxed}.NEGATIVE_INFINITY}));
+        assertEquals((${pt.primitive})2, percentile(0.25, new ${pt.primitive}[]{4,2,3, ${pt.boxed}.POSITIVE_INFINITY, ${pt.null}, ${pt.null}, ${pt.boxed}.NEGATIVE_INFINITY}));
+        assertEquals((${pt.primitive})3, percentile(0.5, new ${pt.primitive}[]{4,2,3, ${pt.boxed}.POSITIVE_INFINITY, ${pt.null}, ${pt.null}, ${pt.boxed}.NEGATIVE_INFINITY}));
+        assertEquals((${pt.primitive})4, percentile(0.75, new ${pt.primitive}[]{4,2,3, ${pt.boxed}.POSITIVE_INFINITY, ${pt.null}, ${pt.null}, ${pt.boxed}.NEGATIVE_INFINITY}));
+        assertEquals(${pt.boxed}.POSITIVE_INFINITY, percentile(1.0, new ${pt.primitive}[]{4,2,3, ${pt.boxed}.POSITIVE_INFINITY, ${pt.null}, ${pt.null}, ${pt.boxed}.NEGATIVE_INFINITY}));
+    </#if>
     }
 
     public void test${pt.boxed}Wsum() {
         <#list primitiveTypes as pt2>
         <#if pt2.valueType.isNumber >
 
+        <#if pt.valueType.isInteger && pt2.valueType.isInteger >
+        assertEquals(1*4+2*5+3*6, wsum(new ${pt.primitive}[]{1,2,3,${pt.null},5}, new ${pt2.primitive}[]{4,5,6,7,${pt2.null}}));
+        assertEquals(NULL_LONG, wsum((${pt.primitive}[])null, new ${pt2.primitive}[]{4,5,6}));
+        assertEquals(NULL_LONG, wsum(new ${pt.primitive}[]{1,2,3}, (${pt2.primitive}[])null));
+
+        assertEquals(NULL_LONG, wsum(new ${pt.primitive}[]{${pt.null},${pt.null},${pt.null}}, new ${pt2.primitive}[]{${pt2.null},${pt2.null},${pt2.null}}));
+        assertEquals(NULL_LONG, wsum(new ${pt.primitive}[]{1,2,3}, new ${pt2.primitive}[]{${pt2.null},${pt2.null},${pt2.null}}));
+        assertEquals(NULL_LONG, wsum(new ${pt.primitive}[]{${pt.null},${pt.null},${pt.null}}, new ${pt2.primitive}[]{1,2,3}));
+
+        assertEquals(1*4+2*5+3*6, wsum(new ${pt.vectorDirect}(new ${pt.primitive}[]{1,2,3,${pt.null},5}), new ${pt2.primitive}[]{4,5,6,7,${pt2.null}}));
+        assertEquals(NULL_LONG, wsum((${pt.vector}) null, new ${pt2.primitive}[]{4,5,6}));
+        assertEquals(NULL_LONG, wsum(new ${pt.vectorDirect}(new ${pt.primitive}[]{1,2,3}), (${pt2.primitive}[])null));
+
+        assertEquals(1*4+2*5+3*6, wsum(new ${pt.primitive}[]{1,2,3,${pt.null},5}, new ${pt2.vectorDirect}(new ${pt2.primitive}[]{4,5,6,7,${pt2.null}})));
+        assertEquals(NULL_LONG, wsum((${pt.primitive}[])null, new ${pt2.vectorDirect}(new ${pt2.primitive}[]{4,5,6})));
+        assertEquals(NULL_LONG, wsum(new ${pt.primitive}[]{1,2,3}, (${pt2.vector}) null));
+
+        assertEquals(1*4+2*5+3*6, wsum(new ${pt.vectorDirect}(new ${pt.primitive}[]{1,2,3,${pt.null},5}), new ${pt2.vectorDirect}(new ${pt2.primitive}[]{4,5,6,7,${pt2.null}})));
+        assertEquals(NULL_LONG, wsum((${pt.vector}) null, new ${pt2.vectorDirect}(new ${pt2.primitive}[]{4,5,6})));
+        assertEquals(NULL_LONG, wsum(new ${pt.vectorDirect}(new ${pt.primitive}[]{1,2,3}), (${pt2.vector}) null));
+
+        try {
+            wsum(new ${pt.vectorDirect}(new ${pt.primitive}[]{1,2,3,${pt.null},5}), new ${pt2.vectorDirect}(new ${pt2.primitive}[]{4,5}));
+            fail("Mismatched arguments");
+        } catch(IllegalArgumentException e){
+            // pass
+        }
+        <#else>
         assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, wsum(new ${pt.primitive}[]{1,2,3,${pt.null},5}, new ${pt2.primitive}[]{4,5,6,7,${pt2.null}}));
         assertEquals(NULL_DOUBLE, wsum((${pt.primitive}[])null, new ${pt2.primitive}[]{4,5,6}));
         assertEquals(NULL_DOUBLE, wsum(new ${pt.primitive}[]{1,2,3}, (${pt2.primitive}[])null));
+
+        assertEquals(NULL_DOUBLE, wsum(new ${pt.primitive}[]{${pt.null},${pt.null},${pt.null}}, new ${pt2.primitive}[]{${pt2.null},${pt2.null},${pt2.null}}));
+        assertEquals(NULL_DOUBLE, wsum(new ${pt.primitive}[]{1,2,3}, new ${pt2.primitive}[]{${pt2.null},${pt2.null},${pt2.null}}));
+        assertEquals(NULL_DOUBLE, wsum(new ${pt.primitive}[]{${pt.null},${pt.null},${pt.null}}, new ${pt2.primitive}[]{1,2,3}));
 
         assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, wsum(new ${pt.vectorDirect}(new ${pt.primitive}[]{1,2,3,${pt.null},5}), new ${pt2.primitive}[]{4,5,6,7,${pt2.null}}));
         assertEquals(NULL_DOUBLE, wsum((${pt.vector}) null, new ${pt2.primitive}[]{4,5,6}));
@@ -1038,12 +1302,27 @@ public class TestNumeric extends BaseArrayTestCase {
         assertEquals(NULL_DOUBLE, wsum((${pt.vector}) null, new ${pt2.vectorDirect}(new ${pt2.primitive}[]{4,5,6})));
         assertEquals(NULL_DOUBLE, wsum(new ${pt.vectorDirect}(new ${pt.primitive}[]{1,2,3}), (${pt2.vector}) null));
 
+        <#if pt.valueType.isFloat >
+        assertEquals(Double.NaN, wsum(new ${pt.vectorDirect}(new ${pt.primitive}[]{1,2,3,${pt.null},Float.NaN}), new ${pt2.vectorDirect}(new ${pt2.primitive}[]{4,5,6,7,${pt2.null}})));
+        assertEquals(Double.POSITIVE_INFINITY, wsum(new ${pt.vectorDirect}(new ${pt.primitive}[]{1,2,3,${pt.null},Float.POSITIVE_INFINITY}), new ${pt2.vectorDirect}(new ${pt2.primitive}[]{4,5,6,7,8})));
+        assertEquals(Double.NEGATIVE_INFINITY, wsum(new ${pt.vectorDirect}(new ${pt.primitive}[]{1,2,3,${pt.null},Float.NEGATIVE_INFINITY}), new ${pt2.vectorDirect}(new ${pt2.primitive}[]{4,5,6,7,8})));
+        assertEquals(Double.NaN, wsum(new ${pt.vectorDirect}(new ${pt.primitive}[]{1,2,3,Float.POSITIVE_INFINITY,Float.NEGATIVE_INFINITY}), new ${pt2.vectorDirect}(new ${pt2.primitive}[]{4,5,6,7,8})));
+        </#if>
+
+        <#if pt2.valueType.isFloat >
+        assertEquals(Double.NaN, wsum(new ${pt.vectorDirect}(new ${pt.primitive}[]{1,2,3,${pt.null},5}), new ${pt2.vectorDirect}(new ${pt2.primitive}[]{4,5,6,Float.NaN,${pt2.null}})));
+        assertEquals(Double.POSITIVE_INFINITY, wsum(new ${pt.vectorDirect}(new ${pt.primitive}[]{1,2,3,4,5}), new ${pt2.vectorDirect}(new ${pt2.primitive}[]{4,5,6,Float.POSITIVE_INFINITY,${pt2.null}})));
+        assertEquals(Double.NEGATIVE_INFINITY, wsum(new ${pt.vectorDirect}(new ${pt.primitive}[]{1,2,3,4,5}), new ${pt2.vectorDirect}(new ${pt2.primitive}[]{4,5,6,Float.NEGATIVE_INFINITY,${pt2.null}})));
+        assertEquals(Double.NaN, wsum(new ${pt.vectorDirect}(new ${pt.primitive}[]{1,2,3,4,5}), new ${pt2.vectorDirect}(new ${pt2.primitive}[]{4,5,6,Float.NEGATIVE_INFINITY,Float.POSITIVE_INFINITY})));
+        </#if>
+
         try {
             wsum(new ${pt.vectorDirect}(new ${pt.primitive}[]{1,2,3,${pt.null},5}), new ${pt2.vectorDirect}(new ${pt2.primitive}[]{4,5}));
             fail("Mismatched arguments");
         } catch(IllegalArgumentException e){
             // pass
         }
+        </#if>
 
         </#if>
         </#list>
@@ -1056,6 +1335,10 @@ public class TestNumeric extends BaseArrayTestCase {
         assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), wavg(new ${pt.primitive}[]{1,2,3,${pt.null},5}, new ${pt2.primitive}[]{4,5,6,7,${pt2.null}}));
         assertEquals(NULL_DOUBLE, wavg((${pt.primitive}[])null, new ${pt2.primitive}[]{4,5,6}));
         assertEquals(NULL_DOUBLE, wavg(new ${pt.primitive}[]{1,2,3}, (${pt2.primitive}[])null));
+
+        assertEquals(NULL_DOUBLE, wavg(new ${pt.primitive}[]{${pt.null},${pt.null},${pt.null}}, new ${pt2.primitive}[]{${pt2.null},${pt2.null},${pt2.null}}));
+        assertEquals(NULL_DOUBLE, wavg(new ${pt.primitive}[]{1,2,3}, new ${pt2.primitive}[]{${pt2.null},${pt2.null},${pt2.null}}));
+        assertEquals(NULL_DOUBLE, wavg(new ${pt.primitive}[]{${pt.null},${pt.null},${pt.null}}, new ${pt2.primitive}[]{1,2,3}));
 
         assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), wavg(new ${pt.vectorDirect}(new ${pt.primitive}[]{1,2,3,${pt.null},5}), new ${pt2.primitive}[]{4,5,6,7,${pt2.null}}));
         assertEquals(NULL_DOUBLE, wavg((${pt.vector}) null, new ${pt2.primitive}[]{4,5,6}));
@@ -1116,6 +1399,21 @@ public class TestNumeric extends BaseArrayTestCase {
         assertEquals(var(new ${pt.primitive}[]{1,2,3}), wvar(new ${pt.primitive}[]{1,2,3,${pt.null},5}, new ${pt2.primitive}[]{1,1,1,7,${pt2.null}}));
         assertEquals(var(new ${pt.primitive}[]{1,2,3}), wvar(new ${pt.primitive}[]{1,2,3,${pt.null},5}, new ${pt2.primitive}[]{2,2,2,7,${pt2.null}}));
 
+        // verify the all-null cases return null
+        assertEquals(NULL_DOUBLE, wvar(new ${pt.primitive}[]{1, 2, 3}, new ${pt2.primitive}[]{${pt2.null}, ${pt2.null}, ${pt2.null}}));
+        assertEquals(NULL_DOUBLE, wvar(new ${pt.primitive}[]{${pt.null}, ${pt.null}, ${pt.null}}, new ${pt2.primitive}[]{1, 2, 3}));
+        assertEquals(NULL_DOUBLE, wvar(new ${pt.primitive}[]{${pt.null}, ${pt.null}, ${pt.null}}, new ${pt2.primitive}[]{${pt2.null}, ${pt2.null}, ${pt2.null}}));
+
+        // verify size==1
+        assertEquals(Double.NaN, wvar(new ${pt.primitive}[]{1}, new ${pt2.primitive}[]{4}));
+
+        <#if pt2.valueType.isFloat >
+        // verify NaN poisoning
+        assertEquals(Double.NaN, wvar(new ${pt.vectorDirect}(new ${pt.primitive}[]{1,2,3,${pt.null},5}), new ${pt2.vectorDirect}(new ${pt2.primitive}[]{4,5,6,Float.NaN,${pt2.null}})));
+        </#if>
+
+        // verify the zero-weight case returns null
+        assertEquals(Double.NaN, wvar(new ${pt.primitive}[]{1, 2, 3}, new ${pt2.primitive}[]{0, 0, 0}));
         </#if>
         </#list>
     }
@@ -1146,6 +1444,10 @@ public class TestNumeric extends BaseArrayTestCase {
         assertEquals(NULL_DOUBLE, wstd((${pt.vector}) null, new ${pt2.vectorDirect}(new ${pt2.primitive}[]{4,5,6})));
         assertEquals(NULL_DOUBLE, wstd(new ${pt.vectorDirect}(new ${pt.primitive}[]{1,2,3}), (${pt2.vector}) null));
 
+        // verify the all-null cases return null
+        assertEquals(NULL_DOUBLE, wstd(new ${pt.primitive}[]{1, 2, 3}, new ${pt2.primitive}[]{${pt2.null}, ${pt2.null}, ${pt2.null}}));
+        assertEquals(NULL_DOUBLE, wstd(new ${pt.primitive}[]{${pt.null}, ${pt.null}, ${pt.null}}, new ${pt2.primitive}[]{1, 2, 3}));
+        assertEquals(NULL_DOUBLE, wstd(new ${pt.primitive}[]{${pt.null}, ${pt.null}, ${pt.null}}, new ${pt2.primitive}[]{${pt2.null}, ${pt2.null}, ${pt2.null}}));
         </#if>
         </#list>
     }
@@ -1185,6 +1487,10 @@ public class TestNumeric extends BaseArrayTestCase {
             // pass
         }
 
+        // verify the all-null cases return null
+        assertEquals(NULL_DOUBLE, wste(new ${pt.primitive}[]{1, 2, 3}, new ${pt2.primitive}[]{${pt2.null}, ${pt2.null}, ${pt2.null}}));
+        assertEquals(NULL_DOUBLE, wste(new ${pt.primitive}[]{${pt.null}, ${pt.null}, ${pt.null}}, new ${pt2.primitive}[]{1, 2, 3}));
+        assertEquals(NULL_DOUBLE, wste(new ${pt.primitive}[]{${pt.null}, ${pt.null}, ${pt.null}}, new ${pt2.primitive}[]{${pt2.null}, ${pt2.null}, ${pt2.null}}));
 
         </#if>
         </#list>
@@ -1211,6 +1517,11 @@ public class TestNumeric extends BaseArrayTestCase {
         assertEquals(target, wtstat(new ${pt.vectorDirect}(new ${pt.primitive}[]{1,2,3,${pt.null},5}), new ${pt2.vectorDirect}(new ${pt2.primitive}[]{4,5,6,7,${pt2.null}})));
         assertEquals(NULL_DOUBLE, wtstat((${pt.vector}) null, new ${pt2.vectorDirect}(new ${pt2.primitive}[]{4,5,6})));
         assertEquals(NULL_DOUBLE, wtstat(new ${pt.vectorDirect}(new ${pt.primitive}[]{1,2,3}), (${pt2.vector}) null));
+
+        // verify the all-null cases return null
+        assertEquals(NULL_DOUBLE, wtstat(new ${pt.primitive}[]{1, 2, 3}, new ${pt2.primitive}[]{${pt2.null}, ${pt2.null}, ${pt2.null}}));
+        assertEquals(NULL_DOUBLE, wtstat(new ${pt.primitive}[]{${pt.null}, ${pt.null}, ${pt.null}}, new ${pt2.primitive}[]{1, 2, 3}));
+        assertEquals(NULL_DOUBLE, wtstat(new ${pt.primitive}[]{${pt.null}, ${pt.null}, ${pt.null}}, new ${pt2.primitive}[]{${pt2.null}, ${pt2.null}, ${pt2.null}}));
 
         </#if>
         </#list>
@@ -1443,6 +1754,277 @@ public class TestNumeric extends BaseArrayTestCase {
         assertEquals(-1, compare(v3, v1));
     }
 
+    </#if>
+
+    public void test${pt.boxed}Atan2(){
+        assertEquals(Math.atan2((${pt.primitive})1, (${pt.primitive})2), atan2((${pt.primitive})1, (${pt.primitive})2));
+        assertEquals(NULL_DOUBLE, atan2(${pt.null}, (${pt.primitive})2));
+        assertEquals(NULL_DOUBLE, atan2((${pt.primitive})2, ${pt.null}));
+    }
+
+    public void test${pt.boxed}Cbrt(){
+        assertEquals(Math.cbrt((${pt.primitive})2), cbrt((${pt.primitive})2));
+        assertEquals(NULL_DOUBLE, cbrt(${pt.null}));
+    }
+
+    public void test${pt.boxed}Cosh(){
+        assertEquals(Math.cosh((${pt.primitive})2), cosh((${pt.primitive})2));
+        assertEquals(NULL_DOUBLE, cosh(${pt.null}));
+    }
+
+    public void test${pt.boxed}Expm1(){
+        assertEquals(Math.expm1((${pt.primitive})2), expm1((${pt.primitive})2));
+        assertEquals(NULL_DOUBLE, expm1(${pt.null}));
+    }
+
+    public void test${pt.boxed}Hypot(){
+        assertEquals(Math.hypot(7, 3), hypot((${pt.primitive})7, (${pt.primitive})3));
+        assertEquals(NULL_DOUBLE, hypot(${pt.null}, (${pt.primitive})3));
+        assertEquals(NULL_DOUBLE, hypot((${pt.primitive})7, ${pt.null}));
+    }
+
+    public void test${pt.boxed}Log10(){
+        assertEquals(Math.log10(7), log10((${pt.primitive})7));
+        assertEquals(NULL_DOUBLE, log10(${pt.null}));
+    }
+
+    public void test${pt.boxed}Log1p(){
+        assertEquals(Math.log1p(7), log1p((${pt.primitive})7));
+        assertEquals(NULL_DOUBLE, log1p(${pt.null}));
+    }
+
+    <#if pt.valueType.isFloat >
+    public void test${pt.boxed}Scalb(){
+        assertEquals(Math.scalb((${pt.primitive})7, 3), scalb((${pt.primitive})7, 3));
+        assertEquals(${pt.null}, scalb(${pt.null}, 3));
+        assertEquals(${pt.null}, scalb((${pt.primitive})7, NULL_INT));
+    }
+    </#if>
+
+    public void test${pt.boxed}Sinh(){
+        assertEquals(Math.sinh((${pt.primitive})7), sinh((${pt.primitive})7));
+        assertEquals(NULL_DOUBLE, sinh(${pt.null}));
+    }
+
+    public void test${pt.boxed}Tanh(){
+        assertEquals(Math.tanh((${pt.primitive})7), tanh((${pt.primitive})7));
+        assertEquals(NULL_DOUBLE, tanh(${pt.null}));
+    }
+
+    public void test${pt.boxed}CopySign() {
+        assertEquals((${pt.primitive})-9, copySign((${pt.primitive})9, (${pt.primitive})-2));
+        assertEquals((${pt.primitive})9, copySign((${pt.primitive})9, (${pt.primitive})2));
+        assertEquals((${pt.primitive})9, copySign((${pt.primitive})9, (${pt.primitive})0));
+        assertEquals((${pt.primitive})-9, copySign((${pt.primitive})-9, (${pt.primitive})-2));
+        assertEquals((${pt.primitive})9, copySign((${pt.primitive})-9, (${pt.primitive})2));
+        assertEquals((${pt.primitive})9, copySign((${pt.primitive})-9, (${pt.primitive})0));
+        assertEquals((${pt.null}), copySign(${pt.null}, (${pt.primitive})-2));
+        assertEquals((${pt.null}), copySign((${pt.primitive})1, ${pt.null}));
+    }
+
+    <#if pt.valueType.isInteger >
+    public void test${pt.boxed}AddExact(){
+        assertEquals((${pt.primitive})3, addExact((${pt.primitive})1, (${pt.primitive})2));
+        assertEquals(${pt.null}, addExact(${pt.null}, (${pt.primitive})2));
+        assertEquals(${pt.null}, addExact((${pt.primitive})2, ${pt.null}));
+
+        try {
+            addExact((${pt.primitive})${pt.maxValue}, (${pt.primitive})1);
+            fail("Overflow");
+        } catch(ArithmeticException e){
+            // pass
+        }
+    }
+    </#if>
+
+    <#if pt.valueType.isInteger >
+    public void test${pt.boxed}SubtractExact(){
+        assertEquals((${pt.primitive})1, subtractExact((${pt.primitive})3, (${pt.primitive})2));
+        assertEquals(${pt.null}, subtractExact(${pt.null}, (${pt.primitive})2));
+        assertEquals(${pt.null}, subtractExact((${pt.primitive})2, ${pt.null}));
+
+        try {
+        subtractExact((${pt.primitive})${pt.minValue}, (${pt.primitive})1);
+            fail("Overflow");
+        } catch(ArithmeticException e){
+            // pass
+        }
+    }
+    </#if>
+
+    <#if pt.valueType.isInteger >
+    public void test${pt.boxed}MultiplyExact(){
+        assertEquals((${pt.primitive})6, multiplyExact((${pt.primitive})3, (${pt.primitive})2));
+        assertEquals(${pt.null}, multiplyExact(${pt.null}, (${pt.primitive})2));
+        assertEquals(${pt.null}, multiplyExact((${pt.primitive})2, ${pt.null}));
+
+        try {
+            multiplyExact((${pt.primitive})${pt.maxValue}, (${pt.primitive})2);
+            fail("Overflow");
+        } catch(ArithmeticException e){
+            // pass
+        }
+    }
+    </#if>
+
+    <#if pt.valueType.isInteger >
+    public void test${pt.boxed}IncrementExact(){
+        assertEquals((${pt.primitive})3, incrementExact((${pt.primitive})2));
+        assertEquals(${pt.null}, incrementExact(${pt.null}));
+
+        try {
+            incrementExact((${pt.primitive})${pt.maxValue});
+            fail("Overflow");
+        } catch(ArithmeticException e){
+            // pass
+        }
+    }
+    </#if>
+
+    <#if pt.valueType.isInteger >
+    public void test${pt.boxed}DecrementExact(){
+        assertEquals((${pt.primitive})1, decrementExact((${pt.primitive})2));
+        assertEquals(${pt.null}, decrementExact(${pt.null}));
+
+        try {
+            decrementExact((${pt.primitive})${pt.minValue});
+            fail("Overflow");
+        } catch(ArithmeticException e){
+            // pass
+        }
+    }
+    </#if>
+
+    <#if pt.valueType.isInteger >
+    public void test${pt.boxed}NegateExact(){
+        assertEquals(Math.negateExact(7), negateExact((${pt.primitive})7));
+        assertEquals(${pt.null}, negateExact(${pt.null}));
+    }
+    </#if>
+
+    <#if pt.valueType.isInteger >
+    public void test${pt.boxed}FloorDiv(){
+        assertEquals(Math.floorDiv(7, 2), floorDiv((${pt.primitive})7, (${pt.primitive})2));
+        assertEquals(${pt.null}, floorDiv(${pt.null}, (${pt.primitive})2));
+        assertEquals(${pt.null}, floorDiv((${pt.primitive})7, ${pt.null}));
+    }
+    </#if>
+
+    <#if pt.valueType.isInteger >
+    public void test${pt.boxed}FloorMod(){
+        assertEquals(Math.floorMod(7, 2), floorMod((${pt.primitive})7, (${pt.primitive})2));
+        assertEquals(${pt.null}, floorMod(${pt.null}, (${pt.primitive})2));
+        assertEquals(${pt.null}, floorMod((${pt.primitive})7, ${pt.null}));
+    }
+    </#if>
+
+    <#if pt.valueType.isFloat >
+    public void test${pt.boxed}GetExponent(){
+        assertEquals(Math.getExponent(7), getExponent((${pt.primitive})7));
+        assertEquals(NULL_INT, getExponent(${pt.null}));
+    }
+    </#if>
+
+    <#if pt.valueType.isFloat >
+    public void test${pt.boxed}IEEEremainder(){
+        assertEquals((${pt.primitive}) Math.IEEEremainder(71, 3), IEEEremainder((${pt.primitive})71, (${pt.primitive})3));
+        assertEquals(${pt.null}, IEEEremainder(${pt.null}, (${pt.primitive})3));
+        assertEquals(${pt.null}, IEEEremainder((${pt.primitive})71, ${pt.null}));
+    }
+    </#if>
+
+    <#if pt.valueType.isFloat >
+    public void test${pt.boxed}NextAfter(){
+        assertEquals(Math.nextAfter((${pt.primitive})7, (${pt.primitive})8), nextAfter((${pt.primitive})7, (${pt.primitive})8));
+        assertEquals(Math.nextAfter((${pt.primitive})7, (${pt.primitive})-8), nextAfter((${pt.primitive})7, (${pt.primitive})-8));
+
+        assertEquals(Math.nextUp(${pt.null}), nextAfter(Math.nextDown(${pt.null}), (${pt.primitive})8));
+        assertEquals(Math.nextDown(${pt.null}), nextAfter(Math.nextUp(${pt.null}), ${pt.boxed}.NEGATIVE_INFINITY));
+
+        assertEquals(${pt.null}, nextAfter(${pt.null}, (${pt.primitive})8));
+        assertEquals(${pt.null}, nextAfter((${pt.primitive}) 7, ${pt.null}));
+    }
+    </#if>
+
+    <#if pt.valueType.isFloat >
+    public void test${pt.boxed}NextUp(){
+        assertEquals(Math.nextUp((${pt.primitive})7), nextUp((${pt.primitive})7));
+        assertEquals(Math.nextUp(${pt.null}), nextUp(Math.nextDown(${pt.null})));
+        assertEquals(${pt.null}, nextUp(${pt.null}));
+    }
+    </#if>
+
+    <#if pt.valueType.isFloat >
+    public void test${pt.boxed}NextDown(){
+        assertEquals(Math.nextDown((${pt.primitive})7), nextDown((${pt.primitive})7));
+        assertEquals(Math.nextDown(${pt.null}), nextDown(Math.nextUp(${pt.null})));
+        assertEquals(${pt.null}, nextDown(${pt.null}));
+    }
+    </#if>
+
+    public void test${pt.boxed}ToDegrees(){
+        assertEquals(Math.toDegrees((${pt.primitive})7), toDegrees((${pt.primitive})7));
+        assertEquals(NULL_DOUBLE, toDegrees(${pt.null}));
+    }
+
+    public void test${pt.boxed}ToRadians(){
+        assertEquals(Math.toRadians((${pt.primitive})7), toRadians((${pt.primitive})7));
+        assertEquals(NULL_DOUBLE, toRadians(${pt.null}));
+    }
+
+    <#if pt.valueType.isInteger >
+    public void test${pt.boxed}ToIntExact(){
+        assertEquals(Math.toIntExact((${pt.primitive})7), toIntExact((${pt.primitive})7));
+        assertEquals(NULL_INT, toIntExact(${pt.null}));
+
+        <#if pt.primitive == "long" >
+        try{
+            toIntExact((${pt.primitive})${pt.maxValue});
+            fail("Overflow");
+        } catch(ArithmeticException e){
+            // pass
+        }
+        </#if>
+    }
+    </#if>
+
+    <#if pt.valueType.isInteger >
+    public void test${pt.boxed}ToShortExact(){
+        assertEquals((short)7, toShortExact((${pt.primitive})7));
+        assertEquals(NULL_SHORT, toShortExact(${pt.null}));
+
+        <#if pt.primitive == "int" || pt.primitive == "long" >
+        try{
+            toShortExact((${pt.primitive})${pt.maxValue});
+            fail("Overflow");
+        } catch(ArithmeticException e){
+            // pass
+        }
+        </#if>
+    }
+    </#if>
+
+    <#if pt.valueType.isInteger >
+    public void test${pt.boxed}ToByteExact(){
+        assertEquals((byte)3, toByteExact((${pt.primitive})3));
+        assertEquals(NULL_BYTE, toByteExact(${pt.null}));
+
+        <#if pt.primitive == "short" || pt.primitive == "int" || pt.primitive == "long" >
+        try{
+            toByteExact((${pt.primitive})${pt.maxValue});
+            fail("Overflow");
+        } catch(ArithmeticException e){
+            // pass
+        }
+        </#if>
+    }
+    </#if>
+
+    <#if pt.valueType.isFloat >
+    public void test${pt.boxed}Ulp(){
+        assertEquals(Math.ulp((${pt.primitive})7), ulp((${pt.primitive})7));
+        assertEquals(${pt.null}, ulp(${pt.null}));
+    }
     </#if>
 
     </#if>

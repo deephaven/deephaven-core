@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.select;
 
@@ -32,13 +32,18 @@ public class NullSelectColumn<T> implements SelectColumn {
     }
 
     @Override
-    public List<String> initDef(final Map<String, ColumnDefinition<?>> columnDefinitionMap) {
+    public List<String> initDef(@NotNull final Map<String, ColumnDefinition<?>> columnDefinitionMap) {
         return Collections.emptyList();
     }
 
     @Override
     public Class<?> getReturnedType() {
         return nvcs.getType();
+    }
+
+    @Override
+    public Class<?> getReturnedComponentType() {
+        return nvcs.getComponentType();
     }
 
     @Override

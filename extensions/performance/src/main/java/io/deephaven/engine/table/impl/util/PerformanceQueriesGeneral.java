@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.util;
 
@@ -337,15 +337,13 @@ public class PerformanceQueriesGeneral {
 
     public static TreeTable queryOperationPerformanceAsTreeTable(
             @NotNull final Table qpl, @NotNull final Table qopl) {
-        // TODO (https://github.com/deephaven/deephaven-core/issues/4814): use NULL_INT for ParentOperationNumber and
-        // Depth once we can prevent any compilation or at least reduce multiple usages to a single formula
         Table mergeWithAggKeys = TableTools.merge(
                 qpl.updateView(
                         "EvalKey = Long.toString(EvaluationNumber)",
                         "ParentEvalKey = ParentEvaluationNumber == null ? null : (Long.toString(ParentEvaluationNumber))",
                         "OperationNumber = NULL_INT",
-                        "ParentOperationNumber = OperationNumber",
-                        "Depth = OperationNumber",
+                        "ParentOperationNumber = NULL_INT",
+                        "Depth = NULL_INT",
                         "CallerLine = (String) null",
                         "IsCompilation = NULL_BOOLEAN",
                         "InputSizeLong = NULL_LONG"),

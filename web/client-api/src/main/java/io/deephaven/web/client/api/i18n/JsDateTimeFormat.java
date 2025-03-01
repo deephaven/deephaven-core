@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.web.client.api.i18n;
 
@@ -237,7 +237,7 @@ public class JsDateTimeFormat {
             // append required digits (may truncate the number if requested)
             String nanoString = Integer.toString(nanos);
             assert nanoString.length() <= 9;
-            for (int i = nanoString.length(); i < 9; i++) {
+            for (int i = 0; i < 9 - nanoString.length() && i < nanoCount; i++) {
                 sb.append('0');
                 remainingNanoDigits--;
             }

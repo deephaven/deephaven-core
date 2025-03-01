@@ -1,8 +1,9 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.parquet.table;
 
+import io.deephaven.parquet.base.BigDecimalParquetBytesCodec;
 import org.junit.Test;
 
 import java.math.BigDecimal;
@@ -68,7 +69,7 @@ public class BigDecimalParquetBytesCodecTest {
     }
 
     private static BigDecimalParquetBytesCodec codec(int precision, int scale) {
-        return new BigDecimalParquetBytesCodec(precision, scale, -1);
+        return new BigDecimalParquetBytesCodec(precision, scale);
     }
 
     private static void checkNoRounding(BigDecimalParquetBytesCodec codec, BigDecimal input,

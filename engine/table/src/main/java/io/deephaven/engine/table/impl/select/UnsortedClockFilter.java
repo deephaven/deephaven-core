@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.select;
 
@@ -124,7 +124,7 @@ public class UnsortedClockFilter extends ClockFilter {
     @Override
     @Nullable
     protected WritableRowSet updateAndGetAddedIndex() {
-        if (rangesByNextTime.isEmpty()) {
+        if (rangesByNextTime == null || rangesByNextTime.isEmpty()) {
             return null;
         }
         final long nowNanos = clock.currentTimeNanos();

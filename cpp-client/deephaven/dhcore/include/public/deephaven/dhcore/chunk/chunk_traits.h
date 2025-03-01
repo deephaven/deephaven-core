@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+ * Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
  */
 #pragma once
 
@@ -63,5 +63,15 @@ struct TypeToChunk<std::string> {
 template<>
 struct TypeToChunk<deephaven::dhcore::DateTime> {
   using type_t = deephaven::dhcore::chunk::DateTimeChunk;
+};
+
+template<>
+struct TypeToChunk<deephaven::dhcore::LocalDate> {
+  using type_t = deephaven::dhcore::chunk::LocalDateChunk;
+};
+
+template<>
+struct TypeToChunk<deephaven::dhcore::LocalTime> {
+  using type_t = deephaven::dhcore::chunk::LocalTimeChunk;
 };
 }  // namespace deephaven::client::chunk

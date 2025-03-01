@@ -94,6 +94,9 @@ BarrageMessageProducer.minSnapshotCellCount=50
 BarrageMessageProducer.maxSnapshotCellCount=50
 BarrageStreamGenerator.batchSize=4
 
+web.storage.layout.directory=/layouts
+web.storage.notebook.directory=/notebooks
+
 http.session.durationMs=300000
 AuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler
 authentication.client.configuration.list=

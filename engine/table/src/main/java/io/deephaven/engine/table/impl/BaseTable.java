@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl;
 
@@ -44,6 +44,7 @@ import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -923,6 +924,7 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
             return parent.satisfied(step);
         }
 
+        @OverridingMethodsMustInvokeSuper
         @Override
         protected void destroy() {
             super.destroy();
@@ -980,6 +982,7 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
             return parent.satisfied(step);
         }
 
+        @OverridingMethodsMustInvokeSuper
         @Override
         protected void destroy() {
             super.destroy();
@@ -1321,6 +1324,7 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
     // Reference Counting
     // ------------------------------------------------------------------------------------------------------------------
 
+    @OverridingMethodsMustInvokeSuper
     @Override
     protected void destroy() {
         super.destroy();

@@ -7,15 +7,17 @@ description = 'The Deephaven table operations API'
 
 dependencies {
   implementation project(':engine-query-constants')
-  Classpaths.inheritCommonsText(project, 'implementation')
-  Classpaths.inheritImmutables(project)
+  implementation libs.commons.text
 
-  compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
+  compileOnly project(':util-immutables')
+  annotationProcessor libs.immutables.value
 
-  Classpaths.inheritJUnitPlatform(project)
-  Classpaths.inheritAssertJ(project)
-  testImplementation 'org.junit.jupiter:junit-jupiter'
-  testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+  compileOnly libs.google.findbugs.jsr305
+
+  testImplementation libs.assertj
+  testImplementation platform(libs.junit.bom)
+  testImplementation libs.junit.jupiter
+  testRuntimeOnly libs.junit.platform.launcher
 }
 
 test {

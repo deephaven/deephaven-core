@@ -1,6 +1,7 @@
 plugins {
     id 'java-library'
     id 'io.deephaven.project.register'
+    id 'io.deephaven.optional-server-dependencies'
 }
 
 configurations {
@@ -9,10 +10,15 @@ configurations {
 
 dependencies {
     implementation project(':server-jetty')
+    implementation project(":util-processenvironment")
+    implementation project(":util-thread")
 
-    Classpaths.inheritDagger(project)
+    implementation project(':extensions-flight-sql')
 
-    Classpaths.inheritGrpcPlatform(project)
+    implementation libs.dagger
+    annotationProcessor libs.dagger.compiler
+
+    implementation platform(libs.grpc.bom)
 
     implementation project(':grpc-java:grpc-servlet-jakarta')
     implementation project(':grpc-java:grpc-servlet-websocket-jakarta')
@@ -20,19 +26,9 @@ dependencies {
     runtimeOnly project(':log-to-slf4j')
     runtimeOnly project(':logback-print-stream-globals')
     runtimeOnly project(':logback-logbuffer')
-    Classpaths.inheritLogbackClassic(project)
+    runtimeOnly libs.logback.classic
 
-    if (!hasProperty('excludeHotspotImpl')) {
-        runtimeOnly project(':hotspot-impl')
-    }
-
-    if (!hasProperty('excludeSql')) {
-        runtimeOnly project(':engine-sql')
-    }
-
-    if (!hasProperty('excludeS3')) {
-        runtimeOnly project(':extensions-s3')
-    }
+    // Note: add optional server dependencies to io.deephaven.optional-server-dependencies plugin in buildSrc
 }
 
 // making a dir here isn't optimal, but without it we need to make py-embedded-server be a java and a python

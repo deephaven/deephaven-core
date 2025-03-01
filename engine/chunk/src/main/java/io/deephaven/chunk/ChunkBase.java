@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.chunk;
 
@@ -44,8 +44,7 @@ public abstract class ChunkBase<ATTR extends Any> implements Chunk<ATTR> {
                     "DO NOT CALL THIS INTERNAL METHOD. Instead call WritableChunk.setSize()");
         }
         if (newSize < 0 || newSize > capacity) {
-            throw new IllegalArgumentException(
-                    String.format("size %d is incompatible with capacity %d", newSize, capacity));
+            throw new IllegalArgumentException("size " + newSize + " is incompatible with capacity " + capacity);
         }
 
         this.size = newSize;

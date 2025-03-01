@@ -46,7 +46,7 @@ def buildRClient = Docker.registerDockerTask(project, 'rClient') {
         }
     }
     dockerfile {
-        from('deephaven/cpp-client:local-build')
+        from(Docker.localImageName('cpp-client'))
         //
         // Build and install client.
         //
@@ -90,7 +90,7 @@ def testRClient = Docker.registerDockerTask(project, 'testRClient') {
         into layout.buildDirectory.dir('test-results')
     }
     dockerfile {
-        from('deephaven/r-client:local-build')
+        from(Docker.localImageName('r-client'))
         copyFile('r-tests.sh', "${prefix}/bin/rdeephaven")
         //
         // Setup for test run; we should be inheriting other env vars
@@ -118,7 +118,7 @@ def rClientDoc = Docker.registerDockerTask(project, 'rClientDoc') {
         into layout.projectDirectory.dir('rdeephaven/man')
     }
     dockerfile {
-        from('deephaven/r-client:local-build')
+        from(Docker.localImageName('r-client'))
         runCommand('''set -eux; \
                       rm -fr /out; \
                       mkdir -p /out; \
@@ -138,7 +138,7 @@ def rClientDoc = Docker.registerDockerTask(project, 'rClientDoc') {
                    ''')
         runCommand('''echo "status = tryCatch(" \
                            "   {" \
-                           "      install.packages('roxygen2', repos='http://cran.us.r-project.org'); " \
+                           "      install.packages('roxygen2'); " \
                            "      0" \
                            "   }," \
                            "  error=function(e) 1," \
@@ -172,14 +172,14 @@ def rClientSite = Docker.registerDockerTask(project, 'rClientSite') {
         into layout.projectDirectory.dir('rdeephaven/docs')
     }
     dockerfile {
-        from('deephaven/r-client-doc:local-build')
+        from(Docker.localImageName('r-client-doc'))
         // We need the contents of 'man' to build the docsite
         copyFile('rdeephaven/man/**', "${prefix}/src/rdeephaven/man/")
         copyFile('rdeephaven/pkgdown/**', "${prefix}/src/rdeephaven/pkgdown/")
         runCommand("mkdir -p ${prefix}/src/rdeephaven/docs")
         runCommand('''echo "status = tryCatch(" \
                            "   {" \
-                           "      install.packages('pkgdown', repos='http://cran.us.r-project.org'); " \
+                           "      install.packages('pkgdown'); " \
                            "      0" \
                            "   }," \
                            "  error=function(e) 1," \

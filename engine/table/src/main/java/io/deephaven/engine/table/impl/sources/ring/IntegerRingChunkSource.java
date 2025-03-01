@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit CharacterRingChunkSource and run "./gradlew replicateRingChunkSources" to regenerate
@@ -25,7 +25,7 @@ final class IntegerRingChunkSource extends AbstractRingChunkSource<Integer, int[
     }
 
     public IntegerRingChunkSource(int capacity) {
-        super(int.class, capacity);
+        super(new int[capacity]);
     }
 
     @Override

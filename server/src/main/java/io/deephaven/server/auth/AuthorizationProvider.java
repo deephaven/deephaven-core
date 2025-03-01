@@ -1,10 +1,11 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.server.auth;
 
 import io.deephaven.auth.AuthContext;
 import io.deephaven.auth.codegen.impl.*;
+import io.deephaven.auth.codegen.impl.ConsoleServiceAuthWiring;
 import io.deephaven.server.session.TicketResolver;
 
 public interface AuthorizationProvider {

@@ -1,10 +1,10 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.util.datastructures;
 
 import io.deephaven.base.reference.SimpleReference;
-import org.apache.commons.lang3.mutable.MutableInt;
+import io.deephaven.util.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -221,7 +221,7 @@ public final class SimpleReferenceManager<T, R extends SimpleReference<T>> {
     public int size() {
         final MutableInt size = new MutableInt(0);
         forEach((ref, source) -> size.increment());
-        return size.intValue();
+        return size.get();
     }
 
     /**

@@ -9,18 +9,20 @@ dependencies {
     api project(":engine-table")
     api project(":engine-rowset")
 
+    implementation project(":util-processenvironment")
+    implementation project(":util-thread")
     implementation project(':Configuration')
     implementation project(':engine-tuple')
-    implementation project(':base-test-utils')
+    api project(':base-test-utils')
     implementation project(':engine-rowset-test-utils')
     implementation project(':extensions-source-support')
 
-    implementation depCommonsLang3
-    implementation depTrove3
+    implementation libs.commons.lang3
+    implementation libs.trove
 
-    implementation 'it.unimi.dsi:fastutil:8.5.13'
+    implementation libs.dsi.fastutil
 
-    Classpaths.inheritJUnitClassic(project, 'implementation')
-    Classpaths.inheritJUnitPlatform(project, 'implementation')
-    Classpaths.inheritAssertJ(project, 'implementation')
+    implementation libs.junit4
+    implementation platform(libs.junit.bom)
+    implementation libs.assertj
 }

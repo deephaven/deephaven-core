@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.server.appmode;
 
@@ -102,7 +102,8 @@ public class ApplicationInjector {
             app = factory.create(applicationListener);
         }
         int numExports = app.listFields().size();
-        log.info().append("\tfound ").append(numExports).append(" exports").endl();
+        log.info().append("\tapp.id=").append(app.id()).append(", found ").append(numExports).append(" exports")
+                .endl();
         ticketResolver.onApplicationLoad(app);
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+ * Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
  */
 #pragma once
 
@@ -247,4 +247,6 @@ private:
 using BooleanArrayColumnSource = GenericArrayColumnSource<bool>;
 using StringArrayColumnSource = GenericArrayColumnSource<std::string>;
 using DateTimeArrayColumnSource = GenericArrayColumnSource<DateTime>;
+using LocalDateArrayColumnSource = GenericArrayColumnSource<LocalDate>;
+using LocalTimeArrayColumnSource = GenericArrayColumnSource<LocalTime>;
 }  // namespace deephaven::dhcore::column

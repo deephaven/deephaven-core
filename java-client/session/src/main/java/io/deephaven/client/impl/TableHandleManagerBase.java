@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.client.impl;
 
@@ -9,10 +9,14 @@ import io.deephaven.qst.table.EmptyTable;
 import io.deephaven.qst.table.InputTable;
 import io.deephaven.qst.table.LabeledTables;
 import io.deephaven.qst.table.MergeTable;
+import io.deephaven.qst.table.MultiJoinInput;
+import io.deephaven.qst.table.MultiJoinTable;
 import io.deephaven.qst.table.NewTable;
 import io.deephaven.qst.table.TableSpec;
 import io.deephaven.qst.table.TicketTable;
 import io.deephaven.qst.table.TimeTable;
+
+import java.util.List;
 
 abstract class TableHandleManagerBase implements TableHandleManager {
 
@@ -47,6 +51,20 @@ abstract class TableHandleManagerBase implements TableHandleManager {
     @Override
     public final TableHandle of(InputTable inputTable) {
         return handle(inputTable);
+    }
+
+    @Override
+    public final TableHandle multiJoin(List<MultiJoinInput<TableHandle>> multiJoinInputs) {
+        MultiJoinTable.Builder builder = MultiJoinTable.builder();
+        for (MultiJoinInput<TableHandle> input : multiJoinInputs) {
+            // noinspection resource We're not making new TableHandles here
+            builder.addInputs(MultiJoinInput.<TableSpec>builder()
+                    .table(input.table().table())
+                    .addAllMatches(input.matches())
+                    .addAllAdditions(input.additions())
+                    .build());
+        }
+        return handle(builder.build());
     }
 
     @Override

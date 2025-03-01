@@ -5,6 +5,7 @@ import io.deephaven.engine.rowset.chunkattributes.*;
 import java.lang.*;
 import java.util.*;
 import io.deephaven.base.string.cache.CompressedString;
+import io.deephaven.chunk.BooleanChunk;
 import io.deephaven.chunk.ByteChunk;
 import io.deephaven.chunk.CharChunk;
 import io.deephaven.chunk.Chunk;
@@ -14,6 +15,7 @@ import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.ShortChunk;
+import io.deephaven.chunk.WritableBooleanChunk;
 import io.deephaven.chunk.WritableByteChunk;
 import io.deephaven.chunk.WritableCharChunk;
 import io.deephaven.chunk.WritableChunk;
@@ -34,9 +36,9 @@ import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Context;
-import io.deephaven.engine.table.DataColumn;
 import io.deephaven.engine.table.Table;
 import static io.deephaven.engine.table.impl.select.ConditionFilter.FilterKernel;
+import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.util.type.ArrayTypeUtils;
@@ -106,7 +108,7 @@ public class FormulaKernelSample implements io.deephaven.engine.table.impl.selec
         try {
             return plus(plus(multiply(I, II), multiply(q.intValue(), ii)), II_.get(longCast(minus(i, 1))));
         } catch (java.lang.Exception __e) {
-            throw new io.deephaven.engine.table.impl.select.FormulaEvaluationException("In formula: " + "plus(plus(multiply(I, II), multiply(q.intValue(), ii)), II_.get(longCast(minus(i, 1))))", __e);
+            throw new io.deephaven.engine.table.impl.select.FormulaEvaluationException("In formula: " + "I * II + q * ii + II_[i - 1]", __e);
         }
     }
 

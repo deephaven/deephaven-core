@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.server.hierarchicaltable;
 
@@ -22,6 +22,7 @@ import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.extensions.barrage.util.ExportUtil;
+import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.proto.backplane.grpc.*;
@@ -46,7 +47,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static io.deephaven.engine.table.impl.AbsoluteSortColumnConventions.baseColumnNameToAbsoluteName;
-import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyComplete;
 
 public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGrpc.HierarchicalTableServiceImplBase {
 
@@ -85,10 +85,12 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
             final SessionState.ExportObject<Table> sourceTableExport =
                     ticketRouter.resolve(session, request.getSourceTableId(), "sourceTableId");
 
-            session.newExport(request.getResultRollupTableId(), "resultRollupTableId")
+            session.<RollupTable>newExport(request.getResultRollupTableId(), "resultRollupTableId")
                     .queryPerformanceRecorder(queryPerformanceRecorder)
                     .require(sourceTableExport)
                     .onError(responseObserver)
+                    .onSuccess((final RollupTable ignoredResult) -> GrpcUtil.safelyOnNextAndComplete(responseObserver,
+                            RollupResponse.getDefaultInstance()))
                     .submit(() -> {
                         final Table sourceTable = sourceTableExport.get();
 
@@ -105,7 +107,10 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
                                 aggregations, includeConstituents, groupByColumns);
 
                         final RollupTable transformedResult = authTransformation.transform(result);
-                        safelyComplete(responseObserver, RollupResponse.getDefaultInstance());
+                        if (transformedResult == null) {
+                            throw Exceptions.statusRuntimeException(
+                                    Code.FAILED_PRECONDITION, "Not authorized to rollup hierarchical table");
+                        }
                         return transformedResult;
                     });
         }
@@ -137,10 +142,12 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
             final SessionState.ExportObject<Table> sourceTableExport =
                     ticketRouter.resolve(session, request.getSourceTableId(), "sourceTableId");
 
-            session.newExport(request.getResultTreeTableId(), "resultTreeTableId")
+            session.<TreeTable>newExport(request.getResultTreeTableId(), "resultTreeTableId")
                     .queryPerformanceRecorder(queryPerformanceRecorder)
                     .require(sourceTableExport)
                     .onError(responseObserver)
+                    .onSuccess((final TreeTable ignoredResult) -> GrpcUtil.safelyOnNextAndComplete(responseObserver,
+                            TreeResponse.getDefaultInstance()))
                     .submit(() -> {
                         final Table sourceTable = sourceTableExport.get();
 
@@ -161,7 +168,10 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
                                 identifierColumn.name(), parentIdentifierColumn.name());
 
                         final TreeTable transformedResult = authTransformation.transform(result);
-                        safelyComplete(responseObserver, TreeResponse.getDefaultInstance());
+                        if (transformedResult == null) {
+                            throw Exceptions.statusRuntimeException(
+                                    Code.FAILED_PRECONDITION, "Not authorized to tree hierarchical table");
+                        }
                         return transformedResult;
                     });
         }
@@ -194,10 +204,13 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
             final SessionState.ExportObject<HierarchicalTable<?>> inputHierarchicalTableExport =
                     ticketRouter.resolve(session, request.getInputHierarchicalTableId(), "inputHierarchicalTableId");
 
-            session.newExport(request.getResultHierarchicalTableId(), "resultHierarchicalTableId")
+            session.<HierarchicalTable<?>>newExport(request.getResultHierarchicalTableId(), "resultHierarchicalTableId")
                     .queryPerformanceRecorder(queryPerformanceRecorder)
                     .require(inputHierarchicalTableExport)
                     .onError(responseObserver)
+                    .onSuccess((final HierarchicalTable<?> ignoredResult) -> GrpcUtil.safelyOnNextAndComplete(
+                            responseObserver,
+                            HierarchicalTableApplyResponse.getDefaultInstance()))
                     .submit(() -> {
                         final HierarchicalTable<?> inputHierarchicalTable = inputHierarchicalTableExport.get();
 
@@ -262,7 +275,10 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
                         }
 
                         final HierarchicalTable<?> transformedResult = authTransformation.transform(result);
-                        safelyComplete(responseObserver, HierarchicalTableApplyResponse.getDefaultInstance());
+                        if (transformedResult == null) {
+                            throw Exceptions.statusRuntimeException(
+                                    Code.FAILED_PRECONDITION, "Not authorized to apply to hierarchical table");
+                        }
                         return transformedResult;
                     });
         }
@@ -383,6 +399,9 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
             resultExportBuilder
                     .queryPerformanceRecorder(queryPerformanceRecorder)
                     .onError(responseObserver)
+                    .onSuccess((final HierarchicalTableView ignoredResult) -> GrpcUtil.safelyOnNextAndComplete(
+                            responseObserver,
+                            HierarchicalTableViewResponse.getDefaultInstance()))
                     .submit(() -> {
                         final Table keyTable = keyTableExport == null ? null : keyTableExport.get();
                         final Object target = targetExport.get();
@@ -423,7 +442,10 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
                         }
 
                         final HierarchicalTableView transformedResult = authTransformation.transform(result);
-                        safelyComplete(responseObserver, HierarchicalTableViewResponse.getDefaultInstance());
+                        if (transformedResult == null) {
+                            throw Exceptions.statusRuntimeException(
+                                    Code.FAILED_PRECONDITION, "Not authorized to view hierarchical table");
+                        }
                         return transformedResult;
                     });
         }
@@ -467,10 +489,12 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
             final SessionState.ExportObject<HierarchicalTable<?>> hierarchicalTableExport =
                     ticketRouter.resolve(session, request.getHierarchicalTableId(), "hierarchicalTableId");
 
-            session.newExport(request.getResultTableId(), "resultTableId")
+            session.<Table>newExport(request.getResultTableId(), "resultTableId")
                     .queryPerformanceRecorder(queryPerformanceRecorder)
                     .require(hierarchicalTableExport)
                     .onError(responseObserver)
+                    .onSuccess((final Table transformedResult) -> GrpcUtil.safelyOnNextAndComplete(responseObserver,
+                            ExportUtil.buildTableCreationResponse(request.getResultTableId(), transformedResult)))
                     .submit(() -> {
                         final HierarchicalTable<?> hierarchicalTable = hierarchicalTableExport.get();
 
@@ -478,9 +502,11 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
                         authWiring.checkPermissionExportSource(session.getAuthContext(), request, List.of(result));
 
                         final Table transformedResult = authTransformation.transform(result);
-                        final ExportedTableCreationResponse response =
-                                ExportUtil.buildTableCreationResponse(request.getResultTableId(), transformedResult);
-                        safelyComplete(responseObserver, response);
+                        if (transformedResult == null) {
+                            throw Exceptions.statusRuntimeException(
+                                    Code.FAILED_PRECONDITION,
+                                    "Not authorized to export source from hierarchical table");
+                        }
                         return transformedResult;
                     });
         }

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.sources;
 
@@ -8,7 +8,7 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.WritableSourceWithPrepareForParallelPopulation;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
-import io.deephaven.engine.table.impl.util.ShiftData;
+import io.deephaven.engine.rowset.RowSetShiftCallback;
 import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.attributes.Values;
@@ -74,7 +74,7 @@ import java.util.Collection;
 public abstract class SparseArrayColumnSource<T>
         extends AbstractColumnSource<T>
         implements FillUnordered<Values>, WritableColumnSource<T>, InMemoryColumnSource, PossiblyImmutableColumnSource,
-        WritableSourceWithPrepareForParallelPopulation, ShiftData.RowSetShiftCallback {
+        WritableSourceWithPrepareForParallelPopulation, RowSetShiftCallback {
 
     static final int DEFAULT_RECYCLER_CAPACITY = 1024;
 

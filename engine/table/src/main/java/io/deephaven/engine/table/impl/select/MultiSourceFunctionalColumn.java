@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.select;
 
@@ -100,7 +100,7 @@ public class MultiSourceFunctionalColumn<D> implements SelectColumn {
     }
 
     @Override
-    public List<String> initDef(Map<String, ColumnDefinition<?>> columnDefinitionMap) {
+    public List<String> initDef(@NotNull final Map<String, ColumnDefinition<?>> columnDefinitionMap) {
         NoSuchColumnException.throwIf(columnDefinitionMap.keySet(), sourceNames);
         return getColumns();
     }
@@ -108,6 +108,11 @@ public class MultiSourceFunctionalColumn<D> implements SelectColumn {
     @Override
     public Class<?> getReturnedType() {
         return destDataType;
+    }
+
+    @Override
+    public Class<?> getReturnedComponentType() {
+        return componentType;
     }
 
     @Override

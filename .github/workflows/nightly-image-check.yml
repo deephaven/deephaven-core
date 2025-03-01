@@ -7,7 +7,7 @@ on:
 
 jobs:
   compare:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     if: ${{ github.repository_owner == 'deephaven' }}
     steps:
       - name: Checkout
@@ -20,6 +20,9 @@ jobs:
           distribution: 'temurin'
           java-version: '11'
 
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
       - name: Set JAVA_HOME
         run: echo "JAVA_HOME=${{ steps.setup-java-11.outputs.path }}" >> $GITHUB_ENV
 
@@ -29,17 +32,14 @@ jobs:
           cat gradle.properties
 
       - name: Run gradle
-        uses: burrunan/gradle-cache-action@v1
-        with:
-          job-id: image-compare
-          arguments: --continue pullImage compareImage
-          gradle-version: wrapper
+        run: ./gradlew --continue pullImage compareImage
 
       - name: Notify Slack
-        uses: slackapi/slack-github-action@v1.25.0
+        uses: slackapi/slack-github-action@v2.0.0
         id: notify-slack
         if: ${{ failure() }}
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL_DHC_NOTIFY }}
         with:
+          webhook-type: webhook-trigger
           payload: '{"repository": "${{ github.repository }}", "message": "${{ github.workflow }}/${{ github.job }} failure, some image is out of date", "link": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"}'

@@ -9,21 +9,21 @@ plugins {
 
 evaluationDependsOn ':docker-server-jetty'
 
-configurations {
-    implementation.extendsFrom dhIntegrations
-    testImplementation.extendsFrom fishBaseTest
-}
-
 dependencies {
 
     implementation project(':engine-table')
     implementation project(':plugin')
     implementation project(':Configuration')
     implementation project(':log-factory')
+    implementation project(":util-thread")
+    implementation libs.commons.lang3
+    implementation libs.google.findbugs.jsr305
 
     testImplementation project(':engine-test-utils')
-    testImplementation TestTools.projectDependency(project, 'engine-time')
+    testImplementation project(path: ':Base', configuration: 'tests')
 
+    // Needed for CalendarInit
+    testRuntimeOnly TestTools.projectDependency(project, 'engine-time')
     testRuntimeOnly project(':log-to-slf4j')
     // add configs, and some runtime dependencies to test classpaths
     testRuntimeOnly project(':configs')
@@ -61,6 +61,13 @@ def runInDocker = { String name, String sourcePath, List<String> command, Closur
             from(test.runtimeClasspath) {
                 into 'classpath'
             }
+            from("${sourcePath}/../client") {
+                include 'setup.py'
+                include 'pydeephaven/**'
+                include 'deephaven_core/**'
+                include 'README.md'
+                into 'python/client'
+            }
 
             // Unpack the config contents for now, since we don't seem to read the configs from inside a jar.
             // This does not add a task dependency, but we already put :configs in the testRuntime classpath,
@@ -71,13 +78,13 @@ def runInDocker = { String name, String sourcePath, List<String> command, Closur
         }
         parentContainers = [project(':docker-server-jetty').tasks.findByName('buildDocker-server-jetty')] // deephaven/server-jetty
 
-        imageName = 'deephaven/py-integrations:local-build'
+        imageName = Docker.localImageName('py-integrations')
 
         addConfig(it)
 
         dockerfile {
             // set up the container, env vars - things that aren't likely to change
-            from 'deephaven/server-jetty:local-build'
+            from Docker.localImageName('server-jetty')
             runCommand '''set -eux; \\
                       pip3 install unittest-xml-reporting==3.0.4; \\
                       mkdir -p /out/report; \\
@@ -97,6 +104,8 @@ def runInDocker = { String name, String sourcePath, List<String> command, Closur
             // copy in the contents that we do expect to change as the project updates
             copyFile 'python', '/python'
             copyFile 'classpath', '/classpath'
+            runCommand '''pip3 install /python/client'''
+
         }
         entrypoint = command
 

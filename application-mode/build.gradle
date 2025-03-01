@@ -6,18 +6,19 @@ plugins {
 dependencies {
     implementation project(':Integrations')
 
-    Classpaths.inheritImmutables(project)
+    compileOnly project(':util-immutables')
+    annotationProcessor libs.immutables.value
 
     // we'll rely on the engine-table module to provide the necessary groovy dependencies
-    Classpaths.inheritGroovy(project, 'groovy', 'compileOnly')
+    compileOnly libs.groovy
 
     api project(':proto:proto-backplane-grpc')
 
     implementation project(':Configuration')
 
-    Classpaths.inheritJUnitPlatform(project)
-    Classpaths.inheritAssertJ(project)
-    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testImplementation libs.assertj
+    testImplementation platform(libs.junit.bom)
+    testImplementation libs.junit.jupiter
 }
 
 test {

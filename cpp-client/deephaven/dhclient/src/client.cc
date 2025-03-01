@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+ * Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
  */
 #include "deephaven/client/client.h"
 
@@ -180,9 +180,9 @@ Aggregate createAggForMatchPairs(ComboAggregateRequest::AggType aggregate_type,
 }  // namespace
 
 Aggregate::Aggregate() = default;
-Aggregate::Aggregate(const Aggregate &other) noexcept = default;
+Aggregate::Aggregate(const Aggregate &other) = default;
 Aggregate::Aggregate(Aggregate &&other) noexcept = default;
-Aggregate &Aggregate::operator=(const Aggregate &other) noexcept = default;
+Aggregate &Aggregate::operator=(const Aggregate &other) = default;
 Aggregate &Aggregate::operator=(Aggregate &&other) noexcept = default;
 Aggregate::~Aggregate() = default;
 
@@ -283,6 +283,8 @@ AggregateCombo AggregateCombo::Create(std::vector<Aggregate> vec) {
 }
 
 AggregateCombo::AggregateCombo(std::shared_ptr<impl::AggregateComboImpl> impl) : impl_(std::move(impl)) {}
+AggregateCombo::AggregateCombo(const deephaven::client::AggregateCombo &other) = default;
+AggregateCombo &AggregateCombo::operator=(const AggregateCombo &other) = default;
 AggregateCombo::AggregateCombo(AggregateCombo &&other) noexcept = default;
 AggregateCombo &AggregateCombo::operator=(AggregateCombo &&other) noexcept = default;
 AggregateCombo::~AggregateCombo() = default;
@@ -403,11 +405,6 @@ TableHandle TableHandle::MedianBy(std::vector<std::string> column_specs) const {
 TableHandle TableHandle::PercentileBy(double percentile, bool avg_median,
     std::vector<std::string> column_specs) const {
   auto qt_impl = impl_->PercentileBy(percentile, avg_median, std::move(column_specs));
-  return TableHandle(std::move(qt_impl));
-}
-
-TableHandle TableHandle::PercentileBy(double percentile, std::vector<std::string> column_specs) const {
-  auto qt_impl = impl_->PercentileBy(percentile, std::move(column_specs));
   return TableHandle(std::move(qt_impl));
 }
 
@@ -571,8 +568,8 @@ TableHandle::Subscribe(onTickCallback_t on_tick, void *on_tick_user_data,
   return impl_->Subscribe(on_tick, on_tick_user_data, on_error, on_error_user_data);
 }
 
-void TableHandle::Unsubscribe(std::shared_ptr<SubscriptionHandle> callback) {
-  impl_->Unsubscribe(std::move(callback));
+void TableHandle::Unsubscribe(const std::shared_ptr<SubscriptionHandle> &handle) {
+  impl_->Unsubscribe(handle);
 }
 
 const std::string &TableHandle::GetTicketAsString() const {

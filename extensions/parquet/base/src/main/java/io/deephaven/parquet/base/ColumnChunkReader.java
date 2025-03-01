@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.parquet.base;
 
@@ -11,9 +11,20 @@ import org.apache.parquet.schema.PrimitiveType;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
+import java.net.URI;
 import java.util.function.Function;
 
 public interface ColumnChunkReader {
+    /**
+     * @return The name of the column this ColumnChunk represents.
+     */
+    String columnName();
+
+    /**
+     * @return The URI of the file this column chunk reader is reading from.
+     */
+    URI getURI();
+
     /**
      * @return The number of rows in this ColumnChunk, or -1 if it's unknown.
      */
@@ -60,9 +71,10 @@ public interface ColumnChunkReader {
     }
 
     /**
+     * @param pageMaterializerFactory The factory to use for constructing page materializers.
      * @return An iterator over individual parquet pages.
      */
-    ColumnPageReaderIterator getPageIterator() throws IOException;
+    ColumnPageReaderIterator getPageIterator(PageMaterializerFactory pageMaterializerFactory) throws IOException;
 
     interface ColumnPageDirectAccessor {
         /**
@@ -75,9 +87,10 @@ public interface ColumnChunkReader {
     }
 
     /**
+     * @param pageMaterializerFactory The factory to use for constructing page materializers.
      * @return An accessor for individual parquet pages which uses the provided offset index.
      */
-    ColumnPageDirectAccessor getPageAccessor(OffsetIndex offsetIndex);
+    ColumnPageDirectAccessor getPageAccessor(OffsetIndex offsetIndex, PageMaterializerFactory pageMaterializerFactory);
 
     /**
      * @return Whether this column chunk uses a dictionary-based encoding on every page.
@@ -117,4 +130,5 @@ public interface ColumnChunkReader {
      * @return The channel provider for this column chunk reader.
      */
     SeekableChannelsProvider getChannelsProvider();
+
 }

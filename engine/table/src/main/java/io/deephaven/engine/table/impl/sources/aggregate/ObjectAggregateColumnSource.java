@@ -1,10 +1,10 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.sources.aggregate;
 
 import io.deephaven.vector.ObjectVector;
-import io.deephaven.engine.table.impl.vector.ObjectVectorColumnWrapper;
+import io.deephaven.engine.table.vectors.ObjectVectorColumnWrapper;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.ObjectChunk;

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit CharSsaChecker and run "./gradlew replicateSegmentedSortedArray" to regenerate
@@ -8,6 +8,7 @@
 package io.deephaven.engine.table.impl.ssa;
 
 import java.util.Objects;
+import io.deephaven.util.compare.ObjectComparisons;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.ObjectChunk;

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.sources;
 
@@ -16,7 +16,7 @@ import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.WritableSourceWithPrepareForParallelPopulation;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
-import io.deephaven.engine.table.impl.util.ShiftData;
+import io.deephaven.engine.rowset.RowSetShiftCallback;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.Instant;
@@ -30,7 +30,7 @@ import java.time.ZonedDateTime;
  */
 public abstract class NanosBasedTimeSparseArraySource<TIME_TYPE> extends AbstractColumnSource<TIME_TYPE>
         implements FillUnordered<Values>, WritableColumnSource<TIME_TYPE>, InMemoryColumnSource,
-        PossiblyImmutableColumnSource, WritableSourceWithPrepareForParallelPopulation, ShiftData.RowSetShiftCallback,
+        PossiblyImmutableColumnSource, WritableSourceWithPrepareForParallelPopulation, RowSetShiftCallback,
         ConvertibleTimeSource {
 
     protected final LongSparseArraySource nanoSource;

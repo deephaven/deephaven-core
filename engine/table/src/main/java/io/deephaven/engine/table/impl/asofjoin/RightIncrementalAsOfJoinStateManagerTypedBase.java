@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.asofjoin;
 
@@ -22,7 +22,7 @@ import io.deephaven.engine.table.impl.ssa.SegmentedSortedArray;
 import io.deephaven.engine.table.impl.util.TypedHasherUtil;
 import io.deephaven.engine.table.impl.util.TypedHasherUtil.BuildOrProbeContext.ProbeContext;
 import io.deephaven.util.QueryConstants;
-import org.apache.commons.lang3.mutable.MutableInt;
+import io.deephaven.util.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -287,7 +287,7 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
                 final long entriesAdded = numEntries - oldEntries;
                 // if we actually added anything, then take away from the "equity" we've built up rehashing, otherwise
                 // don't penalize this build call with additional rehashing
-                bc.rehashCredits.subtract(entriesAdded);
+                bc.rehashCredits.subtract((int) entriesAdded);
 
                 bc.resetSharedContexts();
             }
@@ -868,7 +868,26 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
         return ssa;
     }
 
-    protected void newAlternate() {
+    /**
+     * After creating the new alternate key states, advise the derived classes, so they can cast them to the typed
+     * versions of the column source and adjust the derived class pointers.
+     */
+    protected abstract void adviseNewAlternate();
+
+    private void setupNewAlternate(int oldTableSize) {
+        Assert.eqZero(rehashPointer, "rehashPointer");
+
+        for (int ii = 0; ii < mainKeySources.length; ++ii) {
+            alternateKeySources[ii] = mainKeySources[ii];
+            mainKeySources[ii] = InMemoryColumnSource.getImmutableMemoryColumnSource(tableSize,
+                    alternateKeySources[ii].getType(), alternateKeySources[ii].getComponentType());
+            mainKeySources[ii].ensureCapacity(tableSize);
+        }
+        alternateTableSize = oldTableSize;
+        if (numEntries > 0) {
+            rehashPointer = alternateTableSize;
+        }
+
         alternateRightRowSetSource = rightRowSetSource;
         rightRowSetSource = new ImmutableObjectArraySource<>(Object.class, null);
         rightRowSetSource.ensureCapacity(tableSize);
@@ -909,7 +928,7 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
      */
     public boolean doRehash(boolean fullRehash, MutableInt rehashCredits, int nextChunkSize) {
         if (rehashPointer > 0) {
-            final int requiredRehash = nextChunkSize - rehashCredits.intValue();
+            final int requiredRehash = nextChunkSize - rehashCredits.get();
             if (requiredRehash <= 0) {
                 return false;
             }
@@ -935,8 +954,8 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
         }
 
         // we can't give the caller credit for rehashes with the old table, we need to begin migrating things again
-        if (rehashCredits.intValue() > 0) {
-            rehashCredits.setValue(0);
+        if (rehashCredits.get() > 0) {
+            rehashCredits.set(0);
         }
 
         if (fullRehash) {
@@ -951,20 +970,8 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
             return false;
         }
 
-        Assert.eqZero(rehashPointer, "rehashPointer");
-
-        for (int ii = 0; ii < mainKeySources.length; ++ii) {
-            alternateKeySources[ii] = mainKeySources[ii];
-            mainKeySources[ii] = InMemoryColumnSource.getImmutableMemoryColumnSource(tableSize,
-                    alternateKeySources[ii].getType(), alternateKeySources[ii].getComponentType());
-            mainKeySources[ii].ensureCapacity(tableSize);
-        }
-        alternateTableSize = oldTableSize;
-        if (numEntries > 0) {
-            rehashPointer = alternateTableSize;
-        }
-
-        newAlternate();
+        setupNewAlternate(oldTableSize);
+        adviseNewAlternate();
 
         return true;
     }

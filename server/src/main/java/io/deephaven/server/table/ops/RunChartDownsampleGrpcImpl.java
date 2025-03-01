@@ -1,12 +1,11 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.server.table.ops;
 
 import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.clientsupport.plotdownsampling.RunChartDownsample;
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.Table;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.RunChartDownsampleRequest;
@@ -41,6 +40,6 @@ public class RunChartDownsampleGrpcImpl extends GrpcTableOperation<RunChartDowns
                 request.getPixelCount(),
                 zoomRange,
                 request.getXColumnName(),
-                request.getYColumnNamesList().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)));
+                request.getYColumnNamesList().toArray(String[]::new)));
     }
 }

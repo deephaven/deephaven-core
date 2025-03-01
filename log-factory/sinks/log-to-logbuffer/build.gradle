@@ -3,12 +3,10 @@ plugins {
   id 'io.deephaven.project.register'
 }
 
-configurations {
-  compileOnly.extendsFrom fishIo
-}
-
 dependencies {
+  compileOnly project(':Base')
   compileOnly project(':log-factory')
 
-  Classpaths.inheritAutoService(project)
+  compileOnly libs.autoservice
+  annotationProcessor libs.autoservice.compiler
 }

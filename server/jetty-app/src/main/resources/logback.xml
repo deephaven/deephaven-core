@@ -22,8 +22,10 @@
   <!-- individual package levels can be change -->
   <!--<logger name="io.netty" level="INFO"/>-->
   <!--<logger name="io.deephaven" level="INFO"/>-->
+  <!--<logger name="io.grpc" level="TRACE"/>-->
 
-  <logger name="io.deephaven.sql.SqlAdapter" level="DEBUG"/>
+  <!-- Increase the log level to WARN to avoid excessive logging when getting/returning compressors/decompressors -->
+  <logger name="org.apache.hadoop.io.compress.CodecPool" level="WARN"/>
 
   <!-- See https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/logging-slf4j.html for additional logging options -->
   <!-- <logger name="io.deephaven.extensions.s3" level="DEBUG" /> -->

@@ -1,6 +1,7 @@
 plugins {
     id 'application'
     id 'io.deephaven.project.register'
+    id 'io.deephaven.optional-server-dependencies'
 }
 
 configurations {
@@ -13,7 +14,7 @@ dependencies {
     runtimeOnly project(':log-to-slf4j')
     runtimeOnly project(':logback-print-stream-globals')
     runtimeOnly project(':logback-logbuffer')
-    Classpaths.inheritLogbackClassic(project)
+    runtimeOnly libs.logback.classic
 }
 
 distributions {
@@ -32,17 +33,19 @@ if (hasProperty('groovy')) {
 }
 
 if (!hasProperty('excludeHotspotImpl')) {
-    dependencies {
-        runtimeOnly project(':hotspot-impl')
-    }
     extraJvmArgs += ['--add-exports', 'java.management/sun.management=ALL-UNNAMED']
 }
 
 if (!hasProperty('excludeClockImpl')) {
-    dependencies {
-        runtimeOnly project(':clock-impl')
-    }
     extraJvmArgs += ['--add-exports', 'java.base/jdk.internal.misc=ALL-UNNAMED']
+}
+
+// Note: add optional server dependencies to io.deephaven.optional-server-dependencies plugin in buildSrc
+
+def authHandlers = []
+def authConfigs = ['AuthHandlers']
+if (hasProperty('anonymous')) {
+    authHandlers += ['io.deephaven.auth.AnonymousAuthenticationHandler']
 }
 
 if (hasProperty('devCerts') || hasProperty('devMTLS')) {
@@ -58,11 +61,17 @@ if (hasProperty('devCerts') || hasProperty('devMTLS')) {
                 '-Dssl.trust.path=../dev-certs/ca.crt',
                 '-Dssl.clientAuthentication=NEEDED',
         ]
+        authHandlers += ['io.deephaven.authentication.mtls.MTlsAuthenticationHandler']
+        dependencies.implementation(dependencies.project(path: ':authentication:example-providers:mtls', configuration:'shadow'))
     }
 }
 
 if (hasProperty('debug')) {
     extraJvmArgs += ['-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005']
+}
+
+if (hasProperty('debugAutocomplete')) {
+    extraJvmArgs += ['-Ddeephaven.console.autocomplete.quiet=false']
 }
 
 if (hasProperty('gcApplication')) {
@@ -72,6 +81,43 @@ if (hasProperty('gcApplication')) {
 if (hasProperty('quiet')) {
     extraJvmArgs += ['-Ddeephaven.quiet=true']
 }
+
+if (hasProperty('psk')) {
+    authHandlers += ['io.deephaven.authentication.psk.PskAuthenticationHandler']
+    if (project.getProperty('psk')) {
+        // if there is a non-empty value assigned, use that for the key
+        extraJvmArgs += ["-Dauthentication.psk=${getProperty('psk')}"]
+    }
+}
+if (hasProperty('sql-username-password')) {
+    authHandlers += ['io.deephaven.authentication.sql.BasicSqlAuthenticationHandler']
+    extraJvmArgs += [
+            '-Dauthentication.basic.sql.jdbc.connection=jdbc:postgresql://localhost:5432/postgres',
+            '-Dauthentication.basic.sql.jdbc.user=postgres',
+            '-Dauthentication.basic.sql.jdbc.password=password',
+    ]
+    dependencies.implementation(dependencies.project(path: ':authentication:example-providers:sql-username-password', configuration:'shadow'))
+}
+if (hasProperty('oidc')) {
+    authHandlers += ['io.deephaven.authentication.oidc.OidcAuthenticationHandler']
+    extraJvmArgs += [
+            '-Dauthentication.oidc.keycloak.url=http://localhost:6060',
+            '-Dauthentication.oidc.keycloak.realm=deephaven_core',
+            '-Dauthentication.oidc.keycloak.clientId=deephaven',
+    ]
+    authConfigs += [
+            'authentication.oidc.keycloak.url',
+            'authentication.oidc.keycloak.realm',
+            'authentication.oidc.keycloak.clientId',
+    ]
+    extraJvmArgs += ['-Dauthentication.client.configuration.list=AuthHandlers,authentication.oidc.keycloak.url,authentication.oidc.keycloak.realm,authentication.oidc.keycloak.clientId']
+    dependencies.implementation(dependencies.project(path: ':authentication:example-providers:oidc', configuration:'shadow'))
+}
+
+if (!authHandlers.isEmpty()) {
+    extraJvmArgs += ["-DAuthHandlers=${authHandlers.join(',')}"]
+}
+extraJvmArgs += ["-Dauthentication.client.configuration.list=${authConfigs.join(',')}"]
 
 tasks.withType(JavaExec).configureEach {
     // This appends to the existing jvm args, so that java-open-nio still takes effect

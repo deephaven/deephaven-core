@@ -14,44 +14,48 @@ configurations {
     transitive = false
   }
 
-  // automatically pick up the standard junit version
-  testImplementation.extendsFrom junit
-
   js {}
   python {}
   go {}
   cpp {}
 
+  protoDocs {}
   authzPlugin {}
 }
 
 dependencies {
   // This should be implementation, if listed at all, at least once we have own own version management
-  Classpaths.inheritProtobuf(project, 'api')
+  api libs.protobuf.java
 
-  Classpaths.inheritGrpcPlatform(project, 'api')
-  api 'io.grpc:grpc-protobuf'
-  api 'io.grpc:grpc-api'
-  api 'io.grpc:grpc-stub'
+  api platform(libs.grpc.bom)
+  api libs.grpc.protobuf
+  api libs.grpc.api
+  api libs.grpc.stub
 
   api project(':engine-api')
 
-  Classpaths.inheritBoringSsl(project)
+  api libs.arrow.flight.core
+
+  implementation project(':log-factory')
+
+  runtimeOnly libs.boringssl
 
   // This is excessive, and brings in every grpc jar, making it compile-only limits what it pulls in to
   // downstream classpaths
-  Classpaths.inheritArrow(project, 'flight-core', 'compileOnly')
+  compileOnly libs.arrow.flight.core
 
-  compileOnly 'javax.inject:javax.inject:1'
-  compileOnly "javax.annotation:javax.annotation-api:1.3.1"
+  compileOnly libs.javax.inject
+  compileOnly libs.javax.annotation.api
 
   // technically we should have a runtime dependency on barrage-core, but instead we are regenerating
   // the same output that it contains, and we have declared the correct dependencies as necessary
   //  compile 'io.deephaven.barrage:barrage-core:0.5.0'
-  download 'io.deephaven.barrage:barrage-core:0.6.0'
-  Classpaths.inheritArrow(project, 'flight-core', 'download')
+  download libs.deephaven.barrage.core
+  download libs.arrow.flight.core
 
   authzPlugin project(path: ':authorization-codegen', configuration: 'shadow')
+
+  testImplementation libs.junit4
 }
 
 TaskProvider<Task> generateProtobuf = Docker.registerDockerTask(project, 'generateProtobuf') {
@@ -79,7 +83,7 @@ TaskProvider<Task> generateProtobuf = Docker.registerDockerTask(project, 'genera
   platform = 'linux/amd64'
 
   containerOutPath = '/generated'
-  imageName = 'deephaven/proto-backplane-grpc:local-build'
+  imageName = Docker.localImageName('proto-backplane-grpc')
   copyOut {
     into('build/generated/source/proto/main')
   }
@@ -98,7 +102,7 @@ artifacts {
   go(layout.buildDirectory.dir('generated/source/proto/main/go')) {
     builtBy generateProtobuf
   }
-  cpp(layout.buildDirectory.dir('generated/source/proto/main/cpp')) {
+  protoDocs(layout.buildDirectory.dir('generated/source/proto/main/proto-doc')) {
     builtBy generateProtobuf
   }
 }
@@ -112,7 +116,7 @@ sourceSets {
       srcDir(generateProtobuf).include("**/*.java")
     }
     resources {
-      srcDir 'src/main/proto/deephaven/proto'
+      srcDir 'src/main/proto'
     }
   }
 }

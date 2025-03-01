@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit CharRingBufferVectorWrapper and run "./gradlew replicateUpdateBy" to regenerate
@@ -13,7 +13,7 @@ import io.deephaven.vector.LongVector;
 import io.deephaven.vector.LongVectorDirect;
 import io.deephaven.vector.LongVectorSlice;
 
-public class LongRingBufferVectorWrapper implements LongVector, RingBufferVectorWrapper {
+public class LongRingBufferVectorWrapper implements LongVector, RingBufferVectorWrapper<LongVector> {
     private final LongRingBuffer ringBuffer;
 
     public LongRingBufferVectorWrapper(final LongRingBuffer ringBuffer) {

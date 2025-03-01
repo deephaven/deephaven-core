@@ -5,10 +5,6 @@ plugins {
 
 description 'Engine Context: QueryScope, QueryLibrary and QueryCompiler via ExecutionContext'
 
-configurations {
-    testCompile.extendsFrom junit
-}
-
 dependencies {
     api project(':authentication')
     api project(':Util')
@@ -21,15 +17,15 @@ dependencies {
     implementation project(':table-api')
     implementation project(':IO')
 
-    implementation 'com.github.f4b6a3:uuid-creator:5.2.0'
+    implementation libs.f4b6a3.uuid.creator
 
-    Classpaths.inheritCommonsText(project, 'implementation')
+    compileOnly project(':util-immutables')
+    annotationProcessor libs.immutables.value
 
-    testImplementation TestTools.projectDependency(project, 'Base')
     testImplementation project(':engine-test-utils')
 
     testRuntimeOnly project(':log-to-slf4j'),
             project(path: ':configs'),
             project(path: ':test-configs')
-    Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
+    testRuntimeOnly libs.slf4j.simple
 }

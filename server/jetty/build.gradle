@@ -10,42 +10,53 @@ dependencies {
     api(project(':Integrations')) {
         because 'downstream dagger compile'
     }
+
+    implementation project(':util-thread')
+    compileOnlyApi(project(':util-thread')) {
+        because 'downstream dagger compile'
+    }
+
     runtimeOnly(project(':web'))
 
-    Classpaths.inheritDagger(project)
-    Classpaths.inheritDagger(project, /* test */ true)
+    implementation libs.dagger
+    annotationProcessor libs.dagger.compiler
 
-    Classpaths.inheritGrpcPlatform(project)
-    Classpaths.inheritJetty11Platform(project)
+    testImplementation libs.dagger
+    testAnnotationProcessor libs.dagger.compiler
 
-    api 'jakarta.servlet:jakarta.servlet-api:5.0.0'
-    implementation 'org.eclipse.jetty:jetty-servlet'
-    implementation 'org.eclipse.jetty:jetty-servlets'
-    implementation 'org.eclipse.jetty:jetty-webapp'
-    implementation 'org.eclipse.jetty.http2:http2-server'
-    implementation 'org.eclipse.jetty:jetty-alpn-server'
+    implementation platform(libs.grpc.bom)
+    implementation platform(libs.jetty.bom)
+
+    api libs.jakarata.servlet.api
+    implementation libs.jetty.servlet
+    implementation libs.jetty.servlets
+    implementation libs.jetty.webapp
+    implementation libs.jetty.http2.server
+    implementation libs.jetty.alpn.server
     // TODO(deephaven-core#2506): Support for alternative ALPN implementations
-    runtimeOnly 'org.eclipse.jetty:jetty-alpn-java-server'
+    runtimeOnly libs.jetty.alpn.java.server
 
 //    implementation 'io.grpc:grpc-servlet-jakarta'
     api(project(':grpc-java:grpc-servlet-jakarta')) {
         because 'downstream dagger compile'
     }
     implementation project(':grpc-java:grpc-servlet-websocket-jakarta')
-    implementation 'org.eclipse.jetty.websocket:websocket-jakarta-server'
+    implementation libs.jetty.websocket.jakarta.server
 
-    Classpaths.inheritImmutables(project)
+    compileOnly project(':util-immutables')
+    annotationProcessor libs.immutables.value
+
     implementation project(':ssl-kickstart')
-    Classpaths.inheritSSLContext(project, 'sslcontext-kickstart-for-jetty')
+    implementation libs.sslcontext.kickstart.jetty
 
     implementation project(':grpc-java:grpc-mtls')
 
-    testImplementation project(':server-test')
-    Classpaths.inheritJUnitClassic(project, 'testImplementation')
-    Classpaths.inheritAssertJ(project)
+    testImplementation project(':server-test-utils')
+    testImplementation libs.junit4
+    testImplementation libs.assertj
 
     testRuntimeOnly project(':log-to-slf4j')
-    Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
+    testRuntimeOnly libs.slf4j.simple
 }
 
 test.systemProperty "PeriodicUpdateGraph.allowUnitTestMode", false

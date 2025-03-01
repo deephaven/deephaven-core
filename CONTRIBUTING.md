@@ -31,7 +31,7 @@ Over time, forks will get out of sync with the upstream repository.  To stay up 
 * Follow these directions on [Syncing A Fork](https://docs.github.com/en/github/collaborating-with-issues-and-pull-requests/syncing-a-fork).
 
 ## Building and Running
-For instructions on building and running, see [Build and launch from source](https://deephaven.io/core/docs/how-to-guides/launch-build/).
+For instructions on building and running, see [Build and launch from source](https://deephaven.io/core/docs/getting-started/launch-build/).
 
 ## Creating a Pull Request
 Pull requests can be created through the GitHub website or through the GitHub CLI.
@@ -53,6 +53,11 @@ Follow the directions in [Creating A Pull Request From A Fork](https://docs.gith
 For more information, see:
 * [gh pr create](https://cli.github.com/manual/gh_pr_create)
 * [CLI In Use](https://cli.github.com/manual/examples.html)
+
+## Labels
+
+- Each pull request must have a `ReleaseNotesNeeded` label if a user can perceive the changes.  Build or testing-only changes should have a `NoReleaseNotesNeeded` label.
+- Each pull request must have a `DocumentationNeeded` label if the user guide should be updated.  Pull requests that do not require a user guide update should have a `NoDocumentationNeeded` label.
 
 ## Styleguide
 The [styleguide](style/README.md) is applied globally to the entire project, except for generated code that gets checked in.

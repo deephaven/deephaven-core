@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.client.impl;
 
@@ -17,7 +17,11 @@ import java.util.concurrent.ScheduledExecutorService;
 @Subcomponent(modules = {SessionImplModule.class, FlightSessionModule.class})
 public interface FlightSubcomponent extends FlightSessionFactory {
 
+    @Override
     FlightSession newFlightSession();
+
+    @Override
+    ManagedChannel managedChannel();
 
     @Module(subcomponents = {FlightSubcomponent.class})
     interface FlightSubcomponentModule {

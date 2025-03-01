@@ -1,13 +1,13 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.tuple;
 
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.tuple.serialization.SerializationUtils;
 import io.deephaven.tuple.serialization.StreamingExternalizable;
 import gnu.trove.map.TIntObjectMap;
 import io.deephaven.util.compare.ObjectComparisons;
+import io.deephaven.util.type.ArrayTypeUtils;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.*;
@@ -35,7 +35,7 @@ public class ArrayTuple
      * @param elements The array to wrap
      */
     public ArrayTuple(final Object... elements) {
-        initialize(elements == null ? CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY : elements);
+        initialize(elements == null ? ArrayTypeUtils.EMPTY_OBJECT_ARRAY : elements);
     }
 
     /**

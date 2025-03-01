@@ -7,21 +7,20 @@ description 'Engine Functions: Libraries for use in query expressions'
 
 configurations {
     primitiveCodegen
-    testImplementation.extendsFrom junit
 }
 
 dependencies {
     primitiveCodegen project(':codegen')
 
-    api 'net.sf.trove4j:trove4j:3.0.3'
+    api libs.trove
     api project(':Util')
     api project(':engine-vector')
     api project(':engine-primitive')
 
     implementation project(':Base')
-    implementation depCommonsLang3
+    implementation libs.commons.lang3
 
-    testImplementation TestTools.projectDependency(project, 'Base')
+    testImplementation project(':base-test-utils')
 }
 
 def generatedFiles = []

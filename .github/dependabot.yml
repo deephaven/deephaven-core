@@ -2,5 +2,29 @@ version: 2
 updates:
   - package-ecosystem: "github-actions"
     directory: "/"
+    open-pull-requests-limit: 99
     schedule:
       interval: "weekly"
+    commit-message:
+      prefix: "chore(github-actions)"
+    labels:
+      - "NoDocumentationNeeded"
+      - "NoReleaseNotesNeeded"
+      - "version-bump"
+    assignees:
+      - "devinrsmith"
+      - "stanbrub"
+  - package-ecosystem: "gradle"
+    directory: "/"
+    open-pull-requests-limit: 99
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "chore(gradle)"
+    labels:
+      - "NoDocumentationNeeded"
+      - "NoReleaseNotesNeeded"
+      - "version-bump"
+    assignees:
+      - "devinrsmith"
+      - "rcaudy"

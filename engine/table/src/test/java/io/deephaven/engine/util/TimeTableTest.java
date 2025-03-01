@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.util;
 
@@ -375,6 +375,18 @@ public class TimeTableTest extends RefreshingTableTestCase {
                     Assert.assertEquals(dest.get(ii), column.getLong(keys.get(ii)));
                 }
             }
+        }
+    }
+
+    @Test
+    public void testConcurrentConstruction() {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.startCycleForUnitTests(false);
+        build(TimeTable.newBuilder().period(10));
+        clock.now = 1;
+        try (final SafeCloseable ignored = updateGraph::completeCycleForUnitTests) {
+            updateGraph.refreshUpdateSourceForUnitTests(updateSourceCombiner);
+            updateGraph.markSourcesRefreshedForUnitTests();
         }
     }
 }

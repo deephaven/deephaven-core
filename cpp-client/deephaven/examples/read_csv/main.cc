@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+ * Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
  */
 #include <cstdlib>
 #include <iostream>
@@ -79,9 +79,9 @@ arrow::Status Doit(const TableHandleManager &manager, const std::string &csvfn) 
 
   const auto &src_columns = arrow_table->columns();
   const size_t ncols = src_columns.size();
-  const size_t nchunks = src_columns[0]->num_chunks();
+  const int nchunks = src_columns[0]->num_chunks();
   std::vector<std::shared_ptr<arrow::Array>> dest_columns(ncols);
-  for (size_t chunk_index = 0; chunk_index < nchunks; ++chunk_index) {
+  for (int chunk_index = 0; chunk_index < nchunks; ++chunk_index) {
     for (size_t col_index = 0; col_index < ncols; ++col_index) {
       dest_columns[col_index] = src_columns[col_index]->chunk(chunk_index);
     }

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.io.streams;
 
@@ -252,7 +252,7 @@ public class ByteBufferOutputStream extends java.io.OutputStream implements Data
         final int origLimit = bb.limit();
         int remaining;
         while ((remaining = buf.remaining()) < bb.remaining()) {
-            buf.put(bb.limit(bb.position() + remaining));
+            buf.put((ByteBuffer) bb.limit(bb.position() + remaining));
             bb.limit(origLimit);
             updateBuffer(buf.capacity());
         }

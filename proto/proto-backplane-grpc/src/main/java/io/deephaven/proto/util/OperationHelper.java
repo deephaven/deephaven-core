@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.proto.util;
 
@@ -103,6 +103,8 @@ public class OperationHelper {
                 return Stream.of(op.getColumnStatistics().getSourceId());
             case MULTI_JOIN:
                 return op.getMultiJoin().getMultiJoinInputsList().stream().map(MultiJoinInput::getSourceId);
+            case SLICE:
+                return Stream.of(op.getSlice().getSourceId());
             case OP_NOT_SET:
                 throw new IllegalStateException("Operation id not set");
             default:

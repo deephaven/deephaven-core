@@ -3,36 +3,34 @@ plugins {
     id 'java-library'
 }
 
-configurations {
-    implementation.extendsFrom dhPlot
-
-    testImplementation.extendsFrom fishIoTest
-}
-
 dependencies {
 
     api project(':engine-api')
+    implementation project(':Base')
     implementation project(':engine-table')
     implementation project(':engine-function')
     implementation project(':engine-tuple')
     implementation project(':log-factory')
+    implementation project(':Configuration')
 
-    Classpaths.inheritGroovy(project, 'groovy', 'api')
-    Classpaths.inheritGroovy(project, 'groovy-json', 'implementation')
-    Classpaths.inheritAutoService(project)
+    api libs.groovy
+    implementation libs.groovy.json
+    compileOnly libs.autoservice
+    annotationProcessor libs.autoservice.compiler
 
-    compileOnly 'javax.inject:javax.inject:1'
+    compileOnly libs.javax.inject
 
-    Classpaths.inheritGuava(project)
+    implementation libs.guava
+    implementation libs.commons.lang3
 
-    testImplementation TestTools.projectDependency(project, 'Util')
-    testImplementation TestTools.projectDependency(project, 'engine-table')
+    testImplementation project(':engine-test-utils')
     testImplementation TestTools.projectDependency(project, 'engine-time')
+    testImplementation project(path: ':Base', configuration: 'tests')
 
-    testRuntimeOnly project(path: ':configs')
-    testRuntimeOnly project(path: ':test-configs')
+    testRuntimeOnly project(':configs')
+    testRuntimeOnly project(':test-configs')
     testRuntimeOnly project(':Numerics')
 
     testRuntimeOnly project(':log-to-slf4j')
-    Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
+    testRuntimeOnly libs.slf4j.simple
 }

@@ -11,24 +11,31 @@ dependencies {
         because 'downstream dagger compile'
     }
 
-    Classpaths.inheritDagger(project)
-    Classpaths.inheritDagger(project, /* test */ true)
+    implementation project(":util-thread")
 
-    Classpaths.inheritGrpcPlatform(project)
-    implementation 'io.grpc:grpc-netty'
+    implementation libs.dagger
+    annotationProcessor libs.dagger.compiler
 
-    Classpaths.inheritImmutables(project)
+    testImplementation libs.dagger
+    testAnnotationProcessor libs.dagger.compiler
+
+    implementation platform(libs.grpc.bom)
+    implementation libs.grpc.netty
+
+    compileOnly project(':util-immutables')
+    annotationProcessor libs.immutables.value
+
     implementation project(':ssl-kickstart')
-    Classpaths.inheritSSLContext(project, 'sslcontext-kickstart-for-netty')
+    implementation libs.sslcontext.kickstart.netty
 
     implementation project(':grpc-java:grpc-mtls')
 
-    testImplementation project(':server-test')
-    Classpaths.inheritJUnitClassic(project, 'testImplementation')
-    Classpaths.inheritAssertJ(project)
+    testImplementation project(':server-test-utils')
+    testImplementation libs.junit4
+    testImplementation libs.assertj
 
     testRuntimeOnly project(':log-to-slf4j')
-    Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
+    testRuntimeOnly libs.slf4j.simple
 }
 
 test.systemProperty "PeriodicUpdateGraph.allowUnitTestMode", false

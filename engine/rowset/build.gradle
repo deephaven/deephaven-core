@@ -8,18 +8,18 @@ description 'Engine RowSets: Data structures for working with row keys'
 dependencies {
     api project(':engine-chunk')
     api project(':Base')
-    api depTrove3
+    implementation libs.trove
 
     implementation project(':Container')
     implementation project(':engine-context')
     implementation project(':engine-updategraph')
     implementation project(':Configuration')
-    implementation depCommonsLang3
+    implementation libs.commons.lang3
 
-    compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
-    compileOnly depAnnotations
+    compileOnly libs.google.findbugs.jsr305
+    compileOnly libs.jetbrains.annotations
 
-    Classpaths.inheritJUnitClassic(project, 'testImplementation')
+    testImplementation libs.junit4
 
     testImplementation project(':base-test-utils')
     testImplementation project(':engine-test-utils')
@@ -27,7 +27,7 @@ dependencies {
     testRuntimeOnly project(':log-to-slf4j'),
             project(path: ':configs'),
             project(path: ':test-configs')
-    Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
+    testRuntimeOnly libs.slf4j.simple
 }
 
 TestTools.addEngineOutOfBandTest(project)

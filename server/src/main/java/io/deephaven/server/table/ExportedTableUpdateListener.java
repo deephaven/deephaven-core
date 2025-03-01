@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.server.table;
 
@@ -30,10 +30,12 @@ import io.deephaven.proto.util.Exceptions;
 import io.deephaven.proto.util.ExportTicketHelper;
 import io.deephaven.server.session.SessionService;
 import io.deephaven.server.session.SessionState;
+import io.deephaven.util.mutable.MutableLong;
 import io.deephaven.util.SafeCloseable;
 import io.grpc.stub.StreamObserver;
-import org.apache.commons.lang3.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
+
+import javax.annotation.OverridingMethodsMustInvokeSuper;
 
 import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyComplete;
 
@@ -178,10 +180,10 @@ public class ExportedTableUpdateListener implements StreamObserver<ExportNotific
             BaseTable.initializeWithSnapshot(logPrefix, snapshotControl, (usePrev, beforeClockValue) -> {
                 snapshotControl.setListenerAndResult(listener, NOOP_NOTIFICATION_STEP_RECEIVER);
                 final TrackingRowSet rowSet = table.getRowSet();
-                initSize.setValue(usePrev ? rowSet.sizePrev() : rowSet.size());
+                initSize.set(usePrev ? rowSet.sizePrev() : rowSet.size());
                 return true;
             });
-            sendUpdateMessage(ticket, initSize.longValue(), null);
+            sendUpdateMessage(ticket, initSize.get(), null);
         } catch (final SnapshotUnsuccessfulException err) {
             if (err.getCause() instanceof TableAlreadyFailedException) {
                 sendUpdateMessage(ticket, -1, Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
@@ -247,6 +249,7 @@ public class ExportedTableUpdateListener implements StreamObserver<ExportNotific
                     errorTransformer.transform(error));
         }
 
+        @OverridingMethodsMustInvokeSuper
         @Override
         public void destroy() {
             super.destroy();

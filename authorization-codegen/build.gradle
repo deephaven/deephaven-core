@@ -6,10 +6,14 @@ plugins {
 description 'Deephaven Authorization Code Generator'
 
 dependencies {
-    Classpaths.inheritGrpcPlatform(project, 'implementation')
-    implementation 'io.grpc:grpc-services'
+    implementation project(':engine-api')
 
-    implementation 'com.squareup:javapoet:1.13.0'
+    implementation platform(libs.grpc.bom)
+    implementation libs.grpc.services
+
+    implementation libs.squareup.javapoet
+
+    implementation libs.protobuf.java
 }
 
 tasks.findByName('assemble').dependsOn(tasks.named('shadowJar'))

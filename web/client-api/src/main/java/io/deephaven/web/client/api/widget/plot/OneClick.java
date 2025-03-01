@@ -1,16 +1,14 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.web.client.api.widget.plot;
 
 import com.vertispan.tsdefs.annotations.TsInterface;
 import com.vertispan.tsdefs.annotations.TsName;
-import com.vertispan.tsdefs.annotations.TsTypeRef;
 import elemental2.core.JsArray;
 import elemental2.core.JsMap;
-import elemental2.dom.CustomEventInit;
 import elemental2.promise.Promise;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.figuredescriptor.OneClickDescriptor;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.figuredescriptor.OneClickDescriptor;
 import io.deephaven.web.client.api.Column;
 import io.deephaven.web.client.api.JsPartitionedTable;
 import io.deephaven.web.client.api.JsTable;
@@ -129,7 +127,7 @@ public class OneClick {
         }
 
         // Some of the values aren't set, need to iterate through all the table map keys and select the ones that match
-        return JsArray.from(partitionedTable.getKeys()).filter((tableKey, index, all) -> {
+        return JsArray.from(partitionedTable.getKeys()).filter((tableKey, index) -> {
             if (!(tableKey instanceof String[])) {
                 return false;
             }
@@ -193,9 +191,7 @@ public class OneClick {
                 if (table == null) {
                     // No table, no need to change the figure subscription, just trigger a
                     // synthetic event indicating no items
-                    CustomEventInit event = CustomEventInit.create();
-                    event.setDetail(DataUpdateEvent.empty(jsSeries));
-                    jsFigure.fireEvent(JsFigure.EVENT_UPDATED, event);
+                    jsFigure.fireEvent(JsFigure.EVENT_UPDATED, DataUpdateEvent.empty(jsSeries));
                 } else {
                     // Subscribe to this key and wait for it...
                     currentTable = table;

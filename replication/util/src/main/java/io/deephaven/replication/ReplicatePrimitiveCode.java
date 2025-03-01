@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.replication;
 
@@ -472,6 +472,22 @@ public class ReplicatePrimitiveCode {
         results.add(intToChar(gradleTask, sourceClassJavaPath, serialVersionUIDs, exemptions));
         results.add(intToByte(gradleTask, sourceClassJavaPath, serialVersionUIDs, exemptions));
         results.add(intToLong(gradleTask, sourceClassJavaPath, serialVersionUIDs, exemptions));
+        results.add(intToShort(gradleTask, sourceClassJavaPath, serialVersionUIDs, exemptions));
+        results.add(intToDouble(gradleTask, sourceClassJavaPath, serialVersionUIDs, exemptions));
+        results.add(intToFloat(gradleTask, sourceClassJavaPath, serialVersionUIDs, exemptions));
+        return results;
+    }
+
+    public static List<String> intToAllButBooleanAndLong(String gradleTask, String sourceClassJavaPath,
+            String... exemptions) throws IOException {
+        return intToAllButBooleanAndLong(gradleTask, sourceClassJavaPath, null, exemptions);
+    }
+
+    public static List<String> intToAllButBooleanAndLong(String gradleTask, String sourceClassJavaPath,
+            Map<String, Long> serialVersionUIDs, String... exemptions) throws IOException {
+        final List<String> results = new ArrayList<>();
+        results.add(intToChar(gradleTask, sourceClassJavaPath, serialVersionUIDs, exemptions));
+        results.add(intToByte(gradleTask, sourceClassJavaPath, serialVersionUIDs, exemptions));
         results.add(intToShort(gradleTask, sourceClassJavaPath, serialVersionUIDs, exemptions));
         results.add(intToDouble(gradleTask, sourceClassJavaPath, serialVersionUIDs, exemptions));
         results.add(intToFloat(gradleTask, sourceClassJavaPath, serialVersionUIDs, exemptions));

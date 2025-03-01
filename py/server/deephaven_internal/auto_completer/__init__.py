@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
 
 """ This module allows the user to configure if and how we use jedi to perform autocompletion.
@@ -19,7 +19,16 @@ later, we may add slow mode, which uses both static and interpreted completion m
 from ._completer import Completer, Mode
 from jedi import preload_module, Interpreter
 
+
 jedi_settings = Completer()
 # warm jedi up a little. We could probably off-thread this.
 preload_module("deephaven")
 Interpreter("", []).complete(1, 0)
+
+
+def set_max_recursion_limit(limit: int) -> None:
+    """
+    Utility method to raise/lower the limit that our autocompletion will impose on Python 3.9 and 3.10.
+    """
+    from . import _completer
+    _completer.MAX_RECURSION_LIMIT = limit

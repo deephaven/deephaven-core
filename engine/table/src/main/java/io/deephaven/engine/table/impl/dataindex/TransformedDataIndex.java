@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.dataindex;
 
@@ -10,13 +10,12 @@ import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
-import io.deephaven.engine.table.BasicDataIndex;
-import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.DataIndex;
-import io.deephaven.engine.table.DataIndexTransformer;
-import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.ForkJoinPoolOperationInitializer;
+import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.select.FunctionalColumn;
 import io.deephaven.engine.table.impl.select.FunctionalColumnLong;
+import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -69,7 +68,7 @@ public class TransformedDataIndex extends LivenessArtifact implements BasicDataI
 
     @Override
     @NotNull
-    public Table table() {
+    public Table table(final DataIndexOptions unused) {
         Table localIndexTable;
         if ((localIndexTable = indexTable) != null) {
             return localIndexTable;
@@ -78,25 +77,28 @@ public class TransformedDataIndex extends LivenessArtifact implements BasicDataI
             if ((localIndexTable = indexTable) != null) {
                 return localIndexTable;
             }
+            indexTable = localIndexTable = QueryPerformanceRecorder.withNugget("Transform Data Index",
+                    ForkJoinPoolOperationInitializer.ensureParallelizable(this::buildTable));
+            // Don't hold onto the transformer after the index table is computed, we don't need to maintain
+            // reachability for its RowSets anymore.
+            transformer = null;
+            return localIndexTable;
+        }
+    }
 
-            try (final SafeCloseable ignored = parentIndex.isRefreshing() ? LivenessScopeStack.open() : null) {
-                localIndexTable = parentIndex.table();
-                localIndexTable = maybeIntersectAndInvert(localIndexTable);
-                localIndexTable = maybeSortByFirstKey(localIndexTable);
-                localIndexTable = localIndexTable.isRefreshing() && transformer.snapshotResult()
-                        ? localIndexTable.snapshot()
-                        : localIndexTable;
+    private Table buildTable() {
+        try (final SafeCloseable ignored = parentIndex.isRefreshing() ? LivenessScopeStack.open() : null) {
+            Table localIndexTable = parentIndex.table();
+            localIndexTable = maybeIntersectAndInvert(localIndexTable);
+            localIndexTable = maybeSortByFirstKey(localIndexTable);
+            localIndexTable = localIndexTable.isRefreshing() && transformer.snapshotResult()
+                    ? localIndexTable.snapshot()
+                    : localIndexTable;
 
-                if (localIndexTable.isRefreshing()) {
-                    manage(localIndexTable);
-                }
-
-                indexTable = localIndexTable;
-                // Don't hold onto the transformer after the index table is computed, we don't need to maintain
-                // reachability for its RowSets anymore.
-                transformer = null;
-                return localIndexTable;
+            if (localIndexTable.isRefreshing()) {
+                manage(localIndexTable);
             }
+            return localIndexTable;
         }
     }
 
@@ -153,10 +155,10 @@ public class TransformedDataIndex extends LivenessArtifact implements BasicDataI
         final Function<RowSet, RowSet> mutator =
                 getMutator(transformer.intersectRowSet().orElse(null), transformer.invertRowSet().orElse(null));
         final Table mutated = indexTable
-                .update(List.of(new FunctionalColumn<>(
+                .update(List.of(SelectColumn.ofStateless(new FunctionalColumn<>(
                         parentIndex.rowSetColumnName(), RowSet.class,
                         parentIndex.rowSetColumnName(), RowSet.class,
-                        mutator)));
+                        mutator))));
         if (transformer.intersectRowSet().isPresent()) {
             return mutated.where(Filter.isNotNull(ColumnName.of(parentIndex.rowSetColumnName())));
         }

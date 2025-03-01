@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit CharAddOnlySortedFirstOrLastChunkedOperator and run "./gradlew replicateOperators" to regenerate
@@ -93,12 +93,16 @@ public class DoubleAddOnlySortedFirstOrLastChunkedOperator extends BaseAddOnlyFi
         for (int ii = newDestination ? 1 : 0; ii < length; ++ii) {
             final long index = indices.get(start + ii);
             final double value = values.get(start + ii);
-            final int comparison = DoubleComparisons.compare(value, bestValue);
-            // @formatter:off
-            final boolean better =
-                    ( isFirst && (comparison < 0 || (comparison == 0 && index < bestIndex))) ||
-                    (!isFirst && (comparison > 0 || (comparison == 0 && index > bestIndex)))  ;
-            // @formatter:on
+            final boolean better;
+            if (isFirst) {
+                better = index < bestIndex
+                        ? DoubleComparisons.leq(value, bestValue)
+                        : DoubleComparisons.lt(value, bestValue);
+            } else {
+                better = index > bestIndex
+                        ? DoubleComparisons.geq(value, bestValue)
+                        : DoubleComparisons.gt(value, bestValue);
+            }
             if (better) {
                 bestIndex = index;
                 bestValue = value;

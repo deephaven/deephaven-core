@@ -1,12 +1,11 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.server.table.ops;
 
 import io.deephaven.api.filter.Filter;
 import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
@@ -33,7 +32,7 @@ public class UnstructuredFilterTableGrpcImpl extends GrpcTableOperation<Unstruct
         Assert.eq(sourceTables.size(), "sourceTables.size()", 1);
 
         final Table parent = sourceTables.get(0).get();
-        final String[] filters = request.getFiltersList().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+        final String[] filters = request.getFiltersList().toArray(String[]::new);
         final WhereFilter[] whereFilters = ColumnExpressionValidator.validateSelectFilters(filters, parent);
         return parent.where(Filter.and(whereFilters));
     }

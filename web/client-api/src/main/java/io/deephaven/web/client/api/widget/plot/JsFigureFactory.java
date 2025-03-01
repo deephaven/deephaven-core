@@ -1,15 +1,18 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.web.client.api.widget.plot;
 
 import com.vertispan.tsdefs.annotations.TsTypeRef;
 import elemental2.core.JsArray;
-import elemental2.dom.CustomEventInit;
 import elemental2.promise.Promise;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.FigureDescriptor;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.figuredescriptor.*;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.object_pb.FetchObjectResponse;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.FigureDescriptor;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.figuredescriptor.AxisDescriptor;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.figuredescriptor.ChartDescriptor;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.figuredescriptor.MultiSeriesDescriptor;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.figuredescriptor.SeriesDescriptor;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.figuredescriptor.SourceDescriptor;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.object_pb.FetchObjectResponse;
 import io.deephaven.web.client.api.JsPartitionedTable;
 import io.deephaven.web.client.api.JsTable;
 import io.deephaven.web.shared.fu.RemoverFn;
@@ -43,7 +46,7 @@ public class JsFigureFactory {
         FetchObjectResponse response = new FetchObjectResponse();
         response.setData(figureDescriptor.serializeBinary());
         Promise<?>[] tableCopyPromises =
-                tables.map((table, index, all) -> table.copy(false)).asArray(new Promise[0]);
+                tables.map((table, index) -> table.copy(false)).asArray(new Promise[0]);
         return Promise.all(tableCopyPromises)
                 .then(unknownTableCopies -> {
                     JsArray<JsTable> jsTableCopies = Js.cast(unknownTableCopies);
@@ -82,9 +85,7 @@ public class JsFigureFactory {
                                             figure.fireEvent(JsFigure.EVENT_RECONNECT);
                                             figure.enqueueSubscriptionCheck();
                                         } catch (JsFigure.FigureSourceException e) {
-                                            final CustomEventInit init = CustomEventInit.create();
-                                            init.setDetail(e);
-                                            figure.fireEvent(JsFigure.EVENT_RECONNECTFAILED, init);
+                                            figure.fireEvent(JsFigure.EVENT_RECONNECTFAILED, e);
                                         }
                                     }));
                                     removerFns
@@ -94,9 +95,7 @@ public class JsFigureFactory {
                                                 }
                                                 figure.unsubscribe();
 
-                                                final CustomEventInit init = CustomEventInit.create();
-                                                init.setDetail(err);
-                                                figure.fireEvent(JsFigure.EVENT_RECONNECTFAILED, init);
+                                                figure.fireEvent(JsFigure.EVENT_RECONNECTFAILED, err);
                                             }));
                                 }
 

@@ -3,22 +3,20 @@ plugins {
     id 'java-library'
 }
 
-configurations {
-    implementation.extendsFrom dhNumerics
-    testImplementation.extendsFrom fishBaseTest
-}
-
 dependencies {
     api project(':engine-time')
     implementation project(':engine-function')
     implementation project(':log-factory')
+    implementation libs.jama
+    implementation libs.commons.math3
 
     testImplementation project(':base-test-utils')
+    testImplementation project(path: ':Base', configuration: 'tests')
     testRuntimeOnly project(path: ':configs')
     testRuntimeOnly project(path: ':test-configs')
 
     testRuntimeOnly project(':log-to-slf4j'),
             project(path: ':configs'),
             project(path: ':test-configs')
-    Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
+    testRuntimeOnly libs.slf4j.simple
 }

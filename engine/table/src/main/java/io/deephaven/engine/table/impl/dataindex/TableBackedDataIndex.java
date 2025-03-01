@@ -1,13 +1,15 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.dataindex;
 
 import io.deephaven.api.ColumnName;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.base.verify.Require;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.DataIndexOptions;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.by.*;
@@ -52,7 +54,7 @@ public class TableBackedDataIndex extends AbstractDataIndex {
     public TableBackedDataIndex(
             @NotNull final QueryTable sourceTable,
             @NotNull final String... keyColumnNames) {
-        this.keyColumnNames = List.of(keyColumnNames);
+        this.keyColumnNames = List.of(Require.elementsNeqNull(keyColumnNames, "keyColumnNames"));
 
         // Create an in-order reverse lookup map for the key column names.
         keyColumnNamesByIndexedColumn = Collections.unmodifiableMap(
@@ -82,7 +84,7 @@ public class TableBackedDataIndex extends AbstractDataIndex {
 
     @Override
     @NotNull
-    public Table table() {
+    public Table table(final DataIndexOptions unused) {
         Table localIndexTable;
         if ((localIndexTable = indexTable) != null) {
             return localIndexTable;
@@ -135,8 +137,8 @@ public class TableBackedDataIndex extends AbstractDataIndex {
 
     @Override
     @NotNull
-    public RowKeyLookup rowKeyLookup() {
-        table();
+    public RowKeyLookup rowKeyLookup(final DataIndexOptions options) {
+        table(options);
         return (final Object key, final boolean usePrev) -> {
             // Pass the object to the aggregation lookup, then return the resulting row key. This index will be
             // correct in prev or current space because of the aggregation's hash-based lookup.

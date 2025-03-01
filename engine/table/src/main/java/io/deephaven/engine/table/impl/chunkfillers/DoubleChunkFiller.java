@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit CharChunkFiller and run "./gradlew replicateSourcesAndChunks" to regenerate
@@ -17,7 +17,7 @@ import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableDoubleChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.engine.rowset.RowSequence;
-import org.apache.commons.lang3.mutable.MutableInt;
+import io.deephaven.util.mutable.MutableInt;
 
 public final class DoubleChunkFiller implements ChunkFiller {
     public static final DoubleChunkFiller INSTANCE = new DoubleChunkFiller();
@@ -29,11 +29,11 @@ public final class DoubleChunkFiller implements ChunkFiller {
         final MutableInt destPos = new MutableInt(0);
         keys.forAllRowKeyRanges((start, end) -> {
             for (long v = start; v <= end; ++v) {
-                typedDest.set(destPos.intValue(), src.getDouble(v));
+                typedDest.set(destPos.get(), src.getDouble(v));
                 destPos.increment();
             }
         });
-        typedDest.setSize(destPos.intValue());
+        typedDest.setSize(destPos.get());
     }
 
     @Override
@@ -42,10 +42,10 @@ public final class DoubleChunkFiller implements ChunkFiller {
         final WritableDoubleChunk<? super Values> typedDest = dest.asWritableDoubleChunk();
         final MutableInt destPos = new MutableInt(0);
         keys.forAllRowKeys(v -> {
-            typedDest.set(destPos.intValue(), src.getDouble(v));
+            typedDest.set(destPos.get(), src.getDouble(v));
             destPos.increment();
         });
-        typedDest.setSize(destPos.intValue());
+        typedDest.setSize(destPos.get());
     }
 
     @Override
@@ -68,11 +68,11 @@ public final class DoubleChunkFiller implements ChunkFiller {
         final MutableInt destPos = new MutableInt(0);
         keys.forAllRowKeyRanges((start, end) -> {
             for (long v = start; v <= end; ++v) {
-                typedDest.set(destPos.intValue(), src.getPrevDouble(v));
+                typedDest.set(destPos.get(), src.getPrevDouble(v));
                 destPos.increment();
             }
         });
-        typedDest.setSize(destPos.intValue());
+        typedDest.setSize(destPos.get());
     }
 
     @Override
@@ -81,10 +81,10 @@ public final class DoubleChunkFiller implements ChunkFiller {
         final WritableDoubleChunk<? super Values> typedDest = dest.asWritableDoubleChunk();
         final MutableInt destPos = new MutableInt(0);
         keys.forAllRowKeys(v -> {
-            typedDest.set(destPos.intValue(), src.getPrevDouble(v));
+            typedDest.set(destPos.get(), src.getPrevDouble(v));
             destPos.increment();
         });
-        typedDest.setSize(destPos.intValue());
+        typedDest.setSize(destPos.get());
     }
 
     @Override

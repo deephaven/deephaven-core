@@ -9,8 +9,8 @@ dependencies {
     implementation project(':Util')
     implementation project(':Base')
     implementation project(':replication-util')
-    implementation depTrove3
-    implementation depCommonsIo
+    implementation libs.trove
+    implementation libs.commons.io
 }
 
 // These replicators do not require any manual fix-up and may be run without supervision
@@ -67,6 +67,7 @@ task replicateAllSafe {
     dependsOn Tasks.registerMainExecTask(project, 'replicateRegionAndRegionedSourceTests', 'io.deephaven.replicators.ReplicateRegionAndRegionedSourceTests')
 
     dependsOn Tasks.registerMainExecTask(project, 'replicateToPage', 'io.deephaven.replicators.ReplicateToPage')
+    dependsOn Tasks.registerMainExecTask(project, 'replicatePageMaterializers', 'io.deephaven.replicators.ReplicatePageMaterializers')
 
     dependsOn Tasks.registerMainExecTask(project, 'replicateDownsamplingValueTrackers', 'io.deephaven.replicators.ReplicateDownsamplingValueTrackers')
 

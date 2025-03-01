@@ -8,7 +8,7 @@ Deephaven Community Core is a real-time, time-series, column-oriented analytics 
 
 Java 11+ is required for this module, and the `JAVA_HOME` environment variable must be set appropriately.
 
-This module also requires Python version 3.7 or newer.
+This module also requires Python version 3.8 or newer.
 
 ## Setup
 
@@ -25,5 +25,5 @@ server = Server()
 server.start()
 
 from deephaven import time_table
-ticking_table = time_table('00:00:01').update_view(formulas=["Col1 = i % 2"])
+ticking_table = time_table('PT1s').update_view(formulas=["Col1 = i % 2"])
 ```

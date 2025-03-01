@@ -4,17 +4,17 @@ plugins {
 }
 
 dependencies {
-    implementation project(':java-client-session-dagger')
+    implementation project(':java-client-session')
     implementation project(':java-client-example-utilities')
 
-    Classpaths.inheritGrpcPlatform(project)
-    runtimeOnly 'io.grpc:grpc-netty'
+    implementation platform(libs.grpc.bom)
+    runtimeOnly libs.grpc.netty
 
-    Classpaths.inheritJUnitPlatform(project)
-    Classpaths.inheritAssertJ(project)
-    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testImplementation libs.assertj
+    testImplementation platform(libs.junit.bom)
+    testImplementation libs.junit.jupiter
 
-    Classpaths.inheritLogbackClassic(project)
+    runtimeOnly libs.logback.classic
 }
 
 test {
@@ -48,6 +48,8 @@ application.applicationDistribution.into('bin') {
     from(createApplication('publish', 'io.deephaven.client.examples.Publish'))
     from(createApplication('message-stream-send-receive', 'io.deephaven.client.examples.MessageStreamSendReceive'))
     from(createApplication('filter-table', 'io.deephaven.client.examples.FilterTable'))
+    from(createApplication('create-shared-id', 'io.deephaven.client.examples.CreateSharedId'))
+    from(createApplication('print-configuration-constants', 'io.deephaven.client.examples.PrintConfigurationConstants'))
 
     fileMode = 0755
 }

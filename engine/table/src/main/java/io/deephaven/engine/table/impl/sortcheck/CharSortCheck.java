@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.sortcheck;
 
@@ -32,12 +32,8 @@ public class CharSortCheck implements SortCheck {
     }
 
     // region comparison functions
-    private static int doComparison(char lhs, char rhs) {
-        return CharComparisons.compare(lhs, rhs);
+    private static boolean leq(char lhs, char rhs) {
+        return CharComparisons.leq(lhs, rhs);
     }
     // endregion comparison functions
-
-    private static boolean leq(char lhs, char rhs) {
-        return doComparison(lhs, rhs) <= 0;
-    }
 }

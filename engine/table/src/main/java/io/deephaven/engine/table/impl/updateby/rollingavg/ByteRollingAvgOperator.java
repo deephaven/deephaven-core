@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit CharRollingAvgOperator and run "./gradlew replicateUpdateBy" to regenerate
@@ -87,12 +87,12 @@ public class ByteRollingAvgOperator extends BaseDoubleUpdateByOperator {
 
         @Override
         public void writeToOutputChunk(int outIdx) {
-            if (byteWindowValues.size() == 0) {
+            if (byteWindowValues.isEmpty()) {
                 outputValues.set(outIdx, NULL_DOUBLE);
             } else {
                 final int count = byteWindowValues.size() - nullCount;
                 if (count == 0) {
-                    outputValues.set(outIdx, Double.NaN);
+                    outputValues.set(outIdx, NULL_DOUBLE);
                 } else {
                     outputValues.set(outIdx, curVal / (double) count);
                 }

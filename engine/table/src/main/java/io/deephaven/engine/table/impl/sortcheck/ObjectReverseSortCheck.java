@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit ObjectReverseSortCheck and run "./gradlew replicateSortCheck" to regenerate
@@ -7,8 +7,6 @@
 // @formatter:off
 
 package io.deephaven.engine.table.impl.sortcheck;
-
-import java.util.Objects;
 
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.util.compare.ObjectComparisons;
@@ -39,23 +37,9 @@ public class ObjectReverseSortCheck implements SortCheck {
     }
 
     // region comparison functions
-    // descending comparison
-    private static int doComparison(Object lhs, Object rhs) {
-        if (lhs == rhs) {
-            return 0;
-        }
-        if (lhs == null) {
-            return 1;
-        }
-        if (rhs == null) {
-            return -1;
-        }
-        //noinspection unchecked,rawtypes
-        return ((Comparable)rhs).compareTo(lhs);
+    // note that this is a descending kernel, thus the comparisons here are backwards (e.g., the lt function is in terms of the sort direction, so is implemented by gt)
+    private static boolean leq(Object lhs, Object rhs) {
+        return ObjectComparisons.geq(lhs, rhs);
     }
     // endregion comparison functions
-
-    private static boolean leq(Object lhs, Object rhs) {
-        return doComparison(lhs, rhs) <= 0;
-    }
 }

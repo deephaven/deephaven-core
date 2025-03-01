@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl;
 
@@ -76,7 +76,7 @@ public class FuzzerTest {
     }
 
     private GroovyDeephavenSession getGroovySession(@Nullable Clock clock) throws IOException {
-        final GroovyDeephavenSession session = new GroovyDeephavenSession(
+        final GroovyDeephavenSession session = GroovyDeephavenSession.of(
                 ExecutionContext.getContext().getUpdateGraph(),
                 ExecutionContext.getContext().getOperationInitializer(),
                 NoOp.INSTANCE,

@@ -1,8 +1,9 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.parquet.table.pagestore;
 
+import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.attributes.Any;
@@ -79,21 +80,22 @@ final class OffsetIndexBasedColumnChunkPageStore<ATTR extends Any> extends Colum
             numPages = offsetIndex.getPageCount();
             Assert.gtZero(numPages, "numPages");
             pageStates = new AtomicReferenceArray<>(numPages);
-            columnPageDirectAccessor = columnChunkReader.getPageAccessor(offsetIndex);
+            columnPageDirectAccessor =
+                    columnChunkReader.getPageAccessor(offsetIndex, toPage.getPageMaterializerFactory());
 
             if (numPages == 1) {
                 fixedPageSize = numRows();
-                return;
-            }
-            boolean isPageSizeFixed = true;
-            final long firstPageSize = offsetIndex.getFirstRowIndex(1) - offsetIndex.getFirstRowIndex(0);
-            for (int i = 2; i < numPages; ++i) {
-                if (offsetIndex.getFirstRowIndex(i) - offsetIndex.getFirstRowIndex(i - 1) != firstPageSize) {
-                    isPageSizeFixed = false;
-                    break;
+            } else {
+                boolean isPageSizeFixed = true;
+                final long firstPageSize = offsetIndex.getFirstRowIndex(1) - offsetIndex.getFirstRowIndex(0);
+                for (int i = 2; i < numPages; ++i) {
+                    if (offsetIndex.getFirstRowIndex(i) - offsetIndex.getFirstRowIndex(i - 1) != firstPageSize) {
+                        isPageSizeFixed = false;
+                        break;
+                    }
                 }
+                fixedPageSize = isPageSizeFixed ? firstPageSize : PAGE_SIZE_NOT_FIXED;
             }
-            fixedPageSize = isPageSizeFixed ? firstPageSize : PAGE_SIZE_NOT_FIXED;
             isInitialized = true;
         }
     }
@@ -165,6 +167,9 @@ final class OffsetIndexBasedColumnChunkPageStore<ATTR extends Any> extends Colum
             final FillContext fillContextToUse = fillContext != null ? fillContext : allocatedFillContext;
             ensureInitialized(fillContextToUse);
             return getPageContainingImpl(fillContextToUse, rowKey);
+        } catch (final RuntimeException e) {
+            throw new UncheckedDeephavenException("Failed to read parquet page data for row: " + rowKey + ", column: " +
+                    columnChunkReader.columnName() + ", uri: " + columnChunkReader.getURI(), e);
         }
     }
 

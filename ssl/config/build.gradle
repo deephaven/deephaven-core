@@ -6,21 +6,22 @@ plugins {
 description = 'The Deephaven SSL Configuration'
 
 dependencies {
-    Classpaths.inheritImmutables(project)
-    Classpaths.inheritJacksonPlatform(project, 'api')
-    Classpaths.inheritGrpcPlatform(project)
-    api 'com.fasterxml.jackson.core:jackson-annotations'
-    implementation 'com.fasterxml.jackson.core:jackson-databind'
-    runtimeOnly('com.fasterxml.jackson.datatype:jackson-datatype-jdk8') {
+    compileOnly project(':util-immutables')
+    annotationProcessor libs.immutables.value
+
+    implementation platform(libs.grpc.bom)
+    api platform(libs.jackson.bom)
+    api libs.jackson.annotations
+    implementation libs.jackson.databind
+    runtimeOnly(libs.jackson.datatype.jdk8) {
         because 'we need to parse optional types'
     }
 
-    Classpaths.inheritJUnitPlatform(project)
-    Classpaths.inheritAssertJ(project)
-
-    testImplementation 'org.junit.jupiter:junit-jupiter'
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
-    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    testImplementation libs.assertj
+    testImplementation platform(libs.junit.bom)
+    testImplementation libs.junit.jupiter
+    testRuntimeOnly libs.junit.jupiter.engine
+    testRuntimeOnly libs.junit.platform.launcher
 }
 
 test {

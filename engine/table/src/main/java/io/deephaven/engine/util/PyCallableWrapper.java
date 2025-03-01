@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.util;
 
@@ -56,6 +56,7 @@ public interface PyCallableWrapper {
     class Signature {
         private final List<Parameter> parameters;
         private final Class<?> returnType;
+        public final static Signature EMPTY = new Signature(List.of(), null);
 
         public Signature(List<Parameter> parameters, Class<?> returnType) {
             this.parameters = parameters;

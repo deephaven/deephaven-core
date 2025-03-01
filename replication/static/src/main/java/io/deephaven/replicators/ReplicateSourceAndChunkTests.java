@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.replicators;
 
@@ -263,7 +263,7 @@ public class ReplicateSourceAndChunkTests {
                         ? "                // the unit test framework will ask us to add things, we need to conveniently ignore it\n"
                         : "") +
                         (isImmutable ? "                if (!data.containsKey(v)) {\n" : "") +
-                        (isImmutable ? "    " : "") + "                data.put(v, vcs.get(ii.intValue()));",
+                        (isImmutable ? "    " : "") + "                data.put(v, vcs.get(ii.get()));",
                 (isImmutable ? "                }\n" : "") +
                         "                ii.increment();",
                 "            }",

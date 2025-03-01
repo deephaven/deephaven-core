@@ -1,0 +1,329 @@
+[versions]
+adbc = "0.16.0"
+airlift = "2.0.2"
+arrow = "18.0.0"
+autoservice = "1.1.1"
+avro = "1.12.0"
+awssdk = "2.29.20"
+# See dependency matrix for particular gRPC versions at https://github.com/grpc/grpc-java/blob/master/SECURITY.md#netty
+boringssl = "2.0.61.Final"
+calcite = "1.38.0"
+classgraph = "4.8.177"
+commons-compress = "1.27.1"
+commons-io = "2.18.0"
+commons-lang3 = "3.17.0"
+commons-math3 = "3.6.1"
+commons-text = "1.13.0"
+# confluent and confluent-kafak-clients should be kept in-sync
+confluent = "7.8.0"
+confluent-kafka-clients = "7.8.0-ccs"
+dagger = "2.55"
+deephaven-barrage = "0.7.2"
+deephaven-csv = "0.15.0"
+deephaven-hash = "0.2.0"
+deephaven-suan-shu = "0.1.1"
+dev-dirs = "26"
+dsi = "8.5.15"
+elemental = "1.2.3"
+f4b6a3 = "6.0.0"
+flatbuffers = "24.3.25"
+freemarker = "2.3.33"
+google-findbugs = "3.0.2"
+google-java-allocation-instrumenter = "3.3.4"
+groovy = "3.0.23"
+# Only bump this in concert with boringssl
+grpc = "1.65.1"
+guava = "33.4.0-jre"
+gwt = "2.12.1"
+# used by GwtTools
+gwtJetty = "9.4.44.v20210927"
+hadoop = "3.4.1"
+hdrhistogram = "2.2.2"
+iceberg = "1.8.0"
+immutables = "2.10.1"
+jackson = "2.18.2"
+jakarta-servlet = "5.0.0"
+jakarta-websocket = "2.0.0"
+jama = "1.1.1"
+javaparser = "3.26.2"
+javax-annotation = "1.3.2"
+javax-inject = "1"
+javax-validation = "2.0.1.Final"
+jdom2 = "2.0.6.1"
+jetbrains = "26.0.1"
+jetty = "11.0.20"
+jpy = "1.1.0"
+jsinterop = "2.0.2"
+# google is annoying, and have different versions released for the same groupId
+jsinterop-base = "1.0.3"
+logback = "1.5.16"
+lz4 = "1.8.0"
+mindrot = "0.4"
+nidi = "0.18.1"
+oshi = "5.8.3"
+pac4j = "5.7.0"
+parquet = "1.15.0"
+picocli = "4.7.6"
+postgresql = "42.7.4"
+protobuf = "3.25.4"
+randelshofer = "2.0.1"
+rdblue = "0.1.1"
+selenium = "4.27.0"
+slf4j = "2.0.16"
+snappy = "1.1.10.7"
+squareup = "1.13.0"
+sslcontext = "8.3.7"
+tdunning = "3.3"
+trove = "3.0.3"
+undercouch = "2.15.1"
+univocity = "2.9.1"
+vertispan-nio = "1.0-alpha-2"
+vertispan-flatbuffers-gwt = "24.3.25-1"
+vertispan-ts-defs = "1.0.0-RC4"
+xerial = "3.47.2.0"
+
+# test versions
+assertj = "3.27.3"
+h2database = "2.3.232"
+jmock = "2.13.1"
+junit = "5.11.4"
+junit4 = "4.13.2"
+testcontainers = "1.20.4"
+jmh = "1.37"
+spockframework = "2.3-groovy-3.0"
+
+[libraries]
+adbc-flight-sql = { module = "org.apache.arrow.adbc:adbc-driver-flight-sql", version.ref = "adbc" }
+
+airlift-aircompressor = { module = "io.airlift:aircompressor", version.ref = "airlift"}
+
+arrow-compression = { module = "org.apache.arrow:arrow-compression", version.ref = "arrow" }
+arrow-format = { module = "org.apache.arrow:arrow-format", version.ref = "arrow" }
+arrow-vector = { module = "org.apache.arrow:arrow-vector", version.ref = "arrow" }
+arrow-flight-core = { module = "org.apache.arrow:flight-core", version.ref = "arrow" }
+arrow-flight-sql = { module = "org.apache.arrow:flight-sql", version.ref = "arrow" }
+arrow-flight-sql-jdbc = { module = "org.apache.arrow:flight-sql-jdbc-driver", version.ref = "arrow" }
+
+autoservice = { module = "com.google.auto.service:auto-service-annotations", version.ref = "autoservice" }
+autoservice-compiler = { module = "com.google.auto.service:auto-service", version.ref = "autoservice" }
+
+avro = { module = "org.apache.avro:avro", version.ref = "avro" }
+
+awssdk-bom = { module = "software.amazon.awssdk:bom", version.ref = "awssdk"}
+awssdk-crt-client = { module = "software.amazon.awssdk:aws-crt-client" }
+awssdk-glue = { module = "software.amazon.awssdk:glue" }
+awssdk-s3 = { module = "software.amazon.awssdk:s3" }
+awssdk-s3-transfer-manager = { module = "software.amazon.awssdk:s3-transfer-manager" }
+awssdk-sts = { module = "software.amazon.awssdk:sts" }
+awssdk-dynamodb = { module = "software.amazon.awssdk:dynamodb" }
+awssdk-kms = { module = "software.amazon.awssdk:kms" }
+
+boringssl = { module = "io.netty:netty-tcnative-boringssl-static", version.ref = "boringssl" }
+
+calcite-core = { module = "org.apache.calcite:calcite-core", version.ref = "calcite" }
+
+classgraph = { module = "io.github.classgraph:classgraph", version.ref = "classgraph" }
+
+commons-compress = { module = "org.apache.commons:commons-compress", version.ref = "commons-compress" }
+
+commons-io = { module = "commons-io:commons-io", version.ref = "commons-io" }
+
+commons-lang3 = { module = "org.apache.commons:commons-lang3", version.ref = "commons-lang3" }
+
+commons-math3 = { module = "org.apache.commons:commons-math3", version.ref = "commons-math3" }
+
+commons-text = { module = "org.apache.commons:commons-text", version.ref = "commons-text" }
+
+confluent-avro-serializer = { module = "io.confluent:kafka-avro-serializer", version.ref = "confluent" }
+confluent-protobuf-serializer = { module = "io.confluent:kafka-protobuf-serializer", version.ref = "confluent" }
+
+confluent-kafka-clients = { module = "org.apache.kafka:kafka-clients", version.ref = "confluent-kafka-clients" }
+
+dagger = { module = "com.google.dagger:dagger", version.ref = "dagger" }
+dagger-compiler = { module = "com.google.dagger:dagger-compiler", version.ref = "dagger" }
+
+deephaven-barrage-core = { module = "io.deephaven.barrage:barrage-core", version.ref = "deephaven-barrage" }
+deephaven-barrage-format = { module = "io.deephaven.barrage:barrage-format", version.ref = "deephaven-barrage" }
+
+deephaven-csv = { module = "io.deephaven:deephaven-csv", version.ref = "deephaven-csv" }
+deephaven-csv-fast-double-parser = { module = "io.deephaven:deephaven-csv-fast-double-parser", version.ref = "deephaven-csv" }
+
+deephaven-hash = { module = "io.deephaven:hash", version.ref = "deephaven-hash" }
+
+deephaven-suan-shu = { module = "io.deephaven:SuanShu", version.ref = "deephaven-suan-shu" }
+
+dev-dirs-directories = { module = "dev.dirs:directories", version.ref = "dev-dirs" }
+
+dsi-fastutil = { module = "it.unimi.dsi:fastutil", version.ref = "dsi" }
+
+elemental-core = { module = "com.google.elemental2:elemental2-core", version.ref = "elemental" }
+
+f4b6a3-uuid-creator = { module = "com.github.f4b6a3:uuid-creator", version.ref = "f4b6a3" }
+
+flatbuffers-java = { module = "com.google.flatbuffers:flatbuffers-java", version.ref = "flatbuffers" }
+
+freemarker = { module = "org.freemarker:freemarker", version.ref = "freemarker" }
+
+google-findbugs-jsr305 = { module = "com.google.code.findbugs:jsr305", version.ref = "google-findbugs" }
+
+google-java-allocation-instrumenter = { module = "com.google.code.java-allocation-instrumenter:java-allocation-instrumenter", version.ref = "google-java-allocation-instrumenter"}
+
+groovy = { module = "org.codehaus.groovy:groovy", version.ref = "groovy" }
+groovy-json = { module = "org.codehaus.groovy:groovy-json", version.ref = "groovy" }
+groovy-templates = { module = "org.codehaus.groovy:groovy-templates", version.ref = "groovy" }
+
+grpc-api = { module = "io.grpc:grpc-api" }
+grpc-bom = { module = "io.grpc:grpc-bom", version.ref = "grpc"}
+grpc-core = { module = "io.grpc:grpc-core" }
+grpc-netty = { module = "io.grpc:grpc-netty" }
+grpc-protobuf = { module = "io.grpc:grpc-protobuf" }
+grpc-services = { module = "io.grpc:grpc-services" }
+grpc-stub = { module = "io.grpc:grpc-services" }
+grpc-testing = { module = "io.grpc:grpc-testing" }
+grpc-inprocess = { module = "io.grpc:grpc-inprocess" }
+grpc-util = { module = "io.grpc:grpc-util" }
+
+guava = { module = "com.google.guava:guava", version.ref = "guava" }
+
+gwt-user = { module = "org.gwtproject:gwt-user", version.ref = "gwt" }
+
+hadoop-common = { module = "org.apache.hadoop:hadoop-common", version.ref = "hadoop" }
+# These are transitive, inlined versions; see io.deephaven.hadoop-common-dependencies
+woodstox-core = { module = "com.fasterxml.woodstox:woodstox-core", version = "6.6.2" }
+hadoop-shaded-guava = { module = "org.apache.hadoop.thirdparty:hadoop-shaded-guava", version = "1.3.0" }
+commons-collections = { module = "commons-collections:commons-collections", version = "3.2.2" }
+
+hdrhistogram = { module = "org.hdrhistogram:HdrHistogram", version.ref = "hdrhistogram" }
+
+iceberg-api = { module = "org.apache.iceberg:iceberg-api" }
+iceberg-aws = { module = "org.apache.iceberg:iceberg-aws" }
+iceberg-bom = { module = "org.apache.iceberg:iceberg-bom", version.ref = "iceberg" }
+iceberg-bundled-guava = { module = "org.apache.iceberg:iceberg-bundled-guava" }
+iceberg-core = { module = "org.apache.iceberg:iceberg-core" }
+
+immutables-value = { module = "org.immutables:value", version.ref = "immutables" }
+immutables-value-annotations = { module = "org.immutables:value-annotations", version.ref = "immutables" }
+
+elemental-dom = { module = "com.google.elemental2:elemental2-dom", version.ref = "elemental" }
+elemental-promise = { module = "com.google.elemental2:elemental2-promise", version.ref = "elemental" }
+
+jackson-annotations = { module = "com.fasterxml.jackson.core:jackson-annotations" }
+jackson-bom = { module = "com.fasterxml.jackson:jackson-bom", version.ref = "jackson" }
+jackson-core = { module = "com.fasterxml.jackson.core:jackson-core" }
+jackson-databind = { module = "com.fasterxml.jackson.core:jackson-databind" }
+jackson-dataformat-yaml = { module = "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml" }
+jackson-datatype-jdk8 = { module = "com.fasterxml.jackson.datatype:jackson-datatype-jdk8" }
+
+jakarata-servlet-api = { module = "jakarta.servlet:jakarta.servlet-api", version.ref = "jakarta-servlet" }
+
+jakarta-websocket-api = { module = "jakarta.websocket:jakarta.websocket-api", version.ref = "jakarta-websocket" }
+
+jama = { module = "gov.nist.math.jama:gov.nist.math.jama", version.ref = "jama" }
+
+javaparser-core = { module = "com.github.javaparser:javaparser-core", version.ref = "javaparser" }
+
+javax-annotation-api = { module = "javax.annotation:javax.annotation-api", version.ref = "javax-annotation" }
+
+javax-inject = { module = "javax.inject:javax.inject", version.ref = "javax-inject" }
+
+javax-validation-api = { module = "javax.validation:validation-api", version.ref = "javax-validation" }
+
+jdom2 = { module = "org.jdom:jdom2", version.ref = "jdom2" }
+
+jetbrains-annotations = { module = "org.jetbrains:annotations", version.ref = "jetbrains" }
+
+jetty-alpn-java-server = { module = "org.eclipse.jetty:jetty-alpn-java-server" }
+jetty-alpn-server = { module = "org.eclipse.jetty:jetty-alpn-server" }
+jetty-bom = { module = "org.eclipse.jetty:jetty-bom", version.ref = "jetty" }
+jetty-http2-server = { module = "org.eclipse.jetty.http2:http2-server" }
+jetty-servlet = { module = "org.eclipse.jetty:jetty-servlet" }
+jetty-servlets = { module = "org.eclipse.jetty:jetty-servlets" }
+jetty-webapp = { module = "org.eclipse.jetty:jetty-webapp" }
+jetty-websocket-jakarta-server = { module = "org.eclipse.jetty.websocket:websocket-jakarta-server" }
+
+jpy = { module = "org.jpyconsortium:jpy", version.ref = "jpy" }
+
+jsinterop-annotations = { module = "com.google.jsinterop:jsinterop-annotations", version.ref = "jsinterop" }
+jsinterop-base = { module = "com.google.jsinterop:base", version.ref = "jsinterop-base" }
+
+logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
+
+lz4-java = { module = "org.lz4:lz4-java", version.ref = "lz4" }
+
+mindrot-jbcrypt = { module = "org.mindrot:jbcrypt", version.ref = "mindrot" }
+
+nidi-graphviz-java = { module = "guru.nidi:graphviz-java", version.ref = "nidi" }
+
+oshi-core = { module = "com.github.oshi:oshi-core", version.ref = "oshi" }
+
+pac4j-http = { module = "org.pac4j:pac4j-http", version.ref = "pac4j" }
+pac4j-oidc = { module = "org.pac4j:pac4j-oidc", version.ref = "pac4j" }
+
+parquet-hadoop = { module = "org.apache.parquet:parquet-hadoop", version.ref = "parquet" }
+
+picocli = { module = "info.picocli:picocli", version.ref = "picocli" }
+
+postgresql = { module = "org.postgresql:postgresql", version.ref = "postgresql" }
+
+protobuf-java = { module = "com.google.protobuf:protobuf-java", version.ref = "protobuf" }
+
+randelshofer-fastdoubleparser = { module = "ch.randelshofer:fastdoubleparser", version.ref = "randelshofer" }
+
+rdblue-brotli-codec = { module = "com.github.rdblue:brotli-codec", version.ref = "rdblue" }
+
+selenium-remote-driver = { module = "org.seleniumhq.selenium:selenium-remote-driver", version.ref = "selenium" }
+
+slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
+slf4j-jul-to-slf4j = { module = "org.slf4j:jul-to-slf4j", version.ref = "slf4j" }
+slf4j-simple = { module = "org.slf4j:slf4j-simple", version.ref = "slf4j" }
+
+snappy-java = { module = "org.xerial.snappy:snappy-java", version.ref = "snappy" }
+
+squareup-javapoet = { module = "com.squareup:javapoet", version.ref = "squareup" }
+
+sslcontext-kickstart = { module = "io.github.hakky54:sslcontext-kickstart", version.ref = "sslcontext" }
+sslcontext-kickstart-jetty = { module = "io.github.hakky54:sslcontext-kickstart-for-jetty", version.ref = "sslcontext" }
+sslcontext-kickstart-netty = { module = "io.github.hakky54:sslcontext-kickstart-for-netty", version.ref = "sslcontext" }
+
+tdunning-t-digest = { module = "com.tdunning:t-digest", version.ref = "tdunning" }
+
+trove = { module = "net.sf.trove4j:trove4j", version.ref = "trove" }
+
+undercouch-bson4jackson = { module = "de.undercouch:bson4jackson", version.ref = "undercouch" }
+
+univocity-parsers = { module = "com.univocity:univocity-parsers", version.ref = "univocity" }
+
+vertispan-nio-gwt = { module = "com.vertispan.nio:gwt-nio", version.ref = "vertispan-nio" }
+
+vertispan-flatbuffers-gwt = { module = "com.vertispan.flatbuffers:flatbuffers-gwt", version.ref = "vertispan-flatbuffers-gwt" }
+
+vertispan-ts-defs-annotations = { module = "com.vertispan.tsdefs:jsinterop-ts-defs-annotations", version.ref = "vertispan-ts-defs" }
+vertispan-ts-defs-doclet = { module = "com.vertispan.tsdefs:jsinterop-ts-defs-doclet", version.ref = "vertispan-ts-defs" }
+
+xerial-sqlite-jdbc = { module = "org.xerial:sqlite-jdbc", version.ref = "xerial" }
+
+# test libraries
+assertj = { module = "org.assertj:assertj-core", version.ref = "assertj" }
+
+h2database-h2 = { module = "com.h2database:h2", version.ref = "h2database" }
+
+jmh-core = { module = "org.openjdk.jmh:jmh-core", version.ref = "jmh" }
+jmh-generator-annprocess = { module = "org.openjdk.jmh:jmh-generator-annprocess", version.ref = "jmh" }
+
+jmock-imposters = { module = "org.jmock:jmock-imposters", version.ref = "jmock" }
+jmock-junit4 = { module = "org.jmock:jmock-junit4", version.ref = "jmock" }
+
+junit-bom = { module = "org.junit:junit-bom", version.ref = "junit" }
+junit-jupiter = { module = "org.junit.jupiter:junit-jupiter" }
+junit-jupiter-engine = { module = "org.junit.jupiter:junit-jupiter-engine" }
+junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
+junit-vintage-engine = { module = "org.junit.vintage:junit-vintage-engine" }
+
+junit4 = { module = "junit:junit", version.ref = "junit4" }
+
+spockframework-core = { module = "org.spockframework:spock-core", version.ref = "spockframework" }
+
+testcontainers = { module = "org.testcontainers:testcontainers", version.ref = "testcontainers" }
+testcontainers-junit-jupiter = { module = "org.testcontainers:junit-jupiter", version.ref = "testcontainers" }
+testcontainers-localstack = { module = "org.testcontainers:localstack", version.ref = "testcontainers" }
+testcontainers-minio = { module = "org.testcontainers:minio", version.ref = "testcontainers" }

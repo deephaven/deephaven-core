@@ -1,13 +1,13 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.util;
 
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
-import io.deephaven.engine.table.impl.DataAccessHelpers;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.util.TableTools;
@@ -393,7 +393,7 @@ public class TestSyncTableFilter extends RefreshingTableTestCase {
         updateGraph.completeCycleForUnitTests();
 
         showWithRowSet(sentSum);
-        int[] actual = (int[]) DataAccessHelpers.getColumn(sentSum, "SS").getDirect();
+        int[] actual = ColumnVectors.ofInt(sentSum, "SS").toArray();
         int[] expected = new int[] {606, 610};
         assertEquals(expected, actual);
     }

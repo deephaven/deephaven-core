@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl;
 
@@ -104,9 +104,9 @@ public class TestSelectPreserveGrouping extends QueryTableTestBase {
             DataIndexer.getOrCreateDataIndex(x, "Sym");
 
             System.out.println(x.getDefinition());
-            ParquetTools.writeTable(x, dest);
+            ParquetTools.writeTable(x, dest.getPath());
 
-            final Table readBack = ParquetTools.readTable(dest);
+            final Table readBack = ParquetTools.readTable(dest.getPath());
             TableTools.showWithRowSet(readBack);
 
             assertTrue(DataIndexer.hasDataIndex(readBack, "Sym"));

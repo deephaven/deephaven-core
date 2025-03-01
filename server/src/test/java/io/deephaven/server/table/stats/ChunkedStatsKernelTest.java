@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.server.table.stats;
 
@@ -8,7 +8,6 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
-import io.deephaven.engine.table.impl.vector.ObjectVectorColumnWrapper;
 import io.deephaven.engine.testutil.generator.BigDecimalGenerator;
 import io.deephaven.engine.testutil.generator.BigIntegerGenerator;
 import io.deephaven.engine.testutil.generator.ByteGenerator;
@@ -28,8 +27,6 @@ import org.junit.Test;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.time.temporal.TemporalAmount;
-import java.util.LinkedHashMap;
 import java.util.Random;
 
 import static io.deephaven.engine.testutil.TstUtils.getTable;

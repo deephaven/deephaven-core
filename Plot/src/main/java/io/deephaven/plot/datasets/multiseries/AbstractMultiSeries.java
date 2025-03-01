@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.plot.datasets.multiseries;
 
@@ -218,7 +218,7 @@ public abstract class AbstractMultiSeries<SERIES extends DataSeriesInternal> ext
     @Override
     // this should be run under a seriesLock
     public void addSeries(SERIES series, Object key) {
-        Assert.holdsLock(seriesLock, "seriesLock");
+        Assert.assertion(Thread.holdsLock(seriesLock), "Thread.holdsLock(seriesLock)");
 
         if (seriesKeys == null) {
             seriesKeys = new HashSet<>();

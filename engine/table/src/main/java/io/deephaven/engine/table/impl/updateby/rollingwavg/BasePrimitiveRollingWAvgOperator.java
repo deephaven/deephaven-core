@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.updateby.rollingwavg;
 
@@ -84,8 +84,7 @@ abstract class BasePrimitiveRollingWAvgOperator extends BaseDoubleUpdateByOperat
         @Override
         public void writeToOutputChunk(int outIdx) {
             if (windowValues.size() == nullCount) {
-                // Looks weird but returning NaN is consistent with Numeric#wavg and AggWAvg
-                outputValues.set(outIdx, Double.NaN);
+                outputValues.set(outIdx, NULL_DOUBLE);
             } else {
                 final double weightedValSum = windowValues.evaluate();
                 final double weightSum = windowWeightValues.evaluate();

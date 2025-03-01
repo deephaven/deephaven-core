@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.extensions.barrage.chunk.array;
 
@@ -47,7 +47,7 @@ public class BoxedBooleanArrayExpansionKernel implements ArrayExpansionKernel {
                 continue;
             }
             for (int j = 0; j < row.length; ++j) {
-                final byte value = row[j] ? BooleanUtils.TRUE_BOOLEAN_AS_BYTE : BooleanUtils.FALSE_BOOLEAN_AS_BYTE;
+                final byte value = BooleanUtils.booleanAsByte(row[j]);
                 result.set(lenWritten + j, value);
             }
             lenWritten += row.length;

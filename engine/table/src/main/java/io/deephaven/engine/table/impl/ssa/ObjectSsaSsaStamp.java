@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit CharSsaSsaStamp and run "./gradlew replicateSegmentedSortedArray" to regenerate
@@ -8,6 +8,7 @@
 package io.deephaven.engine.table.impl.ssa;
 
 import java.util.Objects;
+import io.deephaven.util.compare.ObjectComparisons;
 
 import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
@@ -292,19 +293,8 @@ public class ObjectSsaSsaStamp implements SsaSsaStamp {
     // region comparison functions
     // ascending comparison
     private static int doComparison(Object lhs, Object rhs) {
-       if (lhs == rhs) {
-            return 0;
-        }
-        if (lhs == null) {
-            return -1;
-        }
-        if (rhs == null) {
-            return 1;
-        }
-        //noinspection unchecked,rawtypes
-        return ((Comparable)lhs).compareTo(rhs);
+        return ObjectComparisons.compare(lhs, rhs);
     }
-
     // endregion comparison functions
 
     private static boolean lt(Object lhs, Object rhs) {

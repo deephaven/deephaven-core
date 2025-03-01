@@ -1,14 +1,16 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
+import io.deephaven.engine.liveness.LiveSupplier;
+import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
-import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.TableUpdateListener;
 import io.deephaven.engine.table.impl.locations.ImmutableTableLocationKey;
 import io.deephaven.engine.table.impl.locations.TableDataException;
@@ -17,16 +19,16 @@ import io.deephaven.engine.table.impl.locations.TableLocationRemovedException;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationSubscriptionBuffer;
-import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.TestUseOnly;
 import org.apache.commons.lang3.mutable.Mutable;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 
+import javax.annotation.OverridingMethodsMustInvokeSuper;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.stream.Stream;
 
 /**
  * Basic uncoalesced table that only adds keys.
@@ -71,7 +73,7 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
     /**
      * The update source object for refreshing locations and location sizes.
      */
-    private Runnable locationChangePoller;
+    private LocationChangePoller locationChangePoller;
 
     /**
      * Construct a new disk-backed table.
@@ -107,7 +109,10 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
         }
 
         setRefreshing(isRefreshing);
-        setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
+        // Given the location provider's update modes, retrieve and set applicable table attributes from the CSM
+        columnSourceManager.getTableAttributes(
+                locationProvider.getUpdateMode(),
+                locationProvider.getLocationUpdateMode()).forEach(this::setAttribute);
     }
 
     /**
@@ -145,38 +150,64 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
                 if (isRefreshing()) {
                     final TableLocationSubscriptionBuffer locationBuffer =
                             new TableLocationSubscriptionBuffer(locationProvider);
-                    final TableLocationSubscriptionBuffer.LocationUpdate locationUpdate =
-                            locationBuffer.processPending();
-
-                    maybeRemoveLocations(locationUpdate.getPendingRemovedLocationKeys());
-                    maybeAddLocations(locationUpdate.getPendingAddedLocationKeys());
+                    manage(locationBuffer);
+                    try (final TableLocationSubscriptionBuffer.LocationUpdate locationUpdate =
+                            locationBuffer.processPending()) {
+                        if (locationUpdate != null) {
+                            maybeAddLocations(locationUpdate.getPendingAddedLocationKeys());
+                        }
+                    }
                     updateSourceRegistrar.addSource(locationChangePoller = new LocationChangePoller(locationBuffer));
                 } else {
                     locationProvider.refresh();
-                    maybeAddLocations(locationProvider.getTableLocationKeys());
+                    final Collection<LiveSupplier<ImmutableTableLocationKey>> keySuppliers = new ArrayList<>();
+                    try {
+                        locationProvider.getTableLocationKeys(ttlk -> {
+                            // Retain each of the location key suppliers as we see them (since the TLP is not guaranteed
+                            // to retain them outside the callback).
+                            ttlk.retainReference();
+                            keySuppliers.add(ttlk);
+                        });
+                        maybeAddLocations(keySuppliers);
+                    } finally {
+                        // Now we can drop the location key supplier references.
+                        keySuppliers.forEach(LivenessReferent::dropReference);
+                    }
                 }
             });
             locationsInitialized = true;
         }
     }
 
-    private void maybeAddLocations(@NotNull final Collection<ImmutableTableLocationKey> locationKeys) {
+    private void maybeAddLocations(@NotNull final Collection<LiveSupplier<ImmutableTableLocationKey>> locationKeys) {
         if (locationKeys.isEmpty()) {
             return;
         }
         filterLocationKeys(locationKeys)
-                .forEach(lk -> columnSourceManager.addLocation(locationProvider.getTableLocation(lk)));
+                .parallelStream()
+                .forEach(lk -> columnSourceManager.addLocation(locationProvider.getTableLocation(lk.get())));
     }
 
-    private ImmutableTableLocationKey[] maybeRemoveLocations(
-            @NotNull final Collection<ImmutableTableLocationKey> removedKeys) {
+    private void maybeRemoveLocations(@NotNull final Collection<LiveSupplier<ImmutableTableLocationKey>> removedKeys,
+            final boolean removedAllowed) {
         if (removedKeys.isEmpty()) {
-            return ImmutableTableLocationKey.ZERO_LENGTH_IMMUTABLE_TABLE_LOCATION_KEY_ARRAY;
+            return;
         }
 
-        return filterLocationKeys(removedKeys).stream()
-                .filter(columnSourceManager::removeLocationKey)
+        final Collection<LiveSupplier<ImmutableTableLocationKey>> filteredSuppliers = filterLocationKeys(removedKeys);
+        if (filteredSuppliers.isEmpty()) {
+            return;
+        }
+
+        if (removedAllowed) {
+            filteredSuppliers.stream().map(LiveSupplier::get).forEach(columnSourceManager::removeLocationKey);
+            return;
+        }
+
+        final ImmutableTableLocationKey[] keys = filteredSuppliers.stream()
+                .map(LiveSupplier::get)
                 .toArray(ImmutableTableLocationKey[]::new);
+        throw new TableLocationRemovedException("Source table does not support removed locations", keys);
     }
 
     private void initializeLocationSizes() {
@@ -216,14 +247,14 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
 
         @Override
         protected void instrumentedRefresh() {
-            final TableLocationSubscriptionBuffer.LocationUpdate locationUpdate = locationBuffer.processPending();
-            final ImmutableTableLocationKey[] removedKeys =
-                    maybeRemoveLocations(locationUpdate.getPendingRemovedLocationKeys());
-            if (removedKeys.length > 0) {
-                throw new TableLocationRemovedException("Source table does not support removed locations",
-                        removedKeys);
+            try (final TableLocationSubscriptionBuffer.LocationUpdate locationUpdate =
+                    locationBuffer.processPending()) {
+                if (locationUpdate != null) {
+                    maybeRemoveLocations(locationUpdate.getPendingRemovedLocationKeys(),
+                            locationProvider.getUpdateMode().removeAllowed());
+                    maybeAddLocations(locationUpdate.getPendingAddedLocationKeys());
+                }
             }
-            maybeAddLocations(locationUpdate.getPendingAddedLocationKeys());
 
             // This class previously had functionality to notify "location listeners", but it was never used.
             // Resurrect from git history if needed.
@@ -232,13 +263,16 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
                 return;
             }
 
-            final RowSet added = columnSourceManager.refresh();
-            if (added.isEmpty()) {
+            final TableUpdate update = columnSourceManager.refresh();
+            if (update.empty()) {
+                update.release();
                 return;
             }
 
-            rowSet.insert(added);
-            notifyListeners(added, RowSetFactory.empty(), RowSetFactory.empty());
+            Assert.assertion(update.shifted().empty(), "update.shifted().empty()");
+            rowSet.remove(update.removed());
+            rowSet.insert(update.added());
+            notifyListeners(update);
         }
 
         @Override
@@ -257,8 +291,8 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
      *        {@link TableLocationProvider}, but not yet incorporated into the table
      * @return A sub-collection of the input
      */
-    protected Collection<ImmutableTableLocationKey> filterLocationKeys(
-            @NotNull final Collection<ImmutableTableLocationKey> foundLocationKeys) {
+    protected Collection<LiveSupplier<ImmutableTableLocationKey>> filterLocationKeys(
+            @NotNull final Collection<LiveSupplier<ImmutableTableLocationKey>> foundLocationKeys) {
         return foundLocationKeys;
     }
 
@@ -286,9 +320,11 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
             }
 
             if (snapshotControl != null) {
+                // noinspection MethodDoesntCallSuperMethod
                 final ListenerImpl listener =
                         new ListenerImpl("SourceTable.coalesce", this, resultTable) {
 
+                            @OverridingMethodsMustInvokeSuper
                             @Override
                             protected void destroy() {
                                 // This impl cannot call super.destroy() because we must unsubscribe from the actual
@@ -306,37 +342,16 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
         return result.getValue();
     }
 
-    protected static class QueryTableReference extends DeferredViewTable.TableReference {
-
-        protected final SourceTable<?> table;
-
-        QueryTableReference(SourceTable<?> table) {
-            super(table);
-            this.table = table;
-        }
-
-        @Override
-        public long getSize() {
-            return QueryConstants.NULL_LONG;
-        }
-
-        @Override
-        public TableDefinition getDefinition() {
-            return table.getDefinition();
-        }
-
-        @Override
-        public Table get() {
-            return table.coalesce();
-        }
-    }
-
+    @OverridingMethodsMustInvokeSuper
     @Override
     protected void destroy() {
         super.destroy();
         if (updateSourceRegistrar != null) {
             if (locationChangePoller != null) {
                 updateSourceRegistrar.removeSource(locationChangePoller);
+                // NB: we do not want to null out any locationChangePoller.locationBuffer here, as they may still be in
+                // use by a notification delivery running currently with this destroy.
+                locationChangePoller.locationBuffer.reset();
             }
         }
     }

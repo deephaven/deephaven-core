@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit CharRingBufferVectorWrapper and run "./gradlew replicateUpdateBy" to regenerate
@@ -13,7 +13,7 @@ import io.deephaven.vector.ByteVector;
 import io.deephaven.vector.ByteVectorDirect;
 import io.deephaven.vector.ByteVectorSlice;
 
-public class ByteRingBufferVectorWrapper implements ByteVector, RingBufferVectorWrapper {
+public class ByteRingBufferVectorWrapper implements ByteVector, RingBufferVectorWrapper<ByteVector> {
     private final ByteRingBuffer ringBuffer;
 
     public ByteRingBufferVectorWrapper(final ByteRingBuffer ringBuffer) {

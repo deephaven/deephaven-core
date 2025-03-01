@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl;
 
@@ -14,10 +14,11 @@ import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.sources.BitMaskingColumnSource;
 import io.deephaven.engine.table.impl.sources.BitShiftingColumnSource;
 import io.deephaven.engine.table.impl.sources.CrossJoinRightColumnSource;
+import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
 import io.deephaven.util.SafeCloseableList;
+import io.deephaven.util.mutable.MutableInt;
+import io.deephaven.util.mutable.MutableLong;
 import org.apache.commons.lang3.mutable.MutableBoolean;
-import org.apache.commons.lang3.mutable.MutableInt;
-import org.apache.commons.lang3.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
@@ -541,13 +542,13 @@ public class CrossJoinHelper {
                                 final LongConsumer processLeftShiftsUntil = (ii) -> {
                                     // note: if all rows shift, then each row shifts by a different amount and
                                     // rowsToShift is inclusive
-                                    if (!finishShifting.booleanValue() && watermark.longValue() >= ii || allRowsShift) {
+                                    if (!finishShifting.booleanValue() && watermark.get() >= ii || allRowsShift) {
                                         return;
                                     }
 
-                                    for (; currLeftShiftIdx.intValue() < upstreamLeft.shifted().size(); currLeftShiftIdx
+                                    for (; currLeftShiftIdx.get() < upstreamLeft.shifted().size(); currLeftShiftIdx
                                             .increment()) {
-                                        final int shiftIdx = currLeftShiftIdx.intValue();
+                                        final int shiftIdx = currLeftShiftIdx.get();
                                         final long beginRange =
                                                 upstreamLeft.shifted().getBeginRange(shiftIdx) << prevRightBits;
                                         final long endRange =
@@ -556,7 +557,7 @@ public class CrossJoinHelper {
                                         final long shiftDelta =
                                                 upstreamLeft.shifted().getShiftDelta(shiftIdx) << currRightBits;
 
-                                        if (endRange < watermark.longValue()) {
+                                        if (endRange < watermark.get()) {
                                             continue;
                                         }
                                         if (!finishShifting.booleanValue() && beginRange >= ii) {
@@ -564,7 +565,7 @@ public class CrossJoinHelper {
                                         }
 
                                         final long maxTouched = Math.min(ii - 1, endRange);
-                                        final long minTouched = Math.max(watermark.longValue(), beginRange);
+                                        final long minTouched = Math.max(watermark.get(), beginRange);
                                         if (!rsIt.advance(minTouched)) {
                                             break;
                                         }
@@ -574,7 +575,7 @@ public class CrossJoinHelper {
                                             toRemoveFromResultRowSet.appendRange(s, e);
                                             toInsertIntoResultRowSet.appendRange(s + shiftDelta, e + shiftDelta);
                                         });
-                                        watermark.setValue(maxTouched + 1);
+                                        watermark.set(maxTouched + 1);
 
                                         if (!finishShifting.booleanValue() && maxTouched != endRange) {
                                             break;
@@ -651,7 +652,7 @@ public class CrossJoinHelper {
                                         shiftBuilder.shiftRange(prevOffset, prevOffset + prevCardinality - 1,
                                                 currOffset - prevOffset);
                                     }
-                                    watermark.setValue((pi + 1) << prevRightBits);
+                                    watermark.set((pi + 1) << prevRightBits);
                                 });
                                 // finish processing all shifts
                                 finishShifting.setTrue();
@@ -1039,7 +1040,7 @@ public class CrossJoinHelper {
             } else {
                 leftTable.getRowSet().forAllRowKeys((currIdx) -> {
                     final long currResultIdx = currIdx << crossJoinState.getNumShiftBits();
-                    currRightShift.setValue(furtherShiftIndex(currRight, currRightShift.longValue(), currResultIdx));
+                    currRightShift.set(furtherShiftIndex(currRight, currRightShift.get(), currResultIdx));
                     builder.appendRowSequence(currRight);
                 });
                 crossJoinState.setRightEmpty(false);
@@ -1418,7 +1419,11 @@ public class CrossJoinHelper {
         }
 
         for (MatchPair mp : columnsToAdd) {
-            final T wrappedSource = newRightColumnSource.apply(rightTable.getColumnSource(mp.rightColumn()));
+            // If rhs is empty and static, can substitute with a NullValueColumnSource
+            final ColumnSource<?> rcs = rightTable.getColumnSource(mp.rightColumn());
+            final ColumnSource<?> wrappedSource = rightTable.isEmpty() && !rightTable.isRefreshing()
+                    ? NullValueColumnSource.getInstance(rcs.getType(), rcs.getComponentType())
+                    : newRightColumnSource.apply(rcs);
             columnSourceMap.put(mp.leftColumn(), wrappedSource);
         }
 

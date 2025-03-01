@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.web.client.api;
 
@@ -24,6 +24,9 @@ public class JsRangeSet {
     private final RangeSet range;
 
     public static JsRangeSet ofRange(double first, double last) {
+        if (first > last) {
+            throw new IllegalStateException(first + " > " + last);
+        }
         return new JsRangeSet(RangeSet.ofRange((long) first, (long) last));
     }
 

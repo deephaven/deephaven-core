@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit CharChunkEquals and run "./gradlew replicateHashing" to regenerate
@@ -12,6 +12,7 @@ import java.util.Objects;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.ChunkPositions;
+import io.deephaven.util.compare.ObjectComparisons;
 
 // region name
 public class ObjectChunkEquals implements ChunkEquals {
@@ -252,7 +253,7 @@ public class ObjectChunkEquals implements ChunkEquals {
 
     // region eq
     static private boolean eq(Object lhs, Object rhs) {
-        return Objects.equals(lhs, rhs);
+        return ObjectComparisons.eq(lhs, rhs);
     }
     // endregion eq
 

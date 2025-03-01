@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
 
 import functools
@@ -30,10 +30,10 @@ class DTypesTestCase(BaseTestCase):
     def test_type_alias(self):
         self.assertEqual(dtypes.byte, dtypes.int8)
         self.assertEqual(dtypes.short, dtypes.int16)
-        self.assertEqual(dtypes.int_, dtypes.int64)
+        self.assertEqual(dtypes.int64, dtypes.int64)
         self.assertEqual(dtypes.long, dtypes.int64)
-        self.assertEqual(dtypes.float_, dtypes.double)
-        self.assertEqual(dtypes.float_, dtypes.float64)
+        self.assertEqual(dtypes.float64, dtypes.double)
+        self.assertEqual(dtypes.float64, dtypes.float64)
         self.assertEqual(dtypes.double, dtypes.float64)
 
     def test_j_type(self):
@@ -41,11 +41,12 @@ class DTypesTestCase(BaseTestCase):
         self.assertEqual(dtypes.byte.j_type, jpy.get_type("byte"))
         self.assertEqual(dtypes.short.j_type, jpy.get_type("short"))
         self.assertEqual(dtypes.char.j_type, jpy.get_type("char"))
-        self.assertEqual(dtypes.int_.j_type, jpy.get_type("long"))
+        self.assertEqual(dtypes.int64.j_type, jpy.get_type("long"))
         self.assertEqual(dtypes.long.j_type, jpy.get_type("long"))
-        self.assertEqual(dtypes.float_.j_type, jpy.get_type("double"))
+        self.assertEqual(dtypes.float64.j_type, jpy.get_type("double"))
         self.assertEqual(dtypes.double.j_type, jpy.get_type("double"))
         self.assertEqual(dtypes.string.j_type, jpy.get_type("java.lang.String"))
+        self.assertEqual(dtypes.BigInteger.j_type, jpy.get_type("java.math.BigInteger"))
         self.assertEqual(dtypes.BigDecimal.j_type, jpy.get_type("java.math.BigDecimal"))
         self.assertEqual(dtypes.StringSet.j_type, jpy.get_type("io.deephaven.stringset.StringSet"))
         self.assertEqual(dtypes.Instant.j_type, jpy.get_type("java.time.Instant"))
@@ -65,11 +66,12 @@ class DTypesTestCase(BaseTestCase):
         self.assertEqual(dtypes.byte.np_type, np.int8)
         self.assertEqual(dtypes.short.np_type, np.int16)
         self.assertEqual(dtypes.char.np_type, np.dtype('uint16'))
-        self.assertEqual(dtypes.int_.np_type, np.int64)
+        self.assertEqual(dtypes.int64.np_type, np.int64)
         self.assertEqual(dtypes.long.np_type, np.int64)
-        self.assertEqual(dtypes.float_.np_type, np.float64)
+        self.assertEqual(dtypes.float64.np_type, np.float64)
         self.assertEqual(dtypes.double.np_type, np.float64)
         self.assertEqual(dtypes.string.np_type, np.str_)
+        self.assertEqual(dtypes.BigInteger.np_type, np.object_)
         self.assertEqual(dtypes.BigDecimal.np_type, np.object_)
         self.assertEqual(dtypes.StringSet.np_type, np.object_)
         self.assertEqual(dtypes.Instant.np_type, np.dtype("datetime64[ns]"))
@@ -95,7 +97,7 @@ class DTypesTestCase(BaseTestCase):
         self.assertEqual(j_string.toString(), "abc")
 
     def test_array(self):
-        j_array = dtypes.array(dtypes.int_, range(5))
+        j_array = dtypes.array(dtypes.int64, range(5))
         np_array = np.frombuffer(j_array, np.int64)
         expected = np.array([0, 1, 2, 3, 4], dtype=np.int64)
         self.assertTrue(np.array_equal(np_array, expected))
@@ -136,7 +138,7 @@ class DTypesTestCase(BaseTestCase):
 
     def test_floating_array(self):
 
-        nulls = {dtypes.float_: NULL_FLOAT, dtypes.double: NULL_DOUBLE}
+        nulls = {dtypes.float64: NULL_FLOAT, dtypes.double: NULL_DOUBLE}
 
         np_array = np.array([float('nan'), 1.7976931348623157e+300, NULL_DOUBLE, 1.1, float('inf')], dtype=np.float64)
         for dt, nv in nulls.items():

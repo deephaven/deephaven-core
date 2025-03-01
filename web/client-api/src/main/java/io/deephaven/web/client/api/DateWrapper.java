@@ -1,9 +1,10 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.web.client.api;
 
 import elemental2.core.JsDate;
+import io.deephaven.util.QueryConstants;
 import io.deephaven.web.client.api.i18n.JsDateTimeFormat;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsType;
@@ -17,6 +18,9 @@ public class DateWrapper extends LongWrapper {
 
     @JsIgnore
     public static DateWrapper of(long dateInNanos) {
+        if (dateInNanos == QueryConstants.NULL_LONG) {
+            return null;
+        }
         return new DateWrapper(dateInNanos);
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+ * Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
  */
 #pragma once
 
@@ -38,7 +38,7 @@ public:
   ~Schema();
 
   [[nodiscard]]
-  std::optional<size_t> GetColumnIndex(std::string_view name, bool strict) const;
+  std::optional<int32_t> GetColumnIndex(std::string_view name, bool strict) const;
 
   [[nodiscard]]
   const std::vector<std::string> &Names() const {
@@ -51,8 +51,8 @@ public:
   }
 
   [[nodiscard]]
-  size_t NumCols() const {
-    return names_.size();
+  int32_t NumCols() const {
+    return static_cast<int32_t>(names_.size());
   }
 
 private:

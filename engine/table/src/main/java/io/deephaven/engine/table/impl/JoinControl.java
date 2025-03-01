@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl;
 
@@ -32,10 +32,21 @@ public class JoinControl {
         return MINIMUM_INITIAL_HASH_SIZE;
     }
 
-    int tableSize(final long initialCapacity) {
-        return Math.toIntExact(
-                Math.max(MINIMUM_INITIAL_HASH_SIZE,
-                        Math.min(MAX_TABLE_SIZE, Long.highestOneBit(initialCapacity) * 2)));
+    /**
+     * Determine the initial size of the hash table based on the expected number of entries. This is used for static
+     * cases where we won't rehash, or when we have a data index with a known size to start us off from. Other cases use
+     * {@link #initialBuildSize()}.
+     *
+     * @param expectedEntries The expected maximum number of entries that will be needed.
+     * @return The initial size of the hash table to use
+     */
+    int tableSize(final long expectedEntries) {
+        // Get the target capacity to contain expected entries at target load factor. This is optimizing for time, at
+        // the expense of some memory usage.
+        final long targetCapacity = (long) Math.ceil(expectedEntries / getTargetLoadFactor());
+        final long targetCapacityPowerOf2 = Long.highestOneBit(targetCapacity) << 1;
+        // We know the result fits in an int, since MINIMUM_INITIAL_HASH_SIZE and MAX_TABLE_SIZE are positive ints.
+        return (int) Math.max(MINIMUM_INITIAL_HASH_SIZE, Math.min(MAX_TABLE_SIZE, targetCapacityPowerOf2));
     }
 
     double getMaximumLoadFactor() {
@@ -48,6 +59,10 @@ public class JoinControl {
 
     @Nullable
     DataIndex dataIndexToUse(Table table, ColumnSource<?>[] sources) {
+        // Configuration property that serves as an escape hatch
+        if (!QueryTable.USE_DATA_INDEX_FOR_JOINS) {
+            return null;
+        }
         final DataIndexer indexer = DataIndexer.existingOf(table.getRowSet());
         return indexer == null ? null
                 : LivenessScopeStack.computeEnclosed(

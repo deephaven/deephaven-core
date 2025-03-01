@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit DoubleReverseSortCheck and run "./gradlew replicateSortCheck" to regenerate
@@ -38,12 +38,8 @@ public class DoubleReverseSortCheck implements SortCheck {
 
     // region comparison functions
     // note that this is a descending kernel, thus the comparisons here are backwards (e.g., the lt function is in terms of the sort direction, so is implemented by gt)
-    private static int doComparison(double lhs, double rhs) {
-        return -1 * DoubleComparisons.compare(lhs, rhs);
+    private static boolean leq(double lhs, double rhs) {
+        return DoubleComparisons.geq(lhs, rhs);
     }
     // endregion comparison functions
-
-    private static boolean leq(double lhs, double rhs) {
-        return doComparison(lhs, rhs) <= 0;
-    }
 }

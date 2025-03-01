@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+ * Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
  */
 #include "deephaven/client/utility/arrow_util.h"
 
@@ -88,6 +88,21 @@ struct ArrowToElementTypeId final : public arrow::TypeVisitor {
 
   arrow::Status Visit(const arrow::ListType &/*type*/) final {
     type_id_ = ElementTypeId::kList;
+    return arrow::Status::OK();
+  }
+
+  arrow::Status Visit(const arrow::Time64Type &/*type*/) final {
+    type_id_ = ElementTypeId::kLocalTime;
+    return arrow::Status::OK();
+  }
+
+  arrow::Status Visit(const arrow::Date64Type &type) final {
+    if (type.unit() != arrow::DateUnit::MILLI) {
+      auto message = fmt::format("Expected Date64Type with milli units, got {}",
+          type.ToString());
+      throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
+    }
+    type_id_ = ElementTypeId::kLocalDate;
     return arrow::Status::OK();
   }
 
