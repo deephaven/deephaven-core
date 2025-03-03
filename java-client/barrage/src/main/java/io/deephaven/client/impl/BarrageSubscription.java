@@ -7,10 +7,11 @@ import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
+import io.deephaven.extensions.barrage.util.BarrageUtil;
 import io.deephaven.qst.table.TableSpec;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.annotations.FinalDefault;
 
 import java.util.BitSet;
 import java.util.concurrent.Future;
@@ -51,6 +52,18 @@ public interface BarrageSubscription {
                 throws TableHandle.TableHandleException, InterruptedException;
 
         /**
+         * Sources a barrage subscription from a {@link TableSpec}.
+         *
+         * @param tableSpec the tableSpec to resolve and then subscribe to
+         * @return the {@code BarrageSubscription}
+         */
+        @FinalDefault
+        default BarrageSubscription subscribe(TableSpec tableSpec)
+                throws TableHandle.TableHandleException, InterruptedException {
+            return subscribe(tableSpec, BarrageUtil.DEFAULT_SUBSCRIPTION_OPTIONS);
+        }
+
+        /**
          * Sources a barrage subscription from a {@link TableHandle}. A new reference of the handle is created. The
          * original {@code tableHandle} is still owned by the caller.
          *
@@ -59,6 +72,18 @@ public interface BarrageSubscription {
          * @return the {@code BarrageSubscription}
          */
         BarrageSubscription subscribe(TableHandle tableHandle, BarrageSubscriptionOptions options);
+
+        /**
+         * Sources a barrage subscription from a {@link TableHandle}. A new reference of the handle is created. The
+         * original {@code tableHandle} is still owned by the caller.
+         *
+         * @param tableHandle the table handle to subscribe to
+         * @return the {@code BarrageSubscription}
+         */
+        @FinalDefault
+        default BarrageSubscription subscribe(TableHandle tableHandle) {
+            return subscribe(tableHandle, BarrageUtil.DEFAULT_SUBSCRIPTION_OPTIONS);
+        }
     }
 
     /**

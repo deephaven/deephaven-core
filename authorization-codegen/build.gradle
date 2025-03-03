@@ -14,4 +14,6 @@ dependencies {
     implementation libs.grpc.services
 
     implementation libs.squareup.javapoet
+
+    implementation libs.protobuf.java
 }

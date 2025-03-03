@@ -18,7 +18,7 @@ import io.deephaven.web.client.api.TableData;
 import io.deephaven.web.client.api.WorkerConnection;
 import io.deephaven.web.client.api.barrage.CompressedRangeSetReader;
 import io.deephaven.web.client.api.barrage.WebBarrageMessage;
-import io.deephaven.web.client.api.barrage.WebBarrageStreamReader;
+import io.deephaven.web.client.api.barrage.WebBarrageMessageReader;
 import io.deephaven.web.client.api.barrage.WebBarrageUtils;
 import io.deephaven.web.client.api.barrage.data.WebBarrageSubscription;
 import io.deephaven.web.client.api.barrage.stream.BiDiStream;
@@ -520,7 +520,7 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
         }
     }
 
-    private final WebBarrageStreamReader reader = new WebBarrageStreamReader();
+    private final WebBarrageMessageReader reader = new WebBarrageMessageReader();
 
     private void onFlightData(FlightData data) {
         WebBarrageMessage message;
