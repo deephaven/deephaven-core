@@ -3,9 +3,11 @@
 //
 package io.deephaven.iceberg.base;
 
+import io.deephaven.base.FileUtils;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.locations.TableDataException;
+import io.deephaven.iceberg.relative.RelativeFileIO;
 import io.deephaven.iceberg.util.IcebergReadInstructions;
 import org.apache.iceberg.DataFile;
 import org.apache.iceberg.ManifestContent;
@@ -21,6 +23,7 @@ import org.apache.iceberg.catalog.Namespace;
 import org.apache.iceberg.catalog.SupportsNamespaces;
 import org.apache.iceberg.exceptions.AlreadyExistsException;
 import org.apache.iceberg.exceptions.NamespaceNotEmptyException;
+import org.apache.iceberg.io.FileIO;
 import org.apache.iceberg.types.Type;
 import org.apache.iceberg.types.Types;
 import org.jetbrains.annotations.NotNull;
@@ -29,6 +32,7 @@ import org.jetbrains.annotations.Nullable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.math.BigDecimal;
+import java.net.URI;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -125,6 +129,18 @@ public final class IcebergUtils {
                 throw new UncheckedIOException(e);
             }
         });
+    }
+
+    private static String path(String path, FileIO io) {
+        return io instanceof RelativeFileIO ? ((RelativeFileIO) io).absoluteLocation(path) : path;
+    }
+
+    public static URI locationUri(Table table) {
+        return FileUtils.convertToURI(path(table.location(), table.io()), true);
+    }
+
+    public static URI dataFileUri(Table table, DataFile dataFile) {
+        return FileUtils.convertToURI(path(dataFile.path().toString(), table.io()), false);
     }
 
     /**
