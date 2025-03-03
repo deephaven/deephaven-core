@@ -9,6 +9,7 @@ import elemental2.core.JsSet;
 import elemental2.core.Uint8Array;
 import elemental2.promise.Promise;
 import io.deephaven.chunk.ChunkType;
+import io.deephaven.extensions.barrage.BarrageTypeInfo;
 import io.deephaven.javascript.proto.dhinternal.browserheaders.BrowserHeaders;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.ExportedTableCreationResponse;
 import io.deephaven.web.client.api.*;
@@ -256,8 +257,7 @@ public final class ClientTableState extends TableConfig {
 
     /**
      * Returns the Java Class to represent each column in the table. This lets the client replace certain JVM-only
-     * classes with alternative implementations, but still use the simple
-     * {@link io.deephaven.extensions.barrage.chunk.ChunkReader.TypeInfo} wrapper.
+     * classes with alternative implementations, but still use the simple {@link BarrageTypeInfo} wrapper.
      */
     public Class<?>[] columnTypes() {
         return Arrays.stream(tableDef.getColumns())

@@ -6,7 +6,9 @@ package io.deephaven.client.impl;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
+import io.deephaven.extensions.barrage.util.BarrageUtil;
 import io.deephaven.qst.table.TableSpec;
+import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.BitSet;
@@ -45,6 +47,18 @@ public interface BarrageSnapshot {
                 throws TableHandle.TableHandleException, InterruptedException;
 
         /**
+         * Sources a barrage snapshot from a {@link TableSpec}.
+         *
+         * @param tableSpec the tableSpec to resolve and then snapshot
+         * @return the {@code BarrageSnapshot}
+         */
+        @FinalDefault
+        default BarrageSnapshot snapshot(TableSpec tableSpec)
+                throws TableHandle.TableHandleException, InterruptedException {
+            return snapshot(tableSpec, BarrageUtil.DEFAULT_SNAPSHOT_OPTIONS);
+        }
+
+        /**
          * Sources a barrage snapshot from a {@link TableHandle}. A new reference of the handle is created. The original
          * {@code tableHandle} is still owned by the caller.
          *
@@ -53,6 +67,18 @@ public interface BarrageSnapshot {
          * @return the {@code BarrageSnapshot}
          */
         BarrageSnapshot snapshot(TableHandle tableHandle, BarrageSnapshotOptions options);
+
+        /**
+         * Sources a barrage snapshot from a {@link TableHandle}. A new reference of the handle is created. The original
+         * {@code tableHandle} is still owned by the caller.
+         *
+         * @param tableHandle the table handle to snapshot
+         * @return the {@code BarrageSnapshot}
+         */
+        @FinalDefault
+        default BarrageSnapshot snapshot(TableHandle tableHandle) {
+            return snapshot(tableHandle, BarrageUtil.DEFAULT_SNAPSHOT_OPTIONS);
+        }
     }
 
     /**

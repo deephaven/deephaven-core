@@ -74,6 +74,7 @@ set(ALL_FILES
     include/private/deephaven/client/impl/util.h
 
     src/arrowutil/arrow_client_table.cc
+    src/arrowutil/arrow_column_source.cc
     include/private/deephaven/client/arrowutil/arrow_client_table.h
     include/private/deephaven/client/arrowutil/arrow_column_source.h
     include/private/deephaven/client/arrowutil/arrow_value_converter.h
@@ -107,6 +108,7 @@ set(ALL_FILES
     src/utility/table_maker.cc
 
     include/public/deephaven/client/utility/arrow_util.h
+    include/public/deephaven/client/utility/internal_types.h
     include/public/deephaven/client/utility/misc_types.h
     include/public/deephaven/client/utility/table_maker.h
 )

@@ -22,10 +22,10 @@ import jsinterop.annotations.JsType;
 public interface ViewportData extends TableData {
 
     /**
-     * The position of the first returned row, null if this data is not for a viewport.
+     * The position of the first returned row within the table.
      */
     @JsProperty
-    Double getOffset();
+    double getOffset();
 
     @JsProperty
     @Override

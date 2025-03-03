@@ -237,12 +237,17 @@ public class DeephavenApiServer {
 
     void startForUnitTests() throws Exception {
         setInstance(this);
-        pluginRegistration.registerAll();
-        applicationInjector.run();
-        executionContextProvider.get().getQueryLibrary().updateVersionString("DEFAULT");
+        try {
+            pluginRegistration.registerAll();
+            applicationInjector.run();
+            executionContextProvider.get().getQueryLibrary().updateVersionString("DEFAULT");
 
-        log.info().append("Starting server...").endl();
-        server.start();
+            log.info().append("Starting server...").endl();
+            server.start();
+        } catch (Exception e) {
+            clearInstance(this);
+            throw e;
+        }
     }
 
     void teardownForUnitTests() throws InterruptedException {
