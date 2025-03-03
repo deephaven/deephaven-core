@@ -316,11 +316,11 @@ public final class IcebergUtils {
         }
     }
 
-    public static String path(String path, FileIO io) {
+    public static String path(@NotNull final String path, @NotNull final FileIO io) {
         return io instanceof RelativeFileIO ? ((RelativeFileIO) io).absoluteLocation(path) : path;
     }
 
-    public static URI locationUri(Table table) {
+    public static URI locationUri(@NotNull final Table table) {
         return FileUtils.convertToURI(path(table.location(), table.io()), true);
     }
 }

@@ -317,6 +317,12 @@ public class IcebergTableWriter {
         verifyCompatible(writeInstructions.tables(), nonPartitioningTableDefinition);
         final List<String> partitionPaths = writeInstructions.partitionPaths();
         verifyPartitionPaths(tableSpec, partitionPaths);
+
+        if (!parquetFilesWritten.isEmpty()) {
+            throw new IllegalStateException("List of parquet files written should be empty before writing new data, " +
+                    "found " + parquetFilesWritten.size() + " files");
+        }
+
         final List<PartitionData> partitionData;
         // Start a new query scope to avoid polluting the existing query scope with new parameters added for
         // partitioning columns
@@ -327,7 +333,12 @@ public class IcebergTableWriter {
             final List<String[]> dhTableUpdateStrings = ret.getSecond();
             writeParquet(partitionData, dhTableUpdateStrings, writeInstructions);
         }
-        return dataFilesFromParquet(partitionData);
+        final List<DataFile> dataFiles = dataFilesFromParquet(partitionData);
+
+        // Clear the list to reuse it for the next write
+        parquetFilesWritten.clear();
+
+        return dataFiles;
     }
 
     /**
@@ -486,12 +497,6 @@ public class IcebergTableWriter {
             Require.eqZero(dhTableUpdateStrings.size(), "dhTableUpdateStrings.size()");
         }
 
-        // At this point, the list of parquet files written should be empty and will be populated by the callback
-        if (!parquetFilesWritten.isEmpty()) {
-            throw new IllegalStateException("List of parquet files written should be empty before writing new data, " +
-                    "found " + parquetFilesWritten.size() + " files");
-        }
-
         // Write the data to parquet files
         for (int idx = 0; idx < dhTables.size(); idx++) {
             Table dhTable = dhTables.get(idx);
@@ -563,10 +568,6 @@ public class IcebergTableWriter {
             }
             dataFiles.add(dataFileBuilder.build());
         }
-
-        // Clear the list of parquet files written to reuse the same list for the next write
-        parquetFilesWritten.clear();
-
         return dataFiles;
     }
 }

@@ -166,7 +166,7 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
 
     abstract IcebergTableLocationKey keyFromDataFile(ManifestFile manifestFile, DataFile dataFile, URI fileUri);
 
-    private static URI dataFileUri(Table table, DataFile dataFile) {
+    private static URI dataFileUri(@NotNull final Table table, @NotNull final DataFile dataFile) {
         return FileUtils.convertToURI(path(dataFile.path().toString(), table.io()), false);
     }
 

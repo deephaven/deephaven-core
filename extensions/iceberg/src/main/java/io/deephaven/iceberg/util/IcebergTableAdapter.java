@@ -63,10 +63,9 @@ public class IcebergTableAdapter {
     private final DataInstructionsProviderLoader dataInstructionsProviderLoader;
 
     /**
-     * The URI scheme from the Table {@link org.apache.iceberg.Table#location() location}. This is computed lazily and
-     * should be accessed via {@link #getScheme()}.
+     * The URI scheme for the table location.
      */
-    private volatile String uriScheme;
+    private final String uriScheme;
 
     public IcebergTableAdapter(
             final Catalog catalog,
@@ -77,6 +76,7 @@ public class IcebergTableAdapter {
         this.table = table;
         this.tableIdentifier = tableIdentifier;
         this.dataInstructionsProviderLoader = dataInstructionsProviderLoader;
+        this.uriScheme = locationUri(table).getScheme();
     }
 
     /**
@@ -397,11 +397,11 @@ public class IcebergTableAdapter {
         if (partitionSpec.isUnpartitioned()) {
             // Create the flat layout location key finder
             keyFinder = new IcebergFlatLayout(this, updatedInstructions, dataInstructionsProviderLoader,
-                    getScheme());
+                    uriScheme);
         } else {
             // Create the partitioning column location key finder
             keyFinder = new IcebergKeyValuePartitionedLayout(this, partitionSpec, updatedInstructions,
-                    dataInstructionsProviderLoader, getScheme());
+                    dataInstructionsProviderLoader, uriScheme);
         }
 
         if (updatedInstructions.updateMode().updateType() == IcebergUpdateMode.IcebergUpdateType.STATIC) {
@@ -592,24 +592,6 @@ public class IcebergTableAdapter {
      * @return A new instance of {@link IcebergTableWriter} configured with the provided options.
      */
     public IcebergTableWriter tableWriter(final TableWriterOptions tableWriterOptions) {
-        return new IcebergTableWriter(tableWriterOptions, this, dataInstructionsProviderLoader, getScheme());
-    }
-
-    /**
-     * Get the URI scheme from the Table {@link org.apache.iceberg.Table#location() location}.
-     */
-    private String getScheme() {
-        String localScheme;
-        if ((localScheme = uriScheme) != null) {
-            return localScheme;
-        }
-        synchronized (this) {
-            if ((localScheme = uriScheme) != null) {
-                return localScheme;
-            }
-            localScheme = locationUri(table).getScheme();
-            uriScheme = localScheme;
-            return localScheme;
-        }
+        return new IcebergTableWriter(tableWriterOptions, this, dataInstructionsProviderLoader, uriScheme);
     }
 }
