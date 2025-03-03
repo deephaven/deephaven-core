@@ -126,13 +126,11 @@ public class IcebergTableWriter {
      * @param tableAdapter The Iceberg table adapter corresponding to the Iceberg table to write to.
      * @param dataInstructionsProvider The provider for special instructions, to be used if special instructions not
      *        provided in the {@code tableWriterOptions}.
-     * @param tableLocationUriScheme The URI scheme for the table location.
      */
     IcebergTableWriter(
             final TableWriterOptions tableWriterOptions,
             final IcebergTableAdapter tableAdapter,
-            final DataInstructionsProviderLoader dataInstructionsProvider,
-            final String tableLocationUriScheme) {
+            final DataInstructionsProviderLoader dataInstructionsProvider) {
         this.tableWriterOptions = verifyWriterOptions(tableWriterOptions);
         this.table = tableAdapter.icebergTable();
 
@@ -155,8 +153,9 @@ public class IcebergTableWriter {
                 .format(FileFormat.PARQUET)
                 .build();
 
+        final String uriScheme = tableAdapter.getScheme();
         final Object specialInstructions = tableWriterOptions.dataInstructions()
-                .orElseGet(() -> dataInstructionsProvider.load(tableLocationUriScheme));
+                .orElseGet(() -> dataInstructionsProvider.load(uriScheme));
 
         // Build the parquet instructions
         parquetFilesWritten = new ArrayList<>();

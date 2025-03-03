@@ -396,12 +396,11 @@ public class IcebergTableAdapter {
         final IcebergBaseLayout keyFinder;
         if (partitionSpec.isUnpartitioned()) {
             // Create the flat layout location key finder
-            keyFinder = new IcebergFlatLayout(this, updatedInstructions, dataInstructionsProviderLoader,
-                    uriScheme);
+            keyFinder = new IcebergFlatLayout(this, updatedInstructions, dataInstructionsProviderLoader);
         } else {
             // Create the partitioning column location key finder
             keyFinder = new IcebergKeyValuePartitionedLayout(this, partitionSpec, updatedInstructions,
-                    dataInstructionsProviderLoader, uriScheme);
+                    dataInstructionsProviderLoader);
         }
 
         if (updatedInstructions.updateMode().updateType() == IcebergUpdateMode.IcebergUpdateType.STATIC) {
@@ -592,6 +591,13 @@ public class IcebergTableAdapter {
      * @return A new instance of {@link IcebergTableWriter} configured with the provided options.
      */
     public IcebergTableWriter tableWriter(final TableWriterOptions tableWriterOptions) {
-        return new IcebergTableWriter(tableWriterOptions, this, dataInstructionsProviderLoader, uriScheme);
+        return new IcebergTableWriter(tableWriterOptions, this, dataInstructionsProviderLoader);
+    }
+
+    /**
+     * Get the URI scheme for the table location.
+     */
+    public String getScheme() {
+        return uriScheme;
     }
 }

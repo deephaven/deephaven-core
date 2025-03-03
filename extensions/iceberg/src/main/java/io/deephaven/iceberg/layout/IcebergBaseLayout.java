@@ -124,13 +124,11 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
      * @param instructions The instructions for customizations while reading.
      * @param dataInstructionsProvider The provider for special instructions, to be used if special instructions not
      *        provided in the {@code instructions}.
-     * @param tableLocationUriScheme The URI scheme for the table location.
      */
     public IcebergBaseLayout(
             @NotNull final IcebergTableAdapter tableAdapter,
             @NotNull final IcebergReadInstructions instructions,
-            @NotNull final DataInstructionsProviderLoader dataInstructionsProvider,
-            @NotNull final String tableLocationUriScheme) {
+            @NotNull final DataInstructionsProviderLoader dataInstructionsProvider) {
         this.tableAdapter = tableAdapter;
         this.instructions = instructions;
         this.dataInstructionsProvider = dataInstructionsProvider;
@@ -150,11 +148,11 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
 
         this.snapshot = tableAdapter.getSnapshot(instructions);
         this.tableDef = tableAdapter.definition(instructions);
-        this.uriScheme = tableLocationUriScheme;
+        this.uriScheme = tableAdapter.getScheme();
         // Add the data instructions if provided as part of the IcebergReadInstructions, or else attempt to create
         // data instructions from the properties collection and URI scheme.
         final Object specialInstructions = instructions.dataInstructions()
-                .orElseGet(() -> dataInstructionsProvider.load(tableLocationUriScheme));
+                .orElseGet(() -> dataInstructionsProvider.load(uriScheme));
         {
             // Start with user-supplied instructions (if provided).
             final ParquetInstructions.Builder builder = new ParquetInstructions.Builder();
