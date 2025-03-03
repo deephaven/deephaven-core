@@ -35,6 +35,8 @@ dependencies {
     // actually calls it?), but we need to be able to compile against it to implement AwsClientFactory
     compileOnly libs.awssdk.kms
 
+    implementation libs.guava
+
     compileOnly libs.autoservice
     annotationProcessor libs.autoservice.compiler
 
