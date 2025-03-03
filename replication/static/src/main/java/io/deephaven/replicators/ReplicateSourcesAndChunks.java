@@ -597,6 +597,10 @@ public class ReplicateSourcesAndChunks {
         classLines = ReplicationUtils.removeRegion(classLines, "CopyToBuffer");
         classLines = ReplicationUtils.removeRegion(classLines, "BinarySearchImports");
         classLines = ReplicationUtils.removeRegion(classLines, "BinarySearch");
+        classLines = ReplicationUtils.replaceRegion(classLines, "isNull", Arrays.asList(
+                "    public final boolean isNull(int index) {",
+                "        return false;",
+                "    }"));
         FileUtils.writeLines(classFile, classLines);
     }
 
@@ -612,7 +616,8 @@ public class ReplicateSourcesAndChunks {
                 "ObjectChunk<ATTR", "ObjectChunk<T, ATTR",
                 "ObjectChunk<[?] ", "ObjectChunk<T, ? ",
                 "ObjectChunk<Any> EMPTY", "ObjectChunk<Object, Any> EMPTY",
-                "static T\\[\\] makeArray", "static <T> T[] makeArray");
+                "static T\\[\\] makeArray", "static <T> T[] makeArray",
+                "QueryConstants.NULL_OBJECT", "null");
 
         lines = replaceRegion(lines, "makeArray", Arrays.asList(
                 "    public static <T> T[] makeArray(int capacity) {",

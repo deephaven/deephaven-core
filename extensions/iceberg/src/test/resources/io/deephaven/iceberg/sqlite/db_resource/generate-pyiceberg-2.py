@@ -56,3 +56,11 @@ table = pa.Table.from_pylist(data)
 
 # Append the table to the Iceberg table
 tbl.append(table)
+
+######## Empty table testing ########
+
+tbl_empty = catalog.create_table(
+    identifier="trading.data_empty",
+    schema=schema,
+    partition_spec=partition_spec,
+)

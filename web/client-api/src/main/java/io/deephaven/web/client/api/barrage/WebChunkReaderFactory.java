@@ -5,24 +5,30 @@ package io.deephaven.web.client.api.barrage;
 
 import elemental2.core.JsDate;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.WritableByteChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.extensions.barrage.BarrageOptions;
+import io.deephaven.extensions.barrage.BarrageTypeInfo;
+import io.deephaven.extensions.barrage.chunk.BaseChunkReader;
 import io.deephaven.extensions.barrage.chunk.BooleanChunkReader;
 import io.deephaven.extensions.barrage.chunk.ByteChunkReader;
 import io.deephaven.extensions.barrage.chunk.CharChunkReader;
-import io.deephaven.extensions.barrage.chunk.ChunkInputStreamGenerator;
+import io.deephaven.extensions.barrage.chunk.ChunkWriter;
 import io.deephaven.extensions.barrage.chunk.ChunkReader;
 import io.deephaven.extensions.barrage.chunk.DoubleChunkReader;
+import io.deephaven.extensions.barrage.chunk.ExpansionKernel;
 import io.deephaven.extensions.barrage.chunk.FloatChunkReader;
 import io.deephaven.extensions.barrage.chunk.IntChunkReader;
+import io.deephaven.extensions.barrage.chunk.ListChunkReader;
 import io.deephaven.extensions.barrage.chunk.LongChunkReader;
 import io.deephaven.extensions.barrage.chunk.ShortChunkReader;
-import io.deephaven.extensions.barrage.chunk.VarListChunkReader;
-import io.deephaven.extensions.barrage.util.StreamReaderOptions;
+import io.deephaven.extensions.barrage.chunk.TransformingChunkReader;
+import io.deephaven.extensions.barrage.chunk.array.ArrayExpansionKernel;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
@@ -34,6 +40,7 @@ import io.deephaven.web.client.api.LocalTimeWrapper;
 import io.deephaven.web.client.api.LongWrapper;
 import org.apache.arrow.flatbuf.Date;
 import org.apache.arrow.flatbuf.DateUnit;
+import org.apache.arrow.flatbuf.Field;
 import org.apache.arrow.flatbuf.FloatingPoint;
 import org.apache.arrow.flatbuf.Int;
 import org.apache.arrow.flatbuf.Precision;
@@ -41,6 +48,7 @@ import org.apache.arrow.flatbuf.Time;
 import org.apache.arrow.flatbuf.TimeUnit;
 import org.apache.arrow.flatbuf.Timestamp;
 import org.apache.arrow.flatbuf.Type;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.DataInput;
 import java.io.IOException;
@@ -50,36 +58,46 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.PrimitiveIterator;
+import java.util.function.IntFunction;
+import java.util.function.LongFunction;
 
 /**
- * Browser-compatible implementation of the ChunkReaderFactory, with a focus on reading from arrow types rather than
- * successfully round-tripping to the Java server.
+ * Browser-compatible implementation of the {@link ChunkReader.Factory}, with a focus on reading from arrow types rather
+ * than successfully round-tripping to the Java server.
  * <p>
  * Includes some specific workarounds to handle nullability that will make more sense for the browser.
  */
 public class WebChunkReaderFactory implements ChunkReader.Factory {
+    @SuppressWarnings("unchecked")
     @Override
-    public ChunkReader getReader(StreamReaderOptions options, int factor, ChunkReader.TypeInfo typeInfo) {
+    public <T extends WritableChunk<Values>> ChunkReader<T> newReader(
+            @NotNull final BarrageTypeInfo<Field> typeInfo,
+            @NotNull final BarrageOptions options) {
         switch (typeInfo.arrowField().typeType()) {
             case Type.Int: {
                 Int t = new Int();
                 typeInfo.arrowField().type(t);
                 switch (t.bitWidth()) {
                     case 8: {
-                        return new ByteChunkReader(options);
+                        return (ChunkReader<T>) new ByteChunkReader(options);
                     }
                     case 16: {
                         if (t.isSigned()) {
-                            return new ShortChunkReader(options);
+                            return (ChunkReader<T>) new ShortChunkReader(options);
                         }
-                        return new CharChunkReader(options);
+                        return (ChunkReader<T>) new CharChunkReader(options);
                     }
                     case 32: {
-                        return new IntChunkReader(options);
+                        return (ChunkReader<T>) new IntChunkReader(options);
                     }
                     case 64: {
                         if (t.isSigned()) {
-                            return new LongChunkReader(options).transform(LongWrapper::of);
+                            return (ChunkReader<T>) transformToObject(new LongChunkReader(options),
+                                    (src, dst, dstOffset) -> {
+                                        for (int ii = 0; ii < src.size(); ++ii) {
+                                            dst.set(dstOffset + ii, LongWrapper.of(src.get(ii)));
+                                        }
+                                    });
                         }
                         throw new IllegalArgumentException("Unsigned 64bit integers not supported");
                     }
@@ -92,10 +110,10 @@ public class WebChunkReaderFactory implements ChunkReader.Factory {
                 typeInfo.arrowField().type(t);
                 switch (t.precision()) {
                     case Precision.SINGLE: {
-                        return new FloatChunkReader(options);
+                        return (ChunkReader<T>) new FloatChunkReader(options);
                     }
                     case Precision.DOUBLE: {
-                        return new DoubleChunkReader(options);
+                        return (ChunkReader<T>) new DoubleChunkReader(options);
                     }
                     default:
                         throw new IllegalArgumentException(
@@ -105,7 +123,7 @@ public class WebChunkReaderFactory implements ChunkReader.Factory {
             case Type.Binary: {
                 if (typeInfo.type() == BigIntegerWrapper.class) {
                     return (fieldNodeIter, bufferInfoIter, is, outChunk, outOffset,
-                            totalRows) -> extractChunkFromInputStream(
+                            totalRows) -> (T) extractChunkFromInputStream(
                                     is,
                                     fieldNodeIter,
                                     bufferInfoIter,
@@ -114,7 +132,7 @@ public class WebChunkReaderFactory implements ChunkReader.Factory {
                 }
                 if (typeInfo.type() == BigDecimalWrapper.class) {
                     return (fieldNodeIter, bufferInfoIter, is, outChunk, outOffset,
-                            totalRows) -> extractChunkFromInputStream(
+                            totalRows) -> (T) extractChunkFromInputStream(
                                     is,
                                     fieldNodeIter,
                                     bufferInfoIter,
@@ -135,7 +153,7 @@ public class WebChunkReaderFactory implements ChunkReader.Factory {
             }
             case Type.Utf8: {
                 return (fieldNodeIter, bufferInfoIter, is, outChunk, outOffset,
-                        totalRows) -> extractChunkFromInputStream(is, fieldNodeIter,
+                        totalRows) -> (T) extractChunkFromInputStream(is, fieldNodeIter,
                                 bufferInfoIter, (buf, off, len) -> new String(buf, off, len, StandardCharsets.UTF_8),
                                 outChunk, outOffset, totalRows);
             }
@@ -164,7 +182,7 @@ public class WebChunkReaderFactory implements ChunkReader.Factory {
                             chunk.set(outOffset + ii, BooleanUtils.byteAsBoolean(value));
                         }
 
-                        return chunk;
+                        return (T) chunk;
                     }
 
                 };
@@ -174,23 +192,34 @@ public class WebChunkReaderFactory implements ChunkReader.Factory {
                 typeInfo.arrowField().type(t);
                 switch (t.unit()) {
                     case DateUnit.MILLISECOND:
-                        return new LongChunkReader(options).transform(millis -> {
-                            if (millis == QueryConstants.NULL_LONG) {
-                                return null;
-                            }
-                            JsDate jsDate = new JsDate((double) (long) millis);
-                            return new LocalDateWrapper(jsDate.getUTCFullYear(), 1 + jsDate.getUTCMonth(),
-                                    jsDate.getUTCDate());
-                        });
+                        return (ChunkReader<T>) transformToObject(new LongChunkReader(options),
+                                (src, dst, dstOffset) -> {
+                                    for (int ii = 0; ii < src.size(); ++ii) {
+                                        final long millis = src.get(ii);
+                                        if (millis == QueryConstants.NULL_LONG) {
+                                            dst.set(dstOffset + ii, null);
+                                        } else {
+                                            JsDate jsDate = new JsDate((double) millis);
+                                            dst.set(dstOffset + ii, new LocalDateWrapper(jsDate.getUTCFullYear(),
+                                                    1 + jsDate.getUTCMonth(), jsDate.getUTCDate()));
+                                        }
+                                    }
+                                });
                     case DateUnit.DAY:
-                        return new IntChunkReader(options).transform(days -> {
-                            if (days == QueryConstants.NULL_INT) {
-                                return null;
-                            }
-                            JsDate jsDate = new JsDate(((double) (int) days) * 86400000);
-                            return new LocalDateWrapper(jsDate.getUTCFullYear(), 1 + jsDate.getUTCMonth(),
-                                    jsDate.getUTCDate());
-                        });
+                        return (ChunkReader<T>) transformToObject(new IntChunkReader(options),
+                                (src, dst, dstOffset) -> {
+                                    for (int ii = 0; ii < src.size(); ++ii) {
+                                        final int days = src.get(ii);
+
+                                        if (days == QueryConstants.NULL_INT) {
+                                            dst.set(dstOffset + ii, null);
+                                        } else {
+                                            JsDate jsDate = new JsDate(((double) days) * 86400000);
+                                            dst.set(dstOffset + ii, new LocalDateWrapper(jsDate.getUTCFullYear(),
+                                                    1 + jsDate.getUTCMonth(), jsDate.getUTCDate()));
+                                        }
+                                    }
+                                });
                     default:
                         throw new IllegalArgumentException("Unsupported Date unit: " + DateUnit.name(t.unit()));
                 }
@@ -198,38 +227,50 @@ public class WebChunkReaderFactory implements ChunkReader.Factory {
             case Type.Time: {
                 Time t = new Time();
                 typeInfo.arrowField().type(t);
+                final IntFunction<LocalTimeWrapper> fromInt;
                 switch (t.bitWidth()) {
                     case 32: {
                         switch (t.unit()) {
-                            case TimeUnit.SECOND: {
-                                return new IntChunkReader(options)
-                                        .transform(LocalTimeWrapper.intCreator(1)::apply);
-                            }
-                            case TimeUnit.MILLISECOND: {
-                                return new IntChunkReader(options)
-                                        .transform(LocalTimeWrapper.intCreator(1_000)::apply);
-                            }
+                            case TimeUnit.SECOND:
+                                fromInt = LocalTimeWrapper.intCreator(1);
+                                break;
+                            case TimeUnit.MILLISECOND:
+                                fromInt = LocalTimeWrapper.intCreator(1_000);
+                                break;
                             default:
                                 throw new IllegalArgumentException("Unsupported Time unit: " + TimeUnit.name(t.unit()));
                         }
+                        return (ChunkReader<T>) transformToObject(new IntChunkReader(options),
+                                (src, dst, dstOffset) -> {
+                                    for (int ii = 0; ii < src.size(); ++ii) {
+                                        dst.set(dstOffset + ii, fromInt.apply(src.get(ii)));
+                                    }
+                                });
                     }
                     case 64: {
+                        final LongFunction<LocalTimeWrapper> fromLong;
                         switch (t.unit()) {
-                            case TimeUnit.NANOSECOND: {
-                                return new LongChunkReader(options)
-                                        .transform(LocalTimeWrapper.longCreator(1_000_000_000)::apply);
-                            }
+                            case TimeUnit.NANOSECOND:
+                                fromLong = LocalTimeWrapper.longCreator(1_000_000_000);
+                                break;
                             case TimeUnit.MICROSECOND: {
-                                return new LongChunkReader(options)
-                                        .transform(LocalTimeWrapper.longCreator(1_000_000)::apply);
+                                fromLong = LocalTimeWrapper.longCreator(1_000_000);
+                                break;
                             }
                             default:
                                 throw new IllegalArgumentException("Unsupported Time unit: " + TimeUnit.name(t.unit()));
                         }
+                        return (ChunkReader<T>) transformToObject(new LongChunkReader(options),
+                                (src, dst, dstOffset) -> {
+                                    for (int ii = 0; ii < src.size(); ++ii) {
+                                        dst.set(dstOffset + ii, fromLong.apply(src.get(ii)));
+                                    }
+                                });
                     }
                     default:
                         throw new IllegalArgumentException("Unsupported Time bitWidth: " + t.bitWidth());
                 }
+
             }
             case Type.Timestamp: {
                 Timestamp t = new Timestamp();
@@ -239,23 +280,51 @@ public class WebChunkReaderFactory implements ChunkReader.Factory {
                         if (!t.timezone().equals("UTC")) {
                             throw new IllegalArgumentException("Unsupported tz " + t.timezone());
                         }
-                        return new LongChunkReader(options).transform(DateWrapper::of);
+                        return (ChunkReader<T>) transformToObject(new LongChunkReader(options),
+                                (src, dst, dstOffset) -> {
+                                    for (int ii = 0; ii < src.size(); ++ii) {
+                                        dst.set(dstOffset + ii, DateWrapper.of(src.get(ii)));
+                                    }
+                                });
                     }
                     default:
                         throw new IllegalArgumentException("Unsupported Timestamp unit: " + TimeUnit.name(t.unit()));
                 }
             }
+            case Type.FixedSizeList:
+            case Type.ListView:
             case Type.List: {
-                if (typeInfo.componentType() == byte.class) {
+                final ListChunkReader.Mode listMode;
+                if (typeInfo.arrowField().typeType() == Type.FixedSizeList) {
+                    listMode = ListChunkReader.Mode.FIXED;
+                } else if (typeInfo.arrowField().typeType() == Type.ListView) {
+                    listMode = ListChunkReader.Mode.VIEW;
+                } else {
+                    listMode = ListChunkReader.Mode.VARIABLE;
+                }
+
+                if (typeInfo.componentType() == byte.class && listMode == ListChunkReader.Mode.VARIABLE) {
+                    // special case for byte[]
                     return (fieldNodeIter, bufferInfoIter, is, outChunk, outOffset,
-                            totalRows) -> extractChunkFromInputStream(
+                            totalRows) -> (T) extractChunkFromInputStream(
                                     is,
                                     fieldNodeIter,
                                     bufferInfoIter,
                                     (buf, off, len) -> Arrays.copyOfRange(buf, off, off + len),
                                     outChunk, outOffset, totalRows);
                 }
-                return new VarListChunkReader<>(options, typeInfo, this);
+
+                // noinspection DataFlowIssue
+                final BarrageTypeInfo<Field> componentTypeInfo = new BarrageTypeInfo<>(
+                        typeInfo.componentType(),
+                        typeInfo.componentType().getComponentType(),
+                        typeInfo.arrowField().children(0));
+                final ChunkType chunkType = ListChunkReader.getChunkTypeFor(componentTypeInfo.type());
+                final ExpansionKernel<?> kernel =
+                        ArrayExpansionKernel.makeExpansionKernel(chunkType, componentTypeInfo.type());
+                final ChunkReader<?> componentReader = newReader(componentTypeInfo, options);
+
+                return (ChunkReader<T>) new ListChunkReader<>(listMode, 0, kernel, componentReader);
             }
             default:
                 throw new IllegalArgumentException("Unsupported type: " + Type.name(typeInfo.arrowField().typeType()));
@@ -268,13 +337,13 @@ public class WebChunkReaderFactory implements ChunkReader.Factory {
 
     public static <T> WritableObjectChunk<T, Values> extractChunkFromInputStream(
             final DataInput is,
-            final Iterator<ChunkInputStreamGenerator.FieldNodeInfo> fieldNodeIter,
+            final Iterator<ChunkWriter.FieldNodeInfo> fieldNodeIter,
             final PrimitiveIterator.OfLong bufferInfoIter,
             final Mapper<T> mapper,
             final WritableChunk<Values> outChunk,
             final int outOffset,
             final int totalRows) throws IOException {
-        final ChunkInputStreamGenerator.FieldNodeInfo nodeInfo = fieldNodeIter.next();
+        final ChunkWriter.FieldNodeInfo nodeInfo = fieldNodeIter.next();
         final long validityBuffer = bufferInfoIter.nextLong();
         final long offsetsBuffer = bufferInfoIter.nextLong();
         final long payloadBuffer = bufferInfoIter.nextLong();
@@ -369,4 +438,13 @@ public class WebChunkReaderFactory implements ChunkReader.Factory {
         return chunk;
     }
 
+    public static <T, WIRE_CHUNK_TYPE extends WritableChunk<Values>, CR extends ChunkReader<WIRE_CHUNK_TYPE>> ChunkReader<WritableObjectChunk<T, Values>> transformToObject(
+            final CR wireReader,
+            final BaseChunkReader.ChunkTransformer<WIRE_CHUNK_TYPE, WritableObjectChunk<T, Values>> wireTransform) {
+        return new TransformingChunkReader<>(
+                wireReader,
+                WritableObjectChunk::makeWritableChunk,
+                WritableChunk::asWritableObjectChunk,
+                wireTransform);
+    }
 }

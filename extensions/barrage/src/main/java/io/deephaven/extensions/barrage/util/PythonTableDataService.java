@@ -23,10 +23,12 @@ import io.deephaven.engine.table.impl.TableUpdateMode;
 import io.deephaven.engine.table.impl.chunkboxer.ChunkBoxer;
 import io.deephaven.engine.table.impl.locations.*;
 import io.deephaven.engine.table.impl.locations.impl.*;
+import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.sources.regioned.*;
-import io.deephaven.extensions.barrage.chunk.ChunkInputStreamGenerator;
+import io.deephaven.extensions.barrage.BarrageOptions;
 import io.deephaven.extensions.barrage.chunk.ChunkReader;
-import io.deephaven.extensions.barrage.chunk.DefaultChunkReadingFactory;
+import io.deephaven.extensions.barrage.chunk.ChunkWriter;
+import io.deephaven.extensions.barrage.chunk.DefaultChunkReaderFactory;
 import io.deephaven.generic.region.*;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.util.SafeCloseable;
@@ -61,19 +63,19 @@ public class PythonTableDataService extends AbstractTableDataService {
 
     private final BackendAccessor backend;
     private final ChunkReader.Factory chunkReaderFactory;
-    private final StreamReaderOptions streamReaderOptions;
+    private final BarrageOptions streamReaderOptions;
     private final int pageSize;
 
     @ScriptApi
     public static PythonTableDataService create(
             @NotNull final PyObject pyTableDataService,
             @Nullable final ChunkReader.Factory chunkReaderFactory,
-            @Nullable final StreamReaderOptions streamReaderOptions,
+            @Nullable final BarrageOptions streamReaderOptions,
             final int pageSize) {
         return new PythonTableDataService(
                 pyTableDataService,
-                chunkReaderFactory == null ? DefaultChunkReadingFactory.INSTANCE : chunkReaderFactory,
-                streamReaderOptions == null ? BarrageUtil.DEFAULT_SNAPSHOT_DESER_OPTIONS : streamReaderOptions,
+                chunkReaderFactory == null ? DefaultChunkReaderFactory.INSTANCE : chunkReaderFactory,
+                streamReaderOptions == null ? BarrageUtil.DEFAULT_SNAPSHOT_OPTIONS : streamReaderOptions,
                 pageSize <= 0 ? DEFAULT_PAGE_SIZE : pageSize);
     }
 
@@ -87,7 +89,7 @@ public class PythonTableDataService extends AbstractTableDataService {
     private PythonTableDataService(
             @NotNull final PyObject pyTableDataService,
             @NotNull final ChunkReader.Factory chunkReaderFactory,
-            @NotNull final StreamReaderOptions streamReaderOptions,
+            @NotNull final BarrageOptions streamReaderOptions,
             final int pageSize) {
         super("PythonTableDataService");
         this.backend = new BackendAccessor(pyTableDataService);
@@ -337,7 +339,7 @@ public class PythonTableDataService extends AbstractTableDataService {
                         err);
             }
 
-            final ChunkReader[] readers = schemaPlus.computeChunkReaders(
+            final ChunkReader<? extends Values>[] readers = schemaPlus.computeChunkReaders(
                     chunkReaderFactory,
                     partitioningValuesSchema,
                     streamReaderOptions);
@@ -349,9 +351,9 @@ public class PythonTableDataService extends AbstractTableDataService {
             }
             final RecordBatch batch = (RecordBatch) recordBatchMessageInfo.header.header(new RecordBatch());
 
-            final Iterator<ChunkInputStreamGenerator.FieldNodeInfo> fieldNodeIter =
+            final Iterator<ChunkWriter.FieldNodeInfo> fieldNodeIter =
                     new FlatBufferIteratorAdapter<>(batch.nodesLength(),
-                            i -> new ChunkInputStreamGenerator.FieldNodeInfo(batch.nodes(i)));
+                            i -> new ChunkWriter.FieldNodeInfo(batch.nodes(i)));
 
             final PrimitiveIterator.OfLong bufferInfoIter = ArrowToTableConverter.extractBufferInfo(batch);
 
@@ -471,15 +473,17 @@ public class PythonTableDataService extends AbstractTableDataService {
                                     .reduce((a, b) -> a + ", " + b).orElse(""))));
                     return;
                 }
-                if (!columnDefinition.isCompatible(schemaPlus.tableDef.getColumns().get(0))) {
+                final ColumnDefinition<?> dataColumn = ReinterpretUtils.maybeConvertToPrimitive(
+                        schemaPlus.tableDef.getColumns().get(0));
+                if (!columnDefinition.isCompatible(dataColumn)) {
                     asyncState.setError(new IllegalArgumentException(String.format(
                             "Received incompatible column definition. Expected %s, but received %s.",
-                            columnDefinition, schemaPlus.tableDef.getColumns().get(0))));
+                            columnDefinition, dataColumn)));
                     return;
                 }
 
                 final ArrayList<WritableChunk<Values>> resultChunks = new ArrayList<>(messages.length - 1);
-                final ChunkReader reader = schemaPlus.computeChunkReaders(
+                final ChunkReader<? extends Values> reader = schemaPlus.computeChunkReaders(
                         chunkReaderFactory, schema, streamReaderOptions)[0];
                 int mi = 1;
                 try {
@@ -491,9 +495,9 @@ public class PythonTableDataService extends AbstractTableDataService {
                         }
                         final RecordBatch batch = (RecordBatch) recordBatchMessageInfo.header.header(new RecordBatch());
 
-                        final Iterator<ChunkInputStreamGenerator.FieldNodeInfo> fieldNodeIter =
+                        final Iterator<ChunkWriter.FieldNodeInfo> fieldNodeIter =
                                 new FlatBufferIteratorAdapter<>(batch.nodesLength(),
-                                        i -> new ChunkInputStreamGenerator.FieldNodeInfo(batch.nodes(i)));
+                                        i -> new ChunkWriter.FieldNodeInfo(batch.nodes(i)));
 
                         final PrimitiveIterator.OfLong bufferInfoIter = ArrowToTableConverter.extractBufferInfo(batch);
 
@@ -920,7 +924,7 @@ public class PythonTableDataService extends AbstractTableDataService {
             private final @NotNull ColumnDefinition<?> columnDefinition;
 
             public TableServiceGetRangeAdapter(@NotNull ColumnDefinition<?> columnDefinition) {
-                this.columnDefinition = columnDefinition;
+                this.columnDefinition = ReinterpretUtils.maybeConvertToPrimitive(columnDefinition);
             }
 
             @Override

@@ -131,6 +131,18 @@ public final class IcebergUtils {
         });
     }
 
+    private static String path(@NotNull final String path, @NotNull final FileIO io) {
+        return io instanceof RelativeFileIO ? ((RelativeFileIO) io).absoluteLocation(path) : path;
+    }
+
+    public static URI locationUri(@NotNull final Table table) {
+        return FileUtils.convertToURI(path(table.location(), table.io()), true);
+    }
+
+    public static URI dataFileUri(@NotNull final Table table, @NotNull final DataFile dataFile) {
+        return FileUtils.convertToURI(path(dataFile.path().toString(), table.io()), false);
+    }
+
     /**
      * Convert an Iceberg data type to a Deephaven type.
      *
@@ -314,13 +326,5 @@ public final class IcebergUtils {
                         ", partition spec " + tablePartitionSpec);
             }
         }
-    }
-
-    public static String path(@NotNull final String path, @NotNull final FileIO io) {
-        return io instanceof RelativeFileIO ? ((RelativeFileIO) io).absoluteLocation(path) : path;
-    }
-
-    public static URI locationUri(@NotNull final Table table) {
-        return FileUtils.convertToURI(path(table.location(), table.io()), true);
     }
 }
