@@ -80,7 +80,7 @@ univocity = "2.9.1"
 vertispan-nio = "1.0-alpha-2"
 vertispan-flatbuffers-gwt = "24.3.25-1"
 vertispan-ts-defs = "1.0.0-RC4"
-xerial = "3.47.2.0"
+xerial = "3.49.1.0"
 
 # test versions
 assertj = "3.27.3"
