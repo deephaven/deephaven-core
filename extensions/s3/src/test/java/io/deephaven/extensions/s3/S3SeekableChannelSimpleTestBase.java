@@ -174,7 +174,8 @@ abstract class S3SeekableChannelSimpleTestBase extends S3SeekableChannelTestSetu
                 final Throwable cause = e.getCause();
                 assertThat(cause.getClass().equals(ExecutionException.class)).isEqualTo(true);
                 final String s = cause.getMessage();
-                assertThat(s.contains("Client execution did not complete before the specified timeout configuration")).isEqualTo(true);
+                assertThat(s.contains("Client execution did not complete before the specified timeout configuration"))
+                        .isEqualTo(true);
             }
         }
     }

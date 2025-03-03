@@ -165,7 +165,8 @@ class S3Instructions(JObjectWrapper):
                 "PT1s", or other time duration types. Default to 2 seconds.
             write_timeout (DurationLike): the amount of time to wait when writing a fragment before giving up and timing
                 out. Can be expressed as an integer in nanoseconds, a time interval string, e.g. "PT00:00:00.001" or
-                "PT1s", or other time duration types. Default to 2 seconds.
+                "PT1s", or other time duration types. This value is a Java Optional and must be tested as such.
+                If not set then the Optional is empty.
             access_key_id (str):  (Deprecated) the access key for reading files. Both access key and secret access key
                 must be provided to use static credentials. If you specify both access key and secret key, then you
                 cannot provide other credentials like setting anonymous_access or credentials argument.
