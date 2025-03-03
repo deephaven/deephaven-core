@@ -44,7 +44,6 @@ public final class IcebergKeyValuePartitionedLayout extends IcebergBaseLayout {
      * @param instructions The instructions for customizations while reading.
      * @param dataInstructionsProvider The provider for special instructions, to be used if special instructions not
      *        provided in the {@code instructions}.
-     * @param tableLocationUriScheme The URI scheme for the table location.
      */
     public IcebergKeyValuePartitionedLayout(
             @NotNull final IcebergTableAdapter tableAdapter,
