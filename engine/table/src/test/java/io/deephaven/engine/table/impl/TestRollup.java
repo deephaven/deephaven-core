@@ -160,7 +160,9 @@ public class TestRollup extends RefreshingTableTestCase {
         final Table source2 =
                 TableTools.newTable(stringCol("A", "Echo", "Foxtrot", "Golf", "Hotel"), intCol("Sentinel", 6, 7, 8, 9));
 
-        final RollupTable rebased = rollup1.rebase(source2);
+        final RollupTable attributeCheck = rollup1.withAttributes(Collections.singletonMap("Haustier", "Kammerhunde"));
+
+        final RollupTable rebased = attributeCheck.rebase(source2);
 
         final HierarchicalTable.SnapshotState ss2 = rebased.makeSnapshotState();
         final Table snapshot2 =
@@ -170,6 +172,7 @@ public class TestRollup extends RefreshingTableTestCase {
                 snapshot2.view("A", "Count"));
         freeSnapshotTableChunks(snapshot2);
 
+        assertEquals("Kammerhunde", rebased.getAttribute("Haustier"));
     }
 
     @Test

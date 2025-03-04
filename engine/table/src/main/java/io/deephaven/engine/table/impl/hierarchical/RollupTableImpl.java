@@ -499,7 +499,9 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
             newSourceQueryTable = (QueryTable) newSource.coalesce();
         }
 
-        return makeRollupInternal(newSourceQueryTable, aggregations, includesConstituents, groupByColumns,
+        return makeRollupInternal(
+                getAttributes(),
+                newSourceQueryTable, aggregations, includesConstituents, groupByColumns,
                 aggregatedNodeDefinition, aggregatedNodeOperations, constituentNodeDefinition,
                 constituentNodeOperations,
                 availableColumnDefinitions);
@@ -510,8 +512,10 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
             @NotNull final Collection<? extends Aggregation> aggregations,
             final boolean includeConstituents,
             @NotNull final Collection<? extends ColumnName> groupByColumns) {
-        final RollupTableImpl result = makeRollupInternal(source, aggregations, includeConstituents, groupByColumns,
-                null, null, null, null, null);
+        final RollupTableImpl result =
+                makeRollupInternal(source.getAttributes(ak -> shouldCopyAttribute(ak, CopyAttributeOperation.Rollup)),
+                        source, aggregations, includeConstituents, groupByColumns,
+                        null, null, null, null, null);
         final TableDefinition baseDefinition = result.levelTables[groupByColumns.size()].getDefinition();
         source.copySortableColumns(result, baseDefinition.getColumnNameSet()::contains);
         result.setColumnDescriptions(AggregationDescriptions.of(aggregations));
@@ -519,7 +523,7 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
     }
 
     private static @NotNull RollupTableImpl makeRollupInternal(
-            @NotNull final QueryTable source,
+            @NotNull final Map<String, Object> attributes, @NotNull final QueryTable source,
             @NotNull final Collection<? extends Aggregation> aggregations,
             final boolean includeConstituents,
             @NotNull final Collection<? extends ColumnName> groupByColumns,
@@ -539,7 +543,7 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
         rollupFromBase(levelTables, levelRowLookups, levelNodeTableSources, aggregations, groupByColumns);
 
         return new RollupTableImpl(
-                source.getAttributes(ak -> shouldCopyAttribute(ak, CopyAttributeOperation.Rollup)),
+                attributes,
                 source, aggregations, includeConstituents, groupByColumns,
                 levelTables, levelRowLookups, levelNodeTableSources, aggregatedNodeDefinition, aggregatedNodeOperations,
                 constituentNodeDefinition, constituentNodeOperations, null, availableColumnDefinitions);
