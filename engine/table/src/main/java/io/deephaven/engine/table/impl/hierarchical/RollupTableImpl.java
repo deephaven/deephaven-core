@@ -518,7 +518,8 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
         return result;
     }
 
-    private static @NotNull RollupTableImpl makeRollupInternal(@NotNull final QueryTable source,
+    private static @NotNull RollupTableImpl makeRollupInternal(
+            @NotNull final QueryTable source,
             @NotNull final Collection<? extends Aggregation> aggregations,
             final boolean includeConstituents,
             @NotNull final Collection<? extends ColumnName> groupByColumns,
