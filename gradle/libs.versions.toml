@@ -1,7 +1,7 @@
 [versions]
 adbc = "0.16.0"
 airlift = "2.0.2"
-arrow = "18.0.0"
+arrow = "18.2.0"
 autoservice = "1.1.1"
 avro = "1.12.0"
 awssdk = "2.29.20"
