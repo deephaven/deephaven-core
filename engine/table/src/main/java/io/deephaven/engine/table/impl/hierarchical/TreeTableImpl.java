@@ -250,7 +250,8 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
                 null, null);
     }
 
-    private static @NotNull TreeTableImpl makeTreeInternal(@NotNull final QueryTable source,
+    private static @NotNull TreeTableImpl makeTreeInternal(
+            @NotNull final QueryTable source,
             @NotNull final ColumnName identifierColumn,
             @NotNull final ColumnName parentIdentifierColumn,
             @NotNull final Map<String, Object> attributes,
