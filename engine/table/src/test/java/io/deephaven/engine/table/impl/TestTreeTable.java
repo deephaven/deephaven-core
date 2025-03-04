@@ -24,6 +24,7 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
@@ -69,7 +70,9 @@ public class TestTreeTable extends RefreshingTableTestCase {
 
         final Table source2 = TreeTable.promoteOrphans(source1, "ID", "Parent");
 
-        final TreeTable rebased = tree.rebase(source2);
+        final TreeTable withAttributes = tree.withAttributes(Collections.singletonMap("Dog", "BestFriend"));
+
+        final TreeTable rebased = withAttributes.rebase(source2);
 
         final HierarchicalTable.SnapshotState ss2 = rebased.makeSnapshotState();
         final Table snapshot2 =
@@ -81,6 +84,7 @@ public class TestTreeTable extends RefreshingTableTestCase {
                 snapshot2.view("ID", "Parent", "Sentinel"));
         freeSnapshotTableChunks(snapshot2);
 
+        assertEquals(rebased.getAttribute("Dog"), "BestFriend");
     }
 
     @Test
