@@ -9,6 +9,8 @@ dependencies {
     compileOnly project(':util-immutables')
     annotationProcessor libs.immutables.value
 
+    compileOnly libs.jetbrains.annotations
+
     testImplementation libs.assertj
     testImplementation platform(libs.junit.bom)
     testImplementation libs.junit.jupiter

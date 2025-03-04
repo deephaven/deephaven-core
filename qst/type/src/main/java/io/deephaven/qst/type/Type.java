@@ -3,6 +3,8 @@
 //
 package io.deephaven.qst.type;
 
+import org.jetbrains.annotations.Nullable;
+
 import java.util.List;
 import java.util.Optional;
 
@@ -19,19 +21,42 @@ public interface Type<T> {
      * Finds the {@link #knownTypes() known type}, or else creates the relevant {@link NativeArrayType native array
      * type} or {@link CustomType custom type}.
      *
-     * @param clazz the class
-     * @param <T> the generic type of {@code clazz}
+     * @param dataType the data type
+     * @param <T> the generic type of {@code dataType}
      * @return the type
      */
-    static <T> Type<T> find(Class<T> clazz) {
-        Optional<Type<T>> found = TypeHelper.findStatic(clazz);
+    static <T> Type<T> find(Class<T> dataType) {
+        Optional<Type<T>> found = TypeHelper.findStatic(dataType);
         if (found.isPresent()) {
             return found.get();
         }
-        if (clazz.isArray()) {
-            return NativeArrayType.of(clazz, find(clazz.getComponentType()));
+        if (dataType.isArray()) {
+            return NativeArrayType.of(dataType, find(dataType.getComponentType()));
         }
-        return CustomType.of(clazz);
+        return CustomType.of(dataType);
+    }
+
+    /**
+     * If {@code componentType} is not {@code null}, this will find the appropriate {@link ArrayType}. Otherwise, this
+     * is equivalent to {@link #find(Class)}.
+     *
+     * @param dataType the data type
+     * @param componentType the component type
+     * @return the type
+     * @param <T> the generic type of {@code dataType}
+     */
+    static <T> Type<T> find(final Class<T> dataType, @Nullable final Class<?> componentType) {
+        if (componentType == null) {
+            return find(dataType);
+        }
+        final Type<?> ct = find(componentType);
+        if (dataType.isArray()) {
+            return NativeArrayType.of(dataType, ct);
+        }
+        if (componentType.isPrimitive()) {
+            return PrimitiveVectorType.of(dataType, (PrimitiveType<?>) ct);
+        }
+        return GenericVectorType.of(dataType, (GenericType<?>) ct);
     }
 
     /**

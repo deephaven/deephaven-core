@@ -42,7 +42,6 @@ public class TypeTest {
         assertThat(BoxedType.instances().distinct()).hasSize(8);
     }
 
-
     @Test
     void findBooleans() {
         check(boolean.class, Boolean.class, booleanType(), BoxedBooleanType.of());
@@ -87,99 +86,139 @@ public class TypeTest {
     void findString() {
         assertThat(find(String.class)).isEqualTo(stringType());
         assertThat(find(String[].class)).isEqualTo(stringType().arrayType());
+        assertThat(find(String[].class, String.class)).isEqualTo(stringType().arrayType());
     }
 
     @Test
     void findInstant() {
         assertThat(find(Instant.class)).isEqualTo(instantType());
         assertThat(find(Instant[].class)).isEqualTo(instantType().arrayType());
+        assertThat(find(Instant[].class, Instant.class)).isEqualTo(instantType().arrayType());
     }
 
     @Test
     void findCustom() {
         assertThat(find(Custom.class)).isEqualTo(ofCustom(Custom.class));
         assertThat(find(Custom[].class)).isEqualTo(ofCustom(Custom.class).arrayType());
+        assertThat(find(Custom[].class, Custom.class)).isEqualTo(ofCustom(Custom.class).arrayType());
     }
 
     @Test
     void booleanArrayType() {
         assertThat(find(boolean[].class)).isEqualTo(booleanType().arrayType());
+        assertThat(find(boolean[].class, boolean.class)).isEqualTo(booleanType().arrayType());
+
         assertThat(find(Boolean[].class)).isEqualTo(BoxedBooleanType.of().arrayType());
+        assertThat(find(Boolean[].class, Boolean.class)).isEqualTo(BoxedBooleanType.of().arrayType());
     }
 
     @Test
     void byteArrayType() {
         assertThat(find(byte[].class)).isEqualTo(byteType().arrayType());
+        assertThat(find(byte[].class, byte.class)).isEqualTo(byteType().arrayType());
+
         assertThat(find(Byte[].class)).isEqualTo(BoxedByteType.of().arrayType());
+        assertThat(find(Byte[].class, Byte.class)).isEqualTo(BoxedByteType.of().arrayType());
     }
 
     @Test
     void charArrayType() {
         assertThat(find(char[].class)).isEqualTo(charType().arrayType());
+        assertThat(find(char[].class, char.class)).isEqualTo(charType().arrayType());
+
         assertThat(find(Character[].class)).isEqualTo(BoxedCharType.of().arrayType());
+        assertThat(find(Character[].class, Character.class)).isEqualTo(BoxedCharType.of().arrayType());
     }
 
     @Test
     void shortArrayType() {
         assertThat(find(short[].class)).isEqualTo(shortType().arrayType());
+        assertThat(find(short[].class, short.class)).isEqualTo(shortType().arrayType());
+
         assertThat(find(Short[].class)).isEqualTo(BoxedShortType.of().arrayType());
+        assertThat(find(Short[].class, Short.class)).isEqualTo(BoxedShortType.of().arrayType());
     }
 
     @Test
     void intArrayType() {
         assertThat(find(int[].class)).isEqualTo(intType().arrayType());
+        assertThat(find(int[].class, int.class)).isEqualTo(intType().arrayType());
+
         assertThat(find(Integer[].class)).isEqualTo(BoxedIntType.of().arrayType());
+        assertThat(find(Integer[].class, Integer.class)).isEqualTo(BoxedIntType.of().arrayType());
     }
 
     @Test
     void longArrayType() {
         assertThat(find(long[].class)).isEqualTo(longType().arrayType());
+        assertThat(find(long[].class, long.class)).isEqualTo(longType().arrayType());
+
         assertThat(find(Long[].class)).isEqualTo(BoxedLongType.of().arrayType());
+        assertThat(find(Long[].class, Long.class)).isEqualTo(BoxedLongType.of().arrayType());
     }
 
     @Test
     void floatArrayType() {
         assertThat(find(float[].class)).isEqualTo(floatType().arrayType());
+        assertThat(find(float[].class, float.class)).isEqualTo(floatType().arrayType());
+
         assertThat(find(Float[].class)).isEqualTo(BoxedFloatType.of().arrayType());
+        assertThat(find(Float[].class, Float.class)).isEqualTo(BoxedFloatType.of().arrayType());
     }
 
     @Test
     void doubleArrayType() {
         assertThat(find(double[].class)).isEqualTo(doubleType().arrayType());
-        assertThat(find(Double[].class)).isEqualTo(BoxedDoubleType.of().arrayType());
+        assertThat(find(double[].class, double.class)).isEqualTo(doubleType().arrayType());
 
+        assertThat(find(Double[].class)).isEqualTo(BoxedDoubleType.of().arrayType());
+        assertThat(find(Double[].class, Double.class)).isEqualTo(BoxedDoubleType.of().arrayType());
     }
 
     @Test
     void nestedPrimitive2x() {
         assertThat(find(int[][].class)).isEqualTo(intType().arrayType().arrayType());
+        assertThat(find(int[][].class, int[].class)).isEqualTo(intType().arrayType().arrayType());
+
         assertThat(find(Integer[][].class)).isEqualTo(BoxedIntType.of().arrayType().arrayType());
+        assertThat(find(Integer[][].class, Integer[].class)).isEqualTo(BoxedIntType.of().arrayType().arrayType());
     }
 
     @Test
     void nestedPrimitive3x() {
         assertThat(find(int[][][].class)).isEqualTo(intType().arrayType().arrayType().arrayType());
+        assertThat(find(int[][][].class, int[][].class)).isEqualTo(intType().arrayType().arrayType().arrayType());
+
         assertThat(find(Integer[][][].class)).isEqualTo(BoxedIntType.of().arrayType().arrayType().arrayType());
+        assertThat(find(Integer[][][].class, Integer[][].class))
+                .isEqualTo(BoxedIntType.of().arrayType().arrayType().arrayType());
     }
 
     @Test
     void nestedStatic2x() {
         assertThat(find(String[][].class)).isEqualTo(stringType().arrayType().arrayType());
+        assertThat(find(String[][].class, String[].class)).isEqualTo(stringType().arrayType().arrayType());
     }
 
     @Test
     void nestedStatic3x() {
         assertThat(find(String[][][].class)).isEqualTo(stringType().arrayType().arrayType().arrayType());
+        assertThat(find(String[][][].class, String[][].class))
+                .isEqualTo(stringType().arrayType().arrayType().arrayType());
     }
 
     @Test
     void nestedCustom2x() {
         assertThat(find(Custom[][].class)).isEqualTo(CustomType.of(Custom.class).arrayType().arrayType());
+        assertThat(find(Custom[][].class, Custom[].class))
+                .isEqualTo(CustomType.of(Custom.class).arrayType().arrayType());
     }
 
     @Test
     void nestedCustom3x() {
         assertThat(find(Custom[][][].class)).isEqualTo(CustomType.of(Custom.class).arrayType().arrayType().arrayType());
+        assertThat(find(Custom[][][].class, Custom[][].class))
+                .isEqualTo(CustomType.of(Custom.class).arrayType().arrayType().arrayType());
     }
 
     @Test
@@ -217,12 +256,14 @@ public class TypeTest {
             PrimitiveType<T> expectedPrimitive,
             BoxedType<T> expectedBoxed) {
         assertThat(find(primitive)).isEqualTo(expectedPrimitive);
+        assertThat(find(primitive, null)).isEqualTo(expectedPrimitive);
         assertThat(expectedPrimitive.clazz()).isEqualTo(primitive);
         assertThat(expectedPrimitive.boxedType()).isEqualTo(expectedBoxed);
         assertThat(expectedPrimitive.arrayType().componentType()).isEqualTo(expectedPrimitive);
         assertThat(expectedPrimitive.arrayType().clazz()).isEqualTo(Array.newInstance(primitive, 0).getClass());
 
         assertThat(find(boxed)).isEqualTo(expectedBoxed);
+        assertThat(find(boxed, null)).isEqualTo(expectedBoxed);
         assertThat(expectedBoxed.clazz()).isEqualTo(boxed);
         assertThat(expectedBoxed.primitiveType()).isEqualTo(expectedPrimitive);
         assertThat(expectedBoxed.arrayType().componentType()).isEqualTo(expectedBoxed);
