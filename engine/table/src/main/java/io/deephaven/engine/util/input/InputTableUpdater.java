@@ -22,15 +22,16 @@ import java.util.stream.Collectors;
 public interface InputTableUpdater {
 
     /**
-     * Get the input table updater from the given {@code table}, or {@code null}. Equivalent to
-     * {@code (InputTableUpdater) table.getAttribute(Table.INPUT_TABLE_ATTRIBUTE)}.
+     * Get the input table updater from the given {@code table}, or {@code null} if the input table updater is not set
+     * or is the wrong type.
      * 
      * @param table the table
      * @return the input table updater
      * @see Table#INPUT_TABLE_ATTRIBUTE
      */
     static InputTableUpdater from(Table table) {
-        return (InputTableUpdater) table.getAttribute(Table.INPUT_TABLE_ATTRIBUTE);
+        final Object obj = table.getAttribute(Table.INPUT_TABLE_ATTRIBUTE);
+        return obj instanceof InputTableUpdater ? (InputTableUpdater) obj : null;
     }
 
     /**
