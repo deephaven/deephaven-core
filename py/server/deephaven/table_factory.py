@@ -249,8 +249,6 @@ class InputTable(Table):
         self.j_input_table = getattr(_J_InputTableUpdater, "from")(self.j_table)
         if not self.j_input_table:
             raise DHError("the provided table input is not suitable for input tables.")
-        if not _J_InputTableUpdater.jclass.isInstance(self.j_input_table):
-            raise DHError("the provided table's InputTable attribute type is not of InputTableUpdater type.")
 
     def add(self, table: Table) -> None:
         """Synchronously writes rows from the provided table to this input table. If this is a keyed input table,
