@@ -475,7 +475,7 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
     }
 
     @Override
-    public RollupTableImpl rebase(final @NotNull Table newSource) {
+    public RollupTableImpl rebase(@NotNull final Table newSource) {
         if (!newSource.getDefinition().equals(source.getDefinition())) {
             if (newSource.getDefinition().equalsIgnoreOrder(source.getDefinition())) {
                 throw new IllegalArgumentException(
