@@ -31,7 +31,6 @@ import java.util.stream.Stream;
 
 import static io.deephaven.iceberg.base.IcebergUtils.allManifestFiles;
 import static io.deephaven.iceberg.base.IcebergUtils.dataFileUri;
-import static io.deephaven.iceberg.base.IcebergUtils.locationUri;
 
 public abstract class IcebergBaseLayout implements TableLocationKeyFinder<IcebergTableLocationKey> {
     /**
@@ -123,6 +122,8 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
     /**
      * @param tableAdapter The {@link IcebergTableAdapter} that will be used to access the table.
      * @param instructions The instructions for customizations while reading.
+     * @param dataInstructionsProvider The provider for special instructions, to be used if special instructions not
+     *        provided in the {@code instructions}.
      */
     public IcebergBaseLayout(
             @NotNull final IcebergTableAdapter tableAdapter,
@@ -147,7 +148,7 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
 
         this.snapshot = tableAdapter.getSnapshot(instructions);
         this.tableDef = tableAdapter.definition(instructions);
-        this.uriScheme = locationUri(tableAdapter.icebergTable()).getScheme();
+        this.uriScheme = tableAdapter.getScheme();
         // Add the data instructions if provided as part of the IcebergReadInstructions, or else attempt to create
         // data instructions from the properties collection and URI scheme.
         final Object specialInstructions = instructions.dataInstructions()
@@ -170,7 +171,6 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
             }
             this.parquetInstructions = builder.build();
         }
-
         uriSchemeTochannelsProviders = new HashMap<>();
         uriSchemeTochannelsProviders.put(uriScheme,
                 SeekableChannelsProviderLoader.getInstance().load(uriScheme, specialInstructions));

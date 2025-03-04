@@ -107,7 +107,8 @@ class IcebergReadInstructions(JObjectWrapper):
                 the definition is inferred from the Iceberg schema. Setting a definition guarantees the returned table
                 will have that definition. This is useful for specifying a subset of the Iceberg schema columns.
             data_instructions (Optional[s3.S3Instructions]): Special instructions for reading data files, useful when
-                reading files from a non-local file system, like S3.
+                reading files from a non-local file system, like S3. If omitted, the data instructions will be derived
+                from the properties of the catalog.
             column_renames (Optional[Dict[str, str]]): A dictionary of old to new column names that will be renamed in
                 the output table.
             update_mode (Optional[IcebergUpdateMode]): The update mode for the table. If omitted, the default update
@@ -313,6 +314,9 @@ class TableParquetWriterOptions(JObjectWrapper):
                 `None`, which means use 2^20 (1,048,576)
             target_page_size (Optional[int]): the target Parquet file page size in bytes, if not specified. Defaults to
                 `None`, which means use 2^20 bytes (1 MiB)
+            data_instructions (Optional[s3.S3Instructions]): Special instructions for writing data files, useful when
+                writing files to a non-local file system, like S3. If omitted, the data instructions will be derived
+                from the properties of the catalog.
 
         Raises:
             DHError: If unable to build the object.

@@ -43,6 +43,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static io.deephaven.iceberg.base.IcebergUtils.convertToDHType;
+import static io.deephaven.iceberg.base.IcebergUtils.locationUri;
 
 /**
  * This class manages an Iceberg {@link org.apache.iceberg.Table table} and provides methods to interact with it.
@@ -61,6 +62,11 @@ public class IcebergTableAdapter {
     private final TableIdentifier tableIdentifier;
     private final DataInstructionsProviderLoader dataInstructionsProviderLoader;
 
+    /**
+     * The URI scheme for the table location.
+     */
+    private final String uriScheme;
+
     public IcebergTableAdapter(
             final Catalog catalog,
             final TableIdentifier tableIdentifier,
@@ -70,6 +76,7 @@ public class IcebergTableAdapter {
         this.table = table;
         this.tableIdentifier = tableIdentifier;
         this.dataInstructionsProviderLoader = dataInstructionsProviderLoader;
+        this.uriScheme = locationUri(table).getScheme();
     }
 
     /**
@@ -584,6 +591,13 @@ public class IcebergTableAdapter {
      * @return A new instance of {@link IcebergTableWriter} configured with the provided options.
      */
     public IcebergTableWriter tableWriter(final TableWriterOptions tableWriterOptions) {
-        return new IcebergTableWriter(tableWriterOptions, this);
+        return new IcebergTableWriter(tableWriterOptions, this, dataInstructionsProviderLoader);
+    }
+
+    /**
+     * Get the URI scheme for the table location.
+     */
+    public String getScheme() {
+        return uriScheme;
     }
 }
