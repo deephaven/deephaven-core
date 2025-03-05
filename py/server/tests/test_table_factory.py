@@ -380,7 +380,7 @@ class TableFactoryTestCase(BaseTestCase):
 
             with self.assertRaises(DHError) as cm:
                 InputTable(place_holder_input_table)
-            self.assertIn("not of InputTableUpdater type", str(cm.exception))
+            self.assertIn("the provided table input is not suitable for input tables.", str(cm.exception))
 
             self.assertTrue(isinstance(_wrapper.wrap_j_object(place_holder_input_table), Table))
 
