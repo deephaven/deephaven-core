@@ -32,6 +32,8 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
                     "empty_table(1000).update(['ID=i', 'Parent=i == 0 ? null : (int)(i/10)']).format_columns(['ID=ID>0 ? GREEN : RED']).tree('ID', 'Parent')")
             .script("ticking_tree",
                     "time_table('PT0.1s').update(['ID=i', 'Parent=i == 0 ? null : (int)(i/10)']).format_columns(['ID=ID>0 ? GREEN : RED']).tree('ID', 'Parent')")
+            .script("static_table_to_rollup",
+                    "empty_table(20).update(['Y=i%5', 'X=i%3'])")
             .script("table_to_rollup",
                     "time_table('PT0.1s').update(['Y=Math.sin(i/3)', 'X=i%3']).format_columns(['Y=Y>0 ? GREEN : RED'])")
             .script("ticking_rollup",
@@ -399,6 +401,60 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
                     }
 
                     return tests.stream().reduce((p1, p2) -> () -> p1.get().then(result -> p2.get())).get().get();
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    public void testCreateRollupUpdateView() {
+        connect(tables)
+                .then(table("static_table_to_rollup"))
+                .then(table -> {
+                    JsRollupConfig cfg = new JsRollupConfig();
+                    cfg.groupingColumns = Js.uncheckedCast(JsArray.of("X"));
+                    cfg.includeConstituents = true;
+                    cfg.aggregations = JsPropertyMap.of(JsAggregationOperation.SUM, JsArray.of("Y"));
+                    return table.rollup(cfg).then(rollupTable -> {
+
+                        JsPropertyMap<Object> col0 =
+                                JsPropertyMap.of("name", "YPlus1", "expression", "Y + 1", "type", "int");
+                        col0.set("rollupNodeType", "aggregated");
+
+                        CustomColumn.CustomColumOptions col1Options = new CustomColumn.CustomColumOptions();
+                        col1Options.rollupNodeType = "constituent";
+                        CustomColumn col1 = new CustomColumn("YPlus1", "Y + 1", "int", col1Options);
+
+                        JsArray<JsTable.CustomColumnArgUnionType> columns = new JsArray<>(
+                                JsTable.CustomColumnArgUnionType.of(col0),
+                                JsTable.CustomColumnArgUnionType.of(col1));
+
+                        assertEquals(2, rollupTable.getColumns().length);
+
+                        rollupTable.applyCustomColumns(columns);
+
+                        rollupTable.setViewport(0, 99, rollupTable.getColumns(), null);
+                        return rollupTable.getViewportData()
+                                .then(data -> Promise.resolve((TreeViewportData) data))
+                                .then(data -> {
+                                    assertEquals(2, rollupTable.getColumns().length);
+
+                                    assertEquals(4d, data.getTreeSize());
+
+                                    TreeViewportData.TreeRow row0 = (TreeViewportData.TreeRow) data.getRows().getAt(0);
+                                    assertTrue(row0.isExpanded());
+                                    assertTrue(row0.hasChildren());
+                                    assertEquals(1, row0.depth());
+
+                                    TreeViewportData.TreeRow row1 = (TreeViewportData.TreeRow) data.getRows().getAt(1);
+                                    assertFalse(row1.isExpanded());
+                                    assertTrue(row1.hasChildren());
+                                    assertEquals(2, row1.depth());
+
+
+                                    rollupTable.close();
+                                    assertTrue(rollupTable.isClosed());
+                                    return null;
+                                });
+                    });
                 })
                 .then(this::finish).catch_(this::report);
     }

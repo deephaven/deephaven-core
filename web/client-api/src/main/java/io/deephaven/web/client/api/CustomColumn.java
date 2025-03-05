@@ -6,6 +6,7 @@ package io.deephaven.web.client.api;
 import io.deephaven.web.shared.data.CustomColumnDescriptor;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsMethod;
+import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
 import jsinterop.base.JsPropertyMap;
@@ -17,11 +18,22 @@ public class CustomColumn {
             TYPE_FORMAT_DATE = "FORMAT_DATE",
             TYPE_NEW = "NEW";
 
+    public static final String ROLLUP_NODE_TYPE_AGGREGATED = "aggregated",
+            ROLLUP_NODE_TYPE_CONSTITUENT = "constituent";
+
     // Copied from ColumnFormattingValues
     protected static final String ROW_FORMAT_NAME = "__ROW";
     private static final String TABLE_STYLE_FORMAT_SUFFIX = "__TABLE_STYLE_FORMAT";
     private static final String TABLE_NUMBER_FORMAT_SUFFIX = "__TABLE_NUMBER_FORMAT";
     private static final String TABLE_DATE_FORMAT_SUFFIX = "__TABLE_DATE_FORMAT";
+
+    @JsType(isNative = true, namespace = JsPackage.GLOBAL, name = "Object")
+    public static class CustomColumOptions {
+        /**
+         * Should be one of ROLLUP_NODE_TYPE_AGGREGATED / ROLLUP_NODE_TYPE_CONSTITUENT
+         */
+        public String rollupNodeType;
+    }
 
     /**
      * Get the suffix to append to the name for the provided type
@@ -49,12 +61,14 @@ public class CustomColumn {
     private final String name;
     private final String type;
     private final String expression;
+    private final CustomColumOptions options;
 
     @JsIgnore
-    public CustomColumn(String name, String type, String expression) {
+    public CustomColumn(String name, String type, String expression, CustomColumOptions options) {
         this.name = name;
         this.type = type;
         this.expression = expression;
+        this.options = options;
     }
 
     @JsIgnore
@@ -74,6 +88,7 @@ public class CustomColumn {
             name = descriptorName;
             type = TYPE_NEW;
         }
+        options = new CustomColumOptions();
         // Substring from after the name and equals sign
         expression = descriptorExpression.substring(descriptorName.length() + 1);
     }
@@ -87,6 +102,12 @@ public class CustomColumn {
         name = source.getAsAny("name").asString();
         type = source.getAsAny("type").asString();
         expression = source.getAsAny("expression").asString();
+
+        // We expect the options to be provided as part of a top-level map, not nested into a separate object
+        options = new CustomColumOptions();
+        if (source.has("rollupNodeType")) {
+            options.rollupNodeType = source.getAsAny("rollupNodeType").asString();
+        }
     }
 
     /**
@@ -126,6 +147,16 @@ public class CustomColumn {
         return expression;
     }
 
+    /**
+     * The options for this custom column.
+     *
+     * @return CustomColumOptions
+     */
+    @JsProperty
+    public CustomColumOptions getOptions() {
+        return options;
+    }
+
     @JsMethod
     public String valueOf() {
         return toString();
@@ -135,5 +166,15 @@ public class CustomColumn {
     @Override
     public String toString() {
         return "" + name + getNameSuffix(type) + "=" + expression;
+    }
+
+    @JsMethod
+    public static CustomColumn from(String columnInfo) {
+        // Parse the column info from the formatted string (produced from toString())
+        String[] parts = columnInfo.split("=");
+        if (parts.length != 2) {
+            throw new IllegalArgumentException("Invalid column info: " + columnInfo);
+        }
+        return new CustomColumn(parts[0], TYPE_NEW, parts[1], new CustomColumOptions());
     }
 }
