@@ -3585,10 +3585,7 @@ public class QueryTable extends BaseTable<QueryTable> {
      */
     @Override
     public QueryTable copy() {
-        final UpdateGraph updateGraph = getUpdateGraph();
-        try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
-            return copy(StandardOptions.COPY_ALL);
-        }
+        return copy(StandardOptions.COPY_ALL);
     }
 
     public QueryTable copy(Predicate<String> shouldCopy) {
