@@ -1195,7 +1195,7 @@ public abstract class SqliteCatalogBase {
         {
             final IcebergTableWriter tableWriter = tableAdapter.tableWriter(writerOptionsBuilder()
                     .tableDefinition(source.getDefinition())
-                    .sortOrderProvider(SortOrderProvider.disableSorting())
+                    .sortOrderProvider(SortOrderProvider.unsorted())
                     .build());
             tableWriter.append(IcebergWriteInstructions.builder()
                     .addTables(source)

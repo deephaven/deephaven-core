@@ -13,15 +13,16 @@ public interface SortOrderProvider {
     /**
      * Do not sort the data while writing new data to the iceberg table.
      */
-    static SortOrderProvider disableSorting() {
-        return SortOrderProviderInternal.DisableSorting.getInstance();
+    static SortOrderProvider unsorted() {
+        return SortOrderProviderInternal.DisableSorting.INSTANCE;
     }
 
     /**
-     * Use the default {@link org.apache.iceberg.Table#sortOrder()} of the table while writing new data.
+     * Use the default {@link org.apache.iceberg.Table#sortOrder()} of the table while writing new data. If no sort
+     * order is set on the table, no sorting will be done.
      */
     static SortOrderProvider useTableDefault() {
-        return SortOrderProviderInternal.TableDefaultSortOrderProvider.getInstance();
+        return SortOrderProviderInternal.TableDefaultSortOrderProvider.INSTANCE;
     }
 
     /**

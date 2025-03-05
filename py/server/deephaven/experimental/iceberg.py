@@ -294,19 +294,20 @@ class SortOrderProvider(JObjectWrapper):
         return self._j_object
 
     @classmethod
-    def disable_sorting(cls) -> 'SortOrderProvider':
+    def unsorted(cls) -> 'SortOrderProvider':
         """
         Used to disable sorting while writing new data to the iceberg table.
 
         Returns:
             the SortOrderProvider object.
         """
-        return cls(_JSortOrderProvider.disableSorting())
+        return cls(_JSortOrderProvider.unsorted())
 
     @classmethod
     def use_table_default(cls) -> 'SortOrderProvider':
         """
-        Use the default sort order of the table while writing new data.
+        Use the default sort order of the table while writing new data. If no sort order is set on the table, no sorting
+        will be done.
 
         Returns:
             the :class:`.SortOrderProvider` object.
@@ -355,7 +356,6 @@ class TableParquetWriterOptions(JObjectWrapper):
             schema_provider: Optional[SchemaProvider]: Used to extract a Schema from a iceberg table. This schema will
                 be used in conjunction with the field_id_to_column_name to map Deephaven columns from table_definition
                 to Iceberg columns.
-                Users can specify how to extract the schema in multiple ways (by ID, snapshot ID, initial schema, etc.).
                 Defaults to `None`, which means use the current schema from the table.
             field_id_to_column_name: Optional[Dict[int, str]]: A one-to-one map from Iceberg field IDs from the
                 schema_spec to Deephaven column names from the table_definition.
@@ -372,8 +372,9 @@ class TableParquetWriterOptions(JObjectWrapper):
             target_page_size (Optional[int]): the target Parquet file page size in bytes, if not specified. Defaults to
                 `None`, which means use 2^20 bytes (1 MiB)
             sort_order_provider: Optional[SortOrderProvider]: Used to provide SortOrder to be used for sorting new data
-                while writing to an iceberg table using this writer. Users can specify multiple ways to do so, for
-                example, by sort ID, table default, etc. Defaults to `None`, which means use the table's default sort order.
+                while writing to an iceberg table using this writer. Note that we select the sort order of the Table at
+                the time the writer is constructed, and it does not change if the table's sort order changes. Defaults
+                to `None`, which means use the table's default sort order.
 
         Raises:
             DHError: If unable to build the object.

@@ -5,6 +5,7 @@ package io.deephaven.iceberg.util;
 
 import org.apache.iceberg.SortOrder;
 import org.apache.iceberg.Table;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Internal class containing the implementations of {@link SortOrderProvider}.
@@ -15,39 +16,29 @@ class SortOrderProviderInternal {
         /**
          * Returns the {@link SortOrder} to use when writing to the given table based on this {@link SortOrderProvider}.
          */
+        @NotNull
         SortOrder getSortOrder(Table table);
     }
 
     // Implementations of SortOrderProvider
-    static class DisableSorting implements SortOrderProvider, SortOrderProviderImpl {
-
-        private static final DisableSorting INSTANCE = new DisableSorting();
-
-        private DisableSorting() {}
-
-        static DisableSorting getInstance() {
-            return INSTANCE;
-        }
+    enum DisableSorting implements SortOrderProvider, SortOrderProviderImpl {
+        INSTANCE;
 
         @Override
+        @NotNull
         public SortOrder getSortOrder(final Table table) {
             return SortOrder.unsorted();
         }
     }
 
-    static class TableDefaultSortOrderProvider implements SortOrderProvider, SortOrderProviderImpl {
-
-        private static final TableDefaultSortOrderProvider INSTANCE = new TableDefaultSortOrderProvider();
-
-        private TableDefaultSortOrderProvider() {}
-
-        static TableDefaultSortOrderProvider getInstance() {
-            return INSTANCE;
-        }
+    enum TableDefaultSortOrderProvider implements SortOrderProvider, SortOrderProviderImpl {
+        INSTANCE;
 
         @Override
+        @NotNull
         public SortOrder getSortOrder(final Table table) {
-            return table.sortOrder();
+            final SortOrder sortOrder = table.sortOrder();
+            return sortOrder != null ? sortOrder : SortOrder.unsorted();
         }
     }
 
@@ -59,6 +50,7 @@ class SortOrderProviderInternal {
         }
 
         @Override
+        @NotNull
         public SortOrder getSortOrder(final Table table) {
             if (!table.sortOrders().containsKey(sortOrderId)) {
                 throw new IllegalArgumentException("Sort order with ID " + sortOrderId + " not found for table " +

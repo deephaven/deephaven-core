@@ -25,7 +25,8 @@ import java.util.List;
 
 public class IcebergTableParquetLocation extends ParquetTableLocation implements TableLocation {
 
-    private volatile List<SortColumn> sortedColumns;
+    @Nullable
+    private final List<SortColumn> sortedColumns;
 
     public IcebergTableParquetLocation(
             @NotNull final IcebergTableAdapter tableAdapter,
@@ -39,18 +40,7 @@ public class IcebergTableParquetLocation extends ParquetTableLocation implements
     @Override
     @NotNull
     public List<SortColumn> getSortedColumns() {
-        List<SortColumn> local;
-        if ((local = sortedColumns) != null) {
-            return local;
-        }
-        synchronized (this) {
-            if ((local = sortedColumns) != null) {
-                return local;
-            }
-            local = Collections.unmodifiableList(super.getSortedColumns());
-            sortedColumns = local;
-            return local;
-        }
+        return sortedColumns == null ? super.getSortedColumns() : sortedColumns;
     }
 
     @Nullable
