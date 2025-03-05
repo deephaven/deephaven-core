@@ -4,7 +4,6 @@
 package io.deephaven.web.client.api.barrage.data;
 
 import io.deephaven.chunk.Chunk;
-import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.web.client.api.barrage.WebBarrageMessage;
 import io.deephaven.web.client.api.barrage.def.InitialTableDefinition;
@@ -45,36 +44,8 @@ public abstract class WebBarrageSubscription {
             final DataChangedHandler dataChangedHandler) {
 
         WebColumnData[] dataSinks = new WebColumnData[cts.columnTypes().length];
-        ChunkType[] chunkTypes = cts.chunkTypes();
         for (int i = 0; i < dataSinks.length; i++) {
-            switch (chunkTypes[i]) {
-                case Boolean:
-                    throw new IllegalStateException("Boolean unsupported here");
-                case Char:
-                    dataSinks[i] = new WebCharColumnData();
-                    break;
-                case Byte:
-                    dataSinks[i] = new WebByteColumnData();
-                    break;
-                case Short:
-                    dataSinks[i] = new WebShortColumnData();
-                    break;
-                case Int:
-                    dataSinks[i] = new WebIntColumnData();
-                    break;
-                case Long:
-                    dataSinks[i] = new WebLongColumnData();
-                    break;
-                case Float:
-                    dataSinks[i] = new WebFloatColumnData();
-                    break;
-                case Double:
-                    dataSinks[i] = new WebDoubleColumnData();
-                    break;
-                case Object:
-                    dataSinks[i] = new WebObjectColumnData();
-                    break;
-            }
+            dataSinks[i] = new WebColumnData();
         }
 
         if (cts.getTableDef().getAttributes().isBlinkTable()) {
@@ -207,7 +178,7 @@ public abstract class WebBarrageSubscription {
                     PrimitiveIterator.OfLong destIterator = destinationRowSet.indexIterator();
                     for (int j = 0; j < column.data.size(); j++) {
                         Chunk<Values> chunk = column.data.get(j);
-                        destSources[ii].fillChunk(chunk, destIterator);
+                        destSources[ii].fillFromChunk(chunk, destIterator);
                     }
                     assert !destIterator.hasNext();
                 }
@@ -356,7 +327,7 @@ public abstract class WebBarrageSubscription {
 
                         for (int j = 0; j < column.data.size(); j++) {
                             Chunk<Values> chunk = column.data.get(j);
-                            destSources[ii].fillChunk(chunk, destIterator);
+                            destSources[ii].fillFromChunk(chunk, destIterator);
                         }
                         assert !destIterator.hasNext();
                     }
@@ -395,7 +366,7 @@ public abstract class WebBarrageSubscription {
                 };
                 for (int j = 0; j < column.data.size(); j++) {
                     Chunk<Values> chunk = column.data.get(j);
-                    destSources[ii].fillChunk(chunk, destIterator);
+                    destSources[ii].fillFromChunk(chunk, destIterator);
                 }
                 assert !destIterator.hasNext();
             }
@@ -538,7 +509,7 @@ public abstract class WebBarrageSubscription {
 
                 for (int j = 0; j < column.data.size(); j++) {
                     Chunk<Values> chunk = column.data.get(j);
-                    destSources[ii].fillChunk(chunk, column.rowsModified.indexIterator());
+                    destSources[ii].fillFromChunk(chunk, column.rowsModified.indexIterator());
                 }
             }
 
