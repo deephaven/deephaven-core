@@ -14,16 +14,9 @@ import elemental2.dom.AbortController;
 import elemental2.dom.DomGlobal;
 import elemental2.promise.IThenable;
 import elemental2.promise.Promise;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.hierarchicaltable_pb.HierarchicalTableApplyRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.hierarchicaltable_pb.HierarchicalTableDescriptor;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.hierarchicaltable_pb.HierarchicalTableSourceExportRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.hierarchicaltable_pb.HierarchicalTableViewKeyTableDescriptor;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.hierarchicaltable_pb.HierarchicalTableViewRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.hierarchicaltable_pb.*;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.hierarchicaltable_pb_service.UnaryResponse;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.Condition;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.ExportedTableCreationResponse;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.SortDescriptor;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.TableReference;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.*;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.ticket_pb.Ticket;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.ticket_pb.TypedTicket;
 import io.deephaven.web.client.api.*;
@@ -60,6 +53,9 @@ import jsinterop.base.JsPropertyMap;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import static io.deephaven.web.client.api.CustomColumn.ROLLUP_NODE_TYPE_AGGREGATED;
+import static io.deephaven.web.client.api.CustomColumn.ROLLUP_NODE_TYPE_CONSTITUENT;
 
 /**
  * Behaves like a {@link JsTable} externally, but data, state, and viewports are managed by an entirely different
@@ -121,11 +117,11 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
      * all subsequent steps must be performed as well.
      */
     private enum RebuildStep {
-        UPDATE_VIEW, FILTER, SORT, HIERARCHICAL_TABLE_VIEW, SUBSCRIPTION;
+        UPDATE_VIEW, FORMAT_VIEW, FILTER, SORT, HIERARCHICAL_TABLE_VIEW, SUBSCRIPTION;
     }
 
     public enum RollupNodeType {
-        AGGREGATED, CONSTITUENT;
+        UNSPECIFIED, AGGREGATED, CONSTITUENT;
     }
 
     private final WorkerConnection connection;
@@ -149,9 +145,11 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
 
     // The current filter and sort state
     private List<CustomColumn> updateColumns = new ArrayList<>();
+    private List<CustomColumn> formatColumns = new ArrayList<>();
     private List<FilterCondition> filters = new ArrayList<>();
     private List<Sort> sorts = new ArrayList<>();
     private TicketAndPromise<?> updateViewTable;
+    private TicketAndPromise<?> formatViewTable;
     private TicketAndPromise<?> filteredTable;
     private TicketAndPromise<?> sortedTable;
 
@@ -166,6 +164,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
     // the "next" set of filters/sorts/custom columns that we'll use. these either are "==" to the above fields, or are
     // scheduled to replace them soon.
     private List<CustomColumn> nextUpdateColumns = new ArrayList<>();
+    private List<CustomColumn> nextFormatColumns = new ArrayList<>();
     private List<FilterCondition> nextFilters = new ArrayList<>();
     private List<Sort> nextSort = new ArrayList<>();
 
@@ -310,6 +309,25 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
         return connection;
     }
 
+    private UpdateViewRequest adaptCustomColumn(CustomColumn column) {
+        final String rawString = column.getName() + "=" + column.getExpression();
+        final Selectable columnSpec = new Selectable();
+        columnSpec.setRaw(rawString);
+
+        final UpdateViewRequest request = new UpdateViewRequest();
+        request.setColumnSpec(columnSpec);
+        final int nodeType;
+        if (column.getType().equals(ROLLUP_NODE_TYPE_AGGREGATED)) {
+            nodeType = RollupNodeType.AGGREGATED.ordinal();
+        } else if (column.getType().equals(ROLLUP_NODE_TYPE_CONSTITUENT)) {
+            nodeType = RollupNodeType.CONSTITUENT.ordinal();
+        } else {
+            nodeType = RollupNodeType.UNSPECIFIED.ordinal();
+        }
+        request.setNodeType(nodeType);
+        return request;
+    }
+
     private TicketAndPromise<?> prepareUpdateView() {
         if (updateViewTable != null) {
             return updateViewTable;
@@ -319,10 +337,8 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
         }
         Ticket ticket = connection.getTickets().newExportTicket();
         updateViewTable = new TicketAndPromise<>(ticket, Callbacks.grpcUnaryPromise(c -> {
-
             HierarchicalTableApplyRequest applyUpdates = new HierarchicalTableApplyRequest();
-            // applyFilter.setFiltersList(
-            // nextUpdateColumns.stream().map(FilterCondition::makeDescriptor).toArray(Condition[]::new));
+            nextUpdateColumns.stream().map(this::adaptCustomColumn).forEach(applyUpdates::addUpdateViews);
             applyUpdates.setInputHierarchicalTableId(widget.getTicket());
             applyUpdates.setResultHierarchicalTableId(ticket);
             connection.hierarchicalTableServiceClient().apply(applyUpdates, connection.metadata(), c::apply);
@@ -330,20 +346,37 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
         return updateViewTable;
     }
 
+    private TicketAndPromise<?> prepareFormats(TicketAndPromise<?> prevTicket) {
+        if (formatViewTable != null) {
+            return formatViewTable;
+        }
+        if (nextFormatColumns.isEmpty()) {
+            return prevTicket;
+        }
+        Ticket ticket = connection.getTickets().newExportTicket();
+        formatViewTable = new TicketAndPromise<>(ticket, Callbacks.grpcUnaryPromise(c -> {
+            HierarchicalTableApplyRequest applyUpdates = new HierarchicalTableApplyRequest();
+            nextFormatColumns.stream().map(this::adaptCustomColumn).forEach(applyUpdates::addUpdateViews);
+            applyUpdates.setInputHierarchicalTableId(prevTicket.ticket());
+            applyUpdates.setResultHierarchicalTableId(ticket);
+            connection.hierarchicalTableServiceClient().apply(applyUpdates, connection.metadata(), c::apply);
+        }), connection);
+        return formatViewTable;
+    }
+
     private TicketAndPromise<?> prepareFilter(TicketAndPromise<?> prevTicket) {
         if (filteredTable != null) {
             return filteredTable;
         }
         if (nextFilters.isEmpty()) {
-            return new TicketAndPromise<>(widget.getTicket(), connection);
+            return prevTicket;
         }
         Ticket ticket = connection.getTickets().newExportTicket();
         filteredTable = new TicketAndPromise<>(ticket, Callbacks.grpcUnaryPromise(c -> {
-
             HierarchicalTableApplyRequest applyFilter = new HierarchicalTableApplyRequest();
             applyFilter.setFiltersList(
                     nextFilters.stream().map(FilterCondition::makeDescriptor).toArray(Condition[]::new));
-            applyFilter.setInputHierarchicalTableId(widget.getTicket());
+            applyFilter.setInputHierarchicalTableId(prevTicket.ticket());
             applyFilter.setResultHierarchicalTableId(ticket);
             connection.hierarchicalTableServiceClient().apply(applyFilter, connection.metadata(), c::apply);
         }), connection);
@@ -659,6 +692,11 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
                     updateViewTable.release();
                     updateViewTable = null;
                 }
+            case FORMAT_VIEW:
+                if (formatViewTable != null) {
+                    formatViewTable.release();
+                    formatViewTable = null;
+                }
             case FILTER:
                 if (filteredTable != null) {
                     filteredTable.release();
@@ -699,11 +737,14 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
                 .then(ignore -> {
                     makeKeyTable();
                     TicketAndPromise<?> update = prepareUpdateView();
-                    TicketAndPromise<?> filter = prepareFilter(update);
+                    TicketAndPromise<?> format = prepareFormats(update);
+                    TicketAndPromise<?> filter = prepareFilter(format);
                     TicketAndPromise<?> sort = prepareSort(filter);
                     TicketAndPromise<ClientTableState> view = makeView(sort);
                     return Promise.all(
                             keyTable,
+                            update.promise(),
+                            format.promise(),
                             filter.promise(),
                             sort.promise())
                             .then(others -> view.promise());
@@ -728,7 +769,8 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
                                 TreeSubscription.TreeViewportDataImpl detail =
                                         (TreeSubscription.TreeViewportDataImpl) data.getDetail();
 
-                                handleUpdate(nextSort, nextFilters, detail, alwaysFireEvent);
+                                handleUpdate(nextUpdateColumns, nextFormatColumns, nextSort, nextFilters, detail,
+                                        alwaysFireEvent);
                             });
                     return Promise.resolve(subscription);
                 });
@@ -752,7 +794,11 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
         });
     }
 
-    private void handleUpdate(List<Sort> nextSort, List<FilterCondition> nextFilters,
+    private void handleUpdate(
+            List<CustomColumn> nextUpdateColumns,
+            List<CustomColumn> nextFormatColumns,
+            List<Sort> nextSort,
+            List<FilterCondition> nextFilters,
             TreeSubscription.TreeViewportDataImpl viewportData, boolean alwaysFireEvent) {
         JsLog.debug("tree table response arrived", viewportData);
         if (closed) {
@@ -765,6 +811,8 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
 
         this.currentViewportData = viewportData;
 
+        this.formatColumns = nextFormatColumns;
+        this.updateColumns = nextUpdateColumns;
         this.sorts = nextSort;
         this.filters = nextFilters;
 
@@ -994,6 +1042,14 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
 
         connection.releaseTicket(widget.getTicket());
 
+        if (updateViewTable != null) {
+            updateViewTable.release();
+            updateViewTable = null;
+        }
+        if (formatViewTable != null) {
+            formatViewTable.release();
+            formatViewTable = null;
+        }
         if (filteredTable != null) {
             filteredTable.release();
             filteredTable = null;

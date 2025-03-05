@@ -7,6 +7,7 @@ import com.google.rpc.Code;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.SortColumn;
+import io.deephaven.api.Strings;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.auth.codegen.impl.HierarchicalTableServiceContextualAuthWiring;
@@ -237,18 +238,24 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
                         final Collection<UpdateViewRequest> translatedUpdateViews =
                                 translateAndValidateUpdateViews(request,
                                         (BaseGridAttributes<?, ?>) inputHierarchicalTable);
+                        final Collection<UpdateViewRequest> translatedFormatViews =
+                                translateAndValidateFormatViews(request,
+                                        (BaseGridAttributes<?, ?>) inputHierarchicalTable);
 
                         final Collection<SortColumn> translatedSorts =
                                 translateAndValidateSorts(request, (BaseGridAttributes<?, ?>) inputHierarchicalTable);
 
                         final HierarchicalTable<?> result;
                         if (inputHierarchicalTable instanceof RollupTable) {
+                            // For a rollup table, we require format and update views to be applied to a specific node
+                            // and will not translate from one to another.
+
                             RollupTable rollupTable = (RollupTable) inputHierarchicalTable;
                             // Rollups only support filtering on the group-by columns, so we can safely use the
                             // aggregated node definition here.
                             final TableDefinition nodeDefinition =
                                     rollupTable.getNodeDefinition(RollupTable.NodeType.Aggregated);
-                            // Order to follow is updateView, sort, filter
+                            // Order to follow is updateView, format, sort, filter
                             if (translatedUpdateViews != null) {
                                 // extract the Aggregated update views
                                 final Collection<Selectable> aggregatedUpdateViews = translatedUpdateViews.stream()
@@ -266,11 +273,35 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
                                             .collect(Collectors.toList());
 
                                     final RollupTable.NodeOperationsRecorder constituentViews =
-                                            rollupTable.makeNodeOperationsRecorder(RollupTable.NodeType.Aggregated)
+                                            rollupTable.makeNodeOperationsRecorder(RollupTable.NodeType.Constituent)
                                                     .updateView(constituentUpdateViews);
                                     rollupTable = rollupTable.withNodeOperations(aggregatedViews, constituentViews);
                                 } else {
                                     rollupTable = rollupTable.withNodeOperations(aggregatedViews);
+                                }
+                            }
+                            if (translatedFormatViews != null) {
+                                // extract the Aggregated format views
+                                final String[] aggregatedFormatViews = translatedFormatViews.stream()
+                                        .filter(uvr -> uvr.nodeType == RollupTable.NodeType.Aggregated)
+                                        .map(uvr -> Strings.of(uvr.columnSpec))
+                                        .toArray(String[]::new);
+                                final RollupTable.NodeOperationsRecorder aggregatedFormats =
+                                        rollupTable.makeNodeOperationsRecorder(RollupTable.NodeType.Aggregated)
+                                                .formatColumns(aggregatedFormatViews);
+                                if (rollupTable.includesConstituents()) {
+                                    // extract the Constituent update views
+                                    final String[] constituentFormatViews = translatedFormatViews.stream()
+                                            .filter(uvr -> uvr.nodeType == RollupTable.NodeType.Constituent)
+                                            .map(uvr -> Strings.of(uvr.columnSpec))
+                                            .toArray(String[]::new);
+
+                                    final RollupTable.NodeOperationsRecorder constituentViews =
+                                            rollupTable.makeNodeOperationsRecorder(RollupTable.NodeType.Constituent)
+                                                    .formatColumns(constituentFormatViews);
+                                    rollupTable = rollupTable.withNodeOperations(aggregatedFormats, constituentViews);
+                                } else {
+                                    rollupTable = rollupTable.withNodeOperations(aggregatedFormats);
                                 }
                             }
                             if (finishedConditions != null) {
@@ -398,6 +429,22 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
                 .collect(Collectors.toList());
 
         // TODO: what verification is needed here? We check illegal aliasing in the node recorder
+        return translated;
+    }
+
+    @Nullable
+    private static Collection<UpdateViewRequest> translateAndValidateFormatViews(
+            @NotNull final HierarchicalTableApplyRequest request,
+            @NotNull final BaseGridAttributes<?, ?> inputHierarchicalTable) {
+        if (request.getFormatViewsCount() == 0) {
+            return null;
+        }
+        final Collection<UpdateViewRequest> translated = request.getFormatViewsList().stream()
+                .map(uvr -> new UpdateViewRequest(
+                        AggregationAdapter.adapt(uvr.getColumnSpec()),
+                        translateNodeType(uvr.getNodeType())))
+                .collect(Collectors.toList());
+
         return translated;
     }
 
