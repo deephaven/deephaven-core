@@ -523,7 +523,8 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
     }
 
     private static @NotNull RollupTableImpl makeRollupInternal(
-            @NotNull final Map<String, Object> attributes, @NotNull final QueryTable source,
+            @NotNull final Map<String, Object> attributes,
+            @NotNull final QueryTable source,
             @NotNull final Collection<? extends Aggregation> aggregations,
             final boolean includeConstituents,
             @NotNull final Collection<? extends ColumnName> groupByColumns,
