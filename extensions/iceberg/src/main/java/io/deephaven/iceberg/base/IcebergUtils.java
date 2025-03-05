@@ -75,8 +75,19 @@ public final class IcebergUtils {
      */
     public static Stream<DataFile> allDataFiles(@NotNull final Table table, @NotNull final Snapshot snapshot) {
         return allManifestFiles(table, snapshot)
-                .map(manifestFile -> ManifestFiles.read(manifestFile, table.io()))
-                .flatMap(IcebergUtils::toStream);
+                .flatMap(manifestFile -> allDataFiles(table, manifestFile));
+    }
+
+    /**
+     * Get a stream of all {@link DataFile} objects from the given {@link Table} and {@link ManifestFile}.
+     *
+     * @param table The {@link Table} to retrieve data files for.
+     * @param manifestFile The {@link ManifestFile} to retrieve data files from.
+     *
+     * @return A stream of {@link DataFile} objects.
+     */
+    public static Stream<DataFile> allDataFiles(@NotNull final Table table, @NotNull ManifestFile manifestFile) {
+        return toStream(ManifestFiles.read(manifestFile, table.io()));
     }
 
     /**
@@ -115,6 +126,14 @@ public final class IcebergUtils {
             throw new TableDataException(
                     String.format("%s:%d - error retrieving manifest files", table, snapshot.snapshotId()), e);
         }
+    }
+
+    public static Map<ManifestFile, List<DataFile>> manifestToDataFiles(
+            @NotNull final Table table, @NotNull final Snapshot snapshot) {
+        return allManifestFiles(table, snapshot)
+                .collect(Collectors.toMap(
+                        manifestFile -> manifestFile,
+                        manifestFile -> allDataFiles(table, manifestFile).collect(Collectors.toList())));
     }
 
     /**

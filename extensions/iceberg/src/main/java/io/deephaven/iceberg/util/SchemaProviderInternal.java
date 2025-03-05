@@ -20,7 +20,9 @@ class SchemaProviderInternal {
     }
 
     // Implementations of SchemaProvider
-    static class CurrentSchemaProvider implements SchemaProvider, SchemaProviderImpl {
+    enum CurrentSchemaProvider implements SchemaProvider, SchemaProviderImpl {
+        INSTANCE;
+
         @Override
         public Schema getSchema(final Table table) {
             return getCurrentSchema(table);
@@ -66,7 +68,9 @@ class SchemaProviderInternal {
         }
     }
 
-    static class CurrentSnapshotSchemaProvider implements SchemaProvider, SchemaProviderImpl {
+    enum CurrentSnapshotSchemaProvider implements SchemaProvider, SchemaProviderImpl {
+        INSTANCE;
+
         @Override
         public Schema getSchema(final Table table) {
             return getSchemaForCurrentSnapshot(table);
