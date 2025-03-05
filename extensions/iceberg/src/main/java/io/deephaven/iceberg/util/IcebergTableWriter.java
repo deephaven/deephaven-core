@@ -111,13 +111,12 @@ public class IcebergTableWriter {
     private final OutputFileFactory outputFileFactory;
 
     /**
-     * The sort order to use while writing data to the Iceberg table.
+     * The sort order to write down for new data files.
      */
-    private final SortOrder sortOrder;
+    private final SortOrder sortOrderToWrite;
 
     /**
-     * The names of columns on which the tables will be sorted before writing to Iceberg. This is derived from
-     * {@link #sortOrder}.
+     * The names of columns on which the tables will be sorted before writing to Iceberg.
      */
     private final Collection<SortColumn> sortColumnNames;
 
@@ -152,9 +151,11 @@ public class IcebergTableWriter {
                 .format(FileFormat.PARQUET)
                 .build();
 
-        sortOrder = ((SortOrderProviderInternal.SortOrderProviderImpl) tableWriterOptions.sortOrderProvider())
-                .getSortOrder(table);
-        sortColumnNames = computeSortColumns(sortOrder);
+        final SortOrderProviderInternal.SortOrderProviderImpl sortOrderProvider =
+                ((SortOrderProviderInternal.SortOrderProviderImpl) tableWriterOptions.sortOrderProvider());
+        sortColumnNames =
+                computeSortColumns(sortOrderProvider.getSortOrderToUse(table), sortOrderProvider.failOnUnmapped());
+        sortOrderToWrite = sortOrderProvider.getSortOrderToWrite(table);
     }
 
     private static TableParquetWriterOptions verifyWriterOptions(
@@ -284,7 +285,7 @@ public class IcebergTableWriter {
         return nameMappingDefault;
     }
 
-    private List<SortColumn> computeSortColumns(@NotNull final SortOrder sortOrder) {
+    private List<SortColumn> computeSortColumns(@NotNull final SortOrder sortOrder, final boolean failOnUnmapped) {
         if (sortOrder.isUnsorted()) {
             return List.of();
         }
@@ -297,13 +298,19 @@ public class IcebergTableWriter {
             } else if (sortField.nullOrder() == NullOrder.NULLS_LAST && sortField.direction() == SortDirection.DESC) {
                 ascending = false;
             } else {
-                // Cannot enforce this sort ordering using deephaven
+                if (failOnUnmapped) {
+                    throw new IllegalArgumentException("Cannot apply sort order " + sortOrder + " since Deephaven" +
+                            " currently only supports sorting by {ASC, NULLS FIRST} or {DESC, NULLS LAST}");
+                }
                 return List.of();
             }
             final int fieldId = sortField.sourceId();
             final String columnName = fieldIdToColumnName.get(fieldId);
             if (columnName == null) {
-                // Could not find the column name in current schema, so we cannot sort by it
+                if (failOnUnmapped) {
+                    throw new IllegalArgumentException("Cannot apply sort order " + sortOrder + " since column " +
+                            "corresponding to field ID " + fieldId + " not found in schema");
+                }
                 return List.of();
             }
             final SortColumn sortColumn =
@@ -601,7 +608,7 @@ public class IcebergTableWriter {
                     .withFormat(FileFormat.PARQUET)
                     .withRecordCount(completedWrite.numRows())
                     .withFileSizeInBytes(completedWrite.numBytes())
-                    .withSortOrder(sortOrder);
+                    .withSortOrder(sortOrderToWrite);
             if (partitionSpec.isPartitioned()) {
                 dataFileBuilder.withPartition(partitionDataList.get(idx));
             }
