@@ -81,9 +81,9 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
     private final ColumnSource<Table>[] levelNodeTableSources;
 
     /**
-     * When {@link #withFilter(Filter)} is called, we apply the filters to the lowest level, and re-aggregate. We need
-     * them to keep it around, so that when we rebase to a new table we can re-apply them and preserve the semantics of
-     * our chain of rollup operations.
+     * When {@link #withFilter(Filter)} is called we apply the filters to the lowest level and re-aggregate. We need to
+     * keep them around so that when we rebase to a new table we can re-apply them and preserve the semantics of our
+     * chain of rollup operations.
      */
     @Nullable
     private final WhereFilter[] rollupKeyFilters;
