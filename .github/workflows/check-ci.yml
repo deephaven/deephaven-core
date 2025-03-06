@@ -45,7 +45,7 @@ jobs:
           cat gradle.properties
 
       - name: Check
-        run: ./gradlew --scan --continue :go:check :py-client:check
+        run: ./gradlew --scan --continue check
 
       - name: Upload Test Results
         uses: actions/upload-artifact@v4
