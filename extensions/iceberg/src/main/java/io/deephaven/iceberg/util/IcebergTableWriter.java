@@ -45,6 +45,7 @@ import org.apache.iceberg.types.Conversions;
 import org.apache.iceberg.types.Type;
 import org.apache.iceberg.types.Types;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -53,6 +54,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Random;
 
 import static io.deephaven.iceberg.base.IcebergUtils.convertToIcebergType;
@@ -355,7 +357,7 @@ public class IcebergTableWriter {
             final Pair<List<PartitionData>, List<String[]>> ret = partitionDataFromPaths(tableSpec, partitionPaths);
             partitionData = ret.getFirst();
             final List<String[]> dhTableUpdateStrings = ret.getSecond();
-            parquetFileInfo = writeParquet(partitionData, dhTableUpdateStrings, writeInstructions);
+            parquetFileInfo = writeTables(partitionData, dhTableUpdateStrings, writeInstructions);
         }
         return dataFilesFromParquet(parquetFileInfo, partitionData);
     }
@@ -511,7 +513,7 @@ public class IcebergTableWriter {
      * @param writeInstructions The instructions for customizations while writing.
      */
     @NotNull
-    private List<CompletedParquetWrite> writeParquet(
+    private List<CompletedParquetWrite> writeTables(
             @NotNull final List<PartitionData> partitionDataList,
             @NotNull final List<String[]> dhTableUpdateStrings,
             @NotNull final IcebergWriteInstructions writeInstructions) {
@@ -534,38 +536,59 @@ public class IcebergTableWriter {
                 onWriteCompleted, tableDefinition, fieldIdToColumnName);
 
         // Write the data to parquet files
-        for (int idx = 0; idx < dhTables.size(); idx++) {
+        final int numTables = dhTables.size();
+        for (int idx = 0; idx < numTables; idx++) {
             final Table dhTable = dhTables.get(idx);
-            if (dhTable.numColumns() == 0) {
-                // Skip writing empty tables with no columns
-                continue;
+            final PartitionData partitionData;
+            final String[] dhTableUpdateString;
+            if (isPartitioned) {
+                partitionData = partitionDataList.get(idx);
+                dhTableUpdateString = dhTableUpdateStrings.get(idx);
+            } else {
+                partitionData = null;
+                dhTableUpdateString = null;
             }
-            try (final SafeCloseable ignored = LivenessScopeStack.open()) {
-                final String newDataLocation;
-                Table dhTableToWrite = dhTable;
-                if (isPartitioned) {
-                    newDataLocation = getDataLocation(partitionDataList.get(idx));
-                    dhTableToWrite = dhTableToWrite.updateView(dhTableUpdateStrings.get(idx));
-                } else {
-                    newDataLocation = getDataLocation();
-                }
-
-                if (!sortColumnNames.isEmpty()) {
-                    try {
-                        dhTableToWrite = dhTableToWrite.sort(sortColumnNames);
-                    } catch (final RuntimeException e) {
-                        throw new IllegalArgumentException("Failed to sort table " + dhTableToWrite + " by columns " +
-                                sortColumnNames + ", retry after disabling applying sort order in write instructions",
-                                e);
-                    }
-                }
-
-                // TODO (deephaven-core#6343): Set writeDefault() values for required columns that are not present in
-                // the table
-                ParquetTools.writeTable(dhTableToWrite, newDataLocation, parquetInstructions);
-            }
+            writeTable(dhTable, isPartitioned, partitionData, dhTableUpdateString, parquetInstructions);
         }
         return parquetFilesWritten;
+    }
+
+    /**
+     * Write the provided Deephaven table to a parquet file.
+     *
+     * @param dhTable The Deephaven table to write.
+     * @param isPartitioned Whether the iceberg table is partitioned.
+     * @param partitionData The partition data for the table, null if the iceberg table is not partitioned.
+     * @param dhTableUpdateString The update string to apply to the table, null if the iceberg table is not partitioned.
+     * @param parquetInstructions The instructions for customizations while writing parquet.
+     */
+    private void writeTable(
+            @NotNull final Table dhTable,
+            final boolean isPartitioned,
+            @Nullable final PartitionData partitionData,
+            @Nullable final String[] dhTableUpdateString,
+            @NotNull final ParquetInstructions parquetInstructions) {
+        if (dhTable.numColumns() == 0) {
+            // Skip writing empty tables with no columns
+            return;
+        }
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            final String newDataLocation;
+            Table dhTableToWrite = dhTable;
+            if (isPartitioned) {
+                newDataLocation = getDataLocation(Objects.requireNonNull(partitionData));
+                dhTableToWrite = dhTableToWrite.updateView(Objects.requireNonNull(dhTableUpdateString));
+            } else {
+                newDataLocation = getDataLocation();
+            }
+
+            if (!sortColumnNames.isEmpty()) {
+                dhTableToWrite = dhTableToWrite.sort(sortColumnNames);
+            }
+
+            // TODO (deephaven-core#6343): Set writeDefault() values for required columns that are not present in table
+            ParquetTools.writeTable(dhTableToWrite, newDataLocation, parquetInstructions);
+        }
     }
 
     /**
