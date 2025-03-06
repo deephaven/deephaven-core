@@ -42,7 +42,6 @@ import org.eclipse.jetty.http2.RateControl;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.http2.server.internal.HTTP2ServerConnection;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.server.ForwardedRequestCustomizer;
 import org.eclipse.jetty.server.Handler;
@@ -91,7 +90,7 @@ public class JettyBackedGrpcServer implements GrpcServer {
             final JettyConfig config,
             final GrpcFilter filter,
             final JsPlugins jsPlugins) {
-        jetty = new Server(null, null, ByteBufferPool.NON_POOLING);
+        jetty = new Server();
         jetty.addConnector(createConnector(jetty, config));
 
         final WebAppContext context =
