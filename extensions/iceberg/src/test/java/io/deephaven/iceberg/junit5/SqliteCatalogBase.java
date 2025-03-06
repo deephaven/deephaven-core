@@ -1330,8 +1330,8 @@ public abstract class SqliteCatalogBase {
                     .tableDefinition(source.getDefinition())
                     .sortOrderProvider(SortOrderProvider.useTableDefault().withFailOnUnmapped(true))
                     .build());
-            failBecauseExceptionWasNotThrown(UnsupportedOperationException.class);
-        } catch (UnsupportedOperationException e) {
+            failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
+        } catch (IllegalArgumentException e) {
             assertThat(e).hasMessageContaining("Deephaven currently only supports sorting by " +
                     "{ASC, NULLS FIRST} or {DESC, NULLS LAST}");
         }

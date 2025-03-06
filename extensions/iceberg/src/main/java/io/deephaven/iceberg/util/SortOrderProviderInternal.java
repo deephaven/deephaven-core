@@ -43,7 +43,7 @@ class SortOrderProviderInternal {
 
     // Implementations of SortOrderProvider
     enum DisableSorting implements SortOrderProviderImpl {
-        INSTANCE;
+        DISABLE_SORTING;
 
         @Override
         @NotNull

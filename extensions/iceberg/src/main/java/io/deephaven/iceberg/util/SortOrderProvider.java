@@ -16,7 +16,7 @@ public interface SortOrderProvider {
      * Do not sort the data while writing new data to the iceberg table.
      */
     static SortOrderProvider unsorted() {
-        return SortOrderProviderInternal.DisableSorting.INSTANCE;
+        return SortOrderProviderInternal.DisableSorting.DISABLE_SORTING;
     }
 
     /**

@@ -16,7 +16,7 @@ public interface SchemaProvider {
      * Use the current schema from the table.
      */
     static SchemaProvider fromCurrent() {
-        return SchemaProviderInternal.CurrentSchemaProvider.INSTANCE;
+        return SchemaProviderInternal.CurrentSchemaProvider.CURRENT_SCHEMA;
     }
 
     /**
@@ -44,6 +44,6 @@ public interface SchemaProvider {
      * Use the schema from the current snapshot of the table.
      */
     static SchemaProvider fromCurrentSnapshot() {
-        return SchemaProviderInternal.CurrentSnapshotSchemaProvider.INSTANCE;
+        return SchemaProviderInternal.CurrentSnapshotSchemaProvider.CURRENT_SNAPSHOT;
     }
 }

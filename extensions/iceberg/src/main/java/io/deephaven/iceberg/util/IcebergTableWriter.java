@@ -10,6 +10,7 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.context.StandaloneQueryScope;
+import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
@@ -299,7 +300,7 @@ public class IcebergTableWriter {
                 ascending = false;
             } else {
                 if (failOnUnmapped) {
-                    throw new UnsupportedOperationException(
+                    throw new IllegalArgumentException(
                             "Cannot apply sort order " + sortOrder + " since Deephaven currently only supports " +
                                     "sorting by {ASC, NULLS FIRST} or {DESC, NULLS LAST}");
                 }
@@ -534,30 +535,35 @@ public class IcebergTableWriter {
 
         // Write the data to parquet files
         for (int idx = 0; idx < dhTables.size(); idx++) {
-            Table dhTable = dhTables.get(idx);
+            final Table dhTable = dhTables.get(idx);
             if (dhTable.numColumns() == 0) {
                 // Skip writing empty tables with no columns
                 continue;
             }
-            final String newDataLocation;
-            if (isPartitioned) {
-                newDataLocation = getDataLocation(partitionDataList.get(idx));
-                dhTable = dhTable.updateView(dhTableUpdateStrings.get(idx));
-            } else {
-                newDataLocation = getDataLocation();
-            }
-
-            if (!sortColumnNames.isEmpty()) {
-                try {
-                    dhTable = dhTable.sort(sortColumnNames);
-                } catch (final RuntimeException e) {
-                    throw new IllegalArgumentException("Failed to sort table " + dhTable + " by columns " +
-                            sortColumnNames + ", retry after disabling applying sort order in write instructions", e);
+            try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+                final String newDataLocation;
+                Table dhTableToWrite = dhTable;
+                if (isPartitioned) {
+                    newDataLocation = getDataLocation(partitionDataList.get(idx));
+                    dhTableToWrite = dhTableToWrite.updateView(dhTableUpdateStrings.get(idx));
+                } else {
+                    newDataLocation = getDataLocation();
                 }
-            }
 
-            // TODO (deephaven-core#6343): Set writeDefault() values for required columns that not present in the table
-            ParquetTools.writeTable(dhTable, newDataLocation, parquetInstructions);
+                if (!sortColumnNames.isEmpty()) {
+                    try {
+                        dhTableToWrite = dhTableToWrite.sort(sortColumnNames);
+                    } catch (final RuntimeException e) {
+                        throw new IllegalArgumentException("Failed to sort table " + dhTableToWrite + " by columns " +
+                                sortColumnNames + ", retry after disabling applying sort order in write instructions",
+                                e);
+                    }
+                }
+
+                // TODO (deephaven-core#6343): Set writeDefault() values for required columns that are not present in
+                // the table
+                ParquetTools.writeTable(dhTableToWrite, newDataLocation, parquetInstructions);
+            }
         }
         return parquetFilesWritten;
     }
