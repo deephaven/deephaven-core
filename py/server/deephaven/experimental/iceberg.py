@@ -340,9 +340,7 @@ class SortOrderProvider(JObjectWrapper):
         Returns:
             the :class:`.SortOrderProvider` object.
         """
-
-        # Calling the Java method "as", which is a reserved keyword in Python
-        return SortOrderProvider(getattr(self._j_object, "as")(sort_order_id))
+        return SortOrderProvider(self._j_object.withId(sort_order_id))
 
     def with_fail_on_unmapped(self, fail_on_unmapped: bool) -> 'SortOrderProvider':
         """

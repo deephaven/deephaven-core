@@ -36,7 +36,7 @@ class SortOrderProviderInternal {
         boolean failOnUnmapped();
 
         @NotNull
-        default SortOrderProvider as(final int sortOrderId) {
+        default SortOrderProvider withId(final int sortOrderId) {
             return new SortOrderProviderInternal.DelegatingSortOrderProvider(this, sortOrderId);
         }
     }
@@ -184,7 +184,7 @@ class SortOrderProviderInternal {
 
         @Override
         @NotNull
-        public SortOrderProvider as(final int sortOrderId) {
+        public SortOrderProvider withId(final int sortOrderId) {
             return new DelegatingSortOrderProvider(delegateProvider, sortOrderId);
         }
 

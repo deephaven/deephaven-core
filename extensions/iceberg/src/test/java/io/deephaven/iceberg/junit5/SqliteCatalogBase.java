@@ -1288,7 +1288,7 @@ public abstract class SqliteCatalogBase {
         try {
             tableAdapter.tableWriter(writerOptionsBuilder()
                     .tableDefinition(source.getDefinition())
-                    .sortOrderProvider(SortOrderProvider.fromSortOrder(sortOrder).as(1))
+                    .sortOrderProvider(SortOrderProvider.fromSortOrder(sortOrder).withId(1))
                     .build());
             failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
         } catch (IllegalArgumentException e) {
@@ -1297,7 +1297,7 @@ public abstract class SqliteCatalogBase {
 
         final IcebergTableWriter tableWriter = tableAdapter.tableWriter(writerOptionsBuilder()
                 .tableDefinition(source.getDefinition())
-                .sortOrderProvider(SortOrderProvider.fromSortOrder(sortOrder).as(2))
+                .sortOrderProvider(SortOrderProvider.fromSortOrder(sortOrder).withId(2))
                 .build());
         tableWriter.append(IcebergWriteInstructions.builder()
                 .addTables(source)

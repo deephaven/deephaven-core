@@ -37,7 +37,7 @@ public interface SortOrderProvider {
     /**
      * Use the given sort order directly to sort new data while writing to the iceberg table. Note that the provided
      * sort order must either have a valid {@link SortOrder#orderId()}, else this provider should be chained with an
-     * {@link #as(int)} call to set a valid order ID.
+     * {@link #withId(int)} call to set a valid order ID.
      */
     static SortOrderProvider fromSortOrder(final SortOrder sortOrder) {
         return new SortOrderProviderInternal.DirectSortOrderProvider(sortOrder);
@@ -53,7 +53,7 @@ public interface SortOrderProvider {
      *
      * @param sortOrderId the sort order ID to write to the iceberg table
      */
-    SortOrderProvider as(final int sortOrderId);
+    SortOrderProvider withId(final int sortOrderId);
 
     /**
      * Returns a sort order provider which will fail, if for any reason, the sort order cannot be applied to the tables
