@@ -219,17 +219,17 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
                     constituentColumns.put(column.getName(), column);
                 } else {
                     columns[columns.length] = column;
-                    if (definition.isRollupGroupByColumn() && !definition.isRollupConstituentNodeColumn()) {
+                    if (definition.isRollupGroupByColumn()) {
                         groupedColumns.push(column);
 
                         if (hasConstituentColumns) {
                             column.setConstituentType(columnDefsByName.get(true).get(definition.getName()).getType());
                         }
                     }
-                    if (hasConstituentColumns && definition.getRollupAggregationInputColumn() != null
-                            && !definition.getRollupAggregationInputColumn().isEmpty()) {
+                    String aggInputCol = definition.getRollupAggregationInputColumn();
+                    if (hasConstituentColumns && aggInputCol != null && !aggInputCol.isEmpty()) {
                         column.setConstituentType(
-                                columnDefsByName.get(true).get(definition.getRollupAggregationInputColumn()).getType());
+                                columnDefsByName.get(true).get(aggInputCol).getType());
                     }
                 }
             }
