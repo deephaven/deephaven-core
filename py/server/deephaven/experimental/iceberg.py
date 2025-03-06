@@ -327,6 +327,35 @@ class SortOrderProvider(JObjectWrapper):
         """
         return cls(_JSortOrderProvider.fromSortId(sort_order_id))
 
+    def with_id(self, sort_order_id: int) -> 'SortOrderProvider':
+        """
+        Returns a sort order provider that delegates to this provider for computing the columns to sort on, but writes a
+        different sort order ID to the iceberg table.
+        For example, this provider might return fields {A, B, C} to sort on, but the ID written to iceberg corresponds
+        to sort order with fields {A, B}.
+
+        Args:
+            sort_order_id (int): the sort order ID to write to the iceberg table.
+
+        Returns:
+            the :class:`.SortOrderProvider` object.
+        """
+
+        # Calling the Java method "as", which is a reserved keyword in Python
+        return SortOrderProvider(getattr(self._j_object, "as")(sort_order_id))
+
+    def with_fail_on_unmapped(self, fail_on_unmapped: bool) -> 'SortOrderProvider':
+        """
+        Returns a sort order provider which will fail, if for any reason, the sort order cannot be applied to the
+        tables being written. By default, the provider will not fail if the sort order cannot be applied.
+
+        Args:
+            fail_on_unmapped: whether to fail if the sort order cannot be applied to the tables being written
+
+        Returns:
+            the :class:`.SortOrderProvider` object.
+        """
+        return SortOrderProvider(self._j_object.withFailOnUnmapped(fail_on_unmapped))
 
 class TableParquetWriterOptions(JObjectWrapper):
     """

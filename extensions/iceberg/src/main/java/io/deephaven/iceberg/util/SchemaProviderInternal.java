@@ -12,7 +12,7 @@ import org.apache.iceberg.Table;
  */
 class SchemaProviderInternal {
 
-    interface SchemaProviderImpl {
+    interface SchemaProviderImpl extends SchemaProvider {
         /**
          * Returns the schema for the given table based on this {@link SchemaProvider}.
          */
@@ -20,7 +20,7 @@ class SchemaProviderInternal {
     }
 
     // Implementations of SchemaProvider
-    enum CurrentSchemaProvider implements SchemaProvider, SchemaProviderImpl {
+    enum CurrentSchemaProvider implements SchemaProviderImpl {
         INSTANCE;
 
         @Override
@@ -29,7 +29,7 @@ class SchemaProviderInternal {
         }
     }
 
-    static class IdSchemaProvider implements SchemaProvider, SchemaProviderImpl {
+    static class IdSchemaProvider implements SchemaProviderImpl {
         private final int schemaId;
 
         IdSchemaProvider(final int schemaId) {
@@ -42,7 +42,7 @@ class SchemaProviderInternal {
         }
     }
 
-    static class DirectSchemaProvider implements SchemaProvider, SchemaProviderImpl {
+    static class DirectSchemaProvider implements SchemaProviderImpl {
         private final Schema schema;
 
         DirectSchemaProvider(final Schema schema) {
@@ -55,7 +55,7 @@ class SchemaProviderInternal {
         }
     }
 
-    static class SnapshotIdSchemaProvider implements SchemaProvider, SchemaProviderImpl {
+    static class SnapshotIdSchemaProvider implements SchemaProviderImpl {
         private final int snapshotId;
 
         SnapshotIdSchemaProvider(final int snapshotId) {
@@ -68,7 +68,7 @@ class SchemaProviderInternal {
         }
     }
 
-    enum CurrentSnapshotSchemaProvider implements SchemaProvider, SchemaProviderImpl {
+    enum CurrentSnapshotSchemaProvider implements SchemaProviderImpl {
         INSTANCE;
 
         @Override

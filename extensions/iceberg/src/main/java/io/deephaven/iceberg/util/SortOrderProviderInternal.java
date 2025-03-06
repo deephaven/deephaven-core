@@ -12,12 +12,12 @@ import org.jetbrains.annotations.NotNull;
  */
 class SortOrderProviderInternal {
 
-    interface SortOrderProviderImpl {
+    interface SortOrderProviderImpl extends SortOrderProvider {
         /**
          * Returns the {@link SortOrder} to use for sorting the data when writing to the provided iceberg table.
          */
         @NotNull
-        SortOrder getSortOrderToUse(Table table);
+        SortOrder getSortOrderToUse(@NotNull Table table);
 
         /**
          * Returns the sort order to write down to the iceberg table when appending new data. This may be different from
@@ -26,7 +26,7 @@ class SortOrderProviderInternal {
          * order.
          */
         @NotNull
-        default SortOrder getSortOrderToWrite(final Table table) {
+        default SortOrder getSortOrderToWrite(@NotNull final Table table) {
             return getSortOrderToUse(table);
         }
 
@@ -34,15 +34,20 @@ class SortOrderProviderInternal {
          * Whether to fail if the sort order cannot be applied to the tables being written.
          */
         boolean failOnUnmapped();
+
+        @NotNull
+        default SortOrderProvider as(final int sortOrderId) {
+            return new SortOrderProviderInternal.DelegatingSortOrderProvider(this, sortOrderId);
+        }
     }
 
     // Implementations of SortOrderProvider
-    enum DisableSorting implements SortOrderProviderImpl, SortOrderProvider {
+    enum DisableSorting implements SortOrderProviderImpl {
         INSTANCE;
 
         @Override
         @NotNull
-        public SortOrder getSortOrderToUse(final Table table) {
+        public SortOrder getSortOrderToUse(@NotNull final Table table) {
             return SortOrder.unsorted();
         }
 
@@ -58,16 +63,14 @@ class SortOrderProviderInternal {
         }
     }
 
-    static class TableDefaultSortOrderProvider implements SortOrderProvider, SortOrderProviderImpl {
+    static class TableDefaultSortOrderProvider implements SortOrderProviderImpl {
         private boolean failOnUnmapped;
 
-        TableDefaultSortOrderProvider() {
-            failOnUnmapped = false;
-        }
+        TableDefaultSortOrderProvider() {}
 
         @Override
         @NotNull
-        public SortOrder getSortOrderToUse(final Table table) {
+        public SortOrder getSortOrderToUse(@NotNull final Table table) {
             final SortOrder sortOrder = table.sortOrder();
             return sortOrder != null ? sortOrder : SortOrder.unsorted();
         }
@@ -84,19 +87,55 @@ class SortOrderProviderInternal {
         }
     }
 
-    static class IdSortOrderProvider implements SortOrderProvider, SortOrderProviderImpl {
+    static class IdSortOrderProvider implements SortOrderProviderImpl {
         private boolean failOnUnmapped;
         private final int sortOrderId;
 
         IdSortOrderProvider(final int sortOrderId) {
-            super();
             this.sortOrderId = sortOrderId;
         }
 
         @Override
         @NotNull
-        public SortOrder getSortOrderToUse(final Table table) {
+        public SortOrder getSortOrderToUse(@NotNull final Table table) {
             return getSortOrderForId(table, sortOrderId);
+        }
+
+        @Override
+        public SortOrderProvider withFailOnUnmapped(final boolean failOnUnmapped) {
+            this.failOnUnmapped = failOnUnmapped;
+            return this;
+        }
+
+        @Override
+        public boolean failOnUnmapped() {
+            return failOnUnmapped;
+        }
+    }
+
+    static class DirectSortOrderProvider implements SortOrderProviderImpl {
+        private boolean failOnUnmapped;
+        private final SortOrder sortOrder;
+
+        DirectSortOrderProvider(@NotNull final SortOrder sortOrder) {
+            this.sortOrder = sortOrder;
+        }
+
+        @Override
+        @NotNull
+        public SortOrder getSortOrderToUse(@NotNull final Table table) {
+            return sortOrder;
+        }
+
+        @Override
+        @NotNull
+        public SortOrder getSortOrderToWrite(@NotNull final Table table) {
+            // Check if provided sort order is included in the table's sort orders
+            if (!sortOrder.equals(getSortOrderForId(table, sortOrder.orderId()))) {
+                throw new IllegalArgumentException("Provided sort order with id " + sortOrder.orderId() + " is not " +
+                        "included in the table's sort orders");
+            }
+            return sortOrder;
         }
 
         @Override
@@ -115,29 +154,30 @@ class SortOrderProviderInternal {
      * A {@link SortOrderProvider} that delegates to another {@link SortOrderProvider} for computing the sort order,
      * while providing a custom sort order ID.
      */
-    static class DelegatingSortOrderProvider implements SortOrderProvider, SortOrderProviderImpl {
-        private SortOrderProvider sortOrderProvider;
+    private static class DelegatingSortOrderProvider implements SortOrderProviderImpl {
+        private SortOrderProvider delegateProvider;
         private final int sortOrderId;
 
         DelegatingSortOrderProvider(final SortOrderProvider sortOrderProvider, final int sortOrderId) {
-            this.sortOrderProvider = sortOrderProvider;
+            this.delegateProvider = sortOrderProvider;
             this.sortOrderId = sortOrderId;
         }
 
         @Override
         @NotNull
-        public SortOrder getSortOrderToUse(final Table table) {
-            return ((SortOrderProviderImpl) sortOrderProvider).getSortOrderToUse(table);
+        public SortOrder getSortOrderToUse(final @NotNull Table table) {
+            return ((SortOrderProviderImpl) delegateProvider).getSortOrderToUse(table);
         }
 
         @Override
         @NotNull
-        public SortOrder getSortOrderToWrite(final Table table) {
+        public SortOrder getSortOrderToWrite(final @NotNull Table table) {
             final SortOrder sortOrderFromDelegate = getSortOrderToUse(table);
             final SortOrder sortOrderForId = getSortOrderForId(table, sortOrderId);
             if (!sortOrderFromDelegate.satisfies(sortOrderForId)) {
-                throw new IllegalArgumentException("Sort order with ID " + sortOrderId + " does not satisfy the " +
-                        "table's sort order: " + sortOrderFromDelegate);
+                throw new IllegalArgumentException(
+                        "Provided sort order " + sortOrderFromDelegate + " does not satisfy the table's sort order " +
+                                "with id " + sortOrderId + ": " + sortOrderForId);
             }
             return sortOrderForId;
         }
@@ -145,24 +185,23 @@ class SortOrderProviderInternal {
         @Override
         @NotNull
         public SortOrderProvider as(final int sortOrderId) {
-            return new DelegatingSortOrderProvider(sortOrderProvider, sortOrderId);
+            return new DelegatingSortOrderProvider(delegateProvider, sortOrderId);
         }
 
         @Override
         public SortOrderProvider withFailOnUnmapped(final boolean failOnUnmapped) {
-            sortOrderProvider = sortOrderProvider.withFailOnUnmapped(failOnUnmapped);
+            delegateProvider = delegateProvider.withFailOnUnmapped(failOnUnmapped);
             return this;
         }
 
         @Override
         public boolean failOnUnmapped() {
-            return ((SortOrderProviderImpl) sortOrderProvider).failOnUnmapped();
+            return ((SortOrderProviderImpl) delegateProvider).failOnUnmapped();
         }
     }
 
     // --------------------------------------------------------------------------------------------------
 
-    // Methods for extracting the sort order from the table
     private static SortOrder getSortOrderForId(final Table table, final int sortOrderId) {
         if (!table.sortOrders().containsKey(sortOrderId)) {
             throw new IllegalArgumentException("Sort order with ID " + sortOrderId + " not found for table " +

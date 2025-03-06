@@ -299,8 +299,9 @@ public class IcebergTableWriter {
                 ascending = false;
             } else {
                 if (failOnUnmapped) {
-                    throw new IllegalArgumentException("Cannot apply sort order " + sortOrder + " since Deephaven" +
-                            " currently only supports sorting by {ASC, NULLS FIRST} or {DESC, NULLS LAST}");
+                    throw new UnsupportedOperationException(
+                            "Cannot apply sort order " + sortOrder + " since Deephaven currently only supports " +
+                                    "sorting by {ASC, NULLS FIRST} or {DESC, NULLS LAST}");
                 }
                 return List.of();
             }
