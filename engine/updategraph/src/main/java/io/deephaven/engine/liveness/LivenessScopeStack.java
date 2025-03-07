@@ -170,8 +170,9 @@ public class LivenessScopeStack {
      * @param shouldManageResult Whether its necessary to manage the result with the enclosing LivenessScope. Will be
      *        invoked exactly once.
      * @return The result of {@code computation.get()}
-     * @see #computeEnclosed(Supplier, boolean, Predicate)
+     * @deprecated Use {@link #computeEnclosed(Supplier, boolean, Predicate)}
      */
+    @Deprecated
     public static <RESULT_TYPE extends LivenessReferent> RESULT_TYPE computeEnclosed(
             @NotNull final Supplier<RESULT_TYPE> computation,
             @NotNull final BooleanSupplier shouldEnclose,
@@ -219,8 +220,9 @@ public class LivenessScopeStack {
      * @param shouldManageResult Whether its necessary to manage the result with the enclosing LivenessScope. Will be
      *        invoked exactly once per result.
      * @return The results of {@code computation.get()}
-     * @see #computeArrayEnclosed(Supplier, boolean, Predicate)
+     * @deprecated Use {@link #computeArrayEnclosed(Supplier, boolean, Predicate)}
      */
+    @Deprecated
     public static <RESULT_TYPE extends LivenessReferent> RESULT_TYPE[] computeArrayEnclosed(
             @NotNull final Supplier<RESULT_TYPE[]> computation,
             @NotNull final BooleanSupplier shouldEnclose,
