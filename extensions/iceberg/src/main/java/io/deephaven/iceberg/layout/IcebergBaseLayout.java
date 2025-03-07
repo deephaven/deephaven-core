@@ -71,11 +71,6 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
     final TableDefinition tableDef;
 
     /**
-     * The URI scheme from the Table {@link Table#location() location}.
-     */
-    private final String uriScheme;
-
-    /**
      * The {@link Snapshot} from which to discover data files.
      */
     Snapshot snapshot;
@@ -148,7 +143,8 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
 
         this.snapshot = tableAdapter.getSnapshot(instructions);
         this.tableDef = tableAdapter.definition(instructions);
-        this.uriScheme = tableAdapter.getScheme();
+
+        final String uriScheme = tableAdapter.locationUri().getScheme();
         // Add the data instructions if provided as part of the IcebergReadInstructions, or else attempt to create
         // data instructions from the properties collection and URI scheme.
         final Object specialInstructions = instructions.dataInstructions()

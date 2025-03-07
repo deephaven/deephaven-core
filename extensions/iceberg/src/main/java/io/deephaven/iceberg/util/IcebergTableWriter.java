@@ -153,7 +153,7 @@ public class IcebergTableWriter {
                 .format(FileFormat.PARQUET)
                 .build();
 
-        final String uriScheme = tableAdapter.getScheme();
+        final String uriScheme = tableAdapter.locationUri().getScheme();
         final Object specialInstructions = tableWriterOptions.dataInstructions()
                 .orElseGet(() -> dataInstructionsProvider.load(uriScheme));
 

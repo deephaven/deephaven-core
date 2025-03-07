@@ -19,6 +19,7 @@ import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.engine.table.impl.sources.regioned.RegionedTableComponentFactoryImpl;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.engine.util.TableTools;
+import io.deephaven.iceberg.base.IcebergUtils;
 import io.deephaven.iceberg.base.IcebergUtils.SpecAndSchema;
 import io.deephaven.iceberg.internal.DataInstructionsProviderLoader;
 import io.deephaven.iceberg.layout.*;
@@ -38,12 +39,12 @@ import org.apache.iceberg.types.Types;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.net.URI;
 import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
 import static io.deephaven.iceberg.base.IcebergUtils.convertToDHType;
-import static io.deephaven.iceberg.base.IcebergUtils.locationUri;
 
 /**
  * This class manages an Iceberg {@link org.apache.iceberg.Table table} and provides methods to interact with it.
@@ -62,10 +63,7 @@ public class IcebergTableAdapter {
     private final TableIdentifier tableIdentifier;
     private final DataInstructionsProviderLoader dataInstructionsProviderLoader;
 
-    /**
-     * The URI scheme for the table location.
-     */
-    private final String uriScheme;
+    private final URI locationUri;
 
     public IcebergTableAdapter(
             final Catalog catalog,
@@ -76,7 +74,7 @@ public class IcebergTableAdapter {
         this.table = table;
         this.tableIdentifier = tableIdentifier;
         this.dataInstructionsProviderLoader = dataInstructionsProviderLoader;
-        this.uriScheme = locationUri(table).getScheme();
+        this.locationUri = IcebergUtils.locationUri(table);
     }
 
     /**
@@ -595,9 +593,9 @@ public class IcebergTableAdapter {
     }
 
     /**
-     * Get the URI scheme for the table location.
+     * Get the location URI of the Iceberg table.
      */
-    public String getScheme() {
-        return uriScheme;
+    public URI locationUri() {
+        return locationUri;
     }
 }
