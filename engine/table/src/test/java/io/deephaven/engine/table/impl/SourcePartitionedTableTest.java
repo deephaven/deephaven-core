@@ -111,7 +111,8 @@ public class SourcePartitionedTableTest extends RefreshingTableTestCase {
                 tlp,
                 true,
                 true,
-                l -> true);
+                l -> true,
+                true);
     }
 
     private void verifyStringColumnContents(Table table, String columnName, String... expectedValues) {
