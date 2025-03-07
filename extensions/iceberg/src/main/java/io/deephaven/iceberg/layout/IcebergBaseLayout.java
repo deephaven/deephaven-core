@@ -167,6 +167,7 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
             }
             this.parquetInstructions = builder.build();
         }
+
         uriSchemeTochannelsProviders = new HashMap<>();
         uriSchemeTochannelsProviders.put(uriScheme,
                 SeekableChannelsProviderLoader.getInstance().load(uriScheme, specialInstructions));

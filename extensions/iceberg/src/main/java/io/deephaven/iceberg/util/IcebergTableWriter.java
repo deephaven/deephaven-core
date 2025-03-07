@@ -476,6 +476,7 @@ public class IcebergTableWriter {
             Require.eqZero(dhTableUpdateStrings.size(), "dhTableUpdateStrings.size()");
         }
 
+        // Build the parquet instructions
         final List<CompletedParquetWrite> parquetFilesWritten = new ArrayList<>(dhTables.size());
         final ParquetInstructions.OnWriteCompleted onWriteCompleted = parquetFilesWritten::add;
         final ParquetInstructions parquetInstructions = tableWriterOptions.toParquetInstructions(
