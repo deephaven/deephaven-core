@@ -214,23 +214,24 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
                 // technically this may be set for the above two cases, but at this time we send them regardless
                 keyColumns.push(column);
             }
-            if (definition.isRollupConstituentNodeColumn()) {
-                constituentColumns.put(column.getName(), column);
-            }
             if (definition.isVisible()) {
-                columns[columns.length] = column;
-            }
-            if (definition.isRollupGroupByColumn() && !definition.isRollupConstituentNodeColumn()) {
-                groupedColumns.push(column);
+                if (definition.isRollupConstituentNodeColumn()) {
+                    constituentColumns.put(column.getName(), column);
+                } else {
+                    columns[columns.length] = column;
+                    if (definition.isRollupGroupByColumn()) {
+                        groupedColumns.push(column);
 
-                if (hasConstituentColumns) {
-                    column.setConstituentType(columnDefsByName.get(true).get(definition.getName()).getType());
+                        if (hasConstituentColumns) {
+                            column.setConstituentType(columnDefsByName.get(true).get(definition.getName()).getType());
+                        }
+                    }
+                    String aggInputCol = definition.getRollupAggregationInputColumn();
+                    if (hasConstituentColumns && aggInputCol != null && !aggInputCol.isEmpty()) {
+                        column.setConstituentType(
+                                columnDefsByName.get(true).get(aggInputCol).getType());
+                    }
                 }
-            }
-            if (hasConstituentColumns && definition.getRollupAggregationInputColumn() != null
-                    && !definition.getRollupAggregationInputColumn().isEmpty()) {
-                column.setConstituentType(
-                        columnDefsByName.get(true).get(definition.getRollupAggregationInputColumn()).getType());
             }
         }
         this.groupedColumns = JsObject.freeze(groupedColumns);
@@ -254,7 +255,12 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
                         Function.identity()));
         // add the rest of the constituent columns as themselves, they will only show up in constituent rows
         sourceColumns.putAll(constituentColumns);
-        // TODO #3303 offer those as plain columns too
+
+        // restore remaining unmatched constituent columns to the column array
+        for (Column column : constituentColumns.values()) {
+            column.setConstituentType(column.getType());
+            columns[columns.length] = column;
+        }
 
         // visit each column with a source column but no format/style column - if the source column as a format column,
         // we will reference the source column's format column data instead
