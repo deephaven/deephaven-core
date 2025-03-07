@@ -111,7 +111,7 @@ public class TableUpdateValidator implements QueryTable.Operation<QueryTable> {
                 new LinkedHashMap<>(tableToValidate.getColumnSourceMap()),
                 null,
                 tableToValidate.getAttributes());
-        mcsTransformer = tableToValidate .newModifiedColumnSetIdentityTransformer(resultTable);
+        mcsTransformer = tableToValidate.newModifiedColumnSetIdentityTransformer(resultTable);
 
         final TableUpdateListener listener;
         try (final SafeCloseable ignored1 = maybeOpenSharedContext();
