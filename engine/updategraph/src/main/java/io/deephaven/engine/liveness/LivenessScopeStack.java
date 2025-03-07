@@ -194,7 +194,9 @@ public class LivenessScopeStack {
             final boolean shouldEnclose,
             @NotNull final Predicate<RESULT_TYPE> shouldManageResult) {
         final LivenessManager enclosingLivenessManager = LivenessScopeStack.peek();
-        try (final SafeCloseable ignored = shouldEnclose ? LivenessScopeStack.open() : null) {
+        try (final SafeCloseable ignored = shouldEnclose
+                ? LivenessScopeStack.open()
+                : null) {
             final RESULT_TYPE result = computation.get();
             if (shouldManageResult.test(result)) {
                 enclosingLivenessManager.manage(result);
