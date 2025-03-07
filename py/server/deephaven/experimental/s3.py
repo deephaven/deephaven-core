@@ -128,6 +128,7 @@ class S3Instructions(JObjectWrapper):
                  fragment_size: Optional[int] = None,
                  connection_timeout: Optional[DurationLike] = None,
                  read_timeout: Optional[DurationLike] = None,
+                 write_timeout: Optional[DurationLike] = None,
                  access_key_id: Optional[str] = None,
                  secret_access_key: Optional[str] = None,
                  anonymous_access: bool = False,
@@ -162,6 +163,10 @@ class S3Instructions(JObjectWrapper):
             read_timeout (DurationLike): the amount of time to wait when reading a fragment before giving up and timing
                 out. Can be expressed as an integer in nanoseconds, a time interval string, e.g. "PT00:00:00.001" or
                 "PT1s", or other time duration types. Default to 2 seconds.
+            write_timeout (DurationLike): the amount of time to wait when writing a fragment before giving up and timing
+                out. Can be expressed as an integer in nanoseconds, a time interval string, e.g. "PT00:00:00.001" or
+                "PT1s", or other time duration types. This value is a Java Optional and must be tested as such.
+                If not set then the Optional is empty.
             access_key_id (str):  (Deprecated) the access key for reading files. Both access key and secret access key
                 must be provided to use static credentials. If you specify both access key and secret key, then you
                 cannot provide other credentials like setting anonymous_access or credentials argument.
@@ -238,6 +243,9 @@ class S3Instructions(JObjectWrapper):
 
             if read_timeout is not None:
                 builder.readTimeout(to_j_duration(read_timeout))
+
+            if write_timeout is not None:
+                builder.writeTimeout(to_j_duration(write_timeout))
 
             if ((access_key_id is not None and secret_access_key is None) or
                     (access_key_id is None and secret_access_key is not None)):
