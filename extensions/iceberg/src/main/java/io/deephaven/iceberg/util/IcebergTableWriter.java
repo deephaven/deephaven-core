@@ -305,7 +305,6 @@ public class IcebergTableWriter {
         verifyCompatible(writeInstructions.tables(), nonPartitioningTableDefinition);
         final List<String> partitionPaths = writeInstructions.partitionPaths();
         verifyPartitionPaths(tableSpec, partitionPaths);
-
         final List<PartitionData> partitionData;
         final List<CompletedParquetWrite> parquetFileInfo;
         // Start a new query scope to avoid polluting the existing query scope with new parameters added for
@@ -460,6 +459,7 @@ public class IcebergTableWriter {
         return stringBuilder.toString();
     }
 
+    @NotNull
     private List<CompletedParquetWrite> writeParquet(
             @NotNull final List<PartitionData> partitionDataList,
             @NotNull final List<String[]> dhTableUpdateStrings,
@@ -476,7 +476,7 @@ public class IcebergTableWriter {
             Require.eqZero(dhTableUpdateStrings.size(), "dhTableUpdateStrings.size()");
         }
 
-        final List<CompletedParquetWrite> parquetFilesWritten = new ArrayList<>();
+        final List<CompletedParquetWrite> parquetFilesWritten = new ArrayList<>(dhTables.size());
         final ParquetInstructions.OnWriteCompleted onWriteCompleted = parquetFilesWritten::add;
         final ParquetInstructions parquetInstructions = tableWriterOptions.toParquetInstructions(
                 onWriteCompleted, tableDefinition, fieldIdToColumnName, specialInstructions);
