@@ -155,7 +155,7 @@ public interface TreeTable extends HierarchicalTable<TreeTable> {
                                 List.of(JoinMatch.of(parent, identifier)),
                                 List.of(JoinAddition.of(sentinel, identifier)))
                         .view(List.of(viewColumns)),
-                source::isRefreshing,
+                source.isRefreshing(),
                 DynamicNode::isRefreshing);
     }
 }
