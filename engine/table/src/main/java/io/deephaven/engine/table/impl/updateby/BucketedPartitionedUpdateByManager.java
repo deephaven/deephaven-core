@@ -106,7 +106,7 @@ class BucketedPartitionedUpdateByManager extends UpdateBy {
                 return bucket.result;
             });
             return transformed.table();
-        }, source::isRefreshing, DynamicNode::isRefreshing);
+        }, source.isRefreshing(), DynamicNode::isRefreshing);
 
         if (source.isRefreshing()) {
             // create input and output modified column sets

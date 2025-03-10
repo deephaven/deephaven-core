@@ -234,7 +234,7 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
                                         requireMatchingKeys,
                                         sanityCheckJoins);
                             },
-                            () -> refreshingResults,
+                            refreshingResults,
                             ptp -> refreshingResults));
         }
         throw onUnexpectedTableOperations(other);
@@ -594,7 +594,7 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
             // Force a consistent view of initial groups table to be used for all current and future constituents
             final Table initialGroupsTable = LivenessScopeStack.computeEnclosed(
                     () -> ((Table) initialGroups).selectDistinct(groupByColumns).snapshot(),
-                    () -> ((Table) initialGroups).isRefreshing(),
+                    ((Table) initialGroups).isRefreshing(),
                     Table::isRefreshing);
             return basicTransform(
                     true,

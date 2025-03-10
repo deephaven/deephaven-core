@@ -132,7 +132,7 @@ public class ChunkedOperatorAggregationHelper {
                         return true;
                     });
             return resultHolder.getValue();
-        }, input::isRefreshing, Table::isRefreshing);
+        }, input.isRefreshing(), Table::isRefreshing);
     }
 
     private static QueryTable aggregation(

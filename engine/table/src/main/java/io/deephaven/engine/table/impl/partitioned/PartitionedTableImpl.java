@@ -252,7 +252,7 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
                         constituentDefinition,
                         constituentChangesPermitted || table.isRefreshing(),
                         false),
-                table::isRefreshing,
+                table.isRefreshing(),
                 pt -> pt.table().isRefreshing());
     }
 
@@ -275,7 +275,7 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
                         constituentDefinition,
                         constituentChangesPermitted || table.isRefreshing(),
                         false),
-                table::isRefreshing,
+                table.isRefreshing(),
                 pt -> pt.table().isRefreshing());
     }
 
@@ -470,7 +470,7 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
             }
             return matchingCount == 1 ? matchingConstituents[0] : null;
         },
-                table::isRefreshing,
+                table.isRefreshing(),
                 constituent -> constituent != null && constituent.isRefreshing());
     }
 
@@ -479,7 +479,7 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
     public Table[] constituents() {
         return LivenessScopeStack.computeArrayEnclosed(
                 this::snapshotConstituents,
-                table::isRefreshing,
+                table.isRefreshing(),
                 constituent -> constituent != null && constituent.isRefreshing());
     }
 
