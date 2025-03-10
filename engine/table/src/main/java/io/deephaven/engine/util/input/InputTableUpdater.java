@@ -22,6 +22,19 @@ import java.util.stream.Collectors;
 public interface InputTableUpdater {
 
     /**
+     * Get the input table updater from the given {@code table}, or {@code null} if the input table updater is not set
+     * or is the wrong type.
+     * 
+     * @param table the table
+     * @return the input table updater
+     * @see Table#INPUT_TABLE_ATTRIBUTE
+     */
+    static InputTableUpdater from(Table table) {
+        final Object obj = table.getAttribute(Table.INPUT_TABLE_ATTRIBUTE);
+        return obj instanceof InputTableUpdater ? (InputTableUpdater) obj : null;
+    }
+
+    /**
      * Gets the names of the key columns.
      *
      * @return a list with the names of the key columns of this input table
