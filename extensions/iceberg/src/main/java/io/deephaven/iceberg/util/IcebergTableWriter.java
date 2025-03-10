@@ -12,6 +12,7 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.locations.TableDataException;
+import io.deephaven.iceberg.internal.DataInstructionsProviderLoader;
 import io.deephaven.parquet.table.CompletedParquetWrite;
 import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.ParquetTools;
@@ -102,14 +103,29 @@ public class IcebergTableWriter {
     private final OutputFileFactory outputFileFactory;
 
     /**
+     * The special instructions to use for writing the Iceberg data files (might be S3Instructions or other cloud
+     * provider-specific instructions).
+     */
+    private final Object specialInstructions;
+
+    /**
      * Characters to be used for generating random variable names of length {@link #VARIABLE_NAME_LENGTH}.
      */
     private static final String CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
     private static final int VARIABLE_NAME_LENGTH = 6;
 
+    /**
+     * Create a new Iceberg table writer instance.
+     *
+     * @param tableWriterOptions The options to configure the behavior of this writer instance.
+     * @param tableAdapter The Iceberg table adapter corresponding to the Iceberg table to write to.
+     * @param dataInstructionsProvider The provider for special instructions, to be used if special instructions not
+     *        provided in the {@code tableWriterOptions}.
+     */
     IcebergTableWriter(
             final TableWriterOptions tableWriterOptions,
-            final IcebergTableAdapter tableAdapter) {
+            final IcebergTableAdapter tableAdapter,
+            final DataInstructionsProviderLoader dataInstructionsProvider) {
         this.tableWriterOptions = verifyWriterOptions(tableWriterOptions);
         this.table = tableAdapter.icebergTable();
 
@@ -131,6 +147,11 @@ public class IcebergTableWriter {
         outputFileFactory = OutputFileFactory.builderFor(table, 0, 0)
                 .format(FileFormat.PARQUET)
                 .build();
+
+        final String uriScheme = tableAdapter.locationUri().getScheme();
+        this.specialInstructions = tableWriterOptions.dataInstructions()
+                .orElseGet(() -> dataInstructionsProvider.load(uriScheme));
+
     }
 
     private static TableParquetWriterOptions verifyWriterOptions(
@@ -459,7 +480,7 @@ public class IcebergTableWriter {
         final List<CompletedParquetWrite> parquetFilesWritten = new ArrayList<>(dhTables.size());
         final ParquetInstructions.OnWriteCompleted onWriteCompleted = parquetFilesWritten::add;
         final ParquetInstructions parquetInstructions = tableWriterOptions.toParquetInstructions(
-                onWriteCompleted, tableDefinition, fieldIdToColumnName);
+                onWriteCompleted, tableDefinition, fieldIdToColumnName, specialInstructions);
 
         // Write the data to parquet files
         for (int idx = 0; idx < dhTables.size(); idx++) {

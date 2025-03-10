@@ -24,8 +24,9 @@ public abstract class TableWriterOptions {
     public abstract TableDefinition tableDefinition();
 
     /**
-     * The data instructions to use for reading/writing the Iceberg data files (might be S3Instructions or other cloud
-     * provider-specific instructions).
+     * The data instructions to use for writing the Iceberg data files (might be S3Instructions or other cloud
+     * provider-specific instructions). If not provided, data instructions will be derived from the properties of the
+     * catalog.
      */
     public abstract Optional<Object> dataInstructions();
 

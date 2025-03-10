@@ -19,6 +19,7 @@ import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.engine.table.impl.sources.regioned.RegionedTableComponentFactoryImpl;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.engine.util.TableTools;
+import io.deephaven.iceberg.base.IcebergUtils;
 import io.deephaven.iceberg.base.IcebergUtils.SpecAndSchema;
 import io.deephaven.iceberg.internal.DataInstructionsProviderLoader;
 import io.deephaven.iceberg.layout.*;
@@ -38,6 +39,7 @@ import org.apache.iceberg.types.Types;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.net.URI;
 import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -61,6 +63,8 @@ public class IcebergTableAdapter {
     private final TableIdentifier tableIdentifier;
     private final DataInstructionsProviderLoader dataInstructionsProviderLoader;
 
+    private final URI locationUri;
+
     public IcebergTableAdapter(
             final Catalog catalog,
             final TableIdentifier tableIdentifier,
@@ -70,6 +74,7 @@ public class IcebergTableAdapter {
         this.table = table;
         this.tableIdentifier = tableIdentifier;
         this.dataInstructionsProviderLoader = dataInstructionsProviderLoader;
+        this.locationUri = IcebergUtils.locationUri(table);
     }
 
     /**
@@ -584,6 +589,13 @@ public class IcebergTableAdapter {
      * @return A new instance of {@link IcebergTableWriter} configured with the provided options.
      */
     public IcebergTableWriter tableWriter(final TableWriterOptions tableWriterOptions) {
-        return new IcebergTableWriter(tableWriterOptions, this);
+        return new IcebergTableWriter(tableWriterOptions, this, dataInstructionsProviderLoader);
+    }
+
+    /**
+     * Get the location URI of the Iceberg table.
+     */
+    public URI locationUri() {
+        return locationUri;
     }
 }
