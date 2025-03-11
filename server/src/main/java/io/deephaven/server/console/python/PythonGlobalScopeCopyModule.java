@@ -6,6 +6,7 @@ package io.deephaven.server.console.python;
 import dagger.Module;
 import dagger.Provides;
 import io.deephaven.engine.util.PythonEvaluatorJpy;
+import io.deephaven.server.log.LogInit;
 
 import java.io.IOException;
 import java.util.concurrent.TimeoutException;
@@ -14,8 +15,10 @@ import java.util.concurrent.TimeoutException;
 public interface PythonGlobalScopeCopyModule {
 
     @Provides
-    static PythonEvaluatorJpy providePythonEvaluatorJpy() {
+    static PythonEvaluatorJpy providePythonEvaluatorJpy(LogInit logInit) {
         try {
+            // Before we can initialize python and set up our logging redirect from sys.out/err, we ensure that Java's
+            // System fields are reassigned.
             PythonEvaluatorJpy jpy = PythonEvaluatorJpy.withGlobalCopy();
             PythonImportInitializer.init();
             return jpy;
