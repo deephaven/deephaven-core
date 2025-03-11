@@ -48,10 +48,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.stream.Collectors;
 
 import static io.deephaven.iceberg.base.IcebergUtils.convertToIcebergType;
-import static io.deephaven.iceberg.base.IcebergUtils.verifyPartitioningColumns;
-import static io.deephaven.iceberg.base.IcebergUtils.verifyRequiredFields;
 
 /**
  * This class is responsible for writing Deephaven tables to an Iceberg table. Each instance of this class is associated
@@ -98,6 +97,11 @@ public class IcebergTableWriter {
     private final Map<Integer, String> fieldIdToColumnName;
 
     /**
+     * List of fields from the table's schema which have default values and need to be written to the parquet file.
+     */
+    private final List<Types.NestedField> fieldsWithDefaults;
+
+    /**
      * The factory to create new output file locations for writing data files.
      */
     private final OutputFileFactory outputFileFactory;
@@ -113,6 +117,8 @@ public class IcebergTableWriter {
      */
     private static final String CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
     private static final int VARIABLE_NAME_LENGTH = 6;
+
+    private static final String[] EMPTY_STRING_ARRAY = new String[0];
 
     /**
      * Create a new Iceberg table writer instance.
@@ -133,8 +139,6 @@ public class IcebergTableWriter {
 
         this.tableDefinition = tableWriterOptions.tableDefinition();
         this.nonPartitioningTableDefinition = nonPartitioningTableDefinition(tableDefinition);
-        verifyRequiredFields(table.schema(), tableDefinition);
-        verifyPartitioningColumns(tableSpec, tableDefinition);
 
         this.userSchema = ((SchemaProviderImpl) tableWriterOptions.schemaProvider()).getSchema(table);
         verifyFieldIdsInSchema(tableWriterOptions.fieldIdToColumnName().keySet(), userSchema);
@@ -142,7 +146,11 @@ public class IcebergTableWriter {
         // Create a copy of the fieldIdToColumnName map since we might need to add new entries for columns which are not
         // provided by the user.
         this.fieldIdToColumnName = new HashMap<>(tableWriterOptions.fieldIdToColumnName());
-        addFieldIdsForAllColumns();
+        mapFieldIdsForAllColumns();
+
+        fieldsWithDefaults = new ArrayList<>();
+        verifyRequiredFields();
+        verifyPartitioningColumns();
 
         outputFileFactory = OutputFileFactory.builderFor(table, 0, 0)
                 .format(FileFormat.PARQUET)
@@ -181,7 +189,7 @@ public class IcebergTableWriter {
     }
 
     /**
-     * Check that all the field IDs are present in the schema.
+     * Check that all the provided field IDs are present in the schema.
      */
     private static void verifyFieldIdsInSchema(final Collection<Integer> fieldIds, final Schema schema) {
         if (!fieldIds.isEmpty()) {
@@ -198,7 +206,7 @@ public class IcebergTableWriter {
      * Populate the {@link #fieldIdToColumnName} map for all the columns in the {@link #tableDefinition} and do
      * additional checks to ensure that the table definition is compatible with schema provided by user.
      */
-    private void addFieldIdsForAllColumns() {
+    private void mapFieldIdsForAllColumns() {
         final Map<String, Integer> dhColumnNameToFieldId = tableWriterOptions.dhColumnNameToFieldId();
         Map<String, Integer> nameMappingDefault = null; // Lazily initialized
         for (final ColumnDefinition<?> columnDefinition : tableDefinition.getColumns()) {
@@ -282,6 +290,66 @@ public class IcebergTableWriter {
     }
 
     /**
+     * Check that all required fields are present in the table definition to be written by this writer or have a
+     * write-default.
+     */
+    private void verifyRequiredFields() {
+        Require.neqNull(userSchema, "userSchema");
+        Require.neqNull(fieldIdToColumnName, "fieldIdToColumnName");
+        Require.neqNull(tableDefinition, "tableDefinition");
+        Require.neqNull(fieldsWithDefaults, "fieldsWithDefaults");
+        final Schema tableSchema = userSchema;
+        for (final Types.NestedField field : tableSchema.columns()) {
+            if (field.isRequired() && !fieldIdToColumnName.containsKey(field.fieldId())) {
+                if (field.writeDefault() == null) {
+                    throw new IllegalArgumentException(
+                            "Field " + field + " is required in the table schema, but is not present in the table " +
+                                    "definition and does not have a write-default, table schema " + tableSchema +
+                                    ", tableDefinition " + tableDefinition + ", fieldIdToColumnName " +
+                                    fieldIdToColumnName);
+                } else {
+                    fieldsWithDefaults.add(field);
+                }
+            }
+        }
+    }
+
+    /**
+     * Check that all the partitioning columns from the partition spec are present in the table definition to be written
+     * by this writer.
+     */
+    private void verifyPartitioningColumns() {
+        Require.neqNull(tableSpec, "tableSpec");
+        Require.neqNull(tableDefinition, "tableDefinition");
+        final List<String> partitioningColumnNamesFromDefinition = tableDefinition.getColumnStream()
+                .filter(ColumnDefinition::isPartitioning)
+                .map(ColumnDefinition::getName)
+                .collect(Collectors.toList());
+        final List<PartitionField> partitionFieldsFromTableSpec = tableSpec.fields();
+        final int numPartitioningFieldsFromTableSpec = partitionFieldsFromTableSpec.size();
+        if (numPartitioningFieldsFromTableSpec != partitioningColumnNamesFromDefinition.size()) {
+            throw new IllegalArgumentException("Partition spec contains " + partitionFieldsFromTableSpec.size() +
+                    " fields, but the table definition contains " + partitioningColumnNamesFromDefinition.size()
+                    + " fields, partition spec: " + tableSpec + ", table definition: " + tableDefinition);
+        }
+        for (int colIdx = 0; colIdx < numPartitioningFieldsFromTableSpec; colIdx += 1) {
+            final PartitionField partitionField = partitionFieldsFromTableSpec.get(colIdx);
+            final String expectedPartitionColumnName = fieldIdToColumnName.get(partitionField.sourceId());
+            if (expectedPartitionColumnName == null) {
+                throw new IllegalArgumentException("Partitioning field " + partitionField + " is not present " +
+                        "in the table definition: " + tableDefinition + ", partition spec: " +
+                        tableSpec + ", fieldIdToColumnName: " + fieldIdToColumnName);
+            }
+            if (!partitioningColumnNamesFromDefinition.get(colIdx).equals(expectedPartitionColumnName)) {
+                throw new IllegalArgumentException("Partitioning field " + partitionField + " is not present " +
+                        "in the table definition at idx " + colIdx + " in the table definition: " + tableDefinition +
+                        ", partition spec: " + tableSpec + ", fieldIdToColumnName: " +
+                        fieldIdToColumnName);
+            }
+        }
+    }
+
+    /**
      * Append the provided Deephaven {@link IcebergWriteInstructions#tables()} as new partitions to the existing Iceberg
      * table in a single snapshot. This method will not perform any compatibility checks between the existing schema and
      * the provided Deephaven tables.
@@ -311,10 +379,10 @@ public class IcebergTableWriter {
         // partitioning columns
         try (final SafeCloseable _ignore =
                 ExecutionContext.getContext().withQueryScope(new StandaloneQueryScope()).open()) {
-            final Pair<List<PartitionData>, List<String[]>> ret = partitionDataFromPaths(tableSpec, partitionPaths);
+            final Pair<List<PartitionData>, List<String[]>> ret = partitionDataFromPaths(partitionPaths);
             partitionData = ret.getFirst();
-            final List<String[]> dhTableUpdateStrings = ret.getSecond();
-            parquetFileInfo = writeParquet(partitionData, dhTableUpdateStrings, writeInstructions);
+            final List<String[]> dhTableUpdateStringsForPartitioningValues = ret.getSecond();
+            parquetFileInfo = writeParquet(partitionData, dhTableUpdateStringsForPartitioningValues, writeInstructions);
         }
         return dataFilesFromParquet(parquetFileInfo, partitionData);
     }
@@ -351,7 +419,6 @@ public class IcebergTableWriter {
      * Creates a list of {@link PartitionData} and corresponding update strings for Deephaven tables from partition
      * paths and spec. Also, validates that the partition paths are compatible with the provided partition spec.
      *
-     * @param partitionSpec The partition spec to use for validation.
      * @param partitionPaths The list of partition paths to process.
      * @return A pair containing a list of PartitionData objects and a list of update strings for Deephaven tables.
      * @throws IllegalArgumentException if the partition paths are not compatible with the partition spec.
@@ -360,12 +427,11 @@ public class IcebergTableWriter {
      *           details on how partition paths should be parsed, how each type of value is parsed from a string and
      *           what types are allowed for partitioning columns.
      */
-    private static Pair<List<PartitionData>, List<String[]>> partitionDataFromPaths(
-            final PartitionSpec partitionSpec,
+    private Pair<List<PartitionData>, List<String[]>> partitionDataFromPaths(
             final Collection<String> partitionPaths) {
         final List<PartitionData> partitionDataList = new ArrayList<>(partitionPaths.size());
         final List<String[]> dhTableUpdateStringList = new ArrayList<>(partitionPaths.size());
-        final int numPartitioningFields = partitionSpec.fields().size();
+        final int numPartitioningFields = tableSpec.fields().size();
         final QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
         for (final String partitionPath : partitionPaths) {
             final String[] dhTableUpdateString = new String[numPartitioningFields];
@@ -375,13 +441,13 @@ public class IcebergTableWriter {
                     throw new IllegalArgumentException("Expecting " + numPartitioningFields + " number of fields, " +
                             "found " + partitions.length);
                 }
-                final PartitionData partitionData = new PartitionData(partitionSpec.partitionType());
+                final PartitionData partitionData = new PartitionData(tableSpec.partitionType());
                 for (int colIdx = 0; colIdx < partitions.length; colIdx += 1) {
                     final String[] parts = partitions[colIdx].split("=", 2);
                     if (parts.length != 2) {
                         throw new IllegalArgumentException("Expecting key=value format, found " + partitions[colIdx]);
                     }
-                    final PartitionField field = partitionSpec.fields().get(colIdx);
+                    final PartitionField field = tableSpec.fields().get(colIdx);
                     if (!field.name().equals(parts[0])) {
                         throw new IllegalArgumentException("Expecting field name " + field.name() + " at idx " +
                                 colIdx + ", found " + parts[0]);
@@ -392,10 +458,10 @@ public class IcebergTableWriter {
                 }
             } catch (final Exception e) {
                 throw new IllegalArgumentException("Failed to parse partition path: " + partitionPath + " using" +
-                        " partition spec " + partitionSpec + ", check cause for more details ", e);
+                        " partition spec " + tableSpec + ", check cause for more details ", e);
             }
             dhTableUpdateStringList.add(dhTableUpdateString);
-            partitionDataList.add(DataFiles.data(partitionSpec, partitionPath));
+            partitionDataList.add(DataFiles.data(tableSpec, partitionPath));
         }
         return new Pair<>(partitionDataList, dhTableUpdateStringList);
     }
@@ -462,7 +528,7 @@ public class IcebergTableWriter {
     @NotNull
     private List<CompletedParquetWrite> writeParquet(
             @NotNull final List<PartitionData> partitionDataList,
-            @NotNull final List<String[]> dhTableUpdateStrings,
+            @NotNull final List<String[]> dhTableUpdateStringsForPartitioningValues,
             @NotNull final IcebergWriteInstructions writeInstructions) {
         final List<Table> dhTables = writeInstructions.tables();
         final boolean isPartitioned = tableSpec.isPartitioned();
@@ -470,20 +536,26 @@ public class IcebergTableWriter {
             Require.eq(dhTables.size(), "dhTables.size()",
                     partitionDataList.size(), "partitionDataList.size()");
             Require.eq(dhTables.size(), "dhTables.size()",
-                    dhTableUpdateStrings.size(), "dhTableUpdateStrings.size()");
+                    dhTableUpdateStringsForPartitioningValues.size(),
+                    "dhTableUpdateStringsForPartitioningValues.size()");
         } else {
             Require.eqZero(partitionDataList.size(), "partitionDataList.size()");
-            Require.eqZero(dhTableUpdateStrings.size(), "dhTableUpdateStrings.size()");
+            Require.eqZero(dhTableUpdateStringsForPartitioningValues.size(),
+                    "dhTableUpdateStringsForPartitioningValues.size()");
         }
 
         // Build the parquet instructions
-        final List<CompletedParquetWrite> parquetFilesWritten = new ArrayList<>(dhTables.size());
+        final int numTables = dhTables.size();
+        final List<CompletedParquetWrite> parquetFilesWritten = new ArrayList<>(numTables);
         final ParquetInstructions.OnWriteCompleted onWriteCompleted = parquetFilesWritten::add;
         final ParquetInstructions parquetInstructions = tableWriterOptions.toParquetInstructions(
                 onWriteCompleted, tableDefinition, fieldIdToColumnName, specialInstructions);
 
+        // Prepare the list of fields with default values to be written to the parquet file
+        final String[] dhTableUpdateStringsForDefaultValues = getTableUpdateStringForDefaults();
+
         // Write the data to parquet files
-        for (int idx = 0; idx < dhTables.size(); idx++) {
+        for (int idx = 0; idx < numTables; idx++) {
             Table dhTable = dhTables.get(idx);
             if (dhTable.numColumns() == 0) {
                 // Skip writing empty tables with no columns
@@ -492,11 +564,16 @@ public class IcebergTableWriter {
             final String newDataLocation;
             if (isPartitioned) {
                 newDataLocation = getDataLocation(partitionDataList.get(idx));
-                dhTable = dhTable.updateView(dhTableUpdateStrings.get(idx));
+                dhTable = dhTable.updateView(dhTableUpdateStringsForPartitioningValues.get(idx));
             } else {
                 newDataLocation = getDataLocation();
             }
-            // TODO (deephaven-core#6343): Set writeDefault() values for required columns that not present in the table
+
+            // Update the table with default values for required columns
+            if (dhTableUpdateStringsForDefaultValues.length != 0) {
+                dhTable = dhTable.updateView(dhTableUpdateStringsForDefaultValues);
+            }
+
             ParquetTools.writeTable(dhTable, newDataLocation, parquetInstructions);
         }
         return parquetFilesWritten;
@@ -516,6 +593,23 @@ public class IcebergTableWriter {
     private String getDataLocation() {
         final EncryptedOutputFile outputFile = outputFileFactory.newOutputFile();
         return outputFile.encryptingOutputFile().location();
+    }
+
+    private String[] getTableUpdateStringForDefaults() {
+        if (fieldsWithDefaults.isEmpty()) {
+            return EMPTY_STRING_ARRAY;
+        }
+        final QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
+        final String[] dhTableUpdateStrings = new String[fieldsWithDefaults.size()];
+        final int numFields = fieldsWithDefaults.size();
+        for (int idx = 0; idx < numFields; idx++) {
+            final Types.NestedField field = fieldsWithDefaults.get(idx);
+            final Object defaultValue = field.writeDefault();
+            final String paramName = generateRandomAlphabetString(VARIABLE_NAME_LENGTH);
+            queryScope.putParam(paramName, defaultValue);
+            dhTableUpdateStrings[idx] = field.name() + " = " + paramName;
+        }
+        return dhTableUpdateStrings;
     }
 
     /**
