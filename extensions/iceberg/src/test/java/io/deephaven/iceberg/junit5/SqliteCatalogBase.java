@@ -55,6 +55,8 @@ import java.util.stream.Collectors;
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
 import static io.deephaven.engine.util.TableTools.col;
 import static io.deephaven.engine.util.TableTools.doubleCol;
+import static io.deephaven.engine.util.TableTools.intCol;
+import static io.deephaven.engine.util.TableTools.longCol;
 import static org.apache.parquet.schema.LogicalTypeAnnotation.intType;
 import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.DOUBLE;
 import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.INT32;
@@ -1035,5 +1037,38 @@ public abstract class SqliteCatalogBase {
 
         final Table expected2 = TableTools.merge(expected, part3.update("PC = `cat`"));
         assertTableEquals(expected2, fromIcebergRefreshing.select());
+    }
+
+    @Test
+    void appendTableWithWriteDefault() {
+        // Create a table with a write default column
+        final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
+        final Schema schema = new Schema(List.of(
+                Types.NestedField.required(1, "intCol", Types.IntegerType.get()),
+                Types.NestedField.required(2, "doubleCol", Types.DoubleType.get()),
+                Types.NestedField.required(3, "longCol", Types.LongType.get()),
+                Types.NestedField.required("newIntCol")
+                        .withId(4)
+                        .ofType(Types.IntegerType.get())
+                        .withWriteDefault(Integer.valueOf("10"))
+                        .build()));
+        catalogAdapter.catalog().createTable(tableIdentifier, schema);
+
+        final IcebergTableAdapter tableAdapter = catalogAdapter.loadTable(tableIdentifier);
+        final Schema fromIcebergSchema = tableAdapter.icebergTable().schema();
+        assertThat(fromIcebergSchema.sameSchema(schema)).isEqualTo(true);
+
+        final Table source = TableTools.newTable(
+                intCol("intCol", 15, 0, 32, 33, 19),
+                doubleCol("doubleCol", 10.5, 2.5, 3.5, 40.5, 0.5),
+                longCol("longCol", 20L, 50L, 0L, 10L, 5L));
+        final IcebergTableWriter tableWriter = tableAdapter.tableWriter(writerOptionsBuilder()
+                .tableDefinition(source.getDefinition())
+                .build());
+        tableWriter.append(IcebergWriteInstructions.builder()
+                .addTables(source)
+                .build());
+        final Table expected = source.update("newIntCol = 10"); // newIntCol is the write default
+        assertTableEquals(expected, tableAdapter.table());
     }
 }
