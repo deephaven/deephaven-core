@@ -286,4 +286,45 @@ public final class IcebergUtils {
         }
         return false;
     }
+
+    /**
+     * Check that all required fields are present in the table definition
+     */
+    public static void verifyRequiredFields(final Schema tableSchema, final TableDefinition tableDefinition) {
+        final List<String> columnNames = tableDefinition.getColumnNames();
+        for (final Types.NestedField field : tableSchema.columns()) {
+            if (field.isRequired() && !columnNames.contains(field.name())) {
+                // TODO (deephaven-core#6343): Add check for writeDefault() not set for required fields
+                throw new IllegalArgumentException("Field " + field + " is required in the table schema, but is not " +
+                        "present in the table definition, table schema " + tableSchema + ", tableDefinition " +
+                        tableDefinition);
+            }
+        }
+    }
+
+    /**
+     * Check that all the partitioning columns from the partition spec are present in the Table Definition.
+     */
+    public static void verifyPartitioningColumns(
+            final PartitionSpec tablePartitionSpec,
+            final TableDefinition tableDefinition) {
+        final List<String> partitioningColumnNamesFromDefinition = tableDefinition.getColumnStream()
+                .filter(ColumnDefinition::isPartitioning)
+                .map(ColumnDefinition::getName)
+                .collect(Collectors.toList());
+        final List<PartitionField> partitionFieldsFromSchema = tablePartitionSpec.fields();
+        if (partitionFieldsFromSchema.size() != partitioningColumnNamesFromDefinition.size()) {
+            throw new IllegalArgumentException("Partition spec contains " + partitionFieldsFromSchema.size() +
+                    " fields, but the table definition contains " + partitioningColumnNamesFromDefinition.size()
+                    + " fields, partition spec " + tablePartitionSpec + ", table definition " + tableDefinition);
+        }
+        for (int colIdx = 0; colIdx < partitionFieldsFromSchema.size(); colIdx += 1) {
+            final PartitionField partitionField = partitionFieldsFromSchema.get(colIdx);
+            if (!partitioningColumnNamesFromDefinition.get(colIdx).equals(partitionField.name())) {
+                throw new IllegalArgumentException("Partitioning column " + partitionField.name() + " is not present " +
+                        "in the table definition at idx " + colIdx + ", table definition " + tableDefinition +
+                        ", partition spec " + tablePartitionSpec);
+            }
+        }
+    }
 }
