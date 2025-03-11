@@ -13,14 +13,12 @@ configurations {
   download {
     transitive = false
   }
+  authzPlugin {}
 
   js {}
   python {}
   go {}
-  cpp {}
-
   protoDocs {}
-  authzPlugin {}
 }
 
 dependencies {

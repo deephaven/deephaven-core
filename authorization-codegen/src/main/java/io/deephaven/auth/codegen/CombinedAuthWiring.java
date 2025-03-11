@@ -32,20 +32,11 @@ public class CombinedAuthWiring {
             }
             final String realPackage = getRealPackage(file);
             for (final DescriptorProtos.ServiceDescriptorProto service : file.getServiceList()) {
-                if (service.getName().contains("TableService")) {
-                    // all table services perform an authorization check using contextual source tables
-                    continue;
-                } else if (service.getName().contains("BrowserFlightService")) {
+                if (service.getName().contains("BrowserFlightService")) {
                     // the browser flight requests get converted to FlightService requests based on our binding
                     continue;
                 }
-                GenerateServiceAuthWiring.generateForService(realPackage, response, service, typeMap);
-            }
-        }
 
-        // Then, for each service that needs contextual auth, create that interface too
-        for (final DescriptorProtos.FileDescriptorProto file : request.getProtoFileList()) {
-            for (final DescriptorProtos.ServiceDescriptorProto service : file.getServiceList()) {
                 // Only table services perform an authorization check using contextual source tables
                 // In other circumstances we would generate from .proto first, then compile this plugin, then
                 // run the plugin on the remaining .proto files, but we aren't generalizing the plugin that far
@@ -53,11 +44,11 @@ public class CombinedAuthWiring {
                 List<Long> contextualAuthValue =
                         service.getOptions().getUnknownFields().getField(0x6E68).getVarintList();
                 boolean hasContextualAuth = !contextualAuthValue.isEmpty() && contextualAuthValue.get(0) == 1;
-                if (!hasContextualAuth) {
-                    continue;
+                if (hasContextualAuth) {
+                    GenerateContextualAuthWiring.generateForService(response, service, typeMap);
+                } else {
+                    GenerateServiceAuthWiring.generateForService(realPackage, response, service, typeMap);
                 }
-
-                GenerateContextualAuthWiring.generateForService(response, service, typeMap);
             }
         }
 
@@ -84,12 +75,6 @@ public class CombinedAuthWiring {
         if (Strings.isNullOrEmpty(realPackage)) {
             realPackage = file.getPackage();
         }
-        // Unsure of where this is specified in Flight.proto, but in addition to the package the messages are
-        // put into a "Flight" namespace.
-        if (realPackage.equals("org.apache.arrow.flight.impl")) {
-            realPackage += ".Flight";
-        }
         return realPackage;
     }
-
 }

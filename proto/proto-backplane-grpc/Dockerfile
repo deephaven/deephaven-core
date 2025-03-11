@@ -4,13 +4,13 @@ RUN set -eux; \
     apt-get -qq update; \
     apt-get install -qq -y --no-install-recommends openjdk-17-jdk
 
-COPY src/main/proto /includes
-
-COPY dependencies /dependencies
-
 COPY authzPlugin /authzPlugin
 
 RUN chmod +x /authzPlugin/protoc-gen-auth-wiring
+
+COPY src/main/proto /includes
+
+COPY dependencies /dependencies
 
 RUN set -eux; \
   mkdir -p /generated/java; \
