@@ -17,10 +17,20 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.proto.backplane.grpc.WrappedAuthenticationRequest;
+import io.deephaven.qst.type.GenericVectorType;
+import io.deephaven.qst.type.Type;
 import io.deephaven.server.auth.AuthorizationProvider;
 import io.deephaven.server.config.ServerConfig;
 import io.deephaven.server.runner.DeephavenApiServerTestBase;
 import io.deephaven.server.runner.DeephavenApiServerTestBase.TestComponent.Builder;
+import io.deephaven.vector.ByteVector;
+import io.deephaven.vector.CharVector;
+import io.deephaven.vector.DoubleVector;
+import io.deephaven.vector.FloatVector;
+import io.deephaven.vector.IntVector;
+import io.deephaven.vector.LongVector;
+import io.deephaven.vector.ObjectVector;
+import io.deephaven.vector.ShortVector;
 import io.grpc.ManagedChannel;
 import org.apache.arrow.flight.Action;
 import org.apache.arrow.flight.ActionType;
@@ -586,6 +596,31 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
     @Test
     public void badSqlQuery() {
         queryError("this is not SQL", FlightStatusCode.INVALID_ARGUMENT, "Flight SQL: query can't be parsed");
+    }
+
+    @Test
+    public void testDh18803() throws Exception {
+        // https://deephaven.atlassian.net/browse/DH-18803: Sql fails to adapt Vector types
+        final TableDefinition td = TableDefinition.of(
+                ColumnDefinition.ofVector("ByteVector", ByteVector.class),
+                ColumnDefinition.ofVector("CharVector", CharVector.class),
+                ColumnDefinition.ofVector("ShortVector", ShortVector.class),
+                ColumnDefinition.ofVector("IntVector", IntVector.class),
+                ColumnDefinition.ofVector("LongVector", LongVector.class),
+                ColumnDefinition.ofVector("FloatVector", FloatVector.class),
+                ColumnDefinition.ofVector("DoubleVector", DoubleVector.class),
+                ColumnDefinition.of("StringVector", GenericVectorType.of(ObjectVector.class, Type.stringType())));
+        final Table emptyTable = TableTools.newTable(td);
+        ExecutionContext.getContext().getQueryScope().putParam("MyTable", emptyTable);
+        {
+            final SchemaResult schema = flightSqlClient.getExecuteSchema("SELECT * FROM MyTable");
+            assertThat(schema.getSchema().getFields()).hasSize(8);
+        }
+        {
+            final FlightInfo info = flightSqlClient.execute("SELECT * FROM MyTable");
+            assertThat(info.getSchema().getFields()).hasSize(8);
+            consume(info, 0, 0, false);
+        }
     }
 
     @Test
