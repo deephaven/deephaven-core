@@ -18,7 +18,7 @@ public class UpdateSourceCombiner extends LivenessArtifact implements Runnable, 
 
     private final UpdateGraph updateGraph;
 
-    private final WeakReferenceManager<Runnable> combinedTables = new WeakReferenceManager<>(true);
+    private final WeakReferenceManager<Runnable> sources = new WeakReferenceManager<>(true);
 
     public UpdateSourceCombiner(final UpdateGraph updateGraph) {
         this.updateGraph = updateGraph;
@@ -34,7 +34,7 @@ public class UpdateSourceCombiner extends LivenessArtifact implements Runnable, 
 
     @Override
     public void run() {
-        combinedTables.forEachValidReference(Runnable::run);
+        sources.forEachValidReference(Runnable::run);
     }
 
     @Override
@@ -49,12 +49,12 @@ public class UpdateSourceCombiner extends LivenessArtifact implements Runnable, 
             // combiner as a parent, in order to ensure the integrity of the resulting DAG.
             dynamicUpdateSource.addParentReference(this);
         }
-        combinedTables.add(updateSource);
+        sources.add(updateSource);
     }
 
     @Override
     public void removeSource(@NotNull final Runnable updateSource) {
-        combinedTables.removeAll(Collections.singleton(updateSource));
+        sources.removeAll(Collections.singleton(updateSource));
     }
 
     /**
