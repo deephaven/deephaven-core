@@ -48,6 +48,7 @@ import org.apache.iceberg.catalog.TableIdentifier;
 import org.apache.iceberg.types.Types;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
 import org.apache.parquet.schema.MessageType;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -1061,6 +1062,15 @@ public abstract class SqliteCatalogBase {
             final IcebergTableAdapter tableAdapter,
             final TableIdentifier tableIdentifier,
             final List<List<SortColumn>> expectedSortOrders) {
+        verifySortOrder(tableAdapter, tableIdentifier, expectedSortOrders,
+                ParquetInstructions.EMPTY.withTableDefinition(tableAdapter.definition()));
+    }
+
+    private void verifySortOrder(
+            @NotNull final IcebergTableAdapter tableAdapter,
+            @NotNull final TableIdentifier tableIdentifier,
+            @NotNull final List<List<SortColumn>> expectedSortOrders,
+            @NotNull final ParquetInstructions readInstructions) {
         final org.apache.iceberg.Table icebergTable = tableAdapter.icebergTable();
         final String uriScheme = locationUri(icebergTable).getScheme();
         final SeekableChannelsProvider seekableChannelsProvider =
@@ -1078,9 +1088,9 @@ public abstract class SqliteCatalogBase {
                         StandaloneTableKey.getInstance(),
                         new IcebergTableParquetLocationKey(
                                 null, null, tableIdentifier, manifestFile, dataFile,
-                                dataFileUri(icebergTable, dataFile), 0, Map.of(), ParquetInstructions.EMPTY,
+                                dataFileUri(icebergTable, dataFile), 0, Map.of(), readInstructions,
                                 seekableChannelsProvider),
-                        ParquetInstructions.EMPTY);
+                        readInstructions);
                 actualSortOrders.add(tableLocation.getSortedColumns());
             }
         }
@@ -1345,6 +1355,112 @@ public abstract class SqliteCatalogBase {
         verifySortOrder(tableAdapter, tableIdentifier, List.of(List.of()));
         final Table fromIceberg = tableAdapter.table();
         assertTableEquals(source, fromIceberg);
+    }
+
+    @Test
+    void testSortOrderWithColumnRename() {
+        final Table source = TableTools.newTable(
+                intCol("intCol", 15, 0, 32, 33, 19),
+                doubleCol("doubleCol", 10.5, 2.5, 3.5, 40.5, 0.5),
+                longCol("longCol", 20L, 50L, 0L, 10L, 5L));
+        final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
+        final IcebergTableAdapter tableAdapter = catalogAdapter.createTable(tableIdentifier, source.getDefinition());
+
+        // Update the default sort order of the underlying iceberg table
+        final org.apache.iceberg.Table icebergTable = tableAdapter.icebergTable();
+        icebergTable.replaceSortOrder().asc("intCol").desc("doubleCol").commit();
+
+        // Append data to the table
+        final IcebergTableWriter tableWriterWithSorting = tableAdapter.tableWriter(writerOptionsBuilder()
+                .tableDefinition(source.getDefinition())
+                .build());
+        tableWriterWithSorting.append(IcebergWriteInstructions.builder()
+                .addTables(source)
+                .build());
+
+        // Now read a table with a column rename
+        final IcebergReadInstructions readInstructions = IcebergReadInstructions.builder()
+                .putColumnRenames("intCol", "renamedIntCol")
+                .build();
+        final Table fromIceberg = tableAdapter.table(readInstructions);
+        final Table expected = source.renameColumns("renamedIntCol = intCol")
+                .sort(List.of(SortColumn.asc(ColumnName.of("renamedIntCol")),
+                        SortColumn.desc(ColumnName.of("doubleCol"))));
+        assertTableEquals(expected, fromIceberg);
+
+        // Verify that the sort order is still applied
+        final ParquetInstructions parquetInstructions = ParquetInstructions.builder()
+                .addColumnNameMapping("intCol", "renamedIntCol")
+                .setTableDefinition(expected.getDefinition())
+                .build();
+        verifySortOrder(tableAdapter, tableIdentifier, List.of(
+                List.of(SortColumn.asc(ColumnName.of("renamedIntCol")), SortColumn.desc(ColumnName.of("doubleCol")))),
+                parquetInstructions);
+    }
+
+    @Test
+    void testSortOrderWithTableDefinition() {
+        final Table source = TableTools.newTable(
+                intCol("intCol", 15, 0, 32, 33, 19),
+                doubleCol("doubleCol", 10.5, 2.5, 3.5, 40.5, 0.5),
+                longCol("longCol", 20L, 50L, 0L, 10L, 5L));
+        final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
+        final IcebergTableAdapter tableAdapter = catalogAdapter.createTable(tableIdentifier, source.getDefinition());
+
+        // Update the default sort order of the underlying iceberg table
+        final org.apache.iceberg.Table icebergTable = tableAdapter.icebergTable();
+        icebergTable.replaceSortOrder().asc("intCol").desc("doubleCol").commit();
+
+        // Append data to the table
+        final IcebergTableWriter tableWriterWithSorting = tableAdapter.tableWriter(writerOptionsBuilder()
+                .tableDefinition(source.getDefinition())
+                .build());
+        tableWriterWithSorting.append(IcebergWriteInstructions.builder()
+                .addTables(source)
+                .build());
+
+        {
+            // Now read a table with a different table definition skipping the "doubleCol"
+            final TableDefinition tableDefinition = TableDefinition.of(
+                    ColumnDefinition.ofInt("intCol"),
+                    ColumnDefinition.ofLong("longCol"));
+            final IcebergReadInstructions readInstructions = IcebergReadInstructions.builder()
+                    .tableDefinition(tableDefinition)
+                    .build();
+            final Table fromIceberg = tableAdapter.table(readInstructions);
+            final Table expected = source.dropColumns("doubleCol")
+                    .sort(List.of(SortColumn.asc(ColumnName.of("intCol"))));
+            assertTableEquals(expected, fromIceberg);
+
+            // Verify that the sort order is still applied for the first column
+            final ParquetInstructions parquetInstructions = ParquetInstructions.builder()
+                    .setTableDefinition(tableDefinition)
+                    .build();
+            verifySortOrder(tableAdapter, tableIdentifier, List.of(
+                    List.of(SortColumn.asc(ColumnName.of("intCol")))),
+                    parquetInstructions);
+        }
+
+        {
+            // Now read the table with a different table definition skipping the "intCol"
+            final TableDefinition tableDefinition = TableDefinition.of(
+                    ColumnDefinition.ofDouble("doubleCol"),
+                    ColumnDefinition.ofLong("longCol"));
+            final IcebergReadInstructions readInstructions = IcebergReadInstructions.builder()
+                    .tableDefinition(tableDefinition)
+                    .build();
+            final Table fromIceberg = tableAdapter.table(readInstructions);
+            final Table expected = source
+                    .sort(List.of(SortColumn.asc(ColumnName.of("intCol")), SortColumn.desc(ColumnName.of("doubleCol"))))
+                    .dropColumns("intCol");
+            assertTableEquals(expected, fromIceberg);
+
+            // Verify that the sort order is not applied for any columns since the first sorted column is skipped
+            final ParquetInstructions parquetInstructions = ParquetInstructions.builder()
+                    .setTableDefinition(tableDefinition)
+                    .build();
+            verifySortOrder(tableAdapter, tableIdentifier, List.of(List.of()), parquetInstructions);
+        }
     }
 
     @Test

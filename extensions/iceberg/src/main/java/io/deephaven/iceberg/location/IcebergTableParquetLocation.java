@@ -5,6 +5,8 @@ package io.deephaven.iceberg.location;
 
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.SortColumn;
+import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.locations.TableKey;
 import io.deephaven.engine.table.impl.locations.TableLocation;
 import io.deephaven.iceberg.util.IcebergTableAdapter;
@@ -34,7 +36,7 @@ public class IcebergTableParquetLocation extends ParquetTableLocation implements
             @NotNull final IcebergTableParquetLocationKey tableLocationKey,
             @NotNull final ParquetInstructions readInstructions) {
         super(tableKey, tableLocationKey, readInstructions);
-        sortedColumns = computeSortedColumns(tableAdapter, tableLocationKey.dataFile());
+        sortedColumns = computeSortedColumns(tableAdapter, tableLocationKey.dataFile(), readInstructions);
     }
 
     @Override
@@ -46,7 +48,8 @@ public class IcebergTableParquetLocation extends ParquetTableLocation implements
     @Nullable
     private static List<SortColumn> computeSortedColumns(
             @NotNull final IcebergTableAdapter tableAdapter,
-            @NotNull final DataFile dataFile) {
+            @NotNull final DataFile dataFile,
+            @NotNull final ParquetInstructions readInstructions) {
         final Integer sortOrderId = dataFile.sortOrderId();
         // If sort order is missing or unknown, we cannot determine the sorted columns from the metadata and will
         // check the underlying parquet file for the sorted columns, when the user asks for them.
@@ -67,12 +70,20 @@ public class IcebergTableParquetLocation extends ParquetTableLocation implements
                 // TODO (DH-18160): Improve support for handling non-identity transforms
                 break;
             }
-            final ColumnName columnName = ColumnName.of(schema.findColumnName(field.sourceId()));
+            final String icebergColName = schema.findColumnName(field.sourceId());
+            final String dhColName = readInstructions.getColumnNameFromParquetColumnNameOrDefault(icebergColName);
+            final TableDefinition tableDefinition = readInstructions.getTableDefinition().orElseThrow(
+                    () -> new IllegalStateException("Table definition is required for reading from Iceberg tables"));
+            final ColumnDefinition<?> columnDef = tableDefinition.getColumn(dhColName);
+            if (columnDef == null) {
+                // Table definition provided by the user doesn't have this column, so stop here
+                break;
+            }
             final SortColumn sortColumn;
             if (field.nullOrder() == NullOrder.NULLS_FIRST && field.direction() == SortDirection.ASC) {
-                sortColumn = SortColumn.asc(columnName);
+                sortColumn = SortColumn.asc(ColumnName.of(dhColName));
             } else if (field.nullOrder() == NullOrder.NULLS_LAST && field.direction() == SortDirection.DESC) {
-                sortColumn = SortColumn.desc(columnName);
+                sortColumn = SortColumn.desc(ColumnName.of(dhColName));
             } else {
                 break;
             }
