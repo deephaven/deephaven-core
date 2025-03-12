@@ -5,6 +5,8 @@ package io.deephaven.iceberg.util;
 
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.extensions.s3.S3Instructions;
+import io.deephaven.parquet.table.CompletedParquetWrite;
 import io.deephaven.parquet.table.ParquetInstructions;
 import org.junit.jupiter.api.Test;
 
@@ -144,8 +146,12 @@ class TableParquetWriterOptionsTest {
                 ColumnDefinition.ofInt("PC2").withPartitioning(),
                 ColumnDefinition.ofLong("I"));
         final Map<Integer, String> fieldIdToName = Map.of(2, "field2", 3, "field3");
+        final S3Instructions s3Instructions = S3Instructions.builder().regionName("test-region").build();
+        final ParquetInstructions.OnWriteCompleted onWriteCompleted =
+                (final CompletedParquetWrite completedParquetWrite) -> {
+                    /* Do nothing */ };
         final ParquetInstructions parquetInstructions = writeInstructions.toParquetInstructions(
-                null, definition, fieldIdToName);
+                onWriteCompleted, definition, fieldIdToName, s3Instructions);
 
         assertThat(parquetInstructions.getCompressionCodecName()).isEqualTo("GZIP");
         assertThat(parquetInstructions.getMaximumDictionaryKeys()).isEqualTo(100);
@@ -154,7 +160,8 @@ class TableParquetWriterOptionsTest {
         assertThat(parquetInstructions.getFieldId("field1")).isEmpty();
         assertThat(parquetInstructions.getFieldId("field2")).hasValue(2);
         assertThat(parquetInstructions.getFieldId("field3")).hasValue(3);
-        assertThat(parquetInstructions.onWriteCompleted()).isEmpty();
+        assertThat(parquetInstructions.onWriteCompleted()).hasValue(onWriteCompleted);
         assertThat(parquetInstructions.getTableDefinition()).hasValue(definition);
+        assertThat(parquetInstructions.getSpecialInstructions()).isEqualTo(s3Instructions);
     }
 }
