@@ -63,8 +63,7 @@ class SortOrderProviderInternal {
         }
     }
 
-    static class TableDefaultSortOrderProvider implements SortOrderProviderImpl {
-        private boolean failOnUnmapped;
+    static class TableDefaultSortOrderProvider extends CanFailOnUnmapped implements SortOrderProviderImpl {
 
         TableDefaultSortOrderProvider() {}
 
@@ -74,21 +73,9 @@ class SortOrderProviderInternal {
             final SortOrder sortOrder = table.sortOrder();
             return sortOrder != null ? sortOrder : SortOrder.unsorted();
         }
-
-        @Override
-        public SortOrderProvider withFailOnUnmapped(final boolean failOnUnmapped) {
-            this.failOnUnmapped = failOnUnmapped;
-            return this;
-        }
-
-        @Override
-        public boolean failOnUnmapped() {
-            return failOnUnmapped;
-        }
     }
 
-    static class IdSortOrderProvider implements SortOrderProviderImpl {
-        private boolean failOnUnmapped;
+    static class IdSortOrderProvider extends CanFailOnUnmapped implements SortOrderProviderImpl {
         private final int sortOrderId;
 
         IdSortOrderProvider(final int sortOrderId) {
@@ -100,21 +87,9 @@ class SortOrderProviderInternal {
         public SortOrder getSortOrderToUse(@NotNull final Table table) {
             return getSortOrderForId(table, sortOrderId);
         }
-
-        @Override
-        public SortOrderProvider withFailOnUnmapped(final boolean failOnUnmapped) {
-            this.failOnUnmapped = failOnUnmapped;
-            return this;
-        }
-
-        @Override
-        public boolean failOnUnmapped() {
-            return failOnUnmapped;
-        }
     }
 
-    static class DirectSortOrderProvider implements SortOrderProviderImpl {
-        private boolean failOnUnmapped;
+    static class DirectSortOrderProvider extends CanFailOnUnmapped implements SortOrderProviderImpl {
         private final SortOrder sortOrder;
 
         DirectSortOrderProvider(@NotNull final SortOrder sortOrder) {
@@ -136,17 +111,6 @@ class SortOrderProviderInternal {
                         "included in the table's sort orders");
             }
             return sortOrder;
-        }
-
-        @Override
-        public SortOrderProvider withFailOnUnmapped(final boolean failOnUnmapped) {
-            this.failOnUnmapped = failOnUnmapped;
-            return this;
-        }
-
-        @Override
-        public boolean failOnUnmapped() {
-            return failOnUnmapped;
         }
     }
 
@@ -208,5 +172,24 @@ class SortOrderProviderInternal {
                     table);
         }
         return table.sortOrders().get(sortOrderId);
+    }
+
+    private static abstract class CanFailOnUnmapped implements SortOrderProviderImpl {
+        private boolean failOnUnmapped;
+
+        CanFailOnUnmapped() {
+            this.failOnUnmapped = true;
+        }
+
+        @Override
+        public SortOrderProvider withFailOnUnmapped(final boolean failOnUnmapped) {
+            this.failOnUnmapped = failOnUnmapped;
+            return this;
+        }
+
+        @Override
+        public boolean failOnUnmapped() {
+            return failOnUnmapped;
+        }
     }
 }

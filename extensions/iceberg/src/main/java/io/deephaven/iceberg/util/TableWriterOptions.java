@@ -61,9 +61,9 @@ public abstract class TableWriterOptions {
     }
 
     /**
-     * Used for providing {@link org.apache.iceberg.SortOrder} to sort new data while writing to an iceberg table using
-     * this writer. Note that we select the sort order of the Table at the time the writer is constructed, and it does
-     * not change if the table's sort order changes.
+     * Specifies the {@link org.apache.iceberg.SortOrder} to use for sorting new data when writing to an Iceberg table
+     * with this writer. The sort order is determined at the time the writer is created and does not change if the
+     * table's sort order changes later.
      * <p>
      * Defaults to {@link SortOrderProvider#useTableDefault()}.
      */

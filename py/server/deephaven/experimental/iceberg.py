@@ -275,7 +275,7 @@ class SchemaProvider(JObjectWrapper):
 class SortOrderProvider(JObjectWrapper):
     """
     `SortOrderProvider` is used to specify the sort order for new data when writing to an Iceberg table. More details
-    about sort order can be found in the Iceberg spec: https://iceberg.apache.org/spec/#sorting.
+    about sort order can be found in the `Iceberg spec <https://iceberg.apache.org/spec/#sorting>`_
     Users can specify the sort order in multiple ways, such as by providing a sort ID or using the table's default sort
     order. This class consists of factory methods to create different sort order providers.
     """
@@ -346,11 +346,13 @@ class SortOrderProvider(JObjectWrapper):
 
     def with_fail_on_unmapped(self, fail_on_unmapped: bool) -> 'SortOrderProvider':
         """
-        Returns a sort order provider that will fail if the sort order cannot be applied to the tables being written.
-        By default, if the sort order cannot be applied, the tables will be written without sorting.
+        Returns a sort order provider that uses the provided argument value to determine whether to fail or not if the
+        sort order cannot be applied to the tables being written. By default, all providers fail if the sort order
+        cannot be applied.
 
         Args:
-            fail_on_unmapped: whether to fail if the sort order cannot be applied to the tables being written
+            fail_on_unmapped: whether to fail if the sort order cannot be applied to the tables being written. If
+                `False` and the sort order cannot be applied, the tables will be written without sorting.
 
         Returns:
             the `SortOrderProvider` object.
@@ -404,8 +406,8 @@ class TableParquetWriterOptions(JObjectWrapper):
             sort_order_provider (Optional[SortOrderProvider]): Specifies the sort order to use for sorting new data
                 when writing to an Iceberg table with this writer. The sort order is determined at the time the writer
                 is created and does not change if the table's sort order changes later. Defaults to `None`, which means
-                the table's default sort order is used. More details about sort order can be found in the Iceberg
-                spec: https://iceberg.apache.org/spec/#sorting
+                the table's default sort order is used. More details about sort order can be found in the
+                `Iceberg spec <https://iceberg.apache.org/spec/#sorting>`_
             data_instructions (Optional[s3.S3Instructions]): Special instructions for writing data files, useful when
                 writing files to a non-local file system, like S3. If omitted, the data instructions will be derived
                 from the catalog.

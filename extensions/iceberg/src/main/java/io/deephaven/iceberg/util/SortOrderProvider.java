@@ -44,22 +44,24 @@ public interface SortOrderProvider {
     }
 
     /**
-     * Returns a sort order provider that delegates to this provider for computing the columns to sort on, but writes a
-     * different sort order ID to the iceberg table. Note that the sort order returned by the caller must
+     * Returns a sort order provider that uses the current provider to determine the columns to sort on, but writes a
+     * different sort order ID to the Iceberg table. Note that the sort order returned by the caller must
      * {@link SortOrder#satisfies(SortOrder) satisfy} the sort order corresponding to the provided sort order ID.
      * <p>
-     * For example, this provider might return fields {A, B, C} to sort on, but the ID written to iceberg corresponds to
-     * sort order with fields {A, B}.
+     * For example, this provider might sort by columns {A, B, C}, but the ID written to Iceberg corresponds to a sort
+     * order with columns {A, B}.
      *
      * @param sortOrderId the sort order ID to write to the iceberg table
      */
     SortOrderProvider withId(final int sortOrderId);
 
     /**
-     * Returns a sort order provider which will fail, if for any reason, the sort order cannot be applied to the tables
-     * being written. By default, the provider will not fail if the sort order cannot be applied.
+     * Returns a sort order provider that uses the provided argument value to determine whether to fail or not if the
+     * sort order cannot be applied to the tables being written. By default, the provider will fail if the sort order
+     * cannot be applied.
      *
-     * @param failOnUnmapped whether to fail if the sort order cannot be applied to the tables being written
+     * @param failOnUnmapped whether to fail if the sort order cannot be applied to the tables being written. If
+     *        {@code false} and the sort order cannot be applied, the tables will be written without sorting.
      */
     SortOrderProvider withFailOnUnmapped(boolean failOnUnmapped);
 }
