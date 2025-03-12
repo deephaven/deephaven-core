@@ -73,10 +73,55 @@ public abstract class PrimitiveVectorType<T, ComponentType>
     }
 
     @Check
-    final void checkClazz() {
-        if (!VALID_CLASSES.contains(clazz().getName())) {
-            throw new IllegalArgumentException(String.format("Class '%s' is not a valid '%s'",
-                    clazz(), PrimitiveVectorType.class));
+    final void checkPairing() {
+        final String vectorClassNameFromComponent = componentType().walk(VectorClassName.INSTANCE);
+        if (!clazz().getName().equals(vectorClassNameFromComponent)) {
+            throw new IllegalArgumentException(String.format("Invalid PrimitiveVectorType. clazz=%s, componentType=%s",
+                    clazz().getName(), componentType()));
+        }
+    }
+
+    private enum VectorClassName implements PrimitiveType.Visitor<String> {
+        INSTANCE;
+
+        @Override
+        public String visit(BooleanType booleanType) {
+            return null;
+        }
+
+        @Override
+        public String visit(ByteType byteType) {
+            return BYTE_VECTOR;
+        }
+
+        @Override
+        public String visit(CharType charType) {
+            return CHAR_VECTOR;
+        }
+
+        @Override
+        public String visit(ShortType shortType) {
+            return SHORT_VECTOR;
+        }
+
+        @Override
+        public String visit(IntType intType) {
+            return INT_VECTOR;
+        }
+
+        @Override
+        public String visit(LongType longType) {
+            return LONG_VECTOR;
+        }
+
+        @Override
+        public String visit(FloatType floatType) {
+            return FLOAT_VECTOR;
+        }
+
+        @Override
+        public String visit(DoubleType doubleType) {
+            return DOUBLE_VECTOR;
         }
     }
 }

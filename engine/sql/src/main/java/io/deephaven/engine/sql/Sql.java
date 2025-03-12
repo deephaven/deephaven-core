@@ -109,7 +109,7 @@ public final class Sql {
     }
 
     private static ColumnHeader<?> adapt(ColumnDefinition<?> columnDef) {
-        return ColumnHeader.of(columnDef.getName(), Type.find(columnDef.getDataType()));
+        return ColumnHeader.of(columnDef.getName(), Type.find(columnDef.getDataType(), columnDef.getComponentType()));
     }
 
     private enum ToGraphvizDot implements ObjFormatter<TableSpec> {

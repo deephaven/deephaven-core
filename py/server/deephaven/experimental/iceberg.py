@@ -108,7 +108,8 @@ class IcebergReadInstructions(JObjectWrapper):
                 the definition is inferred from the Iceberg schema. Setting a definition guarantees the returned table
                 will have that definition. This is useful for specifying a subset of the Iceberg schema columns.
             data_instructions (Optional[s3.S3Instructions]): Special instructions for reading data files, useful when
-                reading files from a non-local file system, like S3.
+                reading files from a non-local file system, like S3. If omitted, the data instructions will be derived
+                from the catalog.
             column_renames (Optional[Dict[str, str]]): A dictionary of old to new column names that will be renamed in
                 the output table.
             update_mode (Optional[IcebergUpdateMode]): The update mode for the table. If omitted, the default update
@@ -405,7 +406,9 @@ class TableParquetWriterOptions(JObjectWrapper):
                 is created and does not change if the table's sort order changes later. Defaults to `None`, which means
                 the table's default sort order is used. More details about sort order can be found in the Iceberg
                 spec: https://iceberg.apache.org/spec/#sorting
-
+            data_instructions (Optional[s3.S3Instructions]): Special instructions for writing data files, useful when
+                writing files to a non-local file system, like S3. If omitted, the data instructions will be derived
+                from the catalog.
 
         Raises:
             DHError: If unable to build the object.

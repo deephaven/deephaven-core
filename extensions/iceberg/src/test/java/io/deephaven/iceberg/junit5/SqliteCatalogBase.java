@@ -70,7 +70,6 @@ import static io.deephaven.engine.util.TableTools.col;
 import static io.deephaven.engine.util.TableTools.doubleCol;
 import static io.deephaven.engine.util.TableTools.intCol;
 import static io.deephaven.engine.util.TableTools.longCol;
-import static io.deephaven.engine.util.TableTools.merge;
 import static io.deephaven.iceberg.base.IcebergUtils.dataFileUri;
 import static io.deephaven.iceberg.base.IcebergUtils.locationUri;
 import static org.apache.parquet.schema.LogicalTypeAnnotation.intType;
@@ -1347,5 +1346,44 @@ public abstract class SqliteCatalogBase {
         verifySortOrder(tableAdapter, tableIdentifier, List.of(List.of()));
         final Table fromIceberg = tableAdapter.table();
         assertTableEquals(source, fromIceberg);
+    }
+
+    @Test
+    void appendTableWithAndWithoutDataInstructionsTest() {
+        final Table source = TableTools.newTable(
+                intCol("intCol", 15, 0, 32, 33, 19),
+                doubleCol("doubleCol", 10.5, 2.5, 3.5, 40.5, 0.5),
+                longCol("longCol", 20L, 50L, 0L, 10L, 5L));
+        final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
+        final IcebergTableAdapter tableAdapter = catalogAdapter.createTable(tableIdentifier, source.getDefinition());
+        {
+            // Following will add data instructions to the table writer
+            final IcebergTableWriter tableWriter = tableAdapter.tableWriter(writerOptionsBuilder()
+                    .tableDefinition(source.getDefinition())
+                    .build());
+            tableWriter.append(IcebergWriteInstructions.builder()
+                    .addTables(source)
+                    .build());
+        }
+
+        Table fromIceberg = tableAdapter.table();
+        Table expected = source;
+        assertTableEquals(expected, fromIceberg);
+        verifySnapshots(tableIdentifier, List.of("append"));
+
+        {
+            // Skip adding the data instructions to the table writer, should derive them from the catalog
+            final IcebergTableWriter tableWriter = tableAdapter.tableWriter(TableParquetWriterOptions.builder()
+                    .tableDefinition(source.getDefinition())
+                    .build());
+            tableWriter.append(IcebergWriteInstructions.builder()
+                    .addTables(source)
+                    .build());
+        }
+
+        fromIceberg = tableAdapter.table();
+        expected = TableTools.merge(source, source);
+        assertTableEquals(expected, fromIceberg);
+        verifySnapshots(tableIdentifier, List.of("append", "append"));
     }
 }
