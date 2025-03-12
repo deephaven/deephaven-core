@@ -21,10 +21,7 @@ import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.regioned.RegionedTableComponentFactoryImpl;
 import io.deephaven.engine.table.iterators.ChunkedObjectColumnIterator;
-import io.deephaven.engine.updategraph.NotificationQueue;
-import io.deephaven.engine.updategraph.UpdateCommitter;
-import io.deephaven.engine.updategraph.UpdateGraph;
-import io.deephaven.engine.updategraph.UpdateSourceCombiner;
+import io.deephaven.engine.updategraph.*;
 import io.deephaven.util.annotations.ReferentialIntegrity;
 import io.deephaven.util.mutable.MutableLong;
 import org.apache.commons.lang3.mutable.MutableObject;
@@ -56,13 +53,15 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
      * but only the initially-available set of locations.
      *
      * @param constituentDefinition The {@link TableDefinition} expected of constituent {@link Table tables}
-     * @param applyTablePermissions Function to apply in order to correctly restrict the visible result rows
+     * @param applyTablePermissions Function to apply in order to correctly restrict the visible result rows in
+     *        constituent tables
      * @param tableLocationProvider Source for table locations
      * @param refreshLocations Whether changes to the set of available locations after instantiation should be reflected
      *        in the result SourcePartitionedTable; that is, whether constituents should be added or removed
      * @param refreshLocationSizes Whether empty locations should be re-examined on subsequent {@link UpdateGraph}
-     *        cycles for possible inclusion if their size has changed.
-     * @param locationKeyMatcher Function to filter desired location keys
+     *        cycles for possible inclusion or exclusion if their size has changed
+     * @param locationKeyMatcher Function to filter desired location keys; only locations for which
+     *        {@link Predicate#test test} returns {@code true} will be included
      */
     @Deprecated(forRemoval = true)
     public SourcePartitionedTable(
@@ -86,20 +85,21 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
      * but only the initially-available set of locations.
      *
      * @param constituentDefinition The {@link TableDefinition} expected of constituent {@link Table tables}
-     * @param applyTablePermissions Function to apply in order to correctly restrict the visible result rows
+     * @param applyTablePermissions Function to apply in order to correctly restrict the visible result rows in
+     *        constituent tables
      * @param tableLocationProvider Source for table locations
-     * @param locationKeyMatcher Function to accept desired location keys
+     * @param locationKeyMatcher Function to filter desired location keys; only locations for which
+     *        {@link Predicate#test test} returns {@code true} will be included
      * @param refreshLocations Whether changes to the set of available locations after instantiation should be reflected
      *        in the result SourcePartitionedTable; that is, whether constituents should be added or removed
      * @param excludeEmptyLocations Whether to exclude empty locations (that is, locations with null or zero
      *        {@link TableLocation#getSize() size}) instead of including them in the result SourcePartitionedTable as
      *        constituents. It is recommended to set this to {@code false} if you will do subsequent filtering on the
-     *        result, or if you are confident that all locations are valid. Note that once a constituent is added, it
-     *        will not be removed if its size becomes zero, only if {@code refreshLocations == true} and it is removed
-     *        by the {@link TableLocationProvider}.
+     *        result, or if you are confident that {@code tableLocationProvider} will only provide valid, non-empty
+     *        locations.
      * @param refreshLocationSizes Whether empty locations should be re-examined on subsequent {@link UpdateGraph}
-     *        cycles for possible inclusion if their size has changed. This is only relevant if
-     *        {@code excludeEmptyLocations == true}.
+     *        cycles for possible inclusion or exclusion if their size has changed. This is only relevant if
+     *        {@code excludeEmptyLocations == true}, else it is ignored.
      */
     public SourcePartitionedTable(
             @NotNull final TableDefinition constituentDefinition,
@@ -121,13 +121,14 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
                 true,
                 CONSTITUENT_COLUMN_NAME,
                 constituentDefinition,
-                refreshLocations,
+                (refreshLocations && tableLocationProvider.supportsSubscriptions())
+                        || (excludeEmptyLocations && refreshLocationSizes),
                 false);
     }
 
     private static class UnderlyingTableMaintainer
             extends ReferenceCountedLivenessNode
-            implements NotificationQueue.Dependency {
+            implements UpdateSourceRegistrar, Runnable {
 
         private final TableDefinition constituentDefinition;
         private final UnaryOperator<Table> applyTablePermissions;
@@ -135,14 +136,13 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
         private final Predicate<ImmutableTableLocationKey> locationKeyMatcher;
         private final boolean refreshSizes;
 
-        private final TrackingWritableRowSet resultRows;
+        private final TrackingWritableRowSet rawResultRows;
         private final String[] partitioningColumnNames;
         private final WritableColumnSource<?>[] resultPartitionValues;
         private final WritableColumnSource<LocationState> resultLocationStates;
         private final QueryTable result;
 
-        private final UpdateSourceCombiner refreshCombiner;
-        private final TableLocationSubscriptionBuffer subscriptionBuffer;
+        private final TableLocationSubscriptionBuffer sourceTableLocations;
         @ReferentialIntegrity
         private final Runnable processNewLocationsUpdateRoot;
         @ReferentialIntegrity
@@ -167,7 +167,7 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
             this.locationKeyMatcher = locationKeyMatcher;
             this.refreshSizes = excludeEmptyLocations && refreshLocationSizes;
 
-            resultRows = RowSetFactory.empty().toTracking();
+            rawResultRows = RowSetFactory.empty().toTracking();
             final List<ColumnDefinition<?>> partitioningColumns = constituentDefinition.getPartitioningColumns();
             partitioningColumnNames = partitioningColumns.stream()
                     .map(ColumnDefinition::getName)
@@ -193,7 +193,7 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
                     LocationState::table));
             rawResultSources.put(STATE_COLUMN_NAME, resultLocationStates);
 
-            final QueryTable rawResult = new QueryTable(resultRows, rawResultSources);
+            final QueryTable rawResult = new QueryTable(rawResultRows, rawResultSources);
 
             final boolean needToRefreshLocations = refreshLocations && tableLocationProvider.supportsSubscriptions();
             if (needToRefreshLocations || refreshSizes) {
@@ -209,8 +209,8 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
                 Arrays.stream(resultPartitionValues).forEach(ColumnSource::startTrackingPrevValues);
                 resultLocationStates.startTrackingPrevValues();
 
-                subscriptionBuffer = new TableLocationSubscriptionBuffer(tableLocationProvider);
-                manage(subscriptionBuffer);
+                sourceTableLocations = new TableLocationSubscriptionBuffer(tableLocationProvider);
+                manage(sourceTableLocations);
 
                 processNewLocationsUpdateRoot = new InstrumentedTableUpdateSource(
                         refreshCombiner,
@@ -234,7 +234,7 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
                         });
                 processBufferedLocationChanges(false);
             } else {
-                subscriptionBuffer = null;
+                sourceTableLocations = null;
                 processNewLocationsUpdateRoot = null;
                 removedLocationsCommitter = null;
                 tableLocationProvider.refresh();
@@ -247,7 +247,7 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
                             locationKeyMatcher);
                     try (final RowSet added = sortAndAddLocations(locationStates.stream())) {
                         if (added != null) {
-                            resultRows.insert(added);
+                            rawResultRows.insert(added);
                         }
                     }
                 } finally {
@@ -280,9 +280,11 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
 
                         @Override
                         protected void instrumentedRefresh() {
-                            // Note: We could exclude constituents that become empty if we change the request method we
-                            // invoke.
-                            recomputeListener.requestRecomputeUnmatched();
+                            if (tableLocationProvider.getLocationUpdateMode().removeAllowed()) {
+                                recomputeListener.requestRecompute();
+                            } else {
+                                recomputeListener.requestRecomputeUnmatched();
+                            }
                         }
                     };
                     refreshCombiner.addSource(nonEmptyFilterRequestRecomputeUpdateRoot);
@@ -293,6 +295,10 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
                 filteredResult = rawResult;
                 nonEmptyFilterRequestRecomputeUpdateRoot = null;
             }
+            // TODO: I think we want to make the constituents use the regular update graph. Then, we can probably use
+            //       filteredResult as the "resultUpdatedDependency" for purposes of a ConstituentDependency on
+            //       LocationStates, which can be Dependencies that bleed through to the Table iff its been made.
+            // TODO: How to force parallel construction for constituents?
             result = (QueryTable) filteredResult.view(resultColumns);
         }
 
@@ -304,7 +310,7 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
         }
 
         private RowSet sortAndAddLocations(@NotNull final Stream<LocationState> locationStates) {
-            final long initialLastRowKey = resultRows.lastRowKey();
+            final long initialLastRowKey = rawResultRows.lastRowKey();
             final MutableLong lastInsertedRowKey = new MutableLong(initialLastRowKey);
             locationStates.sorted(Comparator.comparing(LocationState::key)).forEach(ls -> {
                 final long constituentRowKey = lastInsertedRowKey.incrementAndGet();
@@ -339,7 +345,7 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
             final RowSet added;
 
             try (final TableLocationSubscriptionBuffer.LocationUpdate locationUpdate =
-                    subscriptionBuffer.processPending()) {
+                    sourceTableLocations.processPending()) {
                 if (locationUpdate == null) {
                     return;
                 }
@@ -351,11 +357,11 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
                 if (added == null) {
                     return;
                 }
-                resultRows.insert(added);
+                rawResultRows.insert(added);
             } else if (added == null) {
-                resultRows.remove(removed);
+                rawResultRows.remove(removed);
             } else {
-                resultRows.update(added, removed);
+                rawResultRows.update(added, removed);
             }
             if (notifyListeners) {
                 result.notifyListeners(new TableUpdateImpl(
@@ -403,8 +409,8 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
             // becomes a performance issue, we can consider adding a map.
             // @formatter:off
             try (final CloseableIterator<LocationState> locationStatesIterator =
-                         ChunkedObjectColumnIterator.make(resultLocationStates, resultRows);
-                 final RowSet.Iterator rowsIterator = resultRows.iterator()) {
+                         ChunkedObjectColumnIterator.make(resultLocationStates, rawResultRows);
+                 final RowSet.Iterator rowsIterator = rawResultRows.iterator()) {
                 // @formatter:on
                 while (locationStatesIterator.hasNext()) {
                     final LocationState locationState = locationStatesIterator.next();
@@ -442,6 +448,26 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
                 throw new UnsupportedOperationException("This method should not be called when result is static");
             }
             return refreshCombiner.getUpdateGraph();
+        }
+
+        @Override
+        public void addSource(@NotNull final Runnable updateSource) {
+
+        }
+
+        @Override
+        public void removeSource(@NotNull final Runnable updateSource) {
+
+        }
+
+        @Override
+        public void requestRefresh() {
+
+        }
+
+        @Override
+        public void run() {
+
         }
 
         private final class LocationState implements LivenessNode, TableLocationProvider {
@@ -507,7 +533,12 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
                     synchronized (this) {
                         if ((localTable = table) == null) {
                             table = localTable = makeConstituentTable(locationKey);
-                            releaseSubscription();
+                            if (!tableLocationProvider.getLocationUpdateMode().removeAllowed()) {
+                                releaseSubscription();
+                            }
+                            if (table.isRefreshing()) {
+                                table.retainReference();
+                            }
                         }
                     }
                 }
@@ -520,7 +551,7 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
                         "SingleLocationSourceTable-" + locationKey,
                         RegionedTableComponentFactoryImpl.INSTANCE,
                         this,
-                        refreshSizes ? refreshCombiner : null);
+                        refreshSizes ? UnderlyingTableMaintainer.this : null);
 
                 // Be careful to propagate the systemic attribute properly to child tables
                 constituent.setAttribute(Table.SYSTEMIC_TABLE_ATTRIBUTE, result.isSystemicObject());
@@ -543,6 +574,10 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
              * Get rid of the underlying subscription in this state, if any, and release the key supplier.
              */
             private void release() {
+                final Table localTable = table;
+                if (localTable != null && localTable.isRefreshing()) {
+                    localTable.dropReference();
+                }
                 releaseSubscription();
                 keySupplier.dropReference();
             }

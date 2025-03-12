@@ -357,6 +357,18 @@ public interface PartitionedTable extends LivenessNode, LogOutputAppendable {
             @NotNull Dependency... dependencies);
 
     /**
+     * Ensure that all constituents have been {@link Table#coalesce() coalesced}.
+     * 
+     * @implNote Implementations should override this if there's a more efficient way to coalesce all constituents.
+     *
+     * @return A new PartitionedTable with all constituents coalesced, or {@code this} if all constituents were already
+     *         coalesced
+     */
+    default PartitionedTable coalesce() {
+        return transform(Table::coalesce);
+    }
+
+    /**
      * <p>
      * Get a single {@link Table constituent} by its corresponding key column values.
      * <p>
