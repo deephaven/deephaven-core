@@ -317,9 +317,9 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
         final UpdateViewRequest request = new UpdateViewRequest();
         request.setColumnSpec(columnSpec);
         final int nodeType;
-        if (column.getType().equals(ROLLUP_NODE_TYPE_AGGREGATED)) {
+        if (column.getOptions().rollupNodeType.equals(ROLLUP_NODE_TYPE_AGGREGATED)) {
             nodeType = RollupNodeType.AGGREGATED.ordinal();
-        } else if (column.getType().equals(ROLLUP_NODE_TYPE_CONSTITUENT)) {
+        } else if (column.getOptions().rollupNodeType.equals(ROLLUP_NODE_TYPE_CONSTITUENT)) {
             nodeType = RollupNodeType.CONSTITUENT.ordinal();
         } else {
             nodeType = RollupNodeType.UNSPECIFIED.ordinal();

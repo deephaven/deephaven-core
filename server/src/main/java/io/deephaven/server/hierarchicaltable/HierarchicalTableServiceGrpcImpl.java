@@ -229,7 +229,10 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
                         authWiring.checkPermissionApply(session.getAuthContext(), request,
                                 List.of(inputHierarchicalTable.getSource()));
 
-                        if (request.getFiltersCount() == 0 && request.getSortsCount() == 0) {
+                        if (request.getFiltersCount() == 0
+                                && request.getSortsCount() == 0
+                                && request.getUpdateViewsCount() == 0
+                                && request.getFormatViewsCount() == 0) {
                             throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, "No operations specified");
                         }
                         final Collection<Condition> finishedConditions = request.getFiltersCount() == 0
