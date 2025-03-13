@@ -149,6 +149,43 @@ abstract class S3SeekableChannelSimpleTestBase extends S3SeekableChannelTestSetu
     }
 
     @Test
+    void readWriteTestExpectReadTimeout() throws IOException {
+        final URI uri = uri("writeReadTest.txt");
+        final String content = "Hello, world!";
+        final byte[] contentBytes = content.getBytes(StandardCharsets.UTF_8);
+        try (
+                final SeekableChannelsProvider providerImpl = providerImpl();
+                final SeekableChannelsProvider provider = CachedChannelProvider.create(providerImpl, 32);
+                final CompletableOutputStream outputStream = provider.getOutputStream(uri, 0)) {
+            final int numBytes = 36 * 1024 * 1024; // 36 Mib -> Three 10-MiB parts + One 6-MiB part
+            outputStream.write(contentBytes);
+            outputStream.flush();
+
+            // Push data to S3, but don't close the stream
+            outputStream.complete();
+            final S3Instructions.Builder s3InstructionsBuilder = S3Instructions.builder()
+                    .readTimeout(Duration.ofMillis(1));
+            try (
+                    final SeekableChannelsProvider providerImplShortTimeout = providerImpl(s3InstructionsBuilder);
+                    final SeekableChannelsProvider providerShortTimeout = CachedChannelProvider.create(providerImplShortTimeout, 32);
+                    final SeekableChannelContext context = providerShortTimeout.makeContext();
+                    final SeekableByteChannel readChannel = providerShortTimeout.getReadChannel(context, uri)) {
+
+                final ByteBuffer buffer = ByteBuffer.allocate(contentBytes.length);
+
+                // We expect a timeout...
+                try {
+                    fillBuffer(readChannel, buffer);
+                    fail("Expected write timeout exception");
+                } catch (Exception e) {
+                    final Throwable cause = e.getCause();
+                    assertThat(cause.getClass().equals(ExecutionException.class)).isEqualTo(true);
+                }
+            }
+        }
+    }
+
+    @Test
     void readWriteTestExpectWriteTimeout() throws IOException {
         final URI uri = uri("writeReadTest.txt");
         final String content = "Hello, world!";

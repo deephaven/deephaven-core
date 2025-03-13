@@ -9,14 +9,7 @@ import software.amazon.awssdk.core.async.AsyncRequestBody;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.S3Uri;
 import software.amazon.awssdk.services.s3.internal.multipart.SdkPojoConversionUtils;
-import software.amazon.awssdk.services.s3.model.AbortMultipartUploadRequest;
-import software.amazon.awssdk.services.s3.model.CompleteMultipartUploadRequest;
-import software.amazon.awssdk.services.s3.model.CompletedMultipartUpload;
-import software.amazon.awssdk.services.s3.model.CompletedPart;
-import software.amazon.awssdk.services.s3.model.CreateMultipartUploadRequest;
-import software.amazon.awssdk.services.s3.model.CreateMultipartUploadResponse;
-import software.amazon.awssdk.services.s3.model.UploadPartRequest;
-import software.amazon.awssdk.services.s3.model.UploadPartResponse;
+import software.amazon.awssdk.services.s3.model.*;
 
 import java.io.IOException;
 import java.net.URI;
@@ -30,6 +23,7 @@ import java.util.concurrent.ExecutionException;
 
 import static io.deephaven.extensions.s3.S3ChannelContext.handleS3Exception;
 import static io.deephaven.extensions.s3.S3Instructions.MIN_WRITE_PART_SIZE;
+import static io.deephaven.extensions.s3.S3Instructions.addTimeout;
 
 class S3CompletableOutputStream extends CompletableOutputStream {
 
@@ -246,6 +240,7 @@ class S3CompletableOutputStream extends CompletableOutputStream {
         try {
             response = future.get();
         } catch (final InterruptedException | ExecutionException e) {
+            future.cancel(true);
             throw handleS3Exception(e, String.format("initiating multipart upload for uri %s", uri), s3Instructions);
         }
         return response.uploadId();
@@ -269,7 +264,7 @@ class S3CompletableOutputStream extends CompletableOutputStream {
                 .uploadId(uploadId)
                 .partNumber(nextPartNumber);
         final Optional<Duration> writeTimeout = s3Instructions.writeTimeout();
-        writeTimeout.ifPresent(duration -> builder.overrideConfiguration(b -> b.apiCallTimeout(duration)));
+        writeTimeout.ifPresent(duration -> builder.overrideConfiguration(b -> addTimeout(b, duration)));
         final UploadPartRequest uploadPartRequest = builder.build();
         request.buffer.flip();
         request.future = s3AsyncClient.uploadPart(uploadPartRequest,
@@ -283,6 +278,7 @@ class S3CompletableOutputStream extends CompletableOutputStream {
         try {
             uploadPartResponse = request.future.get();
         } catch (final InterruptedException | ExecutionException e) {
+            request.future.cancel(true);
             throw handleS3Exception(e, String.format("waiting for part %d for uri %s to complete uploading",
                     request.partNumber, uri), s3Instructions);
         }
@@ -335,9 +331,11 @@ class S3CompletableOutputStream extends CompletableOutputStream {
                         .parts(completedParts)
                         .build())
                 .build();
+        final CompletableFuture<CompleteMultipartUploadResponse> uploadFuture = s3AsyncClient.completeMultipartUpload(completeRequest);
         try {
-            s3AsyncClient.completeMultipartUpload(completeRequest).get();
+            uploadFuture.get();
         } catch (final InterruptedException | ExecutionException e) {
+            uploadFuture.cancel(true);
             throw handleS3Exception(e, String.format("completing multipart upload for uri %s", uri), s3Instructions);
         }
         uploadId = null;
@@ -356,9 +354,11 @@ class S3CompletableOutputStream extends CompletableOutputStream {
                 .key(uri.key().orElseThrow())
                 .uploadId(uploadId)
                 .build();
+        final CompletableFuture<AbortMultipartUploadResponse> abortFuture = s3AsyncClient.abortMultipartUpload(abortRequest);
         try {
-            s3AsyncClient.abortMultipartUpload(abortRequest).get();
+            abortFuture.get();
         } catch (final InterruptedException | ExecutionException e) {
+            abortFuture.cancel(true);
             throw handleS3Exception(e, String.format("aborting multipart upload for uri %s", uri), s3Instructions);
         }
         uploadId = null;

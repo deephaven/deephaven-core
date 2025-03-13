@@ -12,6 +12,7 @@ import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Lazy;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
+import software.amazon.awssdk.awscore.AwsRequestOverrideConfiguration;
 import software.amazon.awssdk.core.client.config.ClientOverrideConfiguration;
 import software.amazon.awssdk.profiles.ProfileFile;
 
@@ -109,10 +110,8 @@ public abstract class S3Instructions implements LogOutputAppendable {
     }
 
     /**
-     * The amount of time to wait when writing a fragment before giving up and timing out. This is accomplished through
-     * calling the
-     * {@link software.amazon.awssdk.core.RequestOverrideConfiguration.Builder#apiCallTimeout(java.time.Duration)}
-     * method to time out api calls.
+     * The amount of time to wait when writing a fragment before giving up and timing out. If no value has been set then
+     * no timeout value is set in write operations.
      */
     public abstract Optional<Duration> writeTimeout();
 
@@ -325,6 +324,17 @@ public abstract class S3Instructions implements LogOutputAppendable {
     final boolean crossRegionAccessEnabled() {
         // Note: this can be elevated to user-level control (with the same default) in the future if necessary
         return regionName().isEmpty();
+    }
+
+    /**
+     * Helper function to add timeout to the builder.
+     *
+     * @param builder the {@link AwsRequestOverrideConfiguration.Builder} to add the timeout to
+     * @param timeout the timeout to add
+     */
+    static void addTimeout(AwsRequestOverrideConfiguration.Builder builder, final Duration timeout) {
+        builder.apiCallAttemptTimeout(timeout.dividedBy(3))
+                .apiCallTimeout(timeout);
     }
 
     // If necessary, we _could_ plumb support for "S3-compatible" services which don't support virtual-host style

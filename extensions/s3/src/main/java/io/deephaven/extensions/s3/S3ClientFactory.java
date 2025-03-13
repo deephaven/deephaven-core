@@ -17,17 +17,13 @@ import software.amazon.awssdk.core.client.config.ClientAsyncConfiguration;
 import software.amazon.awssdk.core.client.config.ClientOverrideConfiguration;
 import software.amazon.awssdk.core.client.config.SdkAdvancedAsyncClientOption;
 import software.amazon.awssdk.core.exception.SdkClientException;
-import software.amazon.awssdk.core.retry.RetryMode;
 import software.amazon.awssdk.http.SdkHttpClient;
 import software.amazon.awssdk.http.async.SdkAsyncHttpClient;
 import software.amazon.awssdk.http.crt.AwsCrtAsyncHttpClient;
 import software.amazon.awssdk.http.crt.AwsCrtHttpClient;
 import software.amazon.awssdk.regions.Region;
-import software.amazon.awssdk.services.s3.S3AsyncClient;
-import software.amazon.awssdk.services.s3.S3AsyncClientBuilder;
-import software.amazon.awssdk.services.s3.S3BaseClientBuilder;
-import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.S3ClientBuilder;
+import software.amazon.awssdk.retries.StandardRetryStrategy;
+import software.amazon.awssdk.services.s3.*;
 import software.amazon.awssdk.utils.ThreadFactoryBuilder;
 
 import java.time.Duration;
@@ -150,9 +146,9 @@ final class S3ClientFactory {
                 // If we find that the STANDARD retry policy does not work well in all situations, we might
                 // try experimenting with ADAPTIVE retry policy, potentially with fast fail.
                 // .retryPolicy(RetryPolicy.builder(RetryMode.ADAPTIVE).fastFailRateLimiting(true).build())
-                .retryPolicy(RetryMode.STANDARD)
-                .apiCallAttemptTimeout(instructions.readTimeout().dividedBy(3))
-                .apiCallTimeout(instructions.readTimeout())
+                .retryStrategy(StandardRetryStrategy.builder()
+                        .maxAttempts(2)
+                        .build())
                 // Adding a metrics publisher may be useful for debugging, but it's very verbose.
                 // .addMetricPublisher(LoggingMetricPublisher.create(Level.INFO, Format.PRETTY))
                 .scheduledExecutorService(ensureScheduledExecutor());
