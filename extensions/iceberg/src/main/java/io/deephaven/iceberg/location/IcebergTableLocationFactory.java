@@ -7,7 +7,6 @@ import io.deephaven.engine.table.impl.locations.TableKey;
 import io.deephaven.engine.table.impl.locations.TableLocation;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationFactory;
 import io.deephaven.engine.table.impl.locations.util.TableDataRefreshService;
-import io.deephaven.iceberg.util.IcebergTableAdapter;
 import io.deephaven.parquet.table.ParquetInstructions;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -17,11 +16,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public final class IcebergTableLocationFactory implements TableLocationFactory<TableKey, IcebergTableLocationKey> {
 
-    final IcebergTableAdapter tableAdapter;
-
-    public IcebergTableLocationFactory(@NotNull final IcebergTableAdapter tableAdapter) {
-        this.tableAdapter = tableAdapter;
-    }
+    public IcebergTableLocationFactory() {}
 
     @Override
     @NotNull
@@ -30,7 +25,11 @@ public final class IcebergTableLocationFactory implements TableLocationFactory<T
             @NotNull final IcebergTableLocationKey locationKey,
             @Nullable final TableDataRefreshService refreshService) {
         if (locationKey instanceof IcebergTableParquetLocationKey) {
-            return new IcebergTableParquetLocation(tableAdapter, tableKey, (IcebergTableParquetLocationKey) locationKey,
+            final IcebergTableParquetLocationKey tableParquetLocationKey = (IcebergTableParquetLocationKey) locationKey;
+            return new IcebergTableParquetLocation(
+                    tableParquetLocationKey.tableAdapter(),
+                    tableKey,
+                    tableParquetLocationKey,
                     (ParquetInstructions) locationKey.readInstructions());
         }
         throw new UnsupportedOperationException("Unsupported location key type: " + locationKey.getClass());

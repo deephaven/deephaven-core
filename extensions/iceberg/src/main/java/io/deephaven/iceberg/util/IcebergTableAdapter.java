@@ -406,7 +406,7 @@ public class IcebergTableAdapter {
                     new IcebergStaticTableLocationProvider<>(
                             StandaloneTableKey.getInstance(),
                             keyFinder,
-                            new IcebergTableLocationFactory(this),
+                            new IcebergTableLocationFactory(),
                             tableIdentifier);
 
             return new IcebergTableImpl(
@@ -424,14 +424,14 @@ public class IcebergTableAdapter {
             locationProvider = new IcebergManualRefreshTableLocationProvider<>(
                     StandaloneTableKey.getInstance(),
                     keyFinder,
-                    new IcebergTableLocationFactory(this),
+                    new IcebergTableLocationFactory(),
                     this,
                     tableIdentifier);
         } else {
             locationProvider = new IcebergAutoRefreshTableLocationProvider<>(
                     StandaloneTableKey.getInstance(),
                     keyFinder,
-                    new IcebergTableLocationFactory(this),
+                    new IcebergTableLocationFactory(),
                     TableDataRefreshService.getSharedRefreshService(),
                     updatedInstructions.updateMode().autoRefreshMs(),
                     this,

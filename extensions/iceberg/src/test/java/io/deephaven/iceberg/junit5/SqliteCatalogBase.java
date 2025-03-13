@@ -1087,7 +1087,7 @@ public abstract class SqliteCatalogBase {
                         tableAdapter,
                         StandaloneTableKey.getInstance(),
                         new IcebergTableParquetLocationKey(
-                                null, null, tableIdentifier, manifestFile, dataFile,
+                                null, null, tableIdentifier, tableAdapter, manifestFile, dataFile,
                                 dataFileUri(icebergTable, dataFile), 0, Map.of(), readInstructions,
                                 seekableChannelsProvider),
                         readInstructions);

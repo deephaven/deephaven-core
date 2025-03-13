@@ -5,6 +5,7 @@ package io.deephaven.iceberg.location;
 
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.table.impl.locations.TableLocationKey;
+import io.deephaven.iceberg.util.IcebergTableAdapter;
 import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
 import org.apache.iceberg.DataFile;
@@ -42,6 +43,9 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
     private final TableIdentifier tableIdentifier;
 
     @NotNull
+    private final IcebergTableAdapter tableAdapter;
+
+    @NotNull
     private final DataFile dataFile;
 
     /**
@@ -75,6 +79,7 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
      * @param catalogName The name of the catalog using which the table is accessed
      * @param tableUuid The UUID of the table, or {@code null} if not available
      * @param tableIdentifier The table identifier used to access the table
+     * @param tableAdapter The Iceberg table adapter for the table
      * @param manifestFile The manifest file from which the data file was discovered
      * @param dataFile The data file that backs the keyed location
      * @param fileUri The {@link URI} for the file that backs the keyed location
@@ -89,6 +94,7 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
             @Nullable final String catalogName,
             @Nullable final UUID tableUuid,
             @NotNull final TableIdentifier tableIdentifier,
+            @NotNull final IcebergTableAdapter tableAdapter,
             @NotNull final ManifestFile manifestFile,
             @NotNull final DataFile dataFile,
             @NotNull final URI fileUri,
@@ -104,6 +110,8 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
         // We don't save tableIdentifier (and thus don't use it in comparisons/equality-testing/hashCode) unless
         // tableUUID was null
         this.tableIdentifier = tableUuid != null ? null : tableIdentifier;
+
+        this.tableAdapter = tableAdapter;
 
         this.dataFile = dataFile;
 
@@ -132,6 +140,11 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
     @NotNull
     DataFile dataFile() {
         return dataFile;
+    }
+
+    @NotNull
+    IcebergTableAdapter tableAdapter() {
+        return tableAdapter;
     }
 
     /**
