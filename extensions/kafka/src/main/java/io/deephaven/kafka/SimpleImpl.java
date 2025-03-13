@@ -233,13 +233,14 @@ class SimpleImpl {
 
         @Override
         Serializer<?> getSerializer(SchemaRegistryClient schemaRegistryClient, TableDefinition definition) {
-            final Class<?> dataType = definition.getColumn(columnName).getDataType();
-            final Serializer<?> serializer = serializer(Type.find(dataType)).orElse(null);
+            final ColumnDefinition<?> cd = definition.getColumn(columnName);
+            final Type<?> type = Type.find(cd.getDataType(), cd.getComponentType());
+            final Serializer<?> serializer = serializer(type).orElse(null);
             if (serializer != null) {
                 return serializer;
             }
             throw new UncheckedDeephavenException(
-                    String.format("Serializer not found for column %s, type %s", columnName, dataType.getName()));
+                    String.format("Serializer not found for column %s, type %s", columnName, type));
         }
 
         @Override

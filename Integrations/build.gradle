@@ -17,6 +17,7 @@ dependencies {
     implementation project(':log-factory')
     implementation project(":util-thread")
     implementation libs.commons.lang3
+    implementation libs.google.findbugs.jsr305
 
     testImplementation project(':engine-test-utils')
     testImplementation project(path: ':Base', configuration: 'tests')

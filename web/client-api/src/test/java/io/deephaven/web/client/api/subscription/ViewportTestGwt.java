@@ -9,15 +9,18 @@ import elemental2.promise.IThenable;
 import elemental2.promise.Promise;
 import io.deephaven.web.client.api.AbstractAsyncGwtTestCase;
 import io.deephaven.web.client.api.Column;
+import io.deephaven.web.client.api.CustomColumn;
 import io.deephaven.web.client.api.DateWrapper;
 import io.deephaven.web.client.api.Format;
 import io.deephaven.web.client.api.JsRangeSet;
 import io.deephaven.web.client.api.JsTable;
+import io.deephaven.web.client.api.Sort;
 import io.deephaven.web.client.api.TableData;
 import io.deephaven.web.client.api.event.Event;
 import io.deephaven.web.client.api.event.HasEventHandling;
 import io.deephaven.web.client.api.filter.FilterCondition;
 import io.deephaven.web.client.api.filter.FilterValue;
+import io.deephaven.web.shared.fu.JsConsumer;
 import io.deephaven.web.shared.fu.RemoverFn;
 import jsinterop.base.Any;
 import jsinterop.base.Js;
@@ -48,7 +51,8 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
                             ".format_columns(['I=I>2 ? GREEN : RED', 'I = Decimal(`0.00%`)', 'Timestamp = Date(`yyyy_MM_dd`)'])")
             .script("blinkOne",
                     "time_table(\"PT00:00:01\").update([\"I=i\", \"J=1\"]).last_by(by=\"J\").where(\"I%2 != 0\")")
-            .script("big", "empty_table(1_000_000).update_view(['I=i', 'Str=``+I']).where('I % 2 == 0')");
+            .script("big", "empty_table(1_000_000).update_view(['I=i', 'Str=``+I']).where('I % 2 == 0')")
+            .script("small", "big.head(100)");
 
     public void testViewportOnStaticTable() {
         connect(tables)
@@ -640,6 +644,219 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
         } catch (Exception ignore) {
             // expected
         }
+    }
+
+    public void testSnapshotWithFormatting() {
+        connect(tables)
+                .then(table("small"))
+                .then(t -> {
+                    delayTestFinish(7876);
+                    // Add a timestamp column, and format the number/timestamp, style the row and cells
+                    t.applyCustomColumns(JsArray.of(
+                            JsTable.CustomColumnArgUnionType
+                                    .of("Timestamp=epochNanosToInstant((i + 1740000000) * 1_000_000_000)"),
+                            JsTable.CustomColumnArgUnionType
+                                    .of(new CustomColumn("I", CustomColumn.TYPE_FORMAT_COLOR, "background(GREEN)", new CustomColumn.CustomColumOptions())),
+                            JsTable.CustomColumnArgUnionType
+                                    .of(new CustomColumn("Str", CustomColumn.TYPE_FORMAT_NUMBER, "`$###,##0.00`", new CustomColumn.CustomColumOptions())),
+                            JsTable.CustomColumnArgUnionType.of(new CustomColumn("Timestamp",
+                                    CustomColumn.TYPE_FORMAT_DATE, "`HH-mm-ss-SSSSSSSSS`", new CustomColumn.CustomColumOptions()))));
+                    // Wait for this to resolve, part of DH-18634 is that already running tables behave differently
+                    return assertEventFiresOnce(t, JsTable.EVENT_CUSTOMCOLUMNSCHANGED, 2025).then(table -> {
+                        Column iColumn = table.findColumn("I");
+                        Column strColumn = table.findColumn("Str");
+                        Column timestampColumn = table.findColumn("Timestamp");
+
+                        JsConsumer<TableData> check = data -> {
+                            assertEquals(10, data.getRows().length);
+                            TableData.Row row = data.getRows().getAt(0);
+
+                            Format iFormat = row.getFormat(iColumn);
+                            assertNotNull(iFormat);
+                            assertEquals("#008000", iFormat.getBackgroundColor());
+                            assertEquals(iFormat, iColumn.getFormat(row));
+                            assertEquals(iFormat, data.getFormat(0, iColumn));
+
+                            Format strFormat = row.getFormat(strColumn);
+                            assertNotNull(strFormat);
+                            assertEquals("$###,##0.00", strFormat.getFormatString());
+                            assertNull(strFormat.getBackgroundColor());
+                            assertEquals(strFormat, strColumn.getFormat(row));
+                            assertEquals(strFormat, data.getFormat(0, strColumn));
+
+                            Format timestampFormat = row.getFormat(timestampColumn);
+                            assertNotNull(timestampFormat);
+                            assertEquals("HH-mm-ss-SSSSSSSSS", timestampFormat.getFormatString());
+                            assertNull(timestampFormat.getBackgroundColor());
+                            assertEquals(timestampFormat, timestampColumn.getFormat(row));
+                            assertEquals(timestampFormat, data.getFormat(0, timestampColumn));
+                        };
+
+                        return Promise.resolve((Object) null).then(ignore -> {
+                            TableViewportSubscription subscription = table.setViewport(0, 9, null);
+
+                            Promise<JsTable> viewportCheck = assertUpdateReceived(table, check::apply, 2507);
+                            Promise<Void> snapshotCheck =
+                                    subscription.snapshot(JsRangeSet.ofRange(0, 9), Js.cast(table.getColumns()))
+                                            .then(data -> {
+                                                check.apply(data);
+                                                return null;
+                                            });
+                            return Promise.all(viewportCheck, snapshotCheck);
+                        }).then(ignore -> {
+                            table.applySort(new Sort[] {iColumn.sort().asc()});
+                            TableViewportSubscription subscription = table.setViewport(0, 9, null);
+
+                            Promise<JsTable> viewportCheck = assertUpdateReceived(table, check::apply, 2508);
+                            Promise<Void> snapshotCheck =
+                                    subscription.snapshot(JsRangeSet.ofRange(0, 9), Js.cast(table.getColumns()))
+                                            .then(data -> {
+                                                check.apply(data);
+                                                return null;
+                                            });
+                            return Promise.all(viewportCheck, snapshotCheck);
+                        }).then(ignore -> Promise.resolve(table));
+                    });
+                })
+                .then(t -> {
+                    delayTestFinish(7877);
+                    // Repeat, this time also with a row style
+                    t.applyCustomColumns(JsArray.of(
+                            JsTable.CustomColumnArgUnionType
+                                    .of("Timestamp=epochNanosToInstant((i + 1740000000) * 1_000_000_000)"),
+                            JsTable.CustomColumnArgUnionType
+                                    .of(new CustomColumn("I", CustomColumn.TYPE_FORMAT_COLOR, "background(GREEN)", new CustomColumn.CustomColumOptions())),
+                            JsTable.CustomColumnArgUnionType
+                                    .of(new CustomColumn("Str", CustomColumn.TYPE_FORMAT_NUMBER, "`$###,##0.00`", new CustomColumn.CustomColumOptions())),
+                            JsTable.CustomColumnArgUnionType.of(new CustomColumn("Timestamp",
+                                    CustomColumn.TYPE_FORMAT_DATE, "`HH-mm-ss-SSSSSSSSS`", new CustomColumn.CustomColumOptions())),
+                            JsTable.CustomColumnArgUnionType.of(Column.formatRowColor("background(RED)", new CustomColumn.CustomColumOptions()))));
+                    // Wait for this to resolve, part of DH-18634 is that already running tables behave differently
+                    return assertEventFiresOnce(t, JsTable.EVENT_CUSTOMCOLUMNSCHANGED, 2025).then(table -> {
+                        Column iColumn = table.findColumn("I");
+                        Column strColumn = table.findColumn("Str");
+                        Column timestampColumn = table.findColumn("Timestamp");
+
+                        JsConsumer<TableData> check = data -> {
+                            assertEquals(10, data.getRows().length);
+                            TableData.Row row = data.getRows().getAt(0);
+
+                            Format iFormat = row.getFormat(iColumn);
+                            assertNotNull(iFormat);
+                            assertEquals("#008000", iFormat.getBackgroundColor());
+                            assertEquals(iFormat, iColumn.getFormat(row));
+                            assertEquals(iFormat, data.getFormat(0, iColumn));
+
+                            Format strFormat = row.getFormat(strColumn);
+                            assertNotNull(strFormat);
+                            assertEquals("$###,##0.00", strFormat.getFormatString());
+                            assertEquals("#ff0000", strFormat.getBackgroundColor());
+                            assertEquals(strFormat, strColumn.getFormat(row));
+                            assertEquals(strFormat, data.getFormat(0, strColumn));
+
+                            Format timestampFormat = row.getFormat(timestampColumn);
+                            assertNotNull(timestampFormat);
+                            assertEquals("HH-mm-ss-SSSSSSSSS", timestampFormat.getFormatString());
+                            assertEquals("#ff0000", timestampFormat.getBackgroundColor());
+                            assertEquals(timestampFormat, timestampColumn.getFormat(row));
+                            assertEquals(timestampFormat, data.getFormat(0, timestampColumn));
+                        };
+
+                        return Promise.resolve((Object) null).then(ignore -> {
+                            TableViewportSubscription subscription = table.setViewport(0, 9, null);
+
+                            Promise<JsTable> viewportCheck = assertUpdateReceived(table, check::apply, 2507);
+                            Promise<Void> snapshotCheck =
+                                    subscription.snapshot(JsRangeSet.ofRange(0, 9), Js.cast(table.getColumns()))
+                                            .then(data -> {
+                                                check.apply(data);
+                                                return null;
+                                            });
+                            return Promise.all(viewportCheck, snapshotCheck);
+                        }).then(ignore -> {
+                            table.applySort(new Sort[] {iColumn.sort().asc()});
+                            TableViewportSubscription subscription = table.setViewport(0, 9, null);
+
+                            Promise<JsTable> viewportCheck = assertUpdateReceived(table, check::apply, 2508);
+                            Promise<Void> snapshotCheck =
+                                    subscription.snapshot(JsRangeSet.ofRange(0, 9), Js.cast(table.getColumns()))
+                                            .then(data -> {
+                                                check.apply(data);
+                                                return null;
+                                            });
+                            return Promise.all(viewportCheck, snapshotCheck);
+                        }).then(ignore -> Promise.resolve(table));
+                    });
+                })
+                .then(t -> {
+                    delayTestFinish(7878);
+                    // Repeat, once more with a row style but no column style
+                    t.applyCustomColumns(JsArray.of(
+                            JsTable.CustomColumnArgUnionType
+                                    .of("Timestamp=epochNanosToInstant((i + 1740000000) * 1_000_000_000)"),
+                            JsTable.CustomColumnArgUnionType
+                                    .of(new CustomColumn("Str", CustomColumn.TYPE_FORMAT_NUMBER, "`$###,##0.00`", new CustomColumn.CustomColumOptions())),
+                            JsTable.CustomColumnArgUnionType.of(new CustomColumn("Timestamp",
+                                    CustomColumn.TYPE_FORMAT_DATE, "`HH-mm-ss-SSSSSSSSS`", new CustomColumn.CustomColumOptions())),
+                            JsTable.CustomColumnArgUnionType.of(Column.formatRowColor("background(RED)", new CustomColumn.CustomColumOptions()))));
+                    // Wait for this to resolve, part of DH-18634 is that already running tables behave differently
+                    return assertEventFiresOnce(t, JsTable.EVENT_CUSTOMCOLUMNSCHANGED, 2025).then(table -> {
+                        Column iColumn = table.findColumn("I");
+                        Column strColumn = table.findColumn("Str");
+                        Column timestampColumn = table.findColumn("Timestamp");
+
+                        JsConsumer<TableData> check = data -> {
+                            assertEquals(10, data.getRows().length);
+                            TableData.Row row = data.getRows().getAt(0);
+
+                            Format iFormat = row.getFormat(iColumn);
+                            assertNotNull(iFormat);
+                            assertEquals("#ff0000", iFormat.getBackgroundColor());
+                            assertEquals(iFormat, iColumn.getFormat(row));
+                            assertEquals(iFormat, data.getFormat(0, iColumn));
+
+                            Format strFormat = row.getFormat(strColumn);
+                            assertNotNull(strFormat);
+                            assertEquals("$###,##0.00", strFormat.getFormatString());
+                            assertEquals("#ff0000", strFormat.getBackgroundColor());
+                            assertEquals(strFormat, strColumn.getFormat(row));
+                            assertEquals(strFormat, data.getFormat(0, strColumn));
+
+                            Format timestampFormat = row.getFormat(timestampColumn);
+                            assertNotNull(timestampFormat);
+                            assertEquals("HH-mm-ss-SSSSSSSSS", timestampFormat.getFormatString());
+                            assertEquals("#ff0000", timestampFormat.getBackgroundColor());
+                            assertEquals(timestampFormat, timestampColumn.getFormat(row));
+                            assertEquals(timestampFormat, data.getFormat(0, timestampColumn));
+                        };
+
+                        return Promise.resolve((Object) null).then(ignore -> {
+                            TableViewportSubscription subscription = table.setViewport(0, 9, null);
+
+                            Promise<JsTable> viewportCheck = assertUpdateReceived(table, check::apply, 2507);
+                            Promise<Void> snapshotCheck =
+                                    subscription.snapshot(JsRangeSet.ofRange(0, 9), Js.cast(table.getColumns()))
+                                            .then(data -> {
+                                                check.apply(data);
+                                                return null;
+                                            });
+                            return Promise.all(viewportCheck, snapshotCheck);
+                        }).then(ignore -> {
+                            table.applySort(new Sort[] {iColumn.sort().asc()});
+                            TableViewportSubscription subscription = table.setViewport(0, 9, null);
+
+                            Promise<JsTable> viewportCheck = assertUpdateReceived(table, check::apply, 2508);
+                            Promise<Void> snapshotCheck =
+                                    subscription.snapshot(JsRangeSet.ofRange(0, 9), Js.cast(table.getColumns()))
+                                            .then(data -> {
+                                                check.apply(data);
+                                                return null;
+                                            });
+                            return Promise.all(viewportCheck, snapshotCheck);
+                        }).then(ignore -> Promise.resolve(table));
+                    });
+                })
+                .then(this::finish).catch_(this::report);
     }
 
     @Override

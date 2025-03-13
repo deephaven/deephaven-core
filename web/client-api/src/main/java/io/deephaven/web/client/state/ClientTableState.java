@@ -9,6 +9,7 @@ import elemental2.core.JsSet;
 import elemental2.core.Uint8Array;
 import elemental2.promise.Promise;
 import io.deephaven.chunk.ChunkType;
+import io.deephaven.extensions.barrage.BarrageTypeInfo;
 import io.deephaven.javascript.proto.dhinternal.browserheaders.BrowserHeaders;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.ExportedTableCreationResponse;
 import io.deephaven.web.client.api.*;
@@ -235,29 +236,8 @@ public final class ClientTableState extends TableConfig {
     }
 
     /**
-     * Returns the ChunkType to use for each column in the table. This is roughly
-     * {@link io.deephaven.engine.table.impl.sources.ReinterpretUtils#maybeConvertToWritablePrimitiveChunkType(Class)}
-     * but without the trip through Class. Note also that effectively all types are stored as Objects except non-long
-     * primitives, so that they can be appropriately wrapped before storing (though the storage process will handle DH
-     * nulls).
-     */
-    public ChunkType[] chunkTypes() {
-        return Arrays.stream(columnTypes()).map(dataType -> {
-            if (dataType == Boolean.class || dataType == boolean.class) {
-                return ChunkType.Object;
-            }
-            if (dataType == Long.class || dataType == long.class) {
-                // JS client holds longs as LongWrappers
-                return ChunkType.Object;
-            }
-            return ChunkType.fromElementType(dataType);
-        }).toArray(ChunkType[]::new);
-    }
-
-    /**
      * Returns the Java Class to represent each column in the table. This lets the client replace certain JVM-only
-     * classes with alternative implementations, but still use the simple
-     * {@link io.deephaven.extensions.barrage.chunk.ChunkReader.TypeInfo} wrapper.
+     * classes with alternative implementations, but still use the simple {@link BarrageTypeInfo} wrapper.
      */
     public Class<?>[] columnTypes() {
         return Arrays.stream(tableDef.getColumns())

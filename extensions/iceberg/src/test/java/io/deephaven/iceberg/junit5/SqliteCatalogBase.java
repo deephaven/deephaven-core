@@ -35,7 +35,6 @@ import org.apache.iceberg.catalog.Namespace;
 import org.apache.iceberg.catalog.TableIdentifier;
 import org.apache.iceberg.types.Types;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
-import org.apache.parquet.schema.LogicalTypeAnnotation;
 import org.apache.parquet.schema.MessageType;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.AfterEach;
@@ -56,6 +55,8 @@ import java.util.stream.Collectors;
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
 import static io.deephaven.engine.util.TableTools.col;
 import static io.deephaven.engine.util.TableTools.doubleCol;
+import static io.deephaven.engine.util.TableTools.intCol;
+import static io.deephaven.engine.util.TableTools.longCol;
 import static org.apache.parquet.schema.LogicalTypeAnnotation.intType;
 import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.DOUBLE;
 import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.INT32;
@@ -88,7 +89,7 @@ public abstract class SqliteCatalogBase {
         engineCleanup.tearDown();
     }
 
-    private TableParquetWriterOptions.Builder writerOptionsBuilder() {
+    protected TableParquetWriterOptions.Builder writerOptionsBuilder() {
         final TableParquetWriterOptions.Builder builder = TableParquetWriterOptions.builder();
         final Object dataInstructions;
         if ((dataInstructions = dataInstructions()) != null) {
@@ -633,7 +634,7 @@ public abstract class SqliteCatalogBase {
         verifyDataFiles(tableIdentifier, List.of(source, anotherSource, moreData));
 
         {
-            // Verify thaty we read the data files in the correct order
+            // Verify that we read the data files in the correct order
             final Table fromIceberg = tableAdapter.table();
             assertTableEquals(TableTools.merge(moreData, source, anotherSource), fromIceberg);
         }
@@ -1036,5 +1037,44 @@ public abstract class SqliteCatalogBase {
 
         final Table expected2 = TableTools.merge(expected, part3.update("PC = `cat`"));
         assertTableEquals(expected2, fromIcebergRefreshing.select());
+    }
+
+    @Test
+    void appendTableWithAndWithoutDataInstructionsTest() {
+        final Table source = TableTools.newTable(
+                intCol("intCol", 15, 0, 32, 33, 19),
+                doubleCol("doubleCol", 10.5, 2.5, 3.5, 40.5, 0.5),
+                longCol("longCol", 20L, 50L, 0L, 10L, 5L));
+        final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
+        final IcebergTableAdapter tableAdapter = catalogAdapter.createTable(tableIdentifier, source.getDefinition());
+        {
+            // Following will add data instructions to the table writer
+            final IcebergTableWriter tableWriter = tableAdapter.tableWriter(writerOptionsBuilder()
+                    .tableDefinition(source.getDefinition())
+                    .build());
+            tableWriter.append(IcebergWriteInstructions.builder()
+                    .addTables(source)
+                    .build());
+        }
+
+        Table fromIceberg = tableAdapter.table();
+        Table expected = source;
+        assertTableEquals(expected, fromIceberg);
+        verifySnapshots(tableIdentifier, List.of("append"));
+
+        {
+            // Skip adding the data instructions to the table writer, should derive them from the catalog
+            final IcebergTableWriter tableWriter = tableAdapter.tableWriter(TableParquetWriterOptions.builder()
+                    .tableDefinition(source.getDefinition())
+                    .build());
+            tableWriter.append(IcebergWriteInstructions.builder()
+                    .addTables(source)
+                    .build());
+        }
+
+        fromIceberg = tableAdapter.table();
+        expected = TableTools.merge(source, source);
+        assertTableEquals(expected, fromIceberg);
+        verifySnapshots(tableIdentifier, List.of("append", "append"));
     }
 }
