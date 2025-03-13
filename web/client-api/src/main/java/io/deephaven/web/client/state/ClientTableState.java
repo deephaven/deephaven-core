@@ -236,26 +236,6 @@ public final class ClientTableState extends TableConfig {
     }
 
     /**
-     * Returns the ChunkType to use for each column in the table. This is roughly
-     * {@link io.deephaven.engine.table.impl.sources.ReinterpretUtils#maybeConvertToWritablePrimitiveChunkType(Class)}
-     * but without the trip through Class. Note also that effectively all types are stored as Objects except non-long
-     * primitives, so that they can be appropriately wrapped before storing (though the storage process will handle DH
-     * nulls).
-     */
-    public ChunkType[] chunkTypes() {
-        return Arrays.stream(columnTypes()).map(dataType -> {
-            if (dataType == Boolean.class || dataType == boolean.class) {
-                return ChunkType.Object;
-            }
-            if (dataType == Long.class || dataType == long.class) {
-                // JS client holds longs as LongWrappers
-                return ChunkType.Object;
-            }
-            return ChunkType.fromElementType(dataType);
-        }).toArray(ChunkType[]::new);
-    }
-
-    /**
      * Returns the Java Class to represent each column in the table. This lets the client replace certain JVM-only
      * classes with alternative implementations, but still use the simple {@link BarrageTypeInfo} wrapper.
      */

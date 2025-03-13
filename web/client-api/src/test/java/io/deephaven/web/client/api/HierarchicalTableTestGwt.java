@@ -16,6 +16,7 @@ import jsinterop.base.JsPropertyMap;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
     private static final Format red = new Format(0x1ff000001e0e0e0L, 0, null, null);
@@ -33,7 +34,7 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
             .script("ticking_tree",
                     "time_table('PT0.1s').update(['ID=i', 'Parent=i == 0 ? null : (int)(i/10)']).format_columns(['ID=ID>0 ? GREEN : RED']).tree('ID', 'Parent')")
             .script("table_to_rollup",
-                    "time_table('PT0.1s').update(['Y=Math.sin(i/3)', 'X=i%3']).format_columns(['Y=Y>0 ? GREEN : RED'])")
+                    "time_table('PT0.1s').update(['Y=Math.sin(i/3)', 'X=i%3', 'Z=`abc` + i']).format_columns(['Y=Y>0 ? GREEN : RED', 'Timestamp=RED'])")
             .script("ticking_rollup",
                     "table_to_rollup.rollup(aggs=[agg.first('Y')],by=['X'],include_constituents=True)");
 
@@ -264,14 +265,18 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
                     assertFalse(rollup.isClosed());
                     assertTrue(rollup.isIncludeConstituents());
 
-                    assertEquals(2, rollup.getColumns().length);
+                    assertEquals(4, rollup.getColumns().length);
                     assertEquals("X", rollup.getColumns().getAt(0).getName());
                     assertEquals("Y", rollup.getColumns().getAt(1).getName());
+                    assertEquals("Timestamp", rollup.getColumns().getAt(2).getName());
+                    assertEquals("Z", rollup.getColumns().getAt(3).getName());
 
                     rollup.setViewport(0, 99, rollup.getColumns(), null);
 
                     Column xCol = rollup.findColumn("X");
                     Column yCol = rollup.findColumn("Y");
+                    Column timestampCol = rollup.findColumn("Timestamp");
+                    Column zCol = rollup.findColumn("Z");
 
                     // Wait for the table to tick such that we have at least 4 rows (root, three children)
                     return waitForEventWhere(rollup, JsTreeTable.EVENT_UPDATED,
@@ -298,6 +303,21 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
                                 assertEquals(0d, row1.get(yCol).asDouble());
                                 assertEquals(0d, yCol.get(row1).asDouble());
 
+                                assertNull(data.getData(0, zCol));
+                                assertNull(data.getData(0, timestampCol));
+                                assertNull(row1.get(zCol));
+                                assertNull(row1.get(timestampCol));
+                                assertNull(zCol.get(row1));
+                                assertNull(timestampCol.get(row1));
+
+                                assertEquals(Format.EMPTY, data.getFormat(0, zCol));
+                                assertEquals(Format.EMPTY, data.getFormat(0, timestampCol));
+                                assertEquals(Format.EMPTY, row1.getFormat(zCol));
+                                assertEquals(Format.EMPTY, row1.getFormat(timestampCol));
+                                assertEquals(Format.EMPTY, zCol.getFormat(row1));
+                                assertEquals(Format.EMPTY, timestampCol.getFormat(row1));
+
+
                                 TreeViewportData.TreeRow row2 = (TreeViewportData.TreeRow) data.getRows().getAt(1);
                                 assertEquals(Format.EMPTY, data.getFormat(1, xCol));
                                 assertEquals(Format.EMPTY, row2.getFormat(xCol));
@@ -314,6 +334,20 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
                                 assertEquals(0d, data.getData(1, yCol).asDouble());
                                 assertEquals(0d, row2.get(yCol).asDouble());
                                 assertEquals(0d, yCol.get(row2).asDouble());
+
+                                assertNull(data.getData(1, zCol));
+                                assertNull(data.getData(1, timestampCol));
+                                assertNull(row2.get(zCol));
+                                assertNull(row2.get(timestampCol));
+                                assertNull(zCol.get(row1));
+                                assertNull(timestampCol.get(row1));
+
+                                assertEquals(Format.EMPTY, data.getFormat(1, zCol));
+                                assertEquals(Format.EMPTY, data.getFormat(1, timestampCol));
+                                assertEquals(Format.EMPTY, row2.getFormat(zCol));
+                                assertEquals(Format.EMPTY, row2.getFormat(timestampCol));
+                                assertEquals(Format.EMPTY, zCol.getFormat(row1));
+                                assertEquals(Format.EMPTY, timestampCol.getFormat(row1));
 
                                 // Expand row 2
                                 rollup.expand(JsTreeTable.RowReferenceUnion.of(1), null);
@@ -344,6 +378,20 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
                                 assertEquals(0d, row3.get(yCol).asDouble());
                                 assertEquals(0d, yCol.get(row3).asDouble());
 
+                                assertEquals("abc0", data.getData(2, zCol).asString());
+                                assertNotNull(data.getData(2, timestampCol));
+                                assertEquals("abc0", row3.get(zCol).asString());
+                                assertNotNull(row3.get(timestampCol));
+                                assertEquals("abc0", zCol.get(row3).asString());
+                                assertNotNull(timestampCol.get(row3));
+
+                                assertEquals(Format.EMPTY, data.getFormat(2, zCol));
+                                assertEquals(red, data.getFormat(2, timestampCol));
+                                assertEquals(Format.EMPTY, row3.getFormat(zCol));
+                                assertEquals(red, row3.getFormat(timestampCol));
+                                assertEquals(Format.EMPTY, zCol.getFormat(row3));
+                                assertEquals(red, timestampCol.getFormat(row3));
+
                                 // Collapse row 2, wait until back to 4 rows
                                 rollup.collapse(JsTreeTable.RowReferenceUnion.of(1));
                                 return waitForEventWhere(rollup, JsTreeTable.EVENT_UPDATED,
@@ -359,18 +407,17 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
                 .then(this::finish).catch_(this::report);
     }
 
-    public void testCreateRollup() {
+    public void testCreateRollupAggTypes() {
         connect(tables)
                 .then(table("table_to_rollup"))
                 .then(table -> {
                     List<Supplier<Promise<JsTreeTable>>> tests = new ArrayList<>();
                     // For each supported operation, apply it to the numeric column
                     // Then expand to verify data can load
-                    List<String> count = List.of(
+                    List<String> aggs = List.of(
                             JsAggregationOperation.COUNT,
                             JsAggregationOperation.COUNT_DISTINCT,
-                            // TODO(deephaven-core#6201) re-enable this line when fixed
-                            // JsAggregationOperation.DISTINCT,
+                            JsAggregationOperation.DISTINCT,
                             JsAggregationOperation.MIN,
                             JsAggregationOperation.MAX,
                             JsAggregationOperation.SUM,
@@ -381,9 +428,9 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
                             JsAggregationOperation.FIRST,
                             JsAggregationOperation.LAST,
                             JsAggregationOperation.UNIQUE);
-                    for (int i = 0; i < count.size(); i++) {
+                    for (int i = 0; i < aggs.size(); i++) {
                         final int step = i;
-                        String operation = count.get(i);
+                        String operation = aggs.get(i);
                         JsRollupConfig cfg = new JsRollupConfig();
                         cfg.groupingColumns = Js.uncheckedCast(JsArray.of("X"));
                         cfg.includeConstituents = true;
@@ -397,6 +444,61 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
                                     .then(event -> Promise.resolve(r));
                         }));
                     }
+
+                    return tests.stream().reduce((p1, p2) -> () -> p1.get().then(result -> p2.get())).get().get();
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    public void testCreateRollupsConstituents() {
+        connect(tables)
+                .then(table("table_to_rollup"))
+                .then(table -> {
+                    List<Supplier<Promise<JsTreeTable>>> tests = new ArrayList<>();
+
+                    JsRollupConfig cfg = new JsRollupConfig();
+                    cfg.groupingColumns = Js.uncheckedCast(JsArray.of("X"));
+                    cfg.aggregations = JsPropertyMap.of("Count", JsArray.of("Y"));
+                    Stream.of(true, false).forEach(includeConstituents -> {
+                        cfg.includeConstituents = includeConstituents;
+                        JsRollupConfig copy = new JsRollupConfig((JsPropertyMap<Object>) cfg);
+                        tests.add(() -> table.rollup(copy).then(r -> {
+                            r.setViewport(0, 99, null, null);
+                            r.expandAll();
+                            delayTestFinish(15000 + (includeConstituents ? 1 : 0));
+
+                            return waitForEventWhere(r, JsTreeTable.EVENT_UPDATED,
+                                    (Event<TreeViewportData> d) -> r.getSize() > 3,
+                                    13000 + (includeConstituents ? 1 : 0))
+                                    .then(JsTreeTable::getViewportData)
+                                    .then(result -> {
+                                        TreeViewportData data = (TreeViewportData) result;
+
+                                        // Check if the 2nd row has constituent data as expected (or doesn't)
+                                        TreeViewportData.TreeRow row =
+                                                (TreeViewportData.TreeRow) data.getRows().getAt(2);
+                                        if (includeConstituents) {
+                                            assertEquals(3, row.depth());
+                                            assertFalse(row.hasChildren());
+                                            assertNotNull(row.get(r.findColumn("Z")));
+                                        } else {
+                                            // Instead of finding the constituent row, we find the next parent
+                                            assertEquals(2, row.depth());
+                                            assertFalse(row.hasChildren());
+
+                                            // Expect to fail if trying to ready the constituent-only column
+                                            try {
+                                                r.findColumn("Z");
+                                                fail("Expected to fail finding constituent-only column");
+                                            } catch (Exception ignore) {
+                                                // Expected
+                                            }
+                                        }
+
+                                        return Promise.resolve(r);
+                                    });
+                        }));
+                    });
 
                     return tests.stream().reduce((p1, p2) -> () -> p1.get().then(result -> p2.get())).get().get();
                 })
