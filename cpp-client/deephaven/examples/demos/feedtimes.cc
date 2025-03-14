@@ -92,6 +92,11 @@ std::string FormatDuration(std::chrono::nanoseconds nanos) {
   return ss.str();
 }
 
+DateTime TimePoint2DateTime(const my_time_point &tp) {
+  using namespace std::chrono;
+  return DateTime::FromNanos(duration_cast<nanoseconds>(tp.time_since_epoch()).count());
+}
+  
 class TrackTimeCallback final : public deephaven::dhcore::ticking::TickingCallback {
 public:
   TrackTimeCallback(const char *col_name)
@@ -133,13 +138,22 @@ public:
     std::uint64_t tick_count = ReadAndResetMinMax(min, max);
 
     const std::string dt_str = FormatDuration(now - last_time);
+    const DateTime now_datetime = TimePoint2DateTime(now);
     if (last_tick_count == tick_count) {
       std::cerr << "WARNING: No ticks for the last " << dt_str << "\n";  // cerr is auto flushed
     } else {
-      std::cout << "Stats for the last " << dt_str
-                << ": min=" << min
-                << ", max=" << max
-                << "."
+      std::cout << now_datetime << " Stats for the last " << dt_str;
+      try {
+        std::cout << ": min=" << min;
+      } catch (const std::runtime_error &ex) {
+        std::cout << "invalid_time(" << min.Nanos() << ")";
+      }
+      try {
+        std::cout << ", max=" << max;
+      } catch (const std::runtime_error &ex) {
+        std::cout << "invalid_time(" << max.Nanos() << ")";
+      }
+      std::cout << "."
                 // we actually want the flush, so we use endl instead of '\n'.
                 << std::endl;
     }
@@ -165,16 +179,42 @@ public:
 
       typed_datetime_col->FillChunk(*these_rows, &data_chunk, nullptr);
 
-      for (size_t i = 0; i < these_rows_size; ++i) {
-        auto v = data_chunk.data()[i];
+      auto data = data_chunk.data();
+
+      DateTime v;
+      size_t j;;
+      // Find first non_null value
+      for (j = 0; j < these_rows_size; ++j) {
+        v = data[j];
+        if (!DateTime::isNull(v)) {
+          break;
+        }
+      }
+
+      if (j >= these_rows_size) {
+        continue;
+      }
+
+      DateTime lmin = v;
+      DateTime lmax = v;
+
+      for (size_t i = j; i < these_rows_size; ++i) {
+        v = data[i];
         if (DateTime::isNull(v)) {
           continue;
         }
-        if (v < min_) {
-          min_ = v;
-        } else if (v > max_) {
-          max_ = v;
+        if (v < lmin) {
+          lmin = v;
+        } else if (v > lmax) {
+          lmax = v;
         }
+      }
+
+      if (lmin < min_) {
+        min_ = lmin;
+      }
+      if (lmax > max_) {
+        max_ = lmax;
       }
     }
   }
