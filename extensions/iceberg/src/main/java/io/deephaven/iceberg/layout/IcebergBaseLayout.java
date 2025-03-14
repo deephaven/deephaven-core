@@ -17,6 +17,7 @@ import io.deephaven.util.channel.SeekableChannelsProviderLoader;
 import org.apache.iceberg.*;
 import org.apache.iceberg.catalog.Catalog;
 import org.apache.iceberg.catalog.TableIdentifier;
+import org.apache.iceberg.io.FileIO;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -212,12 +213,13 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
         }
         final Table table = tableAdapter.icebergTable();
         try {
-            final List<ManifestFile> manifestFiles = snapshot.allManifests(table.io());
+            final FileIO io = table.io();
+            final List<ManifestFile> manifestFiles = snapshot.allManifests(io);
             for (final ManifestFile manifestFile : manifestFiles) {
                 checkIsDataManifest(manifestFile);
             }
             for (final ManifestFile manifestFile : manifestFiles) {
-                try (final ManifestReader<DataFile> manifestReader = ManifestFiles.read(manifestFile, table.io())) {
+                try (final ManifestReader<DataFile> manifestReader = ManifestFiles.read(manifestFile, io)) {
                     for (final DataFile dataFile : manifestReader) {
                         locationKeyObserver.accept(key(table, manifestFile, manifestReader, dataFile));
                     }
