@@ -144,12 +144,12 @@ public:
     } else {
       std::cout << now_datetime << " Stats for the last " << dt_str;
       try {
-        std::cout << ": min=" << min;
+        std::cout << ": min(" << col_name_ << ")=" << min;
       } catch (const std::runtime_error &ex) {
         std::cout << "invalid_time(" << min.Nanos() << ")";
       }
       try {
-        std::cout << ", max=" << max;
+        std::cout << ", max(" << col_name_ << ")=" << max;
       } catch (const std::runtime_error &ex) {
         std::cout << "invalid_time(" << max.Nanos() << ")";
       }
