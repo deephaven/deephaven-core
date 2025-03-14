@@ -35,9 +35,7 @@ public abstract class TableWriterOptions {
      * {@link #fieldIdToColumnName()} to map Deephaven columns from {@link #tableDefinition()} to Iceberg columns. If
      * {@link #fieldIdToColumnName()} is not provided, the mapping is done by column name.
      * <p>
-     * Users can specify how to extract the schema in multiple ways (by schema ID, snapshot ID, etc.).
-     * <p>
-     * Defaults to {@link SchemaProvider#fromCurrent()}, which means use the current schema from the table.
+     * Defaults to {@link SchemaProvider#fromCurrent()}.
      */
     @Value.Default
     public SchemaProvider schemaProvider() {
@@ -62,6 +60,18 @@ public abstract class TableWriterOptions {
         return reversedMap;
     }
 
+    /**
+     * Specifies the {@link org.apache.iceberg.SortOrder} to use for sorting new data when writing to an Iceberg table
+     * with this writer. The sort order is determined at the time the writer is created and does not change if the
+     * table's sort order changes later.
+     * <p>
+     * Defaults to {@link SortOrderProvider#useTableDefault()}.
+     */
+    @Value.Default
+    public SortOrderProvider sortOrderProvider() {
+        return SortOrderProvider.useTableDefault();
+    }
+
     // @formatter:off
     interface Builder<INSTRUCTIONS_BUILDER extends TableWriterOptions.Builder<INSTRUCTIONS_BUILDER>> {
         // @formatter:on
@@ -74,6 +84,8 @@ public abstract class TableWriterOptions {
         INSTRUCTIONS_BUILDER putFieldIdToColumnName(int value, String key);
 
         INSTRUCTIONS_BUILDER putAllFieldIdToColumnName(Map<Integer, ? extends String> entries);
+
+        INSTRUCTIONS_BUILDER sortOrderProvider(SortOrderProvider sortOrderProvider);
     }
 
     /**
