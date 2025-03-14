@@ -246,7 +246,10 @@ class InputTable(Table):
 
     def __init__(self, j_table: jpy.JType):
         super().__init__(j_table)
-        self.j_input_table = getattr(_J_InputTableUpdater, "from")(self.j_table)
+        try:
+            self.j_input_table = getattr(_J_InputTableUpdater, "from")(self.j_table)
+        except Exception as e:
+            raise DHError(e, "the provided table input is not suitable for input tables.") from e
         if not self.j_input_table:
             raise DHError("the provided table input is not suitable for input tables.")
 

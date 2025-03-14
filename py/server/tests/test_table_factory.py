@@ -384,6 +384,13 @@ class TableFactoryTestCase(BaseTestCase):
 
             self.assertTrue(isinstance(_wrapper.wrap_j_object(place_holder_input_table), Table))
 
+        with self.subTest("no input table"):
+            my_table = empty_table(1)
+
+            with self.assertRaises(DHError) as cm:
+                InputTable(my_table.j_table)
+            self.assertIn("the provided table input is not suitable for input tables.", str(cm.exception))
+
 
     def test_ring_table(self):
         cols = [
