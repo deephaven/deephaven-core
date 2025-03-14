@@ -346,9 +346,8 @@ class SortOrderProvider(JObjectWrapper):
 
     def with_fail_on_unmapped(self, fail_on_unmapped: bool) -> 'SortOrderProvider':
         """
-        Returns a sort order provider that uses the provided argument value to determine whether to fail or not if the
-        sort order cannot be applied to the tables being written. By default, all providers fail if the sort order
-        cannot be applied.
+        Returns a sort order provider configured to fail (or not) if the sort order cannot be applied to the tables
+        being written. By default, all providers fail if the sort order cannot be applied.
 
         Args:
             fail_on_unmapped: whether to fail if the sort order cannot be applied to the tables being written. If
