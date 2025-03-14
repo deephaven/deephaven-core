@@ -14,7 +14,7 @@ import io.deephaven.engine.table.impl.PartitionAwareSourceTable;
 import io.deephaven.engine.table.impl.select.FormulaEvaluationException;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.util.TableTools;
-import io.deephaven.iceberg.base.IcebergUtils;
+import io.deephaven.iceberg.base.IcebergTestUtils;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.iceberg.sqlite.SqliteHelper;
 import io.deephaven.iceberg.util.IcebergCatalogAdapter;
@@ -32,7 +32,6 @@ import io.deephaven.parquet.table.location.ParquetTableLocationKey;
 import io.deephaven.qst.type.Type;
 import org.apache.iceberg.AppendFiles;
 import org.apache.iceberg.DataFile;
-import org.apache.iceberg.ManifestFile;
 import org.apache.iceberg.NullOrder;
 import org.apache.iceberg.Schema;
 import org.apache.iceberg.Snapshot;
@@ -570,7 +569,7 @@ public abstract class SqliteCatalogBase {
             final TableIdentifier tableIdentifier,
             final List<Table> dhTables) {
         final org.apache.iceberg.Table table = catalogAdapter.catalog().loadTable(tableIdentifier);
-        final List<DataFile> dataFileList = IcebergUtils.allDataFiles(table, table.currentSnapshot())
+        final List<DataFile> dataFileList = IcebergTestUtils.allDataFiles(table, table.currentSnapshot())
                 .collect(Collectors.toList());
         assertThat(dataFileList).hasSize(dhTables.size());
 
@@ -591,7 +590,7 @@ public abstract class SqliteCatalogBase {
      */
     private List<String> getAllParquetFilesFromDataFiles(final TableIdentifier tableIdentifier) {
         final org.apache.iceberg.Table table = catalogAdapter.catalog().loadTable(tableIdentifier);
-        return IcebergUtils.allDataFiles(table, table.currentSnapshot())
+        return IcebergTestUtils.allDataFiles(table, table.currentSnapshot())
                 .map(dataFile -> dataFile.path().toString())
                 .collect(Collectors.toList());
     }
@@ -1064,7 +1063,7 @@ public abstract class SqliteCatalogBase {
             @NotNull final ParquetInstructions readInstructions) {
         final org.apache.iceberg.Table icebergTable = tableAdapter.icebergTable();
         final List<List<SortColumn>> actualSortOrders = new ArrayList<>();
-        IcebergUtils.allDataFiles(icebergTable, icebergTable.currentSnapshot())
+        IcebergTestUtils.allDataFiles(icebergTable, icebergTable.currentSnapshot())
                 .forEach(dataFile -> actualSortOrders
                         .add(computeSortedColumns(icebergTable, dataFile, readInstructions)));
         assertThat(actualSortOrders).isEqualTo(expectedSortOrders);
