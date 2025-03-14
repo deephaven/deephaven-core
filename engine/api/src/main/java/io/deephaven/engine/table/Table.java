@@ -832,12 +832,12 @@ public interface Table extends
      * <p>
      * In some implementations, this call may also terminate in case of interrupt or spurious wakeup.
      *
-     * @param timeout The maximum time to wait in milliseconds.
+     * @param timeoutMillis The maximum time to wait in milliseconds.
      * @return false if the timeout elapses without notification, true otherwise.
      * @throws InterruptedException In the event this thread is interrupted
      * @see java.util.concurrent.locks.Condition#await()
      */
-    boolean awaitUpdate(long timeout) throws InterruptedException;
+    boolean awaitUpdate(long timeoutMillis) throws InterruptedException;
 
     /**
      * Subscribe for updates to this table. {@code listener} will be invoked via the {@link NotificationQueue}
