@@ -34,6 +34,9 @@ void Run(const TableHandleManager &manager, const char *table_name, const char *
 }  // namespace
 
 int main(int argc, char *argv[]) {
+  // avoid absl log initialization warnings
+  char grpc_env[] = "GRPC_VERBOSITY=ERROR";
+  putenv(grpc_env);
   try {
     if (argc != 5) {
         std::cerr << "Usage: " << argv[0] << " <host:port> <table-name> <timestamp-column-name> <period-seconds>\n";
@@ -41,10 +44,10 @@ int main(int argc, char *argv[]) {
       }
 
     int c = 0;
-    const char *server = argv[c++];
-    const char *table_name = argv[c++];
-    const char *col_name = argv[c++];
-    const int period_seconds = std::stoi(argv[c++]);
+    const char *server = argv[++c];
+    const char *table_name = argv[++c];
+    const char *col_name = argv[++c];
+    const int period_seconds = std::stoi(argv[++c]);
     auto client = Client::Connect(server);
     auto manager = client.GetManager();
 
@@ -68,18 +71,21 @@ std::string FormatDuration(std::chrono::nanoseconds nanos) {
   auto s = duration_cast<seconds>(nanoseconds(ns));
   ns -= duration_cast<nanoseconds>(s).count();
   auto ms = duration_cast<milliseconds>(nanoseconds(ns));
-  ns -= duration_cast<nanoseconds>(ms).count();
-  auto us = duration_cast<microseconds>(nanoseconds(ns));
-  ns -= duration_cast<nanoseconds>(us).count();
 
   std::stringstream ss;
   if (h.count() > 0) {
-    ss << std::setw(2) << std::setfill('0') << h.count() << 'h';
+    ss << h.count() << 'h';
   }
   if (m.count() > 0 || h.count() > 0) {
-    ss << std::setw(2) << std::setfill('0') << m.count() << 'm';
+    if (h.count() > 0) {
+      ss << std::setw(2) << std::setfill('0');
+    }
+    ss << m.count() << 'm';
   }
-  ss << std::setw(2) << std::setfill('0') << s.count() << '.'
+  if (m.count() > 0) {
+    ss << std::setw(2) << std::setfill('0');
+  }
+  ss << s.count() << '.'
      << std::setw(3) << std::setfill('0') << ms.count()
      << 's'
     ;
@@ -88,9 +94,15 @@ std::string FormatDuration(std::chrono::nanoseconds nanos) {
 
 class TrackTimeCallback final : public deephaven::dhcore::ticking::TickingCallback {
 public:
-  TrackTimeCallback(const char *col_name) : col_name_(col_name) {
-    ResetMinMax();
-  }
+  TrackTimeCallback(const char *col_name)
+    : mux_()
+    , col_name_(col_name)
+    , min_(DateTime::Max())
+    , max_(DateTime::Min())
+    , tick_count_(0UL)
+  {}
+
+  virtual ~TrackTimeCallback() {}
 
   void OnTick(deephaven::dhcore::ticking::TickingUpdate update) final {
     std::unique_lock lock(mux_);
@@ -99,7 +111,6 @@ public:
 
     ProcessDeltas(*update.AfterAdds(), col_index, update.AddedRows());
 
-    size_t num_modifies = 0;
     if (update.ModifiedRows().size() > col_index) {
       auto row_sequence = update.ModifiedRows()[col_index];
       ProcessDeltas(*update.AfterModifies(), col_index, row_sequence);
@@ -197,7 +208,7 @@ void Run(
     const int period_seconds) {
   auto table = manager.FetchTable(table_name);
   auto callback = std::make_shared<TrackTimeCallback>(col_name);
-  auto cookie = table.Subscribe(std::move(callback));
+  auto cookie = table.Subscribe(callback);
   
   my_time_point last_time = my_clock::now();
   std::uint64_t last_tick_count = 0;
