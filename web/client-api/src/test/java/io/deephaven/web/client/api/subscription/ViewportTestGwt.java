@@ -656,11 +656,11 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
                             JsTable.CustomColumnArgUnionType
                                     .of("Timestamp=epochNanosToInstant((i + 1740000000) * 1_000_000_000)"),
                             JsTable.CustomColumnArgUnionType
-                                    .of(new CustomColumn("I", CustomColumn.TYPE_FORMAT_COLOR, "background(GREEN)")),
+                                    .of(new CustomColumn("I", CustomColumn.TYPE_FORMAT_COLOR, "background(GREEN)", new CustomColumn.CustomColumOptions())),
                             JsTable.CustomColumnArgUnionType
-                                    .of(new CustomColumn("Str", CustomColumn.TYPE_FORMAT_NUMBER, "`$###,##0.00`")),
+                                    .of(new CustomColumn("Str", CustomColumn.TYPE_FORMAT_NUMBER, "`$###,##0.00`", new CustomColumn.CustomColumOptions())),
                             JsTable.CustomColumnArgUnionType.of(new CustomColumn("Timestamp",
-                                    CustomColumn.TYPE_FORMAT_DATE, "`HH-mm-ss-SSSSSSSSS`"))));
+                                    CustomColumn.TYPE_FORMAT_DATE, "`HH-mm-ss-SSSSSSSSS`", new CustomColumn.CustomColumOptions()))));
                     // Wait for this to resolve, part of DH-18634 is that already running tables behave differently
                     return assertEventFiresOnce(t, JsTable.EVENT_CUSTOMCOLUMNSCHANGED, 2025).then(table -> {
                         Column iColumn = table.findColumn("I");
@@ -725,12 +725,12 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
                             JsTable.CustomColumnArgUnionType
                                     .of("Timestamp=epochNanosToInstant((i + 1740000000) * 1_000_000_000)"),
                             JsTable.CustomColumnArgUnionType
-                                    .of(new CustomColumn("I", CustomColumn.TYPE_FORMAT_COLOR, "background(GREEN)")),
+                                    .of(new CustomColumn("I", CustomColumn.TYPE_FORMAT_COLOR, "background(GREEN)", new CustomColumn.CustomColumOptions())),
                             JsTable.CustomColumnArgUnionType
-                                    .of(new CustomColumn("Str", CustomColumn.TYPE_FORMAT_NUMBER, "`$###,##0.00`")),
+                                    .of(new CustomColumn("Str", CustomColumn.TYPE_FORMAT_NUMBER, "`$###,##0.00`", new CustomColumn.CustomColumOptions())),
                             JsTable.CustomColumnArgUnionType.of(new CustomColumn("Timestamp",
-                                    CustomColumn.TYPE_FORMAT_DATE, "`HH-mm-ss-SSSSSSSSS`")),
-                            JsTable.CustomColumnArgUnionType.of(Column.formatRowColor("background(RED)"))));
+                                    CustomColumn.TYPE_FORMAT_DATE, "`HH-mm-ss-SSSSSSSSS`", new CustomColumn.CustomColumOptions())),
+                            JsTable.CustomColumnArgUnionType.of(Column.formatRowColor("background(RED)", new CustomColumn.CustomColumOptions()))));
                     // Wait for this to resolve, part of DH-18634 is that already running tables behave differently
                     return assertEventFiresOnce(t, JsTable.EVENT_CUSTOMCOLUMNSCHANGED, 2025).then(table -> {
                         Column iColumn = table.findColumn("I");
@@ -795,10 +795,10 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
                             JsTable.CustomColumnArgUnionType
                                     .of("Timestamp=epochNanosToInstant((i + 1740000000) * 1_000_000_000)"),
                             JsTable.CustomColumnArgUnionType
-                                    .of(new CustomColumn("Str", CustomColumn.TYPE_FORMAT_NUMBER, "`$###,##0.00`")),
+                                    .of(new CustomColumn("Str", CustomColumn.TYPE_FORMAT_NUMBER, "`$###,##0.00`", new CustomColumn.CustomColumOptions())),
                             JsTable.CustomColumnArgUnionType.of(new CustomColumn("Timestamp",
-                                    CustomColumn.TYPE_FORMAT_DATE, "`HH-mm-ss-SSSSSSSSS`")),
-                            JsTable.CustomColumnArgUnionType.of(Column.formatRowColor("background(RED)"))));
+                                    CustomColumn.TYPE_FORMAT_DATE, "`HH-mm-ss-SSSSSSSSS`", new CustomColumn.CustomColumOptions())),
+                            JsTable.CustomColumnArgUnionType.of(Column.formatRowColor("background(RED)", new CustomColumn.CustomColumOptions()))));
                     // Wait for this to resolve, part of DH-18634 is that already running tables behave differently
                     return assertEventFiresOnce(t, JsTable.EVENT_CUSTOMCOLUMNSCHANGED, 2025).then(table -> {
                         Column iColumn = table.findColumn("I");
