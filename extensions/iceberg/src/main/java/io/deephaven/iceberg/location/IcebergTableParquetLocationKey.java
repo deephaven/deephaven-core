@@ -86,6 +86,7 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
      *        be made, so the calling code is free to mutate the map after this call
      * @param readInstructions the instructions for customizations while reading
      * @param channelsProvider the provider for reading the file
+     * @param sortedColumns an ordered list of columns this location is sorted by.
      */
     public IcebergTableParquetLocationKey(
             @Nullable final String catalogName,
@@ -131,6 +132,9 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
         return readInstructions;
     }
 
+    /**
+     * Get the ordered list of columns this location is sorted by.
+     */
     @NotNull
     List<SortColumn> sortedColumns() {
         return sortedColumns;
