@@ -3,9 +3,9 @@
 //
 package io.deephaven.iceberg.location;
 
+import io.deephaven.api.SortColumn;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.table.impl.locations.TableLocationKey;
-import io.deephaven.iceberg.util.IcebergTableAdapter;
 import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
 import org.apache.iceberg.DataFile;
@@ -17,6 +17,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.net.URI;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
@@ -42,12 +43,6 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
     @Nullable
     private final TableIdentifier tableIdentifier;
 
-    @NotNull
-    private final IcebergTableAdapter tableAdapter;
-
-    @NotNull
-    private final DataFile dataFile;
-
     /**
      * The {@link DataFile#dataSequenceNumber()} of the data file backing this keyed location.
      */
@@ -71,6 +66,9 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
     @NotNull
     private final ParquetInstructions readInstructions;
 
+    @NotNull
+    private final List<SortColumn> sortedColumns;
+
     private int cachedHashCode;
 
     /**
@@ -79,7 +77,6 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
      * @param catalogName The name of the catalog using which the table is accessed
      * @param tableUuid The UUID of the table, or {@code null} if not available
      * @param tableIdentifier The table identifier used to access the table
-     * @param tableAdapter The Iceberg table adapter for the table
      * @param manifestFile The manifest file from which the data file was discovered
      * @param dataFile The data file that backs the keyed location
      * @param fileUri The {@link URI} for the file that backs the keyed location
@@ -94,14 +91,14 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
             @Nullable final String catalogName,
             @Nullable final UUID tableUuid,
             @NotNull final TableIdentifier tableIdentifier,
-            @NotNull final IcebergTableAdapter tableAdapter,
             @NotNull final ManifestFile manifestFile,
             @NotNull final DataFile dataFile,
             @NotNull final URI fileUri,
             final int order,
             @Nullable final Map<String, Comparable<?>> partitions,
             @NotNull final ParquetInstructions readInstructions,
-            @NotNull final SeekableChannelsProvider channelsProvider) {
+            @NotNull final SeekableChannelsProvider channelsProvider,
+            @NotNull final List<SortColumn> sortedColumns) {
         super(fileUri, order, partitions, channelsProvider);
 
         this.catalogName = catalogName;
@@ -110,10 +107,6 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
         // We don't save tableIdentifier (and thus don't use it in comparisons/equality-testing/hashCode) unless
         // tableUUID was null
         this.tableIdentifier = tableUuid != null ? null : tableIdentifier;
-
-        this.tableAdapter = tableAdapter;
-
-        this.dataFile = dataFile;
 
         // Files with unknown sequence numbers should be ordered first
         dataSequenceNumber = dataFile.dataSequenceNumber() != null ? dataFile.dataSequenceNumber() : Long.MIN_VALUE;
@@ -125,6 +118,7 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
         manifestSequenceNumber = manifestFile.sequenceNumber();
 
         this.readInstructions = readInstructions;
+        this.sortedColumns = sortedColumns;
     }
 
     @Override
@@ -138,13 +132,8 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
     }
 
     @NotNull
-    DataFile dataFile() {
-        return dataFile;
-    }
-
-    @NotNull
-    IcebergTableAdapter tableAdapter() {
-        return tableAdapter;
+    List<SortColumn> sortedColumns() {
+        return sortedColumns;
     }
 
     /**
@@ -220,6 +209,7 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
                 && fileSequenceNumber == otherTyped.fileSequenceNumber
                 && dataFilePos == otherTyped.dataFilePos
                 && manifestSequenceNumber == otherTyped.manifestSequenceNumber
+                && sortedColumns.equals(otherTyped.sortedColumns)
                 && uri.equals(otherTyped.uri);
     }
 
@@ -235,6 +225,7 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
             result = prime * result + Long.hashCode(fileSequenceNumber);
             result = prime * result + Long.hashCode(dataFilePos);
             result = prime * result + Long.hashCode(manifestSequenceNumber);
+            result = prime * result + Objects.hashCode(sortedColumns);
             result = prime * result + uri.hashCode();
             // Don't use 0; that's used by StandaloneTableLocationKey, and also our sentinel for the need to compute
             if (result == 0) {

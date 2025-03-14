@@ -11,15 +11,11 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.PartitionAwareSourceTable;
-import io.deephaven.engine.table.impl.locations.TableLocation;
-import io.deephaven.engine.table.impl.locations.impl.StandaloneTableKey;
 import io.deephaven.engine.table.impl.select.FormulaEvaluationException;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.iceberg.base.IcebergUtils;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
-import io.deephaven.iceberg.location.IcebergTableParquetLocation;
-import io.deephaven.iceberg.location.IcebergTableParquetLocationKey;
 import io.deephaven.iceberg.sqlite.SqliteHelper;
 import io.deephaven.iceberg.util.IcebergCatalogAdapter;
 import io.deephaven.iceberg.util.IcebergReadInstructions;
@@ -34,8 +30,6 @@ import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.ParquetTools;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
 import io.deephaven.qst.type.Type;
-import io.deephaven.util.channel.SeekableChannelsProvider;
-import io.deephaven.util.channel.SeekableChannelsProviderLoader;
 import org.apache.iceberg.AppendFiles;
 import org.apache.iceberg.DataFile;
 import org.apache.iceberg.ManifestFile;
@@ -71,8 +65,7 @@ import static io.deephaven.engine.util.TableTools.col;
 import static io.deephaven.engine.util.TableTools.doubleCol;
 import static io.deephaven.engine.util.TableTools.intCol;
 import static io.deephaven.engine.util.TableTools.longCol;
-import static io.deephaven.iceberg.base.IcebergUtils.dataFileUri;
-import static io.deephaven.iceberg.base.IcebergUtils.locationUri;
+import static io.deephaven.iceberg.layout.IcebergBaseLayout.computeSortedColumns;
 import static org.apache.parquet.schema.LogicalTypeAnnotation.intType;
 import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.DOUBLE;
 import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.INT32;
@@ -1060,38 +1053,23 @@ public abstract class SqliteCatalogBase {
      */
     private void verifySortOrder(
             final IcebergTableAdapter tableAdapter,
-            final TableIdentifier tableIdentifier,
             final List<List<SortColumn>> expectedSortOrders) {
-        verifySortOrder(tableAdapter, tableIdentifier, expectedSortOrders,
+        verifySortOrder(tableAdapter, expectedSortOrders,
                 ParquetInstructions.EMPTY.withTableDefinition(tableAdapter.definition()));
     }
 
     private void verifySortOrder(
             @NotNull final IcebergTableAdapter tableAdapter,
-            @NotNull final TableIdentifier tableIdentifier,
             @NotNull final List<List<SortColumn>> expectedSortOrders,
             @NotNull final ParquetInstructions readInstructions) {
         final org.apache.iceberg.Table icebergTable = tableAdapter.icebergTable();
-        final String uriScheme = locationUri(icebergTable).getScheme();
-        final SeekableChannelsProvider seekableChannelsProvider =
-                SeekableChannelsProviderLoader.getInstance().load(uriScheme, dataInstructions());
-
         final Map<ManifestFile, List<DataFile>> manifestToDataFiles =
                 IcebergUtils.manifestToDataFiles(icebergTable, icebergTable.currentSnapshot());
         final List<List<SortColumn>> actualSortOrders = new ArrayList<>();
         for (final Map.Entry<ManifestFile, List<DataFile>> entry : manifestToDataFiles.entrySet()) {
-            final ManifestFile manifestFile = entry.getKey();
             final List<DataFile> dataFiles = entry.getValue();
             for (final DataFile dataFile : dataFiles) {
-                final TableLocation tableLocation = new IcebergTableParquetLocation(
-                        tableAdapter,
-                        StandaloneTableKey.getInstance(),
-                        new IcebergTableParquetLocationKey(
-                                null, null, tableIdentifier, tableAdapter, manifestFile, dataFile,
-                                dataFileUri(icebergTable, dataFile), 0, Map.of(), readInstructions,
-                                seekableChannelsProvider),
-                        readInstructions);
-                actualSortOrders.add(tableLocation.getSortedColumns());
+                actualSortOrders.add(computeSortedColumns(icebergTable, dataFile, readInstructions));
             }
         }
         assertThat(actualSortOrders).containsExactlyInAnyOrderElementsOf(expectedSortOrders);
@@ -1113,7 +1091,7 @@ public abstract class SqliteCatalogBase {
                 .build());
 
         // Verify that the data file is not sorted
-        verifySortOrder(tableAdapter, tableIdentifier, List.of(List.of()));
+        verifySortOrder(tableAdapter, List.of(List.of()));
 
         // Update the default sort order of the underlying iceberg table
         final org.apache.iceberg.Table icebergTable = tableAdapter.icebergTable();
@@ -1131,7 +1109,7 @@ public abstract class SqliteCatalogBase {
                 .build());
 
         // Verify that the new data file is sorted
-        verifySortOrder(tableAdapter, tableIdentifier, List.of(
+        verifySortOrder(tableAdapter, List.of(
                 List.of(),
                 List.of(SortColumn.asc(ColumnName.of("intCol")))));
 
@@ -1141,7 +1119,7 @@ public abstract class SqliteCatalogBase {
                 .build());
 
         // Verify that the new data file is not sorted
-        verifySortOrder(tableAdapter, tableIdentifier, List.of(
+        verifySortOrder(tableAdapter, List.of(
                 List.of(),
                 List.of(SortColumn.asc(ColumnName.of("intCol"))),
                 List.of()));
@@ -1181,7 +1159,7 @@ public abstract class SqliteCatalogBase {
                 .build());
         final List<SortColumn> expectedSortOrder =
                 List.of(SortColumn.asc(ColumnName.of("doubleCol")), SortColumn.desc(ColumnName.of("longCol")));
-        verifySortOrder(tableAdapter, tableIdentifier, List.of(expectedSortOrder));
+        verifySortOrder(tableAdapter, List.of(expectedSortOrder));
         final Table fromIceberg = tableAdapter.table();
         final Table expected = source.sort(expectedSortOrder);
         assertTableEquals(expected, fromIceberg);
@@ -1204,7 +1182,7 @@ public abstract class SqliteCatalogBase {
                 .addTables(source)
                 .build());
         final List<SortColumn> expectedSortOrder = List.of(SortColumn.asc(ColumnName.of("intCol")));
-        verifySortOrder(tableAdapter, tableIdentifier, List.of(expectedSortOrder));
+        verifySortOrder(tableAdapter, List.of(expectedSortOrder));
         final Table fromIceberg = tableAdapter.table();
         final Table expected = source.sort(expectedSortOrder);
         assertTableEquals(expected, fromIceberg);
@@ -1237,7 +1215,7 @@ public abstract class SqliteCatalogBase {
                 .addTables(source)
                 .build());
         final List<SortColumn> expectedSortOrder = List.of();
-        verifySortOrder(tableAdapter, tableIdentifier, List.of(expectedSortOrder));
+        verifySortOrder(tableAdapter, List.of(expectedSortOrder));
         final Table fromIceberg = tableAdapter.table();
         assertTableEquals(source, fromIceberg);
     }
@@ -1261,7 +1239,7 @@ public abstract class SqliteCatalogBase {
                 .addTables(source)
                 .build());
         final List<SortColumn> expectedSortOrder = List.of(SortColumn.asc(ColumnName.of("intCol")));
-        verifySortOrder(tableAdapter, tableIdentifier, List.of(expectedSortOrder));
+        verifySortOrder(tableAdapter, List.of(expectedSortOrder));
         final Table fromIceberg = tableAdapter.table();
         final Table expected = source.sort(expectedSortOrder);
         assertTableEquals(expected, fromIceberg);
@@ -1313,7 +1291,7 @@ public abstract class SqliteCatalogBase {
                 .build());
         final List<SortColumn> expectedSortOrder =
                 List.of(SortColumn.asc(ColumnName.of("doubleCol")), SortColumn.desc(ColumnName.of("longCol")));
-        verifySortOrder(tableAdapter, tableIdentifier, List.of(expectedSortOrder));
+        verifySortOrder(tableAdapter, List.of(expectedSortOrder));
         final Table fromIceberg = tableAdapter.table();
         final Table expected = source.sort(expectedSortOrder);
         assertTableEquals(expected, fromIceberg);
@@ -1352,7 +1330,7 @@ public abstract class SqliteCatalogBase {
                 .addTables(source)
                 .build());
         // Empty sort order since the sort order cannot be applied
-        verifySortOrder(tableAdapter, tableIdentifier, List.of(List.of()));
+        verifySortOrder(tableAdapter, List.of(List.of()));
         final Table fromIceberg = tableAdapter.table();
         assertTableEquals(source, fromIceberg);
     }
@@ -1393,7 +1371,7 @@ public abstract class SqliteCatalogBase {
                 .addColumnNameMapping("intCol", "renamedIntCol")
                 .setTableDefinition(expected.getDefinition())
                 .build();
-        verifySortOrder(tableAdapter, tableIdentifier, List.of(
+        verifySortOrder(tableAdapter, List.of(
                 List.of(SortColumn.asc(ColumnName.of("renamedIntCol")), SortColumn.desc(ColumnName.of("doubleCol")))),
                 parquetInstructions);
     }
@@ -1436,7 +1414,7 @@ public abstract class SqliteCatalogBase {
             final ParquetInstructions parquetInstructions = ParquetInstructions.builder()
                     .setTableDefinition(tableDefinition)
                     .build();
-            verifySortOrder(tableAdapter, tableIdentifier, List.of(
+            verifySortOrder(tableAdapter, List.of(
                     List.of(SortColumn.asc(ColumnName.of("intCol")))),
                     parquetInstructions);
         }
@@ -1459,7 +1437,7 @@ public abstract class SqliteCatalogBase {
             final ParquetInstructions parquetInstructions = ParquetInstructions.builder()
                     .setTableDefinition(tableDefinition)
                     .build();
-            verifySortOrder(tableAdapter, tableIdentifier, List.of(List.of()), parquetInstructions);
+            verifySortOrder(tableAdapter, List.of(List.of()), parquetInstructions);
         }
     }
 

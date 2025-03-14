@@ -25,11 +25,9 @@ public final class IcebergTableLocationFactory implements TableLocationFactory<T
             @NotNull final IcebergTableLocationKey locationKey,
             @Nullable final TableDataRefreshService refreshService) {
         if (locationKey instanceof IcebergTableParquetLocationKey) {
-            final IcebergTableParquetLocationKey tableParquetLocationKey = (IcebergTableParquetLocationKey) locationKey;
             return new IcebergTableParquetLocation(
-                    tableParquetLocationKey.tableAdapter(),
                     tableKey,
-                    tableParquetLocationKey,
+                    (IcebergTableParquetLocationKey) locationKey,
                     (ParquetInstructions) locationKey.readInstructions());
         }
         throw new UnsupportedOperationException("Unsupported location key type: " + locationKey.getClass());
