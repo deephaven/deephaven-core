@@ -9,9 +9,8 @@ import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.iceberg.relative.RelativeFileIO;
 import io.deephaven.iceberg.util.IcebergReadInstructions;
+import io.deephaven.util.annotations.TestUseOnly;
 import org.apache.iceberg.DataFile;
-import org.apache.iceberg.ManifestContent;
-import org.apache.iceberg.ManifestFile;
 import org.apache.iceberg.ManifestFiles;
 import org.apache.iceberg.PartitionField;
 import org.apache.iceberg.PartitionSpec;
@@ -73,55 +72,19 @@ public final class IcebergUtils {
      *
      * @return A stream of {@link DataFile} objects.
      */
+    @TestUseOnly
     public static Stream<DataFile> allDataFiles(@NotNull final Table table, @NotNull final Snapshot snapshot) {
-        return allManifestFiles(table, snapshot)
-                .map(manifestFile -> ManifestFiles.read(manifestFile, table.io()))
+        return snapshot.allManifests(table.io())
+                .stream()
+                .map(x -> ManifestFiles.read(x, table.io()))
                 .flatMap(IcebergUtils::toStream);
-    }
-
-    /**
-     * Get a stream of all {@link ManifestFile} objects from the given {@link Table} and {@link Snapshot}.
-     *
-     * @param table The {@link Table} to retrieve manifest files for.
-     * @param snapshot The {@link Snapshot} to retrieve manifest files from.
-     *
-     * @return A stream of {@link ManifestFile} objects.
-     */
-    public static Stream<ManifestFile> allManifestFiles(@NotNull final Table table, @NotNull final Snapshot snapshot) {
-        return allManifests(table, snapshot).stream()
-                .peek(manifestFile -> {
-                    if (manifestFile.content() != ManifestContent.DATA) {
-                        throw new TableDataException(
-                                String.format(
-                                        "%s:%d - only DATA manifest files are currently supported, encountered %s",
-                                        table, snapshot.snapshotId(), manifestFile.content()));
-                    }
-                });
-    }
-
-    /**
-     * Retrieves a {@link List} of manifest files from the given {@link Table} and {@link Snapshot}.
-     *
-     * @param table The {@link Table} to retrieve manifest files for.
-     * @param snapshot The {@link Snapshot} to retrieve manifest files from.
-     *
-     * @return A {@link List} of {@link ManifestFile} objects.
-     * @throws TableDataException if there is an error retrieving the manifest files.
-     */
-    static List<ManifestFile> allManifests(@NotNull final Table table, @NotNull final Snapshot snapshot) {
-        try {
-            return snapshot.allManifests(table.io());
-        } catch (final RuntimeException e) {
-            throw new TableDataException(
-                    String.format("%s:%d - error retrieving manifest files", table, snapshot.snapshotId()), e);
-        }
     }
 
     /**
      * Convert a {@link org.apache.iceberg.io.CloseableIterable} to a {@link Stream} that will close the iterable when
      * the stream is closed.
      */
-    public static <T> Stream<T> toStream(final org.apache.iceberg.io.CloseableIterable<T> iterable) {
+    private static <T> Stream<T> toStream(final org.apache.iceberg.io.CloseableIterable<T> iterable) {
         return StreamSupport.stream(iterable.spliterator(), false).onClose(() -> {
             try {
                 iterable.close();
