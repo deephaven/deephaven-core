@@ -8,6 +8,7 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.engine.table.impl.locations.TableLocationKey;
 import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
+import io.deephaven.util.annotations.InternalUseOnly;
 import org.apache.iceberg.DataFile;
 import org.apache.iceberg.ManifestFile;
 import io.deephaven.util.channel.SeekableChannelsProvider;
@@ -25,6 +26,7 @@ import java.util.UUID;
 /**
  * {@link TableLocationKey} implementation for use with data stored in Iceberg tables in the parquet format.
  */
+@InternalUseOnly
 public class IcebergTableParquetLocationKey extends ParquetTableLocationKey implements IcebergTableLocationKey {
 
     private static final String IMPLEMENTATION_NAME = IcebergTableParquetLocationKey.class.getSimpleName();
@@ -119,7 +121,7 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
         manifestSequenceNumber = manifestFile.sequenceNumber();
 
         this.readInstructions = readInstructions;
-        this.sortedColumns = sortedColumns;
+        this.sortedColumns = Require.neqNull(sortedColumns, "sortedColumns");
     }
 
     @Override

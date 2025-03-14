@@ -1051,28 +1051,23 @@ public abstract class SqliteCatalogBase {
     /**
      * Verify that the sort order for the data files in the table match the expected sort order.
      */
-    private void verifySortOrder(
+    private static void verifySortOrder(
             final IcebergTableAdapter tableAdapter,
             final List<List<SortColumn>> expectedSortOrders) {
         verifySortOrder(tableAdapter, expectedSortOrders,
                 ParquetInstructions.EMPTY.withTableDefinition(tableAdapter.definition()));
     }
 
-    private void verifySortOrder(
+    private static void verifySortOrder(
             @NotNull final IcebergTableAdapter tableAdapter,
             @NotNull final List<List<SortColumn>> expectedSortOrders,
             @NotNull final ParquetInstructions readInstructions) {
         final org.apache.iceberg.Table icebergTable = tableAdapter.icebergTable();
-        final Map<ManifestFile, List<DataFile>> manifestToDataFiles =
-                IcebergUtils.manifestToDataFiles(icebergTable, icebergTable.currentSnapshot());
         final List<List<SortColumn>> actualSortOrders = new ArrayList<>();
-        for (final Map.Entry<ManifestFile, List<DataFile>> entry : manifestToDataFiles.entrySet()) {
-            final List<DataFile> dataFiles = entry.getValue();
-            for (final DataFile dataFile : dataFiles) {
-                actualSortOrders.add(computeSortedColumns(icebergTable, dataFile, readInstructions));
-            }
-        }
-        assertThat(actualSortOrders).containsExactlyInAnyOrderElementsOf(expectedSortOrders);
+        IcebergUtils.allDataFiles(icebergTable, icebergTable.currentSnapshot())
+                .forEach(dataFile -> actualSortOrders
+                        .add(computeSortedColumns(icebergTable, dataFile, readInstructions)));
+        assertThat(actualSortOrders).isEqualTo(expectedSortOrders);
     }
 
     @Test
@@ -1110,8 +1105,8 @@ public abstract class SqliteCatalogBase {
 
         // Verify that the new data file is sorted
         verifySortOrder(tableAdapter, List.of(
-                List.of(),
-                List.of(SortColumn.asc(ColumnName.of("intCol")))));
+                List.of(SortColumn.asc(ColumnName.of("intCol"))),
+                List.of()));
 
         // Append more unsorted data to the table without enforcing sort order
         tableWriterWithoutSorting.append(IcebergWriteInstructions.builder()
