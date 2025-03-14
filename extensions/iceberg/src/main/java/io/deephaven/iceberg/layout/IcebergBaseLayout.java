@@ -9,7 +9,6 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder;
-import io.deephaven.iceberg.base.IcebergUtils;
 import io.deephaven.iceberg.location.IcebergTableLocationKey;
 import io.deephaven.iceberg.location.IcebergTableParquetLocationKey;
 import io.deephaven.iceberg.util.IcebergReadInstructions;
@@ -21,10 +20,12 @@ import io.deephaven.util.channel.SeekableChannelsProviderLoader;
 import org.apache.iceberg.*;
 import org.apache.iceberg.catalog.Catalog;
 import org.apache.iceberg.catalog.TableIdentifier;
+import org.apache.iceberg.io.FileIO;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
 
+import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -33,9 +34,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
-import java.util.stream.Stream;
 
-import static io.deephaven.iceberg.base.IcebergUtils.allManifestFiles;
 import static io.deephaven.iceberg.base.IcebergUtils.dataFileUri;
 
 public abstract class IcebergBaseLayout implements TableLocationKeyFinder<IcebergTableLocationKey> {
@@ -195,24 +194,45 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
             URI fileUri,
             SeekableChannelsProvider channelsProvider);
 
+    private IcebergTableLocationKey key(
+            final Table table,
+            final ManifestFile manifestFile,
+            final ManifestReader<?> ignoredManifestReader,
+            final DataFile dataFile) {
+        // Note: ManifestReader explicitly modelled in this path, as it can contain relevant information.
+        // ie, ManifestReader.spec(), ManifestReader.spec().schema()
+        // See https://lists.apache.org/thread/88md2fdk17k26cl4gj3sz6sdbtwcgbk5
+        final URI fileUri = dataFileUri(table, dataFile);
+        return keyFromDataFile(manifestFile, dataFile, fileUri, getChannelsProvider(fileUri.getScheme()));
+    }
+
+    private static void checkIsDataManifest(ManifestFile manifestFile) {
+        if (manifestFile.content() != ManifestContent.DATA) {
+            throw new UnsupportedOperationException(String.format(
+                    "only DATA manifest files are currently supported, encountered %s", manifestFile.content()));
+        }
+    }
+
     @Override
     public synchronized void findKeys(@NotNull final Consumer<IcebergTableLocationKey> locationKeyObserver) {
         if (snapshot == null) {
             return;
         }
         final Table table = tableAdapter.icebergTable();
-        try (final Stream<ManifestFile> manifestFiles = allManifestFiles(table, snapshot)) {
-            manifestFiles.forEach(manifestFile -> {
-                final ManifestReader<DataFile> reader = ManifestFiles.read(manifestFile, table.io());
-                IcebergUtils.toStream(reader)
-                        .map(dataFile -> {
-                            final URI fileUri = dataFileUri(table, dataFile);
-                            return keyFromDataFile(manifestFile, dataFile, fileUri,
-                                    getChannelsProvider(fileUri.getScheme()));
-                        })
-                        .forEach(locationKeyObserver);
-            });
-        } catch (final RuntimeException e) {
+        try {
+            final FileIO io = table.io();
+            final List<ManifestFile> manifestFiles = snapshot.allManifests(io);
+            for (final ManifestFile manifestFile : manifestFiles) {
+                checkIsDataManifest(manifestFile);
+            }
+            for (final ManifestFile manifestFile : manifestFiles) {
+                try (final ManifestReader<DataFile> manifestReader = ManifestFiles.read(manifestFile, io)) {
+                    for (final DataFile dataFile : manifestReader) {
+                        locationKeyObserver.accept(key(table, manifestFile, manifestReader, dataFile));
+                    }
+                }
+            }
+        } catch (RuntimeException | IOException e) {
             throw new TableDataException(
                     String.format("%s:%d - error finding Iceberg locations", tableAdapter, snapshot.snapshotId()), e);
         }
