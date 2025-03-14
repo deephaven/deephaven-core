@@ -39,7 +39,7 @@ dependencies {
     // FlightSqlClient testing does not depend on a public port being bound (ie, does not require server-jetty) because
     // it can use io.grpc.inprocess.InProcessChannelBuilder (via io.deephaven.server.runner.ServerBuilderInProcessModule).
 
-    testImplementation project(':authorization')
+    testImplementation project(':proto:proto-backplane-grpc')
     testImplementation project(':server-test-utils')
     testAnnotationProcessor libs.dagger.compiler
     testImplementation libs.assertj

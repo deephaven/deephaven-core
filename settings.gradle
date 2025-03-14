@@ -412,7 +412,6 @@ project(':hotspot-impl').projectDir = file('hotspot-impl')
 
 include ':authentication'
 include ':authorization-codegen'
-include ':authorization'
 
 include(':authentication:example-providers')
 include(':authentication:example-providers:mtls')

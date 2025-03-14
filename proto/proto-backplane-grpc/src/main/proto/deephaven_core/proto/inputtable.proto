@@ -10,11 +10,14 @@ option optimize_for = SPEED;
 option go_package = "github.com/deephaven/deephaven-core/go/internal/proto/inputtable";
 
 import "deephaven_core/proto/ticket.proto";
+import "deephaven_core/proto/contextual-auth.proto";
 
 /*
  * This service offers methods to manipulate the contents of input tables.
  */
 service InputTableService {
+    option (contextual_auth) = true;
+
     /*
      * Adds the provided table to the specified input table. The new data to add must only have
      * columns (name, types, and order) which match the given input table's columns.

@@ -22,6 +22,7 @@ set(PROTO_OUT_DIR "${PROTO_GEN_DIR}/deephaven_core/proto")
 set(PROTO_FILES
     "${PROTO_SRC_DIR}/deephaven_core/proto/application.proto"
     "${PROTO_SRC_DIR}/deephaven_core/proto/config.proto"
+    "${PROTO_SRC_DIR}/deephaven_core/proto/contextual-auth.proto"
     "${PROTO_SRC_DIR}/deephaven_core/proto/console.proto"
     "${PROTO_SRC_DIR}/deephaven_core/proto/hierarchicaltable.proto"
     "${PROTO_SRC_DIR}/deephaven_core/proto/inputtable.proto"
