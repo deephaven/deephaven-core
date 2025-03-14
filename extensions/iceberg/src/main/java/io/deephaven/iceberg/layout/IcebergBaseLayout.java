@@ -3,6 +3,9 @@
 //
 package io.deephaven.iceberg.layout;
 
+import io.deephaven.api.ColumnName;
+import io.deephaven.api.SortColumn;
+import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder;
@@ -20,8 +23,11 @@ import org.apache.iceberg.catalog.Catalog;
 import org.apache.iceberg.catalog.TableIdentifier;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.VisibleForTesting;
 
 import java.net.URI;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,7 +37,6 @@ import java.util.stream.Stream;
 
 import static io.deephaven.iceberg.base.IcebergUtils.allManifestFiles;
 import static io.deephaven.iceberg.base.IcebergUtils.dataFileUri;
-import static io.deephaven.iceberg.base.IcebergUtils.locationUri;
 
 public abstract class IcebergBaseLayout implements TableLocationKeyFinder<IcebergTableLocationKey> {
     /**
@@ -72,11 +77,6 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
     final TableDefinition tableDef;
 
     /**
-     * The URI scheme from the Table {@link Table#location() location}.
-     */
-    private final String uriScheme;
-
-    /**
      * The {@link Snapshot} from which to discover data files.
      */
     Snapshot snapshot;
@@ -114,7 +114,8 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
         final org.apache.iceberg.FileFormat format = dataFile.format();
         if (format == org.apache.iceberg.FileFormat.PARQUET) {
             return new IcebergTableParquetLocationKey(catalogName, tableUuid, tableIdentifier, manifestFile, dataFile,
-                    fileUri, 0, partitions, parquetInstructions, channelsProvider);
+                    fileUri, 0, partitions, parquetInstructions, channelsProvider,
+                    computeSortedColumns(tableAdapter.icebergTable(), dataFile, parquetInstructions));
         }
         throw new UnsupportedOperationException(String.format("%s:%d - an unsupported file format %s for URI '%s'",
                 tableAdapter, snapshot.snapshotId(), format, fileUri));
@@ -123,6 +124,8 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
     /**
      * @param tableAdapter The {@link IcebergTableAdapter} that will be used to access the table.
      * @param instructions The instructions for customizations while reading.
+     * @param dataInstructionsProvider The provider for special instructions, to be used if special instructions not
+     *        provided in the {@code instructions}.
      */
     public IcebergBaseLayout(
             @NotNull final IcebergTableAdapter tableAdapter,
@@ -147,7 +150,8 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
 
         this.snapshot = tableAdapter.getSnapshot(instructions);
         this.tableDef = tableAdapter.definition(instructions);
-        this.uriScheme = locationUri(tableAdapter.icebergTable()).getScheme();
+
+        final String uriScheme = tableAdapter.locationUri().getScheme();
         // Add the data instructions if provided as part of the IcebergReadInstructions, or else attempt to create
         // data instructions from the properties collection and URI scheme.
         final Object specialInstructions = instructions.dataInstructions()
@@ -262,5 +266,53 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
         }
 
         snapshot = updateSnapshot;
+    }
+
+    @VisibleForTesting
+    @NotNull
+    public static List<SortColumn> computeSortedColumns(
+            @NotNull final org.apache.iceberg.Table icebergTable,
+            @NotNull final DataFile dataFile,
+            @NotNull final ParquetInstructions readInstructions) {
+        final Integer sortOrderId = dataFile.sortOrderId();
+        // If sort order is missing or unknown, we cannot determine the sorted columns from the metadata and will
+        // check the underlying parquet file for the sorted columns, when the user asks for them.
+        if (sortOrderId == null) {
+            return Collections.emptyList();
+        }
+        final SortOrder sortOrder = icebergTable.sortOrders().get(sortOrderId);
+        if (sortOrder == null) {
+            return Collections.emptyList();
+        }
+        if (sortOrder.isUnsorted()) {
+            return Collections.emptyList();
+        }
+        final Schema schema = sortOrder.schema();
+        final List<SortColumn> sortColumns = new ArrayList<>(sortOrder.fields().size());
+        for (final SortField field : sortOrder.fields()) {
+            if (!field.transform().isIdentity()) {
+                // TODO (DH-18160): Improve support for handling non-identity transforms
+                break;
+            }
+            final String icebergColName = schema.findColumnName(field.sourceId());
+            final String dhColName = readInstructions.getColumnNameFromParquetColumnNameOrDefault(icebergColName);
+            final TableDefinition tableDefinition = readInstructions.getTableDefinition().orElseThrow(
+                    () -> new IllegalStateException("Table definition is required for reading from Iceberg tables"));
+            final ColumnDefinition<?> columnDef = tableDefinition.getColumn(dhColName);
+            if (columnDef == null) {
+                // Table definition provided by the user doesn't have this column, so stop here
+                break;
+            }
+            final SortColumn sortColumn;
+            if (field.nullOrder() == NullOrder.NULLS_FIRST && field.direction() == SortDirection.ASC) {
+                sortColumn = SortColumn.asc(ColumnName.of(dhColName));
+            } else if (field.nullOrder() == NullOrder.NULLS_LAST && field.direction() == SortDirection.DESC) {
+                sortColumn = SortColumn.desc(ColumnName.of(dhColName));
+            } else {
+                break;
+            }
+            sortColumns.add(sortColumn);
+        }
+        return Collections.unmodifiableList(sortColumns);
     }
 }

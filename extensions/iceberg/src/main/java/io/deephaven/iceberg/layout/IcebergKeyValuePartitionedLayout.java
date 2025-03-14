@@ -42,6 +42,8 @@ public final class IcebergKeyValuePartitionedLayout extends IcebergBaseLayout {
      * @param tableAdapter The {@link IcebergTableAdapter} that will be used to access the table.
      * @param partitionSpec The Iceberg {@link PartitionSpec partition spec} for the table.
      * @param instructions The instructions for customizations while reading.
+     * @param dataInstructionsProvider The provider for special instructions, to be used if special instructions not
+     *        provided in the {@code instructions}.
      */
     public IcebergKeyValuePartitionedLayout(
             @NotNull final IcebergTableAdapter tableAdapter,

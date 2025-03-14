@@ -75,8 +75,19 @@ public final class IcebergUtils {
      */
     public static Stream<DataFile> allDataFiles(@NotNull final Table table, @NotNull final Snapshot snapshot) {
         return allManifestFiles(table, snapshot)
-                .map(manifestFile -> ManifestFiles.read(manifestFile, table.io()))
-                .flatMap(IcebergUtils::toStream);
+                .flatMap(manifestFile -> allDataFiles(table, manifestFile));
+    }
+
+    /**
+     * Get a stream of all {@link DataFile} objects from the given {@link Table} and {@link ManifestFile}.
+     *
+     * @param table The {@link Table} to retrieve data files for.
+     * @param manifestFile The {@link ManifestFile} to retrieve data files from.
+     *
+     * @return A stream of {@link DataFile} objects.
+     */
+    public static Stream<DataFile> allDataFiles(@NotNull final Table table, @NotNull ManifestFile manifestFile) {
+        return toStream(ManifestFiles.read(manifestFile, table.io()));
     }
 
     /**
@@ -117,6 +128,14 @@ public final class IcebergUtils {
         }
     }
 
+    public static Map<ManifestFile, List<DataFile>> manifestToDataFiles(
+            @NotNull final Table table, @NotNull final Snapshot snapshot) {
+        return allManifestFiles(table, snapshot)
+                .collect(Collectors.toMap(
+                        manifestFile -> manifestFile,
+                        manifestFile -> allDataFiles(table, manifestFile).collect(Collectors.toList())));
+    }
+
     /**
      * Convert a {@link org.apache.iceberg.io.CloseableIterable} to a {@link Stream} that will close the iterable when
      * the stream is closed.
@@ -131,15 +150,15 @@ public final class IcebergUtils {
         });
     }
 
-    private static String path(String path, FileIO io) {
+    private static String path(@NotNull final String path, @NotNull final FileIO io) {
         return io instanceof RelativeFileIO ? ((RelativeFileIO) io).absoluteLocation(path) : path;
     }
 
-    public static URI locationUri(Table table) {
+    public static URI locationUri(@NotNull final Table table) {
         return FileUtils.convertToURI(path(table.location(), table.io()), true);
     }
 
-    public static URI dataFileUri(Table table, DataFile dataFile) {
+    public static URI dataFileUri(@NotNull final Table table, @NotNull final DataFile dataFile) {
         return FileUtils.convertToURI(path(dataFile.path().toString(), table.io()), false);
     }
 

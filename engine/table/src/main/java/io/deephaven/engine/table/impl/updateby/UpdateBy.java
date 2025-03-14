@@ -1436,7 +1436,7 @@ public abstract class UpdateBy {
                     }
                 }
                 return zkm.result();
-            }, source::isRefreshing, DynamicNode::isRefreshing);
+            }, source.isRefreshing(), DynamicNode::isRefreshing);
         }
 
         // TODO: test whether the source is static and that UpdateBy call uses only cumulative operators. In this
@@ -1466,7 +1466,7 @@ public abstract class UpdateBy {
                 }
             }
             return bm.result();
-        }, source::isRefreshing, DynamicNode::isRefreshing);
+        }, source.isRefreshing(), DynamicNode::isRefreshing);
     }
     // endregion
 }
