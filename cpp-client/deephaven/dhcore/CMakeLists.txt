@@ -58,6 +58,7 @@ set(ALL_FILES
     include/public/deephaven/dhcore/ticking/ticking.h
     include/public/deephaven/dhcore/utility/cython_support.h
     include/public/deephaven/dhcore/utility/utility.h
+    include/public/deephaven/dhcore/utility/time.h
 
     flatbuf/deephaven/flatbuf/Barrage_generated.h
 
