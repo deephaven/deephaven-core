@@ -28,6 +28,7 @@ using deephaven::dhcore::utility::VerboseCast;
 
 using my_clock = std::chrono::high_resolution_clock;
 using my_time_point = my_clock::time_point;
+using my_duration = my_clock::duration;
 
 namespace {
 void Run(const TableHandleManager &manager, const char *table_name, const char *column_name, int period_seconds);
@@ -96,29 +97,42 @@ DateTime TimePoint2DateTime(const my_time_point &tp) {
   using namespace std::chrono;
   return DateTime::FromNanos(duration_cast<nanoseconds>(tp.time_since_epoch()).count());
 }
-  
+
+my_time_point DateTime2TimePoint(const DateTime &dt) {
+  using namespace std::chrono;
+  const nanoseconds ns(dt.Nanos());
+  return my_time_point(ns);
+}
+
+uint64_t usecs(const my_duration &d) {
+  using namespace std::chrono;
+  return duration_cast<microseconds>(d).count();
+}
+
+const char *musecs = "\u03bcs";
+
 class TrackTimeCallback final : public deephaven::dhcore::ticking::TickingCallback {
 public:
   TrackTimeCallback(const char *col_name)
-    : mux_()
-    , col_name_(col_name)
-    , min_(DateTime::Max())
-    , max_(DateTime::Min())
+    : col_name_(col_name)
     , tick_count_(0UL)
-  {}
+  {
+    Reset();
+  }
 
   virtual ~TrackTimeCallback() {}
 
   void OnTick(deephaven::dhcore::ticking::TickingUpdate update) final {
+    const my_time_point recv_ts = my_clock::now();
     std::unique_lock lock(mux_);
     ++tick_count_;
     auto col_index = *update.Current()->GetColumnIndex(col_name_, true);
 
-    ProcessDeltas(*update.AfterAdds(), col_index, update.AddedRows());
+    ProcessDeltas(recv_ts, *update.AfterAdds(), col_index, update.AddedRows());
 
     if (update.ModifiedRows().size() > col_index) {
       auto row_sequence = update.ModifiedRows()[col_index];
-      ProcessDeltas(*update.AfterModifies(), col_index, row_sequence);
+      ProcessDeltas(recv_ts, *update.AfterModifies(), col_index, row_sequence);
     }
   }
 
@@ -129,13 +143,16 @@ public:
       std::cout << "Caught error: " << e.what() << std::endl;
     }
   }
-
+  
   void DumpStats(
       my_time_point &last_time,
       std::uint64_t &last_tick_count) {
     const my_time_point now = my_clock::now();
     DateTime min, max;
-    std::uint64_t tick_count = ReadAndResetMinMax(min, max);
+    my_duration min_delay, max_delay;
+    std::uint64_t tick_count = ReadAndReset(min, max, min_delay, max_delay);
+    const uint64_t min_delay_us = usecs(min_delay);
+    const uint64_t max_delay_us = usecs(max_delay);
 
     const std::string dt_str = FormatDuration(now - last_time);
     const DateTime now_datetime = TimePoint2DateTime(now);
@@ -144,12 +161,14 @@ public:
     } else {
       std::cout << now_datetime << " Stats for the last " << dt_str;
       try {
-        std::cout << ": min(" << col_name_ << ")=" << min;
+        std::cout << ": min(" << col_name_ << ")=" << min
+                  << ", min_delay=" << min_delay_us << musecs;
       } catch (const std::runtime_error &ex) {
         std::cout << "invalid_time(" << min.Nanos() << ")";
       }
       try {
-        std::cout << ", max(" << col_name_ << ")=" << max;
+        std::cout << ", max(" << col_name_ << ")=" << max
+                  << ", max_delay=" << max_delay_us << musecs;
       } catch (const std::runtime_error &ex) {
         std::cout << "invalid_time(" << max.Nanos() << ")";
       }
@@ -162,6 +181,7 @@ public:
   }
 
   void ProcessDeltas(
+      const my_time_point recv_ts,
       const ClientTable &table,
       const size_t col_index,
       std::shared_ptr<RowSequence> rows) {
@@ -212,24 +232,30 @@ public:
 
       if (lmin < min_) {
         min_ = lmin;
+        min_delay_ = recv_ts - DateTime2TimePoint(lmin);
       }
       if (lmax > max_) {
         max_ = lmax;
+        max_delay_ = recv_ts - DateTime2TimePoint(lmax);
       }
     }
   }
 
 private:
-  void ResetMinMax() {
+  void Reset() {
     min_ = DateTime::Max();
     max_ = DateTime::Min();
+    min_delay_ = my_duration::max();
+    max_delay_ = my_duration::min();
   }
 
-  std::uint64_t ReadAndResetMinMax(DateTime &min, DateTime &max) {
+  std::uint64_t ReadAndReset(DateTime &min, DateTime &max, my_duration& min_delay, my_duration& max_delay) {
     std::unique_lock lock(mux_);
     min = min_;
     max = max_;
-    ResetMinMax();
+    min_delay = min_delay_;
+    max_delay = max_delay_;
+    Reset();
     return tick_count_;
   }
 
@@ -238,6 +264,8 @@ private:
   const char *col_name_;
   DateTime min_;
   DateTime max_;
+  my_duration min_delay_;
+  my_duration max_delay_;
   std::uint64_t tick_count_;
 };
 
