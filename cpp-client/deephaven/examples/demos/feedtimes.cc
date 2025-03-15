@@ -109,6 +109,15 @@ std::string FormatMicros(const uint64_t us) {
   return ss.str();
 }
 
+uint64_t usecs(const my_duration &d) {
+  using namespace std::chrono;
+  return duration_cast<microseconds>(d).count();
+}
+
+std::string FormatMicros(const my_duration &d) {
+  return FormatMicros(usecs(d));
+}
+  
 DateTime TimePoint2DateTime(const my_time_point &tp) {
   using namespace std::chrono;
   return DateTime::FromNanos(duration_cast<nanoseconds>(tp.time_since_epoch()).count());
@@ -118,11 +127,6 @@ my_time_point DateTime2TimePoint(const DateTime &dt) {
   using namespace std::chrono;
   const nanoseconds ns(dt.Nanos());
   return my_time_point(ns);
-}
-
-uint64_t usecs(const my_duration &d) {
-  using namespace std::chrono;
-  return duration_cast<microseconds>(d).count();
 }
 
 class TrackTimeCallback final : public deephaven::dhcore::ticking::TickingCallback {
@@ -176,8 +180,6 @@ public:
     DateTime min, max;
     my_duration min_delay, max_delay;
     std::uint64_t tick_count = ReadAndReset(min, max, min_delay, max_delay);
-    const uint64_t min_delay_us = usecs(min_delay);
-    const uint64_t max_delay_us = usecs(max_delay);
 
     const std::string dt_str = FormatDuration(now - last_time);
     const DateTime now_datetime = TimePoint2DateTime(now);
@@ -193,7 +195,7 @@ public:
       try {
         std::cout << ": min(" << col_name_ << ")=" << min;
         if (last_tick_count != 0) {
-          std::cout << ", min_delay=" << FormatMicros(min_delay_us);
+          std::cout << ", min_delay=" << FormatMicros(min_delay);
         }
       } catch (const std::runtime_error &ex) {
         std::cout << "invalid_time(" << min.Nanos() << ")";
@@ -201,7 +203,7 @@ public:
       try {
         std::cout << ", max(" << col_name_ << ")=" << max;
         if (last_tick_count != 0) {
-          std::cout << ", max_delay=" << FormatMicros(max_delay_us);
+          std::cout << ", max_delay=" << FormatMicros(max_delay);
         }
       } catch (const std::runtime_error &ex) {
         std::cout << "invalid_time(" << max.Nanos() << ")";
