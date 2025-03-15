@@ -13,9 +13,11 @@
 #include <thread>
 
 #include "deephaven/client/client.h"
+#include "deephaven/dhcore/types.h"
 #include "deephaven/dhcore/chunk/chunk.h"
 #include "deephaven/dhcore/column/column_source.h"
 #include "deephaven/dhcore/utility/utility.h"
+#include "deephaven/dhcore/utility/time.h"
 
 using deephaven::client::Client;
 using deephaven::client::TableHandle;
@@ -26,6 +28,9 @@ using deephaven::dhcore::column::DateTimeColumnSource;
 using deephaven::dhcore::container::RowSequence;
 using deephaven::dhcore::clienttable::ClientTable;
 using deephaven::dhcore::utility::VerboseCast;
+using deephaven::dhcore::utility::ToDateTime;
+using deephaven::dhcore::utility::ToTimePoint;
+using deephaven::dhcore::utility::FormatDuration;
 
 using my_clock = std::chrono::high_resolution_clock;
 using my_time_point = my_clock::time_point;
@@ -63,37 +68,6 @@ int main(int argc, char *argv[]) {
 
 namespace {
 
-std::string FormatDuration(std::chrono::nanoseconds nanos) {
-  using namespace std::chrono;
-  auto ns = nanos.count();
-  auto h = duration_cast<hours>(nanos);
-  ns -= duration_cast<nanoseconds>(h).count();
-  auto m = duration_cast<minutes>(nanoseconds(ns));
-  ns -= duration_cast<nanoseconds>(m).count();
-  auto s = duration_cast<seconds>(nanoseconds(ns));
-  ns -= duration_cast<nanoseconds>(s).count();
-  auto ms = duration_cast<milliseconds>(nanoseconds(ns));
-
-  std::stringstream ss;
-  if (h.count() > 0) {
-    ss << h.count() << 'h';
-  }
-  if (m.count() > 0 || h.count() > 0) {
-    if (h.count() > 0) {
-      ss << std::setw(2) << std::setfill('0');
-    }
-    ss << m.count() << 'm';
-  }
-  if (m.count() > 0) {
-    ss << std::setw(2) << std::setfill('0');
-  }
-  ss << s.count() << '.'
-     << std::setw(3) << std::setfill('0') << ms.count()
-     << 's'
-    ;
-  return ss.str();
-}
-
 const char *musecs = "\u03bcs";
 
 std::string FormatMicros(const uint64_t us) {
@@ -118,17 +92,6 @@ std::string FormatMicros(const my_duration &d) {
   return FormatMicros(usecs(d));
 }
   
-DateTime TimePoint2DateTime(const my_time_point &tp) {
-  using namespace std::chrono;
-  return DateTime::FromNanos(duration_cast<nanoseconds>(tp.time_since_epoch()).count());
-}
-
-my_time_point DateTime2TimePoint(const DateTime &dt) {
-  using namespace std::chrono;
-  const nanoseconds ns(dt.Nanos());
-  return my_time_point(ns);
-}
-
 class TrackTimeCallback final : public deephaven::dhcore::ticking::TickingCallback {
 public:
   TrackTimeCallback(const char *col_name)
@@ -183,7 +146,7 @@ public:
     ReadAndReset(initial, min, max, min_delay, max_delay, nrows, nupdates);
 
     const std::string dt_str = FormatDuration(now - last_time);
-    const DateTime now_datetime = TimePoint2DateTime(now);
+    const DateTime now_datetime = ToDateTime(now);
     std::cout << now_datetime;
     if (nrows == 0) {
       std::cerr << " WARNING: No updates for the last " << dt_str << "\n";  // cerr is auto flushed
@@ -277,11 +240,11 @@ public:
 
       if (lmin < min_) {
         min_ = lmin;
-        min_delay_ = recv_ts - DateTime2TimePoint(lmin);
+        min_delay_ = recv_ts - ToTimePoint(lmin);
       }
       if (lmax > max_) {
         max_ = lmax;
-        max_delay_ = recv_ts - DateTime2TimePoint(lmax);
+        max_delay_ = recv_ts - ToTimePoint(lmax);
       }
     }
   }
