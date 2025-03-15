@@ -9,8 +9,6 @@ import io.deephaven.util.channel.SeekableChannelsProviderPlugin;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.net.URI;
-
 /**
  * {@link SeekableChannelsProviderPlugin} implementation used for reading files from S3.
  */

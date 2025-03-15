@@ -72,7 +72,6 @@ public class IcebergRefreshingTestTable implements Table {
     @Override
     public Map<Integer, SortOrder> sortOrders() {
         return testTable.sortOrders();
-
     }
 
     @Override
