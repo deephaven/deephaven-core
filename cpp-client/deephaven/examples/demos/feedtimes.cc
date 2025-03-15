@@ -133,7 +133,7 @@ class TrackTimeCallback final : public deephaven::dhcore::ticking::TickingCallba
 public:
   TrackTimeCallback(const char *col_name)
     : col_name_(col_name)
-    , tick_count_(0UL)
+    , update_idx_(0UL)
     , initial_done_(false)
   {
     Reset();
@@ -144,7 +144,8 @@ public:
   void OnTick(deephaven::dhcore::ticking::TickingUpdate update) final {
     const my_time_point recv_ts = my_clock::now();
     std::unique_lock lock(mux_);
-    ++tick_count_;
+    ++update_idx_;
+    ++nupdates_;
     auto col_index = *update.Current()->GetColumnIndex(col_name_, true);
 
     ProcessDeltas(recv_ts, *update.AfterAdds(), col_index, update.AddedRows());
@@ -173,28 +174,36 @@ public:
     cond_.wait(lock, [this] { return initial_done_; });
   }
 
-  void DumpStats(
-      my_time_point &last_time,
-      std::uint64_t &last_tick_count) {
+  void DumpStats(my_time_point &last_time) {
     const my_time_point now = my_clock::now();
     DateTime min, max;
     my_duration min_delay, max_delay;
-    std::uint64_t tick_count = ReadAndReset(min, max, min_delay, max_delay);
+    uint64_t nrows, nupdates;
+    bool initial;
+    ReadAndReset(initial, min, max, min_delay, max_delay, nrows, nupdates);
 
     const std::string dt_str = FormatDuration(now - last_time);
     const DateTime now_datetime = TimePoint2DateTime(now);
-    if (last_tick_count == tick_count) {
-      std::cerr << "WARNING: No ticks for the last " << dt_str << "\n";  // cerr is auto flushed
+    std::cout << now_datetime;
+    if (nrows == 0) {
+      std::cerr << " WARNING: No updates for the last " << dt_str << "\n";  // cerr is auto flushed
     } else {
-      std::cout << now_datetime;
-      if (last_tick_count == 0) {
+      if (initial) {
         std::cout << " Initial stats";
       } else {
         std::cout << " Stats for the last " << dt_str;
       }
+      std::cout << ": " << nrows << " row";
+      if (nrows != 1) {
+        std::cout << "s";
+      }
+      std::cout << " in " << nupdates << " update";
+      if (nupdates != 1) {
+        std::cout << "s";
+      }
       try {
-        std::cout << ": min(" << col_name_ << ")=" << min;
-        if (last_tick_count != 0) {
+        std::cout << ", min(" << col_name_ << ")=" << min;
+        if (!initial) {
           std::cout << ", min_delay=" << FormatMicros(min_delay);
         }
       } catch (const std::runtime_error &ex) {
@@ -202,7 +211,7 @@ public:
       }
       try {
         std::cout << ", max(" << col_name_ << ")=" << max;
-        if (last_tick_count != 0) {
+        if (!initial) {
           std::cout << ", max_delay=" << FormatMicros(max_delay);
         }
       } catch (const std::runtime_error &ex) {
@@ -213,7 +222,6 @@ public:
                 << std::endl;
     }
     last_time = now;
-    last_tick_count = tick_count;
   }
 
   void ProcessDeltas(
@@ -231,6 +239,7 @@ public:
     while (!rows->Empty()) {
       auto these_rows = rows->Take(kChunkSize);
       auto these_rows_size = these_rows->Size();
+      nrows_ += these_rows_size;
       rows = rows->Drop(kChunkSize);
 
       typed_datetime_col->FillChunk(*these_rows, &data_chunk, nullptr);
@@ -283,16 +292,22 @@ private:
     max_ = DateTime::Min();
     min_delay_ = my_duration::max();
     max_delay_ = my_duration::min();
+    nrows_ = 0UL;
+    nupdates_ = 0UL;
   }
 
-  std::uint64_t ReadAndReset(DateTime &min, DateTime &max, my_duration& min_delay, my_duration& max_delay) {
+  void ReadAndReset(bool &initial,
+                    DateTime &min, DateTime &max, my_duration &min_delay, my_duration &max_delay,
+                    uint64_t &nrows, uint64_t &nupdates) {
     std::unique_lock lock(mux_);
+    initial = update_idx_ == 1UL;
     min = min_;
     max = max_;
     min_delay = min_delay_;
     max_delay = max_delay_;
+    nrows = nrows_;
+    nupdates = nupdates_;
     Reset();
-    return tick_count_;
   }
 
 private:
@@ -303,7 +318,9 @@ private:
   DateTime max_;
   my_duration min_delay_;
   my_duration max_delay_;
-  std::uint64_t tick_count_;
+  std::uint64_t update_idx_;
+  std::uint64_t nrows_;
+  std::uint64_t nupdates_;
   bool initial_done_;
 };
 
@@ -317,14 +334,13 @@ void Run(
   auto cookie = table.Subscribe(callback);
   
   my_time_point last_time = my_clock::now();
-  std::uint64_t last_tick_count = 0;
   // Will run until interrupted by kill.
   auto period = std::chrono::seconds(period_seconds);
   callback->WaitForInitialSnapshot();
-  callback->DumpStats(last_time, last_tick_count);
+  callback->DumpStats(last_time);
   while (true) {
     std::this_thread::sleep_for(period);
-    callback->DumpStats(last_time, last_tick_count);
+    callback->DumpStats(last_time);
   }
 }
 
