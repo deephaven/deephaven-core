@@ -152,7 +152,7 @@ public:
       std::cerr << " WARNING: No updates for the last " << dt_str << "\n";  // cerr is auto flushed
     } else {
       if (initial) {
-        std::cout << " Initial Snapshot stats";
+        std::cout << " Initial snapshot stats";
       } else {
         std::cout << " Stats for the last " << dt_str;
       }
