@@ -18,12 +18,12 @@ import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.regioned.RegionedTableComponentFactoryImpl;
 import io.deephaven.engine.table.iterators.ChunkedObjectColumnIterator;
 import io.deephaven.engine.updategraph.*;
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.ReferentialIntegrity;
 import io.deephaven.util.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.lang.ref.WeakReference;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
@@ -53,7 +53,7 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
      *
      * @param constituentDefinition The {@link TableDefinition} expected of constituent {@link Table tables}
      * @param applyTablePermissions Function to apply in order to correctly restrict the visible result rows in
-     *        constituent tables; may be {@code null} if no permissions are needed
+     *        constituent tables. May be {@code null} if no permissions are needed. Must not return {@code null} tables.
      * @param tableLocationProvider Source for table locations
      * @param subscribeToTableLocationProvider Whether changes to the set of available locations after instantiation
      *        should be reflected in the result SourcePartitionedTable; that is, whether constituents should be added or
@@ -146,8 +146,7 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
                 resultColumns.add(new FunctionalColumn<>(
                         KEY_COLUMN_NAME, TableLocationKey.class,
                         partitioningColumnName, pcd.getDataType(), pcd.getComponentType(),
-                        (TableLocationKey tlk) -> getPartitionValue(tlk, partitioningColumnName)
-                ));
+                        (TableLocationKey tlk) -> getPartitionValue(tlk, partitioningColumnName)));
             }
             resultColumns.add(new FunctionalColumn<>(
                     STATE_COLUMN_NAME, LocationState.class,
@@ -161,6 +160,7 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
 
             if (subscribeToTableLocationProvider || subscribeToTableLocations) {
                 rawResult.setRefreshing(true);
+                // TODO: RefreshCombiner needs to be better; can't use a COWAL
                 refreshCombiner = new UpdateSourceCombiner(rawResult.getUpdateGraph());
                 rawResult.addParentReference(this);
                 manage(refreshCombiner);
@@ -189,11 +189,7 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
                 this.removedLocationsCommitter = new UpdateCommitter<>(
                         this,
                         rawResult.getUpdateGraph(),
-                        ignored -> {
-                            Assert.neqNull(removedLocationStates, "removedLocationStates");
-                            rawResult.unmanage(removedLocationStates.stream());
-                            removedLocationStates = null;
-                        });
+                        UnderlyingTableMaintainer::unmanageForRemovedLocationStates);
                 processBufferedLocationChanges(false);
             } else {
                 sourceTableLocations = null;
@@ -203,7 +199,7 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
 
                 final Collection<LocationState> locationStates = new ArrayList<>();
                 try {
-                    retainReference();
+                    retainReference(); // TODO: Change this if we switch to raw result as manager.
                     tableLocationProvider.getTableLocationKeys(
                             lstlk -> locationStates.add(new LocationState(lstlk)),
                             locationKeyMatcher);
@@ -217,11 +213,16 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
                 }
             }
 
-            // TODO: I think we want to make the constituents use the regular update graph. Then, we can probably use
-            // filteredResult as the "resultUpdatedDependency" for purposes of a ConstituentDependency on
-            // LocationStates, which can be Dependencies that bleed through to the Table iff its been made.
-            // TODO: How to force parallel construction for constituents?
             result = (QueryTable) rawResult.view(resultColumns);
+        }
+
+        private static void unmanageForRemovedLocationStates(
+                @NotNull final UnderlyingTableMaintainer underlyingTableMaintainer) {
+            final List<LocationState> removedLocationStates = underlyingTableMaintainer.removedLocationStates;
+            Assert.neqNull(removedLocationStates, "removedLocationStates");
+            underlyingTableMaintainer.unmanage(
+                    removedLocationStates.stream().flatMap(LocationState::referentsToUnmanage));
+            underlyingTableMaintainer.removedLocationStates = null;
         }
 
         private QueryTable activateAndGetResult() {
@@ -236,27 +237,18 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
             final MutableLong lastInsertedRowKey = new MutableLong(initialLastRowKey);
             locationStates.sorted(Comparator.comparing(LocationState::key)).forEach(ls -> {
                 final long constituentRowKey = lastInsertedRowKey.incrementAndGet();
-
-                for (int pci = 0; pci < resultPartitionValues.length; ++pci) {
-                    addPartitionValue(
-                            ls.key(),
-                            partitioningColumnNames[pci],
-                            resultPartitionValues[pci],
-                            constituentRowKey);
-                }
-
                 resultLocationStates.ensureCapacity(constituentRowKey + 1);
                 resultLocationStates.set(constituentRowKey, ls);
             });
             return initialLastRowKey == lastInsertedRowKey.get()
-                    ? RowSetFactory.empty()
+                    ? null
                     : RowSetFactory.fromRange(initialLastRowKey + 1, lastInsertedRowKey.get());
         }
 
         private static <T> T getPartitionValue(
                 @NotNull final TableLocationKey tableLocationKey,
                 @NotNull final String partitioningColumnName) {
-            return tableLocationKey.getPartitionValue(partitioningColumnName));
+            return tableLocationKey.getPartitionValue(partitioningColumnName);
         }
 
         private void processBufferedLocationChanges(final boolean notifyListeners) {
@@ -268,8 +260,8 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
                 if (locationUpdate == null) {
                     return;
                 }
-                removed = processRemovals(locationUpdate);
-                added = processAdditions(locationUpdate);
+                removed = processRemovals(locationUpdate.getPendingRemovedLocationKeys());
+                added = processAdditions(locationUpdate.getPendingAddedLocationKeys());
             }
 
             if (removed == null) {
@@ -300,28 +292,34 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
         }
 
         @Nullable
-        private RowSet processAdditions(final TableLocationSubscriptionBuffer.LocationUpdate locationUpdate) {
-            return sortAndAddLocations(locationUpdate.getPendingAddedLocationKeys()
+        private RowSet processAdditions(final Collection<LiveSupplier<ImmutableTableLocationKey>> addedKeySuppliers) {
+            if (addedKeySuppliers.isEmpty()) {
+                return null;
+            }
+            return sortAndAddLocations(addedKeySuppliers
                     .stream()
                     .filter(lstlk -> locationKeyMatcher.test(lstlk.get()))
                     .map(LocationState::new));
         }
 
         @Nullable
-        private RowSet processRemovals(final TableLocationSubscriptionBuffer.LocationUpdate locationUpdate) {
-            final Set<ImmutableTableLocationKey> relevantRemovedLocationKeys =
-                    locationUpdate.getPendingRemovedLocationKeys()
-                            .stream()
-                            .map(LiveSupplier::get)
-                            .filter(locationKeyMatcher)
-                            .collect(Collectors.toSet());
+        private RowSet processRemovals(final Collection<LiveSupplier<ImmutableTableLocationKey>> removedKeySuppliers) {
+            if (removedKeySuppliers.isEmpty()) {
+                return null;
+            }
+
+            final Set<ImmutableTableLocationKey> relevantRemovedLocationKeys = removedKeySuppliers
+                    .stream()
+                    .map(LiveSupplier::get)
+                    .filter(locationKeyMatcher)
+                    .collect(Collectors.toSet());
 
             if (relevantRemovedLocationKeys.isEmpty()) {
                 return null;
             }
 
             // At the end of the cycle we need to make sure we unmanage the key providers for removed location states.
-            this.removedLocationStates = new ArrayList<>(relevantRemovedLocationKeys.size());
+            removedLocationStates = new ArrayList<>(relevantRemovedLocationKeys.size());
             final RowSetBuilderSequential deleteBuilder = RowSetFactory.builderSequential();
 
             // We don't have a map of location key to row key, so we have to iterate the location states. If this
@@ -345,7 +343,7 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
                 removedLocationStates = null;
                 return null;
             }
-            this.removedLocationsCommitter.maybeActivate();
+            removedLocationsCommitter.maybeActivate();
 
             final WritableRowSet deletedRows = deleteBuilder.build();
             resultLocationStates.setNull(deletedRows);
@@ -368,34 +366,17 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
             return refreshCombiner.getUpdateGraph();
         }
 
-        @Override
-        public void addSource(@NotNull final Runnable updateSource) {
-
-        }
-
-        @Override
-        public void removeSource(@NotNull final Runnable updateSource) {
-
-        }
-
-        @Override
-        public void requestRefresh() {
-
-        }
-
-        @Override
-        public void run() {
-
-        }
-
         private final class LocationState {
 
             private final LiveSupplier<ImmutableTableLocationKey> keySupplier;
 
-            private volatile WeakReference<Table> tableRef;
+            private volatile Table table;
 
             private LocationState(@NotNull final LiveSupplier<ImmutableTableLocationKey> keySupplier) {
                 this.keySupplier = keySupplier;
+                // TODO: We need to keep key supplier managed even when we're static and let GC sort things out, but
+                // that means we can't use the UTM as the manager. Maybe we should instead use the raw result, and leak
+                // a ref to it when static?
                 UnderlyingTableMaintainer.this.manage(keySupplier);
             }
 
@@ -405,61 +386,56 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
 
             private Table table() {
                 Table localTable;
-                if ((localTable = existingCachedTable()) == null) {
+                if ((localTable = table) == null) {
                     final TableLocationKey locationKey = key();
                     synchronized (this) {
-                        if ((localTable = existingCachedTable()) == null) {
-                            localTable = LivenessScopeStack.computeEnclosed(
-                                    () -> makeConstituentTable(locationKey),
-                                    () -> subscribeToTableLocations,
-                                    Table::isRefreshing);
-                            tableRef = new WeakReference<>(localTable);
+                        if ((localTable = table) == null) {
+                            localTable = makeConstituentTable(locationKey);
                         }
                     }
                 }
                 return localTable;
             }
 
-            private Table existingCachedTable() {
-                final WeakReference<Table> localTableRef = tableRef;
-                if (localTableRef == null) {
-                    return null;
-                }
-                final Table localTable = localTableRef.get();
-                if (localTable == null || localTable.isFailed() || !Liveness.verifyCachedObjectForReuse(localTable)) {
-                    return null;
-                }
-                return localTable;
-            }
-
             private Table makeConstituentTable(@NotNull final TableLocationKey locationKey) {
-                final PartitionAwareSourceTable constituent = new PartitionAwareSourceTable(
-                        constituentDefinition,
-                        "SingleLocationSourceTable-" + locationKey,
-                        RegionedTableComponentFactoryImpl.INSTANCE,
-                        new SingleTableLocationProvider(
-                                tableLocationProvider.getTableLocation(key()),
-                                subscribeToTableLocations
-                                        ? tableLocationProvider.getLocationUpdateMode()
-                                        : TableUpdateMode.STATIC),
-                        subscribeToTableLocations ? refreshCombiner : null);
+                final TableLocation tableLocation = tableLocationProvider.getTableLocation(key());
+                final boolean refreshing = subscribeToTableLocations && tableLocation.supportsSubscriptions();
+                try (final SafeCloseable ignored = refreshing ? LivenessScopeStack.open() : null) {
+                    // noinspection ExtractMethodRecommender
+                    final BaseTable<?> constituent = new PartitionAwareSourceTable(
+                            constituentDefinition,
+                            SourcePartitionedTable.class.getSimpleName() + '[' + tableLocationProvider + ']'
+                                    + "-Constituent-" + locationKey,
+                            RegionedTableComponentFactoryImpl.INSTANCE,
+                            new SingleTableLocationProvider(
+                                    tableLocation,
+                                    refreshing
+                                            ? tableLocationProvider.getLocationUpdateMode()
+                                            : TableUpdateMode.STATIC),
+                            refreshing ? refreshCombiner : null);
 
-                // Be careful to propagate the systemic attribute properly to child tables
-                constituent.setAttribute(Table.SYSTEMIC_TABLE_ATTRIBUTE, result.isSystemicObject());
-                // TODO: Make sure we manage the constituent appropriately
-                // TODO: How to ensure that we coalesce constituents in parallel?
-                return applyTablePermissions.apply(constituent);
+                    // Be careful to propagate the systemic attribute properly to child tables
+                    constituent.setAttribute(Table.SYSTEMIC_TABLE_ATTRIBUTE, result.isSystemicObject());
+
+                    final Table adjustedConstituent = applyTablePermissions.apply(constituent);
+                    if (adjustedConstituent.isRefreshing()) {
+                        UnderlyingTableMaintainer.this.manage(adjustedConstituent);
+                    }
+                    return adjustedConstituent;
+                }
             }
 
             /**
-             * Get rid of the underlying subscription in this state, if any, and release the key supplier.
+             * @return A {@link Stream} of {@link LivenessReferent referents} to be unmanaged after this location state
+             *         is removed. The stream may contain {@code null} elements. Clears the {@link #table} reference as
+             *         a side effect.
              */
-            private void release() {
+            private Stream<? extends LivenessReferent> referentsToUnmanage() {
                 final Table localTable = table;
-                if (localTable != null && localTable.isRefreshing()) {
-                    localTable.dropReference();
-                }
-                keySupplier.dropReference();
+                table = null;
+                return localTable == null || !localTable.isRefreshing()
+                        ? Stream.of(keySupplier)
+                        : Stream.of(keySupplier, localTable);
             }
         }
     }

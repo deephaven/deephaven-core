@@ -200,7 +200,7 @@ public class RegionedColumnSourceManager implements ColumnSourceManager, Delegat
                 }
             };
         } else {
-            // This RCSM wil be managing table locations to prevent them from being de-scoped but will not otherwise
+            // This RCSM will be managing table locations to prevent them from being de-scoped but will not otherwise
             // participate in the liveness management process.
             livenessNode = new ReferenceCountedLivenessNode(false) {};
             livenessNode.retainReference();
