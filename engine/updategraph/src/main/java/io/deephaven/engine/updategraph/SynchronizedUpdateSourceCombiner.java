@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.updategraph;
 
@@ -11,16 +11,17 @@ import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.util.Collections;
 
 /**
- * Update source that combines multiple sources in order to force them to be refreshed as a unit within the
- * {@link UpdateGraph update graph} provided at construction.
+ * {@link UpdateSourceCombiner} that synchronizes access to the combined sources, and never uses a concurrent
+ * {@link WeakReferenceManager} in order to avoid expensive copy operations. Should be used when its expected that
+ * sources will be added from multiple threads and that the number of sources will be large.
  */
-public class UpdateSourceCombiner extends LivenessArtifact implements Runnable, UpdateSourceRegistrar {
+public class SynchronizedUpdateSourceCombiner extends UpdateSourceCombiner {
 
     private final UpdateGraph updateGraph;
 
-    private final WeakReferenceManager<Runnable> sources = new WeakReferenceManager<>(true);
+    private final WeakReferenceManager<Runnable> combinedTables = new WeakReferenceManager<>(false);
 
-    public UpdateSourceCombiner(final UpdateGraph updateGraph) {
+    public SynchronizedUpdateSourceCombiner(final UpdateGraph updateGraph) {
         this.updateGraph = updateGraph;
     }
 
@@ -34,7 +35,7 @@ public class UpdateSourceCombiner extends LivenessArtifact implements Runnable, 
 
     @Override
     public void run() {
-        sources.forEachValidReference(Runnable::run);
+        combinedTables.forEachValidReference(Runnable::run);
     }
 
     @Override
@@ -49,12 +50,12 @@ public class UpdateSourceCombiner extends LivenessArtifact implements Runnable, 
             // combiner as a parent, in order to ensure the integrity of the resulting DAG.
             dynamicUpdateSource.addParentReference(this);
         }
-        sources.add(updateSource);
+        combinedTables.add(updateSource);
     }
 
     @Override
     public void removeSource(@NotNull final Runnable updateSource) {
-        sources.removeAll(Collections.singleton(updateSource));
+        combinedTables.removeAll(Collections.singleton(updateSource));
     }
 
     /**

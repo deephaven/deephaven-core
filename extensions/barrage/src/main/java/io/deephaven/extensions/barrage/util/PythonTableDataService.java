@@ -122,10 +122,14 @@ public class PythonTableDataService extends AbstractTableDataService {
      *
      * @param tableKey The table key
      * @param live Whether the result should update as new data becomes available
+     * @param preCheckExistence Whether to include only locations observed to have non-empty data
      * @return The {@link PartitionedTable}
      */
     @ScriptApi
-    public PartitionedTable makePartitionedTable(@NotNull final TableKeyImpl tableKey, final boolean live) {
+    public PartitionedTable makePartitionedTable(
+            @NotNull final TableKeyImpl tableKey,
+            final boolean live,
+            final boolean preCheckExistence) {
         final TableLocationProviderImpl tableLocationProvider =
                 (TableLocationProviderImpl) getTableLocationProvider(tableKey);
         return new SourcePartitionedTable(
@@ -134,7 +138,8 @@ public class PythonTableDataService extends AbstractTableDataService {
                 tableLocationProvider,
                 live,
                 live,
-                tlk -> true);
+                tlk -> true,
+                preCheckExistence);
     }
 
     /**
