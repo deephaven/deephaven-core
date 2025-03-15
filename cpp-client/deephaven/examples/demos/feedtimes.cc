@@ -152,7 +152,7 @@ public:
       std::cerr << " WARNING: No updates for the last " << dt_str << "\n";  // cerr is auto flushed
     } else {
       if (initial) {
-        std::cout << " Initial stats";
+        std::cout << " Initial Snapshot stats";
       } else {
         std::cout << " Stats for the last " << dt_str;
       }
@@ -160,9 +160,11 @@ public:
       if (nrows != 1) {
         std::cout << "s";
       }
-      std::cout << " in " << nupdates << " update";
-      if (nupdates != 1) {
-        std::cout << "s";
+      if (!initial) {
+        std::cout << " in " << nupdates << " update";
+        if (nupdates != 1) {
+          std::cout << "s";
+        }
       }
       try {
         std::cout << ", min(" << col_name_ << ")=" << min;
