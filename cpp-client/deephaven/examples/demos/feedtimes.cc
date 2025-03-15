@@ -2,6 +2,7 @@
  * Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
  */
 #include <chrono>
+#include <condition_variable>
 #include <cstdlib>
 #include <exception>
 #include <iostream>
@@ -93,6 +94,21 @@ std::string FormatDuration(std::chrono::nanoseconds nanos) {
   return ss.str();
 }
 
+const char *musecs = "\u03bcs";
+
+std::string FormatMicros(const uint64_t us) {
+  const uint64_t ms = us / 1'000UL;
+  const uint64_t rest_us = us % 1'000UL;
+  std::stringstream ss;
+  ss << ms;
+  if (rest_us > 0) {
+    ss << '.' << std::setw(3) << std::setfill('0') << rest_us;
+  }
+  ss << "ms (";
+  ss << us << musecs << ")";
+  return ss.str();
+}
+
 DateTime TimePoint2DateTime(const my_time_point &tp) {
   using namespace std::chrono;
   return DateTime::FromNanos(duration_cast<nanoseconds>(tp.time_since_epoch()).count());
@@ -109,13 +125,12 @@ uint64_t usecs(const my_duration &d) {
   return duration_cast<microseconds>(d).count();
 }
 
-const char *musecs = "\u03bcs";
-
 class TrackTimeCallback final : public deephaven::dhcore::ticking::TickingCallback {
 public:
   TrackTimeCallback(const char *col_name)
     : col_name_(col_name)
     , tick_count_(0UL)
+    , initial_done_(false)
   {
     Reset();
   }
@@ -134,6 +149,11 @@ public:
       auto row_sequence = update.ModifiedRows()[col_index];
       ProcessDeltas(recv_ts, *update.AfterModifies(), col_index, row_sequence);
     }
+
+    if (!initial_done_) {
+      initial_done_ = true;
+      cond_.notify_all();
+    }
   }
 
   void OnFailure(std::exception_ptr ep) final {
@@ -144,6 +164,11 @@ public:
     }
   }
   
+  void WaitForInitialSnapshot() {
+    std::unique_lock lock(mux_);
+    cond_.wait(lock, [this] { return initial_done_; });
+  }
+
   void DumpStats(
       my_time_point &last_time,
       std::uint64_t &last_tick_count) {
@@ -159,16 +184,25 @@ public:
     if (last_tick_count == tick_count) {
       std::cerr << "WARNING: No ticks for the last " << dt_str << "\n";  // cerr is auto flushed
     } else {
-      std::cout << now_datetime << " Stats for the last " << dt_str;
+      std::cout << now_datetime;
+      if (last_tick_count == 0) {
+        std::cout << " Initial stats";
+      } else {
+        std::cout << " Stats for the last " << dt_str;
+      }
       try {
-        std::cout << ": min(" << col_name_ << ")=" << min
-                  << ", min_delay=" << min_delay_us << musecs;
+        std::cout << ": min(" << col_name_ << ")=" << min;
+        if (last_tick_count != 0) {
+          std::cout << ", min_delay=" << FormatMicros(min_delay_us);
+        }
       } catch (const std::runtime_error &ex) {
         std::cout << "invalid_time(" << min.Nanos() << ")";
       }
       try {
-        std::cout << ", max(" << col_name_ << ")=" << max
-                  << ", max_delay=" << max_delay_us << musecs;
+        std::cout << ", max(" << col_name_ << ")=" << max;
+        if (last_tick_count != 0) {
+          std::cout << ", max_delay=" << FormatMicros(max_delay_us);
+        }
       } catch (const std::runtime_error &ex) {
         std::cout << "invalid_time(" << max.Nanos() << ")";
       }
@@ -261,12 +295,14 @@ private:
 
 private:
   mutable std::mutex mux_;
+  mutable std::condition_variable cond_;
   const char *col_name_;
   DateTime min_;
   DateTime max_;
   my_duration min_delay_;
   my_duration max_delay_;
   std::uint64_t tick_count_;
+  bool initial_done_;
 };
 
 void Run(
@@ -282,6 +318,8 @@ void Run(
   std::uint64_t last_tick_count = 0;
   // Will run until interrupted by kill.
   auto period = std::chrono::seconds(period_seconds);
+  callback->WaitForInitialSnapshot();
+  callback->DumpStats(last_time, last_tick_count);
   while (true) {
     std::this_thread::sleep_for(period);
     callback->DumpStats(last_time, last_tick_count);
