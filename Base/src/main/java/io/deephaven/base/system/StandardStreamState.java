@@ -5,7 +5,7 @@ package io.deephaven.base.system;
 
 import java.io.OutputStream;
 import java.io.PrintStream;
-import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -23,7 +23,7 @@ public class StandardStreamState {
         this.initialized = new AtomicBoolean(false);
     }
 
-    public void setupRedirection() throws UnsupportedEncodingException {
+    public void setupRedirection() {
         if (!initialized.compareAndSet(false, true)) {
             throw new IllegalStateException("May only call StandardStreamState#setupRedirection once");
         }
@@ -59,16 +59,16 @@ public class StandardStreamState {
         }
     }
 
-    private static PrintStream adapt(List<OutputStream> outputStreams) throws UnsupportedEncodingException {
+    private static PrintStream adapt(List<OutputStream> outputStreams) {
         // TODO (core#88): Figure out appropriate stdout / LogBuffer encoding
         if (outputStreams.size() == 1) {
             OutputStream out = outputStreams.get(0);
             if (out instanceof PrintStream) {
                 return (PrintStream) out;
             }
-            return new PrintStream(out, true, "ISO-8859-1");
+            return new PrintStream(out, true, StandardCharsets.ISO_8859_1);
         }
-        return new PrintStream(MultipleOutputStreams.of(outputStreams), true, "ISO-8859-1");
+        return new PrintStream(MultipleOutputStreams.of(outputStreams), true, StandardCharsets.ISO_8859_1);
     }
 }
 

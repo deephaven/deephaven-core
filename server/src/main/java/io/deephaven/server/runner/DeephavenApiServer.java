@@ -88,7 +88,7 @@ public class DeephavenApiServer {
 
     private final GrpcServer server;
     private final UpdateGraph ug;
-    private final LogInit logInit;
+    private final Provider<LogInit> logInit;
     private final Provider<Set<BusinessCalendar>> calendars;
     private final Scheduler scheduler;
     private final Provider<ScriptSession> scriptSessionProvider;
@@ -105,7 +105,7 @@ public class DeephavenApiServer {
     public DeephavenApiServer(
             final GrpcServer server,
             @Named(PeriodicUpdateGraph.DEFAULT_UPDATE_GRAPH_NAME) final UpdateGraph ug,
-            final LogInit logInit,
+            final Provider<LogInit> logInit,
             final Provider<Set<BusinessCalendar>> calendars,
             final Scheduler scheduler,
             final Provider<ScriptSession> scriptSessionProvider,
@@ -173,8 +173,9 @@ public class DeephavenApiServer {
             }
         });
 
+        // Ensure that our logging is configured no later than this point
         log.info().append("Configuring logging...").endl();
-        logInit.run();
+        logInit.get();
 
         for (BusinessCalendar calendar : calendars.get()) {
             Calendars.addCalendar(calendar);
