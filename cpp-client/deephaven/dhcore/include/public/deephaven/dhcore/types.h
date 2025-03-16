@@ -378,45 +378,6 @@ public:
   static DateTime Parse(std::string_view iso_8601_timestamp);
 
   /**
-   * Returns the minimum representable value.  Useful to initialize a variable that would be used
-   * to compute a max over a range of values.
-   *
-   * @return The minimum representable value.
-   */
-  static DateTime Min() {
-    return DateTime(std::numeric_limits<int64_t>::min());
-  }
-
-  /**
-   * Returns the maximum representable value.  Useful to initialize a variable that would be used
-   * to compute a min over a range of values.
-   *
-   * @return The maximum representable value.
-   */
-  static DateTime Max() {
-    return DateTime(std::numeric_limits<int64_t>::max());
-  }
-
-  /**
-   * True if the DateTime object is the Null value.
-   *
-   * @param v a DateTime object to check for Null.
-   * @return true if the DateTime object is the Null value.
-   */
-  static bool isNull(const DateTime& v) {
-    return v.nanos_ == int64_t(0);
-  }
-
-  /**
-   * True if this DateTime object is the null value.
-   *
-   * @return true if this DateTime object is the null value.
-   */
-  bool isNull() const {
-    return isNull(*this);
-  }
-
-  /**
    * Default constructor. Sets the DateTime equal to the epoch.
    */
   DateTime() = default;
@@ -462,28 +423,6 @@ public:
    */
   [[nodiscard]]
   int64_t Nanos() const { return nanos_; }
-
-  friend bool operator<(const DateTime &lhs, const DateTime &rhs) {
-    if (isNull(lhs) || isNull(rhs)) {
-      return false;
-    }
-    return lhs.nanos_ < rhs.nanos_;
-  }
-
-  friend bool operator<=(const DateTime &lhs, const DateTime &rhs) {
-    if (isNull(lhs) || isNull(rhs)) {
-      return false;
-    }
-    return lhs.nanos_ <= rhs.nanos_;
-  }
-
-  friend bool operator>(const DateTime &lhs, const DateTime &rhs) {
-    return rhs < lhs;
-  }
-
-  friend bool operator>=(const DateTime &lhs, const DateTime &rhs) {
-    return rhs <= lhs;
-  }
 
 private:
   int64_t nanos_ = 0;

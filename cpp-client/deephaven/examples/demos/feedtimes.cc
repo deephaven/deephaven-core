@@ -8,6 +8,7 @@
 #include <iostream>
 #include <iomanip>
 #include <mutex>
+#include <optional>
 #include <sstream>
 #include <string>
 #include <thread>
@@ -23,6 +24,7 @@ using deephaven::client::Client;
 using deephaven::client::TableHandle;
 using deephaven::client::TableHandleManager;
 using deephaven::dhcore::DateTime;
+using deephaven::dhcore::chunk::BooleanChunk;
 using deephaven::dhcore::chunk::DateTimeChunk;
 using deephaven::dhcore::column::DateTimeColumnSource;
 using deephaven::dhcore::container::RowSequence;
@@ -37,7 +39,7 @@ using my_time_point = my_clock::time_point;
 using my_duration = my_clock::duration;
 
 namespace {
-void Run(const TableHandleManager &manager, const char *table_name, const char *column_name, int period_seconds);
+void Run(const TableHandleManager &manager, const char *table_name, const char *col_name, int period_seconds);
 }  // namespace
 
 int main(int argc, char *argv[]) {
@@ -94,7 +96,7 @@ std::string FormatMicros(const my_duration &d) {
   
 class TrackTimeCallback final : public deephaven::dhcore::ticking::TickingCallback {
 public:
-  TrackTimeCallback(const char *col_name)
+  explicit TrackTimeCallback(const char *col_name)
     : col_name_(col_name)
     , update_idx_(0UL)
     , initial_done_(false)
@@ -102,7 +104,7 @@ public:
     Reset();
   }
 
-  virtual ~TrackTimeCallback() {}
+  virtual ~TrackTimeCallback() = default;
 
   void OnTick(deephaven::dhcore::ticking::TickingUpdate update) final {
     const my_time_point recv_ts = my_clock::now();
@@ -139,7 +141,7 @@ public:
 
   void DumpStats(my_time_point &last_time) {
     const my_time_point now = my_clock::now();
-    DateTime min, max;
+    std::optional<DateTime> min, max;
     my_duration min_delay, max_delay;
     uint64_t nrows, nupdates;
     bool initial;
@@ -167,20 +169,20 @@ public:
         }
       }
       try {
-        std::cout << ", min(" << col_name_ << ")=" << min;
+        std::cout << ", min(" << col_name_ << ")=" << *min;
         if (!initial) {
           std::cout << ", min_delay=" << FormatMicros(min_delay);
         }
       } catch (const std::runtime_error &ex) {
-        std::cout << "invalid_time(" << min.Nanos() << ")";
+        std::cout << "invalid_time(" << min->Nanos() << ")";
       }
       try {
-        std::cout << ", max(" << col_name_ << ")=" << max;
+        std::cout << ", max(" << col_name_ << ")=" << *max;
         if (!initial) {
           std::cout << ", max_delay=" << FormatMicros(max_delay);
         }
       } catch (const std::runtime_error &ex) {
-        std::cout << "invalid_time(" << max.Nanos() << ")";
+        std::cout << "invalid_time(" << max->Nanos() << ")";
       }
       std::cout << "."
                 // we actually want the flush, so we use endl instead of '\n'.
@@ -200,6 +202,7 @@ public:
 
     constexpr const size_t kChunkSize = 8192;
     auto data_chunk = DateTimeChunk::Create(kChunkSize);
+    auto null_chunk = BooleanChunk::Create(kChunkSize);
 
     while (!rows->Empty()) {
       auto these_rows = rows->Take(kChunkSize);
@@ -207,16 +210,17 @@ public:
       nrows_ += these_rows_size;
       rows = rows->Drop(kChunkSize);
 
-      typed_datetime_col->FillChunk(*these_rows, &data_chunk, nullptr);
+      typed_datetime_col->FillChunk(*these_rows, &data_chunk, &null_chunk);
 
-      auto data = data_chunk.data();
+      const auto *data = data_chunk.data();
+      const auto *nulls = null_chunk.data();
 
-      DateTime v;
-      size_t j;;
+      int64_t v;
+      size_t j;
       // Find first non_null value
       for (j = 0; j < these_rows_size; ++j) {
-        v = data[j];
-        if (!DateTime::isNull(v)) {
+        if (!nulls[j]) {
+          v = data[j].Nanos();
           break;
         }
       }
@@ -225,14 +229,14 @@ public:
         continue;
       }
 
-      DateTime lmin = v;
-      DateTime lmax = v;
+      int64_t lmin = v;
+      int64_t lmax = v;
 
       for (size_t i = j; i < these_rows_size; ++i) {
-        v = data[i];
-        if (DateTime::isNull(v)) {
+        if (nulls[i]) {
           continue;
         }
+        v = data[i].Nanos();
         if (v < lmin) {
           lmin = v;
         } else if (v > lmax) {
@@ -240,21 +244,21 @@ public:
         }
       }
 
-      if (lmin < min_) {
-        min_ = lmin;
-        min_delay_ = recv_ts - ToTimePoint(lmin);
+      if (!min_.has_value() || lmin < min_->Nanos()) {
+        min_ = DateTime::FromNanos(lmin);
+        min_delay_ = recv_ts - ToTimePoint(*min_);
       }
-      if (lmax > max_) {
-        max_ = lmax;
-        max_delay_ = recv_ts - ToTimePoint(lmax);
+      if (!max_.has_value() || lmax > max_->Nanos()) {
+        max_ = DateTime::FromNanos(lmax);
+        max_delay_ = recv_ts - ToTimePoint(*max_);
       }
     }
   }
 
 private:
   void Reset() {
-    min_ = DateTime::Max();
-    max_ = DateTime::Min();
+    min_ = std::nullopt;
+    max_ = std::nullopt;
     min_delay_ = my_duration::max();
     max_delay_ = my_duration::min();
     nrows_ = 0UL;
@@ -262,7 +266,8 @@ private:
   }
 
   void ReadAndReset(bool &initial,
-                    DateTime &min, DateTime &max, my_duration &min_delay, my_duration &max_delay,
+                    std::optional<DateTime> &min, std::optional<DateTime> &max,
+                    my_duration &min_delay, my_duration &max_delay,
                     uint64_t &nrows, uint64_t &nupdates) {
     std::unique_lock lock(mux_);
     initial = update_idx_ == 1UL;
@@ -275,18 +280,17 @@ private:
     Reset();
   }
 
-private:
   mutable std::mutex mux_;
   mutable std::condition_variable cond_;
   const char *col_name_;
-  DateTime min_;
-  DateTime max_;
+  std::optional<DateTime> min_;
+  std::optional<DateTime> max_;
   my_duration min_delay_;
   my_duration max_delay_;
-  std::uint64_t update_idx_;
-  std::uint64_t nrows_;
-  std::uint64_t nupdates_;
-  bool initial_done_;
+  std::uint64_t update_idx_ = 0;
+  std::uint64_t nrows_ = 0;
+  std::uint64_t nupdates_ = 0;
+  bool initial_done_ = false;
 };
 
 void Run(
