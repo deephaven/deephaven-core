@@ -85,13 +85,13 @@ std::string FormatMicros(const uint64_t us) {
   return ss.str();
 }
 
-uint64_t usecs(const my_duration &d) {
+uint64_t ToMicros(const my_duration &d) {
   using namespace std::chrono;
   return duration_cast<microseconds>(d).count();
 }
 
 std::string FormatMicros(const my_duration &d) {
-  return FormatMicros(usecs(d));
+  return FormatMicros(ToMicros(d));
 }
   
 class TrackTimeCallback final : public deephaven::dhcore::ticking::TickingCallback {
@@ -104,7 +104,7 @@ public:
     Reset();
   }
 
-  virtual ~TrackTimeCallback() = default;
+  ~TrackTimeCallback() final = default;
 
   void OnTick(deephaven::dhcore::ticking::TickingUpdate update) final {
     const my_time_point recv_ts = my_clock::now();
