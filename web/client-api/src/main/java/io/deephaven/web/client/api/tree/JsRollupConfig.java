@@ -218,15 +218,6 @@ public class JsRollupConfig {
                     columns.setMatchPairsList(aggColumns);
                     break;
                 }
-                case JsAggregationOperation.MEDIAN: {
-                    AggSpec spec = new AggSpec();
-                    spec.setMedian(new AggSpecMedian());
-                    columns = new AggregationColumns();
-                    columns.setSpec(spec);
-                    columns.setMatchPairsList(aggColumns);
-                    agg.setColumns(columns);
-                    break;
-                }
                 case JsAggregationOperation.STD: {
                     AggSpec spec = new AggSpec();
                     spec.setStd(new AggSpecStd());
