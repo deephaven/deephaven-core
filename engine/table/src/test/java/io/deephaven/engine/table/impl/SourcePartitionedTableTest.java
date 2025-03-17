@@ -106,13 +106,13 @@ public class SourcePartitionedTableTest extends RefreshingTableTestCase {
                 TableUpdateMode.ADD_REMOVE,
                 p1, p2);
 
-        return new SourcePartitionedTable(p1.getDefinition(),
-                t -> t,
+        return new SourcePartitionedTable(
+                p1.getDefinition(),
+                null,
                 tlp,
                 true,
                 true,
-                l -> true,
-                true);
+                null);
     }
 
     private void verifyStringColumnContents(Table table, String columnName, String... expectedValues) {

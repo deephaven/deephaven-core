@@ -47,7 +47,6 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.LongConsumer;
-import java.util.function.UnaryOperator;
 import java.util.stream.IntStream;
 
 import static io.deephaven.extensions.barrage.util.ArrowToTableConverter.parseArrowIpcMessage;
@@ -132,12 +131,11 @@ public class PythonTableDataService extends AbstractTableDataService {
                 (TableLocationProviderImpl) getTableLocationProvider(tableKey);
         return new SourcePartitionedTable(
                 tableLocationProvider.tableDefinition,
-                UnaryOperator.identity(),
+                null,
                 tableLocationProvider,
                 live,
                 live,
-                tlk -> true,
-                preCheckExistence);
+                null);
     }
 
     /**

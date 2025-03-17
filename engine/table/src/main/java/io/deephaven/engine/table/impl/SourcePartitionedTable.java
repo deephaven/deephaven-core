@@ -52,8 +52,11 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
      * changes to constituent rows, but only the initially-available set of locations.
      *
      * @param constituentDefinition The {@link TableDefinition} expected of constituent {@link Table tables}
-     * @param applyTablePermissions Function to apply in order to correctly restrict the visible result rows in
-     *        constituent tables. May be {@code null} if no permissions are needed. Must not return {@code null} tables.
+     * @param constituentTransformer Function to apply to each "raw" constituent before making the result available to
+     *        downstream consumers. This may be used, for example, in order to correctly restrict the visible result
+     *        rows in constituent tables. May be {@code null} if no transformations are needed. Must not return
+     *        {@code null} tables, or tables with a {@link Table#getDefinition() definition} that does not match
+     *        {@code constituentDefinition}.
      * @param tableLocationProvider Source for table locations
      * @param subscribeToTableLocationProvider Whether changes to the set of available locations after instantiation
      *        should be reflected in the result SourcePartitionedTable; that is, whether constituents should be added or
@@ -65,16 +68,16 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
      */
     public SourcePartitionedTable(
             @NotNull final TableDefinition constituentDefinition,
-            @Nullable final UnaryOperator<Table> applyTablePermissions,
+            @Nullable final UnaryOperator<Table> constituentTransformer,
             @NotNull final TableLocationProvider tableLocationProvider,
             final boolean subscribeToTableLocationProvider,
             final boolean subscribeToTableLocations,
             @Nullable final Predicate<ImmutableTableLocationKey> locationKeyMatcher) {
         super(new UnderlyingTableMaintainer(
                 constituentDefinition,
-                applyTablePermissions == null
+                constituentTransformer == null
                         ? UnaryOperator.identity()
-                        : applyTablePermissions,
+                        : constituentTransformer,
                 tableLocationProvider,
                 locationKeyMatcher == null
                         ? key -> true
@@ -100,7 +103,7 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
             implements NotificationQueue.Dependency {
 
         private final TableDefinition constituentDefinition;
-        private final UnaryOperator<Table> applyTablePermissions;
+        private final UnaryOperator<Table> constituentTransformer;
         private final TableLocationProvider tableLocationProvider;
         private final boolean subscribeToTableLocations;
         private final Predicate<ImmutableTableLocationKey> locationKeyMatcher;
@@ -119,7 +122,7 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
 
         private UnderlyingTableMaintainer(
                 @NotNull final TableDefinition constituentDefinition,
-                @NotNull final UnaryOperator<Table> applyTablePermissions,
+                @NotNull final UnaryOperator<Table> constituentTransformer,
                 @NotNull final TableLocationProvider tableLocationProvider,
                 @NotNull final Predicate<ImmutableTableLocationKey> locationKeyMatcher,
                 final boolean subscribeToTableLocationProvider,
@@ -127,7 +130,7 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
             super(false);
 
             this.constituentDefinition = constituentDefinition;
-            this.applyTablePermissions = applyTablePermissions;
+            this.constituentTransformer = constituentTransformer;
             this.tableLocationProvider = tableLocationProvider;
             this.locationKeyMatcher = locationKeyMatcher;
             this.subscribeToTableLocations = subscribeToTableLocations;
@@ -421,7 +424,7 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
                     // Be careful to propagate the systemic attribute properly to child tables
                     constituent.setAttribute(Table.SYSTEMIC_TABLE_ATTRIBUTE, result.isSystemicObject());
 
-                    final Table adjustedConstituent = applyTablePermissions.apply(constituent);
+                    final Table adjustedConstituent = constituentTransformer.apply(constituent);
                     if (adjustedConstituent.isRefreshing()) {
                         UnderlyingTableMaintainer.this.manage(adjustedConstituent);
                     }
