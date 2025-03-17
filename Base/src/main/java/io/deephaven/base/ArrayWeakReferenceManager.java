@@ -19,129 +19,73 @@ import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 /**
- * A helper for manging a list of weakly-reachable references. It hides the internal management of expired references
- * and provides for iteration over the valid ones.
+ * Implementation of {@link WeakReferenceManager} backed by an {@link ArrayList} (when not concurrent) or a
+ * {@link CopyOnWriteArrayList} (when concurrent). Users should note the potential for poor performance when adding a
+ * large number of items to a concurrent ArrayWeakReferenceManager.
  */
 public class ArrayWeakReferenceManager<T> implements WeakReferenceManager<T> {
 
     private final List<WeakReference<T>> refs;
 
     /**
-     * Create a WeakReferenceManager, with {@link CopyOnWriteArrayList} as backing structure.
+     * Construct a WeakReferenceManager as with {@code new ArrayWeakReferenceManager(true)}.
      */
     public ArrayWeakReferenceManager() {
         this(true);
     }
 
     /**
-     * Create a WeakReferenceManager, with either {@link ArrayList} or {@link CopyOnWriteArrayList} as backing
-     * structure.
+     * Construct a WeakReferenceManager.
      *
-     * @param useCowList Use CopyOnWriteArrayList if true, else ArrayList.
+     * @param concurrent Use {@link CopyOnWriteArrayList} if {@code true}, else {@link ArrayList}.
      */
-    public ArrayWeakReferenceManager(final boolean useCowList) {
-        refs = useCowList ? new CopyOnWriteArrayList<>() : new ArrayList<>();
+    public ArrayWeakReferenceManager(final boolean concurrent) {
+        refs = concurrent ? new CopyOnWriteArrayList<>() : new ArrayList<>();
     }
 
-    /**
-     * Add the specified item to the list.
-     *
-     * @param item the item to add.
-     */
     @Override
     public void add(final T item) {
         refs.add(new WeakReference<>(item));
     }
 
-    /**
-     * Remove item from the list if present, and also any expired references.
-     *
-     * @param item the item to remove.
-     */
     @Override
     public void remove(final T item) {
+        if (refs.isEmpty()) {
+            return;
+        }
         refs.removeIf((l) -> (l.get() == null) || (l.get() == item));
     }
 
-    /**
-     * Remove items in the collection from the list, and also any expired references.
-     *
-     * @param items the items to remove.
-     */
     @Override
-    public void removeAll(Collection<T> items) {
+    public void removeAll(@NotNull final Collection<T> items) {
+        if (refs.isEmpty()) {
+            return;
+        }
         refs.removeIf(l -> l.get() == null || items.contains(l.get()));
     }
 
-    /**
-     * Execute the provided procedure on each item that has not been GC'd. If an item was GC'd the reference will be
-     * removed from the internal list of refs.
-     *
-     * @param proc The procedure to call with each valid item
-     */
     @Override
-    public void forEachValidReference(Consumer<T> proc) {
-        if (!refs.isEmpty()) {
-            final ArrayList<WeakReference<T>> expiredRefs = new ArrayList<>();
-
-            try {
-                for (WeakReference<T> ref : refs) {
-                    T item = ref.get();
-                    if (item != null) {
-                        proc.accept(item);
-                    } else {
-                        expiredRefs.add(ref);
-                    }
-                }
-            } finally {
-                refs.removeAll(expiredRefs);
-            }
+    public void forEachValidReference(@NotNull final Consumer<T> consumer, final boolean parallel) {
+        if (refs.isEmpty()) {
+            return;
+        }
+        if (parallel) {
+            parallelStream().forEach(consumer);
+        } else {
+            iterator().forEachRemaining(consumer);
         }
     }
 
-    /**
-     * Retrieve the first valid ref that satisfies the test
-     *
-     * @param test The test to decide if a valid ref should be returned
-     * @return The first valid ref that passed test
-     */
     @Override
-    public T getFirst(Predicate<T> test) {
-        if (!refs.isEmpty()) {
-            final ArrayList<WeakReference<T>> expiredRefs = new ArrayList<>();
-
-            try {
-                for (WeakReference<T> ref : refs) {
-                    T item = ref.get();
-                    if (item != null) {
-                        if (test.test(item)) {
-                            return item;
-                        }
-                    } else {
-                        expiredRefs.add(ref);
-                    }
-                }
-            } finally {
-                refs.removeAll(expiredRefs);
-            }
-        }
-
-        return null;
+    public T getFirst(@NotNull final Predicate<T> test) {
+        return stream().filter(test).findFirst().orElse(null);
     }
 
-    /**
-     * Return true if the list is empty. Does not check for expired references.
-     *
-     * @return true if the list is empty.
-     */
     @Override
     public boolean isEmpty() {
         return refs.isEmpty();
     }
 
-    /**
-     * Clear the list of references.
-     */
     @Override
     public void clear() {
         refs.clear();
@@ -201,13 +145,11 @@ public class ArrayWeakReferenceManager<T> implements WeakReferenceManager<T> {
         }
     }
 
-    @Override
-    public Iterator<T> iterator() {
+    private Iterator<T> iterator() {
         return new IteratorImpl();
     }
 
-    @Override
-    public Stream<T> stream() {
+    private Stream<T> stream() {
         if (refs.isEmpty()) {
             return Stream.empty();
         }
@@ -221,8 +163,7 @@ public class ArrayWeakReferenceManager<T> implements WeakReferenceManager<T> {
         }).filter(Objects::nonNull).onClose(() -> refs.removeAll(expiredRefs));
     }
 
-    @Override
-    public Stream<T> parallelStream() {
+    private Stream<T> parallelStream() {
         if (refs.isEmpty()) {
             return Stream.empty();
         }
