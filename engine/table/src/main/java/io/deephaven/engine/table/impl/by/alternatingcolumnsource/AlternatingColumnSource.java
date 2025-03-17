@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.table.impl.by.alternatingcolumnsource;
 
+import io.deephaven.base.ArrayWeakReferenceManager;
 import io.deephaven.base.WeakReferenceManager;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
@@ -33,7 +34,7 @@ public class AlternatingColumnSource<DATA_TYPE> extends AbstractColumnSource<DAT
     private ColumnSource<DATA_TYPE> alternateSource;
 
     private final WeakReferenceManager<BiConsumer<ColumnSource<DATA_TYPE>, ColumnSource<DATA_TYPE>>> sourceHolderListeners =
-            new WeakReferenceManager<>();
+            new ArrayWeakReferenceManager<>();
 
     public AlternatingColumnSource(@NotNull final Class<DATA_TYPE> dataType,
             @Nullable final Class<?> componentType,

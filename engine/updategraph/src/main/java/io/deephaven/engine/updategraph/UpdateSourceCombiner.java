@@ -3,12 +3,14 @@
 //
 package io.deephaven.engine.updategraph;
 
+import io.deephaven.base.ArrayWeakReferenceManager;
 import io.deephaven.base.WeakReferenceManager;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.util.Collections;
+import java.util.function.Supplier;
 
 /**
  * Update source that combines multiple sources in order to force them to be refreshed as a unit within the
@@ -18,10 +20,17 @@ public class UpdateSourceCombiner extends LivenessArtifact implements Runnable, 
 
     private final UpdateGraph updateGraph;
 
-    private final WeakReferenceManager<Runnable> sources = new WeakReferenceManager<>(true);
+    private final WeakReferenceManager<Runnable> sources;
 
-    public UpdateSourceCombiner(final UpdateGraph updateGraph) {
+    public UpdateSourceCombiner(@NotNull final UpdateGraph updateGraph) {
+        this(updateGraph, ArrayWeakReferenceManager::new);
+    }
+
+    public UpdateSourceCombiner(
+            @NotNull final UpdateGraph updateGraph,
+            @NotNull final Supplier<WeakReferenceManager<Runnable>> weakReferenceManagerFactory) {
         this.updateGraph = updateGraph;
+        this.sources = weakReferenceManagerFactory.get();
     }
 
     /**
