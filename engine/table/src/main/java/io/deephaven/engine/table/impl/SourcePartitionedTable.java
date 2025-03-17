@@ -161,6 +161,8 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
             if (subscribeToTableLocationProvider || subscribeToTableLocations) {
                 rawResult.setRefreshing(true);
                 // TODO: RefreshCombiner needs to be better; can't use a COWAL
+                // It's tempting to make the UTM be the UpdateSourceRegistrar instead of a separate tool, but that
+                // would mean any surviving constituent keeps the UTM referenced and live.
                 refreshCombiner = new UpdateSourceCombiner(rawResult.getUpdateGraph());
                 rawResult.addParentReference(this);
                 manage(refreshCombiner);
@@ -197,19 +199,19 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
                 removedLocationsCommitter = null;
                 tableLocationProvider.refresh();
 
+                // "Leak" a reference to this UTM. We want to keep the key suppliers in the LocationStates alive until
+                // the UTM is GC'd. This is necessary because we are deferring constituent creation; the constituents
+                // will eventually manage the TLs, and we need the key suppliers to keep them from being fully removed
+                // until then.
+                retainReference();
                 final Collection<LocationState> locationStates = new ArrayList<>();
-                try {
-                    retainReference(); // TODO: Change this if we switch to raw result as manager.
-                    tableLocationProvider.getTableLocationKeys(
-                            lstlk -> locationStates.add(new LocationState(lstlk)),
-                            locationKeyMatcher);
-                    try (final RowSet added = sortAndAddLocations(locationStates.stream())) {
-                        if (added != null) {
-                            resultRows.insert(added);
-                        }
+                tableLocationProvider.getTableLocationKeys(
+                        lstlk -> locationStates.add(new LocationState(lstlk)),
+                        locationKeyMatcher);
+                try (final RowSet added = sortAndAddLocations(locationStates.stream())) {
+                    if (added != null) {
+                        resultRows.insert(added);
                     }
-                } finally {
-                    dropReference();
                 }
             }
 
@@ -374,9 +376,8 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
 
             private LocationState(@NotNull final LiveSupplier<ImmutableTableLocationKey> keySupplier) {
                 this.keySupplier = keySupplier;
-                // TODO: We need to keep key supplier managed even when we're static and let GC sort things out, but
-                // that means we can't use the UTM as the manager. Maybe we should instead use the raw result, and leak
-                // a ref to it when static?
+                // Note that this is intentionally unconditional. As long as the LocationState is reachable, the UTM
+                // will be reachable.
                 UnderlyingTableMaintainer.this.manage(keySupplier);
             }
 
@@ -401,12 +402,15 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
                 final TableLocation tableLocation = tableLocationProvider.getTableLocation(key());
                 final boolean refreshing = subscribeToTableLocations && tableLocation.supportsSubscriptions();
                 try (final SafeCloseable ignored = refreshing ? LivenessScopeStack.open() : null) {
-                    // noinspection ExtractMethodRecommender
                     final BaseTable<?> constituent = new PartitionAwareSourceTable(
                             constituentDefinition,
                             SourcePartitionedTable.class.getSimpleName() + '[' + tableLocationProvider + ']'
                                     + "-Constituent-" + locationKey,
+                            // We could consider a simpler/smaller CSM implementation, but for now RCSM is all we have.
                             RegionedTableComponentFactoryImpl.INSTANCE,
+                            // Note, it might be tempting to use the LocationState as a TLP, but that would cause each
+                            // constituent to reference the UTM, which would in turn keep all constituents around as
+                            // long as any are referenced externally.
                             new SingleTableLocationProvider(
                                     tableLocation,
                                     refreshing
