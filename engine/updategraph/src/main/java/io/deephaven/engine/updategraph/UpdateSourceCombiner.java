@@ -19,17 +19,32 @@ import java.util.function.Supplier;
 public class UpdateSourceCombiner extends LivenessArtifact implements Runnable, UpdateSourceRegistrar {
 
     private final UpdateGraph updateGraph;
-
+    private final boolean parallel;
     private final WeakReferenceManager<Runnable> sources;
 
+    /**
+     * Construct an UpdateSourceCombiner with default parameters. The result will process updates serially, and will use
+     * a concurrent {@link ArrayWeakReferenceManager}.
+     *
+     * @param updateGraph The {@link UpdateGraph} to register with
+     */
     public UpdateSourceCombiner(@NotNull final UpdateGraph updateGraph) {
-        this(updateGraph, ArrayWeakReferenceManager::new);
+        this(updateGraph, false, ArrayWeakReferenceManager::new);
     }
 
+    /**
+     * Construct an UpdateSourceCombiner.
+     * 
+     * @param updateGraph The {@link UpdateGraph} to register with
+     * @param parallel Whether to process updates in parallel
+     * @param weakReferenceManagerFactory Factory for the {@link WeakReferenceManager} to use when holding sources
+     */
     public UpdateSourceCombiner(
             @NotNull final UpdateGraph updateGraph,
+            final boolean parallel,
             @NotNull final Supplier<WeakReferenceManager<Runnable>> weakReferenceManagerFactory) {
         this.updateGraph = updateGraph;
+        this.parallel = parallel;
         this.sources = weakReferenceManagerFactory.get();
     }
 
@@ -43,7 +58,7 @@ public class UpdateSourceCombiner extends LivenessArtifact implements Runnable, 
 
     @Override
     public void run() {
-        sources.forEachValidReference(Runnable::run);
+        sources.forEachValidReference(Runnable::run, parallel);
     }
 
     @Override

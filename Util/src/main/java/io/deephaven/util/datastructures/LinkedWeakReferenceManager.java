@@ -32,6 +32,7 @@ public class LinkedWeakReferenceManager<T> implements WeakReferenceManager<T> {
 
         public Node(final T referent) {
             super(referent);
+            next = prev = this;
         }
 
         @Override
@@ -156,6 +157,11 @@ public class LinkedWeakReferenceManager<T> implements WeakReferenceManager<T> {
                 return result;
             }
             throw new NoSuchElementException();
+        }
+
+        @Override
+        public void remove() {
+            refsIterator.remove();
         }
     }
 

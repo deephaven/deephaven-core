@@ -14,12 +14,14 @@ import io.deephaven.engine.table.impl.locations.impl.SingleTableLocationProvider
 import io.deephaven.engine.table.impl.locations.impl.TableLocationSubscriptionBuffer;
 import io.deephaven.engine.table.impl.partitioned.PartitionedTableImpl;
 import io.deephaven.engine.table.impl.select.FunctionalColumn;
+import io.deephaven.engine.table.impl.select.analyzers.ViewColumnLayer;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.regioned.RegionedTableComponentFactoryImpl;
 import io.deephaven.engine.table.iterators.ChunkedObjectColumnIterator;
 import io.deephaven.engine.updategraph.*;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.ReferentialIntegrity;
+import io.deephaven.util.datastructures.LinkedWeakReferenceManager;
 import io.deephaven.util.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -163,10 +165,10 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
 
             if (subscribeToTableLocationProvider || subscribeToTableLocations) {
                 rawResult.setRefreshing(true);
-                // TODO: RefreshCombiner needs to be better; can't use a COWAL
                 // It's tempting to make the UTM be the UpdateSourceRegistrar instead of a separate tool, but that
                 // would mean any surviving constituent keeps the UTM referenced and live.
-                refreshCombiner = new UpdateSourceCombiner(rawResult.getUpdateGraph());
+                refreshCombiner = new UpdateSourceCombiner(
+                        rawResult.getUpdateGraph(), true, LinkedWeakReferenceManager::new);
                 rawResult.addParentReference(this);
                 manage(refreshCombiner);
             } else {
@@ -218,7 +220,7 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
                 }
             }
 
-            result = (QueryTable) rawResult.view(resultColumns);
+            result = ViewColumnLayer.allowLivenessReferentResults(() -> (QueryTable) rawResult.view(resultColumns));
         }
 
         private static void unmanageForRemovedLocationStates(
