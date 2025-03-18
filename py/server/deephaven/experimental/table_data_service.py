@@ -274,15 +274,12 @@ class TableDataService(JObjectWrapper):
         except Exception as e:
             raise DHError(e, message=f"failed to make a table for the key {table_key}") from e
 
-    def make_partitioned_table(self, table_key: TableKey, *, refreshing: bool,
-                               pre_check_existence: bool = False) -> PartitionedTable:
+    def make_partitioned_table(self, table_key: TableKey, *, refreshing: bool) -> PartitionedTable:
         """ Creates a PartitionedTable backed by the backend service with the given table key.
 
         Args:
             table_key (TableKey): the table key
             refreshing (bool): whether the partitioned table is live (True) or static (False)
-            pre_check_existence (bool): whether the partitioned table should verify that locations exist and are
-                non-empty before including them in the table
         Returns:
             PartitionedTable: a new partitioned table
 
@@ -291,8 +288,7 @@ class TableDataService(JObjectWrapper):
         """
         j_table_key = _JTableKeyImpl(table_key)
         try:
-            return PartitionedTable(
-                self._j_tbl_service.makePartitionedTable(j_table_key, refreshing, pre_check_existence))
+            return PartitionedTable(self._j_tbl_service.makePartitionedTable(j_table_key, refreshing))
         except Exception as e:
             raise DHError(e, message=f"failed to make a partitioned table for the key {table_key}") from e
 
