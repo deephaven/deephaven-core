@@ -569,7 +569,7 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
                                     DomGlobal.console.log(yCol);
                                     DomGlobal.console.log(yCol.get(row0));
 
-//                                    assertEquals(40L, yCol.get(row0).asLong());
+                                    assertEquals(40L, yCol.get(row0).asLong());
 
 //                                    assertEquals(0, xCol.get(row1).asInt());
 //                                    assertEquals(14L, yCol.get(row1).asLong());
