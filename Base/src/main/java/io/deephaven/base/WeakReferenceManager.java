@@ -10,7 +10,7 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 /**
- * A helper for manging a list of weakly-reachable items. Implementations hide the internal management of cleared
+ * A helper for managing a list of weakly-reachable items. Implementations hide the internal management of cleared
  * references and provide for iteration over the valid (still reachable) items.
  */
 public interface WeakReferenceManager<T> {

@@ -336,10 +336,10 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
                          ChunkedObjectColumnIterator.make(resultLocationStates, resultRows);
                  final RowSet.Iterator rowsIterator = resultRows.iterator()) {
                 // @formatter:on
-                while (locationStatesIterator.hasNext()) {
+                while (locationStatesIterator.hasNext() && !relevantRemovedLocationKeys.isEmpty()) {
                     final LocationState locationState = locationStatesIterator.next();
                     final long rowKey = rowsIterator.nextLong();
-                    if (relevantRemovedLocationKeys.contains(locationState.key())) {
+                    if (relevantRemovedLocationKeys.remove(locationState.key())) {
                         deleteBuilder.appendKey(rowKey);
                         removedLocationStates.add(locationState);
                     }
@@ -396,7 +396,7 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
                     final TableLocationKey locationKey = key();
                     synchronized (this) {
                         if ((localTable = table) == null) {
-                            localTable = makeConstituentTable(locationKey);
+                            table = localTable = makeConstituentTable(locationKey);
                         }
                     }
                 }
