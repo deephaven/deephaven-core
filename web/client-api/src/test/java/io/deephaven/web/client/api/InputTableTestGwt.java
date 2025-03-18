@@ -82,20 +82,16 @@ public class InputTableTestGwt extends AbstractAsyncGwtTestCase {
     public void testBadInputTable() {
         connect(tables)
                 .then(table("result5"))
-                .catch_(x -> {
-                    DomGlobal.console.log("Caught error: " + x);
-
-                    if (x != null && x.toString().startsWith("Error: Details Logged w/ID '")) {
-                        // good enough
-                        DomGlobal.console.log("Identified exception, bad InputTable attribute test passed.");
-                        finish(null);
-                        return null;
-                    }
-                    // we are expecting an error message
-                    return Promise.reject(x);
-                })
-                .then(x -> Promise
-                        .reject("Should not have been able to retrieve result5, with a bad input table attribute."));
+                .then(y -> Promise
+                        .reject("Should not have been able to retrieve result5, with a bad InputTable attribute."),
+                        x -> {
+                            if (x != null && x.toString().startsWith("Error: Details Logged w/ID '")) {
+                                // good enough
+                                return finish(null);
+                            }
+                            // we are expecting an error message
+                            return Promise.reject(x);
+                        });
     }
 
     @Override
