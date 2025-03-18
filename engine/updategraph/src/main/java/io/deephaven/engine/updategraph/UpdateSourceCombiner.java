@@ -78,7 +78,7 @@ public class UpdateSourceCombiner extends LivenessArtifact implements Runnable, 
 
     @Override
     public void removeSource(@NotNull final Runnable updateSource) {
-        sources.removeAll(Collections.singleton(updateSource));
+        sources.remove(updateSource);
     }
 
     /**

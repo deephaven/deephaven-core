@@ -32,8 +32,7 @@ public interface WeakReferenceManager<T> {
 
     /**
      * Remove all items in {@code items} from this WeakReferenceManager, along with any cleared references. Comparison
-     * is by {@code items.contains(candidate)}, but it's recommended to use items that implement
-     * {@link Object#equals(Object) equals} using reference equality.
+     * is strictly by reference equality.
      *
      * @param items The items to remove
      */

@@ -10,8 +10,11 @@ import org.jetbrains.annotations.NotNull;
 
 import java.lang.ref.WeakReference;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+import java.util.Set;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.function.Consumer;
@@ -87,8 +90,10 @@ public class LinkedWeakReferenceManager<T> implements WeakReferenceManager<T> {
         if (refs.isEmpty()) {
             return;
         }
+        final Set<T> itemsIdentitySet = Collections.newSetFromMap(new IdentityHashMap<>(items.size()));
+        itemsIdentitySet.addAll(items);
         for (final Iterator<T> iterator = iterator(); iterator.hasNext();) {
-            if (items.contains(iterator.next())) {
+            if (itemsIdentitySet.contains(iterator.next())) {
                 iterator.remove();
             }
         }

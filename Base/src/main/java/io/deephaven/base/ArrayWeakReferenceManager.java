@@ -9,10 +9,12 @@ import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -53,7 +55,7 @@ public class ArrayWeakReferenceManager<T> implements WeakReferenceManager<T> {
         if (refs.isEmpty()) {
             return;
         }
-        refs.removeIf((l) -> (l.get() == null) || (l.get() == item));
+        refs.removeIf((ref) -> ref.get() == null || ref.get() == item);
     }
 
     @Override
@@ -61,7 +63,9 @@ public class ArrayWeakReferenceManager<T> implements WeakReferenceManager<T> {
         if (refs.isEmpty()) {
             return;
         }
-        refs.removeIf(l -> l.get() == null || items.contains(l.get()));
+        final Set<T> itemsIdentitySet = Collections.newSetFromMap(new IdentityHashMap<>(items.size()));
+        itemsIdentitySet.addAll(items);
+        refs.removeIf(ref -> ref.get() == null || itemsIdentitySet.contains(ref.get()));
     }
 
     @Override
