@@ -223,6 +223,12 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
             result = ViewColumnLayer.allowLivenessReferentResults(() -> (QueryTable) rawResult.view(resultColumns));
         }
 
+        private static <T> T getPartitionValue(
+                @NotNull final TableLocationKey tableLocationKey,
+                @NotNull final String partitioningColumnName) {
+            return tableLocationKey.getPartitionValue(partitioningColumnName);
+        }
+
         private static void unmanageForRemovedLocationStates(
                 @NotNull final UnderlyingTableMaintainer underlyingTableMaintainer) {
             final List<LocationState> removedLocationStates = underlyingTableMaintainer.removedLocationStates;
@@ -252,10 +258,39 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
                     : RowSetFactory.fromRange(initialLastRowKey + 1, lastInsertedRowKey.get());
         }
 
-        private static <T> T getPartitionValue(
-                @NotNull final TableLocationKey tableLocationKey,
-                @NotNull final String partitioningColumnName) {
-            return tableLocationKey.getPartitionValue(partitioningColumnName);
+        private Table makeConstituentTable(@NotNull final TableLocationKey locationKey) {
+            final TableLocation tableLocation = tableLocationProvider.getTableLocation(locationKey);
+            final boolean refreshing = subscribeToTableLocations && tableLocation.supportsSubscriptions();
+            try (final SafeCloseable ignored = refreshing ? LivenessScopeStack.open() : null) {
+                final BaseTable<?> constituent = new PartitionAwareSourceTable(
+                        constituentDefinition,
+                        SourcePartitionedTable.class.getSimpleName() + '[' + tableLocationProvider + ']'
+                                + "-Constituent-" + locationKey,
+                        // We could consider a simpler/smaller CSM implementation, but for now RCSM is all we have.
+                        RegionedTableComponentFactoryImpl.INSTANCE,
+                        // Note, it might be tempting to use the LocationState as a TLP, but that would cause each
+                        // constituent to reference the UTM, which would in turn keep all constituents around as
+                        // long as any are referenced externally.
+                        new SingleTableLocationProvider(
+                                tableLocation,
+                                refreshing
+                                        ? tableLocationProvider.getLocationUpdateMode()
+                                        : TableUpdateMode.STATIC),
+                        refreshing ? refreshCombiner : null);
+
+                // SourceTable keeps a reference to its UpdateSourceRegistrar, but in this case we must also manage it
+                // to ensure that the refresh combiner stays live while the constituent is live. We don't need it to be
+                // a parent since BaseTable will check the UpdateGraph directly for satisfaction.
+                if (refreshing) {
+                    constituent.manage(refreshCombiner);
+                }
+
+                // Be careful to propagate the systemic attribute properly to child tables
+                constituent.setAttribute(Table.SYSTEMIC_TABLE_ATTRIBUTE, result.isSystemicObject());
+
+                // Apply the provided transformer
+                return constituentTransformer.apply(constituent);
+            }
         }
 
         private void processBufferedLocationChanges(final boolean notifyListeners) {
@@ -397,41 +432,13 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
                     synchronized (this) {
                         if ((localTable = table) == null) {
                             table = localTable = makeConstituentTable(locationKey);
+                            if (localTable.isRefreshing()) {
+                                UnderlyingTableMaintainer.this.manage(localTable);
+                            }
                         }
                     }
                 }
                 return localTable;
-            }
-
-            private Table makeConstituentTable(@NotNull final TableLocationKey locationKey) {
-                final TableLocation tableLocation = tableLocationProvider.getTableLocation(key());
-                final boolean refreshing = subscribeToTableLocations && tableLocation.supportsSubscriptions();
-                try (final SafeCloseable ignored = refreshing ? LivenessScopeStack.open() : null) {
-                    final BaseTable<?> constituent = new PartitionAwareSourceTable(
-                            constituentDefinition,
-                            SourcePartitionedTable.class.getSimpleName() + '[' + tableLocationProvider + ']'
-                                    + "-Constituent-" + locationKey,
-                            // We could consider a simpler/smaller CSM implementation, but for now RCSM is all we have.
-                            RegionedTableComponentFactoryImpl.INSTANCE,
-                            // Note, it might be tempting to use the LocationState as a TLP, but that would cause each
-                            // constituent to reference the UTM, which would in turn keep all constituents around as
-                            // long as any are referenced externally.
-                            new SingleTableLocationProvider(
-                                    tableLocation,
-                                    refreshing
-                                            ? tableLocationProvider.getLocationUpdateMode()
-                                            : TableUpdateMode.STATIC),
-                            refreshing ? refreshCombiner : null);
-
-                    // Be careful to propagate the systemic attribute properly to child tables
-                    constituent.setAttribute(Table.SYSTEMIC_TABLE_ATTRIBUTE, result.isSystemicObject());
-
-                    final Table adjustedConstituent = constituentTransformer.apply(constituent);
-                    if (adjustedConstituent.isRefreshing()) {
-                        UnderlyingTableMaintainer.this.manage(adjustedConstituent);
-                    }
-                    return adjustedConstituent;
-                }
             }
 
             /**
