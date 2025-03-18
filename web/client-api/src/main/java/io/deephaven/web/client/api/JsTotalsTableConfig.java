@@ -71,7 +71,7 @@ public class JsTotalsTableConfig {
             LAST = "Last",
             // ARRAY = "Array",
             SKIP = "Skip";
-    private static final List<String> knownAggTypes = Arrays.asList(
+    protected static final List<String> knownAggTypes = Arrays.asList(
             JsAggregationOperation.COUNT,
             JsAggregationOperation.MIN,
             JsAggregationOperation.MAX,

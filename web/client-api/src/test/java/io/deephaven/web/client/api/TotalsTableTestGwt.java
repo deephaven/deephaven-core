@@ -13,7 +13,10 @@ import io.deephaven.web.client.api.filter.FilterValue;
 import io.deephaven.web.client.api.subscription.ViewportData;
 import jsinterop.base.Js;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 public class TotalsTableTestGwt extends AbstractAsyncGwtTestCase {
     private final TableSourceBuilder tables = new TableSourceBuilder()
@@ -367,6 +370,33 @@ public class TotalsTableTestGwt extends AbstractAsyncGwtTestCase {
                             table.getTotalsTable(config).then(checkForBothTotalsTables),
                             table.getGrandTotalsTable(config).then(checkForBothTotalsTables)
                     });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    public void testCreateTotalsTableAggTypes() {
+        connect(tables)
+                .then(table("hasTotals"))
+                .then(table -> {
+                    List<Supplier<Promise<JsTotalsTable>>> tests = new ArrayList<>();
+                    List<String> aggs = JsTotalsTableConfig.knownAggTypes;
+                    for (int i = 0; i < aggs.size(); i++) {
+                        String operation = aggs.get(i);
+                        JsTotalsTableConfig config = new JsTotalsTableConfig();
+                        config.groupBy.push("K");
+                        config.operationMap.set("J",
+                                Js.uncheckedCast(new JsString[] {toJsString(operation)}));
+                        tests.add(() -> table.getTotalsTable(config).then(totals -> {
+                            totals.setViewport(0, 100, null, null, null);
+
+                            return waitForEvent(totals, JsTable.EVENT_UPDATED, update -> {
+                                ViewportData viewportData = (ViewportData) update.getDetail();
+                                assertEquals(2, viewportData.getRows().length);
+                            }, 1500);
+                        }));
+                    }
+
+                    return tests.stream().reduce((p1, p2) -> () -> p1.get().then(result -> p2.get())).get().get();
                 })
                 .then(this::finish).catch_(this::report);
     }
