@@ -4,6 +4,8 @@
 package io.deephaven.web.client.api;
 
 import elemental2.core.JsArray;
+import elemental2.dom.DomGlobal;
+import elemental2.promise.Promise;
 import jsinterop.base.Js;
 
 public class InputTableTestGwt extends AbstractAsyncGwtTestCase {
@@ -14,7 +16,9 @@ public class InputTableTestGwt extends AbstractAsyncGwtTestCase {
             .script("result1", "input_table(init_table=source, key_cols=[])")
             .script("result2", "input_table(init_table=source, key_cols=[\"A\" , \"B\" ])")
             .script("result3", "input_table(init_table=source, key_cols=[\"C\"])")
-            .script("result4", "input_table(init_table=source, key_cols=[\"E\" , \"F\" ])");
+            .script("result4", "input_table(init_table=source, key_cols=[\"E\" , \"F\" ])")
+            // and a bad input table, that previously crashed the server
+            .script("result5", "source.with_attributes({'InputTable': 'oops'})");
 
     public void testNoKeyCols() {
         connect(tables)
@@ -73,6 +77,24 @@ public class InputTableTestGwt extends AbstractAsyncGwtTestCase {
                     return null;
                 })
                 .then(this::finish).catch_(this::report);
+    }
+
+    public void testBadInputTable() {
+        connect(tables)
+                .then(table("result5"))
+                .catch_(x -> {
+                    DomGlobal.console.log("Caught error: " + x);
+
+                    if (x != null && x.toString().startsWith("Error: Details Logged w/ID '")) {
+                        // good enough
+                        DomGlobal.console.log("Identified exception, bad InputTable attribute test passed.");
+                        finish(null);
+                        return null;
+                    }
+                    // we are expecting an error message
+                    return Promise.reject(x);
+                })
+                .then(x -> Promise.reject("Should not have been able to retrieve result5, with a bad input table attribute."));
     }
 
     @Override

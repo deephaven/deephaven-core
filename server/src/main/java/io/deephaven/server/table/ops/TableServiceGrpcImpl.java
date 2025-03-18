@@ -681,8 +681,7 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
                         operation.checkPermission(request, dependencies);
                         final Table result = operation.create(request, dependencies);
                         // If the response building has any possibility of failing, then we cannot run it in the
-                        // onSuccess
-                        // method, which has no possibility of returning an error to the client.
+                        // onSuccess method, which has no possibility of returning an error to the client.
                         response.setValue(ExportUtil.buildTableCreationResponse(resultId, result));
                         return result;
                     });
