@@ -4,6 +4,7 @@
 package io.deephaven.web.client.api;
 
 import elemental2.core.JsArray;
+import elemental2.dom.DomGlobal;
 import elemental2.promise.Promise;
 import io.deephaven.web.client.api.tree.JsRollupConfig;
 import io.deephaven.web.client.api.event.Event;
@@ -518,19 +519,21 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
                     return table.rollup(cfg).then(rollupTable -> {
 
                         JsPropertyMap<Object> col0 =
-                                JsPropertyMap.of("name", "YPlus1", "expression", "Y + 1", "type", "int");
+                                JsPropertyMap.of("name", "YPlusAgg", "expression", "Y + 1", "type", "long");
                         col0.set("rollupNodeType", "aggregated");
 
-//                        CustomColumn.CustomColumOptions col1Options = new CustomColumn.CustomColumOptions();
-//                        col1Options.rollupNodeType = "constituent";
-//                        CustomColumn col1 = new CustomColumn("YPlus1", "int", "Y + 1", col1Options);
+                        CustomColumn.CustomColumOptions col1Options = new CustomColumn.CustomColumOptions();
+                        col1Options.rollupNodeType = "constituent";
+                        CustomColumn col1 = new CustomColumn("YPlusConst", "int", "Y + 1", col1Options);
 
                         JsArray<JsTable.CustomColumnArgUnionType> columns = new JsArray<>(
-                                JsTable.CustomColumnArgUnionType.of(col0)
-//                                JsTable.CustomColumnArgUnionType.of(col1)
+                                JsTable.CustomColumnArgUnionType.of(col0),
+                                JsTable.CustomColumnArgUnionType.of(col1)
                         );
 
                         assertEquals(2, rollupTable.getColumns().length);
+
+                        DomGlobal.console.log("testCreateRollupUpdateView - line hit - A");
 
                         rollupTable.applyCustomColumns(columns);
 
@@ -538,6 +541,7 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
                         return rollupTable.getViewportData()
                                 .then(data -> Promise.resolve((TreeViewportData) data))
                                 .then(data -> {
+                                    DomGlobal.console.log("testCreateRollupUpdateView - line hit - B");
 //                                    assertEquals(2, rollupTable.getColumns().length);
 //
 //                                    assertEquals(4d, data.getTreeSize());
@@ -552,28 +556,30 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
 //                                    assertTrue(row1.hasChildren());
 //                                    assertEquals(2, row1.depth());
 //
-//                                    Column xCol = rollupTable.findColumn("X");
-//                                    Column yCol = rollupTable.findColumn("Y");
-
-//                                    assertEquals(0, xCol.get(row1).asInt());
-//                                    assertEquals(14, yCol.get(row1).asInt());
-
 //                                    TreeViewportData.TreeRow row2 = (TreeViewportData.TreeRow) data.getRows().getAt(2);
 //                                    assertFalse(row2.isExpanded());
 //                                    assertTrue(row2.hasChildren());
 //                                    assertEquals(2, row2.depth());
 //
-//                                    assertEquals(1, xCol.get(row2).asInt());
-//                                    assertEquals(15, yCol.get(row2).asInt());
-
 //                                    TreeViewportData.TreeRow row3 = (TreeViewportData.TreeRow) data.getRows().getAt(2);
 //                                    assertFalse(row3.isExpanded());
 //                                    assertTrue(row3.hasChildren());
 //                                    assertEquals(2, row3.depth());
 //
+//                                    Column xCol = rollupTable.findColumn("X");
+//                                    Column yCol = rollupTable.findColumn("Y");
+
+//                                    assertEquals(40, yCol.get(row0).asInt());
+
+//                                    assertEquals(0, xCol.get(row1).asInt());
+//                                    assertEquals(14, yCol.get(row1).asInt());
+//
+//                                    assertEquals(1, xCol.get(row2).asInt());
+//                                    assertEquals(15, yCol.get(row2).asInt());
+//
 //                                    assertEquals(2, xCol.get(row3).asInt());
 //                                    assertEquals(12, yCol.get(row3).asInt());
-//
+
 //                                    // Check the update view column
 //
 //                                    Column yplus1Col = rollupTable.findColumn("YPlus1");
