@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.iceberg.layout;
 
@@ -8,6 +8,7 @@ import io.deephaven.iceberg.location.IcebergTableLocationKey;
 import io.deephaven.iceberg.util.IcebergReadInstructions;
 import io.deephaven.iceberg.internal.DataInstructionsProviderLoader;
 import io.deephaven.iceberg.util.IcebergTableAdapter;
+import io.deephaven.util.channel.SeekableChannelsProvider;
 import org.apache.iceberg.*;
 import org.jetbrains.annotations.NotNull;
 
@@ -38,7 +39,8 @@ public final class IcebergFlatLayout extends IcebergBaseLayout {
     IcebergTableLocationKey keyFromDataFile(
             @NotNull final ManifestFile manifestFile,
             @NotNull final DataFile dataFile,
-            @NotNull final URI fileUri) {
-        return locationKey(manifestFile, dataFile, fileUri, null);
+            @NotNull final URI fileUri,
+            @NotNull final SeekableChannelsProvider channelsProvider) {
+        return locationKey(manifestFile, dataFile, fileUri, null, channelsProvider);
     }
 }

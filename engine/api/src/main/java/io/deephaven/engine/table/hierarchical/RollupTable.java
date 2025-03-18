@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.hierarchical;
 
@@ -135,4 +135,17 @@ public interface RollupTable extends HierarchicalTable<RollupTable> {
      */
     NodeOperationsRecorder translateAggregatedNodeOperationsForConstituentNodes(
             @NotNull NodeOperationsRecorder aggregatedNodeOperationsToTranslate);
+
+    /**
+     * Create a new RollupTable based on {@code newSource}, inheriting this RollupTable's {@link #getAggregations()
+     * aggregations}, {@link #includesConstituents() constituent inclusion}, {@link #getGroupByColumns() group-by
+     * columns}, {@link #withNodeOperations(NodeOperationsRecorder...) node operations}, and {@link #withFilter(Filter)
+     * filters}.
+     * 
+     * @param newSource A new source table that must have the same definition as the source of this rollup; that is
+     *        {@code newSource.getDefinition().equals(getSource().getDefinition())} must be {@code true}
+     *
+     * @return The new RollupTable
+     */
+    RollupTable rebase(@NotNull Table newSource);
 }

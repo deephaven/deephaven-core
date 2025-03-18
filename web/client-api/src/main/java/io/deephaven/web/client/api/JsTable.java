@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.web.client.api;
 
@@ -1044,7 +1044,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
             config = new JsRollupConfig(Js.cast(configObject));
         }
 
-        Ticket rollupTicket = workerConnection.getConfig().newTicket();
+        Ticket rollupTicket = workerConnection.getTickets().newExportTicket();
 
         Promise<Object> rollupPromise = Callbacks.grpcUnaryPromise(c -> {
             RollupRequest request = config.buildRequest(getColumns());
@@ -1080,7 +1080,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
             config = new JsTreeTableConfig(Js.cast(configObject));
         }
 
-        Ticket treeTicket = workerConnection.getConfig().newTicket();
+        Ticket treeTicket = workerConnection.getTickets().newExportTicket();
 
         Promise<Object> treePromise = Callbacks.grpcUnaryPromise(c -> {
             TreeRequest requestMessage = new TreeRequest();
@@ -1297,7 +1297,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
 
         // Start the partitionBy on the server - we want to get the error from here, but we'll race the fetch against
         // this to avoid an extra round-trip
-        Ticket partitionedTableTicket = workerConnection.getConfig().newTicket();
+        Ticket partitionedTableTicket = workerConnection.getTickets().newExportTicket();
         Promise<PartitionByResponse> partitionByPromise = Callbacks.<PartitionByResponse, Object>grpcUnaryPromise(c -> {
             PartitionByRequest partitionBy = new PartitionByRequest();
             partitionBy.setTableId(state().getHandle().makeTicket());

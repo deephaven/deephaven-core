@@ -1,16 +1,14 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.iceberg.layout;
 
-import io.deephaven.base.FileUtils;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder;
 import io.deephaven.iceberg.base.IcebergUtils;
 import io.deephaven.iceberg.location.IcebergTableLocationKey;
 import io.deephaven.iceberg.location.IcebergTableParquetLocationKey;
-import io.deephaven.iceberg.relative.RelativeFileIO;
 import io.deephaven.iceberg.util.IcebergReadInstructions;
 import io.deephaven.iceberg.util.IcebergTableAdapter;
 import io.deephaven.parquet.table.ParquetInstructions;
@@ -20,25 +18,36 @@ import io.deephaven.util.channel.SeekableChannelsProviderLoader;
 import org.apache.iceberg.*;
 import org.apache.iceberg.catalog.Catalog;
 import org.apache.iceberg.catalog.TableIdentifier;
-import org.apache.iceberg.io.FileIO;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.net.URI;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import static io.deephaven.iceberg.base.IcebergUtils.allManifestFiles;
+import static io.deephaven.iceberg.base.IcebergUtils.dataFileUri;
+import static io.deephaven.iceberg.base.IcebergUtils.locationUri;
 
 public abstract class IcebergBaseLayout implements TableLocationKeyFinder<IcebergTableLocationKey> {
     /**
      * The {@link IcebergTableAdapter} that will be used to access the table.
      */
     final IcebergTableAdapter tableAdapter;
+
+    /**
+     * The instructions for customizations while reading.
+     */
+    final IcebergReadInstructions instructions;
+
+    /**
+     * The instructions for customizations while reading.
+     */
+    final DataInstructionsProviderLoader dataInstructionsProvider;
 
     /**
      * The UUID of the table, if available.
@@ -81,7 +90,7 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
      * The {@link SeekableChannelsProvider} object that will be used for {@link IcebergTableParquetLocationKey}
      * creation.
      */
-    private final SeekableChannelsProvider channelsProvider;
+    private final Map<String, SeekableChannelsProvider> uriSchemeTochannelsProviders;
 
 
     /**
@@ -100,7 +109,8 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
             @NotNull final ManifestFile manifestFile,
             @NotNull final DataFile dataFile,
             @NotNull final URI fileUri,
-            @Nullable final Map<String, Comparable<?>> partitions) {
+            @Nullable final Map<String, Comparable<?>> partitions,
+            @NotNull final SeekableChannelsProvider channelsProvider) {
         final org.apache.iceberg.FileFormat format = dataFile.format();
         if (format == org.apache.iceberg.FileFormat.PARQUET) {
             return new IcebergTableParquetLocationKey(catalogName, tableUuid, tableIdentifier, manifestFile, dataFile,
@@ -119,6 +129,8 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
             @NotNull final IcebergReadInstructions instructions,
             @NotNull final DataInstructionsProviderLoader dataInstructionsProvider) {
         this.tableAdapter = tableAdapter;
+        this.instructions = instructions;
+        this.dataInstructionsProvider = dataInstructionsProvider;
         {
             UUID uuid;
             try {
@@ -158,22 +170,26 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
             }
             this.parquetInstructions = builder.build();
         }
-        this.channelsProvider = SeekableChannelsProviderLoader.getInstance().load(uriScheme, specialInstructions);
+
+        uriSchemeTochannelsProviders = new HashMap<>();
+        uriSchemeTochannelsProviders.put(uriScheme,
+                SeekableChannelsProviderLoader.getInstance().load(uriScheme, specialInstructions));
     }
 
-    abstract IcebergTableLocationKey keyFromDataFile(ManifestFile manifestFile, DataFile dataFile, URI fileUri);
-
-    private static String path(String path, FileIO io) {
-        return io instanceof RelativeFileIO ? ((RelativeFileIO) io).absoluteLocation(path) : path;
+    private SeekableChannelsProvider getChannelsProvider(final String scheme) {
+        return uriSchemeTochannelsProviders.computeIfAbsent(scheme,
+                scheme2 -> {
+                    final Object specialInstructions = instructions.dataInstructions()
+                            .orElseGet(() -> dataInstructionsProvider.load(scheme2));
+                    return SeekableChannelsProviderLoader.getInstance().load(scheme2, specialInstructions);
+                });
     }
 
-    private static URI locationUri(Table table) {
-        return FileUtils.convertToURI(path(table.location(), table.io()), true);
-    }
-
-    private static URI dataFileUri(Table table, DataFile dataFile) {
-        return FileUtils.convertToURI(path(dataFile.path().toString(), table.io()), false);
-    }
+    abstract IcebergTableLocationKey keyFromDataFile(
+            ManifestFile manifestFile,
+            DataFile dataFile,
+            URI fileUri,
+            SeekableChannelsProvider channelsProvider);
 
     @Override
     public synchronized void findKeys(@NotNull final Consumer<IcebergTableLocationKey> locationKeyObserver) {
@@ -187,13 +203,8 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
                 IcebergUtils.toStream(reader)
                         .map(dataFile -> {
                             final URI fileUri = dataFileUri(table, dataFile);
-                            if (!uriScheme.equals(fileUri.getScheme())) {
-                                throw new TableDataException(String.format(
-                                        "%s:%d - multiple URI schemes are not currently supported. uriScheme=%s, " +
-                                                "fileUri=%s",
-                                        table, snapshot.snapshotId(), uriScheme, fileUri));
-                            }
-                            return keyFromDataFile(manifestFile, dataFile, fileUri);
+                            return keyFromDataFile(manifestFile, dataFile, fileUri,
+                                    getChannelsProvider(fileUri.getScheme()));
                         })
                         .forEach(locationKeyObserver);
             });

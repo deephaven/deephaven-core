@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.iceberg;
 
@@ -35,6 +35,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class Pyiceberg2Test {
     private static final Namespace NAMESPACE = Namespace.of("trading");
     private static final TableIdentifier TRADING_DATA = TableIdentifier.of(NAMESPACE, "data");
+    private static final TableIdentifier EMPTY_DATA = TableIdentifier.of(NAMESPACE, "data_empty");
 
     // This will need to be updated if the data is regenerated
     private static final long SNAPSHOT_1_ID = 2806418501596315192L;
@@ -55,7 +56,7 @@ class Pyiceberg2Test {
     @Test
     void catalogInfo() {
         assertThat(catalogAdapter.listNamespaces()).containsExactly(NAMESPACE);
-        assertThat(catalogAdapter.listTables(NAMESPACE)).containsExactly(TRADING_DATA);
+        assertThat(catalogAdapter.listTables(NAMESPACE)).containsExactly(TRADING_DATA, EMPTY_DATA);
 
         final IcebergTableAdapter tableAdapter = catalogAdapter.loadTable(TRADING_DATA);
         final List<Snapshot> snapshots = tableAdapter.listSnapshots();
@@ -104,5 +105,18 @@ class Pyiceberg2Test {
                 TableTools.doubleCol("ask", 151.0, 151.0, 2810.5, 3420.0, 250.0));
         TstUtils.assertTableEquals(expectedData.sort("datetime", "symbol"),
                 fromIceberg.sort("datetime", "symbol"));
+    }
+
+    @Test
+    void testEmpty() {
+        final IcebergTableAdapter tableAdapter = catalogAdapter.loadTable(EMPTY_DATA);
+        final Table fromIceberg = tableAdapter.table();
+        assertThat(fromIceberg.size()).isEqualTo(0);
+        final Table expectedData = TableTools.newTable(TABLE_DEFINITION,
+                TableTools.col("datetime", new LocalDateTime[0]),
+                TableTools.stringCol("symbol"),
+                TableTools.doubleCol("bid"),
+                TableTools.doubleCol("ask"));
+        TstUtils.assertTableEquals(expectedData, fromIceberg);
     }
 }

@@ -45,6 +45,8 @@ dependencies {
     implementation libs.jackson.dataformat.yaml
     implementation libs.jackson.datatype.jdk8
 
+    implementation libs.guava
+
     compileOnly project(':util-immutables')
     annotationProcessor libs.immutables.value
 

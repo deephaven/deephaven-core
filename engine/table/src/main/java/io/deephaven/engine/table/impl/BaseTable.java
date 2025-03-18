@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl;
 
@@ -359,6 +359,15 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
         tempMap.put(BARRAGE_PERFORMANCE_KEY_ATTRIBUTE, EnumSet.of(
                 CopyAttributeOperation.Flatten, // add flatten for now because web flattens all views
                 CopyAttributeOperation.Preview));
+
+        tempMap.put(BARRAGE_SCHEMA_ATTRIBUTE, EnumSet.of(
+                CopyAttributeOperation.Filter,
+                CopyAttributeOperation.FirstBy,
+                CopyAttributeOperation.Flatten,
+                CopyAttributeOperation.LastBy,
+                CopyAttributeOperation.PartitionBy,
+                CopyAttributeOperation.Reverse,
+                CopyAttributeOperation.Sort));
 
         attributeToCopySet = Collections.unmodifiableMap(tempMap);
     }

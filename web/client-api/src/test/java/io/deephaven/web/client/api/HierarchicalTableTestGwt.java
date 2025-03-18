@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.web.client.api;
 
@@ -369,8 +369,7 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
                     List<String> count = List.of(
                             JsAggregationOperation.COUNT,
                             JsAggregationOperation.COUNT_DISTINCT,
-                            // TODO(deephaven-core#6201) re-enable this line when fixed
-                            // JsAggregationOperation.DISTINCT,
+                            JsAggregationOperation.DISTINCT,
                             JsAggregationOperation.MIN,
                             JsAggregationOperation.MAX,
                             JsAggregationOperation.SUM,

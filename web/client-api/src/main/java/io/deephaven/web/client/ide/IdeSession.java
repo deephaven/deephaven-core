@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.web.client.ide;
 
@@ -24,9 +24,15 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.Position;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.TextDocumentItem;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.VersionedTextDocumentIdentifier;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.ticket_pb.Ticket;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.changedocumentrequest.TextDocumentContentChangeEvent;
-import io.deephaven.web.client.api.*;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.ticket_pb.Ticket;
+import io.deephaven.web.client.api.Callbacks;
+import io.deephaven.web.client.api.DateWrapper;
+import io.deephaven.web.client.api.JsPartitionedTable;
+import io.deephaven.web.client.api.JsTable;
+import io.deephaven.web.client.api.LogItem;
+import io.deephaven.web.client.api.ServerObject;
+import io.deephaven.web.client.api.WorkerConnection;
 import io.deephaven.web.client.api.barrage.stream.BiDiStream;
 import io.deephaven.web.client.api.console.JsCommandResult;
 import io.deephaven.web.client.api.console.JsVariableChanges;
@@ -190,6 +196,45 @@ public class IdeSession extends HasEventHandling {
                 .grpcUnaryPromise(c -> connection.consoleServiceClient().bindTableToVariable(bindRequest,
                         connection.metadata(), c::apply))
                 .then(ignore -> Promise.resolve((Void) null));
+    }
+
+    /**
+     * Makes the {@code object} available to another user or another client on this same server which knows the value of
+     * the {@code sharedTicketBytes}. Use that sharedTicketBytes value like a one-time use password - any other client
+     * which knows this value can read the same object.
+     * <p>
+     * Shared objects will remain available using the sharedTicketBytes until the client that first shared them
+     * releases/closes their copy of the object. Whatever side-channel is used to share the bytes, be sure to wait until
+     * the remote end has signaled that it has successfully fetched the object before releasing it from this client.
+     * <p>
+     * Be sure to use an unpredictable value for the shared ticket bytes, like a UUID or other large, random value to
+     * prevent access by unauthorized clients.
+     *
+     * @param object the object to share with another client/user
+     * @param sharedTicketBytes the value which another client/user must know to obtain the object. It may be a unicode
+     *        string (will be encoded as utf8 bytes), or a {@link elemental2.core.Uint8Array} value.
+     * @return A promise that will resolve to the value passed as sharedTicketBytes when the object is ready to be read
+     *         by another client, or will reject if an error occurs.
+     */
+    public Promise<SharedExportBytesUnion> shareObject(ServerObject.Union object,
+            SharedExportBytesUnion sharedTicketBytes) {
+        return connection.shareObject(object.asServerObject(), sharedTicketBytes);
+    }
+
+    /**
+     * Reads an object shared by another client to this server with the {@code sharedTicketBytes}. Until the other
+     * client releases this object (or their session ends), the object will be available on the server.
+     * <p>
+     * The type of the object must be passed so that the object can be read from the server correct - the other client
+     * should provide this information.
+     *
+     * @param sharedTicketBytes the value provided by another client/user to obtain the object. It may be a unicode
+     *        string (will be encoded as utf8 bytes), or a {@link elemental2.core.Uint8Array} value.
+     * @param type The type of the object, so it can be correctly read from the server
+     * @return A promise that will resolve to the shared object, or will reject with an error if it cannot be read.
+     */
+    public Promise<?> getSharedObject(SharedExportBytesUnion sharedTicketBytes, String type) {
+        return connection.getSharedObject(sharedTicketBytes, type);
     }
 
     public JsRunnable subscribeToFieldUpdates(JsConsumer<JsVariableChanges> callback) {

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.client.impl;
 
@@ -120,6 +120,15 @@ public class UpdateBySpecBuilderTest {
         @Override
         public UpdateByColumn.UpdateBySpec visit(CumProdSpec spec) {
             return UpdateByColumn.UpdateBySpec.newBuilder().setProduct(UpdateByCumulativeProduct.getDefaultInstance())
+                    .build();
+        }
+
+        @Override
+        public UpdateByColumn.UpdateBySpec visit(CumCountWhereSpec spec) {
+            return UpdateByColumn.UpdateBySpec.newBuilder()
+                    .setCountWhere(UpdateByCumulativeCountWhere.newBuilder()
+                            .setResultColumn("count")
+                            .addFilters("x > 5"))
                     .build();
         }
 
@@ -321,6 +330,25 @@ public class UpdateBySpecBuilderTest {
                                     .build())
                     .build();
         }
+
+        @Override
+        public UpdateByColumn.UpdateBySpec visit(RollingCountWhereSpec spec) {
+            return UpdateByColumn.UpdateBySpec
+                    .newBuilder().setRollingCountWhere(
+                            UpdateByColumn.UpdateBySpec.UpdateByRollingCountWhere.newBuilder()
+                                    .setReverseWindowScale(UpdateByWindowScale.newBuilder()
+                                            .setTime(UpdateByWindowScale.UpdateByWindowTime.newBuilder()
+                                                    .setColumn("Timestamp").setNanos(1).build())
+                                            .build())
+                                    .setForwardWindowScale(UpdateByWindowScale.newBuilder()
+                                            .setTime(UpdateByWindowScale.UpdateByWindowTime.newBuilder()
+                                                    .setColumn("Timestamp").setNanos(1).build())
+                                            .build())
+                                    .setResultColumn("count")
+                                    .addFilters("x > 5")
+                                    .build())
+                    .build();
+        }
     }
 
     @Test
@@ -426,6 +454,11 @@ public class UpdateBySpecBuilderTest {
     @Test
     void cumulativeProd() {
         check(CumProdSpec.of());
+    }
+
+    @Test
+    void cumulativeCountWhere() {
+        check(CumCountWhereSpec.of("count", "x > 5"));
     }
 
     @Test
@@ -637,6 +670,29 @@ public class UpdateBySpecBuilderTest {
 
     @Test
     void rollingFormula() {
+        check(RollingFormulaSpec.ofTime("Timestamp", Duration.ofNanos(1), Duration.ofNanos(2), "sum(x)", "x"),
+                UpdateByColumn.UpdateBySpec.newBuilder().setRollingFormula(
+                        UpdateByColumn.UpdateBySpec.UpdateByRollingFormula.newBuilder()
+                                .setReverseWindowScale(time("Timestamp", 1))
+                                .setForwardWindowScale(time("Timestamp", 2))
+                                .setFormula("sum(x)")
+                                .setParamToken("x")
+                                .build())
+                        .build());
+
+        check(RollingFormulaSpec.ofTicks(42L, 43L, "sum(x)", "x"),
+                UpdateByColumn.UpdateBySpec.newBuilder().setRollingFormula(
+                        UpdateByColumn.UpdateBySpec.UpdateByRollingFormula.newBuilder()
+                                .setReverseWindowScale(ticks(42L))
+                                .setForwardWindowScale(ticks(43L))
+                                .setFormula("sum(x)")
+                                .setParamToken("x")
+                                .build())
+                        .build());
+    }
+
+    @Test
+    void rollingCountWhere() {
         check(RollingFormulaSpec.ofTime("Timestamp", Duration.ofNanos(1), Duration.ofNanos(2), "sum(x)", "x"),
                 UpdateByColumn.UpdateBySpec.newBuilder().setRollingFormula(
                         UpdateByColumn.UpdateBySpec.UpdateByRollingFormula.newBuilder()

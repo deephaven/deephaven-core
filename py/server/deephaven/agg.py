@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
 """This module implement various aggregations that can be used in deephaven table's aggregation operations."""
 
@@ -119,7 +119,9 @@ def count_where(col: str, filters: Union[str, Filter, Sequence[str], Sequence[Fi
     filters.
 
     Args:
-        col (str): the column to hold the counts of each distinct group
+        col (str): the column to hold the counts of rows that pass the filter condition
+        filters (Union[str, Filter, Sequence[str], Sequence[Filter]], optional): the filter condition
+            expression(s) or Filter object(s)
 
     Returns:
         an aggregation

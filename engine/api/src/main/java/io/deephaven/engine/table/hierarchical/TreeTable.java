@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.hierarchical;
 
@@ -106,6 +106,18 @@ public interface TreeTable extends HierarchicalTable<TreeTable> {
      * @return The new TreeTable
      */
     TreeTable withNodeOperations(@NotNull NodeOperationsRecorder nodeOperations);
+
+    /**
+     * Create a new TreeTable based on {@code newSource}, inheriting this TreeTable's {@link #getIdentifierColumn()
+     * identifier column}, {@link #getParentIdentifierColumn() parent column}, {@link #withNodeFilterColumns(Collection)
+     * node filter columns}, and {@link #withNodeOperations(NodeOperationsRecorder) node operations}.
+     *
+     * @param newSource A new source table that must have the same definition as the source of this tree; that is
+     *        {@code newSource.getDefinition().equals(getSource().getDefinition())} must be {@code true}
+     *
+     * @return The new TreeTable
+     */
+    TreeTable rebase(@NotNull Table newSource);
 
     /**
      * Adapt a {@code source} {@link Table} to be used for a {@link Table#tree(String, String) tree} to ensure that the

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit BaseCharUpdateByOperator and run "./gradlew replicateUpdateBy" to regenerate
@@ -67,13 +67,15 @@ public abstract class BaseFloatUpdateByOperator extends UpdateByOperator {
         }
 
         @Override
-        public void accumulateRolling(@NotNull final RowSequence inputKeys,
+        public void accumulateRolling(
+                @NotNull final RowSequence inputKeys,
                 @NotNull final Chunk<? extends Values>[] influencerValueChunkArr,
                 @Nullable final LongChunk<OrderedRowKeys> affectedPosChunk,
                 @Nullable final LongChunk<OrderedRowKeys> influencerPosChunk,
                 @NotNull final IntChunk<? extends Values> pushChunk,
                 @NotNull final IntChunk<? extends Values> popChunk,
-                final int len) {
+                final int affectedCount,
+                final int influencerCount) {
 
             setValueChunks(influencerValueChunkArr);
             setPosChunks(affectedPosChunk, influencerPosChunk);
@@ -81,7 +83,7 @@ public abstract class BaseFloatUpdateByOperator extends UpdateByOperator {
             int pushIndex = 0;
 
             // chunk processing
-            for (int ii = 0; ii < len; ii++) {
+            for (int ii = 0; ii < affectedCount; ii++) {
                 final int pushCount = pushChunk.get(ii);
                 final int popCount = popChunk.get(ii);
 
@@ -117,7 +119,7 @@ public abstract class BaseFloatUpdateByOperator extends UpdateByOperator {
             outputValues.set(outIdx, curVal);
         }
 
-        void writeNullToOutputChunk(final int outIdx) {
+        protected void writeNullToOutputChunk(final int outIdx) {
             outputValues.set(outIdx, NULL_FLOAT);
         }
 

@@ -1,4 +1,5 @@
-﻿using Deephaven.ExcelAddIn.Viewmodels;
+﻿using Deephaven.ExcelAddIn.Util;
+using Deephaven.ExcelAddIn.Viewmodels;
 
 namespace Deephaven.ExcelAddIn.Views;
 
@@ -18,6 +19,7 @@ public partial class ConnectionManagerDialog : Form {
 
     _bindingSource.DataSource = typeof(ConnectionManagerDialogRow);
     dataGridView1.DataSource = _bindingSource;
+    versionLabel.Text = Utility.VersionString;
   }
 
   public void AddRow(ConnectionManagerDialogRow row) {

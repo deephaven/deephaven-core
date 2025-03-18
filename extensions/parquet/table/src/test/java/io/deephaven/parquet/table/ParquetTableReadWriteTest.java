@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.parquet.table;
 
@@ -23,6 +23,7 @@ import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfFloat;
 import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfInt;
 import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfLong;
 import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfShort;
+import io.deephaven.engine.rowset.impl.TrackingWritableRowSetImpl;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.PartitionedTable;
@@ -33,6 +34,7 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.dataindex.DataIndexUtils;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
+import io.deephaven.engine.table.impl.locations.ColumnLocation;
 import io.deephaven.engine.table.impl.locations.impl.StandaloneTableKey;
 import io.deephaven.engine.table.impl.select.FormulaEvaluationException;
 import io.deephaven.engine.table.impl.select.FunctionalColumn;
@@ -71,14 +73,14 @@ import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableDouble;
 import org.apache.commons.lang3.mutable.MutableFloat;
 import org.apache.commons.lang3.mutable.MutableObject;
-import org.apache.parquet.column.ColumnDescriptor;
 import org.apache.parquet.column.Encoding;
 import org.apache.parquet.column.statistics.Statistics;
 import org.apache.parquet.hadoop.metadata.ColumnChunkMetaData;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
 import org.apache.parquet.io.api.Binary;
 import org.apache.parquet.schema.LogicalTypeAnnotation;
-import org.apache.parquet.schema.PrimitiveType;
+import org.apache.parquet.schema.MessageType;
+import org.apache.parquet.schema.Types;
 import org.junit.*;
 import org.junit.experimental.categories.Category;
 
@@ -86,6 +88,7 @@ import javax.annotation.Nullable;
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
+import java.io.UncheckedIOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.net.URI;
@@ -104,6 +107,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import java.util.Objects;
+import java.util.function.Consumer;
 import java.util.function.DoubleConsumer;
 import java.util.function.Function;
 import java.util.function.IntConsumer;
@@ -131,7 +135,14 @@ import static io.deephaven.parquet.table.ParquetTools.writeKeyValuePartitionedTa
 import static io.deephaven.parquet.table.ParquetTools.writeTable;
 import static io.deephaven.parquet.table.ParquetTools.writeTables;
 import static io.deephaven.util.QueryConstants.*;
+import static org.apache.parquet.schema.LogicalTypeAnnotation.decimalType;
+import static org.apache.parquet.schema.LogicalTypeAnnotation.intType;
+import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.FIXED_LEN_BYTE_ARRAY;
+import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.INT32;
+import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.INT64;
+import static org.apache.parquet.schema.Types.optional;
 import static org.junit.Assert.*;
+import static org.junit.Assert.assertNotNull;
 
 @Category(OutOfBandTest.class)
 public final class ParquetTableReadWriteTest {
@@ -1969,15 +1980,12 @@ public final class ParquetTableReadWriteTest {
             final ParquetMetadata metadata =
                     new ParquetTableLocationKey(new File(path).toURI(), 0, null, ParquetInstructions.EMPTY)
                             .getMetadata();
-            final List<ColumnDescriptor> columnsMetadata = metadata.getFileMetaData().getSchema().getColumns();
-            assertEquals("DECIMAL(7,5)",
-                    columnsMetadata.get(0).getPrimitiveType().getLogicalTypeAnnotation().toString());
-            assertEquals(PrimitiveType.PrimitiveTypeName.INT32,
-                    columnsMetadata.get(0).getPrimitiveType().getPrimitiveTypeName());
-            assertEquals("DECIMAL(12,8)",
-                    columnsMetadata.get(1).getPrimitiveType().getLogicalTypeAnnotation().toString());
-            assertEquals(PrimitiveType.PrimitiveTypeName.INT64,
-                    columnsMetadata.get(1).getPrimitiveType().getPrimitiveTypeName());
+            final MessageType expectedSchema = Types.buildMessage()
+                    .addFields(
+                            optional(INT32).as(decimalType(5, 7)).named("DecimalIntCol"),
+                            optional(INT64).as(decimalType(8, 12)).named("DecimalLongCol"))
+                    .named("root");
+            assertEquals(expectedSchema, metadata.getFileMetaData().getSchema());
             assertTableEquals(expected, fromDisk);
         }
 
@@ -1989,15 +1997,12 @@ public final class ParquetTableReadWriteTest {
             final ParquetMetadata metadata =
                     new ParquetTableLocationKey(new File(path).toURI(), 0, null, ParquetInstructions.EMPTY)
                             .getMetadata();
-            final List<ColumnDescriptor> columnsMetadata = metadata.getFileMetaData().getSchema().getColumns();
-            assertEquals("DECIMAL(7,5)",
-                    columnsMetadata.get(0).getPrimitiveType().getLogicalTypeAnnotation().toString());
-            assertEquals(PrimitiveType.PrimitiveTypeName.FIXED_LEN_BYTE_ARRAY,
-                    columnsMetadata.get(0).getPrimitiveType().getPrimitiveTypeName());
-            assertEquals("DECIMAL(12,8)",
-                    columnsMetadata.get(1).getPrimitiveType().getLogicalTypeAnnotation().toString());
-            assertEquals(PrimitiveType.PrimitiveTypeName.FIXED_LEN_BYTE_ARRAY,
-                    columnsMetadata.get(1).getPrimitiveType().getPrimitiveTypeName());
+            final MessageType expectedSchema = Types.buildMessage()
+                    .addFields(
+                            optional(FIXED_LEN_BYTE_ARRAY).length(4).as(decimalType(5, 7)).named("DecimalIntCol"),
+                            optional(FIXED_LEN_BYTE_ARRAY).length(6).as(decimalType(8, 12)).named("DecimalLongCol"))
+                    .named("schema"); // note: this file must have been written down with a different schema name
+            assertEquals(expectedSchema, metadata.getFileMetaData().getSchema());
             assertTableEquals(expected, fromDisk);
         }
     }
@@ -2578,10 +2583,14 @@ public final class ParquetTableReadWriteTest {
 
         final ParquetMetadata metadata =
                 new ParquetTableLocationKey(new File(path).toURI(), 0, null, ParquetInstructions.EMPTY).getMetadata();
-        final List<ColumnDescriptor> columnsMetadata = metadata.getFileMetaData().getSchema().getColumns();
-        assertTrue(columnsMetadata.get(0).toString().contains("int32 uint8Col (INTEGER(8,false))"));
-        assertTrue(columnsMetadata.get(1).toString().contains("int32 uint16Col (INTEGER(16,false))"));
-        assertTrue(columnsMetadata.get(2).toString().contains("int32 uint32Col (INTEGER(32,false))"));
+
+        final MessageType expectedSchema = Types.buildMessage()
+                .addFields(
+                        optional(INT32).as(intType(8, false)).named("uint8Col"),
+                        optional(INT32).as(intType(16, false)).named("uint16Col"),
+                        optional(INT32).as(intType(32, false)).named("uint32Col"))
+                .named("schema");
+        assertEquals(expectedSchema, metadata.getFileMetaData().getSchema());
 
         final Table expected = newTable(
                 charCol("uint8Col", (char) 255, (char) 2, (char) 0, NULL_CHAR),
@@ -3651,6 +3660,111 @@ public final class ParquetTableReadWriteTest {
         assertEquals(columnMetadata.getEncodingStats().getNumDataPagesEncodedAs(Encoding.PLAIN), 2);
     }
 
+    private static void verifyMakeHandleException(final Runnable throwingRunnable) {
+        try {
+            throwingRunnable.run();
+            fail("Expected UncheckedIOException");
+        } catch (final UncheckedIOException e) {
+            assertTrue(e.getMessage().contains("makeHandle encountered exception"));
+        }
+    }
+
+    private static void makeNewTableLocationAndVerifyNoException(
+            final Consumer<ParquetTableLocation> parquetTableLocationConsumer) {
+        final File dest = new File(rootFile, "real.parquet");
+        final Table table = TableTools.emptyTable(5).update("A=(int)i", "B=(long)i", "C=(double)i");
+        DataIndexer.getOrCreateDataIndex(table, "A");
+        writeTable(table, dest.getPath());
+
+        final ParquetTableLocationKey newTableLocationKey =
+                new ParquetTableLocationKey(dest.toURI(), 0, null, ParquetInstructions.EMPTY);
+        final ParquetTableLocation newTableLocation =
+                new ParquetTableLocation(StandaloneTableKey.getInstance(), newTableLocationKey, EMPTY);
+
+        // The following operations should not throw exceptions
+        parquetTableLocationConsumer.accept(newTableLocation);
+        dest.delete();
+    }
+
+    @Test
+    public void testTableLocationReading() {
+        // Make a new ParquetTableLocation for a non-existent parquet file
+        final File nonExistentParquetFile = new File(rootFile, "non-existent.parquet");
+        assertFalse(nonExistentParquetFile.exists());
+        final ParquetTableLocationKey nonExistentTableLocationKey =
+                new ParquetTableLocationKey(nonExistentParquetFile.toURI(), 0, null, ParquetInstructions.EMPTY);
+        final ParquetTableLocation nonExistentTableLocation =
+                new ParquetTableLocation(StandaloneTableKey.getInstance(), nonExistentTableLocationKey, EMPTY);
+
+        // Ensure operations don't touch the file or throw exceptions
+        assertEquals(nonExistentTableLocation.getTableKey(), StandaloneTableKey.getInstance());
+        assertEquals(nonExistentTableLocation.getKey(), nonExistentTableLocationKey);
+        assertNotNull(nonExistentTableLocation.toString());
+        assertNotNull(nonExistentTableLocation.asLivenessReferent());
+        assertNotNull(nonExistentTableLocation.getStateLock());
+        nonExistentTableLocation.refresh();
+
+        // Verify that we can get a column location for a non-existent column
+        final ColumnLocation nonExistentColumnLocation = nonExistentTableLocation.getColumnLocation("A");
+        assertNotNull(nonExistentColumnLocation);
+        assertEquals("A", nonExistentColumnLocation.getName());
+        assertEquals(nonExistentTableLocation, nonExistentColumnLocation.getTableLocation());
+        assertNotNull(nonExistentColumnLocation.toString());
+        assertNotNull(nonExistentColumnLocation.getImplementationName());
+
+        // Verify that all the following operations will fail when the file does not exist and pass when it does
+        // APIs from TableLocation
+        verifyMakeHandleException(nonExistentTableLocation::getDataIndexColumns);
+        makeNewTableLocationAndVerifyNoException(ParquetTableLocation::getDataIndexColumns);
+
+        verifyMakeHandleException(nonExistentTableLocation::getSortedColumns);
+        makeNewTableLocationAndVerifyNoException(ParquetTableLocation::getSortedColumns);
+
+        verifyMakeHandleException(nonExistentTableLocation::getColumnTypes);
+        makeNewTableLocationAndVerifyNoException(ParquetTableLocation::getColumnTypes);
+
+        verifyMakeHandleException(nonExistentTableLocation::hasDataIndex);
+        makeNewTableLocationAndVerifyNoException(ParquetTableLocation::hasDataIndex);
+
+        // Assuming here there will be an index on column "A"
+        verifyMakeHandleException(nonExistentTableLocation::getDataIndex);
+        makeNewTableLocationAndVerifyNoException(tableLocation -> tableLocation.getDataIndex("A"));
+
+        verifyMakeHandleException(nonExistentTableLocation::loadDataIndex);
+        makeNewTableLocationAndVerifyNoException(tableLocation -> tableLocation.loadDataIndex("A"));
+
+        // APIs from TableLocationState
+        verifyMakeHandleException(nonExistentTableLocation::getRowSet);
+        makeNewTableLocationAndVerifyNoException(ParquetTableLocation::getRowSet);
+
+        verifyMakeHandleException(nonExistentTableLocation::getSize);
+        makeNewTableLocationAndVerifyNoException(ParquetTableLocation::getSize);
+
+        verifyMakeHandleException(nonExistentTableLocation::getLastModifiedTimeMillis);
+        makeNewTableLocationAndVerifyNoException(ParquetTableLocation::getLastModifiedTimeMillis);
+
+        verifyMakeHandleException(() -> nonExistentTableLocation.handleUpdate(new TrackingWritableRowSetImpl(), 0));
+
+        // APIs from ColumnLocation
+        verifyMakeHandleException(nonExistentColumnLocation::exists);
+        verifyMakeHandleException(() -> nonExistentColumnLocation.makeColumnRegionChar(
+                ColumnDefinition.fromGenericType("A", char.class, Character.class)));
+        verifyMakeHandleException(() -> nonExistentColumnLocation.makeColumnRegionByte(
+                ColumnDefinition.fromGenericType("A", byte.class, Byte.class)));
+        verifyMakeHandleException(() -> nonExistentColumnLocation.makeColumnRegionShort(
+                ColumnDefinition.fromGenericType("A", short.class, Short.class)));
+        verifyMakeHandleException(() -> nonExistentColumnLocation.makeColumnRegionInt(
+                ColumnDefinition.fromGenericType("A", int.class, Integer.class)));
+        verifyMakeHandleException(() -> nonExistentColumnLocation.makeColumnRegionLong(
+                ColumnDefinition.fromGenericType("A", long.class, Long.class)));
+        verifyMakeHandleException(() -> nonExistentColumnLocation.makeColumnRegionFloat(
+                ColumnDefinition.fromGenericType("A", float.class, Float.class)));
+        verifyMakeHandleException(() -> nonExistentColumnLocation.makeColumnRegionDouble(
+                ColumnDefinition.fromGenericType("A", double.class, Double.class)));
+        verifyMakeHandleException(() -> nonExistentColumnLocation.makeColumnRegionObject(
+                ColumnDefinition.fromGenericType("A", String.class, String.class)));
+    }
+
     @Test
     public void readWriteStatisticsTest() {
         // Test simple structured table.
@@ -3704,25 +3818,25 @@ public final class ParquetTableReadWriteTest {
                 new ParquetTableLocationKey(dest.toURI(), 0, null, ParquetInstructions.EMPTY).getMetadata();
         final ColumnChunkMetaData dateColMetadata = metadata.getBlocks().get(0).getColumns().get(0);
         assertTrue(dateColMetadata.toString().contains("someDateColumn"));
-        assertEquals(PrimitiveType.PrimitiveTypeName.INT32, dateColMetadata.getPrimitiveType().getPrimitiveTypeName());
+        assertEquals(INT32, dateColMetadata.getPrimitiveType().getPrimitiveTypeName());
         assertEquals(LogicalTypeAnnotation.dateType(), dateColMetadata.getPrimitiveType().getLogicalTypeAnnotation());
 
         final ColumnChunkMetaData timeColMetadata = metadata.getBlocks().get(0).getColumns().get(1);
         assertTrue(timeColMetadata.toString().contains("someTimeColumn"));
-        assertEquals(PrimitiveType.PrimitiveTypeName.INT64, timeColMetadata.getPrimitiveType().getPrimitiveTypeName());
+        assertEquals(INT64, timeColMetadata.getPrimitiveType().getPrimitiveTypeName());
         assertEquals(LogicalTypeAnnotation.timeType(true, LogicalTypeAnnotation.TimeUnit.NANOS),
                 timeColMetadata.getPrimitiveType().getLogicalTypeAnnotation());
 
         final ColumnChunkMetaData localDateTimeColMetadata = metadata.getBlocks().get(0).getColumns().get(2);
         assertTrue(localDateTimeColMetadata.toString().contains("someLocalDateTimeColumn"));
-        assertEquals(PrimitiveType.PrimitiveTypeName.INT64,
+        assertEquals(INT64,
                 localDateTimeColMetadata.getPrimitiveType().getPrimitiveTypeName());
         assertEquals(LogicalTypeAnnotation.timestampType(false, LogicalTypeAnnotation.TimeUnit.NANOS),
                 localDateTimeColMetadata.getPrimitiveType().getLogicalTypeAnnotation());
 
         final ColumnChunkMetaData instantColMetadata = metadata.getBlocks().get(0).getColumns().get(3);
         assertTrue(instantColMetadata.toString().contains("someInstantColumn"));
-        assertEquals(PrimitiveType.PrimitiveTypeName.INT64,
+        assertEquals(INT64,
                 instantColMetadata.getPrimitiveType().getPrimitiveTypeName());
         assertEquals(LogicalTypeAnnotation.timestampType(true, LogicalTypeAnnotation.TimeUnit.NANOS),
                 instantColMetadata.getPrimitiveType().getLogicalTypeAnnotation());

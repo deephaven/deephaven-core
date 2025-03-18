@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.sql;
 
@@ -109,7 +109,7 @@ public final class Sql {
     }
 
     private static ColumnHeader<?> adapt(ColumnDefinition<?> columnDef) {
-        return ColumnHeader.of(columnDef.getName(), Type.find(columnDef.getDataType()));
+        return ColumnHeader.of(columnDef.getName(), Type.find(columnDef.getDataType(), columnDef.getComponentType()));
     }
 
     private enum ToGraphvizDot implements ObjFormatter<TableSpec> {

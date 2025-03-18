@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.json.jackson;
 
@@ -102,7 +102,7 @@ final class BoolMixin extends Mixin<BoolValue> {
         checkStringAllowed(parser);
         if (!allowNull()) {
             final byte res = Parsing.parseStringAsByteBool(parser, BooleanUtils.NULL_BOOLEAN_AS_BYTE);
-            if (res == BooleanUtils.NULL_BOOLEAN_AS_BYTE) {
+            if (BooleanUtils.isNull(res)) {
                 throw nullNotAllowed(parser);
             }
             return res;

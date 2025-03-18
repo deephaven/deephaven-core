@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.iceberg.junit5;
 
@@ -34,8 +34,8 @@ import org.apache.iceberg.Snapshot;
 import org.apache.iceberg.catalog.Namespace;
 import org.apache.iceberg.catalog.TableIdentifier;
 import org.apache.iceberg.types.Types;
-import org.apache.parquet.column.ColumnDescriptor;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
+import org.apache.parquet.schema.MessageType;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -53,6 +53,13 @@ import java.util.Map;
 import java.util.List;
 import java.util.stream.Collectors;
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
+import static io.deephaven.engine.util.TableTools.col;
+import static io.deephaven.engine.util.TableTools.doubleCol;
+import static org.apache.parquet.schema.LogicalTypeAnnotation.intType;
+import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.DOUBLE;
+import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.INT32;
+import static org.apache.parquet.schema.Types.buildMessage;
+import static org.apache.parquet.schema.Types.optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 
@@ -80,7 +87,7 @@ public abstract class SqliteCatalogBase {
         engineCleanup.tearDown();
     }
 
-    private TableParquetWriterOptions.Builder writerOptionsBuilder() {
+    protected TableParquetWriterOptions.Builder writerOptionsBuilder() {
         final TableParquetWriterOptions.Builder builder = TableParquetWriterOptions.builder();
         final Object dataInstructions;
         if ((dataInstructions = dataInstructions()) != null) {
@@ -277,10 +284,79 @@ public abstract class SqliteCatalogBase {
             tableWriter.append(IcebergWriteInstructions.builder()
                     .addTables(appendTable)
                     .build());
-            failBecauseExceptionWasNotThrown(UncheckedDeephavenException.class);
+            failBecauseExceptionWasNotThrown(TableDefinition.IncompatibleTableDefinitionException.class);
         } catch (TableDefinition.IncompatibleTableDefinitionException e) {
             // Table definition mismatch between table writer and append table
-            assertThat(e).hasMessageContaining("Table definition");
+            assertThat(e).hasMessageContaining("Actual table definition is not compatible with the " +
+                    "expected definition");
+        }
+    }
+
+    @Test
+    void appendWithWrongDefinition() {
+        final Table source = TableTools.newTable(
+                col("dateCol", java.time.LocalDate.now()),
+                doubleCol("doubleCol", 2.5));
+        final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
+
+        final IcebergTableAdapter tableAdapter = catalogAdapter.createTable(tableIdentifier, source.getDefinition());
+        final IcebergTableWriter tableWriter = tableAdapter.tableWriter(writerOptionsBuilder()
+                .tableDefinition(source.getDefinition())
+                .build());
+        tableWriter.append(IcebergWriteInstructions.builder()
+                .addTables(source)
+                .build());
+
+        // Try to build a writer with an unknown column
+        try {
+            tableAdapter.tableWriter(writerOptionsBuilder()
+                    .tableDefinition(TableDefinition.of(ColumnDefinition.of("instantCol", Type.instantType())))
+                    .build());
+            failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
+        } catch (IllegalArgumentException e) {
+            assertThat(e).hasMessageContaining("Column instantCol not found in the schema");
+        }
+
+        // Try to build a writer with incorrect type
+        try {
+            tableAdapter.tableWriter(writerOptionsBuilder()
+                    .tableDefinition(TableDefinition.of(ColumnDefinition.of("dateCol", Type.instantType())))
+                    .build());
+            failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
+        } catch (IllegalArgumentException e) {
+            assertThat(e).hasMessageContaining("Column dateCol has type class java.time.Instant in table " +
+                    "definition but type date in Iceberg schema");
+        }
+
+        // Try to write a table with the incorrect type using a correct writer
+        {
+            final Table appendTableWithIncorrectType = TableTools.newTable(
+                    col("dateCol", java.time.Instant.now()));
+            try {
+                tableWriter.append(IcebergWriteInstructions.builder()
+                        .addTables(appendTableWithIncorrectType)
+                        .build());
+                failBecauseExceptionWasNotThrown(TableDefinition.IncompatibleTableDefinitionException.class);
+            } catch (TableDefinition.IncompatibleTableDefinitionException e) {
+                assertThat(e).hasMessageContaining("Actual table definition is not compatible with the " +
+                        "expected definition");
+            }
+        }
+
+        // Make a tableWriter with a proper subset of the definition, but then try to append with the full definition
+        {
+            final IcebergTableWriter tableWriterWithSubset = tableAdapter.tableWriter(writerOptionsBuilder()
+                    .tableDefinition(TableDefinition.of(ColumnDefinition.of("doubleCol", Type.doubleType())))
+                    .build());
+            try {
+                tableWriterWithSubset.append(IcebergWriteInstructions.builder()
+                        .addTables(source)
+                        .build());
+                failBecauseExceptionWasNotThrown(TableDefinition.IncompatibleTableDefinitionException.class);
+            } catch (TableDefinition.IncompatibleTableDefinitionException e) {
+                assertThat(e).hasMessageContaining("Actual table definition is not compatible with the " +
+                        "expected definition");
+            }
         }
     }
 
@@ -416,8 +492,12 @@ public abstract class SqliteCatalogBase {
         {
             final List<String> parquetFiles = getAllParquetFilesFromDataFiles(tableIdentifier);
             assertThat(parquetFiles).hasSize(1);
-            verifyFieldIdsFromParquetFile(parquetFiles.get(0), originalDefinition.getColumnNames(),
-                    nameToFieldIdFromSchema);
+            final MessageType expectedSchema = buildMessage()
+                    .addFields(
+                            optional(INT32).id(1).as(intType(32, true)).named("intCol"),
+                            optional(DOUBLE).id(2).named("doubleCol"))
+                    .named("root");
+            verifySchema(parquetFiles.get(0), expectedSchema);
         }
 
         final Table moreData = TableTools.emptyTable(5)
@@ -442,10 +522,18 @@ public abstract class SqliteCatalogBase {
 
             final List<String> parquetFiles = getAllParquetFilesFromDataFiles(tableIdentifier);
             assertThat(parquetFiles).hasSize(2);
-            verifyFieldIdsFromParquetFile(parquetFiles.get(0), moreData.getDefinition().getColumnNames(),
-                    newNameToFieldId);
-            verifyFieldIdsFromParquetFile(parquetFiles.get(1), originalDefinition.getColumnNames(),
-                    nameToFieldIdFromSchema);
+            final MessageType expectedSchema0 = buildMessage()
+                    .addFields(
+                            optional(INT32).id(1).as(intType(32, true)).named("newIntCol"),
+                            optional(DOUBLE).id(2).named("newDoubleCol"))
+                    .named("root");
+            final MessageType expectedSchema1 = buildMessage()
+                    .addFields(
+                            optional(INT32).id(1).as(intType(32, true)).named("intCol"),
+                            optional(DOUBLE).id(2).named("doubleCol"))
+                    .named("root");
+            verifySchema(parquetFiles.get(0), expectedSchema0);
+            verifySchema(parquetFiles.get(1), expectedSchema1);
         }
 
         // TODO: This is failing because we don't map columns based on the column ID when reading. Uncomment this
@@ -455,31 +543,13 @@ public abstract class SqliteCatalogBase {
         // moreData.renameColumns("intCol = newIntCol", "doubleCol = newDoubleCol")), fromIceberg);
     }
 
-    /**
-     * Verify that the schema of the parquet file read from the provided path has the provided column and corresponding
-     * field IDs.
-     */
-    private void verifyFieldIdsFromParquetFile(
-            final String path,
-            final List<String> columnNames,
-            final Map<String, Integer> nameToFieldId) throws URISyntaxException {
+    private void verifySchema(String path, MessageType expectedSchema) throws URISyntaxException {
         final ParquetMetadata metadata =
                 new ParquetTableLocationKey(new URI(path), 0, null, ParquetInstructions.builder()
                         .setSpecialInstructions(dataInstructions())
                         .build())
                         .getMetadata();
-        final List<ColumnDescriptor> columnsMetadata = metadata.getFileMetaData().getSchema().getColumns();
-
-        final int numColumns = columnNames.size();
-        for (int colIdx = 0; colIdx < numColumns; colIdx++) {
-            final String columnName = columnNames.get(colIdx);
-            final String columnNameFromParquetFile = columnsMetadata.get(colIdx).getPath()[0];
-            assertThat(columnName).isEqualTo(columnNameFromParquetFile);
-
-            final int expectedFieldId = nameToFieldId.get(columnName);
-            final int fieldIdFromParquetFile = columnsMetadata.get(colIdx).getPrimitiveType().getId().intValue();
-            assertThat(fieldIdFromParquetFile).isEqualTo(expectedFieldId);
-        }
+        assertThat(metadata.getFileMetaData().getSchema()).isEqualTo(expectedSchema);
     }
 
     /**
@@ -562,7 +632,7 @@ public abstract class SqliteCatalogBase {
         verifyDataFiles(tableIdentifier, List.of(source, anotherSource, moreData));
 
         {
-            // Verify thaty we read the data files in the correct order
+            // Verify that we read the data files in the correct order
             final Table fromIceberg = tableAdapter.table();
             assertTableEquals(TableTools.merge(moreData, source, anotherSource), fromIceberg);
         }

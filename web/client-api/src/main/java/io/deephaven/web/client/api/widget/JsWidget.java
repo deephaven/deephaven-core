@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.web.client.api.widget;
 
@@ -119,6 +119,11 @@ public class JsWidget extends HasEventHandling implements ServerObject, WidgetMe
                 (next, headers, c) -> connection.objectServiceClient().nextMessageStream(next, headers, c::apply),
                 new StreamRequest());
         this.exportedObjects = new JsArray<>();
+    }
+
+    @Override
+    public WorkerConnection getConnection() {
+        return connection;
     }
 
     private void closeStream() {
