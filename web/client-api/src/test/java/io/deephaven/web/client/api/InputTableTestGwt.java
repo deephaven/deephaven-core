@@ -94,7 +94,8 @@ public class InputTableTestGwt extends AbstractAsyncGwtTestCase {
                     // we are expecting an error message
                     return Promise.reject(x);
                 })
-                .then(x -> Promise.reject("Should not have been able to retrieve result5, with a bad input table attribute."));
+                .then(x -> Promise
+                        .reject("Should not have been able to retrieve result5, with a bad input table attribute."));
     }
 
     @Override
