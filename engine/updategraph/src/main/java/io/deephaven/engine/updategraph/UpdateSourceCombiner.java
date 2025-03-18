@@ -3,13 +3,12 @@
 //
 package io.deephaven.engine.updategraph;
 
-import io.deephaven.base.ArrayWeakReferenceManager;
-import io.deephaven.base.WeakReferenceManager;
+import io.deephaven.util.datastructures.ArrayWeakReferenceManager;
+import io.deephaven.util.datastructures.WeakReferenceManager;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.OverridingMethodsMustInvokeSuper;
-import java.util.Collections;
 import java.util.function.Supplier;
 
 /**

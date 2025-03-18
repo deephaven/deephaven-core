@@ -3,7 +3,6 @@
 //
 package io.deephaven.util.datastructures;
 
-import io.deephaven.base.WeakReferenceManager;
 import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedNode;
 import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedQueue;
 import org.jetbrains.annotations.NotNull;

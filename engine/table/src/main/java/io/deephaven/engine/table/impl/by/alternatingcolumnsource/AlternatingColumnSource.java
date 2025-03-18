@@ -3,8 +3,8 @@
 //
 package io.deephaven.engine.table.impl.by.alternatingcolumnsource;
 
-import io.deephaven.base.ArrayWeakReferenceManager;
-import io.deephaven.base.WeakReferenceManager;
+import io.deephaven.util.datastructures.ArrayWeakReferenceManager;
+import io.deephaven.util.datastructures.WeakReferenceManager;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
