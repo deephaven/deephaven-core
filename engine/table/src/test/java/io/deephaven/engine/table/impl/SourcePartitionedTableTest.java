@@ -422,20 +422,33 @@ public class SourcePartitionedTableTest extends RefreshingTableTestCase {
         final Table ptSummary = spt.merge().selectDistinct("Sym");
         verifyStringColumnContents(ptSummary, "Sym", "aa", "bb", "cc", "dd");
         tlp.add(p5);
+
+        // Observe an empty p5 constituent.
         updateGraph.getDelegate().runWithinUnitTestCycle(() -> {
             updateGraph.refreshSources();
-            // We refreshed the source first, so it won't see a new size for the location backed by p5 on this cycle.
+        }, true);
+
+        // p5 was initially empty, so it should not be included in the result yet.
+        verifyStringColumnContents(ptSummary, "Sym", "aa", "bb", "cc", "dd");
+
+        // Grow p5 to include some data, and notify the listeners to trigger a refresh.
+        updateGraph.getDelegate().runWithinUnitTestCycle(() -> {
+            updateGraph.refreshSources();
             addToTable(p5, ir(0, 3),
                     stringCol("Sym", "ii", "jj", "kk", "ll"),
                     intCol("intCol", 10000, 20000, 40000, 60000),
                     doubleCol("doubleCol", 0.1, 0.2, 0.4, 0.6));
+            p5.notifyListeners(ir(0, 3), i(), i());
         }, true);
+
+        // The table-backed TL hasn't seen the new rows for p5 yet...
         verifyStringColumnContents(ptSummary, "Sym", "aa", "bb", "cc", "dd");
+
         updateGraph.getDelegate().runWithinUnitTestCycle(() -> {
             updateGraph.refreshSources();
-            // Now the source has been refreshed, so it should see the new size of the location backed by p5, and
-            // include it in the result.
         }, true);
+
+        // Now the table-backed TL has seen the new rows for p5, and the summary table should include them.
         verifyStringColumnContents(ptSummary, "Sym", "aa", "bb", "cc", "dd", "ii", "jj", "kk", "ll");
     }
 }
