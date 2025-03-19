@@ -11,18 +11,15 @@ import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.barrage.flatbuf.BarrageMessageType;
 import io.deephaven.barrage.flatbuf.BarrageSnapshotRequest;
 import io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest;
-import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.liveness.SingletonLivenessManager;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.BaseTable;
-import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
-import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.extensions.barrage.BarragePerformanceLog;
 import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
 import io.deephaven.extensions.barrage.BarrageMessageWriter;
@@ -38,8 +35,6 @@ import io.deephaven.io.logger.Logger;
 import io.deephaven.proto.util.Exceptions;
 import io.deephaven.proto.util.ExportTicketHelper;
 import io.deephaven.server.barrage.BarrageMessageProducer;
-import io.deephaven.server.hierarchicaltable.HierarchicalTableView;
-import io.deephaven.server.hierarchicaltable.HierarchicalTableViewSubscription;
 import io.deephaven.server.session.SessionService;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.server.session.TicketRouter;
@@ -50,6 +45,7 @@ import org.apache.arrow.flatbuf.MessageHeader;
 import org.apache.arrow.flatbuf.Schema;
 import org.apache.arrow.flight.impl.Flight;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -60,14 +56,15 @@ import java.util.concurrent.atomic.AtomicReference;
 public class ArrowFlightUtil {
     private static final Logger log = LoggerFactory.getLogger(ArrowFlightUtil.class);
 
+
     private static class MessageViewAdapter implements StreamObserver<BarrageMessageWriter.MessageView> {
         private final StreamObserver<InputStream> delegate;
 
-        private MessageViewAdapter(StreamObserver<InputStream> delegate) {
+        private MessageViewAdapter(final StreamObserver<InputStream> delegate) {
             this.delegate = delegate;
         }
 
-        public void onNext(BarrageMessageWriter.MessageView value) {
+        public void onNext(final BarrageMessageWriter.MessageView value) {
             synchronized (delegate) {
                 try {
                     value.forEachStream(delegate::onNext);
@@ -78,7 +75,7 @@ public class ArrowFlightUtil {
         }
 
         @Override
-        public void onError(Throwable t) {
+        public void onError(final Throwable t) {
             synchronized (delegate) {
                 delegate.onError(t);
             }
@@ -262,7 +259,7 @@ public class ArrowFlightUtil {
         }
 
         @Override
-        public void onError(Throwable t) {
+        public void onError(final Throwable t) {
             // ok; we're done then
             if (resultTable != null) {
                 resultTable.dropReference();
@@ -375,11 +372,14 @@ public class ArrowFlightUtil {
 
         private final TicketRouter ticketRouter;
         private final BarrageMessageWriter.Factory streamGeneratorFactory;
-        private final BarrageMessageProducer.Operation.Factory bmpOperationFactory;
-        private final HierarchicalTableViewSubscription.Factory htvsFactory;
         private final BarrageMessageProducer.Adapter<BarrageSubscriptionRequest, BarrageSubscriptionOptions> subscriptionOptAdapter;
         private final BarrageMessageProducer.Adapter<BarrageSnapshotRequest, BarrageSnapshotOptions> snapshotOptAdapter;
         private final SessionService.ErrorTransformer errorTransformer;
+        /**
+         * This is the set of marshallers that are consulted for each exported object. The marshallers are processed in
+         * order, with the first marshaller to claim an object the one responsible for subscription and snapshots.
+         */
+        private final List<ExchangeMarshaller> marshallers;
 
         /**
          * Interface for the individual handlers for the DoExchange.
@@ -394,8 +394,7 @@ public class ArrowFlightUtil {
         public DoExchangeMarshaller(
                 final TicketRouter ticketRouter,
                 final BarrageMessageWriter.Factory streamGeneratorFactory,
-                final BarrageMessageProducer.Operation.Factory bmpOperationFactory,
-                final HierarchicalTableViewSubscription.Factory htvsFactory,
+                final Set<ExchangeMarshaller> exchangeMarshallers,
                 final BarrageMessageProducer.Adapter<BarrageSubscriptionRequest, BarrageSubscriptionOptions> subscriptionOptAdapter,
                 final BarrageMessageProducer.Adapter<BarrageSnapshotRequest, BarrageSnapshotOptions> snapshotOptAdapter,
                 final SessionService.ErrorTransformer errorTransformer,
@@ -405,13 +404,14 @@ public class ArrowFlightUtil {
             this.myPrefix = "DoExchangeMarshaller{" + Integer.toHexString(System.identityHashCode(this)) + "}: ";
             this.ticketRouter = ticketRouter;
             this.streamGeneratorFactory = streamGeneratorFactory;
-            this.bmpOperationFactory = bmpOperationFactory;
-            this.htvsFactory = htvsFactory;
             this.subscriptionOptAdapter = subscriptionOptAdapter;
             this.snapshotOptAdapter = snapshotOptAdapter;
             this.session = session;
             this.listener = new MessageViewAdapter(responseObserver);
             this.errorTransformer = errorTransformer;
+            this.marshallers = new ArrayList<>(exchangeMarshallers.size());
+            marshallers.addAll(exchangeMarshallers);
+            marshallers.sort(Comparator.comparingInt(ExchangeMarshaller::priority));
 
             this.session.addOnCloseCallback(this);
             if (responseObserver instanceof ServerCallStreamObserver) {
@@ -422,7 +422,7 @@ public class ArrowFlightUtil {
         // this entry is used for client-streaming requests
         @Override
         public void onNext(final InputStream request) {
-            MessageInfo message;
+            final MessageInfo message;
             try {
                 message = BarrageProtoUtil.parseProtoMessage(request);
             } catch (final IOException err) {
@@ -577,46 +577,19 @@ public class ArrowFlightUtil {
                                 })
                                 .submit(() -> {
                                     metrics.queueNanos = System.nanoTime() - queueStartTm;
-                                    Object export = tableExport.get();
-                                    if (export instanceof Table) {
-                                        export = ((Table) export).coalesce();
-                                    }
-                                    if (!(export instanceof BaseTable)) {
+                                    final Object export = tableExport.get();
+
+                                    final ExchangeMarshaller marshallerForExport =
+                                            ExchangeMarshaller.getMarshaller(export, marshallers);
+                                    if (marshallerForExport == null) {
                                         throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION, "Ticket ("
-                                                + ticketLogName + ") is not a subscribable table.");
-                                    }
-                                    final BaseTable<?> table = (BaseTable<?>) export;
-                                    metrics.tableId = Integer.toHexString(System.identityHashCode(table));
-                                    metrics.tableKey = BarragePerformanceLog.getKeyFor(table);
-
-                                    if (table.isFailed()) {
-                                        throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
-                                                "Table is already failed");
+                                                + ticketLogName + ") is has no associated exchange marshaller.");
                                     }
 
-                                    // push the schema to the listener
-                                    listener.onNext(streamGeneratorFactory.getSchemaView(
-                                            fbb -> BarrageUtil.makeTableSchemaPayload(fbb,
-                                                    snapshotOptAdapter.adapt(snapshotRequest),
-                                                    table.getDefinition(), table.getAttributes(), table.isFlat())));
+                                    final BarrageSnapshotOptions options = snapshotOptAdapter.adapt(snapshotRequest);
 
-                                    // collect the viewport and columnsets (if provided)
-                                    final boolean hasColumns = snapshotRequest.columnsVector() != null;
-                                    final BitSet columns =
-                                            hasColumns ? BitSet.valueOf(snapshotRequest.columnsAsByteBuffer()) : null;
-
-                                    final boolean hasViewport = snapshotRequest.viewportVector() != null;
-                                    RowSet viewport =
-                                            hasViewport
-                                                    ? BarrageProtoUtil.toRowSet(snapshotRequest.viewportAsByteBuffer())
-                                                    : null;
-
-                                    final boolean reverseViewport = snapshotRequest.reverseViewport();
-
-                                    // leverage common code for `DoGet` and `BarrageSnapshotOptions`
-                                    BarrageUtil.createAndSendSnapshot(streamGeneratorFactory, table, columns, viewport,
-                                            reverseViewport, snapshotOptAdapter.adapt(snapshotRequest), listener,
-                                            metrics);
+                                    marshallerForExport.snapshot(snapshotRequest, options, export, metrics,
+                                            listener, ticketLogName, streamGeneratorFactory);
                                 });
                     }
                 }
@@ -653,8 +626,10 @@ public class ArrowFlightUtil {
         private class SubscriptionRequestHandler
                 implements Handler {
 
-            private BarrageMessageProducer bmp;
-            private HierarchicalTableViewSubscription htvs;
+            /**
+             * The object representing the subscription.
+             */
+            private ExchangeMarshaller.Subscription subscriptionObject;
 
             private Queue<BarrageSubscriptionRequest> preExportSubscriptions;
             private SessionState.ExportObject<?> onExportResolvedContinuation;
@@ -679,7 +654,7 @@ public class ArrowFlightUtil {
                     final BarrageSubscriptionRequest subscriptionRequest = BarrageSubscriptionRequest
                             .getRootAsBarrageSubscriptionRequest(message.app_metadata.msgPayloadAsByteBuffer());
 
-                    if (bmp != null || htvs != null) {
+                    if (subscriptionObject != null) {
                         apply(subscriptionRequest);
                         return;
                     }
@@ -733,68 +708,24 @@ public class ArrowFlightUtil {
                 // we know there is at least one request; it was put there when we knew which parent to wait on
                 final BarrageSubscriptionRequest subscriptionRequest = preExportSubscriptions.remove();
 
-                final io.deephaven.barrage.flatbuf.BarrageSubscriptionOptions options =
-                        subscriptionRequest.subscriptionOptions();
-                final long minUpdateIntervalMs;
-                if (options == null || options.minUpdateIntervalMs() == 0) {
-                    minUpdateIntervalMs = DEFAULT_MIN_UPDATE_INTERVAL_MS;
-                } else {
-                    minUpdateIntervalMs = options.minUpdateIntervalMs();
-                }
+                final Object export = parent.get();
 
-                Object export = parent.get();
-                if (export instanceof Table) {
-                    final QueryTable table = (QueryTable) ((Table) export).coalesce();
-
-                    if (table.isFailed()) {
-                        throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
-                                "Table is already failed");
-                    }
-
-                    final UpdateGraph ug = table.getUpdateGraph();
-                    try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(ug).open()) {
-                        bmp = table.getResult(bmpOperationFactory.create(table, minUpdateIntervalMs));
-                        if (bmp.isRefreshing()) {
-                            manage(bmp);
-                        }
-                    }
-                } else if (export instanceof HierarchicalTableView) {
-                    final HierarchicalTableView hierarchicalTableView = (HierarchicalTableView) export;
-                    final UpdateGraph ug = hierarchicalTableView.getHierarchicalTable().getSource().getUpdateGraph();
-                    try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(ug).open()) {
-                        htvs = htvsFactory.create(hierarchicalTableView, listener,
-                                subscriptionOptAdapter.adapt(subscriptionRequest), minUpdateIntervalMs);
-                        if (hierarchicalTableView.getHierarchicalTable().getSource().isRefreshing()) {
-                            manage(htvs);
-                        }
-                    }
-                } else {
+                final ExchangeMarshaller marshallerForExport = ExchangeMarshaller.getMarshaller(export, marshallers);
+                if (marshallerForExport == null) {
                     GrpcUtil.safelyError(listener, Code.FAILED_PRECONDITION, "Ticket ("
                             + ExportTicketHelper.toReadableString(subscriptionRequest.ticketAsByteBuffer(), "ticket")
                             + ") is not a subscribable table.");
                     return;
                 }
 
-                log.debug().append(myPrefix).append("processing initial subscription").endl();
+                final BarrageSubscriptionOptions options = subscriptionOptAdapter.adapt(subscriptionRequest);
 
-                final boolean hasColumns = subscriptionRequest.columnsVector() != null;
-                final BitSet columns =
-                        hasColumns ? BitSet.valueOf(subscriptionRequest.columnsAsByteBuffer()) : null;
+                subscriptionObject =
+                        marshallerForExport.subscribe(subscriptionRequest, options, export, listener);
 
-                final boolean hasViewport = subscriptionRequest.viewportVector() != null;
-                final RowSet viewport =
-                        hasViewport ? BarrageProtoUtil.toRowSet(subscriptionRequest.viewportAsByteBuffer()) : null;
-
-                final boolean reverseViewport = subscriptionRequest.reverseViewport();
-
-                if (bmp != null) {
-                    bmp.addSubscription(listener, subscriptionOptAdapter.adapt(subscriptionRequest), columns, viewport,
-                            reverseViewport);
-                } else if (htvs != null) {
-                    htvs.setViewport(columns, viewport, reverseViewport);
-                } else {
-                    // noinspection ThrowableNotThrown
-                    Assert.statementNeverExecuted();
+                final LivenessReferent subscriptionManagedReference = subscriptionObject.toManage();
+                if (subscriptionManagedReference != null) {
+                    manage(subscriptionManagedReference);
                 }
 
                 for (final BarrageSubscriptionRequest request : preExportSubscriptions) {
@@ -811,25 +742,8 @@ public class ArrowFlightUtil {
              * @param subscriptionRequest the requested view change
              */
             private void apply(final BarrageSubscriptionRequest subscriptionRequest) {
-                final boolean hasColumns = subscriptionRequest.columnsVector() != null;
-                final BitSet columns =
-                        hasColumns ? BitSet.valueOf(subscriptionRequest.columnsAsByteBuffer()) : null;
-
-                final boolean hasViewport = subscriptionRequest.viewportVector() != null;
-                final RowSet viewport =
-                        hasViewport ? BarrageProtoUtil.toRowSet(subscriptionRequest.viewportAsByteBuffer()) : null;
-
-                final boolean reverseViewport = subscriptionRequest.reverseViewport();
-
-                final boolean subscriptionFound;
-                if (bmp != null) {
-                    subscriptionFound = bmp.updateSubscription(listener, viewport, columns, reverseViewport);
-                } else if (htvs != null) {
-                    subscriptionFound = true;
-                    htvs.setViewport(columns, viewport, reverseViewport);
-                } else {
-                    subscriptionFound = false;
-                }
+                final boolean subscriptionFound =
+                        subscriptionObject != null && subscriptionObject.update(subscriptionRequest);
 
                 if (!subscriptionFound) {
                     throw Exceptions.statusRuntimeException(Code.NOT_FOUND, "Subscription was not found.");
@@ -838,16 +752,12 @@ public class ArrowFlightUtil {
 
             @Override
             public synchronized void close() {
-                if (bmp != null) {
-                    bmp.removeSubscription(listener);
-                    bmp = null;
-                } else if (htvs != null) {
-                    htvs.completed();
-                    htvs = null;
+                if (subscriptionObject != null) {
+                    subscriptionObject.close();
+                    subscriptionObject = null;
                 } else {
                     GrpcUtil.safelyComplete(listener);
                 }
-
                 // After we've signaled that the stream should close, cancel the export
                 if (onExportResolvedContinuation != null) {
                     onExportResolvedContinuation.cancel();
@@ -859,5 +769,52 @@ public class ArrowFlightUtil {
                 }
             }
         }
+    }
+
+    /**
+     * Helper to retrieve the viewport RowSet from a subscription request.
+     */
+    public static @Nullable RowSet getViewport(final BarrageSubscriptionRequest subscriptionRequest) {
+        final boolean hasViewport = subscriptionRequest.viewportVector() != null;
+        return hasViewport ? BarrageProtoUtil.toRowSet(subscriptionRequest.viewportAsByteBuffer()) : null;
+    }
+
+    /**
+     * Helper to retrieve the viewport columns from a subscription request.
+     */
+    public static @Nullable BitSet getColumns(final BarrageSubscriptionRequest subscriptionRequest) {
+        final boolean hasColumns = subscriptionRequest.columnsVector() != null;
+        return hasColumns ? BitSet.valueOf(subscriptionRequest.columnsAsByteBuffer()) : null;
+    }
+
+    /**
+     * Helper to retrieve the viewport RowSet from a snapshot request.
+     */
+    static @Nullable RowSet getViewport(final BarrageSnapshotRequest snapshotRequest) {
+        final boolean hasViewport = snapshotRequest.viewportVector() != null;
+        return hasViewport
+                ? BarrageProtoUtil.toRowSet(snapshotRequest.viewportAsByteBuffer())
+                : null;
+    }
+
+    /**
+     * Helper to retrieve the viewport columns from a snapshot request.
+     */
+    static @Nullable BitSet getColumns(final BarrageSnapshotRequest snapshotRequest) {
+        final boolean hasColumns = snapshotRequest.columnsVector() != null;
+        return hasColumns ? BitSet.valueOf(snapshotRequest.columnsAsByteBuffer()) : null;
+    }
+
+    /**
+     * Helper to retrieve the update interval from a subscription request.
+     */
+    public static long getMinUpdateIntervalMs(final io.deephaven.barrage.flatbuf.BarrageSubscriptionOptions options) {
+        final long minUpdateIntervalMs;
+        if (options == null || options.minUpdateIntervalMs() == 0) {
+            minUpdateIntervalMs = DEFAULT_MIN_UPDATE_INTERVAL_MS;
+        } else {
+            minUpdateIntervalMs = options.minUpdateIntervalMs();
+        }
+        return minUpdateIntervalMs;
     }
 }

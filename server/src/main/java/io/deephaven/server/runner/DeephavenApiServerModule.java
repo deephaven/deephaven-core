@@ -7,6 +7,7 @@ import dagger.Module;
 import io.deephaven.server.appmode.AppModeModule;
 import io.deephaven.server.appmode.ApplicationsModule;
 import io.deephaven.server.arrow.ArrowModule;
+import io.deephaven.server.arrow.ExchangeMarshallerModule;
 import io.deephaven.server.auth.AuthContextModule;
 import io.deephaven.server.config.ConfigServiceModule;
 import io.deephaven.server.console.ConsoleModule;
@@ -44,6 +45,7 @@ import io.deephaven.server.uri.UriModule;
         UpdateGraphModule.class,
         GrpcModule.class,
         ScriptSessionModule.class,
+        ExchangeMarshallerModule.class
 })
 public class DeephavenApiServerModule {
 
