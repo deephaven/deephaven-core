@@ -135,12 +135,12 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
 
     private final boolean isRefreshing;
 
-    private final JsArray<Column> keyColumns = new JsArray<>();
     private final Column actionCol;
 
     private InitialTableDefinition tableDefinition;
+    private JsArray<Column> keyColumns;
+    private Map<String, Column> columnsByName;
     private Column[] visibleColumns;
-    private Map<String, Column> columnsByName = new HashMap<>();
     private Map<String, Column> sourceColumns;
 
     private Column rowDepthCol;
@@ -190,6 +190,9 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
 
     public void extractDefinition(final HierarchicalTableDescriptor treeDescriptor) {
         Uint8Array flightSchemaMessage = treeDescriptor.getSnapshotSchema_asU8();
+
+        keyColumns = new JsArray<>();
+        columnsByName = new HashMap<>();
 
         this.tableDefinition = WebBarrageUtils.readTableDefinition(flightSchemaMessage);
         Column[] columns = new Column[0];
@@ -285,13 +288,12 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
         }
 
         // track columns by name and freeze the array to avoid defensive copies
+        this.columns = columns;
         this.visibleColumns = JsObject.freeze(columns);
         for (int i = 0; i < visibleColumns.length; i++) {
             Column column = visibleColumns[i];
             columnsByName.put(column.getName(), column);
         }
-
-        keyTableData = new Object[keyColumns.length + 2][0];
     }
 
     @JsIgnore
@@ -312,6 +314,8 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
         extractDefinition(treeDescriptor);
 
         actionCol = new Column(-1, -1, null, null, "byte", "__action__", false, null, null, false, false);
+
+        keyTableData = new Object[keyColumns.length + 2][0];
 
         sourceTable = JsLazy.of(() -> workerConnection
                 .newState(this, (c, newState, metadata) -> {
@@ -481,7 +485,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
                 c.apply(error, null);
                 return null;
             });
-        }).then(ignored -> (Promise<Object>)prevTicket.promise()).then(result -> {
+        }).then(ignored -> (Promise<Object>) prevTicket.promise()).then(result -> {
             if (controller.signal.aborted) {
                 return Promise.reject(controller.signal.reason);
             }
@@ -867,6 +871,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
                 .filter(Objects::nonNull)
                 .flatMapToInt(Column::getRequiredColumns)
                 .forEach(columnsBitset::set);
+
         for (ColumnDefinition column : tableDefinition.getColumns()) {
             if (column.isForRow()) {
                 columnsBitset.set(column.getColumnIndex());
