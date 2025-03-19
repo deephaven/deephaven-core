@@ -260,7 +260,7 @@ class TableDataService(JObjectWrapper):
 
         Args:
             table_key (TableKey): the table key
-            refreshing (bool): whether the table is live or static
+            refreshing (bool): whether the table is live (True) or static (False)
 
         Returns:
             Table: a new table
@@ -279,8 +279,7 @@ class TableDataService(JObjectWrapper):
 
         Args:
             table_key (TableKey): the table key
-            refreshing (bool): whether the partitioned table is live or static
-
+            refreshing (bool): whether the partitioned table is live (True) or static (False)
         Returns:
             PartitionedTable: a new partitioned table
 
