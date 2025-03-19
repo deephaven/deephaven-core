@@ -8,7 +8,7 @@ awssdk = "2.29.20"
 # See dependency matrix for particular gRPC versions at https://github.com/grpc/grpc-java/blob/master/SECURITY.md#netty
 boringssl = "2.0.61.Final"
 calcite = "1.38.0"
-classgraph = "4.8.177"
+classgraph = "4.8.179"
 commons-compress = "1.27.1"
 commons-io = "2.18.0"
 commons-lang3 = "3.17.0"
