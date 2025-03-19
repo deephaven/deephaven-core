@@ -1044,7 +1044,7 @@ public class TestTableTools {
         final String result;
 
         try (final ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-             final PrintStream printStream = new PrintStream(bytes, false, StandardCharsets.UTF_8)) {
+                final PrintStream printStream = new PrintStream(bytes, false, StandardCharsets.UTF_8)) {
             TableTools.showWithRowSet(t, 0, 10, printStream);
             printStream.flush();
             result = bytes.toString(StandardCharsets.UTF_8);
@@ -1052,9 +1052,9 @@ public class TestTableTools {
             throw new UncheckedIOException(e);
         }
 
-//        System.out.println(result);
+        // System.out.println(result);
 
-        final String [] lines = result.split("\n");
+        final String[] lines = result.split("\n");
         assertEquals(lines.length, 5);
         final int line1Idx = lines[0].indexOf("|");
         final int line2Idx = lines[1].indexOf("+");
