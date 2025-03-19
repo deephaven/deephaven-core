@@ -43,8 +43,7 @@ public class TotalsTableTestGwt extends AbstractAsyncGwtTestCase {
             entry(JsAggregationOperation.MEDIAN, 2.0),
             entry(JsAggregationOperation.STD, 1.5811388300841898),
             entry(JsAggregationOperation.FIRST, 0.0),
-            entry(JsAggregationOperation.LAST, 4.0)
-    );
+            entry(JsAggregationOperation.LAST, 4.0));
 
     public void testQueryDefinedConfigs() {
         connect(tables)
