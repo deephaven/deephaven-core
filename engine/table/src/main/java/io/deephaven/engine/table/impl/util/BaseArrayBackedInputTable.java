@@ -54,7 +54,7 @@ abstract class BaseArrayBackedInputTable extends UpdatableTable {
     }
 
     public InputTableUpdater inputTable() {
-        return (InputTableUpdater) getAttribute(Table.INPUT_TABLE_ATTRIBUTE);
+        return InputTableUpdater.from(this);
     }
 
     public Table readOnlyCopy() {
