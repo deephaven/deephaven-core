@@ -10,6 +10,7 @@ import elemental2.core.ArrayBuffer;
 import elemental2.core.ArrayBufferView;
 import elemental2.core.JsArray;
 import elemental2.core.Uint8Array;
+import elemental2.dom.DomGlobal;
 import elemental2.promise.Promise;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.object_pb.ClientData;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.object_pb.ConnectRequest;
@@ -161,14 +162,18 @@ public class JsWidget extends HasEventHandling implements ServerObject, WidgetMe
                     hasFetched = true;
                     resolve.onInvoke(this);
                 } else {
-                    fireEvent(EVENT_MESSAGE, new EventDetails(res.getData(), responseObjects));
+                    DomGlobal.setTimeout(ignore -> {
+                        fireEvent(EVENT_MESSAGE, new EventDetails(res.getData(), responseObjects));
+                    }, 0);
                 }
             });
             messageStream.onStatus(status -> {
                 if (!status.isOk()) {
                     reject.onInvoke(status.getDetails());
                 }
-                fireEvent(EVENT_CLOSE);
+                DomGlobal.setTimeout(ignore -> {
+                    fireEvent(EVENT_CLOSE);
+                }, 0);
                 closeStream();
             });
             messageStream.onEnd(status -> {
