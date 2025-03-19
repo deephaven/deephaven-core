@@ -10,6 +10,7 @@ dependencies {
     testImplementation libs.assertj
     testImplementation platform(libs.junit.bom)
     testImplementation libs.junit.jupiter
+    testRuntimeOnly libs.junit.platform.launcher
 
     runtimeOnly project(':log-to-slf4j')
     runtimeOnly libs.logback.classic
