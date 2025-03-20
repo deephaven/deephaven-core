@@ -557,7 +557,7 @@ public class PythonTableDataService extends AbstractTableDataService {
                 return false;
             }
             final TableKeyImpl otherTableKey = (TableKeyImpl) other;
-            return this.key.call("__eq__", otherTableKey.key).getBooleanValue();
+            return this.key.eq(otherTableKey.key);
         }
 
         @Override
@@ -711,8 +711,7 @@ public class PythonTableDataService extends AbstractTableDataService {
                 return false;
             }
             final TableLocationKeyImpl otherTyped = (TableLocationKeyImpl) other;
-            return partitions.equals(otherTyped.partitions)
-                    && locationKey.call("__eq__", otherTyped.locationKey).getBooleanValue();
+            return partitions.equals(otherTyped.partitions) && locationKey.eq(otherTyped.locationKey);
         }
 
         @Override
