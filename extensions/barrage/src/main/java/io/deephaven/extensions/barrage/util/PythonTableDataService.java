@@ -563,7 +563,7 @@ public class PythonTableDataService extends AbstractTableDataService {
         @Override
         public int hashCode() {
             if (cachedHashCode == 0) {
-                final int computedHashCode = (int) key.hash();
+                final int computedHashCode = Long.hashCode(key.hash());
                 // Don't use 0; that's used by StandaloneTableKey, and also our sentinel for the need to compute
                 if (computedHashCode == 0) {
                     final int fallbackHashCode = TableKeyImpl.class.hashCode();
@@ -717,7 +717,7 @@ public class PythonTableDataService extends AbstractTableDataService {
         @Override
         public int hashCode() {
             if (cachedHashCode == 0) {
-                final int computedHashCode = 31 * partitions.hashCode() + (int) locationKey.hash();
+                final int computedHashCode = 31 * partitions.hashCode() + Long.hashCode(locationKey.hash());
                 // Don't use 0; that's used by StandaloneTableLocationKey, and also our sentinel for the need to compute
                 if (computedHashCode == 0) {
                     final int fallbackHashCode = TableLocationKeyImpl.class.hashCode();

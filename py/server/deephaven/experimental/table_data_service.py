@@ -25,7 +25,8 @@ _JTableLocationKeyImpl = jpy.get_type("io.deephaven.extensions.barrage.util.Pyth
 class TableKey(ABC):
     """A key that identifies a table. The key should be unique for each table. The key can be any Python object and
     should include sufficient information to uniquely identify the table for the backend service. The __hash__ and
-    __eq__ methods must be implemented consistently to ensure that the key is hashable.
+    __eq__ methods must be implemented consistently to ensure that the key is hashable and behaves correctly for
+    the equality check.
     """
 
     @abstractmethod
@@ -40,7 +41,7 @@ class TableLocationKey(ABC):
     """A key that identifies a specific location of a table. The key should be unique for each table location of the
     table. The key can be any Python object and should include sufficient information to uniquely identify the location
     for the backend service to fetch the data values and data size. The __hash__ and __eq__ methods must be implemented
-    consistently to ensure that the key is hashable.
+    consistently to ensure that the key is hashable and behaves correctly for the equality check.
     """
 
     @abstractmethod
