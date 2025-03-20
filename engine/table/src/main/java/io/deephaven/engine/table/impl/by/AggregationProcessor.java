@@ -199,6 +199,7 @@ public class AggregationProcessor implements AggregationContextFactory {
      * @param aggregations The {@link Aggregation aggregations}. Must not be further mutated by the caller. Will not be
      *        mutated by {@link AggregationProcessor}.
      * @param nullColumns Map of group-by column names and data types to aggregate with a null-column aggregation
+     * @param rollupColumn the name of the rollup column in the result, used to traverse to the next lower level nodes
      * @return The {@link AggregationContextFactory}
      */
     public static AggregationContextFactory forRollupReaggregated(
@@ -212,6 +213,30 @@ public class AggregationProcessor implements AggregationContextFactory {
         reaggregations.add(RollupAggregation.nullColumns(nullColumns));
         reaggregations.addAll(aggregations);
         reaggregations.add(Partition.of(rollupColumn));
+        return new AggregationProcessor(reaggregations, Type.ROLLUP_REAGGREGATED);
+    }
+
+    /**
+     * Convert a collection of {@link Aggregation aggregations} to an {@link AggregationContextFactory} for use in
+     * computing a reaggregated table, but without the ability to descend to the lower level (the rollupColumn is null).
+     *
+     * @param aggregations The {@link Aggregation aggregations}. Must not be further mutated by the caller. Will not be
+     *        mutated by {@link AggregationProcessor}.
+     * @param nullColumns Map of group-by column names and data types to aggregate with a null-column aggregation
+     * @param rollupColumn the name of the rollup column in the result, which is always a null result
+     * @return The {@link AggregationContextFactory}
+     */
+    public static AggregationContextFactory forRollupReaggregatedLeaf(
+            @NotNull final Collection<? extends Aggregation> aggregations,
+            @NotNull final Map<String, Class<?>> nullColumns,
+            @NotNull final ColumnName rollupColumn) {
+        if (aggregations.stream().anyMatch(agg -> agg instanceof Partition)) {
+            rollupUnsupported("Partition");
+        }
+        final Collection<Aggregation> reaggregations = new ArrayList<>(aggregations.size() + 2);
+        reaggregations.add(RollupAggregation.nullColumns(nullColumns));
+        reaggregations.addAll(aggregations);
+        reaggregations.add(RollupAggregation.nullColumns(rollupColumn.name(), Table.class));
         return new AggregationProcessor(reaggregations, Type.ROLLUP_REAGGREGATED);
     }
 
