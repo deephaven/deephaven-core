@@ -1,6 +1,6 @@
 plugins {
-    id 'com.gradle.develocity' version '3.18.1'
-    id 'org.gradle.toolchains.foojay-resolver-convention' version '0.8.0'
+    id 'com.gradle.develocity' version '3.19.1'
+    id 'org.gradle.toolchains.foojay-resolver-convention' version '0.9.0'
 }
 
 gradle.ext.buildStartTime = new Date()
@@ -51,6 +51,7 @@ project(':configs').projectDir = file('props/configs')
 include(':test-configs')
 project(':test-configs').projectDir = file('props/test-configs')
 
+include 'coverage'
 include 'combined-javadoc'
 
 include 'grpc-java:grpc-servlet-jakarta'
@@ -432,6 +433,9 @@ include ':clock'
 include ':clock-impl'
 
 include ':sql'
+
+include ':extensions-flight-sql'
+project(':extensions-flight-sql').projectDir = file('extensions/flight-sql')
 
 include(':codec-api')
 project(':codec-api').projectDir = file('codec/api')

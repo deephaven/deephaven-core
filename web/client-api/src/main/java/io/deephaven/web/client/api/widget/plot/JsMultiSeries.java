@@ -1,12 +1,18 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.web.client.api.widget.plot;
 
 import com.vertispan.tsdefs.annotations.TsInterface;
 import com.vertispan.tsdefs.annotations.TsName;
 import com.vertispan.tsdefs.annotations.TsTypeRef;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.figuredescriptor.*;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.figuredescriptor.BoolMapWithDefault;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.figuredescriptor.DoubleMapWithDefault;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.figuredescriptor.MultiSeriesDescriptor;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.figuredescriptor.MultiSeriesSourceDescriptor;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.figuredescriptor.SeriesDescriptor;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.figuredescriptor.SourceDescriptor;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.figuredescriptor.StringMapWithDefault;
 import io.deephaven.web.client.api.JsPartitionedTable;
 import io.deephaven.web.client.api.widget.plot.enums.JsSeriesPlotStyle;
 import jsinterop.annotations.JsProperty;

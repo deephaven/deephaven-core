@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
 import random
 import unittest
@@ -8,15 +8,17 @@ from typing import List, Any
 
 from deephaven import DHError, read_csv, empty_table, SortDirection, time_table, update_graph, new_table, dtypes
 from deephaven.agg import sum_, weighted_avg, avg, pct, group, count_, first, last, max_, median, min_, std, abs_sum, \
-    var, formula, partition, unique, count_distinct, distinct
+    var, formula, partition, unique, count_distinct, distinct, count_where
 from deephaven.column import datetime_col
 from deephaven.execution_context import make_user_exec_ctx, get_exec_ctx
 from deephaven.html import to_html
 from deephaven.jcompat import j_hashmap
 from deephaven.pandas import to_pandas
-from deephaven.table import Table, TableDefinition, SearchDisplayMode, table_diff
+from deephaven.table import Table, TableDefinition, SearchDisplayMode, table_diff, NaturalJoinType
+from deephaven.filters import Filter, and_, or_
 from tests.testbase import BaseTestCase, table_equals
 
+import pandas as pd
 
 # for scoping dependent table operation tests
 def global_fn() -> str:
@@ -43,6 +45,9 @@ class TableTestCase(BaseTestCase):
         self.aggs_for_rollup = [
             avg(["aggAvg=var"]),
             count_("aggCount"),
+            count_where("aggCountWhere1", "var > 100"),
+            count_where("aggCountWhere2", ["var > 100", "var < 250"]),
+            count_where("aggCountWhere3", or_(["var > 100", "var < 250"])),
             first(["aggFirst=var"]),
             last(["aggLast=var"]),
             max_(["aggMax=var"]),
@@ -305,8 +310,44 @@ class TableTestCase(BaseTestCase):
             result_table = left_table.natural_join(
                 right_table, on=["a"], joins=["RD = d", "e"]
             )
-
         self.assertTrue(cm.exception.root_cause)
+
+    def test_natural_join_output(self):
+        left_table = empty_table(10).update(formulas=["key=i", "index=i"])
+
+        # note that rhs has duplicates
+        right_table_raw = empty_table(10).update(formulas=["key=(int)(i / 2)", "index=i"])
+        right_table_first_by = right_table_raw.first_by(by="key")
+
+        result_table_1 = left_table.natural_join(right_table_first_by, on="key", joins="rhs_index=index")
+        result_table_2 = left_table.natural_join(right_table_raw, on="key", joins="rhs_index=index", type=NaturalJoinType.FIRST_MATCH)
+
+        # get the tables as a local pandas dataframes
+        df_1 = to_pandas(result_table_1)
+        df_2 = to_pandas(result_table_2)
+
+        # assert the values meet expectations
+        self.assertTrue(df_1.equals(df_2))
+
+        self.assertEqual(list(df_1.loc[0: 4, "rhs_index"]), [0, 2, 4, 6, 8])
+        # the following rows have no match and should be null / NA
+        self.assertTrue(all(pd.isna(df_1.loc[5:9, "rhs_index"])))
+
+        right_table_last_by = right_table_raw.last_by(by="key")
+
+        result_table_1 = left_table.natural_join(right_table_last_by, on="key", joins="rhs_index=index")
+        result_table_2 = left_table.natural_join(right_table_raw, on="key", joins="rhs_index=index", type=NaturalJoinType.LAST_MATCH)
+
+        # get the tables as a local pandas dataframes
+        df_1 = to_pandas(result_table_1)
+        df_2 = to_pandas(result_table_2)
+
+        # assert the values meet expectations
+        self.assertTrue(df_1.equals(df_2))
+
+        self.assertEqual(list(df_1.loc[0: 4, "rhs_index"]), [1, 3, 5, 7, 9])
+        # the following rows have no match and should be null / NA
+        self.assertTrue(all(pd.isna(df_1.loc[5:9, "rhs_index"])))
 
     def test_exact_join(self):
         left_table = self.test_table.drop_columns(["d", "e"]).group_by('a')
@@ -461,6 +502,10 @@ class TableTestCase(BaseTestCase):
             formula(
                 formula="min(each)", formula_param="each", cols=["MinA=a", "MinD=d"]
             ),
+            formula(formula="f_const=5.0 + 3"),
+            formula(formula="f_min=min(a)"),
+            formula(formula="f_sum=sum(a) + sum(b)"),
+            formula(formula="f_sum_3_col=sum(a) + sum(b) + max(c)"),
         ]
 
         result_table = self.test_table.agg_by(aggs=aggs, by=["a"])
@@ -478,6 +523,26 @@ class TableTestCase(BaseTestCase):
         for agg in self.aggs:
             result_table = test_table.agg_by(agg, "grp_id")
             self.assertEqual(result_table.size, 2)
+
+    def test_agg_count_where_output(self):
+        """
+        Test and validation of the agg_count_where feature
+        """
+        test_table = empty_table(100).update(["a=ii", "b=ii%2"])
+        count_aggs = [
+            count_where("count1", "a >= 25"),
+            count_where("count2", "a % 3 == 0")
+        ]
+        result_table = test_table.agg_by(aggs=count_aggs, by="b")
+        self.assertEqual(result_table.size, 2)
+
+        # get the table as a local pandas dataframe
+        df = to_pandas(result_table)
+        # assert the values meet expectations
+        self.assertEqual(df.loc[0, "count1"], 37)
+        self.assertEqual(df.loc[1, "count1"], 38)
+        self.assertEqual(df.loc[0, "count2"], 17)
+        self.assertEqual(df.loc[1, "count2"], 17)
 
     def test_agg_by_initial_groups_preserve_empty(self):
         test_table = empty_table(10)
@@ -565,12 +630,12 @@ class TableTestCase(BaseTestCase):
         t = time_table("PT0.1S").update("X = i % 2 == 0 ? i : i - 1").sort("X").tail(10)
         with update_graph.shared_lock(t):
             snapshot_hist = self.test_table.snapshot_when(t, history=True)
-            self.assertFalse(snapshot_hist.j_table.isFailed())
+            self.assertFalse(snapshot_hist.is_failed)
         self.wait_ticking_table_update(t, row_count=10, timeout=2)
         # we have not waited for a whole cycle yet, wait for the shared lock to guarantee cycle is over
         # to ensure snapshot_hist has had the opportunity to process the update we just saw
         with update_graph.shared_lock(t):
-            self.assertTrue(snapshot_hist.j_table.isFailed())
+            self.assertTrue(snapshot_hist.is_failed)
 
     def test_agg_all_by(self):
         test_table = empty_table(10)

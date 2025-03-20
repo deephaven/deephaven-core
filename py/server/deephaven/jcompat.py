@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
 
 """ This module provides Java compatibility support including convenience functions to create some widely used Java
@@ -98,6 +98,19 @@ def j_list_to_list(jlist) -> List[Any]:
         return []
 
     return [wrap_j_object(jlist.get(i)) for i in range(jlist.size())]
+
+
+def j_collection_to_list(jcollection) -> List[Any]:
+    """Converts a java Collection to a python list."""
+    if not jcollection:
+        return []
+
+    res = []
+    it = jcollection.iterator()
+    while it.hasNext():
+        res.append(wrap_j_object(it.next()))
+
+    return res
 
 
 T = TypeVar("T")

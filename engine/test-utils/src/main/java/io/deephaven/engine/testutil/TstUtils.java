@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.testutil;
 
@@ -12,6 +12,7 @@ import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.liveness.LivenessStateException;
 import io.deephaven.engine.rowset.*;
@@ -133,6 +134,17 @@ public class TstUtils {
      */
     public static WritableRowSet i(long... keys) {
         return RowSetFactory.fromKeys(keys);
+    }
+
+    /**
+     * A shorthand for {@link RowSetFactory#fromRange(long, long)} for use in unit tests.
+     *
+     * @param firstRowKey the first key of the new RowSet
+     * @param lastRowKey the last key (inclusive) of the new RowSet
+     * @return a new RowSet with the given key range
+     */
+    public static WritableRowSet ir(final long firstRowKey, final long lastRowKey) {
+        return RowSetFactory.fromRange(firstRowKey, lastRowKey);
     }
 
     public static void addToTable(final Table table, final RowSet rowSet, final ColumnHolder<?>... columnHolders) {
@@ -430,7 +442,7 @@ public class TstUtils {
             System.out.println("================ NEXT ITERATION ================");
         }
         for (int i = 0; i < en.length; i++) {
-            try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            try (final SafeCloseable ignored = LivenessScopeStack.open(new LivenessScope(true), true)) {
                 if (RefreshingTableTestCase.printTableUpdates) {
                     if (i != 0) {
                         System.out.println("================ NUGGET (" + i + ") ================");

@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
 from typing import Optional, Union
 from warnings import warn
@@ -24,6 +24,7 @@ except Exception:
     included in the package. This is an opt-out functionality included by default. If not included, importing this
     module will fail to find the java types.
 """
+
 
 class Credentials(JObjectWrapper):
     """

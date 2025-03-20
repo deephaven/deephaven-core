@@ -9,7 +9,7 @@ import pathlib
 # install extra dependencies, at least until we can more properly manage the build environment (pyproject.toml).
 # TODO(deephaven-core#2233): upgrade setup.py to pyproject.toml
 from pkg_resources import parse_version
-from setuptools import find_packages, setup
+from setuptools import setup, find_namespace_packages
 
 
 def _get_readme() -> str:
@@ -37,7 +37,7 @@ setup(
     description='The Deephaven Python Client',
     long_description=_get_readme(),
     long_description_content_type="text/markdown",
-    packages=find_packages(exclude=("tests",)),
+    packages=find_namespace_packages(exclude=("tests", "examples", "docs.source", "build")),
     url='https://deephaven.io/',
     license='Deephaven Community License Agreement Version 1.0',
     author='Deephaven Data Labs',

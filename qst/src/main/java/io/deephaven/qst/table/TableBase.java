@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.qst.table;
 
@@ -97,9 +97,10 @@ public abstract class TableBase implements TableSpec {
     @Override
     public final TableSpec naturalJoin(TableSpec rightTable,
             Collection<? extends JoinMatch> columnsToMatch,
-            Collection<? extends JoinAddition> columnsToAdd) {
+            Collection<? extends JoinAddition> columnsToAdd,
+            NaturalJoinType naturalJoinType) {
         return NaturalJoinTable.builder().left(this).right(rightTable).addAllMatches(columnsToMatch)
-                .addAllAdditions(columnsToAdd).build();
+                .addAllAdditions(columnsToAdd).joinType(naturalJoinType).build();
     }
 
     @Override

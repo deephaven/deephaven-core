@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.iceberg.layout;
 
@@ -8,6 +8,7 @@ import io.deephaven.iceberg.location.IcebergTableLocationKey;
 import io.deephaven.iceberg.util.IcebergReadInstructions;
 import io.deephaven.iceberg.internal.DataInstructionsProviderLoader;
 import io.deephaven.iceberg.util.IcebergTableAdapter;
+import io.deephaven.util.channel.SeekableChannelsProvider;
 import org.apache.iceberg.*;
 import org.jetbrains.annotations.NotNull;
 
@@ -21,6 +22,8 @@ public final class IcebergFlatLayout extends IcebergBaseLayout {
     /**
      * @param tableAdapter The {@link IcebergTableAdapter} that will be used to access the table.
      * @param instructions The instructions for customizations while reading.
+     * @param dataInstructionsProvider The provider for special instructions, to be used if special instructions not
+     *        provided in the {@code instructions}.
      */
     public IcebergFlatLayout(
             @NotNull final IcebergTableAdapter tableAdapter,
@@ -35,7 +38,11 @@ public final class IcebergFlatLayout extends IcebergBaseLayout {
     }
 
     @Override
-    IcebergTableLocationKey keyFromDataFile(DataFile df, URI fileUri) {
-        return locationKey(df.format(), fileUri, null);
+    IcebergTableLocationKey keyFromDataFile(
+            @NotNull final ManifestFile manifestFile,
+            @NotNull final DataFile dataFile,
+            @NotNull final URI fileUri,
+            @NotNull final SeekableChannelsProvider channelsProvider) {
+        return locationKey(manifestFile, dataFile, fileUri, null, channelsProvider);
     }
 }

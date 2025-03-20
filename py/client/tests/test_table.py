@@ -1,16 +1,17 @@
 #
-# Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
 
 import time
 import unittest
 
 import numpy as np
+import pandas as pd
 from pyarrow import csv
 
 from pydeephaven import DHError
-from pydeephaven import SortDirection
-from pydeephaven.agg import sum_, avg, pct, weighted_avg, count_, partition, median, unique, count_distinct, distinct
+from pydeephaven import SortDirection, NaturalJoinType
+from pydeephaven.agg import sum_, avg, pct, weighted_avg, count_, count_where, partition, median, unique, count_distinct, distinct, formula
 from pydeephaven.table import Table
 from tests.testbase import BaseTestCase
 
@@ -131,6 +132,43 @@ class TableTestCase(BaseTestCase):
             result_table = left_table.natural_join(right_table, on=["a"], joins=["RD = d", "e"])
             self.assertEqual(test_table.size, result_table.size)
 
+    def test_natural_join_output(self):
+        left_table = self.session.empty_table(10).update(formulas=["key=i", "index=i"])
+
+        # note that rhs has duplicates
+        right_table_raw = self.session.empty_table(10).update(formulas=["key=(int)(i / 2)", "index=i"])
+        right_table_first_by = right_table_raw.first_by(by="key")
+
+        result_table_1 = left_table.natural_join(right_table_first_by, on="key", joins="rhs_index=index")
+        result_table_2 = left_table.natural_join(right_table_raw, on="key", joins="rhs_index=index", type=NaturalJoinType.FIRST_MATCH)
+
+        # get the tables as a local pandas dataframes
+        df_1 = result_table_1.to_arrow().to_pandas()
+        df_2 = result_table_2.to_arrow().to_pandas()
+
+        # assert the values meet expectations
+        self.assertTrue(df_1.equals(df_2))
+
+        self.assertEqual(list(df_1.loc[0: 4, "rhs_index"]), [0, 2, 4, 6, 8])
+        # the following rows have no match and should be null / NA
+        self.assertTrue(all(pd.isna(df_1.loc[5:9, "rhs_index"])))
+
+        right_table_last_by = right_table_raw.last_by(by="key")
+
+        result_table_1 = left_table.natural_join(right_table_last_by, on="key", joins="rhs_index=index")
+        result_table_2 = left_table.natural_join(right_table_raw, on="key", joins="rhs_index=index", type=NaturalJoinType.LAST_MATCH)
+
+        # get the tables as a local pandas dataframes
+        df_1 = result_table_1.to_arrow().to_pandas()
+        df_2 = result_table_2.to_arrow().to_pandas()
+
+        # assert the values meet expectations
+        self.assertTrue(df_1.equals(df_2))
+
+        self.assertEqual(list(df_1.loc[0: 4, "rhs_index"]), [1, 3, 5, 7, 9])
+        # the following rows have no match and should be null / NA
+        self.assertTrue(all(pd.isna(df_1.loc[5:9, "rhs_index"])))
+
     def test_exact_join(self):
         pa_table = csv.read_csv(self.csv_file)
         test_table = self.session.import_table(pa_table)
@@ -247,7 +285,17 @@ class TableTestCase(BaseTestCase):
                 pct(percentile=0.5, cols=["PctC = c"]),
                 weighted_avg(wcol="d", cols=["WavGD = d"]),
                 count_(col="ca"),
+                count_where(col="count_where1", filters="a > 5"),
+                count_where("agg_count_where_1", "a > 100"),
+                count_where("agg_count_where_2", ["a > 100", "b < 250"]),
+                count_where("agg_count_where_3", "a <= 100 || b >= 250"),
                 partition(col="aggPartition"),
+                formula(formula="min(x)", formula_param="x", cols=["min_a=a", "min_b=b"]),
+                formula(formula="avg(x)", formula_param="x", cols=["avg_c=c", "avg_d=d"]),
+                formula(formula="f_const=5.0 + 3"),
+                formula(formula="f_min=min(a)"),
+                formula(formula="f_sum=sum(a) + sum(b)"),
+                formula(formula="f_sum_3col=sum(a) + sum(b) + max(c)"),
                 ]
 
         result_table = test_table.agg_by(aggs=aggs, by=["a"])
@@ -294,6 +342,26 @@ class TableTestCase(BaseTestCase):
                 test_table.agg_all_by(agg=partition(col="aggPartition"), by=["a"])
             with self.assertRaises(DHError) as cm:
                 test_table.agg_all_by(agg=count_(col="ca"), by=["a"])
+
+    def test_agg_count_where_output(self):
+        """
+        Test and validation of the agg_count_where feature
+        """
+        test_table = self.session.empty_table(100).update(["a=ii", "b=ii%2"])
+        count_aggs = [
+            count_where("count1", "a >= 25"),
+            count_where("count2", "a % 3 == 0")
+        ]
+        result_table = test_table.agg_by(aggs=count_aggs, by="b")
+        self.assertEqual(result_table.size, 2)
+
+        # get the table as a local pandas dataframe
+        df = result_table.to_arrow().to_pandas()
+        # assert the values meet expectations
+        self.assertEqual(df.loc[0, "count1"], 37)
+        self.assertEqual(df.loc[1, "count1"], 38)
+        self.assertEqual(df.loc[0, "count2"], 17)
+        self.assertEqual(df.loc[1, "count2"], 17)
 
     def test_where_in(self):
         pa_table = csv.read_csv(self.csv_file)

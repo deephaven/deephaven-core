@@ -1,0 +1,220 @@
+/*
+ * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+ */
+
+syntax = "proto3";
+
+package io.deephaven.proto.backplane.grpc;
+
+option java_multiple_files = true;
+option optimize_for = SPEED;
+option go_package = "github.com/deephaven/deephaven-core/go/internal/proto/hierarchicaltable";
+
+import "deephaven_core/proto/table.proto";
+import "deephaven_core/proto/ticket.proto";
+
+// This service provides tools to create and view hierarchical tables (rollups and trees).
+service HierarchicalTableService {
+
+  // Applies a rollup operation to a Table and exports the resulting RollupTable
+  rpc Rollup(RollupRequest) returns (RollupResponse);
+
+  // Applies a tree operation to a Table and exports the resulting TreeTable
+  rpc Tree(TreeRequest) returns (TreeResponse);
+
+  // Applies operations to an existing HierarchicalTable (RollupTable or TreeTable) and exports the resulting
+  // HierarchicalTable
+  rpc Apply(HierarchicalTableApplyRequest) returns (HierarchicalTableApplyResponse);
+
+  // Creates a view associating a Table of expansion keys and actions with an existing HierarchicalTable and exports
+  // the resulting HierarchicalTableView for subsequent snapshot or subscription requests
+  rpc View(HierarchicalTableViewRequest) returns (HierarchicalTableViewResponse);
+
+  // Exports the source Table for a HierarchicalTable (Rollup or TreeTable)
+  rpc ExportSource(HierarchicalTableSourceExportRequest) returns (ExportedTableCreationResponse);
+}
+
+message RollupRequest {
+
+  // Ticket to use to hold the result RollupTable from the rollup operation
+  Ticket result_rollup_table_id = 1;
+
+  // Ticket for the source Table to rollup
+  Ticket source_table_id = 2;
+
+  // The aggregations that should be applied at each level of the rollup
+  repeated Aggregation aggregations = 3;
+
+  // Whether to include the leaf-level constituents in the result
+  bool include_constituents = 4;
+
+  // The names of the columns to rollup by
+  repeated string group_by_columns = 5;
+}
+
+message RollupResponse {
+  // Deliberately empty response, use /ObjectService/FetchObject to access the result_rollup_table_id ticket as
+  // a HierarchicalTableDescriptor. See HierarchicalTableDescriptor documentation for details.
+}
+
+message TreeRequest {
+
+  // Ticket to use to hold the result TreeTable from the tree operation
+  Ticket result_tree_table_id = 1;
+
+  // Ticket for the source Table to tree
+  Ticket source_table_id = 2;
+
+  // The name of the column containing the unique identifier for each row in the source table
+  string identifier_column = 3;
+
+  // The name of the column containing the parent row's unique identifier for each row in the source table
+  string parent_identifier_column = 4;
+
+  // Whether to promote "orphaned" nodes to be children of the root node. Orphans are nodes whose parent identifiers do
+  // not occur as identifiers for any row in the source Table.
+  bool promote_orphans = 5;
+}
+
+message TreeResponse {
+  // Deliberately empty response, use /ObjectService/FetchObject to access the result_tree_table_id ticket as
+  // a HierarchicalTableDescriptor. See HierarchicalTableDescriptor documentation for details.
+}
+
+message HierarchicalTableApplyRequest {
+
+  // Ticket to use to hold the result HierarchicalTable (RollupTable or TreeTable) from the applying the operations
+  Ticket result_hierarchical_table_id = 1;
+
+  // Ticket for the input HierarchicalTable (RollupTable or TreeTable) to apply operations to
+  Ticket input_hierarchical_table_id = 2;
+
+  // Filters to apply to the input HierarchicalTable to produce the result HierarchicalTable. Never expressed against
+  // the "structural" columns included in the a HierarchicalTableDescriptor's snapshot_schema.
+  // For RollupTables, only the group-by columns may be filtered. The names are always expressed as they appear
+  // in aggregated node columns (and in the group-by columns). The filtering will result in a complete or partial
+  // new Table.rollup operation.
+  // For TreeTables, these may be variously applied to the source (resulting in a new Table.tree operation) or to the
+  // nodes (resulting in filtering at snapshot time).
+  repeated Condition filters = 3;
+
+  // Sorts to apply to the input HierarchicalTable to produce the result HierarchicalTable. Never expressed against
+  // the "structural" columns included in the a HierarchicalTableDescriptor's snapshot_schema.
+  // For TreeTables, these are simply applied to the nodes at snapshot time.
+  // For RollupTables, these are expressed against the aggregated node columns, and will be applied to the appropriate
+  // input (constituent) columns as well. The appropriate (aggregated or constituent) sorts are applied to the nodes at
+  // snapshot time.
+  repeated SortDescriptor sorts = 4;
+}
+
+message HierarchicalTableApplyResponse {
+  // Deliberately empty response, use /ObjectService/FetchObject to access the result_hierarchical_table_id ticket as
+  // a HierarchicalTableDescriptor. See HierarchicalTableDescriptor documentation for details.
+}
+
+message HierarchicalTableDescriptor {
+
+  // Schema to be used for snapshot or subscription requests as described in Arrow Message.fbs::Message.
+  // Field metadata is used to convey additional information about the structure of the HierarchicalTable, the
+  // special roles some columns play, and the relationships between columns.
+  //
+  // "hierarchicalTable.isStructuralColumn" is always "true" if set, and is set on columns that should be included on
+  // every snapshot or subscription request, but should not be directly user-visible.
+  //
+  // "hierarchicalTable.isExpandByColumn" is always "true" if set, and is set on all the columns that must be included
+  // in a HierarchicalTableViewRequest's key table, if a key table is specified. These columns are generally
+  // user-visible and displayed before other columns, unless they also have "hierarchicalTable.isStructuralColumn" set.
+  //
+  // "hierarchicalTable.isRowDepthColumn" is always "true" if set, and is set on a single column that specifies the
+  // depth of a row. That column will always have "hierarchicalTable.isExpandByColumn" set for RollupTables, but never
+  // for TreeTables.
+  //
+  // "hierarchicalTable.isRowExpandedColumn" is always "true" if set, and is set on a single nullable column of
+  // booleans that specifies whether a row is expandable or expanded. Values will be null for rows that are not
+  // expandable, true for expanded rows, false for rows that are not expanded (but expandable). Leaf rows have no
+  // children to expand, and hence will always have a null value for this column.
+  //
+  // "rollupTable.isAggregatedNodeColumn" is always "true" if set, and is set on all columns of a RollupTable that
+  // belong to the aggregated nodes.
+  //
+  // "rollupTable.isConstituentNodeColumn" is always "true" if set, and is set on all columns of a RollupTable that
+  // belong to the constituent nodes. No such columns will be present if constituents are not included in the
+  // RollupTable.
+  //
+  // "rollupTable.isGroupByColumn" is always "true" if set, and is set on all columns of a RollupTable that are
+  // "group-by columns", whether the node is aggregated or constituent. All nodes have the same names and types for
+  // columns labeled in this way. Such columns will always have "hierarchicalTable.isExpandByColumn" set if and only if
+  // they also have "rollupTable.isAggregatedNodeColumn" set.
+  //
+  // "rollupTable.aggregationInputColumnName" is set to the (string) name of the corresponding constituent column that
+  // was used as input to this aggregation node column. May have an empty value, because some aggregations take no
+  // input columns, for example "Count". This is only ever present on columns with "rollupTable.isAggregatedNodeColumn"
+  // set.
+  //
+  // "treeTable.isNodeColumn" is always "true" if set, and is set on all columns of a TreeTable that nodes inherit from
+  // the source Table.
+  //
+  // "treeTable.isIdentifierColumn" is always "true" if set, and is set on the single column that uniquely identifies a
+  // TreeTable row and links it to its children. Such columns will always have "hierarchicalTable.isExpandByColumn"
+  // set.
+  //
+  // "treeTable.isParentIdentifierColumn" is always "true" if set, and is set on the single column that links a
+  // TreeTable row to its parent row.
+  bytes snapshot_schema = 1;
+
+  // Whether or not this table might change.
+  bool is_static = 2;
+}
+
+message HierarchicalTableViewRequest {
+
+  // Ticket to use to hold the result HierarchicalTableView
+  Ticket result_view_id = 1;
+
+  oneof target {
+    // Ticket for the HierarchicalTable (RollupTable or TreeTable) to expand
+    Ticket hierarchical_table_id = 2;
+
+    // Ticket for an existing HierarchicalTableView. The result view will inherit the HierarchicalTable from the
+    // existing view. The two views will share state used for caching snapshot data, but the server implementation may
+    // limit parallelism when performing snapshots for either view.
+    // Use this field when you intend to stop using the existing view and instead begin to use the result view.
+    Ticket existing_view_id = 3;
+  }
+
+  // Description for the expansions that define this view of the HierarchicalTable. If not present, the result will
+  // have default expansions, For RollupTables this will be the root (single row, top-level aggregation) and the next
+  // level if one exists (that is, if there are one or more group-by columns, or constituents are included). For
+  // TreeTables, this will be the root (one row for each child of the "null" parent identifier).
+  HierarchicalTableViewKeyTableDescriptor expansions = 4;
+}
+
+message HierarchicalTableViewKeyTableDescriptor {
+
+  // Ticket that represents a Table of expanded or contracted keys from a HierarchicalTable (RollupTable or TreeTable).
+  // The format for the key Table is dictated by the schema from the corresponding HierarchicalTableDescriptor. It is
+  // expected to have one column for each "expand-by column", including the "row depth column" for RollupTables only,
+  // and (optionally) an "action" column whose name is specified in the key_table_action_column field.
+  // If the Table is empty the result will have only default nodes expanded.
+  Ticket key_table_id = 1;
+
+  // The name of a column of bytes found in the key table that specifies the action desired for the node selected by
+  // the other columns for each row. Takes on the value 1 for nodes that should be expanded, 3 for nodes that should be
+  // expanded along with their descendants, and 4 for nodes that should be contracted.
+  // If this column name is not present, all nodes in the key table will be expanded without their descendants.
+  optional string key_table_action_column = 2;
+}
+
+message HierarchicalTableViewResponse {
+  // Deliberately empty response, use /FlightService/DoExchange to snapshot or subscribe to snapshots from the result
+  // result_view_id
+}
+
+message HierarchicalTableSourceExportRequest {
+
+  // Ticket to use to hold an export of the HierarchicalTable's source Table
+  Ticket result_table_id = 1;
+
+  // Ticket for the (existing) HierarchicalTable (RollupTable or TreeTable) to export the source Table for
+  Ticket hierarchical_table_id = 2;
+}

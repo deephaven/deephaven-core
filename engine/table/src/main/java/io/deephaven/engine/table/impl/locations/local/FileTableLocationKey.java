@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.locations.local;
 
@@ -26,8 +26,6 @@ public class FileTableLocationKey extends PartitionedTableLocationKey {
 
     protected final File file;
     private final int order;
-
-    private int cachedHashCode;
 
     /**
      * Construct a new FileTableLocationKey for the supplied {@code file} and {@code partitions}.
@@ -66,10 +64,11 @@ public class FileTableLocationKey extends PartitionedTableLocationKey {
     }
 
     /**
-     * Precedence-wise this implementation compares {@code order}, then applies a {@link PartitionsComparator} to
-     * {@code partitions}, then compares {@code file}.
-     *
-     * @inheritDoc
+     * When comparing with another {@link FileTableLocationKey}, precedence-wise this implementation compares
+     * {@code order}, then applies a {@link PartitionsComparator} to {@code partitions}, then compares {@code file}.
+     * Otherwise, it delegates to parent class.
+     * <p>
+     * {@inheritDoc}
      */
     @Override
     public int compareTo(@NotNull final TableLocationKey other) {
@@ -86,7 +85,7 @@ public class FileTableLocationKey extends PartitionedTableLocationKey {
             }
             return file.compareTo(otherTyped.file);
         }
-        throw new ClassCastException("Cannot compare " + getClass() + " to " + other.getClass());
+        return super.compareTo(other);
     }
 
     @Override

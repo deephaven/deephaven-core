@@ -17,20 +17,20 @@ set(PROTO_SRC_DIR
   "${CMAKE_CURRENT_SOURCE_DIR}/../../../proto/proto-backplane-grpc/src/main/proto")
 set(PROTO_GEN_DIR
   "${CMAKE_BINARY_DIR}/${PROJECT_NAME}/proto")
-set(PROTO_OUT_DIR "${PROTO_GEN_DIR}/deephaven/proto")
+set(PROTO_OUT_DIR "${PROTO_GEN_DIR}/deephaven_core/proto")
 
 set(PROTO_FILES
-    "${PROTO_SRC_DIR}/deephaven/proto/application.proto"
-    "${PROTO_SRC_DIR}/deephaven/proto/config.proto"
-    "${PROTO_SRC_DIR}/deephaven/proto/console.proto"
-    "${PROTO_SRC_DIR}/deephaven/proto/hierarchicaltable.proto"
-    "${PROTO_SRC_DIR}/deephaven/proto/inputtable.proto"
-    "${PROTO_SRC_DIR}/deephaven/proto/object.proto"
-    "${PROTO_SRC_DIR}/deephaven/proto/partitionedtable.proto"
-    "${PROTO_SRC_DIR}/deephaven/proto/session.proto"
-    "${PROTO_SRC_DIR}/deephaven/proto/storage.proto"
-    "${PROTO_SRC_DIR}/deephaven/proto/table.proto"
-    "${PROTO_SRC_DIR}/deephaven/proto/ticket.proto"
+    "${PROTO_SRC_DIR}/deephaven_core/proto/application.proto"
+    "${PROTO_SRC_DIR}/deephaven_core/proto/config.proto"
+    "${PROTO_SRC_DIR}/deephaven_core/proto/console.proto"
+    "${PROTO_SRC_DIR}/deephaven_core/proto/hierarchicaltable.proto"
+    "${PROTO_SRC_DIR}/deephaven_core/proto/inputtable.proto"
+    "${PROTO_SRC_DIR}/deephaven_core/proto/object.proto"
+    "${PROTO_SRC_DIR}/deephaven_core/proto/partitionedtable.proto"
+    "${PROTO_SRC_DIR}/deephaven_core/proto/session.proto"
+    "${PROTO_SRC_DIR}/deephaven_core/proto/storage.proto"
+    "${PROTO_SRC_DIR}/deephaven_core/proto/table.proto"
+    "${PROTO_SRC_DIR}/deephaven_core/proto/ticket.proto"
 )
 
 foreach(PROTO_FILE ${PROTO_FILES})
@@ -74,6 +74,7 @@ set(ALL_FILES
     include/private/deephaven/client/impl/util.h
 
     src/arrowutil/arrow_client_table.cc
+    src/arrowutil/arrow_column_source.cc
     include/private/deephaven/client/arrowutil/arrow_client_table.h
     include/private/deephaven/client/arrowutil/arrow_column_source.h
     include/private/deephaven/client/arrowutil/arrow_value_converter.h
@@ -107,6 +108,7 @@ set(ALL_FILES
     src/utility/table_maker.cc
 
     include/public/deephaven/client/utility/arrow_util.h
+    include/public/deephaven/client/utility/internal_types.h
     include/public/deephaven/client/utility/misc_types.h
     include/public/deephaven/client/utility/table_maker.h
 )

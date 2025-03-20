@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+ * Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
  */
 #pragma once
 
-#include "deephaven/proto/table.pb.h"
-#include "deephaven/proto/table.grpc.pb.h"
+#include "deephaven_core/proto/table.pb.h"
+#include "deephaven_core/proto/table.grpc.pb.h"
 
 namespace deephaven::client::impl {
 class UpdateByOperationImpl {

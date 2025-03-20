@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl;
 
@@ -34,6 +34,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.lang.ref.WeakReference;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -72,6 +73,7 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
             this.tableLocation = tableLocation;
         }
 
+        @OverridingMethodsMustInvokeSuper
         @Override
         protected synchronized void destroy() {
             super.destroy();
@@ -223,7 +225,6 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
             {
                 allowing(locationProvider).supportsSubscriptions();
                 allowing(locationProvider).unsubscribe(with(any(TableLocationProvider.Listener.class)));
-                will(returnValue(true));
                 for (int li = 0; li < tableLocations.length; ++li) {
                     final TableLocation tableLocation = tableLocations[li];
                     allowing(tableLocation).supportsSubscriptions();

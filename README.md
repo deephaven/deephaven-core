@@ -31,7 +31,7 @@ This README is intended to provide a high-level overview of the installation and
 | Go            | No                 | Yes                |
 | R             | No                 | Yes                |
 
-Deephaven's client APIs use [gRPC](https://grpc.io/), [protobuf](https://github.com/deephaven/deephaven-core/tree/main/proto/proto-backplane-grpc/src/main/proto/deephaven/proto), [Apache Arrow Flight](https://arrow.apache.org/docs/format/Flight.html), and [Barrage](https://github.com/deephaven/barrage) to handle ticking data. Users who wish to build their own client APIs can use these tools to do so.
+Deephaven's client APIs use [gRPC](https://grpc.io/), [protobuf](https://github.com/deephaven/deephaven-core/tree/main/proto/proto-backplane-grpc/src/main/proto/deephaven_core/proto), [Apache Arrow Flight](https://arrow.apache.org/docs/format/Flight.html), and [Barrage](https://github.com/deephaven/barrage) to handle ticking data. Users who wish to build their own client APIs can use these tools to do so.
 
 The following list contains documentation links for installation instructions and more:
 
@@ -162,8 +162,8 @@ A Python virtual environment is highly recommended for building Deephaven from s
 ```sh
 git clone https://github.com/deephaven/deephaven-core.git
 cd deephaven-core
-python3 -m venv /tmp/my-dh-venv
-source /tmp/my-dh-venv/bin/activate
+python3 -m venv ~/my-dh-venv
+source ~/my-dh-venv/bin/activate
 ./gradlew py-server:assemble
 pip install "py/server/build/wheel/deephaven_core-<version>-py3-non-any.whl[autocomplete]
 ./gradlew server-jetty-app:run

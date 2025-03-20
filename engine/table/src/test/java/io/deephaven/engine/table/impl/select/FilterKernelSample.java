@@ -5,6 +5,7 @@ import io.deephaven.engine.rowset.chunkattributes.*;
 import java.lang.*;
 import java.util.*;
 import io.deephaven.base.string.cache.CompressedString;
+import io.deephaven.chunk.BooleanChunk;
 import io.deephaven.chunk.ByteChunk;
 import io.deephaven.chunk.CharChunk;
 import io.deephaven.chunk.Chunk;
@@ -14,6 +15,7 @@ import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.ShortChunk;
+import io.deephaven.chunk.WritableBooleanChunk;
 import io.deephaven.chunk.WritableByteChunk;
 import io.deephaven.chunk.WritableCharChunk;
 import io.deephaven.chunk.WritableChunk;
@@ -101,5 +103,45 @@ public class FilterKernelSample implements io.deephaven.engine.table.impl.select
             }
         }
         return __context.resultChunk;
+    }
+    
+    @Override
+    public int filter(final Context __context, final Chunk[] __inputChunks, final int __chunkSize, final WritableBooleanChunk<Values> __results) {
+        final ShortChunk __columnChunk0 = __inputChunks[0].asShortChunk();
+        final DoubleChunk __columnChunk1 = __inputChunks[1].asDoubleChunk();
+        __results.setSize(__chunkSize);
+        int __count = 0;
+        for (int __my_i__ = 0; __my_i__ < __chunkSize; __my_i__++) {
+            final short v1 =  (short)__columnChunk0.get(__my_i__);
+            final double v2 =  (double)__columnChunk1.get(__my_i__);
+            final boolean __newResult = "foo".equals((plus(plus(plus(p1, p2), v1), v2)) + p3);
+            __results.set(__my_i__, __newResult);
+            // count every true value
+            __count += __newResult ? 1 : 0;
+        }
+        return __count;
+    }
+    
+    @Override
+    public int filterAnd(final Context __context, final Chunk[] __inputChunks, final int __chunkSize, final WritableBooleanChunk<Values> __results) {
+        final ShortChunk __columnChunk0 = __inputChunks[0].asShortChunk();
+        final DoubleChunk __columnChunk1 = __inputChunks[1].asDoubleChunk();
+        __results.setSize(__chunkSize);
+        int __count = 0;
+        for (int __my_i__ = 0; __my_i__ < __chunkSize; __my_i__++) {
+            final boolean __result = __results.get(__my_i__);
+            if (!__result) {
+                // already false, no need to compute or increment the count
+                continue;
+            }
+            final short v1 =  (short)__columnChunk0.get(__my_i__);
+            final double v2 =  (double)__columnChunk1.get(__my_i__);
+            final boolean __newResult = "foo".equals((plus(plus(plus(p1, p2), v1), v2)) + p3);
+            __results.set(__my_i__, __newResult);
+            __results.set(__my_i__, __newResult);
+            // increment the count if the new result is TRUE
+            __count += __newResult ? 1 : 0;
+        }
+        return __count;
     }
 }

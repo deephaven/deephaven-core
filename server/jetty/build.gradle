@@ -11,7 +11,10 @@ dependencies {
         because 'downstream dagger compile'
     }
 
-    implementation project(":util-thread")
+    implementation project(':util-thread')
+    compileOnlyApi(project(':util-thread')) {
+        because 'downstream dagger compile'
+    }
 
     runtimeOnly(project(':web'))
 
@@ -52,6 +55,8 @@ dependencies {
     testImplementation project(':server-test-utils')
     testImplementation libs.junit4
     testImplementation libs.assertj
+
+    testImplementation project(':proto:proto-backplane-grpc-flight')
 
     testRuntimeOnly project(':log-to-slf4j')
     testRuntimeOnly libs.slf4j.simple

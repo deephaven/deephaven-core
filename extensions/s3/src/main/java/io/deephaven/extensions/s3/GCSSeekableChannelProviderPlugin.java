@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.extensions.s3;
 
@@ -25,14 +25,14 @@ public final class GCSSeekableChannelProviderPlugin implements SeekableChannelsP
             S3Instructions.builder().endpointOverride(DEFAULT_ENDPOINT_OVERRIDE).build();
 
     @Override
-    public boolean isCompatible(@NotNull final URI uri, @Nullable final Object config) {
-        return GCS_URI_SCHEME.equals(uri.getScheme());
+    public boolean isCompatible(@NotNull final String uriScheme, @Nullable final Object config) {
+        return GCS_URI_SCHEME.equals(uriScheme);
     }
 
     @Override
-    public SeekableChannelsProvider createProvider(@NotNull final URI uri, @Nullable final Object config) {
-        if (!isCompatible(uri, config)) {
-            throw new IllegalArgumentException("Arguments not compatible, provided uri " + uri);
+    public SeekableChannelsProvider createProvider(@NotNull final String uriScheme, @Nullable final Object config) {
+        if (!isCompatible(uriScheme, config)) {
+            throw new IllegalArgumentException("Arguments not compatible, provided uri scheme " + uriScheme);
         }
         return new GCSSeekableChannelProvider(s3Instructions(config));
     }

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.extensions.barrage.util;
 
@@ -7,14 +7,17 @@ import com.google.common.io.LittleEndianDataInputStream;
 import com.google.protobuf.CodedInputStream;
 import com.google.rpc.Code;
 import io.deephaven.UncheckedDeephavenException;
-import io.deephaven.chunk.ChunkType;
+import io.deephaven.chunk.WritableChunk;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
+import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
-import io.deephaven.extensions.barrage.chunk.ChunkInputStreamGenerator;
+import io.deephaven.extensions.barrage.BarrageTypeInfo;
+import io.deephaven.extensions.barrage.chunk.ChunkWriter;
 import io.deephaven.extensions.barrage.chunk.ChunkReader;
-import io.deephaven.extensions.barrage.chunk.DefaultChunkReadingFactory;
+import io.deephaven.extensions.barrage.chunk.DefaultChunkReaderFactory;
 import io.deephaven.extensions.barrage.table.BarrageTable;
 import io.deephaven.io.streams.ByteBufferInputStream;
 import io.deephaven.proto.util.Exceptions;
@@ -35,8 +38,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.PrimitiveIterator;
 
-import static io.deephaven.extensions.barrage.chunk.ChunkReader.typeInfo;
-import static io.deephaven.extensions.barrage.util.BarrageProtoUtil.DEFAULT_SER_OPTIONS;
+import static io.deephaven.extensions.barrage.util.BarrageUtil.DEFAULT_SUBSCRIPTION_OPTIONS;
 
 /**
  * This class allows the incremental making of a BarrageTable from Arrow IPC messages, starting with an Arrow Schema
@@ -47,8 +49,8 @@ public class ArrowToTableConverter {
     protected BarrageTable resultTable;
     private Class<?>[] columnTypes;
     private Class<?>[] componentTypes;
-    protected BarrageSubscriptionOptions options = DEFAULT_SER_OPTIONS;
-    private final List<ChunkReader> readers = new ArrayList<>();
+    protected BarrageSubscriptionOptions options = DEFAULT_SUBSCRIPTION_OPTIONS;
+    private final List<ChunkReader<WritableChunk<Values>>> readers = new ArrayList<>();
 
     private volatile boolean completed = false;
 
@@ -174,21 +176,19 @@ public class ArrowToTableConverter {
         }
 
         final BarrageUtil.ConvertedArrowSchema result = BarrageUtil.convertArrowSchema(schema);
-        resultTable = BarrageTable.make(null, result.tableDef, result.attributes, null);
-        resultTable.setFlat();
+        final BarrageTable res = BarrageTable.make(null, result, true, null);
+        res.setFlat();
 
-        ChunkType[] columnChunkTypes = result.computeWireChunkTypes();
         columnTypes = result.computeWireTypes();
         componentTypes = result.computeWireComponentTypes();
         for (int i = 0; i < schema.fieldsLength(); i++) {
-            final int factor = (result.conversionFactors == null) ? 1 : result.conversionFactors[i];
-            ChunkReader reader = DefaultChunkReadingFactory.INSTANCE.getReader(options, factor,
-                    typeInfo(columnChunkTypes[i], columnTypes[i], componentTypes[i], schema.fields(i)));
-            readers.add(reader);
+            readers.add(DefaultChunkReaderFactory.INSTANCE.newReader(
+                    BarrageTypeInfo.make(columnTypes[i], componentTypes[i], schema.fields(i)), options));
         }
 
         // retain reference until the resultTable can be sealed
-        resultTable.retainReference();
+        res.retainReference();
+        resultTable = res;
     }
 
     protected BarrageMessage createBarrageMessage(BarrageProtoUtil.MessageInfo mi, int numColumns) {
@@ -198,9 +198,9 @@ public class ArrowToTableConverter {
         final BarrageMessage msg = new BarrageMessage();
         final RecordBatch batch = (RecordBatch) mi.header.header(new RecordBatch());
 
-        final Iterator<ChunkInputStreamGenerator.FieldNodeInfo> fieldNodeIter =
+        final Iterator<ChunkWriter.FieldNodeInfo> fieldNodeIter =
                 new FlatBufferIteratorAdapter<>(batch.nodesLength(),
-                        i -> new ChunkInputStreamGenerator.FieldNodeInfo(batch.nodes(i)));
+                        i -> new ChunkWriter.FieldNodeInfo(batch.nodes(i)));
 
         final PrimitiveIterator.OfLong bufferInfoIter = extractBufferInfo(batch);
 
@@ -215,11 +215,16 @@ public class ArrowToTableConverter {
             msg.addColumnData[ci] = acd;
             msg.addColumnData[ci].data = new ArrayList<>();
             try {
-                acd.data.add(readers.get(ci).readChunk(fieldNodeIter, bufferInfoIter, mi.inputStream, null, 0, 0));
+                acd.data.add(readers.get(ci).readChunk(fieldNodeIter, bufferInfoIter, mi.inputStream, null, 0,
+                        LongSizedDataStructure.intSize("ArrowToTableConverter", batch.length())));
             } catch (final IOException unexpected) {
                 throw new UncheckedDeephavenException(unexpected);
             }
 
+            if (options.columnsAsList() && ci == 0) {
+                // we need to ensure that the number of rows added is consistent across all columns
+                numRowsAdded = acd.data.get(0).size();
+            }
             if (acd.data.get(0).size() != numRowsAdded) {
                 throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
                         "Inconsistent num records per column: " + numRowsAdded + " != " + acd.data.get(0).size());

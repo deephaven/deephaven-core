@@ -1,11 +1,11 @@
 #
-# Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
 
 import grpc
 
 from pydeephaven.dherror import DHError
-from pydeephaven.proto import session_pb2_grpc, session_pb2, ticket_pb2
+from deephaven_core.proto import session_pb2_grpc, session_pb2, ticket_pb2
 from pydeephaven.ticket import Ticket, ExportTicket
 
 

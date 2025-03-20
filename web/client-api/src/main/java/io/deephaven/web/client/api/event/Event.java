@@ -1,11 +1,10 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.web.client.api.event;
 
 import com.vertispan.tsdefs.annotations.TsInterface;
 import com.vertispan.tsdefs.annotations.TsName;
-import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsProperty;
 
 /**
@@ -31,7 +30,6 @@ public class Event<T> {
     }
 
     @JsProperty
-    @JsNullable
     public T getDetail() {
         return detail;
     }

@@ -100,7 +100,7 @@ cd %DHSRC%\py\client-ticking
 rem Ensure we clean the remnants of any pre-existing build.
 rmdir build dist /s /q
 rem replace the value below to the version you are building
-set DEEPHAVEN_VERSION=0.37.0-SNAPSHOT
+set DEEPHAVEN_VERSION=0.38.0-SNAPSHOT
 python setup.py build_ext -i
 ```
 

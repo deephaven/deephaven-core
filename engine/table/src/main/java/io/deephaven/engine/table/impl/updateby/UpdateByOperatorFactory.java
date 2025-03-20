@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.updateby;
 
@@ -10,12 +10,21 @@ import io.deephaven.api.updateby.OperationControl;
 import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.api.updateby.spec.*;
+import io.deephaven.base.verify.Require;
+import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
+import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.select.FormulaColumn;
 import io.deephaven.engine.table.impl.select.SelectColumn;
+import io.deephaven.engine.table.impl.select.WhereFilter;
+import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
+import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
+import io.deephaven.engine.table.impl.updateby.countwhere.CountWhereOperator;
 import io.deephaven.engine.table.impl.updateby.delta.*;
 import io.deephaven.engine.table.impl.updateby.em.*;
 import io.deephaven.engine.table.impl.updateby.emstd.*;
@@ -45,6 +54,7 @@ import java.math.MathContext;
 import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static io.deephaven.util.BooleanUtils.NULL_BOOLEAN_AS_BYTE;
@@ -59,7 +69,7 @@ public class UpdateByOperatorFactory {
     private final MatchPair[] groupByColumns;
     @NotNull
     private final UpdateByControl control;
-    private Map<String, ColumnDefinition<?>> vectorColumnNameMap;
+    private Map<String, ColumnDefinition<?>> vectorColumnDefinitions;
 
     public UpdateByOperatorFactory(
             @NotNull final TableDefinition tableDef,
@@ -202,6 +212,21 @@ public class UpdateByOperatorFactory {
         @Override
         public Void visit(@NotNull final ColumnUpdateOperation clause) {
             final UpdateBySpec spec = clause.spec();
+            // Need to handle some specs uniquely
+            if (spec instanceof CumCountWhereSpec) {
+                outputColumns.add(((CumCountWhereSpec) spec).column().name());
+                return null;
+            }
+            if (spec instanceof RollingCountWhereSpec) {
+                outputColumns.add(((RollingCountWhereSpec) spec).column().name());
+                return null;
+            }
+            if (spec instanceof RollingFormulaSpec && ((RollingFormulaSpec) spec).paramToken().isEmpty()) {
+                // The presence of the paramToken indicates that this is a multi-column formula and we have a single
+                // output column in #selectable()
+                outputColumns.add(((RollingFormulaSpec) spec).selectable().newColumn().name());
+                return null;
+            }
             final MatchPair[] pairs =
                     createColumnsToAddIfMissing(tableDef, parseMatchPairs(clause.columns()), spec, groupByColumns);
             for (MatchPair pair : pairs) {
@@ -415,6 +440,12 @@ public class UpdateByOperatorFactory {
         }
 
         @Override
+        public Void visit(CumCountWhereSpec spec) {
+            ops.add(makeCountWhereOperator(tableDef, spec));
+            return null;
+        }
+
+        @Override
         public Void visit(@NotNull final DeltaSpec spec) {
             Arrays.stream(pairs)
                     .map(fc -> makeDeltaOperator(fc, tableDef, spec))
@@ -534,6 +565,12 @@ public class UpdateByOperatorFactory {
                             tableDef,
                             spec))
                     .forEach(ops::add);
+            return null;
+        }
+
+        @Override
+        public Void visit(@NotNull final RollingCountWhereSpec spec) {
+            ops.add(makeCountWhereOperator(tableDef, spec));
             return null;
         }
 
@@ -834,6 +871,8 @@ public class UpdateByOperatorFactory {
 
             if (csType == byte.class || csType == Byte.class) {
                 return new ByteCumMinMaxOperator(pair, isMax, NULL_BYTE);
+            } else if (csType == char.class || csType == Character.class) {
+                return new CharCumMinMaxOperator(pair, isMax);
             } else if (csType == short.class || csType == Short.class) {
                 return new ShortCumMinMaxOperator(pair, isMax);
             } else if (csType == int.class || csType == Integer.class) {
@@ -1011,7 +1050,7 @@ public class UpdateByOperatorFactory {
 
             return new RollingGroupOperator(pairs, affectingColumns,
                     rg.revWindowScale().timestampCol(),
-                    prevWindowScaleUnits, fwdWindowScaleUnits, tableDef);
+                    prevWindowScaleUnits, fwdWindowScaleUnits);
         }
 
         private UpdateByOperator makeRollingAvgOperator(@NotNull final MatchPair pair,
@@ -1110,7 +1149,7 @@ public class UpdateByOperatorFactory {
             } else if (csType == long.class || csType == Long.class || isTimeType(csType)) {
                 return new LongRollingMinMaxOperator(pair, affectingColumns,
                         rmm.revWindowScale().timestampCol(),
-                        prevWindowScaleUnits, fwdWindowScaleUnits, rmm.isMax());
+                        prevWindowScaleUnits, fwdWindowScaleUnits, rmm.isMax(), csType);
             } else if (csType == float.class || csType == Float.class) {
                 return new FloatRollingMinMaxOperator(pair, affectingColumns,
                         rmm.revWindowScale().timestampCol(),
@@ -1237,6 +1276,130 @@ public class UpdateByOperatorFactory {
                 return new ObjectRollingCountOperator(pair, affectingColumns,
                         rs.revWindowScale().timestampCol(),
                         prevWindowScaleUnits, fwdWindowScaleUnits);
+            }
+        }
+
+        /**
+         * This is used for Cum/Rolling CountWhere operators
+         */
+        private UpdateByOperator makeCountWhereOperator(
+                @NotNull final TableDefinition tableDef,
+                @NotNull final UpdateBySpec spec) {
+
+            Require.eqTrue(spec instanceof CumCountWhereSpec || spec instanceof RollingCountWhereSpec,
+                    "spec instanceof CumCountWhereSpec || spec instanceof RollingCountWhereSpec");
+
+            final boolean isCumulative = spec instanceof CumCountWhereSpec;
+
+            final WhereFilter[] whereFilters = isCumulative
+                    ? WhereFilter.fromInternal(((CumCountWhereSpec) spec).filter())
+                    : WhereFilter.fromInternal(((RollingCountWhereSpec) spec).filter());
+
+            final List<String> inputColumnNameList = new ArrayList<>();
+            final Map<String, Integer> inputColumnMap = new HashMap<>();
+            final List<int[]> filterInputColumnIndicesList = new ArrayList<>();
+
+            // Verify all the columns in the where filters are present in the dummy table and valid for use.
+            for (final WhereFilter whereFilter : whereFilters) {
+                whereFilter.init(tableDef);
+                if (whereFilter.isRefreshing()) {
+                    throw new UnsupportedOperationException("CountWhere does not support refreshing filters");
+                }
+
+                // Compute which input sources this filter will use.
+                final List<String> filterColumnName = whereFilter.getColumns();
+                final int inputColumnCount = whereFilter.getColumns().size();
+                final int[] inputColumnIndices = new int[inputColumnCount];
+                for (int ii = 0; ii < inputColumnCount; ++ii) {
+                    final String inputColumnName = filterColumnName.get(ii);
+                    final int inputColumnIndex = inputColumnMap.computeIfAbsent(inputColumnName, k -> {
+                        inputColumnNameList.add(inputColumnName);
+                        return inputColumnNameList.size() - 1;
+                    });
+                    inputColumnIndices[ii] = inputColumnIndex;
+                }
+                filterInputColumnIndicesList.add(inputColumnIndices);
+            }
+
+            // Gather the input column type info and create a dummy table we can use to initialize filters.
+            final String[] inputColumnNames = inputColumnNameList.toArray(String[]::new);
+            final ColumnSource<?>[] originalColumnSources = new ColumnSource[inputColumnNames.length];
+            final ColumnSource<?>[] reinterpretedColumnSources = new ColumnSource[inputColumnNames.length];
+
+            final Map<String, ColumnSource<?>> columnSourceMap = new LinkedHashMap<>();
+            for (int i = 0; i < inputColumnNames.length; i++) {
+                final String col = inputColumnNames[i];
+                final ColumnDefinition<?> def = tableDef.getColumn(col);
+                // Create a representative column source of the correct type for the filter.
+                final ColumnSource<?> nullSource =
+                        NullValueColumnSource.getInstance(def.getDataType(), def.getComponentType());
+                // Create a reinterpreted version of the column source.
+                final ColumnSource<?> maybeReinterpretedSource = ReinterpretUtils.maybeConvertToPrimitive(nullSource);
+                if (nullSource != maybeReinterpretedSource) {
+                    originalColumnSources[i] = nullSource;
+                }
+                columnSourceMap.put(col, maybeReinterpretedSource);
+                reinterpretedColumnSources[i] = maybeReinterpretedSource;
+            }
+            final Table dummyTable = new QueryTable(RowSetFactory.empty().toTracking(), columnSourceMap);
+
+            final CountWhereOperator.CountFilter[] countFilters =
+                    CountWhereOperator.CountFilter.createCountFilters(whereFilters, dummyTable,
+                            filterInputColumnIndicesList);
+
+            // If any filter is ConditionFilter or ChunkFilter and uses a reinterpreted column, need to produce
+            // original-typed chunks.
+            final boolean originalChunksRequired = Arrays.asList(countFilters).stream()
+                    .anyMatch(filter -> (filter.chunkFilter() != null || filter.conditionFilter() != null)
+                            && IntStream.of(filter.inputColumnIndices())
+                                    .anyMatch(i -> originalColumnSources[i] != null));
+
+            // If any filter is a standard WhereFilter or we need to produce original-typed chunks, need a chunk source
+            // table.
+            final boolean chunkSourceTableRequired = originalChunksRequired ||
+                    Arrays.asList(countFilters).stream().anyMatch(filter -> filter.whereFilter() != null);
+
+            // Create a new column pair with the same name for the left and right columns
+            final String columnName = isCumulative
+                    ? ((CumCountWhereSpec) spec).column().name()
+                    : ((RollingCountWhereSpec) spec).column().name();
+            final MatchPair pair = new MatchPair(columnName, columnName);
+
+            // Create and return the operator.
+            if (isCumulative) {
+                return new CountWhereOperator(
+                        pair,
+                        countFilters,
+                        inputColumnNames,
+                        originalColumnSources,
+                        reinterpretedColumnSources,
+                        chunkSourceTableRequired,
+                        originalChunksRequired);
+            } else {
+                final RollingCountWhereSpec rs = (RollingCountWhereSpec) spec;
+
+                final String[] affectingColumns;
+                if (rs.revWindowScale().timestampCol() == null) {
+                    affectingColumns = inputColumnNames;
+                } else {
+                    affectingColumns = ArrayUtils.add(inputColumnNames, rs.revWindowScale().timestampCol());
+                }
+
+                final long prevWindowScaleUnits = rs.revWindowScale().getTimeScaleUnits();
+                final long fwdWindowScaleUnits = rs.fwdWindowScale().getTimeScaleUnits();
+
+                return new CountWhereOperator(
+                        pair,
+                        affectingColumns,
+                        rs.revWindowScale().timestampCol(),
+                        prevWindowScaleUnits,
+                        fwdWindowScaleUnits,
+                        countFilters,
+                        inputColumnNames,
+                        originalColumnSources,
+                        reinterpretedColumnSources,
+                        chunkSourceTableRequired,
+                        originalChunksRequired);
             }
         }
 
@@ -1437,7 +1600,6 @@ public class UpdateByOperatorFactory {
         private UpdateByOperator makeRollingFormulaMultiColumnOperator(
                 @NotNull final TableDefinition tableDef,
                 @NotNull final RollingFormulaSpec rs) {
-
             final long prevWindowScaleUnits = rs.revWindowScale().getTimeScaleUnits();
             final long fwdWindowScaleUnits = rs.fwdWindowScale().getTimeScaleUnits();
 
@@ -1446,21 +1608,24 @@ public class UpdateByOperatorFactory {
             // Create the colum
             final SelectColumn selectColumn = SelectColumn.of(Selectable.parse(rs.formula()));
 
-            // Get or create a column definition map where the definitions are vectors of the original column types.
-            if (vectorColumnNameMap == null) {
-                vectorColumnNameMap = new HashMap<>();
-                columnDefinitionMap.forEach((key, value) -> {
-                    final ColumnDefinition<?> columnDef = ColumnDefinition.fromGenericType(
-                            key,
-                            VectorFactory.forElementType(value.getDataType()).vectorType(),
-                            value.getDataType());
-                    vectorColumnNameMap.put(key, columnDef);
-                });
+            // Get or create a column definition map composed of vectors of the original column types (or scalars when
+            // part of the group_by columns).
+            final Set<String> groupByColumnSet =
+                    Arrays.stream(groupByColumns).map(MatchPair::rightColumn).collect(Collectors.toSet());
+            if (vectorColumnDefinitions == null) {
+                vectorColumnDefinitions = tableDef.getColumnStream().collect(Collectors.toMap(
+                        ColumnDefinition::getName,
+                        (final ColumnDefinition<?> cd) -> groupByColumnSet.contains(cd.getName())
+                                ? cd
+                                : ColumnDefinition.fromGenericType(
+                                        cd.getName(),
+                                        VectorFactory.forElementType(cd.getDataType()).vectorType(),
+                                        cd.getDataType())));
             }
 
-            // Get the input column names and data types from the formula.
-            final String[] inputColumnNames =
-                    selectColumn.initDef(vectorColumnNameMap, compilationProcessor).toArray(String[]::new);
+            // Get the input column names from the formula and provide them to the rolling formula operator
+            final String[] allInputColumns =
+                    selectColumn.initDef(vectorColumnDefinitions, compilationProcessor).toArray(String[]::new);
             if (!selectColumn.getColumnArrays().isEmpty()) {
                 throw new IllegalArgumentException("RollingFormulaMultiColumnOperator does not support column arrays ("
                         + selectColumn.getColumnArrays() + ")");
@@ -1468,20 +1633,33 @@ public class UpdateByOperatorFactory {
             if (selectColumn.hasVirtualRowVariables()) {
                 throw new IllegalArgumentException("RollingFormula does not support virtual row variables");
             }
-            final Class<?>[] inputColumnTypes = new Class[inputColumnNames.length];
-            final Class<?>[] inputVectorTypes = new Class[inputColumnNames.length];
 
-            for (int i = 0; i < inputColumnNames.length; i++) {
-                final ColumnDefinition<?> columnDef = columnDefinitionMap.get(inputColumnNames[i]);
-                inputColumnTypes[i] = columnDef.getDataType();
-                inputVectorTypes[i] = vectorColumnNameMap.get(inputColumnNames[i]).getDataType();
+            final Map<Boolean, List<String>> partitioned = Arrays.stream(allInputColumns)
+                    .collect(Collectors.partitioningBy(groupByColumnSet::contains));
+            final String[] inputKeyColumns = partitioned.get(true).toArray(String[]::new);
+            final String[] inputNonKeyColumns = partitioned.get(false).toArray(String[]::new);
+
+            final Class<?>[] inputKeyColumnTypes = new Class[inputKeyColumns.length];
+            final Class<?>[] inputKeyComponentTypes = new Class[inputKeyColumns.length];
+            for (int i = 0; i < inputKeyColumns.length; i++) {
+                final ColumnDefinition<?> columnDef = columnDefinitionMap.get(inputKeyColumns[i]);
+                inputKeyColumnTypes[i] = columnDef.getDataType();
+                inputKeyComponentTypes[i] = columnDef.getComponentType();
+            }
+
+            final Class<?>[] inputNonKeyColumnTypes = new Class[inputNonKeyColumns.length];
+            final Class<?>[] inputNonKeyVectorTypes = new Class[inputNonKeyColumns.length];
+            for (int i = 0; i < inputNonKeyColumns.length; i++) {
+                final ColumnDefinition<?> columnDef = columnDefinitionMap.get(inputNonKeyColumns[i]);
+                inputNonKeyColumnTypes[i] = columnDef.getDataType();
+                inputNonKeyVectorTypes[i] = vectorColumnDefinitions.get(inputNonKeyColumns[i]).getDataType();
             }
 
             final String[] affectingColumns;
             if (rs.revWindowScale().timestampCol() == null) {
-                affectingColumns = inputColumnNames;
+                affectingColumns = inputNonKeyColumns;
             } else {
-                affectingColumns = ArrayUtils.add(inputColumnNames, rs.revWindowScale().timestampCol());
+                affectingColumns = ArrayUtils.add(inputNonKeyColumns, rs.revWindowScale().timestampCol());
             }
 
             // Create a new column pair with the same name for the left and right columns
@@ -1494,9 +1672,12 @@ public class UpdateByOperatorFactory {
                     prevWindowScaleUnits,
                     fwdWindowScaleUnits,
                     selectColumn,
-                    inputColumnNames,
-                    inputColumnTypes,
-                    inputVectorTypes);
+                    inputKeyColumns,
+                    inputKeyColumnTypes,
+                    inputKeyComponentTypes,
+                    inputNonKeyColumns,
+                    inputNonKeyColumnTypes,
+                    inputNonKeyVectorTypes);
         }
     }
 }

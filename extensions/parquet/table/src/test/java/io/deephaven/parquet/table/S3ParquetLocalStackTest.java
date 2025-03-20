@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.parquet.table;
 
@@ -7,7 +7,6 @@ import io.deephaven.extensions.s3.S3Instructions.Builder;
 import io.deephaven.extensions.s3.testlib.SingletonContainers.LocalStack;
 import org.junit.Assume;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 
 import java.io.IOException;

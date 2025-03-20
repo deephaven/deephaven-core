@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit CharChunk and run "./gradlew replicateSourcesAndChunks" to regenerate
@@ -7,6 +7,7 @@
 // @formatter:off
 package io.deephaven.chunk;
 
+import io.deephaven.util.QueryConstants;
 import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.chunk.attributes.Any;
 
@@ -77,6 +78,12 @@ public class ByteChunk<ATTR extends Any> extends ChunkBase<ATTR> {
     public final byte get(int index) {
         return data[offset + index];
     }
+
+    // region isNull
+    public final boolean isNull(int index) {
+        return data[offset + index] == QueryConstants.NULL_BYTE;
+    }
+    // endregion isNull
 
     @Override
     public ByteChunk<ATTR> slice(int offset, int capacity) {

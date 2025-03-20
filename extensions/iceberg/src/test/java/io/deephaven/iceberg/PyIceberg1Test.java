@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.iceberg;
 
@@ -29,7 +29,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * See TESTING.md and generate-pyiceberg-1.py for more details.
  */
 @Tag("security-manager-allow")
-public class PyIceberg1Test {
+class PyIceberg1Test {
     private static final Namespace NAMESPACE = Namespace.of("dh-default");
     private static final TableIdentifier CITIES_ID = TableIdentifier.of(NAMESPACE, "cities");
 

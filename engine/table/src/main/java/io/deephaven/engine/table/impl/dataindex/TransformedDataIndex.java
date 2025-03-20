@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.dataindex;
 
@@ -10,11 +10,7 @@ import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
-import io.deephaven.engine.table.BasicDataIndex;
-import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.DataIndex;
-import io.deephaven.engine.table.DataIndexTransformer;
-import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.ForkJoinPoolOperationInitializer;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.select.FunctionalColumn;
@@ -72,7 +68,7 @@ public class TransformedDataIndex extends LivenessArtifact implements BasicDataI
 
     @Override
     @NotNull
-    public Table table() {
+    public Table table(final DataIndexOptions unused) {
         Table localIndexTable;
         if ((localIndexTable = indexTable) != null) {
             return localIndexTable;

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.web.client.api.widget;
 
@@ -10,10 +10,15 @@ import elemental2.core.ArrayBuffer;
 import elemental2.core.ArrayBufferView;
 import elemental2.core.JsArray;
 import elemental2.core.Uint8Array;
+import elemental2.dom.DomGlobal;
 import elemental2.promise.Promise;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.object_pb.*;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Ticket;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.TypedTicket;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.object_pb.ClientData;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.object_pb.ConnectRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.object_pb.ServerData;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.object_pb.StreamRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.object_pb.StreamResponse;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.ticket_pb.Ticket;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.ticket_pb.TypedTicket;
 import io.deephaven.web.client.api.ServerObject;
 import io.deephaven.web.client.api.WorkerConnection;
 import io.deephaven.web.client.api.barrage.stream.BiDiStream;
@@ -117,6 +122,11 @@ public class JsWidget extends HasEventHandling implements ServerObject, WidgetMe
         this.exportedObjects = new JsArray<>();
     }
 
+    @Override
+    public WorkerConnection getConnection() {
+        return connection;
+    }
+
     private void closeStream() {
         if (messageStream != null) {
             messageStream.end();
@@ -152,14 +162,18 @@ public class JsWidget extends HasEventHandling implements ServerObject, WidgetMe
                     hasFetched = true;
                     resolve.onInvoke(this);
                 } else {
-                    fireEvent(EVENT_MESSAGE, new EventDetails(res.getData(), responseObjects));
+                    DomGlobal.setTimeout(ignore -> {
+                        fireEvent(EVENT_MESSAGE, new EventDetails(res.getData(), responseObjects));
+                    }, 0);
                 }
             });
             messageStream.onStatus(status -> {
                 if (!status.isOk()) {
                     reject.onInvoke(status.getDetails());
                 }
-                fireEvent(EVENT_CLOSE);
+                DomGlobal.setTimeout(ignore -> {
+                    fireEvent(EVENT_CLOSE);
+                }, 0);
                 closeStream();
             });
             messageStream.onEnd(status -> {

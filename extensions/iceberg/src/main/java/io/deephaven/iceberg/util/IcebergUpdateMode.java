@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.iceberg.util;
 
@@ -29,21 +29,24 @@ public abstract class IcebergUpdateMode {
     }
 
     /**
-     * Set a manually-refreshing update mode for this table.
+     * Set a manually-refreshing update mode for this table. The ordering of the data in the table will depend on the
+     * order in which the data files are discovered on refresh.
      */
     public static IcebergUpdateMode manualRefreshingMode() {
         return MANUAL_REFRESHING;
     }
 
     /**
-     * Set a automatically-refreshing update mode for this table using the default refresh interval of 60 seconds.
+     * Set an automatically-refreshing update mode for this table using the default refresh interval of 60 seconds. The
+     * ordering of the data in the table will depend on the order in which the data files are discovered on refresh.
      */
     public static IcebergUpdateMode autoRefreshingMode() {
         return AUTO_REFRESHING;
     }
 
     /**
-     * Set a automatically-refreshing update mode for this table using the provided refresh interval
+     * Set an automatically-refreshing update mode for this table using the provided refresh interval. The ordering of
+     * the data in the table will depend on the order in which the data files are discovered on refresh.
      *
      * @param refreshMs the refresh interval in milliseconds
      */

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.server.table;
 
@@ -34,6 +34,8 @@ import io.deephaven.util.mutable.MutableLong;
 import io.deephaven.util.SafeCloseable;
 import io.grpc.stub.StreamObserver;
 import org.jetbrains.annotations.NotNull;
+
+import javax.annotation.OverridingMethodsMustInvokeSuper;
 
 import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyComplete;
 
@@ -247,6 +249,7 @@ public class ExportedTableUpdateListener implements StreamObserver<ExportNotific
                     errorTransformer.transform(error));
         }
 
+        @OverridingMethodsMustInvokeSuper
         @Override
         public void destroy() {
             super.destroy();

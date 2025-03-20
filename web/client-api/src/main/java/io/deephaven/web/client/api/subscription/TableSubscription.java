@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.web.client.api.subscription;
 
@@ -31,7 +31,7 @@ public final class TableSubscription extends AbstractTableSubscription {
 
     @JsIgnore
     public TableSubscription(JsArray<Column> columns, JsTable existingTable, Double updateIntervalMs) {
-        super(existingTable.state(), existingTable.getConnection());
+        super(SubscriptionType.FULL_SUBSCRIPTION, existingTable.state(), existingTable.getConnection());
         this.columns = columns;
         this.updateIntervalMs = updateIntervalMs;
     }

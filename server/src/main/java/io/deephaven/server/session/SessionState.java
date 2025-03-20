@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.server.session;
 
@@ -43,6 +43,7 @@ import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
+import javax.annotation.OverridingMethodsMustInvokeSuper;
 import javax.inject.Provider;
 import java.io.Closeable;
 import java.io.IOException;
@@ -716,7 +717,7 @@ public class SessionState {
                 return;
             }
 
-            this.exportMain = exportMain;
+            this.exportMain = Objects.requireNonNull(exportMain);
             this.errorHandler = errorHandler;
             this.successHandler = successHandler;
 
@@ -796,6 +797,13 @@ public class SessionState {
          */
         public Ticket getExportId() {
             return ExportTicketHelper.wrapExportIdInTicket(exportId);
+        }
+
+        /**
+         * @return the export id for this export
+         */
+        public int getExportIdInt() {
+            return exportId;
         }
 
         /**
@@ -1131,6 +1139,7 @@ public class SessionState {
             }
         }
 
+        @OverridingMethodsMustInvokeSuper
         @Override
         protected synchronized void destroy() {
             super.destroy();
@@ -1367,7 +1376,6 @@ public class SessionState {
 
         ExportBuilder(final int exportId) {
             this.exportId = exportId;
-
             if (exportId == NON_EXPORT_ID) {
                 this.export = new ExportObject<>(SessionState.this.errorTransformer, SessionState.this, NON_EXPORT_ID);
             } else {

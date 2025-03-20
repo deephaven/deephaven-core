@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.remote;
 
@@ -618,7 +618,7 @@ public class ConstructSnapshot {
             final long clockStep =
                     callDataSnapshotFunction(System.identityHashCode(logIdentityObject), control, doSnapshot);
             final BarrageMessage snapshot = snapshotMsg.getValue();
-            snapshot.step = snapshot.firstSeq = snapshot.lastSeq = clockStep;
+            snapshot.firstSeq = snapshot.lastSeq = clockStep;
             return snapshot;
         }
     }
@@ -1314,6 +1314,7 @@ public class ConstructSnapshot {
             @Nullable final RowSet keysToSnapshot) {
 
         snapshot.rowsAdded = (usePrev ? table.getRowSet().prev() : table.getRowSet()).copy();
+        snapshot.tableSize = snapshot.rowsAdded.size();
         snapshot.rowsRemoved = RowSetFactory.empty();
         snapshot.addColumnData = new BarrageMessage.AddColumnData[table.getColumnSources().size()];
 

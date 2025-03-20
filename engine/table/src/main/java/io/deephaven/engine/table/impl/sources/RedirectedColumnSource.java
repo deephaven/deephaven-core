@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.sources;
 
@@ -523,7 +523,7 @@ public class RedirectedColumnSource<T> extends AbstractColumnSource<T>
 
         if (ascendingMapping) {
             effectiveContext.doOrderedFillAscending(innerSource, usePrev, destination);
-        } else if (innerSource instanceof FillUnordered) {
+        } else if (FillUnordered.providesFillUnordered(innerSource)) {
             // noinspection unchecked
             effectiveContext.doUnorderedFill((FillUnordered<Values>) innerSource, usePrev, destination);
         } else {

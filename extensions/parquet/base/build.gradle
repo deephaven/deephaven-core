@@ -22,5 +22,16 @@ dependencies {
     implementation libs.guava
 
     compileOnly libs.jetbrains.annotations
-    testImplementation libs.junit4
+
+    testImplementation libs.assertj
+
+    testImplementation platform(libs.junit.bom)
+    testImplementation libs.junit.jupiter
+    testRuntimeOnly libs.junit.jupiter.engine
+    testRuntimeOnly libs.junit.platform.launcher
+}
+
+tasks.withType(Test).configureEach {
+    useJUnitPlatform {
+    }
 }

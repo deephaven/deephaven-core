@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.select;
 
@@ -278,7 +278,7 @@ public interface SelectColumn extends Selectable {
 
         @Override
         public SelectColumn visit(Filter rhs) {
-            return makeSelectColumn(Strings.of(rhs));
+            return FilterSelectColumn.of(lhs.name(), rhs);
         }
 
         @Override

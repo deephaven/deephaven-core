@@ -1,11 +1,11 @@
 #
-# Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
 import io
 from typing import Any
 
 from pydeephaven.dherror import DHError
-from pydeephaven.proto import object_pb2_grpc
+from deephaven_core.proto import object_pb2_grpc
 from pydeephaven.experimental.plugin_client import PluginRequestStream
 
 

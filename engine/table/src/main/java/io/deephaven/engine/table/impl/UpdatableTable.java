@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl;
 
@@ -13,6 +13,7 @@ import gnu.trove.set.TLongSet;
 import gnu.trove.set.hash.TLongHashSet;
 import org.jetbrains.annotations.NotNull;
 
+import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.util.Map;
 import java.util.function.Consumer;
 
@@ -144,6 +145,7 @@ public class UpdatableTable extends QueryTable implements Runnable {
         notifyListeners(update);
     }
 
+    @OverridingMethodsMustInvokeSuper
     @Override
     public void destroy() {
         super.destroy();

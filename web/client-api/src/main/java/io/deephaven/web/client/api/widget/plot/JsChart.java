@@ -1,12 +1,12 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.web.client.api.widget.plot;
 
 import com.vertispan.tsdefs.annotations.TsTypeRef;
 import elemental2.core.JsArray;
 import elemental2.core.JsObject;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.figuredescriptor.ChartDescriptor;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.figuredescriptor.ChartDescriptor;
 import io.deephaven.web.client.api.event.HasEventHandling;
 import io.deephaven.web.client.api.widget.plot.enums.JsChartType;
 import jsinterop.annotations.JsIgnore;

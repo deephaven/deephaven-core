@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.updateby;
 
@@ -55,9 +55,17 @@ class UpdateByWindowCumulative extends UpdateByWindow {
             final TrackingRowSet timestampValidRowSet,
             final boolean timestampsModified,
             final int chunkSize,
-            final boolean isInitializeStep) {
-        return new UpdateByWindowBucketContext(sourceRowSet, timestampColumnSource, timestampSsa, timestampValidRowSet,
-                timestampsModified, chunkSize, isInitializeStep);
+            final boolean isInitializeStep,
+            final Object[] bucketKeyValues) {
+        return new UpdateByWindowBucketContext(
+                sourceRowSet,
+                timestampColumnSource,
+                timestampSsa,
+                timestampValidRowSet,
+                timestampsModified,
+                chunkSize,
+                isInitializeStep,
+                bucketKeyValues);
     }
 
     @Override
@@ -192,7 +200,8 @@ class UpdateByWindowCumulative extends UpdateByWindow {
                     continue;
                 }
                 UpdateByOperator cumOp = operators[opIdx];
-                cumOp.initializeCumulative(winOpContexts[ii], rowKey, timestamp, context.sourceRowSet);
+                cumOp.initializeCumulativeWithKeyValues(winOpContexts[ii], rowKey, timestamp, context.sourceRowSet,
+                        context.bucketKeyValues);
             }
 
             while (affectedIt.hasMore()) {

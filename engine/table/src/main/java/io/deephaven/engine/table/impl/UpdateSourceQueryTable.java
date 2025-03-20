@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl;
 
@@ -10,6 +10,7 @@ import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
 import io.deephaven.engine.table.ColumnSource;
 
+import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.util.Map;
 
 /**
@@ -47,6 +48,7 @@ public class UpdateSourceQueryTable extends QueryTable implements Runnable {
         additionsBuilder.addRange(firstRowKey, lastRowKey);
     }
 
+    @OverridingMethodsMustInvokeSuper
     @Override
     public void destroy() {
         super.destroy();

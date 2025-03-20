@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.web.client.api.subscription;
 
@@ -9,7 +9,6 @@ import elemental2.core.JsArray;
 import io.deephaven.barrage.flatbuf.BarrageMessageType;
 import io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
-import io.deephaven.extensions.barrage.ColumnConversionMode;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb.FlightData;
 import io.deephaven.web.client.api.Column;
 import io.deephaven.web.client.api.Format;
@@ -19,7 +18,7 @@ import io.deephaven.web.client.api.TableData;
 import io.deephaven.web.client.api.WorkerConnection;
 import io.deephaven.web.client.api.barrage.CompressedRangeSetReader;
 import io.deephaven.web.client.api.barrage.WebBarrageMessage;
-import io.deephaven.web.client.api.barrage.WebBarrageStreamReader;
+import io.deephaven.web.client.api.barrage.WebBarrageMessageReader;
 import io.deephaven.web.client.api.barrage.WebBarrageUtils;
 import io.deephaven.web.client.api.barrage.data.WebBarrageSubscription;
 import io.deephaven.web.client.api.barrage.stream.BiDiStream;
@@ -30,6 +29,7 @@ import io.deephaven.web.client.state.ClientTableState;
 import io.deephaven.web.shared.data.RangeSet;
 import io.deephaven.web.shared.data.ShiftedRange;
 import io.deephaven.web.shared.fu.JsRunnable;
+import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsProperty;
 import jsinterop.base.Any;
 import jsinterop.base.Js;
@@ -52,6 +52,7 @@ import java.util.BitSet;
  * exposed to api consumers, rather than wrapping in a Table type, as it handles the barrage stream and provides events
  * that client code can listen to.
  */
+@TsIgnore
 public abstract class AbstractTableSubscription extends HasEventHandling {
     /**
      * Indicates that some new data is available on the client, either an initial snapshot or a delta update. The
@@ -60,9 +61,11 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
      */
     public static final String EVENT_UPDATED = "updated";
 
-    public enum Status {
+    protected enum Status {
         /** Waiting for some prerequisite before we can use it for the first time. */
         STARTING,
+        /** All prerequisites are met, waiting for the first snapshot to be returned. */
+        SUBSCRIPTION_REQUESTED,
         /** Successfully created, not waiting for any messages to be accurate. */
         ACTIVE,
         /** Waiting for an update to return from being active to being active again. */
@@ -71,9 +74,10 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
         DONE;
     }
 
+    private final SubscriptionType subscriptionType;
     private final ClientTableState state;
     private final WorkerConnection connection;
-    protected final int rowStyleColumn;
+    protected int rowStyleColumn;
     private JsArray<Column> columns;
     private BitSet columnBitSet;
     protected RangeSet viewportRowSet;
@@ -87,12 +91,14 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
 
     private String failMsg;
 
-    public AbstractTableSubscription(ClientTableState state, WorkerConnection connection) {
+    protected AbstractTableSubscription(
+            SubscriptionType subscriptionType,
+            ClientTableState state,
+            WorkerConnection connection) {
         state.retain(this);
+        this.subscriptionType = subscriptionType;
         this.state = state;
         this.connection = connection;
-        rowStyleColumn = state.getRowFormatColumn() == null ? TableData.NO_ROW_FORMAT_COLUMN
-                : state.getRowFormatColumn().getIndex();
 
         revive();
     }
@@ -108,20 +114,27 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
                 // already closed
                 return;
             }
+
+            rowStyleColumn = s.getRowFormatColumn() == null ? TableData.NO_ROW_FORMAT_COLUMN
+                    : state.getRowFormatColumn().getIndex();
+
             WebBarrageSubscription.ViewportChangedHandler viewportChangedHandler = this::onViewportChange;
             WebBarrageSubscription.DataChangedHandler dataChangedHandler = this::onDataChanged;
 
-            status = Status.ACTIVE;
-            this.barrageSubscription =
-                    WebBarrageSubscription.subscribe(state, viewportChangedHandler, dataChangedHandler);
+            status = Status.SUBSCRIPTION_REQUESTED;
 
-            doExchange =
-                    connection.<FlightData, FlightData>streamFactory().create(
-                            headers -> connection.flightServiceClient().doExchange(headers),
-                            (first, headers) -> connection.browserFlightServiceClient().openDoExchange(first, headers),
-                            (next, headers, c) -> connection.browserFlightServiceClient().nextDoExchange(next, headers,
-                                    c::apply),
-                            new FlightData());
+            // In order to create the subscription, we need to already have the table resolved, so we know if it
+            // is a blink table or not. In turn, we can't be prepared to handle any messages from the server until
+            // we know this, so we can't race messages with this design.
+            this.barrageSubscription = WebBarrageSubscription.subscribe(
+                    subscriptionType, state, viewportChangedHandler, dataChangedHandler);
+
+            doExchange = connection.<FlightData, FlightData>streamFactory().create(
+                    headers -> connection.flightServiceClient().doExchange(headers),
+                    (first, headers) -> connection.browserFlightServiceClient().openDoExchange(first, headers),
+                    (next, headers, c) -> connection.browserFlightServiceClient().nextDoExchange(next, headers,
+                            c::apply),
+                    new FlightData());
 
             doExchange.onData(this::onFlightData);
             doExchange.onEnd(this::onStreamEnd);
@@ -132,10 +145,6 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
                 this::fail,
                 // If the upstream table is closed, its because this subscription released it, do nothing
                 JsRunnable.doNothing());
-    }
-
-    public Status getStatus() {
-        return status;
     }
 
     protected static FlatBufferBuilder subscriptionRequest(byte[] tableTicket, BitSet columns,
@@ -163,16 +172,19 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
 
     protected abstract void sendFirstSubscriptionRequest();
 
-    protected void sendBarrageSubscriptionRequest(RangeSet viewport, JsArray<Column> columns, Double updateIntervalMs,
+    protected void sendBarrageSubscriptionRequest(@Nullable RangeSet viewport, JsArray<Column> columns,
+            Double updateIntervalMs,
             boolean isReverseViewport) {
-        if (status == Status.DONE) {
+        if (isClosed()) {
             if (failMsg == null) {
                 throw new IllegalStateException("Can't change subscription, already closed");
             } else {
                 throw new IllegalStateException("Can't change subscription, already failed: " + failMsg);
             }
         }
-        status = Status.PENDING_UPDATE;
+        if (status == Status.ACTIVE) {
+            status = Status.PENDING_UPDATE;
+        }
         this.columns = columns;
         this.viewportRowSet = viewport;
         this.columnBitSet = makeColumnBitset(columns);
@@ -180,10 +192,10 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
         this.options = BarrageSubscriptionOptions.builder()
                 .batchSize(WebBarrageSubscription.BATCH_SIZE)
                 .maxMessageSize(WebBarrageSubscription.MAX_MESSAGE_SIZE)
-                .columnConversionMode(ColumnConversionMode.Stringify)
                 .minUpdateIntervalMs(updateIntervalMs == null ? 0 : (int) (double) updateIntervalMs)
                 .columnsAsList(false)// TODO(deephaven-core#5927) flip this to true
                 .useDeephavenNulls(true)
+                .previewListLengthLimit(0)
                 .build();
         FlatBufferBuilder request = subscriptionRequest(
                 Js.uncheckedCast(state.getHandle().getTicket()),
@@ -209,15 +221,39 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
         return connection;
     }
 
+    /**
+     * True if the subscription is in the ACTIVE state, meaning that the server and client are in sync with the state of
+     * the subscription.
+     */
     protected boolean isSubscriptionReady() {
         return status == Status.ACTIVE;
     }
 
+    /**
+     * Returns true if the subscription is closed and cannot be used again, false if it is actively listening for more
+     * data.
+     */
+    public boolean isClosed() {
+        return status == Status.DONE;
+    }
+
+    /**
+     * Returns true if the subscription is in a state where it can be used to read data, false if still waiting for the
+     * server to send the first snapshot or if the subscription has been closed.
+     * 
+     * @return true if the {@link #size()} method will return data based on the subscription, false if some other source
+     *         of the table's size will be used.
+     */
+    public boolean hasValidSize() {
+        return status == Status.ACTIVE || status == Status.PENDING_UPDATE;
+    }
+
+
     public double size() {
-        if (status == Status.ACTIVE) {
-            return barrageSubscription.getCurrentRowSet().size();
+        if (hasValidSize()) {
+            return barrageSubscription.getCurrentSize();
         }
-        if (status == Status.DONE) {
+        if (isClosed()) {
             throw new IllegalStateException("Can't read size when already closed");
         }
         return state.getSize();
@@ -377,9 +413,9 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
                     subscription.getServerViewport(), subscription.isReversed()));
         }
 
-        // for ViewportData
+        // for ViewportData, TreeViewportData
         @JsProperty
-        public Double getOffset() {
+        public double getOffset() {
             return offset;
         }
 
@@ -441,7 +477,7 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
                 cellColors = wrapper == null ? 0 : wrapper.getWrapped();
             }
             if (rowStyleColumn != NO_ROW_FORMAT_COLUMN) {
-                LongWrapper wrapper = subscription.getData(index, column.getStyleColumnIndex()).uncheckedCast();
+                LongWrapper wrapper = subscription.getData(index, rowStyleColumn).uncheckedCast();
                 rowColors = wrapper == null ? 0 : wrapper.getWrapped();
             }
             if (column.getFormatStringColumnIndex() != null) {
@@ -484,12 +520,12 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
         }
     }
 
-    private final WebBarrageStreamReader reader = new WebBarrageStreamReader();
+    private final WebBarrageMessageReader reader = new WebBarrageMessageReader();
 
     private void onFlightData(FlightData data) {
         WebBarrageMessage message;
         try {
-            message = reader.parseFrom(options, state.chunkTypes(), state.columnTypes(), state.componentTypes(), data);
+            message = reader.parseFrom(options, state.columnTypes(), state.componentTypes(), data);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -500,7 +536,7 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
     }
 
     protected void onStreamEnd(ResponseStreamWrapper.Status status) {
-        if (this.status == Status.DONE) {
+        if (isClosed()) {
             return;
         }
         if (status.isTransportError()) {
@@ -531,6 +567,7 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
     /**
      * Stops the subscription on the server.
      */
+    @JsMethod
     public void close() {
         state.unretain(this);
         if (doExchange != null) {

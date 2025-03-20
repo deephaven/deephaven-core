@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.iceberg.TestCatalog;
 
@@ -72,7 +72,6 @@ public class IcebergRefreshingTestTable implements Table {
     @Override
     public Map<Integer, SortOrder> sortOrders() {
         return testTable.sortOrders();
-
     }
 
     @Override

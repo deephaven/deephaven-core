@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.gen;
 
@@ -43,7 +43,7 @@ public class GenUtils {
     public static String javaHeader(final Class<?> generatorClass, final String gradleTask) {
         return String.join("\n",
                 "//",
-                "// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending",
+                "// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending",
                 "//",
                 "// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY",
                 "// ****** Run " + generatorClass.getSimpleName() + " or \"./gradlew " + gradleTask

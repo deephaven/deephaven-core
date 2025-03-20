@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table;
 
@@ -179,10 +179,16 @@ public interface Table extends
      * implementation.
      */
     String AGGREGATION_ROW_LOOKUP_ATTRIBUTE = "AggregationRowLookup";
+
     /**
      * Attribute on sort results used for hierarchical table construction. Specification is left to the implementation.
      */
     String SORT_REVERSE_LOOKUP_ATTRIBUTE = "SortReverseLookup";
+    /**
+     * Attribute on sort results used for hierarchical table construction. Specification is left to the implementation.
+     */
+    String SORT_ROW_REDIRECTION_ATTRIBUTE = "SortRowRedirection";
+
     String SNAPSHOT_VIEWPORT_TYPE = "Snapshot";
     /**
      * This attribute is used internally by TableTools.merge to detect successive merges. Its presence indicates that it
@@ -217,6 +223,12 @@ public interface Table extends
      * Set this attribute to enable collection of barrage performance stats.
      */
     String BARRAGE_PERFORMANCE_KEY_ATTRIBUTE = "BarragePerformanceTableKey";
+    /**
+     * Set an Apache Arrow POJO Schema to this attribute to control the column encoding used for barrage serialization.
+     * <p>
+     * See {@code org.apache.arrow.vector.types.pojo.Schema}.
+     */
+    String BARRAGE_SCHEMA_ATTRIBUTE = "BarrageSchema";
 
     // -----------------------------------------------------------------------------------------------------------------
     // ColumnSources for fetching data by row key

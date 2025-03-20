@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.lang;
 
@@ -310,7 +310,7 @@ public class QueryLanguageFunctionGenerator {
 
         buf.append(String.join("\n",
                 "//",
-                "// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending",
+                "// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending",
                 "//",
                 "// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY",
                 "// ****** Run " + QueryLanguageFunctionGenerator.class.getSimpleName() + " to regenerate",
@@ -360,7 +360,7 @@ public class QueryLanguageFunctionGenerator {
 
         testBuf.append(String.join("\n",
                 "//",
-                "// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending",
+                "// Copyright (c) 2016-202 Deephaven Data Labs and Patent Pending",
                 "//",
                 "// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY",
                 "// ****** Run " + QueryLanguageFunctionGenerator.class.getSimpleName() + " to regenerate",

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.extensions.s3.testlib;
 
@@ -28,6 +28,8 @@ import java.util.concurrent.TimeoutException;
 import static io.deephaven.extensions.s3.testlib.S3Helper.TIMEOUT_SECONDS;
 
 public abstract class S3SeekableChannelTestSetup {
+
+    protected static final String SCHEME = "s3";
 
     protected ExecutorService executor;
     protected S3AsyncClient asyncClient;
@@ -59,7 +61,7 @@ public abstract class S3SeekableChannelTestSetup {
     }
 
     protected final URI uri(String key) {
-        return URI.create(String.format("s3://%s/%s", bucket, key));
+        return URI.create(String.format("%s://%s/%s", SCHEME, bucket, key));
     }
 
     protected final void putObject(String key, AsyncRequestBody body)
@@ -68,10 +70,10 @@ public abstract class S3SeekableChannelTestSetup {
                 TimeUnit.SECONDS);
     }
 
-    protected final SeekableChannelsProvider providerImpl(URI uri) {
+    protected final SeekableChannelsProvider providerImpl() {
         final S3SeekableChannelProviderPlugin plugin = new S3SeekableChannelProviderPlugin();
         final S3Instructions instructions = s3Instructions(S3Instructions.builder()).build();
-        return plugin.createProvider(uri, instructions);
+        return plugin.createProvider(SCHEME, instructions);
     }
 
     protected static ByteBuffer readAll(ReadableByteChannel channel, int maxBytes) throws IOException {

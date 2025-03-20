@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.configuration;
 
@@ -69,12 +69,19 @@ public abstract class Configuration extends PropertyFile {
 
         @Override
         protected String determinePropertyFile() {
-            final String propFile = System.getProperty("Configuration." + name + ".rootFile");
-            if (propFile == null) {
-                throw new ConfigurationException("No property file defined for named configuration " + name);
+            String propFile = System.getProperty("Configuration." + name + ".rootFile");
+            if (propFile != null) {
+                return propFile;
             }
 
-            return propFile;
+            // If Configuration.name.rootFile doesn't exist allow a fallback onto `name.rootFile`
+            propFile = System.getProperty(name + ".rootFile");
+            if (propFile != null) {
+                return propFile;
+            }
+
+            throw new ConfigurationException("No property file defined for named configuration " + name +
+                    ": Make sure the property `Configuration." + name + ".rootFile` or `" + name + ".rootFile` is set");
         }
     }
 
@@ -98,6 +105,7 @@ public abstract class Configuration extends PropertyFile {
      * @throws ConfigurationException if the named configuration could not be loaded.
      */
     public static Configuration getNamed(@NotNull final String name) throws ConfigurationException {
+        validateConfigName(name);
         return NAMED_CONFIGURATIONS.computeIfAbsent(name, (k) -> {
             try {
                 return new Named(name, DefaultConfigurationContext::new);
@@ -151,6 +159,7 @@ public abstract class Configuration extends PropertyFile {
      * @return a new Configuration instance, guaranteed to not be cached.
      */
     public static Configuration newStandaloneConfiguration(@NotNull final String name) {
+        validateConfigName(name);
         return newStandaloneConfiguration(name, DefaultConfigurationContext::new);
     }
 
@@ -432,5 +441,20 @@ public abstract class Configuration extends PropertyFile {
 
     static boolean isQuiet() {
         return Bootstrap.isQuiet() || System.getProperty(QUIET_PROPERTY) != null;
+    }
+
+    /**
+     * Check that the passed in config name is not null and is allowed.
+     *
+     * @param name the Configuration name.
+     */
+    static void validateConfigName(final String name) {
+        if (name == null) {
+            throw new ConfigurationException("Configuration name must not be null");
+        }
+
+        if ("Configuration".equals(name)) {
+            throw new ConfigurationException("The name `Configuration` may not be used as a Configuration name");
+        }
     }
 }

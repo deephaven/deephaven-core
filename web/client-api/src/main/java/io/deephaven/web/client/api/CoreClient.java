@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.web.client.api;
 
@@ -7,12 +7,12 @@ import com.vertispan.tsdefs.annotations.TsTypeRef;
 import elemental2.core.JsObject;
 import elemental2.promise.Promise;
 import io.deephaven.javascript.proto.dhinternal.browserheaders.BrowserHeaders;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.config_pb.AuthenticationConstantsRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.config_pb.AuthenticationConstantsResponse;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.config_pb.ConfigValue;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.config_pb.ConfigurationConstantsRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.config_pb.ConfigurationConstantsResponse;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.config_pb_service.ConfigServiceClient;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.config_pb.AuthenticationConstantsRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.config_pb.AuthenticationConstantsResponse;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.config_pb.ConfigValue;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.config_pb.ConfigurationConstantsRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.config_pb.ConfigurationConstantsResponse;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.config_pb_service.ConfigServiceClient;
 import io.deephaven.javascript.proto.dhinternal.jspb.Map;
 import io.deephaven.web.client.api.event.HasEventHandling;
 import io.deephaven.web.client.api.storage.JsStorageService;
@@ -36,11 +36,12 @@ public class CoreClient extends HasEventHandling {
             EVENT_DISCONNECT = "disconnect",
             EVENT_RECONNECT = "reconnect",
             EVENT_RECONNECT_AUTH_FAILED = "reconnectauthfailed",
-            EVENT_REFRESH_TOKEN_UPDATED = "refreshtokenupdated",
             EVENT_REQUEST_FAILED = "requestfailed",
             EVENT_REQUEST_STARTED = "requeststarted",
             EVENT_REQUEST_SUCCEEDED = "requestsucceeded";
 
+    @Deprecated
+    public static final String EVENT_REFRESH_TOKEN_UPDATED = "refreshtokenupdated";
     public static final String LOGIN_TYPE_PASSWORD = "password",
             LOGIN_TYPE_ANONYMOUS = "anonymous";
 
@@ -48,10 +49,6 @@ public class CoreClient extends HasEventHandling {
 
     public CoreClient(String serverUrl, @TsTypeRef(ConnectOptions.class) @JsOptional Object connectOptions) {
         ideConnection = new IdeConnection(serverUrl, connectOptions);
-
-        // For now the only real connection is the IdeConnection, so we re-fire the auth token refresh
-        // event here for the UI to listen to
-        ideConnection.addEventListener(EVENT_REFRESH_TOKEN_UPDATED, this::fireEvent);
     }
 
     private <R> Promise<String[][]> getConfigs(Consumer<JsBiConsumer<Object, R>> rpcCall,

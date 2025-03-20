@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.server.arrow;
 
@@ -9,28 +9,33 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.ByteStringAccess;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.rpc.Code;
+import io.deephaven.auth.AuthContext;
 import io.deephaven.auth.AuthenticationException;
 import io.deephaven.auth.AuthenticationRequestHandler;
 import io.deephaven.auth.BasicAuthMarshaller;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.util.EngineMetrics;
-import io.deephaven.extensions.barrage.BarrageStreamGenerator;
+import io.deephaven.extensions.barrage.BarrageMessageWriter;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.proto.backplane.grpc.ExportNotification;
 import io.deephaven.proto.backplane.grpc.WrappedAuthenticationRequest;
 import io.deephaven.proto.util.Exceptions;
+import io.deephaven.server.session.ActionRouter;
 import io.deephaven.server.session.SessionService;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.server.session.TicketRouter;
-import io.deephaven.auth.AuthContext;
 import io.deephaven.util.SafeCloseable;
 import io.grpc.StatusRuntimeException;
+import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
+import org.apache.arrow.flight.ProtocolExposer;
 import org.apache.arrow.flight.auth2.Auth2Constants;
 import org.apache.arrow.flight.impl.Flight;
+import org.apache.arrow.flight.impl.Flight.ActionType;
+import org.apache.arrow.flight.impl.Flight.Empty;
 import org.apache.arrow.flight.impl.FlightServiceGrpc;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -43,6 +48,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyComplete;
 import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyError;
@@ -53,10 +60,11 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
     private static final Logger log = LoggerFactory.getLogger(FlightServiceGrpcImpl.class);
 
     private final ScheduledExecutorService executorService;
-    private final BarrageStreamGenerator.Factory streamGeneratorFactory;
+    private final BarrageMessageWriter.Factory streamGeneratorFactory;
     private final SessionService sessionService;
     private final SessionService.ErrorTransformer errorTransformer;
     private final TicketRouter ticketRouter;
+    private final ActionRouter actionRouter;
     private final ArrowFlightUtil.DoExchangeMarshaller.Factory doExchangeFactory;
 
     private final Map<String, AuthenticationRequestHandler> authRequestHandlers;
@@ -64,10 +72,11 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
     @Inject
     public FlightServiceGrpcImpl(
             @Nullable final ScheduledExecutorService executorService,
-            final BarrageStreamGenerator.Factory streamGeneratorFactory,
+            final BarrageMessageWriter.Factory streamGeneratorFactory,
             final SessionService sessionService,
             final SessionService.ErrorTransformer errorTransformer,
             final TicketRouter ticketRouter,
+            final ActionRouter actionRouter,
             final ArrowFlightUtil.DoExchangeMarshaller.Factory doExchangeFactory,
             Map<String, AuthenticationRequestHandler> authRequestHandlers) {
         this.executorService = executorService;
@@ -75,6 +84,7 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
         this.sessionService = sessionService;
         this.errorTransformer = errorTransformer;
         this.ticketRouter = ticketRouter;
+        this.actionRouter = actionRouter;
         this.doExchangeFactory = doExchangeFactory;
         this.authRequestHandlers = authRequestHandlers;
     }
@@ -204,10 +214,31 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
     }
 
     @Override
+    public void doAction(Flight.Action request, StreamObserver<Flight.Result> responseObserver) {
+        actionRouter.doAction(
+                sessionService.getOptionalSession(),
+                ProtocolExposer.fromProtocol(request),
+                new ServerCallStreamObserverAdapter<>(
+                        (ServerCallStreamObserver<Flight.Result>) responseObserver, ProtocolExposer::toProtocol));
+    }
+
+    @Override
     public void listFlights(
             @NotNull final Flight.Criteria request,
             @NotNull final StreamObserver<Flight.FlightInfo> responseObserver) {
+        if (!request.getExpression().isEmpty()) {
+            responseObserver.onError(
+                    Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, "Criteria expressions are not supported"));
+            return;
+        }
         ticketRouter.visitFlightInfo(sessionService.getOptionalSession(), responseObserver::onNext);
+        responseObserver.onCompleted();
+    }
+
+    @Override
+    public void listActions(Empty request, StreamObserver<ActionType> responseObserver) {
+        actionRouter.listActions(sessionService.getOptionalSession(),
+                adapt(responseObserver::onNext, ProtocolExposer::toProtocol));
         responseObserver.onCompleted();
     }
 
@@ -332,5 +363,9 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
      */
     public StreamObserver<InputStream> doExchangeCustom(final StreamObserver<InputStream> responseObserver) {
         return doExchangeFactory.openExchange(sessionService.getCurrentSession(), responseObserver);
+    }
+
+    private static <T, R> Consumer<T> adapt(Consumer<R> consumer, Function<? super T, ? extends R> function) {
+        return t -> consumer.accept(function.apply(t));
     }
 }

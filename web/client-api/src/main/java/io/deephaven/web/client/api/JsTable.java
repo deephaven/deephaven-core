@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.web.client.api;
 
@@ -10,32 +10,32 @@ import com.vertispan.tsdefs.annotations.TsUnionMember;
 import elemental2.core.JsArray;
 import elemental2.promise.IThenable.ThenOnFulfilledCallbackFn;
 import elemental2.promise.Promise;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.hierarchicaltable_pb.RollupRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.hierarchicaltable_pb.TreeRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.partitionedtable_pb.PartitionByRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.partitionedtable_pb.PartitionByResponse;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.AggregateRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.AsOfJoinTablesRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.BatchTableRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ColumnStatisticsRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.CrossJoinTablesRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.DropColumnsRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ExactJoinTablesRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ExportedTableCreationResponse;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.Literal;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.NaturalJoinTablesRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.RunChartDownsampleRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.SeekRowRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.SeekRowResponse;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.SelectDistinctRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.SelectOrUpdateRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.SnapshotTableRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.SnapshotWhenTableRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.TableReference;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.batchtablerequest.Operation;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.runchartdownsamplerequest.ZoomRange;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Ticket;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.TypedTicket;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.hierarchicaltable_pb.RollupRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.hierarchicaltable_pb.TreeRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.partitionedtable_pb.PartitionByRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.partitionedtable_pb.PartitionByResponse;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.AggregateRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.AsOfJoinTablesRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.BatchTableRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.ColumnStatisticsRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.CrossJoinTablesRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.DropColumnsRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.ExactJoinTablesRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.ExportedTableCreationResponse;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.Literal;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.NaturalJoinTablesRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.RunChartDownsampleRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.SeekRowRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.SeekRowResponse;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.SelectDistinctRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.SelectOrUpdateRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.SnapshotTableRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.SnapshotWhenTableRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.TableReference;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.batchtablerequest.Operation;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.runchartdownsamplerequest.ZoomRange;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.ticket_pb.Ticket;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.ticket_pb.TypedTicket;
 import io.deephaven.web.client.api.barrage.def.TableAttributesDefinition;
 import io.deephaven.web.client.api.barrage.stream.ResponseStreamWrapper;
 import io.deephaven.web.client.api.batch.RequestBatcher;
@@ -452,7 +452,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     @JsProperty
     public double getSize() {
         TableViewportSubscription subscription = subscriptions.get(getHandle());
-        if (subscription != null && subscription.getStatus() == TableViewportSubscription.Status.ACTIVE) {
+        if (subscription != null && subscription.hasValidSize()) {
             // only ask the viewport for the size if it is alive and ticking
             return subscription.size();
         }
@@ -705,7 +705,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
         Column[] columnsCopy = columns != null ? Js.uncheckedCast(columns.slice()) : state().getColumns();
         ClientTableState currentState = state();
         TableViewportSubscription activeSubscription = subscriptions.get(getHandle());
-        if (activeSubscription != null && activeSubscription.getStatus() != TableViewportSubscription.Status.DONE) {
+        if (activeSubscription != null && !activeSubscription.isClosed()) {
             // hasn't finished, lets reuse it
             activeSubscription.setInternalViewport(firstRow, lastRow, columnsCopy, updateIntervalMs, isReverseViewport);
             return activeSubscription;
@@ -1044,7 +1044,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
             config = new JsRollupConfig(Js.cast(configObject));
         }
 
-        Ticket rollupTicket = workerConnection.getConfig().newTicket();
+        Ticket rollupTicket = workerConnection.getTickets().newExportTicket();
 
         Promise<Object> rollupPromise = Callbacks.grpcUnaryPromise(c -> {
             RollupRequest request = config.buildRequest(getColumns());
@@ -1080,7 +1080,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
             config = new JsTreeTableConfig(Js.cast(configObject));
         }
 
-        Ticket treeTicket = workerConnection.getConfig().newTicket();
+        Ticket treeTicket = workerConnection.getTickets().newExportTicket();
 
         Promise<Object> treePromise = Callbacks.grpcUnaryPromise(c -> {
             TreeRequest requestMessage = new TreeRequest();
@@ -1297,7 +1297,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
 
         // Start the partitionBy on the server - we want to get the error from here, but we'll race the fetch against
         // this to avoid an extra round-trip
-        Ticket partitionedTableTicket = workerConnection.getConfig().newTicket();
+        Ticket partitionedTableTicket = workerConnection.getTickets().newExportTicket();
         Promise<PartitionByResponse> partitionByPromise = Callbacks.<PartitionByResponse, Object>grpcUnaryPromise(c -> {
             PartitionByRequest partitionBy = new PartitionByRequest();
             partitionBy.setTableId(state().getHandle().makeTicket());
@@ -1583,8 +1583,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
                 if (!isClosed() && was != null && was != state()) {
                     // if we held a subscription
                     TableViewportSubscription existingSubscription = subscriptions.remove(was.getHandle());
-                    if (existingSubscription != null
-                            && existingSubscription.getStatus() != TableViewportSubscription.Status.DONE) {
+                    if (existingSubscription != null && !existingSubscription.isClosed()) {
                         JsLog.debug("closing old viewport", state(), existingSubscription.state());
                         // with the replacement state successfully running, we can shut down the old viewport (unless
                         // something external retained it)
@@ -1715,7 +1714,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
         this.size = s;
 
         TableViewportSubscription subscription = subscriptions.get(getHandle());
-        if (changed && (subscription == null || subscription.getStatus() == TableViewportSubscription.Status.DONE)) {
+        if (changed && (subscription == null || !subscription.hasValidSize())) {
             // If the size changed, and we have no subscription active, fire. Otherwise, we want to let the
             // subscription itself manage this, so that the size changes are synchronized with data changes,
             // and consumers won't be confused by the table size not matching data.

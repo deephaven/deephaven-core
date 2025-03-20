@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.updateby;
 
@@ -33,7 +33,7 @@ import java.util.Map;
  * {@link UpdateByOperator#initializeRolling(Context, RowSet)} (Context)} for windowed operators</li>
  * <li>{@link UpdateByOperator.Context#accumulateCumulative(RowSequence, Chunk[], LongChunk, int)} for cumulative
  * operators or
- * {@link UpdateByOperator.Context#accumulateRolling(RowSequence, Chunk[], LongChunk, LongChunk, IntChunk, IntChunk, int)}
+ * {@link UpdateByOperator.Context#accumulateRolling(RowSequence, Chunk[], LongChunk, LongChunk, IntChunk, IntChunk, int, int)}
  * for windowed operators</li>
  * <li>{@link #finishUpdate(UpdateByOperator.Context)}</li>
  * </ol>
@@ -99,18 +99,48 @@ public abstract class UpdateByOperator {
             throw new UnsupportedOperationException("pop() must be overriden by rolling operators");
         }
 
-        public abstract void accumulateCumulative(RowSequence inputKeys,
+        /**
+         * For cumulative operators only, this method will be called to pass the input chunk data to the operator and
+         * produce the output data values.
+         *
+         * @param inputKeys the keys for the input data rows (also matches the output keys)
+         * @param valueChunkArr the input data chunks needed by the operator for internal calculations
+         * @param tsChunk the timestamp chunk for the input data (if applicable)
+         * @param len the number of items in the input data chunks
+         */
+        public abstract void accumulateCumulative(
+                RowSequence inputKeys,
                 Chunk<? extends Values>[] valueChunkArr,
                 LongChunk<? extends Values> tsChunk,
                 int len);
 
-        public abstract void accumulateRolling(RowSequence inputKeys,
+        /**
+         * For windowed operators only, this method will be called to pass the input chunk data to the operator and
+         * produce the output data values. It is important to note that the size of the influencer (input) and affected
+         * (output) chunks are not likely be the same. We pass these sizes explicitly to the operators for the sake of
+         * the operators (such as {@link io.deephaven.engine.table.impl.updateby.countwhere.CountWhereOperator} with
+         * zero input columns) where no input chunks are provided but we must still process the exact number of input
+         * rows.
+         *
+         * @param inputKeys the keys for the input data rows (also matches the output keys)
+         * @param influencerValueChunkArr the input data chunks needed by the operator for internal calculations, these
+         *        values will be pushed and popped into the current window
+         * @param affectedPosChunk the row positions of the affected rows
+         * @param influencerPosChunk the row positions of the influencer rows
+         * @param pushChunk a chunk containing the push instructions for each output row to be calculated
+         * @param popChunk a chunk containing the pop instructions for each output row to be calculated
+         * @param affectedCount how many affected (output) rows are being computed
+         * @param influencerCount how many influencer (input) rows are needed for the computation
+         */
+        public abstract void accumulateRolling(
+                RowSequence inputKeys,
                 Chunk<? extends Values>[] influencerValueChunkArr,
                 LongChunk<OrderedRowKeys> affectedPosChunk,
                 LongChunk<OrderedRowKeys> influencerPosChunk,
                 IntChunk<? extends Values> pushChunk,
                 IntChunk<? extends Values> popChunk,
-                int len);
+                int affectedCount,
+                int influencerCount);
 
         /**
          * Write the current value for this row to the output chunk
@@ -160,18 +190,45 @@ public abstract class UpdateByOperator {
     public abstract void initializeSources(@NotNull Table source, @Nullable RowRedirection rowRedirection);
 
     /**
+     * Initialize the bucket context for a cumulative operator and pass in the bucket key values. Most operators will
+     * not need the key values, but those that do can override this method.
+     */
+    public void initializeCumulativeWithKeyValues(
+            @NotNull final Context context,
+            final long firstUnmodifiedKey,
+            final long firstUnmodifiedTimestamp,
+            @NotNull final RowSet bucketRowSet,
+            @NotNull Object[] bucketKeyValues) {
+        initializeCumulative(context, firstUnmodifiedKey, firstUnmodifiedTimestamp, bucketRowSet);
+    }
+
+    /**
      * Initialize the bucket context for a cumulative operator
      */
-    public void initializeCumulative(@NotNull final Context context, final long firstUnmodifiedKey,
+    public void initializeCumulative(
+            @NotNull final Context context,
+            final long firstUnmodifiedKey,
             final long firstUnmodifiedTimestamp,
             @NotNull final RowSet bucketRowSet) {
         context.reset();
     }
 
     /**
+     * Initialize the bucket context for a windowed operator and pass in the bucket key values. Most operators will not
+     * need the key values, but those that do can override this method.
+     */
+    public void initializeRollingWithKeyValues(
+            @NotNull final Context context,
+            @NotNull final RowSet bucketRowSet,
+            @NotNull Object[] bucketKeyValues) {
+        initializeRolling(context, bucketRowSet);
+    }
+
+    /**
      * Initialize the bucket context for a windowed operator
      */
-    public void initializeRolling(@NotNull final Context context,
+    public void initializeRolling(
+            @NotNull final Context context,
             @NotNull final RowSet bucketRowSet) {
         context.reset();
     }

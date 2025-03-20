@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.extensions.s3;
 
@@ -8,8 +8,6 @@ import io.deephaven.util.channel.SeekableChannelsProvider;
 import io.deephaven.util.channel.SeekableChannelsProviderPlugin;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import java.net.URI;
 
 /**
  * {@link SeekableChannelsProviderPlugin} implementation used for reading files from S3.
@@ -20,14 +18,14 @@ public final class S3SeekableChannelProviderPlugin implements SeekableChannelsPr
     static final String S3_URI_SCHEME = "s3";
 
     @Override
-    public boolean isCompatible(@NotNull final URI uri, @Nullable final Object config) {
-        return S3_URI_SCHEME.equals(uri.getScheme());
+    public boolean isCompatible(@NotNull final String uriScheme, @Nullable final Object config) {
+        return S3_URI_SCHEME.equals(uriScheme);
     }
 
     @Override
-    public SeekableChannelsProvider createProvider(@NotNull final URI uri, @Nullable final Object config) {
-        if (!isCompatible(uri, config)) {
-            throw new IllegalArgumentException("Arguments not compatible, provided uri " + uri);
+    public SeekableChannelsProvider createProvider(@NotNull final String uriScheme, @Nullable final Object config) {
+        if (!isCompatible(uriScheme, config)) {
+            throw new IllegalArgumentException("Arguments not compatible, provided uri scheme " + uriScheme);
         }
         if (config != null && !(config instanceof S3Instructions)) {
             throw new IllegalArgumentException("Only S3Instructions are valid when reading files from S3, provided " +

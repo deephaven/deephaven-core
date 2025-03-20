@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.parquet.base;
 
@@ -31,7 +31,8 @@ import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.WritableByteChannel;
-import java.util.HashSet;
+import java.util.EnumSet;
+import java.util.Objects;
 import java.util.Set;
 
 import static org.apache.parquet.bytes.BytesUtils.getWidthFromMaxInt;
@@ -57,7 +58,9 @@ final class ColumnWriterImpl implements ColumnWriter {
     private final RunLengthBitPackingHybridEncoder dlEncoder;
     private final RunLengthBitPackingHybridEncoder rlEncoder;
     private long dictionaryOffset = -1;
-    private final Set<Encoding> encodings = new HashSet<>();
+    // The downstream writing code (ParquetFileWriter) seems to respect the traversal order of this set. As such, to
+    // improve determinism, we are using an EnumSet.
+    private final Set<Encoding> encodings = EnumSet.noneOf(Encoding.class);
     private long firstDataPageOffset = -1;
     private long uncompressedLength;
     private long compressedLength;
@@ -74,11 +77,11 @@ final class ColumnWriterImpl implements ColumnWriter {
             final CompressorAdapter compressorAdapter,
             final int targetPageSize,
             final ByteBufferAllocator allocator) {
-        this.countingOutput = countingOutput;
-        this.column = column;
-        this.compressorAdapter = compressorAdapter;
+        this.countingOutput = Objects.requireNonNull(countingOutput);
+        this.column = Objects.requireNonNull(column);
+        this.compressorAdapter = Objects.requireNonNull(compressorAdapter);
         this.targetPageSize = targetPageSize;
-        this.allocator = allocator;
+        this.allocator = Objects.requireNonNull(allocator);
         dlEncoder = column.getMaxDefinitionLevel() == 0 ? null
                 : new RunLengthBitPackingHybridEncoder(
                         getWidthFromMaxInt(column.getMaxDefinitionLevel()), MIN_SLAB_SIZE, targetPageSize, allocator);

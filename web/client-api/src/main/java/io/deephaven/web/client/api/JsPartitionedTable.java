@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.web.client.api;
 
@@ -7,11 +7,11 @@ import elemental2.core.JsArray;
 import elemental2.core.JsObject;
 import elemental2.core.JsSet;
 import elemental2.promise.Promise;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.partitionedtable_pb.GetTableRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.partitionedtable_pb.MergeRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.partitionedtable_pb.PartitionedTableDescriptor;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.SelectOrUpdateRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.TypedTicket;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.partitionedtable_pb.GetTableRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.partitionedtable_pb.MergeRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.partitionedtable_pb.PartitionedTableDescriptor;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.SelectOrUpdateRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.ticket_pb.TypedTicket;
 import io.deephaven.web.client.api.barrage.WebBarrageUtils;
 import io.deephaven.web.client.api.barrage.def.ColumnDefinition;
 import io.deephaven.web.client.api.barrage.def.InitialTableDefinition;
@@ -68,6 +68,12 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
     public JsPartitionedTable(WorkerConnection connection, JsWidget widget) {
         this.connection = connection;
         this.widget = widget;
+    }
+
+    @JsIgnore
+    @Override
+    public WorkerConnection getConnection() {
+        return connection;
     }
 
     @JsIgnore

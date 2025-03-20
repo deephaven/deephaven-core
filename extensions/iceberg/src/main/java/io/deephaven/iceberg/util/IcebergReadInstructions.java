@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.iceberg.util;
 
@@ -22,9 +22,8 @@ import java.util.OptionalLong;
 public abstract class IcebergReadInstructions {
     /**
      * The default {@link IcebergReadInstructions} to use when reading Iceberg data files. Providing this will use
-     * system defaults for cloud provider-specific parameters
+     * system defaults for cloud provider-specific parameters.
      */
-    @SuppressWarnings("unused")
     public static final IcebergReadInstructions DEFAULT = builder().build();
 
     public static Builder builder() {
@@ -38,7 +37,8 @@ public abstract class IcebergReadInstructions {
 
     /**
      * The data instructions to use for reading the Iceberg data files (might be S3Instructions or other cloud
-     * provider-specific instructions).
+     * provider-specific instructions). If not provided, data instructions will be derived from the properties of the
+     * catalog.
      */
     public abstract Optional<Object> dataInstructions();
 
