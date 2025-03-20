@@ -593,6 +593,29 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
                                     assertEquals(16L, ((LongWrapper) yPlusAgg.get(row2)).getWrapped());
                                     assertEquals(13L, ((LongWrapper) yPlusAgg.get(row3)).getWrapped());
 
+                                    // Expand row 1, exposing constituent rows
+                                    rollupTable.expand(JsTreeTable.RowReferenceUnion.of(1), null);
+                                    return rollupTable.<TreeViewportData>nextEvent(
+                                            JsTreeTable.EVENT_UPDATED, 2001d);
+                                }).then(event -> {
+                                    TreeViewportData data = event.getDetail();
+
+                                    Column yCol = rollupTable.findColumn("Y");
+                                    Column yPlusConst = rollupTable.findColumn("YPlusConst");
+
+                                    // Row 2 is the first constituent of row 1, with 7 constituent rows
+                                    for (int i = 2; i < 2 + 7; i++) {
+                                        TreeViewportData.TreeRow row =
+                                                (TreeViewportData.TreeRow) data.getRows().getAt(i);
+                                        assertFalse(row.isExpanded());
+                                        assertFalse(row.hasChildren());
+                                        assertEquals(3, row.depth());
+
+                                        // get the raw Y value and test against the plus 1
+                                        int yVal = yCol.get(row).asInt();
+                                        assertEquals(yVal + 1, yPlusConst.get(row).asInt());
+                                    }
+
                                     rollupTable.close();
                                     assertTrue(rollupTable.isClosed());
                                     return null;

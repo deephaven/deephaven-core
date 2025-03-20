@@ -118,7 +118,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
      * all subsequent steps must be performed as well.
      */
     private enum RebuildStep {
-        UPDATE_VIEW, FORMAT_VIEW, FILTER, SORT, HIERARCHICAL_TABLE_VIEW, SUBSCRIPTION
+        UPDATE_VIEW, FILTER, SORT, HIERARCHICAL_TABLE_VIEW, SUBSCRIPTION
     }
 
     public enum RollupNodeType {
@@ -153,11 +153,9 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
 
     // The current filter and sort state
     private List<CustomColumn> updateColumns = new ArrayList<>();
-    private List<CustomColumn> formatColumns = new ArrayList<>();
     private List<FilterCondition> filters = new ArrayList<>();
     private List<Sort> sorts = new ArrayList<>();
     private TicketAndPromise<?> updateViewTable;
-    private TicketAndPromise<?> formatViewTable;
     private TicketAndPromise<?> filteredTable;
     private TicketAndPromise<?> sortedTable;
 
@@ -172,7 +170,6 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
     // the "next" set of filters/sorts/custom columns that we'll use. these either are "==" to the above fields, or are
     // scheduled to replace them soon.
     private List<CustomColumn> nextUpdateColumns = new ArrayList<>();
-    private List<CustomColumn> nextFormatColumns = new ArrayList<>();
     private List<FilterCondition> nextFilters = new ArrayList<>();
     private List<Sort> nextSort = new ArrayList<>();
 
@@ -380,24 +377,6 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
 
         updateViewTable = new TicketAndPromise<>(ticket, Promise.all(leafWidget.refetch(), p), connection);
         return updateViewTable;
-    }
-
-    private TicketAndPromise<?> prepareFormats(TicketAndPromise<?> prevTicket) {
-        if (formatViewTable != null) {
-            return formatViewTable;
-        }
-        if (nextFormatColumns.isEmpty()) {
-            return prevTicket;
-        }
-        Ticket ticket = connection.getTickets().newExportTicket();
-        formatViewTable = new TicketAndPromise<>(ticket, Callbacks.grpcUnaryPromise(c -> {
-            HierarchicalTableApplyRequest applyUpdates = new HierarchicalTableApplyRequest();
-            nextFormatColumns.stream().map(this::adaptCustomColumn).forEach(applyUpdates::addUpdateViews);
-            applyUpdates.setInputHierarchicalTableId(prevTicket.ticket());
-            applyUpdates.setResultHierarchicalTableId(ticket);
-            connection.hierarchicalTableServiceClient().apply(applyUpdates, connection.metadata(), c::apply);
-        }), connection);
-        return formatViewTable;
     }
 
     private TicketAndPromise<?> prepareFilter(TicketAndPromise<?> prevTicket) {
@@ -732,11 +711,6 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
                     updateViewTable.release();
                     updateViewTable = null;
                 }
-            case FORMAT_VIEW:
-                if (formatViewTable != null) {
-                    formatViewTable.release();
-                    formatViewTable = null;
-                }
             case FILTER:
                 if (filteredTable != null) {
                     filteredTable.release();
@@ -776,15 +750,13 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
                 .then(ignore -> {
                     makeKeyTable();
                     TicketAndPromise<?> update = prepareUpdateView();
-                    TicketAndPromise<?> format = prepareFormats(update);
-                    TicketAndPromise<?> filter = prepareFilter(format);
+                    TicketAndPromise<?> filter = prepareFilter(update);
                     TicketAndPromise<?> sort = prepareSort(filter);
                     TicketAndPromise<ClientTableState> view = makeView(sort);
 
                     return Promise.all(
                             keyTable,
                             update.promise(),
-                            format.promise(),
                             filter.promise(),
                             sort.promise())
                             .then(others -> view.promise());
@@ -809,7 +781,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
                                 TreeSubscription.TreeViewportDataImpl detail =
                                         (TreeSubscription.TreeViewportDataImpl) data.getDetail();
 
-                                handleUpdate(nextUpdateColumns, nextFormatColumns, nextSort, nextFilters, detail,
+                                handleUpdate(nextUpdateColumns, nextSort, nextFilters, detail,
                                         alwaysFireEvent);
                             });
                     return Promise.resolve(subscription);
@@ -836,7 +808,6 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
 
     private void handleUpdate(
             List<CustomColumn> nextUpdateColumns,
-            List<CustomColumn> nextFormatColumns,
             List<Sort> nextSort,
             List<FilterCondition> nextFilters,
             TreeSubscription.TreeViewportDataImpl viewportData, boolean alwaysFireEvent) {
@@ -851,7 +822,6 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
 
         this.currentViewportData = viewportData;
 
-        this.formatColumns = nextFormatColumns;
         this.updateColumns = nextUpdateColumns;
         this.sorts = nextSort;
         this.filters = nextFilters;
@@ -1090,10 +1060,6 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
             updateViewTable.release();
             updateViewTable = null;
         }
-        if (formatViewTable != null) {
-            formatViewTable.release();
-            formatViewTable = null;
-        }
         if (filteredTable != null) {
             filteredTable.release();
             filteredTable = null;
@@ -1166,7 +1132,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
     }
 
     /**
-     * used when adding new filter and sort operations to the table, as long as they are present.
+     * Adding new columns to the table based on other columns using updateView() mechanics.
      *
      * @param customColumns
      * @return {@link CustomColumn} array
