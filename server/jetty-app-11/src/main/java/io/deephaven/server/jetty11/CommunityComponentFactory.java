@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.server.jetty11;
 
@@ -7,6 +7,7 @@ import dagger.Component;
 import dagger.Module;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.server.auth.CommunityAuthorizationModule;
+import io.deephaven.server.flightsql.FlightSqlModule;
 import io.deephaven.server.runner.CommunityDefaultsModule;
 import io.deephaven.server.runner.ComponentFactoryBase;
 
@@ -64,11 +65,14 @@ public final class CommunityComponentFactory
      * The out-of-the-box community {@link Module}.
      *
      * @see JettyServerModule
+     * @see FlightSqlModule
+     * @see JettyClientChannelFactoryModule
      * @see CommunityAuthorizationModule
      * @see CommunityDefaultsModule
      */
     @Module(includes = {
             JettyServerModule.class,
+            FlightSqlModule.class,
             JettyClientChannelFactoryModule.class,
             CommunityAuthorizationModule.class,
             CommunityDefaultsModule.class,

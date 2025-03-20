@@ -339,6 +339,7 @@ public class JettyBackedGrpcServer implements GrpcServer {
             httpConfig.addCustomizer(new SecureRequestCustomizer(config.sniHostCheck()));
             final HTTP2ServerConnectionFactory h2 = new HTTP2ServerConnectionFactory(httpConfig);
             h2.setRateControlFactory(new RateControl.Factory() {});
+            config.maxConcurrentStreams().ifPresent(h2::setMaxConcurrentStreams);
 
             final ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory();
             alpn.setDefaultProtocol(http11 != null ? http11.getProtocol() : h2.getProtocol());
@@ -359,6 +360,8 @@ public class JettyBackedGrpcServer implements GrpcServer {
         } else {
             final HTTP2CServerConnectionFactory h2c = new HTTP2CServerConnectionFactory(httpConfig);
             h2c.setRateControlFactory(new RateControl.Factory() {});
+            config.maxConcurrentStreams().ifPresent(h2c::setMaxConcurrentStreams);
+
             if (http11 != null) {
                 serverConnector = new ServerConnector(server, http11, h2c);
             } else {
@@ -367,6 +370,7 @@ public class JettyBackedGrpcServer implements GrpcServer {
         }
         config.host().ifPresent(serverConnector::setHost);
         serverConnector.setPort(config.port());
+        config.maxHeaderRequestSize().ifPresent(httpConfig::setRequestHeaderSize);
 
         // Give connections extra time to shutdown, since we have an explicit server shutdown
         serverConnector.setShutdownIdleTimeout(serverConnector.getIdleTimeout());

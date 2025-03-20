@@ -77,7 +77,7 @@ public class ControlledCacheResource extends Resource {
 
     @Override
     public String getFileName() {
-        return "";
+        return wrapped.getFileName();
     }
 
     @Override
