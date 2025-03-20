@@ -301,7 +301,7 @@ gotesttable1 = empty_table(10)
 	client1.Close()
 
 	// Run for a limited duration, then give up
-	deadline := time.Now().Add(30 * time.Second)
+	deadline := time.Now().Add(3 * time.Second)
 	for {
 		// Create a client, loop 10 times to try to get the table list and cause the bug
 		client2, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), test_tools.GetAuthType(), test_tools.GetAuthToken(), client.WithConsole("python"))
@@ -310,11 +310,12 @@ gotesttable1 = empty_table(10)
 			return
 		}
 		for i := 0; i < 10; i++ {
-			_, err := client2.OpenTable(ctx, "gotesttable1")
+			table, err := client2.OpenTable(ctx, "gotesttable1")
 			if err != nil {
 				t.Error("error when checking for gotesttable1:", err)
 				return
 			}
+			table.Release()
 		}
 		client2.Close()
 		if time.Now().After(deadline) {
