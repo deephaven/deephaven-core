@@ -223,6 +223,7 @@ public abstract class JettyConfig implements ServerConfig {
         final Boolean httpCompression = httpCompression();
         return httpCompression == null || httpCompression;
     }
+
     /**
      * Value is in bytes. If unset, uses Jetty's default (presently 8192).
      */
