@@ -12,9 +12,11 @@ option go_package = "github.com/deephaven/deephaven-core/go/internal/proto/hiera
 
 import "deephaven_core/proto/table.proto";
 import "deephaven_core/proto/ticket.proto";
+import "deephaven_core/proto/contextual-auth.proto";
 
 // This service provides tools to create and view hierarchical tables (rollups and trees).
 service HierarchicalTableService {
+  option (contextual_auth) = true;
 
   // Applies a rollup operation to a Table and exports the resulting RollupTable
   rpc Rollup(RollupRequest) returns (RollupResponse);

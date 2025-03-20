@@ -11,8 +11,6 @@ import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.ParameterizedTypeName;
 import com.squareup.javapoet.TypeSpec;
-import io.deephaven.auth.AuthContext;
-import io.deephaven.engine.table.Table;
 
 import javax.lang.model.element.Modifier;
 import java.io.IOException;
@@ -20,10 +18,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
 
-import static io.deephaven.auth.codegen.GenerateServiceAuthWiring.generateTypeMap;
+import static io.deephaven.auth.codegen.CombinedAuthWiring.generateTypeMap;
 
 public class GenerateContextualAuthWiring {
     private static final String CHECK_PERMISSION = "checkPermission";
+    private static final ClassName TABLE = ClassName.get("io.deephaven.engine.table", "Table");
+    private static final ParameterizedTypeName LIST_OF_TABLE =
+            ParameterizedTypeName.get(ClassName.get(List.class), TABLE);
 
     public static void main(String[] args) throws IOException {
         final PluginProtos.CodeGeneratorRequest request = PluginProtos.CodeGeneratorRequest.parseFrom(System.in);
@@ -46,7 +47,7 @@ public class GenerateContextualAuthWiring {
         response.build().toByteString().writeTo(System.out);
     }
 
-    private static void generateForService(
+    public static void generateForService(
             final PluginProtos.CodeGeneratorResponse.Builder response,
             final DescriptorProtos.ServiceDescriptorProto service,
             final Map<String, String> typeMap) throws IOException {
@@ -64,8 +65,8 @@ public class GenerateContextualAuthWiring {
                 .addJavadoc("A default implementation that funnels all requests to invoke {@code checkPermission}.\n");
         final MethodSpec.Builder delegateMethodSpec = MethodSpec.methodBuilder("checkPermission")
                 .addModifiers(Modifier.PROTECTED, Modifier.ABSTRACT)
-                .addParameter(AuthContext.class, "authContext")
-                .addParameter(ParameterizedTypeName.get(List.class, Table.class), "sourceTables");
+                .addParameter(ClassName.get("io.deephaven.auth", "AuthContext"), "authContext")
+                .addParameter(LIST_OF_TABLE, "sourceTables");
         delegateAllSpec.addMethod(delegateMethodSpec.build());
         visitAllMethods(service, typeMap, delegateAllSpec, (methodName, method) -> {
             method.addCode("checkPermission(authContext, sourceTables);\n");
@@ -80,8 +81,8 @@ public class GenerateContextualAuthWiring {
         final MethodSpec.Builder allowAllMethodSpec = MethodSpec.methodBuilder("checkPermission")
                 .addAnnotation(Override.class)
                 .addModifiers(Modifier.PROTECTED)
-                .addParameter(AuthContext.class, "authContext")
-                .addParameter(ParameterizedTypeName.get(List.class, Table.class), "sourceTables");
+                .addParameter(ClassName.get("io.deephaven.auth", "AuthContext"), "authContext")
+                .addParameter(LIST_OF_TABLE, "sourceTables");
         // default impl is to do nothing
         allowAllSpec.addMethod(allowAllMethodSpec.build());
 
@@ -95,8 +96,8 @@ public class GenerateContextualAuthWiring {
         final MethodSpec.Builder denyAllMethodSpec = MethodSpec.methodBuilder("checkPermission")
                 .addAnnotation(Override.class)
                 .addModifiers(Modifier.PROTECTED)
-                .addParameter(AuthContext.class, "authContext")
-                .addParameter(ParameterizedTypeName.get(List.class, Table.class), "sourceTables");
+                .addParameter(ClassName.get("io.deephaven.auth", "AuthContext"), "authContext")
+                .addParameter(LIST_OF_TABLE, "sourceTables");
         denyAllMethodSpec.addCode("$T.operationNotAllowed();\n", authWiringClass);
         denyAllSpec.addMethod(denyAllMethodSpec.build());
 
@@ -173,9 +174,9 @@ public class GenerateContextualAuthWiring {
             final String checkMethodName = CHECK_PERMISSION + method.getName();
             final MethodSpec.Builder methodSpec = MethodSpec.methodBuilder(checkMethodName)
                     .addModifiers(Modifier.PUBLIC)
-                    .addParameter(AuthContext.class, "authContext")
+                    .addParameter(ClassName.get("io.deephaven.auth", "AuthContext"), "authContext")
                     .addParameter(ClassName.bestGuess(realType), "request")
-                    .addParameter(ParameterizedTypeName.get(List.class, Table.class), "sourceTables");
+                    .addParameter(LIST_OF_TABLE, "sourceTables");
             visitor.accept(checkMethodName, methodSpec);
             typeSpec.addMethod(methodSpec.build());
         }

@@ -5,6 +5,7 @@ package io.deephaven.server.auth;
 
 import io.deephaven.auth.AuthContext;
 import io.deephaven.auth.codegen.impl.*;
+import io.deephaven.auth.codegen.impl.ConsoleServiceAuthWiring;
 import io.deephaven.server.session.TicketResolver;
 
 public interface AuthorizationProvider {
@@ -37,11 +38,6 @@ public interface AuthorizationProvider {
      * @return the authorization provider for StorageService
      */
     StorageServiceAuthWiring getStorageServiceAuthWiring();
-
-    /**
-     * @return the authorization provider for HealthService
-     */
-    HealthAuthWiring getHealthAuthWiring();
 
     /**
      * @return the authorization provider for TableService

@@ -1,0 +1,19 @@
+/*
+ * Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+ */
+
+syntax = "proto3";
+
+package io.deephaven.proto.backplane.grpc;
+
+import "google/protobuf/descriptor.proto";
+
+option java_multiple_files = true;
+option optimize_for = SPEED;
+option go_package = "github.com/deephaven/deephaven-core/go/internal/proto";
+
+extend google.protobuf.ServiceOptions {
+  // Indicates that the service requires server-side contextual authorization checks.
+  // (Numeric value is 'dh', to avoid collisions with nice round generated numbers.)
+  bool contextual_auth = 0x6E68;
+}

@@ -35,8 +35,6 @@ public class HealthCheckModule {
     @IntoSet
     BindableService bindHealthServiceImpl(
             AuthorizationProvider authorizationProvider, HealthStatusManager healthStatusManager) {
-        return new AuthorizationWrappedGrpcBinding<>(
-                authorizationProvider.getHealthAuthWiring(),
-                (HealthGrpc.HealthImplBase) healthStatusManager.getHealthService());
+        return (HealthGrpc.HealthImplBase) healthStatusManager.getHealthService();
     }
 }
