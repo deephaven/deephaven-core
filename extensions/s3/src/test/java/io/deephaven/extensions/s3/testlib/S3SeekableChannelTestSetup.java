@@ -4,8 +4,9 @@
 package io.deephaven.extensions.s3.testlib;
 
 import io.deephaven.extensions.s3.S3Instructions;
-import io.deephaven.extensions.s3.S3SeekableChannelProviderPlugin;
+import io.deephaven.extensions.s3.UniversalS3SeekableChannelProviderPlugin;
 import io.deephaven.util.channel.SeekableChannelsProvider;
+import io.deephaven.util.channel.SeekableChannelsProviderPlugin;
 import software.amazon.awssdk.core.async.AsyncRequestBody;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
@@ -71,7 +72,7 @@ public abstract class S3SeekableChannelTestSetup {
     }
 
     protected final SeekableChannelsProvider providerImpl() {
-        final S3SeekableChannelProviderPlugin plugin = new S3SeekableChannelProviderPlugin();
+        final SeekableChannelsProviderPlugin plugin = new UniversalS3SeekableChannelProviderPlugin();
         final S3Instructions instructions = s3Instructions(S3Instructions.builder()).build();
         return plugin.createProvider(SCHEME, instructions);
     }
