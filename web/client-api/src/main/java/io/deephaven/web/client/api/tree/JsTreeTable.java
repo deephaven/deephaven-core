@@ -185,7 +185,8 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
 
     private boolean closed = false;
 
-    public void extractDefinition(final HierarchicalTableDescriptor treeDescriptor) {
+    @JsIgnore
+    private void extractDefinition(final HierarchicalTableDescriptor treeDescriptor) {
         Uint8Array flightSchemaMessage = treeDescriptor.getSnapshotSchema_asU8();
 
         keyColumns = new JsArray<>();
