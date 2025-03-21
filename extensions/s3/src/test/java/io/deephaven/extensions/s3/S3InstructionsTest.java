@@ -70,6 +70,35 @@ class S3InstructionsTest {
     }
 
     @Test
+    void testReadTimeout() {
+        assertThat(S3Instructions.builder()
+                .regionName("some-region")
+                .readTimeout(Duration.ofSeconds(1))
+                .build()
+                .readTimeout())
+                .isEqualTo(Duration.ofSeconds(1));
+    }
+
+    @Test
+    void testWriteTimeout() {
+        assertThat(S3Instructions.builder()
+                .regionName("some-region")
+                .writeTimeout(Duration.ofMillis(5))
+                .build()
+                .writeTimeout().get())
+                .isEqualTo(Duration.ofMillis(5));
+    }
+
+    @Test
+    void testWriteTimeoutNotSet() {
+        assertThat(S3Instructions.builder()
+                .regionName("some-region")
+                .build()
+                .writeTimeout().isEmpty())
+                .isEqualTo(true);
+    }
+
+    @Test
     void tooSmallMaxConcurrentRequests() {
         try {
             S3Instructions.builder()
