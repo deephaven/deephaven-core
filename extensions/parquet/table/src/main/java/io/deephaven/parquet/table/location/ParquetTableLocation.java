@@ -55,13 +55,12 @@ public class ParquetTableLocation extends AbstractTableLocation {
     private static final String IMPLEMENTATION_NAME = ParquetColumnLocation.class.getSimpleName();
 
     private final ParquetInstructions readInstructions;
+    private final ParquetColumnResolver resolver;
 
     private volatile boolean isInitialized;
 
     // Access to all the following variables must be guarded by initialize()
     // -----------------------------------------------------------------------
-    private ParquetColumnResolver resolver;
-
     private RegionedPageStore.Parameters regionParameters;
     private Map<String, String[]> parquetColumnNameToPath;
 
@@ -81,6 +80,9 @@ public class ParquetTableLocation extends AbstractTableLocation {
             @NotNull final ParquetInstructions readInstructions) {
         super(tableKey, tableLocationKey, false);
         this.readInstructions = readInstructions;
+        this.resolver = readInstructions.getColumnResolverFactory()
+                .map(factory -> factory.of(getTableKey(), getParquetKey()))
+                .orElse(null);
         this.isInitialized = false;
     }
 
@@ -101,10 +103,6 @@ public class ParquetTableLocation extends AbstractTableLocation {
                 parquetMetadata = tableLocationKey.getMetadata();
                 rowGroupIndices = tableLocationKey.getRowGroupIndices();
             }
-
-            resolver = readInstructions.getColumnResolverFactory()
-                    .map(factory -> factory.of(getTableKey(), tableLocationKey))
-                    .orElse(null);
             final int rowGroupCount = rowGroupIndices.length;
             final RowGroup[] rowGroups = IntStream.of(rowGroupIndices)
                     .mapToObj(rgi -> parquetFileReader.fileMetaData.getRow_groups().get(rgi))
@@ -209,11 +207,11 @@ public class ParquetTableLocation extends AbstractTableLocation {
     }
 
     List<String> getColumnPath(@NotNull String columnName, String parquetColumnNameOrDefault) {
-        initialize();
         if (resolver != null) {
             // empty list will result in exists=false
             return resolver.of(columnName).orElse(List.of());
         }
+        initialize();
         final String[] columnPath = parquetColumnNameToPath.get(parquetColumnNameOrDefault);
         // noinspection Java9CollectionFactory
         return columnPath == null

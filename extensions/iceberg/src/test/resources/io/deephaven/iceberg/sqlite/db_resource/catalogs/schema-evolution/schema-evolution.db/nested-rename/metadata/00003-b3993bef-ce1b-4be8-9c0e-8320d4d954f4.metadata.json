@@ -1,0 +1,201 @@
+{
+    "location": "catalogs/schema-evolution/schema-evolution.db/nested-rename",
+    "table-uuid": "e6d68be9-3a65-4959-8195-90a11679e406",
+    "last-updated-ms": 1742580949877,
+    "last-column-id": 6,
+    "schemas": [
+        {
+            "type": "struct",
+            "fields": [
+                {
+                    "id": 1,
+                    "name": "Foo",
+                    "type": {
+                        "type": "struct",
+                        "fields": [
+                            {
+                                "id": 3,
+                                "name": "Field1",
+                                "type": "int",
+                                "required": false
+                            },
+                            {
+                                "id": 4,
+                                "name": "Field2",
+                                "type": "int",
+                                "required": false
+                            }
+                        ]
+                    },
+                    "required": false
+                },
+                {
+                    "id": 2,
+                    "name": "Bar",
+                    "type": {
+                        "type": "struct",
+                        "fields": [
+                            {
+                                "id": 5,
+                                "name": "Field1",
+                                "type": "int",
+                                "required": false
+                            },
+                            {
+                                "id": 6,
+                                "name": "Field2",
+                                "type": "int",
+                                "required": false
+                            }
+                        ]
+                    },
+                    "required": false
+                }
+            ],
+            "schema-id": 0,
+            "identifier-field-ids": []
+        },
+        {
+            "type": "struct",
+            "fields": [
+                {
+                    "id": 1,
+                    "name": "Foo_B",
+                    "type": {
+                        "type": "struct",
+                        "fields": [
+                            {
+                                "id": 3,
+                                "name": "Field1",
+                                "type": "int",
+                                "required": false
+                            },
+                            {
+                                "id": 4,
+                                "name": "Field2",
+                                "type": "int",
+                                "required": false
+                            }
+                        ]
+                    },
+                    "required": false
+                },
+                {
+                    "id": 2,
+                    "name": "Bar",
+                    "type": {
+                        "type": "struct",
+                        "fields": [
+                            {
+                                "id": 5,
+                                "name": "Field1_B",
+                                "type": "int",
+                                "required": false
+                            },
+                            {
+                                "id": 6,
+                                "name": "Field2_B",
+                                "type": "int",
+                                "required": false
+                            }
+                        ]
+                    },
+                    "required": false
+                }
+            ],
+            "schema-id": 1,
+            "identifier-field-ids": []
+        }
+    ],
+    "current-schema-id": 1,
+    "partition-specs": [
+        {
+            "spec-id": 0,
+            "fields": []
+        }
+    ],
+    "default-spec-id": 0,
+    "last-partition-id": 999,
+    "properties": {},
+    "current-snapshot-id": 4361714451021099968,
+    "snapshots": [
+        {
+            "snapshot-id": 8134645757366367374,
+            "sequence-number": 1,
+            "timestamp-ms": 1742580949860,
+            "manifest-list": "catalogs/schema-evolution/schema-evolution.db/nested-rename/metadata/snap-8134645757366367374-0-50796628-422e-461f-9398-1a17e5d0a441.avro",
+            "summary": {
+                "operation": "append",
+                "added-files-size": "1943",
+                "added-data-files": "1",
+                "added-records": "5",
+                "total-data-files": "1",
+                "total-delete-files": "0",
+                "total-records": "5",
+                "total-files-size": "1943",
+                "total-position-deletes": "0",
+                "total-equality-deletes": "0"
+            },
+            "schema-id": 0
+        },
+        {
+            "snapshot-id": 4361714451021099968,
+            "parent-snapshot-id": 8134645757366367374,
+            "sequence-number": 2,
+            "timestamp-ms": 1742580949877,
+            "manifest-list": "catalogs/schema-evolution/schema-evolution.db/nested-rename/metadata/snap-4361714451021099968-0-dea93c45-5607-4597-b4a4-1c7fbc89fd76.avro",
+            "summary": {
+                "operation": "append",
+                "added-files-size": "1977",
+                "added-data-files": "1",
+                "added-records": "5",
+                "total-data-files": "2",
+                "total-delete-files": "0",
+                "total-records": "10",
+                "total-files-size": "3920",
+                "total-position-deletes": "0",
+                "total-equality-deletes": "0"
+            },
+            "schema-id": 1
+        }
+    ],
+    "snapshot-log": [
+        {
+            "snapshot-id": 8134645757366367374,
+            "timestamp-ms": 1742580949860
+        },
+        {
+            "snapshot-id": 4361714451021099968,
+            "timestamp-ms": 1742580949877
+        }
+    ],
+    "metadata-log": [
+        {
+            "metadata-file": "catalogs/schema-evolution/schema-evolution.db/nested-rename/metadata/00000-15028fea-7eb1-4be2-b6d8-9dc85b6e3b76.metadata.json",
+            "timestamp-ms": 1742580949831
+        },
+        {
+            "metadata-file": "catalogs/schema-evolution/schema-evolution.db/nested-rename/metadata/00001-95d123b1-7569-400d-babe-8a08081eff44.metadata.json",
+            "timestamp-ms": 1742580949860
+        },
+        {
+            "metadata-file": "catalogs/schema-evolution/schema-evolution.db/nested-rename/metadata/00002-2cf9fb6d-4ea8-445b-affb-dd8c2bb1557d.metadata.json",
+            "timestamp-ms": 1742580949865
+        }
+    ],
+    "sort-orders": [
+        {
+            "order-id": 0,
+            "fields": []
+        }
+    ],
+    "default-sort-order-id": 0,
+    "refs": {
+        "main": {
+            "snapshot-id": 4361714451021099968,
+            "type": "branch"
+        }
+    },
+    "format-version": 2,
+    "last-sequence-number": 2
+}

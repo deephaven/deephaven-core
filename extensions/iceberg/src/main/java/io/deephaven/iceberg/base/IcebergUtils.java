@@ -6,7 +6,8 @@ package io.deephaven.iceberg.base;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.locations.TableDataException;
-import io.deephaven.iceberg.util.IcebergReadInstructions;
+import io.deephaven.iceberg.internal.SpecAndSchema;
+import io.deephaven.iceberg.internal.SpecAndSchema2;
 import org.apache.iceberg.DataFile;
 import org.apache.iceberg.ManifestContent;
 import org.apache.iceberg.ManifestFile;
@@ -24,7 +25,6 @@ import org.apache.iceberg.exceptions.NamespaceNotEmptyException;
 import org.apache.iceberg.types.Type;
 import org.apache.iceberg.types.Types;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -188,27 +188,9 @@ public final class IcebergUtils {
     }
 
     /**
-     * Used to hold a {@link Schema}, {@link PartitionSpec} and {@link IcebergReadInstructions} together.
-     */
-    public static final class SpecAndSchema {
-        public final Schema schema;
-        public final PartitionSpec partitionSpec;
-        public final IcebergReadInstructions readInstructions;
-
-        public SpecAndSchema(
-                @NotNull final Schema schema,
-                @NotNull final PartitionSpec partitionSpec,
-                @Nullable final IcebergReadInstructions readInstructions) {
-            this.schema = schema;
-            this.partitionSpec = partitionSpec;
-            this.readInstructions = readInstructions;
-        }
-    }
-
-    /**
      * Create {@link PartitionSpec} and {@link Schema} from a {@link TableDefinition}.
      *
-     * @return A {@link SpecAndSchema} object containing the partition spec and schema, and {@code null} for read
+     * @return A {@link SpecAndSchema2} object containing the partition spec and schema, and {@code null} for read
      *         instructions.
      */
     public static SpecAndSchema createSpecAndSchema(@NotNull final TableDefinition tableDefinition) {
@@ -227,9 +209,8 @@ public final class IcebergUtils {
             fieldID++;
         }
         final Schema schema = new Schema(fields);
-
         final PartitionSpec partitionSpec = createPartitionSpec(schema, partitioningColumnNames);
-        return new SpecAndSchema(schema, partitionSpec, null);
+        return new SpecAndSchema(schema, partitionSpec);
     }
 
     public static PartitionSpec createPartitionSpec(

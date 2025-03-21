@@ -113,6 +113,7 @@ public class IcebergTableWriter {
         this.tableWriterOptions = verifyWriterOptions(tableWriterOptions);
         this.table = tableAdapter.icebergTable();
 
+        // TODO: this is incorrect
         this.tableSpec = table.spec();
 
         this.tableDefinition = tableWriterOptions.tableDefinition();

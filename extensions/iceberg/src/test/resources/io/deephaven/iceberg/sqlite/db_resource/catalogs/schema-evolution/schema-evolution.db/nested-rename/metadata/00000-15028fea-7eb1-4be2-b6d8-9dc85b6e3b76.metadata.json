@@ -1,0 +1,82 @@
+{
+    "location": "catalogs/schema-evolution/schema-evolution.db/nested-rename",
+    "table-uuid": "e6d68be9-3a65-4959-8195-90a11679e406",
+    "last-updated-ms": 1742580949831,
+    "last-column-id": 6,
+    "schemas": [
+        {
+            "type": "struct",
+            "fields": [
+                {
+                    "id": 1,
+                    "name": "Foo",
+                    "type": {
+                        "type": "struct",
+                        "fields": [
+                            {
+                                "id": 3,
+                                "name": "Field1",
+                                "type": "int",
+                                "required": false
+                            },
+                            {
+                                "id": 4,
+                                "name": "Field2",
+                                "type": "int",
+                                "required": false
+                            }
+                        ]
+                    },
+                    "required": false
+                },
+                {
+                    "id": 2,
+                    "name": "Bar",
+                    "type": {
+                        "type": "struct",
+                        "fields": [
+                            {
+                                "id": 5,
+                                "name": "Field1",
+                                "type": "int",
+                                "required": false
+                            },
+                            {
+                                "id": 6,
+                                "name": "Field2",
+                                "type": "int",
+                                "required": false
+                            }
+                        ]
+                    },
+                    "required": false
+                }
+            ],
+            "schema-id": 0,
+            "identifier-field-ids": []
+        }
+    ],
+    "current-schema-id": 0,
+    "partition-specs": [
+        {
+            "spec-id": 0,
+            "fields": []
+        }
+    ],
+    "default-spec-id": 0,
+    "last-partition-id": 999,
+    "properties": {},
+    "snapshots": [],
+    "snapshot-log": [],
+    "metadata-log": [],
+    "sort-orders": [
+        {
+            "order-id": 0,
+            "fields": []
+        }
+    ],
+    "default-sort-order-id": 0,
+    "refs": {},
+    "format-version": 2,
+    "last-sequence-number": 0
+}

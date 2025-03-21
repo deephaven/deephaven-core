@@ -7,16 +7,26 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder;
 import io.deephaven.iceberg.location.IcebergTableLocationKey;
-import io.deephaven.iceberg.util.IcebergReadInstructions;
 import io.deephaven.iceberg.util.IcebergTableAdapter;
-import io.deephaven.iceberg.internal.DataInstructionsProviderLoader;
+import io.deephaven.iceberg.util.Resolver;
+import io.deephaven.parquet.table.ParquetInstructions;
+import io.deephaven.util.channel.SeekableChannelsProvider;
 import io.deephaven.util.type.TypeUtils;
-import org.apache.iceberg.*;
+import org.apache.iceberg.DataFile;
+import org.apache.iceberg.ManifestFile;
+import org.apache.iceberg.PartitionData;
+import org.apache.iceberg.PartitionField;
+import org.apache.iceberg.PartitionSpec;
+import org.apache.iceberg.Snapshot;
 import org.apache.iceberg.data.IdentityPartitionConverters;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.net.URI;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Iceberg {@link TableLocationKeyFinder location finder} for tables with partitions that will discover data files from
@@ -37,18 +47,13 @@ public final class IcebergKeyValuePartitionedLayout extends IcebergBaseLayout {
 
     private final List<IdentityPartitioningColData> identityPartitioningColumns;
 
-    /**
-     * @param tableAdapter The {@link IcebergTableAdapter} that will be used to access the table.
-     * @param partitionSpec The Iceberg {@link PartitionSpec partition spec} for the table.
-     * @param instructions The instructions for customizations while reading.
-     */
     public IcebergKeyValuePartitionedLayout(
-            @NotNull final IcebergTableAdapter tableAdapter,
-            @NotNull final PartitionSpec partitionSpec,
-            @NotNull final IcebergReadInstructions instructions,
-            @NotNull final DataInstructionsProviderLoader dataInstructionsProvider) {
-        super(tableAdapter, instructions, dataInstructionsProvider);
-
+            @NotNull IcebergTableAdapter tableAdapter,
+            @Nullable Snapshot snapshot,
+            @NotNull ParquetInstructions pi,
+            @NotNull SeekableChannelsProvider channelsProvider,
+            @NotNull PartitionSpec partitionSpec) {
+        super(tableAdapter, snapshot, pi, channelsProvider);
         // We can assume due to upstream validation that there are no duplicate names (after renaming) that are included
         // in the output definition, so we can ignore duplicates.
         final List<PartitionField> partitionFields = partitionSpec.fields();
@@ -60,15 +65,24 @@ public final class IcebergKeyValuePartitionedLayout extends IcebergBaseLayout {
                 // TODO (DH-18160): Improve support for handling non-identity transforms
                 continue;
             }
-            final String icebergColName = partitionField.name();
-            final String dhColName = instructions.columnRenames().getOrDefault(icebergColName, icebergColName);
-            final ColumnDefinition<?> columnDef = tableDef.getColumn(dhColName);
-            if (columnDef == null) {
-                // Table definition provided by the user doesn't have this column, so skip.
-                continue;
-            }
-            identityPartitioningColumns.add(new IdentityPartitioningColData(dhColName,
-                    TypeUtils.getBoxedType(columnDef.getDataType()), fieldId));
+
+            // Resolver resolver;
+
+            // resolver.columnInstructions()
+
+            // TODO: use field ids
+
+            throw new RuntimeException("todo");
+
+            // final String icebergColName = partitionField.name();
+            // final String dhColName = instructions.columnRenames().getOrDefault(icebergColName, icebergColName);
+            // final ColumnDefinition<?> columnDef = tableDef.getColumn(dhColName);
+            // if (columnDef == null) {
+            // // Table definition provided by the user doesn't have this column, so skip.
+            // continue;
+            // }
+            // identityPartitioningColumns.add(new IdentityPartitioningColData(dhColName,
+            // TypeUtils.getBoxedType(columnDef.getDataType()), fieldId));
 
         }
     }
@@ -81,6 +95,7 @@ public final class IcebergKeyValuePartitionedLayout extends IcebergBaseLayout {
     @Override
     IcebergTableLocationKey keyFromDataFile(
             @NotNull final ManifestFile manifestFile,
+            @NotNull final PartitionSpec spec,
             @NotNull final DataFile dataFile,
             @NotNull final URI fileUri) {
         final Map<String, Comparable<?>> partitions = new LinkedHashMap<>();
@@ -103,6 +118,6 @@ public final class IcebergKeyValuePartitionedLayout extends IcebergBaseLayout {
             }
             partitions.put(colName, (Comparable<?>) colValue);
         }
-        return locationKey(manifestFile, dataFile, fileUri, partitions);
+        return locationKey(manifestFile, spec, dataFile, fileUri, partitions);
     }
 }

@@ -10,6 +10,8 @@ import io.deephaven.parquet.table.location.ParquetTableLocationKey;
 import org.apache.iceberg.DataFile;
 import org.apache.iceberg.ManifestFile;
 import io.deephaven.util.channel.SeekableChannelsProvider;
+import org.apache.iceberg.PartitionSpec;
+import org.apache.iceberg.Schema;
 import org.apache.iceberg.catalog.TableIdentifier;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -61,6 +63,8 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
      */
     private final long manifestSequenceNumber;
 
+    private final Schema schema;
+
     @NotNull
     private final ParquetInstructions readInstructions;
 
@@ -87,6 +91,7 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
             @Nullable final UUID tableUuid,
             @NotNull final TableIdentifier tableIdentifier,
             @NotNull final ManifestFile manifestFile,
+            @NotNull final PartitionSpec spec,
             @NotNull final DataFile dataFile,
             @NotNull final URI fileUri,
             final int order,
@@ -111,7 +116,22 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
 
         manifestSequenceNumber = manifestFile.sequenceNumber();
 
+        // todo
+        schema = spec.schema();
+
         this.readInstructions = readInstructions;
+    }
+
+    /**
+     * This is the <b>latest</b> {@link Schema} at the time the {@link ManifestFile} was written.
+     */
+    public Schema latestSchema() {
+        return schema;
+    }
+
+    public Schema writersSchema() {
+        // Note: this does not exist
+        throw new UnsupportedOperationException();
     }
 
     @Override

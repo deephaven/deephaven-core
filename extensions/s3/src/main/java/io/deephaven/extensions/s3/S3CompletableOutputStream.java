@@ -5,6 +5,7 @@ package io.deephaven.extensions.s3;
 
 import io.deephaven.util.channel.CompletableOutputStream;
 import org.jetbrains.annotations.NotNull;
+import software.amazon.awssdk.awscore.AwsRequestOverrideConfiguration;
 import software.amazon.awssdk.core.async.AsyncRequestBody;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.S3Uri;
@@ -21,10 +22,12 @@ import software.amazon.awssdk.services.s3.model.UploadPartResponse;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Consumer;
 
 import static io.deephaven.extensions.s3.S3ChannelContext.handleS3Exception;
 import static io.deephaven.extensions.s3.S3Instructions.MIN_WRITE_PART_SIZE;

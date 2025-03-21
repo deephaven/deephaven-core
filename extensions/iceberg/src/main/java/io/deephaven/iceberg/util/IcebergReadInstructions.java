@@ -5,6 +5,7 @@ package io.deephaven.iceberg.util;
 
 import io.deephaven.annotations.CopyableStyle;
 import io.deephaven.engine.table.TableDefinition;
+import org.apache.iceberg.Schema;
 import org.apache.iceberg.Snapshot;
 import org.immutables.value.Value;
 import org.immutables.value.Value.Immutable;
@@ -31,9 +32,18 @@ public abstract class IcebergReadInstructions {
     }
 
     /**
+     * The table definition instructions. Callers are encouraged to set this. If not set, one will be
+     * {@link Resolver#infer(Schema) inferred}.
+     */
+    public abstract Optional<Resolver> resolver();
+
+    /**
      * The {@link TableDefinition} to use when reading Iceberg data files.
      */
-    public abstract Optional<TableDefinition> tableDefinition();
+    @Deprecated
+    public final Optional<TableDefinition> tableDefinition() {
+        return resolver().map(Resolver::definition);
+    }
 
     /**
      * The data instructions to use for reading the Iceberg data files (might be S3Instructions or other cloud
@@ -45,11 +55,13 @@ public abstract class IcebergReadInstructions {
      * A {@link Map map} of rename instructions from Iceberg to Deephaven column names to use when reading the Iceberg
      * data files.
      */
+    @Deprecated
     public abstract Map<String, String> columnRenames();
 
     /**
      * Return a copy of this instructions object with the column renames replaced by {@code entries}.
      */
+    @Deprecated
     public abstract IcebergReadInstructions withColumnRenames(Map<String, ? extends String> entries);
 
     /**
@@ -85,13 +97,22 @@ public abstract class IcebergReadInstructions {
      */
     public abstract IcebergReadInstructions withSnapshot(Snapshot value);
 
+
+
     public interface Builder {
-        Builder tableDefinition(TableDefinition tableDefinition);
+        Builder resolver(Resolver resolver);
+
+        @Deprecated
+        default Builder tableDefinition(TableDefinition tableDefinition) {
+            throw new UnsupportedOperationException("Use definitionInstructions");
+        }
 
         Builder dataInstructions(Object s3Instructions);
 
+        @Deprecated
         Builder putColumnRenames(String key, String value);
 
+        @Deprecated
         Builder putAllColumnRenames(Map<String, ? extends String> entries);
 
         Builder updateMode(IcebergUpdateMode updateMode);

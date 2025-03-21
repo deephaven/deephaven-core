@@ -5,11 +5,15 @@ package io.deephaven.iceberg.layout;
 
 import io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder;
 import io.deephaven.iceberg.location.IcebergTableLocationKey;
-import io.deephaven.iceberg.util.IcebergReadInstructions;
-import io.deephaven.iceberg.internal.DataInstructionsProviderLoader;
 import io.deephaven.iceberg.util.IcebergTableAdapter;
-import org.apache.iceberg.*;
+import io.deephaven.parquet.table.ParquetInstructions;
+import io.deephaven.util.channel.SeekableChannelsProvider;
+import org.apache.iceberg.DataFile;
+import org.apache.iceberg.ManifestFile;
+import org.apache.iceberg.PartitionSpec;
+import org.apache.iceberg.Snapshot;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.net.URI;
 
@@ -18,15 +22,13 @@ import java.net.URI;
  * from a {@link Snapshot}
  */
 public final class IcebergFlatLayout extends IcebergBaseLayout {
-    /**
-     * @param tableAdapter The {@link IcebergTableAdapter} that will be used to access the table.
-     * @param instructions The instructions for customizations while reading.
-     */
+
     public IcebergFlatLayout(
-            @NotNull final IcebergTableAdapter tableAdapter,
-            @NotNull final IcebergReadInstructions instructions,
-            @NotNull final DataInstructionsProviderLoader dataInstructionsProvider) {
-        super(tableAdapter, instructions, dataInstructionsProvider);
+            @NotNull IcebergTableAdapter tableAdapter,
+            @Nullable Snapshot snapshot,
+            @NotNull ParquetInstructions pi,
+            @NotNull SeekableChannelsProvider channelsProvider) {
+        super(tableAdapter, snapshot, pi, channelsProvider);
     }
 
     @Override
@@ -37,8 +39,9 @@ public final class IcebergFlatLayout extends IcebergBaseLayout {
     @Override
     IcebergTableLocationKey keyFromDataFile(
             @NotNull final ManifestFile manifestFile,
+            @NotNull final PartitionSpec spec,
             @NotNull final DataFile dataFile,
             @NotNull final URI fileUri) {
-        return locationKey(manifestFile, dataFile, fileUri, null);
+        return locationKey(manifestFile, spec, dataFile, fileUri, null);
     }
 }
