@@ -45,7 +45,7 @@ import java.util.stream.StreamSupport;
 import static io.deephaven.base.FileUtils.REPEATED_URI_SEPARATOR;
 import static io.deephaven.base.FileUtils.REPEATED_URI_SEPARATOR_PATTERN;
 import static io.deephaven.base.FileUtils.URI_SEPARATOR;
-import static io.deephaven.extensions.s3.S3ChannelContext.handleS3Exception;
+import static io.deephaven.extensions.s3.S3ReadContext.handleS3Exception;
 import static io.deephaven.extensions.s3.S3SeekableChannelProviderPlugin.S3_URI_SCHEME;
 
 /**
@@ -62,9 +62,9 @@ class S3SeekableChannelProvider implements SeekableChannelsProvider {
     private final S3Instructions s3Instructions;
 
     /**
-     * A shared cache for S3 requests. This cache is shared across all S3 channels created by this provider.
+     * A shared cache for S3 read requests. This cache is shared across all S3 channels created by this provider.
      */
-    private final S3RequestCache sharedCache;
+    private final S3ReadRequestCache sharedReadCache;
 
     @SuppressWarnings("rawtypes")
     private static final AtomicReferenceFieldUpdater<S3SeekableChannelProvider, SoftReference> FILE_SIZE_CACHE_REF_UPDATER =
@@ -86,7 +86,7 @@ class S3SeekableChannelProvider implements SeekableChannelsProvider {
     S3SeekableChannelProvider(@NotNull final S3Instructions s3Instructions, @NotNull final String childScheme) {
         this.s3AsyncClient = S3ClientFactory.getAsyncClient(s3Instructions);
         this.s3Instructions = s3Instructions;
-        this.sharedCache = new S3RequestCache(s3Instructions.fragmentSize());
+        this.sharedReadCache = new S3ReadRequestCache(s3Instructions.fragmentSize());
         this.fileSizeCacheRef = new SoftReference<>(new KeyedObjectHashMap<>(FileSizeInfo.URI_MATCH_KEY));
         this.childScheme = childScheme;
     }
@@ -127,24 +127,32 @@ class S3SeekableChannelProvider implements SeekableChannelsProvider {
     }
 
     @Override
-    public SeekableChannelContext makeContext() {
-        return new S3ChannelContext(this, s3AsyncClient, s3Instructions, sharedCache);
+    public SeekableChannelContext makeReadContext() {
+        return new S3ReadContext(this, s3AsyncClient, s3Instructions, sharedReadCache);
     }
 
     @Override
-    public SeekableChannelContext makeSingleUseContext() {
-        return new S3ChannelContext(this, s3AsyncClient, s3Instructions.singleUse(), sharedCache);
+    public SeekableChannelContext makeSingleUseReadContext() {
+        return new S3ReadContext(this, s3AsyncClient, s3Instructions.singleUse(), sharedReadCache);
+    }
+
+    @Override
+    public SeekableChannelContext makeWriteContext() {
+        return new S3WriteContext(s3Instructions);
     }
 
     @Override
     public boolean isCompatibleWith(@NotNull final SeekableChannelContext channelContext) {
-        return channelContext instanceof S3ChannelContext;
+        return channelContext instanceof S3ReadContext;
     }
 
     @Override
-    public CompletableOutputStream getOutputStream(@NotNull final URI uri, final int bufferSizeHint) {
+    public CompletableOutputStream getOutputStream(
+            @NotNull final SeekableChannelContext channelContext,
+            @NotNull final URI uri,
+            final int bufferSizeHint) {
         // bufferSizeHint is unused because s3 output stream is buffered internally into parts
-        return new S3CompletableOutputStream(uri, s3AsyncClient, s3Instructions);
+        return new S3CompletableOutputStream(uri, s3AsyncClient, s3Instructions, channelContext);
     }
 
     @Override
@@ -361,6 +369,6 @@ class S3SeekableChannelProvider implements SeekableChannelsProvider {
     @Override
     public void close() {
         s3AsyncClient.close();
-        sharedCache.clear();
+        sharedReadCache.clear();
     }
 }

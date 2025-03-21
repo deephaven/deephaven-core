@@ -41,8 +41,11 @@ class UriToS3SeekableChannelProvider extends S3SeekableChannelProvider {
     }
 
     @Override
-    public CompletableOutputStream getOutputStream(@NotNull final URI uri, final int bufferSizeHint) {
-        return super.getOutputStream(toS3Uri(uri), bufferSizeHint);
+    public CompletableOutputStream getOutputStream(
+            @NotNull final SeekableChannelContext channelContext,
+            @NotNull final URI uri,
+            final int bufferSizeHint) {
+        return super.getOutputStream(channelContext, toS3Uri(uri), bufferSizeHint);
     }
 
     @Override
