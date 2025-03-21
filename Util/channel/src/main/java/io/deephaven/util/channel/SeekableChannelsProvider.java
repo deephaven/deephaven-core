@@ -40,15 +40,20 @@ public interface SeekableChannelsProvider extends SafeCloseable {
     /**
      * Create a new {@link SeekableChannelContext} object for creating read channels via this provider.
      */
-    SeekableChannelContext makeContext();
+    SeekableChannelContext makeReadContext();
 
     /**
      * Create a new "single-use" {@link SeekableChannelContext} object for creating read channels via this provider.
      * This is meant for contexts that have a short lifecycle and expect to read a small amount from a read channel.
      */
-    default SeekableChannelContext makeSingleUseContext() {
-        return makeContext();
+    default SeekableChannelContext makeSingleUseReadContext() {
+        return makeReadContext();
     }
+
+    /**
+     * Create a new {@link SeekableChannelContext} object for creating output streams via this provider.
+     */
+    SeekableChannelContext makeWriteContext();
 
     /**
      * Check if the given context is compatible with this provider. Useful to test if we can use provided
@@ -93,13 +98,17 @@ public interface SeekableChannelsProvider extends SafeCloseable {
     /**
      * Creates a {@link CompletableOutputStream} to write to the given URI.
      *
+     * @param channelContext the channel context to use for creating the output stream
      * @param uri the URI to write to
      * @param bufferSizeHint the number of bytes the caller expects to buffer before flushing
      * @return the output stream
      * @throws IOException if an IO exception occurs
      * @see CompletableOutputStream
      */
-    CompletableOutputStream getOutputStream(@NotNull final URI uri, int bufferSizeHint) throws IOException;
+    CompletableOutputStream getOutputStream(
+            @NotNull final SeekableChannelContext channelContext,
+            @NotNull final URI uri,
+            int bufferSizeHint) throws IOException;
 
 
     /**

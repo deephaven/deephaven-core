@@ -6,6 +6,7 @@ package io.deephaven.extensions.s3;
 import io.deephaven.annotations.CopyableStyle;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
+import io.deephaven.base.pool.ThreadSafeFixedSizePool;
 import io.deephaven.util.annotations.VisibleForTesting;
 import org.immutables.value.Value.Check;
 import org.immutables.value.Value.Default;
@@ -45,6 +46,12 @@ public abstract class S3Instructions implements LogOutputAppendable {
      */
     private static final int DEFAULT_WRITE_PART_SIZE = 10 << 20; // 10 MiB
     static final int MIN_WRITE_PART_SIZE = 5 << 20; // 5 MiB
+
+    /**
+     * Make sure that the minimum number of concurrent write parts is at least the minimum size of the pool, which is
+     * {@value ThreadSafeFixedSizePool#MIN_SIZE}, because we use this pool to manage write requests.
+     */
+    private static final int MIN_CONCURRENT_WRITE_PARTS = 10;
 
     static final S3Instructions DEFAULT = builder().build();
 
@@ -293,7 +300,7 @@ public abstract class S3Instructions implements LogOutputAppendable {
 
     @Check
     final void boundsCheckMinNumConcurrentWriteParts() {
-        if (numConcurrentWriteParts() < 1) {
+        if (numConcurrentWriteParts() < MIN_CONCURRENT_WRITE_PARTS) {
             throw new IllegalArgumentException(
                     "numConcurrentWriteParts(=" + numConcurrentWriteParts() + ") must be >= 1");
         }

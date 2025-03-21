@@ -23,8 +23,8 @@ public interface SeekableChannelContext extends SafeCloseable {
      * A pattern that allows callers to ensure a valid context has been created for {@code provider}. In the case where
      * the given {@code context} {@link SeekableChannelsProvider#isCompatibleWith(SeekableChannelContext) is compatible
      * with} {@code provider}, a no-op holder around that {@code context} will be returned. Otherwise, a holder with a
-     * new {@link SeekableChannelsProvider#makeSingleUseContext()} will be returned. The returned holder should ideally
-     * be used in a try-with-resources construction.
+     * new {@link SeekableChannelsProvider#makeSingleUseReadContext()} will be returned. The returned holder should
+     * ideally be used in a try-with-resources construction.
      *
      * @param provider the provider
      * @param context the context
@@ -32,7 +32,7 @@ public interface SeekableChannelContext extends SafeCloseable {
      */
     static ContextHolder ensureContext(SeekableChannelsProvider provider, SeekableChannelContext context) {
         if (!provider.isCompatibleWith(context)) {
-            return new ContextHolderImpl(provider.makeSingleUseContext());
+            return new ContextHolderImpl(provider.makeSingleUseReadContext());
         }
         // An impl that does not close the context
         return () -> context;
