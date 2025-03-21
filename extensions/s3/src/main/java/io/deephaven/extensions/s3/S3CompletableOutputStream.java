@@ -313,14 +313,6 @@ class S3CompletableOutputStream extends CompletableOutputStream {
         nextPartNumber++;
     }
 
-    // Buffer pool has a fixed size, can look at ThreadSafeFixedSizePool
-    // Buffers need to be returned on complete
-
-    // Semaphore is for limiting the number of requests, stick with the java one
-    // We can add a semaphore to limit the number of requests
-    // Wait for the throttle and then wait for buffer pool
-
-
     private void waitForCompletion(final S3WriteRequest request) throws IOException {
         try {
             // No need to handle the response since we already did that in the whenComplete callback

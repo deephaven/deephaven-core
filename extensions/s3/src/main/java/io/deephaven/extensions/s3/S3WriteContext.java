@@ -24,7 +24,7 @@ final class S3WriteContext extends BaseSeekableChannelContext implements Seekabl
     final Pool<S3WriteRequest> requestPool;
 
     S3WriteContext(@NotNull final S3Instructions instructions) {
-        this.requestPool = new ThreadSafeFixedSizePool<>(
+        this.requestPool = new ThreadSafeMaxSizePool<>(
                 instructions.numConcurrentWriteParts(),
                 () -> new S3WriteRequest(instructions.writePartSize()),
                 S3WriteRequest::reset);
