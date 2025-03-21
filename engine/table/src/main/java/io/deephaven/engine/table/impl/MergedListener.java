@@ -332,38 +332,15 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
 
         @Override
         public void run() {
-            final long currentStep = getUpdateGraph().clock().currentStep();
             try {
-                if (lastEnqueuedStep != currentStep) {
-                    // noinspection ConstantConditions
-                    throw Assert.statementNeverExecuted("Notification step mismatch: listener="
-                            + System.identityHashCode(MergedListener.this) + ": queuedNotificationStep="
-                            + lastEnqueuedStep + ", step=" + currentStep);
-                }
-
-                if (upstreamError != null) {
-                    propagateError(false, upstreamError, errorSourceEntry);
-                    return;
-                }
-
-                long added = 0;
-                long removed = 0;
-                long modified = 0;
-                long shifted = 0;
-
-                for (ListenerRecorder recorder : recorders) {
-                    if (recorder.getNotificationStep() == currentStep) {
-                        added += recorder.getAdded().size();
-                        removed += recorder.getRemoved().size();
-                        modified += recorder.getModified().size();
-                        shifted += recorder.getShifted().getEffectiveSize();
-                    }
-                }
-
-                if (entry != null) {
-                    entry.onUpdateStart(added, removed, modified, shifted);
-                }
+                final long currentStep = getUpdateGraph().clock().currentStep();
                 try {
+                    if (lastEnqueuedStep != currentStep) {
+                        // noinspection ConstantConditions
+                        throw Assert.statementNeverExecuted("Notification step mismatch: listener="
+                                + System.identityHashCode(MergedListener.this) + ": queuedNotificationStep="
+                                + lastEnqueuedStep + ", step=" + currentStep);
+                    }
                     synchronized (MergedListener.this) {
                         if (notificationStep == lastEnqueuedStep) {
                             // noinspection ConstantConditions
@@ -373,20 +350,57 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
                         }
                         notificationStep = lastEnqueuedStep;
                     }
-                    process();
-                    getUpdateGraph().logDependencies()
-                            .append("MergedListener has completed execution ")
-                            .append(this).endl();
-                } finally {
-                    if (entry != null) {
-                        entry.onUpdateEnd();
+                    // Retain a reference during update processing to prevent interference from concurrent destroys
+                    if (!tryRetainReference()) {
+                        // This listener is no longer live, there's no point to doing any work for this notification
+                        return;
                     }
+                    try {
+                        runInternal(currentStep);
+                    } catch (Exception updateException) {
+                        handleUncaughtException(updateException);
+                    } finally {
+                        dropReference();
+                    }
+                } finally {
+                    StepUpdater.forceUpdateRecordedStep(LAST_COMPLETED_STEP_UPDATER, MergedListener.this, currentStep);
                 }
-            } catch (Exception updateException) {
-                handleUncaughtException(updateException);
             } finally {
-                StepUpdater.forceUpdateRecordedStep(LAST_COMPLETED_STEP_UPDATER, MergedListener.this, currentStep);
                 releaseFromRecorders();
+            }
+        }
+
+        private void runInternal(final long currentStep) {
+            if (upstreamError != null) {
+                propagateError(false, upstreamError, errorSourceEntry);
+                return;
+            }
+            long added = 0;
+            long removed = 0;
+            long modified = 0;
+            long shifted = 0;
+
+            for (ListenerRecorder recorder : recorders) {
+                if (recorder.getNotificationStep() == currentStep) {
+                    added += recorder.getAdded().size();
+                    removed += recorder.getRemoved().size();
+                    modified += recorder.getModified().size();
+                    shifted += recorder.getShifted().getEffectiveSize();
+                }
+            }
+
+            if (entry != null) {
+                entry.onUpdateStart(added, removed, modified, shifted);
+            }
+            try {
+                process();
+                getUpdateGraph().logDependencies()
+                        .append("MergedListener has completed execution ")
+                        .append(this).endl();
+            } finally {
+                if (entry != null) {
+                    entry.onUpdateEnd();
+                }
             }
         }
 
