@@ -19,6 +19,10 @@ import java.util.Collection;
  * The ExchangeMarshaller is a pluggable component within {@link ArrowFlightUtil} that translated exported objects into
  * suitable Barrage messages. Only one marshaller may be responsible for each object. Each marshaller provides support
  * for snapshots and/or subscriptions.
+ *
+ * <p>
+ * Note: this interface is not yet stable.
+ * </p>
  */
 public interface ExchangeMarshaller {
     /**
@@ -30,8 +34,8 @@ public interface ExchangeMarshaller {
      * @return the first matching marshaller, or null if none exists
      */
     @Nullable
-    static ExchangeMarshaller getMarshaller(Object export, Collection<ExchangeMarshaller> marshallers) {
-        for (ExchangeMarshaller marshaller : marshallers) {
+    static ExchangeMarshaller getMarshaller(final Object export, final Collection<ExchangeMarshaller> marshallers) {
+        for (final ExchangeMarshaller marshaller : marshallers) {
             if (marshaller.accept(export)) {
                 return marshaller;
             }
