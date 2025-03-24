@@ -29,9 +29,9 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
 
@@ -89,8 +89,7 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
      * The {@link SeekableChannelsProvider} object that will be used for {@link IcebergTableParquetLocationKey}
      * creation.
      */
-    private final Map<String, SeekableChannelsProvider> uriSchemeTochannelsProviders;
-
+    private final SeekableChannelsProvider seekableChannelsProvider;
 
     /**
      * Create a new {@link IcebergTableLocationKey} for the given {@link ManifestFile}, {@link DataFile} and
@@ -174,18 +173,13 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
             this.parquetInstructions = builder.build();
         }
 
-        uriSchemeTochannelsProviders = new HashMap<>();
-        uriSchemeTochannelsProviders.put(uriScheme,
-                SeekableChannelsProviderLoader.getInstance().load(uriScheme, specialInstructions));
-    }
-
-    private SeekableChannelsProvider getChannelsProvider(final String scheme) {
-        return uriSchemeTochannelsProviders.computeIfAbsent(scheme,
-                scheme2 -> {
-                    final Object specialInstructions = instructions.dataInstructions()
-                            .orElseGet(() -> dataInstructionsProvider.load(scheme2));
-                    return SeekableChannelsProviderLoader.getInstance().load(scheme2, specialInstructions);
-                });
+        if ("s3".equals(uriScheme) || "s3a".equals(uriScheme) || "s3n".equals(uriScheme)) {
+            seekableChannelsProvider =
+                    SeekableChannelsProviderLoader.getInstance().load(Set.of("s3", "s3a", "s3n"), specialInstructions);
+        } else {
+            seekableChannelsProvider =
+                    SeekableChannelsProviderLoader.getInstance().load(uriScheme, specialInstructions);
+        }
     }
 
     abstract IcebergTableLocationKey keyFromDataFile(
@@ -203,7 +197,7 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
         // ie, ManifestReader.spec(), ManifestReader.spec().schema()
         // See https://lists.apache.org/thread/88md2fdk17k26cl4gj3sz6sdbtwcgbk5
         final URI fileUri = dataFileUri(table, dataFile);
-        return keyFromDataFile(manifestFile, dataFile, fileUri, getChannelsProvider(fileUri.getScheme()));
+        return keyFromDataFile(manifestFile, dataFile, fileUri, seekableChannelsProvider);
     }
 
     private static void checkIsDataManifest(ManifestFile manifestFile) {
