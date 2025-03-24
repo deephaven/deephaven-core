@@ -4,11 +4,11 @@
 package io.deephaven.extensions.s3;
 
 import io.deephaven.base.pool.Pool;
-import io.deephaven.base.pool.ThreadSafeFixedSizePool;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.channel.BaseSeekableChannelContext;
 import io.deephaven.util.channel.SeekableChannelContext;
+import io.deephaven.util.datastructures.ThreadSafeMaxSizePool;
 import org.jetbrains.annotations.NotNull;
 
 /**
