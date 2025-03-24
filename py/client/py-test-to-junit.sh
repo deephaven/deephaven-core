@@ -15,7 +15,7 @@ sleep 1
 # Run the tests
 python -m xmlrunner discover tests -v -o "$XML_DIR" && ret=$? || ret=$?;
 
-# Pause another moment to ensure all packets were captures
+# Pause another moment to ensure all packets were captured
 sleep 1
 
 # Stop tcpdump

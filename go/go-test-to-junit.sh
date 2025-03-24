@@ -15,7 +15,7 @@ sleep 1
 # Run the tests
 go test -vet=all -v ./... 2>&1 | go-junit-report -set-exit-code -iocopy -out "$XML" && ret=$? || ret=$?;
 
-# Pause another moment to ensure all packets were captures
+# Pause another moment to ensure all packets were captured
 sleep 1
 
 # Stop tcpdump
