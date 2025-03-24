@@ -309,13 +309,17 @@ gotesttable1 = empty_table(10)
 			t.Error("NewClient failed:", err)
 			return
 		}
+		var tables [10]*client.TableHandle
 		for i := 0; i < 10; i++ {
 			table, err := client2.OpenTable(ctx, "gotesttable1")
+			tables[i] = table
 			if err != nil {
 				t.Error("error when checking for gotesttable1:", err)
 				return
 			}
-			table.Release()
+		}
+		for _, table := range tables {
+			table.Release(ctx)
 		}
 		client2.Close()
 		if time.Now().After(deadline) {
