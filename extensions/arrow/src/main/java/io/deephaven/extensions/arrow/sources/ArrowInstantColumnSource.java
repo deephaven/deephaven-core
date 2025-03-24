@@ -73,7 +73,9 @@ public class ArrowInstantColumnSource extends AbstractArrowColumnSource<Instant>
     }
 
     private Instant extract(final int posInBlock, final TimeStampVector vector) {
-        final long value = vector.get(posInBlock);
-        return vector.isSet(posInBlock) == 0 ? null : DateTimeUtils.epochNanosToInstant(value * factor);
+        if (vector.isSet(posInBlock) == 0) {
+            return null;
+        }
+        return DateTimeUtils.epochNanosToInstant(factor * vector.get(posInBlock));
     }
 }
