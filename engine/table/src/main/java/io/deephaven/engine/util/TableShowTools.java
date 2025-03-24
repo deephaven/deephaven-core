@@ -41,11 +41,11 @@ class TableShowTools {
             if (showRowSet) {
                 out.print("RowPosition");
                 out.print(delimiter);
-                out.print("     RowKey");
+                out.print("    RowKey");
                 out.print(delimiter);
-                columnLimits.add(10);
-                columnLimits.add(21);
-                lineLen = 22;
+                columnLimits.add(11);
+                columnLimits.add(22);
+                lineLen = 23;
             }
             final int[] columnLengths = new int[columns.length];
             for (int i = 0; i < columns.length; i++) {
@@ -79,7 +79,7 @@ class TableShowTools {
                 columnPrinters[i] = getColumnPrinter(columnSources[i], columnLengths[i], timeZone);
             }
 
-            final ColumnPrinter positionPrinter = new DefaultPrinter(10);
+            final ColumnPrinter positionPrinter = new DefaultPrinter(11);
             final ColumnPrinter indexPrinter = new DefaultPrinter(10);
             long ri = 0;
             for (final RowSet.Iterator indexIterator = rowSet.iterator(); ri < lastRowExclusive

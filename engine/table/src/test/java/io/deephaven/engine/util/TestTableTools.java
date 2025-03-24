@@ -36,6 +36,11 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.PrintStream;
+import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.*;
 import java.util.function.Consumer;
@@ -1030,5 +1035,31 @@ public class TestTableTools {
         final Table check = joined.sort("IntCol");
         final Table mergeSort = merged.sort("IntCol");
         assertTableEquals(check, mergeSort);
+    }
+
+    @Test
+    public void testShow() {
+        final Table t = emptyTable(3).update("A=1", "B=`Banana`");
+
+        final String result;
+
+        try (final ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+                final PrintStream printStream = new PrintStream(bytes, false, StandardCharsets.UTF_8)) {
+            TableTools.showWithRowSet(t, 0, 10, printStream);
+            printStream.flush();
+            result = bytes.toString(StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+
+        // System.out.println(result);
+
+        final String[] lines = result.split("\n");
+        assertEquals(lines.length, 5);
+        final int line1Idx = lines[0].indexOf("|");
+        final int line2Idx = lines[1].indexOf("+");
+        final int line3Idx = lines[2].indexOf("|");
+        assertEquals(line1Idx, line2Idx);
+        assertEquals(line1Idx, line3Idx);
     }
 }

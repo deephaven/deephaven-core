@@ -7,6 +7,7 @@ import com.google.rpc.Code;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.clientsupport.gotorow.SeekRow;
 import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
+import io.deephaven.csv.util.MutableObject;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
@@ -548,6 +549,8 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
                     resultId = ExportTicketHelper.tableReference(exportId);
                 }
 
+                final MutableObject<ExportedTableCreationResponse> successResponse = new MutableObject<>();
+
                 exportBuilder.exportBuilder.onError((result, errorContext, cause, dependentId) -> {
                     String errorInfo = errorContext;
                     if (dependentId != null) {
@@ -565,11 +568,15 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
                     safelyOnNext(responseObserver, response);
                     onOneResolved.run();
                 }).onSuccess(table -> {
-                    final ExportedTableCreationResponse response =
-                            ExportUtil.buildTableCreationResponse(resultId, table);
-                    safelyOnNext(responseObserver, response);
+                    safelyOnNext(responseObserver, successResponse.getValue());
                     onOneResolved.run();
-                }).submit(exportBuilder::doExport);
+                }).submit(() -> {
+                    final Table result = exportBuilder.doExport();
+                    // If the response building has any possibility of failing, then we cannot run it in the onSuccess
+                    // method, which has no possibility of returning an error to the client.
+                    successResponse.setValue(ExportUtil.buildTableCreationResponse(resultId, result));
+                    return result;
+                });
             }
 
             // now that we've submitted everything we'll suspend the query and release our refcount
@@ -661,15 +668,22 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
                     .map(ref -> resolveOneShotReference(session, ref))
                     .collect(Collectors.toList());
 
+            final MutableObject<ExportedTableCreationResponse> response = new MutableObject<>();
+
             session.<Table>newExport(resultId, "resultId")
                     .require(dependencies)
                     .queryPerformanceRecorder(queryPerformanceRecorder)
                     .onError(responseObserver)
-                    .onSuccess((final Table result) -> safelyOnNextAndComplete(responseObserver,
-                            ExportUtil.buildTableCreationResponse(resultId, result)))
+                    .onSuccess((final Table result) -> {
+                        safelyOnNextAndComplete(responseObserver, response.getValue());
+                    })
                     .submit(() -> {
                         operation.checkPermission(request, dependencies);
-                        return operation.create(request, dependencies);
+                        final Table result = operation.create(request, dependencies);
+                        // If the response building has any possibility of failing, then we cannot run it in the
+                        // onSuccess method, which has no possibility of returning an error to the client.
+                        response.setValue(ExportUtil.buildTableCreationResponse(resultId, result));
+                        return result;
                     });
         }
     }

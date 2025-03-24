@@ -5,8 +5,9 @@ package io.deephaven.iceberg.util;
 
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.util.TableTools;
+import io.deephaven.extensions.s3.S3Constants;
 import io.deephaven.extensions.s3.S3Instructions;
-import io.deephaven.iceberg.base.IcebergUtils;
+import io.deephaven.iceberg.base.IcebergTestUtils;
 import io.deephaven.iceberg.junit5.SqliteCatalogBase;
 import io.deephaven.iceberg.sqlite.SqliteHelper;
 import org.apache.iceberg.CatalogProperties;
@@ -96,13 +97,13 @@ abstract class S3WarehouseSqliteCatalogBase extends SqliteCatalogBase {
     @Test
     void testIcebergTablesWithS3AScheme(TestInfo testInfo, @TempDir Path rootDir)
             throws ExecutionException, InterruptedException, TimeoutException {
-        testIcebergTablesWithCustomScheme("s3a", testInfo, rootDir);
+        testIcebergTablesWithCustomScheme(S3Constants.S3A_URI_SCHEME, testInfo, rootDir);
     }
 
     @Test
     void testIcebergTablesWithS3NScheme(TestInfo testInfo, @TempDir Path rootDir)
             throws ExecutionException, InterruptedException, TimeoutException {
-        testIcebergTablesWithCustomScheme("s3n", testInfo, rootDir);
+        testIcebergTablesWithCustomScheme(S3Constants.S3N_URI_SCHEME, testInfo, rootDir);
     }
 
     private void testIcebergTablesWithCustomScheme(final String scheme, TestInfo testInfo, @TempDir Path rootDir)
@@ -133,7 +134,7 @@ abstract class S3WarehouseSqliteCatalogBase extends SqliteCatalogBase {
                 .build());
 
         // Verify all data files have the right scheme
-        final List<DataFile> dataFiles = IcebergUtils.allDataFiles(icebergTable, icebergTable.currentSnapshot())
+        final List<DataFile> dataFiles = IcebergTestUtils.allDataFiles(icebergTable, icebergTable.currentSnapshot())
                 .collect(Collectors.toList());
         assertThat(dataFiles).hasSize(2);
         assertThat(dataFiles).allMatch(dataFile -> dataFileUri(icebergTable, dataFile).getScheme().equals(scheme));
@@ -159,7 +160,7 @@ abstract class S3WarehouseSqliteCatalogBase extends SqliteCatalogBase {
         icebergTable.newAppend().appendFile(newDataFile).commit();
 
         // Verify the new data file has the right scheme
-        final List<DataFile> newDataFiles = IcebergUtils.allDataFiles(icebergTable, icebergTable.currentSnapshot())
+        final List<DataFile> newDataFiles = IcebergTestUtils.allDataFiles(icebergTable, icebergTable.currentSnapshot())
                 .collect(Collectors.toList());
         int s3DataFiles = 0;
         int nonS3DataFiles = 0;

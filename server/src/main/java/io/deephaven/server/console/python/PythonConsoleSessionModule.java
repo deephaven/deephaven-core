@@ -21,7 +21,7 @@ import javax.inject.Named;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 
-@Module
+@Module(includes = PythonDebuggingModule.class)
 public class PythonConsoleSessionModule {
     @Provides
     @IntoMap
