@@ -141,7 +141,7 @@ class S3SeekableChannelProvider implements SeekableChannelsProvider {
         if (log.isDebugEnabled()) {
             log.debug().append("Fetching child URIs for directory: ").append(directory.toString()).endl();
         }
-        return createStream(UniversalS3SeekableChannelProviderPlugin.S3_URI_SCHEME, directory, false);
+        return createStream(S3Constants.S3_URI_SCHEME, directory, false);
     }
 
     @Override
@@ -149,7 +149,7 @@ class S3SeekableChannelProvider implements SeekableChannelsProvider {
         if (log.isDebugEnabled()) {
             log.debug().append("Performing recursive traversal from directory: ").append(directory.toString()).endl();
         }
-        return createStream(UniversalS3SeekableChannelProviderPlugin.S3_URI_SCHEME, directory, true);
+        return createStream(S3Constants.S3_URI_SCHEME, directory, true);
     }
 
     /**

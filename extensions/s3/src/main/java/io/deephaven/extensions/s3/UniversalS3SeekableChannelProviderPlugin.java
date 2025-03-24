@@ -13,19 +13,16 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Set;
 
 /**
- * {@link SeekableChannelsProviderPlugin} implementation used for reading from and writing to URIs with schema
- * {@value S3_URI_SCHEME}, {@value S3A_URI_SCHEME}, or {@value S3N_URI_SCHEME}.
+ * {@link SeekableChannelsProviderPlugin} implementation used for reading from and writing to URIs with scheme
+ * {@value S3Constants#S3_URI_SCHEME}, {@value S3Constants#S3A_URI_SCHEME}, or {@value S3Constants#S3N_URI_SCHEME}.
  */
 @AutoService(SeekableChannelsProviderPlugin.class)
 public final class UniversalS3SeekableChannelProviderPlugin extends SeekableChannelsProviderPluginBase {
 
-    static final String S3_URI_SCHEME = "s3";
-    static final String S3A_URI_SCHEME = "s3a";
-    static final String S3N_URI_SCHEME = "s3n";
-
     @Override
     public boolean isCompatible(@NotNull final String uriScheme, @Nullable final Object config) {
-        return S3_URI_SCHEME.equals(uriScheme) || S3A_URI_SCHEME.equals(uriScheme) || S3N_URI_SCHEME.equals(uriScheme);
+        return S3Constants.S3_URI_SCHEME.equals(uriScheme) || S3Constants.S3A_URI_SCHEME.equals(uriScheme)
+                || S3Constants.S3N_URI_SCHEME.equals(uriScheme);
     }
 
     @Override
@@ -33,12 +30,12 @@ public final class UniversalS3SeekableChannelProviderPlugin extends SeekableChan
             @Nullable final Object config) {
         final S3SeekableChannelProvider impl = create(config);
         switch (uriScheme) {
-            case S3_URI_SCHEME:
+            case S3Constants.S3_URI_SCHEME:
                 return impl;
-            case S3A_URI_SCHEME:
-                return new S3DelegateProvider(S3A_URI_SCHEME, impl);
-            case S3N_URI_SCHEME:
-                return new S3DelegateProvider(S3N_URI_SCHEME, impl);
+            case S3Constants.S3A_URI_SCHEME:
+                return new S3DelegateProvider(S3Constants.S3A_URI_SCHEME, impl);
+            case S3Constants.S3N_URI_SCHEME:
+                return new S3DelegateProvider(S3Constants.S3N_URI_SCHEME, impl);
             default:
                 throw new IllegalStateException("Unexpected uriScheme: " + uriScheme);
         }
@@ -48,14 +45,14 @@ public final class UniversalS3SeekableChannelProviderPlugin extends SeekableChan
     protected SeekableChannelsProvider createProviderImpl(@NotNull Set<String> uriSchemes,
             @Nullable final Object config) {
         final S3SeekableChannelProvider impl = create(config);
-        final S3SeekableChannelProvider s3 = uriSchemes.contains(S3_URI_SCHEME)
+        final S3SeekableChannelProvider s3 = uriSchemes.contains(S3Constants.S3_URI_SCHEME)
                 ? impl
                 : null;
-        final S3DelegateProvider s3a = uriSchemes.contains(S3A_URI_SCHEME)
-                ? new S3DelegateProvider(S3A_URI_SCHEME, impl)
+        final S3DelegateProvider s3a = uriSchemes.contains(S3Constants.S3A_URI_SCHEME)
+                ? new S3DelegateProvider(S3Constants.S3A_URI_SCHEME, impl)
                 : null;
-        final S3DelegateProvider s3n = uriSchemes.contains(S3N_URI_SCHEME)
-                ? new S3DelegateProvider(S3N_URI_SCHEME, impl)
+        final S3DelegateProvider s3n = uriSchemes.contains(S3Constants.S3N_URI_SCHEME)
+                ? new S3DelegateProvider(S3Constants.S3N_URI_SCHEME, impl)
                 : null;
         return new UniversalS3Provider(impl, s3, s3a, s3n);
     }

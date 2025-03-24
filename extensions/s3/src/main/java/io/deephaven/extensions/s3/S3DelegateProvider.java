@@ -15,7 +15,7 @@ import java.nio.channels.SeekableByteChannel;
 import java.util.Objects;
 import java.util.stream.Stream;
 
-import static io.deephaven.extensions.s3.UniversalS3SeekableChannelProviderPlugin.S3_URI_SCHEME;
+import static io.deephaven.extensions.s3.S3Constants.S3_URI_SCHEME;
 
 final class S3DelegateProvider extends SeekableChannelsProviderDelegate {
     private final String scheme;

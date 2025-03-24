@@ -16,9 +16,9 @@ import java.util.Objects;
 import java.util.stream.Stream;
 
 import static io.deephaven.base.FileUtils.convertToURI;
-import static io.deephaven.extensions.s3.UniversalS3SeekableChannelProviderPlugin.S3A_URI_SCHEME;
-import static io.deephaven.extensions.s3.UniversalS3SeekableChannelProviderPlugin.S3N_URI_SCHEME;
-import static io.deephaven.extensions.s3.UniversalS3SeekableChannelProviderPlugin.S3_URI_SCHEME;
+import static io.deephaven.extensions.s3.S3Constants.S3A_URI_SCHEME;
+import static io.deephaven.extensions.s3.S3Constants.S3N_URI_SCHEME;
+import static io.deephaven.extensions.s3.S3Constants.S3_URI_SCHEME;
 
 @SuppressWarnings("resource")
 final class UniversalS3Provider extends SeekableChannelsProviderDelegate {
@@ -91,5 +91,15 @@ final class UniversalS3Provider extends SeekableChannelsProviderDelegate {
         final URI uri = convertToURI(uriStr, false);
         // Note: delegating to the URI version instead of the uriStr version
         return of(uri.getScheme()).getReadChannel(channelContext, uri);
+    }
+
+    @Override
+    public String toString() {
+        return "UniversalS3Provider{" +
+                "delegate=" + delegate +
+                ",s3=" + (s3 != null) +
+                ",s3a=" + (s3a != null) +
+                ",s3n=" + (s3n != null) +
+                '}';
     }
 }

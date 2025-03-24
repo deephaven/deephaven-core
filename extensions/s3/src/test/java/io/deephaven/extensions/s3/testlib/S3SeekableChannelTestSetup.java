@@ -3,6 +3,7 @@
 //
 package io.deephaven.extensions.s3.testlib;
 
+import io.deephaven.extensions.s3.S3Constants;
 import io.deephaven.extensions.s3.S3Instructions;
 import io.deephaven.extensions.s3.UniversalS3SeekableChannelProviderPlugin;
 import io.deephaven.util.channel.SeekableChannelsProvider;
@@ -30,7 +31,7 @@ import static io.deephaven.extensions.s3.testlib.S3Helper.TIMEOUT_SECONDS;
 
 public abstract class S3SeekableChannelTestSetup {
 
-    protected static final String SCHEME = "s3";
+    protected static final String SCHEME = S3Constants.S3_URI_SCHEME;
 
     protected ExecutorService executor;
     protected S3AsyncClient asyncClient;
