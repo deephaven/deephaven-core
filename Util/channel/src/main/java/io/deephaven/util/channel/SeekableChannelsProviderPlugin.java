@@ -19,7 +19,7 @@ public interface SeekableChannelsProviderPlugin {
     boolean isCompatible(@NotNull String uriScheme, @Nullable Object config);
 
     /**
-     * Check if this plugin is compatible with the given URI scheme and config object.
+     * Check if this plugin is compatible with all of the given URI schemes and config object.
      */
     boolean isCompatible(@NotNull Set<String> uriSchemes, @Nullable Object config);
 
@@ -29,7 +29,7 @@ public interface SeekableChannelsProviderPlugin {
     SeekableChannelsProvider createProvider(@NotNull String uriScheme, @Nullable Object object);
 
     /**
-     * Create a {@link SeekableChannelsProvider} for the given URI scheme and config object.
+     * Create a {@link SeekableChannelsProvider} for the given URI schemes and config object.
      */
     SeekableChannelsProvider createProvider(@NotNull Set<String> uriSchemes, @Nullable Object object);
 }

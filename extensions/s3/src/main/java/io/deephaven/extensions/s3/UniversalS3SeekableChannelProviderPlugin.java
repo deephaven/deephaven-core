@@ -13,14 +13,15 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Set;
 
 /**
- * {@link SeekableChannelsProviderPlugin} implementation used for reading from and writing to URIs with schema "s3a".
+ * {@link SeekableChannelsProviderPlugin} implementation used for reading from and writing to URIs with schema
+ * {@value S3_URI_SCHEME}, {@value S3A_URI_SCHEME}, or {@value S3N_URI_SCHEME}.
  */
 @AutoService(SeekableChannelsProviderPlugin.class)
 public final class UniversalS3SeekableChannelProviderPlugin extends SeekableChannelsProviderPluginBase {
 
-    static final String S3N_URI_SCHEME = "s3n";
-    static final String S3A_URI_SCHEME = "s3a";
     static final String S3_URI_SCHEME = "s3";
+    static final String S3A_URI_SCHEME = "s3a";
+    static final String S3N_URI_SCHEME = "s3n";
 
     @Override
     public boolean isCompatible(@NotNull final String uriScheme, @Nullable final Object config) {
