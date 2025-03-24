@@ -6,7 +6,6 @@ COPY dependencies /dependencies
 
 RUN set -eux; \
   mkdir -p /generated/java; \
-  mkdir -p /generated/grpc; \
   mkdir -p /generated/js; \
   mkdir -p /generated/go; \
   mkdir -p /generated/python; \
@@ -18,7 +17,7 @@ RUN set -eux; \
   /opt/protoc/bin/protoc \
     --plugin=protoc-gen-grpc=/opt/java/bin/protoc-gen-grpc-java \
     --java_out=/generated/java \
-    --grpc_out=/generated/grpc \
+    --grpc_out=/generated/java \
     -I/dependencies \
     -I/includes \
     /dependencies/BrowserFlight.proto \
