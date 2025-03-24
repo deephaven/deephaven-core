@@ -35,6 +35,7 @@ import io.deephaven.io.logger.LogBufferGlobal;
 import io.deephaven.plugin.Registration;
 import io.deephaven.proto.flight.util.FlightExportTicketHelper;
 import io.deephaven.server.arrow.ArrowModule;
+import io.deephaven.server.arrow.ExchangeMarshallerModule;
 import io.deephaven.server.auth.AuthorizationProvider;
 import io.deephaven.server.config.ConfigServiceModule;
 import io.deephaven.server.console.ConsoleModule;
@@ -189,6 +190,7 @@ public class JettyBarrageChunkFactoryTest {
             FlightTestModule.class,
             JettyServerModule.class,
             JettyTestConfig.class,
+            ExchangeMarshallerModule.class,
     })
     public interface JettyTestComponent extends TestComponent {
     }
