@@ -302,12 +302,8 @@ class S3CompletableOutputStream extends CompletableOutputStream {
                             if (throwable == null) {
                                 // Success
                                 completePartUpload(request, uploadPartResponse);
-                            } else {
-                                // TODO Discuss with Devin if there is a better way to handle this
-                                throw new UncheckedDeephavenException(
-                                        "Failed to upload part " + request.partNumber + " for uri " + uri,
-                                        throwable);
                             }
+                            // Failure will be handled when waiting for completion
                         });
         pendingRequests.add(request);
         nextPartNumber++;
@@ -315,10 +311,9 @@ class S3CompletableOutputStream extends CompletableOutputStream {
 
     private void waitForCompletion(final S3WriteRequest request) throws IOException {
         try {
-            // No need to handle the response since we already did that in the whenComplete callback
+            // We already processed the response in the whenComplete callback
             request.future.get();
         } catch (final InterruptedException | ExecutionException e) {
-            // TODO Discuss with Devin if I need to rehandle the exception here
             throw handleS3Exception(e, String.format("waiting for part %d for uri %s to complete uploading",
                     request.partNumber, uri), s3Instructions);
         }
