@@ -24,8 +24,6 @@ public class TestAuthorizationProvider implements AuthorizationProvider {
             new SessionServiceAuthWiring.TestUseOnly();
     private final StorageServiceAuthWiring.TestUseOnly storageServiceAuthWiring =
             new StorageServiceAuthWiring.TestUseOnly();
-    private final HealthAuthWiring.TestUseOnly healthAuthWiring =
-            new HealthAuthWiring.TestUseOnly();
     private final TableServiceContextualAuthWiring.TestUseOnly tableServiceContextualAuthWiring =
             new TableServiceContextualAuthWiring.TestUseOnly();
     private final InputTableServiceContextualAuthWiring.TestUseOnly inputTableServiceContextualAuthWiring =
@@ -65,11 +63,6 @@ public class TestAuthorizationProvider implements AuthorizationProvider {
     @Override
     public StorageServiceAuthWiring.TestUseOnly getStorageServiceAuthWiring() {
         return storageServiceAuthWiring;
-    }
-
-    @Override
-    public HealthAuthWiring.TestUseOnly getHealthAuthWiring() {
-        return healthAuthWiring;
     }
 
     @Override

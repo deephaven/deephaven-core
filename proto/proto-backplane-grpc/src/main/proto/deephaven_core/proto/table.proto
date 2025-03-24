@@ -10,8 +10,10 @@ option optimize_for = SPEED;
 option go_package = "github.com/deephaven/deephaven-core/go/internal/proto/table";
 
 import "deephaven_core/proto/ticket.proto";
+import "deephaven_core/proto/contextual-auth.proto";
 
 service TableService {
+  option (contextual_auth) = true;
   /*
    * Request an ETCR for this ticket. Ticket must reference a Table.
    */

@@ -5,7 +5,6 @@ plugins {
 
 dependencies {
     api project(':authentication')
-    api project(':authorization')
     api project(':server')
     api(project(':Integrations')) {
         because 'downstream dagger compile'

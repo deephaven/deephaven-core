@@ -13,6 +13,7 @@ configurations {
   download {
     transitive = false
   }
+  authzPlugin {}
 
   js {}
   python {}
@@ -29,6 +30,12 @@ dependencies {
   api libs.grpc.api
   api libs.grpc.stub
 
+  api project(':engine-api')
+
+  api libs.arrow.flight.core
+
+  implementation project(':log-factory')
+
   runtimeOnly libs.boringssl
 
   // This is excessive, and brings in every grpc jar, making it compile-only limits what it pulls in to
@@ -44,6 +51,8 @@ dependencies {
   download libs.deephaven.barrage.core
   download libs.arrow.flight.core
 
+  authzPlugin project(path: ':authorization-codegen', configuration: 'shadow')
+
   testImplementation libs.junit4
 }
 
@@ -58,6 +67,12 @@ TaskProvider<Task> generateProtobuf = Docker.registerDockerTask(project, 'genera
         include('BrowserFlight.proto').into('dependencies')
         include('Flight.proto').into('dependencies')
       }
+    }
+    from(configurations.authzPlugin) {
+      into '/authzPlugin'
+    }
+    from('src/main/sh/') {
+      into '/authzPlugin'
     }
   }
 

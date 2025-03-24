@@ -32,7 +32,7 @@ OUT_DIR=authorization/src/main/java/
 PROTO_DIR=proto/proto-backplane-grpc/src/main/proto/
 ROOT_DIR=$PROTO_DIR/deephaven/proto
 
-DEEPHAVEN_VERSION=${DEEPHAVEN_VERSION} PATH=authorization-codegen:$PATH protoc --service-auth-wiring_out=$OUT_DIR -I $PROTO_DIR    \
+DEEPHAVEN_VERSION=${DEEPHAVEN_VERSION} PATH=authorization-codegen:$PATH protoc --dh-auth-wiring_out=$OUT_DIR -I $PROTO_DIR    \
      $ROOT_DIR/application.proto                                        \
      $ROOT_DIR/console.proto                                            \
      $ROOT_DIR/config.proto                                             \

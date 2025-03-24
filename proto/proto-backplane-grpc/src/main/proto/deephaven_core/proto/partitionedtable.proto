@@ -12,11 +12,14 @@ option go_package = "github.com/deephaven/deephaven-core/go/internal/proto/parti
 
 import "deephaven_core/proto/table.proto";
 import "deephaven_core/proto/ticket.proto";
+import "deephaven_core/proto/contextual-auth.proto";
 
 /*
  * This service provides tools to create and query partitioned tables.
  */
 service PartitionedTableService {
+  option (contextual_auth) = true;
+
   /*
    * Transforms a table into a partitioned table, consisting of many separate tables, each individually
    * addressable. The result will be a FetchObjectResponse populated with a PartitionedTable.
