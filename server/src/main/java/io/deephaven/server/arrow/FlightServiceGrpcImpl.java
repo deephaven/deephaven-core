@@ -183,7 +183,7 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
                 AuthenticationRequestHandler.HandshakeResponseListener listener) throws AuthenticationException {
             AuthenticationRequestHandler handler = authRequestHandlers.get(type);
             if (handler == null) {
-                log.info().append("No AuthenticationRequestHandler registered for type ").append(type).endl();
+                // log.info().append("No AuthenticationRequestHandler registered for type ").append(type).endl();
                 return Optional.empty();
             }
             return handler.login(version, payload.asReadOnlyByteBuffer(), listener);
