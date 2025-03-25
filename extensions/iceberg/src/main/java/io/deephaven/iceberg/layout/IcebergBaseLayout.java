@@ -11,12 +11,10 @@ import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder;
 import io.deephaven.iceberg.location.IcebergTableLocationKey;
 import io.deephaven.iceberg.location.IcebergTableParquetLocationKey;
-import io.deephaven.iceberg.util.IcebergReadInstructions;
 import io.deephaven.iceberg.util.IcebergTableAdapter;
 import io.deephaven.parquet.table.ParquetInstructions;
-import io.deephaven.iceberg.internal.DataInstructionsProviderLoader;
+import io.deephaven.util.annotations.InternalUseOnly;
 import io.deephaven.util.channel.SeekableChannelsProvider;
-import io.deephaven.util.channel.SeekableChannelsProviderLoader;
 import org.apache.iceberg.*;
 import org.apache.iceberg.catalog.Catalog;
 import org.apache.iceberg.catalog.TableIdentifier;
@@ -31,27 +29,18 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Consumer;
 
 import static io.deephaven.iceberg.base.IcebergUtils.dataFileUri;
 
+@InternalUseOnly
 public abstract class IcebergBaseLayout implements TableLocationKeyFinder<IcebergTableLocationKey> {
     /**
      * The {@link IcebergTableAdapter} that will be used to access the table.
      */
     final IcebergTableAdapter tableAdapter;
-
-    /**
-     * The instructions for customizations while reading.
-     */
-    final IcebergReadInstructions instructions;
-
-    /**
-     * The instructions for customizations while reading.
-     */
-    final DataInstructionsProviderLoader dataInstructionsProvider;
 
     /**
      * The UUID of the table, if available.
@@ -69,11 +58,6 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
      * The table identifier used to access this table.
      */
     private final TableIdentifier tableIdentifier;
-    /**
-     * The {@link TableDefinition} that will be used for life of this table. Although Iceberg table schema may change,
-     * schema changes are not supported in Deephaven.
-     */
-    final TableDefinition tableDef;
 
     /**
      * The {@link Snapshot} from which to discover data files.
@@ -119,19 +103,12 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
                 tableAdapter, snapshot.snapshotId(), format, fileUri));
     }
 
-    /**
-     * @param tableAdapter The {@link IcebergTableAdapter} that will be used to access the table.
-     * @param instructions The instructions for customizations while reading.
-     * @param dataInstructionsProvider The provider for special instructions, to be used if special instructions not
-     *        provided in the {@code instructions}.
-     */
-    public IcebergBaseLayout(
+    IcebergBaseLayout(
             @NotNull final IcebergTableAdapter tableAdapter,
-            @NotNull final IcebergReadInstructions instructions,
-            @NotNull final DataInstructionsProviderLoader dataInstructionsProvider) {
-        this.tableAdapter = tableAdapter;
-        this.instructions = instructions;
-        this.dataInstructionsProvider = dataInstructionsProvider;
+            @NotNull final ParquetInstructions parquetInstructions,
+            @NotNull final SeekableChannelsProvider seekableChannelsProvider,
+            @Nullable final Snapshot snapshot) {
+        this.tableAdapter = Objects.requireNonNull(tableAdapter);
         {
             UUID uuid;
             try {
@@ -142,44 +119,11 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
             }
             this.tableUuid = uuid;
         }
-
         this.catalogName = tableAdapter.catalog().name();
         this.tableIdentifier = tableAdapter.tableIdentifier();
-
-        this.snapshot = tableAdapter.getSnapshot(instructions);
-        this.tableDef = tableAdapter.definition(instructions);
-
-        final String uriScheme = tableAdapter.locationUri().getScheme();
-        // Add the data instructions if provided as part of the IcebergReadInstructions, or else attempt to create
-        // data instructions from the properties collection and URI scheme.
-        final Object specialInstructions = instructions.dataInstructions()
-                .orElseGet(() -> dataInstructionsProvider.load(uriScheme));
-        {
-            // Start with user-supplied instructions (if provided).
-            final ParquetInstructions.Builder builder = new ParquetInstructions.Builder();
-
-            // Add the table definition.
-            builder.setTableDefinition(tableDef);
-
-            // Add any column rename mappings.
-            if (!instructions.columnRenames().isEmpty()) {
-                for (Map.Entry<String, String> entry : instructions.columnRenames().entrySet()) {
-                    builder.addColumnNameMapping(entry.getKey(), entry.getValue());
-                }
-            }
-            if (specialInstructions != null) {
-                builder.setSpecialInstructions(specialInstructions);
-            }
-            this.parquetInstructions = builder.build();
-        }
-
-        if ("s3".equals(uriScheme) || "s3a".equals(uriScheme) || "s3n".equals(uriScheme)) {
-            seekableChannelsProvider =
-                    SeekableChannelsProviderLoader.getInstance().load(Set.of("s3", "s3a", "s3n"), specialInstructions);
-        } else {
-            seekableChannelsProvider =
-                    SeekableChannelsProviderLoader.getInstance().load(uriScheme, specialInstructions);
-        }
+        this.parquetInstructions = Objects.requireNonNull(parquetInstructions);
+        this.seekableChannelsProvider = Objects.requireNonNull(seekableChannelsProvider);
+        this.snapshot = snapshot;
     }
 
     abstract IcebergTableLocationKey keyFromDataFile(
