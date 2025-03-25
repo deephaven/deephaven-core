@@ -47,8 +47,7 @@ dependencies {
   testImplementation libs.junit4
 }
 
-def protoOutputDir =  layout.buildDirectory.dir('generated/source/proto/main')
-
+def protoOutputDir = layout.buildDirectory.dir('protoc-output');
 TaskProvider<Task> generateProtobuf = Docker.registerDockerTask(project, 'generateProtobuf') {
   copyIn {
     from(project.projectDir) {
@@ -74,6 +73,14 @@ TaskProvider<Task> generateProtobuf = Docker.registerDockerTask(project, 'genera
   }
 }
 
+tasks.register('syncProtocJava', Sync) {
+  dependsOn(generateProtobuf)
+  from(protoOutputDir.get().dir('java')) {
+    from 'java'
+  }
+  into layout.buildDirectory.dir('generated/sources/protoc/java/main')
+}
+
 // Provide js, go, python output as distinct artifacts - the java output will be consumed in this project by
 // declaring it as a new sourceset, see below. This could definitely be more precisely stated, but given that
 // all are generated in the same docker image creation step, we don't need to get too clever here.
@@ -92,12 +99,10 @@ artifacts {
   }
 }
 
-compileJava.dependsOn generateProtobuf
-
 sourceSets {
   main {
     java {
-      srcDir(protoOutputDir.get().dir('java')).include("**/*.java")
+        srcDir(syncProtocJava)
     }
     resources {
       srcDir 'src/main/proto'
