@@ -73,11 +73,9 @@ TaskProvider<Task> generateProtobuf = Docker.registerDockerTask(project, 'genera
   }
 }
 
-tasks.register('syncProtocJava', Sync) {
+def syncProtocJava = tasks.register('syncProtocJava', Sync) {
   dependsOn(generateProtobuf)
-  from(protoOutputDir.get().dir('java')) {
-    from 'java'
-  }
+  from(protoOutputDir.get().dir('java'))
   into layout.buildDirectory.dir('generated/sources/protoc/java/main')
 }
 
@@ -85,16 +83,16 @@ tasks.register('syncProtocJava', Sync) {
 // declaring it as a new sourceset, see below. This could definitely be more precisely stated, but given that
 // all are generated in the same docker image creation step, we don't need to get too clever here.
 artifacts {
-  js(layout.buildDirectory.dir('generated/source/proto/main/js')) {
+  js(protoOutputDir.get().dir('js')) {
     builtBy generateProtobuf
   }
-  python(layout.buildDirectory.dir('generated/source/proto/main/python')) {
+  python(protoOutputDir.get().dir('python')) {
     builtBy generateProtobuf
   }
-  go(layout.buildDirectory.dir('generated/source/proto/main/go')) {
+  go(protoOutputDir.get().dir('go')) {
     builtBy generateProtobuf
   }
-  protoDocs(layout.buildDirectory.dir('generated/source/proto/main/proto-doc')) {
+  protoDocs(protoOutputDir.get().dir('proto-doc')) {
     builtBy generateProtobuf
   }
 }
