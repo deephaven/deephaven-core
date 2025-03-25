@@ -9,12 +9,15 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder;
+import io.deephaven.iceberg.internal.DataInstructionsProviderLoader;
 import io.deephaven.iceberg.location.IcebergTableLocationKey;
 import io.deephaven.iceberg.location.IcebergTableParquetLocationKey;
+import io.deephaven.iceberg.util.IcebergReadInstructions;
 import io.deephaven.iceberg.util.IcebergTableAdapter;
 import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.util.annotations.InternalUseOnly;
 import io.deephaven.util.channel.SeekableChannelsProvider;
+import io.deephaven.util.channel.SeekableChannelsProviderLoader;
 import org.apache.iceberg.*;
 import org.apache.iceberg.catalog.Catalog;
 import org.apache.iceberg.catalog.TableIdentifier;
@@ -30,6 +33,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
 
@@ -58,6 +62,13 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
      * The table identifier used to access this table.
      */
     private final TableIdentifier tableIdentifier;
+
+    /**
+     * The {@link TableDefinition} that will be used for life of this table. Although Iceberg table schema may change,
+     * schema changes are not supported in Deephaven.
+     */
+    @Deprecated
+    final TableDefinition tableDef;
 
     /**
      * The {@link Snapshot} from which to discover data files.
@@ -103,6 +114,68 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
                 tableAdapter, snapshot.snapshotId(), format, fileUri));
     }
 
+    /**
+     * @param tableAdapter The {@link IcebergTableAdapter} that will be used to access the table.
+     * @param instructions The instructions for customizations while reading.
+     * @param dataInstructionsProvider The provider for special instructions, to be used if special instructions not
+     *        provided in the {@code instructions}.
+     */
+    @Deprecated
+    public IcebergBaseLayout(
+            @NotNull final IcebergTableAdapter tableAdapter,
+            @NotNull final IcebergReadInstructions instructions,
+            @NotNull final DataInstructionsProviderLoader dataInstructionsProvider) {
+        this.tableAdapter = tableAdapter;
+        {
+            UUID uuid;
+            try {
+                uuid = tableAdapter.icebergTable().uuid();
+            } catch (final RuntimeException e) {
+                // The UUID method is unsupported for v1 Iceberg tables since uuid is optional for v1 tables.
+                uuid = null;
+            }
+            this.tableUuid = uuid;
+        }
+
+        this.catalogName = tableAdapter.catalog().name();
+        this.tableIdentifier = tableAdapter.tableIdentifier();
+
+        this.snapshot = tableAdapter.getSnapshot(instructions);
+        this.tableDef = tableAdapter.definition(instructions);
+
+        final String uriScheme = tableAdapter.locationUri().getScheme();
+        // Add the data instructions if provided as part of the IcebergReadInstructions, or else attempt to create
+        // data instructions from the properties collection and URI scheme.
+        final Object specialInstructions = instructions.dataInstructions()
+                .orElseGet(() -> dataInstructionsProvider.load(uriScheme));
+        {
+            // Start with user-supplied instructions (if provided).
+            final ParquetInstructions.Builder builder = new ParquetInstructions.Builder();
+
+            // Add the table definition.
+            builder.setTableDefinition(tableDef);
+
+            // Add any column rename mappings.
+            if (!instructions.columnRenames().isEmpty()) {
+                for (Map.Entry<String, String> entry : instructions.columnRenames().entrySet()) {
+                    builder.addColumnNameMapping(entry.getKey(), entry.getValue());
+                }
+            }
+            if (specialInstructions != null) {
+                builder.setSpecialInstructions(specialInstructions);
+            }
+            this.parquetInstructions = builder.build();
+        }
+
+        if ("s3".equals(uriScheme) || "s3a".equals(uriScheme) || "s3n".equals(uriScheme)) {
+            seekableChannelsProvider =
+                    SeekableChannelsProviderLoader.getInstance().load(Set.of("s3", "s3a", "s3n"), specialInstructions);
+        } else {
+            seekableChannelsProvider =
+                    SeekableChannelsProviderLoader.getInstance().load(uriScheme, specialInstructions);
+        }
+    }
+
     IcebergBaseLayout(
             @NotNull final IcebergTableAdapter tableAdapter,
             @NotNull final ParquetInstructions parquetInstructions,
@@ -124,6 +197,8 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
         this.parquetInstructions = Objects.requireNonNull(parquetInstructions);
         this.seekableChannelsProvider = Objects.requireNonNull(seekableChannelsProvider);
         this.snapshot = snapshot;
+        // not used in the updated constructors' path
+        this.tableDef = null;
     }
 
     abstract IcebergTableLocationKey keyFromDataFile(
