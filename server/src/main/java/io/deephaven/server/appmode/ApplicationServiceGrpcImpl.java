@@ -35,6 +35,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Singleton
 public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.ApplicationServiceImplBase
@@ -105,11 +106,12 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
             propagationJob.markUpdates();
         } else {
             // Run on current thread instead of scheduler
-            propagateUpdates();
+            propagateUpdates(Kind.CHANGE);
         }
     }
-
-    private synchronized void propagateUpdates() {
+    enum Kind {TIMER, CHANGE}
+    private synchronized void propagateUpdates(Kind updateKind) {
+        log.info().append("Propagating field changes ").append(updateKind.name()).append(":").append(accumulated.keySet().toString()).endl();
         propagationJob.markRunning();
         final Updater updater = new Updater();
         for (State state : accumulated.values()) {
@@ -136,6 +138,7 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
         for (FieldInfo fieldInfo : known.values()) {
             responseBuilder.addCreated(fieldInfo);
         }
+        log.info().append("Sending initial field list to subscription ").append(subscription.subscriptionId).append(": ").append(known.keySet().toString()).append("; Job pending? ").append(propagationJob.isScheduled).endl();
         if (subscription.send(responseBuilder.build())) {
             subscriptions.add(subscription);
         } else {
@@ -168,7 +171,7 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
         @Override
         public void run() {
             try {
-                propagateUpdates();
+                propagateUpdates(Kind.TIMER);
             } catch (final Throwable t) {
                 log.error(t).append("failed to propagate field changes").endl();
             }
@@ -198,7 +201,9 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
             }
             return true;
         }
+
     }
+    private static final AtomicInteger nextSubscriptionId = new AtomicInteger(0);
 
     /**
      * Subscription is a small helper class that kills the listener's subscription when its session expires.
@@ -206,6 +211,8 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
      * @implNote gRPC observers are not thread safe; we must synchronize around observer communication
      */
     private class Subscription implements Closeable {
+        private final int subscriptionId = nextSubscriptionId.getAndIncrement();
+
         private final SessionState session;
 
         // guarded by parent sync
@@ -220,9 +227,12 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
                 serverCall.setOnCancelHandler(this::onCancel);
             }
             session.addOnCloseCallback(this);
+            log.info().append("Subscription ").append(subscriptionId).append(" created").endl();
+
         }
 
         void onCancel() {
+            log.info().append("Subscription ").append(subscriptionId).append(" cancelled").endl();
             if (session.removeOnCloseCallback(this)) {
                 close();
             }
@@ -230,6 +240,8 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
 
         @Override
         public void close() {
+            log.info().append("Subscription ").append(subscriptionId).append(" closed").endl();
+
             remove(this);
         }
 
@@ -376,6 +388,14 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
                     .setApplicationId(id.applicationId())
                     .setApplicationName(id.applicationName())
                     .build();
+        }
+
+        @Override
+        public String toString() {
+            return "State{" +
+                    "id=" + id +
+                    ", type='" + type + '\'' +
+                    '}';
         }
     }
 
