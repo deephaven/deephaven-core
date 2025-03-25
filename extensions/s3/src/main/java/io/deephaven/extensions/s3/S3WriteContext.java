@@ -11,6 +11,8 @@ import io.deephaven.util.channel.SeekableChannelContext;
 import io.deephaven.util.datastructures.ThreadSafeMaxSizePool;
 import org.jetbrains.annotations.NotNull;
 
+import java.nio.ByteBuffer;
+
 /**
  * Context object used to store buffer pool for write requests.
  */
@@ -18,16 +20,16 @@ final class S3WriteContext extends BaseSeekableChannelContext implements Seekabl
     private static final Logger log = LoggerFactory.getLogger(S3WriteContext.class);
 
     /**
-     * Pool of {@link S3WriteRequest} objects used to write to S3. This pool is thread-safe and has a fixed size, which
-     * helps to limit the maximum number of concurrent write requests.
+     * Pool of {@link ByteBuffer} objects used to write to S3. This pool is thread-safe and has a fixed maximum size,
+     * which helps to limit the maximum number of concurrent write requests.
      */
-    final Pool<S3WriteRequest> requestPool;
+    final Pool<ByteBuffer> bufferPool;
 
     S3WriteContext(@NotNull final S3Instructions instructions) {
-        this.requestPool = new ThreadSafeMaxSizePool<>(
+        this.bufferPool = new ThreadSafeMaxSizePool<>(
                 instructions.numConcurrentWriteParts(),
-                () -> new S3WriteRequest(instructions.writePartSize()),
-                S3WriteRequest::reset);
+                () -> ByteBuffer.allocate(instructions.writePartSize()),
+                ByteBuffer::clear);
 
         if (log.isDebugEnabled()) {
             log.debug().append("Creating output stream context").endl();
