@@ -115,7 +115,7 @@ def testCppClient = Docker.registerDockerTask(project, 'testCppClient') {
         environmentVariable 'DH_HOST', deephavenDocker.containerName.get()
         environmentVariable 'DH_PORT', '10000'
     }
-    waitTimeMinutes = 2
+    waitTimeMinutes = 5
     containerDependencies.dependsOn = [deephavenDocker.healthyTask]
     containerDependencies.finalizedBy = deephavenDocker.endTask
     network = deephavenDocker.networkName.get()
