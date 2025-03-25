@@ -109,9 +109,14 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
             propagateUpdates(Kind.CHANGE);
         }
     }
-    enum Kind {TIMER, CHANGE}
+
+    enum Kind {
+        TIMER, CHANGE
+    }
+
     private synchronized void propagateUpdates(Kind updateKind) {
-        log.info().append("Propagating field changes ").append(updateKind.name()).append(":").append(accumulated.keySet().toString()).endl();
+        log.info().append("Propagating field changes ").append(updateKind.name()).append(":")
+                .append(accumulated.keySet().toString()).endl();
         propagationJob.markRunning();
         final Updater updater = new Updater();
         for (State state : accumulated.values()) {
@@ -138,7 +143,9 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
         for (FieldInfo fieldInfo : known.values()) {
             responseBuilder.addCreated(fieldInfo);
         }
-        log.info().append("Sending initial field list to subscription ").append(subscription.subscriptionId).append(": ").append(known.keySet().toString()).append("; Job pending? ").append(propagationJob.isScheduled).endl();
+        log.info().append("Sending initial field list to subscription ").append(subscription.subscriptionId)
+                .append(": ").append(known.keySet().toString()).append("; Job pending? ")
+                .append(propagationJob.isScheduled).endl();
         if (subscription.send(responseBuilder.build())) {
             subscriptions.add(subscription);
         } else {
@@ -203,6 +210,7 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
         }
 
     }
+
     private static final AtomicInteger nextSubscriptionId = new AtomicInteger(0);
 
     /**
