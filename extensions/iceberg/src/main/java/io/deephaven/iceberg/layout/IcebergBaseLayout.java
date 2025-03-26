@@ -9,12 +9,13 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder;
+import io.deephaven.iceberg.internal.DataInstructionsProviderLoader;
 import io.deephaven.iceberg.location.IcebergTableLocationKey;
 import io.deephaven.iceberg.location.IcebergTableParquetLocationKey;
 import io.deephaven.iceberg.util.IcebergReadInstructions;
 import io.deephaven.iceberg.util.IcebergTableAdapter;
 import io.deephaven.parquet.table.ParquetInstructions;
-import io.deephaven.iceberg.internal.DataInstructionsProviderLoader;
+import io.deephaven.util.annotations.InternalUseOnly;
 import io.deephaven.util.channel.SeekableChannelsProvider;
 import io.deephaven.util.channel.SeekableChannelsProviderLoader;
 import org.apache.iceberg.*;
@@ -31,27 +32,19 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
 
 import static io.deephaven.iceberg.base.IcebergUtils.dataFileUri;
 
+@InternalUseOnly
 public abstract class IcebergBaseLayout implements TableLocationKeyFinder<IcebergTableLocationKey> {
     /**
      * The {@link IcebergTableAdapter} that will be used to access the table.
      */
     final IcebergTableAdapter tableAdapter;
-
-    /**
-     * The instructions for customizations while reading.
-     */
-    final IcebergReadInstructions instructions;
-
-    /**
-     * The instructions for customizations while reading.
-     */
-    final DataInstructionsProviderLoader dataInstructionsProvider;
 
     /**
      * The UUID of the table, if available.
@@ -69,10 +62,12 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
      * The table identifier used to access this table.
      */
     private final TableIdentifier tableIdentifier;
+
     /**
      * The {@link TableDefinition} that will be used for life of this table. Although Iceberg table schema may change,
      * schema changes are not supported in Deephaven.
      */
+    @Deprecated(forRemoval = true)
     final TableDefinition tableDef;
 
     /**
@@ -125,13 +120,12 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
      * @param dataInstructionsProvider The provider for special instructions, to be used if special instructions not
      *        provided in the {@code instructions}.
      */
+    @Deprecated
     public IcebergBaseLayout(
             @NotNull final IcebergTableAdapter tableAdapter,
             @NotNull final IcebergReadInstructions instructions,
             @NotNull final DataInstructionsProviderLoader dataInstructionsProvider) {
         this.tableAdapter = tableAdapter;
-        this.instructions = instructions;
-        this.dataInstructionsProvider = dataInstructionsProvider;
         {
             UUID uuid;
             try {
@@ -180,6 +174,31 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
             seekableChannelsProvider =
                     SeekableChannelsProviderLoader.getInstance().load(uriScheme, specialInstructions);
         }
+    }
+
+    IcebergBaseLayout(
+            @NotNull final IcebergTableAdapter tableAdapter,
+            @NotNull final ParquetInstructions parquetInstructions,
+            @NotNull final SeekableChannelsProvider seekableChannelsProvider,
+            @Nullable final Snapshot snapshot) {
+        this.tableAdapter = Objects.requireNonNull(tableAdapter);
+        {
+            UUID uuid;
+            try {
+                uuid = tableAdapter.icebergTable().uuid();
+            } catch (final RuntimeException e) {
+                // The UUID method is unsupported for v1 Iceberg tables since uuid is optional for v1 tables.
+                uuid = null;
+            }
+            this.tableUuid = uuid;
+        }
+        this.catalogName = tableAdapter.catalog().name();
+        this.tableIdentifier = tableAdapter.tableIdentifier();
+        this.parquetInstructions = Objects.requireNonNull(parquetInstructions);
+        this.seekableChannelsProvider = Objects.requireNonNull(seekableChannelsProvider);
+        this.snapshot = snapshot;
+        // not used in the updated constructors' path
+        this.tableDef = null;
     }
 
     abstract IcebergTableLocationKey keyFromDataFile(
