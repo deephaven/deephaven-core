@@ -38,9 +38,17 @@ class S3WriteRequest {
      */
     CompletableFuture<UploadPartResponse> completionFuture;
 
-    S3WriteRequest(@NotNull final Pool<ByteBuffer> pool) {
+    S3WriteRequest(@NotNull final Pool<ByteBuffer> pool, final int writePartSize) {
         this.pool = pool;
         buffer = pool.take();
+        if (buffer.position() != 0) {
+            throw new IllegalStateException("Buffer from pool has incorrect position, position = " + buffer.position() +
+                    ", expected 0");
+        }
+        if (buffer.limit() != writePartSize) {
+            throw new IllegalStateException("Buffer from pool has incorrect limit, limit = " + buffer.limit() +
+                    ", expected " + writePartSize);
+        }
         partNumber = INVALID_PART_NUMBER;
     }
 

@@ -46,6 +46,12 @@ public abstract class S3Instructions implements LogOutputAppendable {
      * @see <a href="https://docs.aws.amazon.com/AmazonS3/latest/userguide/qfacts.html">Amazon S3 User Guide</a>
      */
     private static final int DEFAULT_WRITE_PART_SIZE = 10 << 20; // 10 MiB
+
+    /**
+     * The minimum allowed part size, as per AWS S3 API.
+     *
+     * @see <a href="https://docs.aws.amazon.com/AmazonS3/latest/userguide/qfacts.html">Amazon S3 User Guide</a>
+     */
     static final int MIN_WRITE_PART_SIZE = 5 << 20; // 5 MiB
 
     static final S3Instructions DEFAULT = builder().build();
