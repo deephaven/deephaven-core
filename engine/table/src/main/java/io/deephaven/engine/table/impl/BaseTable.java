@@ -68,7 +68,8 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
             Configuration.getInstance().getBooleanWithDefault("BaseTable.validateUpdateIndices", false);
     public static final boolean VALIDATE_UPDATE_OVERLAPS =
             Configuration.getInstance().getBooleanWithDefault("BaseTable.validateUpdateOverlaps", true);
-    private static final boolean VALIDATE_UPDATE_MCSEMPTY = Configuration.getInstance().getBooleanWithDefault("BaseTable.validateUpdateModifiedColumnSets", false);
+    private static final boolean VALIDATE_UPDATE_MCSEMPTY =
+            Configuration.getInstance().getBooleanWithDefault("BaseTable.validateUpdateModifiedColumnSets", false);
     public static final boolean PRINT_SERIALIZED_UPDATE_OVERLAPS =
             Configuration.getInstance().getBooleanWithDefault("BaseTable.printSerializedUpdateOverlaps", false);
 
