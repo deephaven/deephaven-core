@@ -3,15 +3,19 @@
 //
 package io.deephaven.iceberg.util;
 
+import io.deephaven.api.ColumnName;
+import io.deephaven.api.SortColumn;
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.context.StandaloneQueryScope;
+import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.locations.TableDataException;
+import io.deephaven.iceberg.internal.DataInstructionsProviderLoader;
 import io.deephaven.parquet.table.CompletedParquetWrite;
 import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.ParquetTools;
@@ -22,10 +26,14 @@ import org.apache.iceberg.DataFile;
 import org.apache.iceberg.DataFiles;
 import org.apache.iceberg.FileFormat;
 import org.apache.iceberg.HasTableOperations;
+import org.apache.iceberg.NullOrder;
 import org.apache.iceberg.PartitionData;
 import org.apache.iceberg.PartitionField;
 import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.Schema;
+import org.apache.iceberg.SortDirection;
+import org.apache.iceberg.SortField;
+import org.apache.iceberg.SortOrder;
 import org.apache.iceberg.TableMetadata;
 import org.apache.iceberg.TableProperties;
 import org.apache.iceberg.Transaction;
@@ -38,6 +46,7 @@ import org.apache.iceberg.types.Conversions;
 import org.apache.iceberg.types.Type;
 import org.apache.iceberg.types.Types;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -46,6 +55,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Random;
 
 import static io.deephaven.iceberg.base.IcebergUtils.convertToIcebergType;
@@ -70,7 +80,7 @@ public class IcebergTableWriter {
 
     /**
      * Store the partition spec of the Iceberg table at the time of creation of this writer instance and use it for all
-     * writes, so that even if the table spec, the writer will still work.
+     * writes, so that even if the table spec changes, the writer will still work.
      */
     private final PartitionSpec tableSpec;
 
@@ -93,6 +103,9 @@ public class IcebergTableWriter {
 
     /**
      * Mapping from Iceberg field IDs to Deephaven column names, populated inside the parquet file.
+     * <p>
+     * Use this map instead of the {@link TableWriterOptions#fieldIdToColumnName()} map after initialization to ensure
+     * that all columns in the table definition are accounted for.
      */
     private final Map<Integer, String> fieldIdToColumnName;
 
@@ -102,14 +115,39 @@ public class IcebergTableWriter {
     private final OutputFileFactory outputFileFactory;
 
     /**
+     * The sort order to write down for new data files.
+     */
+    private final SortOrder sortOrderToWrite;
+
+    /**
+     * The names of columns on which the tables will be sorted before writing to Iceberg.
+     */
+    private final Collection<SortColumn> sortColumnNames;
+
+    /**
+     * The special instructions to use for writing the Iceberg data files (might be S3Instructions or other cloud
+     * provider-specific instructions).
+     */
+    private final Object specialInstructions;
+
+    /**
      * Characters to be used for generating random variable names of length {@link #VARIABLE_NAME_LENGTH}.
      */
     private static final String CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
     private static final int VARIABLE_NAME_LENGTH = 6;
 
+    /**
+     * Create a new Iceberg table writer instance.
+     *
+     * @param tableWriterOptions The options to configure the behavior of this writer instance.
+     * @param tableAdapter The Iceberg table adapter corresponding to the Iceberg table to write to.
+     * @param dataInstructionsProvider The provider for special instructions, to be used if special instructions not
+     *        provided in the {@code tableWriterOptions}.
+     */
     IcebergTableWriter(
             final TableWriterOptions tableWriterOptions,
-            final IcebergTableAdapter tableAdapter) {
+            final IcebergTableAdapter tableAdapter,
+            final DataInstructionsProviderLoader dataInstructionsProvider) {
         this.tableWriterOptions = verifyWriterOptions(tableWriterOptions);
         this.table = tableAdapter.icebergTable();
 
@@ -132,6 +170,17 @@ public class IcebergTableWriter {
         outputFileFactory = OutputFileFactory.builderFor(table, 0, 0)
                 .format(FileFormat.PARQUET)
                 .build();
+
+        final SortOrderProviderInternal.SortOrderProviderImpl sortOrderProvider =
+                ((SortOrderProviderInternal.SortOrderProviderImpl) tableWriterOptions.sortOrderProvider());
+        sortColumnNames =
+                computeSortColumns(sortOrderProvider.getSortOrderToUse(table), sortOrderProvider.failOnUnmapped());
+        sortOrderToWrite = sortOrderProvider.getSortOrderToWrite(table);
+
+        final String uriScheme = tableAdapter.locationUri().getScheme();
+        this.specialInstructions = tableWriterOptions.dataInstructions()
+                .orElseGet(() -> dataInstructionsProvider.load(uriScheme));
+
     }
 
     private static TableParquetWriterOptions verifyWriterOptions(
@@ -261,6 +310,42 @@ public class IcebergTableWriter {
         return nameMappingDefault;
     }
 
+    private List<SortColumn> computeSortColumns(@NotNull final SortOrder sortOrder, final boolean failOnUnmapped) {
+        if (sortOrder.isUnsorted()) {
+            return List.of();
+        }
+        final List<SortField> sortFields = sortOrder.fields();
+        final List<SortColumn> sortColumns = new ArrayList<>(sortFields.size());
+        for (final SortField sortField : sortOrder.fields()) {
+            final boolean ascending;
+            if (sortField.nullOrder() == NullOrder.NULLS_FIRST && sortField.direction() == SortDirection.ASC) {
+                ascending = true;
+            } else if (sortField.nullOrder() == NullOrder.NULLS_LAST && sortField.direction() == SortDirection.DESC) {
+                ascending = false;
+            } else {
+                if (failOnUnmapped) {
+                    throw new IllegalArgumentException(
+                            "Cannot apply sort order " + sortOrder + " since Deephaven currently only supports " +
+                                    "sorting by {ASC, NULLS FIRST} or {DESC, NULLS LAST}");
+                }
+                return List.of();
+            }
+            final int fieldId = sortField.sourceId();
+            final String columnName = fieldIdToColumnName.get(fieldId);
+            if (columnName == null) {
+                if (failOnUnmapped) {
+                    throw new IllegalArgumentException("Cannot apply sort order " + sortOrder + " since column " +
+                            "corresponding to field ID " + fieldId + " not found in schema");
+                }
+                return List.of();
+            }
+            final SortColumn sortColumn =
+                    ascending ? SortColumn.asc(ColumnName.of(columnName)) : SortColumn.desc(ColumnName.of(columnName));
+            sortColumns.add(sortColumn);
+        }
+        return sortColumns;
+    }
+
     /**
      * Append the provided Deephaven {@link IcebergWriteInstructions#tables()} as new partitions to the existing Iceberg
      * table in a single snapshot. This method will not perform any compatibility checks between the existing schema and
@@ -294,7 +379,7 @@ public class IcebergTableWriter {
             final Pair<List<PartitionData>, List<String[]>> ret = partitionDataFromPaths(tableSpec, partitionPaths);
             partitionData = ret.getFirst();
             final List<String[]> dhTableUpdateStrings = ret.getSecond();
-            parquetFileInfo = writeParquet(partitionData, dhTableUpdateStrings, writeInstructions);
+            parquetFileInfo = writeTables(partitionData, dhTableUpdateStrings, writeInstructions);
         }
         return dataFilesFromParquet(parquetFileInfo, partitionData);
     }
@@ -439,8 +524,18 @@ public class IcebergTableWriter {
         return stringBuilder.toString();
     }
 
+    /**
+     * Write the provided Deephaven tables to parquet files and return a list of {@link CompletedParquetWrite} objects
+     * for each table written.
+     *
+     * @param partitionDataList The list of {@link PartitionData} objects for each table, empty if the table is not
+     *        partitioned.
+     * @param dhTableUpdateStrings The list of update strings to be applied using {@link Table#updateView}, empty if the
+     *        table is not partitioned.
+     * @param writeInstructions The instructions for customizations while writing.
+     */
     @NotNull
-    private List<CompletedParquetWrite> writeParquet(
+    private List<CompletedParquetWrite> writeTables(
             @NotNull final List<PartitionData> partitionDataList,
             @NotNull final List<String[]> dhTableUpdateStrings,
             @NotNull final IcebergWriteInstructions writeInstructions) {
@@ -460,26 +555,62 @@ public class IcebergTableWriter {
         final List<CompletedParquetWrite> parquetFilesWritten = new ArrayList<>(dhTables.size());
         final ParquetInstructions.OnWriteCompleted onWriteCompleted = parquetFilesWritten::add;
         final ParquetInstructions parquetInstructions = tableWriterOptions.toParquetInstructions(
-                onWriteCompleted, tableDefinition, fieldIdToColumnName);
+                onWriteCompleted, tableDefinition, fieldIdToColumnName, specialInstructions);
 
         // Write the data to parquet files
-        for (int idx = 0; idx < dhTables.size(); idx++) {
-            Table dhTable = dhTables.get(idx);
-            if (dhTable.numColumns() == 0) {
-                // Skip writing empty tables with no columns
-                continue;
-            }
-            final String newDataLocation;
+        final int numTables = dhTables.size();
+        for (int idx = 0; idx < numTables; idx++) {
+            final Table dhTable = dhTables.get(idx);
+            final PartitionData partitionData;
+            final String[] dhTableUpdateString;
             if (isPartitioned) {
-                newDataLocation = getDataLocation(partitionDataList.get(idx));
-                dhTable = dhTable.updateView(dhTableUpdateStrings.get(idx));
+                partitionData = partitionDataList.get(idx);
+                dhTableUpdateString = dhTableUpdateStrings.get(idx);
+            } else {
+                partitionData = null;
+                dhTableUpdateString = null;
+            }
+            writeTable(dhTable, isPartitioned, partitionData, dhTableUpdateString, parquetInstructions);
+        }
+        return parquetFilesWritten;
+    }
+
+    /**
+     * Write the provided Deephaven table to a parquet file.
+     *
+     * @param dhTable The Deephaven table to write.
+     * @param isPartitioned Whether the iceberg table is partitioned.
+     * @param partitionData The partition data for the table, null if the iceberg table is not partitioned.
+     * @param dhTableUpdateString The update string to apply to the table, null if the iceberg table is not partitioned.
+     * @param parquetInstructions The instructions for customizations while writing parquet.
+     */
+    private void writeTable(
+            @NotNull final Table dhTable,
+            final boolean isPartitioned,
+            @Nullable final PartitionData partitionData,
+            @Nullable final String[] dhTableUpdateString,
+            @NotNull final ParquetInstructions parquetInstructions) {
+        if (dhTable.numColumns() == 0) {
+            // Skip writing empty tables with no columns
+            return;
+        }
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            final String newDataLocation;
+            Table dhTableToWrite = dhTable;
+            if (isPartitioned) {
+                newDataLocation = getDataLocation(Objects.requireNonNull(partitionData));
+                dhTableToWrite = dhTableToWrite.updateView(Objects.requireNonNull(dhTableUpdateString));
             } else {
                 newDataLocation = getDataLocation();
             }
-            // TODO (deephaven-core#6343): Set writeDefault() values for required columns that not present in the table
-            ParquetTools.writeTable(dhTable, newDataLocation, parquetInstructions);
+
+            if (!sortColumnNames.isEmpty()) {
+                dhTableToWrite = dhTableToWrite.sort(sortColumnNames);
+            }
+
+            // TODO (deephaven-core#6343): Set writeDefault() values for required columns that are not present in table
+            ParquetTools.writeTable(dhTableToWrite, newDataLocation, parquetInstructions);
         }
-        return parquetFilesWritten;
     }
 
     /**
@@ -501,8 +632,7 @@ public class IcebergTableWriter {
     /**
      * Commit the changes to the Iceberg table by creating a snapshot.
      */
-    private void commit(
-            @NotNull final Iterable<DataFile> dataFiles) {
+    private void commit(@NotNull final Iterable<DataFile> dataFiles) {
         final Transaction icebergTransaction = table.newTransaction();
 
         // Append the new data files to the table
@@ -529,7 +659,8 @@ public class IcebergTableWriter {
                     .withPath(completedWrite.destination().toString())
                     .withFormat(FileFormat.PARQUET)
                     .withRecordCount(completedWrite.numRows())
-                    .withFileSizeInBytes(completedWrite.numBytes());
+                    .withFileSizeInBytes(completedWrite.numBytes())
+                    .withSortOrder(sortOrderToWrite);
             if (partitionSpec.isPartitioned()) {
                 dataFileBuilder.withPartition(partitionDataList.get(idx));
             }

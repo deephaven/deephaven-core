@@ -7,6 +7,7 @@ import com.google.auto.service.AutoService;
 import io.deephaven.engine.util.file.TrackedFileHandleFactory;
 import io.deephaven.util.channel.SeekableChannelsProvider;
 import io.deephaven.util.channel.SeekableChannelsProviderPlugin;
+import io.deephaven.util.channel.SeekableChannelsProviderPluginBase;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -16,7 +17,7 @@ import static io.deephaven.base.FileUtils.FILE_URI_SCHEME;
  * {@link SeekableChannelsProviderPlugin} implementation used for reading files from local disk.
  */
 @AutoService(SeekableChannelsProviderPlugin.class)
-public final class TrackedSeekableChannelsProviderPlugin implements SeekableChannelsProviderPlugin {
+public final class TrackedSeekableChannelsProviderPlugin extends SeekableChannelsProviderPluginBase {
 
     @Override
     public boolean isCompatible(@NotNull final String uriScheme, @Nullable final Object object) {
@@ -24,7 +25,7 @@ public final class TrackedSeekableChannelsProviderPlugin implements SeekableChan
     }
 
     @Override
-    public SeekableChannelsProvider createProvider(@NotNull final String uriScheme, @Nullable final Object object) {
+    public SeekableChannelsProvider createProviderImpl(@NotNull final String uriScheme, @Nullable final Object object) {
         if (!isCompatible(uriScheme, object)) {
             throw new IllegalArgumentException("Arguments not compatible, provided uri scheme " + uriScheme);
         }

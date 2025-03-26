@@ -43,7 +43,7 @@ public class TestKeyedArrayBackedInputTable {
 
         assertTableEquals(input, kabut);
 
-        final InputTableUpdater inputTableUpdater = (InputTableUpdater) kabut.getAttribute(Table.INPUT_TABLE_ATTRIBUTE);
+        final InputTableUpdater inputTableUpdater = InputTableUpdater.from(kabut);
         TestCase.assertNotNull(inputTableUpdater);
 
         final Table input2 = TableTools.newTable(stringCol("Name", "Randy"), stringCol("Employer", "USGS"));
@@ -101,8 +101,7 @@ public class TestKeyedArrayBackedInputTable {
 
         assertTableEquals(input, aoabmt);
 
-        final InputTableUpdater inputTableUpdater =
-                (InputTableUpdater) aoabmt.getAttribute(Table.INPUT_TABLE_ATTRIBUTE);
+        final InputTableUpdater inputTableUpdater = InputTableUpdater.from(aoabmt);
         TestCase.assertNotNull(inputTableUpdater);
 
         final Table input2 =
@@ -127,7 +126,7 @@ public class TestKeyedArrayBackedInputTable {
 
         final Table fs = kabut.where("Name.length() == 4").sort("Name");
 
-        final InputTableUpdater inputTableUpdater = (InputTableUpdater) fs.getAttribute(Table.INPUT_TABLE_ATTRIBUTE);
+        final InputTableUpdater inputTableUpdater = InputTableUpdater.from(fs);
         TestCase.assertNotNull(inputTableUpdater);
 
         final Table delete = TableTools.newTable(stringCol("Name", "Fred"));
@@ -149,7 +148,7 @@ public class TestKeyedArrayBackedInputTable {
 
         assertTableEquals(input, kabut);
 
-        final InputTableUpdater inputTableUpdater = (InputTableUpdater) kabut.getAttribute(Table.INPUT_TABLE_ATTRIBUTE);
+        final InputTableUpdater inputTableUpdater = InputTableUpdater.from(kabut);
         TestCase.assertNotNull(inputTableUpdater);
 
         final Table input2 =

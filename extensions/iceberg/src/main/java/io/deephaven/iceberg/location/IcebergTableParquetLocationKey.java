@@ -3,10 +3,12 @@
 //
 package io.deephaven.iceberg.location;
 
+import io.deephaven.api.SortColumn;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.table.impl.locations.TableLocationKey;
 import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
+import io.deephaven.util.annotations.InternalUseOnly;
 import org.apache.iceberg.DataFile;
 import org.apache.iceberg.ManifestFile;
 import io.deephaven.util.channel.SeekableChannelsProvider;
@@ -18,6 +20,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.net.URI;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
@@ -25,6 +28,7 @@ import java.util.UUID;
 /**
  * {@link TableLocationKey} implementation for use with data stored in Iceberg tables in the parquet format.
  */
+@InternalUseOnly
 public class IcebergTableParquetLocationKey extends ParquetTableLocationKey implements IcebergTableLocationKey {
 
     private static final String IMPLEMENTATION_NAME = IcebergTableParquetLocationKey.class.getSimpleName();
@@ -63,10 +67,13 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
      */
     private final long manifestSequenceNumber;
 
-    private final Schema schema;
+    // private final Schema schema;
 
     @NotNull
     private final ParquetInstructions readInstructions;
+
+    @NotNull
+    private final List<SortColumn> sortedColumns;
 
     private int cachedHashCode;
 
@@ -85,19 +92,21 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
      *        be made, so the calling code is free to mutate the map after this call
      * @param readInstructions the instructions for customizations while reading
      * @param channelsProvider the provider for reading the file
+     * @param sortedColumns an ordered list of columns this location is sorted by.
      */
     public IcebergTableParquetLocationKey(
             @Nullable final String catalogName,
             @Nullable final UUID tableUuid,
             @NotNull final TableIdentifier tableIdentifier,
             @NotNull final ManifestFile manifestFile,
-            @NotNull final PartitionSpec spec,
+            // @NotNull final PartitionSpec spec,
             @NotNull final DataFile dataFile,
             @NotNull final URI fileUri,
             final int order,
             @Nullable final Map<String, Comparable<?>> partitions,
             @NotNull final ParquetInstructions readInstructions,
-            @NotNull final SeekableChannelsProvider channelsProvider) {
+            @NotNull final SeekableChannelsProvider channelsProvider,
+            @NotNull final List<SortColumn> sortedColumns) {
         super(fileUri, order, partitions, channelsProvider);
 
         this.catalogName = catalogName;
@@ -117,22 +126,23 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
         manifestSequenceNumber = manifestFile.sequenceNumber();
 
         // todo
-        schema = spec.schema();
+        // schema = spec.schema();
 
         this.readInstructions = readInstructions;
+        this.sortedColumns = Require.neqNull(sortedColumns, "sortedColumns");
     }
 
-    /**
-     * This is the <b>latest</b> {@link Schema} at the time the {@link ManifestFile} was written.
-     */
-    public Schema latestSchema() {
-        return schema;
-    }
-
-    public Schema writersSchema() {
-        // Note: this does not exist
-        throw new UnsupportedOperationException();
-    }
+    // /**
+    // * This is the <b>latest</b> {@link Schema} at the time the {@link ManifestFile} was written.
+    // */
+    // public Schema latestSchema() {
+    // return schema;
+    // }
+    //
+    // public Schema writersSchema() {
+    // // Note: this does not exist
+    // throw new UnsupportedOperationException();
+    // }
 
     @Override
     public String getImplementationName() {
@@ -142,6 +152,14 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
     @Override
     public ParquetInstructions readInstructions() {
         return readInstructions;
+    }
+
+    /**
+     * Get the ordered list of columns this location is sorted by.
+     */
+    @NotNull
+    List<SortColumn> sortedColumns() {
+        return sortedColumns;
     }
 
     /**
@@ -217,6 +235,7 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
                 && fileSequenceNumber == otherTyped.fileSequenceNumber
                 && dataFilePos == otherTyped.dataFilePos
                 && manifestSequenceNumber == otherTyped.manifestSequenceNumber
+                && sortedColumns.equals(otherTyped.sortedColumns)
                 && uri.equals(otherTyped.uri);
     }
 
@@ -232,6 +251,7 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
             result = prime * result + Long.hashCode(fileSequenceNumber);
             result = prime * result + Long.hashCode(dataFilePos);
             result = prime * result + Long.hashCode(manifestSequenceNumber);
+            result = prime * result + Objects.hashCode(sortedColumns);
             result = prime * result + uri.hashCode();
             // Don't use 0; that's used by StandaloneTableLocationKey, and also our sentinel for the need to compute
             if (result == 0) {

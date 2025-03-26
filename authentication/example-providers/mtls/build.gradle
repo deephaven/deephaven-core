@@ -5,4 +5,6 @@ plugins {
 
 dependencies {
     shadow project(':grpc-java:grpc-mtls')
+    shadow platform(libs.grpc.bom)
+    shadow libs.grpc.api
 }

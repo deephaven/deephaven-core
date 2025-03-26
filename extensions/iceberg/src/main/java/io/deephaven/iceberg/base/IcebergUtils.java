@@ -3,32 +3,30 @@
 //
 package io.deephaven.iceberg.base;
 
+import io.deephaven.base.FileUtils;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.locations.TableDataException;
+import io.deephaven.iceberg.relative.RelativeFileIO;
 import io.deephaven.iceberg.internal.SpecAndSchema;
 import io.deephaven.iceberg.internal.SpecAndSchema2;
 import org.apache.iceberg.DataFile;
-import org.apache.iceberg.ManifestContent;
-import org.apache.iceberg.ManifestFile;
-import org.apache.iceberg.ManifestFiles;
 import org.apache.iceberg.PartitionField;
 import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.Schema;
-import org.apache.iceberg.Snapshot;
 import org.apache.iceberg.Table;
 import org.apache.iceberg.catalog.Catalog;
 import org.apache.iceberg.catalog.Namespace;
 import org.apache.iceberg.catalog.SupportsNamespaces;
 import org.apache.iceberg.exceptions.AlreadyExistsException;
 import org.apache.iceberg.exceptions.NamespaceNotEmptyException;
+import org.apache.iceberg.io.FileIO;
 import org.apache.iceberg.types.Type;
 import org.apache.iceberg.types.Types;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.math.BigDecimal;
+import java.net.URI;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -39,8 +37,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 public final class IcebergUtils {
 
@@ -61,70 +57,16 @@ public final class IcebergUtils {
         // TODO (deephaven-core#6327) Add support for more types like ZonedDateTime, Big Decimals, and Lists
     }
 
-    /**
-     * Get a stream of all {@link DataFile} objects from the given {@link Table} and {@link Snapshot}.
-     *
-     * @param table The {@link Table} to retrieve data files for.
-     * @param snapshot The {@link Snapshot} to retrieve data files from.
-     *
-     * @return A stream of {@link DataFile} objects.
-     */
-    public static Stream<DataFile> allDataFiles(@NotNull final Table table, @NotNull final Snapshot snapshot) {
-        return allManifestFiles(table, snapshot)
-                .map(manifestFile -> ManifestFiles.read(manifestFile, table.io()))
-                .flatMap(IcebergUtils::toStream);
+    private static String path(@NotNull final String path, @NotNull final FileIO io) {
+        return io instanceof RelativeFileIO ? ((RelativeFileIO) io).absoluteLocation(path) : path;
     }
 
-    /**
-     * Get a stream of all {@link ManifestFile} objects from the given {@link Table} and {@link Snapshot}.
-     *
-     * @param table The {@link Table} to retrieve manifest files for.
-     * @param snapshot The {@link Snapshot} to retrieve manifest files from.
-     *
-     * @return A stream of {@link ManifestFile} objects.
-     */
-    public static Stream<ManifestFile> allManifestFiles(@NotNull final Table table, @NotNull final Snapshot snapshot) {
-        return allManifests(table, snapshot).stream()
-                .peek(manifestFile -> {
-                    if (manifestFile.content() != ManifestContent.DATA) {
-                        throw new TableDataException(
-                                String.format(
-                                        "%s:%d - only DATA manifest files are currently supported, encountered %s",
-                                        table, snapshot.snapshotId(), manifestFile.content()));
-                    }
-                });
+    public static URI locationUri(@NotNull final Table table) {
+        return FileUtils.convertToURI(path(table.location(), table.io()), true);
     }
 
-    /**
-     * Retrieves a {@link List} of manifest files from the given {@link Table} and {@link Snapshot}.
-     *
-     * @param table The {@link Table} to retrieve manifest files for.
-     * @param snapshot The {@link Snapshot} to retrieve manifest files from.
-     *
-     * @return A {@link List} of {@link ManifestFile} objects.
-     * @throws TableDataException if there is an error retrieving the manifest files.
-     */
-    static List<ManifestFile> allManifests(@NotNull final Table table, @NotNull final Snapshot snapshot) {
-        try {
-            return snapshot.allManifests(table.io());
-        } catch (final RuntimeException e) {
-            throw new TableDataException(
-                    String.format("%s:%d - error retrieving manifest files", table, snapshot.snapshotId()), e);
-        }
-    }
-
-    /**
-     * Convert a {@link org.apache.iceberg.io.CloseableIterable} to a {@link Stream} that will close the iterable when
-     * the stream is closed.
-     */
-    public static <T> Stream<T> toStream(final org.apache.iceberg.io.CloseableIterable<T> iterable) {
-        return StreamSupport.stream(iterable.spliterator(), false).onClose(() -> {
-            try {
-                iterable.close();
-            } catch (final IOException e) {
-                throw new UncheckedIOException(e);
-            }
-        });
+    public static URI dataFileUri(@NotNull final Table table, @NotNull final DataFile dataFile) {
+        return FileUtils.convertToURI(path(dataFile.path().toString(), table.io()), false);
     }
 
     /**

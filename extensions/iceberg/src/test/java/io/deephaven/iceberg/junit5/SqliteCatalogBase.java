@@ -4,6 +4,8 @@
 package io.deephaven.iceberg.junit5;
 
 import io.deephaven.UncheckedDeephavenException;
+import io.deephaven.api.ColumnName;
+import io.deephaven.api.SortColumn;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
@@ -12,7 +14,7 @@ import io.deephaven.engine.table.impl.PartitionAwareSourceTable;
 import io.deephaven.engine.table.impl.select.FormulaEvaluationException;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.util.TableTools;
-import io.deephaven.iceberg.base.IcebergUtils;
+import io.deephaven.iceberg.base.IcebergTestUtils;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.iceberg.sqlite.SqliteHelper;
 import io.deephaven.iceberg.util.IcebergCatalogAdapter;
@@ -22,6 +24,7 @@ import io.deephaven.iceberg.util.IcebergTableImpl;
 import io.deephaven.iceberg.util.IcebergTableWriter;
 import io.deephaven.iceberg.util.IcebergUpdateMode;
 import io.deephaven.iceberg.util.IcebergWriteInstructions;
+import io.deephaven.iceberg.util.SortOrderProvider;
 import io.deephaven.iceberg.util.TableParquetWriterOptions;
 import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.ParquetTools;
@@ -29,14 +32,16 @@ import io.deephaven.parquet.table.location.ParquetTableLocationKey;
 import io.deephaven.qst.type.Type;
 import org.apache.iceberg.AppendFiles;
 import org.apache.iceberg.DataFile;
+import org.apache.iceberg.NullOrder;
 import org.apache.iceberg.Schema;
 import org.apache.iceberg.Snapshot;
+import org.apache.iceberg.SortOrder;
 import org.apache.iceberg.catalog.Namespace;
 import org.apache.iceberg.catalog.TableIdentifier;
 import org.apache.iceberg.types.Types;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
-import org.apache.parquet.schema.LogicalTypeAnnotation;
 import org.apache.parquet.schema.MessageType;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -48,6 +53,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -56,6 +62,9 @@ import java.util.stream.Collectors;
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
 import static io.deephaven.engine.util.TableTools.col;
 import static io.deephaven.engine.util.TableTools.doubleCol;
+import static io.deephaven.engine.util.TableTools.intCol;
+import static io.deephaven.engine.util.TableTools.longCol;
+import static io.deephaven.iceberg.layout.IcebergBaseLayout.computeSortedColumns;
 import static org.apache.parquet.schema.LogicalTypeAnnotation.intType;
 import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.DOUBLE;
 import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.INT32;
@@ -88,7 +97,7 @@ public abstract class SqliteCatalogBase {
         engineCleanup.tearDown();
     }
 
-    private TableParquetWriterOptions.Builder writerOptionsBuilder() {
+    protected TableParquetWriterOptions.Builder writerOptionsBuilder() {
         final TableParquetWriterOptions.Builder builder = TableParquetWriterOptions.builder();
         final Object dataInstructions;
         if ((dataInstructions = dataInstructions()) != null) {
@@ -560,7 +569,7 @@ public abstract class SqliteCatalogBase {
             final TableIdentifier tableIdentifier,
             final List<Table> dhTables) {
         final org.apache.iceberg.Table table = catalogAdapter.catalog().loadTable(tableIdentifier);
-        final List<DataFile> dataFileList = IcebergUtils.allDataFiles(table, table.currentSnapshot())
+        final List<DataFile> dataFileList = IcebergTestUtils.allDataFiles(table, table.currentSnapshot())
                 .collect(Collectors.toList());
         assertThat(dataFileList).hasSize(dhTables.size());
 
@@ -581,7 +590,7 @@ public abstract class SqliteCatalogBase {
      */
     private List<String> getAllParquetFilesFromDataFiles(final TableIdentifier tableIdentifier) {
         final org.apache.iceberg.Table table = catalogAdapter.catalog().loadTable(tableIdentifier);
-        return IcebergUtils.allDataFiles(table, table.currentSnapshot())
+        return IcebergTestUtils.allDataFiles(table, table.currentSnapshot())
                 .map(dataFile -> dataFile.path().toString())
                 .collect(Collectors.toList());
     }
@@ -633,7 +642,7 @@ public abstract class SqliteCatalogBase {
         verifyDataFiles(tableIdentifier, List.of(source, anotherSource, moreData));
 
         {
-            // Verify thaty we read the data files in the correct order
+            // Verify that we read the data files in the correct order
             final Table fromIceberg = tableAdapter.table();
             assertTableEquals(TableTools.merge(moreData, source, anotherSource), fromIceberg);
         }
@@ -1036,5 +1045,432 @@ public abstract class SqliteCatalogBase {
 
         final Table expected2 = TableTools.merge(expected, part3.update("PC = `cat`"));
         assertTableEquals(expected2, fromIcebergRefreshing.select());
+    }
+
+    /**
+     * Verify that the sort order for the data files in the table match the expected sort order.
+     */
+    private static void verifySortOrder(
+            final IcebergTableAdapter tableAdapter,
+            final List<List<SortColumn>> expectedSortOrders) {
+        verifySortOrder(tableAdapter, expectedSortOrders,
+                ParquetInstructions.EMPTY.withTableDefinition(tableAdapter.definition()));
+    }
+
+    private static void verifySortOrder(
+            @NotNull final IcebergTableAdapter tableAdapter,
+            @NotNull final List<List<SortColumn>> expectedSortOrders,
+            @NotNull final ParquetInstructions readInstructions) {
+        final org.apache.iceberg.Table icebergTable = tableAdapter.icebergTable();
+        final List<List<SortColumn>> actualSortOrders = new ArrayList<>();
+        IcebergTestUtils.allDataFiles(icebergTable, icebergTable.currentSnapshot())
+                .forEach(dataFile -> actualSortOrders
+                        .add(computeSortedColumns(icebergTable, dataFile, readInstructions)));
+        assertThat(actualSortOrders).isEqualTo(expectedSortOrders);
+    }
+
+    @Test
+    void testApplyDefaultSortOrder() {
+        final Table source = TableTools.newTable(
+                intCol("intCol", 15, 0, 32, 33, 19),
+                doubleCol("doubleCol", 10.5, 2.5, 3.5, 40.5, 0.5),
+                longCol("longCol", 20L, 50L, 0L, 10L, 5L));
+        final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
+        final IcebergTableAdapter tableAdapter = catalogAdapter.createTable(tableIdentifier, source.getDefinition());
+        final IcebergTableWriter tableWriterWithoutSorting = tableAdapter.tableWriter(writerOptionsBuilder()
+                .tableDefinition(source.getDefinition())
+                .build());
+        tableWriterWithoutSorting.append(IcebergWriteInstructions.builder()
+                .addTables(source)
+                .build());
+
+        // Verify that the data file is not sorted
+        verifySortOrder(tableAdapter, List.of(List.of()));
+
+        // Update the default sort order of the underlying iceberg table
+        final org.apache.iceberg.Table icebergTable = tableAdapter.icebergTable();
+        assertThat(icebergTable.sortOrder().fields()).hasSize(0);
+        icebergTable.replaceSortOrder().asc("intCol").commit();
+        assertThat(icebergTable.sortOrder().fields()).hasSize(1);
+
+        // Append more unsorted data to the table with enforcing sort order
+        final IcebergTableWriter tableWriterWithSorting = tableAdapter.tableWriter(writerOptionsBuilder()
+                .tableDefinition(source.getDefinition())
+                .sortOrderProvider(SortOrderProvider.useTableDefault())
+                .build());
+        tableWriterWithSorting.append(IcebergWriteInstructions.builder()
+                .addTables(source)
+                .build());
+
+        // Verify that the new data file is sorted
+        verifySortOrder(tableAdapter, List.of(
+                List.of(SortColumn.asc(ColumnName.of("intCol"))),
+                List.of()));
+
+        // Append more unsorted data to the table without enforcing sort order
+        tableWriterWithoutSorting.append(IcebergWriteInstructions.builder()
+                .addTables(source)
+                .build());
+
+        // Verify that the new data file is not sorted
+        verifySortOrder(tableAdapter, List.of(
+                List.of(),
+                List.of(SortColumn.asc(ColumnName.of("intCol"))),
+                List.of()));
+    }
+
+    private IcebergTableAdapter buildTableToTestSortOrder(
+            final TableIdentifier tableIdentifier,
+            final TableDefinition tableDefinition) {
+        final IcebergTableAdapter tableAdapter = catalogAdapter.createTable(tableIdentifier, tableDefinition);
+
+        final org.apache.iceberg.Table icebergTable = tableAdapter.icebergTable();
+        assertThat(icebergTable.sortOrders()).hasSize(1); // Default unsorted sort order
+        assertThat(icebergTable.sortOrder().fields()).hasSize(0);
+
+        icebergTable.replaceSortOrder().asc("intCol").commit();
+        icebergTable.replaceSortOrder().asc("doubleCol").desc("longCol").commit();
+        assertThat(icebergTable.sortOrders()).hasSize(3);
+        assertThat(icebergTable.sortOrder().fields()).hasSize(2);
+        return tableAdapter;
+    }
+
+    @Test
+    void testSortByDefaultSortOrder() {
+        final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
+        final Table source = TableTools.newTable(
+                intCol("intCol", 15, 0, 32, 33, 19),
+                doubleCol("doubleCol", 10.5, 2.5, 3.5, 40.5, 0.5),
+                longCol("longCol", 20L, 50L, 0L, 10L, 5L));
+        final IcebergTableAdapter tableAdapter = buildTableToTestSortOrder(tableIdentifier, source.getDefinition());
+
+        final IcebergTableWriter tableWriter = tableAdapter.tableWriter(writerOptionsBuilder()
+                .tableDefinition(source.getDefinition())
+                .sortOrderProvider(SortOrderProvider.useTableDefault())
+                .build());
+        tableWriter.append(IcebergWriteInstructions.builder()
+                .addTables(source)
+                .build());
+        final List<SortColumn> expectedSortOrder =
+                List.of(SortColumn.asc(ColumnName.of("doubleCol")), SortColumn.desc(ColumnName.of("longCol")));
+        verifySortOrder(tableAdapter, List.of(expectedSortOrder));
+        final Table fromIceberg = tableAdapter.table();
+        final Table expected = source.sort(expectedSortOrder);
+        assertTableEquals(expected, fromIceberg);
+    }
+
+    @Test
+    void testSortBySortOrderId() {
+        final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
+        final Table source = TableTools.newTable(
+                intCol("intCol", 15, 0, 32, 33, 19),
+                doubleCol("doubleCol", 10.5, 2.5, 3.5, 40.5, 0.5),
+                longCol("longCol", 20L, 50L, 0L, 10L, 5L));
+        final IcebergTableAdapter tableAdapter = buildTableToTestSortOrder(tableIdentifier, source.getDefinition());
+
+        final IcebergTableWriter tableWriter = tableAdapter.tableWriter(writerOptionsBuilder()
+                .tableDefinition(source.getDefinition())
+                .sortOrderProvider(SortOrderProvider.fromSortId(1))
+                .build());
+        tableWriter.append(IcebergWriteInstructions.builder()
+                .addTables(source)
+                .build());
+        final List<SortColumn> expectedSortOrder = List.of(SortColumn.asc(ColumnName.of("intCol")));
+        verifySortOrder(tableAdapter, List.of(expectedSortOrder));
+        final Table fromIceberg = tableAdapter.table();
+        final Table expected = source.sort(expectedSortOrder);
+        assertTableEquals(expected, fromIceberg);
+    }
+
+    @Test
+    void testSortByDisableSorting() {
+        final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
+        final Table source = TableTools.newTable(
+                intCol("intCol", 15, 0, 32, 33, 19),
+                doubleCol("doubleCol", 10.5, 2.5, 3.5, 40.5, 0.5),
+                longCol("longCol", 20L, 50L, 0L, 10L, 5L));
+        final IcebergTableAdapter tableAdapter = buildTableToTestSortOrder(tableIdentifier, source.getDefinition());
+
+        try {
+            tableAdapter.tableWriter(writerOptionsBuilder()
+                    .tableDefinition(source.getDefinition())
+                    .sortOrderProvider(SortOrderProvider.unsorted().withFailOnUnmapped(true))
+                    .build());
+            failBecauseExceptionWasNotThrown(UnsupportedOperationException.class);
+        } catch (UnsupportedOperationException e) {
+            assertThat(e).hasMessageContaining("Cannot set failOnUnmapped for unsorted sort order provider");
+        }
+
+        final IcebergTableWriter tableWriter = tableAdapter.tableWriter(writerOptionsBuilder()
+                .tableDefinition(source.getDefinition())
+                .sortOrderProvider(SortOrderProvider.unsorted())
+                .build());
+        tableWriter.append(IcebergWriteInstructions.builder()
+                .addTables(source)
+                .build());
+        final List<SortColumn> expectedSortOrder = List.of();
+        verifySortOrder(tableAdapter, List.of(expectedSortOrder));
+        final Table fromIceberg = tableAdapter.table();
+        assertTableEquals(source, fromIceberg);
+    }
+
+    @Test
+    void testSortBySortOrder() {
+        final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
+        final Table source = TableTools.newTable(
+                intCol("intCol", 15, 0, 32, 33, 19),
+                doubleCol("doubleCol", 10.5, 2.5, 3.5, 40.5, 0.5),
+                longCol("longCol", 20L, 50L, 0L, 10L, 5L));
+        final IcebergTableAdapter tableAdapter = buildTableToTestSortOrder(tableIdentifier, source.getDefinition());
+
+        final org.apache.iceberg.Table icebergTable = tableAdapter.icebergTable();
+        final SortOrder sortOrder = icebergTable.sortOrders().get(1);
+        final IcebergTableWriter tableWriter = tableAdapter.tableWriter(writerOptionsBuilder()
+                .tableDefinition(source.getDefinition())
+                .sortOrderProvider(SortOrderProvider.fromSortOrder(sortOrder))
+                .build());
+        tableWriter.append(IcebergWriteInstructions.builder()
+                .addTables(source)
+                .build());
+        final List<SortColumn> expectedSortOrder = List.of(SortColumn.asc(ColumnName.of("intCol")));
+        verifySortOrder(tableAdapter, List.of(expectedSortOrder));
+        final Table fromIceberg = tableAdapter.table();
+        final Table expected = source.sort(expectedSortOrder);
+        assertTableEquals(expected, fromIceberg);
+    }
+
+    @Test
+    void testSortByDelegatingSortOrder() {
+        final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
+        final Table source = TableTools.newTable(
+                intCol("intCol", 15, 0, 32, 33, 19),
+                doubleCol("doubleCol", 10.5, 2.5, 3.5, 40.5, 0.5),
+                longCol("longCol", 20L, 50L, 0L, 10L, 5L));
+        final IcebergTableAdapter tableAdapter = buildTableToTestSortOrder(tableIdentifier, source.getDefinition());
+
+        final org.apache.iceberg.Table icebergTable = tableAdapter.icebergTable();
+        final SortOrder sortOrder = SortOrder.builderFor(icebergTable.schema())
+                .asc("doubleCol")
+                .desc("longCol")
+                .asc("intCol")
+                .build();
+
+        try {
+            tableAdapter.tableWriter(writerOptionsBuilder()
+                    .tableDefinition(source.getDefinition())
+                    .sortOrderProvider(SortOrderProvider.fromSortOrder(sortOrder))
+                    .build());
+            failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
+        } catch (IllegalArgumentException e) {
+            assertThat(e).hasMessageContaining(
+                    "Provided sort order with id 1 is not included in the table's sort orders");
+        }
+
+        try {
+            tableAdapter.tableWriter(writerOptionsBuilder()
+                    .tableDefinition(source.getDefinition())
+                    .sortOrderProvider(SortOrderProvider.fromSortOrder(sortOrder).withId(1))
+                    .build());
+            failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
+        } catch (IllegalArgumentException e) {
+            assertThat(e).hasMessageContaining("does not satisfy the table's sort order with id 1");
+        }
+
+        final IcebergTableWriter tableWriter = tableAdapter.tableWriter(writerOptionsBuilder()
+                .tableDefinition(source.getDefinition())
+                .sortOrderProvider(SortOrderProvider.fromSortOrder(sortOrder).withId(2))
+                .build());
+        tableWriter.append(IcebergWriteInstructions.builder()
+                .addTables(source)
+                .build());
+        final List<SortColumn> expectedSortOrder =
+                List.of(SortColumn.asc(ColumnName.of("doubleCol")), SortColumn.desc(ColumnName.of("longCol")));
+        verifySortOrder(tableAdapter, List.of(expectedSortOrder));
+        final Table fromIceberg = tableAdapter.table();
+        final Table expected = source.sort(expectedSortOrder);
+        assertTableEquals(expected, fromIceberg);
+    }
+
+    @Test
+    void testFailIfSortOrderUnmapped() {
+        final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
+        final Table source = TableTools.newTable(
+                intCol("intCol", 15, 0, 32, 33, 19),
+                doubleCol("doubleCol", 10.5, 2.5, 3.5, 40.5, 0.5),
+                longCol("longCol", 20L, 50L, 0L, 10L, 5L));
+        final IcebergTableAdapter tableAdapter = buildTableToTestSortOrder(tableIdentifier, source.getDefinition());
+
+        final org.apache.iceberg.Table icebergTable = tableAdapter.icebergTable();
+
+        // Add a sort order which cannot be applied by deephaven
+        icebergTable.replaceSortOrder().asc("doubleCol", NullOrder.NULLS_LAST).commit();
+
+
+        try {
+            tableAdapter.tableWriter(writerOptionsBuilder()
+                    .tableDefinition(source.getDefinition())
+                    .build());
+            failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
+        } catch (IllegalArgumentException e) {
+            assertThat(e).hasMessageContaining("Deephaven currently only supports sorting by " +
+                    "{ASC, NULLS FIRST} or {DESC, NULLS LAST}");
+        }
+
+        final IcebergTableWriter tableWriter = tableAdapter.tableWriter(writerOptionsBuilder()
+                .tableDefinition(source.getDefinition())
+                .sortOrderProvider(SortOrderProvider.useTableDefault().withFailOnUnmapped(false))
+                .build());
+        tableWriter.append(IcebergWriteInstructions.builder()
+                .addTables(source)
+                .build());
+        // Empty sort order since the sort order cannot be applied
+        verifySortOrder(tableAdapter, List.of(List.of()));
+        final Table fromIceberg = tableAdapter.table();
+        assertTableEquals(source, fromIceberg);
+    }
+
+    @Test
+    void testSortOrderWithColumnRename() {
+        final Table source = TableTools.newTable(
+                intCol("intCol", 15, 0, 32, 33, 19),
+                doubleCol("doubleCol", 10.5, 2.5, 3.5, 40.5, 0.5),
+                longCol("longCol", 20L, 50L, 0L, 10L, 5L));
+        final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
+        final IcebergTableAdapter tableAdapter = catalogAdapter.createTable(tableIdentifier, source.getDefinition());
+
+        // Update the default sort order of the underlying iceberg table
+        final org.apache.iceberg.Table icebergTable = tableAdapter.icebergTable();
+        icebergTable.replaceSortOrder().asc("intCol").desc("doubleCol").commit();
+
+        // Append data to the table
+        final IcebergTableWriter tableWriterWithSorting = tableAdapter.tableWriter(writerOptionsBuilder()
+                .tableDefinition(source.getDefinition())
+                .build());
+        tableWriterWithSorting.append(IcebergWriteInstructions.builder()
+                .addTables(source)
+                .build());
+
+        // Now read a table with a column rename
+        final IcebergReadInstructions readInstructions = IcebergReadInstructions.builder()
+                .putColumnRenames("intCol", "renamedIntCol")
+                .build();
+        final Table fromIceberg = tableAdapter.table(readInstructions);
+        final Table expected = source.renameColumns("renamedIntCol = intCol")
+                .sort(List.of(SortColumn.asc(ColumnName.of("renamedIntCol")),
+                        SortColumn.desc(ColumnName.of("doubleCol"))));
+        assertTableEquals(expected, fromIceberg);
+
+        // Verify that the sort order is still applied
+        final ParquetInstructions parquetInstructions = ParquetInstructions.builder()
+                .addColumnNameMapping("intCol", "renamedIntCol")
+                .setTableDefinition(expected.getDefinition())
+                .build();
+        verifySortOrder(tableAdapter, List.of(
+                List.of(SortColumn.asc(ColumnName.of("renamedIntCol")), SortColumn.desc(ColumnName.of("doubleCol")))),
+                parquetInstructions);
+    }
+
+    @Test
+    void testSortOrderWithTableDefinition() {
+        final Table source = TableTools.newTable(
+                intCol("intCol", 15, 0, 32, 33, 19),
+                doubleCol("doubleCol", 10.5, 2.5, 3.5, 40.5, 0.5),
+                longCol("longCol", 20L, 50L, 0L, 10L, 5L));
+        final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
+        final IcebergTableAdapter tableAdapter = catalogAdapter.createTable(tableIdentifier, source.getDefinition());
+
+        // Update the default sort order of the underlying iceberg table
+        final org.apache.iceberg.Table icebergTable = tableAdapter.icebergTable();
+        icebergTable.replaceSortOrder().asc("intCol").desc("doubleCol").commit();
+
+        // Append data to the table
+        final IcebergTableWriter tableWriterWithSorting = tableAdapter.tableWriter(writerOptionsBuilder()
+                .tableDefinition(source.getDefinition())
+                .build());
+        tableWriterWithSorting.append(IcebergWriteInstructions.builder()
+                .addTables(source)
+                .build());
+
+        {
+            // Now read a table with a different table definition skipping the "doubleCol"
+            final TableDefinition tableDefinition = TableDefinition.of(
+                    ColumnDefinition.ofInt("intCol"),
+                    ColumnDefinition.ofLong("longCol"));
+            final IcebergReadInstructions readInstructions = IcebergReadInstructions.builder()
+                    .tableDefinition(tableDefinition)
+                    .build();
+            final Table fromIceberg = tableAdapter.table(readInstructions);
+            final Table expected = source.dropColumns("doubleCol")
+                    .sort(List.of(SortColumn.asc(ColumnName.of("intCol"))));
+            assertTableEquals(expected, fromIceberg);
+
+            // Verify that the sort order is still applied for the first column
+            final ParquetInstructions parquetInstructions = ParquetInstructions.builder()
+                    .setTableDefinition(tableDefinition)
+                    .build();
+            verifySortOrder(tableAdapter, List.of(
+                    List.of(SortColumn.asc(ColumnName.of("intCol")))),
+                    parquetInstructions);
+        }
+
+        {
+            // Now read the table with a different table definition skipping the "intCol"
+            final TableDefinition tableDefinition = TableDefinition.of(
+                    ColumnDefinition.ofDouble("doubleCol"),
+                    ColumnDefinition.ofLong("longCol"));
+            final IcebergReadInstructions readInstructions = IcebergReadInstructions.builder()
+                    .tableDefinition(tableDefinition)
+                    .build();
+            final Table fromIceberg = tableAdapter.table(readInstructions);
+            final Table expected = source
+                    .sort(List.of(SortColumn.asc(ColumnName.of("intCol")), SortColumn.desc(ColumnName.of("doubleCol"))))
+                    .dropColumns("intCol");
+            assertTableEquals(expected, fromIceberg);
+
+            // Verify that the sort order is not applied for any columns since the first sorted column is skipped
+            final ParquetInstructions parquetInstructions = ParquetInstructions.builder()
+                    .setTableDefinition(tableDefinition)
+                    .build();
+            verifySortOrder(tableAdapter, List.of(List.of()), parquetInstructions);
+        }
+    }
+
+    @Test
+    void appendTableWithAndWithoutDataInstructionsTest() {
+        final Table source = TableTools.newTable(
+                intCol("intCol", 15, 0, 32, 33, 19),
+                doubleCol("doubleCol", 10.5, 2.5, 3.5, 40.5, 0.5),
+                longCol("longCol", 20L, 50L, 0L, 10L, 5L));
+        final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
+        final IcebergTableAdapter tableAdapter = catalogAdapter.createTable(tableIdentifier, source.getDefinition());
+        {
+            // Following will add data instructions to the table writer
+            final IcebergTableWriter tableWriter = tableAdapter.tableWriter(writerOptionsBuilder()
+                    .tableDefinition(source.getDefinition())
+                    .build());
+            tableWriter.append(IcebergWriteInstructions.builder()
+                    .addTables(source)
+                    .build());
+        }
+
+        Table fromIceberg = tableAdapter.table();
+        Table expected = source;
+        assertTableEquals(expected, fromIceberg);
+        verifySnapshots(tableIdentifier, List.of("append"));
+
+        {
+            // Skip adding the data instructions to the table writer, should derive them from the catalog
+            final IcebergTableWriter tableWriter = tableAdapter.tableWriter(TableParquetWriterOptions.builder()
+                    .tableDefinition(source.getDefinition())
+                    .build());
+            tableWriter.append(IcebergWriteInstructions.builder()
+                    .addTables(source)
+                    .build());
+        }
+
+        fromIceberg = tableAdapter.table();
+        expected = TableTools.merge(source, source);
+        assertTableEquals(expected, fromIceberg);
+        verifySnapshots(tableIdentifier, List.of("append", "append"));
     }
 }

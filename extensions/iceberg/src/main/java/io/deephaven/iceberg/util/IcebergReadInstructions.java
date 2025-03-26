@@ -47,7 +47,8 @@ public abstract class IcebergReadInstructions {
 
     /**
      * The data instructions to use for reading the Iceberg data files (might be S3Instructions or other cloud
-     * provider-specific instructions).
+     * provider-specific instructions). If not provided, data instructions will be derived from the properties of the
+     * catalog.
      */
     public abstract Optional<Object> dataInstructions();
 

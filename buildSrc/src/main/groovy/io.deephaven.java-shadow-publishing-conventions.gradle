@@ -34,12 +34,18 @@ PublishingTools.setupPublications(project) { publication ->
       def dependenciesNode = root.appendNode('dependencies')
 
       project.configurations.shadow.allDependencies.each {
-        if ((it instanceof ProjectDependency) || ! (it instanceof SelfResolvingDependency)) {
+        if ((it instanceof ProjectDependency)) {
           def dependencyNode = dependenciesNode.appendNode('dependency')
           dependencyNode.appendNode('groupId', it.group)
           BasePluginConvention base = it.dependencyProject.convention.getPlugin(BasePluginConvention)
 
           dependencyNode.appendNode('artifactId', base.archivesBaseName)
+          dependencyNode.appendNode('version', it.version)
+          dependencyNode.appendNode('scope', 'runtime')
+        } else if (! (it instanceof SelfResolvingDependency)) {
+          def dependencyNode = dependenciesNode.appendNode('dependency')
+          dependencyNode.appendNode('groupId', it.group)
+          dependencyNode.appendNode('artifactId', it.name)
           dependencyNode.appendNode('version', it.version)
           dependencyNode.appendNode('scope', 'runtime')
         }

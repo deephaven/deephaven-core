@@ -7,3 +7,5 @@ wheel
 sphinx
 bitstring
 unittest-xml-reporting
+flightsql-dbapi
+adbc-driver-flightsql

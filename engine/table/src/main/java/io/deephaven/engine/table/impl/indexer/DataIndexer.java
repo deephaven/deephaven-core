@@ -253,7 +253,7 @@ public class DataIndexer implements TrackingRowSet.Indexer {
                 .filter(Objects::nonNull)
                 .max(Comparator.comparingLong(dataIndex -> dataIndex.table().size()))
                 .orElse(null),
-                table::isRefreshing, (final DataIndex result) -> result != null && result.isRefreshing());
+                table.isRefreshing(), (final DataIndex result) -> result != null && result.isRefreshing());
     }
 
     /**

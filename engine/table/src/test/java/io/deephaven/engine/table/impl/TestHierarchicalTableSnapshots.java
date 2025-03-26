@@ -7,12 +7,10 @@ import io.deephaven.api.ColumnName;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.chunk.WritableChunk;
-import io.deephaven.chunk.attributes.Values;
 import io.deephaven.csv.CsvTools;
 import io.deephaven.csv.util.CsvReaderException;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.*;
@@ -20,26 +18,18 @@ import io.deephaven.engine.table.hierarchical.HierarchicalTable;
 import io.deephaven.engine.table.hierarchical.HierarchicalTable.SnapshotState;
 import io.deephaven.engine.table.hierarchical.RollupTable;
 import io.deephaven.engine.table.hierarchical.TreeTable;
-import io.deephaven.engine.table.impl.sources.ByteAsBooleanColumnSource;
-import io.deephaven.engine.table.impl.sources.LongAsInstantColumnSource;
-import io.deephaven.engine.table.impl.sources.chunkcolumnsource.ChunkColumnSource;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.test.types.OutOfBandTest;
 
 import junit.framework.TestCase;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import java.io.ByteArrayInputStream;
-import java.time.Instant;
-import java.util.Arrays;
 import java.util.BitSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -49,9 +39,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import static io.deephaven.api.agg.Aggregation.AggMax;
-import static io.deephaven.engine.table.impl.sources.ReinterpretUtils.byteToBooleanSource;
-import static io.deephaven.engine.table.impl.sources.ReinterpretUtils.longToInstantSource;
-import static io.deephaven.engine.table.impl.sources.ReinterpretUtils.maybeConvertToPrimitiveChunkType;
+import static io.deephaven.engine.testutil.HierarchicalTableTestTools.freeSnapshotTableChunks;
+import static io.deephaven.engine.testutil.HierarchicalTableTestTools.snapshotToTable;
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.util.QueryConstants.NULL_INT;
@@ -258,76 +247,5 @@ public class TestHierarchicalTableSnapshots {
 
         freeSnapshotTableChunks(snapshot);
         freeSnapshotTableChunks(snapshotSort);
-    }
-
-    @SuppressWarnings("SameParameterValue")
-    private static Table snapshotToTable(
-            @NotNull final HierarchicalTable<?> hierarchicalTable,
-            @NotNull final SnapshotState snapshotState,
-            @NotNull final Table keyTable,
-            @Nullable final ColumnName keyTableActionColumn,
-            @Nullable final BitSet columns,
-            @NotNull final RowSequence rows) {
-        final ColumnDefinition<?>[] availableColumns =
-                hierarchicalTable.getAvailableColumnDefinitions().toArray(ColumnDefinition[]::new);
-        final ColumnDefinition<?>[] includedColumns = columns == null
-                ? availableColumns
-                : columns.stream().mapToObj(ci -> availableColumns[ci]).toArray(ColumnDefinition[]::new);
-
-        assertThat(rows.isContiguous()).isTrue();
-        final int rowsSize = rows.intSize();
-        // noinspection rawtypes
-        final WritableChunk[] chunks = Arrays.stream(includedColumns)
-                .map(cd -> maybeConvertToPrimitiveChunkType(cd.getDataType()))
-                .map(ct -> ct.makeWritableChunk(rowsSize))
-                .toArray(WritableChunk[]::new);
-
-        // noinspection unchecked
-        final long expandedSize =
-                hierarchicalTable.snapshot(snapshotState, keyTable, keyTableActionColumn, columns, rows, chunks);
-        final int snapshotSize = chunks.length == 0 ? 0 : chunks[0].size();
-        final long expectedSnapshotSize = rows.isEmpty()
-                ? 0
-                : Math.min(rows.lastRowKey() + 1, expandedSize) - rows.firstRowKey();
-        assertThat(snapshotSize).isEqualTo(expectedSnapshotSize);
-
-        final LinkedHashMap<String, ColumnSource<?>> sources = new LinkedHashMap<>(includedColumns.length);
-        for (int ci = 0; ci < includedColumns.length; ++ci) {
-            final ColumnDefinition<?> columnDefinition = includedColumns[ci];
-            // noinspection unchecked
-            final WritableChunk<? extends Values> chunk = chunks[ci];
-            final ChunkColumnSource<?> chunkColumnSource = ChunkColumnSource.make(
-                    chunk.getChunkType(), columnDefinition.getDataType(), columnDefinition.getComponentType());
-            chunkColumnSource.addChunk(chunk);
-            final ColumnSource<?> source;
-            if (columnDefinition.getDataType() == Boolean.class && chunkColumnSource.getType() == byte.class) {
-                // noinspection unchecked
-                source = byteToBooleanSource((ColumnSource<Byte>) chunkColumnSource);
-            } else if (columnDefinition.getDataType() == Instant.class && chunkColumnSource.getType() == long.class) {
-                // noinspection unchecked
-                source = longToInstantSource((ColumnSource<Long>) chunkColumnSource);
-            } else {
-                source = chunkColumnSource;
-            }
-            sources.put(columnDefinition.getName(), source);
-        }
-
-        // noinspection resource
-        return new QueryTable(
-                TableDefinition.of(includedColumns),
-                RowSetFactory.flat(snapshotSize).toTracking(),
-                sources);
-    }
-
-    private static void freeSnapshotTableChunks(@NotNull final Table snapshotTable) {
-        snapshotTable.getColumnSources().forEach(cs -> {
-            if (cs instanceof ByteAsBooleanColumnSource) {
-                ((ChunkColumnSource<?>) cs.reinterpret(byte.class)).clear();
-            } else if (cs instanceof LongAsInstantColumnSource) {
-                ((ChunkColumnSource<?>) cs.reinterpret(long.class)).clear();
-            } else {
-                ((ChunkColumnSource<?>) cs).clear();
-            }
-        });
     }
 }

@@ -18,6 +18,7 @@ import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.engine.table.impl.sources.regioned.RegionedTableComponentFactoryImpl;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.engine.util.TableTools;
+import io.deephaven.iceberg.base.IcebergUtils;
 import io.deephaven.iceberg.internal.Inference;
 import io.deephaven.iceberg.internal.SpecAndSchema2;
 import io.deephaven.iceberg.internal.DataInstructionsProviderLoader;
@@ -30,6 +31,7 @@ import io.deephaven.util.annotations.InternalUseOnly;
 import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.util.channel.SeekableChannelsProvider;
 import io.deephaven.util.channel.SeekableChannelsProviderLoader;
+import io.deephaven.util.type.TypeUtils;
 import org.apache.iceberg.PartitionField;
 import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.Schema;
@@ -41,12 +43,12 @@ import org.apache.iceberg.types.Types;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.net.URI;
 import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
 import static io.deephaven.iceberg.base.IcebergUtils.convertToDHType;
-import static io.deephaven.iceberg.layout.IcebergBaseLayout.locationUri;
 
 /**
  * This class manages an Iceberg {@link org.apache.iceberg.Table table} and provides methods to interact with it.
@@ -60,10 +62,14 @@ public class IcebergTableAdapter {
             ColumnDefinition.fromGenericType("Summary", Map.class),
             ColumnDefinition.fromGenericType("SnapshotObject", Snapshot.class));
 
+    private static final Set<String> S3_SCHEMES = Set.of("s3", "s3a", "s3n");
+
     private final Catalog catalog;
     private final org.apache.iceberg.Table table;
     private final TableIdentifier tableIdentifier;
     private final DataInstructionsProviderLoader dataInstructionsProviderLoader;
+
+    private final URI locationUri;
 
     public IcebergTableAdapter(
             final Catalog catalog,
@@ -74,6 +80,7 @@ public class IcebergTableAdapter {
         this.table = table;
         this.tableIdentifier = tableIdentifier;
         this.dataInstructionsProviderLoader = dataInstructionsProviderLoader;
+        this.locationUri = IcebergUtils.locationUri(table);
     }
 
     /**
@@ -406,11 +413,10 @@ public class IcebergTableAdapter {
     }
 
     private @NotNull IcebergBaseLayout keyFinder(SpecAndSchema2 ss, IcebergReadInstructions ri) {
-        final String uriScheme = locationUri(table).getScheme();
+        final String uriScheme = locationUri.getScheme();
         final Object specialInstructions = ri.dataInstructions()
                 .orElseGet(() -> dataInstructionsProviderLoader.load(uriScheme));
-        final SeekableChannelsProvider channelsProvider =
-                SeekableChannelsProviderLoader.getInstance().load(uriScheme, specialInstructions);
+        final SeekableChannelsProvider channelsProvider = seekableChannelsProvider(uriScheme, specialInstructions);
         final ParquetInstructions parquetInstructions = ParquetInstructions.builder()
                 .setTableDefinition(ss.di.definition())
                 .setColumnResolverFactory(ss.di.factory())
@@ -419,12 +425,52 @@ public class IcebergTableAdapter {
         final PartitionSpec spec = ss.di.spec();
         if (spec.isUnpartitioned()) {
             // Create the flat layout location key finder
-            return new IcebergFlatLayout(this, ss.snapshot, parquetInstructions, channelsProvider);
+            return new IcebergFlatLayout(this, parquetInstructions, channelsProvider, ss.snapshot);
         } else {
+            throw new UnsupportedOperationException("TODO");
             // Create the partitioning column location key finder
-            return new IcebergKeyValuePartitionedLayout(this, ss.snapshot, parquetInstructions, channelsProvider, spec);
+            // return new IcebergKeyValuePartitionedLayout(this, parquetInstructions, channelsProvider, ss.snapshot,
+            // identityPartitioningColumns());
         }
     }
+
+    private static SeekableChannelsProvider seekableChannelsProvider(
+            final String uriScheme,
+            final Object specialInstructions) {
+        final SeekableChannelsProviderLoader loader = SeekableChannelsProviderLoader.getInstance();
+        return S3_SCHEMES.contains(uriScheme)
+                ? loader.load(S3_SCHEMES, specialInstructions)
+                : loader.load(uriScheme, specialInstructions);
+    }
+
+    // private static List<IcebergKeyValuePartitionedLayout.IdentityPartitioningColData> identityPartitioningColumns(
+    // final PartitionSpec partitionSpec,
+    // final Map<String, String> legalizedColumnRenames,
+    // final TableDefinition tableDef) {
+    // final List<IcebergKeyValuePartitionedLayout.IdentityPartitioningColData> identityPartitioningColumns;
+    // // We can assume due to upstream validation that there are no duplicate names (after renaming) that are included
+    // // in the output definition, so we can ignore duplicates.
+    // final List<PartitionField> partitionFields = partitionSpec.fields();
+    // final int numPartitionFields = partitionFields.size();
+    // identityPartitioningColumns = new ArrayList<>(numPartitionFields);
+    // for (int fieldId = 0; fieldId < numPartitionFields; ++fieldId) {
+    // final PartitionField partitionField = partitionFields.get(fieldId);
+    // if (!partitionField.transform().isIdentity()) {
+    // // TODO (DH-18160): Improve support for handling non-identity transforms
+    // continue;
+    // }
+    // final String icebergColName = partitionField.name();
+    // final String dhColName = legalizedColumnRenames.getOrDefault(icebergColName, icebergColName);
+    // final ColumnDefinition<?> columnDef = tableDef.getColumn(dhColName);
+    // if (columnDef == null) {
+    // // Table definition provided by the user doesn't have this column, so skip.
+    // continue;
+    // }
+    // identityPartitioningColumns.add(new IcebergKeyValuePartitionedLayout.IdentityPartitioningColData(
+    // dhColName, TypeUtils.getBoxedType(columnDef.getDataType()), fieldId));
+    // }
+    // return identityPartitioningColumns;
+    // }
 
     /**
      * Refresh the table with the latest information from the Iceberg catalog, including new snapshots and schema.
@@ -528,6 +574,13 @@ public class IcebergTableAdapter {
      * @return A new instance of {@link IcebergTableWriter} configured with the provided options.
      */
     public IcebergTableWriter tableWriter(final TableWriterOptions tableWriterOptions) {
-        return new IcebergTableWriter(tableWriterOptions, this);
+        return new IcebergTableWriter(tableWriterOptions, this, dataInstructionsProviderLoader);
+    }
+
+    /**
+     * Get the location URI of the Iceberg table.
+     */
+    public URI locationUri() {
+        return locationUri;
     }
 }

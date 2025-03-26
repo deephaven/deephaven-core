@@ -14,7 +14,7 @@ import java.util.Objects;
  */
 class SchemaProviderInternal {
 
-    interface SchemaProviderImpl {
+    interface SchemaProviderImpl extends SchemaProvider {
         /**
          * Returns the schema for the given table based on this {@link SchemaProvider}.
          */
@@ -22,14 +22,16 @@ class SchemaProviderInternal {
     }
 
     // Implementations of SchemaProvider
-    static class CurrentSchemaProvider implements SchemaProvider, SchemaProviderImpl {
+    enum CurrentSchemaProvider implements SchemaProviderImpl {
+        CURRENT_SCHEMA;
+
         @Override
         public Schema getSchema(final Table table) {
             return getCurrentSchema(table);
         }
     }
 
-    static class IdSchemaProvider implements SchemaProvider, SchemaProviderImpl {
+    static class IdSchemaProvider implements SchemaProviderImpl {
         private final int schemaId;
 
         IdSchemaProvider(final int schemaId) {
@@ -42,7 +44,7 @@ class SchemaProviderInternal {
         }
     }
 
-    static class DirectSchemaProvider implements SchemaProvider, SchemaProviderImpl {
+    static class DirectSchemaProvider implements SchemaProviderImpl {
         private final Schema schema;
 
         DirectSchemaProvider(final Schema schema) {
@@ -60,7 +62,7 @@ class SchemaProviderInternal {
         }
     }
 
-    static class SnapshotIdSchemaProvider implements SchemaProvider, SchemaProviderImpl {
+    static class SnapshotIdSchemaProvider implements SchemaProviderImpl {
         private final int snapshotId;
 
         SnapshotIdSchemaProvider(final int snapshotId) {
@@ -73,7 +75,9 @@ class SchemaProviderInternal {
         }
     }
 
-    static class CurrentSnapshotSchemaProvider implements SchemaProvider, SchemaProviderImpl {
+    enum CurrentSnapshotSchemaProvider implements SchemaProviderImpl {
+        CURRENT_SNAPSHOT;
+
         @Override
         public Schema getSchema(final Table table) {
             return getSchemaForCurrentSnapshot(table);
