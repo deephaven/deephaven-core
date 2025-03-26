@@ -51,7 +51,8 @@ public final class IcebergKeyValuePartitionedLayout extends IcebergBaseLayout {
      * @param dataInstructionsProvider The provider for special instructions, to be used if special instructions not
      *        provided in the {@code instructions}.
      */
-    @Deprecated
+    // TODO(DH-19072): Refactor Iceberg TLKFs to reduce visibility
+    @Deprecated(forRemoval = true)
     public IcebergKeyValuePartitionedLayout(
             @NotNull final IcebergTableAdapter tableAdapter,
             @NotNull final PartitionSpec partitionSpec,

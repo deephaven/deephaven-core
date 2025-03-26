@@ -67,7 +67,7 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
      * The {@link TableDefinition} that will be used for life of this table. Although Iceberg table schema may change,
      * schema changes are not supported in Deephaven.
      */
-    @Deprecated
+    @Deprecated(forRemoval = true)
     final TableDefinition tableDef;
 
     /**

@@ -62,6 +62,8 @@ public class IcebergTableAdapter {
             ColumnDefinition.fromGenericType("Summary", Map.class),
             ColumnDefinition.fromGenericType("SnapshotObject", Snapshot.class));
 
+    private static final Set<String> S3_SCHEMES = Set.of("s3", "s3a", "s3n");
+
     private final Catalog catalog;
     private final org.apache.iceberg.Table table;
     private final TableIdentifier tableIdentifier;
@@ -404,32 +406,8 @@ public class IcebergTableAdapter {
             // data instructions from the properties collection and URI scheme.
             final Object specialInstructions = updatedInstructions.dataInstructions()
                     .orElseGet(() -> dataInstructionsProviderLoader.load(uriScheme));
-            {
-                // Start with user-supplied instructions (if provided).
-                final ParquetInstructions.Builder builder = new ParquetInstructions.Builder();
-
-                // Add the table definition.
-                builder.setTableDefinition(tableDef);
-
-                // Add any column rename mappings.
-                if (!legalizedColumnRenames.isEmpty()) {
-                    for (Map.Entry<String, String> entry : legalizedColumnRenames.entrySet()) {
-                        builder.addColumnNameMapping(entry.getKey(), entry.getValue());
-                    }
-                }
-                if (specialInstructions != null) {
-                    builder.setSpecialInstructions(specialInstructions);
-                }
-                parquetInstructions = builder.build();
-            }
-            {
-                final SeekableChannelsProviderLoader loader = SeekableChannelsProviderLoader.getInstance();
-                if ("s3".equals(uriScheme) || "s3a".equals(uriScheme) || "s3n".equals(uriScheme)) {
-                    seekableChannelsProvider = loader.load(Set.of("s3", "s3a", "s3n"), specialInstructions);
-                } else {
-                    seekableChannelsProvider = loader.load(uriScheme, specialInstructions);
-                }
-            }
+            parquetInstructions = parquetInstructions(tableDef, legalizedColumnRenames, specialInstructions);
+            seekableChannelsProvider = seekableChannelsProvider(uriScheme, specialInstructions);
         }
 
         final IcebergBaseLayout keyFinder;
@@ -437,34 +415,9 @@ public class IcebergTableAdapter {
             // Create the flat layout location key finder
             keyFinder = new IcebergFlatLayout(this, parquetInstructions, seekableChannelsProvider, snapshot);
         } else {
-            final List<IcebergKeyValuePartitionedLayout.IdentityPartitioningColData> identityPartitioningColumns;
-            {
-                // We can assume due to upstream validation that there are no duplicate names (after renaming) that are
-                // included
-                // in the output definition, so we can ignore duplicates.
-                final List<PartitionField> partitionFields = partitionSpec.fields();
-                final int numPartitionFields = partitionFields.size();
-                identityPartitioningColumns = new ArrayList<>(numPartitionFields);
-                for (int fieldId = 0; fieldId < numPartitionFields; ++fieldId) {
-                    final PartitionField partitionField = partitionFields.get(fieldId);
-                    if (!partitionField.transform().isIdentity()) {
-                        // TODO (DH-18160): Improve support for handling non-identity transforms
-                        continue;
-                    }
-                    final String icebergColName = partitionField.name();
-                    final String dhColName = legalizedColumnRenames.getOrDefault(icebergColName, icebergColName);
-                    final ColumnDefinition<?> columnDef = tableDef.getColumn(dhColName);
-                    if (columnDef == null) {
-                        // Table definition provided by the user doesn't have this column, so skip.
-                        continue;
-                    }
-                    identityPartitioningColumns.add(new IcebergKeyValuePartitionedLayout.IdentityPartitioningColData(
-                            dhColName, TypeUtils.getBoxedType(columnDef.getDataType()), fieldId));
-                }
-            }
             // Create the partitioning column location key finder
-            keyFinder = new IcebergKeyValuePartitionedLayout(this, parquetInstructions,
-                    seekableChannelsProvider, snapshot, identityPartitioningColumns);
+            keyFinder = new IcebergKeyValuePartitionedLayout(this, parquetInstructions, seekableChannelsProvider,
+                    snapshot, identityPartitioningColumns(partitionSpec, legalizedColumnRenames, tableDef));
         }
 
         if (updatedInstructions.updateMode().updateType() == IcebergUpdateMode.IcebergUpdateType.STATIC) {
@@ -510,6 +463,66 @@ public class IcebergTableAdapter {
                 RegionedTableComponentFactoryImpl.INSTANCE,
                 locationProvider,
                 updateSourceRegistrar);
+    }
+
+    private static SeekableChannelsProvider seekableChannelsProvider(
+            final String uriScheme,
+            final Object specialInstructions) {
+        final SeekableChannelsProviderLoader loader = SeekableChannelsProviderLoader.getInstance();
+        return S3_SCHEMES.contains(uriScheme)
+                ? loader.load(S3_SCHEMES, specialInstructions)
+                : loader.load(uriScheme, specialInstructions);
+    }
+
+    private static ParquetInstructions parquetInstructions(
+            final TableDefinition tableDef,
+            final Map<String, String> legalizedColumnRenames,
+            final Object specialInstructions) {
+        // Start with user-supplied instructions (if provided).
+        final ParquetInstructions.Builder builder = new ParquetInstructions.Builder();
+
+        // Add the table definition.
+        builder.setTableDefinition(tableDef);
+
+        // Add any column rename mappings.
+        if (!legalizedColumnRenames.isEmpty()) {
+            for (Map.Entry<String, String> entry : legalizedColumnRenames.entrySet()) {
+                builder.addColumnNameMapping(entry.getKey(), entry.getValue());
+            }
+        }
+        if (specialInstructions != null) {
+            builder.setSpecialInstructions(specialInstructions);
+        }
+        return builder.build();
+    }
+
+    private static List<IcebergKeyValuePartitionedLayout.IdentityPartitioningColData> identityPartitioningColumns(
+            final PartitionSpec partitionSpec,
+            final Map<String, String> legalizedColumnRenames,
+            final TableDefinition tableDef) {
+        final List<IcebergKeyValuePartitionedLayout.IdentityPartitioningColData> identityPartitioningColumns;
+        // We can assume due to upstream validation that there are no duplicate names (after renaming) that are included
+        // in the output definition, so we can ignore duplicates.
+        final List<PartitionField> partitionFields = partitionSpec.fields();
+        final int numPartitionFields = partitionFields.size();
+        identityPartitioningColumns = new ArrayList<>(numPartitionFields);
+        for (int fieldId = 0; fieldId < numPartitionFields; ++fieldId) {
+            final PartitionField partitionField = partitionFields.get(fieldId);
+            if (!partitionField.transform().isIdentity()) {
+                // TODO (DH-18160): Improve support for handling non-identity transforms
+                continue;
+            }
+            final String icebergColName = partitionField.name();
+            final String dhColName = legalizedColumnRenames.getOrDefault(icebergColName, icebergColName);
+            final ColumnDefinition<?> columnDef = tableDef.getColumn(dhColName);
+            if (columnDef == null) {
+                // Table definition provided by the user doesn't have this column, so skip.
+                continue;
+            }
+            identityPartitioningColumns.add(new IcebergKeyValuePartitionedLayout.IdentityPartitioningColData(
+                    dhColName, TypeUtils.getBoxedType(columnDef.getDataType()), fieldId));
+        }
+        return identityPartitioningColumns;
     }
 
     /**
