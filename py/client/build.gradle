@@ -77,9 +77,6 @@ def testPyClient = Docker.registerDockerTask(project, 'testPyClient') {
         from ('README.md') {
             into 'project/'
         }
-        from ('py-test-to-junit.sh') {
-            into 'project/'
-        }
     }
     containerDependencies.dependsOn = [deephavenDocker.healthyTask]
     containerDependencies.finalizedBy = deephavenDocker.endTask
@@ -90,7 +87,6 @@ def testPyClient = Docker.registerDockerTask(project, 'testPyClient') {
         workingDir('/project')
         runCommand '''set -eux; \\
                       mkdir -p /out/report; \\
-                      apt-get update && apt-get install -y tcpdump; \\
                       pip3 install --upgrade pip; \\
                       pip3 install -r requirements-dev.txt'''
 
@@ -100,7 +96,7 @@ def testPyClient = Docker.registerDockerTask(project, 'testPyClient') {
         environmentVariable 'DH_PORT', '10000'
     }
     parentContainers = [ Docker.registryTask(project, 'python') ]
-    entrypoint = ['./py-test-to-junit.sh', '/out/report/']
+    entrypoint = ['python', '-m', 'xmlrunner', 'discover', 'tests', '-v', '-o', '/out/report']
     copyOut {
         into layout.buildDirectory.dir('test-results')
     }

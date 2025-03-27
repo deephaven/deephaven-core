@@ -70,7 +70,6 @@ def testGoClient = Docker.registerDockerTask(project, 'testGoClient') {
         copyFile('go.*', '/project/')
         runCommand('''set -eux; \\
                       mkdir /out; \\
-                      apt-get update && apt-get install -y tcpdump; \\
                       go mod download; \\
                       go mod verify; \\
                       go install github.com/jstemmer/go-junit-report/v2@latest
