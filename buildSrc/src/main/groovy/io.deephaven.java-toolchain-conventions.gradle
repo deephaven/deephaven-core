@@ -25,10 +25,12 @@ if (testLanguageLevel < 11) {
   throw new IllegalArgumentException("testLanguageLevel must be greater than or equal to 11")
 }
 if (runtimeVersion < languageLevel) {
-  throw new IllegalArgumentException("runtimeVersion must be greater than or equal to languageLevel")
+  project.logger.lifecycle("runtimeVersion was set to ${runtimeVersion}, updating to ${languageLevel} to match languageLevel")
+  runtimeVersion = languageLevel
 }
 if (testRuntimeVersion < testLanguageLevel) {
-  throw new IllegalArgumentException("testRuntimeVersion must be greater than or equal to testLanguageLevel")
+  project.logger.lifecycle("testRuntimeVersion was set to ${testRuntimeVersion}, updating to ${testLanguageLevel} to match testLanguageLevel")
+  testRuntimeVersion = testLanguageLevel
 }
 
 java {
