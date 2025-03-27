@@ -194,7 +194,7 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
             isScheduled = true;
             final long now = scheduler.currentTimeMillis();
             final long nextMin = lastScheduledMillis + UPDATE_INTERVAL_MS;
-            if (lastScheduledMillis > 0 && now >= nextMin) {
+            if (now >= nextMin) {
                 lastScheduledMillis = now;
                 scheduler.runImmediately(this);
             } else {
