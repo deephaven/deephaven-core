@@ -6,12 +6,12 @@ on:
   push:
     branches: [ 'main', 'check/**', 'release/v*' ]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   checks:
-    strategy:
-      fail-fast: false
-      matrix:
-        run: ['a', 'b', 'c', 'd', 'e', 'f', 'g']
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout
@@ -51,7 +51,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: check-ci-results-${{ matrix.run }}
+          name: check-ci-results
           path: |
             **/build/test-results/**
             **/build/reports/tests/**
@@ -60,7 +60,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: failure()
         with:
-          name: check-ci-jvm-err-${{ matrix.run }}
+          name: check-ci-jvm-err
           path: |
             **/*_pid*.log
             **/core.*

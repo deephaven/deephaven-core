@@ -13,5 +13,4 @@ repositories {
             includeGroup 'org.apache.kafka'
         }
     }
-    mavenLocal()
 }
