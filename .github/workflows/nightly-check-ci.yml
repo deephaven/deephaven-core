@@ -11,6 +11,7 @@ on:
 
 jobs:
   nightly:
+    name: nightly (${{ matrix.gradle-task }}, Java ${{ matrix.test-jvm-version }}, Jetty ${{ matrix.jetty-version }})
     strategy:
       fail-fast: false
       matrix:
@@ -21,16 +22,16 @@ jobs:
         # those tests for Jetty 11. Additionally, restores the Java 11 test version, but only when using Jetty 11, to
         # avoid duplication. Does not run Jetty 11 tests for all JDKs.
         include:
-          - jetty-version: '11'
-            gradle-task: 'check'
+          - gradle-task: 'check'
             test-jvm-version: '11'
-          - jetty-version: '11'
-            gradle-task: 'check'
+            jetty-version: '11'
+          - gradle-task: 'check'
             test-jvm-version: '17'
+            jetty-version: '11'
     if: ${{ github.repository_owner == 'deephaven' || github.event_name != 'schedule' }}
     runs-on: ubuntu-24.04
     concurrency:
-      group: ${{ matrix.gradle-task }}-${{ matrix.test-jvm-version }}-${{ github.workflow }}-${{ github.ref }}
+      group: ${{ matrix.gradle-task }}-${{ matrix.test-jvm-version }}-${{ matrix.jetty-version }}-${{ github.workflow }}-${{ github.ref }}
       cancel-in-progress: true
     env:
       COVER: ${{ (github.event_name == 'schedule' || startsWith(github.ref_name, 'coverage/')) && matrix.test-jvm-version == '21' }}
