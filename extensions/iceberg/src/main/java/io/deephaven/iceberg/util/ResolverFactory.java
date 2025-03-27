@@ -117,7 +117,8 @@ final class ResolverFactory implements ParquetColumnResolver.Factory {
             @Nullable final MappedField fallback) throws MappingException {
         try {
             return findField(fieldId, type);
-        } catch (MappingException e) {
+        } catch (NotFound e) {
+            // Note: only falling back when the id is not found; a duplicate error is more serious and should be thrown
             if (fallback == null) {
                 throw e;
             }
@@ -141,18 +142,18 @@ final class ResolverFactory implements ParquetColumnResolver.Factory {
             }
         }
         if (found == null) {
-            throw new NotFound("not found " + fieldId);
+            throw new NotFound(String.format("field-id %d not found", fieldId));
         }
         return found;
     }
 
-    private static Type findField(MappedField fallback, GroupType type) throws MappingException {
+    private static Type findField(final MappedField fallback, final GroupType type) throws MappingException {
         Type found = null;
         for (Type field : type.getFields()) {
             if (fallback.names().contains(field.getName())) {
                 if (found != null) {
-                    throw new Duplicate(String.format("Duplicate field names %s, %s found for field-id %d",
-                            found.getName(), field.getName(), fallback.id()));
+                    throw new Duplicate(String.format("Duplicate matching fallback names %s, %s found for mapping %s",
+                            found.getName(), field.getName(), fallback));
                 }
                 found = field;
             }

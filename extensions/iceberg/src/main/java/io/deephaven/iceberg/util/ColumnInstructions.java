@@ -49,7 +49,7 @@ public abstract class ColumnInstructions {
 
     @Value.Check
     final void checkType() {
-        if (!(partitionFieldId().isPresent() ^ schemaFieldPath().isPresent())) {
+        if (partitionFieldId().isPresent() == schemaFieldPath().isPresent()) {
             throw new IllegalArgumentException(
                     "ColumnInstructions must have exactly one of partitionFieldId or schemaFieldPath");
         }
