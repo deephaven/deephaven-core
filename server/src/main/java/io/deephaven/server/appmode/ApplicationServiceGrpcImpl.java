@@ -115,7 +115,7 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
     }
 
     private synchronized void propagateUpdates(Kind updateKind) {
-        log.info().append("Propagating field changes ").append(updateKind.name()).append(":")
+        log.debug().append("Propagating field changes ").append(updateKind.name()).append(":")
                 .append(accumulated.keySet().toString()).endl();
         propagationJob.markRunning();
         final Updater updater = new Updater();
@@ -143,7 +143,7 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
         for (FieldInfo fieldInfo : known.values()) {
             responseBuilder.addCreated(fieldInfo);
         }
-        log.info().append("Sending initial field list to subscription ").append(subscription.subscriptionId)
+        log.debug().append("Sending initial field list to subscription ").append(subscription.subscriptionId)
                 .append(": ").append(known.keySet().toString()).append("; Job pending? ")
                 .append(propagationJob.isScheduled).endl();
         if (subscription.send(responseBuilder.build())) {
@@ -235,12 +235,12 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
                 serverCall.setOnCancelHandler(this::onCancel);
             }
             session.addOnCloseCallback(this);
-            log.info().append("Subscription ").append(subscriptionId).append(" created").endl();
+            log.debug().append("Subscription ").append(subscriptionId).append(" created").endl();
 
         }
 
         void onCancel() {
-            log.info().append("Subscription ").append(subscriptionId).append(" cancelled").endl();
+            log.debug().append("Subscription ").append(subscriptionId).append(" cancelled").endl();
             if (session.removeOnCloseCallback(this)) {
                 close();
             }
@@ -248,7 +248,7 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
 
         @Override
         public void close() {
-            log.info().append("Subscription ").append(subscriptionId).append(" closed").endl();
+            log.debug().append("Subscription ").append(subscriptionId).append(" closed").endl();
 
             remove(this);
         }
