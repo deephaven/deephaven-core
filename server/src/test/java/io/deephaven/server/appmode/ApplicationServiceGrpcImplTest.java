@@ -128,20 +128,21 @@ public class ApplicationServiceGrpcImplTest {
 
                     // Open a second subscription, ensure it has the new object
                     CountDownLatch latch = new CountDownLatch(1);
-                    applicationServiceGrpcImpl.listFields(ListFieldsRequest.getDefaultInstance(), new StreamObserver<>() {
-                        @Override
-                        public void onNext(FieldsChangeUpdate fieldsChangeUpdate) {
-                            assertEquals(1, fieldsChangeUpdate.getCreatedCount());
-                            assertEquals("key", fieldsChangeUpdate.getCreated(0).getFieldName());
-                            latch.countDown();
-                        }
+                    applicationServiceGrpcImpl.listFields(ListFieldsRequest.getDefaultInstance(),
+                            new StreamObserver<>() {
+                                @Override
+                                public void onNext(FieldsChangeUpdate fieldsChangeUpdate) {
+                                    assertEquals(1, fieldsChangeUpdate.getCreatedCount());
+                                    assertEquals("key", fieldsChangeUpdate.getCreated(0).getFieldName());
+                                    latch.countDown();
+                                }
 
-                        @Override
-                        public void onError(Throwable throwable) {}
+                                @Override
+                                public void onError(Throwable throwable) {}
 
-                        @Override
-                        public void onCompleted() {}
-                    });
+                                @Override
+                                public void onCompleted() {}
+                            });
 
                     try {
                         assertTrue(latch.await(1, TimeUnit.SECONDS));
