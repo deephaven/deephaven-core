@@ -18,7 +18,6 @@ import (
 	"errors"
 	"log"
 	"sync"
-	"fmt"
 
 	apppb2 "github.com/deephaven/deephaven-core/go/internal/proto/application"
 	configpb2 "github.com/deephaven/deephaven-core/go/internal/proto/config"
@@ -240,12 +239,9 @@ func (client *Client) RunScript(ctx context.Context, script string) error {
 	}
 
 	req := consolepb2.ExecuteCommandRequest{ConsoleId: client.consoleStub.consoleId, Code: script}
-	response, err := client.consoleStub.stub.ExecuteCommand(ctx, &req)
+	_, err = client.consoleStub.stub.ExecuteCommand(ctx, &req)
 	if err != nil {
-		return fmt.Errorf("error running script: %w", err)
-	}
-	if response.ErrorMessage != "" {
-		return fmt.Errorf("error running script: %s", response.ErrorMessage)
+		return err
 	}
 
 	return nil
