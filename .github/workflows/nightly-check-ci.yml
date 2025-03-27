@@ -19,13 +19,14 @@ jobs:
         jetty-version: ['12']
         # While the defaults above only run client integration tests on Jetty 12, the following extra rules restore
         # those tests for Jetty 11. Additionally, restores the Java 11 test version, but only when using Jetty 11, to
-        # avoid duplication.
+        # avoid duplication. Does not run Jetty 11 tests for all JDKs.
         include:
           - jetty-version: '11'
             gradle-task: 'check'
+            test-jvm-version: '11'
           - jetty-version: '11'
             gradle-task: 'check'
-            test-jvm-version: '11'
+            test-jvm-version: '17'
     if: ${{ github.repository_owner == 'deephaven' || github.event_name != 'schedule' }}
     runs-on: ubuntu-24.04
     concurrency:
