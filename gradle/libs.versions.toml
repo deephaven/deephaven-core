@@ -20,7 +20,7 @@ confluent-kafka-clients = "7.8.0-ccs"
 dagger = "2.55"
 deephaven-barrage = "0.7.2"
 deephaven-csv = "0.15.0"
-deephaven-hash = "0.2.0"
+deephaven-hash = "0.3.0"
 deephaven-suan-shu = "0.1.1"
 dev-dirs = "26"
 dsi = "8.5.15"
@@ -63,13 +63,13 @@ mindrot = "0.4"
 nidi = "0.18.1"
 oshi = "5.8.3"
 pac4j = "5.7.0"
-parquet = "1.15.0"
+parquet = "1.15.1"
 picocli = "4.7.6"
 postgresql = "42.7.4"
 protobuf = "3.25.4"
 randelshofer = "2.0.1"
 rdblue = "0.1.1"
-selenium = "4.27.0"
+selenium = "4.30.0"
 slf4j = "2.0.17"
 snappy = "1.1.10.7"
 squareup = "1.13.0"
@@ -87,7 +87,7 @@ xerial = "3.49.1.0"
 assertj = "3.27.3"
 h2database = "2.3.232"
 jmock = "2.13.1"
-junit = "5.11.4"
+junit = "5.12.1"
 junit4 = "4.13.2"
 testcontainers = "1.20.5"
 jmh = "1.37"
@@ -179,7 +179,7 @@ grpc-core = { module = "io.grpc:grpc-core" }
 grpc-netty = { module = "io.grpc:grpc-netty" }
 grpc-protobuf = { module = "io.grpc:grpc-protobuf" }
 grpc-services = { module = "io.grpc:grpc-services" }
-grpc-stub = { module = "io.grpc:grpc-services" }
+grpc-stub = { module = "io.grpc:grpc-stub" }
 grpc-testing = { module = "io.grpc:grpc-testing" }
 grpc-inprocess = { module = "io.grpc:grpc-inprocess" }
 grpc-util = { module = "io.grpc:grpc-util" }
