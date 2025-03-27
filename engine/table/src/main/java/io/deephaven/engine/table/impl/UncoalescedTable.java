@@ -461,8 +461,8 @@ public abstract class UncoalescedTable<IMPL_TYPE extends UncoalescedTable<IMPL_T
     }
 
     @Override
-    public boolean awaitUpdate(long timeout) throws InterruptedException {
-        return coalesce().awaitUpdate(timeout);
+    public boolean awaitUpdate(long timeoutMillis) throws InterruptedException {
+        return coalesce().awaitUpdate(timeoutMillis);
     }
 
     @Override

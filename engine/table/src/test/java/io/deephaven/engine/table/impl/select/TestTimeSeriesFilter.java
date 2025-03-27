@@ -5,6 +5,8 @@ package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.api.filter.Filter;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.liveness.LivenessReferent;
+import io.deephaven.engine.liveness.ReferenceCountedLivenessReferent;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.Table;
@@ -24,10 +26,7 @@ import java.lang.ref.WeakReference;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static io.deephaven.engine.testutil.TstUtils.*;
@@ -153,7 +152,7 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
         final TimeSeriesFilter exclusionFilter =
                 TimeSeriesFilter.newBuilder().columnName("Date").period("PT01:00:00").clock(testClock).invert(true)
                         .build();
-        final ArrayList<WeakReference<TimeSeriesFilter>> filtersToRefresh = new ArrayList<>();
+        final List<WeakReference<TimeSeriesFilter>> filtersToRefresh = Collections.synchronizedList(new ArrayList<>());
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         EvalNugget[] en = makeNuggets(table, inclusionFilter, filtersToRefresh, updateGraph, exclusionFilter);
@@ -192,7 +191,7 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
         final TimeSeriesFilter exclusionFilter =
                 TimeSeriesFilter.newBuilder().columnName("Date").period("PT01:00:00").clock(testClock).invert(true)
                         .build();
-        final ArrayList<WeakReference<TimeSeriesFilter>> filtersToRefresh = new ArrayList<>();
+        final List<WeakReference<TimeSeriesFilter>> filtersToRefresh = Collections.synchronizedList(new ArrayList<>());
 
         EvalNugget[] en = makeNuggets(table, inclusionFilter, filtersToRefresh, updateGraph, exclusionFilter);
 
@@ -214,18 +213,36 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
     }
 
     private static EvalNugget @NotNull [] makeNuggets(QueryTable table, TimeSeriesFilter inclusionFilter,
-            ArrayList<WeakReference<TimeSeriesFilter>> filtersToRefresh, ControlledUpdateGraph updateGraph,
+            List<WeakReference<TimeSeriesFilter>> filtersToRefresh, ControlledUpdateGraph updateGraph,
             TimeSeriesFilter exclusionFilter) {
         final Table withInstant = table.update("Date=DateTimeUtils.epochNanosToInstant(Date.getTime() * 1000000L)");
         return new EvalNugget[] {
                 EvalNugget.from(() -> {
                     final TimeSeriesFilter inclusionCopy = inclusionFilter.copy();
-                    filtersToRefresh.add(new WeakReference<>(inclusionCopy));
+                    final WeakReference<TimeSeriesFilter> filterRef = new WeakReference<>(inclusionCopy);
+                    final LivenessReferent sentinel = new ReferenceCountedLivenessReferent() {
+                        @Override
+                        public void destroy() {
+                            super.destroy();
+                            filtersToRefresh.remove(filterRef);
+                        }
+                    };
+                    inclusionCopy.manage(sentinel);
+                    filtersToRefresh.add(filterRef);
                     return updateGraph.exclusiveLock().computeLocked(() -> withInstant.where(inclusionCopy));
                 }),
                 EvalNugget.from(() -> {
                     final TimeSeriesFilter exclusionCopy = exclusionFilter.copy();
-                    filtersToRefresh.add(new WeakReference<>(exclusionCopy));
+                    final WeakReference<TimeSeriesFilter> filterRef = new WeakReference<>(exclusionCopy);
+                    final LivenessReferent sentinel = new ReferenceCountedLivenessReferent() {
+                        @Override
+                        public void destroy() {
+                            super.destroy();
+                            filtersToRefresh.remove(filterRef);
+                        }
+                    };
+                    exclusionCopy.manage(sentinel);
+                    filtersToRefresh.add(filterRef);
                     return updateGraph.exclusiveLock().computeLocked(() -> withInstant.where(exclusionCopy));
                 }),
         };
