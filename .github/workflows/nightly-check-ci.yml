@@ -15,7 +15,17 @@ jobs:
       fail-fast: false
       matrix:
         gradle-task: ['check', 'testSerial', 'testParallel', 'testOutOfBand']
-        test-jvm-version: ['11', '17', '21', '23']
+        test-jvm-version: ['17', '21', '23']
+        jetty-version: ['12']
+        # While the defaults above only run client integration tests on Jetty 12, the following extra rules restore
+        # those tests for Jetty 11. Additionally, restores the Java 11 test version, but only when using Jetty 11, to
+        # avoid duplication.
+        include:
+          - jetty-version: '11'
+            gradle-task: 'check'
+          - jetty-version: '11'
+            gradle-task: 'check'
+            test-jvm-version: '11'
     if: ${{ github.repository_owner == 'deephaven' || github.event_name != 'schedule' }}
     runs-on: ubuntu-24.04
     concurrency:
@@ -23,6 +33,7 @@ jobs:
       cancel-in-progress: true
     env:
       COVER: ${{ (github.event_name == 'schedule' || startsWith(github.ref_name, 'coverage/')) && matrix.test-jvm-version == '21' }}
+      JETTY_FLAG: ${{ matrix.jetty-version == '11' && '-Pjetty11' || '' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -69,7 +80,7 @@ jobs:
           cat gradle.properties
 
       - name: Run gradle ${{ matrix.gradle-task }} on java ${{ matrix.test-jvm-version }} with coverage=${{ env.COVER }}
-        run: ./gradlew --scan --continue --rerun-tasks ${{ matrix.gradle-task }} -PtestRuntimeVersion=${{ matrix.test-jvm-version }} -Pcoverage.enabled=$COVER
+        run: ./gradlew --scan --continue --rerun-tasks ${{ matrix.gradle-task }} -PtestRuntimeVersion=${{ matrix.test-jvm-version }} -Pcoverage.enabled=$COVER $JETTY_FLAG
         
       - name: Upload Coverage Results
         if: ${{ env.COVER == 'true' }}
@@ -83,7 +94,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: nightly-${{ matrix.gradle-task }}-java${{ matrix.test-jvm-version }}-ci-results
+          name: nightly-${{ matrix.gradle-task }}-java${{ matrix.test-jvm-version }}-jetty${{ matrix.jetty-version}}-ci-results
           path: |
             **/build/test-results/**
             **/build/reports/tests/**
@@ -92,7 +103,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: failure()
         with:
-          name: nightly-${{ matrix.gradle-task }}-java${{ matrix.test-jvm-version }}-ci-jvm-err
+          name: nightly-${{ matrix.gradle-task }}-java${{ matrix.test-jvm-version }}-jetty${{ matrix.jetty-version}}-ci-jvm-err
           path: |
             **/*_pid*.log
             **/core.*
@@ -105,7 +116,7 @@ jobs:
           NODE_OPTIONS: '--max_old_space_size=4096'
         with:
           # We have to make a unique report per run https://github.com/ScaCap/action-surefire-report/issues/70
-          check_name: check report ${{ matrix.gradle-task }} java${{ matrix.test-jvm-version }}
+          check_name: check report ${{ matrix.gradle-task }} java${{ matrix.test-jvm-version }} jetty${{ matrix.jetty-version}}
           github_token: ${{ secrets.GITHUB_TOKEN }}
           report_paths: '**/build/test-results/*/TEST-*.xml'
 
@@ -117,7 +128,7 @@ jobs:
           webhook-type: webhook-trigger
           payload: |
             {
-              "slack_message": "Nightly build failure in ${{ matrix.gradle-task }} on Java ${{ matrix.test-jvm-version }} @ ${{ github.head_ref }} ${{ github.sha }} ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+              "slack_message": "Nightly build failure in ${{ matrix.gradle-task }} on Java ${{ matrix.test-jvm-version }} Jetty ${{ matrix.jetty-version}} @ ${{ github.head_ref }} ${{ github.sha }} ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_NIGHTLY_FAILURE }}
