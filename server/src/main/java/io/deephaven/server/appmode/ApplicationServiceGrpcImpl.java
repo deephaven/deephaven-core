@@ -132,11 +132,16 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
         final SessionState session = sessionService.getCurrentSession();
         final Subscription subscription = new Subscription(session, responseObserver);
 
+        // Before building the initial state, ensure it is up to date.
+        propagateUpdates();
+
         final FieldsChangeUpdate.Builder responseBuilder = FieldsChangeUpdate.newBuilder();
         for (FieldInfo fieldInfo : known.values()) {
             responseBuilder.addCreated(fieldInfo);
         }
+
         if (subscription.send(responseBuilder.build())) {
+            // Now that the new client has received their initial state, add them to the list of subscriptions
             subscriptions.add(subscription);
         } else {
             subscription.onCancel();
