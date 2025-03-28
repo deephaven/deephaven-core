@@ -9,7 +9,9 @@ jacoco {
 }
 
 tasks.register("jacoco-merge", JacocoReport) {
-    def jprojects = rootProject.allprojects.findAll { p-> p.plugins.hasPlugin('java') }
+    def jprojects = rootProject.allprojects.findAll { p ->
+        p.plugins.hasPlugin('java') && !p.name.matches('server-jetty.*-11')
+    }
     additionalSourceDirs = files(jprojects.sourceSets.main.allSource.srcDirs)
     sourceDirectories = files(jprojects.sourceSets.main.allSource.srcDirs)
     classDirectories = files(jprojects.sourceSets.main.output)

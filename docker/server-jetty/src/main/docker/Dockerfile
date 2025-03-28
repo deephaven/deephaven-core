@@ -22,7 +22,7 @@ ARG DEEPHAVEN_VERSION
 ADD serverApplicationDist/server-jetty-${DEEPHAVEN_VERSION}.tar /opt/deephaven
 
 RUN set -eux; \
-    ln -s /opt/deephaven/server-jetty-${DEEPHAVEN_VERSION} /opt/deephaven/server
+    ln -s /opt/deephaven/server-jetty-* /opt/deephaven/server
 
 FROM $BASE
 COPY --from=install / /

@@ -26,6 +26,7 @@ dependencies {
 
     implementation platform(libs.grpc.bom)
     implementation platform(libs.jetty.bom)
+    implementation platform(libs.jetty.ee10.bom)
 
     api libs.jakarata.servlet.api
     implementation libs.jetty.servlet
