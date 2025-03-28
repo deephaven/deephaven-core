@@ -113,10 +113,6 @@ public abstract class Resolver {
 
         Builder putColumnInstructions(String columnName, ColumnInstructions columnInstructions);
 
-        default Builder putColumnInstructions(String columnName, FieldPath fieldPath) {
-            return putColumnInstructions(columnName, ColumnInstructions.schemaFieldPath(fieldPath));
-        }
-
         Builder nameMapping(NameMapping nameMapping);
 
         Builder allowUnmappedColumns(boolean allowUnmappedColumns);
@@ -166,22 +162,20 @@ public abstract class Resolver {
     private void checkColumnInstructions(String columnName, ColumnInstructions ci) {
         definition().checkHasColumn(columnName);
         final ColumnDefinition<?> column = definition().getColumn(columnName);
-
-        // TODO: update after https://github.com/deephaven/deephaven-core/pull/6667
-        final Type<?> type = Type.find(column.getDataType());
+        final Type<?> type = Type.find(column.getDataType(), column.getComponentType());
 
         // todo: incorporate this
         final boolean isPartitioning = column.isPartitioning();
 
         try {
-            yep(ci, type);
+            validate(ci, type);
         } catch (SchemaHelper.PathException | MappingException e) {
             throw new MappingException(String.format("Unable to map Deephaven column %s", column.getName()), e);
         }
     }
 
-    private void yep(ColumnInstructions ci, Type<?> type) throws SchemaHelper.PathException {
-        if (ci.schemaFieldPath().isPresent()) {
+    private void validate(ColumnInstructions ci, Type<?> type) throws SchemaHelper.PathException {
+        if (ci.schemaFieldId().isPresent()) {
             final List<NestedField> fieldPath = ci.schemaFieldPath(schema());
             checkCompatible(fieldPath, type);
         } else {
@@ -211,23 +205,29 @@ public abstract class Resolver {
         if (ci == null) {
             return Optional.empty();
         }
+
+        return Optional.of(SchemaHelper.fieldPath(schema, ci.schemaFieldId().orElseThrow()));
+
+
         // todo: mixin spec?
-        return Optional.of(ci.schemaFieldPath().orElseThrow().resolve(schema));
+//        return Optional.of(ci.schemaFieldPath().orElseThrow().resolve(schema));
     }
 
     // We could change result type to a List or something more complex in future if necessary.
     private static class Inf extends TypeUtil.SchemaVisitor<Void> {
 
         private final InferenceInstructions ii;
-        final List<Types.NestedField> fieldPath = new ArrayList<>();
-
-        private final List<ColumnDefinition<?>> definitions = new ArrayList<>();
         private final InferenceInstructions.Namer namer;
-        private final Builder builder;
 
+        // build results
+        private final Builder builder;
+        private final List<ColumnDefinition<?>> definitions = new ArrayList<>();
         private final List<Inference.UnsupportedType> unsupportedTypes = new ArrayList<>();
 
+        // state
         private int skipDepth = 0;
+        private final List<Types.NestedField> fieldPath = new ArrayList<>();
+
 
         public Inf(InferenceInstructions ii) {
             this.ii = Objects.requireNonNull(ii);
@@ -279,10 +279,15 @@ public abstract class Resolver {
             }
             final String columnName = namer.of(fieldPath, type);
             NameValidator.validateColumnName(columnName);
-            final int[] idPath = fieldPath.stream().mapToInt(NestedField::fieldId).toArray();
-            builder.putColumnInstructions(columnName, ColumnInstructions.schemaFieldPath(FieldPath.of(idPath)));
+            //final int[] idPath = fieldPath.stream().mapToInt(NestedField::fieldId).toArray();
+            //builder.putColumnInstructions(columnName, ColumnInstructions.schemaFieldPath(FieldPath.of(idPath)));
+            builder.putColumnInstructions(columnName, ColumnInstructions.schemaField(currentFieldId()));
             definitions.add(ColumnDefinition.of(columnName, type));
             return null;
+        }
+
+        private int currentFieldId() {
+            return fieldPath.get(fieldPath.size() - 1).fieldId();
         }
 
         @Override

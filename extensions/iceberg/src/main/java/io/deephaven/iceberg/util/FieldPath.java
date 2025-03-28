@@ -46,6 +46,14 @@ public abstract class FieldPath {
         return of(fieldIdPath);
     }
 
+    public static FieldPath get(Schema schema, int fieldId) throws SchemaHelper.PathException {
+        final Optional<FieldPath> fieldPath = find(schema, fieldId);
+        if (fieldPath.isEmpty()) {
+            throw new SchemaHelper.PathException(String.format("Unable to find field id %d", fieldId));
+        }
+        return fieldPath.get();
+    }
+
     public static Optional<FieldPath> find(Schema schema, int fieldId) {
         return find(new ArrayList<>(), schema.asStruct(), fieldId).map(FieldPath::fp);
     }
@@ -95,7 +103,7 @@ public abstract class FieldPath {
 
     // todo: make package private
     // todo
-    final List<NestedField> resolve(Schema schema) throws SchemaHelper.PathException {
+    public final List<NestedField> resolve(Schema schema) throws SchemaHelper.PathException {
         return SchemaHelper.fieldPath(schema, path());
     }
 

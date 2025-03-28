@@ -37,6 +37,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 
+import static io.deephaven.iceberg.util.ColumnInstructions.schemaField;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 
@@ -226,10 +227,10 @@ class InferenceTest {
                         ColumnDefinition.ofInt("S1_F2"),
                         ColumnDefinition.ofInt("S2_F1"),
                         ColumnDefinition.ofInt("S2_F2")))
-                .putColumnInstructions("S1_F1", FieldPath.of(3, 1))
-                .putColumnInstructions("S1_F2", FieldPath.of(3, 2))
-                .putColumnInstructions("S2_F1", FieldPath.of(6, 4))
-                .putColumnInstructions("S2_F2", FieldPath.of(6, 5))
+                .putColumnInstructions("S1_F1", schemaField(1))
+                .putColumnInstructions("S1_F2", schemaField(2))
+                .putColumnInstructions("S2_F1", schemaField(4))
+                .putColumnInstructions("S2_F2", schemaField(5))
                 .build();
         assertThat(Resolver.infer(i(schema))).isEqualTo(expected);
         assertThat(Resolver.infer(ia(schema))).isEqualTo(expected);
@@ -247,8 +248,8 @@ class InferenceTest {
                 .definition(TableDefinition.of(
                         ColumnDefinition.ofInt("S1_S2_F1"),
                         ColumnDefinition.ofInt("S1_S2_F2")))
-                .putColumnInstructions("S1_S2_F1", FieldPath.of(1, 2, 3))
-                .putColumnInstructions("S1_S2_F2", FieldPath.of(1, 2, 4))
+                .putColumnInstructions("S1_S2_F1", schemaField(3))
+                .putColumnInstructions("S1_S2_F2", schemaField(4))
                 .build();
         assertThat(Resolver.infer(i(schema))).isEqualTo(expected);
         assertThat(Resolver.infer(ia(schema))).isEqualTo(expected);
@@ -323,7 +324,7 @@ class InferenceTest {
                 .schema(schema)
                 .spec(PartitionSpec.unpartitioned())
                 .definition(TableDefinition.of(ColumnDefinition.ofInt("F2")))
-                .putColumnInstructions("F2", FieldPath.of(43))
+                .putColumnInstructions("F2", schemaField(43))
                 .build());
     }
 
@@ -343,8 +344,8 @@ class InferenceTest {
                 .definition(TableDefinition.of(
                         ColumnDefinition.ofInt("FieldId_42"),
                         ColumnDefinition.ofInt("FieldId_43")))
-                .putColumnInstructions("FieldId_42", FieldPath.of(42))
-                .putColumnInstructions("FieldId_43", FieldPath.of(43))
+                .putColumnInstructions("FieldId_42", schemaField(42))
+                .putColumnInstructions("FieldId_43", schemaField(43))
                 .build());
     }
 
@@ -365,8 +366,8 @@ class InferenceTest {
                 .schema(schema)
                 .spec(PartitionSpec.unpartitioned())
                 .definition(simpleDefinition(type))
-                .putColumnInstructions("F1", FieldPath.of(42))
-                .putColumnInstructions("F2", FieldPath.of(43))
+                .putColumnInstructions("F1", schemaField(42))
+                .putColumnInstructions("F2", schemaField(43))
                 .build();
     }
 }

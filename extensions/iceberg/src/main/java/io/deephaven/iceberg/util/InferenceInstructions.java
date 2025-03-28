@@ -55,6 +55,7 @@ public abstract class InferenceInstructions {
         return false;
     }
 
+    // TODO: this needs to be generalized to support partition spec stuff, likely pull class out of ColumnInstructions
     /**
      * The set of field paths to skip during inference.
      */

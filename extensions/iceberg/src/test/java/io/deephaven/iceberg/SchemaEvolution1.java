@@ -10,6 +10,7 @@ import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.iceberg.internal.Inference;
 import io.deephaven.iceberg.sqlite.DbResource;
+import io.deephaven.iceberg.util.ColumnInstructions;
 import io.deephaven.iceberg.util.InferenceInstructions;
 import io.deephaven.iceberg.util.Resolver;
 import io.deephaven.iceberg.util.FieldPath;
@@ -29,6 +30,7 @@ import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.Map;
 
+import static io.deephaven.iceberg.util.ColumnInstructions.schemaField;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @Tag("security-manager-allow")
@@ -189,7 +191,7 @@ public class SchemaEvolution1 {
             read(expected, Resolver.builder()
                     .schema(schema_4())
                     .definition(td)
-                    .putColumnInstructions(col1, FieldPath.of(fieldId1))
+                    .putColumnInstructions(col1, schemaField(fieldId1))
                     .build());
         }
         // subset, just id2
@@ -202,7 +204,7 @@ public class SchemaEvolution1 {
             read(expected, Resolver.builder()
                     .schema(schema_4())
                     .definition(td)
-                    .putColumnInstructions(col2, FieldPath.of(fieldId2))
+                    .putColumnInstructions(col2, schemaField(fieldId2))
                     .build());
         }
         // subset, just id3 (ideally, )
@@ -239,9 +241,9 @@ public class SchemaEvolution1 {
             read(expected, Resolver.builder()
                     .schema(schema_4())
                     .definition(td)
-                    .putColumnInstructions(col1, FieldPath.of(fieldId1))
-                    .putColumnInstructions(col2, FieldPath.of(fieldId2))
-                    .putColumnInstructions(col3, FieldPath.of(fieldId3))
+                    .putColumnInstructions(col1, schemaField(fieldId1))
+                    .putColumnInstructions(col2, schemaField(fieldId2))
+                    .putColumnInstructions(col3, schemaField(fieldId3))
                     .allowUnmappedColumns(true)
                     .build());
         }

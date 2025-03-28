@@ -13,45 +13,39 @@ import org.apache.iceberg.types.Types.NestedField;
 import org.immutables.value.Value;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.OptionalInt;
 
 @Value.Immutable
 @BuildableStyle
 public abstract class ColumnInstructions {
 
+    public static ColumnInstructions schemaField(int fieldId) {
+        return ImmutableColumnInstructions.builder().schemaFieldId(fieldId).build();
+    }
+
     public static ColumnInstructions partitionField(int partitionFieldId) {
         return ImmutableColumnInstructions.builder().partitionFieldId(partitionFieldId).build();
     }
 
-    public static ColumnInstructions schemaFieldPath(FieldPath fieldPath) {
-        return ImmutableColumnInstructions.builder().schemaFieldPath(fieldPath).build();
-    }
+    abstract OptionalInt schemaFieldId();
 
     abstract OptionalInt partitionFieldId();
-
-    /**
-     * The path to the Iceberg {@link NestedField} associated with this column.
-     */
-    abstract Optional<FieldPath> schemaFieldPath();
-
+    
     PartitionField partitionField(PartitionSpec spec) throws SchemaHelper.PathException {
         return PartitionSpecHelper.get(spec, partitionFieldId().orElseThrow());
     }
 
     List<NestedField> schemaFieldPath(Schema schema) throws SchemaHelper.PathException {
-        return schemaFieldPath().orElseThrow().resolve(schema);
+        return SchemaHelper.fieldPath(schema, schemaFieldId().orElseThrow());
     }
-
-
 
     // Note: very likely there will be additions here to support future additions; codecs, conversions, etc.
 
     @Value.Check
-    final void checkType() {
-        if (partitionFieldId().isPresent() == schemaFieldPath().isPresent()) {
+    final void checkBase() {
+        if (partitionFieldId().isPresent() == schemaFieldId().isPresent()) {
             throw new IllegalArgumentException(
-                    "ColumnInstructions must have exactly one of partitionFieldId or schemaFieldPath");
+                    "ColumnInstructions must be schema based or partition based");
         }
     }
 }

@@ -18,6 +18,7 @@ import org.apache.iceberg.types.Types.IntegerType;
 import org.apache.iceberg.types.Types.NestedField;
 import org.junit.jupiter.api.Test;
 
+import static io.deephaven.iceberg.util.ColumnInstructions.schemaField;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 
@@ -35,9 +36,9 @@ class ResolverTest {
                     .schema(simpleSchema(IT))
                     .spec(PartitionSpec.unpartitioned())
                     .definition(simpleDefinition(Type.intType()))
-                    .putColumnInstructions("F1", FieldPath.of(42))
-                    .putColumnInstructions("F2", FieldPath.of(43))
-                    .putColumnInstructions("F3", FieldPath.of(42))
+                    .putColumnInstructions("F1", schemaField(42))
+                    .putColumnInstructions("F2", schemaField(43))
+                    .putColumnInstructions("F3", schemaField(42))
                     .build();
         } catch (NoSuchColumnException e) {
             assertThat(e).hasMessageContaining("Unknown column names [F3], available column names are [F1, F2]");
@@ -51,14 +52,25 @@ class ResolverTest {
                     .schema(simpleSchema(IT))
                     .spec(PartitionSpec.unpartitioned())
                     .definition(simpleDefinition(Type.intType()))
-                    .putColumnInstructions("F1", FieldPath.of(42))
-                    .putColumnInstructions("F2", FieldPath.of(44))
+                    .putColumnInstructions("F1", schemaField(42))
+                    .putColumnInstructions("F2", schemaField(44))
                     .build();
             failBecauseExceptionWasNotThrown(Resolver.MappingException.class);
         } catch (Resolver.MappingException e) {
             assertThat(e).hasMessageContaining("Unable to map Deephaven column F2");
             assertThat(e).cause().hasMessageContaining("id path not found, path=[44], context=[]");
         }
+    }
+
+    @Test
+    void noSuchPartitionField() {
+        Resolver.builder()
+                .schema(simpleSchema(IT))
+                .spec(PartitionSpec.unpartitioned())
+                .definition(simpleDefinition(Type.intType()))
+                .putColumnInstructions("F1", schemaField(42))
+                .putColumnInstructions("F2", ColumnInstructions.partitionField(9999))
+                .build();
     }
 
     @Test
@@ -69,7 +81,7 @@ class ResolverTest {
                     .schema(simpleSchema(IT))
                     .spec(PartitionSpec.unpartitioned())
                     .definition(simpleDefinition(Type.intType()))
-                    .putColumnInstructions("F1", FieldPath.of(42))
+                    .putColumnInstructions("F1", schemaField(42))
                     .build();
             failBecauseExceptionWasNotThrown(Resolver.MappingException.class);
         } catch (Resolver.MappingException e) {
@@ -81,7 +93,7 @@ class ResolverTest {
                 .schema(simpleSchema(IT))
                 .spec(PartitionSpec.unpartitioned())
                 .definition(simpleDefinition(Type.intType()))
-                .putColumnInstructions("F1", FieldPath.of(42))
+                .putColumnInstructions("F1", schemaField(42))
                 .allowUnmappedColumns(true)
                 .build();
     }
@@ -96,9 +108,9 @@ class ResolverTest {
                         ColumnDefinition.of("F1", Type.intType()),
                         ColumnDefinition.of("F2", Type.intType()),
                         ColumnDefinition.of("F3", Type.intType())))
-                .putColumnInstructions("F1", FieldPath.of(42))
-                .putColumnInstructions("F2", FieldPath.of(43))
-                .putColumnInstructions("F3", FieldPath.of(43))
+                .putColumnInstructions("F1", schemaField(42))
+                .putColumnInstructions("F2", schemaField(43))
+                .putColumnInstructions("F3", schemaField(43))
                 .build();
 
     }
@@ -113,8 +125,8 @@ class ResolverTest {
                         NestedField.required(44, "F3", IT)))
                 .spec(PartitionSpec.unpartitioned())
                 .definition(simpleDefinition(Type.intType()))
-                .putColumnInstructions("F1", FieldPath.of(42))
-                .putColumnInstructions("F2", FieldPath.of(43))
+                .putColumnInstructions("F1", schemaField(42))
+                .putColumnInstructions("F2", schemaField(43))
                 .build();
     }
 
@@ -126,8 +138,8 @@ class ResolverTest {
                     .schema(simpleSchema(IT))
                     .spec(PartitionSpec.unpartitioned())
                     .definition(simpleDefinition(Type.stringType()))
-                    .putColumnInstructions("F1", FieldPath.of(42))
-                    .putColumnInstructions("F2", FieldPath.of(43))
+                    .putColumnInstructions("F1", schemaField(42))
+                    .putColumnInstructions("F2", schemaField(43))
                     .build();
             failBecauseExceptionWasNotThrown(Resolver.MappingException.class);
         } catch (Resolver.MappingException e) {
@@ -146,8 +158,8 @@ class ResolverTest {
                     .definition(TableDefinition.of(
                             ColumnDefinition.of("F1", Type.intType()),
                             ColumnDefinition.of("F2", Type.intType())))
-                    .putColumnInstructions("F1", FieldPath.of(42))
-                    .putColumnInstructions("F2", FieldPath.of(44))
+                    .putColumnInstructions("F1", schemaField(42))
+                    .putColumnInstructions("F2", schemaField(44))
                     .build();
             failBecauseExceptionWasNotThrown(Resolver.MappingException.class);
         } catch (Resolver.MappingException e) {
@@ -168,8 +180,8 @@ class ResolverTest {
                 .definition(TableDefinition.of(
                         ColumnDefinition.ofInt("S1_S2_F1"),
                         ColumnDefinition.ofInt("S1_S2_F2")))
-                .putColumnInstructions("S1_S2_F1", FieldPath.of(1, 2, 3))
-                .putColumnInstructions("S1_S2_F2", FieldPath.of(1, 2, 4))
+                .putColumnInstructions("S1_S2_F1", schemaField(3))
+                .putColumnInstructions("S1_S2_F2", schemaField(4))
                 .build();
     }
 
@@ -184,7 +196,7 @@ class ResolverTest {
                     .schema(schema)
                     .spec(PartitionSpec.unpartitioned())
                     .definition(TableDefinition.of(ColumnDefinition.ofInt("S1_S2")))
-                    .putColumnInstructions("S1_S2", FieldPath.of(1, 2))
+                    .putColumnInstructions("S1_S2", schemaField(2))
                     .build();
             failBecauseExceptionWasNotThrown(Resolver.MappingException.class);
         } catch (Resolver.MappingException e) {
@@ -208,7 +220,7 @@ class ResolverTest {
                         ColumnDefinition.of("F1", Type.intType()).withPartitioning(),
                         ColumnDefinition.of("F2", Type.intType())))
                 .putColumnInstructions("F1", ColumnInstructions.partitionField(partitionField.fieldId()))
-                .putColumnInstructions("F2", FieldPath.of(43))
+                .putColumnInstructions("F2", schemaField(43))
                 .build();
     }
 
@@ -226,7 +238,7 @@ class ResolverTest {
                             ColumnDefinition.of("F1", Type.intType()).withPartitioning(),
                             ColumnDefinition.of("F2", Type.intType())))
                     .putColumnInstructions("F1", ColumnInstructions.partitionField(9999))
-                    .putColumnInstructions("F2", FieldPath.of(43))
+                    .putColumnInstructions("F2", schemaField(43))
                     .build();
             failBecauseExceptionWasNotThrown(Resolver.MappingException.class);
         } catch (Resolver.MappingException e) {
@@ -250,7 +262,7 @@ class ResolverTest {
                             ColumnDefinition.of("F1", Type.intType()).withPartitioning(),
                             ColumnDefinition.of("F2", Type.intType())))
                     .putColumnInstructions("F1", ColumnInstructions.partitionField(partitionField.fieldId()))
-                    .putColumnInstructions("F2", FieldPath.of(43))
+                    .putColumnInstructions("F2", schemaField(43))
                     .build();
             failBecauseExceptionWasNotThrown(Resolver.MappingException.class);
         } catch (Resolver.MappingException e) {
@@ -265,7 +277,7 @@ class ResolverTest {
     // final Mapping mapping = Mapping.builder()
     // .schema(simpleSchema(IT))
     // .definition(simpleDefinition(Type.intType()))
-    // .putPath("F1", FieldPath.of(42))
+    // .putPath("F1", schemaField(42))
     // .build();
     // }
     //
@@ -276,8 +288,8 @@ class ResolverTest {
     // .definition(TableDefinition.of(
     // ColumnDefinition.ofShort("F1"),
     // ColumnDefinition.ofShort("F2")))
-    // .putPath("F1", FieldPath.of(42))
-    // .putPath("F2", FieldPath.of(43))
+    // .putPath("F1", schemaField(42))
+    // .putPath("F2", schemaField(43))
     // .build();
     // }
     //
@@ -289,7 +301,7 @@ class ResolverTest {
     // Mapping.builder()
     // .schema(schema)
     // .definition(TableDefinition.of(ColumnDefinition.of("L1", Type.intType().arrayType())))
-    // .putPath("L1", FieldPath.of(2))
+    // .putPath("L1", schemaField(2))
     // .build();
     // }
 

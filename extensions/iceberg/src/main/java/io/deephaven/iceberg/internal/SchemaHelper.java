@@ -3,6 +3,7 @@
 //
 package io.deephaven.iceberg.internal;
 
+import io.deephaven.iceberg.util.FieldPath;
 import org.apache.iceberg.Schema;
 import org.apache.iceberg.types.Type;
 import org.apache.iceberg.types.Types.NestedField;
@@ -22,6 +23,16 @@ public final class SchemaHelper {
             return false;
         }
         return true;
+    }
+
+    public static List<NestedField> fieldPath(Schema schema, int fieldId) throws PathException {
+        final FieldPath fieldPath = FieldPath.get(schema, fieldId);
+        try {
+            return fieldPath.resolve(schema);
+        } catch (PathException e) {
+            // this should have failed during the get if it was not found
+            throw new IllegalStateException(e);
+        }
     }
 
     public static List<NestedField> fieldPath(Schema schema, int[] idPath) throws PathException {
