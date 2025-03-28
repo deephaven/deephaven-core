@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.table.Context;
@@ -18,7 +19,7 @@ public class ContextWithChunk<ATTR extends Any, CONTEXT extends Context> impleme
     ContextWithChunk(CONTEXT context, ChunkType chunkType, int chunkCapacity) {
         this.context = context;
         writableChunk = chunkType.makeWritableChunk(chunkCapacity);
-        writableChunk.setSize(chunkCapacity);
+        Assert.eq(chunkCapacity, "chunkCapacity", writableChunk.size(), "writableChunk.size()");
         resettableWritableChunk = chunkType.makeResettableWritableChunk();
     }
 
