@@ -5,13 +5,12 @@ package io.deephaven.iceberg.internal;
 
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.iceberg.util.Resolver;
 import io.deephaven.iceberg.util.FieldPath;
 import io.deephaven.iceberg.util.InferenceInstructions;
+import io.deephaven.iceberg.util.Resolver;
 import io.deephaven.qst.type.Type;
 import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.Schema;
-import org.apache.iceberg.mapping.NameMapping;
 import org.apache.iceberg.types.Types.BinaryType;
 import org.apache.iceberg.types.Types.BooleanType;
 import org.apache.iceberg.types.Types.DateType;
@@ -30,6 +29,7 @@ import org.apache.iceberg.types.Types.TimeType;
 import org.apache.iceberg.types.Types.TimestampNanoType;
 import org.apache.iceberg.types.Types.TimestampType;
 import org.apache.iceberg.types.Types.UUIDType;
+import org.apache.iceberg.types.Types.VariantType;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -45,6 +45,9 @@ import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
  * easier setup than creating or mocking our own consumer via {@link Inference#of(Schema, Inference.Consumer)}.
  */
 class InferenceTest {
+
+    // Note: Schema does not implement equals. In this testing, the expected and actual need to share the exact same
+    // schema (not a problem, since we aren't inferring the Schema, it's given to us).
 
     private static final IntegerType IT = IntegerType.get();
 
@@ -144,8 +147,8 @@ class InferenceTest {
         try {
             Resolver.infer(ia(schema));
             failBecauseExceptionWasNotThrown(Inference.Exception.class);
-        } catch (Inference.Exception e) {
-            assertThat(e).hasMessageContaining("Unsupported Iceberg type: `timestamptz_ns`");
+        } catch (Inference.UnsupportedType e) {
+            assertThat(e).hasMessageContaining("Unsupported Iceberg type `timestamptz_ns` at path [F1]");
         }
     }
 
@@ -156,8 +159,8 @@ class InferenceTest {
         try {
             Resolver.infer(ia(schema));
             failBecauseExceptionWasNotThrown(Inference.Exception.class);
-        } catch (Inference.Exception e) {
-            assertThat(e).hasMessageContaining("Unsupported Iceberg type: `timestamp_ns`");
+        } catch (Inference.UnsupportedType e) {
+            assertThat(e).hasMessageContaining("Unsupported Iceberg type `timestamp_ns` at path [F1]");
         }
     }
 
@@ -200,8 +203,9 @@ class InferenceTest {
         try {
             Resolver.infer(ia(schema));
             failBecauseExceptionWasNotThrown(Inference.Exception.class);
-        } catch (Inference.Exception e) {
-            assertThat(e).hasMessageContaining("Unsupported Iceberg type: `uuid`");
+        } catch (Inference.UnsupportedType e) {
+            assertThat(e).hasMessageContaining("Unsupported Iceberg type `uuid` at path [F1]");
+            assertThat(e.type()).isEqualTo(UUIDType.get());
         }
     }
 
@@ -261,8 +265,9 @@ class InferenceTest {
         try {
             Resolver.infer(ia(schema));
             failBecauseExceptionWasNotThrown(Inference.Exception.class);
-        } catch (Inference.Exception e) {
-            assertThat(e).hasMessageContaining("Unsupported Iceberg type: `list<int>`");
+        } catch (Inference.UnsupportedType e) {
+            assertThat(e).hasMessageContaining("Unsupported Iceberg type `list<int>` at path [L1]");
+            assertThat(e.type()).isEqualTo(ListType.ofOptional(1, IT));
         }
     }
 
@@ -277,9 +282,70 @@ class InferenceTest {
         try {
             Resolver.infer(ia(schema));
             failBecauseExceptionWasNotThrown(Inference.Exception.class);
-        } catch (Inference.Exception e) {
-            assertThat(e).hasMessageContaining("Unsupported Iceberg type: `map<int, int>`");
+        } catch (Inference.UnsupportedType e) {
+            assertThat(e).hasMessageContaining("Unsupported Iceberg type `map<int, int>` at path [M1]");
+            assertThat(e.type()).isEqualTo(MapType.ofOptional(1, 2, IT, IT));
         }
+    }
+
+    @Test
+    void VariantType() throws Inference.UnsupportedType {
+        final Schema schema = simpleSchema(VariantType.get());
+        assertThat(Resolver.infer(i(schema))).isEqualTo(Resolver.empty(schema));
+        try {
+            Resolver.infer(ia(schema));
+            failBecauseExceptionWasNotThrown(Inference.Exception.class);
+        } catch (Inference.UnsupportedType e) {
+            assertThat(e).hasMessageContaining("Unsupported Iceberg type `variant` at path [F1]");
+            assertThat(e.type()).isEqualTo(VariantType.get());
+        }
+    }
+
+    @Test
+    void skipFields() throws Inference.UnsupportedType {
+        final Schema schema = new Schema(
+            NestedField.optional(42, "F1", IT),
+            NestedField.required(43, "F2", IT),
+            NestedField.optional(44, "F3", ListType.ofOptional(1, IT)));
+
+        // We should be able to skip types, regardless of whether we support them or not.
+        // In this case, we are skipping a supported type [42], and skipping an unsupported type [44] which would
+        // otherwise cause an UnsupportedType exception.
+        final InferenceInstructions instructions = InferenceInstructions.builder()
+                .schema(schema)
+                .spec(PartitionSpec.unpartitioned())
+                .failOnUnsupportedTypes(true)
+                .addSkip(FieldPath.of(42))
+                .addSkip(FieldPath.of(44))
+                .build();
+
+        assertThat(Resolver.infer(instructions)).isEqualTo(Resolver.builder()
+                .schema(schema)
+                .spec(PartitionSpec.unpartitioned())
+                .definition(TableDefinition.of(ColumnDefinition.ofInt("F2")))
+                .putColumnInstructions("F2", FieldPath.of(43))
+                .build());
+    }
+
+    @Test
+    void alternativeNamer() throws Inference.UnsupportedType {
+        final Schema schema = simpleSchema(IT);
+        final InferenceInstructions instructions = InferenceInstructions.builder()
+                .schema(schema)
+                .spec(PartitionSpec.unpartitioned())
+                .failOnUnsupportedTypes(true)
+                .namerFactory(InferenceInstructions.Namer.Factory.fieldId())
+                .build();
+
+        assertThat(Resolver.infer(instructions)).isEqualTo(Resolver.builder()
+                .schema(schema)
+                .spec(PartitionSpec.unpartitioned())
+                .definition(TableDefinition.of(
+                        ColumnDefinition.ofInt("FieldId_42"),
+                        ColumnDefinition.ofInt("FieldId_43")))
+                .putColumnInstructions("FieldId_42", FieldPath.of(42))
+                .putColumnInstructions("FieldId_43", FieldPath.of(43))
+                .build());
     }
 
     private static Schema simpleSchema(org.apache.iceberg.types.Type type) {

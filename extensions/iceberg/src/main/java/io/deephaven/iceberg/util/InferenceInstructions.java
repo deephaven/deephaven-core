@@ -8,8 +8,6 @@ import io.deephaven.api.util.NameValidator;
 import io.deephaven.qst.type.Type;
 import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.Schema;
-import org.apache.iceberg.Table;
-import org.apache.iceberg.mapping.NameMapping;
 import org.apache.iceberg.types.Types;
 import org.immutables.value.Value;
 
@@ -30,21 +28,6 @@ public abstract class InferenceInstructions {
         return builder().schema(schema).spec(partitionSpec).build();
     }
 
-    // public static InferenceInstructions fromSchema(Schema schema) {
-    // return builder()
-    // .schema(schema)
-    // .spec(PartitionSpec.unpartitioned())
-    // .build();
-    // }
-    //
-    // public static InferenceInstructions fromLatest(Table table) {
-    // return builder()
-    // .schema(table.schema())
-    // .spec(table.spec())
-    //// .nameMapping(NameMappingUtil.readNameMappingDefault(table).orElse(NameMapping.empty()))
-    // .build();
-    // }
-
     /**
      * The schema to use for inference.
      */
@@ -55,31 +38,27 @@ public abstract class InferenceInstructions {
      */
     public abstract PartitionSpec spec();
 
-    // /**
-    // * The name mapping to use as fallback if field-ids are not present in the data file paths. By default, is {@link
-    // NameMapping#empty()}.
-    // */
-    // @Value.Default
-    // public NameMapping nameMapping() {
-    // return NameMapping.empty();
-    // }
-
     /**
-     * The namer factory. Defaults to {@link Namer.Factory#ofDefault()}.
+     * The namer factory. Defaults to {@link Namer.Factory#fieldName()}.
      */
     @Value.Default
     public Namer.Factory namerFactory() {
-        return Namer.Factory.ofDefault();
+        return Namer.Factory.fieldName();
     }
 
     /**
-     * If inference should fail if any of the Iceberg fields fail to map to Deephaven columns. By default, is
-     * {@code false}.
+     * If inference should fail if any of the Iceberg fields fail to map to Deephaven columns. A {@link #skip() skipped}
+     * field will not throw an exception. By default, is {@code false}.
      */
     @Value.Default
     public boolean failOnUnsupportedTypes() {
         return false;
     }
+
+    /**
+     * The set of field paths to skip during inference.
+     */
+    public abstract Set<FieldPath> skip();
 
     /**
      * The Deephaven column namer.
@@ -89,12 +68,19 @@ public abstract class InferenceInstructions {
         interface Factory {
 
             /**
-             * The default namer constructs a Deephaven column name by joining together the
+             * The field name {@link Namer} constructs a Deephaven column name by joining together the
              * {@link Types.NestedField#name() field names} with an underscore ({@code _}) and calling
              * {@link NameValidator#legalizeColumnName(String, Set)} with de-duplication logic.
              */
-            static Factory ofDefault() {
-                return DefaultNamer.FactoryImpl.DEFAULT_NAMER_FACTORY;
+            static Factory fieldName() {
+                return FieldNameNamer.FactoryImpl.FIELD_NAME_NAMER;
+            }
+
+            /**
+             * The field name {@link Namer} constructs a Deephaven column name of the form {@value FieldIdNamer#FIELD_ID} with the last {@link Types.NestedField#fieldId() field-id} in the path appended.
+             */
+            static Factory fieldId() {
+                return FieldIdNamer.FIELD_ID_NAMER;
             }
 
             /**
@@ -119,11 +105,15 @@ public abstract class InferenceInstructions {
 
         Builder spec(PartitionSpec spec);
 
-        // Builder nameMapping(NameMapping nameMapping);
-
         Builder failOnUnsupportedTypes(boolean failOnUnsupportedTypes);
 
         Builder namerFactory(Namer.Factory namerFactory);
+
+        Builder addSkip(FieldPath element);
+
+        Builder addSkip(FieldPath... elements);
+
+        Builder addAllSkip(Iterable<? extends FieldPath> elements);
 
         InferenceInstructions build();
     }
@@ -138,14 +128,14 @@ public abstract class InferenceInstructions {
         }
     }
 
-    private static final class DefaultNamer implements Namer {
+    private static final class FieldNameNamer implements Namer {
 
         private enum FactoryImpl implements Factory {
-            DEFAULT_NAMER_FACTORY;
+            FIELD_NAME_NAMER;
 
             @Override
             public Namer create() {
-                return new DefaultNamer();
+                return new FieldNameNamer();
             }
         }
 
@@ -157,6 +147,29 @@ public abstract class InferenceInstructions {
             final String columnName = NameValidator.legalizeColumnName(joinedNames, usedNames);
             usedNames.add(columnName);
             return columnName;
+        }
+    }
+
+    private enum FieldIdNamer implements Namer.Factory, Namer {
+        FIELD_ID_NAMER;
+
+        private static final String FIELD_ID = "FieldId_";
+
+        @Override
+        public Namer create() {
+            return this;
+        }
+
+        @Override
+        public String of(Collection<? extends Types.NestedField> path, Type<?> type) {
+            Types.NestedField lastField = null;
+            for (Types.NestedField nestedField : path) {
+                lastField = nestedField;
+            }
+            if (lastField == null) {
+                throw new IllegalStateException();
+            }
+            return FIELD_ID + lastField.fieldId();
         }
     }
 }

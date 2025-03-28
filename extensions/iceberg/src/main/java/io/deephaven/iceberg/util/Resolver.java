@@ -5,6 +5,7 @@ package io.deephaven.iceberg.util;
 
 import io.deephaven.annotations.BuildableStyle;
 import io.deephaven.api.util.NameValidator;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.iceberg.internal.Inference;
@@ -14,6 +15,8 @@ import org.apache.iceberg.PartitionField;
 import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.Schema;
 import org.apache.iceberg.mapping.NameMapping;
+import org.apache.iceberg.types.TypeUtil;
+import org.apache.iceberg.types.Types;
 import org.apache.iceberg.types.Types.NestedField;
 import org.immutables.value.Value;
 
@@ -21,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 
@@ -45,21 +49,13 @@ public abstract class Resolver {
                 .build();
     }
 
-    // public static Resolver infer(Schema schema) throws Inference.Exception {
-    // return infer(InferenceInstructions.builder().schema(schema).spec(PartitionSpec.unpartitioned()).build());
-    // }
-
-    public static Resolver infer(InferenceInstructions instructions) throws Inference.Exception {
-        final InferenceBuilder builder = new InferenceBuilder(instructions);
-        try {
-            Inference.of(instructions.schema(), builder);
-        } catch (RuntimeException e) {
-            if (e.getCause() instanceof Inference.Exception) {
-                throw (Inference.Exception) e.getCause();
-            }
-            throw e;
+    public static Resolver infer(InferenceInstructions i) throws Inference.UnsupportedType {
+        final Inf inf = new Inf(i);
+        TypeUtil.visit(i.schema(), inf);
+        if (i.failOnUnsupportedTypes() && !inf.unsupportedTypes.isEmpty()) {
+            throw inf.unsupportedTypes.get(0);
         }
-        return builder.build();
+        return inf.build();
     }
 
     // TODO: infer update
@@ -219,19 +215,27 @@ public abstract class Resolver {
         return Optional.of(ci.schemaFieldPath().orElseThrow().resolve(schema));
     }
 
-    private static class InferenceBuilder implements Inference.Consumer {
+    // We could change result type to a List or something more complex in future if necessary.
+    private static class Inf extends TypeUtil.SchemaVisitor<Void> {
+
+        private final InferenceInstructions ii;
+        final List<Types.NestedField> fieldPath = new ArrayList<>();
+
         private final List<ColumnDefinition<?>> definitions = new ArrayList<>();
         private final InferenceInstructions.Namer namer;
         private final Builder builder;
-        private final boolean failOnUnsupportedTypes;
 
-        public InferenceBuilder(InferenceInstructions ii) {
+        private final List<Inference.UnsupportedType> unsupportedTypes = new ArrayList<>();
+
+        private int skipDepth = 0;
+
+        public Inf(InferenceInstructions ii) {
+            this.ii = Objects.requireNonNull(ii);
             this.namer = ii.namerFactory().create();
             this.builder = builder()
                     .schema(ii.schema())
                     .spec(ii.spec())
                     .allowUnmappedColumns(false);
-            this.failOnUnsupportedTypes = ii.failOnUnsupportedTypes();
         }
 
         Resolver build() {
@@ -240,28 +244,146 @@ public abstract class Resolver {
                     .build();
         }
 
-        @Override
-        public void onType(Collection<? extends NestedField> path, Type<?> type) {
-            if (!isCompatible(path, type)) {
-                throw new IllegalStateException(
-                        String.format("Inference is producing an invalid mapping path=%s, type=%s",
-                                SchemaHelper.toNameString(path), type));
+        private boolean isSkip() {
+            if (ii.skip().isEmpty()) {
+                return false;
             }
-            final String columnName = namer.of(path, type);
-            NameValidator.validateColumnName(columnName);
-            final int[] idPath = path.stream().mapToInt(NestedField::fieldId).toArray();
-            builder.putColumnInstructions(columnName, ColumnInstructions.schemaFieldPath(FieldPath.of(idPath)));
-            definitions.add(ColumnDefinition.of(columnName, type));
+            // Not the most efficient check, but should not matter given this is only done during inference.
+            final FieldPath fp = FieldPath.of(fieldPath.stream().mapToInt(NestedField::fieldId).toArray());
+            return ii.skip().contains(fp);
+        }
+
+        private void push(NestedField field) {
+            fieldPath.add(field);
+            if (isSkip()) {
+                ++skipDepth;
+            }
+        }
+
+        private void pop(NestedField field) {
+            if (isSkip()) {
+                --skipDepth;
+            }
+            Assert.eq(field, "field", fieldPath.remove(fieldPath.size() - 1));
         }
 
         @Override
-        public void onError(Collection<? extends NestedField> path, Inference.Exception e) {
-            if (failOnUnsupportedTypes) {
-                // todo: more specific exception type
-                throw new RuntimeException(e);
+        public Void primitive(org.apache.iceberg.types.Type.PrimitiveType primitive) {
+            if (skipDepth != 0) {
+                return null;
             }
+            final Type<?> type = Inference.of(primitive).orElse(null);
+            if (type == null) {
+                unsupportedTypes.add(new Inference.UnsupportedType(ii.schema(), fieldPath));
+                return null;
+            }
+            final String columnName = namer.of(fieldPath, type);
+            NameValidator.validateColumnName(columnName);
+            final int[] idPath = fieldPath.stream().mapToInt(NestedField::fieldId).toArray();
+            builder.putColumnInstructions(columnName, ColumnInstructions.schemaFieldPath(FieldPath.of(idPath)));
+            definitions.add(ColumnDefinition.of(columnName, type));
+            return null;
+        }
+
+        @Override
+        public Void struct(Types.StructType struct, List<Void> fieldResults) {
+            if (skipDepth != 0) {
+                return null;
+            }
+            return null;
+        }
+
+        @Override
+        public Void schema(Schema schema, Void structResult) {
+            if (skipDepth != 0) {
+                return null;
+            }
+            return null;
+        }
+
+        @Override
+        public Void map(Types.MapType map, Void keyResult, Void valueResult) {
+            if (skipDepth != 0) {
+                return null;
+            }
+            unsupportedTypes.add(new Inference.UnsupportedType(ii.schema(), fieldPath));
+            return null;
+        }
+
+        @Override
+        public Void list(Types.ListType list, Void elementResult) {
+            if (skipDepth != 0) {
+                return null;
+            }
+            unsupportedTypes.add(new Inference.UnsupportedType(ii.schema(), fieldPath));
+            return null;
+        }
+
+        @Override
+        public Void variant() {
+            if (skipDepth != 0) {
+                return null;
+            }
+            unsupportedTypes.add(new Inference.UnsupportedType(ii.schema(), fieldPath));
+            return null;
+        }
+
+        @Override
+        public Void field(NestedField field, Void fieldResult) {
+            if (skipDepth != 0) {
+                return null;
+            }
+            return null;
+        }
+
+        @Override
+        public void beforeField(NestedField field) {
+            push(field);
+        }
+
+        @Override
+        public void afterField(NestedField field) {
+            pop(field);
+        }
+
+        @Override
+        public void beforeListElement(NestedField elementField) {
+            push(elementField);
+            ++skipDepth;
+        }
+
+        @Override
+        public void afterListElement(NestedField elementField) {
+            --skipDepth;
+            pop(elementField);
+        }
+
+        @Override
+        public void beforeMapKey(NestedField keyField) {
+            push(keyField);
+            ++skipDepth;
+        }
+
+        @Override
+        public void afterMapKey(NestedField keyField) {
+            --skipDepth;
+            pop(keyField);
+        }
+
+        @Override
+        public void beforeMapValue(NestedField valueField) {
+            push(valueField);
+            ++skipDepth;
+        }
+
+        @Override
+        public void afterMapValue(NestedField valueField) {
+            --skipDepth;
+            pop(valueField);
         }
     }
+
+
 
     static boolean isCompatible(Collection<? extends NestedField> path, Type<?> type) {
         try {
@@ -369,11 +491,12 @@ public abstract class Resolver {
     static void checkCompatible(org.apache.iceberg.types.Type.PrimitiveType type) {
         // do we even support this type? note: it's _possible_ there are cases where there is a primitive type where
         // we don't support inference, but do support compatibility with DH type... TODO
-        try {
-            Inference.of(type);
-        } catch (Inference.UnsupportedType e) {
-            throw new MappingException(e.getMessage());
-        }
+        Inference.of(type).orElseThrow(() -> new MappingException("todo"));
+//        try {
+//
+//        } catch (Inference.UnsupportedType e) {
+//            throw new MappingException(e.getMessage());
+//        }
     }
 
     public static class MappingException extends RuntimeException {

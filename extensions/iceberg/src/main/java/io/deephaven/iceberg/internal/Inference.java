@@ -12,30 +12,19 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 
 public final class Inference {
 
-    public interface Consumer {
-
-        void onType(Collection<? extends Types.NestedField> path, Type<?> type);
-
-        void onError(Collection<? extends Types.NestedField> path, Exception e);
+    public static Optional<Type<?>> of(org.apache.iceberg.types.Type.PrimitiveType primitiveType) {
+        return Optional.ofNullable(ofImpl(primitiveType));
     }
 
-    /**
-     * Depth-first traversal dictated by the order in the schema.
-     */
-    public static void of(Schema schema, Consumer consumer) {
-        final List<Types.NestedField> prefix = new ArrayList<>();
-        nestedType(prefix, schema.asStruct(), consumer);
-    }
-
-    public static Type<?> of(org.apache.iceberg.types.Type.PrimitiveType primitiveType) throws UnsupportedType {
+    private static Type<?> ofImpl(org.apache.iceberg.types.Type.PrimitiveType primitiveType) {
         switch (primitiveType.typeId()) {
             case BOOLEAN:
                 return of((Types.BooleanType) primitiveType);
@@ -71,7 +60,7 @@ public final class Inference {
                 // should be able to support UUID, maybe fixed length codec?
             case UUID:
             default:
-                throw new UnsupportedType(primitiveType);
+                return null;
         }
     }
 
@@ -127,68 +116,6 @@ public final class Inference {
         return Type.find(BigDecimal.class);
     }
 
-    private static void structField(
-            List<Types.NestedField> prefix,
-            Types.NestedField structField,
-            Consumer consumer) {
-        push(prefix, structField);
-        try {
-            nestedType(prefix, structField.type().asStructType(), consumer);
-        } finally {
-            pop(prefix, structField);
-        }
-    }
-
-    private static void nestedType(
-            List<Types.NestedField> path,
-            org.apache.iceberg.types.Type.NestedType nestedType,
-            Consumer consumer) {
-        for (final Types.NestedField field : nestedType.fields()) {
-            if (field.type().isPrimitiveType()) {
-                primitiveField(path, field, consumer);
-            } else if (field.type().isStructType()) {
-                structField(path, field, consumer);
-            } else {
-                // map, list
-                consumer.onError(path, new UnsupportedType(field.type()));
-            }
-        }
-    }
-
-    private static void primitiveField(
-            List<Types.NestedField> prefix,
-            Types.NestedField primitiveField,
-            Consumer consumer) {
-        push(prefix, primitiveField);
-        try {
-            primitiveType(prefix, primitiveField.type().asPrimitiveType(), consumer);
-        } finally {
-            pop(prefix, primitiveField);
-        }
-    }
-
-    private static void primitiveType(
-            List<Types.NestedField> path,
-            org.apache.iceberg.types.Type.PrimitiveType primitiveType,
-            Consumer consumer) {
-        final Type<?> type;
-        try {
-            type = of(primitiveType);
-        } catch (UnsupportedType e) {
-            consumer.onError(path, e);
-            return;
-        }
-        consumer.onType(path, type);
-    }
-
-    private static <T> void push(List<T> stack, T item) {
-        stack.add(item);
-    }
-
-    private static <T> void pop(List<T> stack, T item) {
-        Assert.eq(item, "item", stack.remove(stack.size() - 1));
-    }
-
     public static abstract class Exception extends java.lang.Exception {
         public Exception() {}
 
@@ -198,16 +125,25 @@ public final class Inference {
     }
 
     public static final class UnsupportedType extends Exception {
-        private final org.apache.iceberg.types.Type type;
+        private final Schema schema;
+        private final List<Types.NestedField> fieldPath;
 
-        public UnsupportedType(org.apache.iceberg.types.Type type) {
-            // type is more informative than type.typeId()
-            super(String.format("Unsupported Iceberg type: `%s`", type));
-            this.type = Objects.requireNonNull(type);
+        public UnsupportedType(Schema schema, List<Types.NestedField> fieldPath) {
+            super(String.format("Unsupported Iceberg type `%s` at path [%s]", fieldPath.get(fieldPath.size() - 1).type(), fieldPath.stream().map(Types.NestedField::name).collect(Collectors.joining(", "))));
+            this.schema = Objects.requireNonNull(schema);
+            this.fieldPath = List.copyOf(fieldPath);
+        }
+
+        public Schema schema() {
+            return schema;
+        }
+
+        public List<Types.NestedField> fieldPath() {
+            return fieldPath;
         }
 
         public org.apache.iceberg.types.Type type() {
-            return type;
+            return fieldPath.get(fieldPath.size() - 1).type();
         }
     }
 }
