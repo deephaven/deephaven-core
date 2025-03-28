@@ -3,6 +3,7 @@
 //
 package io.deephaven.extensions.barrage.chunk;
 
+import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.WritableChunk;
@@ -32,7 +33,7 @@ public abstract class BaseChunkReader<READ_CHUNK_TYPE extends WritableChunk<Valu
             return castFunction.apply(outChunk);
         }
         final T newChunk = chunkFactory.apply(numRows);
-        newChunk.setSize(numRows);
+        Assert.eq(numRows, "numRows", newChunk.size(), "chunk.size()");
         return newChunk;
     }
 

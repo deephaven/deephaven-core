@@ -57,7 +57,6 @@ public class TransformingChunkReader<INPUT_CHUNK_TYPE extends WritableChunk<Valu
                 Assert.eqZero(outOffset, "outOffset");
             }
             transformer.transform(wireValues, chunk, outOffset);
-            chunk.setSize(outOffset + wireValues.size());
             return chunk;
         }
     }
