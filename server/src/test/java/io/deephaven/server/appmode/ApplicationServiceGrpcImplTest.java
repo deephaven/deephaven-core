@@ -25,9 +25,12 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.Collections;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class ApplicationServiceGrpcImplTest {
 
@@ -67,8 +70,7 @@ public class ApplicationServiceGrpcImplTest {
         AtomicBoolean faultyObserverShouldStillWork = new AtomicBoolean(true);
 
         // start two subscriptions to the app fields, spoofing auth as different connections - the first will behave,
-        // the
-        // second will not
+        // the second will not
         Context.current().withValue(SessionServiceGrpcImpl.SESSION_CONTEXT_KEY, sessionService.newSession(AUTH_CONTEXT))
                 .wrap(() -> {
                     applicationServiceGrpcImpl.listFields(ListFieldsRequest.getDefaultInstance(),
@@ -99,6 +101,55 @@ public class ApplicationServiceGrpcImplTest {
 
         // verify the second subscriber got its call
         assertEquals(2, workingObserver.messageCount);
+    }
+
+    /**
+     * Confirm that an existing ListFields subscription won't prevent a new one from getting an accurate initial
+     * snapshot
+     */
+    @Test
+    public void onListFieldsSubscribeNewObserver() {
+        // start two subscriptions to the app fields, spoofing auth as different connections - the first will behave,
+        // the second will not
+        Context.current().withValue(SessionServiceGrpcImpl.SESSION_CONTEXT_KEY, sessionService.newSession(AUTH_CONTEXT))
+                .run(() -> {
+                    // Open a subscription, leave it running for the duration of the test
+                    applicationServiceGrpcImpl.listFields(ListFieldsRequest.getDefaultInstance(),
+                            new CountingObserver<>());
+
+                    // Trigger a change, don't ask the test scheduler to pick this up
+                    ScriptSession scriptSession = new NoLanguageDeephavenSession(
+                            ExecutionContext.getContext().getUpdateGraph(),
+                            ExecutionContext.getContext().getOperationInitializer());
+                    scriptSession.getQueryScope().putParam("key", "hello world");
+                    ScriptSession.Changes changes = new ScriptSession.Changes();
+                    changes.created.put("key", "Object");
+                    applicationServiceGrpcImpl.onScopeChanges(scriptSession, changes);
+
+                    // Open a second subscription, ensure it has the new object
+                    CountDownLatch latch = new CountDownLatch(1);
+                    applicationServiceGrpcImpl.listFields(ListFieldsRequest.getDefaultInstance(),
+                            new StreamObserver<>() {
+                                @Override
+                                public void onNext(FieldsChangeUpdate fieldsChangeUpdate) {
+                                    assertEquals(1, fieldsChangeUpdate.getCreatedCount());
+                                    assertEquals("key", fieldsChangeUpdate.getCreated(0).getFieldName());
+                                    latch.countDown();
+                                }
+
+                                @Override
+                                public void onError(Throwable throwable) {}
+
+                                @Override
+                                public void onCompleted() {}
+                            });
+
+                    try {
+                        assertTrue(latch.await(1, TimeUnit.SECONDS));
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
     }
 
     private static class CountingObserver<T> implements StreamObserver<T> {
