@@ -60,8 +60,9 @@ def prepareDocker = project.tasks.register('prepareDocker', Sync) {
 
     from(configurations.serverApplicationDist) {
         into 'serverApplicationDist'
-        // remove -11 suffix, if any
-        rename { name -> name.replace('-11', '')}
+        // If the build is using the Jetty server, rename the tarball to remove the '-11' suffix,
+        // as expected by the Dockerfile
+        rename { name -> name.replace('server-jetty-11', 'server-jetty')}
     }
     from(dockerLicenses.outputs) {
         into 'licenses'
