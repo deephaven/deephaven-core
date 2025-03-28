@@ -10,7 +10,7 @@ spotless {
         target '**/*.cc', '**/*.h'
         targetExclude '**/Barrage_generated.h', '**/third_party/**', '**/*.pb.*'
         licenseHeader '''/*
- * Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+ * Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
  */'''
     }
 }
@@ -114,6 +114,7 @@ def testCppClient = Docker.registerDockerTask(project, 'testCppClient') {
         environmentVariable 'DH_HOST', deephavenDocker.containerName.get()
         environmentVariable 'DH_PORT', '10000'
     }
+    waitTimeMinutes = 1
     containerDependencies.dependsOn = [deephavenDocker.healthyTask]
     containerDependencies.finalizedBy = deephavenDocker.endTask
     network = deephavenDocker.networkName.get()

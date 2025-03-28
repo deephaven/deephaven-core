@@ -4,17 +4,19 @@ plugins {
 }
 
 jacoco {
-    toolVersion = '0.8.8'
+    toolVersion = '0.8.12'
 }
 
 jacocoTestReport {
+    sourceSets sourceSets.main
+    executionData = fileTree(buildDir).include("/jacoco/*.exec")
     reports {
-        xml.enabled true
-        csv.enabled true
-        html.enabled true
+    	csv.required = true
+	xml.required = true
+	html.required = true
     }
 }
 
-project.tasks.withType(Test).all { Test t ->
-    finalizedBy jacocoTestReport
+project.tasks.withType(Test).configureEach { Test t ->
+    t.jacoco.enabled = (project.findProperty('coverage.enabled') == 'true')
 }

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.replicators;
 
@@ -114,11 +114,6 @@ public class GenerateArrowColumnSourceTests {
                         "0, 0, 0, 0",
                         "0, 14, 34, 300000000",
                         "21, 59, 29, 26000000")));
-
-        generateTests("ArrowTimestampVectorTest", "/timestamp_vector.arrow", "get", "WritableObjectChunk",
-                null, ClassName.get("java.time", "Instant"), null, expectedRows,
-                addWrapper("io.deephaven.time.DateTimeUtils.epochNanosToInstant(%s)", Arrays.asList(
-                        "1670443801", "1570443532", null, "0", "170443801", "-72309740")));
 
         generateTests("ArrowDecimalVectorTest", "/decimal_vector.arrow", "get", "WritableObjectChunk",
                 BigDecimal.class, null, expectedRows,
@@ -241,7 +236,7 @@ public class GenerateArrowColumnSourceTests {
             Class<?> generatorClass = GenerateArrowColumnSourceTests.class;
             final String header = String.join("\n",
                     "//",
-                    "// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending",
+                    "// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending",
                     "//",
                     "// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY",
                     "// ****** Run " + generatorClass.getSimpleName() + " or \"./gradlew " + gradleTask

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.server.console.python;
 
@@ -21,7 +21,7 @@ import javax.inject.Named;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 
-@Module
+@Module(includes = PythonDebuggingModule.class)
 public class PythonConsoleSessionModule {
     @Provides
     @IntoMap

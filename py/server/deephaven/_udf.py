@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
 
 import inspect
@@ -330,7 +330,11 @@ def _np_ndarray_component_type(t: type) -> Optional[type]:
             elif nargs == 2:  # for npt.NDArray[np.int64], etc.
                 a0 = t.__args__[0]
                 a1 = t.__args__[1]
-                if a0 == typing.Any and isinstance(a1, types.GenericAlias):  # novermin
+                # a0 is typing.Any before numpy 2.2.0 or a generic alias of tuple[int, ...] in numpy 2.2.0+. The latter
+                # is to support shape typing for numpy arrays. e.g. np.ndarray[tuple[Literal[2], Literal[3]], np.int32]
+                # is a 2x3 array of int32.
+                if ((a0 == typing.Any or (isinstance(a0, types.GenericAlias) and a0.__origin__ is tuple))
+                        and isinstance(a1, types.GenericAlias)):  # novermin
                     component_type = a1.__args__[0]
     return component_type
 

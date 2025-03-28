@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.by;
 
@@ -132,7 +132,7 @@ public class ChunkedOperatorAggregationHelper {
                         return true;
                     });
             return resultHolder.getValue();
-        }, input::isRefreshing, Table::isRefreshing);
+        }, input.isRefreshing(), Table::isRefreshing);
     }
 
     private static QueryTable aggregation(

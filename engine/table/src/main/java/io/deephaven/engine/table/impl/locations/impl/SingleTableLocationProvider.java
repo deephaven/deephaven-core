@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.locations.impl;
 
@@ -17,7 +17,7 @@ import java.util.function.Predicate;
 /**
  * A {@link TableLocationProvider} that provides access to exactly one, previously-known {@link TableLocation}. In
  * contrast to {@link AbstractTableLocationProvider}, this class does not manage the liveness of the table location.
- * Managment must be done externally (as in {@link io.deephaven.engine.table.impl.SourcePartitionedTable}).
+ * Management must be done externally (as in {@link io.deephaven.engine.table.impl.SourcePartitionedTable}).
  */
 public final class SingleTableLocationProvider implements TableLocationProvider {
     private static final String IMPLEMENTATION_NAME = SingleTableLocationProvider.class.getSimpleName();

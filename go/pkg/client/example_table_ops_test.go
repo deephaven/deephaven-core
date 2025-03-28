@@ -39,9 +39,9 @@ func Example_tableOps() {
     // record:
     //   schema:
     //   fields: 3
-    //     - Ticker: type=utf8
-    //     - Close: type=float32
-    //     - Volume: type=int32
+    //     - Ticker: type=utf8, nullable
+    //     - Close: type=float32, nullable
+    //     - Volume: type=int32, nullable
     //   rows: 7
     //   col[0][Ticker]: ["XRX" "XYZZY" "IBM" "GME" "AAPL" "ZNGA" "T"]
     //   col[1][Close]: [53.8 88.5 38.7 453 26.7 544.9 13.4]
@@ -57,7 +57,7 @@ func Example_tableOps() {
     //        metadata: ["deephaven:isDateFormat": "false", "deephaven:isNumberFormat": "false", "deephaven:isPartitioning": "false", "deephaven:isRowStyle": "false", "deephaven:isSortable": "true", "deephaven:isStyle": "false", "deephaven:type": "float"]
     //     - Volume: type=int32, nullable
     //         metadata: ["deephaven:isDateFormat": "false", "deephaven:isNumberFormat": "false", "deephaven:isPartitioning": "false", "deephaven:isRowStyle": "false", "deephaven:isSortable": "true", "deephaven:isStyle": "false", "deephaven:type": "int"]
-    //   metadata: ["deephaven:attribute.AddOnly": "true", "deephaven:attribute.AppendOnly": "true", "deephaven:attribute_type.AddOnly": "java.lang.Boolean", "deephaven:attribute_type.AppendOnly": "java.lang.Boolean"]
+    //   metadata: ["deephaven:attribute.AddOnly": "true", "deephaven:attribute.AppendOnly": "true", "deephaven:attribute_type.AddOnly": "java.lang.Boolean", "deephaven:attribute_type.AppendOnly": "java.lang.Boolean", "deephaven:unsent.attribute.BarrageSchema": ""]
     //   rows: 5
     //   col[0][Ticker]: ["XRX" "IBM" "GME" "AAPL" "ZNGA"]
     //   col[1][Close]: [53.8 38.7 453 26.7 544.9]

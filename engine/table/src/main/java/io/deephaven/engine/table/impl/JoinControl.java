@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl;
 
@@ -69,7 +69,7 @@ public class JoinControl {
                         // DataIndexer will only give us valid, live data indexes.
                         () -> indexer.getDataIndex(sources),
                         // Ensure that we use an enclosing scope to manage the data index if needed.
-                        table::isRefreshing,
+                        table.isRefreshing(),
                         // Don't keep the data index managed. Joins hold the update graph lock, so the index can't go
                         // stale,
                         // and we'll only use it during instantiation.

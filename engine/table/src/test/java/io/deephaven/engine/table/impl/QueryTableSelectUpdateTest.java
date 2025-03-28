@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl;
 
@@ -50,6 +50,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static io.deephaven.api.agg.Aggregation.AggDistinct;
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.util.QueryConstants.NULL_INT;
@@ -1662,5 +1663,19 @@ public class QueryTableSelectUpdateTest {
 
         QueryScope.addParam("a", null);
         QueryScope.addParam("b", null);
+    }
+
+    @Test
+    public void testRegressionDH18900() {
+        final Table t = emptyTable(100).update(
+                "Idx=i",
+                "Key=i%3",
+                "KeyString = String.valueOf(i % 2)");
+        final Table t_agg = t.aggBy(AggDistinct("KeyString"), "Key");
+
+        // we had failed to compile here:
+        final Table t_array = t_agg.update(
+                "KeyArr = KeyString == null ? null : KeyString.toArray()");
+        assertEquals(3, t_array.size());
     }
 }

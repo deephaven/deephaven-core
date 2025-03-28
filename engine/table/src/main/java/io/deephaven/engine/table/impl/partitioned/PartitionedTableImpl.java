@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.partitioned;
 
@@ -252,7 +252,7 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
                         constituentDefinition,
                         constituentChangesPermitted || table.isRefreshing(),
                         false),
-                table::isRefreshing,
+                table.isRefreshing(),
                 pt -> pt.table().isRefreshing());
     }
 
@@ -275,7 +275,7 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
                         constituentDefinition,
                         constituentChangesPermitted || table.isRefreshing(),
                         false),
-                table::isRefreshing,
+                table.isRefreshing(),
                 pt -> pt.table().isRefreshing());
     }
 
@@ -470,7 +470,7 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
             }
             return matchingCount == 1 ? matchingConstituents[0] : null;
         },
-                table::isRefreshing,
+                table.isRefreshing(),
                 constituent -> constituent != null && constituent.isRefreshing());
     }
 
@@ -479,7 +479,7 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
     public Table[] constituents() {
         return LivenessScopeStack.computeArrayEnclosed(
                 this::snapshotConstituents,
-                table::isRefreshing,
+                table.isRefreshing(),
                 constituent -> constituent != null && constituent.isRefreshing());
     }
 

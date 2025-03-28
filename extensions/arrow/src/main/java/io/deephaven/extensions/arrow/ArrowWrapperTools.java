@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.extensions.arrow;
 
@@ -257,7 +257,7 @@ public class ArrowWrapperTools {
             case TIMESTAMPNANOTZ:
             case TIMESTAMPSEC:
             case TIMESTAMPSECTZ:
-                return new ArrowInstantColumnSource(highBit, field, arrowHelper);
+                return new ArrowInstantColumnSource(vector.getMinorType(), highBit, field, arrowHelper);
             case NULL:
             case STRUCT:
             case DATEDAY:

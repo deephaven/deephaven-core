@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
 import os
 import unittest
@@ -93,7 +93,6 @@ class ArrowTestCase(BaseTestCase):
         ]
         self.verify_type_conversion(pa_types=pa_types, pa_data=pa_data, cast_for_round_trip=True)
 
-    @unittest.skip("Not correctly widened")
     def test_arrow_types_unsigned_integers(self):
         with self.subTest("unsigned integers"):
             pa_types = [
@@ -115,7 +114,6 @@ class ArrowTestCase(BaseTestCase):
         ]
         self.verify_type_conversion(pa_types=pa_types, pa_data=pa_data)
 
-    @unittest.skip("Not correctly converted by DH, marked as unsupported now.")
     def test_arrow_extra_time_types(self):
         pa_types = [
             pa.timestamp('ns', tz='MST'),
@@ -126,6 +124,13 @@ class ArrowTestCase(BaseTestCase):
                       pd.Timestamp('2017-01-01T11:01:01', tz='Europe/Paris')]),
         ]
         self.verify_type_conversion(pa_types=pa_types, pa_data=pa_data)
+        
+        pa_data_no_tz = [
+            pa.array([pd.Timestamp('2017-01-01T12:01:02'),
+                      pd.Timestamp('2017-01-01T11:01:01'),
+                      ]),
+        ]
+        self.verify_type_conversion(pa_types=pa_types, pa_data=pa_data_no_tz)
 
     def test_arrow_types_floating(self):
         pa_types = [

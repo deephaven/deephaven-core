@@ -4,6 +4,8 @@ using System.Diagnostics;
 namespace Deephaven.ExcelAddIn.Util;
 
 internal static class Utility {
+  public const string VersionString = "Version 0.8.0";
+
   public static T Exchange<T>(ref T item, T newValue) {
     var result = item;
     item = newValue;

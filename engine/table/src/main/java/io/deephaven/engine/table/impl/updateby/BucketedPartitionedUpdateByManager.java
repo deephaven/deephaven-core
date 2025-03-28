@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.updateby;
 
@@ -106,7 +106,7 @@ class BucketedPartitionedUpdateByManager extends UpdateBy {
                 return bucket.result;
             });
             return transformed.table();
-        }, source::isRefreshing, DynamicNode::isRefreshing);
+        }, source.isRefreshing(), DynamicNode::isRefreshing);
 
         if (source.isRefreshing()) {
             // create input and output modified column sets

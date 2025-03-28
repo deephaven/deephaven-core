@@ -1,9 +1,9 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.server.test;
 
-import com.google.flatbuffers.FlatBufferBuilder;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.protobuf.ByteString;
 import dagger.Module;
 import dagger.Provides;
@@ -12,11 +12,6 @@ import io.deephaven.auth.AuthContext;
 import io.deephaven.auth.ServiceAuthWiring;
 import io.deephaven.auth.codegen.impl.ConsoleServiceAuthWiring;
 import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
-import io.deephaven.barrage.flatbuf.BarrageMessageType;
-import io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
-import io.deephaven.barrage.flatbuf.BarrageSnapshotOptions;
-import io.deephaven.barrage.flatbuf.BarrageSnapshotRequest;
-import io.deephaven.barrage.flatbuf.ColumnConversionMode;
 import io.deephaven.base.clock.Clock;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.client.impl.*;
@@ -72,8 +67,8 @@ import org.apache.arrow.flight.impl.Flight;
 import org.apache.arrow.memory.ArrowBuf;
 import org.apache.arrow.memory.BufferAllocator;
 import org.apache.arrow.memory.RootAllocator;
-import org.apache.arrow.vector.BigIntVector;
 import org.apache.arrow.vector.DateMilliVector;
+import org.apache.arrow.vector.DurationVector;
 import org.apache.arrow.vector.FieldVector;
 import org.apache.arrow.vector.TimeNanoVector;
 import org.apache.arrow.vector.TimeStampMicroVector;
@@ -102,8 +97,8 @@ import org.junit.rules.ExternalResource;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -112,7 +107,6 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.Consumer;
 
-import static io.deephaven.client.impl.BarrageSubscriptionImpl.makeRequestInternal;
 import static org.junit.Assert.*;
 
 /**
@@ -156,10 +150,15 @@ public abstract class FlightMessageRoundTripTest {
         }
 
         @Provides
+        @Singleton
         Scheduler provideScheduler() {
             return new Scheduler.DelegatingImpl(
-                    Executors.newSingleThreadExecutor(),
-                    Executors.newScheduledThreadPool(1),
+                    Executors.newSingleThreadExecutor(
+                            new ThreadFactoryBuilder().setDaemon(true).setNameFormat("test-scheduler-single-%d")
+                                    .build()),
+                    Executors.newScheduledThreadPool(1,
+                            new ThreadFactoryBuilder().setDaemon(true).setNameFormat("test-scheduler-multi-%d")
+                                    .build()),
                     Clock.system());
         }
 
@@ -227,12 +226,16 @@ public abstract class FlightMessageRoundTripTest {
         TestAuthorizationProvider authorizationProvider();
 
         Registration.Callback registration();
+
+        Scheduler serverScheduler();
     }
 
     private LogBuffer logBuffer;
     private GrpcServer server;
     protected int localPort;
+    private RootAllocator allocator;
     private FlightClient flightClient;
+    private Scheduler.DelegatingImpl serverScheduler;
 
     protected SessionService sessionService;
 
@@ -262,13 +265,15 @@ public abstract class FlightMessageRoundTripTest {
         server = component.server();
         server.start();
         localPort = server.getPort();
+        serverScheduler = (Scheduler.DelegatingImpl) component.serverScheduler();
 
         sessionService = component.sessionService();
 
         serverLocation = Location.forGrpcInsecure("localhost", localPort);
         currentSession = sessionService.newSession(new AuthContext.SuperUser());
+        allocator = new RootAllocator();
         flightClient = FlightClient.builder().location(serverLocation)
-                .allocator(new RootAllocator()).intercept(info -> new FlightClientMiddleware() {
+                .allocator(allocator).intercept(info -> new FlightClientMiddleware() {
                     @Override
                     public void onBeforeSendingHeaders(CallHeaders outgoingHeaders) {
                         String token = currentSession.getExpiration().token.toString();
@@ -287,7 +292,8 @@ public abstract class FlightMessageRoundTripTest {
                 .intercept(new TestAuthClientInterceptor(currentSession.getExpiration().token.toString()))
                 .build();
 
-        clientScheduler = Executors.newSingleThreadScheduledExecutor();
+        clientScheduler = Executors.newSingleThreadScheduledExecutor(
+                new ThreadFactoryBuilder().setDaemon(true).setNameFormat("test-client-scheduler-%d").build());
 
         clientSession = SessionImpl
                 .create(SessionImplConfig.from(SessionConfig.builder().build(), clientChannel, clientScheduler));
@@ -319,7 +325,9 @@ public abstract class FlightMessageRoundTripTest {
         executionContext.close();
 
         closeClient();
+        server.beginShutdown();
         server.stopWithTimeout(1, TimeUnit.MINUTES);
+        serverScheduler.shutdown();
 
         try {
             server.join();
@@ -375,7 +383,7 @@ public abstract class FlightMessageRoundTripTest {
     public void testLoginHandshakeBasicAuth() {
         closeClient();
         flightClient = FlightClient.builder().location(serverLocation)
-                .allocator(new RootAllocator())
+                .allocator(allocator)
                 .build();
 
         ExecutionContext.getContext().getQueryScope().putParam("test", TableTools.emptyTable(10).update("I=i"));
@@ -396,7 +404,7 @@ public abstract class FlightMessageRoundTripTest {
     public void testLoginHeaderBasicAuth() {
         closeClient();
         flightClient = FlightClient.builder().location(serverLocation)
-                .allocator(new RootAllocator())
+                .allocator(allocator)
                 .build();
 
         ExecutionContext.getContext().getQueryScope().putParam("test", TableTools.emptyTable(10).update("I=i"));
@@ -425,7 +433,7 @@ public abstract class FlightMessageRoundTripTest {
         // add the bearer token override
         final MutableBoolean tokenChanged = new MutableBoolean();
         flightClient = FlightClient.builder().location(serverLocation)
-                .allocator(new RootAllocator())
+                .allocator(allocator)
                 .intercept(info -> new FlightClientMiddleware() {
                     String currToken = Auth2Constants.BEARER_PREFIX + FakeBearer.TOKEN;
 
@@ -457,7 +465,7 @@ public abstract class FlightMessageRoundTripTest {
     public void testLoginHandshakeAnonymous() {
         closeClient();
         flightClient = FlightClient.builder().location(serverLocation)
-                .allocator(new RootAllocator())
+                .allocator(allocator)
                 .build();
 
         ExecutionContext.getContext().getQueryScope().putParam("test", TableTools.emptyTable(10).update("I=i"));
@@ -499,7 +507,7 @@ public abstract class FlightMessageRoundTripTest {
 
         final MutableBoolean tokenChanged = new MutableBoolean();
         flightClient = FlightClient.builder().location(serverLocation)
-                .allocator(new RootAllocator())
+                .allocator(allocator)
                 .intercept(info -> new FlightClientMiddleware() {
                     String currToken = ANONYMOUS;
 
@@ -658,7 +666,7 @@ public abstract class FlightMessageRoundTripTest {
     public void testLocalDateCol() throws Exception {
         final Table source = TableTools.emptyTable(10).update("LD = java.time.LocalDate.ofEpochDay(ii)");
         final ColumnSource<LocalDate> ld = source.getColumnSource("LD");
-        assertRoundTripDataEqual(source,
+        assertRoundTripDataEqual(true, null, source,
                 recordBatch -> {
                     final FieldVector fv = recordBatch.getFieldVectors().get(0);
                     final DateMilliVector dmv = (DateMilliVector) fv;
@@ -673,7 +681,7 @@ public abstract class FlightMessageRoundTripTest {
     public void testLocalTimeCol() throws Exception {
         final Table source = TableTools.emptyTable(10).update("LT = java.time.LocalTime.ofSecondOfDay(ii * 60 * 60)");
         final ColumnSource<LocalTime> lt = source.getColumnSource("LT");
-        assertRoundTripDataEqual(source,
+        assertRoundTripDataEqual(true, null, source,
                 recordBatch -> {
                     final FieldVector fv = recordBatch.getFieldVectors().get(0);
                     final TimeNanoVector tnv = (TimeNanoVector) fv;
@@ -763,31 +771,8 @@ public abstract class FlightMessageRoundTripTest {
         try (FlightClient.ExchangeReaderWriter erw = flightClient.doExchange(fd);
                 final RootAllocator allocator = new RootAllocator(Integer.MAX_VALUE)) {
 
-            final FlatBufferBuilder metadata = new FlatBufferBuilder();
-
-            // use 0 for batch size and max message size to use server-side defaults
-            int optOffset = BarrageSnapshotOptions.createBarrageSnapshotOptions(metadata, false, 0, 0, 0);
-
-            final int ticOffset =
-                    BarrageSnapshotRequest.createTicketVector(metadata,
-                            ScopeTicketHelper.nameToBytes(staticTableName));
-            BarrageSnapshotRequest.startBarrageSnapshotRequest(metadata);
-            BarrageSnapshotRequest.addColumns(metadata, 0);
-            BarrageSnapshotRequest.addViewport(metadata, 0);
-            BarrageSnapshotRequest.addSnapshotOptions(metadata, optOffset);
-            BarrageSnapshotRequest.addTicket(metadata, ticOffset);
-            metadata.finish(BarrageSnapshotRequest.endBarrageSnapshotRequest(metadata));
-
-            final FlatBufferBuilder wrapper = new FlatBufferBuilder();
-            final int innerOffset = wrapper.createByteVector(metadata.dataBuffer());
-            wrapper.finish(BarrageMessageWrapper.createBarrageMessageWrapper(
-                    wrapper,
-                    0x6E687064, // the numerical representation of the ASCII "dphn".
-                    BarrageMessageType.BarrageSnapshotRequest,
-                    innerOffset));
-
-            // extract the bytes and package them in an ArrowBuf for transmission
-            byte[] msg = wrapper.sizedByteArray();
+            byte[] msg = BarrageUtil.createSnapshotRequestMetadataBytes(ScopeTicketHelper.nameToBytes(staticTableName),
+                    io.deephaven.extensions.barrage.BarrageSnapshotOptions.builder().build());
             ArrowBuf data = allocator.buffer(msg.length);
             data.writeBytes(msg);
 
@@ -1006,11 +991,15 @@ public abstract class FlightMessageRoundTripTest {
 
 
     private void assertRoundTripDataEqual(Table deephavenTable) throws Exception {
-        assertRoundTripDataEqual(deephavenTable, recordBatch -> {
+        assertRoundTripDataEqual(true, null, deephavenTable, recordBatch -> {
         });
     }
 
-    private void assertRoundTripDataEqual(Table deephavenTable, Consumer<VectorSchemaRoot> recordBlockTester)
+    private void assertRoundTripDataEqual(
+            boolean doGet,
+            @Nullable BarrageSubscriptionOptions options,
+            Table deephavenTable,
+            Consumer<VectorSchemaRoot> recordBlockTester)
             throws Exception {
         // bind the table in the session
         Flight.Ticket dhTableTicket = FlightExportTicketHelper.exportIdToFlightTicket(nextTicket++);
@@ -1019,18 +1008,42 @@ public abstract class FlightMessageRoundTripTest {
         // fetch with DoGet
         int flightDescriptorTicketValue;
         FlightClient.ClientStreamListener putStream;
-        try (FlightStream stream = flightClient.getStream(new Ticket(dhTableTicket.getTicket().toByteArray()))) {
-            VectorSchemaRoot root = stream.getRoot();
+        byte[] ticketBytes = dhTableTicket.getTicket().toByteArray();
+        try (final FlightStream stream = doGet
+                ? flightClient.getStream(new Ticket(ticketBytes))
+                : null;
+                final FlightClient.ExchangeReaderWriter xStream = doGet
+                        ? null
+                        : flightClient.doExchange(arrowFlightDescriptorForName("test"))) {
+            if (!doGet) {
+                final byte[] request = BarrageUtil.createSubscriptionRequestMetadataBytes(ticketBytes, options);
+                ArrowBuf data = allocator.buffer(request.length);
+                data.writeBytes(request);
+                xStream.getWriter().putMetadata(data);
+            }
+            VectorSchemaRoot root = doGet ? stream.getRoot() : xStream.getReader().getRoot();
 
             // start the DoPut and send the schema
             flightDescriptorTicketValue = nextTicket++;
             FlightDescriptor descriptor = FlightDescriptor.path("export", flightDescriptorTicketValue + "");
             putStream = flightClient.startPut(descriptor, root, new AsyncPutListener());
+            if (options != null) {
+                final byte[] request = BarrageUtil.createSerializationOptionsMetadataBytes(ticketBytes, options);
+                ArrowBuf data = allocator.buffer(request.length);
+                data.writeBytes(request);
+                putStream.putMetadata(data);
+            }
 
             // send the body of the table
-            while (stream.next()) {
+            while (doGet ? stream.next() : xStream.getReader().next()) {
                 recordBlockTester.accept(root);
                 putStream.putNext();
+                if (!doGet) {
+                    // assume one payload; because no easy way to know when we're done and one is the right answer
+                    xStream.getWriter().completed();
+                    xStream.getReader().cancel("all done", null);
+                    break;
+                }
             }
         }
 
@@ -1061,10 +1074,11 @@ public abstract class FlightMessageRoundTripTest {
         // bind the table in the session
         // this should be a refreshing table so we can validate that modifications are also wrapped
         final UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
+        final Table withMods;
         try (final SafeCloseable ignored = updateGraph.sharedLock().lockCloseable()) {
             final Table appendOnly = TableTools.timeTable("PT1s")
                     .update("I = ii % 3", "J = `str_` + i");
-            final Table withMods = appendOnly.lastBy("I");
+            withMods = appendOnly.lastBy("I");
             ExecutionContext.getContext().getQueryScope().putParam("test", withMods);
         }
 
@@ -1078,9 +1092,9 @@ public abstract class FlightMessageRoundTripTest {
                 final RootAllocator allocator = new RootAllocator(Integer.MAX_VALUE)) {
 
             // make a subscription request for test
-            final ByteBuffer request = makeRequestInternal(null, null, false, options, ticket.ticket());
-            ArrowBuf data = allocator.buffer(request.remaining());
-            data.writeBytes(request.array(), request.arrayOffset() + request.position(), request.remaining());
+            final byte[] request = BarrageUtil.createSubscriptionRequestMetadataBytes(ticket.ticket(), options);
+            ArrowBuf data = allocator.buffer(request.length);
+            data.writeBytes(request);
             stream.getWriter().putMetadata(data);
 
             // read messages until we see at least one modification batch:
@@ -1092,6 +1106,9 @@ public abstract class FlightMessageRoundTripTest {
                 Assert.eqTrue(root.getVector("Timestamp") instanceof ListVector, "column is wrapped in list");
             }
         }
+
+        assertRoundTripDataEqual(false, options, withMods, recordBlock -> {
+        });
     }
 
     @Test
@@ -1104,9 +1121,9 @@ public abstract class FlightMessageRoundTripTest {
 
     private void testLongColumnWithFactor(org.apache.arrow.vector.types.TimeUnit timeUnit, long factor) {
         final int exportId = nextTicket++;
-        final Field field = Field.notNullable("Duration", new ArrowType.Duration(timeUnit));
+        final Field field = Field.nullable("Duration", new ArrowType.Duration(timeUnit));
         try (final RootAllocator allocator = new RootAllocator(Integer.MAX_VALUE);
-                final BigIntVector vector = new BigIntVector(field, allocator);
+                final DurationVector vector = new DurationVector(field, allocator);
                 final VectorSchemaRoot root = new VectorSchemaRoot(List.of(field), List.of(vector))) {
             final FlightClient.ClientStreamListener stream = flightClient.startPut(
                     FlightDescriptor.path("export", Integer.toString(exportId)), root, new SyncPutListener());
@@ -1114,9 +1131,12 @@ public abstract class FlightMessageRoundTripTest {
             final int numRows = 12;
             vector.allocateNew(numRows);
             for (int ii = 0; ii < numRows; ++ii) {
-                vector.set(ii, ii % 3 == 0 ? QueryConstants.NULL_LONG : ii);
+                if (ii % 3 == 0) {
+                    vector.setNull(ii);
+                } else {
+                    vector.set(ii, ii);
+                }
             }
-            vector.setValueCount(numRows);
 
             root.setRowCount(numRows);
             stream.putNext();
@@ -1127,14 +1147,13 @@ public abstract class FlightMessageRoundTripTest {
             Assert.eq(result.getState(), "result.getState()",
                     ExportNotification.State.EXPORTED, "ExportNotification.State.EXPORTED");
             Assert.eq(result.get().size(), "result.get().size()", numRows);
-            final ColumnSource<Long> duration = result.get().getColumnSource("Duration");
+            final ColumnSource<Duration> duration = result.get().getColumnSource("Duration");
 
             for (int ii = 0; ii < numRows; ++ii) {
                 if (ii % 3 == 0) {
-                    Assert.eq(duration.getLong(ii), "duration.getLong(ii)", QueryConstants.NULL_LONG,
-                            "QueryConstants.NULL_LONG");
+                    Assert.eqNull(duration.get(ii), "duration.get(ii)");
                 } else {
-                    Assert.eq(duration.getLong(ii), "duration.getLong(ii)", ii * factor, "ii * factor");
+                    Assert.eq(duration.get(ii).toNanos(), "duration.get(ii).toNanos()", ii * factor, "ii * factor");
                 }
             }
         }
@@ -1171,7 +1190,6 @@ public abstract class FlightMessageRoundTripTest {
             for (int ii = 0; ii < numRows; ++ii) {
                 vector.set(ii, ii % 3 == 0 ? QueryConstants.NULL_LONG : ii);
             }
-            vector.setValueCount(numRows);
 
             root.setRowCount(numRows);
             stream.putNext();
@@ -1225,7 +1243,6 @@ public abstract class FlightMessageRoundTripTest {
             for (int ii = 0; ii < numRows; ++ii) {
                 vector.set(ii, ii % 3 == 0 ? QueryConstants.NULL_LONG : ii);
             }
-            vector.setValueCount(numRows);
 
             root.setRowCount(numRows);
             stream.putNext();
@@ -1272,12 +1289,12 @@ public abstract class FlightMessageRoundTripTest {
             final FlightClient.ClientStreamListener stream = flightClient.startPut(
                     FlightDescriptor.path("export", Integer.toString(exportId)), root, new SyncPutListener());
 
-            outerVector.allocateNew();
-            UnionListWriter listWriter = new UnionListWriter(outerVector);
-
             final int numRows = 1;
+            outerVector.allocateNew();
+
+            final UnionListWriter listWriter = outerVector.getWriter();
             listWriter.writeNull();
-            listWriter.setValueCount(numRows);
+
             root.setRowCount(numRows);
 
             stream.putNext();
@@ -1305,13 +1322,12 @@ public abstract class FlightMessageRoundTripTest {
             final FlightClient.ClientStreamListener stream = flightClient.startPut(
                     FlightDescriptor.path("export", Integer.toString(exportId)), root, new SyncPutListener());
 
-            outerVector.allocateNew();
-            UnionListWriter listWriter = new UnionListWriter(outerVector);
-
             final int numRows = 1;
+            outerVector.allocateNew();
+            final UnionListWriter listWriter = outerVector.getWriter();
+
             listWriter.startList();
             listWriter.endList();
-            listWriter.setValueCount(numRows);
 
             root.setRowCount(numRows);
 
@@ -1342,15 +1358,15 @@ public abstract class FlightMessageRoundTripTest {
             final FlightClient.ClientStreamListener stream = flightClient.startPut(
                     FlightDescriptor.path("export", Integer.toString(exportId)), root, new SyncPutListener());
 
-            outerVector.allocateNew();
-            UnionListWriter listWriter = new UnionListWriter(outerVector);
-
             final int numRows = 1;
+            outerVector.allocateNew();
+            final UnionListWriter listWriter = outerVector.getWriter();
+
             // We want to recreate this structure:
             // new double[][] { null, new double[] {}, new double[] { 42.42f, 43.43f } }
 
             listWriter.startList();
-            BaseWriter.ListWriter innerListWriter = listWriter.list();
+            final BaseWriter.ListWriter innerListWriter = listWriter.list();
 
             // null inner list
             innerListWriter.writeNull();
@@ -1366,7 +1382,6 @@ public abstract class FlightMessageRoundTripTest {
             innerListWriter.endList();
 
             listWriter.endList();
-            listWriter.setValueCount(numRows);
             root.setRowCount(numRows);
 
             stream.putNext();

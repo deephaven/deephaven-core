@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.indexer;
 
@@ -253,7 +253,7 @@ public class DataIndexer implements TrackingRowSet.Indexer {
                 .filter(Objects::nonNull)
                 .max(Comparator.comparingLong(dataIndex -> dataIndex.table().size()))
                 .orElse(null),
-                table::isRefreshing, (final DataIndex result) -> result != null && result.isRefreshing());
+                table.isRefreshing(), (final DataIndex result) -> result != null && result.isRefreshing());
     }
 
     /**

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.server.session;
 
@@ -85,7 +85,7 @@ public class SessionService {
                 } else if (sre.getStatus().getCode().equals(Status.CANCELLED.getCode())) {
                     log.debug().append("ignoring cancelled request").endl();
                 } else {
-                    log.error().append(sre).endl();
+                    log.debug().append(sre).endl();
                 }
                 return sre;
             } else if (err instanceof InterruptedException) {

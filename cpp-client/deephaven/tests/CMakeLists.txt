@@ -27,6 +27,7 @@ add_executable(dhclient_tests
         src/table_test.cc
         src/test_util.cc
         src/ticking_test.cc
+        src/time_unit_test.cc
         src/ungroup_test.cc
         src/update_by_test.cc
         src/utility_test.cc

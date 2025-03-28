@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.replicators;
 
@@ -121,15 +121,6 @@ public class GenerateArrowColumnSources {
                         preparePrivateExtractMethod(LocalTime.class, TimeMilliVector.class)
                                 .addStatement("$T localDateTime = vector.getObject(posInBlock)", LocalDateTime.class)
                                 .addStatement("return localDateTime != null ? localDateTime.toLocalTime() : null")
-                                .build()));
-
-        final ClassName instant = ClassName.get("java.time", "Instant");
-        generateArrowColumnSource("ArrowInstantColumnSource", instant, instant, TimeStampVector.class,
-                "get", "ForObject", WritableObjectChunk.class, List.of(
-                        preparePrivateExtractMethod(instant, TimeStampVector.class)
-                                .addStatement(
-                                        "return vector.isSet(posInBlock) == 0 ? null : io.deephaven.time.DateTimeUtils.epochNanosToInstant(vector.get(posInBlock))",
-                                        instant)
                                 .build()));
     }
 
@@ -315,7 +306,7 @@ public class GenerateArrowColumnSources {
             Class<?> generatorClass = GenerateArrowColumnSources.class;
             final String header = String.join("\n",
                     "//",
-                    "// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending",
+                    "// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending",
                     "//",
                     "// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY",
                     "// ****** Run " + generatorClass.getSimpleName() + " or \"./gradlew " + gradleTask

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+ * Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
  */
 #include "deephaven/dhcore/types.h"
 
@@ -57,8 +57,10 @@ constexpr const int64_t DeephavenConstants::kMaxLong;
 
 DateTime DateTime::Parse(std::string_view iso_8601_timestamp) {
   // Special handling for "Z" timezone
-  const char *format_to_use = !iso_8601_timestamp.empty() && iso_8601_timestamp.back() == 'Z' ?
-    "%FT%TZ" : "%FT%T%z";
+  const char *format_to_use = (!iso_8601_timestamp.empty() && iso_8601_timestamp.back() == 'Z')
+    ? "%FT%TZ"
+    : "%FT%T%z"
+    ;
   std::istringstream istream((std::string(iso_8601_timestamp)));
   std::chrono::time_point<std::chrono::system_clock, std::chrono::nanoseconds> tp;
   istream >> date::parse(format_to_use, tp);

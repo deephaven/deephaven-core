@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.partitioned;
 
@@ -234,7 +234,7 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
                                         requireMatchingKeys,
                                         sanityCheckJoins);
                             },
-                            () -> refreshingResults,
+                            refreshingResults,
                             ptp -> refreshingResults));
         }
         throw onUnexpectedTableOperations(other);
@@ -532,9 +532,12 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
     }
 
     @Override
-    public PartitionedTable.Proxy naturalJoin(TableOperations<?, ?> rightTable,
-            Collection<? extends JoinMatch> columnsToMatch, Collection<? extends JoinAddition> columnsToAdd) {
-        return complexTransform(rightTable, (ct, ot) -> ct.naturalJoin(ot, columnsToMatch, columnsToAdd),
+    public PartitionedTable.Proxy naturalJoin(
+            final TableOperations<?, ?> rightTable,
+            final Collection<? extends JoinMatch> columnsToMatch,
+            final Collection<? extends JoinAddition> columnsToAdd,
+            final NaturalJoinType joinType) {
+        return complexTransform(rightTable, (ct, ot) -> ct.naturalJoin(ot, columnsToMatch, columnsToAdd, joinType),
                 columnsToMatch);
     }
 
@@ -591,7 +594,7 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
             // Force a consistent view of initial groups table to be used for all current and future constituents
             final Table initialGroupsTable = LivenessScopeStack.computeEnclosed(
                     () -> ((Table) initialGroups).selectDistinct(groupByColumns).snapshot(),
-                    () -> ((Table) initialGroups).isRefreshing(),
+                    ((Table) initialGroups).isRefreshing(),
                     Table::isRefreshing);
             return basicTransform(
                     true,

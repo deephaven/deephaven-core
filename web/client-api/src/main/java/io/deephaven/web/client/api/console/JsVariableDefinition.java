@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.web.client.api.console;
 
@@ -7,6 +7,7 @@ import com.vertispan.tsdefs.annotations.TsInterface;
 import com.vertispan.tsdefs.annotations.TsName;
 import com.vertispan.tsdefs.annotations.TsTypeRef;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.application_pb.FieldInfo;
+import io.deephaven.web.client.api.Tickets;
 import jsinterop.annotations.JsProperty;
 
 /**
@@ -28,11 +29,7 @@ public class JsVariableDefinition {
     private final String applicationName;
 
     public JsVariableDefinition(String type, String title, String id, String description) {
-        // base64('s/' + str) starts with 'cy8' or 'cy9'
-        // base64('a/' + str) starts with 'YS8' or 'YS9'
-        if (!id.startsWith("cy") && !id.startsWith("YS")) {
-            throw new IllegalArgumentException("Cannot create a VariableDefinition from a non-scope ticket");
-        }
+        Tickets.validateScopeOrApplicationTicketBase64(id);
         this.type = type;
         this.title = title == null ? JS_UNAVAILABLE : title;
         this.id = id;

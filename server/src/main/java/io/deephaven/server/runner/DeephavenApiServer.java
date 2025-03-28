@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.server.runner;
 
@@ -88,7 +88,7 @@ public class DeephavenApiServer {
 
     private final GrpcServer server;
     private final UpdateGraph ug;
-    private final LogInit logInit;
+    private final Provider<LogInit> logInit;
     private final Provider<Set<BusinessCalendar>> calendars;
     private final Scheduler scheduler;
     private final Provider<ScriptSession> scriptSessionProvider;
@@ -105,7 +105,7 @@ public class DeephavenApiServer {
     public DeephavenApiServer(
             final GrpcServer server,
             @Named(PeriodicUpdateGraph.DEFAULT_UPDATE_GRAPH_NAME) final UpdateGraph ug,
-            final LogInit logInit,
+            final Provider<LogInit> logInit,
             final Provider<Set<BusinessCalendar>> calendars,
             final Scheduler scheduler,
             final Provider<ScriptSession> scriptSessionProvider,
@@ -173,8 +173,9 @@ public class DeephavenApiServer {
             }
         });
 
+        // Ensure that our logging is configured no later than this point
         log.info().append("Configuring logging...").endl();
-        logInit.run();
+        logInit.get();
 
         for (BusinessCalendar calendar : calendars.get()) {
             Calendars.addCalendar(calendar);
@@ -237,12 +238,17 @@ public class DeephavenApiServer {
 
     void startForUnitTests() throws Exception {
         setInstance(this);
-        pluginRegistration.registerAll();
-        applicationInjector.run();
-        executionContextProvider.get().getQueryLibrary().updateVersionString("DEFAULT");
+        try {
+            pluginRegistration.registerAll();
+            applicationInjector.run();
+            executionContextProvider.get().getQueryLibrary().updateVersionString("DEFAULT");
 
-        log.info().append("Starting server...").endl();
-        server.start();
+            log.info().append("Starting server...").endl();
+            server.start();
+        } catch (Exception e) {
+            clearInstance(this);
+            throw e;
+        }
     }
 
     void teardownForUnitTests() throws InterruptedException {

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.locations.util;
 
@@ -195,9 +195,11 @@ public enum PartitionParser {
     @Nullable
     public static PartitionParser lookup(@NotNull final Class<?> dataType, @Nullable final Class<?> componentType) {
         if (componentType != null) {
+            // This is a short-circuit since we know that Resolver does not support ArrayType.
             return null;
         }
-        return lookup(Type.find(dataType));
+        // noinspection ConstantValue
+        return lookup(Type.find(dataType, componentType));
     }
 
     /**
@@ -289,6 +291,8 @@ public enum PartitionParser {
 
         @Override
         public PartitionParser visit(@NotNull final ArrayType<?, ?> arrayType) {
+            // If the partition parser ever supports ArrayTypes, make sure the short-circuit in
+            // PartitionParser.lookup(java.lang.Class<?>, java.lang.Class<?>) is removed.
             return null;
         }
 

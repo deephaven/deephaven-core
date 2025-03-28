@@ -1,9 +1,10 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.by.alternatingcolumnsource;
 
-import io.deephaven.base.WeakReferenceManager;
+import io.deephaven.util.datastructures.ArrayWeakReferenceManager;
+import io.deephaven.util.datastructures.WeakReferenceManager;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
@@ -33,7 +34,7 @@ public class AlternatingColumnSource<DATA_TYPE> extends AbstractColumnSource<DAT
     private ColumnSource<DATA_TYPE> alternateSource;
 
     private final WeakReferenceManager<BiConsumer<ColumnSource<DATA_TYPE>, ColumnSource<DATA_TYPE>>> sourceHolderListeners =
-            new WeakReferenceManager<>();
+            new ArrayWeakReferenceManager<>();
 
     public AlternatingColumnSource(@NotNull final Class<DATA_TYPE> dataType,
             @Nullable final Class<?> componentType,

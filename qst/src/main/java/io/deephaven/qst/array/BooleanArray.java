@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.qst.array;
 
@@ -69,7 +69,7 @@ public final class BooleanArray extends PrimitiveArrayBase<Boolean> {
 
     @Override
     public boolean isNull(int index) {
-        return values[index] == BooleanUtils.NULL_BOOLEAN_AS_BYTE;
+        return BooleanUtils.isNull(values[index]);
     }
 
     @Override

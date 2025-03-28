@@ -1,9 +1,10 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.iceberg.internal;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -82,6 +83,7 @@ public final class DataInstructionsProviderLoader {
      * @param uriScheme The URI scheme
      * @return A data instructions object for the given URI scheme or null if one cannot be found
      */
+    @Nullable
     public Object load(@NotNull final String uriScheme) {
         for (final DataInstructionsProviderPlugin plugin : providers) {
             final Object pluginInstructions = plugin.createInstructions(uriScheme, properties);

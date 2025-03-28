@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.iceberg.util;
 
@@ -8,6 +8,7 @@ import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.parquet.table.ParquetInstructions;
 import org.immutables.value.Value;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Map;
 
@@ -71,14 +72,18 @@ public abstract class TableParquetWriterOptions extends TableWriterOptions {
      * @param onWriteCompleted The callback to be invoked after writing the parquet file.
      * @param tableDefinition The table definition to be populated inside the parquet file's schema
      * @param fieldIdToName Mapping of field id to field name, to be populated inside the parquet file's schema
+     * @param specialInstructions Special instructions to be passed to the parquet writer
      */
     ParquetInstructions toParquetInstructions(
             @NotNull final ParquetInstructions.OnWriteCompleted onWriteCompleted,
             @NotNull final TableDefinition tableDefinition,
-            @NotNull final Map<Integer, String> fieldIdToName) {
+            @NotNull final Map<Integer, String> fieldIdToName,
+            @Nullable final Object specialInstructions) {
         final ParquetInstructions.Builder builder = new ParquetInstructions.Builder();
 
-        dataInstructions().ifPresent(builder::setSpecialInstructions);
+        if (specialInstructions != null) {
+            builder.setSpecialInstructions(specialInstructions);
+        }
 
         // Add parquet writing specific instructions.
         builder.setTableDefinition(tableDefinition);

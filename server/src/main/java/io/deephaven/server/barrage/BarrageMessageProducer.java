@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.server.barrage;
 
@@ -10,6 +10,7 @@ import dagger.assisted.AssistedFactory;
 import dagger.assisted.AssistedInject;
 import io.deephaven.base.formatters.FormatBitSet;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.ResettableWritableObjectChunk;
 import io.deephaven.chunk.WritableChunk;
@@ -31,15 +32,19 @@ import io.deephaven.engine.table.impl.util.ShiftInversionHelper;
 import io.deephaven.engine.table.impl.util.UpdateCoalescer;
 import io.deephaven.engine.updategraph.*;
 import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
+import io.deephaven.extensions.barrage.BarrageMessageWriter;
 import io.deephaven.extensions.barrage.BarragePerformanceLog;
-import io.deephaven.extensions.barrage.BarrageStreamGenerator;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.BarrageSubscriptionPerformanceLogger;
+import io.deephaven.extensions.barrage.BarrageTypeInfo;
+import io.deephaven.extensions.barrage.chunk.ChunkWriter;
+import io.deephaven.extensions.barrage.chunk.DefaultChunkWriterFactory;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
-import io.deephaven.extensions.barrage.util.StreamReader;
+import io.deephaven.extensions.barrage.util.BarrageMessageReader;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
+import io.deephaven.proto.flight.util.SchemaHelper;
 import io.deephaven.server.session.SessionService;
 import io.deephaven.server.util.Scheduler;
 import io.deephaven.util.SafeCloseable;
@@ -47,6 +52,8 @@ import io.deephaven.util.SafeCloseableArray;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
+import org.apache.arrow.flatbuf.Schema;
+import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.HdrHistogram.Histogram;
@@ -81,7 +88,7 @@ import static io.deephaven.extensions.barrage.util.BarrageUtil.TARGET_SNAPSHOT_P
  * It is possible to use this replication source to create subscriptions that propagate changes from one UGP to another
  * inside the same JVM.
  * <p>
- * The client-side counterpart of this is the {@link StreamReader}.
+ * The client-side counterpart of this is the {@link BarrageMessageReader}.
  */
 public class BarrageMessageProducer extends LivenessArtifact
         implements DynamicNode, NotificationStepReceiver {
@@ -117,7 +124,7 @@ public class BarrageMessageProducer extends LivenessArtifact
 
         private final Scheduler scheduler;
         private final SessionService.ErrorTransformer errorTransformer;
-        private final BarrageStreamGenerator.Factory streamGeneratorFactory;
+        private final BarrageMessageWriter.Factory streamGeneratorFactory;
         private final BaseTable<?> parent;
         private final long updateIntervalMs;
         private final Runnable onGetSnapshot;
@@ -126,7 +133,7 @@ public class BarrageMessageProducer extends LivenessArtifact
         public Operation(
                 final Scheduler scheduler,
                 final SessionService.ErrorTransformer errorTransformer,
-                final BarrageStreamGenerator.Factory streamGeneratorFactory,
+                final BarrageMessageWriter.Factory streamGeneratorFactory,
                 @Assisted final BaseTable<?> parent,
                 @Assisted final long updateIntervalMs) {
             this(scheduler, errorTransformer, streamGeneratorFactory, parent, updateIntervalMs, null);
@@ -136,7 +143,7 @@ public class BarrageMessageProducer extends LivenessArtifact
         public Operation(
                 final Scheduler scheduler,
                 final SessionService.ErrorTransformer errorTransformer,
-                final BarrageStreamGenerator.Factory streamGeneratorFactory,
+                final BarrageMessageWriter.Factory streamGeneratorFactory,
                 final BaseTable<?> parent,
                 final long updateIntervalMs,
                 @Nullable final Runnable onGetSnapshot) {
@@ -197,7 +204,7 @@ public class BarrageMessageProducer extends LivenessArtifact
     private final String logPrefix;
     private final Scheduler scheduler;
     private final SessionService.ErrorTransformer errorTransformer;
-    private final BarrageStreamGenerator.Factory streamGeneratorFactory;
+    private final BarrageMessageWriter.Factory streamGeneratorFactory;
 
     private final BaseTable<?> parent;
     private final long updateIntervalMs;
@@ -214,6 +221,8 @@ public class BarrageMessageProducer extends LivenessArtifact
 
     /** the possibly reinterpretted source column */
     private final ColumnSource<?>[] sourceColumns;
+    /** the chunk writer per source column */
+    private final ChunkWriter<Chunk<Values>>[] chunkWriters;
     /** which source columns are object columns and thus need proactive garbage collection */
     private final BitSet objectColumns = new BitSet();
     /** internally, booleans are reinterpretted to bytes; however we need to be packed bitsets over Arrow */
@@ -306,7 +315,7 @@ public class BarrageMessageProducer extends LivenessArtifact
     public BarrageMessageProducer(
             final Scheduler scheduler,
             final SessionService.ErrorTransformer errorTransformer,
-            final BarrageStreamGenerator.Factory streamGeneratorFactory,
+            final BarrageMessageWriter.Factory streamGeneratorFactory,
             final BaseTable<?> parent,
             final long updateIntervalMs,
             final Runnable onGetSnapshot) {
@@ -343,6 +352,22 @@ public class BarrageMessageProducer extends LivenessArtifact
         deltaColumns = new WritableColumnSource[sourceColumns.length];
         realColumnType = new Class<?>[sourceColumns.length];
         realColumnComponentType = new Class<?>[sourceColumns.length];
+
+        // lookup ChunkWriter mappings once, as they are constant for the lifetime of this producer
+        // noinspection unchecked
+        chunkWriters = (ChunkWriter<Chunk<Values>>[]) new ChunkWriter[sourceColumns.length];
+
+        final MutableInt mi = new MutableInt();
+        final Schema schema = SchemaHelper.flatbufSchema(
+                BarrageUtil.schemaBytesFromTable(parent).asReadOnlyByteBuffer());
+
+        parent.getColumnSourceMap().forEach((columnName, columnSource) -> {
+            int ii = mi.getAndIncrement();
+            chunkWriters[ii] = DefaultChunkWriterFactory.INSTANCE.newWriter(BarrageTypeInfo.make(
+                    ReinterpretUtils.maybeConvertToPrimitiveDataType(columnSource.getType()),
+                    columnSource.getComponentType(),
+                    schema.fields(ii)));
+        });
 
         // we start off with initial sizes of zero, because its quite possible no one will ever look at this table
         final int capacity = 0;
@@ -413,7 +438,7 @@ public class BarrageMessageProducer extends LivenessArtifact
      */
     private static class Subscription {
         private final BarrageSubscriptionOptions options;
-        private final StreamObserver<BarrageStreamGenerator.MessageView> listener;
+        private final StreamObserver<BarrageMessageWriter.MessageView> listener;
         private final String logPrefix;
 
         /** active viewport **/
@@ -462,7 +487,7 @@ public class BarrageMessageProducer extends LivenessArtifact
         /** is this the first snapshot after a change to a subscriptions */
         private boolean isFirstSnapshot;
 
-        private Subscription(final StreamObserver<BarrageStreamGenerator.MessageView> listener,
+        private Subscription(final StreamObserver<BarrageMessageWriter.MessageView> listener,
                 final BarrageSubscriptionOptions options,
                 final BitSet subscribedColumns,
                 @Nullable final RowSet initialViewport,
@@ -496,7 +521,7 @@ public class BarrageMessageProducer extends LivenessArtifact
      * @param columnsToSubscribe The initial columns to subscribe to
      * @param initialViewport Initial viewport, to be owned by the subscription
      */
-    public void addSubscription(final StreamObserver<BarrageStreamGenerator.MessageView> listener,
+    public void addSubscription(final StreamObserver<BarrageMessageWriter.MessageView> listener,
             final BarrageSubscriptionOptions options,
             @Nullable final BitSet columnsToSubscribe,
             @Nullable final RowSet initialViewport,
@@ -541,7 +566,7 @@ public class BarrageMessageProducer extends LivenessArtifact
         }
     }
 
-    private boolean findAndUpdateSubscription(final StreamObserver<BarrageStreamGenerator.MessageView> listener,
+    private boolean findAndUpdateSubscription(final StreamObserver<BarrageMessageWriter.MessageView> listener,
             final Consumer<Subscription> updateSubscription) {
         final Function<List<Subscription>, Boolean> findAndUpdate = (List<Subscription> subscriptions) -> {
             for (final Subscription sub : subscriptions) {
@@ -569,14 +594,14 @@ public class BarrageMessageProducer extends LivenessArtifact
         }
     }
 
-    public boolean updateSubscription(final StreamObserver<BarrageStreamGenerator.MessageView> listener,
+    public boolean updateSubscription(final StreamObserver<BarrageMessageWriter.MessageView> listener,
             @Nullable final RowSet newViewport, @Nullable final BitSet columnsToSubscribe) {
         // assume forward viewport when not specified
         return updateSubscription(listener, newViewport, columnsToSubscribe, false);
     }
 
     public boolean updateSubscription(
-            final StreamObserver<BarrageStreamGenerator.MessageView> listener,
+            final StreamObserver<BarrageMessageWriter.MessageView> listener,
             @Nullable final RowSet newViewport,
             @Nullable final BitSet columnsToSubscribe,
             final boolean newReverseViewport) {
@@ -616,7 +641,7 @@ public class BarrageMessageProducer extends LivenessArtifact
         });
     }
 
-    public void removeSubscription(final StreamObserver<BarrageStreamGenerator.MessageView> listener) {
+    public void removeSubscription(final StreamObserver<BarrageMessageWriter.MessageView> listener) {
         findAndUpdateSubscription(listener, sub -> {
             sub.pendingDelete = true;
             if (log.isDebugEnabled()) {
@@ -1498,8 +1523,8 @@ public class BarrageMessageProducer extends LivenessArtifact
         }
 
         if (snapshot != null) {
-            try (final BarrageStreamGenerator snapshotGenerator =
-                    streamGeneratorFactory.newGenerator(snapshot, this::recordWriteMetrics)) {
+            try (final BarrageMessageWriter snapshotGenerator =
+                    streamGeneratorFactory.newMessageWriter(snapshot, chunkWriters, this::recordWriteMetrics)) {
                 if (log.isDebugEnabled()) {
                     log.debug().append(logPrefix).append("Sending snapshot to ").append(activeSubscriptions.size())
                             .append(" subscriber(s).").endl();
@@ -1560,8 +1585,8 @@ public class BarrageMessageProducer extends LivenessArtifact
             final RowSet propRowSetForMessagePrev,
             final RowSet propRowSetForMessage) {
         // message is released via transfer to stream generator (as it must live until all views are closed)
-        try (final BarrageStreamGenerator generator = streamGeneratorFactory.newGenerator(
-                message, this::recordWriteMetrics)) {
+        try (final BarrageMessageWriter bmw = streamGeneratorFactory.newMessageWriter(
+                message, chunkWriters, this::recordWriteMetrics)) {
             for (final Subscription subscription : activeSubscriptions) {
                 if (subscription.pendingInitialSnapshot || subscription.pendingDelete) {
                     continue;
@@ -1586,7 +1611,7 @@ public class BarrageMessageProducer extends LivenessArtifact
                         vp != null ? propRowSetForMessagePrev.subSetForPositions(vp, isReversed) : null;
                         final RowSet clientView =
                                 vp != null ? propRowSetForMessage.subSetForPositions(vp, isReversed) : null) {
-                    subscription.listener.onNext(generator.getSubView(
+                    subscription.listener.onNext(bmw.getSubView(
                             subscription.options, false, subscription.isFullSubscription(), vp,
                             subscription.reverseViewport, clientViewPrev, clientView, cols));
                 } catch (final Exception e) {
@@ -1616,7 +1641,7 @@ public class BarrageMessageProducer extends LivenessArtifact
     }
 
     private void propagateSnapshotForSubscription(final Subscription subscription,
-            final BarrageStreamGenerator snapshotGenerator) {
+            final BarrageMessageWriter snapshotGenerator) {
         boolean needsSnapshot = subscription.pendingInitialSnapshot;
 
         // This is a little confusing, but by the time we propagate, the `snapshotViewport`/`snapshotColumns` objects
@@ -2368,7 +2393,6 @@ public class BarrageMessageProducer extends LivenessArtifact
             scheduler.runAfterDelay(BarragePerformanceLog.CYCLE_DURATION_MILLIS, this);
             final BarrageSubscriptionPerformanceLogger logger =
                     BarragePerformanceLog.getInstance().getSubscriptionLogger();
-            // noinspection SynchronizationOnLocalVariableOrMethodParameter
             synchronized (logger) {
                 flush(now, logger, enqueue, "EnqueueMillis");
                 flush(now, logger, aggregate, "AggregateMillis");

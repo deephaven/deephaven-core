@@ -1,13 +1,11 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.client.impl;
 
-import com.google.flatbuffers.FlatBufferBuilder;
 import com.google.protobuf.ByteStringAccess;
 import com.google.rpc.Code;
 import io.deephaven.UncheckedDeephavenException;
-import io.deephaven.barrage.flatbuf.*;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.engine.exceptions.RequestCancelledException;
@@ -39,7 +37,6 @@ import org.jetbrains.annotations.Nullable;
 
 import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.io.InputStream;
-import java.nio.ByteBuffer;
 import java.util.BitSet;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
@@ -62,7 +59,7 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
     private final BarrageSnapshotOptions options;
     private final ClientCallStreamObserver<FlightData> observer;
     private final BarrageUtil.ConvertedArrowSchema schema;
-    private final BarrageStreamReader barrageStreamReader;
+    private final BarrageMessageReaderImpl barrageMessageReader;
 
     private volatile BarrageTable resultTable;
     private final CompletableFuture<Table> future;
@@ -95,10 +92,10 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
         schema = BarrageUtil.convertArrowSchema(tableHandle.response());
         future = new SnapshotCompletableFuture();
 
-        barrageStreamReader = new BarrageStreamReader();
+        barrageMessageReader = new BarrageMessageReaderImpl();
         final MethodDescriptor<FlightData, BarrageMessage> snapshotDescriptor =
                 getClientDoExchangeDescriptor(options, schema.computeWireChunkTypes(), schema.computeWireTypes(),
-                        schema.computeWireComponentTypes(), barrageStreamReader);
+                        schema.computeWireComponentTypes(), barrageMessageReader);
 
         // We need to ensure that the DoExchange RPC does not get attached to the server RPC when this is being called
         // from a Deephaven server RPC thread. If we need to generalize this in the future, we may wrap this logic in a
@@ -233,13 +230,14 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
 
         final boolean isFullSubscription = viewport == null;
         final BarrageTable localResultTable = BarrageTable.make(
-                executorService, schema.tableDef, schema.attributes, isFullSubscription, new CheckForCompletion());
+                executorService, schema, isFullSubscription, new CheckForCompletion());
         resultTable = localResultTable;
-        barrageStreamReader.setDeserializeTmConsumer(localResultTable.getDeserializationTmConsumer());
+        barrageMessageReader.setDeserializeTmConsumer(localResultTable.getDeserializationTmConsumer());
 
         // Send the snapshot request:
         observer.onNext(FlightData.newBuilder()
-                .setAppMetadata(ByteStringAccess.wrap(makeRequestInternal(viewport, columns, reverseViewport, options)))
+                .setAppMetadata(ByteStringAccess.wrap(BarrageUtil.createSnapshotRequestMetadataBytes(
+                        tableHandle.ticketId().bytes(), options, viewport, columns, reverseViewport)))
                 .build());
 
         observer.onCompleted();
@@ -282,46 +280,6 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
                 .append(System.identityHashCode(this)).append("/");
     }
 
-    private ByteBuffer makeRequestInternal(
-            @Nullable final RowSet viewport,
-            @Nullable final BitSet columns,
-            boolean reverseViewport,
-            @Nullable BarrageSnapshotOptions options) {
-        final FlatBufferBuilder metadata = new FlatBufferBuilder();
-
-        int colOffset = 0;
-        if (columns != null) {
-            colOffset = BarrageSnapshotRequest.createColumnsVector(metadata, columns.toByteArray());
-        }
-        int vpOffset = 0;
-        if (viewport != null) {
-            vpOffset = BarrageSnapshotRequest.createViewportVector(
-                    metadata, BarrageProtoUtil.toByteBuffer(viewport));
-        }
-        int optOffset = 0;
-        if (options != null) {
-            optOffset = options.appendTo(metadata);
-        }
-
-        final int ticOffset = BarrageSnapshotRequest.createTicketVector(metadata, tableHandle.ticketId().bytes());
-        BarrageSnapshotRequest.startBarrageSnapshotRequest(metadata);
-        BarrageSnapshotRequest.addColumns(metadata, colOffset);
-        BarrageSnapshotRequest.addViewport(metadata, vpOffset);
-        BarrageSnapshotRequest.addSnapshotOptions(metadata, optOffset);
-        BarrageSnapshotRequest.addTicket(metadata, ticOffset);
-        BarrageSnapshotRequest.addReverseViewport(metadata, reverseViewport);
-        metadata.finish(BarrageSnapshotRequest.endBarrageSnapshotRequest(metadata));
-
-        final FlatBufferBuilder wrapper = new FlatBufferBuilder();
-        final int innerOffset = wrapper.createByteVector(metadata.dataBuffer());
-        wrapper.finish(BarrageMessageWrapper.createBarrageMessageWrapper(
-                wrapper,
-                BarrageUtil.FLATBUFFER_MAGIC,
-                BarrageMessageType.BarrageSnapshotRequest,
-                innerOffset));
-        return wrapper.dataBuffer();
-    }
-
     /**
      * Fetch the client side descriptor for a specific table schema.
      *
@@ -337,7 +295,7 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
             final ChunkType[] columnChunkTypes,
             final Class<?>[] columnTypes,
             final Class<?>[] componentTypes,
-            final StreamReader streamReader) {
+            final BarrageMessageReader streamReader) {
         final MethodDescriptor.Marshaller<FlightData> requestMarshaller =
                 ProtoUtils.marshaller(FlightData.getDefaultInstance());
         final MethodDescriptor<?, ?> descriptor = FlightServiceGrpc.getDoExchangeMethod();
@@ -358,14 +316,14 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
         private final ChunkType[] columnChunkTypes;
         private final Class<?>[] columnTypes;
         private final Class<?>[] componentTypes;
-        private final StreamReader streamReader;
+        private final BarrageMessageReader streamReader;
 
         public BarrageDataMarshaller(
                 final BarrageSnapshotOptions options,
                 final ChunkType[] columnChunkTypes,
                 final Class<?>[] columnTypes,
                 final Class<?>[] componentTypes,
-                final StreamReader streamReader) {
+                final BarrageMessageReader streamReader) {
             this.options = options;
             this.columnChunkTypes = columnChunkTypes;
             this.columnTypes = columnTypes;
