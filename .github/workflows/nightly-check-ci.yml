@@ -34,7 +34,7 @@ jobs:
       group: ${{ matrix.gradle-task }}-${{ matrix.test-jvm-version }}-${{ matrix.jetty-version }}-${{ github.workflow }}-${{ github.ref }}
       cancel-in-progress: true
     env:
-      COVER: ${{ (github.event_name == 'schedule' || startsWith(github.ref_name, 'coverage/')) && matrix.test-jvm-version == '21' }}
+      COVER: ${{ (github.event_name == 'schedule' || startsWith(github.ref_name, 'coverage/')) && matrix.test-jvm-version == '21' && matrix.jetty-version == '12' }}
       JETTY_FLAG: ${{ matrix.jetty-version == '11' && '-Pjetty11' || '' }}
     steps:
       - name: Checkout
