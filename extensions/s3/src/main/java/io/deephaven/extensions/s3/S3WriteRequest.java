@@ -32,12 +32,6 @@ class S3WriteRequest {
      */
     CompletableFuture<UploadPartResponse> sdkUploadFuture;
 
-    /**
-     * A future derived from the SDK future that includes the post-processing/callback logic. This future should be used
-     * to wait for the completion of the upload.
-     */
-    CompletableFuture<UploadPartResponse> completionFuture;
-
     S3WriteRequest(@NotNull final Pool<ByteBuffer> pool, final int writePartSize) {
         this.pool = pool;
         buffer = pool.take();

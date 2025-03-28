@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Semaphore;
 
 import static io.deephaven.extensions.s3.S3ReadContext.handleS3Exception;
 
@@ -49,10 +50,10 @@ class S3CompletableOutputStream extends CompletableOutputStream {
     private int nextPartNumber;
 
     /**
-     * A list of all write requests that have been initiated. This list is used to wait for all parts to complete before
-     * completing the multipart upload.
+     * Track how many parts have completed (success or failure). This is used to wait for all parts to finish before
+     * completing the upload.
      */
-    private final List<S3WriteRequest> writeRequests;
+    private final Semaphore numPartsCompleted;
 
     /**
      * A list of all parts that have been successfully uploaded. This list is used to complete the multipart upload.
@@ -66,7 +67,7 @@ class S3CompletableOutputStream extends CompletableOutputStream {
      * This pool needs to be thread safe.
      */
     @Nullable
-    private Pool<ByteBuffer> bufferPool;
+    private final Pool<ByteBuffer> bufferPool;
 
     /**
      * The request containing data buffered for the next part to be uploaded. S3 requires that all parts, except the
@@ -113,8 +114,7 @@ class S3CompletableOutputStream extends CompletableOutputStream {
         this.s3Instructions = s3Instructions;
 
         this.nextPartNumber = MIN_PART_NUMBER;
-
-        this.writeRequests = Collections.synchronizedList(new ArrayList<>());
+        this.numPartsCompleted = new Semaphore(0);
         this.completedParts = Collections.synchronizedList(new ArrayList<>());
 
         if (!(channelContext instanceof S3WriteContext)) {
@@ -125,7 +125,6 @@ class S3CompletableOutputStream extends CompletableOutputStream {
         this.uploadId = null;
 
         this.state = State.OPEN;
-
         this.status = new CompletableFuture<>();
     }
 
@@ -316,19 +315,21 @@ class S3CompletableOutputStream extends CompletableOutputStream {
         request.buffer.flip();
         request.partNumber = nextPartNumber;
         request.sdkUploadFuture = s3AsyncClient.uploadPart(uploadPartRequest,
-                AsyncRequestBody.fromByteBufferUnsafe(request.buffer));
-        request.completionFuture = request.sdkUploadFuture.whenComplete((uploadPartResponse, throwable) -> {
-            try {
-                if (throwable == null) {
-                    completedParts.add(SdkPojoConversionUtils.toCompletedPart(uploadPartResponse, request.partNumber));
-                } else {
-                    failAll(new IOException("Failed to upload part " + request.partNumber + " for uri " + uri,
-                            throwable));
-                }
-            } finally {
-                request.releaseBuffer();
-            }
-        });
+                AsyncRequestBody.fromByteBufferUnsafe(request.buffer))
+                .whenComplete((uploadPartResponse, throwable) -> {
+                    try {
+                        if (throwable == null) {
+                            completedParts.add(
+                                    SdkPojoConversionUtils.toCompletedPart(uploadPartResponse, request.partNumber));
+                        } else {
+                            failAll(new IOException("Failed to upload part " + request.partNumber + " for uri " + uri,
+                                    throwable));
+                        }
+                    } finally {
+                        request.releaseBuffer();
+                        numPartsCompleted.release();
+                    }
+                });
 
         // If the status future fails, we want to cancel each part's upload
         status.exceptionally(t -> {
@@ -336,7 +337,6 @@ class S3CompletableOutputStream extends CompletableOutputStream {
             return null;
         });
 
-        writeRequests.add(request);
         nextPartNumber++;
     }
 
@@ -357,7 +357,7 @@ class S3CompletableOutputStream extends CompletableOutputStream {
      */
     private void checkStatus() throws IOException {
         if (status.isCompletedExceptionally()) {
-            // If it's exceptionally completed, join() will throw a CompletionException
+            // join() will throw a CompletionException with the cause as the original exception
             try {
                 status.join();
             } catch (final CompletionException e) {
@@ -368,19 +368,6 @@ class S3CompletableOutputStream extends CompletableOutputStream {
                     throw new IOException("Failed to upload to S3, check cause for more details", cause);
                 }
             }
-        }
-    }
-
-    private void waitForCompletion(final S3WriteRequest request) throws IOException {
-        try {
-            // The response is processed in the whenComplete callback
-            request.completionFuture.get();
-        } catch (final InterruptedException | ExecutionException e) {
-            final IOException ex =
-                    handleS3Exception(e, String.format("waiting for part %d for uri %s to complete uploading",
-                            request.partNumber, uri), s3Instructions);
-            failAll(ex);
-            throw ex;
         }
     }
 
@@ -402,17 +389,19 @@ class S3CompletableOutputStream extends CompletableOutputStream {
 
     private void completeMultipartUpload() throws IOException {
         if (uploadId == null) {
-            final IllegalStateException ex =
-                    new IllegalStateException("Cannot complete multipart upload for uri " + uri +
-                            " because upload ID is null");
-            failAll(ex);
-            throw ex;
+            // We didn't start the upload, so nothing to complete
+            return;
         }
 
-        for (final S3WriteRequest request : writeRequests) {
-            waitForCompletion(request);
+        final int totalPartCount = nextPartNumber - 1;
+        try {
+            numPartsCompleted.acquire(totalPartCount);
+        } catch (final InterruptedException e) {
+            final IOException ioe = new IOException("Failed to complete the upload since interrupted while waiting " +
+                    "for all parts to finish", e);
+            failAll(ioe);
+            throw ioe;
         }
-        writeRequests.clear();
 
         // If any part failed to upload, we should fail here
         checkStatus();
