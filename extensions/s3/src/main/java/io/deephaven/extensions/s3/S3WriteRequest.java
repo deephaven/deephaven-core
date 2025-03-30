@@ -4,15 +4,12 @@
 package io.deephaven.extensions.s3;
 
 import io.deephaven.base.pool.Pool;
+import io.deephaven.util.reference.CleanupReferenceProcessor;
 import org.jetbrains.annotations.NotNull;
-import software.amazon.awssdk.services.s3.model.UploadPartResponse;
 
 import java.nio.ByteBuffer;
-import java.util.concurrent.CompletableFuture;
 
 class S3WriteRequest {
-
-    private static final int INVALID_PART_NUMBER = -1;
 
     private Pool<ByteBuffer> pool;
 
@@ -20,17 +17,6 @@ class S3WriteRequest {
      * The buffer for this request
      */
     ByteBuffer buffer;
-
-    /**
-     * The part number for the part to be uploaded
-     */
-    int partNumber;
-
-    /**
-     * The future for the part upload, returned by the AWS SDK. This future should be used to cancel the upload, if
-     * necessary.
-     */
-    CompletableFuture<UploadPartResponse> sdkUploadFuture;
 
     S3WriteRequest(@NotNull final Pool<ByteBuffer> pool, final int writePartSize) {
         this.pool = pool;
@@ -43,11 +29,16 @@ class S3WriteRequest {
             throw new IllegalStateException("Buffer from pool has incorrect limit, limit = " + buffer.limit() +
                     ", expected " + writePartSize);
         }
-        partNumber = INVALID_PART_NUMBER;
+
+        // Register this request with the cleanup reference processor so that we can release the buffer (if not already
+        // released) when it is garbage collected.
+        CleanupReferenceProcessor.getDefault().registerPhantom(this, this::releaseBuffer);
     }
 
-    void releaseBuffer() {
-        pool.give(buffer);
-        buffer = null;
+    final void releaseBuffer() {
+        if (buffer != null) {
+            pool.give(buffer);
+            buffer = null;
+        }
     }
 }

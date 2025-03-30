@@ -20,6 +20,7 @@ import software.amazon.awssdk.services.s3.model.CompletedPart;
 import software.amazon.awssdk.services.s3.model.CreateMultipartUploadRequest;
 import software.amazon.awssdk.services.s3.model.CreateMultipartUploadResponse;
 import software.amazon.awssdk.services.s3.model.UploadPartRequest;
+import software.amazon.awssdk.services.s3.model.UploadPartResponse;
 
 import java.io.IOException;
 import java.net.URI;
@@ -47,6 +48,11 @@ class S3CompletableOutputStream extends CompletableOutputStream {
     private final S3AsyncClient s3AsyncClient;
     private final S3Instructions s3Instructions;
 
+    /**
+     * The part number to be used for the next part upload. This is initialized to {@link #MIN_PART_NUMBER} and
+     * incremented for each part The total number of parts uploaded can be calculated as {@code nextPartNumber - 1} and
+     * cannot exceed {@link #MAX_PART_NUMBER}.
+     */
     private int nextPartNumber;
 
     /**
@@ -278,13 +284,16 @@ class S3CompletableOutputStream extends CompletableOutputStream {
                 .build();
         // Note: We can add support for other parameters like tagging, storage class, encryption, permissions, etc. in
         // future
-        final CompletableFuture<CreateMultipartUploadResponse> future =
+        final CompletableFuture<CreateMultipartUploadResponse> initiateUploadFuture =
                 s3AsyncClient.createMultipartUpload(createMultipartUploadRequest);
+        initiateUploadFuture.exceptionally(throwable -> {
+            failAll(new IOException("Failed to initiate multipart upload for uri " + uri, throwable));
+            return null;
+        });
         final CreateMultipartUploadResponse response;
         try {
-            response = future.get();
+            response = initiateUploadFuture.get();
         } catch (final InterruptedException | ExecutionException e) {
-            failAll(new IOException("Error initiating multipart upload for uri " + uri, e));
             throw handleS3Exception(e, String.format("initiating multipart upload for uri %s", uri), s3Instructions);
         }
         return response.uploadId();
@@ -300,12 +309,6 @@ class S3CompletableOutputStream extends CompletableOutputStream {
             failAll(ex);
             throw ex;
         }
-        if (request.sdkUploadFuture != null) {
-            final IllegalStateException ex = new IllegalStateException("Request already in progress for uri " + uri +
-                    " with part number " + request.partNumber);
-            failAll(ex);
-            throw ex;
-        }
         final UploadPartRequest uploadPartRequest = UploadPartRequest.builder()
                 .bucket(uri.bucket().orElseThrow())
                 .key(uri.key().orElseThrow())
@@ -313,27 +316,32 @@ class S3CompletableOutputStream extends CompletableOutputStream {
                 .partNumber(nextPartNumber)
                 .build();
         request.buffer.flip();
-        request.partNumber = nextPartNumber;
-        request.sdkUploadFuture = s3AsyncClient.uploadPart(uploadPartRequest,
-                AsyncRequestBody.fromByteBufferUnsafe(request.buffer))
-                .whenComplete((uploadPartResponse, throwable) -> {
-                    try {
-                        if (throwable == null) {
-                            completedParts.add(
-                                    SdkPojoConversionUtils.toCompletedPart(uploadPartResponse, request.partNumber));
-                        } else {
-                            failAll(new IOException("Failed to upload part " + request.partNumber + " for uri " + uri,
-                                    throwable));
-                        }
-                    } finally {
-                        request.releaseBuffer();
-                        numPartsCompleted.release();
-                    }
-                });
+        final int partNumber = nextPartNumber;
+        final CompletableFuture<UploadPartResponse> uploadPartFuture = s3AsyncClient.uploadPart(uploadPartRequest,
+                AsyncRequestBody.fromByteBufferUnsafe(request.buffer));
 
-        // If the status future fails, we want to cancel each part's upload
+        // Release the buffer when the upload is complete, regardless of success or failure. So the future will hold a
+        // reference to the request instance.
+        uploadPartFuture.whenComplete((uploadPartResponse, throwable) -> request.releaseBuffer());
+
+        // Process the upload part response
+        uploadPartFuture.whenComplete((uploadPartResponse, throwable) -> {
+            try {
+                if (throwable == null) {
+                    completedParts.add(
+                            SdkPojoConversionUtils.toCompletedPart(uploadPartResponse, partNumber));
+                } else {
+                    failAll(new IOException("Failed to upload part " + partNumber + " for uri " + uri,
+                            throwable));
+                }
+            } finally {
+                numPartsCompleted.release();
+            }
+        });
+
+        // Cancel the upload if the status future fails. So status will hold a reference to the upload future.
         status.exceptionally(t -> {
-            request.sdkUploadFuture.cancel(true);
+            uploadPartFuture.cancel(true);
             return null;
         });
 
@@ -397,6 +405,7 @@ class S3CompletableOutputStream extends CompletableOutputStream {
         try {
             numPartsCompleted.acquire(totalPartCount);
         } catch (final InterruptedException e) {
+            Thread.currentThread().interrupt();
             final IOException ioe = new IOException("Failed to complete the upload since interrupted while waiting " +
                     "for all parts to finish", e);
             failAll(ioe);
