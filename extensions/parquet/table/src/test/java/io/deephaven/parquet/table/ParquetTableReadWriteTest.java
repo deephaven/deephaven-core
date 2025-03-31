@@ -1557,6 +1557,54 @@ public final class ParquetTableReadWriteTest {
     }
 
     @Test
+    public void testAddingIndexOnPartitioningColumn() {
+        final TableDefinition definition = TableDefinition.of(
+                ColumnDefinition.ofInt("PC1").withPartitioning(),
+                ColumnDefinition.ofLong("I"));
+        final Table inputData = TableTools.emptyTable(10)
+                .update("PC1 = (ii%2==0)? null : (int)(ii%2)",
+                        "I = ii");
+        final File parentDir = new File(rootFile, "writeKeyValuePartitionedDataWithNullKeys");
+        final ParquetInstructions instructionsWithIndexOnPC = ParquetInstructions.builder()
+                .setTableDefinition(definition)
+                .addIndexColumns("PC1") // Adding index on partitioning column
+                .build();
+
+        try {
+            writeKeyValuePartitionedTable(inputData, parentDir.getAbsolutePath(), instructionsWithIndexOnPC);
+        } catch (final IllegalArgumentException exception) {
+            assertTrue(exception.getMessage().contains("Cannot add index on partitioning column"));
+        }
+
+        try {
+            writeKeyValuePartitionedTable(
+                    inputData.partitionBy("PC1"), parentDir.getAbsolutePath(), instructionsWithIndexOnPC);
+        } catch (final IllegalArgumentException exception) {
+            assertTrue(exception.getMessage().contains("Cannot add index on partitioning column"));
+        }
+
+        {
+            // Add a data index on a partitioning column
+            DataIndexer.getOrCreateDataIndex(inputData, "PC1");
+            writeKeyValuePartitionedTable(inputData, parentDir.getAbsolutePath(), ParquetInstructions.builder()
+                    .setTableDefinition(definition)
+                    .setBaseNameForPartitionedParquetData("data")
+                    .build());
+
+            // Make sure we didn't write the index
+            final File parquetDataDir = new File(parentDir, "PC1=1");
+            verifyFilesInDir(parquetDataDir, new String[] {"data.parquet"}, null);
+
+            final Table fromDisk = readTable(parentDir.getPath());
+            // Make sure an index is present on the partitioning column, which will be the partitioning index
+            verifyIndexingInfoExists(fromDisk, "PC1");
+        }
+
+
+        // TODO Add a test where index already exists on multiple partitioning columns and we can read
+    }
+
+    @Test
     public void someMoreKeyValuePartitionedTestsWithComplexKeys() {
         // Verify complex keys both with and without data index
         someMoreKeyValuePartitionedTestsWithComplexKeysHelper(true);
