@@ -326,8 +326,8 @@ public class ParquetTools {
                     // Skip writing any existing indexes that are on partitioning columns
                     final Collection<List<String>> existingIndexes = indexedColumnNames(sourceTable);
                     return existingIndexes.stream()
-                            .filter(index ->
-                                    index.size() != 1 || !partitionedTable.keyColumnNames().contains(index.get(0)))
+                            .filter(index -> index.size() != 1
+                                    || !partitionedTable.keyColumnNames().contains(index.get(0)))
                             .collect(Collectors.toList());
                 });
 
@@ -384,7 +384,6 @@ public class ParquetTools {
             }
         }
     }
-
 
     /**
      * Write a partitioned table to disk in a key=value partitioning format with the already computed definition for the
