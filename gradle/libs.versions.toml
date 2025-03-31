@@ -33,7 +33,7 @@ google-java-allocation-instrumenter = "3.3.4"
 groovy = "3.0.24"
 # Only bump this in concert with boringssl
 grpc = "1.65.1"
-guava = "33.4.0-jre"
+guava = "33.4.6-jre"
 gwt = "2.12.2"
 # used by GwtTools
 gwtJetty = "9.4.44.v20210927"
