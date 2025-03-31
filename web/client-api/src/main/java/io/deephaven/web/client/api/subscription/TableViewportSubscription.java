@@ -21,7 +21,7 @@ import io.deephaven.web.client.api.JsTable;
 import io.deephaven.web.client.api.TableData;
 import io.deephaven.web.client.api.WorkerConnection;
 import io.deephaven.web.client.api.barrage.WebBarrageMessage;
-import io.deephaven.web.client.api.barrage.WebBarrageStreamReader;
+import io.deephaven.web.client.api.barrage.WebBarrageMessageReader;
 import io.deephaven.web.client.api.barrage.WebBarrageUtils;
 import io.deephaven.web.client.api.barrage.data.WebBarrageSubscription;
 import io.deephaven.web.client.api.barrage.stream.BiDiStream;
@@ -347,15 +347,16 @@ public class TableViewportSubscription extends AbstractTableSubscription {
                 .useDeephavenNulls(true)
                 .build();
 
-        WebBarrageSubscription snapshot = WebBarrageSubscription.subscribe(
-                SubscriptionType.SNAPSHOT, state(),
-                (serverViewport1, serverColumns, serverReverseViewport) -> {
-                },
-                (rowsAdded, rowsRemoved, totalMods, shifted, modifiedColumnSet) -> {
-                });
+        LazyPromise<TableData> promise = new LazyPromise<>();
+        state().onRunning(cts -> {
+            WebBarrageSubscription snapshot = WebBarrageSubscription.subscribe(
+                    SubscriptionType.SNAPSHOT, cts,
+                    (serverViewport1, serverColumns, serverReverseViewport) -> {
+                    },
+                    (rowsAdded, rowsRemoved, totalMods, shifted, modifiedColumnSet) -> {
+                    });
 
-        WebBarrageStreamReader reader = new WebBarrageStreamReader();
-        return new Promise<>((resolve, reject) -> {
+            WebBarrageMessageReader reader = new WebBarrageMessageReader();
 
             BiDiStream<FlightData, FlightData> doExchange = connection().<FlightData, FlightData>streamFactory().create(
                     headers -> connection().flightServiceClient().doExchange(headers),
@@ -367,7 +368,7 @@ public class TableViewportSubscription extends AbstractTableSubscription {
             doExchange.onData(data -> {
                 WebBarrageMessage message;
                 try {
-                    message = reader.parseFrom(options, state().chunkTypes(), state().columnTypes(),
+                    message = reader.parseFrom(options, state().columnTypes(),
                             state().componentTypes(), data);
                 } catch (IOException e) {
                     throw new RuntimeException(e);
@@ -421,19 +422,20 @@ public class TableViewportSubscription extends AbstractTableSubscription {
                     } else {
                         result = RangeSet.empty();
                     }
-                    resolve.onInvoke(new SubscriptionEventData(snapshot, rowStyleColumn, Js.uncheckedCast(columns),
+                    promise.succeed(new SubscriptionEventData(snapshot, rowStyleColumn, Js.uncheckedCast(columns),
                             result,
                             RangeSet.empty(),
                             RangeSet.empty(),
                             null));
                 } else {
-                    reject.onInvoke(status);
+                    promise.fail(status);
                 }
             });
 
             doExchange.send(payload);
             doExchange.end();
 
-        });
+        }, promise::fail, () -> promise.fail("Table was closed"));
+        return promise.asPromise();
     }
 }

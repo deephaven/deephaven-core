@@ -37,6 +37,7 @@ public class HasherConfig<T> {
     final List<ParameterSpec> extraPartialRehashParameters;
     final List<ProbeSpec> probes;
     final List<BuildSpec> builds;
+    public final List<ParameterSpec> extraConstructorParameters;
 
     HasherConfig(Class<T> baseClass, String classPrefix, String packageGroup, String packageMiddle,
             boolean openAddressedAlternate,
@@ -55,7 +56,8 @@ public class HasherConfig<T> {
             List<ParameterSpec> extraPartialRehashParameters,
             List<ProbeSpec> probes,
             List<BuildSpec> builds,
-            List<BiFunction<HasherConfig<T>, ChunkType[], MethodSpec>> extraMethods) {
+            List<BiFunction<HasherConfig<T>, ChunkType[], MethodSpec>> extraMethods,
+            List<ParameterSpec> extraConstructorParameters) {
         this.baseClass = baseClass;
         this.classPrefix = classPrefix;
         this.packageGroup = packageGroup;
@@ -77,6 +79,7 @@ public class HasherConfig<T> {
         this.probes = probes;
         this.builds = builds;
         this.extraMethods = extraMethods;
+        this.extraConstructorParameters = extraConstructorParameters;
     }
 
     @FunctionalInterface
@@ -179,6 +182,7 @@ public class HasherConfig<T> {
         private Consumer<CodeBlock.Builder> moveMainAlternate;
         private Consumer<CodeBlock.Builder> moveMainFull;
         private Consumer<CodeBlock.Builder> rehashFullSetup;
+        private final List<ParameterSpec> extraConstructorParameters = new ArrayList<>();
         private final List<ParameterSpec> extraPartialRehashParameters = new ArrayList<>();
         private final List<ProbeSpec> probes = new ArrayList<>();
         private final List<BuildSpec> builds = new ArrayList<>();
@@ -288,6 +292,11 @@ public class HasherConfig<T> {
             return this;
         }
 
+        public Builder<T> addConstructorParameter(ParameterSpec paramSpec) {
+            extraConstructorParameters.add(paramSpec);
+            return this;
+        }
+
         HasherConfig<T> build() {
             Assert.neqNull(classPrefix, "classPrefix");
             Assert.neqNull(packageGroup, "packageGroup");
@@ -304,7 +313,7 @@ public class HasherConfig<T> {
                     mainStateName,
                     overflowOrAlternateStateName, emptyStateName, tombstoneStateName,
                     stateType, moveMainFull, moveMainAlternate, rehashFullSetup, extraPartialRehashParameters, probes,
-                    builds, extraMethods);
+                    builds, extraMethods, extraConstructorParameters);
         }
     }
 }

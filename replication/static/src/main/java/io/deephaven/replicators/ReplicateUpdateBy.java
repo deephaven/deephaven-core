@@ -87,9 +87,10 @@ public class ReplicateUpdateBy {
         ReplicatePrimitiveCode.floatToAllFloatingPoints(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/sum/FloatCumSumOperator.java");
 
-        files = ReplicatePrimitiveCode.shortToAllNumericals(TASK,
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/minmax/ShortCumMinMaxOperator.java",
-                null);
+
+        files = ReplicatePrimitiveCode.charToAllButBoolean(TASK,
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/minmax/CharCumMinMaxOperator.java",
+                exemptions);
         for (final String f : files) {
             if (f.contains("Integer")) {
                 fixupInteger(f);
@@ -141,6 +142,9 @@ public class ReplicateUpdateBy {
                 fixupInteger(f);
             } else if (f.contains("Float") || f.contains("Double")) {
                 fixupFloatDoubleMinMax(f);
+            }
+            if (f.contains("Long")) {
+                augmentLongWithReinterps(f);
             }
         }
 
@@ -326,12 +330,14 @@ public class ReplicateUpdateBy {
     private static void fixupBoolean(String boolResult) throws IOException {
         final File objectFile = new File(boolResult);
         List<String> lines = FileUtils.readLines(objectFile, Charset.defaultCharset());
+        lines = removeImport(lines, "import static io.deephaven.util.QueryConstants.NULL_BOOLEAN;");
         lines = addImport(lines, "import io.deephaven.engine.table.ColumnSource;",
                 "import java.util.Map;",
                 "import java.util.Collections;",
                 "import io.deephaven.engine.table.impl.sources.BooleanArraySource;",
                 "import io.deephaven.engine.table.impl.sources.BooleanSparseArraySource;",
-                "import io.deephaven.engine.table.WritableColumnSource;");
+                "import io.deephaven.engine.table.WritableColumnSource;",
+                "import io.deephaven.util.BooleanUtils;");
 
         lines = globalReplacements(lines,
                 "BaseBooleanUpdateByOperator", "BaseByteUpdateByOperator",
@@ -343,14 +349,12 @@ public class ReplicateUpdateBy {
                 "boolean previousVal", "byte previousVal",
                 "boolean currentVal", "byte currentVal",
                 "BooleanChunk", "ByteChunk",
-                "NULL_BOOLEAN", "NULL_BOOLEAN_AS_BYTE");
-        lines = globalReplacements(lines,
-                "!BooleanPrimitives\\.isNull\\(currentVal\\)", "currentVal != NULL_BOOLEAN_AS_BYTE");
+                "val != NULL_BOOLEAN", "!BooleanUtils.isNull(val)");
         lines = replaceRegion(lines, "extra-methods",
                 Collections.singletonList(
                         "    @Override\n" +
                                 "    protected byte getNullValue() {\n" +
-                                "        return NULL_BOOLEAN_AS_BYTE;\n" +
+                                "        return BooleanUtils.NULL_BOOLEAN_AS_BYTE;\n" +
                                 "    }\n" +
                                 "    @Override\n" +
                                 "    protected WritableColumnSource<Byte> makeSparseSource() {\n" +

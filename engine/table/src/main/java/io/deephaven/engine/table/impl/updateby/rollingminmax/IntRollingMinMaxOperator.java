@@ -168,4 +168,7 @@ public class IntRollingMinMaxOperator extends BaseIntUpdateByOperator {
         // endregion extra-copy-args
         );
     }
+
+    // region extra-methods
+    // endregion extra-methods
 }

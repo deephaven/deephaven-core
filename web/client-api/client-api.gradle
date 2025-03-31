@@ -44,6 +44,8 @@ dependencies {
 
     js project(path: ':proto:raw-js-openapi', configuration: 'js')
 
+    implementation libs.guava
+
     testImplementation libs.junit4
     testImplementation libs.selenium.remote.driver
 

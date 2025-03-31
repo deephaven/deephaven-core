@@ -12,7 +12,7 @@ import pyarrow as pa
 
 from pydeephaven._utils import to_list
 
-from pydeephaven._table_ops import MetaTableOp, SortDirection, MultijoinTablesOp
+from pydeephaven._table_ops import MetaTableOp, SortDirection, MultijoinTablesOp, NaturalJoinType
 from pydeephaven.agg import Aggregation
 from pydeephaven.dherror import DHError
 from pydeephaven._table_interface import TableInterface
@@ -282,7 +282,8 @@ class Table(TableInterface, ServerObject):
         """
         return super(Table, self).tail(num_rows)
 
-    def natural_join(self, table: Table, on: Union[str, List[str]], joins: Union[str, List[str]] = None) -> Table:
+    def natural_join(self, table: Table, on: Union[str, List[str]], joins: Union[str, List[str]] = None,
+                     type: NaturalJoinType = NaturalJoinType.ERROR_ON_DUPLICATE) -> Table:
         """The natural_join method creates a new table containing all the rows and columns of this table, 
         plus additional columns containing data from the right table. For columns appended to the left table (joins), 
         row values equal the row values from the right table where the key values in the left and right tables are 
@@ -295,6 +296,8 @@ class Table(TableInterface, ServerObject):
             joins (Union[str, List[str]], optional): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None, which means all the columns
                 from the right table, excluding those specified in 'on'
+            type (NaturalJoinType, optional): the action to be taken when duplicate right hand rows are
+                encountered; default is ERROR_ON_DUPLICATE
 
         Returns:
             a Table object
@@ -302,7 +305,7 @@ class Table(TableInterface, ServerObject):
         Raises:
             DHError
         """
-        return super().natural_join(table, on, joins)
+        return super().natural_join(table, on, joins, type)
 
     def exact_join(self, table: Table, on: Union[str, List[str]], joins: Union[str, List[str]] = None) -> Table:
         """The exact_join method creates a new table containing all the rows and columns of this table plus 

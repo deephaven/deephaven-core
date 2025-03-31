@@ -541,7 +541,6 @@ public:
   /**
    * Converts nanoseconds-since-start-of-day to LocalTime. The Deephaven null value sentinel is
    * turned into LocalTime(0).
-   * TODO(kosak): find out null convention
    * @param nanos Nanoseconds since the start of the day.
    * @return The corresponding LocalTime.
    */
@@ -579,7 +578,6 @@ private:
     return !(lhs == rhs);
   }
 };
-
 }  // namespace deephaven::dhcore
 
 template<> struct fmt::formatter<deephaven::dhcore::DateTime> : ostream_formatter {};

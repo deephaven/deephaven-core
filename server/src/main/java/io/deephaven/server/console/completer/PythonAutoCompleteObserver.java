@@ -257,14 +257,14 @@ public class PythonAutoCompleteObserver extends SessionCloseableObserver<AutoCom
 
             final SignatureInformation.Builder item = SignatureInformation.newBuilder();
             item.setLabel(label);
-            item.setDocumentation(MarkupContent.newBuilder().setValue(docstring).setKind("plaintext").build());
+            item.setDocumentation(MarkupContent.newBuilder().setValue(docstring).setKind("markdown").build());
             item.setActiveParameter(activeParam);
 
             signature.get(2).asList().forEach(obj -> {
                 final List<PyObject> param = obj.asList();
                 item.addParameters(ParameterInformation.newBuilder().setLabel(param.get(0).getStringValue())
                         .setDocumentation(MarkupContent.newBuilder().setValue(param.get(1).getStringValue())
-                                .setKind("plaintext").build()));
+                                .setKind("markdown").build()));
             });
 
             finalItems.add(item.build());

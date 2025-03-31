@@ -17,10 +17,20 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.proto.backplane.grpc.WrappedAuthenticationRequest;
+import io.deephaven.qst.type.GenericVectorType;
+import io.deephaven.qst.type.Type;
 import io.deephaven.server.auth.AuthorizationProvider;
 import io.deephaven.server.config.ServerConfig;
 import io.deephaven.server.runner.DeephavenApiServerTestBase;
 import io.deephaven.server.runner.DeephavenApiServerTestBase.TestComponent.Builder;
+import io.deephaven.vector.ByteVector;
+import io.deephaven.vector.CharVector;
+import io.deephaven.vector.DoubleVector;
+import io.deephaven.vector.FloatVector;
+import io.deephaven.vector.IntVector;
+import io.deephaven.vector.LongVector;
+import io.deephaven.vector.ObjectVector;
+import io.deephaven.vector.ShortVector;
 import io.grpc.ManagedChannel;
 import org.apache.arrow.flight.Action;
 import org.apache.arrow.flight.ActionType;
@@ -47,6 +57,7 @@ import org.apache.arrow.flight.sql.FlightSqlClient.Savepoint;
 import org.apache.arrow.flight.sql.FlightSqlClient.SubstraitPlan;
 import org.apache.arrow.flight.sql.FlightSqlClient.Transaction;
 import org.apache.arrow.flight.sql.FlightSqlUtils;
+import org.apache.arrow.flight.sql.impl.FlightSql;
 import org.apache.arrow.flight.sql.impl.FlightSql.ActionBeginSavepointRequest;
 import org.apache.arrow.flight.sql.impl.FlightSql.ActionBeginTransactionRequest;
 import org.apache.arrow.flight.sql.impl.FlightSql.ActionCancelQueryRequest;
@@ -61,7 +72,6 @@ import org.apache.arrow.flight.sql.impl.FlightSql.CommandGetDbSchemas;
 import org.apache.arrow.flight.sql.impl.FlightSql.CommandGetExportedKeys;
 import org.apache.arrow.flight.sql.impl.FlightSql.CommandGetImportedKeys;
 import org.apache.arrow.flight.sql.impl.FlightSql.CommandGetPrimaryKeys;
-import org.apache.arrow.flight.sql.impl.FlightSql.CommandGetSqlInfo;
 import org.apache.arrow.flight.sql.impl.FlightSql.CommandGetTableTypes;
 import org.apache.arrow.flight.sql.impl.FlightSql.CommandGetTables;
 import org.apache.arrow.flight.sql.impl.FlightSql.CommandGetXdbcTypeInfo;
@@ -73,6 +83,7 @@ import org.apache.arrow.flight.sql.impl.FlightSql.CommandStatementUpdate;
 import org.apache.arrow.flight.sql.util.TableRef;
 import org.apache.arrow.memory.BufferAllocator;
 import org.apache.arrow.memory.RootAllocator;
+import org.apache.arrow.vector.FieldVector;
 import org.apache.arrow.vector.types.Types.MinorType;
 import org.apache.arrow.vector.types.pojo.ArrowType.Utf8;
 import org.apache.arrow.vector.types.pojo.Field;
@@ -588,6 +599,31 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
     }
 
     @Test
+    public void testDh18803() throws Exception {
+        // https://deephaven.atlassian.net/browse/DH-18803: Sql fails to adapt Vector types
+        final TableDefinition td = TableDefinition.of(
+                ColumnDefinition.ofVector("ByteVector", ByteVector.class),
+                ColumnDefinition.ofVector("CharVector", CharVector.class),
+                ColumnDefinition.ofVector("ShortVector", ShortVector.class),
+                ColumnDefinition.ofVector("IntVector", IntVector.class),
+                ColumnDefinition.ofVector("LongVector", LongVector.class),
+                ColumnDefinition.ofVector("FloatVector", FloatVector.class),
+                ColumnDefinition.ofVector("DoubleVector", DoubleVector.class),
+                ColumnDefinition.of("StringVector", GenericVectorType.of(ObjectVector.class, Type.stringType())));
+        final Table emptyTable = TableTools.newTable(td);
+        ExecutionContext.getContext().getQueryScope().putParam("MyTable", emptyTable);
+        {
+            final SchemaResult schema = flightSqlClient.getExecuteSchema("SELECT * FROM MyTable");
+            assertThat(schema.getSchema().getFields()).hasSize(8);
+        }
+        {
+            final FlightInfo info = flightSqlClient.execute("SELECT * FROM MyTable");
+            assertThat(info.getSchema().getFields()).hasSize(8);
+            consume(info, 0, 0, false);
+        }
+    }
+
+    @Test
     public void executeSubstrait() {
         getSchemaUnimplemented(() -> flightSqlClient.getExecuteSubstraitSchema(fakePlan()),
                 CommandStatementSubstraitPlan.getDescriptor());
@@ -644,11 +680,33 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
     }
 
     @Test
-    public void getSqlInfo() {
-        getSchemaUnimplemented(() -> flightSqlClient.getSqlInfoSchema(), CommandGetSqlInfo.getDescriptor());
-        commandUnimplemented(() -> flightSqlClient.getSqlInfo(), CommandGetSqlInfo.getDescriptor());
-        misbehave(CommandGetSqlInfo.getDefaultInstance(), CommandGetSqlInfo.getDescriptor());
-        unpackable(CommandGetSqlInfo.getDescriptor(), CommandGetSqlInfo.class);
+    public void getSqlInfo() throws Exception {
+        final SchemaResult schemaResult = flightSqlClient.getSqlInfoSchema();
+        final FlightInfo info = flightSqlClient.getSqlInfo();
+        try (final FlightStream stream = flightSqlClient.getStream(endpoint(info).getTicket())) {
+            assertThat(schemaResult.getSchema()).isEqualTo(stream.getSchema());
+
+            int numRows = 0;
+            int flightCount = 0;
+            boolean found = false;
+            while (stream.next()) {
+                ++flightCount;
+                numRows += stream.getRoot().getRowCount();
+
+                // validate the data:
+                final List<FieldVector> vs = stream.getRoot().getFieldVectors();
+                for (int ii = 0; ii < stream.getRoot().getRowCount(); ++ii) {
+                    if (vs.get(0).getObject(ii).equals(FlightSql.SqlInfo.FLIGHT_SQL_SERVER_NAME_VALUE)) {
+                        found = true;
+                        assertThat(vs.get(1).getObject(ii).toString()).isEqualTo("Deephaven");
+                        break;
+                    }
+                }
+            }
+            assertThat(found).isTrue();
+            assertThat(flightCount).isEqualTo(1);
+            assertThat(numRows).isEqualTo(8);
+        }
     }
 
     @Test

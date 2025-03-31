@@ -9,6 +9,7 @@ package io.deephaven.engine.table.impl.naturaljoin.typed.staticopen.gen;
 
 import static io.deephaven.util.compare.LongComparisons.eq;
 
+import io.deephaven.api.NaturalJoinType;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
@@ -29,8 +30,8 @@ final class StaticNaturalJoinHasherLong extends StaticNaturalJoinStateManagerTyp
 
     public StaticNaturalJoinHasherLong(ColumnSource[] tableKeySources,
             ColumnSource[] originalTableKeySources, int tableSize, double maximumLoadFactor,
-            double targetLoadFactor) {
-        super(tableKeySources, originalTableKeySources, tableSize, maximumLoadFactor);
+            double targetLoadFactor, NaturalJoinType joinType, boolean addOnly) {
+        super(tableKeySources, originalTableKeySources, tableSize, maximumLoadFactor, joinType, addOnly);
         this.mainKeySource0 = (ImmutableLongArraySource) super.mainKeySources[0];
         this.mainKeySource0.ensureCapacity(tableSize);
     }
@@ -85,7 +86,14 @@ final class StaticNaturalJoinHasherLong extends StaticNaturalJoinStateManagerTyp
                     mainRightRowKey.set(tableLocation, rightRowKeyToInsert);
                     break;
                 } else if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
-                    mainRightRowKey.set(tableLocation, DUPLICATE_RIGHT_STATE);
+                    if (joinType == NaturalJoinType.FIRST_MATCH) {
+                        // no-op, we already have the first match;
+                    } else if (joinType == NaturalJoinType.LAST_MATCH) {
+                        // we are processing sequentially so this is the latest;
+                        mainRightRowKey.set(tableLocation, rowKeyChunk.get(chunkPosition));
+                    } else {
+                        mainRightRowKey.set(tableLocation, DUPLICATE_RIGHT_STATE);
+                    }
                     break;
                 } else {
                     tableLocation = nextTableLocation(tableLocation);
@@ -138,8 +146,15 @@ final class StaticNaturalJoinHasherLong extends StaticNaturalJoinStateManagerTyp
             while (!isStateEmpty(existingStateValue = mainRightRowKey.getUnsafe(tableLocation))) {
                 if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
                     if (existingStateValue != NO_RIGHT_STATE_VALUE) {
-                        mainRightRowKey.set(tableLocation, DUPLICATE_RIGHT_STATE);
-                        throw new DuplicateRightRowDecorationException(tableLocation);
+                        if (joinType == NaturalJoinType.FIRST_MATCH) {
+                            // no-op, we already have the first match;
+                        } else if (joinType == NaturalJoinType.LAST_MATCH) {
+                            // we are processing sequentially so this is the latest;
+                            mainRightRowKey.set(tableLocation, rowKeyChunk.get(chunkPosition));
+                        } else {
+                            mainRightRowKey.set(tableLocation, DUPLICATE_RIGHT_STATE);
+                            throw new DuplicateRightRowDecorationException(tableLocation);
+                        }
                     } else {
                         final long rightRowKeyToInsert = rowKeyChunk.get(chunkPosition);
                         mainRightRowKey.set(tableLocation, rightRowKeyToInsert);

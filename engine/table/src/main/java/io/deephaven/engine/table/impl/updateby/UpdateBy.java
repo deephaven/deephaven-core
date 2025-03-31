@@ -1392,13 +1392,24 @@ public abstract class UpdateBy {
 
         final Map<String, ColumnSource<?>> resultSources = new LinkedHashMap<>(source.getColumnSourceMap());
 
-        // We have the source table and the row redirection; we can initialize the operators and add the output
-        // columns to the result sources
+        final Map<String, ColumnSource<?>> unorderedResultSources = new HashMap<>();
+        // We have the source table and the row redirection; we can initialize the operators and collect the output
+        // columns.
         for (UpdateByWindow win : operatorCollection.windowArr) {
             for (UpdateByOperator op : win.operators) {
                 op.initializeSources(source, rowRedirection);
-                resultSources.putAll(op.getOutputColumns());
+                unorderedResultSources.putAll(op.getOutputColumns());
             }
+        }
+
+        // Add the output result sources to the table column map in the order specified by the updateBy call.
+        for (String outputColumnName : operatorCollection.outputColumnNames) {
+            final ColumnSource<?> cs = unorderedResultSources.get(outputColumnName);
+            if (cs == null) {
+                throw new IllegalStateException(
+                        "Requested output column '" + outputColumnName + "' was not found in operator output");
+            }
+            resultSources.put(outputColumnName, cs);
         }
 
         if (operatorCollection.byColumnNames.length == 0) {
@@ -1425,7 +1436,7 @@ public abstract class UpdateBy {
                     }
                 }
                 return zkm.result();
-            }, source::isRefreshing, DynamicNode::isRefreshing);
+            }, source.isRefreshing(), DynamicNode::isRefreshing);
         }
 
         // TODO: test whether the source is static and that UpdateBy call uses only cumulative operators. In this
@@ -1455,7 +1466,7 @@ public abstract class UpdateBy {
                 }
             }
             return bm.result();
-        }, source::isRefreshing, DynamicNode::isRefreshing);
+        }, source.isRefreshing(), DynamicNode::isRefreshing);
     }
     // endregion
 }

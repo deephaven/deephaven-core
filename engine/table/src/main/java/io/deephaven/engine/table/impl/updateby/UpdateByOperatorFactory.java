@@ -212,6 +212,21 @@ public class UpdateByOperatorFactory {
         @Override
         public Void visit(@NotNull final ColumnUpdateOperation clause) {
             final UpdateBySpec spec = clause.spec();
+            // Need to handle some specs uniquely
+            if (spec instanceof CumCountWhereSpec) {
+                outputColumns.add(((CumCountWhereSpec) spec).column().name());
+                return null;
+            }
+            if (spec instanceof RollingCountWhereSpec) {
+                outputColumns.add(((RollingCountWhereSpec) spec).column().name());
+                return null;
+            }
+            if (spec instanceof RollingFormulaSpec && ((RollingFormulaSpec) spec).paramToken().isEmpty()) {
+                // The presence of the paramToken indicates that this is a multi-column formula and we have a single
+                // output column in #selectable()
+                outputColumns.add(((RollingFormulaSpec) spec).selectable().newColumn().name());
+                return null;
+            }
             final MatchPair[] pairs =
                     createColumnsToAddIfMissing(tableDef, parseMatchPairs(clause.columns()), spec, groupByColumns);
             for (MatchPair pair : pairs) {
@@ -856,6 +871,8 @@ public class UpdateByOperatorFactory {
 
             if (csType == byte.class || csType == Byte.class) {
                 return new ByteCumMinMaxOperator(pair, isMax, NULL_BYTE);
+            } else if (csType == char.class || csType == Character.class) {
+                return new CharCumMinMaxOperator(pair, isMax);
             } else if (csType == short.class || csType == Short.class) {
                 return new ShortCumMinMaxOperator(pair, isMax);
             } else if (csType == int.class || csType == Integer.class) {
@@ -1033,7 +1050,7 @@ public class UpdateByOperatorFactory {
 
             return new RollingGroupOperator(pairs, affectingColumns,
                     rg.revWindowScale().timestampCol(),
-                    prevWindowScaleUnits, fwdWindowScaleUnits, tableDef);
+                    prevWindowScaleUnits, fwdWindowScaleUnits);
         }
 
         private UpdateByOperator makeRollingAvgOperator(@NotNull final MatchPair pair,
@@ -1132,7 +1149,7 @@ public class UpdateByOperatorFactory {
             } else if (csType == long.class || csType == Long.class || isTimeType(csType)) {
                 return new LongRollingMinMaxOperator(pair, affectingColumns,
                         rmm.revWindowScale().timestampCol(),
-                        prevWindowScaleUnits, fwdWindowScaleUnits, rmm.isMax());
+                        prevWindowScaleUnits, fwdWindowScaleUnits, rmm.isMax(), csType);
             } else if (csType == float.class || csType == Float.class) {
                 return new FloatRollingMinMaxOperator(pair, affectingColumns,
                         rmm.revWindowScale().timestampCol(),

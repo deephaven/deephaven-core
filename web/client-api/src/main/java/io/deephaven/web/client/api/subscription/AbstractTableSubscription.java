@@ -18,7 +18,7 @@ import io.deephaven.web.client.api.TableData;
 import io.deephaven.web.client.api.WorkerConnection;
 import io.deephaven.web.client.api.barrage.CompressedRangeSetReader;
 import io.deephaven.web.client.api.barrage.WebBarrageMessage;
-import io.deephaven.web.client.api.barrage.WebBarrageStreamReader;
+import io.deephaven.web.client.api.barrage.WebBarrageMessageReader;
 import io.deephaven.web.client.api.barrage.WebBarrageUtils;
 import io.deephaven.web.client.api.barrage.data.WebBarrageSubscription;
 import io.deephaven.web.client.api.barrage.stream.BiDiStream;
@@ -77,7 +77,7 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
     private final SubscriptionType subscriptionType;
     private final ClientTableState state;
     private final WorkerConnection connection;
-    protected final int rowStyleColumn;
+    protected int rowStyleColumn;
     private JsArray<Column> columns;
     private BitSet columnBitSet;
     protected RangeSet viewportRowSet;
@@ -99,8 +99,6 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
         this.subscriptionType = subscriptionType;
         this.state = state;
         this.connection = connection;
-        rowStyleColumn = state.getRowFormatColumn() == null ? TableData.NO_ROW_FORMAT_COLUMN
-                : state.getRowFormatColumn().getIndex();
 
         revive();
     }
@@ -116,6 +114,10 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
                 // already closed
                 return;
             }
+
+            rowStyleColumn = s.getRowFormatColumn() == null ? TableData.NO_ROW_FORMAT_COLUMN
+                    : state.getRowFormatColumn().getIndex();
+
             WebBarrageSubscription.ViewportChangedHandler viewportChangedHandler = this::onViewportChange;
             WebBarrageSubscription.DataChangedHandler dataChangedHandler = this::onDataChanged;
 
@@ -411,9 +413,9 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
                     subscription.getServerViewport(), subscription.isReversed()));
         }
 
-        // for ViewportData
+        // for ViewportData, TreeViewportData
         @JsProperty
-        public Double getOffset() {
+        public double getOffset() {
             return offset;
         }
 
@@ -475,7 +477,7 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
                 cellColors = wrapper == null ? 0 : wrapper.getWrapped();
             }
             if (rowStyleColumn != NO_ROW_FORMAT_COLUMN) {
-                LongWrapper wrapper = subscription.getData(index, column.getStyleColumnIndex()).uncheckedCast();
+                LongWrapper wrapper = subscription.getData(index, rowStyleColumn).uncheckedCast();
                 rowColors = wrapper == null ? 0 : wrapper.getWrapped();
             }
             if (column.getFormatStringColumnIndex() != null) {
@@ -518,12 +520,12 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
         }
     }
 
-    private final WebBarrageStreamReader reader = new WebBarrageStreamReader();
+    private final WebBarrageMessageReader reader = new WebBarrageMessageReader();
 
     private void onFlightData(FlightData data) {
         WebBarrageMessage message;
         try {
-            message = reader.parseFrom(options, state.chunkTypes(), state.columnTypes(), state.componentTypes(), data);
+            message = reader.parseFrom(options, state.columnTypes(), state.componentTypes(), data);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

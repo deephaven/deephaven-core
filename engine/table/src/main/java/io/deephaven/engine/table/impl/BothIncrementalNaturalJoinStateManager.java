@@ -21,11 +21,11 @@ public interface BothIncrementalNaturalJoinStateManager extends IncrementalNatur
 
     void compactAll();
 
-    WritableRowRedirection buildIndexedRowRedirection(QueryTable leftTable, boolean exactMatch, InitialBuildContext ibc,
+    WritableRowRedirection buildIndexedRowRedirection(QueryTable leftTable, InitialBuildContext ibc,
             ColumnSource<RowSet> indexRowSets, JoinControl.RedirectionType redirectionType);
 
-    WritableRowRedirection buildRowRedirectionFromRedirections(QueryTable leftTable, boolean exactMatch,
-            InitialBuildContext ibc, JoinControl.RedirectionType redirectionType);
+    WritableRowRedirection buildRowRedirectionFromRedirections(QueryTable leftTable, InitialBuildContext ibc,
+            JoinControl.RedirectionType redirectionType);
 
     Context makeProbeContext(ColumnSource<?>[] probeSources, long maxSize);
 

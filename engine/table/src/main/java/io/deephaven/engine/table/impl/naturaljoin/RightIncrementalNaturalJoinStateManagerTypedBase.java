@@ -3,6 +3,9 @@
 //
 package io.deephaven.engine.table.impl.naturaljoin;
 
+import gnu.trove.list.array.TLongArrayList;
+import io.deephaven.api.NaturalJoinType;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ChunkType;
@@ -18,11 +21,11 @@ import io.deephaven.engine.table.impl.RightIncrementalNaturalJoinStateManager;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.engine.table.impl.sources.LongArraySource;
 import io.deephaven.engine.table.impl.sources.LongSparseArraySource;
+import io.deephaven.engine.table.impl.sources.ObjectArraySource;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableLongArraySource;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableObjectArraySource;
 import io.deephaven.engine.table.impl.util.*;
 import io.deephaven.engine.table.impl.util.TypedHasherUtil.BuildOrProbeContext.BuildContext;
-import io.deephaven.engine.table.impl.util.TypedHasherUtil.BuildOrProbeContext.ProbeContext;
 import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.engine.table.impl.JoinControl.CHUNK_SIZE;
@@ -31,6 +34,7 @@ import static io.deephaven.engine.table.impl.util.TypedHasherUtil.getKeyChunks;
 import static io.deephaven.engine.table.impl.util.TypedHasherUtil.getPrevKeyChunks;
 
 public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends RightIncrementalNaturalJoinStateManager {
+    public static final long FIRST_DUPLICATE = RowSet.NULL_ROW_KEY - 1;
 
     // the number of slots in our table
     protected int tableSize;
@@ -48,11 +52,16 @@ public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends R
     protected ImmutableObjectArraySource<WritableRowSet> leftRowSet =
             new ImmutableObjectArraySource<>(WritableRowSet.class, null);
     protected ImmutableLongArraySource rightRowKey = new ImmutableLongArraySource();
+    protected ObjectArraySource<WritableRowSet> rightSideDuplicateRowSets =
+            new ObjectArraySource<>(WritableRowSet.class);
+    protected long nextDuplicateRightSide = 0;
+    protected TLongArrayList freeDuplicateValues = new TLongArrayList();
     protected ImmutableLongArraySource modifiedTrackerCookieSource = new ImmutableLongArraySource();
 
     protected RightIncrementalNaturalJoinStateManagerTypedBase(ColumnSource<?>[] tableKeySources,
-            ColumnSource<?>[] keySourcesForErrorMessages, int tableSize, double maximumLoadFactor) {
-        super(keySourcesForErrorMessages);
+            ColumnSource<?>[] keySourcesForErrorMessages, int tableSize, double maximumLoadFactor,
+            NaturalJoinType joinType, boolean addOnly) {
+        super(keySourcesForErrorMessages, joinType, addOnly);
 
         // we start out with a chunk sized table, and will grow by rehashing the left as states are added
         this.tableSize = CHUNK_SIZE;
@@ -75,13 +84,36 @@ public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends R
         ensureCapacity(tableSize);
     }
 
-
     private void ensureCapacity(int tableSize) {
         leftRowSet.ensureCapacity(tableSize);
         rightRowKey.ensureCapacity(tableSize);
         modifiedTrackerCookieSource.ensureCapacity(tableSize);
         for (WritableColumnSource<?> mainKeySource : mainKeySources) {
             mainKeySource.ensureCapacity(tableSize);
+        }
+    }
+
+    public static class ProbeContext extends TypedHasherUtil.BuildOrProbeContext {
+        private ProbeContext(ColumnSource<?>[] buildSources, int chunkSize) {
+            super(buildSources, chunkSize);
+        }
+
+        void startShifts(long shiftDelta) {
+            if (shiftDelta > 0) {
+                if (pendingShifts == null) {
+                    pendingShifts = new LongArraySource();
+                }
+            }
+            pendingShiftPointer = 0;
+        }
+
+        public int pendingShiftPointer;
+        public LongArraySource pendingShifts;
+
+        public void ensureShiftCapacity(long shiftDelta, long size) {
+            if (shiftDelta > 0) {
+                pendingShifts.ensureCapacity(pendingShiftPointer + 2 * size);
+            }
         }
     }
 
@@ -166,14 +198,49 @@ public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends R
         return hash & (tableSize - 1);
     }
 
-    @Override
-    public long getRightIndex(int slot) {
-        return rightRowKey.getUnsafe(slot);
+    protected long duplicateLocationFromRowKey(long rowKey) {
+        Assert.leq(rowKey, "rowKey", FIRST_DUPLICATE);
+        return -rowKey + FIRST_DUPLICATE;
+    }
+
+    protected long rowKeyFromDuplicateLocation(long duplicateLocation) {
+        return -duplicateLocation + FIRST_DUPLICATE;
+    }
+
+    protected long allocateDuplicateLocation() {
+        if (freeDuplicateValues.isEmpty()) {
+            rightSideDuplicateRowSets.ensureCapacity(nextDuplicateRightSide + 1);
+            return nextDuplicateRightSide++;
+        } else {
+            final int offset = freeDuplicateValues.size() - 1;
+            final long value = freeDuplicateValues.get(offset);
+            freeDuplicateValues.remove(offset, 1);
+            return value;
+        }
+    }
+
+    protected void freeDuplicateLocation(long duplicateLocation) {
+        freeDuplicateValues.add(duplicateLocation);
     }
 
     @Override
-    public RowSet getLeftIndex(int slot) {
+    public long getRightRowKey(int slot) {
+        final long key = rightRowKey.getUnsafe(slot);
+        if (key <= FIRST_DUPLICATE) {
+            return DUPLICATE_RIGHT_VALUE;
+        }
+        return key;
+    }
+
+    @Override
+    public RowSet getLeftRowSet(int slot) {
         return leftRowSet.getUnsafe(slot);
+    }
+
+    @Override
+    public RowSet getRightRowSet(int slot) {
+        final long key = rightRowKey.getUnsafe(slot);
+        return rightSideDuplicateRowSets.getUnsafe(duplicateLocationFromRowKey(key));
     }
 
     @Override
@@ -220,15 +287,32 @@ public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends R
         final int chunkSize = (int) Math.min(rightRowSet.size(), CHUNK_SIZE);
         try (ProbeContext pc = makeProbeContext(rightSources, chunkSize)) {
             probeTable(pc, rightRowSet, false, rightSources,
-                    (chunkOk, sourceKeyChunks) -> addRightSide(chunkOk, sourceKeyChunks));
+                    this::addRightSide);
         }
     }
 
     protected abstract void addRightSide(RowSequence rowSequence, Chunk[] sourceKeyChunks);
 
+    private long getRightRowKeyFromState(
+            final long leftRowKey,
+            final long rightRowKeyForState) {
+        if (rightRowKeyForState > FIRST_DUPLICATE) {
+            return rightRowKeyForState;
+        }
+        if (joinType == NaturalJoinType.ERROR_ON_DUPLICATE || joinType == NaturalJoinType.EXACTLY_ONE_MATCH) {
+            throw new IllegalStateException("Natural Join found duplicate right key for "
+                    + extractKeyStringFromSourceTable(leftRowKey));
+        }
+        final long location = duplicateLocationFromRowKey(rightRowKeyForState);
+        final WritableRowSet rightRowSet = rightSideDuplicateRowSets.getUnsafe(location);
+        return joinType == NaturalJoinType.FIRST_MATCH
+                ? rightRowSet.firstRowKey()
+                : rightRowSet.lastRowKey();
+    }
+
     @Override
-    public WritableRowRedirection buildRowRedirectionFromHashSlot(QueryTable leftTable, boolean exactMatch,
-            InitialBuildContext ibc, JoinControl.RedirectionType redirectionType) {
+    public WritableRowRedirection buildRowRedirectionFromHashSlot(QueryTable leftTable, InitialBuildContext ibc,
+            JoinControl.RedirectionType redirectionType) {
 
         switch (redirectionType) {
             case Contiguous: {
@@ -241,9 +325,12 @@ public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends R
                 for (int ii = 0; ii < tableSize; ++ii) {
                     final WritableRowSet leftRowSet = this.leftRowSet.getUnsafe(ii);
                     if (leftRowSet != null) {
-                        final long rightRowKeyForState = rightRowKey.getUnsafe(ii);
-                        checkExactMatch(exactMatch, leftRowSet.firstRowKey(), rightRowKeyForState);
-                        leftRowSet.forAllRowKeys(pos -> innerIndex[(int) pos] = rightRowKeyForState);
+                        final long leftRowKey = leftRowSet.firstRowKey();
+                        final long rightState = rightRowKey.getUnsafe(ii);
+                        final long rightRowKey = getRightRowKeyFromState(leftRowKey, rightState);
+                        checkExactMatch(leftRowKey, rightRowKey);
+                        // Set unconditionally, need to populate the entire array with NULL_ROW_KEY or the RHS key
+                        leftRowSet.forAllRowKeys(pos -> innerIndex[(int) pos] = rightRowKey);
                     }
                 }
 
@@ -254,10 +341,13 @@ public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends R
                 for (int ii = 0; ii < tableSize; ++ii) {
                     final WritableRowSet leftRowSet = this.leftRowSet.getUnsafe(ii);
                     if (leftRowSet != null) {
-                        final long rightRowKeyForState = rightRowKey.getUnsafe(ii);
-                        if (rightRowKeyForState != RowSet.NULL_ROW_KEY) {
-                            checkExactMatch(exactMatch, leftRowSet.firstRowKey(), rightRowKeyForState);
-                            leftRowSet.forAllRowKeys(pos -> sparseRedirections.set(pos, rightRowKeyForState));
+                        final long leftRowKey = leftRowSet.firstRowKey();
+                        final long rightState = rightRowKey.getUnsafe(ii);
+                        final long rightRowKey = getRightRowKeyFromState(leftRowKey, rightState);
+                        if (rightRowKey == RowSet.NULL_ROW_KEY) {
+                            checkExactMatch(leftRowKey, rightRowKey);
+                        } else {
+                            leftRowSet.forAllRowKeys(pos -> sparseRedirections.set(pos, rightRowKey));
                         }
                     }
                 }
@@ -269,10 +359,13 @@ public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends R
                 for (int ii = 0; ii < tableSize; ++ii) {
                     final WritableRowSet leftRowSet = this.leftRowSet.getUnsafe(ii);
                     if (leftRowSet != null) {
-                        final long rightRowKeyForState = rightRowKey.getUnsafe(ii);
-                        if (rightRowKeyForState != RowSet.NULL_ROW_KEY) {
-                            checkExactMatch(exactMatch, leftRowSet.firstRowKey(), rightRowKeyForState);
-                            leftRowSet.forAllRowKeys(pos -> rowRedirection.put(pos, rightRowKeyForState));
+                        final long leftRowKey = leftRowSet.firstRowKey();
+                        final long rightState = rightRowKey.getUnsafe(ii);
+                        final long rightRowKey = getRightRowKeyFromState(leftRowKey, rightState);
+                        if (rightRowKey == RowSet.NULL_ROW_KEY) {
+                            checkExactMatch(leftRowKey, rightRowKey);
+                        } else {
+                            leftRowSet.forAllRowKeys(pos -> rowRedirection.put(pos, rightRowKey));
                         }
                     }
                 }
@@ -285,9 +378,9 @@ public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends R
 
     @Override
     public WritableRowRedirection buildRowRedirectionFromHashSlotIndexed(QueryTable leftTable,
-            ColumnSource<RowSet> rowSetSource, int groupingSize, boolean exactMatch,
-            InitialBuildContext ibc, JoinControl.RedirectionType redirectionType) {
-        return buildRowRedirectionFromHashSlot(leftTable, exactMatch, ibc, redirectionType);
+            ColumnSource<RowSet> rowSetSource, int groupingSize, InitialBuildContext ibc,
+            JoinControl.RedirectionType redirectionType) {
+        return buildRowRedirectionFromHashSlot(leftTable, ibc, redirectionType);
     }
 
     @Override
@@ -296,12 +389,25 @@ public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends R
         if (shiftedRowSet.isEmpty()) {
             return;
         }
-        probeTable((ProbeContext) pc, shiftedRowSet, false, rightSources, (chunkOk,
-                sourceKeyChunks) -> applyRightShift(chunkOk, sourceKeyChunks, shiftDelta, modifiedSlotTracker));
+        final ProbeContext pc1 = (ProbeContext) pc;
+        pc1.startShifts(shiftDelta);
+        probeTable(pc1, shiftedRowSet, false, rightSources,
+                (chunkOk, sourceKeyChunks) -> {
+                    pc1.ensureShiftCapacity(shiftDelta, chunkOk.size());
+                    applyRightShift(chunkOk, sourceKeyChunks, shiftDelta, modifiedSlotTracker, pc1);
+                });
+        for (int ii = pc1.pendingShiftPointer - 2; ii >= 0; ii -= 2) {
+            final long location = pc1.pendingShifts.getUnsafe(ii);
+            final long indexKey = pc1.pendingShifts.getUnsafe(ii + 1);
+
+            final WritableRowSet duplicates = rightSideDuplicateRowSets.getUnsafe(location);
+            Assert.neqNull(duplicates, "duplicates");
+            shiftOneKey(duplicates, indexKey, shiftDelta);
+        }
     }
 
     protected abstract void applyRightShift(RowSequence rowSequence, Chunk[] sourceKeyChunks, long shiftDelta,
-            NaturalJoinModifiedSlotTracker modifiedSlotTracker);
+            NaturalJoinModifiedSlotTracker modifiedSlotTracker, ProbeContext pc);
 
     @Override
     public void modifyByRight(Context pc, RowSet modified, ColumnSource<?>[] rightSources,

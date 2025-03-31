@@ -68,6 +68,8 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
             Configuration.getInstance().getBooleanWithDefault("BaseTable.validateUpdateIndices", false);
     public static final boolean VALIDATE_UPDATE_OVERLAPS =
             Configuration.getInstance().getBooleanWithDefault("BaseTable.validateUpdateOverlaps", true);
+    private static final boolean VALIDATE_UPDATE_MCSEMPTY =
+            Configuration.getInstance().getBooleanWithDefault("BaseTable.validateUpdateModifiedColumnSets", false);
     public static final boolean PRINT_SERIALIZED_UPDATE_OVERLAPS =
             Configuration.getInstance().getBooleanWithDefault("BaseTable.printSerializedUpdateOverlaps", false);
 
@@ -359,6 +361,15 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
         tempMap.put(BARRAGE_PERFORMANCE_KEY_ATTRIBUTE, EnumSet.of(
                 CopyAttributeOperation.Flatten, // add flatten for now because web flattens all views
                 CopyAttributeOperation.Preview));
+
+        tempMap.put(BARRAGE_SCHEMA_ATTRIBUTE, EnumSet.of(
+                CopyAttributeOperation.Filter,
+                CopyAttributeOperation.FirstBy,
+                CopyAttributeOperation.Flatten,
+                CopyAttributeOperation.LastBy,
+                CopyAttributeOperation.PartitionBy,
+                CopyAttributeOperation.Reverse,
+                CopyAttributeOperation.Sort));
 
         attributeToCopySet = Collections.unmodifiableMap(tempMap);
     }
@@ -720,6 +731,9 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
             update.removed().validate();
             update.modified().validate();
             update.shifted().validate();
+        }
+
+        if (VALIDATE_UPDATE_MCSEMPTY) {
             Assert.eq(update.modified().isEmpty(), "update.modified.empty()", update.modifiedColumnSet().empty(),
                     "update.modifiedColumnSet.empty()");
         }

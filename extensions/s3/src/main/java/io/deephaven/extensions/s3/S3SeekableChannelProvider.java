@@ -32,6 +32,7 @@ import java.nio.channels.SeekableByteChannel;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.concurrent.CancellationException;
@@ -46,7 +47,6 @@ import static io.deephaven.base.FileUtils.REPEATED_URI_SEPARATOR;
 import static io.deephaven.base.FileUtils.REPEATED_URI_SEPARATOR_PATTERN;
 import static io.deephaven.base.FileUtils.URI_SEPARATOR;
 import static io.deephaven.extensions.s3.S3ChannelContext.handleS3Exception;
-import static io.deephaven.extensions.s3.S3SeekableChannelProviderPlugin.S3_URI_SCHEME;
 
 /**
  * {@link SeekableChannelsProvider} implementation that is used to fetch objects from an S3-compatible API.
@@ -74,7 +74,7 @@ class S3SeekableChannelProvider implements SeekableChannelsProvider {
     private volatile SoftReference<Map<URI, FileSizeInfo>> fileSizeCacheRef;
 
     S3SeekableChannelProvider(@NotNull final S3Instructions s3Instructions) {
-        this.s3AsyncClient = S3ClientFactory.getAsyncClient(s3Instructions);
+        this.s3AsyncClient = S3ClientFactory.getAsyncClient(Objects.requireNonNull(s3Instructions));
         this.s3Instructions = s3Instructions;
         this.sharedCache = new S3RequestCache(s3Instructions.fragmentSize());
         this.fileSizeCacheRef = new SoftReference<>(new KeyedObjectHashMap<>(FileSizeInfo.URI_MATCH_KEY));
@@ -141,7 +141,7 @@ class S3SeekableChannelProvider implements SeekableChannelsProvider {
         if (log.isDebugEnabled()) {
             log.debug().append("Fetching child URIs for directory: ").append(directory.toString()).endl();
         }
-        return createStream(directory, false, S3_URI_SCHEME);
+        return createStream(S3Constants.S3_URI_SCHEME, directory, false);
     }
 
     @Override
@@ -149,20 +149,20 @@ class S3SeekableChannelProvider implements SeekableChannelsProvider {
         if (log.isDebugEnabled()) {
             log.debug().append("Performing recursive traversal from directory: ").append(directory.toString()).endl();
         }
-        return createStream(directory, true, S3_URI_SCHEME);
+        return createStream(S3Constants.S3_URI_SCHEME, directory, true);
     }
 
     /**
      * Create a stream of URIs, the elements of which are the entries in the directory.
      *
+     * @param resultScheme The scheme to use for URI results
      * @param directory The parent directory to list.
      * @param isRecursive Whether to list the entries recursively.
-     * @param childScheme The scheme to apply to the children URIs in the returned stream.
      */
     Stream<URI> createStream(
+            @NotNull final String resultScheme,
             @NotNull final URI directory,
-            final boolean isRecursive,
-            @NotNull final String childScheme) {
+            final boolean isRecursive) {
         // The following iterator fetches URIs from S3 in batches and creates a stream
         final Iterator<URI> iterator = new Iterator<>() {
             private final String bucketName;
@@ -235,7 +235,7 @@ class S3SeekableChannelProvider implements SeekableChannelsProvider {
                             }
                             final URI uri;
                             try {
-                                uri = new URI(childScheme, directory.getUserInfo(), directory.getHost(),
+                                uri = new URI(resultScheme, directory.getUserInfo(), directory.getHost(),
                                         directory.getPort(), path, null, null);
                             } catch (final URISyntaxException e) {
                                 throw new UncheckedDeephavenException("Failed to create URI for S3 object with key: "

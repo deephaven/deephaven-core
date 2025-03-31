@@ -24,26 +24,33 @@ _JTableLocationKeyImpl = jpy.get_type("io.deephaven.extensions.barrage.util.Pyth
 
 class TableKey(ABC):
     """A key that identifies a table. The key should be unique for each table. The key can be any Python object and
-    should include sufficient information to uniquely identify the table for the backend service. The __hash__ method
-    must be implemented to ensure that the key is hashable.
+    should include sufficient information to uniquely identify the table for the backend service. The __hash__ and
+    __eq__ methods must be implemented consistently to ensure that the key is hashable and behaves correctly for
+    the equality check.
     """
 
     @abstractmethod
     def __hash__(self):
         pass
 
+    @abstractmethod
+    def __eq__(self, other):
+        pass
 
 class TableLocationKey(ABC):
     """A key that identifies a specific location of a table. The key should be unique for each table location of the
     table. The key can be any Python object and should include sufficient information to uniquely identify the location
-    for the backend service to fetch the data values and data size. The __hash__ method must be implemented to ensure
-    that the key is hashable.
+    for the backend service to fetch the data values and data size. The __hash__ and __eq__ methods must be implemented
+    consistently to ensure that the key is hashable and behaves correctly for the equality check.
     """
 
     @abstractmethod
     def __hash__(self):
         pass
 
+    @abstractmethod
+    def __eq__(self, other):
+        pass
 
 class TableDataServiceBackend(ABC):
     """An interface for a backend service that provides access to table data."""
@@ -260,7 +267,7 @@ class TableDataService(JObjectWrapper):
 
         Args:
             table_key (TableKey): the table key
-            refreshing (bool): whether the table is live or static
+            refreshing (bool): whether the table is live (True) or static (False)
 
         Returns:
             Table: a new table
@@ -279,8 +286,7 @@ class TableDataService(JObjectWrapper):
 
         Args:
             table_key (TableKey): the table key
-            refreshing (bool): whether the partitioned table is live or static
-
+            refreshing (bool): whether the partitioned table is live (True) or static (False)
         Returns:
             PartitionedTable: a new partitioned table
 

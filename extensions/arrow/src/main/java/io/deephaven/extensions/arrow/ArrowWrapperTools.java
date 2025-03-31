@@ -257,7 +257,7 @@ public class ArrowWrapperTools {
             case TIMESTAMPNANOTZ:
             case TIMESTAMPSEC:
             case TIMESTAMPSECTZ:
-                return new ArrowInstantColumnSource(highBit, field, arrowHelper);
+                return new ArrowInstantColumnSource(vector.getMinorType(), highBit, field, arrowHelper);
             case NULL:
             case STRUCT:
             case DATEDAY:

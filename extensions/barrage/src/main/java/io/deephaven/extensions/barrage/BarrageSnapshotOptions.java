@@ -6,14 +6,13 @@ package io.deephaven.extensions.barrage;
 import com.google.flatbuffers.FlatBufferBuilder;
 import io.deephaven.annotations.BuildableStyle;
 import io.deephaven.barrage.flatbuf.BarrageSnapshotRequest;
-import io.deephaven.extensions.barrage.util.StreamReaderOptions;
 import io.deephaven.util.annotations.FinalDefault;
 import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
 
 @Immutable
 @BuildableStyle
-public abstract class BarrageSnapshotOptions implements StreamReaderOptions {
+public abstract class BarrageSnapshotOptions implements BarrageOptions {
     public static Builder builder() {
         return ImmutableBarrageSnapshotOptions.builder();
     }
@@ -69,7 +68,7 @@ public abstract class BarrageSnapshotOptions implements StreamReaderOptions {
     public interface Builder {
 
         /**
-         * See {@link StreamReaderOptions#useDeephavenNulls()} for details.
+         * See {@link BarrageOptions#useDeephavenNulls()} for details.
          *
          * @param useDeephavenNulls whether to use deephaven nulls
          * @return this builder
@@ -90,7 +89,7 @@ public abstract class BarrageSnapshotOptions implements StreamReaderOptions {
         }
 
         /**
-         * See {@link StreamReaderOptions#batchSize()} for details.
+         * See {@link BarrageOptions#batchSize()} for details.
          *
          * @param batchSize the ideal number of records to send per record batch
          * @return this builder
@@ -98,7 +97,7 @@ public abstract class BarrageSnapshotOptions implements StreamReaderOptions {
         Builder batchSize(int batchSize);
 
         /**
-         * See {@link StreamReaderOptions#maxMessageSize()} for details.
+         * See {@link BarrageOptions#maxMessageSize()} for details.
          *
          * @param messageSize the maximum size of a GRPC message in bytes
          * @return this builder
@@ -106,7 +105,7 @@ public abstract class BarrageSnapshotOptions implements StreamReaderOptions {
         Builder maxMessageSize(int messageSize);
 
         /**
-         * See {@link StreamReaderOptions#previewListLengthLimit()} for details.
+         * See {@link BarrageOptions#previewListLengthLimit()} for details.
          *
          * @param previewListLengthLimit the magnitude of the number of elements to include in a preview list
          * @return this builder
