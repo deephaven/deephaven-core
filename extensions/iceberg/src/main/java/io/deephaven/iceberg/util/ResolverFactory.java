@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
+// TODO: more testing of this logic
 final class ResolverFactory implements ParquetColumnResolver.Factory {
 
     private final Resolver resolver;
@@ -44,6 +45,7 @@ final class ResolverFactory implements ParquetColumnResolver.Factory {
 
         @Override
         public Optional<List<String>> of(String columnName) {
+            // TODO: this may also be PartitionSpeec based column?
             final List<Types.NestedField> readersPath =
                     resolver.resolveSchemaFieldViaReadersSchema(columnName).orElse(null);
             if (readersPath == null) {

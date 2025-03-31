@@ -219,6 +219,8 @@ class InferenceTest {
                 NestedField.required(6, "S2", StructType.of(
                         NestedField.optional(4, "F1", IT),
                         NestedField.required(5, "F2", IT))));
+
+
         final Resolver expected = Resolver.builder()
                 .schema(schema)
                 .spec(PartitionSpec.unpartitioned())

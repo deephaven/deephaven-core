@@ -33,9 +33,13 @@ public abstract class IcebergReadInstructions {
 
     /**
      * The table definition instructions. Callers are encouraged to set this. If not set, one will be
-     * {@link Resolver#infer(Schema) inferred}.
+     * {@link Resolver#infer(InferenceInstructions)}}.
      */
     public abstract Optional<Resolver> resolver();
+
+    // might be some awy to pass in desired inferenc instructions; arguably, caller _might_ want to specify namer and
+    // if inference should fail...
+    // public abstract Optional<InferenceInstructions> inferenceInstructions();
 
     /**
      * The {@link TableDefinition} to use when reading Iceberg data files.

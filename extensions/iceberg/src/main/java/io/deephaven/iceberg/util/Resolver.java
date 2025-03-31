@@ -52,6 +52,8 @@ public abstract class Resolver {
     public static Resolver infer(InferenceInstructions i) throws Inference.UnsupportedType {
         final Inf inf = new Inf(i);
         TypeUtil.visit(i.schema(), inf);
+        // TODO: visit the PartitionSpec to build io.deephaven.iceberg.util.ColumnInstructions.partitionField as well
+        // i.spec();
         if (i.failOnUnsupportedTypes() && !inf.unsupportedTypes.isEmpty()) {
             throw inf.unsupportedTypes.get(0);
         }
@@ -225,7 +227,7 @@ public abstract class Resolver {
         private final List<Inference.UnsupportedType> unsupportedTypes = new ArrayList<>();
 
         // state
-        private int skipDepth = 0;
+        private int skipDepth = 0; // if skipDepth > 0, we should skip inference on any types we visit
         private final List<Types.NestedField> fieldPath = new ArrayList<>();
 
 
@@ -284,7 +286,20 @@ public abstract class Resolver {
             builder.putColumnInstructions(columnName, ColumnInstructions.schemaField(currentFieldId()));
             definitions.add(ColumnDefinition.of(columnName, type));
             return null;
+
+
+            // "Foo": {
+            //    "Bar": int,
+            //    "Baz": int,
+            // }
+            // "Foo2": List {
+            //   "Bar": int,
+            //   "Baz": int
+            // }
+
         }
+
+
 
         private int currentFieldId() {
             return fieldPath.get(fieldPath.size() - 1).fieldId();

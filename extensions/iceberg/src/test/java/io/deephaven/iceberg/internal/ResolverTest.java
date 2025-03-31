@@ -18,6 +18,7 @@ import org.apache.iceberg.types.Types.IntegerType;
 import org.apache.iceberg.types.Types.NestedField;
 import org.junit.jupiter.api.Test;
 
+import static io.deephaven.iceberg.util.ColumnInstructions.partitionField;
 import static io.deephaven.iceberg.util.ColumnInstructions.schemaField;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
@@ -69,7 +70,7 @@ class ResolverTest {
                 .spec(PartitionSpec.unpartitioned())
                 .definition(simpleDefinition(Type.intType()))
                 .putColumnInstructions("F1", schemaField(42))
-                .putColumnInstructions("F2", ColumnInstructions.partitionField(9999))
+                .putColumnInstructions("F2", partitionField(9999))
                 .build();
     }
 
@@ -219,7 +220,7 @@ class ResolverTest {
                 .definition(TableDefinition.of(
                         ColumnDefinition.of("F1", Type.intType()).withPartitioning(),
                         ColumnDefinition.of("F2", Type.intType())))
-                .putColumnInstructions("F1", ColumnInstructions.partitionField(partitionField.fieldId()))
+                .putColumnInstructions("F1", partitionField(partitionField.fieldId()))
                 .putColumnInstructions("F2", schemaField(43))
                 .build();
     }
@@ -237,7 +238,7 @@ class ResolverTest {
                     .definition(TableDefinition.of(
                             ColumnDefinition.of("F1", Type.intType()).withPartitioning(),
                             ColumnDefinition.of("F2", Type.intType())))
-                    .putColumnInstructions("F1", ColumnInstructions.partitionField(9999))
+                    .putColumnInstructions("F1", partitionField(9999))
                     .putColumnInstructions("F2", schemaField(43))
                     .build();
             failBecauseExceptionWasNotThrown(Resolver.MappingException.class);
@@ -261,7 +262,7 @@ class ResolverTest {
                     .definition(TableDefinition.of(
                             ColumnDefinition.of("F1", Type.intType()).withPartitioning(),
                             ColumnDefinition.of("F2", Type.intType())))
-                    .putColumnInstructions("F1", ColumnInstructions.partitionField(partitionField.fieldId()))
+                    .putColumnInstructions("F1", partitionField(partitionField.fieldId()))
                     .putColumnInstructions("F2", schemaField(43))
                     .build();
             failBecauseExceptionWasNotThrown(Resolver.MappingException.class);
