@@ -19,6 +19,7 @@ from deephaven.experimental.table_data_service import TableDataServiceBackend, T
     TableLocationKey, TableDataService
 import deephaven.arrow as dharrow
 from deephaven.liveness_scope import liveness_scope
+from deephaven.update_graph import exclusive_lock
 
 from tests.testbase import BaseTestCase
 
@@ -177,12 +178,11 @@ class TestBackend(TableDataServiceBackend):
 
         while self.subscriptions_enabled_for_test and self.partitions_size_subscriptions[table_location_key]:
             if self.sub_partition_size_fail_test:
-                # give main test thread a chance to wait on the condition
-                time.sleep(0.1)
                 with self.size_sub_failure_cb_called_cond:
                     failure_cb(Exception("table location size subscription failure"))
                     self.is_size_sub_failure_cb_called = True
                     self.size_sub_failure_cb_called_cond.notify()
+                    self.sub_partition_size_fail_test = False
                 return
             else:
                 pa_table = self.partitions[table_location_key]
@@ -423,16 +423,19 @@ class TableDataServiceTestCase(BaseTestCase):
         table = data_service.make_table(TableKeyImpl("test"), refreshing=True)
 
         # wait for location/size subscription to be established
-        self.wait_ticking_table_update(table, 2, 1)
+        # hold the exclusive lock to ensure table initialization is complete before size failure is triggered
+        with exclusive_lock(table):
+            table = table.coalesce()
 
-        with backend.size_sub_failure_cb_called_cond:
-            # the test backend will trigger a size subscription failure
-            if not backend.is_size_sub_failure_cb_called:
-                if not backend.size_sub_failure_cb_called_cond.wait(timeout=5):
-                    self.fail("size subscription failure callback was not called in 5s")
-            else:
-                # size subscription failure callback was already called
-                pass
+        # the test backend will trigger a size subscription failure
+        if not backend.is_size_sub_failure_cb_called:
+            with backend.size_sub_failure_cb_called_cond:
+                if not backend.is_size_sub_failure_cb_called:
+                    if not backend.size_sub_failure_cb_called_cond.wait(timeout=5):
+                        self.fail("size subscription failure callback was not called in 5s")
+                else:
+                    # size subscription failure callback was already called
+                    pass
 
         with self.assertRaises(Exception) as cm:
             # for a real PUG with 1s interval, the failure is buffered after the roots are
