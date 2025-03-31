@@ -1557,14 +1557,16 @@ public final class ParquetTableReadWriteTest {
     }
 
     @Test
-    public void testAddingIndexOnPartitioningColumn() {
+    public void testWritingPartitionedDatasetWithIndexOnPartitioningColumn() {
         final TableDefinition definition = TableDefinition.of(
                 ColumnDefinition.ofInt("PC1").withPartitioning(),
+                ColumnDefinition.ofInt("PC2").withPartitioning(),
                 ColumnDefinition.ofLong("I"));
         final Table inputData = TableTools.emptyTable(10)
                 .update("PC1 = (ii%2==0)? null : (int)(ii%2)",
+                        "PC2 = (int)(ii%3)",
                         "I = ii");
-        final File parentDir = new File(rootFile, "writeKeyValuePartitionedDataWithNullKeys");
+        final File parentDir = new File(rootFile, "writeKeyValuePartitionedDataWithIndexOnPC");
         final ParquetInstructions instructionsWithIndexOnPC = ParquetInstructions.builder()
                 .setTableDefinition(definition)
                 .addIndexColumns("PC1") // Adding index on partitioning column
@@ -1575,7 +1577,6 @@ public final class ParquetTableReadWriteTest {
         } catch (final IllegalArgumentException exception) {
             assertTrue(exception.getMessage().contains("Cannot add index on partitioning column"));
         }
-
         try {
             writeKeyValuePartitionedTable(
                     inputData.partitionBy("PC1"), parentDir.getAbsolutePath(), instructionsWithIndexOnPC);
@@ -1583,25 +1584,55 @@ public final class ParquetTableReadWriteTest {
             assertTrue(exception.getMessage().contains("Cannot add index on partitioning column"));
         }
 
-        {
-            // Add a data index on a partitioning column
-            DataIndexer.getOrCreateDataIndex(inputData, "PC1");
-            writeKeyValuePartitionedTable(inputData, parentDir.getAbsolutePath(), ParquetInstructions.builder()
-                    .setTableDefinition(definition)
-                    .setBaseNameForPartitionedParquetData("data")
-                    .build());
+        // Add a data index on a partitioning column
+        DataIndexer.getOrCreateDataIndex(inputData, "PC1");
+        writeKeyValuePartitionedTable(inputData, parentDir.getAbsolutePath(), ParquetInstructions.builder()
+                .setTableDefinition(definition)
+                .setBaseNameForPartitionedParquetData("data")
+                .build());
 
-            // Make sure we didn't write the index
-            final File parquetDataDir = new File(parentDir, "PC1=1");
-            verifyFilesInDir(parquetDataDir, new String[] {"data.parquet"}, null);
+        // Make sure we didn't write the index
+        final File parquetDataDir = new File(parentDir, "PC1=1/PC2=1");
+        verifyFilesInDir(parquetDataDir, new String[] {"data.parquet"}, null);
 
-            final Table fromDisk = readTable(parentDir.getPath());
-            // Make sure an index is present on the partitioning column, which will be the partitioning index
-            verifyIndexingInfoExists(fromDisk, "PC1");
-        }
+        final Table fromDisk = readTable(parentDir.getPath());
 
+        // Make sure an index is present on the partitioning column, which will be the partitioning index
+        verifyIndexingInfoExists(fromDisk, "PC1");
+        verifyIndexingInfoExists(fromDisk, "PC2");
 
-        // TODO Add a test where index already exists on multiple partitioning columns and we can read
+        // Make sure the data is read correctly
+        assertEquals(definition, fromDisk.getDefinition());
+        assertTableEquals(inputData.sort("PC1", "PC2"), fromDisk.sort("PC1", "PC2"));
+    }
+
+    @Test
+    public void testReadingPartitionedDatasetWithIndexOnPartitioningColumn() {
+        final TableDefinition expectedDefinition = TableDefinition.of(
+                ColumnDefinition.ofInt("PC1").withPartitioning(),
+                ColumnDefinition.ofInt("PC2").withPartitioning(),
+                ColumnDefinition.ofLong("I"));
+        final Table expectedValues = TableTools.emptyTable(10)
+                .update("PC1 = (ii%2==0)? null : (int)(ii%2)",
+                        "PC2 = (int)(ii%3)",
+                        "I = ii");
+        final String parentDir =
+                ParquetTableReadWriteTest.class.getResource("/referencePartitionedDataWithIndexOnPC").getFile();
+        final File parquetDataDir = new File(parentDir, "PC1=1/PC2=1");
+        final String pc1IndexFilePath = ".dh_metadata/indexes/PC1/index_PC1_data.parquet";
+        final String pc2IndexFilePath = ".dh_metadata/indexes/PC2/index_PC2_data.parquet";
+        verifyFilesInDir(parquetDataDir, new String[] {"data.parquet"},
+                Map.of("PC1", new String[] {pc1IndexFilePath},
+                        "PC2", new String[] {pc2IndexFilePath}));
+
+        final Table fromDisk = readTable(parentDir);
+        // Make sure an index is present on the partitioning column, which will be the partitioning index
+        verifyIndexingInfoExists(fromDisk, "PC1");
+        verifyIndexingInfoExists(fromDisk, "PC2");
+
+        // Make sure the data is read correctly
+        assertEquals(expectedDefinition, fromDisk.getDefinition());
+        assertTableEquals(expectedValues.sort("PC1", "PC2"), fromDisk.sort("PC1", "PC2"));
     }
 
     @Test
