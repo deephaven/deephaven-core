@@ -49,7 +49,7 @@ class S3WriteRequest {
      */
     final Runnable cleanup;
 
-    S3WriteRequest(
+    private S3WriteRequest(
             @NotNull final ByteBuffer buffer,
             @NotNull final Runnable cleanup) {
         this.buffer = buffer;
