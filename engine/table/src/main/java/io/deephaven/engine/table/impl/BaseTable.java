@@ -68,8 +68,6 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
             Configuration.getInstance().getBooleanWithDefault("BaseTable.validateUpdateIndices", false);
     public static final boolean VALIDATE_UPDATE_OVERLAPS =
             Configuration.getInstance().getBooleanWithDefault("BaseTable.validateUpdateOverlaps", true);
-    private static final boolean VALIDATE_UPDATE_MCSEMPTY =
-            Configuration.getInstance().getBooleanWithDefault("BaseTable.validateUpdateModifiedColumnSets", false);
     public static final boolean PRINT_SERIALIZED_UPDATE_OVERLAPS =
             Configuration.getInstance().getBooleanWithDefault("BaseTable.printSerializedUpdateOverlaps", false);
 
@@ -680,13 +678,25 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
      *        {@code notifyListeners} takes ownership, and will call {@code release} on it once it is not used anymore;
      *        callers should pass a {@code copy} for updates they intend to further use.
      */
-    public final void notifyListeners(final TableUpdate update) {
+    public final void notifyListeners(final TableUpdate originalUpdate) {
         Assert.eqFalse(isFailed, "isFailed");
         final long currentStep = updateGraph.clock().currentStep();
         // tables may only be updated once per cycle
         Assert.lt(lastNotificationStep, "lastNotificationStep", currentStep, "updateGraph.clock().currentStep()");
 
-        Assert.eqTrue(update.valid(), "update.valid()");
+        Assert.eqTrue(originalUpdate.valid(), "originalUpdate.valid()");
+
+        final TableUpdate update;
+        if (originalUpdate.modified().isEmpty() && originalUpdate.modifiedColumnSet().nonempty()
+                || (originalUpdate.modifiedColumnSet().empty() && originalUpdate.modified().isNonempty())) {
+            update = new TableUpdateImpl(originalUpdate.added().copy(), originalUpdate.removed().copy(),
+                    RowSetFactory.empty(),
+                    originalUpdate.shifted(), ModifiedColumnSet.EMPTY);
+            originalUpdate.release();
+        } else {
+            update = originalUpdate;
+        }
+
         if (update.empty()) {
             update.release();
             return;
@@ -731,11 +741,6 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
             update.removed().validate();
             update.modified().validate();
             update.shifted().validate();
-        }
-
-        if (VALIDATE_UPDATE_MCSEMPTY) {
-            Assert.eq(update.modified().isEmpty(), "update.modified.empty()", update.modifiedColumnSet().empty(),
-                    "update.modifiedColumnSet.empty()");
         }
 
         if (VALIDATE_UPDATE_OVERLAPS) {
