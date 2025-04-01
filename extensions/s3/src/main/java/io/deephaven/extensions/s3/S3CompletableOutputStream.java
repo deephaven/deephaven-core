@@ -202,7 +202,7 @@ class S3CompletableOutputStream extends CompletableOutputStream {
             final S3WriteRequest useRequest;
             if (bufferedPartRequest == null) {
                 // Get a new request from the pool
-                useRequest = new S3WriteRequest(bufferPool, s3Instructions.writePartSize());
+                useRequest = S3WriteRequest.create(bufferPool, s3Instructions.writePartSize());
             } else {
                 // Re-use the pending request
                 useRequest = bufferedPartRequest;
