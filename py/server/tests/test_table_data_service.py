@@ -191,6 +191,8 @@ class TestBackend(TableDataServiceBackend):
                 new_pa_table = pa.Table.from_batches(rbs)
                 self.partitions[table_location_key] = new_pa_table
                 size_cb(new_pa_table.num_rows)
+
+            # pause to simulate a delay in adding new rows
             time.sleep(0.1)
 
     def subscribe_to_table_location_size(self, table_key: TableKeyImpl,
@@ -428,14 +430,14 @@ class TableDataServiceTestCase(BaseTestCase):
             table = table.coalesce()
 
         # the test backend will trigger a size subscription failure
-        if not backend.is_size_sub_failure_cb_called:
-            with backend.size_sub_failure_cb_called_cond:
-                if not backend.is_size_sub_failure_cb_called:
-                    if not backend.size_sub_failure_cb_called_cond.wait(timeout=5):
-                        self.fail("size subscription failure callback was not called in 5s")
-                else:
-                    # size subscription failure callback was already called
-                    pass
+        # if not backend.is_size_sub_failure_cb_called:
+        with backend.size_sub_failure_cb_called_cond:
+            if not backend.is_size_sub_failure_cb_called:
+                if not backend.size_sub_failure_cb_called_cond.wait(timeout=5):
+                    self.fail("size subscription failure callback was not called in 5s")
+            else:
+                # size subscription failure callback was already called
+                pass
 
         with self.assertRaises(Exception) as cm:
             # for a real PUG with 1s interval, the failure is buffered after the roots are
