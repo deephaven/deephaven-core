@@ -51,13 +51,13 @@ public interface SeekableChannelsProvider extends SafeCloseable {
     }
 
     /**
-     * Create a new {@link SeekableChannelContext} object for creating output streams via this provider.
+     * Create a new context object for creating output streams via this provider.
      */
-    SeekableChannelContext makeWriteContext();
+    SafeCloseable makeWriteContext();
 
     /**
-     * Check if the given context is compatible with this provider. Useful to test if we can use provided
-     * {@code context} object for creating channels with this provider.
+     * Check if the given context is compatible with this provider for reading. Useful to test if we can use provided
+     * {@code channelContext} object for creating read channels with this provider.
      */
     boolean isCompatibleWith(@NotNull SeekableChannelContext channelContext);
 
@@ -106,7 +106,7 @@ public interface SeekableChannelsProvider extends SafeCloseable {
      * @see CompletableOutputStream
      */
     CompletableOutputStream getOutputStream(
-            @NotNull final SeekableChannelContext channelContext,
+            @NotNull final SafeCloseable channelContext,
             @NotNull final URI uri,
             int bufferSizeHint) throws IOException;
 

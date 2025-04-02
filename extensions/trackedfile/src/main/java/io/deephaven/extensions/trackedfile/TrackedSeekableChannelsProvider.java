@@ -9,6 +9,7 @@ import io.deephaven.engine.util.file.FileHandle;
 import io.deephaven.engine.util.file.FileHandleFactory;
 import io.deephaven.engine.util.file.TrackedFileHandleFactory;
 import io.deephaven.engine.util.file.TrackedSeekableByteChannel;
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.channel.Channels;
 import io.deephaven.util.channel.CompletableOutputStream;
 import io.deephaven.util.channel.SeekableChannelContext;
@@ -37,6 +38,10 @@ final class TrackedSeekableChannelsProvider implements SeekableChannelsProvider 
 
     private static final int MAX_READ_BUFFER_SIZE = 1 << 16; // 64 KiB
 
+    private static final SafeCloseable NULL_WRITE_CONTEXT = () -> {
+        // no-op, since write context is not used by this provider
+    };
+
     private final TrackedFileHandleFactory fileHandleFactory;
 
     TrackedSeekableChannelsProvider(@NotNull final TrackedFileHandleFactory fileHandleFactory) {
@@ -49,8 +54,8 @@ final class TrackedSeekableChannelsProvider implements SeekableChannelsProvider 
     }
 
     @Override
-    public SeekableChannelContext makeWriteContext() {
-        return new BaseSeekableChannelContext();
+    public SafeCloseable makeWriteContext() {
+        return NULL_WRITE_CONTEXT;
     }
 
     @Override
@@ -80,7 +85,7 @@ final class TrackedSeekableChannelsProvider implements SeekableChannelsProvider 
 
     @Override
     public CompletableOutputStream getOutputStream(
-            @NotNull final SeekableChannelContext channelContext,
+            @NotNull final SafeCloseable channelContext,
             @NotNull final URI uri,
             int bufferSizeHint) throws IOException {
         return new LocalCompletableOutputStream(new File(uri), this, bufferSizeHint, channelContext);

@@ -144,7 +144,7 @@ public class CachedChannelProviderTest {
         }
 
         @Override
-        public SeekableChannelContext makeWriteContext() {
+        public SafeCloseable makeWriteContext() {
             return new TestChannelContext();
         }
 
@@ -177,7 +177,7 @@ public class CachedChannelProviderTest {
 
         @Override
         public CompletableOutputStream getOutputStream(
-                @NotNull SeekableChannelContext channelContext,
+                @NotNull SafeCloseable channelContext,
                 @NotNull final URI uri,
                 int bufferSizeHint) {
             throw new UnsupportedOperationException("getOutputStream");

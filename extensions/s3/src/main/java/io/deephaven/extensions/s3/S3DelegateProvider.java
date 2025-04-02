@@ -3,6 +3,7 @@
 //
 package io.deephaven.extensions.s3;
 
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.channel.CompletableOutputStream;
 import io.deephaven.util.channel.SeekableChannelContext;
 import io.deephaven.util.channel.SeekableChannelsProviderDelegate;
@@ -42,7 +43,7 @@ final class S3DelegateProvider extends SeekableChannelsProviderDelegate {
 
     @Override
     public CompletableOutputStream getOutputStream(
-            @NotNull final SeekableChannelContext channelContext,
+            @NotNull final SafeCloseable channelContext,
             @NotNull URI uri,
             int bufferSizeHint) throws IOException {
         return delegate.getOutputStream(channelContext, toS3Uri(uri), bufferSizeHint);

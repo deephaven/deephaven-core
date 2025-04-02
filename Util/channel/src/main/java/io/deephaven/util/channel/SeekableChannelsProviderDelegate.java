@@ -3,6 +3,7 @@
 //
 package io.deephaven.util.channel;
 
+import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
@@ -25,7 +26,7 @@ public class SeekableChannelsProviderDelegate implements SeekableChannelsProvide
     }
 
     @Override
-    public SeekableChannelContext makeWriteContext() {
+    public SafeCloseable makeWriteContext() {
         return delegate.makeWriteContext();
     }
 
@@ -52,7 +53,7 @@ public class SeekableChannelsProviderDelegate implements SeekableChannelsProvide
 
     @Override
     public CompletableOutputStream getOutputStream(
-            @NotNull final SeekableChannelContext channelContext,
+            @NotNull final SafeCloseable channelContext,
             @NotNull URI uri,
             int bufferSizeHint) throws IOException {
         return delegate.getOutputStream(channelContext, uri, bufferSizeHint);

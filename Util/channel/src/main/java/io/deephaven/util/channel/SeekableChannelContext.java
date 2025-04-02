@@ -20,11 +20,11 @@ public interface SeekableChannelContext extends SafeCloseable {
     SeekableChannelContext NULL = SeekableChannelContextNull.NULL_CONTEXT_INSTANCE;
 
     /**
-     * A pattern that allows callers to ensure a valid context has been created for {@code provider}. In the case where
-     * the given {@code context} {@link SeekableChannelsProvider#isCompatibleWith(SeekableChannelContext) is compatible
-     * with} {@code provider}, a no-op holder around that {@code context} will be returned. Otherwise, a holder with a
-     * new {@link SeekableChannelsProvider#makeSingleUseReadContext()} will be returned. The returned holder should
-     * ideally be used in a try-with-resources construction.
+     * A pattern that allows callers to ensure a valid context for reading has been created for {@code provider}. In the
+     * case where the given {@code context} {@link SeekableChannelsProvider#isCompatibleWith(SeekableChannelContext) is
+     * compatible with} {@code provider}, a no-op holder around that {@code context} will be returned. Otherwise, a
+     * holder with a new {@link SeekableChannelsProvider#makeSingleUseReadContext()} will be returned. The returned
+     * holder should ideally be used in a try-with-resources construction.
      *
      * @param provider the provider
      * @param context the context

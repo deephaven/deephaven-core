@@ -3,40 +3,36 @@
 //
 package io.deephaven.extensions.s3;
 
-import io.deephaven.base.pool.Pool;
+import io.deephaven.UncheckedDeephavenException;
+import io.deephaven.base.reference.CleanupReference;
 import io.deephaven.util.reference.CleanupReferenceProcessor;
 import org.jetbrains.annotations.NotNull;
 
 import java.nio.ByteBuffer;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 class S3WriteRequest {
 
-    static S3WriteRequest create(
-            @NotNull final Pool<ByteBuffer> pool,
-            final int writePartSize) {
-        final ByteBuffer buffer = pool.take();
-        if (buffer.position() != 0) {
-            throw new IllegalStateException("Buffer from pool has incorrect position, position = " + buffer.position() +
-                    ", expected 0");
-        }
-        if (buffer.limit() != writePartSize) {
-            throw new IllegalStateException("Buffer from pool has incorrect limit, limit = " + buffer.limit() +
-                    ", expected " + writePartSize);
+    /**
+     * A {@link Runnable} that releases a {@link ByteBuffer} back to a provided {@link S3WriteContext} when executed.
+     */
+    private static class BufferReleaser implements Runnable {
+        private final S3WriteContext writeContext;
+        private final ByteBuffer buffer;
+
+        BufferReleaser(@NotNull final S3WriteContext writeContext, @NotNull final ByteBuffer buffer) {
+            this.writeContext = writeContext;
+            this.buffer = buffer;
         }
 
-        final AtomicBoolean released = new AtomicBoolean(false);
-        final Runnable cleanup = () -> {
-            if (released.compareAndSet(false, true)) {
-                pool.give(buffer);
+        @Override
+        public void run() {
+            try {
+                writeContext.returnBuffer(buffer);
+            } catch (final InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new UncheckedDeephavenException("Thread interrupted while returning buffer to the pool", e);
             }
-        };
-        final S3WriteRequest request = new S3WriteRequest(buffer, cleanup);
-
-        // Register this request with the cleanup reference processor so that we can release the buffer (if not already
-        // released) when the request becomes phantom reachable.
-        CleanupReferenceProcessor.getDefault().registerPhantom(request, cleanup);
-        return request;
+        }
     }
 
     /**
@@ -45,21 +41,40 @@ class S3WriteRequest {
     ByteBuffer buffer;
 
     /**
-     * The runnable to clean up the buffer when this request is no longer reachable.
+     * The cleanup reference for this request, used to release the buffer when the request is no longer reachable
      */
-    final Runnable cleanup;
+    private final CleanupReference<?> cleanup;
 
-    private S3WriteRequest(
-            @NotNull final ByteBuffer buffer,
-            @NotNull final Runnable cleanup) {
-        this.buffer = buffer;
-        this.cleanup = cleanup;
+    S3WriteRequest(
+            @NotNull final S3WriteContext writeContext,
+            final int writePartSize) {
+        final ByteBuffer allocatedBuffer;
+        try {
+            allocatedBuffer = writeContext.getBuffer();
+        } catch (final InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new UncheckedDeephavenException("Thread interrupted while allocating buffer from the pool", e);
+        }
+        if (allocatedBuffer.position() != 0) {
+            throw new IllegalStateException("Buffer from pool has incorrect position, position = "
+                    + allocatedBuffer.position() + ", expected 0");
+        }
+        if (allocatedBuffer.limit() != writePartSize) {
+            throw new IllegalStateException("Buffer from pool has incorrect limit, limit = " + allocatedBuffer.limit() +
+                    ", expected " + writePartSize);
+        }
+
+        // Register this request with the cleanup reference processor so that we can release the buffer (if not already
+        // released) when the request becomes phantom reachable. It is important that we don't capture "this" in the
+        // cleanup logic, as this will create a strong reference to this object and prevent it from being garbage
+        // collected.
+        this.cleanup = CleanupReferenceProcessor.getDefault().registerPhantom(this,
+                new BufferReleaser(writeContext, allocatedBuffer));
+        this.buffer = allocatedBuffer;
     }
 
     final void releaseBuffer() {
-        if (buffer != null) {
-            cleanup.run();
-            buffer = null;
-        }
+        cleanup.cleanup();
+        buffer = null;
     }
 }

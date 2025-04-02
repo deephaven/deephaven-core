@@ -7,8 +7,8 @@ import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.FileUtils;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.channel.CompletableOutputStream;
-import io.deephaven.util.channel.SeekableChannelContext;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -41,7 +41,7 @@ class LocalCompletableOutputStream extends CompletableOutputStream {
             @NotNull final File destFile,
             @NotNull final TrackedSeekableChannelsProvider provider,
             final int bufferSizeHint,
-            @NotNull final SeekableChannelContext ignored) throws IOException {
+            @NotNull final SafeCloseable ignored) throws IOException {
         this.firstCreatedDir = prepareDestinationFileLocation(destFile);
         this.destFile = destFile;
         deleteBackupFile(destFile);

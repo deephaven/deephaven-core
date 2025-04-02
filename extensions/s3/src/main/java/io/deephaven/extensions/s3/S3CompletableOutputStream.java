@@ -3,9 +3,8 @@
 //
 package io.deephaven.extensions.s3;
 
-import io.deephaven.base.pool.Pool;
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.channel.CompletableOutputStream;
-import io.deephaven.util.channel.SeekableChannelContext;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import software.amazon.awssdk.core.async.AsyncRequestBody;
@@ -67,13 +66,9 @@ class S3CompletableOutputStream extends CompletableOutputStream {
     private final List<CompletedPart> completedParts;
 
     /**
-     * The pool of byte buffers used by the write requests. This field is set by the {@link S3WriteContext} before
-     * initiating a write operation and does not change during the lifetime of the stream.
-     * <p>
-     * This pool needs to be thread safe.
+     * The context object used to manage the pool of buffers for write requests.
      */
-    @Nullable
-    private final Pool<ByteBuffer> bufferPool;
+    private final S3WriteContext writeContext;
 
     /**
      * The request containing data buffered for the next part to be uploaded. S3 requires that all parts, except the
@@ -114,7 +109,7 @@ class S3CompletableOutputStream extends CompletableOutputStream {
             @NotNull final URI uri,
             @NotNull final S3AsyncClient s3AsyncClient,
             @NotNull final S3Instructions s3Instructions,
-            @NotNull final SeekableChannelContext channelContext) {
+            @NotNull final SafeCloseable channelContext) {
         this.uri = s3AsyncClient.utilities().parseUri(uri);
         this.s3AsyncClient = s3AsyncClient;
         this.s3Instructions = s3Instructions;
@@ -126,7 +121,7 @@ class S3CompletableOutputStream extends CompletableOutputStream {
         if (!(channelContext instanceof S3WriteContext)) {
             throw new IllegalArgumentException("Unsupported channel context " + channelContext);
         }
-        this.bufferPool = ((S3WriteContext) channelContext).bufferPool;
+        this.writeContext = (S3WriteContext) channelContext;
         this.bufferedPartRequest = null;
         this.uploadId = null;
 
@@ -185,10 +180,6 @@ class S3CompletableOutputStream extends CompletableOutputStream {
      * @throws IOException if an I/O error occurs during the write operation or if the stream is not {@link State#OPEN}
      */
     private void write(@NotNull final DataWriter writer, int off, int len) throws IOException {
-        if (bufferPool == null) {
-            throw new IllegalStateException("Cannot write to stream for uri " + uri + " because buffer pool is not " +
-                    "initialized");
-        }
         if (state != State.OPEN) {
             throw new IOException("Cannot write to stream for uri " + uri + " because stream is in state " + state +
                     " instead of OPEN");
@@ -202,7 +193,7 @@ class S3CompletableOutputStream extends CompletableOutputStream {
             final S3WriteRequest useRequest;
             if (bufferedPartRequest == null) {
                 // Get a new request from the pool
-                useRequest = S3WriteRequest.create(bufferPool, s3Instructions.writePartSize());
+                useRequest = new S3WriteRequest(writeContext, s3Instructions.writePartSize());
             } else {
                 // Re-use the pending request
                 useRequest = bufferedPartRequest;
