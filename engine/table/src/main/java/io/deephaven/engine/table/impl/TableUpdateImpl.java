@@ -94,6 +94,15 @@ public class TableUpdateImpl implements TableUpdate {
         Assert.neq(added, "added", modified, "modified");
         Assert.neq(added, "added", removed, "removed");
         Assert.neq(removed, "removed", modified, "modified");
+        try {
+            added.isEmpty();
+            removed.isEmpty();
+            modified.isEmpty();
+        } catch (NullPointerException npe) {
+            // noinspection ThrowableNotThrown
+            Assert.statementNeverExecuted(
+                    "Invalid RowSet in TableUpdateImpl, NullPointerException when calling isEmpty");
+        }
     }
 
     @Override

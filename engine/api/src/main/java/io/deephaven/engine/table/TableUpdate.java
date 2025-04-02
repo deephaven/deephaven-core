@@ -72,7 +72,9 @@ public interface TableUpdate extends LogOutputAppendable {
     }
 
     /**
-     *
+     * Throws an {@link io.deephaven.base.verify.AssertionFailure} if this update is not structurally valid, i.e. its
+     * accessors will return non-{@code null}, usable data structures. This does not test for usage outside the
+     * appropriate updating phase.
      */
     void validate();
 
