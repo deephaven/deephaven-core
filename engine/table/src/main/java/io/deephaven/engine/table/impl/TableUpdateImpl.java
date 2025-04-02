@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.base.verify.Require;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.TrackingRowSet;
@@ -59,13 +60,16 @@ public class TableUpdateImpl implements TableUpdate {
      * The added, removed, and modified RowSets must be distinct.
      * </p>
      *
-     * @param added the added rows (in post-shift space)
-     * @param removed the removed rows (in pre-shift space)
-     * @param modified the modified rows (in post-shift space)
-     * @param shifted the shifted rows
-     * @param modifiedColumnSet the modified columns
+     * @param added The added rows (in post-shift space)
+     * @param removed The removed rows (in pre-shift space)
+     * @param modified The modified rows (in post-shift space)
+     * @param shifted The shifted rows
+     * @param modifiedColumnSet The modified columns
      */
-    public TableUpdateImpl(final RowSet added, final RowSet removed, final RowSet modified,
+    public TableUpdateImpl(
+            final RowSet added,
+            final RowSet removed,
+            final RowSet modified,
             final RowSetShiftData shifted,
             final ModifiedColumnSet modifiedColumnSet) {
         this.added = added;
@@ -73,9 +77,6 @@ public class TableUpdateImpl implements TableUpdate {
         this.modified = modified;
         this.shifted = shifted;
         this.modifiedColumnSet = modifiedColumnSet;
-        Assert.neq(added, "added", modified, "modified");
-        Assert.neq(added, "added", removed, "removed");
-        Assert.neq(removed, "removed", modified, "modified");
     }
 
     @Override
@@ -84,13 +85,15 @@ public class TableUpdateImpl implements TableUpdate {
     }
 
     @Override
-    public boolean valid() {
-        return added() != null
-                && removed() != null
-                && modified() != null
-                && shifted() != null
-                && modifiedColumnSet() != null && added() != modified() && added() != removed()
-                && removed() != modified();
+    public void validate() {
+        Assert.neqNull(added, "added");
+        Assert.neqNull(removed, "removed");
+        Assert.neqNull(modified, "modified");
+        Assert.neqNull(shifted, "shifted");
+        Assert.neqNull(modifiedColumnSet, "modifiedColumnSet");
+        Assert.neq(added, "added", modified, "modified");
+        Assert.neq(added, "added", removed, "removed");
+        Assert.neq(removed, "removed", modified, "modified");
     }
 
     @Override
@@ -153,16 +156,16 @@ public class TableUpdateImpl implements TableUpdate {
     }
 
     public void reset() {
-        if (added() != null) {
-            added().close();
+        if (added != null) {
+            added.close();
             added = null;
         }
-        if (removed() != null) {
-            removed().close();
+        if (removed != null) {
+            removed.close();
             removed = null;
         }
-        if (modified() != null) {
-            modified().close();
+        if (modified != null) {
+            modified.close();
             modified = null;
         }
         shifted = null;
