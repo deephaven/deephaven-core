@@ -52,6 +52,19 @@ public class TableUpdateImpl implements TableUpdate {
 
     public TableUpdateImpl() {}
 
+    /**
+     * Construct a TableUpdateImpl, which takes ownership of the passed in RowSets.
+     *
+     * <p>
+     * The added, removed, and modified RowSets must be distinct.
+     * </p>
+     *
+     * @param added the added rows (in post-shift space)
+     * @param removed the removed rows (in pre-shift space)
+     * @param modified the modified rows (in post-shift space)
+     * @param shifted the shifted rows
+     * @param modifiedColumnSet the modified columns
+     */
     public TableUpdateImpl(final RowSet added, final RowSet removed, final RowSet modified,
             final RowSetShiftData shifted,
             final ModifiedColumnSet modifiedColumnSet) {
@@ -60,11 +73,24 @@ public class TableUpdateImpl implements TableUpdate {
         this.modified = modified;
         this.shifted = shifted;
         this.modifiedColumnSet = modifiedColumnSet;
+        Assert.neq(added, "added", modified, "modified");
+        Assert.neq(added, "added", removed, "removed");
+        Assert.neq(removed, "removed", modified, "modified");
     }
 
     @Override
     public String toString() {
         return new LogOutputStringImpl().append(this).toString();
+    }
+
+    @Override
+    public boolean valid() {
+        return added() != null
+                && removed() != null
+                && modified() != null
+                && shifted() != null
+                && modifiedColumnSet() != null && added() != modified() && added() != removed()
+                && removed() != modified();
     }
 
     @Override
@@ -87,6 +113,7 @@ public class TableUpdateImpl implements TableUpdate {
     }
 
     @Override
+    @NotNull
     public RowSet getModifiedPreShift() {
         if (shifted().empty()) {
             return modified();
@@ -181,26 +208,31 @@ public class TableUpdateImpl implements TableUpdate {
     }
 
     @Override
+    @NotNull
     public RowSet added() {
         return added;
     }
 
     @Override
+    @NotNull
     public RowSet removed() {
         return removed;
     }
 
     @Override
+    @NotNull
     public RowSet modified() {
         return modified;
     }
 
     @Override
+    @NotNull
     public RowSetShiftData shifted() {
         return shifted;
     }
 
     @Override
+    @NotNull
     public ModifiedColumnSet modifiedColumnSet() {
         return modifiedColumnSet;
     }

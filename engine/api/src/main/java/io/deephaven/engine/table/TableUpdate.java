@@ -8,6 +8,7 @@ import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetShiftData;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.function.BiConsumer;
 
@@ -32,6 +33,15 @@ public interface TableUpdate extends LogOutputAppendable {
     /**
      * Increment the reference count on this object.
      *
+     * <p>
+     * A TableUpdate is only valid during the update cycle that it was created on. If a TableUpdate is held across cycle
+     * boundaries behavior is undefined.
+     * </p>
+     *
+     * <p>
+     * You must call {@link #release()} to decrement the reference count.
+     * </p>
+     *
      * @return {@code this} for convenience
      */
     TableUpdate acquire();
@@ -54,17 +64,12 @@ public interface TableUpdate extends LogOutputAppendable {
     /**
      * @return true if all internal state is initialized
      */
-    default boolean valid() {
-        return added() != null
-                && removed() != null
-                && modified() != null
-                && shifted() != null
-                && modifiedColumnSet() != null;
-    }
+    boolean valid();
 
     /**
      * @return a cached copy of the modified RowSet in pre-shift keyspace
      */
+    @NotNull
     RowSet getModifiedPreShift();
 
     /**
@@ -87,26 +92,64 @@ public interface TableUpdate extends LogOutputAppendable {
 
     /**
      * rows added (post-shift keyspace)
+     * 
+     * <p>
+     * A {@link #valid()} update never returns a null RowSet, but the returned rowset may be {@link RowSet#isEmpty()
+     * empty}.
+     * </p>
+     *
+     * <p>
+     * Note that the TableUpdate object still retains ownership of the returned {@link RowSet} object. The caller must
+     * not close the returned RowSet. To use the RowSet beyond the scope of a notification, the caller must
+     * {@link #acquire()} the update or make a {@link RowSet#copy() copy} of the RowSet.
+     * </p>
      */
+    @NotNull
     RowSet added();
 
     /**
      * rows removed (pre-shift keyspace)
+     *
+     * <p>
+     * A {@link #valid()} update never returns a null RowSet, but the returned rowset may be {@link RowSet#isEmpty()
+     * empty}.
+     * </p>
+     *
+     * <p>
+     * Note that the TableUpdate object still retains ownership of the returned {@link RowSet} object. The caller must
+     * not close the returned RowSet. To use the RowSet beyond the scope of a notification, the caller must
+     * {@link #acquire()} the update or make a {@link RowSet#copy() copy} of the RowSet.
+     * </p>
      */
+    @NotNull
     RowSet removed();
 
     /**
      * rows modified (post-shift keyspace)
+     *
+     * <p>
+     * A {@link #valid()} update never returns a null RowSet, but the returned rowset may be {@link RowSet#isEmpty()
+     * empty}.
+     * </p>
+     *
+     * <p>
+     * Note that the TableUpdate object still retains ownership of the returned {@link RowSet} object. The caller must
+     * not close the returned RowSet. To use the RowSet beyond the scope of a notification, the caller must
+     * {@link #acquire()} the update or make a {@link RowSet#copy() copy} of the RowSet.
+     * </p>
      */
+    @NotNull
     RowSet modified();
 
     /**
      * rows that shifted to new indices
      */
+    @NotNull
     RowSetShiftData shifted();
 
     /**
      * the set of columns that might have changed for rows in the {@code modified()} RowSet
      */
+    @NotNull
     ModifiedColumnSet modifiedColumnSet();
 }
