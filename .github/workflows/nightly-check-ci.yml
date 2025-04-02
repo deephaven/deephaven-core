@@ -16,8 +16,12 @@ jobs:
       fail-fast: false
       matrix:
         gradle-task: ['check', 'testSerial', 'testParallel', 'testOutOfBand']
-        test-jvm-version: ['17', '21', '23']
+        test-jvm-version: ['11', '17', '21', '23']
         jetty-version: ['12']
+        # Exclude Java 11 checks for Jetty 12, they will run as Java 17.
+        exclude:
+          - gradle-task: 'check'
+            test-jvm-version: '11'
         # While the defaults above only run client integration tests on Jetty 12, the following extra rules restore
         # those tests for Jetty 11. Additionally, restores the Java 11 test version, but only when using Jetty 11, to
         # avoid duplication. Does not run Jetty 11 tests for all JDKs.
@@ -28,6 +32,7 @@ jobs:
           - gradle-task: 'check'
             test-jvm-version: '17'
             jetty-version: '11'
+
     if: ${{ github.repository_owner == 'deephaven' || github.event_name != 'schedule' }}
     runs-on: ubuntu-24.04
     concurrency:
