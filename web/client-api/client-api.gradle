@@ -57,6 +57,11 @@ dependencies {
 }
 
 GwtTools.gwtCompile project, 'io.deephaven.web.DeephavenApi', 'Create a jar of client JS API'
+// The GWT plugin that we're using today double-includes our resources when producing a jar, causing
+// an error unless we disable the check
+// https://github.com/esoco/gwt-gradle-plugin/issues/33
+jar.duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+
 
 def jsOutput = layout.buildDirectory.dir('js')
 def gwtOutput = tasks.register('gwtOutput', Sync) {
