@@ -141,6 +141,8 @@ public class FuzzerTest {
                 clock.now += DateTimeUtils.SECOND / 10 * timeRandom.nextInt(20);
             }
         }
+
+        session.eraseClassCacheDirectory();
     }
 
     @Test
@@ -173,6 +175,8 @@ public class FuzzerTest {
                 });
                 Thread.sleep(fuzzDescriptor.sleepPerStep);
             }
+
+            session.eraseClassCacheDirectory();
         }
     }
 
@@ -292,6 +296,8 @@ public class FuzzerTest {
                 break;
             }
         }
+
+        session.eraseClassCacheDirectory();
 
         final long loopEnd = System.currentTimeMillis();
         System.out.println("Elapsed time: " + (loopEnd - start) + "ms, loop: " + (loopEnd - loopStart) + "ms"
