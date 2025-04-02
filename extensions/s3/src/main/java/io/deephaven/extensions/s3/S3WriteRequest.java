@@ -64,10 +64,8 @@ class S3WriteRequest {
                     ", expected " + writePartSize);
         }
 
-        // Register this request with the cleanup reference processor so that we can release the buffer (if not already
-        // released) when the request becomes phantom reachable. It is important that we don't capture "this" in the
-        // cleanup logic, as this will create a strong reference to this object and prevent it from being garbage
-        // collected.
+        // Note: It's important that we don't capture "this" in the cleanup logic, as this will create a strong
+        // reference to this object and prevent it from being garbage collected.
         this.cleanup = CleanupReferenceProcessor.getDefault().registerPhantom(this,
                 new BufferReleaser(writeContext, allocatedBuffer));
         this.buffer = allocatedBuffer;
