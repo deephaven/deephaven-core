@@ -73,9 +73,11 @@ def dtsOutput = layout.buildDirectory.dir('ts-types');
 def tsDefs = tasks.register('typescriptDefinitions', Javadoc) {
     dependsOn 'compileJava'
     source = sourceSets.main.allJava
-    options.classpath = sourceSets.main.compileClasspath.files as List
+    doFirst {
+        options.classpath = sourceSets.main.compileClasspath.files as List
+        options.docletpath = (configurations.typescriptDoclet.files as List) + (sourceSets.main.compileClasspath.files as List)
+    }
     destinationDir = dtsOutput.get().asFile
-    options.docletpath = (configurations.typescriptDoclet.files as List) + (sourceSets.main.compileClasspath.files as List)
     options.doclet = 'com.vertispan.tsdefs.doclet.TsDoclet'
 }
 

@@ -9,9 +9,14 @@ tasks.withType(Javadoc).configureEach {
 
     options.encoding = 'UTF-8'
 
-    options.links = ['https://docs.oracle.com/en/java/javase/11/docs/api/']
-    options.addBooleanOption('Xdoclint:none', true)
-    options.tags = ['apiNote', 'implNote', 'note']
+    doFirst {
+        // If using a custom doclet, don't add these flags
+        if (options.doclet == null) {
+            options.links = ['https://docs.oracle.com/en/java/javase/11/docs/api/']
+            options.addBooleanOption('Xdoclint:none', true)
+            options.tags = ['apiNote', 'implNote', 'note']
+        }
+    }
 
     // Don't fail on warnings, let specific projects enable this if desired
 //  options.addBooleanOption('Xwerror', true)

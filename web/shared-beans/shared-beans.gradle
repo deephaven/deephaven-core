@@ -20,3 +20,7 @@ dependencies {
     // non-transitive dependency
     compileOnly libs.gwt.user
 }
+
+spotless {
+
+}
