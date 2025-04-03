@@ -76,7 +76,7 @@ public interface TableUpdate extends LogOutputAppendable {
      * accessors will return non-{@code null}, usable data structures. This does not test for usage outside the
      * appropriate updating phase.
      */
-    void validate();
+    void validate() throws AssertionFailure;
 
     /**
      * @return a cached copy of the modified RowSet in pre-shift keyspace
