@@ -4,6 +4,8 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.base.verify.AssertionFailure;
+import io.deephaven.base.verify.Require;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.TrackingRowSet;
@@ -52,7 +54,23 @@ public class TableUpdateImpl implements TableUpdate {
 
     public TableUpdateImpl() {}
 
-    public TableUpdateImpl(final RowSet added, final RowSet removed, final RowSet modified,
+    /**
+     * Construct a TableUpdateImpl, which takes ownership of the passed in RowSets.
+     *
+     * <p>
+     * The added, removed, and modified RowSets must be distinct.
+     * </p>
+     *
+     * @param added The added rows (in post-shift space)
+     * @param removed The removed rows (in pre-shift space)
+     * @param modified The modified rows (in post-shift space)
+     * @param shifted The shifted rows
+     * @param modifiedColumnSet The modified columns
+     */
+    public TableUpdateImpl(
+            final RowSet added,
+            final RowSet removed,
+            final RowSet modified,
             final RowSetShiftData shifted,
             final ModifiedColumnSet modifiedColumnSet) {
         this.added = added;
@@ -65,6 +83,27 @@ public class TableUpdateImpl implements TableUpdate {
     @Override
     public String toString() {
         return new LogOutputStringImpl().append(this).toString();
+    }
+
+    @Override
+    public void validate() throws AssertionFailure {
+        Assert.neqNull(added, "added");
+        Assert.neqNull(removed, "removed");
+        Assert.neqNull(modified, "modified");
+        Assert.neqNull(shifted, "shifted");
+        Assert.neqNull(modifiedColumnSet, "modifiedColumnSet");
+        Assert.neq(added, "added", modified, "modified");
+        Assert.neq(added, "added", removed, "removed");
+        Assert.neq(removed, "removed", modified, "modified");
+        try {
+            added.isEmpty();
+            removed.isEmpty();
+            modified.isEmpty();
+        } catch (NullPointerException npe) {
+            // noinspection ThrowableNotThrown
+            Assert.statementNeverExecuted(
+                    "Invalid RowSet in TableUpdateImpl, NullPointerException when calling isEmpty");
+        }
     }
 
     @Override
@@ -87,6 +126,7 @@ public class TableUpdateImpl implements TableUpdate {
     }
 
     @Override
+    @NotNull
     public RowSet getModifiedPreShift() {
         if (shifted().empty()) {
             return modified();
@@ -126,16 +166,16 @@ public class TableUpdateImpl implements TableUpdate {
     }
 
     public void reset() {
-        if (added() != null) {
-            added().close();
+        if (added != null) {
+            added.close();
             added = null;
         }
-        if (removed() != null) {
-            removed().close();
+        if (removed != null) {
+            removed.close();
             removed = null;
         }
-        if (modified() != null) {
-            modified().close();
+        if (modified != null) {
+            modified.close();
             modified = null;
         }
         shifted = null;
@@ -181,26 +221,31 @@ public class TableUpdateImpl implements TableUpdate {
     }
 
     @Override
+    @NotNull
     public RowSet added() {
         return added;
     }
 
     @Override
+    @NotNull
     public RowSet removed() {
         return removed;
     }
 
     @Override
+    @NotNull
     public RowSet modified() {
         return modified;
     }
 
     @Override
+    @NotNull
     public RowSetShiftData shifted() {
         return shifted;
     }
 
     @Override
+    @NotNull
     public ModifiedColumnSet modifiedColumnSet() {
         return modifiedColumnSet;
     }
