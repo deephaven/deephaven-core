@@ -684,7 +684,7 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
         // tables may only be updated once per cycle
         Assert.lt(lastNotificationStep, "lastNotificationStep", currentStep, "updateGraph.clock().currentStep()");
 
-        Assert.eqTrue(originalUpdate.valid(), "originalUpdate.valid()");
+        update.validate();
 
         final TableUpdate update;
         if (originalUpdate.modified().isEmpty() && originalUpdate.modifiedColumnSet().nonempty()
