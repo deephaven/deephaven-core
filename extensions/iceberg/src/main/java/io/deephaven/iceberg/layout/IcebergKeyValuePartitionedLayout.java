@@ -72,7 +72,6 @@ public final class IcebergKeyValuePartitionedLayout extends IcebergBaseLayout {
             }
             identityPartitioningColumns.add(new IdentityPartitioningColData(dhColName,
                     TypeUtils.getBoxedType(columnDef.getDataType()), fieldId));
-
         }
     }
 
