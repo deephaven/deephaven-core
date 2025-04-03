@@ -307,9 +307,9 @@ class InferenceTest {
     @Test
     void skipFields() throws Inference.UnsupportedType {
         final Schema schema = new Schema(
-            NestedField.optional(42, "F1", IT),
-            NestedField.required(43, "F2", IT),
-            NestedField.optional(44, "F3", ListType.ofOptional(1, IT)));
+                NestedField.optional(42, "F1", IT),
+                NestedField.required(43, "F2", IT),
+                NestedField.optional(44, "F3", ListType.ofOptional(1, IT)));
 
         // We should be able to skip types, regardless of whether we support them or not.
         // In this case, we are skipping a supported type [42], and skipping an unsupported type [44] which would

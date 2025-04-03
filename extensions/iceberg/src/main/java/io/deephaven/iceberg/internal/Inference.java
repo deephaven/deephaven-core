@@ -129,7 +129,9 @@ public final class Inference {
         private final List<Types.NestedField> fieldPath;
 
         public UnsupportedType(Schema schema, List<Types.NestedField> fieldPath) {
-            super(String.format("Unsupported Iceberg type `%s` at path [%s]", fieldPath.get(fieldPath.size() - 1).type(), fieldPath.stream().map(Types.NestedField::name).collect(Collectors.joining(", "))));
+            super(String.format("Unsupported Iceberg type `%s` at path [%s]",
+                    fieldPath.get(fieldPath.size() - 1).type(),
+                    fieldPath.stream().map(Types.NestedField::name).collect(Collectors.joining(", "))));
             this.schema = Objects.requireNonNull(schema);
             this.fieldPath = List.copyOf(fieldPath);
         }

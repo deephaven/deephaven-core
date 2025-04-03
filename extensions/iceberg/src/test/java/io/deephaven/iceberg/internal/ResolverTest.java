@@ -6,8 +6,6 @@ package io.deephaven.iceberg.internal;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.NoSuchColumnException;
-import io.deephaven.iceberg.util.ColumnInstructions;
-import io.deephaven.iceberg.util.FieldPath;
 import io.deephaven.iceberg.util.Resolver;
 import io.deephaven.qst.type.Type;
 import org.apache.iceberg.PartitionField;
@@ -31,71 +29,31 @@ class ResolverTest {
     private static final IntegerType IT = IntegerType.get();
 
     @Test
-    void noSuchColumn() {
-        try {
-            Resolver.builder()
-                    .schema(simpleSchema(IT))
-                    .spec(PartitionSpec.unpartitioned())
-                    .definition(simpleDefinition(Type.intType()))
-                    .putColumnInstructions("F1", schemaField(42))
-                    .putColumnInstructions("F2", schemaField(43))
-                    .putColumnInstructions("F3", schemaField(42))
-                    .build();
-        } catch (NoSuchColumnException e) {
-            assertThat(e).hasMessageContaining("Unknown column names [F3], available column names are [F1, F2]");
-        }
-    }
-
-    @Test
-    void noSuchPath() {
-        try {
-            Resolver.builder()
-                    .schema(simpleSchema(IT))
-                    .spec(PartitionSpec.unpartitioned())
-                    .definition(simpleDefinition(Type.intType()))
-                    .putColumnInstructions("F1", schemaField(42))
-                    .putColumnInstructions("F2", schemaField(44))
-                    .build();
-            failBecauseExceptionWasNotThrown(Resolver.MappingException.class);
-        } catch (Resolver.MappingException e) {
-            assertThat(e).hasMessageContaining("Unable to map Deephaven column F2");
-            assertThat(e).cause().hasMessageContaining("id path not found, path=[44], context=[]");
-        }
-    }
-
-    @Test
-    void noSuchPartitionField() {
+    void normal() {
         Resolver.builder()
                 .schema(simpleSchema(IT))
                 .spec(PartitionSpec.unpartitioned())
                 .definition(simpleDefinition(Type.intType()))
                 .putColumnInstructions("F1", schemaField(42))
-                .putColumnInstructions("F2", partitionField(9999))
+                .putColumnInstructions("F2", schemaField(43))
                 .build();
     }
 
     @Test
-    void unmappedColumn() {
-        // All DH columns must be mapped by default.
-        try {
-            Resolver.builder()
-                    .schema(simpleSchema(IT))
-                    .spec(PartitionSpec.unpartitioned())
-                    .definition(simpleDefinition(Type.intType()))
-                    .putColumnInstructions("F1", schemaField(42))
-                    .build();
-            failBecauseExceptionWasNotThrown(Resolver.MappingException.class);
-        } catch (Resolver.MappingException e) {
-            assertThat(e).hasMessageContaining("Column `F2` is not mapped");
-        }
-        // But, there is support to allow them, which is necessary for cases where a Schema field has been deleted, but
-        // we want to keep the column in DH
+    void partitionSpec() {
+        final Schema schema = simpleSchema(IT);
+        final PartitionSpec spec = PartitionSpec.builderFor(schema)
+                .identity("F1")
+                .build();
+        final TableDefinition td = TableDefinition.of(
+                ColumnDefinition.ofInt("F1").withPartitioning(),
+                ColumnDefinition.ofInt("F2"));
         Resolver.builder()
-                .schema(simpleSchema(IT))
-                .spec(PartitionSpec.unpartitioned())
-                .definition(simpleDefinition(Type.intType()))
-                .putColumnInstructions("F1", schemaField(42))
-                .allowUnmappedColumns(true)
+                .schema(schema)
+                .spec(spec)
+                .definition(td)
+                .putColumnInstructions("F1", partitionField(spec.fields().get(0).fieldId()))
+                .putColumnInstructions("F2", schemaField(43))
                 .build();
     }
 
@@ -132,6 +90,145 @@ class ResolverTest {
     }
 
     @Test
+    void nestedStruct() {
+        final Schema schema = new Schema(NestedField.optional(1, "S1", Types.StructType.of(
+                NestedField.optional(2, "S2", Types.StructType.of(
+                        NestedField.optional(3, "F1", IT),
+                        NestedField.required(4, "F2", IT))))));
+        Resolver.builder()
+                .schema(schema)
+                .spec(PartitionSpec.unpartitioned())
+                .definition(TableDefinition.of(
+                        ColumnDefinition.ofInt("S1_S2_F1"),
+                        ColumnDefinition.ofInt("S1_S2_F2")))
+                .putColumnInstructions("S1_S2_F1", schemaField(3))
+                .putColumnInstructions("S1_S2_F2", schemaField(4))
+                .build();
+    }
+
+    @Test
+    void unmappedColumn() {
+        // All DH columns must be mapped by default.
+        try {
+            Resolver.builder()
+                    .schema(simpleSchema(IT))
+                    .spec(PartitionSpec.unpartitioned())
+                    .definition(simpleDefinition(Type.intType()))
+                    .putColumnInstructions("F1", schemaField(42))
+                    .build();
+            failBecauseExceptionWasNotThrown(Resolver.MappingException.class);
+        } catch (Resolver.MappingException e) {
+            assertThat(e).hasMessageContaining("Column `F2` is not mapped");
+        }
+        // But, there is support to allow them, which is necessary for cases where a Schema field has been deleted, but
+        // we want to keep the column in DH
+        Resolver.builder()
+                .schema(simpleSchema(IT))
+                .spec(PartitionSpec.unpartitioned())
+                .definition(simpleDefinition(Type.intType()))
+                .putColumnInstructions("F1", schemaField(42))
+                .allowUnmappedColumns(true)
+                .build();
+    }
+
+    @Test
+    void normalColumnPartitionField() {
+        final Schema schema = simpleSchema(IT);
+        final PartitionSpec spec = PartitionSpec.builderFor(schema)
+                .identity("F1")
+                .build();
+        try {
+            Resolver.builder()
+                    .schema(schema)
+                    .spec(spec)
+                    .definition(simpleDefinition(Type.intType()))
+                    .putColumnInstructions("F1", partitionField(spec.fields().get(0).fieldId()))
+                    .putColumnInstructions("F2", schemaField(43))
+                    .build();
+            failBecauseExceptionWasNotThrown(Resolver.MappingException.class);
+        } catch (Resolver.MappingException e) {
+            assertThat(e).hasMessageContaining("Unable to map Deephaven column F1");
+            assertThat(e).cause().hasMessageContaining("Must use partitioning column with partition field");
+        }
+    }
+
+    @Test
+    void partitioningColumnSchemaField() {
+        final Schema schema = simpleSchema(IT);
+        final TableDefinition td = TableDefinition.of(
+                ColumnDefinition.ofInt("F1").withPartitioning(),
+                ColumnDefinition.ofInt("F2"));
+        try {
+            Resolver.builder()
+                    .schema(schema)
+                    .spec(PartitionSpec.unpartitioned())
+                    .definition(td)
+                    .putColumnInstructions("F1", schemaField(42))
+                    .putColumnInstructions("F2", schemaField(43))
+                    .build();
+            failBecauseExceptionWasNotThrown(Resolver.MappingException.class);
+        } catch (Resolver.MappingException e) {
+            assertThat(e).hasMessageContaining("Unable to map Deephaven column F1");
+            assertThat(e).cause().hasMessageContaining("Must use normal column with schema field");
+        }
+    }
+
+    @Test
+    void noSuchColumn() {
+        try {
+            Resolver.builder()
+                    .schema(simpleSchema(IT))
+                    .spec(PartitionSpec.unpartitioned())
+                    .definition(simpleDefinition(Type.intType()))
+                    .putColumnInstructions("F1", schemaField(42))
+                    .putColumnInstructions("F2", schemaField(43))
+                    .putColumnInstructions("F3", schemaField(42))
+                    .build();
+            failBecauseExceptionWasNotThrown(Resolver.MappingException.class);
+        } catch (NoSuchColumnException e) {
+            assertThat(e).hasMessageContaining("Unknown column names [F3], available column names are [F1, F2]");
+        }
+    }
+
+    @Test
+    void noSuchPath() {
+        try {
+            Resolver.builder()
+                    .schema(simpleSchema(IT))
+                    .spec(PartitionSpec.unpartitioned())
+                    .definition(simpleDefinition(Type.intType()))
+                    .putColumnInstructions("F1", schemaField(42))
+                    .putColumnInstructions("F2", schemaField(44))
+                    .build();
+            failBecauseExceptionWasNotThrown(Resolver.MappingException.class);
+        } catch (Resolver.MappingException e) {
+            assertThat(e).hasMessageContaining("Unable to map Deephaven column F2");
+            assertThat(e).cause().hasMessageContaining("Unable to find field id 44");
+        }
+    }
+
+    @Test
+    void noSuchPartitionField() {
+        final TableDefinition td = TableDefinition.of(
+                ColumnDefinition.ofInt("F1"),
+                ColumnDefinition.ofInt("F2").withPartitioning());
+        try {
+            Resolver.builder()
+                    .schema(simpleSchema(IT))
+                    .spec(PartitionSpec.unpartitioned())
+                    .definition(td)
+                    .putColumnInstructions("F1", schemaField(42))
+                    .putColumnInstructions("F2", partitionField(9999))
+                    .build();
+            failBecauseExceptionWasNotThrown(Resolver.MappingException.class);
+        } catch (Resolver.MappingException e) {
+            assertThat(e).hasMessageContaining("Unable to map Deephaven column F2");
+            assertThat(e).cause().hasMessageContaining("Unable to find partition field id 9999");
+        }
+    }
+
+
+    @Test
     void invalidMappingType() {
         // TODO: we should try to be thorough in describing what we do and do not support
         try {
@@ -165,25 +262,8 @@ class ResolverTest {
             failBecauseExceptionWasNotThrown(Resolver.MappingException.class);
         } catch (Resolver.MappingException e) {
             assertThat(e).hasMessageContaining("Unable to map Deephaven column F2");
-            assertThat(e).cause().hasMessageContaining("id path not found, path=[44], context=[]");
+            assertThat(e).cause().hasMessageContaining("Unable to find field id 44");
         }
-    }
-
-    @Test
-    void nestedStruct() {
-        final Schema schema = new Schema(NestedField.optional(1, "S1", Types.StructType.of(
-                NestedField.optional(2, "S2", Types.StructType.of(
-                        NestedField.optional(3, "F1", IT),
-                        NestedField.required(4, "F2", IT))))));
-        Resolver.builder()
-                .schema(schema)
-                .spec(PartitionSpec.unpartitioned())
-                .definition(TableDefinition.of(
-                        ColumnDefinition.ofInt("S1_S2_F1"),
-                        ColumnDefinition.ofInt("S1_S2_F2")))
-                .putColumnInstructions("S1_S2_F1", schemaField(3))
-                .putColumnInstructions("S1_S2_F2", schemaField(4))
-                .build();
     }
 
     @Test
@@ -208,27 +288,9 @@ class ResolverTest {
     }
 
     @Test
-    void partitionSpec() {
-        Schema schema = simpleSchema(IT);
-        PartitionSpec spec = PartitionSpec.builderFor(schema)
-                .identity("F1")
-                .build();
-        PartitionField partitionField = spec.fields().get(0);
-        Resolver.builder()
-                .schema(schema)
-                .spec(spec)
-                .definition(TableDefinition.of(
-                        ColumnDefinition.of("F1", Type.intType()).withPartitioning(),
-                        ColumnDefinition.of("F2", Type.intType())))
-                .putColumnInstructions("F1", partitionField(partitionField.fieldId()))
-                .putColumnInstructions("F2", schemaField(43))
-                .build();
-    }
-
-    @Test
     void badPartitionFieldId() {
-        Schema schema = simpleSchema(IT);
-        PartitionSpec spec = PartitionSpec.builderFor(schema)
+        final Schema schema = simpleSchema(IT);
+        final PartitionSpec spec = PartitionSpec.builderFor(schema)
                 .identity("F1")
                 .build();
         try {
@@ -250,11 +312,10 @@ class ResolverTest {
 
     @Test
     void badPartitionType() {
-        Schema schema = simpleSchema(IT);
-        PartitionSpec spec = PartitionSpec.builderFor(schema)
+        final Schema schema = simpleSchema(IT);
+        final PartitionSpec spec = PartitionSpec.builderFor(schema)
                 .bucket("F1", 99)
                 .build();
-        PartitionField partitionField = spec.fields().get(0);
         try {
             Resolver.builder()
                     .schema(schema)
@@ -262,7 +323,7 @@ class ResolverTest {
                     .definition(TableDefinition.of(
                             ColumnDefinition.of("F1", Type.intType()).withPartitioning(),
                             ColumnDefinition.of("F2", Type.intType())))
-                    .putColumnInstructions("F1", partitionField(partitionField.fieldId()))
+                    .putColumnInstructions("F1", partitionField(spec.fields().get(0).fieldId()))
                     .putColumnInstructions("F2", schemaField(43))
                     .build();
             failBecauseExceptionWasNotThrown(Resolver.MappingException.class);
@@ -272,39 +333,6 @@ class ResolverTest {
                     "Unable to map partitionField=[1000: F1_bucket: bucket[99](42)], only identity transform is supported");
         }
     }
-
-    // @Test
-    // void simpleSubset() {
-    // final Mapping mapping = Mapping.builder()
-    // .schema(simpleSchema(IT))
-    // .definition(simpleDefinition(Type.intType()))
-    // .putPath("F1", schemaField(42))
-    // .build();
-    // }
-    //
-    // @Test
-    // void name() {
-    // Mapping.builder()
-    // .schema(simpleSchema(IT))
-    // .definition(TableDefinition.of(
-    // ColumnDefinition.ofShort("F1"),
-    // ColumnDefinition.ofShort("F2")))
-    // .putPath("F1", schemaField(42))
-    // .putPath("F2", schemaField(43))
-    // .build();
-    // }
-    //
-    // @Test
-    // void ListType() {
-    //
-    // final Schema schema = new Schema(NestedField.optional(2, "L1", Types.ListType.ofOptional(1, IT)));
-    //
-    // Mapping.builder()
-    // .schema(schema)
-    // .definition(TableDefinition.of(ColumnDefinition.of("L1", Type.intType().arrayType())))
-    // .putPath("L1", schemaField(2))
-    // .build();
-    // }
 
     private static Schema simpleSchema(org.apache.iceberg.types.Type type) {
         return new Schema(

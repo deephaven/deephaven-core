@@ -30,7 +30,7 @@ public abstract class ColumnInstructions {
     abstract OptionalInt schemaFieldId();
 
     abstract OptionalInt partitionFieldId();
-    
+
     PartitionField partitionField(PartitionSpec spec) throws SchemaHelper.PathException {
         return PartitionSpecHelper.get(spec, partitionFieldId().orElseThrow());
     }

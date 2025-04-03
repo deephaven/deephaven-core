@@ -78,7 +78,9 @@ public abstract class InferenceInstructions {
             }
 
             /**
-             * The field name {@link Namer} constructs a Deephaven column name of the form {@value FieldIdNamer#FIELD_ID} with the last {@link Types.NestedField#fieldId() field-id} in the path appended.
+             * The field name {@link Namer} constructs a Deephaven column name of the form
+             * {@value FieldIdNamer#FIELD_ID} with the last {@link Types.NestedField#fieldId() field-id} in the path
+             * appended.
              */
             static Factory fieldId() {
                 return FieldIdNamer.FIELD_ID_NAMER;

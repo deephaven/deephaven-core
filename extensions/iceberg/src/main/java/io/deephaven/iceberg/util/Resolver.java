@@ -9,6 +9,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.iceberg.internal.Inference;
+import io.deephaven.iceberg.internal.PartitionSpecHelper;
 import io.deephaven.iceberg.internal.SchemaHelper;
 import io.deephaven.qst.type.Type;
 import org.apache.iceberg.PartitionField;
@@ -26,6 +27,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+
+import static io.deephaven.iceberg.util.ColumnInstructions.schemaField;
 
 
 // This is a mapping for _read_
@@ -165,23 +168,29 @@ public abstract class Resolver {
         definition().checkHasColumn(columnName);
         final ColumnDefinition<?> column = definition().getColumn(columnName);
         final Type<?> type = Type.find(column.getDataType(), column.getComponentType());
-
-        // todo: incorporate this
-        final boolean isPartitioning = column.isPartitioning();
-
         try {
-            validate(ci, type);
+            validate(column.isPartitioning(), type, ci);
         } catch (SchemaHelper.PathException | MappingException e) {
             throw new MappingException(String.format("Unable to map Deephaven column %s", column.getName()), e);
         }
     }
 
-    private void validate(ColumnInstructions ci, Type<?> type) throws SchemaHelper.PathException {
+    private void validate(boolean isPartitioningColumn, Type<?> type, ColumnInstructions ci)
+            throws SchemaHelper.PathException {
+        // This are not all hard technical limitations, but just narrowing the set of acceptable combinations. We could
+        // search through the partition spec to see if any corresponding w/ identity to the column, but right now,
+        // we'll just do that as part of inference.
         if (ci.schemaFieldId().isPresent()) {
+            if (isPartitioningColumn) {
+                throw new MappingException("Must use normal column with schema field");
+            }
             final List<NestedField> fieldPath = ci.schemaFieldPath(schema());
             checkCompatible(fieldPath, type);
         } else {
-            final PartitionField partitionField = ci.partitionField(spec());;
+            if (!isPartitioningColumn) {
+                throw new MappingException("Must use partitioning column with partition field");
+            }
+            final PartitionField partitionField = ci.partitionField(spec());
             checkCompatible(schema(), partitionField, type);
         }
     }
@@ -212,7 +221,7 @@ public abstract class Resolver {
 
 
         // todo: mixin spec?
-//        return Optional.of(ci.schemaFieldPath().orElseThrow().resolve(schema));
+        // return Optional.of(ci.schemaFieldPath().orElseThrow().resolve(schema));
     }
 
     // We could change result type to a List or something more complex in future if necessary.
@@ -281,25 +290,12 @@ public abstract class Resolver {
             }
             final String columnName = namer.of(fieldPath, type);
             NameValidator.validateColumnName(columnName);
-            //final int[] idPath = fieldPath.stream().mapToInt(NestedField::fieldId).toArray();
-            //builder.putColumnInstructions(columnName, ColumnInstructions.schemaFieldPath(FieldPath.of(idPath)));
-            builder.putColumnInstructions(columnName, ColumnInstructions.schemaField(currentFieldId()));
+            // final int[] idPath = fieldPath.stream().mapToInt(NestedField::fieldId).toArray();
+            // builder.putColumnInstructions(columnName, ColumnInstructions.schemaFieldPath(FieldPath.of(idPath)));
+            builder.putColumnInstructions(columnName, schemaField(currentFieldId()));
             definitions.add(ColumnDefinition.of(columnName, type));
             return null;
-
-
-            // "Foo": {
-            //    "Bar": int,
-            //    "Baz": int,
-            // }
-            // "Foo2": List {
-            //   "Bar": int,
-            //   "Baz": int
-            // }
-
         }
-
-
 
         private int currentFieldId() {
             return fieldPath.get(fieldPath.size() - 1).fieldId();
@@ -512,11 +508,11 @@ public abstract class Resolver {
         // do we even support this type? note: it's _possible_ there are cases where there is a primitive type where
         // we don't support inference, but do support compatibility with DH type... TODO
         Inference.of(type).orElseThrow(() -> new MappingException("todo"));
-//        try {
-//
-//        } catch (Inference.UnsupportedType e) {
-//            throw new MappingException(e.getMessage());
-//        }
+        // try {
+        //
+        // } catch (Inference.UnsupportedType e) {
+        // throw new MappingException(e.getMessage());
+        // }
     }
 
     public static class MappingException extends RuntimeException {
