@@ -424,9 +424,8 @@ class TableDataServiceTestCase(BaseTestCase):
         table = data_service.make_table(TableKeyImpl("test"), refreshing=True)
 
         # wait for location/size subscription to be established before triggering the failure
-        with exclusive_lock(table):
-            table = table.coalesce()
-            backend.sub_partition_size_fail_test = True
+        table = table.coalesce()
+        backend.sub_partition_size_fail_test = True
 
         # the test backend will trigger a size subscription failure
         # if not backend.is_size_sub_failure_cb_called:
