@@ -690,8 +690,7 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
         if (originalUpdate.modified().isEmpty() && originalUpdate.modifiedColumnSet().nonempty()
                 || (originalUpdate.modifiedColumnSet().empty() && originalUpdate.modified().isNonempty())) {
             update = new TableUpdateImpl(originalUpdate.added().copy(), originalUpdate.removed().copy(),
-                    RowSetFactory.empty(),
-                    originalUpdate.shifted(), ModifiedColumnSet.EMPTY);
+                    RowSetFactory.empty(), originalUpdate.shifted(), ModifiedColumnSet.EMPTY);
             originalUpdate.release();
         } else {
             update = originalUpdate;
