@@ -432,12 +432,8 @@ class TableDataServiceTestCase(BaseTestCase):
         # the test backend will trigger a size subscription failure
         # if not backend.is_size_sub_failure_cb_called:
         with backend.size_sub_failure_cb_called_cond:
-            if not backend.is_size_sub_failure_cb_called:
-                if not backend.size_sub_failure_cb_called_cond.wait(timeout=5):
-                    self.fail("size subscription failure callback was not called in 5s")
-            else:
-                # size subscription failure callback was already called
-                pass
+            if not backend.size_sub_failure_cb_called_cond.wait_for(lambda: backend.is_size_sub_failure_cb_called, timeout=5):
+                self.fail("size subscription failure callback was not called in 5s")
 
         with self.assertRaises(Exception) as cm:
             # for a real PUG with 1s interval, the failure is buffered after the roots are
