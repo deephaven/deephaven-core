@@ -85,7 +85,7 @@ public class TableUpdateImpl implements TableUpdate {
     }
 
     @Override
-    public void validate() {
+    public void validate() throws AssertionFailure {
         Assert.neqNull(added, "added");
         Assert.neqNull(removed, "removed");
         Assert.neqNull(modified, "modified");
