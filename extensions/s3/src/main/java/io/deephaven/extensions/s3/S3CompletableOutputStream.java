@@ -58,7 +58,7 @@ class S3CompletableOutputStream extends CompletableOutputStream {
 
     /**
      * Track how many parts have completed (success or failure). This is used to wait for all parts to finish before
-     * completing the upload.
+     * completing or aborting the upload.
      */
     private final Semaphore numPartsCompleted;
 
@@ -305,7 +305,7 @@ class S3CompletableOutputStream extends CompletableOutputStream {
         final CreateMultipartUploadResponse response;
         try {
             response = initiateUploadFuture.get();
-        } catch (final InterruptedException | ExecutionException e) {
+        } catch (final InterruptedException | ExecutionException | CancellationException e) {
             throw handleS3Exception(e, String.format("initiating multipart upload for uri %s", uri), s3Instructions);
         }
         return response.uploadId();
@@ -459,7 +459,7 @@ class S3CompletableOutputStream extends CompletableOutputStream {
                 .build();
         try {
             s3AsyncClient.completeMultipartUpload(completeRequest).get();
-        } catch (final InterruptedException | ExecutionException e) {
+        } catch (final InterruptedException | ExecutionException | CancellationException e) {
             final IOException ex = handleS3Exception(e,
                     String.format("completing multipart upload for uri %s", uri), s3Instructions);
             failAll(ex);
@@ -472,12 +472,34 @@ class S3CompletableOutputStream extends CompletableOutputStream {
     }
 
     /**
-     * Abort the multipart upload if it is in progress.
+     * Abort the multipart upload if it is in progress. Note that aborting an upload is a best effort operation, since
+     * according to the <a href="https://docs.aws.amazon.com/AmazonS3/latest/API/API_AbortMultipartUpload.html">SDK</a>,
+     * any in flight requests might still succeed. So its recommended to set expiration rules on buckets for incomplete
+     * uploads.
+     *
+     *
+     * @see <a href=
+     *      "https://aws.amazon.com/blogs/aws-cloud-financial-management/discovering-and-deleting-incomplete-multipart-uploads-to-lower-amazon-s3-costs/">
+     *      Discovering and Deleting Incomplete Multipart Uploads to Lower Amazon S3 Costs</a>
      */
     private void abortMultipartUpload() throws IOException {
         if (uploadId == null) {
             // We didn't start the upload, so nothing to abort
             return;
+        }
+
+        // Cancel all pending requests
+        failAll(new IOException("Upload aborted for uri " + uri));
+
+        // Wait for all parts to finish
+        final int totalPartCount = nextPartNumber - 1;
+        try {
+            numPartsCompleted.acquire(totalPartCount);
+        } catch (final InterruptedException e) {
+            Thread.currentThread().interrupt();
+            final IOException ioe = new IOException("Failed to abort the upload since interrupted while waiting " +
+                    "for all parts to finish", e);
+            throw ioe;
         }
 
         // Initiate the abort request
@@ -488,13 +510,10 @@ class S3CompletableOutputStream extends CompletableOutputStream {
                 .build();
         final CompletableFuture<AbortMultipartUploadResponse> future = s3AsyncClient.abortMultipartUpload(abortRequest);
 
-        // Cancel all pending requests
-        failAll(new IOException("Upload aborted for uri " + uri));
-
         // Wait for the abort to complete
         try {
             future.get();
-        } catch (final InterruptedException | ExecutionException e) {
+        } catch (final InterruptedException | ExecutionException | CancellationException e) {
             throw handleS3Exception(e,
                     String.format("aborting multipart upload for uri %s", uri), s3Instructions);
         }

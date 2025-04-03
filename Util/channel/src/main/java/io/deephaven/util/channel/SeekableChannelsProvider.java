@@ -17,6 +17,15 @@ import static io.deephaven.base.FileUtils.convertToURI;
 public interface SeekableChannelsProvider extends SafeCloseable {
 
     /**
+     * Context object for writing to streams created by {@link SeekableChannelsProvider}.
+     */
+    interface WriteContext extends SafeCloseable {
+        WriteContext NULL_INSTANCE = () -> {
+            // no-op
+        };
+    }
+
+    /**
      * Wraps {@link SeekableChannelsProvider#getInputStream(SeekableByteChannel, int)} to ensure the channel's position
      * is incremented the exact amount that has been consumed from the resulting input stream. To remain valid, the
      * caller must ensure that the resulting input stream isn't re-wrapped by any downstream code in a way that would
@@ -53,7 +62,7 @@ public interface SeekableChannelsProvider extends SafeCloseable {
     /**
      * Create a new context object for creating output streams via this provider.
      */
-    SafeCloseable makeWriteContext();
+    WriteContext makeWriteContext();
 
     /**
      * Check if the given context is compatible with this provider for reading. Useful to test if we can use provided
@@ -106,7 +115,7 @@ public interface SeekableChannelsProvider extends SafeCloseable {
      * @see CompletableOutputStream
      */
     CompletableOutputStream getOutputStream(
-            @NotNull final SafeCloseable channelContext,
+            @NotNull final WriteContext channelContext,
             @NotNull final URI uri,
             int bufferSizeHint) throws IOException;
 

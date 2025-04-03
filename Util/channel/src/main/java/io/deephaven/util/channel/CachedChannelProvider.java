@@ -8,7 +8,6 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
-import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -83,7 +82,7 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
     }
 
     @Override
-    public SafeCloseable makeWriteContext() {
+    public WriteContext makeWriteContext() {
         return wrappedProvider.makeWriteContext();
     }
 
@@ -117,7 +116,7 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
 
     @Override
     public final CompletableOutputStream getOutputStream(
-            @NotNull final SafeCloseable channelContext,
+            @NotNull final WriteContext channelContext,
             @NotNull final URI uri,
             final int bufferSizeHint) throws IOException {
         return wrappedProvider.getOutputStream(channelContext, uri, bufferSizeHint);

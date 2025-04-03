@@ -5,7 +5,7 @@ package io.deephaven.extensions.s3;
 
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.channel.SeekableChannelsProvider;
 import org.jetbrains.annotations.NotNull;
 
 import java.nio.ByteBuffer;
@@ -15,7 +15,7 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 /**
  * Context object used to store buffer pool for write requests.
  */
-final class S3WriteContext implements SafeCloseable {
+final class S3WriteContext implements SeekableChannelsProvider.WriteContext {
     private static final Logger log = LoggerFactory.getLogger(S3WriteContext.class);
 
     /**

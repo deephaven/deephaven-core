@@ -10,7 +10,6 @@ import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.channel.Channels;
 import io.deephaven.util.channel.CompletableOutputStream;
 import io.deephaven.util.channel.SeekableChannelContext;
@@ -127,7 +126,7 @@ class S3SeekableChannelProvider implements SeekableChannelsProvider {
     }
 
     @Override
-    public SafeCloseable makeWriteContext() {
+    public WriteContext makeWriteContext() {
         return new S3WriteContext(s3Instructions);
     }
 
@@ -138,7 +137,7 @@ class S3SeekableChannelProvider implements SeekableChannelsProvider {
 
     @Override
     public CompletableOutputStream getOutputStream(
-            @NotNull final SafeCloseable channelContext,
+            @NotNull final WriteContext channelContext,
             @NotNull final URI uri,
             final int bufferSizeHint) {
         // bufferSizeHint is unused because s3 output stream is buffered internally into parts

@@ -9,7 +9,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.function.Supplier;
 
 /**
- * Context object for reading and writing to channels created by {@link SeekableChannelsProvider}.
+ * Context object for reading from channels created by {@link SeekableChannelsProvider}.
  * <p>
  * The context object can hold {@link SafeCloseable} resources corresponding to {@link String} keys, which can be
  * plugged into the context by calling the {@link #getCachedResource(String, Supplier)} method. These resources will be

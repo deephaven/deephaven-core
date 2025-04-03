@@ -24,7 +24,6 @@ import io.deephaven.parquet.base.ParquetMetadataFileWriter;
 import io.deephaven.parquet.base.NullParquetMetadataFileWriter;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.channel.CompletableOutputStream;
-import io.deephaven.util.channel.SeekableChannelContext;
 import io.deephaven.util.channel.SeekableChannelsProvider;
 import io.deephaven.util.channel.SeekableChannelsProviderLoader;
 import io.deephaven.vector.*;
@@ -265,7 +264,7 @@ public class ParquetTools {
             @NotNull final String[][] parquetColumnNameArr,
             @NotNull final URI dest,
             @NotNull final SeekableChannelsProvider channelProvider,
-            @NotNull final SafeCloseable writeContext) throws IOException {
+            @NotNull final SeekableChannelsProvider.WriteContext writeContext) throws IOException {
         Require.eq(indexColumns.size(), "indexColumns.size", parquetColumnNameArr.length,
                 "parquetColumnNameArr.length");
         final int numIndexes = indexColumns.size();
@@ -595,7 +594,7 @@ public class ParquetTools {
         final List<CompletableOutputStream> outputStreams = new ArrayList<>(destinations.length);
 
         // Create a common shared context for all the output streams
-        try (final SafeCloseable writeContext = channelsProvider.makeWriteContext();
+        try (final SeekableChannelsProvider.WriteContext writeContext = channelsProvider.makeWriteContext();
                 final SafeCloseable ignored = () -> SafeCloseable.closeAll(outputStreams.stream())) {
             try {
                 if (indexColumns.isEmpty()) {

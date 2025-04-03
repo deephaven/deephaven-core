@@ -4,7 +4,6 @@
 package io.deephaven.extensions.s3;
 
 import io.deephaven.extensions.s3.testlib.S3SeekableChannelTestSetup;
-import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.channel.CachedChannelProvider;
 import io.deephaven.util.channel.CompletableOutputStream;
 import io.deephaven.util.channel.SeekableChannelContext;
@@ -100,7 +99,7 @@ abstract class S3SeekableChannelSimpleTestBase extends S3SeekableChannelTestSetu
         try (
                 final SeekableChannelsProvider providerImpl = providerImpl();
                 final SeekableChannelsProvider provider = CachedChannelProvider.create(providerImpl, 32);
-                final SafeCloseable context = provider.makeWriteContext();
+                final SeekableChannelsProvider.WriteContext context = provider.makeWriteContext();
                 final CompletableOutputStream outputStream = provider.getOutputStream(context, uri, 0)) {
             final int numBytes = 36 * 1024 * 1024; // 36 Mib -> Three 10-MiB parts + One 6-MiB part
             final int numIters = numBytes / contentBytes.length;

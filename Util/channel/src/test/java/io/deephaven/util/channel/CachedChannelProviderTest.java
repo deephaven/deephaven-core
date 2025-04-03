@@ -130,7 +130,7 @@ public class CachedChannelProviderTest {
 
         AtomicInteger count = new AtomicInteger(0);
 
-        private final class TestChannelContext implements SeekableChannelContext {
+        private final class TestChannelContext implements SeekableChannelContext, WriteContext {
             @Override
             @Nullable
             public <T extends SafeCloseable> T getCachedResource(final String key, final Supplier<T> resourceFactory) {
@@ -144,7 +144,7 @@ public class CachedChannelProviderTest {
         }
 
         @Override
-        public SafeCloseable makeWriteContext() {
+        public WriteContext makeWriteContext() {
             return new TestChannelContext();
         }
 
@@ -177,7 +177,7 @@ public class CachedChannelProviderTest {
 
         @Override
         public CompletableOutputStream getOutputStream(
-                @NotNull SafeCloseable channelContext,
+                @NotNull WriteContext channelContext,
                 @NotNull final URI uri,
                 int bufferSizeHint) {
             throw new UnsupportedOperationException("getOutputStream");
