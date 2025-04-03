@@ -678,7 +678,7 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
      *        {@code notifyListeners} takes ownership, and will call {@code release} on it once it is not used anymore;
      *        callers should pass a {@code copy} for updates they intend to further use.
      */
-    public final void notifyListeners(final TableUpdate originalUpdate) {
+    public final void notifyListeners(final TableUpdate update) {
         Assert.eqFalse(isFailed, "isFailed");
         final long currentStep = updateGraph.clock().currentStep();
         // tables may only be updated once per cycle
@@ -686,18 +686,18 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
 
         update.validate();
 
-        final TableUpdate update;
-        if (originalUpdate.modified().isEmpty() && originalUpdate.modifiedColumnSet().nonempty()
-                || (originalUpdate.modifiedColumnSet().empty() && originalUpdate.modified().isNonempty())) {
-            update = new TableUpdateImpl(originalUpdate.added().copy(), originalUpdate.removed().copy(),
-                    RowSetFactory.empty(), originalUpdate.shifted(), ModifiedColumnSet.EMPTY);
-            originalUpdate.release();
+        final TableUpdate updateToSend;
+        if (update.modified().isEmpty() && update.modifiedColumnSet().nonempty()
+                || (update.modifiedColumnSet().empty() && update.modified().isNonempty())) {
+            updateToSend = new TableUpdateImpl(update.added().copy(), update.removed().copy(),
+                    RowSetFactory.empty(), update.shifted(), ModifiedColumnSet.EMPTY);
+            update.release();
         } else {
-            update = originalUpdate;
+            updateToSend = update;
         }
 
-        if (update.empty()) {
-            update.release();
+        if (updateToSend.empty()) {
+            updateToSend.release();
             return;
         }
 
@@ -706,44 +706,45 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
         final boolean hasNoListeners = !hasListeners();
         if (hasNoListeners) {
             lastNotificationStep = currentStep;
-            update.release();
+            updateToSend.release();
             return;
         }
 
-        Assert.neqNull(update.added(), "added");
-        Assert.neqNull(update.removed(), "removed");
-        Assert.neqNull(update.modified(), "modified");
-        Assert.neqNull(update.shifted(), "shifted");
+        Assert.neqNull(updateToSend.added(), "added");
+        Assert.neqNull(updateToSend.removed(), "removed");
+        Assert.neqNull(updateToSend.modified(), "modified");
+        Assert.neqNull(updateToSend.shifted(), "shifted");
 
         if (isFlat()) {
             Assert.assertion(getRowSet().isFlat(), "getRowSet().isFlat()", getRowSet(), "getRowSet()");
         }
         if (isAppendOnly() || isAddOnly()) {
-            Assert.assertion(update.removed().isEmpty(), "update.removed.empty()");
-            Assert.assertion(update.modified().isEmpty(), "update.modified.empty()");
-            Assert.assertion(update.shifted().empty(), "update.shifted.empty()");
+            Assert.assertion(updateToSend.removed().isEmpty(), "updateToSend.removed.empty()");
+            Assert.assertion(updateToSend.modified().isEmpty(), "updateToSend.modified.empty()");
+            Assert.assertion(updateToSend.shifted().empty(), "updateToSend.shifted.empty()");
         }
         if (isAppendOnly()) {
-            Assert.assertion(getRowSet().sizePrev() == 0 || getRowSet().lastRowKeyPrev() < update.added().firstRowKey(),
-                    "getRowSet().lastRowKeyPrev() < update.added().firstRowKey()");
+            Assert.assertion(
+                    getRowSet().sizePrev() == 0 || getRowSet().lastRowKeyPrev() < updateToSend.added().firstRowKey(),
+                    "getRowSet().lastRowKeyPrev() < updateToSend.added().firstRowKey()");
         }
         if (isBlink()) {
-            Assert.eq(update.added().size(), "added size", getRowSet().size(), "current table size");
-            Assert.eq(update.removed().size(), "removed size", getRowSet().sizePrev(), "previous table size");
-            Assert.assertion(update.modified().isEmpty(), "update.modified.isEmpty()");
-            Assert.assertion(update.shifted().empty(), "update.shifted.empty()");
+            Assert.eq(updateToSend.added().size(), "added size", getRowSet().size(), "current table size");
+            Assert.eq(updateToSend.removed().size(), "removed size", getRowSet().sizePrev(), "previous table size");
+            Assert.assertion(updateToSend.modified().isEmpty(), "updateToSend.modified.isEmpty()");
+            Assert.assertion(updateToSend.shifted().empty(), "updateToSend.shifted.empty()");
         }
 
         // First validate that each rowSet is in a sane state.
         if (VALIDATE_UPDATE_INDICES) {
-            update.added().validate();
-            update.removed().validate();
-            update.modified().validate();
-            update.shifted().validate();
+            updateToSend.added().validate();
+            updateToSend.removed().validate();
+            updateToSend.modified().validate();
+            updateToSend.shifted().validate();
         }
 
         if (VALIDATE_UPDATE_OVERLAPS) {
-            validateUpdateOverlaps(update);
+            validateUpdateOverlaps(updateToSend);
         }
 
         // notify children
@@ -752,10 +753,11 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
 
             final NotificationQueue notificationQueue = getNotificationQueue();
             childListenerReferences.forEach(
-                    (listenerRef, listener) -> notificationQueue.addNotification(listener.getNotification(update)));
+                    (listenerRef, listener) -> notificationQueue
+                            .addNotification(listener.getNotification(updateToSend)));
         }
 
-        update.release();
+        updateToSend.release();
     }
 
     private void validateUpdateOverlaps(final TableUpdate update) {
