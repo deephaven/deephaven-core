@@ -29,6 +29,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
@@ -206,7 +207,14 @@ class S3CompletableOutputStream extends CompletableOutputStream {
 
     private int writeImpl(final DataWriter writer, int off, int len) throws IOException {
         if (bufferedPartRequest == null) {
-            final S3WriteRequest request = new S3WriteRequest(writeContext, s3Instructions.writePartSize());
+            final S3WriteRequest request;
+            try {
+                request = new S3WriteRequest(writeContext, s3Instructions.writePartSize());
+            } catch (final InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new IOException("Thread interrupted while creating a write request for part " +
+                        nextPartNumber, e);
+            }
             handoff = new CompletableFuture<>();
             // If the status has an exception, cancel the handoff
             forwardExceptionAsCancel(status, handoff);
@@ -393,7 +401,7 @@ class S3CompletableOutputStream extends CompletableOutputStream {
         // join() will throw a CompletionException with the cause as the original exception
         try {
             status.join();
-        } catch (final CompletionException e) {
+        } catch (final CompletionException | CancellationException e) {
             final Throwable cause = e.getCause();
             if (cause instanceof IOException) {
                 return (IOException) cause;

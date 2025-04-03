@@ -10,8 +10,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 /**
  * Context object used to store buffer pool for write requests.
@@ -33,15 +32,15 @@ final class S3WriteContext implements SafeCloseable {
     /**
      * Used to pool buffers for writing to S3.
      */
-    private final BlockingQueue<ByteBuffer> bufferQueue;
+    private final ArrayBlockingQueue<ByteBuffer> bufferQueue;
 
     /**
      * The number of buffers that have been allocated
      */
-    private volatile Integer createdCount;
+    private volatile int createdCount;
 
-    private static final AtomicReferenceFieldUpdater<S3WriteContext, Integer> CREATED_COUNT_UPDATER =
-            AtomicReferenceFieldUpdater.newUpdater(S3WriteContext.class, Integer.class, "createdCount");
+    private static final AtomicIntegerFieldUpdater<S3WriteContext> CREATED_COUNT_UPDATER =
+            AtomicIntegerFieldUpdater.newUpdater(S3WriteContext.class, "createdCount");
 
     S3WriteContext(@NotNull final S3Instructions instructions) {
         this.writePartSize = instructions.writePartSize();
@@ -56,7 +55,7 @@ final class S3WriteContext implements SafeCloseable {
     /**
      * Get a buffer from the pool. This method will block until a buffer is available.
      */
-    ByteBuffer getBuffer() throws InterruptedException {
+    ByteBuffer take() throws InterruptedException {
         // Try to get a buffer without blocking
         final ByteBuffer buffer = bufferQueue.poll();
         if (buffer != null) {
@@ -64,7 +63,7 @@ final class S3WriteContext implements SafeCloseable {
         }
 
         // Allocate a new buffer if we haven't reached the max size yet
-        Integer current;
+        int current;
         while ((current = createdCount) < numConcurrentWriteParts) {
             if (CREATED_COUNT_UPDATER.compareAndSet(this, current, current + 1)) {
                 return ByteBuffer.allocate(writePartSize);
@@ -78,9 +77,12 @@ final class S3WriteContext implements SafeCloseable {
     /**
      * Return a buffer to the pool, clearing its contents. This method will block until the buffer is accepted.
      */
-    void returnBuffer(@NotNull final ByteBuffer buffer) throws InterruptedException {
+    void give(@NotNull final ByteBuffer buffer) {
         buffer.clear();
-        bufferQueue.put(buffer);
+        if (!bufferQueue.offer(buffer)) {
+            throw new IllegalStateException("Failed to return buffer to queue, queue size expected to be  + " +
+                    numConcurrentWriteParts + ", remaining capacity = " + bufferQueue.remainingCapacity());
+        }
     }
 
     @Override
