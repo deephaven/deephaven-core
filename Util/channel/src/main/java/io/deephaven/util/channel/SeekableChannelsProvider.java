@@ -119,7 +119,6 @@ public interface SeekableChannelsProvider extends SafeCloseable {
             @NotNull final URI uri,
             int bufferSizeHint) throws IOException;
 
-
     /**
      * Returns a stream of URIs, the elements of which are the entries in the directory. The listing is non-recursive.
      * The URIs supplied by the stream will not have any unnecessary slashes or path separators. Also, the URIs will be
