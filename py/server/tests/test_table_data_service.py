@@ -421,13 +421,12 @@ class TableDataServiceTestCase(BaseTestCase):
             [pa.field(name="Ticker", type=pa.string()), pa.field(name="Exchange", type=pa.string())])
         backend = TestBackend(self.gen_pa_table(), pt_schema=self.pa_table.schema, pc_schema=pc_schema)
         data_service = TableDataService(backend)
-        backend.sub_partition_size_fail_test = True
         table = data_service.make_table(TableKeyImpl("test"), refreshing=True)
 
-        # wait for location/size subscription to be established
-        # hold the exclusive lock to ensure table initialization is complete before size failure is triggered
+        # wait for location/size subscription to be established before triggering the failure
         with exclusive_lock(table):
             table = table.coalesce()
+            backend.sub_partition_size_fail_test = True
 
         # the test backend will trigger a size subscription failure
         # if not backend.is_size_sub_failure_cb_called:
