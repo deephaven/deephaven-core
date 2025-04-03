@@ -6,7 +6,6 @@ package io.deephaven.extensions.s3;
 import io.deephaven.annotations.CopyableStyle;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
-import io.deephaven.base.pool.ThreadSafeFixedSizePool;
 import io.deephaven.util.annotations.VisibleForTesting;
 import org.immutables.value.Value.Check;
 import org.immutables.value.Value.Default;
