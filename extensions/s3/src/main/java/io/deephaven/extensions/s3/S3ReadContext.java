@@ -23,8 +23,8 @@ import java.util.concurrent.TimeoutException;
  * Context object used to store read-ahead buffers for efficiently reading from S3. A single context object can only be
  * associated with a single URI at a time.
  */
-final class S3ChannelContext extends BaseSeekableChannelContext implements SeekableChannelContext {
-    private static final Logger log = LoggerFactory.getLogger(S3ChannelContext.class);
+final class S3ReadContext extends BaseSeekableChannelContext implements SeekableChannelContext {
+    private static final Logger log = LoggerFactory.getLogger(S3ReadContext.class);
     static final long UNINITIALIZED_SIZE = -1;
     private static final long UNINITIALIZED_NUM_FRAGMENTS = -1;
 
@@ -42,7 +42,7 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
      * Used to cache recently fetched fragments from the {@link #uri} for faster lookup. Note that this cache can be
      * shared across multiple contexts and be accessed concurrently.
      */
-    final S3RequestCache sharedCache;
+    final S3ReadRequestCache sharedReadCache;
 
     /**
      * The size of the object in bytes, stored in context to avoid fetching multiple times
@@ -54,18 +54,18 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
      */
     private long numFragments;
 
-    S3ChannelContext(
+    S3ReadContext(
             @NotNull final S3SeekableChannelProvider provider,
             @NotNull final S3AsyncClient client,
             @NotNull final S3Instructions instructions,
-            @NotNull final S3RequestCache sharedCache) {
+            @NotNull final S3ReadRequestCache sharedReadCache) {
         this.provider = Objects.requireNonNull(provider);
         this.client = Objects.requireNonNull(client);
         this.instructions = Objects.requireNonNull(instructions);
-        this.sharedCache = sharedCache;
-        if (sharedCache.getFragmentSize() != instructions.fragmentSize()) {
+        this.sharedReadCache = sharedReadCache;
+        if (sharedReadCache.getFragmentSize() != instructions.fragmentSize()) {
             throw new IllegalArgumentException("Fragment size mismatch between shared cache and instructions, "
-                    + sharedCache.getFragmentSize() + " != " + instructions.fragmentSize());
+                    + sharedReadCache.getFragmentSize() + " != " + instructions.fragmentSize());
         }
         uri = null;
         size = UNINITIALIZED_SIZE;
@@ -115,7 +115,7 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
         int filled;
         {
             // Hold a reference to the first request to ensure it is not evicted from the cache
-            final S3Request.Acquired acquiredRequest = getOrCreateRequest(firstFragmentIx);
+            final S3ReadRequest.Acquired acquiredRequest = getOrCreateRequest(firstFragmentIx);
             for (int i = 0; i < readAhead; ++i) {
                 // Do not hold references to the read-ahead requests
                 getOrCreateRequest(firstFragmentIx + i + 1);
@@ -124,7 +124,7 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
             filled = acquiredRequest.fill(position, dest);
         }
         for (int i = 0; dest.hasRemaining(); ++i) {
-            final S3Request.Acquired readAheadRequest = sharedCache.getRequest(uri, firstFragmentIx + i + 1);
+            final S3ReadRequest.Acquired readAheadRequest = sharedReadCache.getRequest(uri, firstFragmentIx + i + 1);
             if (readAheadRequest == null || !readAheadRequest.isDone()) {
                 break;
             }
@@ -155,8 +155,8 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
     // --------------------------------------------------------------------------------------------------
 
     @NotNull
-    private S3Request.Acquired getOrCreateRequest(final long fragmentIndex) {
-        final S3Request.Acquired cachedRequest = sharedCache.getOrCreateRequest(uri, fragmentIndex, this);
+    private S3ReadRequest.Acquired getOrCreateRequest(final long fragmentIndex) {
+        final S3ReadRequest.Acquired cachedRequest = sharedReadCache.getOrCreateRequest(uri, fragmentIndex, this);
         // Send the request, if not sent already. The following method is idempotent, so we always call it.
         cachedRequest.send();
         return cachedRequest;
@@ -168,14 +168,16 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
 
     private String ctxStr() {
         if (uri != null) {
-            return String.format("ctx=%d %s/%s", System.identityHashCode(S3ChannelContext.this),
+            return String.format("ctx=%d %s/%s", System.identityHashCode(S3ReadContext.this),
                     uri.bucket().orElseThrow(), uri.key().orElseThrow());
         } else {
-            return String.format("ctx=%d", System.identityHashCode(S3ChannelContext.this));
+            return String.format("ctx=%d", System.identityHashCode(S3ReadContext.this));
         }
     }
 
-    static IOException handleS3Exception(final Exception e, final String operationDescription,
+    static IOException handleS3Exception(
+            final Exception e,
+            final String operationDescription,
             final S3Instructions instructions) {
         if (e instanceof InterruptedException) {
             Thread.currentThread().interrupt();
