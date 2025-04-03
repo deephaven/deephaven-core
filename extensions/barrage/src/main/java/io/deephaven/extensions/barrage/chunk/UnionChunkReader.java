@@ -129,13 +129,12 @@ public class UnionChunkReader<T> extends BaseChunkReader<WritableObjectChunk<T, 
                 chunks[ii] = (ObjectChunk<T, Values>) boxer.box(chunk);
             }
 
-            final WritableObjectChunk<T, Values> result;
-            if (outChunk != null) {
-                result = outChunk.asWritableObjectChunk();
-            } else {
-                result = WritableObjectChunk.makeWritableChunk(numRows);
-                result.setSize(numRows);
-            }
+            final WritableObjectChunk<T, Values> result = castOrCreateChunk(
+                    outChunk,
+                    outOffset,
+                    Math.max(totalRows, nodeInfo.numElements),
+                    WritableObjectChunk::makeWritableChunk,
+                    WritableChunk::asWritableObjectChunk);
 
             for (int ii = 0; ii < columnsOfInterest.size(); ++ii) {
                 final byte coi = columnsOfInterest.get(ii);

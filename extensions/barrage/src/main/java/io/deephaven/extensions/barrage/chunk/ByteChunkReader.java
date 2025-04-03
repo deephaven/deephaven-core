@@ -56,6 +56,7 @@ public class ByteChunkReader extends BaseChunkReader<WritableByteChunk<Values>> 
 
         final WritableByteChunk<Values> chunk = castOrCreateChunk(
                 outChunk,
+                outOffset,
                 Math.max(totalRows, nodeInfo.numElements),
                 WritableByteChunk::makeWritableChunk,
                 WritableChunk::asWritableByteChunk);

@@ -265,13 +265,9 @@ public class BarrageMessageReaderImpl implements BarrageMessageReader {
                             }
 
                             // fill the chunk with data and assign back into the array
-                            final int origSize = chunk.size();
-                            chunk = readers.get(ci).readChunk(fieldNodeIter, bufferInfoIter, ois, chunk, origSize,
+                            chunk = readers.get(ci).readChunk(fieldNodeIter, bufferInfoIter, ois, chunk, chunk.size(),
                                     (int) batch.length());
                             acd.data.set(lastChunkIndex, chunk);
-                            if (!options.columnsAsList()) {
-                                chunk.setSize(origSize + (int) batch.length());
-                            }
                         }
 
                         if (options.columnsAsList() && msg.addColumnData.length > 0) {
@@ -309,7 +305,6 @@ public class BarrageMessageReaderImpl implements BarrageMessageReader {
                             mcd.data.set(lastChunkIndex,
                                     readers.get(ci).readChunk(fieldNodeIter, bufferInfoIter, ois, chunk,
                                             chunk.size(), numRowsToRead));
-                            chunk.setSize(chunk.size() + numRowsToRead);
                         }
                         numModRowsRead += maxModRows;
                     }
