@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
@@ -80,6 +81,14 @@ class S3CompletableOutputStream extends CompletableOutputStream {
      */
     @Nullable
     private S3WriteRequest bufferedPartRequest;
+
+    /**
+     * Represents the handoff of responsibility for returning the buffer for the bufferedPartRequest. If completed
+     * exceptionally, then the buffer will be returned as part of that exception handling. If completed successfully,
+     * the buffer will be released downstream of the successful completion.
+     */
+    @Nullable
+    private CompletableFuture<Void> handoff;
 
     /**
      * The upload ID for the multipart upload. This is initialized on the first write operation and is set to
@@ -189,29 +198,33 @@ class S3CompletableOutputStream extends CompletableOutputStream {
                 // Initialize the upload ID for the multipart upload
                 uploadId = initiateMultipartUpload();
             }
-
-            final S3WriteRequest useRequest;
-            if (bufferedPartRequest == null) {
-                // Get a new request from the pool
-                useRequest = new S3WriteRequest(writeContext, s3Instructions.writePartSize());
-            } else {
-                // Re-use the pending request
-                useRequest = bufferedPartRequest;
-                bufferedPartRequest = null;
-            }
-
-            // Write as much as possible to this buffer
-            final ByteBuffer buffer = useRequest.buffer;
-            final int lengthWritten = writer.write(buffer, off, len);
-            if (!buffer.hasRemaining()) {
-                sendPartRequest(useRequest);
-            } else {
-                // Save the request for the next write
-                bufferedPartRequest = useRequest;
-            }
+            final int lengthWritten = writeImpl(writer, off, len);
             off += lengthWritten;
             len -= lengthWritten;
         }
+    }
+
+    private int writeImpl(final DataWriter writer, int off, int len) throws IOException {
+        if (bufferedPartRequest == null) {
+            final S3WriteRequest request = new S3WriteRequest(writeContext, s3Instructions.writePartSize());
+            handoff = new CompletableFuture<>();
+            // If the status has an exception, cancel the handoff
+            forwardExceptionAsCancel(status, handoff);
+            // If we can't complete the handoff, release the buffer
+            handoff.whenComplete((unused, throwable) -> {
+                if (throwable != null) {
+                    request.releaseBuffer();
+                }
+            });
+            bufferedPartRequest = request;
+        }
+        final int lengthWritten = writer.write(bufferedPartRequest.buffer, off, len);
+        if (!bufferedPartRequest.buffer.hasRemaining()) {
+            sendPartRequest(false);
+            bufferedPartRequest = null;
+            handoff = null;
+        }
+        return lengthWritten;
     }
 
     @Override
@@ -230,7 +243,7 @@ class S3CompletableOutputStream extends CompletableOutputStream {
             throw new IOException("Cannot mark stream as done for uri " + uri + " because stream is in state " + state +
                     " instead of OPEN");
         }
-        sendBufferedData();
+        sendLastRequestIfPresent();
         state = State.DONE;
     }
 
@@ -293,20 +306,33 @@ class S3CompletableOutputStream extends CompletableOutputStream {
     /**
      * Send a part request for the given buffer. This method assumes that the buffer is non-empty.
      */
-    private void sendPartRequest(final S3WriteRequest request) throws IOException {
+    private void sendPartRequest(boolean onDone) throws IOException {
         if (nextPartNumber > MAX_PART_NUMBER) {
             final IOException ex = new IOException("Cannot upload more than " + MAX_PART_NUMBER +
                     " parts for uri " + uri + ", please try again with a larger part size");
             failAll(ex);
             throw ex;
         }
+        if (!Objects.requireNonNull(handoff).complete(null)) {
+            // handoff only completes exceptionally if status had an error
+            throw statusError();
+        }
+        // After handoff, we are responsible for releasing buffer
+        final S3WriteRequest request = Objects.requireNonNull(bufferedPartRequest);
+        request.buffer.flip();
+        if (onDone && !request.buffer.hasRemaining()) {
+            // The only potential for an empty buffer is when onDone; we still need to release it.
+            request.releaseBuffer();
+            return;
+        }
+
         final UploadPartRequest uploadPartRequest = UploadPartRequest.builder()
                 .bucket(uri.bucket().orElseThrow())
                 .key(uri.key().orElseThrow())
                 .uploadId(uploadId)
                 .partNumber(nextPartNumber)
                 .build();
-        request.buffer.flip();
+
         final int partNumber = nextPartNumber;
         final CompletableFuture<UploadPartResponse> uploadPartFuture = s3AsyncClient.uploadPart(uploadPartRequest,
                 AsyncRequestBody.fromByteBufferUnsafe(request.buffer));
@@ -329,14 +355,17 @@ class S3CompletableOutputStream extends CompletableOutputStream {
                 numPartsCompleted.release();
             }
         });
-
         // Cancel the upload if the status future fails. So status will hold a reference to the upload future.
-        status.exceptionally(t -> {
-            uploadPartFuture.cancel(true);
-            return null;
-        });
-
+        forwardExceptionAsCancel(status, uploadPartFuture);
         nextPartNumber++;
+    }
+
+    private static void forwardExceptionAsCancel(CompletableFuture<?> src, CompletableFuture<?> dst) {
+        src.whenComplete((ignored, ex) -> {
+            if (ex != null) {
+                dst.cancel(true);
+            }
+        });
     }
 
     /**
@@ -356,34 +385,37 @@ class S3CompletableOutputStream extends CompletableOutputStream {
      */
     private void checkStatus() throws IOException {
         if (status.isCompletedExceptionally()) {
-            // join() will throw a CompletionException with the cause as the original exception
-            try {
-                status.join();
-            } catch (final CompletionException e) {
-                final Throwable cause = e.getCause();
-                if (cause instanceof IOException) {
-                    throw (IOException) cause;
-                } else {
-                    throw new IOException("Failed to upload to S3, check cause for more details", cause);
-                }
+            throw statusError();
+        }
+    }
+
+    private IOException statusError() {
+        // join() will throw a CompletionException with the cause as the original exception
+        try {
+            status.join();
+        } catch (final CompletionException e) {
+            final Throwable cause = e.getCause();
+            if (cause instanceof IOException) {
+                return (IOException) cause;
+            } else {
+                return new IOException("Failed to upload to S3, check cause for more details", cause);
             }
         }
+        throw new IllegalStateException();
     }
 
     /**
      * Send all buffered data to S3. This should only be done for the last part of the upload because we want to enforce
      * that all parts except the last one are of equal size, given by {@link S3Instructions#writePartSize()}
      */
-    private void sendBufferedData() throws IOException {
+    private void sendLastRequestIfPresent() throws IOException {
         if (bufferedPartRequest == null) {
             // Nothing to send
             return;
         }
-        final S3WriteRequest request = bufferedPartRequest;
-        if (request.buffer.position() != 0) {
-            sendPartRequest(request);
-            bufferedPartRequest = null;
-        }
+        sendPartRequest(true);
+        bufferedPartRequest = null;
+        handoff = null;
     }
 
     private void completeMultipartUpload() throws IOException {
