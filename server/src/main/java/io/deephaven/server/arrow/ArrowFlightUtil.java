@@ -7,6 +7,7 @@ import com.google.rpc.Code;
 import dagger.assisted.Assisted;
 import dagger.assisted.AssistedFactory;
 import dagger.assisted.AssistedInject;
+import gnu.trove.map.hash.TByteObjectHashMap;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.barrage.flatbuf.BarrageMessageType;
 import io.deephaven.barrage.flatbuf.BarrageSnapshotRequest;
@@ -367,11 +368,15 @@ public class ArrowFlightUtil {
 
         private final TicketRouter ticketRouter;
         private final BarrageMessageWriter.Factory streamGeneratorFactory;
-        // private final BarrageMessageProducer.Adapter<BarrageSubscriptionRequest, BarrageSubscriptionOptions>
-        // subscriptionOptAdapter;
-        // private final BarrageMessageProducer.Adapter<BarrageSnapshotRequest, BarrageSnapshotOptions>
-        // snapshotOptAdapter;
         private final SessionService.ErrorTransformer errorTransformer;
+
+
+        /**
+         * A map from the wire request type to the handler factory.
+         */
+        private final TByteObjectHashMap<ExchangeRequestHandlerFactory> requestHandlerFactories;
+
+
         /**
          * This is the set of marshallers that are consulted for each exported object. The marshallers are processed in
          * order, with the first marshaller to claim an object the one responsible for subscription and snapshots.
@@ -392,6 +397,7 @@ public class ArrowFlightUtil {
                 final TicketRouter ticketRouter,
                 final BarrageMessageWriter.Factory streamGeneratorFactory,
                 final Set<ExchangeMarshaller> exchangeMarshallers,
+                final Set<ExchangeRequestHandlerFactory> requestHandlerFactories,
                 final SessionService.ErrorTransformer errorTransformer,
                 @Assisted final SessionState session,
                 @Assisted final StreamObserver<InputStream> responseObserver) {
@@ -405,6 +411,16 @@ public class ArrowFlightUtil {
             this.marshallers = new ArrayList<>(exchangeMarshallers.size());
             marshallers.addAll(exchangeMarshallers);
             marshallers.sort(Comparator.comparingInt(ExchangeMarshaller::priority));
+
+            this.requestHandlerFactories = new TByteObjectHashMap<>(requestHandlerFactories.size());
+            for (final ExchangeRequestHandlerFactory factory : requestHandlerFactories) {
+                final ExchangeRequestHandlerFactory old = this.requestHandlerFactories.put(factory.type(), factory);
+                if (old != null) {
+                    throw new IllegalStateException("Cannot have multiple registered factories for type "
+                            + factory.type() + ", existing=" + old + ", new=" + factory);
+                }
+            }
+
 
             this.session.addOnCloseCallback(this);
             if (responseObserver instanceof ServerCallStreamObserver) {
@@ -436,18 +452,16 @@ public class ArrowFlightUtil {
 
                 if (message.app_metadata != null) {
                     // handle the different message types that can come over DoExchange
-                    switch (message.app_metadata.msgType()) {
-                        case BarrageMessageType.BarrageSubscriptionRequest:
-                            requestHandler = new BarrageSubscriptionRequestHandler(this, ticketRouter, session,
-                                    listener, streamGeneratorFactory);
-                            break;
-                        case BarrageMessageType.BarrageSnapshotRequest:
-                            requestHandler = new BarrageSnapshotRequestHandler(this, ticketRouter, session, listener,
-                                    streamGeneratorFactory);
-                            break;
-                        default:
-                            throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
-                                    myPrefix + "received a message with unhandled BarrageMessageType");
+                    final byte type = message.app_metadata.msgType();
+                    final ExchangeRequestHandlerFactory factory = requestHandlerFactories.get(type);
+                    if (factory == null) {
+                        throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
+                                myPrefix + "received a message with unhandled BarrageMessageType");
+                    }
+                    requestHandler = factory.create(this, ticketRouter, session, listener, streamGeneratorFactory);
+                    if (requestHandler == null) {
+                        throw new IllegalStateException(
+                                "ExchangeRequestHandlerFactory returned null for message of type " + type);
                     }
                     requestHandler.handleMessage(message);
                     return;

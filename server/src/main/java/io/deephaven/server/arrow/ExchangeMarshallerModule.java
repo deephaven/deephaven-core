@@ -51,4 +51,22 @@ public class ExchangeMarshallerModule {
                 final SessionService.ErrorTransformer errorTransformer,
                 final BarrageMessageWriter.Factory streamGeneratorFactory);
     }
+
+    @Provides
+    @ElementsIntoSet
+    public static Set<ExchangeRequestHandlerFactory> provideRequestHandlers() {
+        final Iterator<ExchangeRequestHandlerFactory> it =
+                ServiceLoader.load(ExchangeRequestHandlerFactory.class).iterator();
+        if (!it.hasNext()) {
+            return Collections.emptySet();
+        }
+
+        final List<ExchangeRequestHandlerFactory> list = new ArrayList<>();
+
+        while (it.hasNext()) {
+            list.add(it.next());
+        }
+
+        return Collections.unmodifiableSet(new HashSet<>(list));
+    }
 }
