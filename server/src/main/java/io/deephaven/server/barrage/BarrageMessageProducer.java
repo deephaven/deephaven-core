@@ -117,7 +117,6 @@ public class BarrageMessageProducer extends LivenessArtifact
     public static class Operation
             implements QueryTable.MemoizableOperation<BarrageMessageProducer> {
 
-        @AssistedFactory
         public interface Factory {
             Operation create(BaseTable<?> parent, long updateIntervalMs);
         }
@@ -129,13 +128,12 @@ public class BarrageMessageProducer extends LivenessArtifact
         private final long updateIntervalMs;
         private final Runnable onGetSnapshot;
 
-        @AssistedInject
         public Operation(
                 final Scheduler scheduler,
                 final SessionService.ErrorTransformer errorTransformer,
                 final BarrageMessageWriter.Factory streamGeneratorFactory,
-                @Assisted final BaseTable<?> parent,
-                @Assisted final long updateIntervalMs) {
+                final BaseTable<?> parent,
+                final long updateIntervalMs) {
             this(scheduler, errorTransformer, streamGeneratorFactory, parent, updateIntervalMs, null);
         }
 

@@ -38,15 +38,16 @@ public abstract class ArrowModule {
         return new BarrageMessageWriterImpl.Factory();
     }
 
-    @Provides
-    static BarrageMessageProducer.Adapter<BarrageSubscriptionRequest, BarrageSubscriptionOptions> subscriptionOptAdapter() {
-        return BarrageSubscriptionOptions::of;
-    }
-
-    @Provides
-    static BarrageMessageProducer.Adapter<BarrageSnapshotRequest, BarrageSnapshotOptions> snapshotOptAdapter() {
-        return BarrageSnapshotOptions::of;
-    }
+    // @Provides
+    // static BarrageMessageProducer.Adapter<BarrageSubscriptionRequest, BarrageSubscriptionOptions>
+    // subscriptionOptAdapter() {
+    // return BarrageSubscriptionOptions::of;
+    // }
+    //
+    // @Provides
+    // static BarrageMessageProducer.Adapter<BarrageSnapshotRequest, BarrageSnapshotOptions> snapshotOptAdapter() {
+    // return BarrageSnapshotOptions::of;
+    // }
 
     @Provides
     @ElementsIntoSet
