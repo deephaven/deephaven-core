@@ -965,6 +965,8 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
          * sidecar tables. This argument is used to narrow the set of indexes to write, or to be explicit about the
          * expected set of indexes present on all sources. Indexes that are specified but missing will be computed on
          * demand.
+         * <p>
+         * Adding an index on an individual partitioning column is not allowed.
          */
         public Builder addIndexColumns(final String... indexColumns) {
             initIndexColumns();
@@ -980,6 +982,8 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
          * indexes to write, or to be explicit about the expected set of indexes present on all sources. Indexes that
          * are specified but missing will be computed on demand. To prevent the generation of index files, provide an
          * empty iterable.
+         * <p>
+         * Adding an index on an individual partitioning column is not allowed.
          */
         public Builder addAllIndexColumns(final Iterable<List<String>> indexColumns) {
             initIndexColumns();
