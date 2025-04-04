@@ -12,7 +12,6 @@ import io.deephaven.barrage.flatbuf.BarrageMessageType;
 import io.deephaven.barrage.flatbuf.BarrageSnapshotRequest;
 import io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.liveness.SingletonLivenessManager;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.Table;
@@ -21,7 +20,6 @@ import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.extensions.barrage.BarragePerformanceLog;
-import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
 import io.deephaven.extensions.barrage.BarrageMessageWriter;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.table.BarrageTable;
@@ -33,8 +31,6 @@ import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.proto.util.Exceptions;
-import io.deephaven.proto.util.ExportTicketHelper;
-import io.deephaven.server.barrage.BarrageMessageProducer;
 import io.deephaven.server.session.SessionService;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.server.session.TicketRouter;
@@ -51,7 +47,6 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicReference;
 
 public class ArrowFlightUtil {
     private static final Logger log = LoggerFactory.getLogger(ArrowFlightUtil.class);
@@ -372,8 +367,8 @@ public class ArrowFlightUtil {
 
         private final TicketRouter ticketRouter;
         private final BarrageMessageWriter.Factory streamGeneratorFactory;
-        private final BarrageMessageProducer.Adapter<BarrageSubscriptionRequest, BarrageSubscriptionOptions> subscriptionOptAdapter;
-        private final BarrageMessageProducer.Adapter<BarrageSnapshotRequest, BarrageSnapshotOptions> snapshotOptAdapter;
+//        private final BarrageMessageProducer.Adapter<BarrageSubscriptionRequest, BarrageSubscriptionOptions> subscriptionOptAdapter;
+//        private final BarrageMessageProducer.Adapter<BarrageSnapshotRequest, BarrageSnapshotOptions> snapshotOptAdapter;
         private final SessionService.ErrorTransformer errorTransformer;
         /**
          * This is the set of marshallers that are consulted for each exported object. The marshallers are processed in
@@ -384,7 +379,7 @@ public class ArrowFlightUtil {
         /**
          * Interface for the individual handlers for the DoExchange.
          */
-        interface Handler extends Closeable {
+        public interface Handler extends Closeable {
             void handleMessage(@NotNull MessageInfo message);
         }
 
@@ -395,8 +390,6 @@ public class ArrowFlightUtil {
                 final TicketRouter ticketRouter,
                 final BarrageMessageWriter.Factory streamGeneratorFactory,
                 final Set<ExchangeMarshaller> exchangeMarshallers,
-                final BarrageMessageProducer.Adapter<BarrageSubscriptionRequest, BarrageSubscriptionOptions> subscriptionOptAdapter,
-                final BarrageMessageProducer.Adapter<BarrageSnapshotRequest, BarrageSnapshotOptions> snapshotOptAdapter,
                 final SessionService.ErrorTransformer errorTransformer,
                 @Assisted final SessionState session,
                 @Assisted final StreamObserver<InputStream> responseObserver) {
@@ -404,8 +397,6 @@ public class ArrowFlightUtil {
             this.myPrefix = "DoExchangeMarshaller{" + Integer.toHexString(System.identityHashCode(this)) + "}: ";
             this.ticketRouter = ticketRouter;
             this.streamGeneratorFactory = streamGeneratorFactory;
-            this.subscriptionOptAdapter = subscriptionOptAdapter;
-            this.snapshotOptAdapter = snapshotOptAdapter;
             this.session = session;
             this.listener = new MessageViewAdapter(responseObserver);
             this.errorTransformer = errorTransformer;
@@ -445,10 +436,10 @@ public class ArrowFlightUtil {
                     // handle the different message types that can come over DoExchange
                     switch (message.app_metadata.msgType()) {
                         case BarrageMessageType.BarrageSubscriptionRequest:
-                            requestHandler = new SubscriptionRequestHandler();
+                            requestHandler = new BarrageSubscriptionRequestHandler(this, ticketRouter, session, listener, streamGeneratorFactory);
                             break;
                         case BarrageMessageType.BarrageSnapshotRequest:
-                            requestHandler = new SnapshotRequestHandler();
+                            requestHandler = new BarrageSnapshotRequestHandler(this, ticketRouter, session, listener, streamGeneratorFactory);
                             break;
                         default:
                             throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
@@ -467,6 +458,14 @@ public class ArrowFlightUtil {
 
                 isFirstMsg = false;
             }
+        }
+
+        public List<ExchangeMarshaller> getMarshallers() {
+            return marshallers;
+        }
+
+        public boolean isClosed() {
+            return isClosed;
         }
 
         public void onCancel() {
@@ -513,262 +512,6 @@ public class ArrowFlightUtil {
             }
         }
 
-        /**
-         * Handler for DoGetRequest over DoExchange.
-         */
-        private class SnapshotRequestHandler
-                implements Handler {
-            private final AtomicReference<HalfClosedState> halfClosedState =
-                    new AtomicReference<>(HalfClosedState.DONT_CLOSE);
-
-            public SnapshotRequestHandler() {}
-
-            @Override
-            public void handleMessage(@NotNull final BarrageProtoUtil.MessageInfo message) {
-                // verify this is the correct type of message for this handler
-                if (message.app_metadata.msgType() != BarrageMessageType.BarrageSnapshotRequest) {
-                    throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
-                            "Request type cannot be changed after initialization, expected BarrageSnapshotRequest metadata");
-                }
-
-                // ensure synchronization with parent class functions
-                synchronized (DoExchangeMarshaller.this) {
-                    final BarrageSnapshotRequest snapshotRequest = BarrageSnapshotRequest
-                            .getRootAsBarrageSnapshotRequest(message.app_metadata.msgPayloadAsByteBuffer());
-
-                    final String ticketLogName =
-                            ticketRouter.getLogNameFor(snapshotRequest.ticketAsByteBuffer(), "table");
-                    final String description = "FlightService#DoExchange(snapshot, table=" + ticketLogName + ")";
-                    final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.newQuery(
-                            description, session.getSessionId(), QueryPerformanceNugget.DEFAULT_FACTORY);
-
-                    try (final SafeCloseable ignored = queryPerformanceRecorder.startQuery()) {
-                        final SessionState.ExportObject<?> tableExport =
-                                ticketRouter.resolve(session, snapshotRequest.ticketAsByteBuffer(), "table");
-
-                        final BarragePerformanceLog.SnapshotMetricsHelper metrics =
-                                new BarragePerformanceLog.SnapshotMetricsHelper();
-
-                        final long queueStartTm = System.nanoTime();
-                        session.nonExport()
-                                .queryPerformanceRecorder(queryPerformanceRecorder)
-                                .require(tableExport)
-                                .onError(listener)
-                                .onSuccess(() -> {
-                                    final HalfClosedState newState = halfClosedState.updateAndGet(current -> {
-                                        switch (current) {
-                                            case DONT_CLOSE:
-                                                // record that we have finished sending
-                                                return HalfClosedState.FINISHED_SENDING;
-                                            case CLIENT_HALF_CLOSED:
-                                                // since streaming has now finished, and client already half-closed,
-                                                // time to half close from server
-                                                return HalfClosedState.CLOSED;
-                                            case FINISHED_SENDING:
-                                            case CLOSED:
-                                                throw new IllegalStateException("Can't finish streaming twice");
-                                            default:
-                                                throw new IllegalStateException("Unknown state " + current);
-                                        }
-                                    });
-                                    if (newState == HalfClosedState.CLOSED) {
-                                        GrpcUtil.safelyComplete(listener);
-                                    }
-                                })
-                                .submit(() -> {
-                                    metrics.queueNanos = System.nanoTime() - queueStartTm;
-                                    final Object export = tableExport.get();
-
-                                    final ExchangeMarshaller marshallerForExport =
-                                            ExchangeMarshaller.getMarshaller(export, marshallers);
-                                    if (marshallerForExport == null) {
-                                        throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION, "Ticket ("
-                                                + ticketLogName + ") is has no associated exchange marshaller.");
-                                    }
-
-                                    final BarrageSnapshotOptions options = snapshotOptAdapter.adapt(snapshotRequest);
-
-                                    marshallerForExport.snapshot(snapshotRequest, options, export, metrics,
-                                            listener, ticketLogName, streamGeneratorFactory);
-                                });
-                    }
-                }
-            }
-
-            @Override
-            public void close() {
-                // no work to do for DoGetRequest close
-                // possibly safely complete if finished sending data
-                final HalfClosedState newState = halfClosedState.updateAndGet(current -> {
-                    switch (current) {
-                        case DONT_CLOSE:
-                            // record that we have half closed
-                            return HalfClosedState.CLIENT_HALF_CLOSED;
-                        case FINISHED_SENDING:
-                            // since client has now half closed, and we're done sending, time to half-close from server
-                            return HalfClosedState.CLOSED;
-                        case CLIENT_HALF_CLOSED:
-                        case CLOSED:
-                            throw new IllegalStateException("Can't close twice");
-                        default:
-                            throw new IllegalStateException("Unknown state " + current);
-                    }
-                });
-                if (newState == HalfClosedState.CLOSED) {
-                    GrpcUtil.safelyComplete(listener);
-                }
-            }
-        }
-
-        /**
-         * Handler for BarrageSubscriptionRequest over DoExchange.
-         */
-        private class SubscriptionRequestHandler
-                implements Handler {
-
-            /**
-             * The object representing the subscription.
-             */
-            private ExchangeMarshaller.Subscription subscriptionObject;
-
-            private Queue<BarrageSubscriptionRequest> preExportSubscriptions;
-            private SessionState.ExportObject<?> onExportResolvedContinuation;
-
-            public SubscriptionRequestHandler() {}
-
-            @Override
-            public void handleMessage(@NotNull final MessageInfo message) {
-                // verify this is the correct type of message for this handler
-                if (message.app_metadata.msgType() != BarrageMessageType.BarrageSubscriptionRequest) {
-                    throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
-                            "Request type cannot be changed after initialization, expected BarrageSubscriptionRequest metadata");
-                }
-
-                if (message.app_metadata.msgPayloadVector() == null) {
-                    throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, "Subscription request not supplied");
-                }
-
-                // ensure synchronization with parent class functions
-                synchronized (DoExchangeMarshaller.this) {
-
-                    final BarrageSubscriptionRequest subscriptionRequest = BarrageSubscriptionRequest
-                            .getRootAsBarrageSubscriptionRequest(message.app_metadata.msgPayloadAsByteBuffer());
-
-                    if (subscriptionObject != null) {
-                        apply(subscriptionRequest);
-                        return;
-                    }
-
-                    if (isClosed) {
-                        return;
-                    }
-
-                    // have we already created the queue?
-                    if (preExportSubscriptions != null) {
-                        preExportSubscriptions.add(subscriptionRequest);
-                        return;
-                    }
-
-                    if (subscriptionRequest.ticketVector() == null) {
-                        GrpcUtil.safelyError(listener, Code.INVALID_ARGUMENT, "Ticket not specified.");
-                        return;
-                    }
-
-                    preExportSubscriptions = new ArrayDeque<>();
-                    preExportSubscriptions.add(subscriptionRequest);
-
-                    final String description = "FlightService#DoExchange(subscription, table="
-                            + ticketRouter.getLogNameFor(subscriptionRequest.ticketAsByteBuffer(), "table") + ")";
-                    final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.newQuery(
-                            description, session.getSessionId(), QueryPerformanceNugget.DEFAULT_FACTORY);
-
-                    try (final SafeCloseable ignored = queryPerformanceRecorder.startQuery()) {
-                        final SessionState.ExportObject<Object> table =
-                                ticketRouter.resolve(session, subscriptionRequest.ticketAsByteBuffer(), "table");
-
-                        synchronized (this) {
-                            onExportResolvedContinuation = session.nonExport()
-                                    .queryPerformanceRecorder(queryPerformanceRecorder)
-                                    .require(table)
-                                    .onErrorHandler(DoExchangeMarshaller.this::onError)
-                                    .submit(() -> onExportResolved(table));
-                        }
-                    }
-                }
-            }
-
-            private synchronized void onExportResolved(final SessionState.ExportObject<Object> parent) {
-                onExportResolvedContinuation = null;
-
-                if (isClosed) {
-                    preExportSubscriptions = null;
-                    return;
-                }
-
-                // we know there is at least one request; it was put there when we knew which parent to wait on
-                final BarrageSubscriptionRequest subscriptionRequest = preExportSubscriptions.remove();
-
-                final Object export = parent.get();
-
-                final ExchangeMarshaller marshallerForExport = ExchangeMarshaller.getMarshaller(export, marshallers);
-                if (marshallerForExport == null) {
-                    GrpcUtil.safelyError(listener, Code.FAILED_PRECONDITION, "Ticket ("
-                            + ExportTicketHelper.toReadableString(subscriptionRequest.ticketAsByteBuffer(), "ticket")
-                            + ") is not a subscribable table.");
-                    return;
-                }
-
-                final BarrageSubscriptionOptions options = subscriptionOptAdapter.adapt(subscriptionRequest);
-
-                subscriptionObject =
-                        marshallerForExport.subscribe(subscriptionRequest, options, export, listener);
-
-                final LivenessReferent subscriptionManagedReference = subscriptionObject.toManage();
-                if (subscriptionManagedReference != null) {
-                    manage(subscriptionManagedReference);
-                }
-
-                for (final BarrageSubscriptionRequest request : preExportSubscriptions) {
-                    apply(request);
-                }
-
-                // we will now process requests as they are received
-                preExportSubscriptions = null;
-            }
-
-            /**
-             * Update the existing subscription to match the new request.
-             *
-             * @param subscriptionRequest the requested view change
-             */
-            private void apply(final BarrageSubscriptionRequest subscriptionRequest) {
-                final boolean subscriptionFound =
-                        subscriptionObject != null && subscriptionObject.update(subscriptionRequest);
-
-                if (!subscriptionFound) {
-                    throw Exceptions.statusRuntimeException(Code.NOT_FOUND, "Subscription was not found.");
-                }
-            }
-
-            @Override
-            public synchronized void close() {
-                if (subscriptionObject != null) {
-                    subscriptionObject.close();
-                    subscriptionObject = null;
-                } else {
-                    GrpcUtil.safelyComplete(listener);
-                }
-                // After we've signaled that the stream should close, cancel the export
-                if (onExportResolvedContinuation != null) {
-                    onExportResolvedContinuation.cancel();
-                    onExportResolvedContinuation = null;
-                }
-
-                if (preExportSubscriptions != null) {
-                    preExportSubscriptions = null;
-                }
-            }
-        }
     }
 
     /**
@@ -817,4 +560,5 @@ public class ArrowFlightUtil {
         }
         return minUpdateIntervalMs;
     }
+
 }
