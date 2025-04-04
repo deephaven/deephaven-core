@@ -14,6 +14,7 @@ import org.apache.iceberg.mapping.MappedField;
 import org.apache.iceberg.mapping.NameMapping;
 import org.apache.iceberg.types.Types.IntegerType;
 import org.apache.iceberg.types.Types.NestedField;
+import org.apache.parquet.schema.LogicalTypeAnnotation;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -25,6 +26,7 @@ import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.INT32;
 import static org.apache.parquet.schema.Types.buildMessage;
 import static org.apache.parquet.schema.Types.optional;
 import static org.apache.parquet.schema.Types.optionalGroup;
+import static org.apache.parquet.schema.Types.required;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class ResolverFactorySimpleTest {
@@ -52,6 +54,8 @@ class ResolverFactorySimpleTest {
     private static final Map<String, ColumnInstructions> COLUMN_INSTRUCTIONS = Map.of(
             DH1, schemaField(I1_ID),
             DH2, schemaField(I2_ID));
+
+    private static final LogicalTypeAnnotation.IntLogicalTypeAnnotation INT32_TYPE = intType(32, true);
 
     private static void check(ParquetColumnResolver resolver, boolean hasColumn1, boolean hasColumn2) {
         if (hasColumn1) {
@@ -105,8 +109,8 @@ class ResolverFactorySimpleTest {
             {
                 final ParquetColumnResolver resolver = factory.of(buildMessage()
                         .addFields(
-                                optional(INT32).as(intType(32, true)).named(PQ1),
-                                optional(INT32).as(intType(32, true)).named(PQ2))
+                                optional(INT32).as(INT32_TYPE).named(PQ1),
+                                required(INT32).as(INT32_TYPE).named(PQ2))
                         .named("root"));
                 check(resolver, false, false);
             }
@@ -115,8 +119,8 @@ class ResolverFactorySimpleTest {
             {
                 final ParquetColumnResolver resolver = factory.of(buildMessage()
                         .addFields(
-                                optional(INT32).id(I1_ID).as(intType(32, true)).named(PQ1),
-                                optional(INT32).id(I2_ID).as(intType(32, true)).named(PQ2))
+                                optional(INT32).id(I1_ID).as(INT32_TYPE).named(PQ1),
+                                required(INT32).id(I2_ID).as(INT32_TYPE).named(PQ2))
                         .named("root"));
                 check(resolver, true, true);
             }
@@ -126,9 +130,9 @@ class ResolverFactorySimpleTest {
             {
                 final ParquetColumnResolver resolver = factory.of(buildMessage()
                         .addFields(
-                                optional(INT32).id(I1_ID).as(intType(32, true)).named(PQ1),
-                                optional(INT32).id(I2_ID).as(intType(32, true)).named(PQ2),
-                                optional(INT32).id(I2_ID).as(intType(32, true)).named("parquet_col3"))
+                                optional(INT32).id(I1_ID).as(INT32_TYPE).named(PQ1),
+                                required(INT32).id(I2_ID).as(INT32_TYPE).named(PQ2),
+                                optional(INT32).id(I2_ID).as(INT32_TYPE).named(PQ2 + "Dupe"))
                         .named("root"));
                 check(resolver, true, false);
             }
@@ -138,12 +142,12 @@ class ResolverFactorySimpleTest {
             {
                 final ParquetColumnResolver resolver = factory.of(buildMessage()
                         .addFields(
-                                optional(INT32).id(I1_ID).as(intType(32, true)).named(PQ1),
-                                optional(INT32).id(I2_ID).as(intType(32, true)).named(PQ2),
+                                optional(INT32).id(I1_ID).as(INT32_TYPE).named(PQ1),
+                                required(INT32).id(I2_ID).as(INT32_TYPE).named(PQ2),
                                 optionalGroup()
                                         .addFields(
-                                                optional(INT32).id(I1_ID).as(intType(32, true)).named("parquet_col3"),
-                                                optional(INT32).id(I1_ID).as(intType(32, true)).named("parquet_col4"))
+                                                optional(INT32).id(I1_ID).as(INT32_TYPE).named(PQ1 + "Dupe"),
+                                                optional(INT32).id(I2_ID).as(INT32_TYPE).named(PQ2 + "Dupe"))
                                         .named("parquet_group_1"))
                         .named("root"));
                 check(resolver, true, true);
@@ -159,12 +163,12 @@ class ResolverFactorySimpleTest {
                         MappedField.of(I2_ID, PQ2)))
                 .build());
         // Unrelated mappings should have no effect
-        final ResolverFactory f2 = factory(builder()
+        final ResolverFactory extraNames = factory(builder()
                 .nameMapping(NameMapping.of(
                         MappedField.of(I1_ID, List.of(PQ1, I1, DH1)),
                         MappedField.of(I2_ID, List.of(PQ2, I2, DH2))))
                 .build());
-        for (ResolverFactory factory : List.of(f1, f2)) {
+        for (ResolverFactory factory : List.of(f1, extraNames)) {
             // Empty parquet schema, nothing can be resolved
             {
                 final ParquetColumnResolver resolver = factory.of(buildMessage().named("root"));
@@ -175,8 +179,8 @@ class ResolverFactorySimpleTest {
             {
                 final ParquetColumnResolver resolver = factory.of(buildMessage()
                         .addFields(
-                                optional(INT32).as(intType(32, true)).named(PQ1),
-                                optional(INT32).as(intType(32, true)).named(PQ2))
+                                optional(INT32).as(INT32_TYPE).named(PQ1),
+                                required(INT32).as(INT32_TYPE).named(PQ2))
                         .named("root"));
                 check(resolver, true, true);
             }
@@ -185,9 +189,9 @@ class ResolverFactorySimpleTest {
             {
                 final ParquetColumnResolver resolver = factory.of(buildMessage()
                         .addFields(
-                                optional(INT32).as(intType(32, true)).named(PQ1),
-                                optional(INT32).as(intType(32, true)).named(PQ2),
-                                optional(INT32).as(intType(32, true)).named(PQ2))
+                                optional(INT32).as(INT32_TYPE).named(PQ1),
+                                required(INT32).as(INT32_TYPE).named(PQ2),
+                                optional(INT32).as(INT32_TYPE).named(PQ2))
                         .named("root"));
                 check(resolver, true, false);
             }
@@ -196,12 +200,12 @@ class ResolverFactorySimpleTest {
             {
                 final ParquetColumnResolver resolver = factory.of(buildMessage()
                         .addFields(
-                                optional(INT32).as(intType(32, true)).named(PQ1),
-                                optional(INT32).as(intType(32, true)).named(PQ2),
+                                optional(INT32).as(INT32_TYPE).named(PQ1),
+                                required(INT32).as(INT32_TYPE).named(PQ2),
                                 optionalGroup()
                                         .addFields(
-                                                optional(INT32).as(intType(32, true)).named(PQ1),
-                                                optional(INT32).as(intType(32, true)).named(PQ1))
+                                                optional(INT32).as(INT32_TYPE).named(PQ1),
+                                                optional(INT32).as(INT32_TYPE).named(PQ2))
                                         .named("parquet_group_1"))
                         .named("root"));
                 check(resolver, true, true);
