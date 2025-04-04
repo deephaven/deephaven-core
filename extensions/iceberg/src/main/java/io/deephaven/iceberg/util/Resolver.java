@@ -28,8 +28,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
-import static io.deephaven.iceberg.util.ColumnInstructions.schemaField;
-
 
 // This is a mapping for _read_
 
@@ -119,6 +117,8 @@ public abstract class Resolver {
 
         Builder putColumnInstructions(String columnName, ColumnInstructions columnInstructions);
 
+        Builder putAllColumnInstructions(Map<String, ? extends ColumnInstructions> entries);
+
         Builder nameMapping(NameMapping nameMapping);
 
         Builder allowUnmappedColumns(boolean allowUnmappedColumns);
@@ -197,11 +197,12 @@ public abstract class Resolver {
     }
 
     // TODO
-    public final ResolverFactory factory() {
-        return new ResolverFactory(this);
-    }
+    // public final ParquetColumnResolver.Factory factory() {
+    // return new ResolverFactory(this);
+    // }
 
-    final Optional<List<NestedField>> resolveSchemaFieldViaReadersSchema(String columnName) {
+    // TODO
+    public final Optional<List<NestedField>> resolveSchemaFieldViaReadersSchema(String columnName) {
         // todo: mixin spec?
         try {
             return resolveSchemaFieldVia(columnName, schema());
@@ -211,7 +212,8 @@ public abstract class Resolver {
         }
     }
 
-    final Optional<List<NestedField>> resolveSchemaFieldVia(String columnName, Schema schema)
+    // TODO
+    public final Optional<List<NestedField>> resolveSchemaFieldVia(String columnName, Schema schema)
             throws SchemaHelper.PathException {
         final ColumnInstructions ci = columnInstructions().get(columnName);
         if (ci == null) {

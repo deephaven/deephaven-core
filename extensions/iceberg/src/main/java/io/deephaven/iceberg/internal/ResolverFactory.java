@@ -1,12 +1,14 @@
 //
 // Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
-package io.deephaven.iceberg.util;
+package io.deephaven.iceberg.internal;
 
 import io.deephaven.engine.table.impl.locations.TableKey;
 import io.deephaven.iceberg.location.IcebergTableParquetLocationKey;
+import io.deephaven.iceberg.util.Resolver;
 import io.deephaven.parquet.table.location.ParquetColumnResolver;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
+import io.deephaven.util.annotations.VisibleForTesting;
 import org.apache.iceberg.mapping.MappedField;
 import org.apache.iceberg.mapping.MappedFields;
 import org.apache.iceberg.mapping.NameMapping;
@@ -20,6 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Supplier;
 
 // TODO: more testing of this logic
 final class ResolverFactory implements ParquetColumnResolver.Factory {
@@ -32,14 +35,20 @@ final class ResolverFactory implements ParquetColumnResolver.Factory {
 
     @Override
     public ParquetColumnResolver of(TableKey tableKey, ParquetTableLocationKey tableLocationKey) {
-        return new ResolverImpl((IcebergTableParquetLocationKey) tableLocationKey);
+        return new ResolverImpl(((IcebergTableParquetLocationKey) tableLocationKey)::getSchema);
+    }
+
+    @VisibleForTesting
+    ParquetColumnResolver of(MessageType readersSchema) {
+        return new ResolverImpl(() -> readersSchema);
     }
 
     private class ResolverImpl implements ParquetColumnResolver {
 
-        private final IcebergTableParquetLocationKey key;
+        // private final IcebergTableParquetLocationKey key;
+        private final Supplier<MessageType> key;
 
-        public ResolverImpl(IcebergTableParquetLocationKey key) {
+        public ResolverImpl(Supplier<MessageType> key) {
             this.key = Objects.requireNonNull(key);
         }
 
@@ -64,7 +73,7 @@ final class ResolverFactory implements ParquetColumnResolver.Factory {
             // return Optional.empty();
             // }
             // Note: intentionally delaying the reading of the Parquet schema as late as possible.
-            final MessageType parquetSchema = key.getSchema();
+            final MessageType parquetSchema = key.get();
             try {
                 return Optional.of(resolve(parquetSchema, readersPath, resolver.nameMapping().orElse(null)));
             } catch (MappingException e) {

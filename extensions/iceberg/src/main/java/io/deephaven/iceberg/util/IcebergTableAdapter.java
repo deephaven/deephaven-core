@@ -20,6 +20,7 @@ import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.iceberg.base.IcebergUtils;
 import io.deephaven.iceberg.internal.Inference;
+import io.deephaven.iceberg.internal.Shim;
 import io.deephaven.iceberg.internal.SpecAndSchema2;
 import io.deephaven.iceberg.internal.DataInstructionsProviderLoader;
 import io.deephaven.iceberg.layout.*;
@@ -419,7 +420,7 @@ public class IcebergTableAdapter {
         final SeekableChannelsProvider channelsProvider = seekableChannelsProvider(uriScheme, specialInstructions);
         final ParquetInstructions parquetInstructions = ParquetInstructions.builder()
                 .setTableDefinition(ss.di.definition())
-                .setColumnResolverFactory(ss.di.factory())
+                .setColumnResolverFactory(Shim.factory(ss.di))
                 .setSpecialInstructions(specialInstructions)
                 .build();
         final PartitionSpec spec = ss.di.spec();
