@@ -56,6 +56,7 @@ public class DoubleChunkReader extends BaseChunkReader<WritableDoubleChunk<Value
 
         final WritableDoubleChunk<Values> chunk = castOrCreateChunk(
                 outChunk,
+                outOffset,
                 Math.max(totalRows, nodeInfo.numElements),
                 WritableDoubleChunk::makeWritableChunk,
                 WritableChunk::asWritableDoubleChunk);

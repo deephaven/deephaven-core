@@ -35,6 +35,7 @@ public class NullChunkReader<READ_CHUNK_TYPE extends WritableChunk<Values>> exte
 
         final WritableChunk<Values> chunk = castOrCreateChunk(
                 outChunk,
+                outOffset,
                 Math.max(totalRows, nodeInfo.numElements),
                 resultType::makeWritableChunk,
                 c -> c);

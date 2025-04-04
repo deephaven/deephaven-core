@@ -49,6 +49,7 @@ public class BooleanChunkReader extends BaseChunkReader<WritableByteChunk<Values
 
                 final WritableObjectChunk<T, Values> chunk = castOrCreateChunk(
                         outChunk,
+                        outOffset,
                         Math.max(totalRows, inner.size()),
                         WritableObjectChunk::makeWritableChunk,
                         WritableChunk::asWritableObjectChunk);
@@ -80,14 +81,12 @@ public class BooleanChunkReader extends BaseChunkReader<WritableByteChunk<Values
         final long validityBuffer = bufferInfoIter.nextLong();
         final long payloadBuffer = bufferInfoIter.nextLong();
 
-        final WritableByteChunk<Values> chunk;
-        if (outChunk != null) {
-            chunk = outChunk.asWritableByteChunk();
-        } else {
-            final int numRows = Math.max(totalRows, nodeInfo.numElements);
-            chunk = WritableByteChunk.makeWritableChunk(numRows);
-            chunk.setSize(numRows);
-        }
+        final WritableByteChunk<Values> chunk = castOrCreateChunk(
+                outChunk,
+                outOffset,
+                Math.max(totalRows, nodeInfo.numElements),
+                WritableByteChunk::makeWritableChunk,
+                WritableChunk::asWritableByteChunk);
 
         if (nodeInfo.numElements == 0) {
             return chunk;

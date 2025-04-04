@@ -56,6 +56,7 @@ public class ShortChunkReader extends BaseChunkReader<WritableShortChunk<Values>
 
         final WritableShortChunk<Values> chunk = castOrCreateChunk(
                 outChunk,
+                outOffset,
                 Math.max(totalRows, nodeInfo.numElements),
                 WritableShortChunk::makeWritableChunk,
                 WritableChunk::asWritableShortChunk);

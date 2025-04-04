@@ -35,7 +35,6 @@ import io.deephaven.vector.ByteVector;
 import io.deephaven.vector.ByteVectorDirect;
 import io.deephaven.vector.Vector;
 import org.apache.arrow.vector.PeriodDuration;
-import org.apache.arrow.vector.types.TimeUnit;
 import org.apache.arrow.vector.types.pojo.ArrowType;
 import org.apache.arrow.vector.types.pojo.Field;
 import org.apache.arrow.vector.types.pojo.Schema;
@@ -87,9 +86,12 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
             ArrowType.ArrowTypeID.Null);
 
     public static final Logger log = LoggerFactory.getLogger(DefaultChunkReaderFactory.class);
-    public static final ChunkReader.Factory INSTANCE = new DefaultChunkReaderFactory();
+    public static final DefaultChunkReaderFactory INSTANCE = new DefaultChunkReaderFactory();
 
-    protected interface ChunkReaderFactory {
+    /**
+     * Factory method to create a new {@link ChunkReader} for the given type and options.
+     */
+    public interface ChunkReaderFactory {
         ChunkReader<? extends WritableChunk<Values>> make(
                 final ArrowType arrowType,
                 final BarrageTypeInfo<Field> typeInfo,
@@ -347,7 +349,7 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
     }
 
     @SuppressWarnings("unchecked")
-    protected void register(
+    public void register(
             final ArrowType.ArrowTypeID arrowType,
             final Class<?> deephavenType,
             final ChunkReaderFactory chunkReaderFactory) {

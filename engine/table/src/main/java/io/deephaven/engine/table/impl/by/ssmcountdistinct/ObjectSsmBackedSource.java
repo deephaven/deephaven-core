@@ -41,7 +41,7 @@ public class ObjectSsmBackedSource extends AbstractColumnSource<ObjectVector>
         ObjectSegmentedSortedMultiset ssm = underlying.getUnsafe(key);
         if (ssm == null) {
             // region CreateNew
-            underlying.set(key, ssm = new ObjectSegmentedSortedMultiset(SsmDistinctContext.NODE_SIZE, Object.class));
+            underlying.set(key, ssm = new ObjectSegmentedSortedMultiset(SsmDistinctContext.NODE_SIZE, componentType));
             // endregion CreateNew
         }
         ssm.setTrackDeltas(trackingPrevious);

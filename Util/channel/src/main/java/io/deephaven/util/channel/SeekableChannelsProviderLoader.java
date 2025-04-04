@@ -9,6 +9,8 @@ import org.jetbrains.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ServiceLoader;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * A service loader class for loading {@link SeekableChannelsProviderPlugin} implementations at runtime and provide
@@ -48,7 +50,7 @@ public final class SeekableChannelsProviderLoader {
 
     /**
      * Create a new {@link SeekableChannelsProvider} compatible for reading from and writing to the given URI scheme.
-     * For example, for a "S3" URI, we will create a {@link SeekableChannelsProvider} which can read files from S3.
+     * For example, for an "s3" URI, we will create a {@link SeekableChannelsProvider} which can read files from S3.
      *
      * @param uriScheme The URI scheme
      * @param specialInstructions An optional object to pass special instructions to the provider.
@@ -61,5 +63,30 @@ public final class SeekableChannelsProviderLoader {
             }
         }
         throw new UnsupportedOperationException("No plugin found for uri scheme: " + uriScheme);
+    }
+
+    /**
+     * Create a new {@link SeekableChannelsProvider} compatible for reading from and writing to the given URI schemes.
+     * For example, for an "s3" URI, we will create a {@link SeekableChannelsProvider} which can read files from S3.
+     *
+     * @param uriSchemes The URI schemes
+     * @param specialInstructions An optional object to pass special instructions to the provider.
+     * @return A {@link SeekableChannelsProvider} for the given URI scheme.
+     */
+    public SeekableChannelsProvider load(@NotNull final Set<String> uriSchemes,
+            @Nullable final Object specialInstructions) {
+        if (uriSchemes.isEmpty()) {
+            throw new IllegalArgumentException("Must provide at least one uri scheme");
+        }
+        if (uriSchemes.size() == 1) {
+            return load(uriSchemes.iterator().next(), specialInstructions);
+        }
+        for (final SeekableChannelsProviderPlugin plugin : providers) {
+            if (plugin.isCompatible(uriSchemes, specialInstructions)) {
+                return plugin.createProvider(uriSchemes, specialInstructions);
+            }
+        }
+        throw new UnsupportedOperationException(String.format("No plugin found for uri schemes [%s]",
+                uriSchemes.stream().collect(Collectors.joining("`, `", "`", "`"))));
     }
 }

@@ -6,15 +6,18 @@ package io.deephaven.iceberg.layout;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder;
+import io.deephaven.iceberg.internal.DataInstructionsProviderLoader;
 import io.deephaven.iceberg.location.IcebergTableLocationKey;
 import io.deephaven.iceberg.util.IcebergReadInstructions;
 import io.deephaven.iceberg.util.IcebergTableAdapter;
-import io.deephaven.iceberg.internal.DataInstructionsProviderLoader;
+import io.deephaven.parquet.table.ParquetInstructions;
+import io.deephaven.util.annotations.InternalUseOnly;
 import io.deephaven.util.channel.SeekableChannelsProvider;
 import io.deephaven.util.type.TypeUtils;
 import org.apache.iceberg.*;
 import org.apache.iceberg.data.IdentityPartitionConverters;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.net.URI;
 import java.util.*;
@@ -23,15 +26,18 @@ import java.util.*;
  * Iceberg {@link TableLocationKeyFinder location finder} for tables with partitions that will discover data files from
  * a {@link Snapshot}
  */
+@InternalUseOnly
 public final class IcebergKeyValuePartitionedLayout extends IcebergBaseLayout {
-    private static class IdentityPartitioningColData {
+
+    @InternalUseOnly
+    public static class IdentityPartitioningColData {
         final String name;
         final Class<?> type;
         final int index; // position in the partition spec
 
-        private IdentityPartitioningColData(String name, Class<?> type, int index) {
-            this.name = name;
-            this.type = type;
+        public IdentityPartitioningColData(String name, Class<?> type, int index) {
+            this.name = Objects.requireNonNull(name);
+            this.type = Objects.requireNonNull(type);
             this.index = index;
         }
     }
@@ -45,6 +51,8 @@ public final class IcebergKeyValuePartitionedLayout extends IcebergBaseLayout {
      * @param dataInstructionsProvider The provider for special instructions, to be used if special instructions not
      *        provided in the {@code instructions}.
      */
+    // TODO(DH-19072): Refactor Iceberg TLKFs to reduce visibility
+    @Deprecated(forRemoval = true)
     public IcebergKeyValuePartitionedLayout(
             @NotNull final IcebergTableAdapter tableAdapter,
             @NotNull final PartitionSpec partitionSpec,
@@ -72,8 +80,17 @@ public final class IcebergKeyValuePartitionedLayout extends IcebergBaseLayout {
             }
             identityPartitioningColumns.add(new IdentityPartitioningColData(dhColName,
                     TypeUtils.getBoxedType(columnDef.getDataType()), fieldId));
-
         }
+    }
+
+    public IcebergKeyValuePartitionedLayout(
+            @NotNull IcebergTableAdapter tableAdapter,
+            @NotNull ParquetInstructions parquetInstructions,
+            @NotNull SeekableChannelsProvider seekableChannelsProvider,
+            @Nullable Snapshot snapshot,
+            @NotNull List<IdentityPartitioningColData> identityPartitioningColumns) {
+        super(tableAdapter, parquetInstructions, seekableChannelsProvider, snapshot);
+        this.identityPartitioningColumns = Objects.requireNonNull(identityPartitioningColumns);
     }
 
     @Override

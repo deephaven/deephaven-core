@@ -57,6 +57,7 @@ public class TestGroovyDeephavenSession {
 
     @After
     public void teardown() {
+        session.cleanup();
         executionContext.close();
         LivenessScopeStack.pop(livenessScope);
         livenessScope.release();

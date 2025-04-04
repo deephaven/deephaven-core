@@ -3,6 +3,7 @@
 //
 package io.deephaven.extensions.barrage.chunk;
 
+import io.deephaven.chunk.WritableCharChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.WritableObjectChunk;
@@ -53,14 +54,12 @@ public class FixedWidthChunkReader<T> extends BaseChunkReader<WritableObjectChun
         final long validityBuffer = bufferInfoIter.nextLong();
         final long payloadBuffer = bufferInfoIter.nextLong();
 
-        final WritableObjectChunk<T, Values> chunk;
-        if (outChunk != null) {
-            chunk = outChunk.asWritableObjectChunk();
-        } else {
-            final int numRows = Math.max(nodeInfo.numElements, totalRows);
-            chunk = WritableObjectChunk.makeWritableChunk(numRows);
-            chunk.setSize(numRows);
-        }
+        final WritableObjectChunk<T, Values> chunk = castOrCreateChunk(
+                outChunk,
+                outOffset,
+                Math.max(totalRows, nodeInfo.numElements),
+                WritableObjectChunk::makeWritableChunk,
+                WritableChunk::asWritableObjectChunk);
 
         if (nodeInfo.numElements == 0) {
             return chunk;

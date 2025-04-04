@@ -5,6 +5,7 @@ package io.deephaven.iceberg.util;
 
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.util.TableTools;
+import io.deephaven.extensions.s3.S3Constants;
 import io.deephaven.extensions.s3.S3Instructions;
 import io.deephaven.iceberg.base.IcebergTestUtils;
 import io.deephaven.iceberg.junit5.SqliteCatalogBase;
@@ -96,13 +97,13 @@ abstract class S3WarehouseSqliteCatalogBase extends SqliteCatalogBase {
     @Test
     void testIcebergTablesWithS3AScheme(TestInfo testInfo, @TempDir Path rootDir)
             throws ExecutionException, InterruptedException, TimeoutException {
-        testIcebergTablesWithCustomScheme("s3a", testInfo, rootDir);
+        testIcebergTablesWithCustomScheme(S3Constants.S3A_URI_SCHEME, testInfo, rootDir);
     }
 
     @Test
     void testIcebergTablesWithS3NScheme(TestInfo testInfo, @TempDir Path rootDir)
             throws ExecutionException, InterruptedException, TimeoutException {
-        testIcebergTablesWithCustomScheme("s3n", testInfo, rootDir);
+        testIcebergTablesWithCustomScheme(S3Constants.S3N_URI_SCHEME, testInfo, rootDir);
     }
 
     private void testIcebergTablesWithCustomScheme(final String scheme, TestInfo testInfo, @TempDir Path rootDir)

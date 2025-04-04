@@ -8,8 +8,6 @@ import io.deephaven.barrage.flatbuf.BarrageMessageType;
 import io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
 import io.deephaven.barrage.flatbuf.BarrageModColumnMetadata;
 import io.deephaven.barrage.flatbuf.BarrageUpdateMetadata;
-import io.deephaven.chunk.ChunkType;
-import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Values;
@@ -226,11 +224,9 @@ public class WebBarrageMessageReader {
                 }
 
                 // fill the chunk with data and assign back into the array
-                final int origSize = chunk.size();
                 chunk = readers.get(ci).readChunk(fieldNodeIter, bufferInfoIter, ois, chunk, chunk.size(),
                         (int) batch.length());
                 acd.data.set(lastChunkIndex, chunk);
-                chunk.setSize(origSize + (int) batch.length());
             }
             numAddRowsRead += batch.length();
         } else {
@@ -260,7 +256,6 @@ public class WebBarrageMessageReader {
                 mcd.data.set(lastChunkIndex,
                         readers.get(ci).readChunk(fieldNodeIter, bufferInfoIter, ois, chunk, chunk.size(),
                                 numRowsToRead));
-                chunk.setSize(chunk.size() + numRowsToRead);
             }
             numModRowsRead += batch.length();
         }

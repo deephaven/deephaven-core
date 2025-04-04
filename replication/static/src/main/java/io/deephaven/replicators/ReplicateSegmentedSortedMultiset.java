@@ -8,6 +8,7 @@ import org.apache.commons.io.FileUtils;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.nio.charset.Charset;
 import java.time.Instant;
 import java.util.Arrays;
@@ -32,7 +33,8 @@ public class ReplicateSegmentedSortedMultiset {
         fixupObjectSsm(objectSsm, ReplicateSegmentedSortedMultiset::fixupNulls,
                 ReplicateSegmentedSortedMultiset::fixupTHashes,
                 ReplicateSegmentedSortedMultiset::fixupSsmConstructor,
-                ReplicateSegmentedSortedMultiset::fixupObjectCompare);
+                ReplicateSegmentedSortedMultiset::fixupObjectCompare,
+                ReplicateSegmentedSortedMultiset::fixupKeyArrayAllocation);
 
         charToAllButBoolean(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmminmax/CharSetResult.java");
@@ -60,7 +62,7 @@ public class ReplicateSegmentedSortedMultiset {
         fixupObjectSsm(objectSsm,
                 ReplicateSegmentedSortedMultiset::fixupSourceConstructor,
                 (l) -> replaceRegion(l, "CreateNew", Collections.singletonList(
-                        "            underlying.set(key, ssm = new ObjectSegmentedSortedMultiset(SsmDistinctContext.NODE_SIZE, Object.class));")));
+                        "            underlying.set(key, ssm = new ObjectSegmentedSortedMultiset(SsmDistinctContext.NODE_SIZE, componentType));")));
 
         charToAllButBoolean(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/count/CharChunkedCountDistinctOperator.java");
@@ -171,6 +173,16 @@ public class ReplicateSegmentedSortedMultiset {
         }
 
         FileUtils.writeLines(objectFile, lines);
+    }
+
+    private static List<String> fixupKeyArrayAllocation(List<String> lines) {
+        lines = replaceRegion(lines, "KeyArrayAllocation",
+                indent(Collections.singletonList(
+                        "final Object[] keyArray = (Object[]) Array.newInstance(getComponentType(), totalSize);"), 8));
+        lines = replaceRegion(lines, "EmptyKeyArrayAllocation",
+                indent(Collections.singletonList(
+                        "return (Object[]) Array.newInstance(getComponentType(), 0);"), 12));
+        return addImport(lines, Array.class);
     }
 
     private static List<String> fixupNulls(List<String> lines) {

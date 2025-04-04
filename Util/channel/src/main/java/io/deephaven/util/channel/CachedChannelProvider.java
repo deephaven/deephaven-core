@@ -72,13 +72,18 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
     }
 
     @Override
-    public SeekableChannelContext makeContext() {
-        return wrappedProvider.makeContext();
+    public SeekableChannelContext makeReadContext() {
+        return wrappedProvider.makeReadContext();
     }
 
     @Override
-    public SeekableChannelContext makeSingleUseContext() {
-        return wrappedProvider.makeSingleUseContext();
+    public SeekableChannelContext makeSingleUseReadContext() {
+        return wrappedProvider.makeSingleUseReadContext();
+    }
+
+    @Override
+    public WriteContext makeWriteContext() {
+        return wrappedProvider.makeWriteContext();
     }
 
     @Override
@@ -110,9 +115,11 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
     }
 
     @Override
-    public final CompletableOutputStream getOutputStream(@NotNull final URI uri, final int bufferSizeHint)
-            throws IOException {
-        return wrappedProvider.getOutputStream(uri, bufferSizeHint);
+    public final CompletableOutputStream getOutputStream(
+            @NotNull final WriteContext channelContext,
+            @NotNull final URI uri,
+            final int bufferSizeHint) throws IOException {
+        return wrappedProvider.getOutputStream(channelContext, uri, bufferSizeHint);
     }
 
     @Override

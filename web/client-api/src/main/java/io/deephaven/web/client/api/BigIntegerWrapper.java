@@ -42,4 +42,19 @@ public class BigIntegerWrapper {
     public String toString() {
         return value.toString();
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+
+        BigIntegerWrapper that = (BigIntegerWrapper) o;
+        return value.equals(that.value);
+    }
+
+    @Override
+    public int hashCode() {
+        return value.hashCode();
+    }
 }

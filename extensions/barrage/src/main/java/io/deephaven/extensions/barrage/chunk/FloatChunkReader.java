@@ -56,6 +56,7 @@ public class FloatChunkReader extends BaseChunkReader<WritableFloatChunk<Values>
 
         final WritableFloatChunk<Values> chunk = castOrCreateChunk(
                 outChunk,
+                outOffset,
                 Math.max(totalRows, nodeInfo.numElements),
                 WritableFloatChunk::makeWritableChunk,
                 WritableChunk::asWritableFloatChunk);

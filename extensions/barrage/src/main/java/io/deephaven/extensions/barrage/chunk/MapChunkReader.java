@@ -101,6 +101,7 @@ public class MapChunkReader<T> extends BaseChunkReader<WritableObjectChunk<T, Va
 
                 chunk = castOrCreateChunk(
                         outChunk,
+                        outOffset,
                         Math.max(totalRows, nodeInfo.numElements),
                         WritableObjectChunk::makeWritableChunk,
                         WritableChunk::asWritableObjectChunk);

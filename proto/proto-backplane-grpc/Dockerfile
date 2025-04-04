@@ -6,7 +6,6 @@ COPY dependencies /dependencies
 
 RUN set -eux; \
   mkdir -p /generated/java; \
-  mkdir -p /generated/grpc; \
   mkdir -p /generated/js; \
   mkdir -p /generated/go; \
   mkdir -p /generated/python; \
@@ -18,7 +17,7 @@ RUN set -eux; \
   /opt/protoc/bin/protoc \
     --plugin=protoc-gen-grpc=/opt/java/bin/protoc-gen-grpc-java \
     --java_out=/generated/java \
-    --grpc_out=/generated/grpc \
+    --grpc_out=/generated/java \
     -I/dependencies \
     -I/includes \
     /dependencies/BrowserFlight.proto \
@@ -70,13 +69,10 @@ RUN set -eux; \
   /opt/protoc/bin/protoc \
     --plugin=protoc-gen-go=/opt/go/bin/protoc-gen-go \
     --plugin=protoc-gen-go-grpc=/opt/go/bin/protoc-gen-go-grpc \
-    --plugin=protoc-gen-cpp_grpc=/opt/deephaven/bin/grpc_cpp_plugin \
     --go_out=/generated/go \
     --go-grpc_out=/generated/go \
     --go_opt=module=github.com/deephaven/deephaven-core/go \
     --go-grpc_opt=module=github.com/deephaven/deephaven-core/go \
-    --cpp_out=generated/cpp \
-    --cpp_grpc_out=generated/cpp \
     -I/includes \
     /includes/deephaven_core/proto/ticket.proto \
     /includes/deephaven_core/proto/console.proto \

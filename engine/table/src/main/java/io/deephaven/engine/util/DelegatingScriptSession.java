@@ -53,6 +53,11 @@ public class DelegatingScriptSession implements ScriptSession {
     }
 
     @Override
+    public void cleanup() {
+        // do not cleanup the delegate as it is not owned by us and likely to be reused
+    }
+
+    @Override
     public ExecutionContext getExecutionContext() {
         return delegate.getExecutionContext();
     }

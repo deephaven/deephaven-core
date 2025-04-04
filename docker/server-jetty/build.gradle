@@ -27,8 +27,13 @@ configurations {
     pythonWheel
 }
 
+def serverPath = ':server-jetty-app'
+if (hasProperty('jetty11')) {
+    // If requested, use the Jetty 11 server instead of the default Jetty 12 server within this build
+    serverPath = ':server-jetty-app-11'
+}
 dependencies {
-    serverApplicationDist project(path: ':server-jetty-app', configuration: 'applicationDist')
+    serverApplicationDist project(path: serverPath, configuration: 'applicationDist')
 
     pythonWheel project(':py-server')
 }
@@ -55,6 +60,9 @@ def prepareDocker = project.tasks.register('prepareDocker', Sync) {
 
     from(configurations.serverApplicationDist) {
         into 'serverApplicationDist'
+        // If the build is using the Jetty server, rename the tarball to remove the '-11' suffix,
+        // as expected by the Dockerfile
+        rename { name -> name.replace('server-jetty-11', 'server-jetty')}
     }
     from(dockerLicenses.outputs) {
         into 'licenses'

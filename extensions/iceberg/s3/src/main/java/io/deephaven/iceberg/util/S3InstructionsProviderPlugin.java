@@ -6,6 +6,7 @@ package io.deephaven.iceberg.util;
 import com.google.auto.service.AutoService;
 import io.deephaven.extensions.s3.Credentials;
 import io.deephaven.extensions.s3.DeephavenAwsClientFactory;
+import io.deephaven.extensions.s3.S3Constants;
 import io.deephaven.extensions.s3.S3Instructions;
 import io.deephaven.iceberg.internal.DataInstructionsProviderPlugin;
 import org.apache.iceberg.aws.AwsClientProperties;
@@ -33,9 +34,9 @@ public final class S3InstructionsProviderPlugin implements DataInstructionsProvi
 
         // If the URI scheme is "s3","s3a","s3n" or if the properties contain one of these specific keys, we can
         // create a useful S3Instructions object.
-        if (uriScheme.equals("s3")
-                || uriScheme.equals("s3a")
-                || uriScheme.equals("s3n")
+        if (S3Constants.S3_URI_SCHEME.equals(uriScheme)
+                || S3Constants.S3A_URI_SCHEME.equals(uriScheme)
+                || S3Constants.S3N_URI_SCHEME.equals(uriScheme)
                 || properties.containsKey(AwsClientProperties.CLIENT_REGION)
                 || properties.containsKey(S3FileIOProperties.ACCESS_KEY_ID)
                 || properties.containsKey(S3FileIOProperties.SECRET_ACCESS_KEY)

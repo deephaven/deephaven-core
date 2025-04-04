@@ -52,6 +52,7 @@ public class CharChunkReader extends BaseChunkReader<WritableCharChunk<Values>> 
 
         final WritableCharChunk<Values> chunk = castOrCreateChunk(
                 outChunk,
+                outOffset,
                 Math.max(totalRows, nodeInfo.numElements),
                 WritableCharChunk::makeWritableChunk,
                 WritableChunk::asWritableCharChunk);

@@ -130,14 +130,12 @@ public class WebChunkReaderFactory implements ChunkReader.Factory {
                     try (final WritableByteChunk<Values> inner = subReader.readChunk(
                             fieldNodeIter, bufferInfoIter, is, null, 0, 0)) {
 
-                        final WritableObjectChunk<Boolean, Values> chunk;
-                        if (outChunk != null) {
-                            chunk = outChunk.asWritableObjectChunk();
-                        } else {
-                            int numRows = Math.max(totalRows, inner.size());
-                            chunk = WritableObjectChunk.makeWritableChunk(numRows);
-                            chunk.setSize(numRows);
-                        }
+                        final WritableObjectChunk<Boolean, Values> chunk = BaseChunkReader.castOrCreateChunk(
+                                outChunk,
+                                outOffset,
+                                Math.max(totalRows, inner.size()),
+                                WritableObjectChunk::makeWritableChunk,
+                                WritableChunk::asWritableObjectChunk);
 
                         if (outChunk == null) {
                             // if we're not given an output chunk then we better be writing at the front of the new one
@@ -411,14 +409,12 @@ public class WebChunkReaderFactory implements ChunkReader.Factory {
         final long payloadBuffer = bufferInfoIter.nextLong();
 
         final int numElements = nodeInfo.numElements;
-        final WritableObjectChunk<T, Values> chunk;
-        if (outChunk != null) {
-            chunk = outChunk.asWritableObjectChunk();
-        } else {
-            final int numRows = Math.max(totalRows, numElements);
-            chunk = WritableObjectChunk.makeWritableChunk(numRows);
-            chunk.setSize(numRows);
-        }
+        final WritableObjectChunk<T, Values> chunk = BaseChunkReader.castOrCreateChunk(
+                outChunk,
+                outOffset,
+                Math.max(totalRows, numElements),
+                WritableObjectChunk::makeWritableChunk,
+                WritableChunk::asWritableObjectChunk);
 
         if (numElements == 0) {
             return chunk;

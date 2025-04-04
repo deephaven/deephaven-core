@@ -96,6 +96,7 @@ import org.junit.Test;
 import org.junit.rules.ExternalResource;
 
 import javax.inject.Named;
+import javax.inject.Provider;
 import javax.inject.Singleton;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -230,6 +231,8 @@ public abstract class FlightMessageRoundTripTest {
         Registration.Callback registration();
 
         Scheduler serverScheduler();
+
+        Provider<ScriptSession> scriptSessionProvider();
     }
 
     private LogBuffer logBuffer;
@@ -319,6 +322,8 @@ public abstract class FlightMessageRoundTripTest {
 
     @After
     public void teardown() throws InterruptedException {
+        component.scriptSessionProvider().get().cleanup();
+
         clientSession.close();
         clientScheduler.shutdownNow();
         clientChannel.shutdownNow();

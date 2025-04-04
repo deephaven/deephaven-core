@@ -56,6 +56,7 @@ public class IntChunkReader extends BaseChunkReader<WritableIntChunk<Values>> {
 
         final WritableIntChunk<Values> chunk = castOrCreateChunk(
                 outChunk,
+                outOffset,
                 Math.max(totalRows, nodeInfo.numElements),
                 WritableIntChunk::makeWritableChunk,
                 WritableChunk::asWritableIntChunk);

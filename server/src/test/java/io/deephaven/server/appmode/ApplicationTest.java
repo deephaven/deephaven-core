@@ -34,6 +34,7 @@ public class ApplicationTest {
     @After
     public void tearDown() {
         if (session != null) {
+            session.cleanup();
             session = null;
         }
     }
