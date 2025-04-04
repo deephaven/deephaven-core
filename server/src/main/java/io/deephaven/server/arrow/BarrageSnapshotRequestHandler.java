@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.server.arrow;
 
 import com.google.rpc.Code;
@@ -33,10 +36,10 @@ class BarrageSnapshotRequestHandler
     private final BarrageMessageWriter.Factory streamGeneratorFactory;
 
     public BarrageSnapshotRequestHandler(final ArrowFlightUtil.DoExchangeMarshaller marshaller,
-                                         final TicketRouter ticketRouter,
-                                         final SessionState session,
-                                         final StreamObserver<BarrageMessageWriter.MessageView> listener,
-                                         final BarrageMessageWriter.Factory streamGeneratorFactory) {
+            final TicketRouter ticketRouter,
+            final SessionState session,
+            final StreamObserver<BarrageMessageWriter.MessageView> listener,
+            final BarrageMessageWriter.Factory streamGeneratorFactory) {
         this.marshaller = marshaller;
         this.ticketRouter = ticketRouter;
         this.session = session;

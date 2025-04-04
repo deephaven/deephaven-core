@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.server.arrow;
 
 import com.google.rpc.Code;
@@ -40,10 +43,10 @@ class BarrageSubscriptionRequestHandler implements ArrowFlightUtil.DoExchangeMar
     private SessionState.ExportObject<?> onExportResolvedContinuation;
 
     public BarrageSubscriptionRequestHandler(final ArrowFlightUtil.DoExchangeMarshaller marshaller,
-                                             final TicketRouter ticketRouter,
-                                             final SessionState session,
-                                             final StreamObserver<BarrageMessageWriter.MessageView> listener,
-                                             @SuppressWarnings("unused") final BarrageMessageWriter.Factory streamGeneratorFactory) {
+            final TicketRouter ticketRouter,
+            final SessionState session,
+            final StreamObserver<BarrageMessageWriter.MessageView> listener,
+            @SuppressWarnings("unused") final BarrageMessageWriter.Factory streamGeneratorFactory) {
         this.marshaller = marshaller;
         this.ticketRouter = ticketRouter;
         this.session = session;
@@ -124,7 +127,8 @@ class BarrageSubscriptionRequestHandler implements ArrowFlightUtil.DoExchangeMar
 
         final Object export = parent.get();
 
-        final ExchangeMarshaller marshallerForExport = ExchangeMarshaller.getMarshaller(export, marshaller.getMarshallers());
+        final ExchangeMarshaller marshallerForExport =
+                ExchangeMarshaller.getMarshaller(export, marshaller.getMarshallers());
         if (marshallerForExport == null) {
             GrpcUtil.safelyError(listener, Code.FAILED_PRECONDITION, "Ticket ("
                     + ExportTicketHelper.toReadableString(subscriptionRequest.ticketAsByteBuffer(), "ticket")

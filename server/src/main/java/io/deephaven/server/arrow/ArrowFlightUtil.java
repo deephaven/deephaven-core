@@ -367,8 +367,10 @@ public class ArrowFlightUtil {
 
         private final TicketRouter ticketRouter;
         private final BarrageMessageWriter.Factory streamGeneratorFactory;
-//        private final BarrageMessageProducer.Adapter<BarrageSubscriptionRequest, BarrageSubscriptionOptions> subscriptionOptAdapter;
-//        private final BarrageMessageProducer.Adapter<BarrageSnapshotRequest, BarrageSnapshotOptions> snapshotOptAdapter;
+        // private final BarrageMessageProducer.Adapter<BarrageSubscriptionRequest, BarrageSubscriptionOptions>
+        // subscriptionOptAdapter;
+        // private final BarrageMessageProducer.Adapter<BarrageSnapshotRequest, BarrageSnapshotOptions>
+        // snapshotOptAdapter;
         private final SessionService.ErrorTransformer errorTransformer;
         /**
          * This is the set of marshallers that are consulted for each exported object. The marshallers are processed in
@@ -436,10 +438,12 @@ public class ArrowFlightUtil {
                     // handle the different message types that can come over DoExchange
                     switch (message.app_metadata.msgType()) {
                         case BarrageMessageType.BarrageSubscriptionRequest:
-                            requestHandler = new BarrageSubscriptionRequestHandler(this, ticketRouter, session, listener, streamGeneratorFactory);
+                            requestHandler = new BarrageSubscriptionRequestHandler(this, ticketRouter, session,
+                                    listener, streamGeneratorFactory);
                             break;
                         case BarrageMessageType.BarrageSnapshotRequest:
-                            requestHandler = new BarrageSnapshotRequestHandler(this, ticketRouter, session, listener, streamGeneratorFactory);
+                            requestHandler = new BarrageSnapshotRequestHandler(this, ticketRouter, session, listener,
+                                    streamGeneratorFactory);
                             break;
                         default:
                             throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
