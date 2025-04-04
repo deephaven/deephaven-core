@@ -18,7 +18,7 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.PrimitiveIterator;
 
-public class VarBinaryChunkReader<T> implements ChunkReader<WritableObjectChunk<T, Values>> {
+public class VarBinaryChunkReader<T> extends BaseChunkReader<WritableObjectChunk<T, Values>> {
     private static final String DEBUG_NAME = "VarBinaryChunkReader";
 
     public interface Mapper<T> {
@@ -45,14 +45,12 @@ public class VarBinaryChunkReader<T> implements ChunkReader<WritableObjectChunk<
         final long payloadBuffer = bufferInfoIter.nextLong();
 
         final int numElements = nodeInfo.numElements;
-        final WritableObjectChunk<T, Values> chunk;
-        if (outChunk != null) {
-            chunk = outChunk.asWritableObjectChunk();
-        } else {
-            final int numRows = Math.max(totalRows, numElements);
-            chunk = WritableObjectChunk.makeWritableChunk(numRows);
-            chunk.setSize(numRows);
-        }
+        final WritableObjectChunk<T, Values> chunk = castOrCreateChunk(
+                outChunk,
+                outOffset,
+                Math.max(totalRows, nodeInfo.numElements),
+                WritableObjectChunk::makeWritableChunk,
+                WritableChunk::asWritableObjectChunk);
 
         if (numElements == 0) {
             return chunk;

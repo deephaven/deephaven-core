@@ -12,6 +12,7 @@ import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.WritableObjectChunk;
+import io.deephaven.extensions.barrage.chunk.BaseChunkReader;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -99,28 +100,16 @@ public class ObjectArrayExpansionKernel<T> implements ArrayExpansionKernel<T[]> 
             @Nullable final WritableChunk<A> outChunk,
             final int outOffset,
             final int totalRows) {
-        if (lengths != null && lengths.size() == 0
-                || lengths == null && offsets != null && offsets.size() <= 1) {
-            if (outChunk != null) {
-                return outChunk.asWritableObjectChunk();
-            }
-            final WritableObjectChunk<T[], A> chunk = WritableObjectChunk.makeWritableChunk(totalRows);
-            chunk.fillWithNullValue(0, totalRows);
-            return chunk;
-        }
-
         final int itemsInBatch = offsets == null
                 ? source.size() / sizePerElement
                 : (offsets.size() - (lengths == null ? 1 : 0));
         final ObjectChunk<T, A> typedSource = source.asObjectChunk();
-        final WritableObjectChunk<T[], A> result;
-        if (outChunk != null) {
-            result = outChunk.asWritableObjectChunk();
-        } else {
-            final int numRows = Math.max(itemsInBatch, totalRows);
-            result = WritableObjectChunk.makeWritableChunk(numRows);
-            result.setSize(numRows);
-        }
+        final WritableObjectChunk<T[], A> result = BaseChunkReader.castOrCreateChunk(
+                outChunk,
+                outOffset,
+                Math.max(totalRows, itemsInBatch),
+                WritableObjectChunk::makeWritableChunk,
+                WritableChunk::asWritableObjectChunk);
 
         for (int ii = 0; ii < itemsInBatch; ++ii) {
             final int offset = offsets == null ? ii * sizePerElement : offsets.get(ii);

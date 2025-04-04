@@ -7,6 +7,7 @@ import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableLongChunk;
+import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import org.jetbrains.annotations.NotNull;
@@ -23,17 +24,21 @@ public abstract class BaseChunkReader<READ_CHUNK_TYPE extends WritableChunk<Valu
         void transform(READ_CHUNK_TYPE source, DEST_CHUNK_TYPE dest, int destOffset);
     }
 
-    protected static <T extends WritableChunk<Values>> T castOrCreateChunk(
-            final WritableChunk<Values> outChunk,
+    public static <ATTR extends Any, T extends WritableChunk<ATTR>> T castOrCreateChunk(
+            final WritableChunk<ATTR> outChunk,
+            final int outOffset,
             final int numRows,
             final IntFunction<T> chunkFactory,
-            final Function<WritableChunk<Values>, T> castFunction) {
+            final Function<WritableChunk<ATTR>, T> castFunction) {
         if (outChunk != null) {
-            return castFunction.apply(outChunk);
+            T castChunk = castFunction.apply(outChunk);
+            if (castChunk.size() < outOffset + numRows) {
+                castChunk.setSize(outOffset + numRows);
+            }
+            return castChunk;
         }
-        final T newChunk = chunkFactory.apply(numRows);
-        newChunk.setSize(numRows);
-        return newChunk;
+        // note this returns an appropriately sized chunk with capacity >= size
+        return chunkFactory.apply(numRows);
     }
 
     public static ChunkType getChunkTypeFor(final Class<?> dest) {
