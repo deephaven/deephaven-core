@@ -119,12 +119,6 @@ public class ObjectVectorExpansionKernel<T> implements VectorExpansionKernel<Obj
                 WritableObjectChunk::makeWritableChunk,
                 WritableChunk::asWritableObjectChunk);
 
-        if (lengths != null && lengths.size() == 0
-                || lengths == null && offsets != null && offsets.size() <= 1) {
-            result.fillWithNullValue(outOffset, outOffset + totalRows);
-            return result;
-        }
-
         for (int ii = 0; ii < itemsInBatch; ++ii) {
             final int offset = offsets == null ? ii * sizePerElement : offsets.get(ii);
             final int rowLen = computeSize(ii, sizePerElement, offsets, lengths);

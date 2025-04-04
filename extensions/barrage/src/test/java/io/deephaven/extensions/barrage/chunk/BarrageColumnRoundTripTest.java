@@ -631,19 +631,13 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
     public void testLocalDateSerialization() throws IOException {
         testRoundTripSerialization(SpecialMode.NONE, OPT_DEFAULT, LocalDate.class,
                 BarrageColumnRoundTripTest::initLocalDateChunk,
-                new LocalDateVectorIdentityValidator());
-    }
-
-    public void testLocalDateArraySerialization() throws IOException {
-        testRoundTripSerialization(SpecialMode.NONE, OPT_DEFAULT, LocalTime.class,
-                BarrageColumnRoundTripTest::initLocalTimeChunk,
-                new LocalTimeVectorIdentityValidator());
+                new LocalDateIdentityValidator());
     }
 
     public void testLocalTimeSerialization() throws IOException {
         testRoundTripSerialization(SpecialMode.NONE, OPT_DEFAULT, LocalTime.class,
                 BarrageColumnRoundTripTest::initLocalTimeChunk,
-                new LocalTimeVectorIdentityValidator());
+                new LocalTimeIdentityValidator());
     }
 
     private static class Unique {
@@ -888,7 +882,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
         }
     }
 
-    private static final class LocalDateVectorIdentityValidator implements Validator {
+    private static final class LocalDateIdentityValidator implements Validator {
         @Override
         public void assertExpected(
                 final WritableChunk<Values> untypedOriginal,
@@ -912,7 +906,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
         }
     }
 
-    private static final class LocalTimeVectorIdentityValidator implements Validator {
+    private static final class LocalTimeIdentityValidator implements Validator {
         @Override
         public void assertExpected(
                 final WritableChunk<Values> untypedOriginal,
