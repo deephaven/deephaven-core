@@ -129,6 +129,7 @@ import org.junit.Test;
 import org.junit.rules.ExternalResource;
 
 import javax.inject.Named;
+import javax.inject.Provider;
 import javax.inject.Singleton;
 import java.io.DataInput;
 import java.io.IOException;
@@ -318,6 +319,8 @@ public class BarrageChunkFactoryTest {
         Registration.Callback registration();
 
         Scheduler serverScheduler();
+
+        Provider<ScriptSession> scriptSessionProvider();
     }
 
     private LogBuffer logBuffer;
@@ -407,6 +410,8 @@ public class BarrageChunkFactoryTest {
 
     @After
     public void teardown() throws InterruptedException {
+        component.scriptSessionProvider().get().cleanup();
+
         clientSession.close();
         clientScheduler.shutdownNow();
         clientChannel.shutdownNow();

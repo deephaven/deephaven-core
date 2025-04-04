@@ -12,30 +12,30 @@ import org.jetbrains.annotations.Nullable;
 import software.amazon.awssdk.services.s3.S3Uri;
 
 /**
- * This class uses a {@link KeyedObjectHashMap} to cache {@link S3Request} objects based on their URI and fragment
+ * This class uses a {@link KeyedObjectHashMap} to cache {@link S3ReadRequest} objects based on their URI and fragment
  * index. This cache can be used concurrently.
  */
-final class S3RequestCache {
+final class S3ReadRequestCache {
 
-    private static final Logger log = LoggerFactory.getLogger(S3RequestCache.class);
+    private static final Logger log = LoggerFactory.getLogger(S3ReadRequestCache.class);
 
     private final int fragmentSize;
-    private final KeyedObjectHashMap<S3Request.ID, S3Request> requests;
+    private final KeyedObjectHashMap<S3ReadRequest.ID, S3ReadRequest> requests;
 
     /**
      * Create a new cache to hold fragments of the given size.
      */
-    S3RequestCache(final int fragmentSize) {
+    S3ReadRequestCache(final int fragmentSize) {
         this.fragmentSize = fragmentSize;
         this.requests = new KeyedObjectHashMap<>(RequestKey.INSTANCE);
     }
 
-    private static final class RequestKey extends KeyedObjectKey.Basic<S3Request.ID, S3Request> {
+    private static final class RequestKey extends KeyedObjectKey.Basic<S3ReadRequest.ID, S3ReadRequest> {
 
-        private static final KeyedObjectKey<S3Request.ID, S3Request> INSTANCE = new RequestKey();
+        private static final KeyedObjectKey<S3ReadRequest.ID, S3ReadRequest> INSTANCE = new RequestKey();
 
         @Override
-        public S3Request.ID getKey(@NotNull final S3Request request) {
+        public S3ReadRequest.ID getKey(@NotNull final S3ReadRequest request) {
             return request.getId();
         }
     }
@@ -55,11 +55,11 @@ final class S3RequestCache {
      * @return the request if we could acquire it from the cache, or null
      */
     @Nullable
-    S3Request.Acquired getRequest(@NotNull final S3Uri uri, final long fragmentIndex) {
-        final S3Request.ID key = new S3Request.ID(uri, fragmentIndex);
-        final S3Request existingRequest = requests.get(key);
+    S3ReadRequest.Acquired getRequest(@NotNull final S3Uri uri, final long fragmentIndex) {
+        final S3ReadRequest.ID key = new S3ReadRequest.ID(uri, fragmentIndex);
+        final S3ReadRequest existingRequest = requests.get(key);
         if (existingRequest != null) {
-            final S3Request.Acquired acquired = existingRequest.tryAcquire();
+            final S3ReadRequest.Acquired acquired = existingRequest.tryAcquire();
             if (acquired != null) {
                 return acquired;
             }
@@ -78,14 +78,16 @@ final class S3RequestCache {
      * @return the request
      */
     @NotNull
-    S3Request.Acquired getOrCreateRequest(@NotNull final S3Uri uri, final long fragmentIndex,
-            @NotNull final S3ChannelContext context) {
-        final S3Request.ID key = new S3Request.ID(uri, fragmentIndex);
-        S3Request.Acquired newAcquired = null;
-        S3Request existingRequest = requests.get(key);
+    S3ReadRequest.Acquired getOrCreateRequest(
+            @NotNull final S3Uri uri,
+            final long fragmentIndex,
+            @NotNull final S3ReadContext context) {
+        final S3ReadRequest.ID key = new S3ReadRequest.ID(uri, fragmentIndex);
+        S3ReadRequest.Acquired newAcquired = null;
+        S3ReadRequest existingRequest = requests.get(key);
         while (true) {
             if (existingRequest != null) {
-                final S3Request.Acquired acquired = existingRequest.tryAcquire();
+                final S3ReadRequest.Acquired acquired = existingRequest.tryAcquire();
                 if (acquired != null) {
                     return acquired;
                 } else {
@@ -93,7 +95,7 @@ final class S3RequestCache {
                 }
             }
             if (newAcquired == null) {
-                newAcquired = S3Request.createAndAcquire(fragmentIndex, context);
+                newAcquired = S3ReadRequest.createAndAcquire(fragmentIndex, context);
             }
             if ((existingRequest = requests.putIfAbsent(key, newAcquired.request())) == null) {
                 if (log.isDebugEnabled()) {
@@ -111,7 +113,7 @@ final class S3RequestCache {
     /**
      * Remove this request from the cache, if present.
      */
-    void remove(@NotNull final S3Request request) {
+    void remove(@NotNull final S3ReadRequest request) {
         if (log.isDebugEnabled()) {
             log.debug().append("Clearing request from cache: ").append(request.requestStr()).endl();
         }
