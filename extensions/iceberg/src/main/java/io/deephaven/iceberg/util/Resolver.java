@@ -68,6 +68,12 @@ public abstract class Resolver {
     // return null;
     // }
 
+
+    /**
+     * The Deephaven table definition.
+     */
+    public abstract TableDefinition definition();
+
     /**
      * The Iceberg schema. This schema is set at the time these instructions were originally made - it is often
      * <b>not</b> the most recent schema for an Iceberg table.
@@ -76,11 +82,6 @@ public abstract class Resolver {
 
     // todo: should this really be UnboundPartitionSpec ?
     public abstract PartitionSpec spec();
-
-    /**
-     * The Deephaven table definition.
-     */
-    public abstract TableDefinition definition();
 
     /**
      * The column instructions keyed by Deephaven column name.
@@ -288,12 +289,27 @@ public abstract class Resolver {
                 unsupportedTypes.add(new Inference.UnsupportedType(ii.schema(), fieldPath));
                 return null;
             }
+
             final String columnName = namer.of(fieldPath, type);
             NameValidator.validateColumnName(columnName);
-            // final int[] idPath = fieldPath.stream().mapToInt(NestedField::fieldId).toArray();
-            // builder.putColumnInstructions(columnName, ColumnInstructions.schemaFieldPath(FieldPath.of(idPath)));
-            builder.putColumnInstructions(columnName, schemaField(currentFieldId()));
-            definitions.add(ColumnDefinition.of(columnName, type));
+
+            final int fieldId = currentFieldId();
+            final ColumnDefinition<?> columnDefinition;
+            final ColumnInstructions columnInstructions;
+            {
+                final ColumnDefinition<?> cd = ColumnDefinition.of(columnName, type);
+                final PartitionField pf =
+                        PartitionSpecHelper.findIdentityForSchemaFieldId(ii.spec(), fieldId).orElse(null);
+                if (pf == null) {
+                    columnDefinition = cd;
+                    columnInstructions = ColumnInstructions.schemaField(fieldId);
+                } else {
+                    columnDefinition = cd.withPartitioning();
+                    columnInstructions = ColumnInstructions.partitionField(pf.fieldId());
+                }
+            }
+            builder.putColumnInstructions(columnName, columnInstructions);
+            definitions.add(columnDefinition);
             return null;
         }
 

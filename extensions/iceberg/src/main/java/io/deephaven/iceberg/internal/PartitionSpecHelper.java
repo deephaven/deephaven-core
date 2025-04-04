@@ -33,5 +33,17 @@ public class PartitionSpecHelper {
         return partitionField.get();
     }
 
+    public static Optional<PartitionField> findIdentityForSchemaFieldId(PartitionSpec spec, int schemaFieldId) {
+        for (final PartitionField partitionField : spec.fields()) {
+            if (!partitionField.transform().isIdentity()) {
+                continue;
+            }
+            if (partitionField.sourceId() == schemaFieldId) {
+                return Optional.of(partitionField);
+            }
+        }
+        return Optional.empty();
+    }
+
 
 }
