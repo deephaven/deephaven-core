@@ -51,11 +51,9 @@ import io.deephaven.server.session.SessionServiceGrpcImpl;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.server.session.TicketResolver;
 import io.deephaven.server.table.TableModule;
-import io.deephaven.server.test.FlightMessageRoundTripTest;
 import io.deephaven.server.test.TestAuthModule;
 import io.deephaven.server.test.TestAuthorizationProvider;
 import io.deephaven.server.util.Scheduler;
-import io.deephaven.server.util.TestControlledScheduler;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.type.TypeUtils;
@@ -122,6 +120,7 @@ import org.junit.Test;
 import org.junit.rules.ExternalResource;
 
 import javax.inject.Named;
+import javax.inject.Provider;
 import javax.inject.Singleton;
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -161,7 +160,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-public class JettyBarrageChunkFactoryTest {
+public class BarrageChunkFactoryTest {
     private static final String COLUMN_NAME = "test_col";
     private static final int NUM_ROWS = 1023;
     private static final int RANDOM_SEED = 42;
@@ -308,6 +307,8 @@ public class JettyBarrageChunkFactoryTest {
         Registration.Callback registration();
 
         Scheduler serverScheduler();
+
+        Provider<ScriptSession> scriptSessionProvider();
     }
 
     private LogBuffer logBuffer;
@@ -340,7 +341,7 @@ public class JettyBarrageChunkFactoryTest {
         logBuffer = new LogBuffer(128);
         LogBufferGlobal.setInstance(logBuffer);
 
-        component = DaggerJettyBarrageChunkFactoryTest_JettyTestComponent.create();
+        component = DaggerBarrageChunkFactoryTest_JettyTestComponent.create();
         // open execution context immediately so it can be used when resolving `scriptSession`
         executionContext = component.executionContext().open();
 
@@ -397,6 +398,8 @@ public class JettyBarrageChunkFactoryTest {
 
     @After
     public void teardown() throws InterruptedException {
+        component.scriptSessionProvider().get().cleanup();
+
         clientSession.close();
         clientScheduler.shutdownNow();
         clientChannel.shutdownNow();
@@ -1281,7 +1284,7 @@ public class JettyBarrageChunkFactoryTest {
     @Test
     public void testUnsupportedMappingPropagation() throws Exception {
         try {
-            new Utf8RoundTripTest(JettyBarrageChunkFactoryTest.class, new ArrowType.Utf8()).runTest();
+            new Utf8RoundTripTest(BarrageChunkFactoryTest.class, new ArrowType.Utf8()).runTest();
             Assert.statementNeverExecuted("Should have thrown an exception");
         } catch (FlightRuntimeException fre) {
             assertTrue(fre.getMessage().contains("No known Barrage ChunkReader"));
@@ -1314,7 +1317,7 @@ public class JettyBarrageChunkFactoryTest {
     @Test
     public void testDestClassNotFoundPropagation() throws Exception {
         try {
-            new RoundTripTest<>(JettyBarrageChunkFactoryTest.class) {
+            new RoundTripTest<>(BarrageChunkFactoryTest.class) {
                 @Override
                 public Schema newSchema(boolean isNullable) {
                     final Map<String, String> attrs = new HashMap<>();
@@ -1333,7 +1336,7 @@ public class JettyBarrageChunkFactoryTest {
     @Test
     public void testComponentDestClassNotFoundPropagation() throws Exception {
         try {
-            new RoundTripTest<>(JettyBarrageChunkFactoryTest.class) {
+            new RoundTripTest<>(BarrageChunkFactoryTest.class) {
                 @Override
                 public Schema newSchema(boolean isNullable) {
                     final Map<String, String> attrs = new HashMap<>();
