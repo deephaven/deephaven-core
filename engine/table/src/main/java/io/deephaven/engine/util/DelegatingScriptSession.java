@@ -20,9 +20,6 @@ import java.util.stream.Stream;
  * The delegating script session delegates all calls to another script session. When evaluating a script it massages the
  * Changes to the QueryScope so that any modifications that are being seen for the first time by the api-client come
  * across as new entries and not as modified entries.
- * <p>
- * Note that the delegating script session should not be cleaned up if the delegate will be used by other delegating
- * script sessions. The cleanup method should only be invoked when the delegate is no longer needed.
  */
 public class DelegatingScriptSession implements ScriptSession {
     private final ScriptSession delegate;
@@ -57,7 +54,7 @@ public class DelegatingScriptSession implements ScriptSession {
 
     @Override
     public void cleanup() {
-        delegate.cleanup();
+        // do not cleanup the delegate as it is not owned by us and likely to be reused
     }
 
     @Override
