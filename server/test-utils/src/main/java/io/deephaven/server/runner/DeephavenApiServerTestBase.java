@@ -176,9 +176,7 @@ public abstract class DeephavenApiServerTestBase {
 
     @After
     public void tearDown() throws Exception {
-        if (scriptSessionProvider instanceof AbstractScriptSession) {
-            ((AbstractScriptSession<?>) scriptSessionProvider).cleanup();
-        }
+        scriptSessionProvider.get().cleanup();
 
         if (scopeCloseable != null) {
             scopeCloseable.close();

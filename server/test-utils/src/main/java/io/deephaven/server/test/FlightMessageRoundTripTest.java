@@ -320,10 +320,7 @@ public abstract class FlightMessageRoundTripTest {
 
     @After
     public void teardown() throws InterruptedException {
-        final ScriptSession ss = component.scriptSessionProvider().get();
-        if (ss instanceof AbstractScriptSession) {
-            ((AbstractScriptSession<?>) ss).cleanup();
-        }
+        component.scriptSessionProvider().get().cleanup();
 
         clientSession.close();
         clientScheduler.shutdownNow();

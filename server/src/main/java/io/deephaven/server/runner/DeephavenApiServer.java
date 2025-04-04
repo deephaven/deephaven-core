@@ -165,12 +165,7 @@ public class DeephavenApiServer {
 
         // Let's also clear the class cache directory on a successful shutdown.
         ProcessEnvironment.getGlobalShutdownManager().registerTask(ShutdownManager.OrderingCategory.MIDDLE,
-                () -> {
-                    final ScriptSession ss = scriptSessionProvider.get();
-                    if (ss instanceof AbstractScriptSession) {
-                        ((AbstractScriptSession) ss).cleanup();
-                    }
-                });
+                () -> scriptSessionProvider.get().cleanup());
 
         // Finally, wait for the http server to be finished stopping
         ProcessEnvironment.getGlobalShutdownManager().registerTask(ShutdownManager.OrderingCategory.LAST, () -> {
