@@ -8,6 +8,8 @@ import elemental2.promise.Promise;
 import io.deephaven.web.client.api.AbstractAsyncGwtTestCase;
 import io.deephaven.web.client.api.Column;
 import io.deephaven.web.client.api.JsTable;
+import io.deephaven.web.client.api.LongWrapper;
+import io.deephaven.web.client.api.TableData;
 import io.deephaven.web.client.api.subscription.AbstractTableSubscription;
 import io.deephaven.web.client.api.subscription.SubscriptionTableData;
 import io.deephaven.web.client.api.subscription.TableSubscription;
@@ -17,6 +19,8 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 import java.io.Serializable;
+import java.util.Arrays;
+import java.util.PrimitiveIterator;
 import java.util.function.BiConsumer;
 
 public class ChartDataTestGwt extends AbstractAsyncGwtTestCase {
@@ -26,7 +30,7 @@ public class ChartDataTestGwt extends AbstractAsyncGwtTestCase {
             .script("updating_table", "appending_table.last_by('A')");
 
     private final TableSourceBuilder tickingData = new TableSourceBuilder()
-            .script("from deephaven import input_table",
+            .script("from deephaven import input_table, empty_table",
                     "from deephaven import dtypes as dht",
                     "import jpy",
                     "from deephaven.execution_context import ExecutionContext, get_exec_ctx",
@@ -34,8 +38,29 @@ public class ChartDataTestGwt extends AbstractAsyncGwtTestCase {
                     "ug = jpy.get_type('io.deephaven.engine.updategraph.impl.EventDrivenUpdateGraph').newBuilder('test').existingOrBuild()",
                     "exec_ctx = ExecutionContext(get_exec_ctx().j_object.withUpdateGraph(ug))",
                     "with exec_ctx:\n" +
-                            "    input = input_table(col_defs=my_col_defs, key_cols=\"ID\")\n" +
-                            "    result = input.without_attributes('InputTable').where(\"!Deleted\").sort(\"ID\")");
+                            "    input1 = input_table(col_defs=my_col_defs, key_cols=\"ID\")\n" +
+                            "    result1 = input1.without_attributes('InputTable').where(\"!Deleted\").sort(\"ID\")",
+                    "with exec_ctx:\n" +
+                            "    my_col_defs[\"Vers\"] = dht.int32\n" +
+                            "    input2 = input_table(col_defs=my_col_defs, key_cols=\"ID\")\n" +
+                            "    result2 = input2.without_attributes('InputTable')" +
+                            ".where(\"!Deleted\")" +
+                            ".sort(\"ID\")" +
+                            ".update([" +
+                            "   \"MyInt=ID==0?null:ID + Vers\"," +
+                            "   \"MyLong=ID==0?null:(long)(ID + Vers)\"," +
+                            "   \"MyDouble=ID==0?null:(double)(ID + Vers)\"," +
+                            "   \"MyShort=ID==0?null:(short)(ID + Vers)\"," +
+                            "   \"MyFloat=ID==0?null:(float)(ID + Vers)\"," +
+                            "   \"MyChar=ID==0?null:(char)(ID + Vers)\"," +
+                            "   \"MyByte=ID==0?null:(byte)(ID + Vers)\"," +
+                            "   \"MyBoolean=ID==0?null:(Vers==0?true:false)\"," +
+                            "   \"MyString=ID==0?null:``+(ID + Vers)\"," +
+                            "   \"MyDate=ID==0?null:epochNanosToInstant(ID + Vers)\"," +
+                            "   \"MyBigInteger=ID==0?null:java.math.BigInteger.valueOf(ID + Vers)\"," +
+                            "   \"MyBigDecimal=ID==0?null:java.math.BigDecimal.valueOf(ID + Vers, 4)\"," +
+                            "   \"MyStringArray1=ID==0?null:new String[] {`` + ID, `` + Vers, `C`}\"" +
+                            "]).last_by(\"ID\").join(empty_table(17))");
 
     @Override
     public String getModuleName() {
@@ -117,8 +142,8 @@ public class ChartDataTestGwt extends AbstractAsyncGwtTestCase {
         connect(tickingData)
                 .then(ideSession -> {
                     delayTestFinish(9870);
-                    Promise<JsTable> inputPromise = ideSession.getTable("input", false);
-                    Promise<JsTable> resultPromise = ideSession.getTable("result", false);
+                    Promise<JsTable> inputPromise = ideSession.getTable("input1", false);
+                    Promise<JsTable> resultPromise = ideSession.getTable("result1", false);
                     return inputPromise.then(JsTable::inputTable).then(delayFinish(9871)).then(input -> {
                         delayTestFinish(9872);
                         return resultPromise.then(result -> {
@@ -189,6 +214,111 @@ public class ChartDataTestGwt extends AbstractAsyncGwtTestCase {
                     });
                 })
                 .then(this::finish).catch_(this::report);
+    }
+
+    public void testDataTypes() {
+        // In contrast to the above, this does simple changes to rowsets, and focuses on different types/values of data.
+        // The table starts empty, then adds a null row, then replaces the null row with non-null values.
+        connect(tickingData)
+                .then(ideSession -> {
+                    delayTestFinish(9870);
+                    Promise<JsTable> inputPromise = ideSession.getTable("input2", false);
+                    Promise<JsTable> resultPromise = ideSession.getTable("result2", false);
+                    return inputPromise.then(JsTable::inputTable).then(delayFinish(9871)).then(input -> {
+                        delayTestFinish(9872);
+                        return resultPromise.then(result -> {
+                            delayTestFinish(9873);
+
+                            return subscriptionValidator(result, result.getColumns())
+                                    .check((delta, snap) -> {
+                                        assertEquals(0, delta.getRows().length);
+                                        assertEquals(0, snap.getRows().length);
+                                    })
+                                    // add a row with all nulls
+                                    .when(() -> input.addRows(new JsPropertyMap[] {row(0, 0, "asdf")}, null))
+                                    .check(valueCheck(null))
+                                    // replace the null row with a row with all non-null values
+                                    .when(() -> {
+                                        input.addRows(new JsPropertyMap[] {
+                                                delete(0),
+                                                row(1, 0, "qwer")
+                                        }, null);
+                                    })
+                                    .check(valueCheck(1.0))
+                                    // replace the existing non-null values with different non-null values
+                                    .when(() -> {
+                                        input.addRows(new JsPropertyMap[] {
+                                                row(1, 1, "poiu")
+                                        }, null);
+                                    })
+                                    .check(valueCheck(2.0))
+                                    .cleanup();
+                        });
+                    });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    /**
+     * Helper to generate a check based on the expected value for all numeric types, as well as compare the snapshot vs
+     * delta.
+     */
+    private BiConsumer<SubscriptionTableData, SubscriptionTableData> valueCheck(Double approxExpectedValue) {
+        return (delta, snapshot) -> {
+            assertEquals(snapshot.getFullIndex().getSize(), delta.getFullIndex().getSize());
+            assertEquals(snapshot.getRows().length, (int) snapshot.getFullIndex().getSize());
+            assertEquals(snapshot.getRows().length, delta.getRows().length);
+
+            Column myInt = snapshot.getColumns().getAt(4);
+            Column myLong = snapshot.getColumns().getAt(5);
+            Column myDouble = snapshot.getColumns().getAt(6);
+            Column myShort = snapshot.getColumns().getAt(7);
+            Column myFloat = snapshot.getColumns().getAt(8);
+            Column myChar = snapshot.getColumns().getAt(9);
+            Column myByte = snapshot.getColumns().getAt(10);
+            Column myBoolean = snapshot.getColumns().getAt(11);
+            Column myString = snapshot.getColumns().getAt(12);
+            Column myDate = snapshot.getColumns().getAt(13);
+            Column myBigInteger = snapshot.getColumns().getAt(14);
+            Column myBigDecimal = snapshot.getColumns().getAt(15);
+            Column myStringArray1 = snapshot.getColumns().getAt(16);
+
+            PrimitiveIterator.OfLong iter = snapshot.getFullIndex().getRange().indexIterator();
+            for (int i = 0; i < snapshot.getRows().length; i++) {
+                long key = iter.nextLong();
+                TableData.Row snapRow = snapshot.get(key);
+                TableData.Row deltaRow = delta.get(key);
+
+                if (approxExpectedValue == null) {
+                    for (int j = 4; j < snapshot.getColumns().length; j++) {
+                        assertNull(snapRow.get(snapshot.getColumns().getAt(j)));
+                        assertNull(deltaRow.get(snapshot.getColumns().getAt(j)));
+                    }
+                } else {
+                    assertEquals(snapRow.get(myInt), deltaRow.get(myInt));
+                    assertEquals(approxExpectedValue, deltaRow.get(myInt));
+                    assertEquals(snapRow.get(myLong), deltaRow.get(myLong));
+                    assertEquals(LongWrapper.of((long) (double) approxExpectedValue), deltaRow.get(myLong));
+                    assertEquals(snapRow.get(myDouble), deltaRow.get(myDouble));
+                    assertEquals(approxExpectedValue, deltaRow.get(myDouble));
+                    assertEquals(snapRow.get(myShort), deltaRow.get(myShort));
+                    assertEquals(approxExpectedValue, deltaRow.get(myShort));
+                    assertEquals(snapRow.get(myFloat), deltaRow.get(myFloat));
+                    assertEquals(approxExpectedValue, deltaRow.get(myFloat));
+                    assertEquals(snapRow.get(myChar), deltaRow.get(myChar));
+                    assertEquals(approxExpectedValue, deltaRow.get(myChar));
+                    assertEquals(snapRow.get(myByte), deltaRow.get(myByte));
+                    assertEquals(approxExpectedValue, deltaRow.get(myByte));
+                    assertEquals(snapRow.get(myBoolean), deltaRow.get(myBoolean));
+                    assertEquals(snapRow.get(myString), deltaRow.get(myString));
+                    assertEquals(snapRow.get(myDate), deltaRow.get(myDate));
+                    assertEquals(snapRow.get(myBigInteger), deltaRow.get(myBigInteger));
+                    assertEquals(snapRow.get(myBigDecimal), deltaRow.get(myBigDecimal));
+                    assertTrue(Arrays.equals(snapRow.get(myStringArray1).asArray(),
+                            deltaRow.get(myStringArray1).asArray()));
+                }
+            }
+        };
     }
 
     /**
@@ -273,6 +403,15 @@ public class ChartDataTestGwt extends AbstractAsyncGwtTestCase {
 
     private static JsPropertyMap<? extends Serializable> row(int id, String value) {
         return JsPropertyMap.of("ID", (double) id, "Value", value, "Deleted", false);
+    }
+
+    private static JsPropertyMap<? extends Serializable> row(int id, int vers, String value) {
+        JsPropertyMap<Serializable> map = JsPropertyMap.of();
+        map.set("ID", (double) id);
+        map.set("Vers", (double) vers);
+        map.set("Value", value);
+        map.set("Deleted", false);
+        return map;
     }
 
     private static JsPropertyMap<? extends Serializable> delete(int id) {
