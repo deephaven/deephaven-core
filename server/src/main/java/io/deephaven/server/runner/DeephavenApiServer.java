@@ -168,7 +168,7 @@ public class DeephavenApiServer {
                 () -> {
                     final ScriptSession ss = scriptSessionProvider.get();
                     if (ss instanceof AbstractScriptSession) {
-                        ((AbstractScriptSession) ss).eraseClassCacheDirectory();
+                        ((AbstractScriptSession) ss).cleanup();
                     }
                 });
 

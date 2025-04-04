@@ -34,7 +34,7 @@ public class ApplicationTest {
     @After
     public void tearDown() {
         if (session != null) {
-            session.eraseClassCacheDirectory();
+            session.cleanup();
             session = null;
         }
     }

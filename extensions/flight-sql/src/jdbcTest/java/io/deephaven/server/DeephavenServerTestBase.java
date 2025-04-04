@@ -61,7 +61,7 @@ public abstract class DeephavenServerTestBase {
     void tearDown() throws InterruptedException {
         final ScriptSession ss = component.scriptSessionProvider().get();
         if (ss instanceof AbstractScriptSession) {
-            ((AbstractScriptSession<?>) ss).eraseClassCacheDirectory();
+            ((AbstractScriptSession<?>) ss).cleanup();
         }
 
         server.stopWithTimeout(10, TimeUnit.SECONDS);

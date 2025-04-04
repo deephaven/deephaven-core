@@ -107,7 +107,8 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
                 .build();
     }
 
-    public void eraseClassCacheDirectory() {
+    @Override
+    public void cleanup() {
         FileUtils.deleteRecursively(classCacheDirectory);
     }
 

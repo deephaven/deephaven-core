@@ -400,7 +400,7 @@ public class BarrageChunkFactoryTest {
     public void teardown() throws InterruptedException {
         final ScriptSession ss = component.scriptSessionProvider().get();
         if (ss instanceof AbstractScriptSession) {
-            ((AbstractScriptSession<?>) ss).eraseClassCacheDirectory();
+            ((AbstractScriptSession<?>) ss).cleanup();
         }
 
         clientSession.close();
