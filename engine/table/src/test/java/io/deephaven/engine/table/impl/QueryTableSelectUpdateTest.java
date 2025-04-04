@@ -821,6 +821,7 @@ public class QueryTableSelectUpdateTest {
     public void testUpdateIndex() {
         QueryTable table = TstUtils.testRefreshingTable(i().toTracking());
         QueryTable table2 = (QueryTable) table.update("Position=i", "Key=\"\" + k");
+        final PrintListener pl = new PrintListener("table2", table2);
         ListenerWithGlobals listener = base.newListenerWithGlobals(table2);
         table2.addUpdateListener(listener);
 
@@ -844,16 +845,18 @@ public class QueryTableSelectUpdateTest {
         TestCase.assertEquals(base.removed, i());
         TestCase.assertEquals(base.modified, i());
 
+        // we modify row 9, but there is nothing impacting our formulas; so the result update will end up being empty
         updateGraph.runWithinUnitTestCycle(() -> table.notifyListeners(i(), i(), i(9)));
+        listener.reset();
 
         TestCase.assertEquals(2, table.size());
         TestCase.assertEquals(2, table2.size());
         show(table2);
         assertArrayEquals(new int[] {0, 1}, ColumnVectors.ofInt(table2, "Position").toArray());
         assertArrayEquals(new String[] {"7", "9"}, ColumnVectors.ofObject(table2, "Key", String.class).toArray());
-        TestCase.assertEquals(base.added, i());
-        TestCase.assertEquals(base.removed, i());
-        TestCase.assertEquals(base.modified, i(9));
+        TestCase.assertEquals(base.added, null);
+        TestCase.assertEquals(base.removed, null);
+        TestCase.assertEquals(base.modified, null);
     }
 
     @Test
