@@ -23,6 +23,9 @@ public abstract class ColumnInstructions {
         return ImmutableColumnInstructions.builder().schemaFieldId(fieldId).build();
     }
 
+    // TODO: should we even allow user to configure this? we don't really want to expose partition columns to them
+    // (except identity, but then it's already in the schema, so they don't _need_ this).
+    // really, it means you want to use the *name* from the partition field as well
     public static ColumnInstructions partitionField(int partitionFieldId) {
         return ImmutableColumnInstructions.builder().partitionFieldId(partitionFieldId).build();
     }

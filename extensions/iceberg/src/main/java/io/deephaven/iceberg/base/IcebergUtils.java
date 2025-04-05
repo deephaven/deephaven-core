@@ -9,7 +9,8 @@ import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.iceberg.relative.RelativeFileIO;
 import io.deephaven.iceberg.internal.SpecAndSchema;
-import io.deephaven.iceberg.internal.SpecAndSchema2;
+import io.deephaven.iceberg.util.ColumnInstructions;
+import io.deephaven.iceberg.util.Resolver;
 import org.apache.iceberg.DataFile;
 import org.apache.iceberg.PartitionField;
 import org.apache.iceberg.PartitionSpec;
@@ -130,16 +131,26 @@ public final class IcebergUtils {
     }
 
     /**
-     * Create {@link PartitionSpec} and {@link Schema} from a {@link TableDefinition}.
+     * Create {@link PartitionSpec} and {@link Schema} from a {@link TableDefinition}. This should only be used in the
+     * context of creating a new {@link Table}.
      *
-     * @return A {@link SpecAndSchema2} object containing the partition spec and schema, and {@code null} for read
+     * @return A {@link SpecAndSchema} object containing the partition spec and schema, and {@code null} for read
      *         instructions.
+     * @deprecated prefer {@link #resolver(TableDefinition)} which will give exact instructions on how to read the Table
+     *             after it has been created
      */
     public static SpecAndSchema createSpecAndSchema(@NotNull final TableDefinition tableDefinition) {
+        final Resolver resolver = resolver(tableDefinition);
+        return new SpecAndSchema(resolver.schema(), resolver.spec());
+    }
+
+    // TODO: we may want to capture this more generally with instructions like we do for the reading side
+    // TODO: not that this won't have a real schema id
+    public static Resolver resolver(@NotNull final TableDefinition tableDefinition) {
+        final Resolver.Builder builder = Resolver.builder().definition(tableDefinition);
         final Collection<String> partitioningColumnNames = new ArrayList<>();
         final List<Types.NestedField> fields = new ArrayList<>();
         int fieldID = 1; // Iceberg field IDs start from 1
-
         // Create the schema first and use it to build the partition spec
         for (final ColumnDefinition<?> columnDefinition : tableDefinition.getColumns()) {
             final String dhColumnName = columnDefinition.getName();
@@ -148,14 +159,17 @@ public final class IcebergUtils {
             if (columnDefinition.isPartitioning()) {
                 partitioningColumnNames.add(dhColumnName);
             }
+            builder.putColumnInstructions(dhColumnName, ColumnInstructions.schemaField(fieldID));
             fieldID++;
         }
         final Schema schema = new Schema(fields);
-        final PartitionSpec partitionSpec = createPartitionSpec(schema, partitioningColumnNames);
-        return new SpecAndSchema(schema, partitionSpec);
+        return builder
+                .schema(schema)
+                .spec(createPartitionSpec(schema, partitioningColumnNames))
+                .build();
     }
 
-    public static PartitionSpec createPartitionSpec(
+    private static PartitionSpec createPartitionSpec(
             @NotNull final Schema schema,
             @NotNull final Iterable<String> partitionColumnNames) {
         final PartitionSpec.Builder partitionSpecBuilder = PartitionSpec.builderFor(schema);

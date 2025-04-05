@@ -8,8 +8,7 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.iceberg.base.IcebergUtils;
-import io.deephaven.iceberg.internal.SpecAndSchema;
-import io.deephaven.iceberg.internal.SpecAndSchema2;
+import io.deephaven.iceberg.internal.NameMappingUtil;
 import io.deephaven.iceberg.internal.DataInstructionsProviderLoader;
 import io.deephaven.iceberg.internal.DataInstructionsProviderPlugin;
 import io.deephaven.util.annotations.VisibleForTesting;
@@ -285,28 +284,49 @@ public class IcebergCatalogAdapter {
      * All columns of type {@link ColumnDefinition.ColumnType#Partitioning partitioning} will be used to create the
      * partition spec for the table.
      *
+     * <p>
+     * Note, if callers plans to use this table for reading, it may be preferable to call
+     * {@link #createTable2(TableIdentifier, TableDefinition)}, which will return a {@link Resolver} which can be
+     * provided to {@link IcebergReadInstructions}.
+     *
      * @param tableIdentifier The identifier of the new table.
      * @param definition The {@link TableDefinition} of the new table.
      * @return The {@link IcebergTableAdapter table adapter} for the new Iceberg table.
      * @throws AlreadyExistsException if the table already exists
+     * @see IcebergUtils#resolver(TableDefinition)
      */
     public IcebergTableAdapter createTable(
             @NotNull final TableIdentifier tableIdentifier,
             @NotNull final TableDefinition definition) {
-        final SpecAndSchema specAndSchema = IcebergUtils.createSpecAndSchema(definition);
-        return createTable(tableIdentifier, specAndSchema.schema, specAndSchema.partitionSpec);
+        final Resolver resolver = IcebergUtils.resolver(definition);
+        final org.apache.iceberg.Table table = createTable(tableIdentifier, resolver.schema(), resolver.spec());
+        return new IcebergTableAdapter(catalog, tableIdentifier, table, dataInstructionsProvider);
     }
 
-    private IcebergTableAdapter createTable(
+    public Resolver createTable2(
+            @NotNull final TableIdentifier tableIdentifier,
+            @NotNull final TableDefinition definition) {
+        final Resolver resolver = IcebergUtils.resolver(definition);
+        final org.apache.iceberg.Table table = createTable(tableIdentifier, resolver.schema(), resolver.spec());
+        // the schema from the real table will have the schema id
+        final Resolver.Builder builder = Resolver.builder()
+                .definition(definition)
+                .schema(table.schema())
+                .spec(table.spec())
+                .putAllColumnInstructions(resolver.columnInstructions());
+        // Unlikely to be set, but it's possible a catalog implementation creates ones by default?
+        NameMappingUtil.readNameMappingDefault(table).ifPresent(builder::nameMapping);
+        return builder.build();
+    }
+
+    private org.apache.iceberg.Table createTable(
             @NotNull final TableIdentifier tableIdentifier,
             @NotNull final Schema schema,
             @NotNull final PartitionSpec partitionSpec) {
         final boolean newNamespaceCreated = createNamespaceIfNotExists(catalog, tableIdentifier.namespace());
         try {
-            final org.apache.iceberg.Table table =
-                    catalog.createTable(tableIdentifier, schema, partitionSpec,
-                            Map.of(TableProperties.DEFAULT_FILE_FORMAT, TableProperties.DEFAULT_FILE_FORMAT_DEFAULT));
-            return new IcebergTableAdapter(catalog, tableIdentifier, table, dataInstructionsProvider);
+            return catalog.createTable(tableIdentifier, schema, partitionSpec,
+                    Map.of(TableProperties.DEFAULT_FILE_FORMAT, TableProperties.DEFAULT_FILE_FORMAT_DEFAULT));
         } catch (final Throwable throwable) {
             if (newNamespaceCreated) {
                 // Delete it to avoid leaving a partial namespace in the catalog

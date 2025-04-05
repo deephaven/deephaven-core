@@ -50,12 +50,12 @@ public abstract class Resolver {
                 .build();
     }
 
-    public static Resolver infer(InferenceInstructions i) throws Inference.UnsupportedType {
-        final Inf inf = new Inf(i);
-        TypeUtil.visit(i.schema(), inf);
+    public static Resolver infer(final InferenceInstructions inferenceInstructions) throws Inference.UnsupportedType {
+        final Inf inf = new Inf(inferenceInstructions);
+        TypeUtil.visit(inferenceInstructions.schema(), inf);
         // TODO: visit the PartitionSpec to build io.deephaven.iceberg.util.ColumnInstructions.partitionField as well
         // i.spec();
-        if (i.failOnUnsupportedTypes() && !inf.unsupportedTypes.isEmpty()) {
+        if (inferenceInstructions.failOnUnsupportedTypes() && !inf.unsupportedTypes.isEmpty()) {
             throw inf.unsupportedTypes.get(0);
         }
         return inf.build();
@@ -109,11 +109,11 @@ public abstract class Resolver {
 
     public interface Builder {
 
+        Builder definition(TableDefinition definition);
+
         Builder schema(Schema schema);
 
         Builder spec(PartitionSpec spec);
-
-        Builder definition(TableDefinition definition);
 
         Builder putColumnInstructions(String columnName, ColumnInstructions columnInstructions);
 
@@ -182,15 +182,15 @@ public abstract class Resolver {
         // search through the partition spec to see if any corresponding w/ identity to the column, but right now,
         // we'll just do that as part of inference.
         if (ci.schemaFieldId().isPresent()) {
-            if (isPartitioningColumn) {
-                throw new MappingException("Must use normal column with schema field");
-            }
+            // if (isPartitioningColumn) {
+            // throw new MappingException("Must use normal column with schema field");
+            // }
             final List<NestedField> fieldPath = ci.schemaFieldPath(schema());
             checkCompatible(fieldPath, type);
         } else {
-            if (!isPartitioningColumn) {
-                throw new MappingException("Must use partitioning column with partition field");
-            }
+            // if (!isPartitioningColumn) {
+            // throw new MappingException("Must use partitioning column with partition field");
+            // }
             final PartitionField partitionField = ci.partitionField(spec());
             checkCompatible(schema(), partitionField, type);
         }
@@ -307,7 +307,9 @@ public abstract class Resolver {
                     columnInstructions = ColumnInstructions.schemaField(fieldId);
                 } else {
                     columnDefinition = cd.withPartitioning();
-                    columnInstructions = ColumnInstructions.partitionField(pf.fieldId());
+                    columnInstructions = ColumnInstructions.schemaField(fieldId);
+                    // NOTE: I'm beginning to think we should *not* use partitionField here for _inference_; if
+                    // columnInstructions = ColumnInstructions.partitionField(pf.fieldId());
                 }
             }
             builder.putColumnInstructions(columnName, columnInstructions);

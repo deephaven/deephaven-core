@@ -305,6 +305,46 @@ class InferenceTest {
     }
 
     @Test
+    void identityPartition() throws Inference.UnsupportedType {
+        final Schema schema = simpleSchema(IT);
+        final PartitionSpec spec = PartitionSpec.builderFor(schema).identity("F1").build();
+        final InferenceInstructions ii = InferenceInstructions.builder()
+                .schema(schema)
+                .spec(spec)
+                .failOnUnsupportedTypes(true)
+                .build();
+        assertThat(Resolver.infer(ii)).isEqualTo(Resolver.builder()
+                .schema(schema)
+                .spec(spec)
+                .definition(TableDefinition.of(
+                        ColumnDefinition.ofInt("F1").withPartitioning(),
+                        ColumnDefinition.ofInt("F2")))
+                .putColumnInstructions("F1", schemaField(42))
+                .putColumnInstructions("F2", schemaField(43))
+                .build());
+    }
+
+    @Test
+    void skipUnknownPartition() throws Inference.UnsupportedType {
+        final Schema schema = simpleSchema(IT);
+        final PartitionSpec spec = PartitionSpec.builderFor(schema).bucket("F1", 99).build();
+        final InferenceInstructions ii = InferenceInstructions.builder()
+                .schema(schema)
+                .spec(spec)
+                .failOnUnsupportedTypes(true)
+                .build();
+        assertThat(Resolver.infer(ii)).isEqualTo(Resolver.builder()
+                .schema(schema)
+                .spec(spec)
+                .definition(TableDefinition.of(
+                        ColumnDefinition.ofInt("F1"),
+                        ColumnDefinition.ofInt("F2")))
+                .putColumnInstructions("F1", schemaField(42))
+                .putColumnInstructions("F2", schemaField(43))
+                .build());
+    }
+
+    @Test
     void skipFields() throws Inference.UnsupportedType {
         final Schema schema = new Schema(
                 NestedField.optional(42, "F1", IT),

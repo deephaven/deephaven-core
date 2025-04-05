@@ -3,6 +3,7 @@
 //
 package io.deephaven.iceberg.util;
 
+import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.ColumnDefinition;
@@ -19,11 +20,15 @@ import io.deephaven.engine.table.impl.sources.regioned.RegionedTableComponentFac
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.iceberg.base.IcebergUtils;
+import io.deephaven.iceberg.internal.DataInstructionsProviderLoader;
 import io.deephaven.iceberg.internal.Inference;
 import io.deephaven.iceberg.internal.Shim;
-import io.deephaven.iceberg.internal.SpecAndSchema2;
-import io.deephaven.iceberg.internal.DataInstructionsProviderLoader;
-import io.deephaven.iceberg.layout.*;
+import io.deephaven.iceberg.layout.IcebergAutoRefreshTableLocationProvider;
+import io.deephaven.iceberg.layout.IcebergBaseLayout;
+import io.deephaven.iceberg.layout.IcebergFlatLayout;
+import io.deephaven.iceberg.layout.IcebergManualRefreshTableLocationProvider;
+import io.deephaven.iceberg.layout.IcebergStaticTableLocationProvider;
+import io.deephaven.iceberg.layout.IcebergTableLocationProviderBase;
 import io.deephaven.iceberg.location.IcebergTableLocationFactory;
 import io.deephaven.iceberg.location.IcebergTableLocationKey;
 import io.deephaven.parquet.table.ParquetInstructions;
@@ -32,7 +37,6 @@ import io.deephaven.util.annotations.InternalUseOnly;
 import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.util.channel.SeekableChannelsProvider;
 import io.deephaven.util.channel.SeekableChannelsProviderLoader;
-import io.deephaven.util.type.TypeUtils;
 import org.apache.iceberg.PartitionField;
 import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.Schema;
@@ -46,7 +50,13 @@ import org.jetbrains.annotations.Nullable;
 
 import java.net.URI;
 import java.time.Instant;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static io.deephaven.iceberg.base.IcebergUtils.convertToDHType;
@@ -281,36 +291,35 @@ public class IcebergTableAdapter {
         return null;
     }
 
-    /**
-     * Retrieve the schema and partition spec for the table based on the provided read instructions. Also, populate the
-     * read instructions with the requested snapshot, or the latest snapshot if none is requested.
-     */
-    private SpecAndSchema2 getSpecAndSchema(@NotNull final IcebergReadInstructions readInstructions) {
-        // TODO: this is a change in behavior, unless w/ definitionInstructions, we will infer based on the latest
-        // schema
+    private ResolverAndSnapshot resolverAndSnapshot(@NotNull final IcebergReadInstructions readInstructions) {
+        final Resolver explicitResolver = readInstructions.resolver().orElse(null);
+        final Snapshot explicitSnapshot = getSnapshot(readInstructions);
+        if (explicitResolver != null && explicitSnapshot != null) {
+            return new ResolverAndSnapshot(explicitResolver, explicitSnapshot);
+        }
+        final Resolver resolver;
         final Snapshot snapshot;
-        {
-            final Snapshot snapshotFromInstructions = getSnapshot(readInstructions);
-            if (snapshotFromInstructions == null) {
+        if (explicitResolver == null) {
+            final InferenceInstructions ii;
+            if (explicitSnapshot == null) {
                 // todo: not sure why we were sync and refreshing before?
+                ii = InferenceInstructions.of(table.schema(), table.spec());
                 snapshot = table.currentSnapshot();
             } else {
-                // Use the schema from the snapshot
-                snapshot = snapshotFromInstructions;
+                ii = InferenceInstructions.of(table.schemas().get(explicitSnapshot.schemaId()), table.spec());
+                snapshot = explicitSnapshot;
             }
-        }
-        final Resolver di;
-        if (readInstructions.resolver().isPresent()) {
-            di = readInstructions.resolver().orElseThrow();
-        } else {
             try {
-                // note: using the latest schema, even if specific snapshot is set
-                di = Resolver.infer(InferenceInstructions.of(table.schema(), table.spec()));
-            } catch (Inference.Exception e) {
+                resolver = Resolver.infer(ii);
+            } catch (Inference.UnsupportedType e) {
                 throw new RuntimeException(e);
             }
+        } else {
+            Assert.eqNull(explicitSnapshot, "explicitSnapshot");
+            resolver = explicitResolver;
+            snapshot = table.currentSnapshot();
         }
-        return new SpecAndSchema2(di, snapshot);
+        return new ResolverAndSnapshot(resolver, snapshot);
     }
 
     /**
@@ -329,7 +338,7 @@ public class IcebergTableAdapter {
      * @return The table definition
      */
     public TableDefinition definition(@NotNull final IcebergReadInstructions readInstructions) {
-        return getSpecAndSchema(readInstructions).di.definition();
+        return resolverAndSnapshot(readInstructions).resolver().definition();
     }
 
     /**
@@ -367,8 +376,11 @@ public class IcebergTableAdapter {
      * @return The loaded table
      */
     public IcebergTable table(@NotNull final IcebergReadInstructions readInstructions) {
-        final SpecAndSchema2 ss = getSpecAndSchema(readInstructions);
-        final IcebergBaseLayout keyFinder = keyFinder(ss, readInstructions);
+        final ResolverAndSnapshot ras = resolverAndSnapshot(readInstructions);
+        final Resolver resolver = ras.resolver();
+        final TableDefinition definition = resolver.definition();
+        final IcebergBaseLayout keyFinder =
+                keyFinder(resolver, ras.snapshot().orElse(null), readInstructions.dataInstructions().orElse(null));
         if (readInstructions.updateMode().updateType() == IcebergUpdateMode.IcebergUpdateType.STATIC) {
             final IcebergTableLocationProviderBase<TableKey, IcebergTableLocationKey> locationProvider =
                     new IcebergStaticTableLocationProvider<>(
@@ -377,7 +389,7 @@ public class IcebergTableAdapter {
                             new IcebergTableLocationFactory(),
                             tableIdentifier);
             return new IcebergTableImpl(
-                    ss.di.definition(),
+                    definition,
                     tableIdentifier.toString(),
                     RegionedTableComponentFactoryImpl.INSTANCE,
                     locationProvider,
@@ -406,27 +418,36 @@ public class IcebergTableAdapter {
         }
 
         return new IcebergTableImpl(
-                ss.di.definition(),
+                definition,
                 tableIdentifier.toString(),
                 RegionedTableComponentFactoryImpl.INSTANCE,
                 locationProvider,
                 updateSourceRegistrar);
     }
 
-    private @NotNull IcebergBaseLayout keyFinder(SpecAndSchema2 ss, IcebergReadInstructions ri) {
-        final String uriScheme = locationUri.getScheme();
-        final Object specialInstructions = ri.dataInstructions()
-                .orElseGet(() -> dataInstructionsProviderLoader.load(uriScheme));
-        final SeekableChannelsProvider channelsProvider = seekableChannelsProvider(uriScheme, specialInstructions);
+    private @NotNull IcebergBaseLayout keyFinder(
+            @NotNull final Resolver resolver,
+            @Nullable final Snapshot snapshot,
+            @Nullable final Object dataInstructions) {
+        final Object specialInstructions;
+        final SeekableChannelsProvider channelsProvider;
+        {
+            final String uriScheme = locationUri.getScheme();
+            specialInstructions = dataInstructions == null
+                    ? dataInstructionsProviderLoader.load(uriScheme)
+                    : dataInstructions;
+            channelsProvider = seekableChannelsProvider(uriScheme, specialInstructions);
+        }
         final ParquetInstructions parquetInstructions = ParquetInstructions.builder()
-                .setTableDefinition(ss.di.definition())
-                .setColumnResolverFactory(Shim.factory(ss.di))
+                .setTableDefinition(resolver.definition())
+                .setColumnResolverFactory(Shim.factory(resolver))
                 .setSpecialInstructions(specialInstructions)
                 .build();
-        final PartitionSpec spec = ss.di.spec();
+        // todo: we should probably be checking TD instead
+        final PartitionSpec spec = resolver.spec();
         if (spec.isUnpartitioned()) {
             // Create the flat layout location key finder
-            return new IcebergFlatLayout(this, parquetInstructions, channelsProvider, ss.snapshot);
+            return new IcebergFlatLayout(this, parquetInstructions, channelsProvider, snapshot);
         } else {
             throw new UnsupportedOperationException("TODO");
             // Create the partitioning column location key finder

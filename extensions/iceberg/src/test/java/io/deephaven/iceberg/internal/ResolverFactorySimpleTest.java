@@ -213,6 +213,15 @@ class ResolverFactorySimpleTest {
         }
     }
 
+    @Test
+    void resolvePartitionField() {
+        Resolver.builder()
+                .definition(TABLE_DEFINITION)
+                .schema(SCHEMA)
+                .spec(PartitionSpec.unpartitioned())
+                .putAllColumnInstructions(COLUMN_INSTRUCTIONS);
+    }
+
     private static ResolverFactory factory(Resolver resolver) {
         return new ResolverFactory(resolver);
     }

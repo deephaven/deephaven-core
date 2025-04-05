@@ -8,7 +8,6 @@ import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.NoSuchColumnException;
 import io.deephaven.iceberg.util.Resolver;
 import io.deephaven.qst.type.Type;
-import org.apache.iceberg.PartitionField;
 import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.Schema;
 import org.apache.iceberg.types.Types;
@@ -131,46 +130,125 @@ class ResolverTest {
                 .build();
     }
 
-    @Test
-    void normalColumnPartitionField() {
-        final Schema schema = simpleSchema(IT);
-        final PartitionSpec spec = PartitionSpec.builderFor(schema)
-                .identity("F1")
-                .build();
-        try {
-            Resolver.builder()
-                    .schema(schema)
-                    .spec(spec)
-                    .definition(simpleDefinition(Type.intType()))
-                    .putColumnInstructions("F1", partitionField(spec.fields().get(0).fieldId()))
-                    .putColumnInstructions("F2", schemaField(43))
-                    .build();
-            failBecauseExceptionWasNotThrown(Resolver.MappingException.class);
-        } catch (Resolver.MappingException e) {
-            assertThat(e).hasMessageContaining("Unable to map Deephaven column F1");
-            assertThat(e).cause().hasMessageContaining("Must use partitioning column with partition field");
-        }
-    }
+    // @Test
+    // void normalColumnPartitionField() {
+    // final Schema schema = simpleSchema(IT);
+    // final PartitionSpec spec = PartitionSpec.builderFor(schema)
+    // .identity("F1")
+    // .build();
+    // try {
+    // Resolver.builder()
+    // .schema(schema)
+    // .spec(spec)
+    // .definition(simpleDefinition(Type.intType()))
+    // .putColumnInstructions("F1", partitionField(spec.fields().get(0).fieldId()))
+    // .putColumnInstructions("F2", schemaField(43))
+    // .build();
+    // failBecauseExceptionWasNotThrown(Resolver.MappingException.class);
+    // } catch (Resolver.MappingException e) {
+    // assertThat(e).hasMessageContaining("Unable to map Deephaven column F1");
+    // assertThat(e).cause().hasMessageContaining("Must use partitioning column with partition field");
+    // }
+    // }
+
+    // @Test
+    // void partitioningColumnSchemaField() {
+    // final Schema schema = simpleSchema(IT);
+    // final TableDefinition td = TableDefinition.of(
+    // ColumnDefinition.ofInt("F1").withPartitioning(),
+    // ColumnDefinition.ofInt("F2"));
+    // try {
+    // Resolver.builder()
+    // .schema(schema)
+    // .spec(PartitionSpec.unpartitioned())
+    // .definition(td)
+    // .putColumnInstructions("F1", schemaField(42))
+    // .putColumnInstructions("F2", schemaField(43))
+    // .build();
+    // failBecauseExceptionWasNotThrown(Resolver.MappingException.class);
+    // } catch (Resolver.MappingException e) {
+    // assertThat(e).hasMessageContaining("Unable to map Deephaven column F1");
+    // assertThat(e).cause().hasMessageContaining("Must use normal column with schema field");
+    // }
+    // }
 
     @Test
-    void partitioningColumnSchemaField() {
+    void partitioningColumnSchemaFieldNoPartitionSpec() {
         final Schema schema = simpleSchema(IT);
         final TableDefinition td = TableDefinition.of(
                 ColumnDefinition.ofInt("F1").withPartitioning(),
                 ColumnDefinition.ofInt("F2"));
-        try {
-            Resolver.builder()
-                    .schema(schema)
-                    .spec(PartitionSpec.unpartitioned())
-                    .definition(td)
-                    .putColumnInstructions("F1", schemaField(42))
-                    .putColumnInstructions("F2", schemaField(43))
-                    .build();
-            failBecauseExceptionWasNotThrown(Resolver.MappingException.class);
-        } catch (Resolver.MappingException e) {
-            assertThat(e).hasMessageContaining("Unable to map Deephaven column F1");
-            assertThat(e).cause().hasMessageContaining("Must use normal column with schema field");
-        }
+        Resolver.builder()
+                .schema(schema)
+                .spec(PartitionSpec.unpartitioned())
+                .definition(td)
+                .putColumnInstructions("F1", schemaField(42))
+                .putColumnInstructions("F2", schemaField(43))
+                .build();
+    }
+
+    @Test
+    void partitioningColumnSchemaFieldPartitionSpec() {
+        final Schema schema = simpleSchema(IT);
+        final PartitionSpec spec = PartitionSpec.builderFor(schema).identity("F1").build();
+        final TableDefinition td = TableDefinition.of(
+                ColumnDefinition.ofInt("F1").withPartitioning(),
+                ColumnDefinition.ofInt("F2"));
+        Resolver.builder()
+                .schema(schema)
+                .spec(spec)
+                .definition(td)
+                .putColumnInstructions("F1", schemaField(42))
+                .putColumnInstructions("F2", schemaField(43))
+                .build();
+    }
+
+    @Test
+    void partitioningColumnPartitionFieldPartitionSpec() {
+        final Schema schema = simpleSchema(IT);
+        final PartitionSpec spec = PartitionSpec.builderFor(schema).identity("F1").build();
+        final TableDefinition td = TableDefinition.of(
+                ColumnDefinition.ofInt("F1").withPartitioning(),
+                ColumnDefinition.ofInt("F2"));
+        Resolver.builder()
+                .schema(schema)
+                .spec(spec)
+                .definition(td)
+                .putColumnInstructions("F1", partitionField(spec.fields().get(0).fieldId()))
+                .putColumnInstructions("F2", schemaField(43))
+                .build();
+    }
+
+    @Test
+    void normalColumnSchemaFieldPartitionSpec() {
+        final Schema schema = simpleSchema(IT);
+        final PartitionSpec spec = PartitionSpec.builderFor(schema).identity("F1").build();
+        final TableDefinition td = TableDefinition.of(
+                ColumnDefinition.ofInt("F1"),
+                ColumnDefinition.ofInt("F2"));
+        Resolver.builder()
+                .schema(schema)
+                .spec(spec)
+                .definition(td)
+                .putColumnInstructions("F1", schemaField(42))
+                .putColumnInstructions("F2", schemaField(43))
+                .build();
+    }
+
+    @Test
+    void normalColumnPartitionFieldPartitionSpec() {
+        final Schema schema = simpleSchema(IT);
+        final PartitionSpec spec = PartitionSpec.builderFor(schema).identity("F1").build();
+        final TableDefinition td = TableDefinition.of(
+                ColumnDefinition.ofInt("F1"),
+                ColumnDefinition.ofInt("F2"));
+        Resolver.builder()
+                .schema(schema)
+                .spec(spec)
+                .definition(td)
+                .putColumnInstructions("F1", partitionField(spec.fields().get(0).fieldId()))
+                .putColumnInstructions("F2", schemaField(43))
+                .build();
     }
 
     @Test
