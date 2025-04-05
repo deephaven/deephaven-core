@@ -27,6 +27,12 @@ dependencies {
     runtimeOnly libs.awssdk.sts
     implementation libs.awssdk.glue
 
+    implementation libs.awssdk.s3tables
+    implementation libs.awssdk.sso
+    implementation libs.awssdk.ssooidc
+
+    implementation libs.s3.tables.catalog.for.iceberg
+
     // We don't want to explicitly pull in dependencies for dynamodb (org.apache.iceberg.aws.dynamodb.DynamoDbCatalog),
     // but we need to be able to compile against it to implement AwsClientFactory
     compileOnly libs.awssdk.dynamodb
