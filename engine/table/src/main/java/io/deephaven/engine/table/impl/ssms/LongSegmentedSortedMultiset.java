@@ -2213,11 +2213,15 @@ public final class LongSegmentedSortedMultiset implements SegmentedSortedMultiSe
      */
     private long[] keyArray(long first, long last) {
         if (isEmpty()) {
+            // region EmptyKeyArrayAllocation
             return ArrayTypeUtils.EMPTY_LONG_ARRAY;
+            // endregion EmptyKeyArrayAllocation
         }
 
         final int totalSize = (int) (last - first + 1);
+        // region KeyArrayAllocation
         final long[] keyArray = new long[totalSize];
+        // endregion KeyArrayAllocation
         if (leafCount == 1) {
             System.arraycopy(directoryValues, (int) first, keyArray, 0, totalSize);
         } else if (leafCount > 0) {

@@ -38,7 +38,7 @@ if (hasProperty('groovy')) {
 }
 
 if (!hasProperty('excludeHotspotImpl')) {
-   extraJvmArgs += ['--add-exports', 'java.management/sun.management=ALL-UNNAMED']
+    extraJvmArgs += ['--add-exports', 'java.management/sun.management=ALL-UNNAMED']
 }
 
 if (!hasProperty('excludeClockImpl')) {
