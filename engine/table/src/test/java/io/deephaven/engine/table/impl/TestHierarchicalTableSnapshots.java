@@ -325,6 +325,46 @@ public class TestHierarchicalTableSnapshots {
         freeSnapshotTableChunks(customSnapshot);
     }
 
+    @Test
+    public void testRollupUpdateViewError() throws CsvReaderException {
+        final String data = "A,B,C,N\n" +
+                "Apple,One,Alpha,1\n" +
+                "Apple,One,Alpha,2\n" +
+                "Apple,One,Bravo,3\n" +
+                "Apple,One,Bravo,4\n" +
+                "Apple,One,Bravo,5\n" +
+                "Apple,One,Bravo,6\n" +
+                "Banana,Two,Alpha,7\n" +
+                "Banana,Two,Alpha,8\n" +
+                "Banana,Two,Bravo,3\n" +
+                "Banana,Two,Bravo,4\n" +
+                "Banana,Three,Bravo,1\n" +
+                "Banana,Three,Bravo,1\n";
+        final Table source = CsvTools.readCsv(new ByteArrayInputStream(data.getBytes()));
+
+        // Make a simple rollup
+        final Collection<Aggregation> aggs = List.of(
+                AggCount("count"),
+                AggSum("sumN=N"));
+
+        final String[] arrayWithNull = new String[1];
+
+        final RollupTable rollupTable = source.rollup(aggs, false, "A", "B", "C");
+
+        try {
+            // Perform an illegal updateView using the virtual row variable "ii"
+            final RollupTable customRollup = rollupTable.withNodeOperations(
+                    rollupTable.makeNodeOperationsRecorder(RollupTable.NodeType.Aggregated)
+                            .updateView("iPlus1 = ii + 1"));
+            TestCase.fail("Expected exception not thrown");
+        } catch (Exception ex) {
+            if (!(ex instanceof IllegalArgumentException)
+                    || !ex.toString().contains("updateView does not support virtual row variables")) {
+                TestCase.fail("Expected IllegalArgumentException, got " + ex.getClass().getSimpleName() + ": " + ex);
+            }
+        }
+    }
+
     @SuppressWarnings("SameParameterValue")
     static Table snapshotToTable(
             @NotNull final HierarchicalTable<?> hierarchicalTable,
