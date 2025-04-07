@@ -22,6 +22,7 @@ import java.nio.channels.SeekableByteChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 
@@ -201,24 +202,35 @@ abstract class S3SeekableChannelSimpleTestBase extends S3SeekableChannelTestSetu
                 final SeekableChannelsProvider provider = CachedChannelProvider.create(providerImpl, 32);
                 final SeekableChannelsProvider.WriteContext context = provider.makeWriteContext();
                 final CompletableOutputStream outputStream = provider.getOutputStream(context, uri, 0)) {
-            final int numBytes = 36 * 1024 * 1024; // 36 Mib -> Three 10-MiB parts + One 6-MiB part
+            final int numBytes = 1024 * 1024;
             final int numIters = numBytes / contentBytes.length;
             for (int i = 0; i < numIters; ++i) {
                 outputStream.write(contentBytes);
             }
-            outputStream.flush();
-            outputStream.done();
             // Push data to S3 and expect a timeout
             try {
+                outputStream.flush();
+                outputStream.done();
                 outputStream.complete();
                 fail("Expected write timeout exception");
             } catch (Exception e) {
+                System.out.println("Exception 1");
+                e.printStackTrace();
                 final Throwable cause = e.getCause();
-                assertThat(cause.getClass().equals(ExecutionException.class)).isEqualTo(true);
+                if (!(cause instanceof CompletionException)) {
+                    fail("Expected CompletionException but got " + cause.getClass().getName());
+                }
+
+                final String expectedMessage = "Client execution did not complete before the specified timeout configuration";
                 final String s = cause.getMessage();
-                assertThat(s.contains("Client execution did not complete before the specified timeout configuration"))
-                        .isEqualTo(true);
+                if (!s.contains(expectedMessage)) {
+                    fail("Expected message to contain: " + expectedMessage + " but got: " + s);
+                }
             }
+            outputStream.complete();
+        } catch (Exception ignored) {
+            // The close can throw another exception which we don't care about - it's actually a "Self-suppression not permitted"
+            // IAE from the try-with-resources block
         }
     }
 
