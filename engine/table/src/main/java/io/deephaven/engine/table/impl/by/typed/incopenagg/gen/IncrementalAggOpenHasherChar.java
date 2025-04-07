@@ -88,6 +88,36 @@ final class IncrementalAggOpenHasherChar extends IncrementalChunkedOperatorAggre
         }
     }
 
+    protected void buildInitial(RowSequence rowSequence, Chunk[] sourceKeyChunks) {
+        Assert.eqZero(rehashPointer, "rehashPointer");
+        final CharChunk<Values> keyChunk0 = sourceKeyChunks[0].asCharChunk();
+        final int chunkSize = keyChunk0.size();
+        for (int chunkPosition = 0; chunkPosition < chunkSize; ++chunkPosition) {
+            final char k0 = keyChunk0.get(chunkPosition);
+            final int hash = hash(k0);
+            final int firstTableLocation = hashToTableLocation(hash);
+            int tableLocation = firstTableLocation;
+            MAIN_SEARCH: while (true) {
+                int outputPosition = mainOutputPosition.getUnsafe(tableLocation);
+                if (isStateEmpty(outputPosition)) {
+                    numEntries++;
+                    mainKeySource0.set(tableLocation, k0);
+                    outputPosition = nextOutputPosition.getAndIncrement();
+                    outputPositions.set(chunkPosition, outputPosition);
+                    mainOutputPosition.set(tableLocation, outputPosition);
+                    outputPositionToHashSlot.set(outputPosition, mainInsertMask | tableLocation);
+                    break;
+                } else if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
+                    outputPositions.set(chunkPosition, outputPosition);
+                    break;
+                } else {
+                    tableLocation = nextTableLocation(tableLocation);
+                    Assert.neq(tableLocation, "tableLocation", firstTableLocation, "firstTableLocation");
+                }
+            }
+        }
+    }
+
     protected void probe(RowSequence rowSequence, Chunk[] sourceKeyChunks) {
         final CharChunk<Values> keyChunk0 = sourceKeyChunks[0].asCharChunk();
         final int chunkSize = keyChunk0.size();
