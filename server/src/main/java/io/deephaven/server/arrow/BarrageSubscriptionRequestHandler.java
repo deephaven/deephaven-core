@@ -28,7 +28,7 @@ import java.util.Queue;
 /**
  * Handler for BarrageSubscriptionRequest over DoExchange.
  */
-class BarrageSubscriptionRequestHandler implements ArrowFlightUtil.DoExchangeMarshaller.Handler {
+public class BarrageSubscriptionRequestHandler implements ArrowFlightUtil.DoExchangeMarshaller.Handler {
 
     private final ArrowFlightUtil.DoExchangeMarshaller marshaller;
     private final TicketRouter ticketRouter;

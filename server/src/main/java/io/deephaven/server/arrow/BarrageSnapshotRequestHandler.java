@@ -26,8 +26,7 @@ import java.util.concurrent.atomic.AtomicReference;
 /**
  * Handler for DoGetRequest over DoExchange.
  */
-class BarrageSnapshotRequestHandler
-        implements ArrowFlightUtil.DoExchangeMarshaller.Handler {
+public class BarrageSnapshotRequestHandler implements ArrowFlightUtil.DoExchangeMarshaller.Handler {
     private final AtomicReference<ArrowFlightUtil.HalfClosedState> halfClosedState =
             new AtomicReference<>(ArrowFlightUtil.HalfClosedState.DONT_CLOSE);
     private final ArrowFlightUtil.DoExchangeMarshaller marshaller;
