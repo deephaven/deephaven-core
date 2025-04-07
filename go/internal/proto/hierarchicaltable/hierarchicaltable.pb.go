@@ -325,7 +325,7 @@ type UpdateViewRequest struct {
 	unknownFields protoimpl.UnknownFields
 
 	ColumnSpec *table.Selectable `protobuf:"bytes,1,opt,name=column_spec,json=columnSpec,proto3" json:"column_spec,omitempty"`
-	// The node types that will have this update_view applied. Ignored for TreeTable
+	// The node types that will have this update_view applied. Ignored for TreeTable.
 	NodeType RollupNodeType `protobuf:"varint,2,opt,name=node_type,json=nodeType,proto3,enum=io.deephaven.proto.backplane.grpc.RollupNodeType" json:"node_type,omitempty"`
 }
 
@@ -395,11 +395,10 @@ type HierarchicalTableApplyRequest struct {
 	// Sorts to apply to the input HierarchicalTable to produce the result HierarchicalTable. Never expressed against
 	// the "structural" columns included in the a HierarchicalTableDescriptor's snapshot_schema.
 	// For TreeTables, these are simply applied to the nodes at snapshot time.
-	// For RollupTables, these are expressed against the aggregated node columns, and will be applied to the appropriate
-	// input (constituent) columns as well. The appropriate (aggregated or constituent) sorts are applied to the nodes at
-	// snapshot time.
+	// For RollupTables, these are expressed against the aggregated, constituent or updateView node columns. The
+	// appropriate sorts are applied to the nodes at snapshot time.
 	Sorts []*table.SortDescriptor `protobuf:"bytes,4,rep,name=sorts,proto3" json:"sorts,omitempty"`
-	// format operations to apply to the nodes of the table.
+	// Format operations to apply to the nodes of the table.
 	// For RollupTables, the update is applied only to the specified node types.
 	// For TreeTables, the node type is ignored and the update is applied to all nodes.
 	FormatViews []*UpdateViewRequest `protobuf:"bytes,5,rep,name=format_views,json=formatViews,proto3" json:"format_views,omitempty"`
