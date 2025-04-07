@@ -324,9 +324,9 @@ public class ParquetTools {
         } else {
             // Skip writing any existing indexes that are on partitioning columns, but don't fail
             final Collection<List<String>> existingIndexes = indexedColumnNames(sourceTable);
+            final Set<String> keyColumnNames = partitionedTable.keyColumnNames();
             indexColumns = existingIndexes.stream()
-                    .filter(index -> index.size() != 1
-                            || !partitionedTable.keyColumnNames().contains(index.get(0)))
+                    .filter(index -> !isIndexOnPartitioningColumn(index, keyColumnNames))
                     .collect(Collectors.toList());
         }
 
@@ -379,10 +379,16 @@ public class ParquetTools {
             @NotNull final Collection<List<String>> indexColumnsCollection,
             @NotNull final Collection<String> partitioningColumnNames) {
         for (final List<String> indexColumns : indexColumnsCollection) {
-            if (indexColumns.size() == 1 && partitioningColumnNames.contains(indexColumns.get(0))) {
+            if (isIndexOnPartitioningColumn(indexColumns, partitioningColumnNames)) {
                 throw new IllegalArgumentException("Cannot add index on partitioning column " + indexColumns.get(0));
             }
         }
+    }
+
+    private static boolean isIndexOnPartitioningColumn(
+            @NotNull final List<String> indexColumns,
+            @NotNull final Collection<String> partitioningColumnNames) {
+        return indexColumns.size() == 1 && partitioningColumnNames.contains(indexColumns.get(0));
     }
 
     /**
