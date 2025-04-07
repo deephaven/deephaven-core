@@ -49,11 +49,7 @@ public class BarrageSnapshotRequestHandler implements ArrowFlightUtil.DoExchange
 
     @Override
     public void handleMessage(@NotNull final BarrageProtoUtil.MessageInfo message) {
-        // verify this is the correct type of message for this handler
-        if (message.app_metadata.msgType() != BarrageMessageType.BarrageSnapshotRequest) {
-            throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
-                    "Request type cannot be changed after initialization, expected BarrageSnapshotRequest metadata");
-        }
+        validateMessage(message);
 
         final BarrageSnapshotRequest snapshotRequest = BarrageSnapshotRequest
                 .getRootAsBarrageSnapshotRequest(message.app_metadata.msgPayloadAsByteBuffer());
@@ -113,6 +109,20 @@ public class BarrageSnapshotRequestHandler implements ArrowFlightUtil.DoExchange
                         marshallerForExport.snapshot(snapshotRequest, options, export, metrics,
                                 listener, ticketLogName, streamGeneratorFactory);
                     });
+        }
+    }
+
+    /**
+     * Called at the start of {@link #handleMessage(BarrageProtoUtil.MessageInfo)} to validate that the message is of
+     * the correct type and is initialized properly.
+     * 
+     * @param message the message to validate
+     */
+    protected void validateMessage(@NotNull final BarrageProtoUtil.MessageInfo message) {
+        // verify this is the correct type of message for this handler
+        if (message.app_metadata.msgType() != BarrageMessageType.BarrageSnapshotRequest) {
+            throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
+                    "Request type cannot be changed after initialization, expected BarrageSnapshotRequest metadata");
         }
     }
 

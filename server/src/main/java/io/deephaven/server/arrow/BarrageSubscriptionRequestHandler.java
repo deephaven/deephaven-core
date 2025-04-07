@@ -55,15 +55,7 @@ public class BarrageSubscriptionRequestHandler implements ArrowFlightUtil.DoExch
 
     @Override
     public void handleMessage(@NotNull final BarrageProtoUtil.MessageInfo message) {
-        // verify this is the correct type of message for this handler
-        if (message.app_metadata.msgType() != BarrageMessageType.BarrageSubscriptionRequest) {
-            throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
-                    "Request type cannot be changed after initialization, expected BarrageSubscriptionRequest metadata");
-        }
-
-        if (message.app_metadata.msgPayloadVector() == null) {
-            throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, "Subscription request not supplied");
-        }
+        validateMessage(message);
 
         final BarrageSubscriptionRequest subscriptionRequest = BarrageSubscriptionRequest
                 .getRootAsBarrageSubscriptionRequest(message.app_metadata.msgPayloadAsByteBuffer());
@@ -107,6 +99,24 @@ public class BarrageSubscriptionRequestHandler implements ArrowFlightUtil.DoExch
                         .onErrorHandler(marshaller::onError)
                         .submit(() -> onExportResolved(table));
             }
+        }
+    }
+
+    /**
+     * Called at the start of {@link #handleMessage(BarrageProtoUtil.MessageInfo)} to validate that the message is of
+     * the correct type and is initialized properly.
+     * 
+     * @param message the message to validate
+     */
+    protected void validateMessage(@NotNull final BarrageProtoUtil.MessageInfo message) {
+        // verify this is the correct type of message for this handler
+        if (message.app_metadata.msgType() != BarrageMessageType.BarrageSubscriptionRequest) {
+            throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
+                    "Request type cannot be changed after initialization, expected BarrageSubscriptionRequest metadata");
+        }
+
+        if (message.app_metadata.msgPayloadVector() == null) {
+            throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, "Subscription request not supplied");
         }
     }
 
