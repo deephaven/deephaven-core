@@ -13,6 +13,7 @@ import org.immutables.value.Value;
 
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -39,11 +40,13 @@ public abstract class InferenceInstructions {
     public abstract PartitionSpec spec();
 
     /**
-     * The namer factory. Defaults to {@link Namer.Factory#fieldName()}.
+     * The namer factory. Defaults to {@code fieldName("_")}.
+     *
+     * @see Namer.Factory#fieldName(String)
      */
     @Value.Default
     public Namer.Factory namerFactory() {
-        return Namer.Factory.fieldName();
+        return Namer.Factory.fieldName("_");
     }
 
     /**
@@ -70,11 +73,13 @@ public abstract class InferenceInstructions {
 
             /**
              * The field name {@link Namer} constructs a Deephaven column name by joining together the
-             * {@link Types.NestedField#name() field names} with an underscore ({@code _}) and calling
+             * {@link Types.NestedField#name() field names} with an {@code delimiter} and calling
              * {@link NameValidator#legalizeColumnName(String, Set)} with de-duplication logic.
+             * 
+             * @param delimiter the delimiter to use to join names
              */
-            static Factory fieldName() {
-                return FieldNameNamer.FactoryImpl.FIELD_NAME_NAMER;
+            static Factory fieldName(String delimiter) {
+                return new FieldNameNamerFactory(delimiter);
             }
 
             /**
@@ -131,25 +136,30 @@ public abstract class InferenceInstructions {
         }
     }
 
-    private static final class FieldNameNamer implements Namer {
+    private static final class FieldNameNamerFactory implements Namer.Factory {
+        private final String delimiter;
 
-        private enum FactoryImpl implements Factory {
-            FIELD_NAME_NAMER;
-
-            @Override
-            public Namer create() {
-                return new FieldNameNamer();
-            }
+        FieldNameNamerFactory(String delimiter) {
+            this.delimiter = Objects.requireNonNull(delimiter);
         }
 
-        private final Set<String> usedNames = new HashSet<>();
-
         @Override
-        public String of(Collection<? extends Types.NestedField> path, Type<?> type) {
-            final String joinedNames = path.stream().map(Types.NestedField::name).collect(Collectors.joining("_"));
-            final String columnName = NameValidator.legalizeColumnName(joinedNames, usedNames);
-            usedNames.add(columnName);
-            return columnName;
+        public Namer create() {
+            return new FieldNameNamer();
+        }
+
+        private final class FieldNameNamer implements Namer {
+
+            private final Set<String> usedNames = new HashSet<>();
+
+            @Override
+            public String of(Collection<? extends Types.NestedField> path, Type<?> type) {
+                final String joinedNames =
+                        path.stream().map(Types.NestedField::name).collect(Collectors.joining(delimiter));
+                final String columnName = NameValidator.legalizeColumnName(joinedNames, usedNames);
+                usedNames.add(columnName);
+                return columnName;
+            }
         }
     }
 

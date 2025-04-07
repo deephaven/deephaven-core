@@ -314,6 +314,10 @@ public class IcebergTableAdapter {
             } catch (Inference.UnsupportedType e) {
                 throw new RuntimeException(e);
             }
+
+            // todo:
+
+
         } else {
             Assert.eqNull(explicitSnapshot, "explicitSnapshot");
             resolver = explicitResolver;
