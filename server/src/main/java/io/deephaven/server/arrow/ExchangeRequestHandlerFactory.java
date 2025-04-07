@@ -3,19 +3,8 @@
 //
 package io.deephaven.server.arrow;
 
-import io.deephaven.barrage.flatbuf.BarrageSnapshotRequest;
-import io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest;
-import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.extensions.barrage.BarrageMessageWriter;
-import io.deephaven.extensions.barrage.BarragePerformanceLog;
-import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
-import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
-import io.deephaven.server.session.SessionState;
-import io.deephaven.server.session.TicketRouter;
 import io.grpc.stub.StreamObserver;
-import org.jetbrains.annotations.Nullable;
-
-import java.util.Collection;
 
 /**
  * The ExchangeRequestHandlerFactory is a pluggable component within {@link ArrowFlightUtil} that provides a

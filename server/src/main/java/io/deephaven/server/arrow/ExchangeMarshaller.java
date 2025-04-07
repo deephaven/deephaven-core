@@ -112,7 +112,7 @@ public interface ExchangeMarshaller {
         void close();
 
         /**
-         * Update the subscription with the
+         * Update the subscription with the new request.
          * 
          * @param subscriptionRequest the request to update the subscription
          * @return true if the subscription was found and updated, false otherwise

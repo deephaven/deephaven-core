@@ -97,8 +97,9 @@ public class HierarchicalTableViewExchangeMarshaller implements ExchangeMarshall
 
         @Override
         public LivenessReferent toManage() {
-            if (isRefreshing)
+            if (isRefreshing) {
                 return htvs;
+            }
             return null;
         }
 
