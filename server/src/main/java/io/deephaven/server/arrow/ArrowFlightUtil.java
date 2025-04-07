@@ -10,7 +10,6 @@ import dagger.assisted.AssistedInject;
 import gnu.trove.map.hash.TByteObjectHashMap;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.barrage.flatbuf.BarrageMessageType;
-import io.deephaven.barrage.flatbuf.BarrageSnapshotRequest;
 import io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.liveness.SingletonLivenessManager;
@@ -42,7 +41,6 @@ import org.apache.arrow.flatbuf.MessageHeader;
 import org.apache.arrow.flatbuf.Schema;
 import org.apache.arrow.flight.impl.Flight;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -541,52 +539,4 @@ public class ArrowFlightUtil {
         }
 
     }
-
-    /**
-     * Helper to retrieve the viewport RowSet from a subscription request.
-     */
-    public static @Nullable RowSet getViewport(final BarrageSubscriptionRequest subscriptionRequest) {
-        final boolean hasViewport = subscriptionRequest.viewportVector() != null;
-        return hasViewport ? BarrageProtoUtil.toRowSet(subscriptionRequest.viewportAsByteBuffer()) : null;
-    }
-
-    /**
-     * Helper to retrieve the viewport columns from a subscription request.
-     */
-    public static @Nullable BitSet getColumns(final BarrageSubscriptionRequest subscriptionRequest) {
-        final boolean hasColumns = subscriptionRequest.columnsVector() != null;
-        return hasColumns ? BitSet.valueOf(subscriptionRequest.columnsAsByteBuffer()) : null;
-    }
-
-    /**
-     * Helper to retrieve the viewport RowSet from a snapshot request.
-     */
-    static @Nullable RowSet getViewport(final BarrageSnapshotRequest snapshotRequest) {
-        final boolean hasViewport = snapshotRequest.viewportVector() != null;
-        return hasViewport
-                ? BarrageProtoUtil.toRowSet(snapshotRequest.viewportAsByteBuffer())
-                : null;
-    }
-
-    /**
-     * Helper to retrieve the viewport columns from a snapshot request.
-     */
-    static @Nullable BitSet getColumns(final BarrageSnapshotRequest snapshotRequest) {
-        final boolean hasColumns = snapshotRequest.columnsVector() != null;
-        return hasColumns ? BitSet.valueOf(snapshotRequest.columnsAsByteBuffer()) : null;
-    }
-
-    /**
-     * Helper to retrieve the update interval from a subscription request.
-     */
-    public static long getMinUpdateIntervalMs(final io.deephaven.barrage.flatbuf.BarrageSubscriptionOptions options) {
-        final long minUpdateIntervalMs;
-        if (options == null || options.minUpdateIntervalMs() == 0) {
-            minUpdateIntervalMs = DEFAULT_MIN_UPDATE_INTERVAL_MS;
-        } else {
-            minUpdateIntervalMs = options.minUpdateIntervalMs();
-        }
-        return minUpdateIntervalMs;
-    }
-
 }

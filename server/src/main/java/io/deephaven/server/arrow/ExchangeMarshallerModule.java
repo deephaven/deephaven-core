@@ -31,8 +31,7 @@ public class ExchangeMarshallerModule {
                 .stream()
                 .map(factory -> factory.get().create(scheduler, errorTransformer, streamGeneratorFactory))
                 // Note that although we sort the marshallers by priority, the eventual user of the marshaller must sort
-                // the
-                // complete set by priority.
+                // the complete set by priority.
                 .sorted(Comparator.comparingInt(ExchangeMarshaller::priority))
                 .collect(Collectors.collectingAndThen(Collectors.toCollection(LinkedHashSet::new),
                         Collections::unmodifiableSet));

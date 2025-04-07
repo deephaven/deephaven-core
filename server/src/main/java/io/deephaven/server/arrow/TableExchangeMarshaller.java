@@ -83,9 +83,9 @@ public class TableExchangeMarshaller implements ExchangeMarshaller {
                         table.getDefinition(), table.getAttributes(), table.isFlat())));
 
         // collect the viewport and columnsets (if provided)
-        final BitSet columns = ArrowFlightUtil.getColumns(snapshotRequest);
+        final BitSet columns = BarrageRequestHelpers.getColumns(snapshotRequest);
 
-        final RowSet viewport = ArrowFlightUtil.getViewport(snapshotRequest);
+        final RowSet viewport = BarrageRequestHelpers.getViewport(snapshotRequest);
 
         final boolean reverseViewport = snapshotRequest.reverseViewport();
 
@@ -103,7 +103,7 @@ public class TableExchangeMarshaller implements ExchangeMarshaller {
         final BarrageMessageProducer bmp;
 
         final long minUpdateIntervalMs =
-                ArrowFlightUtil.getMinUpdateIntervalMs(subscriptionRequest.subscriptionOptions());
+                BarrageRequestHelpers.getMinUpdateIntervalMs(subscriptionRequest.subscriptionOptions());
 
         if (table.isFailed()) {
             throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
@@ -115,8 +115,8 @@ public class TableExchangeMarshaller implements ExchangeMarshaller {
             bmp = table.getResult(bmpOperationFactory.create(table, minUpdateIntervalMs));
         }
 
-        final BitSet columns = ArrowFlightUtil.getColumns(subscriptionRequest);
-        final RowSet viewport = ArrowFlightUtil.getViewport(subscriptionRequest);
+        final BitSet columns = BarrageRequestHelpers.getColumns(subscriptionRequest);
+        final RowSet viewport = BarrageRequestHelpers.getViewport(subscriptionRequest);
         final boolean reverseViewport = subscriptionRequest.reverseViewport();
 
         bmp.addSubscription(listener, options, columns, viewport, reverseViewport);
@@ -149,8 +149,8 @@ public class TableExchangeMarshaller implements ExchangeMarshaller {
 
         @Override
         public boolean update(final BarrageSubscriptionRequest subscriptionRequest) {
-            final BitSet columns = ArrowFlightUtil.getColumns(subscriptionRequest);
-            final RowSet viewport = ArrowFlightUtil.getViewport(subscriptionRequest);
+            final BitSet columns = BarrageRequestHelpers.getColumns(subscriptionRequest);
+            final RowSet viewport = BarrageRequestHelpers.getViewport(subscriptionRequest);
             final boolean reverseViewport = subscriptionRequest.reverseViewport();
 
             return bmp.updateSubscription(listener, viewport, columns, reverseViewport);

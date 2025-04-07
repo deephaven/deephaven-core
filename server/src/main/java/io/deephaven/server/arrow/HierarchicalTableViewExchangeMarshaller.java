@@ -66,7 +66,7 @@ public class HierarchicalTableViewExchangeMarshaller implements ExchangeMarshall
             final Object export,
             final StreamObserver<BarrageMessageWriter.MessageView> listener) {
         final long minUpdateIntervalMs =
-                ArrowFlightUtil.getMinUpdateIntervalMs(subscriptionRequest.subscriptionOptions());
+                BarrageRequestHelpers.getMinUpdateIntervalMs(subscriptionRequest.subscriptionOptions());
 
         final HierarchicalTableView hierarchicalTableView = (HierarchicalTableView) export;
         final boolean isRefreshing = hierarchicalTableView.getHierarchicalTable().getSource().isRefreshing();
@@ -76,8 +76,8 @@ public class HierarchicalTableViewExchangeMarshaller implements ExchangeMarshall
             htvs = htvsFactory.create(hierarchicalTableView, listener, options, minUpdateIntervalMs);
         }
 
-        final BitSet columns = ArrowFlightUtil.getColumns(subscriptionRequest);
-        final RowSet viewport = ArrowFlightUtil.getViewport(subscriptionRequest);
+        final BitSet columns = BarrageRequestHelpers.getColumns(subscriptionRequest);
+        final RowSet viewport = BarrageRequestHelpers.getViewport(subscriptionRequest);
         final boolean reverseViewport = subscriptionRequest.reverseViewport();
 
         htvs.setViewport(columns, viewport, reverseViewport);
@@ -109,8 +109,8 @@ public class HierarchicalTableViewExchangeMarshaller implements ExchangeMarshall
 
         @Override
         public boolean update(final BarrageSubscriptionRequest subscriptionRequest) {
-            final BitSet columns = ArrowFlightUtil.getColumns(subscriptionRequest);
-            final RowSet viewport = ArrowFlightUtil.getViewport(subscriptionRequest);
+            final BitSet columns = BarrageRequestHelpers.getColumns(subscriptionRequest);
+            final RowSet viewport = BarrageRequestHelpers.getViewport(subscriptionRequest);
             final boolean reverseViewport = subscriptionRequest.reverseViewport();
             htvs.setViewport(columns, viewport, reverseViewport);
             return true;
