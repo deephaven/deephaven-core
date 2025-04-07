@@ -56,67 +56,64 @@ class BarrageSnapshotRequestHandler
                     "Request type cannot be changed after initialization, expected BarrageSnapshotRequest metadata");
         }
 
-        // ensure synchronization with parent class functions
-        synchronized (marshaller) {
-            final BarrageSnapshotRequest snapshotRequest = BarrageSnapshotRequest
-                    .getRootAsBarrageSnapshotRequest(message.app_metadata.msgPayloadAsByteBuffer());
+        final BarrageSnapshotRequest snapshotRequest = BarrageSnapshotRequest
+                .getRootAsBarrageSnapshotRequest(message.app_metadata.msgPayloadAsByteBuffer());
 
-            final String ticketLogName =
-                    ticketRouter.getLogNameFor(snapshotRequest.ticketAsByteBuffer(), "table");
-            final String description = "FlightService#DoExchange(snapshot, table=" + ticketLogName + ")";
-            final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.newQuery(
-                    description, session.getSessionId(), QueryPerformanceNugget.DEFAULT_FACTORY);
+        final String ticketLogName =
+                ticketRouter.getLogNameFor(snapshotRequest.ticketAsByteBuffer(), "table");
+        final String description = "FlightService#DoExchange(snapshot, table=" + ticketLogName + ")";
+        final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.newQuery(
+                description, session.getSessionId(), QueryPerformanceNugget.DEFAULT_FACTORY);
 
-            try (final SafeCloseable ignored = queryPerformanceRecorder.startQuery()) {
-                final SessionState.ExportObject<?> tableExport =
-                        ticketRouter.resolve(session, snapshotRequest.ticketAsByteBuffer(), "table");
+        try (final SafeCloseable ignored = queryPerformanceRecorder.startQuery()) {
+            final SessionState.ExportObject<?> tableExport =
+                    ticketRouter.resolve(session, snapshotRequest.ticketAsByteBuffer(), "table");
 
-                final BarragePerformanceLog.SnapshotMetricsHelper metrics =
-                        new BarragePerformanceLog.SnapshotMetricsHelper();
+            final BarragePerformanceLog.SnapshotMetricsHelper metrics =
+                    new BarragePerformanceLog.SnapshotMetricsHelper();
 
-                final long queueStartTm = System.nanoTime();
-                session.nonExport()
-                        .queryPerformanceRecorder(queryPerformanceRecorder)
-                        .require(tableExport)
-                        .onError(listener)
-                        .onSuccess(() -> {
-                            final ArrowFlightUtil.HalfClosedState newState = halfClosedState.updateAndGet(current -> {
-                                switch (current) {
-                                    case DONT_CLOSE:
-                                        // record that we have finished sending
-                                        return ArrowFlightUtil.HalfClosedState.FINISHED_SENDING;
-                                    case CLIENT_HALF_CLOSED:
-                                        // since streaming has now finished, and client already half-closed,
-                                        // time to half close from server
-                                        return ArrowFlightUtil.HalfClosedState.CLOSED;
-                                    case FINISHED_SENDING:
-                                    case CLOSED:
-                                        throw new IllegalStateException("Can't finish streaming twice");
-                                    default:
-                                        throw new IllegalStateException("Unknown state " + current);
-                                }
-                            });
-                            if (newState == ArrowFlightUtil.HalfClosedState.CLOSED) {
-                                GrpcUtil.safelyComplete(listener);
+            final long queueStartTm = System.nanoTime();
+            session.nonExport()
+                    .queryPerformanceRecorder(queryPerformanceRecorder)
+                    .require(tableExport)
+                    .onError(listener)
+                    .onSuccess(() -> {
+                        final ArrowFlightUtil.HalfClosedState newState = halfClosedState.updateAndGet(current -> {
+                            switch (current) {
+                                case DONT_CLOSE:
+                                    // record that we have finished sending
+                                    return ArrowFlightUtil.HalfClosedState.FINISHED_SENDING;
+                                case CLIENT_HALF_CLOSED:
+                                    // since streaming has now finished, and client already half-closed,
+                                    // time to half close from server
+                                    return ArrowFlightUtil.HalfClosedState.CLOSED;
+                                case FINISHED_SENDING:
+                                case CLOSED:
+                                    throw new IllegalStateException("Can't finish streaming twice");
+                                default:
+                                    throw new IllegalStateException("Unknown state " + current);
                             }
-                        })
-                        .submit(() -> {
-                            metrics.queueNanos = System.nanoTime() - queueStartTm;
-                            final Object export = tableExport.get();
-
-                            final ExchangeMarshaller marshallerForExport =
-                                    ExchangeMarshaller.getMarshaller(export, marshaller.getMarshallers());
-                            if (marshallerForExport == null) {
-                                throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION, "Ticket ("
-                                        + ticketLogName + ") is has no associated exchange marshaller.");
-                            }
-
-                            final BarrageSnapshotOptions options = BarrageSnapshotOptions.of(snapshotRequest);
-
-                            marshallerForExport.snapshot(snapshotRequest, options, export, metrics,
-                                    listener, ticketLogName, streamGeneratorFactory);
                         });
-            }
+                        if (newState == ArrowFlightUtil.HalfClosedState.CLOSED) {
+                            GrpcUtil.safelyComplete(listener);
+                        }
+                    })
+                    .submit(() -> {
+                        metrics.queueNanos = System.nanoTime() - queueStartTm;
+                        final Object export = tableExport.get();
+
+                        final ExchangeMarshaller marshallerForExport =
+                                ExchangeMarshaller.getMarshaller(export, marshaller.getMarshallers());
+                        if (marshallerForExport == null) {
+                            throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION, "Ticket ("
+                                    + ticketLogName + ") is has no associated exchange marshaller.");
+                        }
+
+                        final BarrageSnapshotOptions options = BarrageSnapshotOptions.of(snapshotRequest);
+
+                        marshallerForExport.snapshot(snapshotRequest, options, export, metrics,
+                                listener, ticketLogName, streamGeneratorFactory);
+                    });
         }
     }
 

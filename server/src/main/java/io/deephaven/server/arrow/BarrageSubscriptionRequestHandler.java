@@ -65,51 +65,47 @@ class BarrageSubscriptionRequestHandler implements ArrowFlightUtil.DoExchangeMar
             throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, "Subscription request not supplied");
         }
 
-        // ensure synchronization with parent class functions
-        synchronized (marshaller) {
+        final BarrageSubscriptionRequest subscriptionRequest = BarrageSubscriptionRequest
+                .getRootAsBarrageSubscriptionRequest(message.app_metadata.msgPayloadAsByteBuffer());
 
-            final BarrageSubscriptionRequest subscriptionRequest = BarrageSubscriptionRequest
-                    .getRootAsBarrageSubscriptionRequest(message.app_metadata.msgPayloadAsByteBuffer());
+        if (subscriptionObject != null) {
+            apply(subscriptionRequest);
+            return;
+        }
 
-            if (subscriptionObject != null) {
-                apply(subscriptionRequest);
-                return;
-            }
+        if (marshaller.isClosed()) {
+            return;
+        }
 
-            if (marshaller.isClosed()) {
-                return;
-            }
-
-            // have we already created the queue?
-            if (preExportSubscriptions != null) {
-                preExportSubscriptions.add(subscriptionRequest);
-                return;
-            }
-
-            if (subscriptionRequest.ticketVector() == null) {
-                GrpcUtil.safelyError(listener, Code.INVALID_ARGUMENT, "Ticket not specified.");
-                return;
-            }
-
-            preExportSubscriptions = new ArrayDeque<>();
+        // have we already created the queue?
+        if (preExportSubscriptions != null) {
             preExportSubscriptions.add(subscriptionRequest);
+            return;
+        }
 
-            final String description = "FlightService#DoExchange(subscription, table="
-                    + ticketRouter.getLogNameFor(subscriptionRequest.ticketAsByteBuffer(), "table") + ")";
-            final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.newQuery(
-                    description, session.getSessionId(), QueryPerformanceNugget.DEFAULT_FACTORY);
+        if (subscriptionRequest.ticketVector() == null) {
+            GrpcUtil.safelyError(listener, Code.INVALID_ARGUMENT, "Ticket not specified.");
+            return;
+        }
 
-            try (final SafeCloseable ignored = queryPerformanceRecorder.startQuery()) {
-                final SessionState.ExportObject<Object> table =
-                        ticketRouter.resolve(session, subscriptionRequest.ticketAsByteBuffer(), "table");
+        preExportSubscriptions = new ArrayDeque<>();
+        preExportSubscriptions.add(subscriptionRequest);
 
-                synchronized (this) {
-                    onExportResolvedContinuation = session.nonExport()
-                            .queryPerformanceRecorder(queryPerformanceRecorder)
-                            .require(table)
-                            .onErrorHandler(marshaller::onError)
-                            .submit(() -> onExportResolved(table));
-                }
+        final String description = "FlightService#DoExchange(subscription, table="
+                + ticketRouter.getLogNameFor(subscriptionRequest.ticketAsByteBuffer(), "table") + ")";
+        final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.newQuery(
+                description, session.getSessionId(), QueryPerformanceNugget.DEFAULT_FACTORY);
+
+        try (final SafeCloseable ignored = queryPerformanceRecorder.startQuery()) {
+            final SessionState.ExportObject<Object> table =
+                    ticketRouter.resolve(session, subscriptionRequest.ticketAsByteBuffer(), "table");
+
+            synchronized (this) {
+                onExportResolvedContinuation = session.nonExport()
+                        .queryPerformanceRecorder(queryPerformanceRecorder)
+                        .require(table)
+                        .onErrorHandler(marshaller::onError)
+                        .submit(() -> onExportResolved(table));
             }
         }
     }
