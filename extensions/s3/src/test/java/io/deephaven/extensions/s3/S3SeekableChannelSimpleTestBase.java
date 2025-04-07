@@ -157,7 +157,8 @@ abstract class S3SeekableChannelSimpleTestBase extends S3SeekableChannelTestSetu
         try (
                 final SeekableChannelsProvider providerImpl = providerImpl();
                 final SeekableChannelsProvider provider = CachedChannelProvider.create(providerImpl, 32);
-                final CompletableOutputStream outputStream = provider.getOutputStream(uri, 0)) {
+                final SeekableChannelsProvider.WriteContext context = provider.makeWriteContext();
+                final CompletableOutputStream outputStream = provider.getOutputStream(context, uri, 0)) {
             final int numBytes = 36 * 1024 * 1024; // 36 Mib -> Three 10-MiB parts + One 6-MiB part
             outputStream.write(contentBytes);
             outputStream.flush();
@@ -169,18 +170,20 @@ abstract class S3SeekableChannelSimpleTestBase extends S3SeekableChannelTestSetu
             try (
                     final SeekableChannelsProvider providerImplShortTimeout = providerImpl(s3InstructionsBuilder);
                     final SeekableChannelsProvider providerShortTimeout = CachedChannelProvider.create(providerImplShortTimeout, 32);
-                    final SeekableChannelContext context = providerShortTimeout.makeContext();
-                    final SeekableByteChannel readChannel = providerShortTimeout.getReadChannel(context, uri)) {
+                    final SeekableChannelContext useContext = providerShortTimeout.makeReadContext();
+                    final SeekableByteChannel readChannel = providerShortTimeout.getReadChannel(useContext, uri)) {
 
                 final ByteBuffer buffer = ByteBuffer.allocate(contentBytes.length);
 
                 // We expect a timeout...
                 try {
                     fillBuffer(readChannel, buffer);
-                    fail("Expected write timeout exception");
+                    fail("Expected read timeout exception");
                 } catch (Exception e) {
                     final Throwable cause = e.getCause();
-                    assertThat(cause.getClass().equals(ExecutionException.class)).isEqualTo(true);
+                    if (!(cause instanceof TimeoutException)) {
+                        fail("Expected TimeoutException but got " + cause.getClass().getName());
+                    }
                 }
             }
         }
@@ -196,7 +199,8 @@ abstract class S3SeekableChannelSimpleTestBase extends S3SeekableChannelTestSetu
         try (
                 final SeekableChannelsProvider providerImpl = providerImpl(s3InstructionsBuilder);
                 final SeekableChannelsProvider provider = CachedChannelProvider.create(providerImpl, 32);
-                final CompletableOutputStream outputStream = provider.getOutputStream(uri, 0)) {
+                final SeekableChannelsProvider.WriteContext context = provider.makeWriteContext();
+                final CompletableOutputStream outputStream = provider.getOutputStream(context, uri, 0)) {
             final int numBytes = 36 * 1024 * 1024; // 36 Mib -> Three 10-MiB parts + One 6-MiB part
             final int numIters = numBytes / contentBytes.length;
             for (int i = 0; i < numIters; ++i) {
@@ -228,7 +232,8 @@ abstract class S3SeekableChannelSimpleTestBase extends S3SeekableChannelTestSetu
         try (
                 final SeekableChannelsProvider providerImpl = providerImpl(s3InstructionsBuilder);
                 final SeekableChannelsProvider provider = CachedChannelProvider.create(providerImpl, 32);
-                final CompletableOutputStream outputStream = provider.getOutputStream(uri, 0)) {
+                final SeekableChannelsProvider.WriteContext context = provider.makeWriteContext();
+                final CompletableOutputStream outputStream = provider.getOutputStream(context, uri, 0)) {
             final int numBytes = 36 * 1024 * 1024; // 36 Mib -> Three 10-MiB parts + One 6-MiB part
             final int numIters = numBytes / contentBytes.length;
             for (int i = 0; i < numIters; ++i) {
