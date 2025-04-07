@@ -90,7 +90,7 @@ enum RollupNodeType {
 message UpdateViewRequest {
   Selectable column_spec = 1;
 
-  // The node types that will have this update_view applied. Ignored for TreeTable
+  // The node types that will have this update_view applied. Ignored for TreeTable.
   RollupNodeType node_type = 2;
 }
 
@@ -114,12 +114,11 @@ message HierarchicalTableApplyRequest {
   // Sorts to apply to the input HierarchicalTable to produce the result HierarchicalTable. Never expressed against
   // the "structural" columns included in the a HierarchicalTableDescriptor's snapshot_schema.
   // For TreeTables, these are simply applied to the nodes at snapshot time.
-  // For RollupTables, these are expressed against the aggregated node columns, and will be applied to the appropriate
-  // input (constituent) columns as well. The appropriate (aggregated or constituent) sorts are applied to the nodes at
-  // snapshot time.
+  // For RollupTables, these are expressed against the aggregated, constituent or updateView node columns. The
+  // appropriate sorts are applied to the nodes at snapshot time.
   repeated SortDescriptor sorts = 4;
 
-  // format operations to apply to the nodes of the table.
+  // Format operations to apply to the nodes of the table.
   // For RollupTables, the update is applied only to the specified node types.
   // For TreeTables, the node type is ignored and the update is applied to all nodes.
   repeated UpdateViewRequest format_views = 5;

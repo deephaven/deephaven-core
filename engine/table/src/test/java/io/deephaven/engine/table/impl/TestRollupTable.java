@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.Random;
 
 import static io.deephaven.api.agg.Aggregation.*;
-import static io.deephaven.api.agg.Aggregation.AggSum;
 import static io.deephaven.engine.testutil.HierarchicalTableTestTools.freeSnapshotTableChunks;
 import static io.deephaven.engine.testutil.HierarchicalTableTestTools.snapshotToTable;
 import static io.deephaven.engine.testutil.TstUtils.*;

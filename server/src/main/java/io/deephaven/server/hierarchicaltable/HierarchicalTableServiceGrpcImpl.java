@@ -238,18 +238,19 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
                         final Collection<Condition> finishedConditions = request.getFiltersCount() == 0
                                 ? null
                                 : FilterTableGrpcImpl.finishConditions(request.getFiltersList());
-                        final Collection<UpdateViewRequest> translatedUpdateViews =
-                                translateAndValidateUpdateViews(request,
-                                        (BaseGridAttributes<?, ?>) inputHierarchicalTable);
-                        final Collection<UpdateViewRequest> translatedFormatViews =
-                                translateAndValidateFormatViews(request,
-                                        (BaseGridAttributes<?, ?>) inputHierarchicalTable);
 
                         final Collection<SortColumn> translatedSorts =
                                 translateAndValidateSorts(request, (BaseGridAttributes<?, ?>) inputHierarchicalTable);
 
                         final HierarchicalTable<?> result;
                         if (inputHierarchicalTable instanceof RollupTable) {
+                            final Collection<UpdateViewRequest> translatedUpdateViews =
+                                    translateAndValidateUpdateViews(request,
+                                            (BaseGridAttributes<?, ?>) inputHierarchicalTable);
+                            final Collection<UpdateViewRequest> translatedFormatViews =
+                                    translateAndValidateFormatViews(request,
+                                            (BaseGridAttributes<?, ?>) inputHierarchicalTable);
+
                             // For a rollup table, we require format and update views to be applied to a specific node
                             // and will not translate from one to another.
 

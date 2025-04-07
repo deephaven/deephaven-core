@@ -7,6 +7,7 @@ import com.vertispan.tsdefs.annotations.TsName;
 import io.deephaven.web.client.api.filter.FilterValue;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsNullable;
+import jsinterop.annotations.JsOptional;
 import jsinterop.annotations.JsProperty;
 import jsinterop.base.Any;
 
@@ -57,7 +58,7 @@ public class Column {
      * @return {@link CustomColumn}
      */
     @JsMethod(namespace = "dh.Column")
-    public static CustomColumn formatRowColor(String expression, CustomColumOptions options) {
+    public static CustomColumn formatRowColor(String expression, @JsOptional @JsNullable CustomColumOptions options) {
         return new CustomColumn(CustomColumn.ROW_FORMAT_NAME, CustomColumn.TYPE_FORMAT_COLOR, expression, options);
     }
 
@@ -70,7 +71,10 @@ public class Column {
      * @return {@link CustomColumn}
      */
     @JsMethod(namespace = "dh.Column")
-    public static CustomColumn createCustomColumn(String name, String expression, CustomColumOptions options) {
+    public static CustomColumn createCustomColumn(
+            String name,
+            String expression,
+            @JsOptional @JsNullable CustomColumOptions options) {
         return new CustomColumn(name, CustomColumn.TYPE_NEW, expression, options);
     }
 
@@ -230,7 +234,7 @@ public class Column {
      * @return {@link CustomColumn}
      */
     @JsMethod
-    public CustomColumn formatColor(String expression, CustomColumOptions options) {
+    public CustomColumn formatColor(String expression, @JsOptional @JsNullable CustomColumOptions options) {
         return new CustomColumn(name, CustomColumn.TYPE_FORMAT_COLOR, expression, options);
     }
 
@@ -241,7 +245,7 @@ public class Column {
      * @return {@link CustomColumn}
      */
     @JsMethod
-    public CustomColumn formatNumber(String expression, CustomColumOptions options) {
+    public CustomColumn formatNumber(String expression, @JsOptional @JsNullable CustomColumOptions options) {
         return new CustomColumn(name, CustomColumn.TYPE_FORMAT_NUMBER, expression, options);
     }
 
@@ -252,7 +256,7 @@ public class Column {
      * @return {@link CustomColumn}
      */
     @JsMethod
-    public CustomColumn formatDate(String expression, CustomColumOptions options) {
+    public CustomColumn formatDate(String expression, @JsOptional @JsNullable CustomColumOptions options) {
         return new CustomColumn(name, CustomColumn.TYPE_FORMAT_DATE, expression, options);
     }
 

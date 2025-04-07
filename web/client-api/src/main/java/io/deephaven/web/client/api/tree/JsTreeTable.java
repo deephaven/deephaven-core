@@ -186,6 +186,38 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
     private boolean closed = false;
 
     @JsIgnore
+    public JsTreeTable(WorkerConnection workerConnection, JsWidget widget) {
+        this.connection = workerConnection;
+        this.widget = leafWidget = widget;
+
+        // register for same-session disconnect/reconnect callbacks
+        this.connection.registerSimpleReconnectable(this);
+
+        // TODO(deephaven-core#3604) factor most of the rest of this out for a refetch, in case of new session
+        HierarchicalTableDescriptor treeDescriptor =
+                HierarchicalTableDescriptor.deserializeBinary(widget.getDataAsU8());
+
+        this.isRefreshing = !treeDescriptor.getIsStatic();
+
+        // Load the table and column definitions from the descriptor
+        extractDefinition(treeDescriptor);
+
+        actionCol = new Column(-1, -1, null, null, "byte", "__action__", false, null, null, false, false);
+
+        keyTableData = new Object[keyColumns.length + 2][0];
+
+        sourceTable = JsLazy.of(() -> workerConnection
+                .newState(this, (c, newState, metadata) -> {
+                    HierarchicalTableSourceExportRequest exportRequest = new HierarchicalTableSourceExportRequest();
+                    exportRequest.setResultTableId(newState.getHandle().makeTicket());
+                    exportRequest.setHierarchicalTableId(leafWidget.getTicket());
+                    connection.hierarchicalTableServiceClient().exportSource(exportRequest, connection.metadata(),
+                            c::apply);
+                }, "source for hierarchical table")
+                .then(cts -> Promise.resolve(new JsTable(connection, cts))));
+    }
+
+    @JsIgnore
     private void extractDefinition(final HierarchicalTableDescriptor treeDescriptor) {
         Uint8Array flightSchemaMessage = treeDescriptor.getSnapshotSchema_asU8();
 
@@ -292,38 +324,6 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
             Column column = visibleColumns[i];
             columnsByName.put(column.getName(), column);
         }
-    }
-
-    @JsIgnore
-    public JsTreeTable(WorkerConnection workerConnection, JsWidget widget) {
-        this.connection = workerConnection;
-        this.widget = leafWidget = widget;
-
-        // register for same-session disconnect/reconnect callbacks
-        this.connection.registerSimpleReconnectable(this);
-
-        // TODO(deephaven-core#3604) factor most of the rest of this out for a refetch, in case of new session
-        HierarchicalTableDescriptor treeDescriptor =
-                HierarchicalTableDescriptor.deserializeBinary(widget.getDataAsU8());
-
-        this.isRefreshing = !treeDescriptor.getIsStatic();
-
-        // Load the table and column definitions from the descriptor
-        extractDefinition(treeDescriptor);
-
-        actionCol = new Column(-1, -1, null, null, "byte", "__action__", false, null, null, false, false);
-
-        keyTableData = new Object[keyColumns.length + 2][0];
-
-        sourceTable = JsLazy.of(() -> workerConnection
-                .newState(this, (c, newState, metadata) -> {
-                    HierarchicalTableSourceExportRequest exportRequest = new HierarchicalTableSourceExportRequest();
-                    exportRequest.setResultTableId(newState.getHandle().makeTicket());
-                    exportRequest.setHierarchicalTableId(leafWidget.getTicket());
-                    connection.hierarchicalTableServiceClient().exportSource(exportRequest, connection.metadata(),
-                            c::apply);
-                }, "source for hierarchical table")
-                .then(cts -> Promise.resolve(new JsTable(connection, cts))));
     }
 
     @JsIgnore

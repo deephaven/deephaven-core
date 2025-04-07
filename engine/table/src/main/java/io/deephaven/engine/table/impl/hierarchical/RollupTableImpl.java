@@ -288,7 +288,6 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
 
     @Override
     public RollupTable withUpdateView(Collection<Selectable> columns) {
-        // TODO: Verify we aren't using illegal columns (virtual row variables, etc.)
         return withNodeOperations(makeNodeOperationsRecorder(NodeType.Aggregated).updateView(columns));
     }
 

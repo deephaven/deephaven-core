@@ -139,7 +139,6 @@ class RollupNodeOperationsRecorder extends BaseNodeOperationsRecorder<RollupTabl
         return adapter.hasSelectColumns() ? withUpdateView(adapter.selectColumns()) : self();
     }
 
-
     RollupNodeOperationsRecorder withOperations(@NotNull final RollupNodeOperationsRecorder other) {
         if (!getResultDefinition().equals(other.getResultDefinition()) || nodeType != other.nodeType) {
             throw new IllegalArgumentException(
@@ -182,6 +181,13 @@ class RollupNodeOperationsRecorder extends BaseNodeOperationsRecorder<RollupTabl
         private Stream<? extends SelectColumn> selectColumns() {
             final SelectColumn[] selectColumns = SelectColumn.from(columns);
             SelectAndViewAnalyzer.initializeSelectColumns(getDefinition().getColumnNameMap(), selectColumns);
+            // Enforce no virtual row variables are used.
+            List<SelectColumn> invalidColumns = Arrays.asList(selectColumns).stream()
+                    .filter(SelectColumn::hasVirtualRowVariables).collect(Collectors.toList());
+            if (!invalidColumns.isEmpty()) {
+                throw new IllegalArgumentException(
+                        "updateView does not support virtual row variables. Invalid columns: " + invalidColumns);
+            }
             return Stream.of(selectColumns);
         }
     }
