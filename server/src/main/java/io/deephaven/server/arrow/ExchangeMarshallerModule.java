@@ -19,6 +19,11 @@ import java.util.stream.Collectors;
  * {@link ArrowFlightUtil} {@code DoExchangeMarshaller}, loaded using a {@link ServiceLoader} constructed with the
  * injected {@link Scheduler}, {@link io.deephaven.server.session.SessionService.ErrorTransformer} and
  * {@link BarrageMessageWriter.Factory} parameters.
+ *
+ * <p>
+ * Note, the user of the ExchangeMarshaller set must sort the marshallers according to priority. The set cannot be
+ * sorted at our injection point, because there may be multiple @ElementsIntoSet injectors.
+ * </p>
  */
 @Module
 public class ExchangeMarshallerModule {
@@ -30,11 +35,7 @@ public class ExchangeMarshallerModule {
         return ServiceLoader.load(ExchangeMarshallerModule.Factory.class)
                 .stream()
                 .map(factory -> factory.get().create(scheduler, errorTransformer, streamGeneratorFactory))
-                // Note that although we sort the marshallers by priority, the eventual user of the marshaller must sort
-                // the complete set by priority.
-                .sorted(Comparator.comparingInt(ExchangeMarshaller::priority))
-                .collect(Collectors.collectingAndThen(Collectors.toCollection(LinkedHashSet::new),
-                        Collections::unmodifiableSet));
+                .collect(Collectors.collectingAndThen(Collectors.toSet(), Collections::unmodifiableSet));
     }
 
     /**

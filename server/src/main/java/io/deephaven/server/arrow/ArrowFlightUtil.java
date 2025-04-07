@@ -407,6 +407,7 @@ public class ArrowFlightUtil {
             this.errorTransformer = errorTransformer;
             this.marshallers = new ArrayList<>(exchangeMarshallers.size());
             marshallers.addAll(exchangeMarshallers);
+            // we must sort the marshallers here, as they can be injected from multiple places
             marshallers.sort(Comparator.comparingInt(ExchangeMarshaller::priority));
 
             this.requestHandlerFactories = new TByteObjectHashMap<>(requestHandlerFactories.size());
