@@ -50,18 +50,9 @@ public class ExchangeMarshallerModule {
     @Provides
     @ElementsIntoSet
     public static Set<ExchangeRequestHandlerFactory> provideRequestHandlers() {
-        final Iterator<ExchangeRequestHandlerFactory> it =
-                ServiceLoader.load(ExchangeRequestHandlerFactory.class).iterator();
-        if (!it.hasNext()) {
-            return Collections.emptySet();
-        }
-
-        final List<ExchangeRequestHandlerFactory> list = new ArrayList<>();
-
-        while (it.hasNext()) {
-            list.add(it.next());
-        }
-
-        return Collections.unmodifiableSet(new HashSet<>(list));
+        return ServiceLoader.load(ExchangeRequestHandlerFactory.class)
+                .stream()
+                .map(ServiceLoader.Provider::get)
+                .collect(Collectors.collectingAndThen(Collectors.toSet(), Collections::unmodifiableSet));
     }
 }
