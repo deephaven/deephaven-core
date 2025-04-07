@@ -103,6 +103,7 @@ public interface ExchangeMarshaller {
         /**
          * @return an object that should be managed for this subscription, or null
          */
+        @Nullable
         LivenessReferent toManage();
 
         /**

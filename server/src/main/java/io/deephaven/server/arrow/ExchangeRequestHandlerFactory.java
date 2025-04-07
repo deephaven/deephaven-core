@@ -32,6 +32,10 @@ import java.util.Collection;
 public interface ExchangeRequestHandlerFactory {
     /**
      * The type of message that this factory produces a handler for.
+     *
+     * <p>
+     * Message types are defined in {@link io.deephaven.barrage.flatbuf.BarrageMessageType}.
+     * </p>
      * 
      * @return the type of message handled by this factory
      */

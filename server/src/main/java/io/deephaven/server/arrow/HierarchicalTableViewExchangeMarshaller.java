@@ -5,7 +5,6 @@ package io.deephaven.server.arrow;
 
 import com.google.auto.service.AutoService;
 import com.google.rpc.Code;
-import dagger.assisted.AssistedInject;
 import io.deephaven.barrage.flatbuf.BarrageSnapshotRequest;
 import io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest;
 import io.deephaven.engine.context.ExecutionContext;
@@ -33,9 +32,8 @@ import java.util.BitSet;
  */
 @ReflexiveUse(referrers = "ExchangeMarshallerModule")
 public class HierarchicalTableViewExchangeMarshaller implements ExchangeMarshaller {
-    final HierarchicalTableViewSubscription.Factory htvsFactory;
+    private final HierarchicalTableViewSubscription.Factory htvsFactory;
 
-    @AssistedInject
     public HierarchicalTableViewExchangeMarshaller(final HierarchicalTableViewSubscription.Factory htvsFactory) {
         this.htvsFactory = htvsFactory;
     }

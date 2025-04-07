@@ -5,9 +5,6 @@ package io.deephaven.server.barrage;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.rpc.Code;
-import dagger.assisted.Assisted;
-import dagger.assisted.AssistedFactory;
-import dagger.assisted.AssistedInject;
 import io.deephaven.base.formatters.FormatBitSet;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;

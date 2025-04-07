@@ -136,8 +136,9 @@ public class TableExchangeMarshaller implements ExchangeMarshaller {
 
         @Override
         public LivenessReferent toManage() {
-            if (bmp.isRefreshing())
+            if (bmp.isRefreshing()) {
                 return bmp;
+            }
             return null;
         }
 
