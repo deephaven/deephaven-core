@@ -600,9 +600,13 @@ public class BarrageUtil {
                 putMetadata(metadata, "inputtable.isKey", inputTableUpdater.getKeyNames().contains(name) + "");
             }
 
+            final Class<?> innerComponentType;
             if (columnsAsList) {
+                innerComponentType = componentType;
                 componentType = dataType;
                 dataType = Array.newInstance(dataType, 0).getClass();
+            } else {
+                innerComponentType = componentType == null ? null : componentType.getComponentType();
             }
 
             if (field != null) {
@@ -617,7 +621,7 @@ public class BarrageUtil {
             if (Vector.class.isAssignableFrom(dataType)) {
                 return arrowFieldForVectorType(name, dataType, componentType, metadata);
             }
-            return arrowFieldFor(name, dataType, componentType, metadata, columnsAsList);
+            return arrowFieldFor(name, dataType, componentType, innerComponentType, metadata, columnsAsList);
         };
 
         if (wireFormatSpecified) {
@@ -1016,6 +1020,7 @@ public class BarrageUtil {
             final String name,
             final Class<?> type,
             final Class<?> componentType,
+            @Nullable final Class<?> innerComponentType,
             final Map<String, String> metadata,
             final boolean columnAsList) {
         List<Field> children = Collections.emptyList();
@@ -1024,7 +1029,10 @@ public class BarrageUtil {
         if (fieldType.getType().isComplex()) {
             if (type.isArray() || Vector.class.isAssignableFrom(type)) {
                 children = Collections.singletonList(arrowFieldFor(
-                        "", componentType, componentType.getComponentType(), Collections.emptyMap(), false));
+                        "", componentType, innerComponentType,
+                        innerComponentType == null ? null : innerComponentType.getComponentType(),
+                        Collections.emptyMap(),
+                        false));
             } else {
                 throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
                         "No default mapping for Arrow complex type: " + fieldType.getType());
@@ -1037,10 +1045,12 @@ public class BarrageUtil {
     public static org.apache.arrow.flatbuf.Field flatbufFieldFor(
             final ColumnDefinition<?> columnDefinition,
             final Map<String, String> metadata) {
+        final Class<?> componentType = columnDefinition.getComponentType();
         return flatbufFieldFor(
                 columnDefinition.getName(),
                 columnDefinition.getDataType(),
-                columnDefinition.getComponentType(),
+                componentType,
+                componentType == null ? null : componentType.getComponentType(),
                 metadata);
     }
 
@@ -1048,8 +1058,9 @@ public class BarrageUtil {
             final String name,
             final Class<?> type,
             final Class<?> componentType,
+            final Class<?> innerComponentType,
             final Map<String, String> metadata) {
-        final Field field = arrowFieldFor(name, type, componentType, metadata, false);
+        final Field field = arrowFieldFor(name, type, componentType, innerComponentType, metadata, false);
         final FlatBufferBuilder builder = new FlatBufferBuilder();
         builder.finish(field.getField(builder));
         return org.apache.arrow.flatbuf.Field.getRootAsField(builder.dataBuffer());
@@ -1124,9 +1135,11 @@ public class BarrageUtil {
         // Vectors are always lists.
         final FieldType fieldType = new FieldType(true, Types.MinorType.LIST.getType(), null, metadata);
         Class<?> componentType = VectorExpansionKernel.getComponentType(type, knownComponentType);
+        Class<?> ic = componentType == null ? null : componentType.getComponentType();
+        Class<?> ic2 = ic == null ? null : ic.getComponentType();
 
         final List<Field> children = Collections.singletonList(arrowFieldFor(
-                "", componentType, componentType.getComponentType(), Collections.emptyMap(), false));
+                "", componentType, ic, ic2, Collections.emptyMap(), false));
 
         return new Field(name, fieldType, children);
     }

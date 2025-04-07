@@ -95,13 +95,22 @@ public class ShortArrayExpansionKernel implements ArrayExpansionKernel<short[]> 
     @Override
     public <A extends Any> WritableObjectChunk<short[], A> contract(
             @NotNull final Chunk<A> source,
-            int sizePerElement,
+            final int sizePerElement,
             @Nullable final IntChunk<ChunkPositions> offsets,
             @Nullable final IntChunk<ChunkLengths> lengths,
             @Nullable final WritableChunk<A> outChunk,
             final int outOffset,
             final int totalRows) {
-        sizePerElement = Math.abs(sizePerElement);
+        if (lengths != null && lengths.size() == 0
+                || lengths == null && offsets != null && offsets.size() <= 1) {
+            if (outChunk != null) {
+                return outChunk.asWritableObjectChunk();
+            }
+            final WritableObjectChunk<short[], A> chunk = WritableObjectChunk.makeWritableChunk(totalRows);
+            chunk.fillWithNullValue(0, totalRows);
+            return chunk;
+        }
+
         final int itemsInBatch = offsets == null
                 ? source.size() / sizePerElement
                 : (offsets.size() - (lengths == null ? 1 : 0));
