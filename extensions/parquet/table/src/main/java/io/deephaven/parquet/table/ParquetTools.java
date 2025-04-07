@@ -317,19 +317,18 @@ public class ParquetTools {
         final TableDefinition leafDefinition =
                 getNonKeyTableDefinition(new HashSet<>(Arrays.asList(partitioningColNames)), definition);
 
-        final Collection<List<String>> indexColumns = writeInstructions.getIndexColumns()
-                .map(columns -> {
-                    verifyNotAddingIndexOnPartitioningColumn(columns, partitionedTable.keyColumnNames());
-                    return columns;
-                })
-                .orElseGet(() -> {
-                    // Skip writing any existing indexes that are on partitioning columns
-                    final Collection<List<String>> existingIndexes = indexedColumnNames(sourceTable);
-                    return existingIndexes.stream()
-                            .filter(index -> index.size() != 1
-                                    || !partitionedTable.keyColumnNames().contains(index.get(0)))
-                            .collect(Collectors.toList());
-                });
+        final Collection<List<String>> indexColumns;
+        if (writeInstructions.getIndexColumns().isPresent()) {
+            indexColumns = writeInstructions.getIndexColumns().get();
+            verifyNotAddingIndexOnPartitioningColumn(indexColumns, partitionedTable.keyColumnNames());
+        } else {
+            // Skip writing any existing indexes that are on partitioning columns, but don't fail
+            final Collection<List<String>> existingIndexes = indexedColumnNames(sourceTable);
+            indexColumns = existingIndexes.stream()
+                    .filter(index -> index.size() != 1
+                            || !partitionedTable.keyColumnNames().contains(index.get(0)))
+                    .collect(Collectors.toList());
+        }
 
         writeKeyValuePartitionedTableImpl(partitionedTable, keyTableDefinition, leafDefinition, destinationDir,
                 writeInstructions, indexColumns, Optional.of(sourceTable));
@@ -364,12 +363,13 @@ public class ParquetTools {
             leafDefinition = getNonKeyTableDefinition(partitionedTable.keyColumnNames(), definition);
         }
 
-        final Collection<List<String>> indexColumns = writeInstructions.getIndexColumns()
-                .map(columns -> {
-                    verifyNotAddingIndexOnPartitioningColumn(columns, partitionedTable.keyColumnNames());
-                    return columns;
-                })
-                .orElse(EMPTY_INDEXES);
+        final Collection<List<String>> indexColumns;
+        if (writeInstructions.getIndexColumns().isPresent()) {
+            indexColumns = writeInstructions.getIndexColumns().get();
+            verifyNotAddingIndexOnPartitioningColumn(indexColumns, partitionedTable.keyColumnNames());
+        } else {
+            indexColumns = EMPTY_INDEXES;
+        }
 
         writeKeyValuePartitionedTableImpl(partitionedTable, keyTableDefinition, leafDefinition, destinationDir,
                 writeInstructions, indexColumns, Optional.empty());

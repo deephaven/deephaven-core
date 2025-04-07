@@ -1574,12 +1574,14 @@ public final class ParquetTableReadWriteTest {
 
         try {
             writeKeyValuePartitionedTable(inputData, parentDir.getAbsolutePath(), instructionsWithIndexOnPC);
+            fail("Expected exception when adding index on partitioning column");
         } catch (final IllegalArgumentException exception) {
             assertTrue(exception.getMessage().contains("Cannot add index on partitioning column"));
         }
         try {
             writeKeyValuePartitionedTable(
                     inputData.partitionBy("PC1"), parentDir.getAbsolutePath(), instructionsWithIndexOnPC);
+            fail("Expected exception when adding index on partitioning column");
         } catch (final IllegalArgumentException exception) {
             assertTrue(exception.getMessage().contains("Cannot add index on partitioning column"));
         }
