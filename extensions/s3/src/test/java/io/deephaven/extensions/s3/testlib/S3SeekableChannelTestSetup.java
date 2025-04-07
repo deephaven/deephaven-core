@@ -3,9 +3,11 @@
 //
 package io.deephaven.extensions.s3.testlib;
 
+import io.deephaven.extensions.s3.S3Constants;
 import io.deephaven.extensions.s3.S3Instructions;
-import io.deephaven.extensions.s3.S3SeekableChannelProviderPlugin;
+import io.deephaven.extensions.s3.UniversalS3SeekableChannelProviderPlugin;
 import io.deephaven.util.channel.SeekableChannelsProvider;
+import io.deephaven.util.channel.SeekableChannelsProviderPlugin;
 import org.jetbrains.annotations.Nullable;
 import software.amazon.awssdk.core.async.AsyncRequestBody;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
@@ -30,7 +32,7 @@ import static io.deephaven.extensions.s3.testlib.S3Helper.TIMEOUT_SECONDS;
 
 public abstract class S3SeekableChannelTestSetup {
 
-    protected static final String SCHEME = "s3";
+    protected static final String SCHEME = S3Constants.S3_URI_SCHEME;
 
     protected ExecutorService executor;
     protected S3AsyncClient asyncClient;
@@ -77,7 +79,7 @@ public abstract class S3SeekableChannelTestSetup {
 
     protected final SeekableChannelsProvider providerImpl(
             @Nullable final S3Instructions.Builder s3InstructionsBuilder) {
-        final S3SeekableChannelProviderPlugin plugin = new S3SeekableChannelProviderPlugin();
+        final SeekableChannelsProviderPlugin plugin = new UniversalS3SeekableChannelProviderPlugin();
         final S3Instructions instructions =
                 s3Instructions(s3InstructionsBuilder == null ? S3Instructions.builder() : s3InstructionsBuilder)
                         .build();

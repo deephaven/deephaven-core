@@ -17,7 +17,7 @@ import java.nio.channels.NonWritableChannelException;
 import java.nio.channels.SeekableByteChannel;
 import java.util.Objects;
 
-import static io.deephaven.extensions.s3.S3ChannelContext.UNINITIALIZED_SIZE;
+import static io.deephaven.extensions.s3.S3ReadContext.UNINITIALIZED_SIZE;
 
 
 /**
@@ -35,7 +35,7 @@ final class S3SeekableByteChannel implements SeekableByteChannel, CachedChannelP
      * The {@link SeekableChannelContext} object used to cache read-ahead buffers for efficiently reading from S3. This
      * is set before the read and cleared when closing the channel.
      */
-    private S3ChannelContext context;
+    private S3ReadContext context;
 
     private long position;
     private long size;
@@ -53,15 +53,15 @@ final class S3SeekableByteChannel implements SeekableByteChannel, CachedChannelP
     /**
      * @param channelContext The {@link SeekableChannelContext} object used to cache read-ahead buffers for efficiently
      *        reading from S3. An appropriate channel context should be set before the read and should be cleared after
-     *        the read is complete via {@link io.deephaven.util.channel.SeekableChannelsProvider#makeContext()}. A
+     *        the read is complete via {@link io.deephaven.util.channel.SeekableChannelsProvider#makeReadContext()}. A
      *        {@code null} parameter value is equivalent to clearing the context.
      */
     @Override
     public void setContext(@Nullable final SeekableChannelContext channelContext) {
-        if (channelContext != null && !(channelContext instanceof S3ChannelContext)) {
+        if (channelContext != null && !(channelContext instanceof S3ReadContext)) {
             throw new IllegalArgumentException("Unsupported channel context " + channelContext);
         }
-        this.context = (S3ChannelContext) channelContext;
+        this.context = (S3ReadContext) channelContext;
         if (this.context != null) {
             this.context.setURI(uri);
             if (size != UNINITIALIZED_SIZE) {

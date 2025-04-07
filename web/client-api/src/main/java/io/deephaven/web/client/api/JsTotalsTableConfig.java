@@ -20,6 +20,7 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.aggspec.AggSpecFirst;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.aggspec.AggSpecLast;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.aggspec.AggSpecMax;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.aggspec.AggSpecMedian;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.aggspec.AggSpecMin;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.aggspec.AggSpecNonUniqueSentinel;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.aggspec.AggSpecStd;
@@ -70,7 +71,7 @@ public class JsTotalsTableConfig {
             LAST = "Last",
             // ARRAY = "Array",
             SKIP = "Skip";
-    private static final List<String> knownAggTypes = Arrays.asList(
+    protected static final List<String> knownAggTypes = Arrays.asList(
             JsAggregationOperation.COUNT,
             JsAggregationOperation.MIN,
             JsAggregationOperation.MAX,
@@ -78,6 +79,7 @@ public class JsTotalsTableConfig {
             JsAggregationOperation.ABS_SUM,
             JsAggregationOperation.VAR,
             JsAggregationOperation.AVG,
+            JsAggregationOperation.MEDIAN,
             JsAggregationOperation.STD,
             JsAggregationOperation.FIRST,
             JsAggregationOperation.LAST,
@@ -351,6 +353,15 @@ public class JsTotalsTableConfig {
                 case JsAggregationOperation.AVG: {
                     AggSpec spec = new AggSpec();
                     spec.setAvg(new AggSpecAvg());
+                    columns = new AggregationColumns();
+                    columns.setSpec(spec);
+                    columns.setMatchPairsList(aggColumns);
+                    agg.setColumns(columns);
+                    break;
+                }
+                case JsAggregationOperation.MEDIAN: {
+                    AggSpec spec = new AggSpec();
+                    spec.setMedian(new AggSpecMedian());
                     columns = new AggregationColumns();
                     columns.setSpec(spec);
                     columns.setMatchPairsList(aggColumns);

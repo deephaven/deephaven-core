@@ -51,13 +51,12 @@ public class TransformingChunkReader<INPUT_CHUNK_TYPE extends WritableChunk<Valu
             final int totalRows) throws IOException {
         try (final INPUT_CHUNK_TYPE wireValues = wireChunkReader.readChunk(fieldNodeIter, bufferInfoIter, is)) {
             final OUTPUT_CHUNK_TYPE chunk = castOrCreateChunk(
-                    outChunk, Math.max(totalRows, wireValues.size()), chunkFactory, castFunction);
+                    outChunk, outOffset, Math.max(totalRows, wireValues.size()), chunkFactory, castFunction);
             if (outChunk == null) {
                 // if we're not given an output chunk then we better be writing at the front of the new one
                 Assert.eqZero(outOffset, "outOffset");
             }
             transformer.transform(wireValues, chunk, outOffset);
-            chunk.setSize(outOffset + wireValues.size());
             return chunk;
         }
     }

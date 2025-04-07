@@ -6,8 +6,8 @@ package io.deephaven.server.jetty;
 import io.grpc.servlet.web.websocket.GrpcWebsocket;
 import io.grpc.servlet.web.websocket.MultiplexedWebSocketServerStream;
 import jakarta.websocket.Endpoint;
+import org.eclipse.jetty.ee10.websocket.jakarta.server.JakartaWebSocketServerContainer;
 import org.eclipse.jetty.util.component.Graceful;
-import org.eclipse.jetty.websocket.jakarta.server.internal.JakartaWebSocketServerContainer;
 
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;

@@ -38,7 +38,7 @@ if (hasProperty('groovy')) {
 }
 
 if (!hasProperty('excludeHotspotImpl')) {
-   extraJvmArgs += ['--add-exports', 'java.management/sun.management=ALL-UNNAMED']
+    extraJvmArgs += ['--add-exports', 'java.management/sun.management=ALL-UNNAMED']
 }
 
 if (!hasProperty('excludeClockImpl')) {
@@ -72,7 +72,15 @@ if (hasProperty('devCerts') || hasProperty('devMTLS')) {
 }
 
 if (hasProperty('debug')) {
-    extraJvmArgs += ['-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005']
+    // Allow the port to be specified as an argument, like -Pdebug=5006.
+    // If not specified (ie, just -Pdebug) default to 5005.
+    int debugPort
+    try {
+        debugPort=Integer.parseInt(getProperty('debug'))
+    } catch (NumberFormatException ignored) {
+        debugPort=5005
+    }
+    extraJvmArgs += ["-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:${debugPort}"]
 }
 
 if (hasProperty('debugAutocomplete')) {
