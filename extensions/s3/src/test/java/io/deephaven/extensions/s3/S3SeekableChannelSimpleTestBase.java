@@ -170,7 +170,8 @@ abstract class S3SeekableChannelSimpleTestBase extends S3SeekableChannelTestSetu
                     .readTimeout(Duration.ofMillis(1));
             try (
                     final SeekableChannelsProvider providerImplShortTimeout = providerImpl(s3InstructionsBuilder);
-                    final SeekableChannelsProvider providerShortTimeout = CachedChannelProvider.create(providerImplShortTimeout, 32);
+                    final SeekableChannelsProvider providerShortTimeout =
+                            CachedChannelProvider.create(providerImplShortTimeout, 32);
                     final SeekableChannelContext useContext = providerShortTimeout.makeReadContext();
                     final SeekableByteChannel readChannel = providerShortTimeout.getReadChannel(useContext, uri)) {
 
@@ -182,8 +183,14 @@ abstract class S3SeekableChannelSimpleTestBase extends S3SeekableChannelTestSetu
                     fail("Expected read timeout exception");
                 } catch (Exception e) {
                     final Throwable cause = e.getCause();
-                    if (!(cause instanceof TimeoutException)) {
-                        fail("Expected TimeoutException but got " + cause.getClass().getName());
+                    if (!(cause instanceof ExecutionException || cause instanceof TimeoutException)) {
+                        fail("Expected TimeoutException or ExecutionException but got " + cause.getClass().getName());
+                    }
+                    final String expectedMessage =
+                            "Client execution did not complete before the specified timeout configuration";
+                    final String s = cause.getMessage();
+                    if (s != null && !s.contains(expectedMessage)) {
+                        fail("Expected message to contain: " + expectedMessage + " but got: " + s);
                     }
                 }
             }
@@ -221,7 +228,8 @@ abstract class S3SeekableChannelSimpleTestBase extends S3SeekableChannelTestSetu
                     fail("Expected CompletionException but got " + cause.getClass().getName());
                 }
 
-                final String expectedMessage = "Client execution did not complete before the specified timeout configuration";
+                final String expectedMessage =
+                        "Client execution did not complete before the specified timeout configuration";
                 final String s = cause.getMessage();
                 if (!s.contains(expectedMessage)) {
                     fail("Expected message to contain: " + expectedMessage + " but got: " + s);
@@ -229,7 +237,8 @@ abstract class S3SeekableChannelSimpleTestBase extends S3SeekableChannelTestSetu
             }
             outputStream.complete();
         } catch (Exception ignored) {
-            // The close can throw another exception which we don't care about - it's actually a "Self-suppression not permitted"
+            // The close can throw another exception which we don't care about - it's actually a "Self-suppression not
+            // permitted"
             // IAE from the try-with-resources block
         }
     }

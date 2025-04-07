@@ -455,7 +455,8 @@ class S3CompletableOutputStream extends CompletableOutputStream {
                         .parts(completedParts)
                         .build())
                 .build();
-        final CompletableFuture<CompleteMultipartUploadResponse> uploadFuture = s3AsyncClient.completeMultipartUpload(completeRequest);
+        final CompletableFuture<CompleteMultipartUploadResponse> uploadFuture =
+                s3AsyncClient.completeMultipartUpload(completeRequest);
         try {
             uploadFuture.get();
         } catch (final InterruptedException | ExecutionException | CancellationException e) {
