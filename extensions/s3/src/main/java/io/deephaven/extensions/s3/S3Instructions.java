@@ -334,17 +334,6 @@ public abstract class S3Instructions implements LogOutputAppendable {
         return regionName().isEmpty();
     }
 
-    /**
-     * Helper function to add timeout to the builder.
-     *
-     * @param builder the {@link AwsRequestOverrideConfiguration.Builder} to add the timeout to
-     * @param timeout the timeout to add
-     */
-    static void addTimeout(AwsRequestOverrideConfiguration.Builder builder, final Duration timeout) {
-        builder.apiCallAttemptTimeout(timeout.dividedBy(3))
-                .apiCallTimeout(timeout);
-    }
-
     // If necessary, we _could_ plumb support for "S3-compatible" services which don't support virtual-host style
     // requests via software.amazon.awssdk.services.s3.S3BaseClientBuilder.forcePathStyle. Originally, AWS planned to
     // deprecate path-style requests, but that has been delayed an indefinite amount of time. In the meantime, we'll

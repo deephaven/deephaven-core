@@ -49,7 +49,7 @@ import static io.deephaven.base.FileUtils.REPEATED_URI_SEPARATOR;
 import static io.deephaven.base.FileUtils.REPEATED_URI_SEPARATOR_PATTERN;
 import static io.deephaven.base.FileUtils.URI_SEPARATOR;
 import static io.deephaven.extensions.s3.S3ReadContext.handleS3Exception;
-import static io.deephaven.extensions.s3.S3Instructions.addTimeout;
+import static io.deephaven.extensions.s3.S3Utils.addTimeout;
 
 /**
  * {@link SeekableChannelsProvider} implementation that is used to fetch objects from an S3-compatible API.

@@ -30,7 +30,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Semaphore;
 
 import static io.deephaven.extensions.s3.S3ReadContext.handleS3Exception;
-import static io.deephaven.extensions.s3.S3Instructions.addTimeout;
+import static io.deephaven.extensions.s3.S3Utils.addTimeout;
 
 class S3CompletableOutputStream extends CompletableOutputStream {
 

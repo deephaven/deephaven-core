@@ -4,10 +4,12 @@
 package io.deephaven.extensions.s3;
 
 import org.jetbrains.annotations.NotNull;
+import software.amazon.awssdk.awscore.AwsRequestOverrideConfiguration;
 import software.amazon.awssdk.profiles.ProfileFile;
 import software.amazon.awssdk.profiles.ProfileFileLocation;
 
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.Optional;
 
 class S3Utils {
@@ -47,5 +49,16 @@ class S3Utils {
                 .type(type)
                 .content(path)
                 .build());
+    }
+
+    /**
+     * Helper function to add timeout to the builder.
+     *
+     * @param builder the {@link AwsRequestOverrideConfiguration.Builder} to add the timeout to
+     * @param timeout the timeout to add
+     */
+    static void addTimeout(AwsRequestOverrideConfiguration.Builder builder, final Duration timeout) {
+        builder.apiCallAttemptTimeout(timeout.dividedBy(3))
+                .apiCallTimeout(timeout);
     }
 }
