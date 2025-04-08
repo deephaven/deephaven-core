@@ -15,8 +15,10 @@ import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.TableKey;
 import io.deephaven.engine.table.impl.locations.impl.StandaloneTableKey;
 import io.deephaven.engine.table.impl.locations.util.TableDataRefreshService;
+import io.deephaven.engine.table.impl.select.FunctionalColumn;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.engine.table.impl.sources.regioned.RegionedTableComponentFactoryImpl;
+import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.iceberg.base.IcebergUtils;
@@ -32,15 +34,26 @@ import io.deephaven.iceberg.layout.IcebergTableLocationProviderBase;
 import io.deephaven.iceberg.location.IcebergTableLocationFactory;
 import io.deephaven.iceberg.location.IcebergTableLocationKey;
 import io.deephaven.parquet.table.ParquetInstructions;
+import io.deephaven.qst.table.SelectableTable;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.annotations.InternalUseOnly;
 import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.util.channel.SeekableChannelsProvider;
 import io.deephaven.util.channel.SeekableChannelsProviderLoader;
+import org.apache.iceberg.ContentFile;
+import org.apache.iceberg.DataFile;
+import org.apache.iceberg.FileFormat;
+import org.apache.iceberg.ManifestContent;
+import org.apache.iceberg.ManifestFile;
+import org.apache.iceberg.ManifestFiles;
+import org.apache.iceberg.ManifestReader;
 import org.apache.iceberg.PartitionField;
 import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.Schema;
 import org.apache.iceberg.Snapshot;
+import org.apache.iceberg.SnapshotRef;
+import org.apache.iceberg.StatisticsFile;
+import org.apache.iceberg.StructLike;
 import org.apache.iceberg.catalog.Catalog;
 import org.apache.iceberg.catalog.TableIdentifier;
 import org.apache.iceberg.types.Type;
@@ -48,15 +61,18 @@ import org.apache.iceberg.types.Types;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.IOException;
 import java.net.URI;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static io.deephaven.iceberg.base.IcebergUtils.convertToDHType;
@@ -218,6 +234,120 @@ public class IcebergTableAdapter {
 
         // Create and return the table
         return new QueryTable(SNAPSHOT_DEFINITION, RowSetFactory.flat(size).toTracking(), columnSourceMap);
+    }
+
+    public Table snapshots2() {
+        final List<Snapshot> l = new ArrayList<>();
+        table.snapshots().forEach(l::add);
+        final Snapshot[] snapshots = l.toArray(new Snapshot[0]);
+        final String snapshot = "SnapshotObject";
+        final Class<Snapshot> dataType = Snapshot.class;
+        final TableDefinition td = TableDefinition.of(ColumnDefinition.of(snapshot, io.deephaven.qst.type.Type.find(dataType)));
+        final Table snapshotsTable = TableTools.newTable(td, new ColumnHolder<>(snapshot, dataType, null, false, snapshots));
+        return snapshotsTable.updateView(List.of(
+                new FunctionalColumn<>(snapshot, dataType, "SequenceNumber", long.class, Snapshot::sequenceNumber),
+                new FunctionalColumn<>(snapshot, dataType, "Id", long.class, Snapshot::snapshotId),
+                new FunctionalColumn<>(snapshot, dataType, "Timestamp", Instant.class, x -> Instant.ofEpochMilli(x.timestampMillis())),
+                new FunctionalColumn<>(snapshot, dataType, "Operation", String.class, Snapshot::operation),
+                new FunctionalColumn<>(snapshot, dataType, "Summary", Map.class, Snapshot::summary),
+                new FunctionalColumn<>(snapshot, dataType, "ParentId", long.class, Snapshot::parentId),
+                new FunctionalColumn<>(snapshot, dataType, "ManifestListLocation", String.class, Snapshot::manifestListLocation),
+                new FunctionalColumn<>(snapshot, dataType, "FirstRowId", long.class, Snapshot::firstRowId),
+                new FunctionalColumn<>(snapshot, dataType, "AddedRows", long.class, Snapshot::addedRows)));
+    }
+
+    public Table statisticsFile() {
+        final StatisticsFile[] files = table.statisticsFiles().toArray(new StatisticsFile[0]);
+        final String file = "StatisticsFile";
+        final Class<StatisticsFile> dataType = StatisticsFile.class;
+        final TableDefinition td = TableDefinition.of(ColumnDefinition.of(file, io.deephaven.qst.type.Type.find(dataType)));
+        final Table table = TableTools.newTable(td, new ColumnHolder<>(file, dataType, null, false, files));
+        return table.updateView(List.of(
+                new FunctionalColumn<>(file, dataType, "SnapshotId", long.class, StatisticsFile::snapshotId),
+                new FunctionalColumn<>(file, dataType, "Path", String.class, StatisticsFile::path),
+                new FunctionalColumn<>(file, dataType, "FileSize", long.class, StatisticsFile::fileSizeInBytes),
+                new FunctionalColumn<>(file, dataType, "FileFooterSize", long.class, StatisticsFile::fileFooterSizeInBytes)));
+    }
+
+    public Table refs() {
+        final Map.Entry[] entries = table.refs().entrySet().toArray(new Map.Entry[0]);
+        final String entry = "Entry";
+        final Class<Map.Entry> dataType = Map.Entry.class;
+        final TableDefinition td = TableDefinition.of(ColumnDefinition.of(entry, io.deephaven.qst.type.Type.find(dataType)));
+        final Table table = TableTools.newTable(td, new ColumnHolder<>(entry, dataType, null, false, entries));
+        return table.view(List.of(
+                new FunctionalColumn<>(entry, dataType, "Ref", String.class, e -> (String)e.getKey()),
+                new FunctionalColumn<>(entry, dataType, "RefType", String.class, e -> ((SnapshotRef)e.getValue()).isBranch() ? "BRANCH" : "TAG"),
+                new FunctionalColumn<>(entry, dataType, "SnapshotId", long.class, e -> ((SnapshotRef)e.getValue()).snapshotId()),
+                new FunctionalColumn<>(entry, dataType, "MinSnapshotsToKeep", int.class, e -> ((SnapshotRef)e.getValue()).minSnapshotsToKeep()),
+                new FunctionalColumn<>(entry, dataType, "maxSnapshotAgeMs", long.class, e -> ((SnapshotRef)e.getValue()).maxSnapshotAgeMs()),
+                new FunctionalColumn<>(entry, dataType, "MaxRefAgeMs", long.class, e -> ((SnapshotRef)e.getValue()).maxRefAgeMs())));
+    }
+
+    public Table manifestFiles() {
+        final String file = "ManifestFile";
+        final Class<ManifestFile> dataType = ManifestFile.class;
+        final Map<String, ManifestFile> deduped = manifestFilesMap();
+        final ManifestFile[] files = deduped.values().toArray(new ManifestFile[0]);
+        // todo: extra reading for ManifestReader metadata?
+        final TableDefinition td = TableDefinition.of(
+                ColumnDefinition.of(file, io.deephaven.qst.type.Type.find(dataType)));
+        return TableTools.newTable(td,
+                new ColumnHolder<>(file, dataType, null, false, files)).updateView(List.of(
+                new FunctionalColumn<>(file, dataType, "Path", String.class, ManifestFile::path),
+                new FunctionalColumn<>(file, dataType, "Length", long.class, ManifestFile::length),
+                new FunctionalColumn<>(file, dataType, "PartitionSpecId", int.class, ManifestFile::partitionSpecId),
+                new FunctionalColumn<>(file, dataType, "Content", ManifestContent.class, ManifestFile::content),
+                new FunctionalColumn<>(file, dataType, "SequenceNumber", long.class, ManifestFile::sequenceNumber),
+                new FunctionalColumn<>(file, dataType, "MinSequenceNumber", long.class, ManifestFile::minSequenceNumber),
+                new FunctionalColumn<>(file, dataType, "OrigSnapshotId", long.class, ManifestFile::snapshotId),
+                new FunctionalColumn<>(file, dataType, "AddedFilesCount", int.class, ManifestFile::addedFilesCount),
+                new FunctionalColumn<>(file, dataType, "AddedRowsCount", long.class, ManifestFile::addedRowsCount),
+                new FunctionalColumn<>(file, dataType, "ExistingFilesCount", int.class, ManifestFile::existingFilesCount),
+                new FunctionalColumn<>(file, dataType, "ExistingRowsCount", long.class, ManifestFile::existingRowsCount),
+                new FunctionalColumn<>(file, dataType, "DeletedFilesCount", int.class, ManifestFile::deletedFilesCount),
+                new FunctionalColumn<>(file, dataType, "DeletedRowsCount", long.class, ManifestFile::deletedRowsCount)
+                // TODO: partitions
+                ));
+    }
+
+    private Map<String, ManifestFile> manifestFilesMap() {
+        final Map<String, ManifestFile> deduped = new LinkedHashMap<>();
+        for (final Snapshot snapshot : table.snapshots()) {
+            final List<ManifestFile> files = snapshot.allManifests(table.io());
+            for (final ManifestFile manifestFile : files) {
+                deduped.putIfAbsent(manifestFile.path(), manifestFile);
+            }
+        }
+        return deduped;
+    }
+
+    public Table dataFiles() throws IOException {
+        final List<DataFile> dataFiles = new ArrayList<>();
+        for (final ManifestFile manifestFile : manifestFilesMap().values()) {
+            try (final ManifestReader<DataFile> manifestReader = ManifestFiles.read(manifestFile, table.io())) {
+                for (final DataFile dataFile : manifestReader) {
+                    dataFiles.add(dataFile);
+                }
+            }
+        }
+        final DataFile[] files = dataFiles.toArray(new DataFile[0]);
+        final String file = "DataFile";
+        final Class<DataFile> dataType = DataFile.class;
+        final TableDefinition td = TableDefinition.of(ColumnDefinition.of(file, io.deephaven.qst.type.Type.find(dataType)));
+        final Table table = TableTools.newTable(td, new ColumnHolder<>(file, dataType, null, false, files));
+        return table.updateView(List.of(
+                new FunctionalColumn<>(file, dataType, "Path", String.class, ContentFile::location),
+                new FunctionalColumn<>(file, dataType, "Pos", long.class, ContentFile::pos),
+                new FunctionalColumn<>(file, dataType, "SpecId", int.class, ContentFile::specId),
+                new FunctionalColumn<>(file, dataType, "Format", FileFormat.class, ContentFile::format),
+                new FunctionalColumn<>(file, dataType, "Partition", StructLike.class, ContentFile::partition),
+                new FunctionalColumn<>(file, dataType, "RecordCount", long.class, ContentFile::recordCount),
+                new FunctionalColumn<>(file, dataType, "FileSize", long.class, ContentFile::fileSizeInBytes),
+                // todo bunch of stuff
+                new FunctionalColumn<>(file, dataType, "SortOrderId", int.class, ContentFile::sortOrderId),
+                new FunctionalColumn<>(file, dataType, "DataSequenceNumber", long.class, ContentFile::dataSequenceNumber),
+                new FunctionalColumn<>(file, dataType, "FileSequenceNumber", long.class, ContentFile::fileSequenceNumber)));
     }
 
     /**

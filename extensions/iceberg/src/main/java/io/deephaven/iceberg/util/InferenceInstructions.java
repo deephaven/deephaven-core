@@ -25,8 +25,8 @@ public abstract class InferenceInstructions {
         return ImmutableInferenceInstructions.builder();
     }
 
-    public static InferenceInstructions of(Schema schema, PartitionSpec partitionSpec) {
-        return builder().schema(schema).spec(partitionSpec).build();
+    public static InferenceInstructions of(Schema schema, PartitionSpec spec) {
+        return builder().schema(schema).spec(spec).build();
     }
 
     /**
@@ -73,7 +73,7 @@ public abstract class InferenceInstructions {
 
             /**
              * The field name {@link Namer} constructs a Deephaven column name by joining together the
-             * {@link Types.NestedField#name() field names} with an {@code delimiter} and calling
+             * {@link Types.NestedField#name() field names} with a {@code delimiter} and calling
              * {@link NameValidator#legalizeColumnName(String, Set)} with de-duplication logic.
              * 
              * @param delimiter the delimiter to use to join names
