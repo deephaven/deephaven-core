@@ -168,7 +168,7 @@ public final class Explore {
     }
 
     public static Table refs(Map<String, SnapshotRef> refs) {
-        //noinspection unchecked,rawtypes
+        // noinspection unchecked,rawtypes
         return new TableBuilder<>("Entry", (Class<Map.Entry<String, SnapshotRef>>) (Class) Map.Entry.class)
                 .add("Ref", String.class, Map.Entry::getKey)
                 .add("RefType", String.class, e -> e.getValue().isBranch() ? "BRANCH" : "TAG")
@@ -209,7 +209,7 @@ public final class Explore {
     }
 
     public static Table properties(Map<String, String> properties) {
-        //noinspection unchecked,rawtypes
+        // noinspection unchecked,rawtypes
         return new TableBuilder<>("Entry", (Class<Map.Entry<String, String>>) (Class) Map.Entry.class)
                 .add("Key", String.class, Map.Entry::getKey)
                 .add("Value", String.class, Map.Entry::getValue)
