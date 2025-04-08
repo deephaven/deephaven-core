@@ -11,6 +11,10 @@ import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Style;
 
 import javax.annotation.Nullable;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.OptionalInt;
 import java.util.OptionalLong;
 import java.util.Set;
@@ -34,7 +38,8 @@ public abstract class JettyConfig implements ServerConfig {
     public static final String MAX_CONCURRENT_STREAMS = "http2.maxConcurrentStreams";
     public static final String MAX_HEADER_REQUEST_SIZE = "http.maxHeaderRequestSize";
     public static final String ALLOWED_HTTP_METHODS = "http.allowedMethods";
-    public static final Set<String> DEFAULT_ALLOWED_METHODS = Set.of("GET", "POST", "DELETE");
+    public static final Set<String> DEFAULT_ALLOWED_METHODS = Set.of("GET", "POST", "OPTIONS");
+    public static final String EXTRA_HEADERS = "http.add.header.";
 
     /**
      * Values to indicate what kind of websocket support should be offered.
@@ -103,6 +108,7 @@ public abstract class JettyConfig implements ServerConfig {
         String maxHeaderRequestSize = config.getStringWithDefault(MAX_HEADER_REQUEST_SIZE, null);
         Set<String> allowedHttpMethods = config.getStringSetFromPropertyWithDefault(ALLOWED_HTTP_METHODS,
                 DEFAULT_ALLOWED_METHODS);
+        Map<String, String> extraHeaders = readExtraHeaders(config);
 
         if (httpWebsockets != null) {
             switch (httpWebsockets.toLowerCase()) {
@@ -140,7 +146,28 @@ public abstract class JettyConfig implements ServerConfig {
             builder.maxHeaderRequestSize(Integer.parseInt(maxHeaderRequestSize));
         }
         builder.allowedHttpMethods(allowedHttpMethods);
+        builder.extraHeaders(extraHeaders);
         return builder;
+    }
+
+    private static Map<String, String> readExtraHeaders(Configuration config) {
+        Map<String, String> extraHeaders = new HashMap<>();
+        final List<String> headerKeys = new ArrayList<>();
+
+        config.getProperties(EXTRA_HEADERS).forEach((suffixArg, valueArg) -> {
+            final String suffix = (String) suffixArg;
+            if (suffix != null && suffix.endsWith(".enabled") && valueArg != null
+                    && Boolean.parseBoolean(valueArg.toString())) {
+                headerKeys.add(suffix.substring(0, suffix.length() - ".enabled".length()));
+            }
+        });
+        for (String headerKey : headerKeys) {
+            final String headerValue = config.getStringWithDefault(EXTRA_HEADERS + headerKey + ".value", null);
+            if (headerValue != null) {
+                extraHeaders.put(headerKey, headerValue);
+            }
+        }
+        return extraHeaders;
     }
 
     /**
@@ -246,6 +273,11 @@ public abstract class JettyConfig implements ServerConfig {
      */
     public abstract Set<String> allowedHttpMethods();
 
+    /**
+     * Extra headers to return in every response from this server.
+     */
+    public abstract Map<String, String> extraHeaders();
+
     public interface Builder extends ServerConfig.Builder<JettyConfig, Builder> {
 
         Builder websockets(WebsocketsSupport websockets);
@@ -263,5 +295,7 @@ public abstract class JettyConfig implements ServerConfig {
         Builder maxConcurrentStreams(int maxConcurrentStreams);
 
         Builder allowedHttpMethods(Iterable<String> allowedHttpMethods);
+
+        Builder extraHeaders(Map<String, ? extends String> extraHeaders);
     }
 }

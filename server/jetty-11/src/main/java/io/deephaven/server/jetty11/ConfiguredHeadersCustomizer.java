@@ -1,11 +1,12 @@
 //
 // Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
-package io.deephaven.server.jetty;
+package io.deephaven.server.jetty11;
 
-import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 
 import java.util.Map;
 
@@ -20,10 +21,10 @@ public class ConfiguredHeadersCustomizer implements HttpConfiguration.Customizer
     }
 
     @Override
-    public Request customize(Request request, HttpFields.Mutable responseHeaders) {
+    public void customize(Connector connector, HttpConfiguration channelConfig, Request request) {
+        Response response = request.getResponse();
         for (Map.Entry<String, String> header : configuredHeaders.entrySet()) {
-            responseHeaders.add(header.getKey(), header.getValue());
+            response.setHeader(header.getKey(), header.getValue());
         }
-        return request;
     }
 }
