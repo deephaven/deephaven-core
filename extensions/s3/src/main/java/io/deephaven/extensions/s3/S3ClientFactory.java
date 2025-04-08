@@ -42,6 +42,9 @@ final class S3ClientFactory {
             getOrComputeThreadCountProperty("S3.numFutureCompletionThreads", -1);
     private static final int NUM_SCHEDULED_EXECUTOR_THREADS =
             getOrComputeThreadCountProperty("S3.numScheduledExecutorThreads", 5);
+    // The default retries value of 3 matches the value from the deprecated software.amazon.awssdk.core.retry.RetryMode#STANDARD
+    // which allowed 2 retries (3 attempts).
+    static final int RETRY_STRATEGY_MAX_ATTEMPTS = 3;
 
     private static final Logger log = LoggerFactory.getLogger(S3ClientFactory.class);
     private static final Map<HttpClientConfig, SdkAsyncHttpClient> httpAsyncClientCache = new ConcurrentHashMap<>();
@@ -147,7 +150,7 @@ final class S3ClientFactory {
                 // try experimenting with ADAPTIVE retry policy, potentially with fast fail.
                 // .retryPolicy(RetryPolicy.builder(RetryMode.ADAPTIVE).fastFailRateLimiting(true).build())
                 .retryStrategy(StandardRetryStrategy.builder()
-                        .maxAttempts(2)
+                        .maxAttempts(RETRY_STRATEGY_MAX_ATTEMPTS)
                         .build())
                 // Adding a metrics publisher may be useful for debugging, but it's very verbose.
                 // .addMetricPublisher(LoggingMetricPublisher.create(Level.INFO, Format.PRETTY))

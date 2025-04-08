@@ -12,6 +12,8 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Optional;
 
+import static io.deephaven.extensions.s3.S3ClientFactory.RETRY_STRATEGY_MAX_ATTEMPTS;
+
 class S3Utils {
 
     /**
@@ -58,7 +60,7 @@ class S3Utils {
      * @param timeout the timeout to add
      */
     static void addTimeout(AwsRequestOverrideConfiguration.Builder builder, final Duration timeout) {
-        builder.apiCallAttemptTimeout(timeout.dividedBy(3))
+        builder.apiCallAttemptTimeout(timeout.dividedBy(RETRY_STRATEGY_MAX_ATTEMPTS))
                 .apiCallTimeout(timeout);
     }
 }
