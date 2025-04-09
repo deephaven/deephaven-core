@@ -80,7 +80,7 @@ import java.util.function.Function;
  *
  *
  * def partition_stats(ita: IcebergTableAdapter) -> Table:
- *     return Table(_JExplore.partitionStats(ita.j_object.icebergTable()))
+ *     return Table(_JExplore.partitionStats(ita.j_object.icebergTable(), ita.j_object.icebergTable().currentSnapshot()))
  * </pre>
  */
 @InternalUseOnly
@@ -174,7 +174,9 @@ public final class Explore {
     }
 
     private static <X extends ContentFile<?>> TableBuilder<X> contentFileFunctions(TableBuilder<X> builder) {
-        return builder.add("Path", String.class, ContentFile::location)
+        return builder
+                .add("Class", String.class, x -> x.getClass().getName())
+                .add("Path", String.class, ContentFile::location)
                 .add("Pos", long.class, ContentFile::pos)
                 .add("SpecId", int.class, ContentFile::specId)
                 .add("Format", FileFormat.class, ContentFile::format)
