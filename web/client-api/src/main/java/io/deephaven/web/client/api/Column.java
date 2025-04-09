@@ -7,12 +7,15 @@ import com.vertispan.tsdefs.annotations.TsName;
 import io.deephaven.web.client.api.filter.FilterValue;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsNullable;
+import jsinterop.annotations.JsOptional;
 import jsinterop.annotations.JsProperty;
 import jsinterop.base.Any;
 
 import java.util.Objects;
 import java.util.stream.IntStream;
 import java.util.stream.IntStream.Builder;
+
+import static io.deephaven.web.client.api.CustomColumn.CustomColumOptions;
 
 /**
  * Describes the structure of the column, and if desired can be used to get access to the data to be rendered in this
@@ -51,11 +54,12 @@ public class Column {
      * table using <b>applyCustomColumns</b> with the parameters specified.
      *
      * @param expression
+     * @param options
      * @return {@link CustomColumn}
      */
     @JsMethod(namespace = "dh.Column")
-    public static CustomColumn formatRowColor(String expression) {
-        return new CustomColumn(CustomColumn.ROW_FORMAT_NAME, CustomColumn.TYPE_FORMAT_COLOR, expression);
+    public static CustomColumn formatRowColor(String expression, @JsOptional @JsNullable CustomColumOptions options) {
+        return new CustomColumn(CustomColumn.ROW_FORMAT_NAME, CustomColumn.TYPE_FORMAT_COLOR, expression, options);
     }
 
     /**
@@ -63,11 +67,15 @@ public class Column {
      *
      * @param name
      * @param expression
+     * @param options
      * @return {@link CustomColumn}
      */
     @JsMethod(namespace = "dh.Column")
-    public static CustomColumn createCustomColumn(String name, String expression) {
-        return new CustomColumn(name, CustomColumn.TYPE_NEW, expression);
+    public static CustomColumn createCustomColumn(
+            String name,
+            String expression,
+            @JsOptional @JsNullable CustomColumOptions options) {
+        return new CustomColumn(name, CustomColumn.TYPE_NEW, expression, options);
     }
 
     public Column(int jsIndex, int index, Integer formatColumnIndex, Integer styleColumnIndex, String type, String name,
@@ -226,8 +234,8 @@ public class Column {
      * @return {@link CustomColumn}
      */
     @JsMethod
-    public CustomColumn formatColor(String expression) {
-        return new CustomColumn(name, CustomColumn.TYPE_FORMAT_COLOR, expression);
+    public CustomColumn formatColor(String expression, @JsOptional @JsNullable CustomColumOptions options) {
+        return new CustomColumn(name, CustomColumn.TYPE_FORMAT_COLOR, expression, options);
     }
 
     /**
@@ -237,8 +245,8 @@ public class Column {
      * @return {@link CustomColumn}
      */
     @JsMethod
-    public CustomColumn formatNumber(String expression) {
-        return new CustomColumn(name, CustomColumn.TYPE_FORMAT_NUMBER, expression);
+    public CustomColumn formatNumber(String expression, @JsOptional @JsNullable CustomColumOptions options) {
+        return new CustomColumn(name, CustomColumn.TYPE_FORMAT_NUMBER, expression, options);
     }
 
     /**
@@ -248,8 +256,8 @@ public class Column {
      * @return {@link CustomColumn}
      */
     @JsMethod
-    public CustomColumn formatDate(String expression) {
-        return new CustomColumn(name, CustomColumn.TYPE_FORMAT_DATE, expression);
+    public CustomColumn formatDate(String expression, @JsOptional @JsNullable CustomColumOptions options) {
+        return new CustomColumn(name, CustomColumn.TYPE_FORMAT_DATE, expression, options);
     }
 
     @JsMethod
