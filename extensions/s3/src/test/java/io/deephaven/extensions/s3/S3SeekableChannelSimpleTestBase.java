@@ -211,18 +211,16 @@ abstract class S3SeekableChannelSimpleTestBase extends S3SeekableChannelTestSetu
                 final CompletableOutputStream outputStream = provider.getOutputStream(context, uri, 0)) {
             final int numBytes = 1024 * 1024;
             final int numIters = numBytes / contentBytes.length;
-            for (int i = 0; i < numIters; ++i) {
-                outputStream.write(contentBytes);
-            }
-            // Push data to S3 and expect a timeout
             try {
+                for (int i = 0; i < numIters; ++i) {
+                    outputStream.write(contentBytes);
+                }
+                // Push data to S3 and expect a timeout
                 outputStream.flush();
                 outputStream.done();
                 outputStream.complete();
                 fail("Expected write timeout exception");
             } catch (Exception e) {
-                System.out.println("Exception 1");
-                e.printStackTrace();
                 final Throwable cause = e.getCause();
                 if (!(cause instanceof CompletionException)) {
                     fail("Expected CompletionException but got " + cause.getClass().getName());
@@ -244,7 +242,7 @@ abstract class S3SeekableChannelSimpleTestBase extends S3SeekableChannelTestSetu
     }
 
     @Test
-    void readWriteTestNoWriteTimeout() throws IOException {
+    void writeTestNoWriteTimeout() throws IOException {
         final URI uri = uri("writeReadTest.txt");
         final String content = "Hello, world!";
         final byte[] contentBytes = content.getBytes(StandardCharsets.UTF_8);
@@ -264,6 +262,34 @@ abstract class S3SeekableChannelSimpleTestBase extends S3SeekableChannelTestSetu
             outputStream.done();
             // Push data to S3
             outputStream.complete();
+        }
+    }
+
+    @Test
+    void writeTestAbortNoTimeout() throws IOException {
+        final URI uri = uri("writeReadTest.txt");
+        final String content = "Hello, world!";
+        final byte[] contentBytes = content.getBytes(StandardCharsets.UTF_8);
+        final S3Instructions.Builder s3InstructionsBuilder = S3Instructions.builder()
+                .writeTimeout(Duration.ofSeconds(20));
+        try (
+                final SeekableChannelsProvider providerImpl = providerImpl(s3InstructionsBuilder);
+                final SeekableChannelsProvider provider = CachedChannelProvider.create(providerImpl, 32);
+                final SeekableChannelsProvider.WriteContext context = provider.makeWriteContext();
+                final CompletableOutputStream outputStream = provider.getOutputStream(context, uri, 0)) {
+            final int numBytes = 36 * 1024 * 1024; // 36 Mib -> Three 10-MiB parts + One 6-MiB part
+            final int numIters = numBytes / contentBytes.length;
+            for (int i = 0; i < numIters; ++i) {
+                outputStream.write(contentBytes);
+            }
+            outputStream.rollback();
+        } catch (final IOException e) {
+            final String expectedMessage =
+                    "Upload aborted";
+            final String s = e.getMessage();
+            if (!s.contains(expectedMessage)) {
+                fail("Expected message to contain: " + expectedMessage + " but got: " + s);
+            }
         }
     }
 }

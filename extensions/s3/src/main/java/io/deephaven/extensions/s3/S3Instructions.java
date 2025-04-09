@@ -12,7 +12,6 @@ import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Lazy;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
-import software.amazon.awssdk.awscore.AwsRequestOverrideConfiguration;
 import software.amazon.awssdk.core.client.config.ClientOverrideConfiguration;
 import software.amazon.awssdk.profiles.ProfileFile;
 
@@ -37,6 +36,7 @@ public abstract class S3Instructions implements LogOutputAppendable {
     private static final Duration DEFAULT_READ_TIMEOUT = Duration.ofSeconds(2);
     private static final int DEFAULT_NUM_CONCURRENT_WRITE_PARTS = 64;
     private static final int MIN_CONCURRENT_WRITE_PARTS = 1;
+    private static final Duration MIN_TIMEOUT = Duration.ofMillis(1);
 
     /**
      * We set default part size to 10 MiB. The maximum number of parts allowed is 10,000. This means maximum size of a
@@ -313,6 +313,24 @@ public abstract class S3Instructions implements LogOutputAppendable {
             throw new IllegalArgumentException(
                     "numConcurrentWriteParts(=" + numConcurrentWriteParts() + ") must be >= " +
                             MIN_CONCURRENT_WRITE_PARTS);
+        }
+    }
+
+    @Check
+    final void boundsCheckReadTimeout() {
+        if (readTimeout() != null && MIN_TIMEOUT.compareTo(readTimeout()) > 0) {
+            throw new IllegalArgumentException(
+                    "readTimeout(=" + readTimeout() + ") must be >= " +
+                            MIN_TIMEOUT);
+        }
+    }
+
+    @Check
+    final void boundsCheckWriteTimeout() {
+        if (writeTimeout().isPresent() && MIN_TIMEOUT.compareTo(writeTimeout().get()) > 0) {
+            throw new IllegalArgumentException(
+                    "writeTimeout(=" + writeTimeout().get() + ") must be >= " +
+                            MIN_TIMEOUT);
         }
     }
 

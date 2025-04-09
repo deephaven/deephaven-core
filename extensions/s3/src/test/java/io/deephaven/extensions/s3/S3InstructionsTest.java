@@ -80,6 +80,26 @@ class S3InstructionsTest {
     }
 
     @Test
+    void testReadTimeoutValidate() {
+        // 1 milli is allowed
+        S3Instructions.builder()
+                .regionName("some-region")
+                .readTimeout(Duration.ofMillis(1))
+                .build();
+
+        // Less than 1 milli is not allowed
+        try {
+            S3Instructions.builder()
+                    .regionName("some-region")
+                    .readTimeout(Duration.ofNanos(999_999))
+                    .build();
+            failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
+        } catch (IllegalArgumentException e) {
+            assertThat(e).hasMessageContaining("readTimeout");
+        }
+    }
+
+    @Test
     void testWriteTimeout() {
         assertThat(S3Instructions.builder()
                 .regionName("some-region")
@@ -96,6 +116,26 @@ class S3InstructionsTest {
                 .build()
                 .writeTimeout().isEmpty())
                 .isEqualTo(true);
+    }
+
+    @Test
+    void testWriteTimeoutValidate() {
+        // 1 milli is allowed
+        S3Instructions.builder()
+                .regionName("some-region")
+                .writeTimeout(Duration.ofMillis(1))
+                .build();
+
+        // Less than 1 milli is not allowed
+        try {
+            S3Instructions.builder()
+                    .regionName("some-region")
+                    .writeTimeout(Duration.ofNanos(999_999))
+                    .build();
+            failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
+        } catch (IllegalArgumentException e) {
+            assertThat(e).hasMessageContaining("writeTimeout");
+        }
     }
 
     @Test
