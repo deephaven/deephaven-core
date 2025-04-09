@@ -13,12 +13,15 @@ import io.deephaven.engine.util.TableTools;
 import io.deephaven.util.annotations.InternalUseOnly;
 import org.apache.iceberg.ContentFile;
 import org.apache.iceberg.DataFile;
+import org.apache.iceberg.DeleteFile;
 import org.apache.iceberg.FileFormat;
 import org.apache.iceberg.ManifestContent;
 import org.apache.iceberg.ManifestFile;
 import org.apache.iceberg.ManifestFiles;
 import org.apache.iceberg.ManifestReader;
 import org.apache.iceberg.PartitionStatisticsFile;
+import org.apache.iceberg.PartitionStats;
+import org.apache.iceberg.PartitionStatsUtil;
 import org.apache.iceberg.Snapshot;
 import org.apache.iceberg.SnapshotRef;
 import org.apache.iceberg.StatisticsFile;
@@ -56,8 +59,8 @@ import java.util.function.Function;
  *     return Table(_JExplore.manifestFiles(ita.j_object.icebergTable()))
  *
  *
- * def data_files(ita: IcebergTableAdapter) -> Table:
- *     return Table(_JExplore.dataFiles(ita.j_object.icebergTable()))
+ * def content_files(ita: IcebergTableAdapter) -> Table:
+ *     return Table(_JExplore.contentFiles(ita.j_object.icebergTable()))
  *
  *
  * def refs(ita: IcebergTableAdapter) -> Table:
@@ -74,6 +77,10 @@ import java.util.function.Function;
  *
  * def partition_statistics_files(ita: IcebergTableAdapter) -> Table:
  *     return Table(_JExplore.partitionStatisticsFiles(ita.j_object.icebergTable()))
+ *
+ *
+ * def partition_stats(ita: IcebergTableAdapter) -> Table:
+ *     return Table(_JExplore.partitionStats(ita.j_object.icebergTable()))
  * </pre>
  */
 @InternalUseOnly
@@ -125,45 +132,59 @@ public final class Explore {
                 .view(manifestFiles);
     }
 
-    public static Table dataFiles(org.apache.iceberg.Table table) throws IOException {
-        return dataFiles(table.snapshots(), table.io());
+    public static Table contentFiles(org.apache.iceberg.Table table) throws IOException {
+        return contentFiles(table.snapshots(), table.io());
     }
 
-    public static Table dataFiles(Iterable<Snapshot> snapshots, FileIO io) throws IOException {
-        final List<DataFile> dataFiles = new ArrayList<>();
+    public static Table contentFiles(Iterable<Snapshot> snapshots, FileIO io) throws IOException {
+        // noinspection rawtypes
+        final List<ContentFile> contentFiles = new ArrayList<>();
         for (final ManifestFile manifestFile : manifestFilesDeduped(snapshots, io)) {
-            dataFiles.addAll(readDataFiles(manifestFile, io));
+            switch (manifestFile.content()) {
+                case DATA:
+                    contentFiles.addAll(readDataFiles(manifestFile, io));
+                    break;
+                case DELETES:
+                    contentFiles.addAll(readDeleteFiles(manifestFile, io));
+                    break;
+                default:
+                    throw new IllegalStateException("Unexpected contet " + manifestFile.content());
+            }
         }
-        return dataFiles(dataFiles);
+        return contentFiles(contentFiles);
     }
 
-    public static Table dataFiles(Snapshot snapshot, FileIO io) throws IOException {
-        final List<DataFile> dataFiles = new ArrayList<>();
-        // We don't expect any duplicated ManifestFiles from a single snapshot
-        for (final ManifestFile allManifest : snapshot.allManifests(io)) {
-            dataFiles.addAll(readDataFiles(allManifest, io));
-        }
-        return dataFiles(dataFiles);
+    public static Table contentFiles(Snapshot snapshot, FileIO io) throws IOException {
+        return contentFiles(List.of(snapshot), io);
+    }
+
+    public static Table contentFiles(@SuppressWarnings("rawtypes") Collection<ContentFile> dataFiles) {
+        return contentFileFunctions(new TableBuilder<>("ContentFile", ContentFile.class))
+                .view(dataFiles);
     }
 
     public static Table dataFiles(ManifestFile manifestFile, FileIO io) throws IOException {
-        return dataFiles(readDataFiles(manifestFile, io));
+        return contentFileFunctions(new TableBuilder<>("DataFile", DataFile.class))
+                .view(readDataFiles(manifestFile, io));
     }
 
-    public static Table dataFiles(Collection<DataFile> dataFiles) {
-        return new TableBuilder<>("DataFile", DataFile.class)
-                .add("Path", String.class, ContentFile::location)
+    public static Table deleteFiles(ManifestFile manifestFile, FileIO io) throws IOException {
+        return contentFileFunctions(new TableBuilder<>("DeleteFile", DeleteFile.class))
+                .view(readDeleteFiles(manifestFile, io));
+    }
+
+    private static <X extends ContentFile<?>> TableBuilder<X> contentFileFunctions(TableBuilder<X> builder) {
+        return builder.add("Path", String.class, ContentFile::location)
                 .add("Pos", long.class, ContentFile::pos)
                 .add("SpecId", int.class, ContentFile::specId)
                 .add("Format", FileFormat.class, ContentFile::format)
                 .add("Partition", StructLike.class, ContentFile::partition)
                 .add("RecordCount", long.class, ContentFile::recordCount)
                 .add("FileSize", long.class, ContentFile::fileSizeInBytes)
-                // todo bunch of stuff
+                // other fields we may want to capture, split offsets, maps, etc
                 .add("SortOrderId", int.class, ContentFile::sortOrderId)
                 .add("DataSequenceNumber", long.class, ContentFile::dataSequenceNumber)
-                .add("FileSequenceNumber", long.class, ContentFile::fileSequenceNumber)
-                .view(dataFiles);
+                .add("FileSequenceNumber", long.class, ContentFile::fileSequenceNumber);
     }
 
     public static Table refs(org.apache.iceberg.Table table) {
@@ -219,6 +240,27 @@ public final class Explore {
                 .view(properties.entrySet());
     }
 
+    public static Table partitionStats(org.apache.iceberg.Table table, Snapshot snapshot) {
+        return new TableBuilder<>("PartitionStats", PartitionStats.class)
+                .add("Partition", StructLike.class, PartitionStats::partition)
+                .add("SpecId", int.class, PartitionStats::specId)
+                .add("DataRecordCount", long.class, PartitionStats::dataRecordCount)
+                .add("DataFileCount", int.class, PartitionStats::dataFileCount)
+                .add("TotalDataFileSizeInBytes", long.class, PartitionStats::totalDataFileSizeInBytes)
+                .add("PositionDeleteRecordCount", long.class, PartitionStats::positionDeleteRecordCount)
+                .add("PositionDeleteFileCount", int.class, PartitionStats::positionDeleteFileCount)
+                .add("EqualityDeleteRecordCount", long.class, PartitionStats::equalityDeleteRecordCount)
+                .add("EqualityDeleteFileCount", int.class, PartitionStats::equalityDeleteFileCount)
+                .add("TotalRecordCount", long.class, PartitionStats::totalRecordCount)
+                .add("LastUpdatedAt", Instant.class, Explore::lastUpdatedAt)
+                .add("LastUpdatedSnapshotId", long.class, PartitionStats::lastUpdatedSnapshotId)
+                .table(PartitionStatsUtil.computeStats(table, snapshot));
+    }
+
+    private static Instant lastUpdatedAt(PartitionStats x) {
+        return x.lastUpdatedAt() == null ? null : Instant.ofEpochMilli(x.lastUpdatedAt());
+    }
+
     public static Collection<ManifestFile> manifestFilesDeduped(Iterable<Snapshot> snapshots, FileIO io) {
         final Map<String, ManifestFile> deduped = new LinkedHashMap<>();
         for (final Snapshot snapshot : snapshots) {
@@ -235,6 +277,17 @@ public final class Explore {
         try (final ManifestReader<DataFile> manifestReader = ManifestFiles.read(manifestFile, io)) {
             for (final DataFile dataFile : manifestReader) {
                 dataFiles.add(dataFile);
+            }
+        }
+        return dataFiles;
+    }
+
+    public static List<DeleteFile> readDeleteFiles(ManifestFile manifestFile, FileIO io) throws IOException {
+        final List<DeleteFile> dataFiles = new ArrayList<>();
+        try (final ManifestReader<DeleteFile> manifestReader =
+                ManifestFiles.readDeleteManifest(manifestFile, io, null)) {
+            for (final DeleteFile deleteFile : manifestReader) {
+                dataFiles.add(deleteFile);
             }
         }
         return dataFiles;
