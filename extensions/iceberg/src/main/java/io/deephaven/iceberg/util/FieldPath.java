@@ -5,6 +5,7 @@ package io.deephaven.iceberg.util;
 
 import io.deephaven.annotations.SimpleStyle;
 import io.deephaven.iceberg.internal.SchemaHelper;
+import org.apache.iceberg.PartitionField;
 import org.apache.iceberg.Schema;
 import org.apache.iceberg.types.Type;
 import org.apache.iceberg.types.Types.NestedField;
@@ -54,8 +55,20 @@ public abstract class FieldPath {
         return fieldPath.get();
     }
 
+    public static FieldPath get(Schema schema, PartitionField partitionField) throws SchemaHelper.PathException {
+        final Optional<FieldPath> fieldPath = find(schema, partitionField);
+        if (fieldPath.isEmpty()) {
+            throw new SchemaHelper.PathException(String.format("Unable to find field id %s in schema", partitionField));
+        }
+        return fieldPath.get();
+    }
+
     public static Optional<FieldPath> find(Schema schema, int fieldId) {
         return find(new ArrayList<>(), schema.asStruct(), fieldId).map(FieldPath::fp);
+    }
+
+    public static Optional<FieldPath> find(Schema schema, PartitionField partitionField) {
+        return find(schema, partitionField.sourceId());
     }
 
     private static FieldPath fp(List<NestedField> x) {

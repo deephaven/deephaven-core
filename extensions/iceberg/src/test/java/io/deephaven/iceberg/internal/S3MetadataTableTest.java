@@ -47,11 +47,9 @@ class S3MetadataTableTest {
     @Test
     void inference() throws IOException, Inference.UnsupportedType {
         final Schema schema = s3MetadataSchema();
-        final PartitionSpec spec = PartitionSpec.unpartitioned();
         // TODO: add description to ColumnDefinition?
-        assertThat(Resolver.infer(InferenceInstructions.of(schema, spec))).isEqualTo(Resolver.builder()
+        assertThat(Resolver.infer(InferenceInstructions.of(schema, PartitionSpec.unpartitioned()))).isEqualTo(Resolver.builder()
                 .schema(schema)
-                .spec(spec)
                 .definition(TableDefinition.of(
                         ColumnDefinition.ofString("bucket"),
                         ColumnDefinition.ofString("key"),

@@ -149,7 +149,6 @@ class ResolverFactoryNestedTest {
         return Resolver.builder()
                 .definition(TABLE_DEFINITION)
                 .schema(SCHEMA)
-                .spec(PartitionSpec.unpartitioned())
                 .putAllColumnInstructions(COLUMN_INSTRUCTIONS);
     }
 

@@ -627,7 +627,7 @@ public class IcebergTableAdapter {
                 .setSpecialInstructions(specialInstructions)
                 .build();
         // todo: we should probably be checking TD instead
-        final PartitionSpec spec = resolver.spec();
+        final PartitionSpec spec = resolver.specOrUnpartitioned();
         if (spec.isUnpartitioned()) {
             // Create the flat layout location key finder
             return new IcebergFlatLayout(this, parquetInstructions, channelsProvider, snapshot);

@@ -55,7 +55,7 @@ class InferenceTest {
     static InferenceInstructions i(Schema schema) {
         return InferenceInstructions.builder()
                 .schema(schema)
-                .spec(PartitionSpec.unpartitioned())
+                //.spec(PartitionSpec.unpartitioned())
                 // .nameMapping(NameMapping.empty())
                 .build();
     }
@@ -219,11 +219,8 @@ class InferenceTest {
                 NestedField.required(6, "S2", StructType.of(
                         NestedField.optional(4, "F1", IT),
                         NestedField.required(5, "F2", IT))));
-
-
         final Resolver expected = Resolver.builder()
                 .schema(schema)
-                .spec(PartitionSpec.unpartitioned())
                 .definition(TableDefinition.of(
                         ColumnDefinition.ofInt("S1_F1"),
                         ColumnDefinition.ofInt("S1_F2"),
@@ -246,7 +243,6 @@ class InferenceTest {
                         NestedField.required(4, "F2", IT))))));
         final Resolver expected = Resolver.builder()
                 .schema(schema)
-                .spec(PartitionSpec.unpartitioned())
                 .definition(TableDefinition.of(
                         ColumnDefinition.ofInt("S1_S2_F1"),
                         ColumnDefinition.ofInt("S1_S2_F2")))
@@ -364,7 +360,6 @@ class InferenceTest {
 
         assertThat(Resolver.infer(instructions)).isEqualTo(Resolver.builder()
                 .schema(schema)
-                .spec(PartitionSpec.unpartitioned())
                 .definition(TableDefinition.of(ColumnDefinition.ofInt("F2")))
                 .putColumnInstructions("F2", schemaField(43))
                 .build());
@@ -382,7 +377,6 @@ class InferenceTest {
 
         assertThat(Resolver.infer(instructions)).isEqualTo(Resolver.builder()
                 .schema(schema)
-                .spec(PartitionSpec.unpartitioned())
                 .definition(TableDefinition.of(
                         ColumnDefinition.ofInt("FieldId_42"),
                         ColumnDefinition.ofInt("FieldId_43")))
@@ -406,7 +400,6 @@ class InferenceTest {
     private static Resolver simpleMapping(Schema schema, Type<?> type) {
         return Resolver.builder()
                 .schema(schema)
-                .spec(PartitionSpec.unpartitioned())
                 .definition(simpleDefinition(type))
                 .putColumnInstructions("F1", schemaField(42))
                 .putColumnInstructions("F2", schemaField(43))

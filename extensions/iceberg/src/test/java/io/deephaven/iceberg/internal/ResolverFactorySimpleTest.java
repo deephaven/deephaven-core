@@ -84,7 +84,6 @@ class ResolverFactorySimpleTest {
         return Resolver.builder()
                 .definition(TABLE_DEFINITION)
                 .schema(SCHEMA)
-                .spec(PartitionSpec.unpartitioned())
                 .putAllColumnInstructions(COLUMN_INSTRUCTIONS);
     }
 
@@ -218,7 +217,6 @@ class ResolverFactorySimpleTest {
         Resolver.builder()
                 .definition(TABLE_DEFINITION)
                 .schema(SCHEMA)
-                .spec(PartitionSpec.unpartitioned())
                 .putAllColumnInstructions(COLUMN_INSTRUCTIONS);
     }
 

@@ -4,6 +4,7 @@
 package io.deephaven.iceberg.internal;
 
 import io.deephaven.iceberg.util.FieldPath;
+import org.apache.iceberg.PartitionField;
 import org.apache.iceberg.Schema;
 import org.apache.iceberg.types.Type;
 import org.apache.iceberg.types.Types.NestedField;
@@ -41,6 +42,16 @@ public final class SchemaHelper {
 
     public static List<NestedField> fieldPath(Schema schema, String[] namePath) throws PathException {
         return path(schema.asStruct(), namePath);
+    }
+
+    public static List<NestedField> fieldPath(Schema schema, PartitionField partitionField) throws PathException {
+        final FieldPath fieldPath = FieldPath.get(schema, partitionField);
+        try {
+            return fieldPath.resolve(schema);
+        } catch (PathException e) {
+            // this should have failed during the get if it was not found
+            throw new IllegalStateException(e);
+        }
     }
 
     public static String toNameString(Collection<? extends NestedField> context) {

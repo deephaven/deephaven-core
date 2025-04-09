@@ -38,6 +38,21 @@ public abstract class ColumnInstructions {
         return PartitionSpecHelper.get(spec, partitionFieldId().orElseThrow());
     }
 
+    PartitionField partitionFieldFromSchemaFieldId(PartitionSpec spec) throws SchemaHelper.PathException {
+        final int fieldId = schemaFieldId().orElseThrow();
+        final List<PartitionField> partitionFields = spec.getFieldsBySourceId(fieldId);
+        if (partitionFields.isEmpty()) {
+            throw new SchemaHelper.PathException(String.format("No PartitionField with source field id %d exists in PartitionSpec %s", fieldId, spec));
+        }
+        if (partitionFields.size() > 1) {
+            // Note: we are *not* being lenient and assuming the user meant identity transform when there are multiple
+            // partition specs for a given source field id. In that case, the user should be precise and use
+            // partitionFieldId.
+            throw new SchemaHelper.PathException(String.format("Multiple PartitionFields with source field id %d exist in PartitionSpec %s. Must be more explicit and use partitionField.", fieldId, spec));
+        }
+        return partitionFields.get(0);
+    }
+
     List<NestedField> schemaFieldPath(Schema schema) throws SchemaHelper.PathException {
         return SchemaHelper.fieldPath(schema, schemaFieldId().orElseThrow());
     }

@@ -31,7 +31,6 @@ class ResolverTest {
     void normal() {
         Resolver.builder()
                 .schema(simpleSchema(IT))
-                .spec(PartitionSpec.unpartitioned())
                 .definition(simpleDefinition(Type.intType()))
                 .putColumnInstructions("F1", schemaField(42))
                 .putColumnInstructions("F2", schemaField(43))
@@ -61,7 +60,6 @@ class ResolverTest {
         // It's okay to map the same Iceberg field to different DH columns
         Resolver.builder()
                 .schema(simpleSchema(IT))
-                .spec(PartitionSpec.unpartitioned())
                 .definition(TableDefinition.of(
                         ColumnDefinition.of("F1", Type.intType()),
                         ColumnDefinition.of("F2", Type.intType()),
@@ -81,7 +79,6 @@ class ResolverTest {
                         NestedField.optional(42, "F1", IT),
                         NestedField.required(43, "F2", IT),
                         NestedField.required(44, "F3", IT)))
-                .spec(PartitionSpec.unpartitioned())
                 .definition(simpleDefinition(Type.intType()))
                 .putColumnInstructions("F1", schemaField(42))
                 .putColumnInstructions("F2", schemaField(43))
@@ -96,7 +93,6 @@ class ResolverTest {
                         NestedField.required(4, "F2", IT))))));
         Resolver.builder()
                 .schema(schema)
-                .spec(PartitionSpec.unpartitioned())
                 .definition(TableDefinition.of(
                         ColumnDefinition.ofInt("S1_S2_F1"),
                         ColumnDefinition.ofInt("S1_S2_F2")))
@@ -111,7 +107,6 @@ class ResolverTest {
         try {
             Resolver.builder()
                     .schema(simpleSchema(IT))
-                    .spec(PartitionSpec.unpartitioned())
                     .definition(simpleDefinition(Type.intType()))
                     .putColumnInstructions("F1", schemaField(42))
                     .build();
@@ -123,7 +118,6 @@ class ResolverTest {
         // we want to keep the column in DH
         Resolver.builder()
                 .schema(simpleSchema(IT))
-                .spec(PartitionSpec.unpartitioned())
                 .definition(simpleDefinition(Type.intType()))
                 .putColumnInstructions("F1", schemaField(42))
                 .allowUnmappedColumns(true)
@@ -178,13 +172,18 @@ class ResolverTest {
         final TableDefinition td = TableDefinition.of(
                 ColumnDefinition.ofInt("F1").withPartitioning(),
                 ColumnDefinition.ofInt("F2"));
-        Resolver.builder()
-                .schema(schema)
-                .spec(PartitionSpec.unpartitioned())
-                .definition(td)
-                .putColumnInstructions("F1", schemaField(42))
-                .putColumnInstructions("F2", schemaField(43))
-                .build();
+        try {
+            Resolver.builder()
+                    .schema(schema)
+                    .definition(td)
+                    .putColumnInstructions("F1", schemaField(42))
+                    .putColumnInstructions("F2", schemaField(43))
+                    .build();
+            failBecauseExceptionWasNotThrown(Resolver.MappingException.class);
+        } catch (Resolver.MappingException e) {
+            assertThat(e).hasMessageContaining("Unable to map Deephaven column F1");
+            assertThat(e).cause().hasMessageContaining("No PartitionField with source field id 42 exists in PartitionSpec []");
+        }
     }
 
     @Test
@@ -242,13 +241,19 @@ class ResolverTest {
         final TableDefinition td = TableDefinition.of(
                 ColumnDefinition.ofInt("F1"),
                 ColumnDefinition.ofInt("F2"));
-        Resolver.builder()
-                .schema(schema)
-                .spec(spec)
-                .definition(td)
-                .putColumnInstructions("F1", partitionField(spec.fields().get(0).fieldId()))
-                .putColumnInstructions("F2", schemaField(43))
-                .build();
+        try {
+            Resolver.builder()
+                    .schema(schema)
+                    .spec(spec)
+                    .definition(td)
+                    .putColumnInstructions("F1", partitionField(spec.fields().get(0).fieldId()))
+                    .putColumnInstructions("F2", schemaField(43))
+                    .build();
+            failBecauseExceptionWasNotThrown(Resolver.MappingException.class);
+        } catch (Resolver.MappingException e) {
+            assertThat(e).hasMessageContaining("Unable to map Deephaven column F1");
+            assertThat(e).cause().hasMessageContaining("Should only specify Iceberg partitionField in combination with a Deephaven partitioning column");
+        }
     }
 
     @Test
@@ -256,7 +261,6 @@ class ResolverTest {
         try {
             Resolver.builder()
                     .schema(simpleSchema(IT))
-                    .spec(PartitionSpec.unpartitioned())
                     .definition(simpleDefinition(Type.intType()))
                     .putColumnInstructions("F1", schemaField(42))
                     .putColumnInstructions("F2", schemaField(43))
@@ -273,7 +277,6 @@ class ResolverTest {
         try {
             Resolver.builder()
                     .schema(simpleSchema(IT))
-                    .spec(PartitionSpec.unpartitioned())
                     .definition(simpleDefinition(Type.intType()))
                     .putColumnInstructions("F1", schemaField(42))
                     .putColumnInstructions("F2", schemaField(44))
@@ -293,7 +296,6 @@ class ResolverTest {
         try {
             Resolver.builder()
                     .schema(simpleSchema(IT))
-                    .spec(PartitionSpec.unpartitioned())
                     .definition(td)
                     .putColumnInstructions("F1", schemaField(42))
                     .putColumnInstructions("F2", partitionField(9999))
@@ -312,7 +314,6 @@ class ResolverTest {
         try {
             Resolver.builder()
                     .schema(simpleSchema(IT))
-                    .spec(PartitionSpec.unpartitioned())
                     .definition(simpleDefinition(Type.stringType()))
                     .putColumnInstructions("F1", schemaField(42))
                     .putColumnInstructions("F2", schemaField(43))
@@ -330,7 +331,6 @@ class ResolverTest {
         try {
             Resolver.builder()
                     .schema(simpleSchema(IT))
-                    .spec(PartitionSpec.unpartitioned())
                     .definition(TableDefinition.of(
                             ColumnDefinition.of("F1", Type.intType()),
                             ColumnDefinition.of("F2", Type.intType())))
@@ -353,7 +353,6 @@ class ResolverTest {
         try {
             Resolver.builder()
                     .schema(schema)
-                    .spec(PartitionSpec.unpartitioned())
                     .definition(TableDefinition.of(ColumnDefinition.ofInt("S1_S2")))
                     .putColumnInstructions("S1_S2", schemaField(2))
                     .build();

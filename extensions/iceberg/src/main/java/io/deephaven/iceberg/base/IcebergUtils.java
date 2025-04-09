@@ -141,7 +141,7 @@ public final class IcebergUtils {
      */
     public static SpecAndSchema createSpecAndSchema(@NotNull final TableDefinition tableDefinition) {
         final Resolver resolver = resolver(tableDefinition);
-        return new SpecAndSchema(resolver.schema(), resolver.spec());
+        return new SpecAndSchema(resolver.schema(), resolver.spec().orElse(PartitionSpec.unpartitioned()));
     }
 
     // TODO: we may want to capture this more generally with instructions like we do for the reading side

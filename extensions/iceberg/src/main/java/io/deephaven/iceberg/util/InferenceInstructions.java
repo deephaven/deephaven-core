@@ -34,6 +34,7 @@ public abstract class InferenceInstructions {
      */
     public abstract Schema schema();
 
+    // TODO: make this optional, or removal altogether?
     /**
      * The partition spec to use for inference.
      */

@@ -20,6 +20,7 @@ import org.apache.iceberg.types.TypeUtil;
 import org.apache.iceberg.types.Types;
 import org.apache.iceberg.types.Types.NestedField;
 import org.immutables.value.Value;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -45,7 +46,7 @@ public abstract class Resolver {
     public static Resolver empty(Schema schema) {
         return builder()
                 .schema(schema)
-                .spec(PartitionSpec.unpartitioned())
+//                .spec(PartitionSpec.unpartitioned())
                 .definition(TableDefinition.of(List.of()))
                 .build();
     }
@@ -78,8 +79,16 @@ public abstract class Resolver {
      */
     public abstract Schema schema();
 
-    // todo: should this really be UnboundPartitionSpec ?
-    public abstract PartitionSpec spec();
+
+    /**
+     * The Iceberg partition specification.
+     * @return
+     */
+    public abstract Optional<PartitionSpec> spec();
+
+    final PartitionSpec specOrUnpartitioned() {
+        return spec().orElse(PartitionSpec.unpartitioned());
+    }
 
     /**
      * The column instructions keyed by Deephaven column name.
@@ -128,11 +137,16 @@ public abstract class Resolver {
 
     @Value.Check
     final void checkSpecSchema() {
-        if (spec() == PartitionSpec.unpartitioned()) {
+        if (spec().isEmpty()) {
             return;
         }
-        if (!schema().sameSchema(spec().schema())) {
-            throw new IllegalArgumentException("schema and spec schema are not the same");
+        final PartitionSpec spec = spec().orElseThrow();
+//        if (spec == PartitionSpec.unpartitioned()) {
+//            return;
+//        }
+        // Note: we *do* mean the same literal schema
+        if (schema() != spec.schema()) {
+            throw new IllegalArgumentException("schema and spec schema are not the same instance");
         }
     }
 
@@ -178,28 +192,28 @@ public abstract class Resolver {
 
     private void validate(boolean isPartitioningColumn, Type<?> type, ColumnInstructions ci)
             throws SchemaHelper.PathException {
-        // This are not all hard technical limitations, but just narrowing the set of acceptable combinations. We could
-        // search through the partition spec to see if any corresponding w/ identity to the column, but right now,
-        // we'll just do that as part of inference.
+        final List<NestedField> fieldPath;
+        final PartitionField partitionField;
         if (ci.schemaFieldId().isPresent()) {
-            // if (isPartitioningColumn) {
-            // throw new MappingException("Must use normal column with schema field");
-            // }
-            final List<NestedField> fieldPath = ci.schemaFieldPath(schema());
-            checkCompatible(fieldPath, type);
+            fieldPath = ci.schemaFieldPath(schema());
+            partitionField = isPartitioningColumn ? ci.partitionFieldFromSchemaFieldId(specOrUnpartitioned()) : null;
         } else {
-            // if (!isPartitioningColumn) {
-            // throw new MappingException("Must use partitioning column with partition field");
-            // }
-            final PartitionField partitionField = ci.partitionField(spec());
-            checkCompatible(schema(), partitionField, type);
+            if (!isPartitioningColumn) {
+                throw new MappingException("Should only specify Iceberg partitionField in combination with a Deephaven partitioning column");
+            }
+            partitionField = ci.partitionField(specOrUnpartitioned());
+            fieldPath = SchemaHelper.fieldPath(schema(), partitionField);
         }
+        validate(type, fieldPath, partitionField);
     }
 
-    // TODO
-    // public final ParquetColumnResolver.Factory factory() {
-    // return new ResolverFactory(this);
-    // }
+    private void validate(final Type<?> type, final List<NestedField> fieldPath, @Nullable final PartitionField partitionField) {
+        // This is not a hard limitation; could be improved in the future
+        if (partitionField != null && !partitionField.transform().isIdentity()) {
+            throw new MappingException(String.format("Unable to map partitionField=[%s], only identity transform is supported", partitionField));
+        }
+        checkCompatible(fieldPath, type);
+    }
 
     // TODO
     public final Optional<List<NestedField>> resolveSchemaFieldViaReadersSchema(String columnName) {
