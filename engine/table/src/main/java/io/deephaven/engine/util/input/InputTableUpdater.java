@@ -68,7 +68,8 @@ public interface InputTableUpdater {
      * @throws TableDefinition.IncompatibleTableDefinitionException if the definitions are not compatible
      */
     default void validateAddOrModify(final Table tableToApply) {
-        getTableDefinition().checkMutualCompatibility(tableToApply.getDefinition());
+        // Verify the incoming table can supply all the columns in the input table.
+        tableToApply.getDefinition().checkCompatibility(getTableDefinition());
     }
 
     /**
