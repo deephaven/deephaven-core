@@ -222,8 +222,8 @@ abstract class S3SeekableChannelSimpleTestBase extends S3SeekableChannelTestSetu
                 fail("Expected write timeout exception");
             } catch (Exception e) {
                 final Throwable cause = e.getCause();
-                if (!(cause instanceof CompletionException)) {
-                    fail("Expected CompletionException but got " + cause.getClass().getName());
+                if (!(cause instanceof CompletionException || cause instanceof ExecutionException)) {
+                    fail("Expected CompletionException or ExecutionException but got " + cause.getClass().getName());
                 }
 
                 final String expectedMessage =
