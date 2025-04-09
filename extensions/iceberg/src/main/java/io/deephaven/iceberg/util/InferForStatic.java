@@ -17,7 +17,7 @@ public class InferForStatic {
 //            }
             final int specId = manifestFile.partitionSpecId();
             final PartitionSpec spec = table.specs().get(specId);
-            spec.compatibleWith()
+//            spec.compatibleWith()
         }
 
     }
