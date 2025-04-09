@@ -37,6 +37,9 @@ import java.util.Objects;
 import java.util.function.Function;
 
 /**
+ * These are undocumented methods, potentially useful for debugging various Iceberg table states. They are subject to
+ * change, or removal, at any time.
+ *
  * <pre>
  * import jpy
  * from deephaven.table import Table
