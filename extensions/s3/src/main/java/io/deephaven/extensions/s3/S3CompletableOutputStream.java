@@ -23,7 +23,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CancellationException;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
@@ -288,8 +287,8 @@ class S3CompletableOutputStream extends CompletableOutputStream {
         final CreateMultipartUploadRequest.Builder builder = CreateMultipartUploadRequest.builder()
                 .bucket(uri.bucket().orElseThrow())
                 .key(uri.key().orElseThrow());
-        final Optional<Duration> writeTimeout = s3Instructions.writeTimeout();
-        writeTimeout.ifPresent(duration -> builder.overrideConfiguration(b -> addTimeout(b, duration)));
+        final Duration writeTimeout = s3Instructions.writeTimeout();
+        builder.overrideConfiguration(b -> addTimeout(b, writeTimeout));
         final CreateMultipartUploadRequest createMultipartUploadRequest = builder.build();
         // Note: We can add support for other parameters like tagging, storage class, encryption, permissions, etc. in
         // future
@@ -337,8 +336,8 @@ class S3CompletableOutputStream extends CompletableOutputStream {
                 .key(uri.key().orElseThrow())
                 .uploadId(uploadId)
                 .partNumber(nextPartNumber);
-        final Optional<Duration> writeTimeout = s3Instructions.writeTimeout();
-        writeTimeout.ifPresent(duration -> builder.overrideConfiguration(b -> addTimeout(b, duration)));
+        final Duration writeTimeout = s3Instructions.writeTimeout();
+        builder.overrideConfiguration(b -> addTimeout(b, writeTimeout));
         final UploadPartRequest uploadPartRequest = builder.build();
 
         final int partNumber = nextPartNumber;
@@ -456,8 +455,8 @@ class S3CompletableOutputStream extends CompletableOutputStream {
                 .multipartUpload(CompletedMultipartUpload.builder()
                         .parts(completedParts)
                         .build());
-        final Optional<Duration> writeTimeout = s3Instructions.writeTimeout();
-        writeTimeout.ifPresent(duration -> builder.overrideConfiguration(b -> addTimeout(b, duration)));
+        final Duration writeTimeout = s3Instructions.writeTimeout();
+        builder.overrideConfiguration(b -> addTimeout(b, writeTimeout));
         final CompleteMultipartUploadRequest completeRequest = builder.build();
         final CompletableFuture<CompleteMultipartUploadResponse> uploadFuture =
                 s3AsyncClient.completeMultipartUpload(completeRequest);
@@ -512,8 +511,8 @@ class S3CompletableOutputStream extends CompletableOutputStream {
                 .bucket(uri.bucket().orElseThrow())
                 .key(uri.key().orElseThrow())
                 .uploadId(uploadId);
-        final Optional<Duration> writeTimeout = s3Instructions.writeTimeout();
-        writeTimeout.ifPresent(duration -> builder.overrideConfiguration(b -> addTimeout(b, duration)));
+        final Duration writeTimeout = s3Instructions.writeTimeout();
+        builder.overrideConfiguration(b -> addTimeout(b, writeTimeout));
         final AbortMultipartUploadRequest abortRequest = builder.build();
         final CompletableFuture<AbortMultipartUploadResponse> future = s3AsyncClient.abortMultipartUpload(abortRequest);
 

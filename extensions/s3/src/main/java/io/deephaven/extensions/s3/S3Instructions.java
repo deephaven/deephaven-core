@@ -33,10 +33,13 @@ public abstract class S3Instructions implements LogOutputAppendable {
     private static final int DEFAULT_FRAGMENT_SIZE = 1 << 16; // 64 KiB
     private static final int MIN_FRAGMENT_SIZE = 8 << 10; // 8 KiB
     private static final Duration DEFAULT_CONNECTION_TIMEOUT = Duration.ofSeconds(2);
-    private static final Duration DEFAULT_READ_TIMEOUT = Duration.ofSeconds(2);
+    @VisibleForTesting
+    static final Duration DEFAULT_READ_TIMEOUT = Duration.ofSeconds(2);
+    @VisibleForTesting
+    static final Duration DEFAULT_WRITE_TIMEOUT = Duration.ofSeconds(2);
     private static final int DEFAULT_NUM_CONCURRENT_WRITE_PARTS = 64;
     private static final int MIN_CONCURRENT_WRITE_PARTS = 1;
-    private static final Duration MIN_TIMEOUT = Duration.ofMillis(1);
+    private static final Duration MIN_READ_WRITE_TIMEOUT = Duration.ofMillis(1);
 
     /**
      * We set default part size to 10 MiB. The maximum number of parts allowed is 10,000. This means maximum size of a
@@ -117,10 +120,14 @@ public abstract class S3Instructions implements LogOutputAppendable {
     }
 
     /**
-     * The amount of time to wait when writing a fragment before giving up and timing out. If no value has been set then
-     * no timeout value is set in write operations.
+     * The amount of time to wait when writing a fragment before giving up and timing out, defaults to 2 seconds. The
+     * implementation may choose to internally retry the request multiple times, so long as the total time does not
+     * exceed this timeout.
      */
-    public abstract Optional<Duration> writeTimeout();
+    @Default
+    public Duration writeTimeout() {
+        return DEFAULT_WRITE_TIMEOUT;
+    }
 
     /**
      * The credentials to use when reading or writing to S3. By default, uses {@link Credentials#resolving()}.
@@ -318,19 +325,19 @@ public abstract class S3Instructions implements LogOutputAppendable {
 
     @Check
     final void boundsCheckReadTimeout() {
-        if (readTimeout() != null && MIN_TIMEOUT.compareTo(readTimeout()) > 0) {
+        if (MIN_READ_WRITE_TIMEOUT.compareTo(readTimeout()) > 0) {
             throw new IllegalArgumentException(
                     "readTimeout(=" + readTimeout() + ") must be >= " +
-                            MIN_TIMEOUT);
+                            MIN_READ_WRITE_TIMEOUT);
         }
     }
 
     @Check
     final void boundsCheckWriteTimeout() {
-        if (writeTimeout().isPresent() && MIN_TIMEOUT.compareTo(writeTimeout().get()) > 0) {
+        if (MIN_READ_WRITE_TIMEOUT.compareTo(writeTimeout()) > 0) {
             throw new IllegalArgumentException(
-                    "writeTimeout(=" + writeTimeout().get() + ") must be >= " +
-                            MIN_TIMEOUT);
+                    "writeTimeout(=" + writeTimeout() + ") must be >= " +
+                            MIN_READ_WRITE_TIMEOUT);
         }
     }
 
