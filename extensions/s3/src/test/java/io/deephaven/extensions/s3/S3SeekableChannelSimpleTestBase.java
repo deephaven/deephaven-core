@@ -284,8 +284,7 @@ abstract class S3SeekableChannelSimpleTestBase extends S3SeekableChannelTestSetu
             }
             outputStream.rollback();
         } catch (final IOException e) {
-            final String expectedMessage =
-                    "Upload aborted";
+            final String expectedMessage = "abort";
             final String s = e.getMessage();
             if (!s.contains(expectedMessage)) {
                 fail("Expected message to contain: " + expectedMessage + " but got: " + s);
