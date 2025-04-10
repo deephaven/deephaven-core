@@ -42,7 +42,8 @@ final class S3ClientFactory {
             getOrComputeThreadCountProperty("S3.numFutureCompletionThreads", -1);
     private static final int NUM_SCHEDULED_EXECUTOR_THREADS =
             getOrComputeThreadCountProperty("S3.numScheduledExecutorThreads", 5);
-    // The default retries value of 3 matches the value from the deprecated software.amazon.awssdk.core.retry.RetryMode#STANDARD
+    // The default retries value of 3 matches the value from the deprecated
+    // software.amazon.awssdk.core.retry.RetryMode#STANDARD
     // which allowed 2 retries (3 attempts).
     static final int RETRY_STRATEGY_MAX_ATTEMPTS = 3;
 
