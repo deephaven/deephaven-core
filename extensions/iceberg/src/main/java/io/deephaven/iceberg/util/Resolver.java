@@ -16,6 +16,7 @@ import org.apache.iceberg.PartitionField;
 import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.Schema;
 import org.apache.iceberg.mapping.NameMapping;
+import org.apache.iceberg.transforms.Transform;
 import org.apache.iceberg.types.TypeUtil;
 import org.apache.iceberg.types.Types;
 import org.apache.iceberg.types.Types.NestedField;
@@ -46,7 +47,6 @@ public abstract class Resolver {
     public static Resolver empty(Schema schema) {
         return builder()
                 .schema(schema)
-//                .spec(PartitionSpec.unpartitioned())
                 .definition(TableDefinition.of(List.of()))
                 .build();
     }
@@ -54,35 +54,31 @@ public abstract class Resolver {
     public static Resolver infer(final InferenceInstructions inferenceInstructions) throws Inference.UnsupportedType {
         final Inf inf = new Inf(inferenceInstructions);
         TypeUtil.visit(inferenceInstructions.schema(), inf);
-        // TODO: visit the PartitionSpec to build io.deephaven.iceberg.util.ColumnInstructions.partitionField as well
-        // i.spec();
         if (inferenceInstructions.failOnUnsupportedTypes() && !inf.unsupportedTypes.isEmpty()) {
             throw inf.unsupportedTypes.get(0);
         }
         return inf.build();
     }
 
-    // TODO: infer update
-    // public static Resolver inferUpdate(Resolver resolver, InferenceInstructions instructions) {
-    // return null;
-    // }
-
-
     /**
      * The Deephaven table definition.
+     *
+     * <p>
+     * Callers should take care and only use {@link ColumnDefinition.ColumnType#Partitioning} columns when they know
+     * the Iceberg table will always have {@link Transform#isIdentity() identity} partitions for said columns. In the
+     * general case, Iceberg partitions may evolve over time, which can break the assumptions Deephaven makes about
      */
     public abstract TableDefinition definition();
 
     /**
      * The Iceberg schema. This schema is set at the time these instructions were originally made - it is often
-     * <b>not</b> the most recent schema for an Iceberg table.
+     * not the most recent schema for an Iceberg table.
      */
     public abstract Schema schema();
 
-
+    // TODO: throw exception of spec is provided without need?
     /**
      * The Iceberg partition specification.
-     * @return
      */
     public abstract Optional<PartitionSpec> spec();
 
@@ -141,9 +137,6 @@ public abstract class Resolver {
             return;
         }
         final PartitionSpec spec = spec().orElseThrow();
-//        if (spec == PartitionSpec.unpartitioned()) {
-//            return;
-//        }
         // Note: we *do* mean the same literal schema
         if (schema() != spec.schema()) {
             throw new IllegalArgumentException("schema and spec schema are not the same instance");
@@ -256,17 +249,19 @@ public abstract class Resolver {
         private int skipDepth = 0; // if skipDepth > 0, we should skip inference on any types we visit
         private final List<Types.NestedField> fieldPath = new ArrayList<>();
 
-
         public Inf(InferenceInstructions ii) {
             this.ii = Objects.requireNonNull(ii);
             this.namer = ii.namerFactory().create();
             this.builder = builder()
                     .schema(ii.schema())
-                    .spec(ii.spec())
                     .allowUnmappedColumns(false);
         }
 
         Resolver build() {
+            if (ii.spec().isPresent() && definitions.stream().anyMatch(ColumnDefinition::isPartitioning)) {
+                // Only pass along the spec if it has actually been used
+                builder.spec(ii.spec().get());
+            }
             return builder
                     .definition(TableDefinition.of(definitions))
                     .build();
@@ -314,16 +309,15 @@ public abstract class Resolver {
             final ColumnInstructions columnInstructions;
             {
                 final ColumnDefinition<?> cd = ColumnDefinition.of(columnName, type);
-                final PartitionField pf =
-                        PartitionSpecHelper.findIdentityForSchemaFieldId(ii.spec(), fieldId).orElse(null);
+                final PartitionField pf = ii.spec().isPresent()
+                        ? PartitionSpecHelper.findIdentityForSchemaFieldId(ii.spec().get(), fieldId).orElse(null)
+                        : null;
                 if (pf == null) {
                     columnDefinition = cd;
                     columnInstructions = ColumnInstructions.schemaField(fieldId);
                 } else {
                     columnDefinition = cd.withPartitioning();
-                    columnInstructions = ColumnInstructions.schemaField(fieldId);
-                    // NOTE: I'm beginning to think we should *not* use partitionField here for _inference_; if
-                    // columnInstructions = ColumnInstructions.partitionField(pf.fieldId());
+                    columnInstructions = ColumnInstructions.partitionField(pf.fieldId());
                 }
             }
             builder.putColumnInstructions(columnName, columnInstructions);

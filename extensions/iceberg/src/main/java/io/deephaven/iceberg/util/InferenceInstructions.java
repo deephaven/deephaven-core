@@ -14,6 +14,7 @@ import org.immutables.value.Value;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -25,8 +26,8 @@ public abstract class InferenceInstructions {
         return ImmutableInferenceInstructions.builder();
     }
 
-    public static InferenceInstructions of(Schema schema, PartitionSpec spec) {
-        return builder().schema(schema).spec(spec).build();
+    public static InferenceInstructions of(Schema schema) {
+        return builder().schema(schema).build();
     }
 
     /**
@@ -34,11 +35,16 @@ public abstract class InferenceInstructions {
      */
     public abstract Schema schema();
 
-    // TODO: make this optional, or removal altogether?
     /**
      * The partition spec to use for inference.
+     *
+     * <p>
+     * Inferring using a partition spec for general-purpose use is dangerous. This is only meant to be applied in
+     * situations where callers are working with a fixed set of data files that have this spec (or a superset of this
+     * spec); or, when the caller is able to guarantee that all current and future data files will have this spec (or a
+     * superset of this spec).
      */
-    public abstract PartitionSpec spec();
+    public abstract Optional<PartitionSpec> spec();
 
     /**
      * The namer factory. Defaults to {@code fieldName("_")}.
@@ -129,12 +135,15 @@ public abstract class InferenceInstructions {
 
     @Value.Check
     final void checkSpecSchema() {
-        if (spec() == PartitionSpec.unpartitioned()) {
+        if (spec().isEmpty()) {
             return;
         }
-        if (!schema().sameSchema(spec().schema())) {
-            throw new IllegalArgumentException("schema and spec schema are not the same");
+        if (schema() != spec().get().schema()) {
+            throw new IllegalArgumentException("Must use same schema instance"); // yes this is on purpose
         }
+//        if (!schema().sameSchema(spec().schema())) {
+//            throw new IllegalArgumentException("schema and spec schema are not the same");
+//        }
     }
 
     private static final class FieldNameNamerFactory implements Namer.Factory {

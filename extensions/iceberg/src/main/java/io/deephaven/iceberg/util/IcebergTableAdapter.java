@@ -480,12 +480,13 @@ public class IcebergTableAdapter {
         final Snapshot snapshot;
         if (explicitResolver == null) {
             final InferenceInstructions ii;
+            // TODO: use spec if we _know_ it's safe?
             if (explicitSnapshot == null) {
                 // todo: not sure why we were sync and refreshing before?
-                ii = InferenceInstructions.of(table.schema(), table.spec());
+                ii = InferenceInstructions.of(table.schema());
                 snapshot = table.currentSnapshot();
             } else {
-                ii = InferenceInstructions.of(table.schemas().get(explicitSnapshot.schemaId()), table.spec());
+                ii = InferenceInstructions.of(table.schemas().get(explicitSnapshot.schemaId()));
                 snapshot = explicitSnapshot;
             }
             try {

@@ -37,6 +37,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 
+import static io.deephaven.iceberg.util.ColumnInstructions.partitionField;
 import static io.deephaven.iceberg.util.ColumnInstructions.schemaField;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
@@ -55,16 +56,12 @@ class InferenceTest {
     static InferenceInstructions i(Schema schema) {
         return InferenceInstructions.builder()
                 .schema(schema)
-                //.spec(PartitionSpec.unpartitioned())
-                // .nameMapping(NameMapping.empty())
                 .build();
     }
 
     static InferenceInstructions ia(Schema schema) {
         return InferenceInstructions.builder()
                 .schema(schema)
-                .spec(PartitionSpec.unpartitioned())
-                // .nameMapping(NameMapping.empty())
                 .failOnUnsupportedTypes(true)
                 .build();
     }
@@ -315,7 +312,7 @@ class InferenceTest {
                 .definition(TableDefinition.of(
                         ColumnDefinition.ofInt("F1").withPartitioning(),
                         ColumnDefinition.ofInt("F2")))
-                .putColumnInstructions("F1", schemaField(42))
+                .putColumnInstructions("F1", partitionField(spec.fields().get(0).fieldId()))
                 .putColumnInstructions("F2", schemaField(43))
                 .build());
     }
@@ -331,7 +328,6 @@ class InferenceTest {
                 .build();
         assertThat(Resolver.infer(ii)).isEqualTo(Resolver.builder()
                 .schema(schema)
-                .spec(spec)
                 .definition(TableDefinition.of(
                         ColumnDefinition.ofInt("F1"),
                         ColumnDefinition.ofInt("F2")))
@@ -352,7 +348,6 @@ class InferenceTest {
         // otherwise cause an UnsupportedType exception.
         final InferenceInstructions instructions = InferenceInstructions.builder()
                 .schema(schema)
-                .spec(PartitionSpec.unpartitioned())
                 .failOnUnsupportedTypes(true)
                 .addSkip(FieldPath.of(42))
                 .addSkip(FieldPath.of(44))
@@ -370,7 +365,6 @@ class InferenceTest {
         final Schema schema = simpleSchema(IT);
         final InferenceInstructions instructions = InferenceInstructions.builder()
                 .schema(schema)
-                .spec(PartitionSpec.unpartitioned())
                 .failOnUnsupportedTypes(true)
                 .namerFactory(InferenceInstructions.Namer.Factory.fieldId())
                 .build();
