@@ -299,7 +299,8 @@ public class IcebergCatalogAdapter {
             @NotNull final TableIdentifier tableIdentifier,
             @NotNull final TableDefinition definition) {
         final Resolver resolver = IcebergUtils.resolver(definition);
-        final org.apache.iceberg.Table table = createTable(tableIdentifier, resolver.schema(), resolver.specOrUnpartitioned());
+        final org.apache.iceberg.Table table =
+                createTable(tableIdentifier, resolver.schema(), resolver.specOrUnpartitioned());
         return new IcebergTableAdapter(catalog, tableIdentifier, table, dataInstructionsProvider);
     }
 
@@ -307,7 +308,8 @@ public class IcebergCatalogAdapter {
             @NotNull final TableIdentifier tableIdentifier,
             @NotNull final TableDefinition definition) {
         final Resolver resolver = IcebergUtils.resolver(definition);
-        final org.apache.iceberg.Table table = createTable(tableIdentifier, resolver.schema(), resolver.specOrUnpartitioned());
+        final org.apache.iceberg.Table table =
+                createTable(tableIdentifier, resolver.schema(), resolver.specOrUnpartitioned());
         // the schema from the real table will have the schema id
         final Resolver.Builder builder = Resolver.builder()
                 .definition(definition)

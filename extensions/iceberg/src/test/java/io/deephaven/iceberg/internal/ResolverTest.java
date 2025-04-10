@@ -182,7 +182,8 @@ class ResolverTest {
             failBecauseExceptionWasNotThrown(Resolver.MappingException.class);
         } catch (Resolver.MappingException e) {
             assertThat(e).hasMessageContaining("Unable to map Deephaven column F1");
-            assertThat(e).cause().hasMessageContaining("No PartitionField with source field id 42 exists in PartitionSpec []");
+            assertThat(e).cause()
+                    .hasMessageContaining("No PartitionField with source field id 42 exists in PartitionSpec []");
         }
     }
 
@@ -252,7 +253,8 @@ class ResolverTest {
             failBecauseExceptionWasNotThrown(Resolver.MappingException.class);
         } catch (Resolver.MappingException e) {
             assertThat(e).hasMessageContaining("Unable to map Deephaven column F1");
-            assertThat(e).cause().hasMessageContaining("Should only specify Iceberg partitionField in combination with a Deephaven partitioning column");
+            assertThat(e).cause().hasMessageContaining(
+                    "Should only specify Iceberg partitionField in combination with a Deephaven partitioning column");
         }
     }
 

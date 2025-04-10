@@ -45,6 +45,12 @@ public abstract class InferenceInstructions {
      * superset of this spec).
      */
     public abstract Optional<PartitionSpec> spec();
+    // todo: this should be a list of partitionfields instead of a specific spec
+    // for example, we might have a common subset of identities we want to use, but there is no direct spec for it:
+    // s1 = [ I1, I2, I3 ]
+    // s2 = [ I2, I3, I4 ]
+    //
+    // In this case, we want to infer based on a "virtual" spec of [ I2, I3 ]
 
     /**
      * The namer factory. Defaults to {@code fieldName("_")}.
@@ -70,6 +76,8 @@ public abstract class InferenceInstructions {
      * The set of field paths to skip during inference.
      */
     public abstract Set<FieldPath> skip();
+
+    // todo: need to add exclusions for specific partitioning fields
 
     /**
      * The Deephaven column namer.
@@ -133,18 +141,18 @@ public abstract class InferenceInstructions {
         InferenceInstructions build();
     }
 
-    @Value.Check
-    final void checkSpecSchema() {
-        if (spec().isEmpty()) {
-            return;
-        }
-        if (schema() != spec().get().schema()) {
-            throw new IllegalArgumentException("Must use same schema instance"); // yes this is on purpose
-        }
-//        if (!schema().sameSchema(spec().schema())) {
-//            throw new IllegalArgumentException("schema and spec schema are not the same");
-//        }
-    }
+    // @Value.Check
+    // final void checkSpecSchema() {
+    // if (spec().isEmpty()) {
+    // return;
+    // }
+    // if (schema() != spec().get().schema()) {
+    // throw new IllegalArgumentException("Must use same schema instance"); // yes this is on purpose
+    // }
+    // // if (!schema().sameSchema(spec().schema())) {
+    // // throw new IllegalArgumentException("schema and spec schema are not the same");
+    // // }
+    // }
 
     private static final class FieldNameNamerFactory implements Namer.Factory {
         private final String delimiter;

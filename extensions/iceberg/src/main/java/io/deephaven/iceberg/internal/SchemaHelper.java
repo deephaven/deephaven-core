@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 public final class SchemaHelper {
@@ -36,12 +37,29 @@ public final class SchemaHelper {
         }
     }
 
+    public static String fieldName(Schema schema, int fieldId) throws PathException {
+        return toFieldName(fieldPath(schema, fieldId));
+    }
+
     public static List<NestedField> fieldPath(Schema schema, int[] idPath) throws PathException {
         return path(schema.asStruct(), idPath);
     }
 
     public static List<NestedField> fieldPath(Schema schema, String[] namePath) throws PathException {
         return path(schema.asStruct(), namePath);
+    }
+
+    public static Optional<List<NestedField>> findFieldPath(Schema schema, PartitionField partitionField) {
+        final FieldPath fieldPath = FieldPath.find(schema, partitionField).orElse(null);
+        if (fieldPath == null) {
+            return Optional.empty();
+        }
+        try {
+            return Optional.of(fieldPath.resolve(schema));
+        } catch (PathException e) {
+            // this should have failed during the get if it was not found
+            throw new IllegalStateException(e);
+        }
     }
 
     public static List<NestedField> fieldPath(Schema schema, PartitionField partitionField) throws PathException {
@@ -54,9 +72,16 @@ public final class SchemaHelper {
         }
     }
 
-    public static String toNameString(Collection<? extends NestedField> context) {
-        return context.stream().map(NestedField::name).collect(Collectors.joining(", ", "[", "]"));
+    public static String toFieldName(Collection<? extends NestedField> context) {
+        return context
+                .stream()
+                .map(NestedField::name)
+                .collect(Collectors.joining("."));
     }
+
+    // public static String toNameString(Collection<? extends NestedField> context) {
+    // return context.stream().map(NestedField::name).collect(Collectors.joining(", ", "[", "]"));
+    // }
 
     private static List<NestedField> path(final Type.NestedType type, final int[] idPath) throws PathException {
         Type currentType = type;
@@ -116,23 +141,23 @@ public final class SchemaHelper {
     private static PathException idPathNotFound(int[] idPath, List<NestedField> context) {
         return new PathException(
                 String.format("id path not found, path=%s, context=%s", Arrays.toString(idPath),
-                        toNameString(context)));
+                        toFieldName(context)));
     }
 
     private static PathException idPathTooLong(int[] idPath, List<NestedField> context) {
         return new PathException(
-                String.format("id path too long, path=%s, context=%s", Arrays.toString(idPath), toNameString(context)));
+                String.format("id path too long, path=%s, context=%s", Arrays.toString(idPath), toFieldName(context)));
     }
 
     private static PathException namePathNotFound(String[] namePath, List<NestedField> context) {
         return new PathException(
                 String.format("name path not found, path=%s, context=%s", Arrays.toString(namePath),
-                        toNameString(context)));
+                        toFieldName(context)));
     }
 
     private static PathException namePathTooLong(String[] namePath, List<NestedField> context) {
         return new PathException(
                 String.format("name path too long, path=%s, context=%s", Arrays.toString(namePath),
-                        toNameString(context)));
+                        toFieldName(context)));
     }
 }

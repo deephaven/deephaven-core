@@ -4,7 +4,6 @@
 package io.deephaven.iceberg.util;
 
 import io.deephaven.api.Selectable;
-import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.ColumnDefinition;
@@ -24,7 +23,6 @@ import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.iceberg.base.IcebergUtils;
 import io.deephaven.iceberg.internal.DataInstructionsProviderLoader;
-import io.deephaven.iceberg.internal.Inference;
 import io.deephaven.iceberg.internal.Shim;
 import io.deephaven.iceberg.layout.IcebergAutoRefreshTableLocationProvider;
 import io.deephaven.iceberg.layout.IcebergBaseLayout;
@@ -470,42 +468,6 @@ public class IcebergTableAdapter {
         return null;
     }
 
-    private ResolverAndSnapshot resolverAndSnapshot(@NotNull final IcebergReadInstructions readInstructions) {
-        final Resolver explicitResolver = readInstructions.resolver().orElse(null);
-        final Snapshot explicitSnapshot = getSnapshot(readInstructions);
-        if (explicitResolver != null && explicitSnapshot != null) {
-            return new ResolverAndSnapshot(explicitResolver, explicitSnapshot);
-        }
-        final Resolver resolver;
-        final Snapshot snapshot;
-        if (explicitResolver == null) {
-            final InferenceInstructions ii;
-            // TODO: use spec if we _know_ it's safe?
-            if (explicitSnapshot == null) {
-                // todo: not sure why we were sync and refreshing before?
-                ii = InferenceInstructions.of(table.schema());
-                snapshot = table.currentSnapshot();
-            } else {
-                ii = InferenceInstructions.of(table.schemas().get(explicitSnapshot.schemaId()));
-                snapshot = explicitSnapshot;
-            }
-            try {
-                resolver = Resolver.infer(ii);
-            } catch (Inference.UnsupportedType e) {
-                throw new RuntimeException(e);
-            }
-
-            // todo:
-
-
-        } else {
-            Assert.eqNull(explicitSnapshot, "explicitSnapshot");
-            resolver = explicitResolver;
-            snapshot = table.currentSnapshot();
-        }
-        return new ResolverAndSnapshot(resolver, snapshot);
-    }
-
     /**
      * Return {@link TableDefinition table definition} corresponding to this iceberg table
      *
@@ -607,6 +569,15 @@ public class IcebergTableAdapter {
                 RegionedTableComponentFactoryImpl.INSTANCE,
                 locationProvider,
                 updateSourceRegistrar);
+    }
+
+    private ResolverAndSnapshot resolverAndSnapshot(@NotNull final IcebergReadInstructions readInstructions) {
+        return ResolverAndSnapshot.create(
+                table,
+                readInstructions.resolver().orElse(null),
+                getSnapshot(readInstructions),
+                readInstructions.updateMode().updateType() == IcebergUpdateMode.IcebergUpdateType.STATIC,
+                true);
     }
 
     private @NotNull IcebergBaseLayout keyFinder(

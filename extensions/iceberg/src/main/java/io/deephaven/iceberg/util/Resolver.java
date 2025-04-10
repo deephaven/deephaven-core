@@ -52,6 +52,11 @@ public abstract class Resolver {
     }
 
     public static Resolver infer(final InferenceInstructions inferenceInstructions) throws Inference.UnsupportedType {
+        return inferBuilder(inferenceInstructions).build();
+    }
+
+    public static Resolver.Builder inferBuilder(final InferenceInstructions inferenceInstructions)
+            throws Inference.UnsupportedType {
         final Inf inf = new Inf(inferenceInstructions);
         TypeUtil.visit(inferenceInstructions.schema(), inf);
         if (inferenceInstructions.failOnUnsupportedTypes() && !inf.unsupportedTypes.isEmpty()) {
@@ -64,36 +69,33 @@ public abstract class Resolver {
      * The Deephaven table definition.
      *
      * <p>
-     * Callers should take care and only use {@link ColumnDefinition.ColumnType#Partitioning} columns when they know
-     * the Iceberg table will always have {@link Transform#isIdentity() identity} partitions for said columns. In the
+     * Callers should take care and only use {@link ColumnDefinition.ColumnType#Partitioning} columns when they know the
+     * Iceberg table will always have {@link Transform#isIdentity() identity} partitions for said columns. In the
      * general case, Iceberg partitions may evolve over time, which can break the assumptions Deephaven makes about
      */
     public abstract TableDefinition definition();
 
     /**
-     * The Iceberg schema. This schema is set at the time these instructions were originally made - it is often
-     * not the most recent schema for an Iceberg table.
+     * The Iceberg schema. This schema is set at the time these instructions were originally made - it is often not the
+     * most recent schema for an Iceberg table.
      */
     public abstract Schema schema();
 
-    // TODO: throw exception of spec is provided without need?
     /**
-     * The Iceberg partition specification.
+     * The Iceberg partition specification. Only necessary to set when the {@link #definition()} has
+     * {@link ColumnDefinition.ColumnType#Partitioning} columns, or {@link #columnInstructions()} references
+     * {@link ColumnInstructions#partitionField(int) partition fields}.
      */
     public abstract Optional<PartitionSpec> spec();
-
-    final PartitionSpec specOrUnpartitioned() {
-        return spec().orElse(PartitionSpec.unpartitioned());
-    }
 
     /**
      * The column instructions keyed by Deephaven column name.
      */
     public abstract Map<String, ColumnInstructions> columnInstructions();
 
-    // todo: should this be here, or somewhere else?
-    // todo: this doesn't implement equals
-    // MappedFields
+    /**
+     * The name mapping.
+     */
     public abstract Optional<NameMapping> nameMapping();
 
     // We need to store as List so we can get test out the mapping wrt equals
@@ -129,6 +131,10 @@ public abstract class Resolver {
         Builder allowUnmappedColumns(boolean allowUnmappedColumns);
 
         Resolver build();
+    }
+
+    final PartitionSpec specOrUnpartitioned() {
+        return spec().orElse(PartitionSpec.unpartitioned());
     }
 
     @Value.Check
@@ -192,7 +198,8 @@ public abstract class Resolver {
             partitionField = isPartitioningColumn ? ci.partitionFieldFromSchemaFieldId(specOrUnpartitioned()) : null;
         } else {
             if (!isPartitioningColumn) {
-                throw new MappingException("Should only specify Iceberg partitionField in combination with a Deephaven partitioning column");
+                throw new MappingException(
+                        "Should only specify Iceberg partitionField in combination with a Deephaven partitioning column");
             }
             partitionField = ci.partitionField(specOrUnpartitioned());
             fieldPath = SchemaHelper.fieldPath(schema(), partitionField);
@@ -200,10 +207,12 @@ public abstract class Resolver {
         validate(type, fieldPath, partitionField);
     }
 
-    private void validate(final Type<?> type, final List<NestedField> fieldPath, @Nullable final PartitionField partitionField) {
+    private void validate(final Type<?> type, final List<NestedField> fieldPath,
+            @Nullable final PartitionField partitionField) {
         // This is not a hard limitation; could be improved in the future
         if (partitionField != null && !partitionField.transform().isIdentity()) {
-            throw new MappingException(String.format("Unable to map partitionField=[%s], only identity transform is supported", partitionField));
+            throw new MappingException(String
+                    .format("Unable to map partitionField=[%s], only identity transform is supported", partitionField));
         }
         checkCompatible(fieldPath, type);
     }
@@ -257,14 +266,13 @@ public abstract class Resolver {
                     .allowUnmappedColumns(false);
         }
 
-        Resolver build() {
+        Resolver.Builder build() {
             if (ii.spec().isPresent() && definitions.stream().anyMatch(ColumnDefinition::isPartitioning)) {
                 // Only pass along the spec if it has actually been used
                 builder.spec(ii.spec().get());
             }
             return builder
-                    .definition(TableDefinition.of(definitions))
-                    .build();
+                    .definition(TableDefinition.of(definitions));
         }
 
         private boolean isSkip() {
