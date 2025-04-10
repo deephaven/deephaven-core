@@ -1475,6 +1475,39 @@ public abstract class SqliteCatalogBase {
         verifySnapshots(tableIdentifier, List.of("append", "append"));
     }
 
+    @Test
+    void testPartitionedReadingWithTableDefinition() {
+        // Create a table with two partitioning columns
+        final TableDefinition writingDefinition = TableDefinition.of(
+                ColumnDefinition.ofString("StringPC").withPartitioning(),
+                ColumnDefinition.ofInt("IntegerPC").withPartitioning(),
+                ColumnDefinition.ofInt("data"));
+        final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
+        final IcebergTableAdapter tableAdapter = catalogAdapter.createTable(tableIdentifier, writingDefinition);
+        final Table source = TableTools.newTable(intCol("data", 12, 5, 13, 1, 4));
+
+        // Add some data to it
+        final IcebergTableWriter tableWriter = tableAdapter.tableWriter(writerOptionsBuilder()
+                .tableDefinition(writingDefinition)
+                .build());
+        final List<String> partitionPaths = List.of("StringPC=AA/IntegerPC=1");
+        tableWriter.append(IcebergWriteInstructions.builder()
+                .addTables(source)
+                .addAllPartitionPaths(partitionPaths)
+                .build());
+
+        // Now read this table back skipping first partitioning columns
+        final TableDefinition readingDefinition = TableDefinition.of(
+                ColumnDefinition.ofInt("IntegerPC").withPartitioning(),
+                ColumnDefinition.ofInt("data"));
+        final Table fromIceberg = tableAdapter.table(IcebergReadInstructions.builder()
+                .tableDefinition(readingDefinition)
+                .build());
+        final Table expected = source.updateView("IntegerPC = (int) 1")
+                .moveColumns(1, "data");
+        assertTableEquals(expected, fromIceberg);
+    }
+
     /*---  Tests for schema evolution ---*/
 
     // A container to hold the source table and its adapter.
