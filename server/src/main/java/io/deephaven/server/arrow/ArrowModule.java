@@ -39,16 +39,6 @@ public abstract class ArrowModule {
     }
 
     @Provides
-    static BarrageMessageProducer.Adapter<BarrageSubscriptionRequest, BarrageSubscriptionOptions> subscriptionOptAdapter() {
-        return BarrageSubscriptionOptions::of;
-    }
-
-    @Provides
-    static BarrageMessageProducer.Adapter<BarrageSnapshotRequest, BarrageSnapshotOptions> snapshotOptAdapter() {
-        return BarrageSnapshotOptions::of;
-    }
-
-    @Provides
     @ElementsIntoSet
     static Set<TicketResolver> primesEmptyTicketResolvers() {
         return Set.of();
