@@ -1,4 +1,5 @@
 '''
+This script uses PyIceberg to create an Iceberg table with a partition spec containing a non-identity transform field.
 See TESTING.md for how to run this script.
 '''
 

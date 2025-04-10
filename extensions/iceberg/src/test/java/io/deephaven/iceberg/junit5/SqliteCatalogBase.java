@@ -72,6 +72,7 @@ import static org.apache.parquet.schema.Types.buildMessage;
 import static org.apache.parquet.schema.Types.optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
+import static org.junit.Assert.fail;
 
 public abstract class SqliteCatalogBase {
 
@@ -1473,4 +1474,116 @@ public abstract class SqliteCatalogBase {
         assertTableEquals(expected, fromIceberg);
         verifySnapshots(tableIdentifier, List.of("append", "append"));
     }
+
+    /*---  Tests for schema evolution ---*/
+
+    // A container to hold the source table and its adapter.
+    private static class SchemaEvolutionTestContext {
+        final Table source;
+        final IcebergTableAdapter tableAdapter;
+
+        SchemaEvolutionTestContext(Table source, IcebergTableAdapter tableAdapter) {
+            this.source = source;
+            this.tableAdapter = tableAdapter;
+        }
+    }
+
+    /**
+     * Helper that creates and writes the source table.
+     */
+    private SchemaEvolutionTestContext createSourceTable() {
+        final Table source = TableTools.newTable(
+                intCol("intCol", 15, 0, 32, 33, 19),
+                doubleCol("doubleCol", 10.5, 2.5, 3.5, 40.5, 0.5),
+                longCol("longCol", 20L, 50L, 0L, 10L, 5L));
+        final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
+        final IcebergTableAdapter tableAdapter = catalogAdapter.createTable(tableIdentifier, source.getDefinition());
+        final IcebergTableWriter tableWriter = tableAdapter.tableWriter(writerOptionsBuilder()
+                .tableDefinition(source.getDefinition())
+                .build());
+        tableWriter.append(IcebergWriteInstructions.builder()
+                .addTables(source)
+                .build());
+        return new SchemaEvolutionTestContext(source, tableAdapter);
+    }
+
+    @Test
+    void testSchemaEvolutionAddColumns() {
+        final SchemaEvolutionTestContext ctx = createSourceTable();
+
+        final org.apache.iceberg.Table icebergTable = ctx.tableAdapter.icebergTable();
+        icebergTable.updateSchema().addColumn("floatCol", Types.FloatType.get()).commit();
+
+        // Read with the old table adapter
+        final Table fromIceberg = ctx.tableAdapter.table();
+        final Table expected = ctx.source.update("floatCol = (float) null");
+        assertTableEquals(expected, fromIceberg);
+    }
+
+    @Test
+    void testSchemaEvolutionDropColumns() {
+        final SchemaEvolutionTestContext ctx = createSourceTable();
+
+        final org.apache.iceberg.Table icebergTable = ctx.tableAdapter.icebergTable();
+        icebergTable.updateSchema().deleteColumn("doubleCol").commit();
+
+        // Read with the old table adapter
+        final Table fromIceberg = ctx.tableAdapter.table();
+        final Table expected = ctx.source.dropColumns("doubleCol");
+        assertTableEquals(expected, fromIceberg);
+    }
+
+    @Test
+    void testSchemaEvolutionRenameColumns() {
+        final SchemaEvolutionTestContext ctx = createSourceTable();
+
+        final org.apache.iceberg.Table icebergTable = ctx.tableAdapter.icebergTable();
+        icebergTable.updateSchema().renameColumn("intCol", "renamedIntCol").commit();
+
+        // Read with the old table adapter
+        final Table fromIceberg = ctx.tableAdapter.table();
+        final Table expected = ctx.source.renameColumns("renamedIntCol = intCol");
+        try {
+            assertTableEquals(expected, fromIceberg);
+            fail("Expected failure in comparison");
+        } catch (final AssertionError error) {
+            // TODO (DH-19178): Iceberg column rename handling
+            // Expected failure since the column name has changed, column renames are not supported yet
+            assertThat(error.getMessage()).contains("Column renamedIntCol different from the expected set");
+        }
+    }
+
+    @Test
+    void testSchemaEvolutionReorderColumns() {
+        final SchemaEvolutionTestContext ctx = createSourceTable();
+
+        final org.apache.iceberg.Table icebergTable = ctx.tableAdapter.icebergTable();
+        icebergTable.updateSchema().moveAfter("intCol", "longCol").commit();
+
+        // Read with the old table adapter
+        final Table fromIceberg = ctx.tableAdapter.table();
+        final Table expected = ctx.source.moveColumnsDown("intCol");
+        assertTableEquals(expected, fromIceberg);
+    }
+
+    @Test
+    void testSchemaEvolutionTypePromotion() {
+        final SchemaEvolutionTestContext ctx = createSourceTable();
+
+        final org.apache.iceberg.Table icebergTable = ctx.tableAdapter.icebergTable();
+        icebergTable.updateSchema().updateColumn("intCol", Types.LongType.get()).commit();
+
+        // Read with the old table adapter
+        final Table fromIceberg = ctx.tableAdapter.table();
+        final TableDefinition expectedDefinition = TableDefinition.of(
+                ColumnDefinition.ofLong("intCol"),
+                ColumnDefinition.ofDouble("doubleCol"),
+                ColumnDefinition.ofLong("longCol"));
+        assertThat(fromIceberg.getDefinition()).isEqualTo(expectedDefinition);
+
+        final Table expected = ctx.source.update("intCol = (long) intCol");
+        assertTableEquals(expected, fromIceberg);
+    }
+    /*---  End of tests for schema evolution ---*/
+
 }
