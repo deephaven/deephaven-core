@@ -12,6 +12,10 @@ import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.auth.AuthContext;
 import io.deephaven.base.clock.Clock;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.WritableChunk;
+import io.deephaven.chunk.WritableLongChunk;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.client.impl.BearerHandler;
 import io.deephaven.client.impl.Session;
 import io.deephaven.client.impl.SessionConfig;
@@ -27,6 +31,11 @@ import io.deephaven.engine.util.AbstractScriptSession;
 import io.deephaven.engine.util.NoLanguageDeephavenSession;
 import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
+import io.deephaven.extensions.barrage.chunk.ChunkWriter;
+import io.deephaven.extensions.barrage.chunk.DefaultChunkReaderFactory;
+import io.deephaven.extensions.barrage.chunk.DefaultChunkWriterFactory;
+import io.deephaven.extensions.barrage.chunk.LongChunkReader;
+import io.deephaven.extensions.barrage.chunk.LongChunkWriter;
 import io.deephaven.extensions.barrage.util.ArrowIpcUtil;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
 import io.deephaven.extensions.barrage.util.ExposedByteArrayOutputStream;
@@ -51,11 +60,9 @@ import io.deephaven.server.session.SessionServiceGrpcImpl;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.server.session.TicketResolver;
 import io.deephaven.server.table.TableModule;
-import io.deephaven.server.test.FlightMessageRoundTripTest;
 import io.deephaven.server.test.TestAuthModule;
 import io.deephaven.server.test.TestAuthorizationProvider;
 import io.deephaven.server.util.Scheduler;
-import io.deephaven.server.util.TestControlledScheduler;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.type.TypeUtils;
@@ -122,7 +129,9 @@ import org.junit.Test;
 import org.junit.rules.ExternalResource;
 
 import javax.inject.Named;
+import javax.inject.Provider;
 import javax.inject.Singleton;
+import java.io.DataInput;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -143,9 +152,11 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.PrimitiveIterator;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -161,7 +172,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-public class JettyBarrageChunkFactoryTest {
+public class BarrageChunkFactoryTest {
     private static final String COLUMN_NAME = "test_col";
     private static final int NUM_ROWS = 1023;
     private static final int RANDOM_SEED = 42;
@@ -308,6 +319,8 @@ public class JettyBarrageChunkFactoryTest {
         Registration.Callback registration();
 
         Scheduler serverScheduler();
+
+        Provider<ScriptSession> scriptSessionProvider();
     }
 
     private LogBuffer logBuffer;
@@ -340,7 +353,7 @@ public class JettyBarrageChunkFactoryTest {
         logBuffer = new LogBuffer(128);
         LogBufferGlobal.setInstance(logBuffer);
 
-        component = DaggerJettyBarrageChunkFactoryTest_JettyTestComponent.create();
+        component = DaggerBarrageChunkFactoryTest_JettyTestComponent.create();
         // open execution context immediately so it can be used when resolving `scriptSession`
         executionContext = component.executionContext().open();
 
@@ -397,6 +410,8 @@ public class JettyBarrageChunkFactoryTest {
 
     @After
     public void teardown() throws InterruptedException {
+        component.scriptSessionProvider().get().cleanup();
+
         clientSession.close();
         clientScheduler.shutdownNow();
         clientChannel.shutdownNow();
@@ -478,6 +493,105 @@ public class JettyBarrageChunkFactoryTest {
     public void testNumRowsIsOdd() {
         // ensure that rows are odd so that we hit padding lines
         assertEquals(NUM_ROWS % 2, 1);
+    }
+
+    private static long factorForTimeUnit(final TimeUnit unit) {
+        return switch (unit) {
+            case NANOSECOND -> 1L;
+            case MICROSECOND -> 1000L;
+            case MILLISECOND -> 1000 * 1000L;
+            case SECOND -> 1000 * 1000 * 1000L;
+        };
+    }
+
+    @Test
+    public void testRegisterCustomType() throws Exception {
+        // this permanently registers the custom types, but Duration -> Long is not the default mapping
+        DefaultChunkReaderFactory.INSTANCE.register(
+                ArrowType.ArrowTypeID.Duration,
+                long.class,
+                (arrowType, typeInfo, options) -> {
+                    final long factor = factorForTimeUnit(((ArrowType.Duration) arrowType).getUnit());
+                    return new LongChunkReader(options) {
+                        @Override
+                        public WritableLongChunk<Values> readChunk(
+                                @NotNull final Iterator<ChunkWriter.FieldNodeInfo> fieldNodeIter,
+                                @NotNull final PrimitiveIterator.OfLong bufferInfoIter,
+                                @NotNull final DataInput is,
+                                @Nullable final WritableChunk<Values> outChunk,
+                                final int outOffset,
+                                final int totalRows) throws IOException {
+                            final WritableLongChunk<Values> values =
+                                    super.readChunk(fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows);
+                            for (int ii = outOffset; ii < values.size(); ++ii) {
+                                if (!values.isNull(ii)) {
+                                    values.set(ii, values.get(ii) * factor);
+                                }
+                            }
+                            return values;
+                        }
+                    };
+                });
+
+        DefaultChunkWriterFactory.INSTANCE.register(
+                ArrowType.ArrowTypeID.Duration,
+                long.class,
+                typeInfo -> {
+                    final long factor =
+                            factorForTimeUnit(((ArrowType.Duration) typeInfo.arrowField().getType()).getUnit());
+                    return new LongChunkWriter<>((source) -> {
+                        final WritableLongChunk<Values> chunk = WritableLongChunk.makeWritableChunk(source.size());
+                        for (int ii = 0; ii < source.size(); ++ii) {
+                            final long value = source.get(ii); // assume in nanoseconds
+                            chunk.set(ii,
+                                    value == QueryConstants.NULL_LONG ? QueryConstants.NULL_LONG : value / factor);
+                        }
+                        return chunk;
+                    }, LongChunk::getEmptyChunk, typeInfo.arrowField().isNullable());
+                });
+
+        class Test extends RoundTripTest<DurationVector> {
+            private final TimeUnit timeUnit;
+
+            Test(final TimeUnit timeUnit) {
+                super(long.class);
+                this.timeUnit = timeUnit;
+            }
+
+            @Override
+            public Schema newSchema(boolean isNullable) {
+                return createSchema(isNullable, isDefault, new ArrowType.Duration(timeUnit), dhType);
+            }
+
+            @Override
+            public int initializeRoot(@NotNull DurationVector source) {
+                final long factor = factorForTimeUnit(timeUnit);
+                for (int ii = 0; ii < NUM_ROWS; ++ii) {
+                    final long nextValue = rnd.nextLong() / factor;
+                    source.set(ii, nextValue);
+                    if (nextValue == QueryConstants.NULL_LONG) {
+                        --ii;
+                    }
+                }
+                return NUM_ROWS;
+            }
+
+            @Override
+            public void validate(TestNullMode nullMode, @NotNull DurationVector source, @NotNull DurationVector dest) {
+                for (int ii = 0; ii < source.getValueCount(); ++ii) {
+                    if (source.isNull(ii)) {
+                        assertTrue(dest.isNull(ii));
+                    } else {
+                        assertEquals(source.getObject(ii), dest.getObject(ii));
+                    }
+                }
+            }
+        }
+
+        new Test(TimeUnit.NANOSECOND).runTest();
+        new Test(TimeUnit.MILLISECOND).runTest();
+        new Test(TimeUnit.MICROSECOND).runTest();
+        new Test(TimeUnit.SECOND).runTest();
     }
 
     @Test
@@ -1281,7 +1395,7 @@ public class JettyBarrageChunkFactoryTest {
     @Test
     public void testUnsupportedMappingPropagation() throws Exception {
         try {
-            new Utf8RoundTripTest(JettyBarrageChunkFactoryTest.class, new ArrowType.Utf8()).runTest();
+            new Utf8RoundTripTest(BarrageChunkFactoryTest.class, new ArrowType.Utf8()).runTest();
             Assert.statementNeverExecuted("Should have thrown an exception");
         } catch (FlightRuntimeException fre) {
             assertTrue(fre.getMessage().contains("No known Barrage ChunkReader"));
@@ -1314,7 +1428,7 @@ public class JettyBarrageChunkFactoryTest {
     @Test
     public void testDestClassNotFoundPropagation() throws Exception {
         try {
-            new RoundTripTest<>(JettyBarrageChunkFactoryTest.class) {
+            new RoundTripTest<>(BarrageChunkFactoryTest.class) {
                 @Override
                 public Schema newSchema(boolean isNullable) {
                     final Map<String, String> attrs = new HashMap<>();
@@ -1333,7 +1447,7 @@ public class JettyBarrageChunkFactoryTest {
     @Test
     public void testComponentDestClassNotFoundPropagation() throws Exception {
         try {
-            new RoundTripTest<>(JettyBarrageChunkFactoryTest.class) {
+            new RoundTripTest<>(BarrageChunkFactoryTest.class) {
                 @Override
                 public Schema newSchema(boolean isNullable) {
                     final Map<String, String> attrs = new HashMap<>();
@@ -1961,7 +2075,8 @@ public class JettyBarrageChunkFactoryTest {
                                     // TODO: remove branch when https://github.com/apache/arrow-java/issues/551 is fixed
                                     filterZonedDateTimeSource(wrapMode, previewMode, sourceArr, newView, source,
                                             listItemLength);
-                                } else if (dhType == Duration.class && !(this instanceof IntervalRoundTripTest)) {
+                                } else if ((dataVector instanceof DurationVector)
+                                        && !(this instanceof IntervalRoundTripTest)) {
                                     // TODO: remove branch when https://github.com/apache/arrow-java/issues/558 is fixed
                                     filterDurationSource(wrapMode, previewMode, sourceArr, newView, source,
                                             listItemLength);
@@ -2014,7 +2129,8 @@ public class JettyBarrageChunkFactoryTest {
                                     // TODO: remove branch when https://github.com/apache/arrow-java/issues/551 is fixed
                                     filterZonedDateTimeSource(wrapMode, previewMode, sourceArr, newView, source,
                                             listItemLength);
-                                } else if (dhType == Duration.class && !(this instanceof IntervalRoundTripTest)) {
+                                } else if ((dataVector instanceof DurationVector)
+                                        && !(this instanceof IntervalRoundTripTest)) {
                                     // TODO: remove branch when https://github.com/apache/arrow-java/issues/558 is fixed
                                     filterDurationSource(wrapMode, previewMode, sourceArr, newView, source,
                                             listItemLength);
@@ -2395,6 +2511,8 @@ public class JettyBarrageChunkFactoryTest {
                 return (FieldWriter) writer.list();
             case LISTVIEW:
                 return (FieldWriter) writer.listView();
+            case DURATION:
+                return (FieldWriter) writer.duration();
             default:
                 throw new UnsupportedOperationException(reader.getMinorType().toString());
         }
@@ -2947,19 +3065,7 @@ public class JettyBarrageChunkFactoryTest {
 
         @Override
         public int initializeRoot(@NotNull final DurationVector source) {
-            final long factor;
-            if (timeUnit == TimeUnit.NANOSECOND) {
-                factor = 1;
-            } else if (timeUnit == TimeUnit.MICROSECOND) {
-                factor = 1_000;
-            } else if (timeUnit == TimeUnit.MILLISECOND) {
-                factor = 1_000_000;
-            } else if (timeUnit == TimeUnit.SECOND) {
-                factor = 1_000_000_000;
-            } else {
-                throw new IllegalArgumentException("Unexpected time unit: " + timeUnit);
-            }
-
+            final long factor = factorForTimeUnit(timeUnit);
             for (int ii = 0; ii < NUM_ROWS; ++ii) {
                 final long nextValue = rnd.nextLong() / factor;
                 source.set(ii, nextValue);

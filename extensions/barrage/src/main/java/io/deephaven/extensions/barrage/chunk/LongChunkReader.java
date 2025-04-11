@@ -56,6 +56,7 @@ public class LongChunkReader extends BaseChunkReader<WritableLongChunk<Values>> 
 
         final WritableLongChunk<Values> chunk = castOrCreateChunk(
                 outChunk,
+                outOffset,
                 Math.max(totalRows, nodeInfo.numElements),
                 WritableLongChunk::makeWritableChunk,
                 WritableChunk::asWritableLongChunk);

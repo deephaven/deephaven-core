@@ -36,7 +36,7 @@ public class CachedChannelProviderTest {
         for (int ii = 0; ii < 100; ++ii) {
             final SeekableByteChannel[] sameFile = new SeekableByteChannel[10];
             for (int jj = 0; jj < sameFile.length; ++jj) {
-                sameFile[jj] = cachedChannelProvider.getReadChannel(wrappedProvider.makeContext(), "r" + ii);
+                sameFile[jj] = cachedChannelProvider.getReadChannel(wrappedProvider.makeReadContext(), "r" + ii);
             }
             final ByteBuffer buffer = ByteBuffer.allocate(1);
             for (int jj = 0; jj < 10; ++jj) {
@@ -57,7 +57,7 @@ public class CachedChannelProviderTest {
         SeekableChannelsProvider wrappedProvider = new TestChannelProvider();
         CachedChannelProvider cachedChannelProvider = CachedChannelProvider.create(wrappedProvider, 100);
         for (int i = 0; i < 1000; i++) {
-            SeekableByteChannel rc = cachedChannelProvider.getReadChannel(wrappedProvider.makeContext(), "r" + i);
+            SeekableByteChannel rc = cachedChannelProvider.getReadChannel(wrappedProvider.makeReadContext(), "r" + i);
             rc.close();
         }
         assertEquals(900, closed.size());
@@ -71,7 +71,8 @@ public class CachedChannelProviderTest {
         for (int i = 0; i < 20; i++) {
             List<SeekableByteChannel> channels = new ArrayList<>();
             for (int j = 0; j < 50; j++) {
-                channels.add(cachedChannelProvider.getReadChannel(wrappedProvider.makeContext(), "r" + (j + 50 * i)));
+                channels.add(
+                        cachedChannelProvider.getReadChannel(wrappedProvider.makeReadContext(), "r" + (j + 50 * i)));
             }
             for (int j = 0; j < 50; j++) {
                 channels.get(49 - j).close();
@@ -92,7 +93,7 @@ public class CachedChannelProviderTest {
         final SeekableByteChannel[] someResult = new SeekableByteChannel[50];
         final ByteBuffer buffer = ByteBuffer.allocate(1);
         for (int ci = 0; ci < someResult.length; ++ci) {
-            someResult[ci] = cachedChannelProvider.getReadChannel(wrappedProvider.makeContext(), "r" + ci);
+            someResult[ci] = cachedChannelProvider.getReadChannel(wrappedProvider.makeReadContext(), "r" + ci);
             // Call read to hit the assertions inside the mock channel, which doesn't read anything
             someResult[ci].read(buffer);
         }
@@ -102,7 +103,7 @@ public class CachedChannelProviderTest {
         for (int step = 0; step < 10; ++step) {
             for (int ci = 0; ci < someResult.length; ++ci) {
                 assertSame(someResult[ci],
-                        cachedChannelProvider.getReadChannel(wrappedProvider.makeContext(), "r" + ci));
+                        cachedChannelProvider.getReadChannel(wrappedProvider.makeReadContext(), "r" + ci));
                 // Call read to hit the assertions inside the mock channel, which doesn't read anything
                 someResult[ci].read(buffer);
             }
@@ -129,7 +130,7 @@ public class CachedChannelProviderTest {
 
         AtomicInteger count = new AtomicInteger(0);
 
-        private final class TestChannelContext implements SeekableChannelContext {
+        private final class TestChannelContext implements SeekableChannelContext, WriteContext {
             @Override
             @Nullable
             public <T extends SafeCloseable> T getCachedResource(final String key, final Supplier<T> resourceFactory) {
@@ -138,7 +139,12 @@ public class CachedChannelProviderTest {
         }
 
         @Override
-        public SeekableChannelContext makeContext() {
+        public SeekableChannelContext makeReadContext() {
+            return new TestChannelContext();
+        }
+
+        @Override
+        public WriteContext makeWriteContext() {
             return new TestChannelContext();
         }
 
@@ -170,7 +176,10 @@ public class CachedChannelProviderTest {
         }
 
         @Override
-        public CompletableOutputStream getOutputStream(@NotNull final URI uri, int bufferSizeHint) {
+        public CompletableOutputStream getOutputStream(
+                @NotNull WriteContext channelContext,
+                @NotNull final URI uri,
+                int bufferSizeHint) {
             throw new UnsupportedOperationException("getOutputStream");
         }
 

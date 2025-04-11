@@ -110,6 +110,7 @@ class PartitioningColumnDataIndex<KEY_TYPE> extends AbstractDataIndex implements
         if (locationTable.isRefreshing()) {
             // No need to track previous values; we mutate the index table's RowSets in-place, and we never move a key.
             indexTable.getRowSet().writableCast().initializePreviousValue();
+            indexTable.setLastNotificationStep(locationTable.getLastNotificationStep());
             upstreamKeyModified = locationTable.newModifiedColumnSet(keyColumnName);
             upstreamRowSetModified = locationTable.newModifiedColumnSet(columnSourceManager.rowSetColumnName());
             downstreamRowSetModified = indexTable.newModifiedColumnSet(rowSetColumnName());
@@ -188,7 +189,12 @@ class PartitioningColumnDataIndex<KEY_TYPE> extends AbstractDataIndex implements
             }
         });
 
-        final WritableRowSet added = RowSetFactory.fromRange(previousSize, newSize - 1);
+        final WritableRowSet added;
+        if (previousSize == newSize) {
+            added = RowSetFactory.empty();
+        } else {
+            added = RowSetFactory.fromRange(previousSize, newSize - 1);
+        }
         final RowSet removed = removedPositionsBuilder.build();
         modified.remove(removed);
         try (final RowSet resurrected = resurrectedPositionsBuilder.build()) {
