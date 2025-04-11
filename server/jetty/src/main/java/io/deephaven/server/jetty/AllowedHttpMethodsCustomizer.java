@@ -27,12 +27,16 @@ import java.util.Set;
 public class AllowedHttpMethodsCustomizer implements HttpConfiguration.Customizer {
     private final Set<String> allowedMethods;
 
-    public AllowedHttpMethodsCustomizer(Set<String> allowedMethods) {
+    /**
+     * Creates a new instance of the customizer, allowing only the specified HTTP methods.
+     * @param allowedMethods the HTTP methods to allow
+     */
+    public AllowedHttpMethodsCustomizer(final Set<String> allowedMethods) {
         this.allowedMethods = allowedMethods;
     }
 
     @Override
-    public Request customize(Request request, HttpFields.Mutable mutable) {
+    public Request customize(final Request request, final HttpFields.Mutable mutable) {
         if (!allowedMethods.contains(request.getMethod())) {
             throw new HttpException.RuntimeException(HttpStatus.METHOD_NOT_ALLOWED_405, "Method not allowed");
         }

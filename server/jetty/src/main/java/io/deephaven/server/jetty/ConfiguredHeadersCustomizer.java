@@ -15,12 +15,16 @@ import java.util.Map;
 public class ConfiguredHeadersCustomizer implements HttpConfiguration.Customizer {
     private final Map<String, String> configuredHeaders;
 
-    public ConfiguredHeadersCustomizer(Map<String, String> configuredHeaders) {
+    /**
+     * Creates a new instance of the customizer, applying the given headers to every outgoing response.
+     * @param configuredHeaders the headers to add to every response
+     */
+    public ConfiguredHeadersCustomizer(final Map<String, String> configuredHeaders) {
         this.configuredHeaders = configuredHeaders;
     }
 
     @Override
-    public Request customize(Request request, HttpFields.Mutable responseHeaders) {
+    public Request customize(final Request request, final HttpFields.Mutable responseHeaders) {
         for (Map.Entry<String, String> header : configuredHeaders.entrySet()) {
             responseHeaders.add(header.getKey(), header.getValue());
         }
