@@ -15,6 +15,7 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.locations.TableDataException;
+import io.deephaven.iceberg.base.IcebergUtils;
 import io.deephaven.iceberg.internal.DataInstructionsProviderLoader;
 import io.deephaven.parquet.table.CompletedParquetWrite;
 import io.deephaven.parquet.table.ParquetInstructions;
@@ -433,13 +434,14 @@ public class IcebergTableWriter {
         final QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
         for (final String partitionPath : partitionPaths) {
             final String[] dhTableUpdateString = new String[numPartitioningFields];
+            final PartitionData partitionData = new PartitionData(partitionSpec.partitionType());
             try {
                 final String[] partitions = partitionPath.split("/", -1);
                 if (partitions.length != numPartitioningFields) {
                     throw new IllegalArgumentException("Expecting " + numPartitioningFields + " number of fields, " +
                             "found " + partitions.length);
                 }
-                final PartitionData partitionData = new PartitionData(partitionSpec.partitionType());
+
                 for (int colIdx = 0; colIdx < partitions.length; colIdx += 1) {
                     final String[] parts = partitions[colIdx].split("=", 2);
                     if (parts.length != 2) {
@@ -452,14 +454,14 @@ public class IcebergTableWriter {
                     }
                     final Type type = partitionData.getType(colIdx);
                     dhTableUpdateString[colIdx] = getTableUpdateString(field.name(), type, parts[1], queryScope);
-                    partitionData.set(colIdx, Conversions.fromPartitionString(partitionData.getType(colIdx), parts[1]));
+                    partitionData.set(colIdx, Conversions.fromPartitionString(type, parts[1]));
                 }
             } catch (final Exception e) {
                 throw new IllegalArgumentException("Failed to parse partition path: " + partitionPath + " using" +
                         " partition spec " + partitionSpec + ", check cause for more details ", e);
             }
             dhTableUpdateStringList.add(dhTableUpdateString);
-            partitionDataList.add(DataFiles.data(partitionSpec, partitionPath));
+            partitionDataList.add(partitionData);
         }
         return new Pair<>(partitionDataList, dhTableUpdateStringList);
     }
@@ -597,7 +599,8 @@ public class IcebergTableWriter {
             final String newDataLocation;
             Table dhTableToWrite = dhTable;
             if (isPartitioned) {
-                newDataLocation = getDataLocation(Objects.requireNonNull(partitionData));
+                newDataLocation = IcebergUtils
+                        .maybeResolveRelativePath(getDataLocation(Objects.requireNonNull(partitionData)), table.io());
                 dhTableToWrite = dhTableToWrite.updateView(Objects.requireNonNull(dhTableUpdateString));
             } else {
                 newDataLocation = getDataLocation();
