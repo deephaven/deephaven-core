@@ -71,3 +71,47 @@ client.configuration.list=java.version,deephaven.version,barrage.version,groovy.
 # jar, and a class that is found in that jar. Any such keys will be made available to the client.configuration.list
 # as <key>.version.
 client.version.list=deephaven=io.deephaven.engine.table.Table,barrage=io.deephaven.barrage.flatbuf.BarrageMessageWrapper,groovy=groovy.lang.GroovyShell
+
+# Disabled by default, applications should enable this after their TLS certificates are
+# deployed and confirmed to work, as disabling this after the fact can result in clients
+# remembering the old value for a long time.
+http.add.header.Strict-Transport-Security.enabled = false
+http.add.header.Strict-Transport-Security.value = max-age=31536000; includeSubDomains
+
+# Disable by default, but can be enabled if iframe widgets will not be used from other origins.
+# This can optionally be fine tuned to allow specific origins or same origin loading.
+http.add.header.X-Frame-Options.enabled = false
+http.add.header.X-Frame-Options.value = DENY
+
+# Disabled by default, this CSP policy prevents embedding pages in an iframe. This is a more
+# modern equivalent to the X-Frame-Options header above, and also can be fine tuned to allow
+# specific remote origins or same origin.
+http.add.header.Content-Security-Policy.enabled = false
+http.add.header.Content-Security-Policy.value = frame-ancestors 'none';
+
+# Enabled by default as the risk should be low for breaking other pages. We advise against
+# fine tuning this, but instead if it is breaking a specific use case, outright disable it.
+# See https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/X-XSS-Protection
+# for more information.
+http.add.header.X-XSS-Protection.enabled = true
+http.add.header.X-XSS-Protection.value = 1; mode=block
+
+# Enabled by default, the server should be able to set all of its own content-type headers
+# correctly. It is possible that third-party plugins could cause issues with this, so it can
+# be disabled if desired.
+http.add.header.X-Content-Type-Options.enabled = true
+http.add.header.X-Content-Type-Options.value = nosniff
+
+# Enabled by default, the server doesn't make use of any referrer information. Can be enabled
+# as desired to handle other use cases.
+http.add.header.Referrer-Policy.enabled = true
+http.add.header.Referrer-Policy.value = no-referrer
+
+# Enabled by default, these settings restrict documents loaded from Deephaven-core to block
+# no-cors calls and permit running the page in a secure context.
+http.add.header.Cross-Origin-Resource-Policy.enabled = true
+http.add.header.Cross-Origin-Resource-Policy.value = same-origin
+http.add.header.Cross-Origin-Embedder-Policy.enabled = true
+http.add.header.Cross-Origin-Embedder-Policy.value = require-corp
+http.add.header.Cross-Origin-Opener-Policy.enabled = true
+http.add.header.Cross-Origin-Opener-Policy.value = same-origin

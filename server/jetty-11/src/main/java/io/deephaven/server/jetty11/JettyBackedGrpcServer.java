@@ -348,6 +348,10 @@ public class JettyBackedGrpcServer implements GrpcServer {
         // https://www.eclipse.org/jetty/documentation/jetty-11/programming-guide/index.html#pg-server-http-connector-protocol-http2-tls
         final HttpConfiguration httpConfig = new HttpConfiguration();
         httpConfig.addCustomizer(new ForwardedRequestCustomizer());
+        httpConfig.addCustomizer(new AllowedHttpMethodsCustomizer(config.allowedHttpMethods()));
+        if (!config.extraHeaders().isEmpty()) {
+            httpConfig.addCustomizer(new ConfiguredHeadersCustomizer(config.extraHeaders()));
+        }
         final HttpConnectionFactory http11 = config.http1OrDefault() ? new HttpConnectionFactory(httpConfig) : null;
         final ServerConnector serverConnector;
         if (config.ssl().isPresent()) {
