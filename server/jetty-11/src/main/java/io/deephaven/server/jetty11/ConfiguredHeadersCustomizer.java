@@ -18,6 +18,7 @@ public class ConfiguredHeadersCustomizer implements HttpConfiguration.Customizer
 
     /**
      * Creates a new instance of the customizer, applying the given headers to every outgoing response.
+     *
      * @param configuredHeaders the headers to add to every response
      */
     public ConfiguredHeadersCustomizer(final Map<String, String> configuredHeaders) {

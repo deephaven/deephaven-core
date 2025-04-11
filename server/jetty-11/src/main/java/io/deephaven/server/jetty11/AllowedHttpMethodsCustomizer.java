@@ -28,6 +28,7 @@ public class AllowedHttpMethodsCustomizer implements HttpConfiguration.Customize
 
     /**
      * Creates a new instance of the customizer, allowing only the specified HTTP methods.
+     *
      * @param allowedMethods the HTTP methods to allow
      */
     public AllowedHttpMethodsCustomizer(final Set<String> allowedMethods) {
