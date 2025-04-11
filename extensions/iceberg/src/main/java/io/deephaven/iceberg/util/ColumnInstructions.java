@@ -30,9 +30,9 @@ public abstract class ColumnInstructions {
         return ImmutableColumnInstructions.builder().partitionFieldId(partitionFieldId).build();
     }
 
-    abstract OptionalInt schemaFieldId();
+    public abstract OptionalInt schemaFieldId();
 
-    abstract OptionalInt partitionFieldId();
+    public abstract OptionalInt partitionFieldId();
 
     PartitionField partitionField(PartitionSpec spec) throws SchemaHelper.PathException {
         return PartitionSpecHelper.get(spec, partitionFieldId().orElseThrow());
