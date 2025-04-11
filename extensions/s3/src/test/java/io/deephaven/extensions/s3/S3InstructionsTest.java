@@ -12,6 +12,8 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Optional;
 
+import static io.deephaven.extensions.s3.S3Instructions.DEFAULT_READ_TIMEOUT;
+import static io.deephaven.extensions.s3.S3Instructions.DEFAULT_WRITE_TIMEOUT;
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
@@ -66,6 +68,84 @@ class S3InstructionsTest {
             failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
         } catch (IllegalArgumentException e) {
             assertThat(e).hasMessageContaining("maxConcurrentRequests");
+        }
+    }
+
+    @Test
+    void testReadTimeout() {
+        assertThat(S3Instructions.builder()
+                .regionName("some-region")
+                .readTimeout(Duration.ofSeconds(1))
+                .build()
+                .readTimeout())
+                .isEqualTo(Duration.ofSeconds(1));
+    }
+
+    @Test
+    void testReadTimeoutNotSet() {
+        assertThat(S3Instructions.builder()
+                .regionName("some-region")
+                .build()
+                .readTimeout())
+                .isEqualTo(DEFAULT_READ_TIMEOUT);
+    }
+
+    @Test
+    void testReadTimeoutValidate() {
+        // 1 milli is allowed
+        S3Instructions.builder()
+                .regionName("some-region")
+                .readTimeout(Duration.ofMillis(1))
+                .build();
+
+        // Less than 1 milli is not allowed
+        try {
+            S3Instructions.builder()
+                    .regionName("some-region")
+                    .readTimeout(Duration.ofNanos(999_999))
+                    .build();
+            failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
+        } catch (IllegalArgumentException e) {
+            assertThat(e).hasMessageContaining("readTimeout");
+        }
+    }
+
+    @Test
+    void testWriteTimeout() {
+        assertThat(S3Instructions.builder()
+                .regionName("some-region")
+                .writeTimeout(Duration.ofMillis(5))
+                .build()
+                .writeTimeout())
+                .isEqualTo(Duration.ofMillis(5));
+    }
+
+    @Test
+    void testWriteTimeoutNotSet() {
+        assertThat(S3Instructions.builder()
+                .regionName("some-region")
+                .build()
+                .writeTimeout())
+                .isEqualTo(DEFAULT_WRITE_TIMEOUT);
+    }
+
+    @Test
+    void testWriteTimeoutValidate() {
+        // 1 milli is allowed
+        S3Instructions.builder()
+                .regionName("some-region")
+                .writeTimeout(Duration.ofMillis(1))
+                .build();
+
+        // Less than 1 milli is not allowed
+        try {
+            S3Instructions.builder()
+                    .regionName("some-region")
+                    .writeTimeout(Duration.ofNanos(999_999))
+                    .build();
+            failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
+        } catch (IllegalArgumentException e) {
+            assertThat(e).hasMessageContaining("writeTimeout");
         }
     }
 
