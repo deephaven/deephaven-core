@@ -39,7 +39,7 @@ import java.util.function.BiConsumer;
  *           access the buffer directly, but instead use the {@link Acquired#fill} method. Also, users should hold
  *           instances of {@link Acquired} to keep the requests alive.
  */
-final class S3Request extends SoftReference<ByteBuffer>
+final class S3ReadRequest extends SoftReference<ByteBuffer>
         implements AsyncResponseTransformer<GetObjectResponse, Boolean>, BiConsumer<Boolean, Throwable>,
         CleanupReference<ByteBuffer> {
 
@@ -75,7 +75,7 @@ final class S3Request extends SoftReference<ByteBuffer>
         }
     }
 
-    private static final Logger log = LoggerFactory.getLogger(S3Request.class);
+    private static final Logger log = LoggerFactory.getLogger(S3ReadRequest.class);
 
     private final S3Uri s3Uri;
     private final ID id;
@@ -89,7 +89,7 @@ final class S3Request extends SoftReference<ByteBuffer>
     private volatile CompletableFuture<Boolean> producerFuture;
     private int fillCount;
     private long fillBytes;
-    private final S3RequestCache sharedCache;
+    private final S3ReadRequestCache sharedCache;
 
     /**
      * Create a new request for the given fragment index using the provided context object.
@@ -100,17 +100,21 @@ final class S3Request extends SoftReference<ByteBuffer>
      * @implNote This method does not cache the context because contexts are short-lived while a request may be cached.
      */
     @NotNull
-    static Acquired createAndAcquire(final long fragmentIndex, @NotNull final S3ChannelContext context) {
+    static Acquired createAndAcquire(final long fragmentIndex, @NotNull final S3ReadContext context) {
         final long from = fragmentIndex * context.instructions.fragmentSize();
         final long to = Math.min(from + context.instructions.fragmentSize(), context.size) - 1;
         final long requestLength = to - from + 1;
         final ByteBuffer buffer = ByteBuffer.allocate((int) requestLength);
-        final S3Request request = new S3Request(fragmentIndex, context, buffer, from, to);
+        final S3ReadRequest request = new S3ReadRequest(fragmentIndex, context, buffer, from, to);
         return request.acquire(buffer);
     }
 
-    private S3Request(final long fragmentIndex, @NotNull final S3ChannelContext context,
-            @NotNull final ByteBuffer buffer, final long from, final long to) {
+    private S3ReadRequest(
+            final long fragmentIndex,
+            @NotNull final S3ReadContext context,
+            @NotNull final ByteBuffer buffer,
+            final long from,
+            final long to) {
         super(buffer, CleanupReferenceProcessor.getDefault().getReferenceQueue());
         this.fragmentIndex = fragmentIndex;
         this.s3Uri = context.uri;
@@ -118,7 +122,7 @@ final class S3Request extends SoftReference<ByteBuffer>
         this.client = context.client;
         this.from = from;
         this.to = to;
-        sharedCache = context.sharedCache;
+        sharedCache = context.sharedReadCache;
         createdAt = Instant.now();
         id = new ID(s3Uri, fragmentIndex);
         if (log.isDebugEnabled()) {
@@ -193,8 +197,8 @@ final class S3Request extends SoftReference<ByteBuffer>
             sendImpl();
         }
 
-        final S3Request request() {
-            return S3Request.this;
+        final S3ReadRequest request() {
+            return S3ReadRequest.this;
         }
 
         /**
@@ -227,7 +231,7 @@ final class S3Request extends SoftReference<ByteBuffer>
             try {
                 isComplete = consumerFuture.get(readNanos, TimeUnit.NANOSECONDS);
             } catch (final InterruptedException | ExecutionException | TimeoutException | CancellationException e) {
-                throw S3ChannelContext.handleS3Exception(e, String.format("fetching fragment %s", requestStr()),
+                throw S3ReadContext.handleS3Exception(e, String.format("fetching fragment %s", requestStr()),
                         instructions);
             }
             if (!Boolean.TRUE.equals(isComplete)) {
@@ -334,7 +338,7 @@ final class S3Request extends SoftReference<ByteBuffer>
 
         Sub() {
             localProducer = producerFuture;
-            final ByteBuffer buffer = S3Request.this.get();
+            final ByteBuffer buffer = S3ReadRequest.this.get();
             if (buffer == null) {
                 localProducer.complete(false);
                 return;
@@ -350,7 +354,7 @@ final class S3Request extends SoftReference<ByteBuffer>
 
         @Override
         public void onSubscribe(Subscription s) {
-            if (S3Request.this.get() == null) {
+            if (S3ReadRequest.this.get() == null) {
                 localProducer.complete(false);
                 s.cancel();
                 return;
@@ -365,7 +369,7 @@ final class S3Request extends SoftReference<ByteBuffer>
 
         @Override
         public void onNext(final ByteBuffer dataBuffer) {
-            final ByteBuffer resultBuffer = S3Request.this.get();
+            final ByteBuffer resultBuffer = S3ReadRequest.this.get();
             if (resultBuffer == null) {
                 localProducer.complete(false);
                 subscription.cancel();
@@ -384,7 +388,7 @@ final class S3Request extends SoftReference<ByteBuffer>
 
         @Override
         public void onComplete() {
-            if (S3Request.this.get() == null) {
+            if (S3ReadRequest.this.get() == null) {
                 localProducer.complete(false);
                 return;
             }
