@@ -3,7 +3,6 @@
 //
 package io.deephaven.iceberg.internal;
 
-import io.deephaven.base.verify.Assert;
 import io.deephaven.qst.type.Type;
 import org.apache.iceberg.Schema;
 import org.apache.iceberg.types.Types;
@@ -15,7 +14,6 @@ import java.time.LocalTime;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 
 public final class Inference {
@@ -129,9 +127,9 @@ public final class Inference {
         private final List<Types.NestedField> fieldPath;
 
         public UnsupportedType(Schema schema, List<Types.NestedField> fieldPath) {
-            super(String.format("Unsupported Iceberg type `%s` at path [%s]",
+            super(String.format("Unsupported Iceberg type `%s` at fieldName `%s`",
                     fieldPath.get(fieldPath.size() - 1).type(),
-                    fieldPath.stream().map(Types.NestedField::name).collect(Collectors.joining(", "))));
+                    SchemaHelper.toFieldName(fieldPath)));
             this.schema = Objects.requireNonNull(schema);
             this.fieldPath = List.copyOf(fieldPath);
         }

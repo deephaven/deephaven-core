@@ -24,7 +24,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Supplier;
 
-// TODO: more testing of this logic
 final class ResolverFactory implements ParquetColumnResolver.Factory {
 
     private final Resolver resolver;
@@ -45,6 +44,7 @@ final class ResolverFactory implements ParquetColumnResolver.Factory {
 
     private class ResolverImpl implements ParquetColumnResolver {
 
+        // Using Supplier instead of IcebergTableParquetLocationKey to greatly aid in test-ability.
         // private final IcebergTableParquetLocationKey key;
         private final Supplier<MessageType> key;
 
@@ -54,9 +54,7 @@ final class ResolverFactory implements ParquetColumnResolver.Factory {
 
         @Override
         public Optional<List<String>> of(String columnName) {
-            // TODO: this may also be PartitionSpeec based column?
-            final List<Types.NestedField> readersPath =
-                    resolver.resolveSchemaFieldViaReadersSchema(columnName).orElse(null);
+            final List<Types.NestedField> readersPath = resolver.resolve(columnName).orElse(null);
             if (readersPath == null) {
                 // DH did not map this column name
                 return Optional.empty();
@@ -67,7 +65,7 @@ final class ResolverFactory implements ParquetColumnResolver.Factory {
             // See https://lists.apache.org/thread/98m6d7b08fzxkbxlm78c5tnx5zp93mgc
             // final List<Types.NestedField> writersFields;
             // try {
-            // writersFields = instructions.resolveVia(columnName, key.writersSchema()).orElse(null);
+            // writersFields = resolver.resolveVia(columnName, key.writersSchema()).orElse(null);
             // } catch (SchemaHelper.PathException e) {
             // // Writer did not write this column
             // return Optional.empty();

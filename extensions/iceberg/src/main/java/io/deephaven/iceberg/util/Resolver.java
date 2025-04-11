@@ -5,37 +5,29 @@ package io.deephaven.iceberg.util;
 
 import io.deephaven.annotations.BuildableStyle;
 import io.deephaven.api.util.NameValidator;
-import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.iceberg.internal.Inference;
-import io.deephaven.iceberg.internal.PartitionSpecHelper;
 import io.deephaven.iceberg.internal.SchemaHelper;
 import io.deephaven.qst.type.Type;
 import org.apache.iceberg.PartitionField;
 import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.Schema;
-import org.apache.iceberg.exceptions.ValidationException;
 import org.apache.iceberg.mapping.NameMapping;
 import org.apache.iceberg.transforms.Transform;
-import org.apache.iceberg.types.TypeUtil;
-import org.apache.iceberg.types.Types;
 import org.apache.iceberg.types.Types.NestedField;
 import org.immutables.value.Value;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-
-
-// This is a mapping for _read_
+import java.util.function.BiConsumer;
 
 /**
- * This is the necessary structure to resolve data files.
+ * This is the necessary structure to map an Iceberg {@link Schema} to a Deephaven {@link TableDefinition}.
  */
 @Value.Immutable
 @BuildableStyle
@@ -45,25 +37,29 @@ public abstract class Resolver {
         return ImmutableResolver.builder();
     }
 
-    public static Resolver empty(Schema schema) {
-        return builder()
-                .schema(schema)
-                .definition(TableDefinition.of(List.of()))
-                .build();
-    }
-
+    /**
+     * Infer a resolver based on the {@code inferenceInstructions}.
+     *
+     * @param inferenceInstructions the inference instructions
+     * @return the resolver
+     * @throws Inference.UnsupportedType if an unsupported type is encountered
+     */
     public static Resolver infer(final InferenceInstructions inferenceInstructions) throws Inference.UnsupportedType {
         return inferBuilder(inferenceInstructions).build();
     }
 
+    /**
+     * Infer a resolver-builder based on the {@code inferenceInstructions}. This sets everything necessary, except
+     * leaves {@link Resolver.Builder#nameMapping(NameMapping) name-mapping} unset, allowing the caller to provide it if
+     * necessary.
+     *
+     * @param inferenceInstructions the inference instructions
+     * @return the resolver-builder
+     * @throws Inference.UnsupportedType if an unsupported type is encountered
+     */
     public static Resolver.Builder inferBuilder(final InferenceInstructions inferenceInstructions)
             throws Inference.UnsupportedType {
-        final Inf inf = new Inf(inferenceInstructions);
-        TypeUtil.visit(inferenceInstructions.schema(), inf);
-        if (inferenceInstructions.failOnUnsupportedTypes() && !inf.unsupportedTypes.isEmpty()) {
-            throw inf.unsupportedTypes.get(0);
-        }
-        return inf.build();
+        return InferenceImpl.of(inferenceInstructions);
     }
 
     /**
@@ -73,6 +69,7 @@ public abstract class Resolver {
      * Callers should take care and only use {@link ColumnDefinition.ColumnType#Partitioning} columns when they know the
      * Iceberg table will always have {@link Transform#isIdentity() identity} partitions for said columns. In the
      * general case, Iceberg partitions may evolve over time, which can break the assumptions Deephaven makes about
+     * partitioning columns.
      */
     public abstract TableDefinition definition();
 
@@ -86,6 +83,8 @@ public abstract class Resolver {
      * The Iceberg partition specification. Only necessary to set when the {@link #definition()} has
      * {@link ColumnDefinition.ColumnType#Partitioning} columns, or {@link #columnInstructions()} references
      * {@link ColumnInstructions#partitionField(int) partition fields}.
+     *
+     * @see InferenceInstructions#spec() for related warnings
      */
     public abstract Optional<PartitionSpec> spec();
 
@@ -102,6 +101,22 @@ public abstract class Resolver {
     @Value.Default
     boolean allowUnmappedColumns() {
         return false;
+    }
+
+    /**
+     * Get the field path associated with the Deephaven {@code columnName}. Will return empty when the column name is
+     * not in {@link #columnInstructions()}, and a result otherwise.
+     *
+     * @param columnName the column name
+     * @return the field path
+     */
+    public final Optional<List<NestedField>> resolve(String columnName) {
+        // noinspection unchecked
+        final List<NestedField>[] out = new List[1];
+        if (!resolve2(columnName, (x, y) -> out[0] = x)) {
+            return Optional.empty();
+        }
+        return Optional.of(out[0]);
     }
 
     public interface Builder {
@@ -121,6 +136,22 @@ public abstract class Resolver {
         Builder allowUnmappedColumns(boolean allowUnmappedColumns);
 
         Resolver build();
+    }
+
+    // May want to expose this in the future, or a new class instead of a BiConsumer.
+    final boolean resolve2(String columnName, BiConsumer<List<NestedField>, PartitionField> consumer) {
+        final ColumnInstructions ci = columnInstructions().get(columnName);
+        if (ci == null) {
+            return false;
+        }
+        final ColumnDefinition<?> column = Objects.requireNonNull(definition().getColumn(columnName));
+        try {
+            consume2(column.isPartitioning(), ci, consumer);
+        } catch (SchemaHelper.PathException e) {
+            // should have been caught during constructions
+            throw new IllegalStateException(e);
+        }
+        return true;
     }
 
     final PartitionSpec specOrUnpartitioned() {
@@ -158,14 +189,16 @@ public abstract class Resolver {
         final ColumnDefinition<?> column = definition().getColumn(columnName);
         final Type<?> type = Type.find(column.getDataType(), column.getComponentType());
         try {
-            validate(column.isPartitioning(), type, ci);
+            consume2(column.isPartitioning(), ci, (x, y) -> validate(type, x, y));
         } catch (SchemaHelper.PathException | MappingException e) {
             throw new MappingException(String.format("Unable to map Deephaven column %s", column.getName()), e);
         }
     }
 
-    private void validate(boolean isPartitioningColumn, Type<?> type, ColumnInstructions ci)
-            throws SchemaHelper.PathException {
+    private void consume2(
+            boolean isPartitioningColumn,
+            ColumnInstructions ci,
+            BiConsumer<List<NestedField>, PartitionField> consumer) throws SchemaHelper.PathException {
         final List<NestedField> fieldPath;
         final PartitionField partitionField;
         if (ci.schemaFieldId().isPresent()) {
@@ -179,10 +212,12 @@ public abstract class Resolver {
             partitionField = ci.partitionField(specOrUnpartitioned());
             fieldPath = SchemaHelper.fieldPath(schema(), partitionField);
         }
-        validate(type, fieldPath, partitionField);
+        consumer.accept(fieldPath, partitionField);
     }
 
-    private void validate(final Type<?> type, final List<NestedField> fieldPath,
+    private void validate(
+            final Type<?> type,
+            final List<NestedField> fieldPath,
             @Nullable final PartitionField partitionField) {
         // This is not a hard limitation; could be improved in the future
         if (partitionField != null && !partitionField.transform().isIdentity()) {
@@ -191,259 +226,6 @@ public abstract class Resolver {
                             partitionField));
         }
         checkCompatible(fieldPath, type);
-    }
-
-    // TODO
-    public final Optional<List<NestedField>> resolveSchemaFieldViaReadersSchema(String columnName) {
-        // todo: mixin spec?
-        try {
-            return resolveSchemaFieldVia(columnName, schema());
-        } catch (SchemaHelper.PathException e) {
-            // should already be accounted for in checkCompatibility
-            throw new IllegalStateException(e);
-        }
-    }
-
-    // TODO
-    public final Optional<List<NestedField>> resolveSchemaFieldVia(String columnName, Schema schema)
-            throws SchemaHelper.PathException {
-        final ColumnInstructions ci = columnInstructions().get(columnName);
-        if (ci == null) {
-            return Optional.empty();
-        }
-
-        return Optional.of(SchemaHelper.fieldPath(schema, ci.schemaFieldId().orElseThrow()));
-
-
-        // todo: mixin spec?
-        // return Optional.of(ci.schemaFieldPath().orElseThrow().resolve(schema));
-    }
-
-    // We could change result type to a List or something more complex in future if necessary.
-    private static class Inf extends TypeUtil.SchemaVisitor<Void> {
-
-        private final InferenceInstructions ii;
-        private final InferenceInstructions.Namer namer;
-
-        // build results
-        private final Builder builder;
-        private final List<ColumnDefinition<?>> definitions = new ArrayList<>();
-        private final List<Inference.UnsupportedType> unsupportedTypes = new ArrayList<>();
-
-        // state
-        private int skipDepth = 0; // if skipDepth > 0, we should skip inference on any types we visit
-        private final List<Types.NestedField> fieldPath = new ArrayList<>();
-
-        public Inf(InferenceInstructions ii) {
-            this.ii = Objects.requireNonNull(ii);
-            this.namer = ii.namerFactory().create();
-            this.builder = builder()
-                    .schema(ii.schema())
-                    .allowUnmappedColumns(false);
-        }
-
-        Resolver.Builder build() {
-            if (ii.spec().isPresent() && definitions.stream().anyMatch(ColumnDefinition::isPartitioning)) {
-                // Only pass along the spec if it has actually been used
-                builder.spec(ii.spec().get());
-            }
-            return builder
-                    .definition(TableDefinition.of(definitions));
-        }
-
-        private boolean isSkip() {
-            if (ii.skip().isEmpty()) {
-                return false;
-            }
-            // Not the most efficient check, but should not matter given this is only done during inference.
-            final FieldPath fp = FieldPath.of(fieldPath.stream().mapToInt(NestedField::fieldId).toArray());
-            return ii.skip().contains(fp);
-        }
-
-        private void push(NestedField field) {
-            fieldPath.add(field);
-            if (isSkip()) {
-                ++skipDepth;
-            }
-        }
-
-        private void pop(NestedField field) {
-            if (isSkip()) {
-                --skipDepth;
-            }
-            Assert.eq(field, "field", fieldPath.remove(fieldPath.size() - 1));
-        }
-
-        @Override
-        public Void primitive(org.apache.iceberg.types.Type.PrimitiveType primitive) {
-            if (skipDepth != 0) {
-                return null;
-            }
-            final Type<?> type = Inference.of(primitive).orElse(null);
-            if (type == null) {
-                unsupportedTypes.add(new Inference.UnsupportedType(ii.schema(), fieldPath));
-                return null;
-            }
-
-            final String columnName = namer.of(fieldPath, type);
-            NameValidator.validateColumnName(columnName);
-
-            final int fieldId = currentFieldId();
-            final ColumnDefinition<?> columnDefinition;
-            final ColumnInstructions columnInstructions;
-            {
-                final ColumnDefinition<?> cd = ColumnDefinition.of(columnName, type);
-                final PartitionField pf = ii.spec().isPresent()
-                        ? PartitionSpecHelper.findIdentityForSchemaFieldId(ii.spec().get(), fieldId).orElse(null)
-                        : null;
-                if (pf == null) {
-                    columnDefinition = cd;
-                    columnInstructions = ColumnInstructions.schemaField(fieldId);
-                } else {
-                    columnDefinition = cd.withPartitioning();
-                    columnInstructions = ColumnInstructions.partitionField(pf.fieldId());
-                }
-            }
-            builder.putColumnInstructions(columnName, columnInstructions);
-            definitions.add(columnDefinition);
-            return null;
-        }
-
-        private int currentFieldId() {
-            return fieldPath.get(fieldPath.size() - 1).fieldId();
-        }
-
-        @Override
-        public Void struct(Types.StructType struct, List<Void> fieldResults) {
-            if (skipDepth != 0) {
-                return null;
-            }
-            return null;
-        }
-
-        @Override
-        public Void schema(Schema schema, Void structResult) {
-            if (skipDepth != 0) {
-                return null;
-            }
-            return null;
-        }
-
-        @Override
-        public Void map(Types.MapType map, Void keyResult, Void valueResult) {
-            if (skipDepth != 0) {
-                return null;
-            }
-            unsupportedTypes.add(new Inference.UnsupportedType(ii.schema(), fieldPath));
-            return null;
-        }
-
-        @Override
-        public Void list(Types.ListType list, Void elementResult) {
-            if (skipDepth != 0) {
-                return null;
-            }
-            unsupportedTypes.add(new Inference.UnsupportedType(ii.schema(), fieldPath));
-            return null;
-        }
-
-        @Override
-        public Void variant() {
-            if (skipDepth != 0) {
-                return null;
-            }
-            unsupportedTypes.add(new Inference.UnsupportedType(ii.schema(), fieldPath));
-            return null;
-        }
-
-        @Override
-        public Void field(NestedField field, Void fieldResult) {
-            if (skipDepth != 0) {
-                return null;
-            }
-            return null;
-        }
-
-        @Override
-        public void beforeField(NestedField field) {
-            push(field);
-        }
-
-        @Override
-        public void afterField(NestedField field) {
-            pop(field);
-        }
-
-        @Override
-        public void beforeListElement(NestedField elementField) {
-            push(elementField);
-            ++skipDepth;
-        }
-
-        @Override
-        public void afterListElement(NestedField elementField) {
-            --skipDepth;
-            pop(elementField);
-        }
-
-        @Override
-        public void beforeMapKey(NestedField keyField) {
-            push(keyField);
-            ++skipDepth;
-        }
-
-        @Override
-        public void afterMapKey(NestedField keyField) {
-            --skipDepth;
-            pop(keyField);
-        }
-
-        @Override
-        public void beforeMapValue(NestedField valueField) {
-            push(valueField);
-            ++skipDepth;
-        }
-
-        @Override
-        public void afterMapValue(NestedField valueField) {
-            --skipDepth;
-            pop(valueField);
-        }
-    }
-
-
-
-    static boolean isCompatible(Collection<? extends NestedField> path, Type<?> type) {
-        try {
-            checkCompatible(path, type);
-            return true;
-        } catch (MappingException e) {
-            return false;
-        }
-    }
-
-    static void checkCompatible(Schema schema, PartitionField partitionField, Type<?> type) {
-        if (!partitionField.transform().isIdentity()) {
-            throw new MappingException(String
-                    .format("Unable to map partitionField=[%s], only identity transform is supported", partitionField));
-        }
-        final Optional<FieldPath> fieldPath = FieldPath.find(schema, partitionField.sourceId());
-        if (fieldPath.isEmpty()) {
-            throw new MappingException(
-                    String.format("Unable to map partitionField=[%s], sourceId not found in schema", partitionField));
-        }
-        final List<NestedField> fields;
-        try {
-            fields = fieldPath.get().resolve(schema);
-        } catch (SchemaHelper.PathException e) {
-            // Should not happen since we just found it via this schema
-            throw new IllegalStateException(e);
-        }
-        try {
-            checkCompatible(fields, type);
-        } catch (MappingException e) {
-            throw new MappingException(String.format("Unable to map partitionField=[%s]", partitionField), e);
-        }
     }
 
     static void checkCompatible(Collection<? extends NestedField> path, Type<?> type) {
@@ -537,4 +319,5 @@ public abstract class Resolver {
             super(message, cause);
         }
     }
+
 }
