@@ -34,24 +34,24 @@ class SchemaHelperTest {
         assertFieldPath(schema, new int[0]).isEmpty();
 
         assertFieldPath(schema, 1).containsExactly("I1");
-        assertFieldPathError("id path too long, path=[1, 2], context=I1", schema, 1, 2);
+        assertFieldPathError("id path too long, path=[1, 2], fieldName=`I1`", schema, 1, 2);
 
         assertFieldPath(schema, 4, 2).containsExactly("I4", "I2");
         assertFieldPath(schema, 4, 3).containsExactly("I4", "I3");
-        assertFieldPathError("id path not found, path=[4, 1], context=I4", schema, 4, 1);
-        assertFieldPathError("id path too long, path=[4, 2, 1], context=I4.I2", schema, 4, 2, 1);
+        assertFieldPathError("id path not found, path=[4, 1], fieldName=`I4`", schema, 4, 1);
+        assertFieldPathError("id path too long, path=[4, 2, 1], fieldName=`I4.I2`", schema, 4, 2, 1);
 
         assertFieldPath(schema, 6).containsExactly("I6");
         assertFieldPath(schema, 6, 5).containsExactly("I6", "element");
-        assertFieldPathError("id path not found, path=[6, 4], context=I6", schema, 6, 4);
-        assertFieldPathError("id path too long, path=[6, 5, 4], context=I6.element", schema, 6, 5, 4);
+        assertFieldPathError("id path not found, path=[6, 4], fieldName=`I6`", schema, 6, 4);
+        assertFieldPathError("id path too long, path=[6, 5, 4], fieldName=`I6.element`", schema, 6, 5, 4);
 
         assertFieldPath(schema, 9).containsExactly("I9");
         assertFieldPath(schema, 9, 7).containsExactly("I9", "key");
         assertFieldPath(schema, 9, 8).containsExactly("I9", "value");
-        assertFieldPathError("id path not found, path=[9, 6], context=I9", schema, 9, 6);
-        assertFieldPathError("id path too long, path=[9, 7, 6], context=I9.key", schema, 9, 7, 6);
-        assertFieldPathError("id path too long, path=[9, 8, 6], context=I9.value", schema, 9, 8, 6);
+        assertFieldPathError("id path not found, path=[9, 6], fieldName=`I9`", schema, 9, 6);
+        assertFieldPathError("id path too long, path=[9, 7, 6], fieldName=`I9.key`", schema, 9, 7, 6);
+        assertFieldPathError("id path too long, path=[9, 8, 6], fieldName=`I9.value`", schema, 9, 8, 6);
     }
 
     @Test
@@ -68,26 +68,26 @@ class SchemaHelperTest {
         assertFieldPath(schema, new String[0]).isEmpty();
 
         assertFieldPath(schema, "I1").containsExactly("I1");
-        assertFieldPathError("name path too long, path=[I1, I2], context=I1", schema, "I1", "I2");
+        assertFieldPathError("name path too long, path=[I1, I2], fieldName=`I1`", schema, "I1", "I2");
 
         assertFieldPath(schema, "I4", "I2").containsExactly("I4", "I2");
         assertFieldPath(schema, "I4", "I3").containsExactly("I4", "I3");
-        assertFieldPathError("name path not found, path=[I4, I1], context=I4", schema, "I4", "I1");
-        assertFieldPathError("name path too long, path=[I4, I2, I1], context=I4.I2", schema, "I4", "I2", "I1");
+        assertFieldPathError("name path not found, path=[I4, I1], fieldName=`I4`", schema, "I4", "I1");
+        assertFieldPathError("name path too long, path=[I4, I2, I1], fieldName=`I4.I2`", schema, "I4", "I2", "I1");
 
         assertFieldPath(schema, "I6").containsExactly("I6");
         assertFieldPath(schema, "I6", "element").containsExactly("I6", "element");
-        assertFieldPathError("name path not found, path=[I6, dne], context=I6", schema, "I6", "dne");
-        assertFieldPathError("name path too long, path=[I6, element, dne], context=I6.element", schema, "I6",
+        assertFieldPathError("name path not found, path=[I6, dne], fieldName=`I6`", schema, "I6", "dne");
+        assertFieldPathError("name path too long, path=[I6, element, dne], fieldName=`I6.element`", schema, "I6",
                 "element", "dne");
 
         assertFieldPath(schema, "I9").containsExactly("I9");
         assertFieldPath(schema, "I9", "key").containsExactly("I9", "key");
         assertFieldPath(schema, "I9", "value").containsExactly("I9", "value");
-        assertFieldPathError("name path not found, path=[I9, dne], context=I9", schema, "I9", "dne");
-        assertFieldPathError("name path too long, path=[I9, key, dne], context=I9.key", schema, "I9", "key",
+        assertFieldPathError("name path not found, path=[I9, dne], fieldName=`I9`", schema, "I9", "dne");
+        assertFieldPathError("name path too long, path=[I9, key, dne], fieldName=`I9.key`", schema, "I9", "key",
                 "dne");
-        assertFieldPathError("name path too long, path=[I9, value, dne], context=I9.value", schema, "I9",
+        assertFieldPathError("name path too long, path=[I9, value, dne], fieldName=`I9.value`", schema, "I9",
                 "value", "dne");
     }
 

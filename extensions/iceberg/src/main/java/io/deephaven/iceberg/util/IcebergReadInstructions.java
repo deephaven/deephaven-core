@@ -110,12 +110,11 @@ public abstract class IcebergReadInstructions {
      */
     public abstract IcebergReadInstructions withSnapshot(Snapshot value);
 
-
     /**
      * If Deephaven {@link ColumnDefinition.ColumnType#Partitioning} columns should be inferred based on a
      * {@link PartitionSpec}. This setting is only relevant when {@link #resolver()} is not set. By default, is only
      * {@code true} when {@link #updateMode()} is {@link IcebergUpdateMode#staticMode() static}. While callers can
-     * explicitly set this to {@code true}, it is not advisable. See the caveats on
+     * explicitly set this to {@code true}, it is not generally safe to do so. See the caveats on
      * {@link InferenceInstructions#spec()}.
      */
     @Value.Default

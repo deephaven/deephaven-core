@@ -15,6 +15,7 @@ import io.deephaven.qst.type.Type;
 import org.apache.iceberg.PartitionField;
 import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.Schema;
+import org.apache.iceberg.exceptions.ValidationException;
 import org.apache.iceberg.mapping.NameMapping;
 import org.apache.iceberg.transforms.Transform;
 import org.apache.iceberg.types.TypeUtil;
@@ -98,21 +99,10 @@ public abstract class Resolver {
      */
     public abstract Optional<NameMapping> nameMapping();
 
-    // We need to store as List so we can get test out the mapping wrt equals
-    // todo: verify this is pointing to a schema leaf; arguably, doesn't
-    // have to be a leaf if it's a list? b/c really, the list type is
-    // probably better than a path to the elemnt
-
-    // todo: this should be schema columns?
     @Value.Default
     boolean allowUnmappedColumns() {
         return false;
     }
-
-    // todo: should we have similar setting for partition spec columns?
-
-
-    // todo: need to specify any special transformations that happen
 
     public interface Builder {
 
@@ -138,20 +128,6 @@ public abstract class Resolver {
     }
 
     @Value.Check
-    final void checkSpecSchema() {
-        if (spec().isEmpty()) {
-            return;
-        }
-        final PartitionSpec spec = spec().orElseThrow();
-        // Note: we *do* mean the same literal schema
-        if (schema() != spec.schema()) {
-            throw new IllegalArgumentException("schema and spec schema are not the same instance");
-        }
-    }
-
-    // todo: check various Partitioning stuff; a column can refer to a parititionfieldId
-
-    @Value.Check
     final void checkUnmappedColumns() {
         if (allowUnmappedColumns()) {
             return;
@@ -165,7 +141,6 @@ public abstract class Resolver {
 
     @Value.Check
     final void checkColumnNames() {
-        // TODO: TableDefinition does not do this :(
         for (String columnName : definition().getColumnNames()) {
             NameValidator.validateColumnName(columnName);
         }
@@ -212,7 +187,8 @@ public abstract class Resolver {
         // This is not a hard limitation; could be improved in the future
         if (partitionField != null && !partitionField.transform().isIdentity()) {
             throw new MappingException(String
-                    .format("Unable to map partitionField=[%s], only identity transform is supported", partitionField));
+                    .format("Unable to map partition field `%s`, only identity transform is supported",
+                            partitionField));
         }
         checkCompatible(fieldPath, type);
     }
@@ -560,12 +536,5 @@ public abstract class Resolver {
         public MappingException(String message, Throwable cause) {
             super(message, cause);
         }
-    }
-
-    private static RuntimeException extract(RuntimeException e) throws Inference.Exception {
-        if (e.getCause() instanceof Inference.Exception) {
-            throw ((Inference.Exception) e.getCause());
-        }
-        throw e;
     }
 }

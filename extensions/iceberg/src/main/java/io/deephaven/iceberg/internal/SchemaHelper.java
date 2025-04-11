@@ -140,24 +140,25 @@ public final class SchemaHelper {
 
     private static PathException idPathNotFound(int[] idPath, List<NestedField> context) {
         return new PathException(
-                String.format("id path not found, path=%s, context=%s", Arrays.toString(idPath),
+                String.format("id path not found, path=%s, fieldName=`%s`", Arrays.toString(idPath),
                         toFieldName(context)));
     }
 
     private static PathException idPathTooLong(int[] idPath, List<NestedField> context) {
         return new PathException(
-                String.format("id path too long, path=%s, context=%s", Arrays.toString(idPath), toFieldName(context)));
+                String.format("id path too long, path=%s, fieldName=`%s`", Arrays.toString(idPath),
+                        toFieldName(context)));
     }
 
     private static PathException namePathNotFound(String[] namePath, List<NestedField> context) {
         return new PathException(
-                String.format("name path not found, path=%s, context=%s", Arrays.toString(namePath),
+                String.format("name path not found, path=%s, fieldName=`%s`", Arrays.toString(namePath),
                         toFieldName(context)));
     }
 
     private static PathException namePathTooLong(String[] namePath, List<NestedField> context) {
         return new PathException(
-                String.format("name path too long, path=%s, context=%s", Arrays.toString(namePath),
+                String.format("name path too long, path=%s, fieldName=`%s`", Arrays.toString(namePath),
                         toFieldName(context)));
     }
 }

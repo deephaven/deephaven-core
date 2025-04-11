@@ -10,6 +10,7 @@ import io.deephaven.iceberg.util.Resolver;
 import io.deephaven.qst.type.Type;
 import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.Schema;
+import org.apache.iceberg.exceptions.ValidationException;
 import org.apache.iceberg.types.Types;
 import org.apache.iceberg.types.Types.IntegerType;
 import org.apache.iceberg.types.Types.NestedField;
@@ -123,48 +124,6 @@ class ResolverTest {
                 .allowUnmappedColumns(true)
                 .build();
     }
-
-    // @Test
-    // void normalColumnPartitionField() {
-    // final Schema schema = simpleSchema(IT);
-    // final PartitionSpec spec = PartitionSpec.builderFor(schema)
-    // .identity("F1")
-    // .build();
-    // try {
-    // Resolver.builder()
-    // .schema(schema)
-    // .spec(spec)
-    // .definition(simpleDefinition(Type.intType()))
-    // .putColumnInstructions("F1", partitionField(spec.fields().get(0).fieldId()))
-    // .putColumnInstructions("F2", schemaField(43))
-    // .build();
-    // failBecauseExceptionWasNotThrown(Resolver.MappingException.class);
-    // } catch (Resolver.MappingException e) {
-    // assertThat(e).hasMessageContaining("Unable to map Deephaven column F1");
-    // assertThat(e).cause().hasMessageContaining("Must use partitioning column with partition field");
-    // }
-    // }
-
-    // @Test
-    // void partitioningColumnSchemaField() {
-    // final Schema schema = simpleSchema(IT);
-    // final TableDefinition td = TableDefinition.of(
-    // ColumnDefinition.ofInt("F1").withPartitioning(),
-    // ColumnDefinition.ofInt("F2"));
-    // try {
-    // Resolver.builder()
-    // .schema(schema)
-    // .spec(PartitionSpec.unpartitioned())
-    // .definition(td)
-    // .putColumnInstructions("F1", schemaField(42))
-    // .putColumnInstructions("F2", schemaField(43))
-    // .build();
-    // failBecauseExceptionWasNotThrown(Resolver.MappingException.class);
-    // } catch (Resolver.MappingException e) {
-    // assertThat(e).hasMessageContaining("Unable to map Deephaven column F1");
-    // assertThat(e).cause().hasMessageContaining("Must use normal column with schema field");
-    // }
-    // }
 
     @Test
     void partitioningColumnSchemaFieldNoPartitionSpec() {
@@ -409,8 +368,55 @@ class ResolverTest {
         } catch (Resolver.MappingException e) {
             assertThat(e).hasMessageContaining("Unable to map Deephaven column F1");
             assertThat(e).cause().hasMessageContaining(
-                    "Unable to map partitionField=[1000: F1_bucket: bucket[99](42)], only identity transform is supported");
+                    "Unable to map partition field `1000: F1_bucket: bucket[99](42)`, only identity transform is supported");
         }
+    }
+
+    @Test
+    void specThatIsNotCompatibleWithSchemaIsOk() {
+        final Schema s1 = new Schema(NestedField.optional(42, "F1", IT));
+        final Schema s2 = simpleSchema(IT);
+        final PartitionSpec spec2 = PartitionSpec.builderFor(s2)
+                .identity("F1")
+                .identity("F2")
+                .build();
+        final int partitionFieldId1 = spec2.fields().get(0).fieldId();
+        final int partitionFieldId2 = spec2.fields().get(1).fieldId();
+
+        // This is mainly "proof" that spec2 is not directly compatible with s1
+        try {
+            spec2.toUnbound().bind(s1);
+            failBecauseExceptionWasNotThrown(ValidationException.class);
+        } catch (ValidationException e) {
+            assertThat(e).hasMessageContaining("Cannot find source column for partition field: 1001: F2: identity(43)");
+        }
+
+        // But, it's still OK to build a resolver with it
+        Resolver.builder()
+                .schema(s1)
+                .spec(spec2)
+                .definition(TableDefinition.of(
+                        ColumnDefinition.of("F1", Type.intType()).withPartitioning()))
+                .putColumnInstructions("F1", partitionField(partitionFieldId1))
+                .build();
+
+        // Of course, we can't actually _reference_ the partition fields that aren't in the schema, as they will fail to
+        // resolve
+        try {
+            Resolver.builder()
+                    .schema(s1)
+                    .spec(spec2)
+                    .definition(TableDefinition.of(
+                            ColumnDefinition.of("F1", Type.intType()).withPartitioning()))
+                    .putColumnInstructions("F1", partitionField(partitionFieldId2))
+                    .build();
+            failBecauseExceptionWasNotThrown(Resolver.MappingException.class);
+        } catch (Resolver.MappingException e) {
+            assertThat(e).hasMessageContaining("Unable to map Deephaven column F1");
+            assertThat(e).cause().hasMessageContaining(
+                    "Unable to find partition field `1001: F2: identity(43)` in schema");
+        }
+
     }
 
     private static Schema simpleSchema(org.apache.iceberg.types.Type type) {

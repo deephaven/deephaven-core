@@ -45,12 +45,6 @@ public abstract class InferenceInstructions {
      * superset of this spec).
      */
     public abstract Optional<PartitionSpec> spec();
-    // todo: this should be a list of partitionfields instead of a specific spec
-    // for example, we might have a common subset of identities we want to use, but there is no direct spec for it:
-    // s1 = [ I1, I2, I3 ]
-    // s2 = [ I2, I3, I4 ]
-    //
-    // In this case, we want to infer based on a "virtual" spec of [ I2, I3 ]
 
     /**
      * The namer factory. Defaults to {@code fieldName("_")}.
@@ -141,6 +135,11 @@ public abstract class InferenceInstructions {
         InferenceInstructions build();
     }
 
+    // TODO: resolution order may _change_ in the future. if caller cares, they should be explicit and create Resolver
+    // themselves
+
+    // Note: there was originally a strict check about the partition spec schema being the same as the schema used for
+    // inference. This is *not* required, as we may be using an
     // @Value.Check
     // final void checkSpecSchema() {
     // if (spec().isEmpty()) {

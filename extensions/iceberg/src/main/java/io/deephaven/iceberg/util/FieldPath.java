@@ -58,7 +58,8 @@ public abstract class FieldPath {
     public static FieldPath get(Schema schema, PartitionField partitionField) throws SchemaHelper.PathException {
         final Optional<FieldPath> fieldPath = find(schema, partitionField);
         if (fieldPath.isEmpty()) {
-            throw new SchemaHelper.PathException(String.format("Unable to find field id %s in schema", partitionField));
+            throw new SchemaHelper.PathException(
+                    String.format("Unable to find partition field `%s` in schema", partitionField));
         }
         return fieldPath.get();
     }
