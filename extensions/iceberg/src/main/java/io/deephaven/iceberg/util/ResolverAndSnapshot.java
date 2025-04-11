@@ -36,20 +36,20 @@ final class ResolverAndSnapshot {
                     ? table.currentSnapshot()
                     : explicitSnapshot;
             {
-                final InferenceInstructions ii;
+                final InferenceInstructions instructions;
                 {
                     final Schema schema = explicitSnapshot == null
                             ? table.schema()
                             : table.schemas().get(explicitSnapshot.schemaId());
                     if (!inferWithPartitionSpec) {
-                        ii = InferenceInstructions.of(schema);
+                        instructions = InferenceInstructions.of(schema);
                     } else {
                         final PartitionSpec bestSpecForPartitionInference = partitionForInference(table, snapshot);
                         if (bestSpecForPartitionInference.isUnpartitioned()) {
-                            ii = InferenceInstructions.of(schema);
+                            instructions = InferenceInstructions.of(schema);
                         } else {
                             bestSpecForPartitionInference.toUnbound().bind(schema);
-                            ii = InferenceInstructions.builder()
+                            instructions = InferenceInstructions.builder()
                                     .schema(schema)
                                     .spec(bestSpecForPartitionInference)
                                     .build();
@@ -58,7 +58,7 @@ final class ResolverAndSnapshot {
                 }
                 Resolver.Builder builder;
                 try {
-                    builder = Resolver.inferBuilder(ii);
+                    builder = Resolver.inferBuilder(instructions);
                 } catch (Inference.UnsupportedType e) {
                     throw new RuntimeException(e);
                 }

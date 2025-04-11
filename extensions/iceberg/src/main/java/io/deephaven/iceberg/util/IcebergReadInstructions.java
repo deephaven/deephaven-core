@@ -4,9 +4,15 @@
 package io.deephaven.iceberg.util;
 
 import io.deephaven.annotations.CopyableStyle;
+import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.iceberg.internal.NameMappingUtil;
+import org.apache.iceberg.DataFile;
+import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.Schema;
 import org.apache.iceberg.Snapshot;
+import org.apache.iceberg.mapping.NameMappingParser;
+import org.apache.iceberg.types.Types;
 import org.immutables.value.Value;
 import org.immutables.value.Value.Immutable;
 
@@ -36,6 +42,8 @@ public abstract class IcebergReadInstructions {
      * {@link Resolver#infer(InferenceInstructions)}}.
      */
     public abstract Optional<Resolver> resolver();
+
+    // todo: only relevant when resolver not set
 
     // might be some awy to pass in desired inferenc instructions; arguably, caller _might_ want to specify namer and
     // if inference should fail...
@@ -103,6 +111,28 @@ public abstract class IcebergReadInstructions {
     public abstract IcebergReadInstructions withSnapshot(Snapshot value);
 
 
+    /**
+     * If Deephaven {@link ColumnDefinition.ColumnType#Partitioning} columns should be inferred based on a
+     * {@link PartitionSpec}. This setting is only relevant when {@link #resolver()} is not set. By default, is only
+     * {@code true} when {@link #updateMode()} is {@link IcebergUpdateMode#staticMode() static}. While callers can
+     * explicitly set this to {@code true}, it is not advisable. See the caveats on
+     * {@link InferenceInstructions#spec()}.
+     */
+    @Value.Default
+    public boolean usePartitionInference() {
+        return updateMode() == IcebergUpdateMode.staticMode();
+    }
+
+    /**
+     * If column resolution should use the {@link NameMappingParser naming-mapping} fallback
+     * ({@value org.apache.iceberg.TableProperties#DEFAULT_NAME_MAPPING}) when {@link Types.NestedField#fieldId() field
+     * ids} are not present in the {@link DataFile data files}. This setting is only relevant when {@link #resolver()}
+     * is not set (when set, {@link Resolver#nameMapping()} is explicitly provided). By default, is {@code true}.
+     */
+    @Value.Default
+    public boolean useNameMapping() {
+        return true;
+    }
 
     public interface Builder {
         Builder resolver(Resolver resolver);

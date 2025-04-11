@@ -576,8 +576,8 @@ public class IcebergTableAdapter {
                 table,
                 readInstructions.resolver().orElse(null),
                 getSnapshot(readInstructions),
-                readInstructions.updateMode().updateType() == IcebergUpdateMode.IcebergUpdateType.STATIC,
-                true);
+                readInstructions.usePartitionInference(),
+                readInstructions.useNameMapping());
     }
 
     private @NotNull IcebergBaseLayout keyFinder(
