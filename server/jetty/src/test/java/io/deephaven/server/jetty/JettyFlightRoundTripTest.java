@@ -23,6 +23,7 @@ import javax.inject.Singleton;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 
@@ -37,6 +38,7 @@ public class JettyFlightRoundTripTest extends FlightMessageRoundTripTest {
             return JettyConfig.builder()
                     .port(0)
                     .tokenExpire(Duration.of(5, ChronoUnit.MINUTES))
+                    .allowedHttpMethods(Set.of("GET", "POST"))
                     .build();
         }
     }
