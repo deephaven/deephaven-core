@@ -13,13 +13,13 @@ import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.TableKey;
+import io.deephaven.engine.table.impl.locations.TableLocationProvider;
 import io.deephaven.engine.table.impl.locations.impl.StandaloneTableKey;
 import io.deephaven.engine.table.impl.locations.util.TableDataRefreshService;
 import io.deephaven.engine.table.impl.select.FunctionalColumn;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.engine.table.impl.sources.regioned.RegionedTableComponentFactoryImpl;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
-import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.iceberg.base.IcebergUtils;
 import io.deephaven.iceberg.internal.DataInstructionsProviderLoader;
@@ -515,45 +515,28 @@ public class IcebergTableAdapter {
         return table(IcebergReadInstructions.DEFAULT);
     }
 
-    /**
-     * Read a snapshot of this Iceberg table from the Iceberg catalog as a Deephaven {@link Table table}.
-     *
-     * @param readInstructions The instructions for customizations while reading the table.
-     * @return The loaded table
-     */
-    public IcebergTable table(@NotNull final IcebergReadInstructions readInstructions) {
-        final ResolverAndSnapshot ras = resolverAndSnapshot(readInstructions);
+    private IcebergTableLocationProviderBase<TableKey, IcebergTableLocationKey> provider2(
+            @NotNull final ResolverAndSnapshot ras,
+            @NotNull final IcebergReadInstructions readInstructions) {
         final Resolver resolver = ras.resolver();
-        final TableDefinition definition = resolver.definition();
         final IcebergBaseLayout keyFinder =
                 keyFinder(resolver, ras.snapshot().orElse(null), readInstructions.dataInstructions().orElse(null));
         if (readInstructions.updateMode().updateType() == IcebergUpdateMode.IcebergUpdateType.STATIC) {
-            final IcebergTableLocationProviderBase<TableKey, IcebergTableLocationKey> locationProvider =
-                    new IcebergStaticTableLocationProvider<>(
-                            StandaloneTableKey.getInstance(),
-                            keyFinder,
-                            new IcebergTableLocationFactory(),
-                            tableIdentifier);
-            return new IcebergTableImpl(
-                    definition,
-                    tableIdentifier.toString(),
-                    RegionedTableComponentFactoryImpl.INSTANCE,
-                    locationProvider,
-                    null);
+            return new IcebergStaticTableLocationProvider<>(
+                    StandaloneTableKey.getInstance(),
+                    keyFinder,
+                    new IcebergTableLocationFactory(),
+                    tableIdentifier);
         }
-
-        final UpdateSourceRegistrar updateSourceRegistrar = ExecutionContext.getContext().getUpdateGraph();
-        final IcebergTableLocationProviderBase<TableKey, IcebergTableLocationKey> locationProvider;
-
         if (readInstructions.updateMode().updateType() == IcebergUpdateMode.IcebergUpdateType.MANUAL_REFRESHING) {
-            locationProvider = new IcebergManualRefreshTableLocationProvider<>(
+            return new IcebergManualRefreshTableLocationProvider<>(
                     StandaloneTableKey.getInstance(),
                     keyFinder,
                     new IcebergTableLocationFactory(),
                     this,
                     tableIdentifier);
         } else {
-            locationProvider = new IcebergAutoRefreshTableLocationProvider<>(
+            return new IcebergAutoRefreshTableLocationProvider<>(
                     StandaloneTableKey.getInstance(),
                     keyFinder,
                     new IcebergTableLocationFactory(),
@@ -562,13 +545,40 @@ public class IcebergTableAdapter {
                     this,
                     tableIdentifier);
         }
+    }
 
-        return new IcebergTableImpl(
-                definition,
-                tableIdentifier.toString(),
-                RegionedTableComponentFactoryImpl.INSTANCE,
-                locationProvider,
-                updateSourceRegistrar);
+    public TableLocationProvider provider(@NotNull final IcebergReadInstructions readInstructions) {
+        return provider2(resolverAndSnapshot(readInstructions), readInstructions);
+    }
+
+    /**
+     * Read a snapshot of this Iceberg table from the Iceberg catalog as a Deephaven {@link Table table}.
+     *
+     * @param readInstructions The instructions for customizations while reading the table.
+     * @return The loaded table
+     */
+    public IcebergTable table(@NotNull final IcebergReadInstructions readInstructions) {
+        final ResolverAndSnapshot ras = resolverAndSnapshot(readInstructions);
+        final IcebergTableLocationProviderBase<TableKey, IcebergTableLocationKey> itlpb =
+                provider2(ras, readInstructions);
+        if (itlpb instanceof IcebergStaticTableLocationProvider) {
+            return new IcebergTableImpl(
+                    ras.resolver().definition(),
+                    tableIdentifier.toString(),
+                    RegionedTableComponentFactoryImpl.INSTANCE,
+                    itlpb,
+                    null);
+        }
+        if (itlpb instanceof IcebergManualRefreshTableLocationProvider
+                || itlpb instanceof IcebergAutoRefreshTableLocationProvider) {
+            return new IcebergTableImpl(
+                    ras.resolver().definition(),
+                    tableIdentifier.toString(),
+                    RegionedTableComponentFactoryImpl.INSTANCE,
+                    itlpb,
+                    ExecutionContext.getContext().getUpdateGraph());
+        }
+        throw new IllegalStateException("Unexpected TableLocationProvider: " + itlpb.getClass().getName());
     }
 
     private ResolverAndSnapshot resolverAndSnapshot(@NotNull final IcebergReadInstructions readInstructions) {
