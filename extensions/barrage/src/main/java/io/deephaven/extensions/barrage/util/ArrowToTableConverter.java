@@ -175,7 +175,7 @@ public class ArrowToTableConverter {
             throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, "Schema evolution not supported");
         }
 
-        final BarrageUtil.ConvertedArrowSchema result = BarrageUtil.convertArrowSchema(schema);
+        final BarrageUtil.ConvertedArrowSchema result = BarrageUtil.convertArrowSchema(schema, options);
         final BarrageTable res = BarrageTable.make(null, result, true, null);
         res.setFlat();
 

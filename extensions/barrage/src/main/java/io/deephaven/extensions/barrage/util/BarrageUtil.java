@@ -16,6 +16,7 @@ import io.deephaven.barrage.flatbuf.BarrageSnapshotRequest;
 import io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest;
 import io.deephaven.base.ArrayUtil;
 import io.deephaven.base.ClassUtil;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.ChunkType;
@@ -61,6 +62,7 @@ import org.apache.arrow.flatbuf.KeyValue;
 import org.apache.arrow.flatbuf.Message;
 import org.apache.arrow.util.Collections2;
 import org.apache.arrow.vector.PeriodDuration;
+import org.apache.arrow.vector.types.IntervalUnit;
 import org.apache.arrow.vector.types.TimeUnit;
 import org.apache.arrow.vector.types.Types;
 import org.apache.arrow.vector.types.pojo.ArrowType;
@@ -83,6 +85,7 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.Period;
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Collection;
@@ -132,6 +135,12 @@ public class BarrageUtil {
      */
     public static final ArrowType.Timestamp NANO_SINCE_EPOCH_TYPE =
             new ArrowType.Timestamp(TimeUnit.NANOSECOND, "UTC");
+
+    /**
+     * By default we'll use nanosecond resolution for Duration columns.
+     */
+    public static final ArrowType.Duration NANO_DURATION_TYPE =
+            new ArrowType.Duration(TimeUnit.NANOSECOND);
 
     /**
      * The name of the attribute that indicates that a table is flat.
@@ -234,15 +243,20 @@ public class BarrageUtil {
      * These are the types that get special encoding but are otherwise not primitives. TODO (core#58): add custom
      * barrage serialization/deserialization support
      */
-    private static final Set<Class<?>> supportedTypes = new HashSet<>(Collections2.<Class<?>>asImmutableList(
+    @SuppressWarnings("unchecked")
+    private static final Set<Class<?>> supportedTypes = new HashSet<>(Collections2.asImmutableList(
             BigDecimal.class,
             BigInteger.class,
-            String.class,
-            Instant.class,
             Boolean.class,
+            Duration.class,
+            Instant.class,
             LocalDate.class,
             LocalTime.class,
-            Schema.class));
+            Period.class,
+            PeriodDuration.class,
+            Schema.class,
+            String.class,
+            ZonedDateTime.class));
 
     /**
      * Create a subscription request payload to be sent via DoExchange.
@@ -547,7 +561,7 @@ public class BarrageUtil {
         final Map<String, Field> fieldMap = new LinkedHashMap<>();
 
         final Function<ColumnDefinition<?>, Field> fieldFor = (final ColumnDefinition<?> column) -> {
-            final Field field = fieldMap.get(column.getName());
+            Field field = fieldMap.get(column.getName());
             final String name = column.getName();
             Class<?> dataType = column.getDataType();
             Class<?> componentType = column.getComponentType();
@@ -600,28 +614,26 @@ public class BarrageUtil {
                 putMetadata(metadata, "inputtable.isKey", inputTableUpdater.getKeyNames().contains(name) + "");
             }
 
-            final Class<?> innerComponentType;
-            if (columnsAsList) {
-                innerComponentType = componentType;
-                componentType = dataType;
-                dataType = Array.newInstance(dataType, 0).getClass();
-            } else {
-                innerComponentType = componentType == null ? null : componentType.getComponentType();
-            }
-
             if (field != null) {
                 final FieldType origType = field.getFieldType();
                 // user defined metadata should override the default metadata
                 metadata.putAll(field.getMetadata());
                 final FieldType newType =
                         new FieldType(origType.isNullable(), origType.getType(), origType.getDictionary(), metadata);
-                return new Field(field.getName(), newType, field.getChildren());
+                field = new Field(field.getName(), newType, field.getChildren());
+            } else if (Vector.class.isAssignableFrom(dataType)) {
+                field = arrowFieldForVectorType(name, dataType, componentType, metadata);
+            } else {
+                field = arrowFieldFor(name, dataType, componentType, metadata, columnsAsList);
             }
 
-            if (Vector.class.isAssignableFrom(dataType)) {
-                return arrowFieldForVectorType(name, dataType, componentType, metadata);
+            if (columnsAsList) {
+                final boolean nullable = false;
+                final FieldType wrappedType =
+                        new FieldType(nullable, Types.MinorType.LIST.getType(), null, field.getMetadata());
+                field = new Field(field.getName(), wrappedType, Collections.singletonList(field));
             }
-            return arrowFieldFor(name, dataType, componentType, innerComponentType, metadata, columnsAsList);
+            return field;
         };
 
         if (wireFormatSpecified) {
@@ -848,18 +860,24 @@ public class BarrageUtil {
         }
     }
 
-    public static TableDefinition convertTableDefinition(final ExportedTableCreationResponse response) {
+    public static TableDefinition convertTableDefinition(@NotNull final ExportedTableCreationResponse response) {
         return convertArrowSchema(SchemaHelper.flatbufSchema(response)).tableDef;
     }
 
-    public static ConvertedArrowSchema convertArrowSchema(final ExportedTableCreationResponse response) {
+    public static ConvertedArrowSchema convertArrowSchema(@NotNull final ExportedTableCreationResponse response) {
         return convertArrowSchema(SchemaHelper.flatbufSchema(response));
     }
 
+    public static ConvertedArrowSchema convertArrowSchema(@NotNull final org.apache.arrow.flatbuf.Schema schema) {
+        return convertArrowSchema(schema, null);
+    }
+
     public static ConvertedArrowSchema convertArrowSchema(
-            final org.apache.arrow.flatbuf.Schema schema) {
+            @NotNull final org.apache.arrow.flatbuf.Schema schema,
+            @Nullable final BarrageOptions options) {
         return convertArrowSchema(
                 Schema.convertSchema(schema),
+                options,
                 schema.fieldsLength(),
                 i -> Field.convertField(schema.fields(i)),
                 i -> visitor -> {
@@ -882,8 +900,15 @@ public class BarrageUtil {
     }
 
     public static ConvertedArrowSchema convertArrowSchema(final Schema schema) {
+        return convertArrowSchema(schema, null);
+    }
+
+    public static ConvertedArrowSchema convertArrowSchema(
+            final Schema schema,
+            final BarrageOptions options) {
         return convertArrowSchema(
                 schema,
+                options,
                 schema.getFields().size(),
                 i -> schema.getFields().get(i),
                 i -> visitor -> {
@@ -893,15 +918,16 @@ public class BarrageUtil {
     }
 
     private static ConvertedArrowSchema convertArrowSchema(
-            final Schema schema,
+            @NotNull final Schema schema,
+            @Nullable final BarrageOptions options,
             final int numColumns,
-            final IntFunction<Field> getField,
-            final IntFunction<Consumer<BiConsumer<String, String>>> columnMetadataVisitor,
-            final Consumer<BiConsumer<String, String>> tableMetadataVisitor) {
+            @NotNull final IntFunction<Field> getField,
+            @NotNull final IntFunction<Consumer<BiConsumer<String, String>>> columnMetadataVisitor,
+            @NotNull final Consumer<BiConsumer<String, String>> tableMetadataVisitor) {
         final ColumnDefinition<?>[] columns = new ColumnDefinition[numColumns];
 
         for (int i = 0; i < numColumns; ++i) {
-            final Field field = getField.apply(i);
+            Field field = getField.apply(i);
             final String origName = field.getName();
             final String name = NameValidator.legalizeColumnName(origName);
             final MutableObject<Class<?>> type = new MutableObject<>();
@@ -926,6 +952,9 @@ public class BarrageUtil {
             });
 
             // this has side effects such as type validation; must call even if dest type is well known
+            if (options != null && options.columnsAsList()) {
+                field = field.getChildren().get(0);
+            }
             Class<?> defaultType = getDefaultType(field, type.getValue());
 
             if (type.getValue() == null) {
@@ -940,7 +969,21 @@ public class BarrageUtil {
             columns[i] = ColumnDefinition.fromGenericType(name, type.getValue(), componentType.getValue());
         }
 
-        final ConvertedArrowSchema result = new ConvertedArrowSchema(TableDefinition.of(columns), schema);
+        final Schema resultSchema;
+        if (options != null && !options.columnsAsList()) {
+            resultSchema = schema;
+        } else {
+            // must unwrap each column's list wrapper
+            final List<Field> unwrappedFields = new ArrayList<>(numColumns);
+            for (final Field wrappedCol : schema.getFields()) {
+                Assert.eq(wrappedCol.getType().getTypeID(), "wrappedCol.getType().getTypeID()",
+                        ArrowType.ArrowTypeID.List, "ArrowType.ArrowTypeID.List");
+                final Field realCol = wrappedCol.getChildren().get(0);
+                unwrappedFields.add(new Field(wrappedCol.getName(), realCol.getFieldType(), realCol.getChildren()));
+            }
+            resultSchema = new Schema(unwrappedFields, schema.getCustomMetadata());
+        }
+        final ConvertedArrowSchema result = new ConvertedArrowSchema(TableDefinition.of(columns), resultSchema);
 
         final HashMap<String, String> attributeTypeMap = new HashMap<>();
         tableMetadataVisitor.accept((key, value) -> {
@@ -1020,7 +1063,6 @@ public class BarrageUtil {
             final String name,
             final Class<?> type,
             final Class<?> componentType,
-            @Nullable final Class<?> innerComponentType,
             final Map<String, String> metadata,
             final boolean columnAsList) {
         List<Field> children = Collections.emptyList();
@@ -1029,8 +1071,7 @@ public class BarrageUtil {
         if (fieldType.getType().isComplex()) {
             if (type.isArray() || Vector.class.isAssignableFrom(type)) {
                 children = Collections.singletonList(arrowFieldFor(
-                        "", componentType, innerComponentType,
-                        innerComponentType == null ? null : innerComponentType.getComponentType(),
+                        "", componentType, componentType == null ? null : componentType.getComponentType(),
                         Collections.emptyMap(),
                         false));
             } else {
@@ -1050,7 +1091,6 @@ public class BarrageUtil {
                 columnDefinition.getName(),
                 columnDefinition.getDataType(),
                 componentType,
-                componentType == null ? null : componentType.getComponentType(),
                 metadata);
     }
 
@@ -1058,9 +1098,8 @@ public class BarrageUtil {
             final String name,
             final Class<?> type,
             final Class<?> componentType,
-            final Class<?> innerComponentType,
             final Map<String, String> metadata) {
-        final Field field = arrowFieldFor(name, type, componentType, innerComponentType, metadata, false);
+        final Field field = arrowFieldFor(name, type, componentType, metadata, false);
         final FlatBufferBuilder builder = new FlatBufferBuilder();
         builder.finish(field.getField(builder));
         return org.apache.arrow.flatbuf.Field.getRootAsField(builder.dataBuffer());
@@ -1121,6 +1160,15 @@ public class BarrageUtil {
                 if (type == Instant.class || type == ZonedDateTime.class) {
                     return NANO_SINCE_EPOCH_TYPE;
                 }
+                if (type == Duration.class) {
+                    return NANO_DURATION_TYPE;
+                }
+                if (type == Period.class) {
+                    return new ArrowType.Interval(IntervalUnit.YEAR_MONTH);
+                }
+                if (type == PeriodDuration.class) {
+                    return new ArrowType.Interval(IntervalUnit.MONTH_DAY_NANO);
+                }
 
                 // everything gets converted to a string
                 return Types.MinorType.VARCHAR.getType(); // aka Utf8
@@ -1136,10 +1184,9 @@ public class BarrageUtil {
         final FieldType fieldType = new FieldType(true, Types.MinorType.LIST.getType(), null, metadata);
         Class<?> componentType = VectorExpansionKernel.getComponentType(type, knownComponentType);
         Class<?> ic = componentType == null ? null : componentType.getComponentType();
-        Class<?> ic2 = ic == null ? null : ic.getComponentType();
 
         final List<Field> children = Collections.singletonList(arrowFieldFor(
-                "", componentType, ic, ic2, Collections.emptyMap(), false));
+                "", componentType, ic, Collections.emptyMap(), false));
 
         return new Field(name, fieldType, children);
     }
