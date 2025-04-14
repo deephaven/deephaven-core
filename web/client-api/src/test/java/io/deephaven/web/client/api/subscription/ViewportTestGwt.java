@@ -10,6 +10,7 @@ import elemental2.promise.Promise;
 import io.deephaven.web.client.api.AbstractAsyncGwtTestCase;
 import io.deephaven.web.client.api.Column;
 import io.deephaven.web.client.api.CustomColumn;
+import io.deephaven.web.client.api.CustomColumnOptions;
 import io.deephaven.web.client.api.DateWrapper;
 import io.deephaven.web.client.api.Format;
 import io.deephaven.web.client.api.JsRangeSet;
@@ -657,7 +658,7 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
                                     .of("Timestamp=epochNanosToInstant((i + 1740000000) * 1_000_000_000)"),
                             JsTable.CustomColumnArgUnionType
                                     .of(new CustomColumn("I", CustomColumn.TYPE_FORMAT_COLOR, "background(GREEN)",
-                                            new CustomColumn.CustomColumOptions())),
+                                            new CustomColumnOptions())),
                             JsTable.CustomColumnArgUnionType
                                     .of(new CustomColumn("Str", CustomColumn.TYPE_FORMAT_NUMBER, "`$###,##0.00`",
                                             null)),
@@ -729,15 +730,15 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
                                     .of("Timestamp=epochNanosToInstant((i + 1740000000) * 1_000_000_000)"),
                             JsTable.CustomColumnArgUnionType
                                     .of(new CustomColumn("I", CustomColumn.TYPE_FORMAT_COLOR, "background(GREEN)",
-                                            new CustomColumn.CustomColumOptions())),
+                                            new CustomColumnOptions())),
                             JsTable.CustomColumnArgUnionType
                                     .of(new CustomColumn("Str", CustomColumn.TYPE_FORMAT_NUMBER, "`$###,##0.00`",
-                                            new CustomColumn.CustomColumOptions())),
+                                            new CustomColumnOptions())),
                             JsTable.CustomColumnArgUnionType.of(new CustomColumn("Timestamp",
                                     CustomColumn.TYPE_FORMAT_DATE, "`HH-mm-ss-SSSSSSSSS`",
-                                    new CustomColumn.CustomColumOptions())),
+                                    new CustomColumnOptions())),
                             JsTable.CustomColumnArgUnionType.of(
-                                    Column.formatRowColor("background(RED)", new CustomColumn.CustomColumOptions()))));
+                                    Column.formatRowColor("background(RED)", new CustomColumnOptions()))));
                     // Wait for this to resolve, part of DH-18634 is that already running tables behave differently
                     return assertEventFiresOnce(t, JsTable.EVENT_CUSTOMCOLUMNSCHANGED, 2025).then(table -> {
                         Column iColumn = table.findColumn("I");
@@ -803,12 +804,12 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
                                     .of("Timestamp=epochNanosToInstant((i + 1740000000) * 1_000_000_000)"),
                             JsTable.CustomColumnArgUnionType
                                     .of(new CustomColumn("Str", CustomColumn.TYPE_FORMAT_NUMBER, "`$###,##0.00`",
-                                            new CustomColumn.CustomColumOptions())),
+                                            new CustomColumnOptions())),
                             JsTable.CustomColumnArgUnionType.of(new CustomColumn("Timestamp",
                                     CustomColumn.TYPE_FORMAT_DATE, "`HH-mm-ss-SSSSSSSSS`",
-                                    new CustomColumn.CustomColumOptions())),
+                                    new CustomColumnOptions())),
                             JsTable.CustomColumnArgUnionType.of(
-                                    Column.formatRowColor("background(RED)", new CustomColumn.CustomColumOptions()))));
+                                    Column.formatRowColor("background(RED)", new CustomColumnOptions()))));
                     // Wait for this to resolve, part of DH-18634 is that already running tables behave differently
                     return assertEventFiresOnce(t, JsTable.EVENT_CUSTOMCOLUMNSCHANGED, 2025).then(table -> {
                         Column iColumn = table.findColumn("I");

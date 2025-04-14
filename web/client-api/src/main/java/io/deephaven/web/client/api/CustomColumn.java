@@ -6,9 +6,9 @@ package io.deephaven.web.client.api;
 import io.deephaven.web.shared.data.CustomColumnDescriptor;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsMethod;
-import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
+import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(namespace = "dh")
@@ -18,22 +18,11 @@ public class CustomColumn {
             TYPE_FORMAT_DATE = "FORMAT_DATE",
             TYPE_NEW = "NEW";
 
-    public static final String ROLLUP_NODE_TYPE_AGGREGATED = "aggregated",
-            ROLLUP_NODE_TYPE_CONSTITUENT = "constituent";
-
     // Copied from ColumnFormattingValues
     protected static final String ROW_FORMAT_NAME = "__ROW";
     private static final String TABLE_STYLE_FORMAT_SUFFIX = "__TABLE_STYLE_FORMAT";
     private static final String TABLE_NUMBER_FORMAT_SUFFIX = "__TABLE_NUMBER_FORMAT";
     private static final String TABLE_DATE_FORMAT_SUFFIX = "__TABLE_DATE_FORMAT";
-
-    @JsType(isNative = true, namespace = JsPackage.GLOBAL, name = "Object")
-    public static class CustomColumOptions {
-        /**
-         * Should be one of ROLLUP_NODE_TYPE_AGGREGATED / ROLLUP_NODE_TYPE_CONSTITUENT
-         */
-        public String rollupNodeType;
-    }
 
     /**
      * Get the suffix to append to the name for the provided type
@@ -61,14 +50,20 @@ public class CustomColumn {
     private final String name;
     private final String type;
     private final String expression;
-    private final CustomColumOptions options;
+    private final CustomColumnOptions options;
 
     @JsIgnore
-    public CustomColumn(String name, String type, String expression, CustomColumOptions options) {
+    public CustomColumn(String name, String type, String expression, Object options) {
         this.name = name;
         this.type = type;
         this.expression = expression;
-        this.options = options;
+        if (options instanceof CustomColumnOptions) {
+            this.options = (CustomColumnOptions) options;
+        } else if (options == null) {
+            this.options = new CustomColumnOptions();
+        } else {
+            this.options = new CustomColumnOptions(Js.cast(options));
+        }
     }
 
     @JsIgnore
@@ -88,7 +83,7 @@ public class CustomColumn {
             name = descriptorName;
             type = TYPE_NEW;
         }
-        options = new CustomColumOptions();
+        options = new CustomColumnOptions();
         // Substring from after the name and equals sign
         expression = descriptorExpression.substring(descriptorName.length() + 1);
     }
@@ -104,9 +99,15 @@ public class CustomColumn {
         expression = source.getAsAny("expression").asString();
 
         // We expect the options to be provided as part of a top-level map, not nested into a separate object
-        options = new CustomColumOptions();
-        if (source.has("rollupNodeType")) {
-            options.rollupNodeType = source.getAsAny("rollupNodeType").asString();
+        if (source.has("options")) {
+            Object options = source.get("options");
+            if (options instanceof CustomColumnOptions) {
+                this.options = (CustomColumnOptions) options;
+            } else {
+                this.options = new CustomColumnOptions(Js.cast(options));
+            }
+        } else {
+            options = new CustomColumnOptions();
         }
     }
 
@@ -153,7 +154,7 @@ public class CustomColumn {
      * @return CustomColumOptions
      */
     @JsProperty
-    public CustomColumOptions getOptions() {
+    public CustomColumnOptions getOptions() {
         return options;
     }
 
@@ -175,6 +176,6 @@ public class CustomColumn {
         if (parts.length != 2) {
             throw new IllegalArgumentException("Invalid column info: " + columnInfo);
         }
-        return new CustomColumn(parts[0], TYPE_NEW, parts[1], new CustomColumOptions());
+        return new CustomColumn(parts[0], TYPE_NEW, parts[1], new CustomColumnOptions());
     }
 }
