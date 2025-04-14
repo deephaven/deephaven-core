@@ -970,7 +970,7 @@ public class BarrageUtil {
         }
 
         final Schema resultSchema;
-        if (options != null && !options.columnsAsList()) {
+        if (options == null || !options.columnsAsList()) {
             resultSchema = schema;
         } else {
             // must unwrap each column's list wrapper
