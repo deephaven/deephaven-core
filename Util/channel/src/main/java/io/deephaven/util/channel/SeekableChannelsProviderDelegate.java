@@ -20,8 +20,13 @@ public class SeekableChannelsProviderDelegate implements SeekableChannelsProvide
     }
 
     @Override
-    public SeekableChannelContext makeContext() {
-        return delegate.makeContext();
+    public SeekableChannelContext makeReadContext() {
+        return delegate.makeReadContext();
+    }
+
+    @Override
+    public WriteContext makeWriteContext() {
+        return delegate.makeWriteContext();
     }
 
     @Override
@@ -46,8 +51,11 @@ public class SeekableChannelsProviderDelegate implements SeekableChannelsProvide
     }
 
     @Override
-    public CompletableOutputStream getOutputStream(@NotNull URI uri, int bufferSizeHint) throws IOException {
-        return delegate.getOutputStream(uri, bufferSizeHint);
+    public CompletableOutputStream getOutputStream(
+            @NotNull final WriteContext channelContext,
+            @NotNull URI uri,
+            int bufferSizeHint) throws IOException {
+        return delegate.getOutputStream(channelContext, uri, bufferSizeHint);
     }
 
     @Override
@@ -66,8 +74,8 @@ public class SeekableChannelsProviderDelegate implements SeekableChannelsProvide
     }
 
     @Override
-    public SeekableChannelContext makeSingleUseContext() {
-        return delegate.makeSingleUseContext();
+    public SeekableChannelContext makeSingleUseReadContext() {
+        return delegate.makeSingleUseReadContext();
     }
 
     @Override

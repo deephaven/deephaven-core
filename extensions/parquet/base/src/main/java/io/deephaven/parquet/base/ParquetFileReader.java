@@ -76,7 +76,7 @@ public class ParquetFileReader {
             rootURI = parquetFileURI;
         }
         try (
-                final SeekableChannelContext context = channelsProvider.makeSingleUseContext();
+                final SeekableChannelContext context = channelsProvider.makeSingleUseReadContext();
                 final SeekableByteChannel ch = channelsProvider.getReadChannel(context, parquetFileURI)) {
             final int footerLength = positionToFileMetadata(parquetFileURI, ch);
             try (final InputStream in = channelsProvider.getInputStream(ch, footerLength)) {
