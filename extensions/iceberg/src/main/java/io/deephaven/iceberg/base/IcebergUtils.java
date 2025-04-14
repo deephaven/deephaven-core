@@ -36,6 +36,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public final class IcebergUtils {
@@ -228,6 +229,9 @@ public final class IcebergUtils {
         }
     }
 
+    private static final Set<Class<?>> SUPPORTED_PARTITIONING_TYPES =
+            Set.of(Boolean.class, double.class, float.class, int.class, long.class, String.class, LocalDate.class);
+
     /**
      * Check that all the partitioning columns from the partition spec are of supported types and are present in the
      * Table Definition.
@@ -235,6 +239,16 @@ public final class IcebergUtils {
     public static void verifyPartitioningColumns(
             final PartitionSpec tablePartitionSpec,
             final TableDefinition tableDefinition) {
+        final List<String> partitioningColumnNamesFromDefinition = tableDefinition.getColumnStream()
+                .filter(ColumnDefinition::isPartitioning)
+                .peek(columnDefinition -> {
+                    if (!SUPPORTED_PARTITIONING_TYPES.contains(columnDefinition.getDataType())) {
+                        throw new IllegalArgumentException("Unsupported partitioning column type " +
+                                columnDefinition.getDataType() + " for column " + columnDefinition.getName());
+                    }
+                })
+                .map(ColumnDefinition::getName)
+                .collect(Collectors.toList());
         final List<PartitionField> partitionFieldsFromSpec = tablePartitionSpec.fields();
         partitionFieldsFromSpec.forEach(partitionField -> {
             if (!partitionField.transform().isIdentity()) {
@@ -244,10 +258,6 @@ public final class IcebergUtils {
                         " not support writing to iceberg tables with non-identity transforms");
             }
         });
-        final List<String> partitioningColumnNamesFromDefinition = tableDefinition.getColumnStream()
-                .filter(ColumnDefinition::isPartitioning)
-                .map(ColumnDefinition::getName)
-                .collect(Collectors.toList());
         if (partitionFieldsFromSpec.size() != partitioningColumnNamesFromDefinition.size()) {
             throw new IllegalArgumentException("Partition spec contains " + partitionFieldsFromSpec.size() +
                     " fields, but the table definition contains " + partitioningColumnNamesFromDefinition.size()

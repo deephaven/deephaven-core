@@ -52,6 +52,7 @@ import org.junit.jupiter.api.io.TempDir;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -789,7 +790,7 @@ public abstract class SqliteCatalogBase {
     }
 
     @Test
-    void testPartitionedAppendWithAllPartitioningTypes() {
+    void testPartitionedAppendWithAllSupportedPartitioningTypes() {
         final TableDefinition definition = TableDefinition.of(
                 ColumnDefinition.ofString("StringPC").withPartitioning(),
                 ColumnDefinition.ofBoolean("BooleanPC").withPartitioning(),
@@ -836,6 +837,26 @@ public abstract class SqliteCatalogBase {
                 "LocalDatePC = LocalDate.parse(`2023-10-01`)")
                 .moveColumns(7, "data");
         assertTableEquals(expected, fromIceberg);
+    }
+
+    @Test
+    void testPartitionedAppendWithUnupportedPartitioningTypes() {
+        final TableDefinition definition = TableDefinition.of(
+                ColumnDefinition.of("InstantPC", Type.find(Instant.class)).withPartitioning(),
+                ColumnDefinition.ofInt("data"));
+
+        final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
+        final IcebergTableAdapter tableAdapter = catalogAdapter.createTable(tableIdentifier, definition);
+        final Table source = TableTools.newTable(
+                intCol("data", 15, 0, 32, 33, 19));
+        try {
+            tableAdapter.tableWriter(writerOptionsBuilder()
+                    .tableDefinition(definition)
+                    .build());
+            failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
+        } catch (IllegalArgumentException e) {
+            assertThat(e.getMessage()).contains("Unsupported partitioning column type class java.time.Instant ");
+        }
     }
 
     @Test
