@@ -1486,7 +1486,12 @@ public class BarrageChunkFactoryTest {
     protected enum TestRPCMethod {
         DO_GET, DO_EXCHANGE_NO_FILTER, HEAD, TAIL, COLUMNS_AS_LIST;
 
-        boolean isPreviewEnabled() {return switch(this){case HEAD,TAIL->true;default->false;};}
+        boolean isPreviewEnabled() {
+            return switch (this) {
+                case HEAD,TAIL -> true;
+                default -> false;
+            };
+        }
 
         private byte[] getOptionsMetadata(final boolean reading, final int ticket) {
             if (!reading && this == TestRPCMethod.COLUMNS_AS_LIST) {
