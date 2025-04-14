@@ -1086,11 +1086,10 @@ public class BarrageUtil {
     public static org.apache.arrow.flatbuf.Field flatbufFieldFor(
             final ColumnDefinition<?> columnDefinition,
             final Map<String, String> metadata) {
-        final Class<?> componentType = columnDefinition.getComponentType();
         return flatbufFieldFor(
                 columnDefinition.getName(),
                 columnDefinition.getDataType(),
-                componentType,
+                columnDefinition.getComponentType(),
                 metadata);
     }
 
@@ -1182,11 +1181,11 @@ public class BarrageUtil {
 
         // Vectors are always lists.
         final FieldType fieldType = new FieldType(true, Types.MinorType.LIST.getType(), null, metadata);
-        Class<?> componentType = VectorExpansionKernel.getComponentType(type, knownComponentType);
-        Class<?> ic = componentType == null ? null : componentType.getComponentType();
+        final Class<?> componentType = VectorExpansionKernel.getComponentType(type, knownComponentType);
+        final Class<?> innerComponentType = componentType == null ? null : componentType.getComponentType();
 
         final List<Field> children = Collections.singletonList(arrowFieldFor(
-                "", componentType, ic, Collections.emptyMap(), false));
+                "", componentType, innerComponentType, Collections.emptyMap(), false));
 
         return new Field(name, fieldType, children);
     }

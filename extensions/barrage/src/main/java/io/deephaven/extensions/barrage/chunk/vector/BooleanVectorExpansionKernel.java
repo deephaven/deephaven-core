@@ -118,9 +118,6 @@ public class BooleanVectorExpansionKernel implements VectorExpansionKernel<Objec
             if (rowLen == 0) {
                 // noinspection unchecked
                 result.set(outOffset + ii, (ObjectVector<Boolean>) ZERO_LENGTH_VECTOR);
-            } else if (rowLen < 0) {
-                // note that this may occur when data sent from a native arrow client is null
-                result.set(outOffset + ii, null);
             } else {
                 final Boolean[] row = new Boolean[rowLen];
                 for (int jj = 0; jj < rowLen; ++jj) {
