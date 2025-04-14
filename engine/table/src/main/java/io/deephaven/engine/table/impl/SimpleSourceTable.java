@@ -41,7 +41,7 @@ public class SimpleSourceTable extends SourceTable<SimpleSourceTable> {
 
     @Override
     protected SimpleSourceTable copy() {
-        final SimpleSourceTable result = newInstance(definition, description, componentFactory, locationProvider,
+        final SimpleSourceTable result = newInstance(definition, getDescription(), componentFactory, locationProvider,
                 updateSourceRegistrar);
         LiveAttributeMap.copyAttributes(this, result, ak -> true);
         return result;
@@ -53,14 +53,14 @@ public class SimpleSourceTable extends SourceTable<SimpleSourceTable> {
             // Nothing changed - we have the same columns in the same order.
             return this;
         }
-        return newInstance(newDefinition, description + "-retainColumns", componentFactory, locationProvider,
+        return newInstance(newDefinition, getDescription() + "-retainColumns", componentFactory, locationProvider,
                 updateSourceRegistrar);
     }
 
     @Override
     protected final Table redefine(TableDefinition newDefinitionExternal, TableDefinition newDefinitionInternal,
             SelectColumn[] viewColumns) {
-        return new DeferredViewTable(newDefinitionExternal, description + "-redefined",
+        return new DeferredViewTable(newDefinitionExternal, getDescription() + "-redefined",
                 new TableReference(redefine(newDefinitionInternal)), new String[0], viewColumns, null);
     }
 }

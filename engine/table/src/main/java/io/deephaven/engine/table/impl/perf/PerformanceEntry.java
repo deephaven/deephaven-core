@@ -40,6 +40,7 @@ public class PerformanceEntry extends BasePerformanceEntry implements TableListe
     private long collections;
     private long collectionTimeMs;
 
+    private boolean loggedOnce;
     private final RuntimeMemory.Sample startSample;
     private final RuntimeMemory.Sample endSample;
 
@@ -58,6 +59,7 @@ public class PerformanceEntry extends BasePerformanceEntry implements TableListe
         minFreeMemory = Long.MAX_VALUE;
         collections = 0;
         collectionTimeMs = 0;
+        loggedOnce = false;
     }
 
     public final void onUpdateStart() {
@@ -217,6 +219,10 @@ public class PerformanceEntry extends BasePerformanceEntry implements TableListe
      * @return if this nugget is significant enough to be logged, otherwise it is aggregated into the small update entry
      */
     boolean shouldLogEntryInterval() {
+        if (UpdatePerformanceTracker.LOG_ALL_ENTRIES_ONCE && !loggedOnce) {
+            loggedOnce = true;
+            return true;
+        }
         return invocationCount > 0 && UpdatePerformanceTracker.LOG_THRESHOLD.shouldLog(getUsageNanos());
     }
 

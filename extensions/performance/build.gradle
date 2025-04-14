@@ -8,6 +8,7 @@ dependencies {
     implementation project(':engine-table')
     implementation project(':Plot')
     implementation libs.guava
+    implementation libs.nidi.graphviz.java
     compileOnly libs.autoservice
     annotationProcessor libs.autoservice.compiler
     implementation libs.groovy

@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.table.impl;
 
+import gnu.trove.list.array.TLongArrayList;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.context.ExecutionContext;
@@ -11,6 +12,8 @@ import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.table.TableListener;
 import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
 import io.deephaven.engine.table.impl.perf.PerformanceEntry;
+import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
+import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import io.deephaven.engine.table.impl.util.AsyncClientErrorNotifier;
 import io.deephaven.engine.table.impl.util.StepUpdater;
 import io.deephaven.engine.updategraph.AbstractNotification;
@@ -83,7 +86,17 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
         this.dependencies = dependencies;
         this.listenerDescription = listenerDescription;
         this.result = result;
-        this.entry = PeriodicUpdateGraph.createUpdatePerformanceEntry(this.updateGraph, listenerDescription);
+        this.entry = PeriodicUpdateGraph.createUpdatePerformanceEntry(this.updateGraph, listenerDescription, () -> {
+            final TLongArrayList parentList = new TLongArrayList();
+            recorders.forEach(rec -> {
+                if (rec.getParent() instanceof BaseTable) {
+                    final BaseTable<?> parentBase = (BaseTable<?>) (rec.getParent());
+                    parentBase.parentPerformanceEntryIds().forEach(parentList::add);
+                }
+            });
+            return parentList.toArray();
+        });
+
         this.logPrefix = System.identityHashCode(this) + " " + listenerDescription + " Merged Listener: ";
     }
 
@@ -94,6 +107,11 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
     @Override
     public UpdateGraph getUpdateGraph() {
         return updateGraph;
+    }
+
+    @Nullable
+    public PerformanceEntry getEntry() {
+        return entry;
     }
 
     protected Iterable<? extends ListenerRecorder> getRecorders() {

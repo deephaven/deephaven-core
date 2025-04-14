@@ -671,6 +671,11 @@ public class TableTools {
             {
                 setFlat();
             }
+
+            @Override
+            public String getDescription() {
+                return "emptyTable(" + size + ")";
+            }
         };
     }
 
