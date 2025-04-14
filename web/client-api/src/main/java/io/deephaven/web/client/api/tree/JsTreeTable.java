@@ -14,6 +14,7 @@ import elemental2.dom.AbortController;
 import elemental2.dom.DomGlobal;
 import elemental2.promise.IThenable;
 import elemental2.promise.Promise;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.Hierarchicaltable_pb;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.hierarchicaltable_pb.*;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.hierarchicaltable_pb_service.UnaryResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.*;
@@ -54,9 +55,6 @@ import jsinterop.base.JsPropertyMap;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
-import static io.deephaven.web.client.api.CustomColumn.ROLLUP_NODE_TYPE_AGGREGATED;
-import static io.deephaven.web.client.api.CustomColumn.ROLLUP_NODE_TYPE_CONSTITUENT;
 
 /**
  * Behaves like a {@link JsTable} externally, but data, state, and viewports are managed by an entirely different
@@ -333,21 +331,24 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
     }
 
     private UpdateViewRequest adaptCustomColumn(CustomColumn column) {
-        final String rawString = column.getName() + "=" + column.getExpression();
         final Selectable columnSpec = new Selectable();
-        columnSpec.setRaw(rawString);
+        columnSpec.setRaw(column.toString());
 
         final UpdateViewRequest request = new UpdateViewRequest();
         request.setColumnSpec(columnSpec);
-        final int nodeType;
-        if (column.getOptions().rollupNodeType.equals(ROLLUP_NODE_TYPE_AGGREGATED)) {
-            nodeType = RollupNodeType.AGGREGATED.ordinal();
-        } else if (column.getOptions().rollupNodeType.equals(ROLLUP_NODE_TYPE_CONSTITUENT)) {
-            nodeType = RollupNodeType.CONSTITUENT.ordinal();
-        } else {
-            nodeType = RollupNodeType.UNSPECIFIED.ordinal();
+        if (column.getOptions().rollupNodeType != null) {
+            switch (column.getOptions().rollupNodeType) {
+                case CustomColumnOptions.RollupNodeType.ROLLUP_NODE_TYPE_AGGREGATED:
+                    request.setNodeType(Hierarchicaltable_pb.RollupNodeType.getAGGREGATED());
+                    break;
+                case CustomColumnOptions.RollupNodeType.ROLLUP_NODE_TYPE_CONSTITUENT:
+                    request.setNodeType(Hierarchicaltable_pb.RollupNodeType.getCONSTITUENT());
+                    break;
+                default:
+                    throw new IllegalArgumentException(
+                            "Unknown rollup node type: " + column.getOptions().rollupNodeType);
+            }
         }
-        request.setNodeType(nodeType);
         return request;
     }
 

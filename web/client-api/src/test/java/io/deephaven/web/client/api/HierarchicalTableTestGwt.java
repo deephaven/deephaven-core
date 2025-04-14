@@ -518,12 +518,13 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
                     return table.rollup(cfg).then(rollupTable -> {
 
                         JsPropertyMap<Object> col0 =
-                                JsPropertyMap.of("name", "YPlusAgg", "expression", "Y + 1", "type", "long");
-                        col0.set("rollupNodeType", "aggregated");
+                                JsPropertyMap.of("name", "YPlusAgg", "expression", "Y + 1", "type",
+                                        CustomColumn.TYPE_NEW);
+                        col0.set("options", JsPropertyMap.of("rollupNodeType", "aggregated"));
 
-                        CustomColumn.CustomColumOptions col1Options = new CustomColumn.CustomColumOptions();
+                        CustomColumnOptions col1Options = new CustomColumnOptions();
                         col1Options.rollupNodeType = "constituent";
-                        CustomColumn col1 = new CustomColumn("YPlusConst", "int", "Y + 1", col1Options);
+                        CustomColumn col1 = new CustomColumn("YPlusConst", CustomColumn.TYPE_NEW, "Y + 1", col1Options);
 
                         JsArray<JsTable.CustomColumnArgUnionType> columns = new JsArray<>(
                                 JsTable.CustomColumnArgUnionType.of(col0),
