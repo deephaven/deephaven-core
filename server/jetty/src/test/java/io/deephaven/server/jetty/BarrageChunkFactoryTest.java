@@ -1488,7 +1488,7 @@ public class BarrageChunkFactoryTest {
 
         boolean isPreviewEnabled() {
             return switch (this) {
-                case HEAD,TAIL -> true;
+                case HEAD, TAIL -> true;
                 default -> false;
             };
         }
