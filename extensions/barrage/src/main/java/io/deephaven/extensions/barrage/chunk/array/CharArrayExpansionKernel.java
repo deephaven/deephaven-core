@@ -97,16 +97,6 @@ public class CharArrayExpansionKernel implements ArrayExpansionKernel<char[]> {
             @Nullable final WritableChunk<A> outChunk,
             final int outOffset,
             final int totalRows) {
-        if (lengths != null && lengths.size() == 0
-                || lengths == null && offsets != null && offsets.size() <= 1) {
-            if (outChunk != null) {
-                return outChunk.asWritableObjectChunk();
-            }
-            final WritableObjectChunk<char[], A> chunk = WritableObjectChunk.makeWritableChunk(totalRows);
-            chunk.fillWithNullValue(0, totalRows);
-            return chunk;
-        }
-
         final int itemsInBatch = offsets == null
                 ? source.size() / sizePerElement
                 : (offsets.size() - (lengths == null ? 1 : 0));

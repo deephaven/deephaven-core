@@ -103,13 +103,6 @@ public class ObjectVectorExpansionKernel<T> implements VectorExpansionKernel<Obj
             @Nullable final WritableChunk<A> outChunk,
             final int outOffset,
             final int totalRows) {
-        if (source.size() == 0) {
-            if (outChunk != null) {
-                return outChunk.asWritableObjectChunk();
-            }
-            return WritableObjectChunk.makeWritableChunk(totalRows);
-        }
-
         final int itemsInBatch = offsets == null
                 ? source.size() / sizePerElement
                 : (offsets.size() - (lengths == null ? 1 : 0));
