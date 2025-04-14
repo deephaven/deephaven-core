@@ -6,6 +6,7 @@ package io.deephaven.iceberg.internal;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.NoSuchColumnException;
+import io.deephaven.iceberg.util.ColumnInstructions;
 import io.deephaven.iceberg.util.Resolver;
 import io.deephaven.qst.type.Type;
 import org.apache.iceberg.PartitionSpec;
@@ -18,6 +19,7 @@ import org.junit.jupiter.api.Test;
 
 import static io.deephaven.iceberg.util.ColumnInstructions.partitionField;
 import static io.deephaven.iceberg.util.ColumnInstructions.schemaField;
+import static io.deephaven.iceberg.util.ColumnInstructions.unmapped;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 
@@ -121,7 +123,7 @@ class ResolverTest {
                 .schema(simpleSchema(IT))
                 .definition(simpleDefinition(Type.intType()))
                 .putColumnInstructions("F1", schemaField(42))
-                .allowUnmappedColumns(true)
+                .putColumnInstructions("F2", unmapped())
                 .build();
     }
 

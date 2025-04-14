@@ -31,6 +31,7 @@ import java.util.Arrays;
 import java.util.Map;
 
 import static io.deephaven.iceberg.util.ColumnInstructions.schemaField;
+import static io.deephaven.iceberg.util.ColumnInstructions.unmapped;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @Tag("security-manager-allow")
@@ -217,8 +218,7 @@ public class SchemaEvolution1 {
             read(expected, Resolver.builder()
                     .schema(schema_4())
                     .definition(td)
-                    .allowUnmappedColumns(true)
-                    // .putColumnInstructions(col3, FieldPath.of(fieldId3))
+                    .putColumnInstructions(col3, schemaField(fieldId3))
                     .build());
         }
         // superset
@@ -244,7 +244,7 @@ public class SchemaEvolution1 {
                     .putColumnInstructions(col1, schemaField(fieldId1))
                     .putColumnInstructions(col2, schemaField(fieldId2))
                     .putColumnInstructions(col3, schemaField(fieldId3))
-                    .allowUnmappedColumns(true)
+                    .putColumnInstructions(col4, unmapped())
                     .build());
         }
     }

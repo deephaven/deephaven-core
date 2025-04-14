@@ -19,6 +19,10 @@ import java.util.OptionalInt;
 @BuildableStyle
 public abstract class ColumnInstructions {
 
+    public static ColumnInstructions unmapped() {
+        return ImmutableColumnInstructions.builder().build();
+    }
+
     public static ColumnInstructions schemaField(int fieldId) {
         return ImmutableColumnInstructions.builder().schemaFieldId(fieldId).build();
     }
@@ -28,6 +32,10 @@ public abstract class ColumnInstructions {
     // really, it means you want to use the *name* from the partition field as well
     public static ColumnInstructions partitionField(int partitionFieldId) {
         return ImmutableColumnInstructions.builder().partitionFieldId(partitionFieldId).build();
+    }
+
+    public final boolean isUnmapped() {
+        return schemaFieldId().isEmpty() && partitionFieldId().isEmpty();
     }
 
     public abstract OptionalInt schemaFieldId();
@@ -64,6 +72,9 @@ public abstract class ColumnInstructions {
 
     @Value.Check
     final void checkBase() {
+        if (isUnmapped()) {
+            return;
+        }
         if (partitionFieldId().isPresent() == schemaFieldId().isPresent()) {
             throw new IllegalArgumentException(
                     "ColumnInstructions must be schema based or partition based");

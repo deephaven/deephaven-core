@@ -13,7 +13,10 @@ import io.deephaven.qst.type.Type;
 import org.apache.iceberg.PartitionField;
 import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.Schema;
+import org.apache.iceberg.Table;
+import org.apache.iceberg.TableProperties;
 import org.apache.iceberg.mapping.NameMapping;
+import org.apache.iceberg.mapping.NameMappingParser;
 import org.apache.iceberg.transforms.Transform;
 import org.apache.iceberg.types.Types.NestedField;
 import org.immutables.value.Value;
@@ -66,6 +69,10 @@ public abstract class Resolver {
      * The Deephaven table definition.
      *
      * <p>
+     * By default, it is expected that every column in this definition be mapped to a corresponding Iceberg field (via
+     * {@link #columnInstructions()}. In the case where a column is defined here, but not in Iceberg,
+     *
+     * <p>
      * Callers should take care and only use {@link ColumnDefinition.ColumnType#Partitioning} columns when they know the
      * Iceberg table will always have {@link Transform#isIdentity() identity} partitions for said columns. In the
      * general case, Iceberg partitions may evolve over time, which can break the assumptions Deephaven makes about
@@ -74,8 +81,7 @@ public abstract class Resolver {
     public abstract TableDefinition definition();
 
     /**
-     * The Iceberg schema. This schema is set at the time these instructions were originally made - it is often not the
-     * most recent schema for an Iceberg table.
+     * The Iceberg schema.
      */
     public abstract Schema schema();
 
@@ -94,14 +100,19 @@ public abstract class Resolver {
     public abstract Map<String, ColumnInstructions> columnInstructions();
 
     /**
-     * The name mapping.
+     * The name mapping. This provides a fallback for resolving columns from data files that are written without
+     * field-ids. This is typically provided from the Iceberg {@link Table#properties() Table property}
+     * {@value TableProperties#DEFAULT_NAME_MAPPING}.
+     *
+     * @see NameMappingParser#fromJson(String)
+     * @see <a href="https://iceberg.apache.org/spec/#column-projection">schema.name-mapping.default</a>
      */
     public abstract Optional<NameMapping> nameMapping();
 
-    @Value.Default
-    boolean allowUnmappedColumns() {
-        return false;
-    }
+    // @Value.Default
+    // boolean allowUnmappedColumns() {
+    // return false;
+    // }
 
     /**
      * Get the field path associated with the Deephaven {@code columnName}. Will return empty when the column name is
@@ -133,7 +144,7 @@ public abstract class Resolver {
 
         Builder nameMapping(NameMapping nameMapping);
 
-        Builder allowUnmappedColumns(boolean allowUnmappedColumns);
+        // Builder allowUnmappedColumns(boolean allowUnmappedColumns);
 
         Resolver build();
     }
@@ -141,7 +152,7 @@ public abstract class Resolver {
     // May want to expose this in the future, or a new class instead of a BiConsumer.
     final boolean resolve2(String columnName, BiConsumer<List<NestedField>, PartitionField> consumer) {
         final ColumnInstructions ci = columnInstructions().get(columnName);
-        if (ci == null) {
+        if (ci == null || ci.isUnmapped()) {
             return false;
         }
         final ColumnDefinition<?> column = Objects.requireNonNull(definition().getColumn(columnName));
@@ -160,9 +171,6 @@ public abstract class Resolver {
 
     @Value.Check
     final void checkUnmappedColumns() {
-        if (allowUnmappedColumns()) {
-            return;
-        }
         for (String column : definition().getColumnNameSet()) {
             if (!columnInstructions().containsKey(column)) {
                 throw new MappingException(String.format("Column `%s` is not mapped", column));
@@ -188,6 +196,9 @@ public abstract class Resolver {
         definition().checkHasColumn(columnName);
         final ColumnDefinition<?> column = definition().getColumn(columnName);
         final Type<?> type = Type.find(column.getDataType(), column.getComponentType());
+        if (ci.isUnmapped()) {
+            return;
+        }
         try {
             consume2(column.isPartitioning(), ci, (x, y) -> validate(type, x, y));
         } catch (SchemaHelper.PathException | MappingException e) {
@@ -199,6 +210,9 @@ public abstract class Resolver {
             boolean isPartitioningColumn,
             ColumnInstructions ci,
             BiConsumer<List<NestedField>, PartitionField> consumer) throws SchemaHelper.PathException {
+        if (ci.isUnmapped()) {
+            throw new IllegalArgumentException("Expected a mapped ColumnInstructions");
+        }
         final List<NestedField> fieldPath;
         final PartitionField partitionField;
         if (ci.schemaFieldId().isPresent()) {

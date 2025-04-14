@@ -43,8 +43,7 @@ final class InferenceImpl extends TypeUtil.SchemaVisitor<Void> {
         this.ii = Objects.requireNonNull(ii);
         this.namer = ii.namerFactory().create();
         this.builder = Resolver.builder()
-                .schema(ii.schema())
-                .allowUnmappedColumns(false);
+                .schema(ii.schema());
     }
 
     Resolver.Builder builder() throws Inference.UnsupportedType {
