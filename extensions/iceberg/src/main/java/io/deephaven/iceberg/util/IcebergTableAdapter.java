@@ -518,26 +518,27 @@ public class IcebergTableAdapter {
     private IcebergTableLocationProviderBase<TableKey, IcebergTableLocationKey> provider2(
             @NotNull final ResolverAndSnapshot ras,
             @NotNull final IcebergReadInstructions readInstructions) {
+        final TableKey tableKey = readInstructions.tableKey().orElse(StandaloneTableKey.getInstance());
         final Resolver resolver = ras.resolver();
         final IcebergBaseLayout keyFinder =
                 keyFinder(resolver, ras.snapshot().orElse(null), readInstructions.dataInstructions().orElse(null));
         if (readInstructions.updateMode().updateType() == IcebergUpdateMode.IcebergUpdateType.STATIC) {
             return new IcebergStaticTableLocationProvider<>(
-                    StandaloneTableKey.getInstance(),
+                    tableKey,
                     keyFinder,
                     new IcebergTableLocationFactory(),
                     tableIdentifier);
         }
         if (readInstructions.updateMode().updateType() == IcebergUpdateMode.IcebergUpdateType.MANUAL_REFRESHING) {
             return new IcebergManualRefreshTableLocationProvider<>(
-                    StandaloneTableKey.getInstance(),
+                    tableKey,
                     keyFinder,
                     new IcebergTableLocationFactory(),
                     this,
                     tableIdentifier);
         } else {
             return new IcebergAutoRefreshTableLocationProvider<>(
-                    StandaloneTableKey.getInstance(),
+                    tableKey,
                     keyFinder,
                     new IcebergTableLocationFactory(),
                     TableDataRefreshService.getSharedRefreshService(),
@@ -558,6 +559,7 @@ public class IcebergTableAdapter {
      * @return The loaded table
      */
     public IcebergTable table(@NotNull final IcebergReadInstructions readInstructions) {
+        // todo: should tableKey be part of readInstructions?
         final ResolverAndSnapshot ras = resolverAndSnapshot(readInstructions);
         final IcebergTableLocationProviderBase<TableKey, IcebergTableLocationKey> itlpb =
                 provider2(ras, readInstructions);

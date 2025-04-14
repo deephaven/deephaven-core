@@ -6,6 +6,7 @@ package io.deephaven.iceberg.util;
 import io.deephaven.annotations.CopyableStyle;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.locations.TableKey;
 import io.deephaven.iceberg.internal.NameMappingUtil;
 import org.apache.iceberg.DataFile;
 import org.apache.iceberg.PartitionSpec;
@@ -36,6 +37,8 @@ public abstract class IcebergReadInstructions {
     public static Builder builder() {
         return ImmutableIcebergReadInstructions.builder();
     }
+
+    public abstract Optional<TableKey> tableKey();
 
     /**
      * The table definition instructions. Callers are encouraged to set this. If not set, one will be
@@ -134,6 +137,9 @@ public abstract class IcebergReadInstructions {
     }
 
     public interface Builder {
+
+        Builder tableKey(TableKey tableKey);
+
         Builder resolver(Resolver resolver);
 
         @Deprecated
