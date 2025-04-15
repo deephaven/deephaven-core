@@ -6,6 +6,7 @@ import io.deephaven.tools.docker.WaitForHealthyContainer
 plugins {
     id 'io.deephaven.project.register'
     id 'io.deephaven.deephaven-in-docker'
+    id 'java-library'
 }
 
 evaluationDependsOn(Docker.registryProject('selenium'))
@@ -16,42 +17,42 @@ configurations {
     typescriptDoclet
 }
 dependencies {
-    implementation platform(libs.grpc.bom)
-    implementation variantOf(libs.grpc.api) { classifier('sources') }
+    api platform(libs.grpc.bom)
+    api variantOf(libs.grpc.api) { classifier('sources') }
 
-    implementation project(':engine-chunk')
-    implementation project(':extensions-barrage')
-    implementation project(':DataStructures')
-    implementation project(':web-shared-beans')
-    implementation project(':web-client-backplane')
-    implementation libs.jetbrains.annotations
-    implementation variantOf(libs.jetbrains.annotations) { classifier("sources") }
-    implementation libs.immutables.value.annotations
-    implementation variantOf(libs.immutables.value.annotations) { classifier("sources") }
+    api project(':engine-chunk')
+    api project(':extensions-barrage')
+    api project(':DataStructures')
+    api project(':web-shared-beans')
+    api project(':web-client-backplane')
+    api libs.jetbrains.annotations
+    api variantOf(libs.jetbrains.annotations) { classifier("sources") }
+    api libs.immutables.value.annotations
+    api variantOf(libs.immutables.value.annotations) { classifier("sources") }
 
-    implementation libs.flatbuffers.java
-    implementation variantOf(libs.flatbuffers.java) { classifier("sources") }
-    implementation libs.arrow.format
-    implementation variantOf(libs.arrow.format) { classifier('sources') }
-    implementation libs.deephaven.barrage.format
-    implementation variantOf(libs.deephaven.barrage.format) { classifier('sources') }
+    api libs.flatbuffers.java
+    api variantOf(libs.flatbuffers.java) { classifier("sources") }
+    api libs.arrow.format
+    api variantOf(libs.arrow.format) { classifier('sources') }
+    api libs.deephaven.barrage.format
+    api variantOf(libs.deephaven.barrage.format) { classifier('sources') }
 
-    implementation libs.vertispan.ts.defs.annotations
+    api libs.vertispan.ts.defs.annotations
     typescriptDoclet libs.vertispan.ts.defs.doclet
 
-    implementation libs.vertispan.nio.gwt
-    implementation libs.vertispan.flatbuffers.gwt
+    api libs.vertispan.nio.gwt
+    api libs.vertispan.flatbuffers.gwt
 
     js project(path: ':proto:raw-js-openapi', configuration: 'js')
 
-    implementation libs.guava
+    api libs.guava
 
     testImplementation libs.junit4
     testImplementation libs.selenium.remote.driver
 
-    implementation libs.elemental.core
-    implementation libs.elemental.promise
-    implementation libs.elemental.dom
+    api libs.elemental.core
+    api libs.elemental.promise
+    api libs.elemental.dom
 
     testImplementation libs.gwt.user
 }
