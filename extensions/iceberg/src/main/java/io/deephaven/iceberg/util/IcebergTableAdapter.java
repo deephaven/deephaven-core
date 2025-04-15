@@ -468,6 +468,14 @@ public class IcebergTableAdapter {
         return null;
     }
 
+    public Resolver infer() {
+        return resolverAndSnapshot(IcebergReadInstructions.DEFAULT).resolver();
+    }
+
+    public Resolver infer(@NotNull final IcebergReadInstructions readInstructions) {
+        return resolverAndSnapshot(readInstructions).resolver();
+    }
+
     /**
      * Return {@link TableDefinition table definition} corresponding to this iceberg table
      *
@@ -484,7 +492,7 @@ public class IcebergTableAdapter {
      * @return The table definition
      */
     public TableDefinition definition(@NotNull final IcebergReadInstructions readInstructions) {
-        return resolverAndSnapshot(readInstructions).resolver().definition();
+        return infer(readInstructions).definition();
     }
 
     /**

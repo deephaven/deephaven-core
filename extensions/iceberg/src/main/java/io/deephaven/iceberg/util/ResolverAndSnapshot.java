@@ -33,46 +33,61 @@ final class ResolverAndSnapshot {
         final Resolver resolver;
         final Snapshot snapshot;
         if (explicitResolver == null) {
-            snapshot = explicitSnapshot == null
-                    ? table.currentSnapshot()
-                    : explicitSnapshot;
-            {
-                final InferenceInstructions instructions;
-                {
-                    final Schema schema = explicitSnapshot == null
-                            ? table.schema()
-                            : table.schemas().get(explicitSnapshot.schemaId());
-                    if (!withPartitionInference) {
-                        instructions = InferenceInstructions.of(schema);
-                    } else {
-                        final PartitionSpec partitionSpec = partitionForInference(table, snapshot);
-                        if (partitionSpec.isUnpartitioned()) {
-                            instructions = InferenceInstructions.of(schema);
-                        } else {
-                            instructions = InferenceInstructions.builder()
-                                    .schema(schema)
-                                    .spec(partitionSpec)
-                                    .build();
-                        }
-                    }
-                }
-                Resolver.Builder builder;
-                try {
-                    builder = Resolver.inferBuilder(instructions);
-                } catch (Inference.UnsupportedType e) {
-                    throw new RuntimeException(e);
-                }
-                if (withNameMapping) {
-                    NameMappingUtil.readNameMappingDefault(table).ifPresent(builder::nameMapping);
-                }
-                resolver = builder.build();
+            final Schema schema;
+            if (explicitSnapshot == null) {
+                schema = table.schema();
+                snapshot = table.currentSnapshot();
+            } else {
+                schema = table.schemas().get(explicitSnapshot.schemaId());
+                snapshot = explicitSnapshot;
             }
+            resolver = infer(table, schema, snapshot, withPartitionInference, withNameMapping);
         } else {
             Assert.eqNull(explicitSnapshot, "explicitSnapshot");
             resolver = explicitResolver;
             snapshot = table.currentSnapshot();
         }
         return new ResolverAndSnapshot(resolver, snapshot);
+    }
+
+    static Resolver infer(
+            @NotNull final Table table,
+            @NotNull final Schema schema,
+            @Nullable final Snapshot snapshot,
+            final boolean withPartitionInference,
+            final boolean withNameMapping) {
+        final InferenceInstructions instructions =
+                inferenceInstructions(table, schema, snapshot, withPartitionInference);
+        final Resolver.Builder builder;
+        try {
+            builder = Resolver.inferBuilder(instructions);
+        } catch (Inference.UnsupportedType e) {
+            throw new RuntimeException(e);
+        }
+        if (withNameMapping) {
+            NameMappingUtil.readNameMappingDefault(table).ifPresent(builder::nameMapping);
+        }
+        return builder.build();
+    }
+
+    private static InferenceInstructions inferenceInstructions(
+            @NotNull final Table table,
+            @NotNull final Schema schema,
+            @Nullable final Snapshot snapshot,
+            final boolean withPartitionInference) {
+        if (!withPartitionInference) {
+            return InferenceInstructions.of(schema);
+        } else {
+            final PartitionSpec partitionSpec = partitionForInference(table, snapshot);
+            if (partitionSpec.isUnpartitioned()) {
+                return InferenceInstructions.of(schema);
+            } else {
+                return InferenceInstructions.builder()
+                        .schema(schema)
+                        .spec(partitionSpec)
+                        .build();
+            }
+        }
     }
 
     private final Resolver resolver;
