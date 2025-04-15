@@ -62,19 +62,21 @@ public class BarrageSubscriptionRequestHandler implements ArrowFlightUtil.DoExch
         final BarrageSubscriptionRequest subscriptionRequest = BarrageSubscriptionRequest
                 .getRootAsBarrageSubscriptionRequest(message.app_metadata.msgPayloadAsByteBuffer());
 
-        if (subscriptionObject != null) {
-            apply(subscriptionRequest);
-            return;
-        }
+        synchronized (this) {
+            if (subscriptionObject != null) {
+                apply(subscriptionRequest);
+                return;
+            }
 
-        if (marshaller.isClosed()) {
-            return;
-        }
+            if (marshaller.isClosed()) {
+                return;
+            }
 
-        // have we already created the queue?
-        if (preExportSubscriptions != null) {
-            preExportSubscriptions.add(subscriptionRequest);
-            return;
+            // have we already created the queue?
+            if (preExportSubscriptions != null) {
+                preExportSubscriptions.add(subscriptionRequest);
+                return;
+            }
         }
 
         if (subscriptionRequest.ticketVector() == null) {
