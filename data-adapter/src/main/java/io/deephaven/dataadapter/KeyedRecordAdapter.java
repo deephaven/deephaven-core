@@ -9,15 +9,6 @@ import gnu.trove.map.TLongIntMap;
 import gnu.trove.map.hash.TLongIntHashMap;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
-import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.rowset.*;
-import io.deephaven.engine.table.*;
-import io.deephaven.engine.table.impl.BaseTable;
-import io.deephaven.engine.table.impl.NotificationStepSource;
-import io.deephaven.engine.table.impl.by.AggregationProcessor;
-import io.deephaven.engine.table.impl.by.AggregationRowLookup;
-import io.deephaven.engine.table.impl.dataindex.TableBackedDataIndex;
-import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.dataadapter.consumers.*;
 import io.deephaven.dataadapter.locking.GetDataLockType;
 import io.deephaven.dataadapter.locking.QueryDataRetrievalOperation;
@@ -25,6 +16,18 @@ import io.deephaven.dataadapter.rec.MultiRowRecordAdapter;
 import io.deephaven.dataadapter.rec.desc.RecordAdapterDescriptor;
 import io.deephaven.dataadapter.rec.desc.RecordAdapterDescriptorBuilder;
 import io.deephaven.dataadapter.rec.updaters.*;
+import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.rowset.*;
+import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.DataIndex;
+import io.deephaven.engine.table.PartitionedTable;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.BaseTable;
+import io.deephaven.engine.table.impl.NotificationStepSource;
+import io.deephaven.engine.table.impl.by.AggregationProcessor;
+import io.deephaven.engine.table.impl.by.AggregationRowLookup;
+import io.deephaven.engine.table.impl.dataindex.TableBackedDataIndex;
+import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.util.function.ThrowingBiConsumer;
@@ -39,6 +42,7 @@ import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
+import java.util.function.LongSupplier;
 import java.util.stream.Collectors;
 
 /**
@@ -46,17 +50,16 @@ import java.util.stream.Collectors;
  * <p>
  * Instantiate through {@link #makeRecordAdapterSimpleKey}/{@link #makeRecordAdapterCompositeKey}.
  *
- * @param <K> Key type (either some object or a {@code List<?>}). If {@code K} is a {@code List<?>}, then a
- *        {@link #tupleSource} appropriate for the {@link #keyColumns}' types will be used to generate keys for the
- *        inner {@link #toMapListener}. If {@code K} is <b>any type except</b> a {@code List<?>}, then {@code K} will be
- *        used directly as the {@code toMapListener}'s key type (and must match the data type in the {@code keyColumn}).
- * @param <T> Record type
+ * @param <K> Key type. If there is one key column, {@code K} must be that column's type. If there are multiple key
+ *         columns, {@code K} must be {@code List<?>}.
+ * @param <T> Record type. Each retrieved row is represented by one instance of {@code T}.
  */
-// MAJOR TODOs: how to handle returning multiple rows for a given key?
 public class KeyedRecordAdapter<K, T> {
 
-    // TODO: remove this & the logging
-    private final boolean TRACE_LOGGING = true;
+    /**
+     * Whether trace logging should be enabled. Used when testing or debugging.
+     */
+    private final boolean TRACE_LOGGING = Boolean.parseBoolean(System.getProperty("KeyedRecordAdapter.trace", "false"));
 
     /**
      * Consumer that obtains lock before calling code
@@ -96,6 +99,10 @@ public class KeyedRecordAdapter<K, T> {
      * Whether this KeyedRecordAdapter has just one key column (as opposed to multiple key columns).
      */
     protected final boolean isSingleKeyCol;
+
+    /**
+     * List of data types for the {@link #keyColumns key columns}.
+     */
     protected final List<Class<?>> keyColumnTypesList;
 
     /**
@@ -171,42 +178,27 @@ public class KeyedRecordAdapter<K, T> {
 
         if (dataIndex != null) {
             final DataIndex.RowKeyLookup rowKeyLookup = dataIndex.rowKeyLookup(keyColumnSources);
+            final ColumnSource<RowSet> dataIndexRowSetColSource =
+                    dataIndex.table().getColumnSource(dataIndex.rowSetColumnName());
+
+            final LongSupplier approxRowsPerKey = () -> sourceTable.size() / dataIndex.table().size();
+
             targetRowSetRetriever = (keysList, usePrev) -> getRowSetForKeysWithDataIndex(
+                    approxRowsPerKey,
                     rowKeyLookup,
-                    dataIndex.table().getColumnSource(dataIndex.rowSetColumnName()),
+                    dataIndexRowSetColSource,
                     usePrev,
                     keysList);
         } else if (sourceTable.hasAttribute(Table.AGGREGATION_ROW_LOOKUP_ATTRIBUTE)) {
+            final AggregationRowLookup rowLookup = AggregationProcessor.getRowLookup(sourceTable);
             targetRowSetRetriever = (keysList, usePrev) -> getRowSetForKeysFromAggregatedTable(
-                    AggregationProcessor.getRowLookup(sourceTable),
+                    sourceTable,
+                    rowLookup,
                     usePrev,
                     keysList);
         } else {
-            // TODO: partitioned table lookup? also, note that *the partitioned table depends on its constituents*
-            /* special case of the above, since a partitioned table (in the context we care about) is an aggregation */
-
-            targetRowSetRetriever = (keysList, usePrev) -> getRowSetForKeysFromPartitionedTable(
-                    AggregationProcessor.getRowLookup(sourceTable),
-                    sourceTable.getColumnSource(thePartitionedTable.constituentColumnName(), Table.class),
-                    usePrev,
-                    keysList
-            );
-
-            /* filter the PartitionedTable.table(), then iterate over the constituents and rip out all the rows of all those tables. */
-
-            throw new UnsupportedOperationException();
+            throw new UnsupportedOperationException("Only tables with Data Indexes or an AggregationRowLookup are supported. Partitioned tables not created with .partitionBy() are unsupported.");
         }
-        // TODO: use io.deephaven.engine.table.impl.by.AggregationRowLookup.get. But read its documentation! e.g. about
-        // reinterpreting. you can get this for any aggregation result
-        // To get teh AggregationRowLookup, use io.deephaven.engine.table.impl.by.AggregationProcessor.getRowLookup.
-        // Call it on the exact table you're going to get data from (ie. the lastBy result itself).
-        // Also, might need to do some magic to make sure this thing is turned on. (Making a ContextFactory??)
-        // TODO: ticket about tracking the key columns of a table? or rather, 'automatically add data indexes to agg
-        // results'
-
-
-        // TODO: for also look at io.deephaven.engine.table.impl.dataindex.TableBackedDataIndex.computeTable /
-        // io.deephaven.engine.table.impl.dataindex.TableBackedDataIndex.rowKeyLookup
 
         final NotificationStepSource[] notificationSources;
         if (dataIndex != null) {
@@ -420,37 +412,62 @@ public class KeyedRecordAdapter<K, T> {
         return new KeyedRecordAdapter<>(sourceTable, null, dataIndex, genericRecordAdapterDescriptor, keyColumns);
     }
 
+    public static <T> KeyedRecordAdapter<List<?>, Map<String, Object>> makeRecordAdapterCompositeKey(PartitionedTable sourceTable,
+                                                                                   List<String> valueColumns) {
+        final List<String> keyColumnsList = new ArrayList<>(sourceTable.keyColumnNames());
+
+        if (keyColumnsList.isEmpty()) {
+            throw new IllegalArgumentException("partitionedTable has no key columns!");
+        }
+        if (keyColumnsList.size() == 1) {
+            throw new IllegalArgumentException(
+                    "Attempting to create composite-key KeyedRecordAdapter but partitionedTable has only one key column. Use makeRecordAdapterSimpleKey instead.");
+        }
+
+        final String[] keyColumns = keyColumnsList.toArray(new String[0]);
+        final ArrayList<String> allCols = new ArrayList<>(keyColumns.length + valueColumns.size());
+        allCols.addAll(keyColumnsList);
+        allCols.addAll(valueColumns);
+
+        // Note: this requires that the constituents include the key columns -- i.e., the partitioned table is created
+        // with .partitionBy(source) or .partitionBy(false, source)
+        final RecordAdapterDescriptor<Map<String, Object>> genericRecordAdapterDescriptor =
+                RecordAdapterDescriptor.createGenericRecordAdapterDescriptor(sourceTable.constituentDefinition(), allCols);
+        return new KeyedRecordAdapter<>(null, sourceTable, null, genericRecordAdapterDescriptor, keyColumns);
+    }
+
     public static <T> KeyedRecordAdapter<List<?>, T> makeRecordAdapterCompositeKey(Table sourceTable,
             RecordAdapterDescriptor<T> recordAdapterDescriptor, String... keyColumns) {
         return new KeyedRecordAdapter<>(sourceTable, recordAdapterDescriptor, keyColumns);
     }
 
     public static <T> KeyedRecordAdapter<List<?>, T> makeRecordAdapterCompositeKey(Table sourceTable,
-                                                                                   TableBackedDataIndex dataIndex,
-                                                                                   RecordAdapterDescriptor<T> recordAdapterDescriptor) {
+            TableBackedDataIndex dataIndex,
+            RecordAdapterDescriptor<T> recordAdapterDescriptor) {
         final List<String> keyColumnsList = dataIndex.keyColumnNames();
 
         if (keyColumnsList.isEmpty()) {
             throw new IllegalArgumentException("dataIndex has no key columns!");
         }
         if (keyColumnsList.size() == 1) {
-            throw new IllegalArgumentException("Attempting to create composite-key KeyedRecordAdapter but dataIndex has only one key column. Use makeRecordAdapterSimpleKey instead.");
+            throw new IllegalArgumentException(
+                    "Attempting to create composite-key KeyedRecordAdapter but dataIndex has only one key column. Use makeRecordAdapterSimpleKey instead.");
         }
 
         final String[] keyColumns = keyColumnsList.toArray(new String[0]);
         return new KeyedRecordAdapter<>(sourceTable, null, dataIndex, recordAdapterDescriptor, keyColumns);
     }
 
-
     public static <T> KeyedRecordAdapter<List<?>, T> makeRecordAdapterCompositeKey(PartitionedTable sourceTable,
-                                                                                   RecordAdapterDescriptor<T> recordAdapterDescriptor) {
+            RecordAdapterDescriptor<T> recordAdapterDescriptor) {
         final List<String> keyColumnsList = new ArrayList<>(sourceTable.keyColumnNames());
 
         if (keyColumnsList.isEmpty()) {
-            throw new IllegalArgumentException("dataIndex has no key columns!");
+            throw new IllegalArgumentException("sourceTable has no key columns!");
         }
         if (keyColumnsList.size() == 1) {
-            throw new IllegalArgumentException("Attempting to create composite-key KeyedRecordAdapter but dataIndex has only one key column. Use makeRecordAdapterSimpleKey instead.");
+            throw new IllegalArgumentException(
+                    "Attempting to create composite-key KeyedRecordAdapter but sourceTable has only one key column. Use makeRecordAdapterSimpleKey instead.");
         }
 
         final String[] keyColumns = keyColumnsList.toArray(new String[0]);
@@ -458,16 +475,16 @@ public class KeyedRecordAdapter<K, T> {
     }
 
     public static <K, T> KeyedRecordAdapter<K, T> makeRecordAdapterSimpleKey(Table sourceTable,
-                                                                             RecordAdapterDescriptor<T> recordAdapterDescriptor, String keyColumn, Class<K> keyColType) {
+            RecordAdapterDescriptor<T> recordAdapterDescriptor, String keyColumn, Class<K> keyColType) {
         // throw an exception if keyColumn is not of keyColType:
         sourceTable.getColumnSource(keyColumn, TypeUtils.getUnboxedTypeIfBoxed(keyColType));
         return new KeyedRecordAdapter<>(sourceTable, recordAdapterDescriptor, keyColumn);
     }
 
     public static <K, T> KeyedRecordAdapter<K, T> makeRecordAdapterSimpleKey(Table sourceTable,
-                                                                             TableBackedDataIndex dataIndex,
-                                                                             RecordAdapterDescriptor<T> recordAdapterDescriptor,
-                                                                             Class<K> keyColType
+            TableBackedDataIndex dataIndex,
+            RecordAdapterDescriptor<T> recordAdapterDescriptor,
+            Class<K> keyColType
 
     ) {
         final List<String> keyColumnsList = dataIndex.keyColumnNames();
@@ -476,14 +493,16 @@ public class KeyedRecordAdapter<K, T> {
             throw new IllegalArgumentException("dataIndex has no key columns!");
         }
         if (keyColumnsList.size() > 1) {
-            throw new IllegalArgumentException("Attempting to create simple-key KeyedRecordAdapter but dataIndex has multiple key columns. Use makeRecordAdapterCompositeKey instead.");
+            throw new IllegalArgumentException(
+                    "Attempting to create simple-key KeyedRecordAdapter but dataIndex has multiple key columns. Use makeRecordAdapterCompositeKey instead.");
         }
 
         // Ensure the key column type matches between the given keyColType and the dataIndex
         final String colNameInDataIndex = keyColumnsList.get(0);
         final Class<Object> dataIndexKeyColType = dataIndex.table().getColumnSource(colNameInDataIndex).getType();
         if (!keyColType.isAssignableFrom(dataIndexKeyColType)) {
-            throw new IllegalArgumentException("Key column type mismatch: expected type " + keyColType.getName() + ", found " + dataIndexKeyColType.getName() + " in dataIndex for column " + colNameInDataIndex);
+            throw new IllegalArgumentException("Key column type mismatch: expected type " + keyColType.getName()
+                    + ", found " + dataIndexKeyColType.getName() + " in dataIndex for column " + colNameInDataIndex);
         }
 
         final String[] keyColumns = keyColumnsList.toArray(new String[0]);
@@ -491,8 +510,8 @@ public class KeyedRecordAdapter<K, T> {
     }
 
     public static <K, T> KeyedRecordAdapter<K, T> makeRecordAdapterSimpleKey(PartitionedTable sourceTable,
-                                                                             RecordAdapterDescriptor<T> recordAdapterDescriptor,
-                                                                             Class<K> keyColType
+            RecordAdapterDescriptor<T> recordAdapterDescriptor,
+            Class<K> keyColType
 
     ) {
         final List<String> keyColumnsList = new ArrayList<>(sourceTable.keyColumnNames());
@@ -501,14 +520,17 @@ public class KeyedRecordAdapter<K, T> {
             throw new IllegalArgumentException("dataIndex has no key columns!");
         }
         if (keyColumnsList.size() > 1) {
-            throw new IllegalArgumentException("Attempting to create simple-key KeyedRecordAdapter but dataIndex has multiple key columns. Use makeRecordAdapterCompositeKey instead.");
+            throw new IllegalArgumentException(
+                    "Attempting to create simple-key KeyedRecordAdapter but dataIndex has multiple key columns. Use makeRecordAdapterCompositeKey instead.");
         }
 
         // Ensure the key column type matches between the given keyColType and the dataIndex
         final String colNameInDataIndex = keyColumnsList.get(0);
         final Class<Object> dataIndexKeyColType = sourceTable.table().getColumnSource(colNameInDataIndex).getType();
         if (!keyColType.isAssignableFrom(dataIndexKeyColType)) {
-            throw new IllegalArgumentException("Key column type mismatch: expected type " + keyColType.getName() + ", found " + dataIndexKeyColType.getName() + " in partitioned table for column " + colNameInDataIndex);
+            throw new IllegalArgumentException(
+                    "Key column type mismatch: expected type " + keyColType.getName() + ", found "
+                            + dataIndexKeyColType.getName() + " in partitioned table for column " + colNameInDataIndex);
         }
 
         final String[] keyColumns = keyColumnsList.toArray(new String[0]);
@@ -540,8 +562,8 @@ public class KeyedRecordAdapter<K, T> {
     }
 
     /**
-     * Retrieve a record of type {@code T} corresponding to the data in the table for the given {@code dataKey}. If
-     * the table contains multiple records for the given key, the last record will be returned.
+     * Retrieve a record of type {@code T} corresponding to the data in the table for the given {@code dataKey}. If the
+     * table contains multiple records for the given key, the last record will be returned.
      *
      * @param dataKey The key for which to retrieve data
      * @return A record containing data for the key, if the key is present in the table. Otherwise, {@code null}.
@@ -580,11 +602,12 @@ public class KeyedRecordAdapter<K, T> {
     }
 
     /**
-     * Retrieve multiple records of type {@code T} corresponding to the data in the table for the given {@code dataKey}. If
-     * the table contains multiple records for the given key, the last record will be returned.
+     * Retrieve multiple records of type {@code T} corresponding to the data in the table for the given {@code dataKey}.
+     * If the table contains multiple records for the given key, the last record will be returned.
      *
      * @param dataKey The key for which to retrieve data
-     * @return A List of record containing data for the key, if the key is present in the table. Otherwise, {@code null}.
+     * @return A List of record containing data for the key, if the key is present in the table. Otherwise,
+     *         {@code null}.
      */
     public List<T> getRecordList(K dataKey) {
         return getRecordsLists(dataKey).get(dataKey);
@@ -595,18 +618,15 @@ public class KeyedRecordAdapter<K, T> {
         return getRecordsLists(Arrays.asList(dataKeys));
     }
 
-
-
-
-
     /**
      * Retrieve records of type {@code T} corresponding to the data in the table for the given {@code dataKeys}.
      */
     public Map<K, T> getRecords(final List<K> dataKeys) {
         final Result<T> result = getResult(dataKeys);
 
-        // Now that we have retrieved a consistent snapshot, create records for each row
-        final TLongIntMap dbIdxKeyToDataKeyPositionalIndex = result.dbRowKeyToDataKeyPositionalIndexRef.getValue();
+        // Finish handling the retrieved records.
+        // Populate the fields pertaining to the key, and stick the records in a map.
+        final TLongIntMap dbIdxKeyToDataKeyPositionalIndex = result.dbRowKeyToDataKeyPositionalIndex;
         final Map<K, T> resultsMap = new HashMap<>(dataKeys.size());
         for (int idx = 0; idx < result.nRetrievedRecords; idx++) {
             // Find the data key corresponding to the DB index key from
@@ -631,8 +651,9 @@ public class KeyedRecordAdapter<K, T> {
     public Map<K, List<T>> getRecordsLists(final List<K> dataKeys) {
         final Result<T> result = getResult(dataKeys);
 
-        // Now that we have retrieved a consistent snapshot, create records for each row
-        final TLongIntMap dbIdxKeyToDataKeyPositionalIndex = result.dbRowKeyToDataKeyPositionalIndexRef.getValue();
+        // Finish handling the retrieved records.
+        // Populate the fields pertaining to the key, and stick the records in a map.
+        final TLongIntMap dbIdxKeyToDataKeyPositionalIndex = result.dbRowKeyToDataKeyPositionalIndex;
         final Map<K, List<T>> resultsMap = new HashMap<>(dataKeys.size());
         for (int idx = 0; idx < result.nRetrievedRecords; idx++) {
             // Find the data key corresponding to the DB index key from
@@ -654,13 +675,14 @@ public class KeyedRecordAdapter<K, T> {
     private @NotNull Result<T> getResult(List<K> dataKeys) {
         final int nKeys = dataKeys.size();
 
-        if(!isSingleKeyCol) {
+        if (!isSingleKeyCol) {
             // Run a sanity check on key components with a clear exception
             final int nCols = keyColumns.length;
             for (K dataKey : dataKeys) {
                 final int nKeyComponents = ((List<?>) dataKey).size();
                 if (nKeyComponents != nCols) {
-                    throw new IllegalArgumentException("dataKey has " + nKeyComponents + " components; expected " + nCols);
+                    throw new IllegalArgumentException(
+                            "dataKey has " + nKeyComponents + " components; expected " + nCols);
                 }
             }
         }
@@ -668,9 +690,12 @@ public class KeyedRecordAdapter<K, T> {
         // Convert data keys (Object or List<?>) to lookup keys (Object or Object[]))
         final List<Object> lookupKeys = dataKeysListToLookupKeys.apply(dataKeys);
 
-        // create arrays to hold the result data
-        /* TODO: for data indexes/partitioned tables, we don't actually know how many rows we're pulling data for, so that sucks because it means I need to create the arrays under the snapshot rather than before taking a lock, but who really cares */
-        final Object[] recordDataArrs = multiRowRecordAdapter.getTableDataArrayRetriever().createDataArrays(nKeys);
+        /*
+        * Create reference to result arrays.
+        * We can't allocate the arrays yet, since for data indexes and partitioned tables we don't know yet how many rows
+        * we're going to retrieve data from. Even from a lastBy we don't know how many of the keys are actually present.
+        */
+        final MutableObject<Object[]> recordDataArrsRef = new MutableObject<>(null);
 
         // list to store the index keys for which data is retrieved
         final TLongList recordDataRowKeys = new TLongArrayList(nKeys);
@@ -679,25 +704,30 @@ public class KeyedRecordAdapter<K, T> {
         final MutableObject<TLongIntMap> dbRowKeyToDataKeyPositionalIndexRef = new MutableObject<>();
 
         DO_LOCKED_FUNCTION.accept(
-                (usePrev) -> retrieveDataMultipleKeys(lookupKeys, recordDataArrs, recordDataRowKeys,
+                (usePrev) -> retrieveDataMultipleKeys(lookupKeys, recordDataArrsRef, recordDataRowKeys,
                         dbRowKeyToDataKeyPositionalIndexRef, usePrev),
                 "KeyedRecordAdapter.getRecords()");
 
+        // Now that we have retrieved a consistent snapshot, create records for each row (turning the columnar
+        // data fetched from the engine into user-friendly row data)
         final int nRetrievedRecords = recordDataRowKeys.size();
-        final T[] recordsArr = multiRowRecordAdapter.createRecordsFromData(recordDataArrs, nRetrievedRecords);
-        Result result = new Result(recordDataRowKeys, dbRowKeyToDataKeyPositionalIndexRef, nRetrievedRecords, recordsArr);
-        return result;
+        final T[] recordsArr = multiRowRecordAdapter.createRecordsFromData(recordDataArrsRef.getValue(), nRetrievedRecords);
+
+        return new Result<>(recordDataRowKeys, dbRowKeyToDataKeyPositionalIndexRef.getValue(), nRetrievedRecords, recordsArr);
     }
 
     private static class Result<T> {
         public final TLongList recordDataRowKeys;
-        public final MutableObject<TLongIntMap> dbRowKeyToDataKeyPositionalIndexRef;
+        public final TLongIntMap dbRowKeyToDataKeyPositionalIndex;
         public final int nRetrievedRecords;
         public final T[] recordsArr;
 
-        public Result(TLongList recordDataRowKeys, MutableObject<TLongIntMap> dbRowKeyToDataKeyPositionalIndexRef, int nRetrievedRecords, T[] recordsArr) {
+        public Result(TLongList recordDataRowKeys,
+                      TLongIntMap dbRowKeyToDataKeyPositionalIndex,
+                      int nRetrievedRecords,
+                      T[] recordsArr) {
             this.recordDataRowKeys = recordDataRowKeys;
-            this.dbRowKeyToDataKeyPositionalIndexRef = dbRowKeyToDataKeyPositionalIndexRef;
+            this.dbRowKeyToDataKeyPositionalIndex = dbRowKeyToDataKeyPositionalIndex;
             this.nRetrievedRecords = nRetrievedRecords;
             this.recordsArr = recordsArr;
         }
@@ -705,7 +735,7 @@ public class KeyedRecordAdapter<K, T> {
 
     /**
      * @param lookupKeys The keys to look up in the ToMapListener
-     * @param recordDataArrs Array that will be filled with data for each column
+     * @param recordDataArrsRef Reference to be populated with an array that will be filled with arrays of data for each column
      * @param recordDataKeys A list that will be populated with keys for
      * @param rowKeyToDataKeyPositionRef Map of row keys to the position (in the {@code lookupKeys} list) of the
      *        corresponding data key.
@@ -714,21 +744,29 @@ public class KeyedRecordAdapter<K, T> {
      */
     protected final boolean retrieveDataMultipleKeys(
             @NotNull final List<Object> lookupKeys,
-            @NotNull final Object[] recordDataArrs,
+            @NotNull final MutableObject<Object[]> recordDataArrsRef,
             @NotNull final TLongList recordDataKeys,
             @NotNull final MutableObject<TLongIntMap> rowKeyToDataKeyPositionRef,
             final boolean usePrev) {
 
+        // TODO: it would be helpful if we could also extract each row's position within the table when necessary.
 
         if (TRACE_LOGGING) {
             Function<List<Object>, String> lookupKeyPrinter = keys -> keys.stream()
-                    .map(o -> { if (o instanceof Object[]) { return Arrays.deepToString((Object[]) o); } else { return Objects.toString(o); } })
+                    .map(o -> {
+                        if (o instanceof Object[]) {
+                            return Arrays.deepToString((Object[]) o);
+                        } else {
+                            return Objects.toString(o);
+                        }
+                    })
                     .collect(Collectors.joining(", "));
 
             System.out.println(
-                    "clock: " + ExecutionContext.getContext().getUpdateGraph().clock().currentStep() + "\n" +
-                    "lookupKeys: " + lookupKeyPrinter.apply(lookupKeys) + "\n" +
-                    "usePrev: " + usePrev);
+                    "----------\n" +
+                            "clock: " + ExecutionContext.getContext().getUpdateGraph().clock().currentStep() + "\n" +
+                            "lookupKeys: " + lookupKeyPrinter.apply(lookupKeys) + "\n" +
+                            "usePrev: " + usePrev);
         }
 
         // Get the row keys to retrieve data for
@@ -737,12 +775,8 @@ public class KeyedRecordAdapter<K, T> {
         final RowSet rowSetAcrossDataKeys = dataKeyLookupResult.rowSet;
         rowKeyToDataKeyPositionRef.setValue(dataKeyLookupResult.rowKeyToDataKeyPositionMap);
 
-        final Object[] arrsForAllRows = multiRowRecordAdapter.getTableDataArrayRetriever().createDataArrays(rowSetAcrossDataKeys.intSize());
-        Assert.eq(recordDataArrs.length, "recordDataArrs.length", arrsForAllRows.length, "arrsForAllRows.length");
-
-        // TODO: by sizing the recordDataArrs based on the size of the row set, we won't necessarily have the same length arrs as before,
-        //   since we won't have slots for keys we didn't find....?? how was this handled before??
-        System.arraycopy(arrsForAllRows, 0, recordDataArrs, 0, recordDataArrs.length);
+        final Object[] recordDataArrs = multiRowRecordAdapter.getTableDataArrayRetriever().createDataArrays(rowSetAcrossDataKeys.intSize());
+        recordDataArrsRef.setValue(recordDataArrs);
 
         multiRowRecordAdapter.getTableDataArrayRetriever().fillDataArrays(
                 usePrev,
@@ -753,7 +787,9 @@ public class KeyedRecordAdapter<K, T> {
                 // the data keys after all rows have been retrieved:
                 recordDataKeys);
 
-        if (TRACE_LOGGING) System.out.println("recordDataArrs (populated): " + Arrays.deepToString(recordDataArrs));
+        if (TRACE_LOGGING) {
+            System.out.println("recordDataArrs (populated): " + Arrays.deepToString(recordDataArrs) + "\n----------");
+        }
 
         return true;
     }
@@ -833,13 +869,28 @@ public class KeyedRecordAdapter<K, T> {
         return isSingleKeyCol;
     }
 
+    /**
+     * Retrieve a row set with the row keys for all rows matching {@code dataKeys}, using the given
+     * {@code aggregationRowLookup}.
+     * 
+     * @param sourceTable The table. Must be the same table the {@code aggregationRowLookup} is from.
+     * @param aggregationRowLookup An aggregationRowLookup for the columns corresponding to the elements of the
+     *        {@code dataKeys}
+     * @param usePrev Whether to use previous values
+     * @param dataKeys The data keys to search for
+     * @return
+     */
     @NotNull
     private RowSetForKeysResult getRowSetForKeysFromAggregatedTable(
+            final Table sourceTable,
             final AggregationRowLookup aggregationRowLookup,
             final boolean usePrev,
             final List<?> dataKeys) {
         final int nKeys = dataKeys.size();
         final TLongIntMap rowKeyToDataKeyPositionMap = new TLongIntHashMap(nKeys);
+
+        final TrackingRowSet trackingRowSet = sourceTable.getRowSet();
+        final RowSet rowSet = usePrev ? trackingRowSet.prev() : trackingRowSet;
 
         final RowSetBuilderRandom builder = RowSetFactory.builderRandom();
         int ii = 0;
@@ -847,7 +898,10 @@ public class KeyedRecordAdapter<K, T> {
             // TODO: don't care about prev here?
             final int k = aggregationRowLookup.get(dataKey);
 
-            if (k != aggregationRowLookup.noEntryValue()) {
+            // The AggregationRowLookup never forgets the slot for a given data key, so we need to make sure
+            // the returned row key is still present in the table's actual RowSet. (Otherwise we could return
+            // data that is still in the column sources but not actually part of the table.)
+            if (k != aggregationRowLookup.noEntryValue() && rowSet.containsRange(k, k)) {
                 builder.addKey(k);
                 rowKeyToDataKeyPositionMap.put(k, ii);
             }
@@ -858,24 +912,42 @@ public class KeyedRecordAdapter<K, T> {
         return new RowSetForKeysResult(builder.build(), rowKeyToDataKeyPositionMap);
     }
 
+    /**
+     * Retrieve a row set with the row keys for all rows matching {@code dataKeys}, using the given
+     * {@code rowKeyLookup}.
+     *
+     * @param avgRowsPerKey                 Supplier of the average number of rows per entry in the data index (i.e. {@code sourceTable.size() / dataIndex.size()})
+     * @param rowKeyLookup                  The row key lookup from the data index
+     * @param dataIndexTableRowSetColSource The column source for the RowSet column in the {@link DataIndex#table() data
+     *                                      index's underlying table}
+     * @param usePrev                       Whether to use previous values
+     * @param dataKeys                      The data keys to search for
+     * @return
+     */
     @NotNull
     private RowSetForKeysResult getRowSetForKeysWithDataIndex(
+            final LongSupplier avgRowsPerKey,
             final DataIndex.RowKeyLookup rowKeyLookup,
             final ColumnSource<RowSet> dataIndexTableRowSetColSource,
             final boolean usePrev,
             final List<?> dataKeys) {
-        final int nKeys = dataKeys.size();
-        final TLongIntMap rowKeyToDataKeyPositionMap = new TLongIntHashMap(nKeys);
+
+        // heuristic for sizing hashmap -- nKeys * avgRowsPerKey
+        final int hashMapInitSize = (int) Long.min(Integer.MAX_VALUE, avgRowsPerKey.getAsLong() * dataKeys.size());
+
+        final TLongIntMap rowKeyToDataKeyPositionMap = new TLongIntHashMap(hashMapInitSize);
         final RowSetBuilderRandom builder = RowSetFactory.builderRandom();
         int ii = 0;
-        for (Object dataKey : dataKeys) {
+        for (final Object dataKey : dataKeys) {
             final long indexTableRowKey = rowKeyLookup.apply(dataKey, usePrev);
             if (indexTableRowKey != RowSequence.NULL_ROW_KEY) {
                 final RowSet rowSetForDataKey = usePrev ? dataIndexTableRowSetColSource.getPrev(indexTableRowKey)
                         : dataIndexTableRowSetColSource.get(indexTableRowKey);
 
-                if (rowSetForDataKey == null || rowSetForDataKey.isEmpty())
+                if (rowSetForDataKey == null || rowSetForDataKey.isEmpty()) {
+                    ii++;
                     continue;
+                }
 
                 // map the row keys back to the corresponding data key, so that after pull the data we know which
                 // data key goes with each row of the data

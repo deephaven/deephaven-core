@@ -5,13 +5,14 @@ package io.deephaven.dataadapter;
 
 import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.deephaven.base.verify.Assert;
+import io.deephaven.dataadapter.rec.json.JsonRecordAdapterUtil;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.util.TableTools;
-import io.deephaven.dataadapter.rec.json.JsonRecordAdapterUtil;
 import io.deephaven.util.QueryConstants;
 import org.apache.commons.lang3.mutable.MutableInt;
 
@@ -21,6 +22,7 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.IntConsumer;
 
 import static io.deephaven.engine.testutil.TstUtils.i;
 
@@ -31,10 +33,17 @@ public class TableToRecordListenerTest extends RefreshingTableTestCase {
     @SuppressWarnings("FieldCanBeLocal") // can't be local; for retention
     private TableToRecordListener<ObjectNode> tableToRecordListener;
 
+    /**
+     * Test synchronous publication of records (i.e., table data is converted to records and published on the UGP thread).
+     */
     public void testJsonRecordListenerNoAsync() {
         runJsonRecordListenerTest(false);
     }
 
+    /**
+     * Test asynchronous publication of records (i.e., table data is retrieved in the listener on the UGP thread, but
+     * converted to records and published on a separate thread).
+     */
     public void testJsonRecordListenerAsync() {
         runJsonRecordListenerTest(true);
     }
@@ -81,8 +90,8 @@ public class TableToRecordListenerTest extends RefreshingTableTestCase {
                         removedModifiedPrev::add,
                         processInitialData,
                         async,
-                        // TODO: wtf was this for?
                         !async ? null : nUpdatesProcessed -> {
+                            // This is used with awaitRecordProcessing to verify that records are enqueued/processed correctly.
                             try {
                                 l.lock();
                                 nProcessedRecords.setValue(nUpdatesProcessed);
@@ -92,12 +101,12 @@ public class TableToRecordListenerTest extends RefreshingTableTestCase {
                             }
                         }));
 
-        Runnable awaitRecordProcessing;
+        IntConsumer awaitRecordProcessing;
         if (!async) {
-            awaitRecordProcessing = () -> {
+            awaitRecordProcessing = (expectedRecords) -> {
             };
         } else {
-            awaitRecordProcessing = () -> {
+            awaitRecordProcessing = (expectedRecords) -> {
                 final int timeout = 10;
                 final TimeUnit timeoutUnit = TimeUnit.SECONDS;
 
@@ -107,9 +116,7 @@ public class TableToRecordListenerTest extends RefreshingTableTestCase {
                         throw new RuntimeException("No records processed after " + timeout + " " + timeoutUnit);
                     }
 
-                    if (nProcessedRecords.intValue() <= 0) {
-                        throw new IllegalStateException();
-                    }
+                    Assert.equals(expectedRecords, "expectedRecords", nProcessedRecords.getValue(), "nProcessedRecords.getValue()");
 
                     nProcessedRecords.setValue(0);
                 } catch (InterruptedException e) {
@@ -196,7 +203,8 @@ public class TableToRecordListenerTest extends RefreshingTableTestCase {
             source.notifyListeners(i(), i(), i(4));
         });
 
-        awaitRecordProcessing.run();
+        // expect 2 changes (1 add_modify, 1 remove_modprev)
+        awaitRecordProcessing.accept(2);
 
         // check the new row at the modified index
         record = addedModified.remove();
@@ -238,7 +246,7 @@ public class TableToRecordListenerTest extends RefreshingTableTestCase {
             source.notifyListeners(i(), i(6), i());
         });
 
-        awaitRecordProcessing.run();
+        awaitRecordProcessing.accept(1);
 
         record = removedModifiedPrev.remove();
         assertNotNull(record);
@@ -274,7 +282,7 @@ public class TableToRecordListenerTest extends RefreshingTableTestCase {
             source.notifyListeners(i(7), i(), i());
         });
 
-        awaitRecordProcessing.run();
+        awaitRecordProcessing.accept(1);
 
         record = addedModified.remove();
         assertNotNull(record);

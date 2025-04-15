@@ -3,236 +3,41 @@
 //
 package io.deephaven.dataadapter;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.deephaven.base.Pair;
 import io.deephaven.dataadapter.rec.desc.RecordAdapterDescriptorBuilder;
-import io.deephaven.dataadapter.rec.json.JsonRecordAdapterUtil;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.DataIndex;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.dataindex.TableBackedDataIndex;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.TstUtils;
-import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.util.TableTools;
+import io.deephaven.function.Basic;
 import io.deephaven.util.QueryConstants;
+import org.jetbrains.annotations.NotNull;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 
 import static io.deephaven.engine.testutil.TstUtils.i;
 
 
-public class KeyedRecordAdapterDataIndexTest extends RefreshingTableTestCase {
-
-    /**
-     * Test a KeyedRecordAdapter that just converts rows into HashMaps
-     */
-    public void testGenericKeyedRecordAdapter() {
-        final QueryTable source = TstUtils.testRefreshingTable(
-                i(2, 4, 6, 8).copy().toTracking(),
-                TableTools.col("KeyCol1", "KeyA", "KeyB", "KeyA", "KeyB"),
-                TableTools.col("KeyCol2", 0, 0, 1, 1),
-                TableTools.col("StringCol", "Aa", null, "Cc", "Dd"),
-                TableTools.charCol("CharCol", 'A', QueryConstants.NULL_CHAR, 'C', 'D'),
-                TableTools.byteCol("ByteCol", (byte) 0, QueryConstants.NULL_BYTE, (byte) 3, (byte) 4),
-                TableTools.shortCol("ShortCol", (short) 1, QueryConstants.NULL_SHORT, (short) 3, (short) 4),
-                TableTools.intCol("IntCol", 100, QueryConstants.NULL_INT, 300, 400),
-                TableTools.floatCol("FloatCol", 0.1f, QueryConstants.NULL_FLOAT, 0.3f, 0.4f),
-                TableTools.longCol("LongCol", 10_000_000_000L, QueryConstants.NULL_LONG, 30_000_000_000L,
-                        40_000_000_000L),
-                TableTools.doubleCol("DoubleCol", 1.1d, QueryConstants.NULL_DOUBLE, 3.3d, 4.4d));
-        TableTools.show(source);
-
-        final DataIndex dataIndex = DataIndexer.getDataIndex(source, "KeyCol1", "KeyCol2");
-
-        final KeyedRecordAdapter<List<?>, Map<String, Object>> keyedRecordAdapter =
-                KeyedRecordAdapter.makeRecordAdapterCompositeKey(
-                        source,
-                        Arrays.asList("StringCol", "CharCol", "ByteCol", "ShortCol", "IntCol", "FloatCol", "LongCol",
-                                "DoubleCol"),
-                        "KeyCol1", "KeyCol2");
-
-        Map<String, Object> record = keyedRecordAdapter.getRecord(Arrays.asList("KeyA", 0));
-        assertEquals("Aa", record.get("StringCol"));
-        assertEquals('A', record.get("CharCol"));
-        assertEquals((byte) 0, record.get("ByteCol"));
-        assertEquals((short) 1, record.get("ShortCol"));
-        assertEquals(100, record.get("IntCol"));
-        assertEquals(0.1f, record.get("FloatCol"));
-        assertEquals(10_000_000_000L, record.get("LongCol"));
-        assertEquals(1.1d, record.get("DoubleCol"));
-
-        record = keyedRecordAdapter.getRecord(Arrays.asList("KeyB", 0));
-        assertNull(record.get("StringCol"));
-        assertNull(record.get("CharCol"));
-        assertNull(record.get("ByteCol"));
-        assertNull(record.get("ShortCol"));
-        assertNull(record.get("IntCol"));
-        assertNull(record.get("FloatCol"));
-        assertNull(record.get("LongCol"));
-        assertNull(record.get("DoubleCol"));
-
-        // test missing key
-        assertNull(keyedRecordAdapter.getRecord(Arrays.asList("MissingKey", 0)));
-
-        // test invalid key
-        try {
-            keyedRecordAdapter.getRecord(Collections.singletonList("KeyA"));
-            fail("should have thrown an exception");
-        } catch (IllegalArgumentException ex) {
-            assertEquals("dataKey has 1 components; expected 2", ex.getMessage());
-        }
-    }
-
-    /**
-     * Test a KeyedRecordAdapter that just converts rows into ObjectNodes
-     */
-    public void testJsonKeyedRecordAdapter() {
-        final QueryTable source = TstUtils.testRefreshingTable(
-                i(2, 4, 6, 8).copy().toTracking(),
-                TableTools.col("KeyCol1", "KeyA", "KeyB", "KeyA", "KeyB"),
-                TableTools.col("KeyCol2", 0, 0, 1, 1),
-                TableTools.col("StringCol", "Aa", null, "Cc", "Dd"),
-                TableTools.charCol("CharCol", 'A', QueryConstants.NULL_CHAR, 'C', 'D'),
-                TableTools.byteCol("ByteCol", (byte) 0, QueryConstants.NULL_BYTE, (byte) 3, (byte) 4),
-                TableTools.shortCol("ShortCol", (short) 1, QueryConstants.NULL_SHORT, (short) 3, (short) 4),
-                TableTools.intCol("IntCol", 100, QueryConstants.NULL_INT, 300, 400),
-                TableTools.floatCol("FloatCol", 0.1f, QueryConstants.NULL_FLOAT, 0.3f, 0.4f),
-                TableTools.longCol("LongCol", 10_000_000_000L, QueryConstants.NULL_LONG, 30_000_000_000L,
-                        40_000_000_000L),
-                TableTools.doubleCol("DoubleCol", 1.1d, QueryConstants.NULL_DOUBLE, 3.3d, 4.4d));
-        TableTools.show(source);
-
-        final KeyedRecordAdapter<List<?>, ObjectNode> keyedRecordAdapter =
-                KeyedRecordAdapter.makeRecordAdapterCompositeKey(
-                        source,
-                        JsonRecordAdapterUtil.createJsonRecordAdapterDescriptor(source,
-                                Arrays.asList("KeyCol1", "KeyCol2", "StringCol", "CharCol", "ByteCol", "ShortCol",
-                                        "IntCol", "FloatCol", "LongCol", "DoubleCol")),
-                        "KeyCol1", "KeyCol2");
-
-        ObjectNode record = keyedRecordAdapter.getRecord(Arrays.asList("KeyA", 0));
-        assertEquals("KeyA", record.get("KeyCol1").textValue());
-        assertEquals(0, record.get("KeyCol2").intValue());
-        assertEquals("Aa", record.get("StringCol").textValue());
-        assertEquals('A', record.get("CharCol").textValue().charAt(0));
-        assertEquals((byte) 0, (byte) record.get("ByteCol").shortValue());
-        assertEquals((short) 1, record.get("ShortCol").shortValue());
-        assertEquals(100, record.get("IntCol").intValue());
-        assertEquals(0.1f, record.get("FloatCol").floatValue());
-        assertEquals(10_000_000_000L, record.get("LongCol").longValue());
-        assertEquals(1.1d, record.get("DoubleCol").doubleValue());
-
-        record = keyedRecordAdapter.getRecord(Arrays.asList("KeyB", 0));
-        assertEquals("KeyB", record.get("KeyCol1").textValue());
-        assertEquals(0, record.get("KeyCol2").intValue());
-        assertTrue(record.get("StringCol").isNull());
-        assertTrue(record.get("CharCol").isNull());
-        assertTrue(record.get("ByteCol").isNull());
-        assertTrue(record.get("ShortCol").isNull());
-        assertTrue(record.get("IntCol").isNull());
-        assertTrue(record.get("FloatCol").isNull());
-        assertTrue(record.get("LongCol").isNull());
-        assertTrue(record.get("DoubleCol").isNull());
-
-        // test missing key
-        assertNull(keyedRecordAdapter.getRecord(Arrays.asList("MissingKey", 0)));
-
-        // test invalid key
-        try {
-            keyedRecordAdapter.getRecord(Collections.singletonList("KeyA"));
-            fail("should have thrown an exception");
-        } catch (IllegalArgumentException ex) {
-            assertEquals("dataKey has 1 components; expected 2", ex.getMessage());
-        }
-    }
-
-    /**
-     * Test a KeyedRecordAdapter that converts rows into instances of a custom object {@link MyRecord}.
-     */
-    public void testCustomKeyedRecordAdapterExcludingKeyCols() {
-        final QueryTable source = TstUtils.testRefreshingTable(
-                i(2, 4, 6, 8).copy().toTracking(),
-                TableTools.col("KeyCol1", "KeyA", "KeyB", "KeyA", "KeyB"),
-                TableTools.col("KeyCol2", 0, 0, 1, 1),
-                TableTools.col("StringCol", "Aa", null, "Cc", "Dd"),
-                TableTools.charCol("CharCol", 'A', QueryConstants.NULL_CHAR, 'C', 'D'),
-                TableTools.byteCol("ByteCol", (byte) 0, QueryConstants.NULL_BYTE, (byte) 3, (byte) 4),
-                TableTools.shortCol("ShortCol", (short) 1, QueryConstants.NULL_SHORT, (short) 3, (short) 4),
-                TableTools.intCol("IntCol", 100, QueryConstants.NULL_INT, 300, 400),
-                TableTools.floatCol("FloatCol", 0.1f, QueryConstants.NULL_FLOAT, 0.3f, 0.4f),
-                TableTools.longCol("LongCol", 10_000_000_000L, QueryConstants.NULL_LONG, 30_000_000_000L,
-                        40_000_000_000L),
-                TableTools.doubleCol("DoubleCol", 1.1d, QueryConstants.NULL_DOUBLE, 3.3d, 4.4d));
-        TableTools.show(source);
-
-
-        final KeyedRecordAdapter<List<?>, MyRecord> keyedRecordAdapter =
-                KeyedRecordAdapter.makeRecordAdapterCompositeKey(
-                        source,
-                        RecordAdapterDescriptorBuilder.create(MyRecord::new)
-                                .addStringColumnAdapter("StringCol", (myRecord, s) -> myRecord.myString = s)
-                                .addStringColumnAdapter("StringCol", (myRecord, s) -> myRecord.myString = s)
-                                .addCharColumnAdapter("CharCol", (myRecord, s) -> myRecord.myChar = s)
-                                .addByteColumnAdapter("ByteCol", (myRecord, s) -> myRecord.myByte = s)
-                                .addShortColumnAdapter("ShortCol", (myRecord, s) -> myRecord.myShort = s)
-                                .addIntColumnAdapter("IntCol", (myRecord, s) -> myRecord.myInt = s)
-                                .addFloatColumnAdapter("FloatCol", (myRecord, s) -> myRecord.myFloat = s)
-                                .addLongColumnAdapter("LongCol", (myRecord, s) -> myRecord.myLong = s)
-                                .addDoubleColumnAdapter("DoubleCol", (myRecord, s) -> myRecord.myDouble = s)
-                                .build(),
-                        "KeyCol1", "KeyCol2");
-
-        MyRecord record = keyedRecordAdapter.getRecord(Arrays.asList("KeyA", 0));
-        assertEquals("Aa", record.myString);
-        assertEquals('A', record.myChar);
-        assertEquals((byte) 0, record.myByte);
-        assertEquals((short) 1, record.myShort);
-        assertEquals(100, record.myInt);
-        assertEquals(0.1f, record.myFloat);
-        assertEquals(10_000_000_000L, record.myLong);
-        assertEquals(1.1d, record.myDouble);
-
-        record = keyedRecordAdapter.getRecord(Arrays.asList("KeyB", 0));
-        assertNull(record.myString);
-        assertEquals(QueryConstants.NULL_CHAR, record.myChar);
-        assertEquals(QueryConstants.NULL_BYTE, record.myByte);
-        assertEquals(QueryConstants.NULL_SHORT, record.myShort);
-        assertEquals(QueryConstants.NULL_INT, record.myInt);
-        assertEquals(QueryConstants.NULL_FLOAT, record.myFloat);
-        assertEquals(QueryConstants.NULL_LONG, record.myLong);
-        assertEquals(QueryConstants.NULL_DOUBLE, record.myDouble);
-
-        // test missing key:
-        assertNull(keyedRecordAdapter.getRecord(Arrays.asList("MissingKey", 0)));
-
-        // test invalid key:
-        try {
-            keyedRecordAdapter.getRecord(Collections.singletonList("KeyA"));
-            fail("should have thrown an exception");
-        } catch (IllegalArgumentException ex) {
-            assertEquals("dataKey has 1 components; expected 2", ex.getMessage());
-        }
-    }
+public class KeyedRecordAdapterDataIndexTest extends KeyedRecordAdapterTestBase {
 
     public void testCustomKeyedRecordAdapterWithOneObjKeyCol() {
-        final QueryTable source = TstUtils.testRefreshingTable(
-                i(2, 4).copy().toTracking(),
-                TableTools.col("KeyCol1", "KeyA", "KeyB"),
-                TableTools.col("StringCol", "Aa", null),
-                TableTools.charCol("CharCol", 'A', QueryConstants.NULL_CHAR),
-                TableTools.byteCol("ByteCol", (byte) 0, QueryConstants.NULL_BYTE),
-                TableTools.shortCol("ShortCol", (short) 1, QueryConstants.NULL_SHORT),
-                TableTools.intCol("IntCol", 100, QueryConstants.NULL_INT),
-                TableTools.floatCol("FloatCol", 0.1f, QueryConstants.NULL_FLOAT),
-                TableTools.longCol("LongCol", 10_000_000_000L, QueryConstants.NULL_LONG),
-                TableTools.doubleCol("DoubleCol", 1.1d, QueryConstants.NULL_DOUBLE));
-        TableTools.show(source);
-
+        final Pair<QueryTable, TableBackedDataIndex> result = getSource("KeyCol1");
+        final Table source = result.first;
+        final TableBackedDataIndex dataIndex = result.second;
 
         final KeyedRecordAdapter<String, MyRecord> keyedRecordAdapter =
                 KeyedRecordAdapter.makeRecordAdapterSimpleKey(
                         source,
+                        dataIndex,
                         RecordAdapterDescriptorBuilder.create(MyRecord::new)
                                 .addStringColumnAdapter("StringCol", (myRecord, s) -> myRecord.myString = s)
                                 .addCharColumnAdapter("CharCol", (myRecord, s) -> myRecord.myChar = s)
@@ -244,139 +49,71 @@ public class KeyedRecordAdapterDataIndexTest extends RefreshingTableTestCase {
                                 .addDoubleColumnAdapter("DoubleCol", (myRecord, s) -> myRecord.myDouble = s)
                                 .addStringColumnAdapter("KeyCol1", (myRecord, s) -> myRecord.myKeyString = s)
                                 .build(),
-                        "KeyCol1", String.class);
+                        String.class);
 
-        MyRecord recordA = keyedRecordAdapter.getRecord("KeyA");
+        // getRecord tests
+        final MyRecord recordA = keyedRecordAdapter.getRecord("KeyA");
         assertEquals("KeyA", recordA.myKeyString);
-        assertEquals("Aa", recordA.myString);
-        assertEquals('A', recordA.myChar);
-        assertEquals((byte) 0, recordA.myByte);
-        assertEquals((short) 1, recordA.myShort);
-        assertEquals(100, recordA.myInt);
-        assertEquals(0.1f, recordA.myFloat);
-        assertEquals(10_000_000_000L, recordA.myLong);
-        assertEquals(1.1d, recordA.myDouble);
+        assertEquals(0, recordA.myKeyInt);
+        assertEquals("Xx", recordA.myString);
+        assertEquals('X', recordA.myChar);
+        assertEquals((byte) 99, recordA.myByte);
+        assertEquals((short) 99, recordA.myShort);
+        assertEquals(900, recordA.myInt);
+        assertEquals(0.9f, recordA.myFloat);
+        assertEquals(90_000_000_000L, recordA.myLong);
+        assertEquals(9.9d, recordA.myDouble);
 
-        MyRecord recordB = keyedRecordAdapter.getRecord("KeyB");
+        final MyRecord recordB = keyedRecordAdapter.getRecord("KeyB");
         assertEquals("KeyB", recordB.myKeyString);
-        assertNull(recordB.myString);
-        assertEquals(QueryConstants.NULL_CHAR, recordB.myChar);
-        assertEquals(QueryConstants.NULL_BYTE, recordB.myByte);
-        assertEquals(QueryConstants.NULL_SHORT, recordB.myShort);
-        assertEquals(QueryConstants.NULL_INT, recordB.myInt);
-        assertEquals(QueryConstants.NULL_FLOAT, recordB.myFloat);
-        assertEquals(QueryConstants.NULL_LONG, recordB.myLong);
-        assertEquals(QueryConstants.NULL_DOUBLE, recordB.myDouble);
+        assertEquals(0, recordA.myKeyInt);
+        assertEquals("Yy", recordB.myString);
+        assertEquals('Y', recordB.myChar);
+        assertEquals((byte) 100, recordB.myByte);
+        assertEquals((short) 100, recordB.myShort);
+        assertEquals(1000, recordB.myInt);
+        assertEquals(1.0f, recordB.myFloat);
+        assertEquals(100_000_000_000L, recordB.myLong);
+        assertEquals(10.0d, recordB.myDouble);
 
-        // test single-argument composite key:
-        MyRecord record = keyedRecordAdapter.getRecordCompositeKey("KeyA");
-        assertEquals("KeyA", record.myKeyString);
-        assertEquals("Aa", record.myString);
-        assertEquals('A', record.myChar);
-        assertEquals((byte) 0, record.myByte);
-        assertEquals((short) 1, record.myShort);
-        assertEquals(100, record.myInt);
-        assertEquals(0.1f, record.myFloat);
-        assertEquals(10_000_000_000L, record.myLong);
-        assertEquals(1.1d, record.myDouble);
+        // test null key
+        final MyRecord recordNull = keyedRecordAdapter.getRecord(null);
+        assertNull(recordNull.myKeyString);
+        assertEquals(0, recordNull.myKeyInt);
+        assertEquals("", recordNull.myString);
+        assertEquals('0', recordNull.myChar);
+        assertEquals((byte) -1, recordNull.myByte);
+        assertEquals((short) -1, recordNull.myShort);
+        assertEquals(-1, recordNull.myInt);
+        assertEquals(-1.0f, recordNull.myFloat);
+        assertEquals(-1L, recordNull.myLong);
+        assertEquals(-1.0d, recordNull.myDouble);
 
         // test missing key:
         assertNull(keyedRecordAdapter.getRecord("MissingKey"));
 
-        // test invalid key:
-        try {
-            keyedRecordAdapter.getRecordCompositeKey("KeyA", 0);
-            fail("should have thrown an exception");
-        } catch (IllegalArgumentException ex) {
-            assertEquals("dataKey has 2 components; expected 1", ex.getMessage());
-        }
+        // getRecordList tests
+        final List<MyRecord> recordsA = keyedRecordAdapter.getRecordList("KeyA");
+        assertEquals(3, recordsA.size());
+        assertEquals("Aa", recordsA.get(0).myString);
+        assertEquals("Cc", recordsA.get(1).myString);
+        assertEquals("Xx", recordsA.get(2).myString);
 
-        // Test retrieving multiple records
-        final Map<String, MyRecord> records = keyedRecordAdapter.getRecords("KeyA", "KeyB", "MissingKey");
-        assertEquals(recordA, records.get("KeyA"));
-        assertEquals(recordB, records.get("KeyB"));
-        assertFalse("records.containsKey(\"MissingKey\")", records.containsKey("MissingKey"));
-    }
+        final List<MyRecord> recordsB = keyedRecordAdapter.getRecordList("KeyB");
+        assertEquals(3, recordsB.size());
+        assertNull(recordsB.get(0).myString);
+        assertEquals("Dd", recordsB.get(1).myString);
+        assertEquals("Yy", recordsB.get(2).myString);
 
-    public void testCustomKeyedRecordAdapterWithOnePrimitiveKeyCol() {
-        final QueryTable source = TstUtils.testRefreshingTable(
-                i(2, 4, 6).copy().toTracking(),
-                TableTools.intCol("KeyCol1", 0, 1, QueryConstants.NULL_INT),
-                TableTools.col("StringCol", "Aa", "Bb", null),
-                TableTools.charCol("CharCol", 'A', 'B', QueryConstants.NULL_CHAR),
-                TableTools.byteCol("ByteCol", (byte) 0, (byte) 0, QueryConstants.NULL_BYTE),
-                TableTools.shortCol("ShortCol", (short) 1, (short) 1, QueryConstants.NULL_SHORT),
-                TableTools.intCol("IntCol", 100, 0, QueryConstants.NULL_INT),
-                TableTools.floatCol("FloatCol", 0.1f, 0, QueryConstants.NULL_FLOAT),
-                TableTools.longCol("LongCol", 10_000_000_000L, 0, QueryConstants.NULL_LONG),
-                TableTools.doubleCol("DoubleCol", 1.1d, 0, QueryConstants.NULL_DOUBLE));
-        TableTools.show(source);
-
-
-        final KeyedRecordAdapter<Integer, MyRecord> keyedRecordAdapter =
-                KeyedRecordAdapter.makeRecordAdapterSimpleKey(
-                        source,
-                        RecordAdapterDescriptorBuilder.create(MyRecord::new)
-                                .addStringColumnAdapter("StringCol", (myRecord, s) -> myRecord.myString = s)
-                                .addCharColumnAdapter("CharCol", (myRecord, s) -> myRecord.myChar = s)
-                                .addByteColumnAdapter("ByteCol", (myRecord, s) -> myRecord.myByte = s)
-                                .addShortColumnAdapter("ShortCol", (myRecord, s) -> myRecord.myShort = s)
-                                .addIntColumnAdapter("IntCol", (myRecord, s) -> myRecord.myInt = s)
-                                .addFloatColumnAdapter("FloatCol", (myRecord, s) -> myRecord.myFloat = s)
-                                .addLongColumnAdapter("LongCol", (myRecord, s) -> myRecord.myLong = s)
-                                .addDoubleColumnAdapter("DoubleCol", (myRecord, s) -> myRecord.myDouble = s)
-                                .addIntColumnAdapter("KeyCol1", (myRecord, s) -> myRecord.myKeyInt = s)
-                                .build(),
-                        "KeyCol1", Integer.class);
-
-        MyRecord record0 = keyedRecordAdapter.getRecord(0);
-        assertEquals(0, record0.myKeyInt);
-        assertEquals("Aa", record0.myString);
-        assertEquals('A', record0.myChar);
-        assertEquals((byte) 0, record0.myByte);
-        assertEquals((short) 1, record0.myShort);
-        assertEquals(100, record0.myInt);
-        assertEquals(0.1f, record0.myFloat);
-        assertEquals(10_000_000_000L, record0.myLong);
-        assertEquals(1.1d, record0.myDouble);
-
-        MyRecord record1 = keyedRecordAdapter.getRecord(1);
-        assertEquals(1, record1.myKeyInt);
-        assertEquals("Bb", record1.myString);
-        assertEquals('B', record1.myChar);
-        assertEquals((byte) 0, record1.myByte);
-        assertEquals((short) 1, record1.myShort);
-        assertEquals(0, record1.myInt);
-        assertEquals(0f, record1.myFloat);
-        assertEquals(0L, record1.myLong);
-        assertEquals(0d, record1.myDouble);
-
-        // test null key
-        MyRecord recordNull = keyedRecordAdapter.getRecord(null);
-        assertEquals(QueryConstants.NULL_INT, recordNull.myKeyInt);
-        assertNull(recordNull.myString);
-        assertEquals(QueryConstants.NULL_CHAR, recordNull.myChar);
-        assertEquals(QueryConstants.NULL_BYTE, recordNull.myByte);
-        assertEquals(QueryConstants.NULL_SHORT, recordNull.myShort);
-        assertEquals(QueryConstants.NULL_INT, recordNull.myInt);
-        assertEquals(QueryConstants.NULL_FLOAT, recordNull.myFloat);
-        assertEquals(QueryConstants.NULL_LONG, recordNull.myLong);
-        assertEquals(QueryConstants.NULL_DOUBLE, recordNull.myDouble);
+        final List<MyRecord> recordsNull = keyedRecordAdapter.getRecordList(null);
+        assertEquals(1, recordsNull.size());
+        assertEquals(recordNull, recordsNull.get(0));
 
         // test single-argument composite key:
-        MyRecord record = keyedRecordAdapter.getRecordCompositeKey(0);
-        assertEquals(0, record.myKeyInt);
-        assertEquals("Aa", record.myString);
-        assertEquals('A', record.myChar);
-        assertEquals((byte) 0, record.myByte);
-        assertEquals((short) 1, record.myShort);
-        assertEquals(100, record.myInt);
-        assertEquals(0.1f, record.myFloat);
-        assertEquals(10_000_000_000L, record.myLong);
-        assertEquals(1.1d, record.myDouble);
+        assertEquals(recordA, keyedRecordAdapter.getRecordCompositeKey("KeyA"));
 
-        // test missing key:
-        assertNull(keyedRecordAdapter.getRecord(-1));
+        // test missing composite key:
+        assertNull(keyedRecordAdapter.getRecordCompositeKey("MissingKey"));
 
         // test invalid composite key:
         try {
@@ -386,6 +123,133 @@ public class KeyedRecordAdapterDataIndexTest extends RefreshingTableTestCase {
             assertEquals("dataKey has 2 components; expected 1", ex.getMessage());
         }
 
+        // getRecordListCompositeKey tests
+        final List<MyRecord> recordsA_composite = keyedRecordAdapter.getRecordListCompositeKey("KeyA");
+        assertEquals(recordsA, recordsA_composite);
+
+        final List<MyRecord> recordsB_composite = keyedRecordAdapter.getRecordListCompositeKey("KeyB");
+        assertEquals(recordsB, recordsB_composite);
+
+        final List<MyRecord> recordsNull_composite = keyedRecordAdapter.getRecordListCompositeKey((Object) null);
+        assertEquals(1, recordsNull_composite.size());
+        assertEquals(recordNull, recordsNull_composite.get(0));
+
+        assertNull(keyedRecordAdapter.getRecordListCompositeKey("MissingKey"));
+
+        // Test retrieving multiple records (for different keys)
+        final Map<String, MyRecord> records = keyedRecordAdapter.getRecords("KeyA", "KeyB", "MissingKey");
+        assertEquals(recordA, records.get("KeyA"));
+        assertEquals(recordB, records.get("KeyB"));
+        assertFalse("records.containsKey(\"MissingKey\")", records.containsKey("MissingKey"));
+    }
+
+    public void testCustomKeyedRecordAdapterWithOnePrimitiveKeyCol() {
+        final Pair<QueryTable, TableBackedDataIndex> result = getSource("KeyCol2");
+        final Table source = result.first;
+        final TableBackedDataIndex dataIndex = result.second;
+
+        final KeyedRecordAdapter<Integer, MyRecord> keyedRecordAdapter =
+                KeyedRecordAdapter.makeRecordAdapterSimpleKey(
+                        source,
+                        dataIndex,
+                        RecordAdapterDescriptorBuilder.create(MyRecord::new)
+                                .addStringColumnAdapter("StringCol", (myRecord, s) -> myRecord.myString = s)
+                                .addCharColumnAdapter("CharCol", (myRecord, s) -> myRecord.myChar = s)
+                                .addByteColumnAdapter("ByteCol", (myRecord, s) -> myRecord.myByte = s)
+                                .addShortColumnAdapter("ShortCol", (myRecord, s) -> myRecord.myShort = s)
+                                .addIntColumnAdapter("IntCol", (myRecord, s) -> myRecord.myInt = s)
+                                .addFloatColumnAdapter("FloatCol", (myRecord, s) -> myRecord.myFloat = s)
+                                .addLongColumnAdapter("LongCol", (myRecord, s) -> myRecord.myLong = s)
+                                .addDoubleColumnAdapter("DoubleCol", (myRecord, s) -> myRecord.myDouble = s)
+                                .addIntColumnAdapter("KeyCol2", (myRecord, s) -> myRecord.myKeyInt = s)
+                                .build(),
+                        int.class);
+
+        // getRecord tests
+        final MyRecord record0 = keyedRecordAdapter.getRecord(0);
+        assertNull(record0.myKeyString);
+        assertEquals(0, record0.myKeyInt);
+        assertEquals("Xx", record0.myString);
+        assertEquals('X', record0.myChar);
+        assertEquals((byte) 99, record0.myByte);
+        assertEquals((short) 99, record0.myShort);
+        assertEquals(900, record0.myInt);
+        assertEquals(0.9f, record0.myFloat);
+        assertEquals(90_000_000_000L, record0.myLong);
+        assertEquals(9.9d, record0.myDouble);
+
+        final MyRecord record1 = keyedRecordAdapter.getRecord(1);
+        assertNull(record1.myKeyString);
+        assertEquals(1, record1.myKeyInt);
+        assertEquals("Yy", record1.myString);
+        assertEquals('Y', record1.myChar);
+        assertEquals((byte) 100, record1.myByte);
+        assertEquals((short) 100, record1.myShort);
+        assertEquals(1000, record1.myInt);
+        assertEquals(1.0f, record1.myFloat);
+        assertEquals(100_000_000_000L, record1.myLong);
+        assertEquals(10.0d, record1.myDouble);
+
+        // test null key
+        final MyRecord recordNull = keyedRecordAdapter.getRecord(null);
+        assertNull(recordNull.myKeyString);
+        assertEquals(QueryConstants.NULL_INT, recordNull.myKeyInt);
+        assertEquals("", recordNull.myString);
+        assertEquals('0', recordNull.myChar);
+        assertEquals((byte) -1, recordNull.myByte);
+        assertEquals((short) -1, recordNull.myShort);
+        assertEquals(-1, recordNull.myInt);
+        assertEquals(-1.0f, recordNull.myFloat);
+        assertEquals(-1L, recordNull.myLong);
+        assertEquals(-1.0d, recordNull.myDouble);
+
+        // test missing key:
+        assertNull(keyedRecordAdapter.getRecord(-1));
+
+        // getRecordList tests
+        final List<MyRecord> records0 = keyedRecordAdapter.getRecordList(0);
+        assertEquals(3, records0.size());
+        assertEquals("Aa", records0.get(0).myString);
+        assertNull(records0.get(1).myString);
+        assertEquals("Xx", records0.get(2).myString);
+
+        final List<MyRecord> records1 = keyedRecordAdapter.getRecordList(1);
+        assertEquals(3, records1.size());
+        assertEquals("Cc", records1.get(0).myString);
+        assertEquals("Dd", records1.get(1).myString);
+        assertEquals("Yy", records1.get(2).myString);
+
+        final List<MyRecord> recordsNull = keyedRecordAdapter.getRecordList(null);
+        assertEquals(1, recordsNull.size());
+        assertEquals(recordNull, recordsNull.get(0));
+
+        // test single-argument composite key:
+        assertEquals(record0, keyedRecordAdapter.getRecordCompositeKey(0));
+
+        // test missing composite key:
+        assertNull(keyedRecordAdapter.getRecordCompositeKey(-1));
+
+        // test invalid composite key:
+        try {
+            keyedRecordAdapter.getRecordCompositeKey("KeyA", 0);
+            fail("should have thrown an exception");
+        } catch (IllegalArgumentException ex) {
+            assertEquals("dataKey has 2 components; expected 1", ex.getMessage());
+        }
+
+        // getRecordListCompositeKey tests
+        final List<MyRecord> records0_composite = keyedRecordAdapter.getRecordListCompositeKey(0);
+        assertEquals(records0, records0_composite);
+
+        final List<MyRecord> records1_composite = keyedRecordAdapter.getRecordListCompositeKey(1);
+        assertEquals(records1, records1_composite);
+
+        final List<MyRecord> recordsNull_composite = keyedRecordAdapter.getRecordListCompositeKey((Object) null);
+        assertEquals(1, recordsNull_composite.size());
+        assertEquals(recordNull, recordsNull_composite.get(0));
+
+        assertNull(keyedRecordAdapter.getRecordListCompositeKey(-1));
+
         // Test retrieving multiple records
         final Map<Integer, MyRecord> records = keyedRecordAdapter.getRecords(0, 1, null);
         assertEquals(record0, records.get(0));
@@ -394,25 +258,14 @@ public class KeyedRecordAdapterDataIndexTest extends RefreshingTableTestCase {
     }
 
     public void testCustomKeyedRecordAdapterWithTwoKeyCols() {
-        final QueryTable source = TstUtils.testRefreshingTable(
-                i(2, 4, 6, 8).copy().toTracking(),
-                TableTools.col("KeyCol1", "KeyA", "KeyB", "KeyA", "KeyB"),
-                TableTools.col("KeyCol2", 0, 0, 1, 1),
-                TableTools.col("StringCol", "Aa", null, "Cc", "Dd"),
-                TableTools.charCol("CharCol", 'A', QueryConstants.NULL_CHAR, 'C', 'D'),
-                TableTools.byteCol("ByteCol", (byte) 0, QueryConstants.NULL_BYTE, (byte) 3, (byte) 4),
-                TableTools.shortCol("ShortCol", (short) 1, QueryConstants.NULL_SHORT, (short) 3, (short) 4),
-                TableTools.intCol("IntCol", 100, QueryConstants.NULL_INT, 300, 400),
-                TableTools.floatCol("FloatCol", 0.1f, QueryConstants.NULL_FLOAT, 0.3f, 0.4f),
-                TableTools.longCol("LongCol", 10_000_000_000L, QueryConstants.NULL_LONG, 30_000_000_000L,
-                        40_000_000_000L),
-                TableTools.doubleCol("DoubleCol", 1.1d, QueryConstants.NULL_DOUBLE, 3.3d, 4.4d));
-        TableTools.show(source);
-
+        final Pair<QueryTable, TableBackedDataIndex> result = getSource("KeyCol1", "KeyCol2");
+        final QueryTable source = result.first;
+        final TableBackedDataIndex dataIndex = result.second;
 
         final KeyedRecordAdapter<List<?>, MyRecord> keyedRecordAdapter =
                 KeyedRecordAdapter.makeRecordAdapterCompositeKey(
                         source,
+                        dataIndex,
                         RecordAdapterDescriptorBuilder.create(MyRecord::new)
                                 .addStringColumnAdapter("StringCol", (myRecord, s) -> myRecord.myString = s)
                                 .addCharColumnAdapter("CharCol", (myRecord, s) -> myRecord.myChar = s)
@@ -424,35 +277,80 @@ public class KeyedRecordAdapterDataIndexTest extends RefreshingTableTestCase {
                                 .addDoubleColumnAdapter("DoubleCol", (myRecord, s) -> myRecord.myDouble = s)
                                 .addStringColumnAdapter("KeyCol1", (myRecord, s) -> myRecord.myKeyString = s)
                                 .addIntColumnAdapter("KeyCol2", (myRecord, s) -> myRecord.myKeyInt = s)
-                                .build(),
-                        "KeyCol1", "KeyCol2");
+                                .build());
 
-        MyRecord record = keyedRecordAdapter.getRecord(Arrays.asList("KeyA", 0));
-        assertEquals("KeyA", record.myKeyString);
-        assertEquals(0, record.myKeyInt);
-        assertEquals("Aa", record.myString);
-        assertEquals('A', record.myChar);
-        assertEquals((byte) 0, record.myByte);
-        assertEquals((short) 1, record.myShort);
-        assertEquals(100, record.myInt);
-        assertEquals(0.1f, record.myFloat);
-        assertEquals(10_000_000_000L, record.myLong);
-        assertEquals(1.1d, record.myDouble);
+        // getRecord tests
+        final MyRecord recordA0 = keyedRecordAdapter.getRecord(Arrays.asList("KeyA", 0));
+        assertEquals("KeyA", recordA0.myKeyString);
+        assertEquals(0, recordA0.myKeyInt);
+        assertEquals("Xx", recordA0.myString);
+        assertEquals('X', recordA0.myChar);
+        assertEquals((byte) 99, recordA0.myByte);
+        assertEquals((short) 99, recordA0.myShort);
+        assertEquals(900, recordA0.myInt);
+        assertEquals(0.9f, recordA0.myFloat);
+        assertEquals(90_000_000_000L, recordA0.myLong);
+        assertEquals(9.9d, recordA0.myDouble);
 
-        record = keyedRecordAdapter.getRecord(Arrays.asList("KeyB", 0));
-        assertEquals("KeyB", record.myKeyString);
-        assertEquals(0, record.myKeyInt);
-        assertNull(record.myString);
-        assertEquals(QueryConstants.NULL_CHAR, record.myChar);
-        assertEquals(QueryConstants.NULL_BYTE, record.myByte);
-        assertEquals(QueryConstants.NULL_SHORT, record.myShort);
-        assertEquals(QueryConstants.NULL_INT, record.myInt);
-        assertEquals(QueryConstants.NULL_FLOAT, record.myFloat);
-        assertEquals(QueryConstants.NULL_LONG, record.myLong);
-        assertEquals(QueryConstants.NULL_DOUBLE, record.myDouble);
+        final MyRecord recordB0 = keyedRecordAdapter.getRecord(Arrays.asList("KeyB", 0));
+        assertEquals("KeyB", recordB0.myKeyString);
+        assertEquals(0, recordB0.myKeyInt);
+        assertTrue(Basic.isNull(recordB0.myString));
+        assertTrue(Basic.isNull(recordB0.myChar));
+        assertTrue(Basic.isNull(recordB0.myByte));
+        assertTrue(Basic.isNull(recordB0.myShort));
+        assertTrue(Basic.isNull(recordB0.myInt));
+        assertTrue(Basic.isNull(recordB0.myFloat));
+        assertTrue(Basic.isNull(recordB0.myLong));
+        assertTrue(Basic.isNull(recordB0.myDouble));
+
+        // test null key
+        final MyRecord recordNull = keyedRecordAdapter.getRecord(Arrays.asList(null, null));
+        assertNull(recordNull.myKeyString);
+        assertEquals(QueryConstants.NULL_INT, recordNull.myKeyInt);
+        assertEquals("", recordNull.myString);
+        assertEquals('0', recordNull.myChar);
+        assertEquals((byte) -1, recordNull.myByte);
+        assertEquals((short) -1, recordNull.myShort);
+        assertEquals(-1, recordNull.myInt);
+        assertEquals(-1.0f, recordNull.myFloat);
+        assertEquals(-1L, recordNull.myLong);
+        assertEquals(-1.0d, recordNull.myDouble);
 
         // test missing key:
         assertNull(keyedRecordAdapter.getRecord(Arrays.asList("MissingKey", 0)));
+
+        // getRecordList tests
+        final List<MyRecord> recordsA0 = keyedRecordAdapter.getRecordList(Arrays.asList("KeyA", 0));
+        final MyRecord recordA0_0 = recordsA0.get(0);
+        assertEquals("KeyA", recordA0_0.myKeyString);
+        assertEquals(0, recordA0_0.myKeyInt);
+        assertEquals("Aa", recordA0_0.myString);
+        assertEquals('A', recordA0_0.myChar);
+        assertEquals((byte) 0, recordA0_0.myByte);
+        assertEquals((short) 1, recordA0_0.myShort);
+        assertEquals(100, recordA0_0.myInt);
+        assertEquals(0.1f, recordA0_0.myFloat);
+        assertEquals(10_000_000_000L, recordA0_0.myLong);
+        assertEquals(1.1d, recordA0_0.myDouble);
+
+        final MyRecord recordA0_1 = recordsA0.get(1);
+        assertEquals("KeyA", recordA0_1.myKeyString);
+        assertEquals(0, recordA0_1.myKeyInt);
+        assertEquals("Xx", recordA0_1.myString);
+        assertEquals('X', recordA0_1.myChar);
+        assertEquals((byte) 99, recordA0_1.myByte);
+        assertEquals((short) 99, recordA0_1.myShort);
+        assertEquals(900, recordA0_1.myInt);
+        assertEquals(0.9f, recordA0_1.myFloat);
+        assertEquals(90_000_000_000L, recordA0_1.myLong);
+        assertEquals(9.9d, recordA0_1.myDouble);
+
+        // test composite key:
+        assertEquals(recordA0_1, keyedRecordAdapter.getRecordCompositeKey("KeyA", 0));
+
+        // test missing composite key:
+        assertNull(keyedRecordAdapter.getRecordCompositeKey("MissingKey", -1));
 
         // test invalid key:
         try {
@@ -461,33 +359,38 @@ public class KeyedRecordAdapterDataIndexTest extends RefreshingTableTestCase {
         } catch (IllegalArgumentException ex) {
             assertEquals("dataKey has 1 components; expected 2", ex.getMessage());
         }
+
+        // getRecordListCompositeKey tests
+        final List<MyRecord> recordsA0_composite = keyedRecordAdapter.getRecordListCompositeKey("KeyA", 0);
+        assertEquals(recordsA0, recordsA0_composite);
+
+        final List<MyRecord> recordsNull_composite = keyedRecordAdapter.getRecordListCompositeKey(null, null);
+        assertEquals(1, recordsNull_composite.size());
+        assertEquals(recordNull, recordsNull_composite.get(0));
+
+        assertNull(keyedRecordAdapter.getRecordListCompositeKey("MissingKey", -1));
+
+        // Test retrieving multiple records
+        final Map<List<?>, MyRecord> records = keyedRecordAdapter.getRecords(Arrays.asList("KeyA", 0), Arrays.asList("KeyB", 0), Arrays.asList(null, null));
+        assertEquals(recordA0_1, records.get(List.of("KeyA", 0)));
+        assertEquals(recordB0, records.get(List.of("KeyB", 0)));
+        assertEquals(recordNull, records.get(Arrays.asList(null, null)));
     }
 
     public void testGenericKeyedRecordAdapterUpdating() throws InterruptedException {
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.resetForUnitTests(false);
 
-        final QueryTable source = TstUtils.testRefreshingTable(
-                i(2, 4, 6, 8).copy().toTracking(),
-                TableTools.col("KeyCol1", "KeyA", "KeyB", "KeyA", "KeyB"),
-                TableTools.col("KeyCol2", 0, 0, 1, 1),
-                TableTools.col("StringCol", "Aa", null, "Cc", "Dd"),
-                TableTools.charCol("CharCol", 'A', QueryConstants.NULL_CHAR, 'C', 'D'),
-                TableTools.byteCol("ByteCol", (byte) 0, QueryConstants.NULL_BYTE, (byte) 3, (byte) 4),
-                TableTools.shortCol("ShortCol", (short) 1, QueryConstants.NULL_SHORT, (short) 3, (short) 4),
-                TableTools.intCol("IntCol", 100, QueryConstants.NULL_INT, 300, 400),
-                TableTools.floatCol("FloatCol", 0.1f, QueryConstants.NULL_FLOAT, 0.3f, 0.4f),
-                TableTools.longCol("LongCol", 10_000_000_000L, QueryConstants.NULL_LONG, 30_000_000_000L,
-                        40_000_000_000L),
-                TableTools.doubleCol("DoubleCol", 1.1d, QueryConstants.NULL_DOUBLE, 3.3d, 4.4d));
-        TableTools.show(source);
+        final Pair<QueryTable, TableBackedDataIndex> result = getSource("KeyCol1", "KeyCol2");
+        final QueryTable source = result.first;
+        final TableBackedDataIndex dataIndex = result.second;
 
         final KeyedRecordAdapter<List<?>, Map<String, Object>> keyedRecordAdapter =
                 KeyedRecordAdapter.makeRecordAdapterCompositeKey(
                         source,
+                        dataIndex,
                         Arrays.asList("StringCol", "CharCol", "ByteCol", "ShortCol", "IntCol", "FloatCol", "LongCol",
-                                "DoubleCol"),
-                        "KeyCol1", "KeyCol2");
+                                "DoubleCol"));
 
         updateGraph.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(source, i(4).copy().toTracking(),
@@ -585,6 +488,8 @@ public class KeyedRecordAdapterDataIndexTest extends RefreshingTableTestCase {
         l2.countDown();
         l3.await();
 
+        TableTools.show(source);
+
         // LTM cycle complete -- KeyA/1 should be gone
         Map<List<?>, Map<String, Object>> recordsAfterLTM = keyedRecordAdapter.getRecords(
                 Arrays.asList("KeyA", 0),
@@ -592,7 +497,7 @@ public class KeyedRecordAdapterDataIndexTest extends RefreshingTableTestCase {
                 Arrays.asList("KeyA", 1),
                 Arrays.asList("KeyB", 1));
 
-        // TODO: how do I know that the row is gone, even though I can still find its data??
+        // TODO: how do I know that the row for KeyA/1 is gone, even though I can still find its data??
         //   The data is still in the column source, and the AggregationRowLookup never forgets the slot?
         assertEquals(3, recordsAfterLTM.size());
         assertEquals(recordB, recordsAfterLTM.get(Arrays.asList("KeyB", 0)));
@@ -601,66 +506,13 @@ public class KeyedRecordAdapterDataIndexTest extends RefreshingTableTestCase {
 
     }
 
-    static class MyRecord {
-        String myKeyString;
-        int myKeyInt;
+    private @NotNull Pair<QueryTable, TableBackedDataIndex> getSource(final String... keyCols) {
+        final QueryTable source = getSimpleTestTable();
+        TableTools.show(source);
 
-        String myString;
-        char myChar;
-        byte myByte;
-        short myShort;
-        int myInt;
-        float myFloat;
-        long myLong;
-        double myDouble;
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o)
-                return true;
-            if (o == null || getClass() != o.getClass())
-                return false;
-
-            MyRecord myRecord = (MyRecord) o;
-
-            if (myKeyInt != myRecord.myKeyInt)
-                return false;
-            if (myChar != myRecord.myChar)
-                return false;
-            if (myByte != myRecord.myByte)
-                return false;
-            if (myShort != myRecord.myShort)
-                return false;
-            if (myInt != myRecord.myInt)
-                return false;
-            if (Float.compare(myRecord.myFloat, myFloat) != 0)
-                return false;
-            if (myLong != myRecord.myLong)
-                return false;
-            if (Double.compare(myRecord.myDouble, myDouble) != 0)
-                return false;
-            if (!Objects.equals(myKeyString, myRecord.myKeyString))
-                return false;
-            return Objects.equals(myString, myRecord.myString);
-        }
-
-        @Override
-        public int hashCode() {
-            int result;
-            long temp;
-            result = myKeyString != null ? myKeyString.hashCode() : 0;
-            result = 31 * result + myKeyInt;
-            result = 31 * result + (myString != null ? myString.hashCode() : 0);
-            result = 31 * result + (int) myChar;
-            result = 31 * result + (int) myByte;
-            result = 31 * result + (int) myShort;
-            result = 31 * result + myInt;
-            result = 31 * result + (myFloat != +0.0f ? Float.floatToIntBits(myFloat) : 0);
-            result = 31 * result + (int) (myLong ^ (myLong >>> 32));
-            temp = Double.doubleToLongBits(myDouble);
-            result = 31 * result + (int) (temp ^ (temp >>> 32));
-            return result;
-        }
+        final DataIndex dataIndex = DataIndexer.getOrCreateDataIndex(source, keyCols);
+        TableTools.show(dataIndex.table());
+        return new Pair<>(source, ((TableBackedDataIndex) dataIndex));
     }
 
 }

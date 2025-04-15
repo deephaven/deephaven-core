@@ -3,17 +3,18 @@
 //
 package io.deephaven.dataadapter.rec.desc;
 
-import io.deephaven.api.agg.Partition;
-import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.dataadapter.rec.MultiRowRecordAdapter;
+import io.deephaven.dataadapter.rec.updaters.ObjRecordUpdater;
+import io.deephaven.dataadapter.rec.updaters.RecordUpdater;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
-import io.deephaven.dataadapter.datafetch.bulk.DefaultMultiRowRecordAdapter;
-import io.deephaven.dataadapter.rec.MultiRowRecordAdapter;
-import io.deephaven.dataadapter.rec.updaters.RecordUpdater;
-import io.deephaven.dataadapter.rec.updaters.ObjRecordUpdater;
+import io.deephaven.engine.table.TableDefinition;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.function.BiFunction;
 
 /**
@@ -31,13 +32,26 @@ public interface RecordAdapterDescriptor<T> {
     static RecordAdapterDescriptor<Map<String, Object>> createGenericRecordAdapterDescriptor(
             @NotNull final Table sourceTable,
             @NotNull final List<String> columns) {
+        return createGenericRecordAdapterDescriptor(sourceTable.getDefinition(), columns);
+    }
+
+    /**
+     * Creates a RecordAdapterDescriptor for a record adapter that stores the {@code columns} in a HashMap.
+     *
+     * @param tableDefinition
+     * @param columns         The columns to include in the map.
+     * @return A RecordAdapterDescriptor that converts each row of a table into a HashMaps.
+     */
+    @NotNull
+    static RecordAdapterDescriptor<Map<String, Object>> createGenericRecordAdapterDescriptor(
+            @NotNull final TableDefinition tableDefinition,
+            @NotNull final List<String> columns) {
         final int nCols = columns.size();
         final RecordAdapterDescriptorBuilder<Map<String, Object>> descriptorBuilder =
                 RecordAdapterDescriptorBuilder.create(() -> new HashMap<>(nCols));
 
         for (String colName : columns) {
-            final ColumnSource<?> colSource = sourceTable.getColumnSource(colName);
-            final Class<?> colType = colSource.getType();
+            final Class<?> colType = tableDefinition.getColumn(colName).getDataType();
             final RecordUpdater<Map<String, Object>, ?> updater = ObjRecordUpdater.getBoxingUpdater(
                     colType,
                     ObjRecordUpdater.getObjectUpdater((map, val) -> map.put(colName, val)));

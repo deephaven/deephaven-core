@@ -120,13 +120,17 @@ public class TableToRecordListener<T> extends InstrumentedTableUpdateListenerAda
                         recordsQueue.clear();
                     }
 
-                    final int nUpdates = tableUpdates.length;
-                    if (nUpdates > 0) {
+                    if (tableUpdates.length > 0) {
+                        // total number of records processed. removed rows and previous values for modified rows are
+                        // only counted if the removedRecordConsumer is set. if is removedRecordConsumer is set, then
+                        // modified rows are counted twice (once for the new values and once for the previous values).
+                        int totalUpdatedRows = 0;
                         for (TableUpdates update : tableUpdates) {
+                            totalUpdatedRows += update.nUpdates;
                             processUpdateRecords(update);
                         }
 
-                        notifyUpdatesProcessed(nUpdates);
+                        notifyUpdatesProcessed(totalUpdatedRows);
                     }
                 }
             }, TableToRecordListener.class.getSimpleName() + "_processingThread-" + description);

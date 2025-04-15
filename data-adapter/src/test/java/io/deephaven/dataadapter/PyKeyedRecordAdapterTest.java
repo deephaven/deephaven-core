@@ -18,7 +18,7 @@ import static io.deephaven.engine.testutil.TstUtils.i;
 public class PyKeyedRecordAdapterTest extends RefreshingTableTestCase {
 
     /**
-     * Test a KeyedRecordAdapter that just converts rows into HashMaps
+     * Test a KeyedRecordAdapter that converts rows into HashMaps
      */
     public void testPyKeyedRecordAdapter() {
         final QueryTable source = TstUtils.testRefreshingTable(

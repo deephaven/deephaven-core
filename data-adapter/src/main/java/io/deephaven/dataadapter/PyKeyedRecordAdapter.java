@@ -9,11 +9,11 @@ import gnu.trove.map.TLongIntMap;
 import io.deephaven.base.verify.Require;
 import io.deephaven.dataadapter.datafetch.bulk.DefaultMultiRowRecordAdapter;
 import io.deephaven.dataadapter.rec.MultiRowRecordAdapter;
-import io.deephaven.engine.table.PartitionedTable;
-import io.deephaven.engine.table.Table;
 import io.deephaven.dataadapter.rec.desc.RecordAdapterDescriptor;
 import io.deephaven.dataadapter.rec.updaters.ObjRecordUpdater;
 import io.deephaven.dataadapter.rec.updaters.RecordUpdater;
+import io.deephaven.engine.table.PartitionedTable;
+import io.deephaven.engine.table.Table;
 import io.deephaven.util.type.TypeUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.mutable.MutableObject;
@@ -136,7 +136,7 @@ public class PyKeyedRecordAdapter<K> extends KeyedRecordAdapter<K, Object> {
         final List<Object> mapKeys = dataKeysListToLookupKeys.apply(dataKeysList);
 
         // create arrays to hold the result data
-        final Object[] recordDataArrs = multiRowRecordAdapter.getTableDataArrayRetriever().createDataArrays(nKeys);
+        final MutableObject<Object[]> recordDataArrsRef = new MutableObject<>(null);
 
         // list to store the index keys for which data is retrieved
         final TLongList recordDataRowKeys = new TLongArrayList(nKeys);
@@ -145,12 +145,12 @@ public class PyKeyedRecordAdapter<K> extends KeyedRecordAdapter<K, Object> {
         final MutableObject<TLongIntMap> dbRowKeyToDataKeyPositionalIndexRef = new MutableObject<>();
 
         DO_LOCKED_FUNCTION.accept(
-                (usePrev) -> retrieveDataMultipleKeys(mapKeys, recordDataArrs, recordDataRowKeys,
+                (usePrev) -> retrieveDataMultipleKeys(mapKeys, recordDataArrsRef, recordDataRowKeys,
                         dbRowKeyToDataKeyPositionalIndexRef, usePrev),
                 "KeyedRecordAdapter.getRecords()");
 
         return new RecordRetrievalResult(recordDataRowKeys.toArray(), dbRowKeyToDataKeyPositionalIndexRef.getValue(),
-                recordDataArrs);
+                recordDataArrsRef.getValue());
     }
 
     public static class RecordRetrievalResult {

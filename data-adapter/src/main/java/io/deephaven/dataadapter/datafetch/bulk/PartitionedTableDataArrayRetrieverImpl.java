@@ -8,10 +8,14 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.dataadapter.ContextHolder;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.TrackingRowSet;
-import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.PartitionedTable;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableDefinition;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.*;
+import java.util.List;
+import java.util.Objects;
 
 public final class PartitionedTableDataArrayRetrieverImpl extends AbstractTableDataArrayRetrieverImpl {
 
@@ -63,7 +67,7 @@ public final class PartitionedTableDataArrayRetrieverImpl extends AbstractTableD
         final Table[] constituents = new Table[nConstituentsToRetrieve];
         final int[] constituentSizes = new int[nConstituentsToRetrieve];
 
-        // Size of all rows to be retrieved across all constituents
+        // First, determine the total number of rows to be retrieved across all constituents
         int totalSize = 0;
         {
             int constituentIdx = 0;
@@ -79,6 +83,8 @@ public final class PartitionedTableDataArrayRetrieverImpl extends AbstractTableD
                 rowKeysList.fill(totalSize, totalSize + constituentIntSize, nextConstituentRowKey);
 
                 totalSize = Math.addExact(totalSize, constituentIntSize);
+
+                constituentIdx++;
             }
         }
 
