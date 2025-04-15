@@ -9,6 +9,7 @@ import dagger.multibindings.ElementsIntoSet;
 import io.deephaven.extensions.barrage.BarrageMessageWriter;
 import io.deephaven.server.session.SessionService;
 import io.deephaven.server.util.Scheduler;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -27,6 +28,19 @@ import java.util.stream.Collectors;
  */
 @Module
 public class ExchangeMarshallerModule {
+    /**
+     * Multiple modules could have injected a marshaller, we must sort the complete list by priority.
+     *
+     * @param marshallers the input set of marshallers
+     * @return the marshallers sorted in ascending priority.
+     */
+    @Provides
+    public static List<ExchangeMarshaller> sortMarshallersByPriority(
+            @NotNull final Set<ExchangeMarshaller> marshallers) {
+        return marshallers.stream().sorted(Comparator.comparingInt(ExchangeMarshaller::priority))
+                .collect(Collectors.toUnmodifiableList());
+    }
+
     @Provides
     @ElementsIntoSet
     public static Set<ExchangeMarshaller> provideExchangeMarshallers(final Scheduler scheduler,

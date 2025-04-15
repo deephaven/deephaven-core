@@ -19,6 +19,7 @@ import io.deephaven.proto.util.ExportTicketHelper;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.server.session.TicketRouter;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.annotations.ReflexiveUse;
 import io.grpc.stub.StreamObserver;
 import org.jetbrains.annotations.NotNull;
 
@@ -28,6 +29,7 @@ import java.util.Queue;
 /**
  * Handler for BarrageSubscriptionRequest over DoExchange.
  */
+@ReflexiveUse(referrers = "ArrowFlightUtil")
 public class BarrageSubscriptionRequestHandler implements ArrowFlightUtil.DoExchangeMarshaller.Handler {
 
     private final ArrowFlightUtil.DoExchangeMarshaller marshaller;

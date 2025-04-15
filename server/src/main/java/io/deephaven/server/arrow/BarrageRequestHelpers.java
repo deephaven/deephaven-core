@@ -4,7 +4,9 @@
 package io.deephaven.server.arrow;
 
 import io.deephaven.barrage.flatbuf.BarrageSnapshotRequest;
+import io.deephaven.barrage.flatbuf.BarrageSubscriptionOptions;
 import io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest;
+import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.extensions.barrage.util.BarrageProtoUtil;
 import org.jetbrains.annotations.Nullable;
@@ -16,6 +18,9 @@ import java.util.BitSet;
  * requests.
  */
 public class BarrageRequestHelpers {
+    public static final int DEFAULT_MIN_UPDATE_INTERVAL_MS =
+            Configuration.getInstance().getIntegerWithDefault("barrage.minUpdateInterval", 1000);
+
     /**
      * Helper to retrieve the viewport RowSet from a subscription request.
      */
@@ -57,10 +62,10 @@ public class BarrageRequestHelpers {
     /**
      * Helper to retrieve the update interval from a subscription request.
      */
-    public static long getMinUpdateIntervalMs(final io.deephaven.barrage.flatbuf.BarrageSubscriptionOptions options) {
+    public static long getMinUpdateIntervalMs(final BarrageSubscriptionOptions options) {
         final long minUpdateIntervalMs;
         if (options == null || options.minUpdateIntervalMs() == 0) {
-            minUpdateIntervalMs = ArrowFlightUtil.DEFAULT_MIN_UPDATE_INTERVAL_MS;
+            minUpdateIntervalMs = DEFAULT_MIN_UPDATE_INTERVAL_MS;
         } else {
             minUpdateIntervalMs = options.minUpdateIntervalMs();
         }

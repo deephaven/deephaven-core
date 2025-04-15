@@ -82,7 +82,7 @@ public class HierarchicalTableViewExchangeMarshaller implements ExchangeMarshall
 
         htvs.setViewport(columns, viewport, reverseViewport);
 
-        return new Subscription(htvs, listener, isRefreshing);
+        return new Subscription(htvs, isRefreshing);
     }
 
     private static class Subscription implements ExchangeMarshaller.Subscription {
@@ -90,7 +90,7 @@ public class HierarchicalTableViewExchangeMarshaller implements ExchangeMarshall
         private final boolean isRefreshing;
 
         private Subscription(final HierarchicalTableViewSubscription htvs,
-                final StreamObserver<BarrageMessageWriter.MessageView> listener, final boolean isRefreshing) {
+                final boolean isRefreshing) {
             this.htvs = htvs;
             this.isRefreshing = isRefreshing;
         }

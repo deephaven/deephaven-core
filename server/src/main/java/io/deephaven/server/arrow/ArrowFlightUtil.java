@@ -11,7 +11,6 @@ import gnu.trove.map.hash.TByteObjectHashMap;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.barrage.flatbuf.BarrageMessageType;
 import io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest;
-import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.liveness.SingletonLivenessManager;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.Table;
@@ -81,9 +80,6 @@ public class ArrowFlightUtil {
             }
         }
     }
-
-    public static final int DEFAULT_MIN_UPDATE_INTERVAL_MS =
-            Configuration.getInstance().getIntegerWithDefault("barrage.minUpdateInterval", 1000);
 
     public static void DoGetCustom(
             final BarrageMessageWriter.Factory streamGeneratorFactory,
@@ -393,7 +389,7 @@ public class ArrowFlightUtil {
         public DoExchangeMarshaller(
                 final TicketRouter ticketRouter,
                 final BarrageMessageWriter.Factory streamGeneratorFactory,
-                final Set<ExchangeMarshaller> exchangeMarshallers,
+                final List<ExchangeMarshaller> exchangeMarshallers,
                 final Set<ExchangeRequestHandlerFactory> requestHandlerFactories,
                 final SessionService.ErrorTransformer errorTransformer,
                 @Assisted final SessionState session,
@@ -405,10 +401,7 @@ public class ArrowFlightUtil {
             this.session = session;
             this.listener = new MessageViewAdapter(responseObserver);
             this.errorTransformer = errorTransformer;
-            this.marshallers = new ArrayList<>(exchangeMarshallers.size());
-            marshallers.addAll(exchangeMarshallers);
-            // we must sort the marshallers here, as they can be injected from multiple places
-            marshallers.sort(Comparator.comparingInt(ExchangeMarshaller::priority));
+            this.marshallers = exchangeMarshallers;
 
             this.requestHandlerFactories = new TByteObjectHashMap<>(requestHandlerFactories.size());
             for (final ExchangeRequestHandlerFactory factory : requestHandlerFactories) {
