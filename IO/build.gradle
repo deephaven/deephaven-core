@@ -12,19 +12,6 @@ dependencies {
     testImplementation libs.jmock.imposters
 }
 
-sourceSets {
-    main {
-        resources {
-            srcDir 'src/main/java' exclude '**/*.java'
-        }
-    }
-    test {
-        resources {
-            srcDir 'src/test/java' exclude '**/*.java'
-        }
-    }
-}
-
 // TODO (core#116): Gradle test fixtures
 task jarTests(type: Jar, dependsOn: testClasses) {
     archiveClassifier = 'tests'
