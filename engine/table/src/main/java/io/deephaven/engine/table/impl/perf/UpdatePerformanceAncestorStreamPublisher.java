@@ -13,6 +13,7 @@ import io.deephaven.stream.StreamChunkUtils;
 import io.deephaven.stream.StreamConsumer;
 import io.deephaven.stream.StreamPublisher;
 import io.deephaven.vector.LongVector;
+import io.deephaven.vector.LongVectorDirect;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Objects;
@@ -57,7 +58,7 @@ class UpdatePerformanceAncestorStreamPublisher implements StreamPublisher {
         // ColumnDefinition.ofString("EntryDescription"),
         chunks[2].asWritableObjectChunk().add(description);
         // ColumnDefinition.ofLong("Ancestors"),
-        chunks[3].asWritableObjectChunk().add(ancestors);
+        chunks[3].asWritableObjectChunk().add(new LongVectorDirect(ancestors));
 
         if (chunks[0].size() == CHUNK_SIZE) {
             flushInternal();

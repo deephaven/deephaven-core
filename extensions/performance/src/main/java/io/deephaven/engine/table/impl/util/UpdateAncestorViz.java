@@ -123,7 +123,7 @@ public class UpdateAncestorViz {
 
     @NotNull
     private Graphviz makeGraph(long[] entryIds) {
-        Graph g = guru.nidi.graphviz.model.Factory.graph("example1").directed()
+        Graph g = guru.nidi.graphviz.model.Factory.graph("deephaven_update_graph").directed()
                 .graphAttr().with(Rank.dir(Rank.RankDir.TOP_TO_BOTTOM));
 
         for (long id : entryIds) {
