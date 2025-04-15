@@ -18,6 +18,7 @@ import io.deephaven.proto.util.Exceptions;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.server.session.TicketRouter;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.annotations.ReflexiveUse;
 import io.grpc.stub.StreamObserver;
 import org.jetbrains.annotations.NotNull;
 
@@ -26,6 +27,7 @@ import java.util.concurrent.atomic.AtomicReference;
 /**
  * Handler for DoGetRequest over DoExchange.
  */
+@ReflexiveUse(referrers = "ArrowFlightUtil")
 public class BarrageSnapshotRequestHandler implements ArrowFlightUtil.DoExchangeMarshaller.Handler {
     private final AtomicReference<ArrowFlightUtil.HalfClosedState> halfClosedState =
             new AtomicReference<>(ArrowFlightUtil.HalfClosedState.DONT_CLOSE);
