@@ -23,7 +23,7 @@ original_schema = Schema(
 )
 
 #  Using specific names to make clear these aren't a standard / convention
-catalog.create_namespace("dh-default")
+catalog.create_namespace_if_not_exists("dh-default")
 
 table = catalog.create_table(
     "dh-default.cities",

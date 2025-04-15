@@ -22,8 +22,8 @@ import java.time.LocalDateTime;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * This test verifies how DH interacts with an iceberg tables where we drop identity partition fields. See TESTING.md
- * and generate-pyiceberg-5.py for generating the corresponding data.
+ * This test verifies how DH interacts with Iceberg tables where we drop identity partition fields. See TESTING.md and
+ * generate-pyiceberg-5.py for generating the corresponding data.
  */
 @Tag("security-manager-allow")
 class PyIceberg5aTest {
@@ -32,9 +32,9 @@ class PyIceberg5aTest {
     private static final TableIdentifier TABLE_ID = TableIdentifier.of(NAMESPACE, "drop_identity_partition_field");
 
     private static final TableDefinition TABLE_DEFINITION = TableDefinition.of(
-            ColumnDefinition.fromGenericType("datetime", LocalDateTime.class).withPartitioning(),
+            ColumnDefinition.fromGenericType("datetime", LocalDateTime.class),
             ColumnDefinition.ofString("symbol"),
-            ColumnDefinition.ofDouble("bid"),
+            ColumnDefinition.ofDouble("bid").withPartitioning(),
             ColumnDefinition.ofDouble("ask"));
 
     private IcebergCatalogAdapter catalogAdapter;

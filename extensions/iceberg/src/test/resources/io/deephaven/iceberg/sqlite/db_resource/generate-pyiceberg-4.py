@@ -35,7 +35,7 @@ partition_spec = PartitionSpec(
     )
 )
 
-catalog.create_namespace("trading")
+catalog.create_namespace_if_not_exists("trading")
 
 # Generate some data to be added to the tables later
 data = pa.Table.from_pylist([
@@ -46,12 +46,16 @@ data = pa.Table.from_pylist([
 more_data = pa.Table.from_pylist([
     {"datetime": datetime(2022, 11, 26, 10, 1, 0), "symbol": "GOOG", "bid": 2800.75, "ask": 2810.5},
     {"datetime": datetime(2023, 11, 26, 10, 2, 0), "symbol": "AMZN", "bid": 3400.5, "ask": 3420.0},
-    {"datetime": datetime(2025, 11, 28, 10, 3, 0), "symbol": "MSFT", "bid": None, "ask": 250.0},
+    {"datetime": datetime(2025, 11, 28, 10, 3, 0), "symbol": "MSFT", "bid": 238.85, "ask": 250.0},
 ])
 
 def drop_non_identity_partition_field():
+    table_identifier = "trading.drop_non_identity_partition_field"
+    if catalog.table_exists(table_identifier):
+        catalog.purge_table(table_identifier)
+
     tbl = catalog.create_table(
-        identifier="trading.drop_non_identity_partition_field",
+        identifier=table_identifier,
         schema=schema,
         partition_spec=partition_spec,
     )
@@ -64,8 +68,12 @@ def drop_non_identity_partition_field():
     tbl.append(more_data)
 
 def drop_identity_partition_field():
+    table_identifier = "trading.drop_identity_partition_field"
+    if catalog.table_exists(table_identifier):
+        catalog.purge_table(table_identifier)
+
     tbl = catalog.create_table(
-        identifier="trading.drop_identity_partition_field",
+        identifier=table_identifier,
         schema=schema,
         partition_spec=partition_spec,
     )

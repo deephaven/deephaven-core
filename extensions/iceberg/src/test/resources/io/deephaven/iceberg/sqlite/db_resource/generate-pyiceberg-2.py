@@ -35,7 +35,7 @@ partition_spec = PartitionSpec(
     )
 )
 
-catalog.create_namespace("trading")
+catalog.create_namespace_if_not_exists("trading")
 
 tbl = catalog.create_table(
     identifier="trading.data",
@@ -46,10 +46,10 @@ tbl = catalog.create_table(
 # Define the data according to your Iceberg schema
 data = [
     {"datetime": datetime(2024, 11, 27, 10, 0, 0), "symbol": "AAPL", "bid": 150.25, "ask": 151.0},
-    {"datetime": datetime(2024, 11, 27, 10, 0, 0), "symbol": "MSFT", "bid": 150.25, "ask": 151.0},
-    {"datetime": datetime(2024, 11, 26, 10, 1, 0), "symbol": "GOOG", "bid": 2800.75, "ask": 2810.5},
-    {"datetime": datetime(2024, 11, 26, 10, 2, 0), "symbol": "AMZN", "bid": 3400.5, "ask": 3420.0},
-    {"datetime": datetime(2024, 11, 28, 10, 3, 0), "symbol": "MSFT", "bid": None, "ask": 250.0},
+    {"datetime": datetime(2022, 11, 27, 10, 0, 0), "symbol": "MSFT", "bid": 150.25, "ask": 151.0},
+    {"datetime": datetime(2022, 11, 26, 10, 1, 0), "symbol": "GOOG", "bid": 2800.75, "ask": 2810.5},
+    {"datetime": datetime(2023, 11, 26, 10, 2, 0), "symbol": "AMZN", "bid": 3400.5, "ask": 3420.0},
+    {"datetime": datetime(2025, 11, 28, 10, 3, 0), "symbol": "MSFT", "bid": 238.85, "ask": 250.0},
 ]
 
 # Create a PyArrow Table
