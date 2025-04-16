@@ -33,13 +33,14 @@ import java.nio.file.Files;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 import static io.deephaven.engine.util.TableTools.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class TestUpdateAncestorViz {
+    private static boolean VERBOSE = false;
+
     EventDrivenUpdateGraph defaultUpdateGraph;
     File cacheDir;
     private ExecutionContext executionContext;
@@ -127,8 +128,6 @@ public class TestUpdateAncestorViz {
                 Map.of("PartitionedTable.merge()", 1, "Update([S2])", 3),
                 result::getValue);
 
-        TableTools.show(result.getValue());
-
         manager.unmanage(result.getValue());
         manager.unmanage(source.getValue());
 
@@ -156,8 +155,10 @@ public class TestUpdateAncestorViz {
             // we need to have two refreshes to flush our performance data
             defaultUpdateGraph.requestRefresh();
 
-            TableTools.show(ua);
-            TableTools.show(upl);
+            if (VERBOSE) {
+                TableTools.show(ua);
+                TableTools.show(upl);
+            }
 
             long entry;
             try (final CloseablePrimitiveIteratorOfLong entryId =
@@ -169,7 +170,9 @@ public class TestUpdateAncestorViz {
 
             final MutableGraph graph = UpdateAncestorViz.graph(new long[] {entry}, upl, ua).toMutable();
 
-            System.out.println(Graphviz.fromGraph(graph).render(Format.DOT));
+            if (VERBOSE) {
+                System.out.println(Graphviz.fromGraph(graph).render(Format.DOT));
+            }
 
             for (final Map.Entry<String, Integer> mapEntry : expectedNodes.entrySet()) {
                 final String expectedNode = mapEntry.getKey();

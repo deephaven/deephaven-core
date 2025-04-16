@@ -7,6 +7,9 @@ import io.deephaven.base.clock.Clock;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.liveness.LivenessArtifact;
+import io.deephaven.engine.liveness.PermanentLivenessManager;
+import io.deephaven.engine.liveness.SingletonLivenessManager;
 import io.deephaven.engine.table.ShiftObliviousListener;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdateListener;
@@ -70,7 +73,9 @@ public class UpdatePerformanceTracker {
     static final QueryPerformanceLogThreshold LOG_THRESHOLD =
             new QueryPerformanceLogThreshold("Update", 500_000L);
 
-
+    // we do not want an UpdatePerformanceTracker's start that occurs within a liveness scope to allow these resources
+    // to be freed, the INSTANCE should remain live unless it is discarded.
+    private static final SingletonLivenessManager livenessManager = new SingletonLivenessManager();
     private static InternalState INSTANCE;
 
     private static InternalState getInternalState() {
@@ -79,13 +84,14 @@ public class UpdatePerformanceTracker {
             synchronized (UpdatePerformanceTracker.class) {
                 if ((local = INSTANCE) == null) {
                     INSTANCE = local = new InternalState();
+                    livenessManager.manage(INSTANCE);
                 }
             }
         }
         return local;
     }
 
-    private static class InternalState {
+    private static class InternalState extends LivenessArtifact {
         private final UpdatePerformanceLogLogger tableLogger;
         private final UpdatePerformanceStreamPublisher publisher;
 
@@ -118,6 +124,7 @@ public class UpdatePerformanceTracker {
                         publishingGraph,
                         UpdatePerformanceTracker.class.getName());
                 blink = adapter.table();
+                manage(blink);
 
                 ancestorLogger = EngineTableLoggers.get().updatePerformanceAncestorLogger();
                 ancestorPublisher = new UpdatePerformanceAncestorStreamPublisher();
@@ -127,6 +134,7 @@ public class UpdatePerformanceTracker {
                         publishingGraph,
                         UpdatePerformanceTracker.class.getName() + "-Ancestors");
                 ancestorBlink = ancestorAdapter.table();
+                manage(ancestorBlink);
             }
         }
 
@@ -346,6 +354,7 @@ public class UpdatePerformanceTracker {
     @TestUseOnly
     public static void resetForUnitTests() {
         synchronized (UpdatePerformanceTracker.class) {
+            livenessManager.unmanage(INSTANCE);
             INSTANCE = null;
         }
     }
