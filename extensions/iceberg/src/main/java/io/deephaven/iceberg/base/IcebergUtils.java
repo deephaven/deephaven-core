@@ -9,6 +9,12 @@ import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.iceberg.relative.RelativeFileIO;
 import io.deephaven.iceberg.util.IcebergReadInstructions;
+import io.deephaven.qst.type.GenericType;
+import io.deephaven.vector.DoubleVector;
+import io.deephaven.vector.FloatVector;
+import io.deephaven.vector.IntVector;
+import io.deephaven.vector.LongVector;
+import io.deephaven.vector.ObjectVector;
 import org.apache.iceberg.DataFile;
 import org.apache.iceberg.PartitionField;
 import org.apache.iceberg.PartitionSpec;
@@ -78,8 +84,6 @@ public final class IcebergUtils {
     public static io.deephaven.qst.type.Type<?> convertToDHType(@NotNull final Type icebergType) {
         final Type.TypeID typeId = icebergType.typeId();
         switch (typeId) {
-            case BOOLEAN:
-                return io.deephaven.qst.type.Type.booleanType().boxedType();
             case DOUBLE:
                 return io.deephaven.qst.type.Type.doubleType();
             case FLOAT:
@@ -88,12 +92,14 @@ public final class IcebergUtils {
                 return io.deephaven.qst.type.Type.intType();
             case LONG:
                 return io.deephaven.qst.type.Type.longType();
+            case BOOLEAN:
+                return io.deephaven.qst.type.Type.booleanType().boxedType();
             case STRING:
                 return io.deephaven.qst.type.Type.stringType();
             case TIMESTAMP:
                 final Types.TimestampType timestampType = (Types.TimestampType) icebergType;
                 if (timestampType == Types.TimestampType.withZone()) {
-                    return io.deephaven.qst.type.Type.find(Instant.class);
+                    return io.deephaven.qst.type.Type.instantType();
                 }
                 return io.deephaven.qst.type.Type.find(LocalDateTime.class);
             case DATE:
@@ -106,7 +112,7 @@ public final class IcebergUtils {
             case BINARY:
                 return io.deephaven.qst.type.Type.byteType().arrayType();
             case LIST:
-                return convertToDHArrayType(icebergType.asListType());
+                return convertToDHVectorType(icebergType.asListType());
             case UUID: // Fall through
             case STRUCT: // Fall through
             case MAP: // Fall through
@@ -118,26 +124,30 @@ public final class IcebergUtils {
     }
 
     /**
-     * Convert an Iceberg list type to a Deephaven array type. Used for reading data from Iceberg tables.
+     * Convert an Iceberg list type to a Deephaven vector type. Used for reading data from Iceberg tables.
      *
      * @param icebergListType The Iceberg list type to be converted.
      * @return The converted Deephaven type.
      */
-    private static io.deephaven.qst.type.Type<?> convertToDHArrayType(@NotNull final Types.ListType icebergListType) {
+    private static io.deephaven.qst.type.Type<?> convertToDHVectorType(@NotNull final Types.ListType icebergListType) {
         final Type.TypeID elementTypeId = icebergListType.elementType().typeId();
         switch (elementTypeId) {
-            case BOOLEAN:
             case DOUBLE:
+                return DoubleVector.type();
             case FLOAT:
+                return FloatVector.type();
             case INTEGER:
+                return IntVector.type();
             case LONG:
+                return LongVector.type();
+            case BOOLEAN:
             case STRING:
             case TIMESTAMP:
             case DATE:
             case TIME:
             case DECIMAL:
                 try {
-                    return convertToDHType(icebergListType.elementType()).arrayType();
+                    return ObjectVector.type((GenericType<?>) convertToDHType(icebergListType.elementType()));
                 } catch (final TableDataException e) {
                     // Fall through
                 }

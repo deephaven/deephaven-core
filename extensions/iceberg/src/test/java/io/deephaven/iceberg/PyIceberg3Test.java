@@ -11,7 +11,18 @@ import io.deephaven.engine.util.TableTools;
 import io.deephaven.iceberg.sqlite.DbResource;
 import io.deephaven.iceberg.util.IcebergCatalogAdapter;
 import io.deephaven.iceberg.util.IcebergTableAdapter;
+import io.deephaven.qst.type.GenericType;
 import io.deephaven.qst.type.Type;
+import io.deephaven.vector.DoubleVector;
+import io.deephaven.vector.DoubleVectorDirect;
+import io.deephaven.vector.FloatVector;
+import io.deephaven.vector.FloatVectorDirect;
+import io.deephaven.vector.IntVector;
+import io.deephaven.vector.IntVectorDirect;
+import io.deephaven.vector.LongVector;
+import io.deephaven.vector.LongVectorDirect;
+import io.deephaven.vector.ObjectVector;
+import io.deephaven.vector.ObjectVectorDirect;
 import org.apache.iceberg.catalog.Namespace;
 import org.apache.iceberg.catalog.TableIdentifier;
 import org.junit.jupiter.api.BeforeEach;
@@ -42,19 +53,32 @@ class PyIceberg3Test {
     private static final TableIdentifier TABLE_IDENTIFIER = TableIdentifier.of(NAMESPACE, "data");
 
     private static final TableDefinition TABLE_DEFINITION = TableDefinition.of(
-            ColumnDefinition.of("bin_col", Type.byteType().arrayType()),
-            ColumnDefinition.of("fixed_col", Type.byteType().arrayType()),
-            ColumnDefinition.of("long_list", Type.longType().arrayType()),
-            ColumnDefinition.of("bool_list", Type.booleanType().boxedType().arrayType()),
-            ColumnDefinition.of("double_list", Type.doubleType().arrayType()),
-            ColumnDefinition.of("float_list", Type.floatType().arrayType()),
-            ColumnDefinition.of("int_list", Type.intType().arrayType()),
-            ColumnDefinition.of("string_list", Type.stringType().arrayType()),
-            ColumnDefinition.of("timestamp_ntz_list", Type.find(LocalDateTime.class).arrayType()),
-            ColumnDefinition.of("timestamp_tz_list", Type.find(Instant.class).arrayType()),
-            ColumnDefinition.of("date_list", Type.find(LocalDate.class).arrayType()),
-            ColumnDefinition.of("time_list", Type.find(LocalTime.class).arrayType()),
-            ColumnDefinition.of("decimal_list", Type.find(BigDecimal.class).arrayType()));
+            ColumnDefinition.of("bin_col",
+                    Type.byteType().arrayType()),
+            ColumnDefinition.of("fixed_col",
+                    Type.byteType().arrayType()),
+            ColumnDefinition.of("long_list",
+                    LongVector.type()),
+            ColumnDefinition.of("bool_list",
+                    ObjectVector.type(Type.booleanType().boxedType())),
+            ColumnDefinition.of("double_list",
+                    DoubleVector.type()),
+            ColumnDefinition.of("float_list",
+                    FloatVector.type()),
+            ColumnDefinition.of("int_list",
+                    IntVector.type()),
+            ColumnDefinition.of("string_list",
+                    ObjectVector.type(Type.stringType())),
+            ColumnDefinition.of("timestamp_ntz_list",
+                    ObjectVector.type((GenericType<?>) Type.find(LocalDateTime.class))),
+            ColumnDefinition.of("timestamp_tz_list",
+                    ObjectVector.type((GenericType<?>) Type.find(Instant.class))),
+            ColumnDefinition.of("date_list",
+                    ObjectVector.type((GenericType<?>) Type.find(LocalDate.class))),
+            ColumnDefinition.of("time_list",
+                    ObjectVector.type((GenericType<?>) Type.find(LocalTime.class))),
+            ColumnDefinition.of("decimal_list",
+                    ObjectVector.type((GenericType<?>) Type.find(BigDecimal.class))));
 
     private static final byte[] EMPTY_BYTES = new byte[0];
 
@@ -88,57 +112,73 @@ class PyIceberg3Test {
                         "13 bytes only".getBytes(StandardCharsets.UTF_8),
                         null),
                 TableTools.col("long_list",
-                        new long[] {100L, 200L, 300L},
-                        new long[] {600L, NULL_LONG, 700L},
-                        null),
+                        new LongVectorDirect(100L, 200L, 300L),
+                        new LongVectorDirect(600L, NULL_LONG, 700L),
+                        (LongVector) null),
                 TableTools.col("bool_list",
-                        new Boolean[] {true, false},
-                        new Boolean[] {true, false, null},
-                        null),
+                        new ObjectVectorDirect<>(true, false),
+                        new ObjectVectorDirect<>(true, false, null),
+                        (ObjectVector<Boolean>) null),
                 TableTools.col("double_list",
-                        new double[] {10.01, 20.02},
-                        new double[] {60.06, NULL_DOUBLE, 70.07},
-                        null),
+                        new DoubleVectorDirect(10.01, 20.02),
+                        new DoubleVectorDirect(60.06, NULL_DOUBLE, 70.07),
+                        (DoubleVector) null),
                 TableTools.col("float_list",
-                        new float[] {1.1f, 2.2f},
-                        new float[] {NULL_FLOAT, 5.5f, 6.6f},
-                        null),
+                        new FloatVectorDirect(1.1f, 2.2f),
+                        new FloatVectorDirect(NULL_FLOAT, 5.5f, 6.6f),
+                        (FloatVector) null),
                 TableTools.col("int_list",
-                        new int[] {10, 20},
-                        new int[] {50, NULL_INT, 60},
-                        null),
+                        new IntVectorDirect(10, 20),
+                        new IntVectorDirect(50, NULL_INT, 60),
+                        (IntVector) null),
                 TableTools.col("string_list",
-                        new String[] {"hello", "world"},
-                        new String[] {null, "alpha", "beta"},
-                        null),
+                        new ObjectVectorDirect<>("hello", "world"),
+                        new ObjectVectorDirect<>(null, "alpha", "beta"),
+                        (ObjectVector<String>) null),
                 TableTools.col("timestamp_ntz_list",
-                        new LocalDateTime[] {
+                        new ObjectVectorDirect<>(
                                 LocalDateTime.of(2025, 1, 1, 12, 0, 1),
-                                LocalDateTime.of(2025, 1, 1, 12, 0, 2)},
-                        new LocalDateTime[] {
+                                LocalDateTime.of(2025, 1, 1, 12, 0, 2)),
+                        new ObjectVectorDirect<>(
                                 LocalDateTime.of(2025, 1, 3, 14, 0, 1),
-                                null},
-                        null),
+                                null),
+                        (ObjectVector<LocalDateTime>) null),
                 TableTools.col("timestamp_tz_list",
-                        new Instant[] {
+                        new ObjectVectorDirect<>(
                                 Instant.parse("2025-01-01T12:00:03Z"),
-                                Instant.parse("2025-01-01T12:00:04Z")},
-                        new Instant[] {
+                                Instant.parse("2025-01-01T12:00:04Z")),
+                        new ObjectVectorDirect<>(
                                 null,
-                                Instant.parse("2025-01-03T14:00:04Z")},
-                        null),
+                                Instant.parse("2025-01-03T14:00:04Z")),
+                        (ObjectVector<Instant>) null),
                 TableTools.col("date_list",
-                        new LocalDate[] {LocalDate.of(2025, 1, 1), LocalDate.of(2025, 1, 2)},
-                        new LocalDate[] {LocalDate.of(2025, 1, 5), null, LocalDate.of(2025, 1, 6), null},
-                        null),
+                        new ObjectVectorDirect<>(
+                                LocalDate.of(2025, 1, 1),
+                                LocalDate.of(2025, 1, 2)),
+                        new ObjectVectorDirect<>(
+                                LocalDate.of(2025, 1, 5),
+                                null,
+                                LocalDate.of(2025, 1, 6),
+                                null),
+                        (ObjectVector<LocalDate>) null),
                 TableTools.col("time_list",
-                        new LocalTime[] {LocalTime.of(12, 0, 1), LocalTime.of(13, 0, 2)},
-                        new LocalTime[] {null, LocalTime.of(17, 0, 6), null},
-                        null),
+                        new ObjectVectorDirect<>(
+                                LocalTime.of(12, 0, 1),
+                                LocalTime.of(13, 0, 2)),
+                        new ObjectVectorDirect<>(
+                                null,
+                                LocalTime.of(17, 0, 6),
+                                null),
+                        (ObjectVector<LocalTime>) null),
                 TableTools.col("decimal_list",
-                        new BigDecimal[] {new BigDecimal("123.45"), new BigDecimal("678.90")},
-                        new BigDecimal[] {null, null, null},
-                        null));
+                        new ObjectVectorDirect<>(
+                                new BigDecimal("123.45"),
+                                new BigDecimal("678.90")),
+                        new ObjectVectorDirect<>(
+                                null,
+                                null,
+                                (BigDecimal) null),
+                        (ObjectVector<BigDecimal>) null));
         TstUtils.assertTableEquals(expectedData, fromIceberg);
     }
 }
