@@ -1,20 +1,19 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.web.client.api.input;
 
 import elemental2.core.JsObject;
-import elemental2.core.JsArray;
 import elemental2.promise.Promise;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.inputtable_pb.AddTableRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.inputtable_pb.DeleteTableRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.BatchTableRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ExportedTableCreationResponse;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.MergeTablesRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.SelectOrUpdateRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.TableReference;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.batchtablerequest.Operation;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Ticket;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.inputtable_pb.AddTableRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.inputtable_pb.DeleteTableRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.BatchTableRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.ExportedTableCreationResponse;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.MergeTablesRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.SelectOrUpdateRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.TableReference;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.batchtablerequest.Operation;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.ticket_pb.Ticket;
 import io.deephaven.web.client.api.Callbacks;
 import io.deephaven.web.client.api.Column;
 import io.deephaven.web.client.api.JsLazy;
@@ -25,7 +24,6 @@ import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsOptional;
 import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
-import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 import java.util.ArrayList;
@@ -240,7 +238,7 @@ public class JsInputTable {
                 failureToReport = Promise.resolve((Object) null);
             } else {
                 // view the only table
-                ticketToDelete = table.getConnection().getConfig().newTicket();
+                ticketToDelete = table.getConnection().getTickets().newExportTicket();
                 cleanups.add(() -> table.getConnection().releaseTicket(ticketToDelete));
 
                 SelectOrUpdateRequest view = new SelectOrUpdateRequest();
@@ -252,7 +250,7 @@ public class JsInputTable {
             }
         } else {
             // there is more than one table here, construct a merge after making a view of each table
-            ticketToDelete = table.getConnection().getConfig().newTicket();
+            ticketToDelete = table.getConnection().getTickets().newExportTicket();
             cleanups.add(() -> table.getConnection().releaseTicket(ticketToDelete));
 
             BatchTableRequest batch = new BatchTableRequest();

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.select;
 
@@ -65,6 +65,17 @@ public interface SelectColumn extends Selectable {
      */
     static SelectColumn ofStateless(@NotNull final Selectable selectable) {
         return new StatelessSelectColumn(of(selectable));
+    }
+
+    /**
+     * Produce a SelectColumn that {@link #recomputeOnModifiedRow()} recomputes values on any modified row} from
+     * {@code selectable}.
+     *
+     * @param selectable The {@link Selectable} to adapt and mark as requiring row-level recomputation
+     * @return The resulting SelectColumn
+     */
+    static SelectColumn ofRecomputeOnModifiedRow(Selectable selectable) {
+        return new RecomputeOnModifiedRowSelectColumn(of(selectable));
     }
 
     /**
@@ -171,7 +182,7 @@ public interface SelectColumn extends Selectable {
     /**
      * Get a MatchPair for this column, if applicable.
      *
-     * @return
+     * @return the MatchPair for this column, if applicable.
      */
     MatchPair getMatchPair();
 
@@ -219,11 +230,34 @@ public interface SelectColumn extends Selectable {
     boolean isStateless();
 
     /**
+     * Returns true if this column uses row virtual offset columns of {@code i}, {@code ii} or {@code k}.
+     */
+    default boolean hasVirtualRowVariables() {
+        return false;
+    }
+
+    /**
      * Create a copy of this SelectColumn.
      *
      * @return an independent copy of this SelectColumn.
      */
     SelectColumn copy();
+
+    /**
+     * Should we ignore modified column sets, and always re-evaluate this column when the row changes?
+     * 
+     * @return true if this column should be evaluated on every row modification
+     */
+    default boolean recomputeOnModifiedRow() {
+        return false;
+    }
+
+    /**
+     * Create a copy of this SelectColumn that always re-evaluates itself when a row is modified.
+     */
+    default SelectColumn withRecomputeOnModifiedRow() {
+        return new RecomputeOnModifiedRowSelectColumn(copy());
+    }
 
     class ExpressionAdapter implements Expression.Visitor<SelectColumn> {
         private final ColumnName lhs;
@@ -244,7 +278,7 @@ public interface SelectColumn extends Selectable {
 
         @Override
         public SelectColumn visit(Filter rhs) {
-            return makeSelectColumn(Strings.of(rhs));
+            return FilterSelectColumn.of(lhs.name(), rhs);
         }
 
         @Override

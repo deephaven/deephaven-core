@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.qst.table;
 
@@ -101,6 +101,8 @@ public interface TableSpec extends TableOperationsDefaults<TableSpec, TableSpec>
         T visit(HeadTable headTable);
 
         T visit(TailTable tailTable);
+
+        T visit(SliceTable sliceTable);
 
         T visit(ReverseTable reverseTable);
 

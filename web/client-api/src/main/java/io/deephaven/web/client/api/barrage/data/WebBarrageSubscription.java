@@ -1,13 +1,13 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.web.client.api.barrage.data;
 
 import io.deephaven.chunk.Chunk;
-import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.web.client.api.barrage.WebBarrageMessage;
 import io.deephaven.web.client.api.barrage.def.InitialTableDefinition;
+import io.deephaven.web.client.api.subscription.SubscriptionType;
 import io.deephaven.web.client.state.ClientTableState;
 import io.deephaven.web.shared.data.Range;
 import io.deephaven.web.shared.data.RangeSet;
@@ -37,46 +37,24 @@ public abstract class WebBarrageSubscription {
     public static final int MAX_MESSAGE_SIZE = 10_000_000;
     public static final int BATCH_SIZE = 100_000;
 
-    public static WebBarrageSubscription subscribe(ClientTableState cts, ViewportChangedHandler viewportChangedHandler,
-            DataChangedHandler dataChangedHandler) {
+    public static WebBarrageSubscription subscribe(
+            final SubscriptionType subscriptionType,
+            final ClientTableState cts,
+            final ViewportChangedHandler viewportChangedHandler,
+            final DataChangedHandler dataChangedHandler) {
 
         WebColumnData[] dataSinks = new WebColumnData[cts.columnTypes().length];
-        ChunkType[] chunkTypes = cts.chunkTypes();
         for (int i = 0; i < dataSinks.length; i++) {
-            switch (chunkTypes[i]) {
-                case Boolean:
-                    throw new IllegalStateException("Boolean unsupported here");
-                case Char:
-                    dataSinks[i] = new WebCharColumnData();
-                    break;
-                case Byte:
-                    dataSinks[i] = new WebByteColumnData();
-                    break;
-                case Short:
-                    dataSinks[i] = new WebShortColumnData();
-                    break;
-                case Int:
-                    dataSinks[i] = new WebIntColumnData();
-                    break;
-                case Long:
-                    dataSinks[i] = new WebLongColumnData();
-                    break;
-                case Float:
-                    dataSinks[i] = new WebFloatColumnData();
-                    break;
-                case Double:
-                    dataSinks[i] = new WebDoubleColumnData();
-                    break;
-                case Object:
-                    dataSinks[i] = new WebObjectColumnData();
-                    break;
-            }
+            dataSinks[i] = new WebColumnData();
         }
 
         if (cts.getTableDef().getAttributes().isBlinkTable()) {
             return new BlinkImpl(cts, viewportChangedHandler, dataChangedHandler, dataSinks);
+        } else if (subscriptionType == SubscriptionType.VIEWPORT_SUBSCRIPTION) {
+            return new ViewportImpl(cts, viewportChangedHandler, dataChangedHandler, dataSinks);
+        } else {
+            return new RedirectedImpl(cts, viewportChangedHandler, dataChangedHandler, dataSinks);
         }
-        return new RedirectedImpl(cts, viewportChangedHandler, dataChangedHandler, dataSinks);
     }
 
     public interface ViewportChangedHandler {
@@ -108,6 +86,13 @@ public abstract class WebBarrageSubscription {
     }
 
     public abstract void applyUpdates(WebBarrageMessage message);
+
+    /**
+     * @return the current size of the table
+     */
+    public long getCurrentSize() {
+        return currentRowSet.size();
+    }
 
     protected void updateServerViewport(RangeSet viewport, BitSet columns, boolean reverseViewport) {
         serverViewport = viewport;
@@ -193,7 +178,7 @@ public abstract class WebBarrageSubscription {
                     PrimitiveIterator.OfLong destIterator = destinationRowSet.indexIterator();
                     for (int j = 0; j < column.data.size(); j++) {
                         Chunk<Values> chunk = column.data.get(j);
-                        destSources[ii].fillChunk(chunk, destIterator);
+                        destSources[ii].fillFromChunk(chunk, destIterator);
                     }
                     assert !destIterator.hasNext();
                 }
@@ -342,7 +327,7 @@ public abstract class WebBarrageSubscription {
 
                         for (int j = 0; j < column.data.size(); j++) {
                             Chunk<Values> chunk = column.data.get(j);
-                            destSources[ii].fillChunk(chunk, destIterator);
+                            destSources[ii].fillFromChunk(chunk, destIterator);
                         }
                         assert !destIterator.hasNext();
                     }
@@ -381,7 +366,7 @@ public abstract class WebBarrageSubscription {
                 };
                 for (int j = 0; j < column.data.size(); j++) {
                     Chunk<Values> chunk = column.data.get(j);
-                    destSources[ii].fillChunk(chunk, destIterator);
+                    destSources[ii].fillFromChunk(chunk, destIterator);
                 }
                 assert !destIterator.hasNext();
             }
@@ -444,6 +429,114 @@ public abstract class WebBarrageSubscription {
                 }
             });
             reusableHelper.flush();
+        }
+    }
+
+    public static class ViewportImpl extends WebBarrageSubscription {
+        private long tableSize = 0;
+
+        public ViewportImpl(ClientTableState state, ViewportChangedHandler viewportChangedHandler,
+                DataChangedHandler dataChangedHandler, WebColumnData[] dataSinks) {
+            super(state, viewportChangedHandler, dataChangedHandler, dataSinks);
+            serverViewport = RangeSet.empty();
+        }
+
+        @Override
+        public long getCurrentSize() {
+            return tableSize;
+        }
+
+        @Override
+        public RangeSet getCurrentRowSet() {
+            if (tableSize <= 0) {
+                return RangeSet.empty();
+            }
+            return RangeSet.ofRange(0, tableSize - 1);
+        }
+
+        @Override
+        public void applyUpdates(WebBarrageMessage message) {
+            final BitSet prevServerColumns = serverColumns == null ? null : (BitSet) serverColumns.clone();
+            assert message.tableSize >= 0;
+            final long prevTableSize = tableSize;
+            tableSize = message.tableSize;
+
+            final RangeSet prevServerViewport = serverViewport.copy();
+            if (message.isSnapshot) {
+                updateServerViewport(message.snapshotRowSet, message.snapshotColumns, message.snapshotRowSetIsReversed);
+                viewportChangedHandler.onServerViewportChanged(serverViewport, serverColumns, serverReverseViewport);
+            }
+
+            // Update the currentRowSet; we're guaranteed to be flat
+            assert currentRowSet.isFlat();
+            final long prevSize = currentRowSet.size();
+            final long newSize = prevSize - message.rowsRemoved.size() + message.rowsAdded.size();
+            if (prevSize < newSize) {
+                currentRowSet.addRange(new Range(prevSize, newSize - 1));
+            } else if (prevSize > newSize) {
+                currentRowSet.removeRange(new Range(newSize, prevSize - 1));
+            }
+            assert currentRowSet.isFlat();
+
+            for (int ii = 0; ii < message.addColumnData.length; ii++) {
+                final WebBarrageMessage.AddColumnData column = message.addColumnData[ii];
+                final boolean prevSubscribed = prevServerColumns == null || prevServerColumns.get(ii);
+                final boolean currSubscribed = serverColumns == null || serverColumns.get(ii);
+
+                if (!currSubscribed && prevSubscribed && prevSize > 0) {
+                    destSources[ii].applyUpdate(column.data, RangeSet.empty(), RangeSet.ofRange(0, prevSize - 1));
+                    continue;
+                }
+
+                if (!message.rowsAdded.isEmpty() || !message.rowsRemoved.isEmpty()) {
+                    if (prevSubscribed && currSubscribed) {
+                        destSources[ii].applyUpdate(column.data, message.rowsAdded, message.rowsRemoved);
+                    } else if (currSubscribed) {
+                        // this column is a new subscription
+                        destSources[ii].applyUpdate(column.data, message.rowsAdded, RangeSet.empty());
+                    }
+                }
+            }
+
+            final BitSet modifiedColumnSet = new BitSet(numColumns());
+            for (int ii = 0; ii < message.modColumnData.length; ii++) {
+                WebBarrageMessage.ModColumnData column = message.modColumnData[ii];
+                if (!isSubscribedColumn(ii) || column.rowsModified.isEmpty()) {
+                    continue;
+                }
+
+                modifiedColumnSet.set(ii);
+
+                for (int j = 0; j < column.data.size(); j++) {
+                    Chunk<Values> chunk = column.data.get(j);
+                    destSources[ii].fillFromChunk(chunk, column.rowsModified.indexIterator());
+                }
+            }
+
+            state.setSize(message.tableSize);
+            final RangeSet rowsAdded = serverViewport == null ? RangeSet.empty() : serverViewport.copy();
+            if (!rowsAdded.isEmpty() && rowsAdded.getLastRow() >= tableSize) {
+                rowsAdded.removeRange(new Range(tableSize, rowsAdded.getLastRow()));
+            }
+            final RangeSet rowsRemoved = prevServerViewport == null ? RangeSet.empty() : prevServerViewport.copy();
+            if (!rowsRemoved.isEmpty() && rowsRemoved.getLastRow() >= prevTableSize) {
+                rowsRemoved.removeRange(new Range(prevTableSize, rowsRemoved.getLastRow()));
+            }
+            dataChangedHandler.onDataChanged(
+                    rowsAdded, rowsRemoved, RangeSet.empty(), new ShiftedRange[0],
+                    serverColumns == null ? null : (BitSet) serverColumns.clone());
+        }
+
+        @Override
+        public Any getData(long key, int col) {
+            if (!isSubscribedColumn(col)) {
+                throw new NoSuchElementException("No column at index " + col);
+            }
+            long pos = serverViewport.find(key);
+            if (pos < 0) {
+                return null;
+            }
+            return this.destSources[col].get(pos);
         }
     }
 

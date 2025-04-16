@@ -9,6 +9,7 @@ dependencies {
     api project(':util-function')
     api libs.protobuf.java
     implementation project(':engine-query-constants')
+    implementation project(':engine-time')
 
     compileOnly project(':util-immutables')
     annotationProcessor libs.immutables.value

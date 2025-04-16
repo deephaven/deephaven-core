@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.vector;
 
@@ -91,7 +91,7 @@ public final class ObjectVectorDirect<COMPONENT_TYPE> implements ObjectVector<CO
     @Override
     public boolean equals(final Object obj) {
         if (obj instanceof ObjectVectorDirect) {
-            return Arrays.equals(data, ((ObjectVectorDirect<?>) obj).data);
+            return Arrays.deepEquals(data, ((ObjectVectorDirect<?>) obj).data);
         }
         return ObjectVector.equals(this, obj);
     }

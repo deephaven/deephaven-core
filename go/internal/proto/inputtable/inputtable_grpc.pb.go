@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.2.0
 // - protoc             v4.25.3
-// source: deephaven/proto/inputtable.proto
+// source: deephaven_core/proto/inputtable.proto
 
 package inputtable
 
@@ -149,5 +149,5 @@ var InputTableService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "deephaven/proto/inputtable.proto",
+	Metadata: "deephaven_core/proto/inputtable.proto",
 }

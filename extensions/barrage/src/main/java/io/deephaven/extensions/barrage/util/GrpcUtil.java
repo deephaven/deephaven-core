@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.extensions.barrage.util;
 
@@ -13,8 +13,6 @@ import io.grpc.stub.ClientCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.UUID;
 
 public class GrpcUtil {
     private static final Logger log = LoggerFactory.getLogger(GrpcUtil.class);
@@ -56,7 +54,7 @@ public class GrpcUtil {
      * @param message the last message to send on this stream before completing
      * @param <T> the type of message that the stream handles
      */
-    public static <T> void safelyComplete(StreamObserver<T> observer, T message) {
+    public static <T> void safelyOnNextAndComplete(StreamObserver<T> observer, T message) {
         safelyExecuteLocked(observer, () -> {
             observer.onNext(message);
             observer.onCompleted();

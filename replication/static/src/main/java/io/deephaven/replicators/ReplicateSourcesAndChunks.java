@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.replicators;
 
@@ -397,8 +397,8 @@ public class ReplicateSourcesAndChunks {
                 "Object value", "T value");
         lines = ReplicationUtils.removeRegion(lines, "UnboxedSetter");
         lines = ReplicationUtils.replaceRegion(lines, "Constructor", Arrays.asList(
-                "    public ObjectSingleValueSource(Class<T> type) {",
-                "        super(type);",
+                "    public ObjectSingleValueSource(Class<T> type, Class<?> componentType) {",
+                "        super(type, componentType);",
                 "        current = null;",
                 "        prev = null;",
                 "    }"));
@@ -597,6 +597,10 @@ public class ReplicateSourcesAndChunks {
         classLines = ReplicationUtils.removeRegion(classLines, "CopyToBuffer");
         classLines = ReplicationUtils.removeRegion(classLines, "BinarySearchImports");
         classLines = ReplicationUtils.removeRegion(classLines, "BinarySearch");
+        classLines = ReplicationUtils.replaceRegion(classLines, "isNull", Arrays.asList(
+                "    public final boolean isNull(int index) {",
+                "        return false;",
+                "    }"));
         FileUtils.writeLines(classFile, classLines);
     }
 
@@ -612,7 +616,8 @@ public class ReplicateSourcesAndChunks {
                 "ObjectChunk<ATTR", "ObjectChunk<T, ATTR",
                 "ObjectChunk<[?] ", "ObjectChunk<T, ? ",
                 "ObjectChunk<Any> EMPTY", "ObjectChunk<Object, Any> EMPTY",
-                "static T\\[\\] makeArray", "static <T> T[] makeArray");
+                "static T\\[\\] makeArray", "static <T> T[] makeArray",
+                "QueryConstants.NULL_OBJECT", "null");
 
         lines = replaceRegion(lines, "makeArray", Arrays.asList(
                 "    public static <T> T[] makeArray(int capacity) {",
@@ -1157,8 +1162,12 @@ public class ReplicateSourcesAndChunks {
                 "ObjectChunk<[?] super Values>", "ObjectChunk<Boolean, ? super Values>");
         lines = simpleFixup(lines, "primitive get", "NULL_BOOLEAN", "NULL_BOOLEAN_AS_BYTE", "getBoolean", "getByte",
                 "getPrevBoolean", "getPrevByte");
-        lines = simpleFixup(lines, "nullByKeys", "NULL_BOOLEAN", "NULL_BOOLEAN_AS_BYTE");
-        lines = simpleFixup(lines, "nullByRanges", "NULL_BOOLEAN", "NULL_BOOLEAN_AS_BYTE");
+        lines = simpleFixup(lines, "nullByKeys",
+                "oldValue != NULL_BOOLEAN", "!BooleanUtils.isNull(oldValue)",
+                "NULL_BOOLEAN", "NULL_BOOLEAN_AS_BYTE");
+        lines = simpleFixup(lines, "nullByRanges",
+                "block\\[indexWithinBlock\\] != NULL_BOOLEAN", "!BooleanUtils.isNull(block[indexWithinBlock])",
+                "NULL_BOOLEAN", "NULL_BOOLEAN_AS_BYTE");
         lines = simpleFixup(lines, "setNull", "NULL_BOOLEAN", "NULL_BOOLEAN_AS_BYTE");
 
         lines = replaceRegion(lines, "copyFromTypedArray", Arrays.asList(

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.iceberg.util;
 
@@ -15,11 +15,11 @@ import java.util.Map;
 /**
  * Tools for accessing tables in the Iceberg table format.
  */
-public abstract class IcebergTools {
+public final class IcebergTools {
     @SuppressWarnings("unused")
     public static IcebergCatalogAdapter createAdapter(
             final Catalog catalog) {
-        return new IcebergCatalogAdapter(catalog);
+        return IcebergCatalogAdapter.of(catalog, Map.of());
     }
 
     /**
@@ -30,18 +30,20 @@ public abstract class IcebergTools {
      * <p>
      * The minimal set of properties required to create an Iceberg catalog are:
      * <ul>
-     * <li>{@code "catalog-impl"} or {@code "type"} - the Java catalog implementation to use. When providing
-     * {@code "catalog-impl"}, the implementing Java class should be provided (e.g.
-     * {@code "org.apache.iceberg.rest.RESTCatalog"} or {@code "org.apache.iceberg.aws.glue.GlueCatalog")}. Choices for
-     * {@code "type"} include {@code "hive"}, {@code "hadoop"}, {@code "rest"}, {@code "glue"}, {@code "nessie"},
-     * {@code "jdbc"}.</li>
-     * <li>{@code "uri"} - the URI of the catalog.</li>
+     * <li>{@value CatalogProperties#CATALOG_IMPL} or {@value CatalogUtil#ICEBERG_CATALOG_TYPE} - the Java catalog
+     * implementation to use. When providing {@value CatalogProperties#CATALOG_IMPL}, the implementing Java class should
+     * be provided (e.g. {@code "org.apache.iceberg.rest.RESTCatalog"} or
+     * {@code "org.apache.iceberg.aws.glue.GlueCatalog")}. Choices for {@value CatalogUtil#ICEBERG_CATALOG_TYPE} include
+     * {@value CatalogUtil#ICEBERG_CATALOG_TYPE_HIVE}, {@value CatalogUtil#ICEBERG_CATALOG_TYPE_HADOOP},
+     * {@value CatalogUtil#ICEBERG_CATALOG_TYPE_REST}, {@value CatalogUtil#ICEBERG_CATALOG_TYPE_GLUE},
+     * {@value CatalogUtil#ICEBERG_CATALOG_TYPE_NESSIE}, {@value CatalogUtil#ICEBERG_CATALOG_TYPE_JDBC}.</li>
      * </ul>
      * <p>
      * Other common properties include:
      * </p>
      * <ul>
-     * <li>{@code "warehouse"} - the location of the data warehouse.</li>
+     * <li>{@value CatalogProperties#URI} - the URI of the catalog.</li>
+     * <li>{@value CatalogProperties#WAREHOUSE_LOCATION} - the location of the data warehouse.</li>
      * <li>{@code "client.region"} - the region of the AWS client.</li>
      * <li>{@code "s3.access-key-id"} - the S3 access key for reading files.</li>
      * <li>{@code "s3.secret-access-key"} - the S3 secret access key for reading files.</li>
@@ -51,7 +53,7 @@ public abstract class IcebergTools {
      * Additional properties for the specific catalog should also be included, such as as S3-specific properties for
      * authentication or endpoint overriding.
      * </p>
-     * 
+     *
      * @param name the name of the catalog; if omitted, the catalog URI will be used to generate a name
      * @param properties a map containing the Iceberg catalog properties to use
      * @return the Iceberg catalog adapter
@@ -71,18 +73,20 @@ public abstract class IcebergTools {
      * <p>
      * The minimal set of properties required to create an Iceberg catalog are:
      * <ul>
-     * <li>{@code "catalog-impl"} or {@code "type"} - the Java catalog implementation to use. When providing
-     * {@code "catalog-impl"}, the implementing Java class should be provided (e.g.
-     * {@code "org.apache.iceberg.rest.RESTCatalog"} or {@code "org.apache.iceberg.aws.glue.GlueCatalog")}. Choices for
-     * {@code "type"} include {@code "hive"}, {@code "hadoop"}, {@code "rest"}, {@code "glue"}, {@code "nessie"},
-     * {@code "jdbc"}.</li>
-     * <li>{@code "uri"} - the URI of the catalog.</li>
+     * <li>{@value CatalogProperties#CATALOG_IMPL} or {@value CatalogUtil#ICEBERG_CATALOG_TYPE} - the Java catalog
+     * implementation to use. When providing {@value CatalogProperties#CATALOG_IMPL}, the implementing Java class should
+     * be provided (e.g. {@code "org.apache.iceberg.rest.RESTCatalog"} or
+     * {@code "org.apache.iceberg.aws.glue.GlueCatalog")}. Choices for {@value CatalogUtil#ICEBERG_CATALOG_TYPE} include
+     * {@value CatalogUtil#ICEBERG_CATALOG_TYPE_HIVE}, {@value CatalogUtil#ICEBERG_CATALOG_TYPE_HADOOP},
+     * {@value CatalogUtil#ICEBERG_CATALOG_TYPE_REST}, {@value CatalogUtil#ICEBERG_CATALOG_TYPE_GLUE},
+     * {@value CatalogUtil#ICEBERG_CATALOG_TYPE_NESSIE}, {@value CatalogUtil#ICEBERG_CATALOG_TYPE_JDBC}.</li>
      * </ul>
      * <p>
      * Other common properties include:
      * </p>
      * <ul>
-     * <li>{@code "warehouse"} - the location of the data warehouse.</li>
+     * <li>{@value CatalogProperties#URI} - the URI of the catalog.</li>
+     * <li>{@value CatalogProperties#WAREHOUSE_LOCATION} - the location of the data warehouse.</li>
      * <li>{@code "client.region"} - the region of the AWS client.</li>
      * <li>{@code "s3.access-key-id"} - the S3 access key for reading files.</li>
      * <li>{@code "s3.secret-access-key"} - the S3 secret access key for reading files.</li>
@@ -110,13 +114,11 @@ public abstract class IcebergTools {
                     String.format("Catalog type '%s' or implementation class '%s' is required",
                             CatalogUtil.ICEBERG_CATALOG_TYPE, CatalogProperties.CATALOG_IMPL));
         }
-        if (!properties.containsKey(CatalogProperties.URI)) {
-            throw new IllegalArgumentException(String.format("Catalog URI property '%s' is required",
-                    CatalogProperties.URI));
-        }
 
         final String catalogUri = properties.get(CatalogProperties.URI);
-        final String catalogName = name != null ? name : "IcebergCatalog-" + catalogUri;
+        final String catalogName = name != null
+                ? name
+                : "IcebergCatalog" + (catalogUri == null ? "" : "-" + catalogUri);
 
         // Load the Hadoop configuration with the provided properties
         final Configuration hadoopConf = new Configuration();
@@ -125,7 +127,7 @@ public abstract class IcebergTools {
         // Create the Iceberg catalog from the properties
         final Catalog catalog = CatalogUtil.buildIcebergCatalog(catalogName, properties, hadoopConf);
 
-        return new IcebergCatalogAdapter(catalog, properties);
+        return IcebergCatalogAdapter.of(catalog, properties);
     }
 
 }

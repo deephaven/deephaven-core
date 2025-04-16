@@ -1,6 +1,7 @@
 plugins {
     id 'java-library'
     id 'io.deephaven.project.register'
+    id 'io.deephaven.hadoop-common-dependencies'
 }
 
 evaluationDependsOn Docker.registryProject('localstack')
@@ -9,7 +10,7 @@ evaluationDependsOn Docker.registryProject('minio')
 description 'Iceberg: Support to read iceberg catalogs.'
 
 dependencies {
-    implementation project(':extensions-iceberg')
+    api project(':extensions-iceberg')
 
     // Bring in the AWS / S3 extensions
     api platform(libs.iceberg.bom)
@@ -24,12 +25,21 @@ dependencies {
     implementation libs.awssdk.s3
     implementation libs.awssdk.crt.client
     runtimeOnly libs.awssdk.sts
-    runtimeOnly libs.awssdk.glue
+    implementation libs.awssdk.glue
+
+    // We don't want to explicitly pull in dependencies for dynamodb (org.apache.iceberg.aws.dynamodb.DynamoDbCatalog),
+    // but we need to be able to compile against it to implement AwsClientFactory
+    compileOnly libs.awssdk.dynamodb
+
+    // We don't want to explicitly pull in dependencies for KMS (there doesn't seem to be anything in Iceberg that
+    // actually calls it?), but we need to be able to compile against it to implement AwsClientFactory
+    compileOnly libs.awssdk.kms
+
+    implementation libs.guava
 
     compileOnly libs.autoservice
     annotationProcessor libs.autoservice.compiler
 
-    testImplementation libs.junit4
     testImplementation project(':engine-test-utils')
 
     testImplementation libs.testcontainers
@@ -43,12 +53,27 @@ dependencies {
     testRuntimeOnly project(':test-configs')
     testRuntimeOnly project(':log-to-slf4j')
     testRuntimeOnly libs.slf4j.simple
+
+    testImplementation platform(libs.junit.bom)
+    testImplementation libs.junit.jupiter
+    testRuntimeOnly libs.junit.jupiter.engine
+    testRuntimeOnly libs.junit.platform.launcher
 }
 
-TestTools.addEngineOutOfBandTest(project)
+test {
+    useJUnitPlatform {
+        excludeTags("testcontainers")
+    }
+}
 
-testOutOfBand.dependsOn Docker.registryTask(project, 'localstack')
-testOutOfBand.systemProperty 'testcontainers.localstack.image', Docker.localImageName('localstack')
+tasks.register('testOutOfBand', Test) {
+    useJUnitPlatform {
+        includeTags("testcontainers")
+    }
 
-testOutOfBand.dependsOn Docker.registryTask(project, 'minio')
-testOutOfBand.systemProperty 'testcontainers.minio.image', Docker.localImageName('minio')
+    dependsOn Docker.registryTask(project, 'localstack')
+    systemProperty 'testcontainers.localstack.image', Docker.localImageName('localstack')
+
+    dependsOn Docker.registryTask(project, 'minio')
+    systemProperty 'testcontainers.minio.image', Docker.localImageName('minio')
+}

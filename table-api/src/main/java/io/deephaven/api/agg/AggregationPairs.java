@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.api.agg;
 
@@ -50,6 +50,11 @@ public class AggregationPairs implements Aggregation.Visitor {
     }
 
     @Override
+    public void visit(CountWhere countWhere) {
+        out = Stream.empty();
+    }
+
+    @Override
     public void visit(FirstRowKey firstRowKey) {
         out = Stream.empty();
     }
@@ -63,4 +68,10 @@ public class AggregationPairs implements Aggregation.Visitor {
     public void visit(Partition partition) {
         out = Stream.empty();
     }
+
+    @Override
+    public void visit(Formula formula) {
+        out = Stream.empty();
+    }
+
 }

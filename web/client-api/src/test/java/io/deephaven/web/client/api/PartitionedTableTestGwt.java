@@ -1,10 +1,10 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.web.client.api;
 
 import elemental2.core.JsArray;
-import elemental2.dom.CustomEvent;
+import io.deephaven.web.client.api.event.Event;
 
 public class PartitionedTableTestGwt extends AbstractAsyncGwtTestCase {
     @Override
@@ -112,10 +112,10 @@ public class PartitionedTableTestGwt extends AbstractAsyncGwtTestCase {
                     assertEquals("x", columns[2].getName());
 
                     return waitForEventWhere(partitionedTable, JsPartitionedTable.EVENT_KEYADDED,
-                            (CustomEvent<JsArray<Object>> e) -> e.detail.getAt(0).equals("2"), 14004)
+                            (Event<JsArray<Object>> e) -> e.getDetail().getAt(0).equals("2"), 14004)
                             .then(event -> partitionedTable.getTable("2")).then(constituentTable -> {
                                 assertEquals(3, constituentTable.getColumns().length);
-                                assertTrue(constituentTable.getSize() >= 2);
+                                assertTrue(constituentTable.getSize() >= 1);
 
                                 constituentTable.close();
                                 partitionedTable.close();
@@ -141,7 +141,7 @@ public class PartitionedTableTestGwt extends AbstractAsyncGwtTestCase {
                     assertEquals("x", columns[1].getName());
 
                     return waitForEventWhere(partitionedTable, JsPartitionedTable.EVENT_KEYADDED,
-                            (CustomEvent<JsArray<Object>> e) -> e.detail.getAt(0).equals("2"), 14005)
+                            (Event<JsArray<Object>> e) -> e.getDetail().getAt(0).equals("2"), 14005)
                             .then(event -> partitionedTable.getTable("2")).then(constituentTable -> {
                                 assertEquals(2, constituentTable.getColumns().length);
                                 assertTrue(constituentTable.getSize() >= 1);

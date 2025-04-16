@@ -1,106 +1,129 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.iceberg.layout;
 
 import io.deephaven.engine.table.ColumnDefinition;
-import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder;
-import io.deephaven.iceberg.location.IcebergTableLocationKey;
-import io.deephaven.iceberg.util.IcebergInstructions;
 import io.deephaven.iceberg.internal.DataInstructionsProviderLoader;
+import io.deephaven.iceberg.location.IcebergTableLocationKey;
+import io.deephaven.iceberg.util.IcebergReadInstructions;
+import io.deephaven.iceberg.util.IcebergTableAdapter;
+import io.deephaven.parquet.table.ParquetInstructions;
+import io.deephaven.util.annotations.InternalUseOnly;
+import io.deephaven.util.channel.SeekableChannelsProvider;
 import io.deephaven.util.type.TypeUtils;
-import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.iceberg.*;
-import org.apache.iceberg.io.FileIO;
+import org.apache.iceberg.data.IdentityPartitionConverters;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.net.URI;
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * Iceberg {@link TableLocationKeyFinder location finder} for tables with partitions that will discover data files from
  * a {@link Snapshot}
  */
+@InternalUseOnly
 public final class IcebergKeyValuePartitionedLayout extends IcebergBaseLayout {
-    private static class ColumnData {
+
+    @InternalUseOnly
+    public static class IdentityPartitioningColData {
         final String name;
         final Class<?> type;
-        final int index;
+        final int index; // position in the partition spec
 
-        public ColumnData(String name, Class<?> type, int index) {
-            this.name = name;
-            this.type = type;
+        public IdentityPartitioningColData(String name, Class<?> type, int index) {
+            this.name = Objects.requireNonNull(name);
+            this.type = Objects.requireNonNull(type);
             this.index = index;
         }
     }
 
-    private final List<ColumnData> outputPartitioningColumns;
+    private final List<IdentityPartitioningColData> identityPartitioningColumns;
 
     /**
-     * @param tableDef The {@link TableDefinition} that will be used for the table.
-     * @param table The {@link Table} to discover locations for.
-     * @param tableSnapshot The {@link Snapshot} from which to discover data files.
-     * @param fileIO The file IO to use for reading manifest data files.
+     * @param tableAdapter The {@link IcebergTableAdapter} that will be used to access the table.
      * @param partitionSpec The Iceberg {@link PartitionSpec partition spec} for the table.
      * @param instructions The instructions for customizations while reading.
+     * @param dataInstructionsProvider The provider for special instructions, to be used if special instructions not
+     *        provided in the {@code instructions}.
      */
+    // TODO(DH-19072): Refactor Iceberg TLKFs to reduce visibility
+    @Deprecated(forRemoval = true)
     public IcebergKeyValuePartitionedLayout(
-            @NotNull final TableDefinition tableDef,
-            @NotNull final org.apache.iceberg.Table table,
-            @NotNull final org.apache.iceberg.Snapshot tableSnapshot,
-            @NotNull final FileIO fileIO,
+            @NotNull final IcebergTableAdapter tableAdapter,
             @NotNull final PartitionSpec partitionSpec,
-            @NotNull final IcebergInstructions instructions,
+            @NotNull final IcebergReadInstructions instructions,
             @NotNull final DataInstructionsProviderLoader dataInstructionsProvider) {
-        super(tableDef, table, tableSnapshot, fileIO, instructions, dataInstructionsProvider);
+        super(tableAdapter, instructions, dataInstructionsProvider);
 
         // We can assume due to upstream validation that there are no duplicate names (after renaming) that are included
         // in the output definition, so we can ignore duplicates.
-        final MutableInt icebergIndex = new MutableInt(0);
-        final Map<String, Integer> availablePartitioningColumns = partitionSpec.fields().stream()
-                .map(PartitionField::name)
-                .map(name -> instructions.columnRenames().getOrDefault(name, name))
-                .collect(Collectors.toMap(
-                        name -> name,
-                        name -> icebergIndex.getAndIncrement(),
-                        (v1, v2) -> v1,
-                        LinkedHashMap::new));
+        final List<PartitionField> partitionFields = partitionSpec.fields();
+        final int numPartitionFields = partitionFields.size();
+        identityPartitioningColumns = new ArrayList<>(numPartitionFields);
+        for (int fieldId = 0; fieldId < numPartitionFields; ++fieldId) {
+            final PartitionField partitionField = partitionFields.get(fieldId);
+            if (!partitionField.transform().isIdentity()) {
+                // TODO (DH-18160): Improve support for handling non-identity transforms
+                continue;
+            }
+            final String icebergColName = partitionField.name();
+            final String dhColName = instructions.columnRenames().getOrDefault(icebergColName, icebergColName);
+            final ColumnDefinition<?> columnDef = tableDef.getColumn(dhColName);
+            if (columnDef == null) {
+                // Table definition provided by the user doesn't have this column, so skip.
+                continue;
+            }
+            identityPartitioningColumns.add(new IdentityPartitioningColData(dhColName,
+                    TypeUtils.getBoxedType(columnDef.getDataType()), fieldId));
+        }
+    }
 
-        outputPartitioningColumns = tableDef.getColumnStream()
-                .map((final ColumnDefinition<?> columnDef) -> {
-                    final Integer index = availablePartitioningColumns.get(columnDef.getName());
-                    if (index == null) {
-                        return null;
-                    }
-                    return new ColumnData(columnDef.getName(), TypeUtils.getBoxedType(columnDef.getDataType()), index);
-                })
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
+    public IcebergKeyValuePartitionedLayout(
+            @NotNull IcebergTableAdapter tableAdapter,
+            @NotNull ParquetInstructions parquetInstructions,
+            @NotNull SeekableChannelsProvider seekableChannelsProvider,
+            @Nullable Snapshot snapshot,
+            @NotNull List<IdentityPartitioningColData> identityPartitioningColumns) {
+        super(tableAdapter, parquetInstructions, seekableChannelsProvider, snapshot);
+        this.identityPartitioningColumns = Objects.requireNonNull(identityPartitioningColumns);
     }
 
     @Override
     public String toString() {
-        return IcebergKeyValuePartitionedLayout.class.getSimpleName() + '[' + table.name() + ']';
+        return IcebergKeyValuePartitionedLayout.class.getSimpleName() + '[' + tableAdapter + ']';
     }
 
     @Override
-    IcebergTableLocationKey keyFromDataFile(DataFile df, URI fileUri) {
+    IcebergTableLocationKey keyFromDataFile(
+            @NotNull final ManifestFile manifestFile,
+            @NotNull final DataFile dataFile,
+            @NotNull final URI fileUri,
+            @NotNull final SeekableChannelsProvider channelsProvider) {
         final Map<String, Comparable<?>> partitions = new LinkedHashMap<>();
 
-        final PartitionData partitionData = (PartitionData) df.partition();
-        for (final ColumnData colData : outputPartitioningColumns) {
+        final PartitionData partitionData = (PartitionData) dataFile.partition();
+        for (final IdentityPartitioningColData colData : identityPartitioningColumns) {
             final String colName = colData.name;
-            final Object colValue = partitionData.get(colData.index);
-            if (colValue != null && !colData.type.isAssignableFrom(colValue.getClass())) {
-                throw new TableDataException("Partitioning column " + colName
-                        + " has type " + colValue.getClass().getName()
-                        + " but expected " + colData.type.getName());
+            final Object colValue;
+            final Object valueFromPartitionData = partitionData.get(colData.index);
+            if (valueFromPartitionData != null) {
+                colValue = IdentityPartitionConverters.convertConstant(
+                        partitionData.getType(colData.index), valueFromPartitionData);
+                if (!colData.type.isAssignableFrom(colValue.getClass())) {
+                    throw new TableDataException("Partitioning column " + colName
+                            + " has type " + colValue.getClass().getName()
+                            + " but expected " + colData.type.getName());
+                }
+            } else {
+                colValue = null;
             }
             partitions.put(colName, (Comparable<?>) colValue);
         }
-        return locationKey(df.format(), fileUri, partitions);
+        return locationKey(manifestFile, dataFile, fileUri, partitions, channelsProvider);
     }
 }

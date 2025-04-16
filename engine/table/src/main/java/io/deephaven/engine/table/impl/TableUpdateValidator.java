@@ -1,14 +1,16 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.WritableBooleanChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.util.hashing.ChunkEquals;
+import io.deephaven.chunk.util.hashing.ObjectChunkDeepEquals;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.rowset.RowKeyRangeShiftCallback;
 import io.deephaven.engine.rowset.RowSequence;
@@ -25,6 +27,8 @@ import io.deephaven.util.mutable.MutableInt;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.function.Supplier;
 
 public class TableUpdateValidator implements QueryTable.Operation<QueryTable> {
@@ -53,6 +57,7 @@ public class TableUpdateValidator implements QueryTable.Operation<QueryTable> {
 
     private TrackingWritableRowSet rowSet;
     private QueryTable resultTable;
+    private ModifiedColumnSet.Transformer mcsTransformer;
     private SharedContext sharedContext;
     private final String description;
 
@@ -104,7 +109,11 @@ public class TableUpdateValidator implements QueryTable.Operation<QueryTable> {
     public Result<QueryTable> initialize(boolean usePrev, long beforeClock) {
         rowSet = (usePrev ? tableToValidate.getRowSet().prev() : tableToValidate.getRowSet()).copy().toTracking();
 
-        resultTable = new QueryTable(rowSet, tableToValidate.getColumnSourceMap());
+        resultTable = new QueryTable(tableToValidate.getDefinition(), rowSet,
+                new LinkedHashMap<>(tableToValidate.getColumnSourceMap()),
+                null,
+                tableToValidate.getAttributes());
+        mcsTransformer = tableToValidate.newModifiedColumnSetIdentityTransformer(resultTable);
 
         final TableUpdateListener listener;
         try (final SafeCloseable ignored1 = maybeOpenSharedContext();
@@ -218,7 +227,11 @@ public class TableUpdateValidator implements QueryTable.Operation<QueryTable> {
                 return;
             }
 
-            resultTable.notifyListeners(upstream.acquire());
+            final TableUpdateImpl downstream = TableUpdateImpl.copy(upstream);
+            downstream.modifiedColumnSet = resultTable.getModifiedColumnSetForUpdates();
+            mcsTransformer.clearAndTransform(upstream.modifiedColumnSet(), downstream.modifiedColumnSet);
+
+            resultTable.notifyListeners(downstream);
         }
     }
 
@@ -341,7 +354,7 @@ public class TableUpdateValidator implements QueryTable.Operation<QueryTable> {
         WritableObjectChunk<Object, Values> sourceFillChunk;
         ColumnSource.GetContext expectedGetContext;
         ChunkSink.FillFromContext expectedFillFromContext;
-        WritableBooleanChunk equalValuesDest;
+        WritableBooleanChunk<Values> equalValuesDest;
 
         private ColumnInfo(QueryTable tableToValidate, String columnName) {
             this.name = columnName;
@@ -354,7 +367,10 @@ public class TableUpdateValidator implements QueryTable.Operation<QueryTable> {
             Assert.eqTrue(this.expectedSource instanceof RowSetShiftCallback,
                     "expectedSource instanceof ShiftData.RowSetShiftCallback");
 
-            this.chunkEquals = ChunkEquals.makeEqual(source.getChunkType());
+            ChunkType chunkType = source.getChunkType();
+            this.chunkEquals = chunkType == ChunkType.Object
+                    ? ObjectChunkDeepEquals.INSTANCE
+                    : ChunkEquals.makeEqual(chunkType);
         }
 
         private ColumnSource.GetContext sourceGetContext() {
@@ -392,7 +408,7 @@ public class TableUpdateValidator implements QueryTable.Operation<QueryTable> {
             return expectedFillFromContext;
         }
 
-        private WritableBooleanChunk equalValuesDest() {
+        private WritableBooleanChunk<Values> equalValuesDest() {
             if (equalValuesDest == null) {
                 equalValuesDest = WritableBooleanChunk.makeWritableChunk(CHUNK_SIZE);
             }

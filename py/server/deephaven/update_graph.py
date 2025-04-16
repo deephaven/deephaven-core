@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
 """This module provides access to the Update Graph (UG)'s locks that must be acquired to perform certain
 table operations. When working with refreshing tables, UG locks must be held in order to have a consistent view of

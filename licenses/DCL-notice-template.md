@@ -2,7 +2,7 @@ Deephaven ${projectName}
 Copyright ${copyrightYear} Deephaven Data Lab
 
 Licensed under the Deephaven Community License Agreement 1.0 (the "License");
-You may obtain a copy of the License at [LICENSE](LICENSE).
+You may obtain a copy of the License at [LICENSE](../LICENSE.md).
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,

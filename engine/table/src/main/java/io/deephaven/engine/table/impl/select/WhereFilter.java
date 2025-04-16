@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.select;
 
@@ -302,6 +302,13 @@ public interface WhereFilter extends Filter {
     }
 
     /**
+     * Returns true if this filter uses row virtual offset columns of {@code i}, {@code ii} or {@code k}.
+     */
+    default boolean hasVirtualRowVariables() {
+        return false;
+    }
+
+    /**
      * Create a copy of this WhereFilter.
      *
      * @return an independent copy of this WhereFilter.
@@ -331,7 +338,7 @@ public interface WhereFilter extends Filter {
 
     @Override
     default <T> T walk(Expression.Visitor<T> visitor) {
-        throw new UnsupportedOperationException("WhereFilters do not implement walk");
+        return visitor.visit(this);
     }
 
     @Override

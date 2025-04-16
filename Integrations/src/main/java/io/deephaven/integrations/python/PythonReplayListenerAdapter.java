@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.integrations.python;
 
@@ -83,11 +83,11 @@ public class PythonReplayListenerAdapter extends InstrumentedTableUpdateListener
 
     @Override
     public void replay() {
-        final RowSet emptyRowSet = RowSetFactory.empty();
         final RowSetShiftData emptyShift = RowSetShiftData.EMPTY;
         final ModifiedColumnSet emptyColumnSet = ModifiedColumnSet.EMPTY;
         final TableUpdate update =
-                new TableUpdateImpl(source.getRowSet(), emptyRowSet, emptyRowSet, emptyShift, emptyColumnSet);
+                new TableUpdateImpl(source.getRowSet(), RowSetFactory.empty(), RowSetFactory.empty(), emptyShift,
+                        emptyColumnSet);
         final boolean isReplay = true;
         pyListenerCallable.call("__call__", update, isReplay);
     }

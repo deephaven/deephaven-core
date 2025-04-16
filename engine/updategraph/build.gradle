@@ -10,6 +10,7 @@ dependencies {
     implementation project(':hotspot')
     implementation project(':log-factory')
     implementation project(':Configuration')
+    implementation project(':util-processenvironment')
     implementation libs.commons.lang3
 
     compileOnly libs.google.findbugs.jsr305

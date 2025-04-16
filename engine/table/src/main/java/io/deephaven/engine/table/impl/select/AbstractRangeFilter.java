@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.select;
 
@@ -23,7 +23,7 @@ import java.util.regex.Pattern;
  * A filter that determines if a column value is between an upper and lower bound (which each may either be inclusive or
  * exclusive).
  */
-public abstract class AbstractRangeFilter extends WhereFilterImpl {
+public abstract class AbstractRangeFilter extends WhereFilterImpl implements ExposesChunkFilter {
     private static final Pattern decimalPattern = Pattern.compile("(-)?\\d+(?:\\.((\\d+)0*)?)?");
 
     protected final String columnName;
@@ -47,6 +47,11 @@ public abstract class AbstractRangeFilter extends WhereFilterImpl {
         this.columnName = columnName;
         this.upperInclusive = upperInclusive;
         this.lowerInclusive = lowerInclusive;
+    }
+
+    @Override
+    public Optional<ChunkFilter> chunkFilter() {
+        return Optional.of(chunkFilter);
     }
 
     public static WhereFilter makeBigDecimalRange(String columnName, String val) {

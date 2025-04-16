@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.server.console;
 
@@ -74,6 +74,9 @@ public class ScopeTicketResolver extends TicketResolverBase {
 
     @Override
     public void forAllFlightInfo(@Nullable final SessionState session, final Consumer<Flight.FlightInfo> visitor) {
+        if (session == null) {
+            return;
+        }
         final QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
         queryScope.toMap(queryScope::unwrapObject, (n, t) -> t instanceof Table).forEach((name, table) -> {
             final Table transformedTable = authorization.transform((Table) table);

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.parquet.table;
 
@@ -16,6 +16,7 @@ import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.PartitionedTableFactory;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.TableUpdateMode;
 import io.deephaven.engine.table.impl.locations.util.PartitionFormatter;
 import io.deephaven.engine.table.impl.locations.util.TableDataRefreshService;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
@@ -256,12 +257,14 @@ public class ParquetTools {
      * @param parquetColumnNameArr Names of index columns for the parquet file, stored as String[] for each index
      * @param dest The destination URI for the main table containing these index columns
      * @param channelProvider The channel provider to use for creating channels to the index files
+     * @param writeContext The shared context to be passed to all output streams
      */
     private static List<ParquetTableWriter.IndexWritingInfo> indexInfoBuilderHelper(
             @NotNull final Collection<List<String>> indexColumns,
             @NotNull final String[][] parquetColumnNameArr,
             @NotNull final URI dest,
-            @NotNull final SeekableChannelsProvider channelProvider) throws IOException {
+            @NotNull final SeekableChannelsProvider channelProvider,
+            @NotNull final SeekableChannelsProvider.WriteContext writeContext) throws IOException {
         Require.eq(indexColumns.size(), "indexColumns.size", parquetColumnNameArr.length,
                 "parquetColumnNameArr.length");
         final int numIndexes = indexColumns.size();
@@ -273,7 +276,7 @@ public class ParquetTools {
             final String indexFileRelativePath = getRelativeIndexFilePath(destFileName, parquetColumnNames);
             final URI indexFileURI = resolve(dest, indexFileRelativePath);
             final CompletableOutputStream indexFileOutputStream =
-                    channelProvider.getOutputStream(indexFileURI, PARQUET_OUTPUT_BUFFER_SIZE);
+                    channelProvider.getOutputStream(writeContext, indexFileURI, PARQUET_OUTPUT_BUFFER_SIZE);
             final ParquetTableWriter.IndexWritingInfo info = new ParquetTableWriter.IndexWritingInfo(
                     indexColumnNames,
                     parquetColumnNames,
@@ -303,8 +306,6 @@ public class ParquetTools {
             @NotNull final Table sourceTable,
             @NotNull final String destinationDir,
             @NotNull final ParquetInstructions writeInstructions) {
-        final Collection<List<String>> indexColumns =
-                writeInstructions.getIndexColumns().orElseGet(() -> indexedColumnNames(sourceTable));
         final TableDefinition definition = writeInstructions.getTableDefinition().orElse(sourceTable.getDefinition());
         final List<ColumnDefinition<?>> partitioningColumns = definition.getPartitioningColumns();
         if (partitioningColumns.isEmpty()) {
@@ -317,6 +318,20 @@ public class ParquetTools {
         final TableDefinition keyTableDefinition = TableDefinition.of(partitioningColumns);
         final TableDefinition leafDefinition =
                 getNonKeyTableDefinition(new HashSet<>(Arrays.asList(partitioningColNames)), definition);
+
+        final Collection<List<String>> indexColumns;
+        if (writeInstructions.getIndexColumns().isPresent()) {
+            indexColumns = writeInstructions.getIndexColumns().get();
+            verifyNotAddingIndexOnPartitioningColumn(indexColumns, partitionedTable.keyColumnNames());
+        } else {
+            // Skip writing any existing indexes that are on partitioning columns, but don't fail
+            final Collection<List<String>> existingIndexes = indexedColumnNames(sourceTable);
+            final Set<String> keyColumnNames = partitionedTable.keyColumnNames();
+            indexColumns = existingIndexes.stream()
+                    .filter(index -> !isIndexOnPartitioningColumn(index, keyColumnNames))
+                    .collect(Collectors.toList());
+        }
+
         writeKeyValuePartitionedTableImpl(partitionedTable, keyTableDefinition, leafDefinition, destinationDir,
                 writeInstructions, indexColumns, Optional.of(sourceTable));
     }
@@ -338,7 +353,6 @@ public class ParquetTools {
             @NotNull final PartitionedTable partitionedTable,
             @NotNull final String destinationDir,
             @NotNull final ParquetInstructions writeInstructions) {
-        final Collection<List<String>> indexColumns = writeInstructions.getIndexColumns().orElse(EMPTY_INDEXES);
         final TableDefinition keyTableDefinition, leafDefinition;
         if (writeInstructions.getTableDefinition().isEmpty()) {
             keyTableDefinition = getKeyTableDefinition(partitionedTable.keyColumnNames(),
@@ -350,8 +364,33 @@ public class ParquetTools {
             keyTableDefinition = getKeyTableDefinition(partitionedTable.keyColumnNames(), definition);
             leafDefinition = getNonKeyTableDefinition(partitionedTable.keyColumnNames(), definition);
         }
+
+        final Collection<List<String>> indexColumns;
+        if (writeInstructions.getIndexColumns().isPresent()) {
+            indexColumns = writeInstructions.getIndexColumns().get();
+            verifyNotAddingIndexOnPartitioningColumn(indexColumns, partitionedTable.keyColumnNames());
+        } else {
+            indexColumns = EMPTY_INDEXES;
+        }
+
         writeKeyValuePartitionedTableImpl(partitionedTable, keyTableDefinition, leafDefinition, destinationDir,
                 writeInstructions, indexColumns, Optional.empty());
+    }
+
+    private static void verifyNotAddingIndexOnPartitioningColumn(
+            @NotNull final Collection<List<String>> indexColumnsCollection,
+            @NotNull final Collection<String> partitioningColumnNames) {
+        for (final List<String> indexColumns : indexColumnsCollection) {
+            if (isIndexOnPartitioningColumn(indexColumns, partitioningColumnNames)) {
+                throw new IllegalArgumentException("Cannot add index on partitioning column " + indexColumns.get(0));
+            }
+        }
+    }
+
+    private static boolean isIndexOnPartitioningColumn(
+            @NotNull final List<String> indexColumns,
+            @NotNull final Collection<String> partitioningColumnNames) {
+        return indexColumns.size() == 1 && partitioningColumnNames.contains(indexColumns.get(0));
     }
 
     /**
@@ -574,7 +613,7 @@ public class ParquetTools {
         }
         // Assuming all destination URIs have the same scheme, and will use the same channels provider instance
         final SeekableChannelsProvider channelsProvider = SeekableChannelsProviderLoader.getInstance()
-                .fromServiceLoader(destinations[0], writeInstructions.getSpecialInstructions());
+                .load(destinations[0].getScheme(), writeInstructions.getSpecialInstructions());
 
         final ParquetMetadataFileWriter metadataFileWriter;
         if (writeInstructions.generateMetadataFiles()) {
@@ -589,17 +628,21 @@ public class ParquetTools {
 
         // List of output streams created, to rollback in case of exceptions
         final List<CompletableOutputStream> outputStreams = new ArrayList<>(destinations.length);
-        try (final SafeCloseable ignored = () -> SafeCloseable.closeAll(outputStreams.stream())) {
+
+        // Create a common shared context for all the output streams
+        try (final SeekableChannelsProvider.WriteContext writeContext = channelsProvider.makeWriteContext();
+                final SafeCloseable ignored = () -> SafeCloseable.closeAll(outputStreams.stream())) {
             try {
                 if (indexColumns.isEmpty()) {
                     // Write the tables without any index info
                     for (int tableIdx = 0; tableIdx < sources.length; tableIdx++) {
                         final Table source = sources[tableIdx];
+                        final URI tableDestination = destinations[tableIdx];
                         final CompletableOutputStream outputStream = channelsProvider.getOutputStream(
-                                destinations[tableIdx], PARQUET_OUTPUT_BUFFER_SIZE);
+                                writeContext, tableDestination, PARQUET_OUTPUT_BUFFER_SIZE);
                         outputStreams.add(outputStream);
-                        ParquetTableWriter.write(source, definition, writeInstructions, destinations[tableIdx],
-                                outputStream, Collections.emptyMap(), (List<ParquetTableWriter.IndexWritingInfo>) null,
+                        ParquetTableWriter.write(source, definition, writeInstructions, tableDestination, outputStream,
+                                Collections.emptyMap(), (List<ParquetTableWriter.IndexWritingInfo>) null,
                                 metadataFileWriter, computedCache);
                     }
                 } else {
@@ -614,27 +657,27 @@ public class ParquetTools {
                         final URI tableDestination = destinations[tableIdx];
                         final List<ParquetTableWriter.IndexWritingInfo> indexInfoList =
                                 indexInfoBuilderHelper(indexColumns, parquetColumnNameArr, tableDestination,
-                                        channelsProvider);
+                                        channelsProvider, writeContext);
                         final CompletableOutputStream outputStream = channelsProvider.getOutputStream(
-                                destinations[tableIdx], PARQUET_OUTPUT_BUFFER_SIZE);
+                                writeContext, destinations[tableIdx], PARQUET_OUTPUT_BUFFER_SIZE);
                         outputStreams.add(outputStream);
                         for (final ParquetTableWriter.IndexWritingInfo info : indexInfoList) {
                             outputStreams.add(info.destOutputStream);
                         }
-                        final Table sourceTable = sources[tableIdx];
-                        ParquetTableWriter.write(sourceTable, definition, writeInstructions, destinations[tableIdx],
-                                outputStream, Collections.emptyMap(), indexInfoList, metadataFileWriter, computedCache);
+                        final Table source = sources[tableIdx];
+                        ParquetTableWriter.write(source, definition, writeInstructions, tableDestination, outputStream,
+                                Collections.emptyMap(), indexInfoList, metadataFileWriter, computedCache);
                     }
                 }
 
                 if (writeInstructions.generateMetadataFiles()) {
                     final URI metadataDest = metadataRootDir.resolve(METADATA_FILE_NAME);
                     final CompletableOutputStream metadataOutputStream = channelsProvider.getOutputStream(
-                            metadataDest, PARQUET_OUTPUT_BUFFER_SIZE);
+                            writeContext, metadataDest, PARQUET_OUTPUT_BUFFER_SIZE);
                     outputStreams.add(metadataOutputStream);
                     final URI commonMetadataDest = metadataRootDir.resolve(COMMON_METADATA_FILE_NAME);
                     final CompletableOutputStream commonMetadataOutputStream = channelsProvider.getOutputStream(
-                            commonMetadataDest, PARQUET_OUTPUT_BUFFER_SIZE);
+                            writeContext, commonMetadataDest, PARQUET_OUTPUT_BUFFER_SIZE);
                     outputStreams.add(commonMetadataOutputStream);
                     metadataFileWriter.writeMetadataFiles(metadataOutputStream, commonMetadataOutputStream);
                 }
@@ -822,14 +865,15 @@ public class ParquetTools {
         if (readInstructions.isRefreshing()) {
             throw new IllegalArgumentException("Unable to have a refreshing single parquet file");
         }
-        final TableDefinition tableDefinition = readInstructions.getTableDefinition().orElseThrow(
-                () -> new IllegalArgumentException("Table definition must be provided"));
+        final TableDefinition tableDefinition = ParquetInstructions.ensureDefinition(readInstructions);
         verifyFileLayout(readInstructions, ParquetFileLayout.SINGLE_FILE);
         final TableLocationProvider locationProvider = new PollingTableLocationProvider<>(
                 StandaloneTableKey.getInstance(),
                 new KnownLocationKeyFinder<>(tableLocationKey),
                 new ParquetTableLocationFactory(readInstructions),
-                null);
+                null,
+                TableUpdateMode.STATIC, // exactly one location here
+                TableUpdateMode.STATIC); // parquet files are static
         return new SimpleSourceTable(tableDefinition.getWritable(),
                 "Read single parquet file from " + tableLocationKey.getURI(),
                 RegionedTableComponentFactoryImpl.INSTANCE, locationProvider, null);
@@ -857,11 +901,10 @@ public class ParquetTools {
         if (readInstructions.getTableDefinition().isEmpty()) {
             // Infer the definition
             final KnownLocationKeyFinder<ParquetTableLocationKey> inferenceKeys = toKnownKeys(locationKeyFinder);
-            final Pair<TableDefinition, ParquetInstructions> inference = infer(inferenceKeys, readInstructions);
+            useInstructions = infer(inferenceKeys, readInstructions);
+            definition = useInstructions.getTableDefinition().orElseThrow();
             // In the case of a static output table, we can re-use the already fetched inference keys
-            useLocationKeyFinder = readInstructions.isRefreshing() ? locationKeyFinder : inferenceKeys;
-            definition = inference.getFirst();
-            useInstructions = inference.getSecond();
+            useLocationKeyFinder = useInstructions.isRefreshing() ? locationKeyFinder : inferenceKeys;
         } else {
             definition = readInstructions.getTableDefinition().get();
             useInstructions = readInstructions;
@@ -890,11 +933,23 @@ public class ParquetTools {
                         StandaloneTableKey.getInstance(),
                         keyFinder,
                         new ParquetTableLocationFactory(useInstructions),
-                        refreshService),
+                        refreshService,
+                        // If refreshing, new locations can be discovered but they will be appended
+                        // to the locations list
+                        useInstructions.isRefreshing()
+                                ? TableUpdateMode.APPEND_ONLY
+                                : TableUpdateMode.STATIC,
+                        TableUpdateMode.STATIC // parquet files are static
+                ),
                 updateSourceRegistrar);
     }
 
-    private static Pair<TableDefinition, ParquetInstructions> infer(
+    /**
+     * Infers additional information regarding the parquet file(s) based on the inferenceKeys and returns a potentially
+     * updated parquet instructions. If the incoming {@code readInstructions} does not have a {@link TableDefinition},
+     * the returned instructions will have an inferred {@link TableDefinition}.
+     */
+    private static ParquetInstructions infer(
             final KnownLocationKeyFinder<ParquetTableLocationKey> inferenceKeys,
             final ParquetInstructions readInstructions) {
         // TODO(deephaven-core#877): Support schema merge when discovering multiple parquet files
@@ -929,7 +984,7 @@ public class ParquetTools {
         columnDefinitionsFromParquetFile.stream()
                 .filter(columnDefinition -> !partitionKeys.contains(columnDefinition.getName()))
                 .forEach(allColumns::add);
-        return new Pair<>(TableDefinition.of(allColumns), schemaInfo.getSecond());
+        return ensureTableDefinition(schemaInfo.getSecond(), TableDefinition.of(allColumns), true);
     }
 
     private static KnownLocationKeyFinder<ParquetTableLocationKey> toKnownKeys(
@@ -945,7 +1000,7 @@ public class ParquetTools {
         // Check if the directory has a metadata file
         final URI metadataFileURI = tableRootDirectory.resolve(METADATA_FILE_NAME);
         final SeekableChannelsProvider channelsProvider =
-                SeekableChannelsProviderLoader.getInstance().fromServiceLoader(tableRootDirectory,
+                SeekableChannelsProviderLoader.getInstance().load(tableRootDirectory.getScheme(),
                         readInstructions.getSpecialInstructions());
         if (channelsProvider.exists(metadataFileURI)) {
             return readPartitionedTableWithMetadata(metadataFileURI, readInstructions, channelsProvider);
@@ -970,10 +1025,6 @@ public class ParquetTools {
             @NotNull final ParquetInstructions readInstructions,
             @Nullable final SeekableChannelsProvider channelsProvider) {
         verifyFileLayout(readInstructions, ParquetFileLayout.METADATA_PARTITIONED);
-        if (readInstructions.getTableDefinition().isPresent()) {
-            throw new UnsupportedOperationException("Detected table definition inside read instructions, reading " +
-                    "metadata files with custom table definition is currently not supported");
-        }
         final ParquetMetadataFileLayout layout =
                 ParquetMetadataFileLayout.create(sourceURI, readInstructions, channelsProvider);
         return readTable(layout,
@@ -1044,11 +1095,7 @@ public class ParquetTools {
         }
         // Infer the table definition
         final KnownLocationKeyFinder<ParquetTableLocationKey> inferenceKeys = new KnownLocationKeyFinder<>(locationKey);
-        final Pair<TableDefinition, ParquetInstructions> inference = infer(inferenceKeys, readInstructions);
-        final TableDefinition inferredTableDefinition = inference.getFirst();
-        final ParquetInstructions inferredInstructions = inference.getSecond();
-        return readTable(inferenceKeys.getFirstKey().orElseThrow(),
-                ensureTableDefinition(inferredInstructions, inferredTableDefinition, true));
+        return readTable(inferenceKeys.getFirstKey().orElseThrow(), infer(inferenceKeys, readInstructions));
     }
 
     @VisibleForTesting

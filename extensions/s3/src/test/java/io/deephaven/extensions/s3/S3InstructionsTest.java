@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.extensions.s3;
 
@@ -12,10 +12,10 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Optional;
 
+import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.assertj.core.api.AssertionsForClassTypes.fail;
 
-public class S3InstructionsTest {
+class S3InstructionsTest {
 
     @Test
     void defaults() {
@@ -63,7 +63,7 @@ public class S3InstructionsTest {
                     .regionName("some-region")
                     .maxConcurrentRequests(-1)
                     .build();
-            fail("Expected exception");
+            failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
         } catch (IllegalArgumentException e) {
             assertThat(e).hasMessageContaining("maxConcurrentRequests");
         }
@@ -76,7 +76,7 @@ public class S3InstructionsTest {
                     .regionName("some-region")
                     .maxConcurrentRequests(0)
                     .build();
-            fail("Expected exception");
+            failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
         } catch (IllegalArgumentException e) {
             assertThat(e).hasMessageContaining("maxConcurrentRequests");
         }
@@ -99,7 +99,7 @@ public class S3InstructionsTest {
                     .regionName("some-region")
                     .readAheadCount(-1)
                     .build();
-            fail("Expected exception");
+            failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
         } catch (IllegalArgumentException e) {
             assertThat(e).hasMessageContaining("readAheadCount");
         }
@@ -122,7 +122,7 @@ public class S3InstructionsTest {
                     .regionName("some-region")
                     .fragmentSize(8 * (1 << 10) - 1)
                     .build();
-            fail("Expected exception");
+            failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
         } catch (IllegalArgumentException e) {
             assertThat(e).hasMessageContaining("fragmentSize");
         }
@@ -145,7 +145,7 @@ public class S3InstructionsTest {
                     .regionName("some-region")
                     .credentials(new Credentials() {})
                     .build();
-            fail("Expected exception");
+            failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
         } catch (IllegalArgumentException e) {
             assertThat(e).hasMessageContaining("credentials");
         }
@@ -158,7 +158,7 @@ public class S3InstructionsTest {
                     .regionName("some-region")
                     .writePartSize(1024)
                     .build();
-            fail("Expected exception");
+            failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
         } catch (IllegalArgumentException e) {
             assertThat(e).hasMessageContaining("writePartSize");
         }
@@ -171,7 +171,7 @@ public class S3InstructionsTest {
                     .regionName("some-region")
                     .numConcurrentWriteParts(0)
                     .build();
-            fail("Expected exception");
+            failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
         } catch (IllegalArgumentException e) {
             assertThat(e).hasMessageContaining("numConcurrentWriteParts");
         }
@@ -185,7 +185,7 @@ public class S3InstructionsTest {
                     .numConcurrentWriteParts(1001)
                     .maxConcurrentRequests(1000)
                     .build();
-            fail("Expected exception");
+            failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
         } catch (IllegalArgumentException e) {
             assertThat(e).hasMessageContaining("numConcurrentWriteParts");
         }
@@ -239,7 +239,7 @@ public class S3InstructionsTest {
                     .configFilePath("/some/random/path")
                     .build()
                     .aggregatedProfileFile();
-            fail("Expected exception");
+            failBecauseExceptionWasNotThrown(IllegalStateException.class);
         } catch (IllegalStateException e) {
             assertThat(e).hasMessageContaining("/some/random/path");
         }
@@ -252,7 +252,7 @@ public class S3InstructionsTest {
                     .credentialsFilePath("/some/random/path")
                     .build()
                     .aggregatedProfileFile();
-            fail("Expected exception");
+            failBecauseExceptionWasNotThrown(IllegalStateException.class);
         } catch (IllegalStateException e) {
             assertThat(e).hasMessageContaining("/some/random/path");
         }

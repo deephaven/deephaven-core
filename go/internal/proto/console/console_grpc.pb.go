@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.2.0
 // - protoc             v4.25.3
-// source: deephaven/proto/console.proto
+// source: deephaven_core/proto/console.proto
 
 package console
 
@@ -568,5 +568,5 @@ var ConsoleService_ServiceDesc = grpc.ServiceDesc{
 			ServerStreams: true,
 		},
 	},
-	Metadata: "deephaven/proto/console.proto",
+	Metadata: "deephaven_core/proto/console.proto",
 }

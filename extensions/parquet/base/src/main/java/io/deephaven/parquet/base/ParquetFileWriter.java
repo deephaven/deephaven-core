@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.parquet.base;
 
@@ -70,6 +70,13 @@ public final class ParquetFileWriter implements AutoCloseable {
         blocks.add(rowGroupWriter.getBlock());
         offsetIndexes.add(rowGroupWriter.offsetIndexes());
         return rowGroupWriter;
+    }
+
+    /**
+     * Get the number of bytes written to the parquet file so far.
+     */
+    public long bytesWritten() {
+        return countingOutput.getCount();
     }
 
     @Override

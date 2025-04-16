@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl;
 
@@ -92,15 +92,43 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
 
     @Override
     public SafeCloseable beginOperation(@NotNull final QueryTable parent) {
-        final QueryCompilerRequestProcessor.BatchProcessor compilationProcessor = QueryCompilerRequestProcessor.batch();
-        Arrays.stream(whereFilters).forEach(filter -> filter.init(parent.getDefinition(), compilationProcessor));
-        compilationProcessor.compile();
-
         return Arrays.stream(whereFilters)
                 .map((final WhereFilter filter) -> {
                     // Ensure we gather the correct dependencies when building a snapshot control.
                     return filter.beginOperation(parent);
                 }).collect(SafeCloseableList.COLLECTOR);
+    }
+
+    /**
+     * Initialize the filters.
+     *
+     * <p>
+     * We must initialize our filters before the wouldMatch operation's call to QueryTable's getResult method, so that
+     * memoization processing can correctly compare them. MatchFilters do not properly implement memoization before
+     * initialization, and they are the most common filter to memoize.
+     * </p>
+     *
+     * @param parent the parent table to have wouldMatch applied
+     */
+    void initializeFilters(@NotNull QueryTable parent) {
+        final QueryCompilerRequestProcessor.BatchProcessor compilationProcessor = QueryCompilerRequestProcessor.batch();
+        Arrays.stream(whereFilters).forEach(filter -> filter.init(parent.getDefinition(), compilationProcessor));
+
+        final List<WhereFilter> disallowedRowVariables =
+                Arrays.stream(whereFilters).filter(WhereFilter::hasVirtualRowVariables).collect(Collectors.toList());
+        if (!disallowedRowVariables.isEmpty()) {
+            throw new UncheckedTableException(
+                    "wouldMatch filters cannot use virtual row variables (i, ii, and k): " + disallowedRowVariables);
+        }
+
+        final List<WhereFilter> disallowedColumnVectors =
+                Arrays.stream(whereFilters).filter(wf -> !wf.getColumnArrays().isEmpty()).collect(Collectors.toList());
+        if (!disallowedColumnVectors.isEmpty()) {
+            throw new UncheckedTableException(
+                    "wouldMatch filters cannot use column Vectors (_ syntax): " + disallowedColumnVectors);
+        }
+
+        compilationProcessor.compile();
     }
 
     @Override
@@ -180,7 +208,8 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
 
     @Override
     public MemoizedOperationKey getMemoizedOperationKey() {
-        return MemoizedOperationKey.wouldMatch();
+        return MemoizedOperationKey.wouldMatch(
+                matchColumns.stream().map(ColumnHolder::getColumnName).toArray(String[]::new), whereFilters);
     }
 
     /**
@@ -503,13 +532,14 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
 
             try (final SafeCloseableList toClose = new SafeCloseableList()) {
                 // Filter and add addeds
-                final WritableRowSet filteredAdded = toClose.add(filter.filter(added, source, table, false));
+                final WritableRowSet filteredAdded = toClose.add(filter.filter(added, table.getRowSet(), table, false));
                 RowSet keysToRemove = EMPTY_INDEX;
 
                 // If we were affected, recompute mods and re-add the ones that pass.
                 if (affected) {
                     downstreamModified.setAll(name);
-                    final RowSet filteredModified = toClose.add(filter.filter(modified, source, table, false));
+                    final RowSet filteredModified =
+                            toClose.add(filter.filter(modified, table.getRowSet(), table, false));
 
                     // Now apply the additions and remove any non-matching modifieds
                     filteredAdded.insert(filteredModified);

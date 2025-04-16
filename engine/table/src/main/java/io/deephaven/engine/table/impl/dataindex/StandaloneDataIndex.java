@@ -1,11 +1,12 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.dataindex;
 
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.table.BasicDataIndex;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.DataIndexOptions;
 import io.deephaven.engine.table.Table;
 import org.jetbrains.annotations.NotNull;
 
@@ -63,7 +64,7 @@ public class StandaloneDataIndex extends LivenessArtifact implements BasicDataIn
 
     @Override
     @NotNull
-    public Table table() {
+    public Table table(final DataIndexOptions unused) {
         return table;
     }
 

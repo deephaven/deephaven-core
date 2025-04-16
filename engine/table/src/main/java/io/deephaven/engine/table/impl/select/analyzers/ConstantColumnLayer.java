@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.select.analyzers;
 
@@ -22,6 +22,10 @@ public class ConstantColumnLayer extends SelectOrViewColumnLayer {
             final String[] deps,
             final ModifiedColumnSet mcsBuilder) {
         super(context, sc, ws, null, deps, mcsBuilder);
+        if (sc.recomputeOnModifiedRow()) {
+            throw new IllegalArgumentException(
+                    "SelectColumn may not have alwaysEvaluate set for a constant column: " + sc);
+        }
         initialize(ws);
     }
 

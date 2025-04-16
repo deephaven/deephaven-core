@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.qst.table;
 
@@ -35,6 +35,11 @@ public abstract class TableVisitorGeneric<T> implements TableSpec.Visitor<T> {
     @Override
     public T visit(TailTable tailTable) {
         return accept(tailTable);
+    }
+
+    @Override
+    public T visit(SliceTable sliceTable) {
+        return accept(sliceTable);
     }
 
     @Override

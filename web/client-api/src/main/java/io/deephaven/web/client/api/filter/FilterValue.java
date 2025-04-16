@@ -1,22 +1,22 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.web.client.api.filter;
 
 import com.vertispan.tsdefs.annotations.TsTypeRef;
 import com.vertispan.tsdefs.annotations.TsUnion;
 import com.vertispan.tsdefs.annotations.TsUnionMember;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.Table_pb;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.CompareCondition;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.Condition;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ContainsCondition;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.InCondition;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.InvokeCondition;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.IsNullCondition;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.Literal;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.MatchesCondition;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.Reference;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.Value;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.Table_pb;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.CompareCondition;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.Condition;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.ContainsCondition;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.InCondition;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.InvokeCondition;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.IsNullCondition;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.Literal;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.MatchesCondition;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.Reference;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.Value;
 import io.deephaven.web.client.api.Column;
 import io.deephaven.web.client.api.DateWrapper;
 import io.deephaven.web.client.api.LongWrapper;

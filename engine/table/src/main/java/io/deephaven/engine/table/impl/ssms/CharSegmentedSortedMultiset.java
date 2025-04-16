@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.ssms;
 
@@ -2204,11 +2204,15 @@ public final class CharSegmentedSortedMultiset implements SegmentedSortedMultiSe
      */
     private char[] keyArray(long first, long last) {
         if (isEmpty()) {
+            // region EmptyKeyArrayAllocation
             return ArrayTypeUtils.EMPTY_CHAR_ARRAY;
+            // endregion EmptyKeyArrayAllocation
         }
 
         final int totalSize = (int) (last - first + 1);
+        // region KeyArrayAllocation
         final char[] keyArray = new char[totalSize];
+        // endregion KeyArrayAllocation
         if (leafCount == 1) {
             System.arraycopy(directoryValues, (int) first, keyArray, 0, totalSize);
         } else if (leafCount > 0) {

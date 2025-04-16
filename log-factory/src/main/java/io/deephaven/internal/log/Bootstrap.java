@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.internal.log;
 
@@ -8,9 +8,11 @@ import java.util.Optional;
 public final class Bootstrap {
 
     public static boolean isQuiet() {
-        return viaProperty()
-                .or(Bootstrap::viaEnvironment)
-                .map(Boolean::parseBoolean)
+        Optional<String> optional = viaProperty();
+        if (!optional.isPresent()) {
+            optional = viaEnvironment();
+        }
+        return optional.map(Boolean::parseBoolean)
                 .orElse(false);
     }
 

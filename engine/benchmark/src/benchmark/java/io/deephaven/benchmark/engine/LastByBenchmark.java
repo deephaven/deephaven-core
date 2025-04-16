@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.benchmark.engine;
 
@@ -58,9 +58,6 @@ public class LastByBenchmark {
 
     @Param({"1"})
     private int valueCount;
-
-    @Param({"true"})
-    private boolean tracked;
 
     private Table table;
 
@@ -171,8 +168,6 @@ public class LastByBenchmark {
         state = new TableBenchmarkState(BenchmarkTools.stripName(params.getBenchmark()), params.getWarmup().getCount());
 
         table = bmt.getTable().coalesce().dropColumns("PartCol");
-
-        QueryTable.TRACKED_FIRST_BY = QueryTable.TRACKED_LAST_BY = tracked;
     }
 
     @TearDown(Level.Trial)

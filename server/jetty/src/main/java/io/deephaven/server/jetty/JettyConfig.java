@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.server.jetty;
 
@@ -11,7 +11,6 @@ import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Style;
 
 import javax.annotation.Nullable;
-import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.OptionalLong;
 
@@ -99,6 +98,7 @@ public abstract class JettyConfig implements ServerConfig {
         String h2StreamIdleTimeout = config.getStringWithDefault(HTTP_STREAM_TIMEOUT, null);
         String h2MaxConcurrentStreams = config.getStringWithDefault(MAX_CONCURRENT_STREAMS, null);
         String maxHeaderRequestSize = config.getStringWithDefault(MAX_HEADER_REQUEST_SIZE, null);
+
         if (httpWebsockets != null) {
             switch (httpWebsockets.toLowerCase()) {
                 case "true":// backwards compatible

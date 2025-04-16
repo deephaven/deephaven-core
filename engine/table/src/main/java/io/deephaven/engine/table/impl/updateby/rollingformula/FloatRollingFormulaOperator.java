@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit CharRollingFormulaOperator and run "./gradlew replicateUpdateBy" to regenerate
@@ -48,7 +48,6 @@ public class FloatRollingFormulaOperator extends BaseRollingFormulaOperator {
     // endregion extra-fields
 
     protected class Context extends BaseRollingFormulaOperator.Context {
-        private final ColumnSource<?> formulaOutputSource;
         private final IntConsumer outputSetter;
 
         private FloatChunk<? extends Values> influencerValuesChunk;
@@ -71,7 +70,8 @@ public class FloatRollingFormulaOperator extends BaseRollingFormulaOperator {
             formulaCopy.initInputs(RowSetFactory.flat(1).toTracking(),
                     Collections.singletonMap(PARAM_COLUMN_NAME, formulaInputSource));
 
-            formulaOutputSource = ReinterpretUtils.maybeConvertToPrimitive(formulaCopy.getDataView());
+            final ColumnSource<?> formulaOutputSource =
+                    ReinterpretUtils.maybeConvertToPrimitive(formulaCopy.getDataView());
             outputSetter = getChunkSetter(outputValues, formulaOutputSource);
         }
 
@@ -94,7 +94,8 @@ public class FloatRollingFormulaOperator extends BaseRollingFormulaOperator {
                 @Nullable final LongChunk<OrderedRowKeys> influencerPosChunk,
                 @NotNull final IntChunk<? extends Values> pushChunk,
                 @NotNull final IntChunk<? extends Values> popChunk,
-                final int len) {
+                final int affectedCount,
+                final int influencerCount) {
 
             setValueChunks(influencerValueChunkArr);
             setPosChunks(affectedPosChunk, influencerPosChunk);
@@ -102,7 +103,7 @@ public class FloatRollingFormulaOperator extends BaseRollingFormulaOperator {
             int pushIndex = 0;
 
             // chunk processing
-            for (int ii = 0; ii < len; ii++) {
+            for (int ii = 0; ii < affectedCount; ii++) {
                 final int pushCount = pushChunk.get(ii);
                 final int popCount = popChunk.get(ii);
 
@@ -169,8 +170,17 @@ public class FloatRollingFormulaOperator extends BaseRollingFormulaOperator {
     // region extra-constructor-args
     // endregion extra-constructor-args
     ) {
-        super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, formula,
-                paramToken, formulaColumnMap, tableDef, compilationProcessor);
+        super(
+                pair,
+                affectingColumns,
+                timestampColumnName,
+                reverseWindowScaleUnits,
+                forwardWindowScaleUnits,
+                formula,
+                paramToken,
+                formulaColumnMap,
+                tableDef,
+                compilationProcessor);
         // region constructor
         // endregion constructor
     }
@@ -181,14 +191,25 @@ public class FloatRollingFormulaOperator extends BaseRollingFormulaOperator {
             @Nullable final String timestampColumnName,
             final long reverseWindowScaleUnits,
             final long forwardWindowScaleUnits,
+            final Class<?> columnType,
+            final Class<?> componentType,
             final Class<?> vectorType,
             @NotNull final Map<Class<?>, FormulaColumn> formulaColumnMap,
             @NotNull final TableDefinition tableDef
     // region extra-constructor-args
     // endregion extra-constructor-args
     ) {
-        super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, vectorType,
-                formulaColumnMap, tableDef);
+        super(
+                pair,
+                affectingColumns,
+                timestampColumnName,
+                reverseWindowScaleUnits,
+                forwardWindowScaleUnits,
+                columnType,
+                componentType,
+                vectorType,
+                formulaColumnMap,
+                tableDef);
         // region constructor
         // endregion constructor
     }
@@ -200,6 +221,8 @@ public class FloatRollingFormulaOperator extends BaseRollingFormulaOperator {
                 timestampColumnName,
                 reverseWindowScaleUnits,
                 forwardWindowScaleUnits,
+                inputColumnType,
+                inputComponentType,
                 inputVectorType,
                 formulaColumnMap,
                 tableDef

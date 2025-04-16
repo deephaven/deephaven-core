@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.updateby.rollingwavg;
 
@@ -88,16 +88,5 @@ public class CharRollingWAvgOperator extends BasePrimitiveRollingWAvgOperator {
         // region extra-copy-args
         // endregion extra-copy-args
         );
-    }
-
-    /**
-     * Get the names of the input column(s) for this operator.
-     *
-     * @return the names of the input column
-     */
-    @NotNull
-    @Override
-    protected String[] getInputColumnNames() {
-        return new String[] {pair.rightColumn, weightColumnName};
     }
 }

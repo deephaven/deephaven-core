@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.time.calendar;
 
@@ -107,6 +107,7 @@ public class TestStaticCalendarMethods extends BaseArrayTestCase {
         excludes.add("description");
         excludes.add("firstValidDate");
         excludes.add("lastValidDate");
+        excludes.add("clearCache");
 
         // Occasionally tests fail because of invalid clocks on the test system
         final LocalDate startDate = LocalDate.of(1990, 1, 1);

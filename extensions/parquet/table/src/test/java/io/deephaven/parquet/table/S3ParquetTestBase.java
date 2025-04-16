@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.parquet.table;
 
@@ -518,20 +518,17 @@ abstract class S3ParquetTestBase extends S3SeekableChannelTestSetup {
     }
 
     @Test
-    public void testReadWriteUsingProfile() throws IOException {
+    public void testInvalidKeysFromProfile() throws IOException {
         final Table table = TableTools.emptyTable(5).update("someIntColumn = (int) i");
-        Path tempConfigFile = null;
-        Path tempCredentialsFile = null;
+        // Create temporary config and credentials file and write correct credentials and region to them
+        final Path tempConfigFile = Files.createTempFile("config", ".tmp");
+        final Path tempCredentialsFile = Files.createTempFile("credentials", ".tmp");
         try {
-            // Create temporary config and credentials file and write wrong credentials to them
-            tempConfigFile = Files.createTempFile("config", ".tmp");
-            final String configData = "[profile test-user]\nregion = wrong-region";
+            final String configData = "[profile test-user]\nregion = " + region();
             Files.write(tempConfigFile, configData.getBytes());
-
-            tempCredentialsFile = Files.createTempFile("credentials", ".tmp");
-            final String credentialsData = "[test-user]\naws_access_key_id = foo\naws_secret_access_key = bar";
+            final String credentialsData = "[test-user]\naws_access_key_id = badaccesskey" +
+                    "\naws_secret_access_key = badsecretkey";
             Files.write(tempCredentialsFile, credentialsData.getBytes());
-
             final S3Instructions s3Instructions = S3Instructions.builder()
                     .readTimeout(Duration.ofSeconds(3))
                     .endpointOverride(s3Endpoint())
@@ -551,21 +548,20 @@ abstract class S3ParquetTestBase extends S3SeekableChannelTestSetup {
             }
         } finally {
             // Delete the temporary files
-            if (tempConfigFile != null) {
-                Files.deleteIfExists(tempConfigFile);
-            }
-            if (tempCredentialsFile != null) {
-                Files.delete(tempCredentialsFile);
-            }
+            Files.delete(tempConfigFile);
+            Files.delete(tempCredentialsFile);
         }
+    }
 
+    @Test
+    public void testReadWriteUsingProfile() throws IOException {
+        final Table table = TableTools.emptyTable(5).update("someIntColumn = (int) i");
+        // Create temporary config and credentials file and write correct credentials and region to them
+        final Path tempConfigFile = Files.createTempFile("config", ".tmp");
+        final Path tempCredentialsFile = Files.createTempFile("credentials", ".tmp");
         try {
-            // Create temporary config and credentials file and write correct credentials and region to them
-            tempConfigFile = Files.createTempFile("config", ".tmp");
             final String configData = "[profile test-user]\nregion = " + region();
             Files.write(tempConfigFile, configData.getBytes());
-
-            tempCredentialsFile = Files.createTempFile("credentials", ".tmp");
             final String credentialsData = "[test-user]\naws_access_key_id = " + accessKey() +
                     "\naws_secret_access_key = " + secretAccessKey();
             Files.write(tempCredentialsFile, credentialsData.getBytes());
@@ -589,6 +585,68 @@ abstract class S3ParquetTestBase extends S3SeekableChannelTestSetup {
             // Delete the temporary files
             Files.delete(tempConfigFile);
             Files.delete(tempCredentialsFile);
+        }
+    }
+
+    @Test
+    public void testReadBucketRootKeyValuePartitioned() {
+        final TableDefinition definition = TableDefinition.of(
+                ColumnDefinition.ofInt("PC1").withPartitioning(),
+                ColumnDefinition.ofInt("PC2").withPartitioning(),
+                ColumnDefinition.ofInt("someIntColumn"),
+                ColumnDefinition.ofString("someStringColumn"));
+        final Table table = ((QueryTable) TableTools.emptyTable(500_000)
+                .updateView("PC1 = (int)(ii%3)",
+                        "PC2 = (int)(ii%2)",
+                        "someIntColumn = (int) i",
+                        "someStringColumn = String.valueOf(i)"))
+                .withDefinitionUnsafe(definition);
+        final URI bucketRoot = URI.create(String.format("s3://%s", bucket));
+        final ParquetInstructions instructions = ParquetInstructions.builder()
+                .setSpecialInstructions(s3Instructions(
+                        S3Instructions.builder()
+                                .readTimeout(Duration.ofSeconds(10)))
+                        .build())
+                .setTableDefinition(definition)
+                .setBaseNameForPartitionedParquetData("data")
+                .build();
+        writeKeyValuePartitionedTable(table, bucketRoot.toString(), instructions);
+        {
+            final Table fromS3 = ParquetTools.readTable(bucketRoot.toString(), instructions);
+            assertTableEquals(table.sort("PC1", "PC2"), fromS3.sort("PC1", "PC2"));
+        }
+        {
+            final URI bucketRootWithSlash = URI.create(String.format("s3://%s/", bucket));
+            final Table fromS3 = ParquetTools.readTable(bucketRootWithSlash.toString(), instructions);
+            assertTableEquals(table.sort("PC1", "PC2"), fromS3.sort("PC1", "PC2"));
+        }
+    }
+
+    @Test
+    public void testReadBucketRootFlatPartitioned() {
+        final Table table = getTable(100_000);
+        final ParquetInstructions instructions = ParquetInstructions.builder()
+                .setSpecialInstructions(s3Instructions(
+                        S3Instructions.builder()
+                                .readTimeout(Duration.ofSeconds(10)))
+                        .build())
+                .build();
+        for (int i = 0; i < 3; ++i) {
+            final URI dest = uri("table" + i + ".parquet");
+            ParquetTools.writeTable(table, dest.toString(), instructions);
+        }
+
+        final URI bucketRoot = URI.create(String.format("s3://%s", bucket));
+        final Table expected = merge(table, table, table);
+        {
+            final Table fromS3AsFlat = ParquetTools.readTable(bucketRoot.toString(),
+                    instructions.withLayout(ParquetInstructions.ParquetFileLayout.FLAT_PARTITIONED));
+            assertTableEquals(expected, fromS3AsFlat);
+        }
+        {
+            final Table fromS3AsKV = ParquetTools.readTable(bucketRoot.toString(),
+                    instructions.withLayout(ParquetInstructions.ParquetFileLayout.KV_PARTITIONED));
+            assertTableEquals(expected, fromS3AsKV);
         }
     }
 }

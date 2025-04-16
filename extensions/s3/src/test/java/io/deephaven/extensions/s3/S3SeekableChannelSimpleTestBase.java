@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.extensions.s3;
 
@@ -46,9 +46,9 @@ abstract class S3SeekableChannelSimpleTestBase extends S3SeekableChannelTestSetu
             final URI uri = uri("empty.txt");
             final ByteBuffer buffer = ByteBuffer.allocate(1);
             try (
-                    final SeekableChannelsProvider providerImpl = providerImpl(uri);
+                    final SeekableChannelsProvider providerImpl = providerImpl();
                     final SeekableChannelsProvider provider = CachedChannelProvider.create(providerImpl, 32);
-                    final SeekableChannelContext context = provider.makeContext();
+                    final SeekableChannelContext context = provider.makeReadContext();
                     final SeekableByteChannel readChannel = provider.getReadChannel(context, uri)) {
                 assertThat(readChannel.read(buffer)).isEqualTo(-1);
             }
@@ -56,9 +56,9 @@ abstract class S3SeekableChannelSimpleTestBase extends S3SeekableChannelTestSetu
         {
             final URI uri = uri("hello/world.txt");
             try (
-                    final SeekableChannelsProvider providerImpl = providerImpl(uri);
+                    final SeekableChannelsProvider providerImpl = providerImpl();
                     final SeekableChannelsProvider provider = CachedChannelProvider.create(providerImpl, 32);
-                    final SeekableChannelContext context = provider.makeContext();
+                    final SeekableChannelContext context = provider.makeReadContext();
                     final SeekableByteChannel readChannel = provider.getReadChannel(context, uri)) {
                 final ByteBuffer bytes = readAll(readChannel, 32);
                 assertThat(bytes).isEqualTo(ByteBuffer.wrap("Hello, world!".getBytes(StandardCharsets.UTF_8)));
@@ -78,9 +78,9 @@ abstract class S3SeekableChannelSimpleTestBase extends S3SeekableChannelTestSetu
         final URI uri = uri("32MiB.bin");
         final ByteBuffer buffer = ByteBuffer.allocate(1);
         try (
-                final SeekableChannelsProvider providerImpl = providerImpl(uri);
+                final SeekableChannelsProvider providerImpl = providerImpl();
                 final SeekableChannelsProvider provider = CachedChannelProvider.create(providerImpl, 32);
-                final SeekableChannelContext context = provider.makeContext();
+                final SeekableChannelContext context = provider.makeReadContext();
                 final SeekableByteChannel readChannel = provider.getReadChannel(context, uri)) {
             for (long p = 0; p < numBytes; ++p) {
                 assertThat(readChannel.read(buffer)).isEqualTo(1);
@@ -97,9 +97,10 @@ abstract class S3SeekableChannelSimpleTestBase extends S3SeekableChannelTestSetu
         final String content = "Hello, world!";
         final byte[] contentBytes = content.getBytes(StandardCharsets.UTF_8);
         try (
-                final SeekableChannelsProvider providerImpl = providerImpl(uri);
+                final SeekableChannelsProvider providerImpl = providerImpl();
                 final SeekableChannelsProvider provider = CachedChannelProvider.create(providerImpl, 32);
-                final CompletableOutputStream outputStream = provider.getOutputStream(uri, 0)) {
+                final SeekableChannelsProvider.WriteContext context = provider.makeWriteContext();
+                final CompletableOutputStream outputStream = provider.getOutputStream(context, uri, 0)) {
             final int numBytes = 36 * 1024 * 1024; // 36 Mib -> Three 10-MiB parts + One 6-MiB part
             final int numIters = numBytes / contentBytes.length;
             for (int i = 0; i < numIters; ++i) {
@@ -121,8 +122,8 @@ abstract class S3SeekableChannelSimpleTestBase extends S3SeekableChannelTestSetu
             // Push data to S3, but don't close the stream
             outputStream.complete();
             try (
-                    final SeekableChannelContext context = provider.makeContext();
-                    final SeekableByteChannel readChannel = provider.getReadChannel(context, uri)) {
+                    final SeekableChannelContext useContext = provider.makeReadContext();
+                    final SeekableByteChannel readChannel = provider.getReadChannel(useContext, uri)) {
                 final ByteBuffer buffer = ByteBuffer.allocate(contentBytes.length);
                 // We wrote total of numIters + 1 times
                 for (int i = 0; i < numIters + 1; ++i) {
@@ -137,8 +138,8 @@ abstract class S3SeekableChannelSimpleTestBase extends S3SeekableChannelTestSetu
             // Try rollback, should not delete the file
             outputStream.rollback();
             try (
-                    final SeekableChannelContext context = provider.makeContext();
-                    final SeekableByteChannel readChannel = provider.getReadChannel(context, uri)) {
+                    final SeekableChannelContext useContext = provider.makeReadContext();
+                    final SeekableByteChannel readChannel = provider.getReadChannel(useContext, uri)) {
                 final ByteBuffer buffer = ByteBuffer.allocate(contentBytes.length);
                 readChannel.read(buffer);
                 buffer.flip();

@@ -1,9 +1,8 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.web.client.api.widget.plot;
 
-import elemental2.dom.CustomEventInit;
 import elemental2.promise.Promise;
 import io.deephaven.web.client.api.DateWrapper;
 import io.deephaven.web.client.api.JsTable;
@@ -82,25 +81,20 @@ public final class FigureSubscription {
 
         // For each of the series in copy, if this subscription is downsampled we need to notify of this fact.
         if (downsampleAxisRange != null) {
-            CustomEventInit init = CustomEventInit.create();
-            init.setDetail(replacements.toArray());
-            figure.fireEvent(JsFigure.EVENT_DOWNSAMPLESTARTED, init);
+            figure.fireEvent(JsFigure.EVENT_DOWNSAMPLESTARTED, replacements.toArray());
         }
 
         if (firstEventFired) {
             // Next, if any data has loaded, regardless of downsample state, we need to fire an update event for those
             // series
-            CustomEventInit event = CustomEventInit.create();
-            event.setDetail(new DataUpdateEvent(replacements.toArray(new JsSeries[0]), currentData, null));
-            figure.fireEvent(JsFigure.EVENT_UPDATED, event);
+            figure.fireEvent(JsFigure.EVENT_UPDATED,
+                    new DataUpdateEvent(replacements.toArray(new JsSeries[0]), currentData, null));
 
             // Finally, if data was loaded and also the subscription is downsampled, we need to notify that the
             // downsample
             // is complete
             if (downsampleAxisRange != null) {
-                CustomEventInit successInit = CustomEventInit.create();
-                successInit.setDetail(replacements.toArray());
-                figure.fireEvent(JsFigure.EVENT_DOWNSAMPLEFINISHED, successInit);
+                figure.fireEvent(JsFigure.EVENT_DOWNSAMPLEFINISHED, replacements.toArray());
             }
         }
 
@@ -211,9 +205,7 @@ public final class FigureSubscription {
                 } else {
                     zoomRange = null;
                 }
-                CustomEventInit init = CustomEventInit.create();
-                init.setDetail(includedSeries.toArray());
-                figure.fireEvent(JsFigure.EVENT_DOWNSAMPLESTARTED, init);
+                figure.fireEvent(JsFigure.EVENT_DOWNSAMPLESTARTED, includedSeries.toArray());
                 Promise<JsTable> downsampled =
                         tablePromise.then(t -> t
                                 .downsample(zoomRange, downsampleParams.getPixelCount(), downsampleAxisRange.getxCol(),
@@ -259,21 +251,18 @@ public final class FigureSubscription {
             sub.addEventListener(TableSubscription.EVENT_UPDATED, e -> {
                 // refire with specifics for the columns that we're watching here, after updating data arrays
                 AbstractTableSubscription.SubscriptionEventData subscriptionUpdateData =
-                        (AbstractTableSubscription.SubscriptionEventData) e.detail;
+                        (AbstractTableSubscription.SubscriptionEventData) e.getDetail();
                 currentData.update(subscriptionUpdateData);
 
-                CustomEventInit<DataUpdateEvent> event = CustomEventInit.create();
-                event.setDetail(new DataUpdateEvent(includedSeries.toArray(new JsSeries[0]), currentData,
-                        subscriptionUpdateData));
-                figure.fireEvent(JsFigure.EVENT_UPDATED, event);
+                figure.fireEvent(JsFigure.EVENT_UPDATED,
+                        new DataUpdateEvent(includedSeries.toArray(new JsSeries[0]), currentData,
+                                subscriptionUpdateData));
 
                 if (!firstEventFired) {
                     firstEventFired = true;
 
                     if (downsampleAxisRange != null) {
-                        CustomEventInit<Object[]> successInit = CustomEventInit.create();
-                        successInit.setDetail(includedSeries.toArray());
-                        figure.fireEvent(JsFigure.EVENT_DOWNSAMPLEFINISHED, successInit);
+                        figure.fireEvent(JsFigure.EVENT_DOWNSAMPLEFINISHED, includedSeries.toArray());
                     }
                 }
             });

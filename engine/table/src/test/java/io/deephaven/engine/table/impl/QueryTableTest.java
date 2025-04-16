@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl;
 
@@ -23,7 +23,6 @@ import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
-import io.deephaven.engine.table.impl.remote.InitialSnapshotTable;
 import io.deephaven.engine.table.impl.select.*;
 import io.deephaven.engine.table.impl.select.MatchFilter.CaseSensitivity;
 import io.deephaven.engine.table.impl.select.MatchFilter.MatchType;
@@ -70,6 +69,7 @@ import java.util.function.*;
 import java.util.stream.LongStream;
 
 import static io.deephaven.api.agg.Aggregation.*;
+import static io.deephaven.engine.table.impl.SnapshotTestUtils.verifySnapshotBarrageMessage;
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.*;
 import static org.junit.Assert.assertArrayEquals;
@@ -962,6 +962,43 @@ public class QueryTableTest extends QueryTableTestBase {
         for (int i = 0; i < 500; i++) {
             simulateShiftAwareStep(size, random, table, columnInfo, en);
         }
+    }
+
+    public void testIndexRetentionThroughGC() {
+        final Table childTable;
+
+        // We don't need this liveness scope for liveness management, but rather to opt out of the enclosing scope's
+        // enforceStrongReachability
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            final Map<String, Object> retained = new HashMap<>();
+            final Random random = new Random(0);
+            final int size = 500;
+            final QueryTable parentTable = getTable(false, size, random,
+                    initColumnInfos(new String[] {"S1", "S2"},
+                            new SetGenerator<>("aa", "bb", "cc", "dd", "AA", "BB", "CC", "DD"),
+                            new SetGenerator<>("aaa", "bbb", "ccc", "ddd", "AAA", "BBB", "CCC", "DDD")));
+
+            // Explicitly retain the index references.
+            retained.put("di1", DataIndexer.getOrCreateDataIndex(parentTable, "S1"));
+            retained.put("di2", DataIndexer.getOrCreateDataIndex(parentTable, "S2"));
+            childTable = parentTable.update("isEven = ii % 2 == 0");
+
+            // While retained, the indexes will survive GC
+            System.gc();
+
+            // While the references are held, the parent and child tables should have the indexes.
+            Assert.assertTrue(DataIndexer.hasDataIndex(parentTable, "S1"));
+            Assert.assertTrue(DataIndexer.hasDataIndex(parentTable, "S2"));
+            Assert.assertTrue(DataIndexer.hasDataIndex(childTable, "S1"));
+            Assert.assertTrue(DataIndexer.hasDataIndex(childTable, "S2"));
+
+            // Explicitly release the references.
+            retained.clear();
+        }
+        // After a GC, the child table should not have the indexes.
+        System.gc();
+        Assert.assertFalse(DataIndexer.hasDataIndex(childTable, "S1"));
+        Assert.assertFalse(DataIndexer.hasDataIndex(childTable, "S2"));
     }
 
     public void testStringMatchFilterIndexed() {
@@ -3180,10 +3217,10 @@ public class QueryTableTest extends QueryTableTestBase {
         assertNull(ungrouped.getColumnSource("CCol").getPrev(firstKey));
         assertEquals('b', ungrouped.getColumnSource("CCol").getPrev(secondKey));
 
-        // This tests the NPE condition in the ungrouped column sources
-        final Table snappy = InitialSnapshotTable.setupInitialSnapshotTable(ungrouped,
-                ConstructSnapshot.constructInitialSnapshot(this, (QueryTable) ungrouped));
-        assertTableEquals(expected, snappy);
+        try (final BarrageMessage snap =
+                ConstructSnapshot.constructBackplaneSnapshot(this, (BaseTable<?>) ungrouped)) {
+            verifySnapshotBarrageMessage(snap, expected);
+        }
     }
 
     private void testMemoize(QueryTable source, UnaryOperator<Table> op) {
@@ -3279,6 +3316,11 @@ public class QueryTableTest extends QueryTableTestBase {
             testNoMemoize(source, t -> t.where("Sym in `aa`, `bb`"), t -> t.where("Sym not in `aa`, `bb`"));
             testNoMemoize(source, t -> t.where("Sym in `aa`, `bb`"), t -> t.where("Sym in `aa`, `cc`"));
             testNoMemoize(source, t -> t.where("Sym.startsWith(`a`)"));
+
+            testMemoize(source, t -> t.wouldMatch("A=intCol == 7"), t -> t.wouldMatch("A=intCol == 7"));
+            testNoMemoize(source, t -> t.wouldMatch("A=intCol == 7"), t -> t.wouldMatch("A=intCol == 6"));
+            testNoMemoize(source, t -> t.wouldMatch("A=intCol == 7"), t -> t.wouldMatch("B=intCol == 7"));
+            testNoMemoize(source, t -> t.wouldMatch("A=intCol < 7"), t -> t.wouldMatch("A=intCol < 7"));
 
             testMemoize(source, t -> t.countBy("Count", "Sym"));
             testMemoize(source, t -> t.countBy("Sym"));

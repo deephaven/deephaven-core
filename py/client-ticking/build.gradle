@@ -55,7 +55,7 @@ def pyClientTickingWheel = { String pythonTag -> Docker.registerDockerTask(proje
                         '${prefix}/log' \\
                         '${prefix}/src/py-client-ticking/src' \\
                         '${prefix}/src/py-client-ticking/in-wheels'; \\
-                   /opt/python/${pythonTag}/bin/pip install cython
+                   /opt/python/${pythonTag}/bin/pip install cython setuptools
                    """)
         copyFile('setup.py', "${prefix}/src/py-client-ticking")
         copyFile('README.md', "${prefix}/src/py-client-ticking")

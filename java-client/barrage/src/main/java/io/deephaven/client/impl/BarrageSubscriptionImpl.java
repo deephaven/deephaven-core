@@ -1,14 +1,11 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.client.impl;
 
-import com.google.flatbuffers.FlatBufferBuilder;
 import com.google.protobuf.ByteStringAccess;
+import com.google.rpc.Code;
 import io.deephaven.UncheckedDeephavenException;
-import io.deephaven.barrage.flatbuf.BarrageMessageType;
-import io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
-import io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.engine.exceptions.RequestCancelledException;
@@ -16,7 +13,6 @@ import io.deephaven.engine.liveness.*;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.engine.updategraph.DynamicNode;
@@ -27,12 +23,13 @@ import io.deephaven.extensions.barrage.table.BarrageTable;
 import io.deephaven.extensions.barrage.util.*;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
+import io.deephaven.proto.util.Exceptions;
 import io.deephaven.util.annotations.FinalDefault;
-import io.deephaven.util.annotations.VisibleForTesting;
 import io.grpc.CallOptions;
 import io.grpc.ClientCall;
 import io.grpc.Context;
 import io.grpc.MethodDescriptor;
+import io.grpc.StatusRuntimeException;
 import io.grpc.protobuf.ProtoUtils;
 import io.grpc.stub.ClientCallStreamObserver;
 import io.grpc.stub.ClientCalls;
@@ -42,8 +39,8 @@ import org.apache.arrow.flight.impl.FlightServiceGrpc;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.io.InputStream;
-import java.nio.ByteBuffer;
 import java.util.BitSet;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
@@ -63,7 +60,10 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
     private final BarrageSubscriptionOptions options;
     private final ClientCallStreamObserver<FlightData> observer;
     private final CheckForCompletion checkForCompletion;
-    private final BarrageTable resultTable;
+    private final BarrageUtil.ConvertedArrowSchema schema;
+    private final ScheduledExecutorService executorService;
+    private final BarrageMessageReaderImpl barrageMessageReader;
+    private volatile BarrageTable resultTable;
 
     private LivenessScope constructionScope;
     private volatile FutureAdapter future;
@@ -94,17 +94,16 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
         this.logName = tableHandle.exportId().toString();
         this.tableHandle = tableHandle;
         this.options = options;
+        this.executorService = executorService;
         this.constructionScope = constructionScope;
 
-        final BarrageUtil.ConvertedArrowSchema schema = BarrageUtil.convertArrowSchema(tableHandle.response());
-        final TableDefinition tableDefinition = schema.tableDef;
+        schema = BarrageUtil.convertArrowSchema(tableHandle.response());
         checkForCompletion = new CheckForCompletion();
-        resultTable = BarrageTable.make(executorService, tableDefinition, schema.attributes, checkForCompletion);
 
+        barrageMessageReader = new BarrageMessageReaderImpl();
         final MethodDescriptor<FlightData, BarrageMessage> subscribeDescriptor =
                 getClientDoExchangeDescriptor(options, schema.computeWireChunkTypes(), schema.computeWireTypes(),
-                        schema.computeWireComponentTypes(),
-                        new BarrageStreamReader(resultTable.getDeserializationTmConsumer()));
+                        schema.computeWireComponentTypes(), barrageMessageReader);
 
         // We need to ensure that the DoExchange RPC does not get attached to the server RPC when this is being called
         // from a Deephaven server RPC thread. If we need to generalize this in the future, we may wrap this logic in a
@@ -141,7 +140,17 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
                     return;
                 }
 
-                resultTable.handleBarrageMessage(barrageMessage);
+                final BarrageTable localResultTable = resultTable;
+                if (localResultTable == null) {
+                    log.error().append(BarrageSubscriptionImpl.this)
+                            .append(": Received data before subscription was requested").endl();
+                    final StatusRuntimeException sre = Exceptions.statusRuntimeException(
+                            Code.FAILED_PRECONDITION, "Received data before subscription was requested");
+                    GrpcUtil.safelyError(observer, sre);
+                    checkForCompletion.onError(sre);
+                    return;
+                }
+                localResultTable.handleBarrageMessage(barrageMessage);
             }
         }
 
@@ -156,8 +165,15 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
                     .append(t).endl();
 
             final String label = TableSpecLabeler.of(tableHandle.export().table());
-            resultTable.handleBarrageError(new TableDataException(
-                    String.format("Barrage subscription error for %s (%s)", logName, label), t));
+            final TableDataException tde = new TableDataException(
+                    String.format("Barrage subscription error for %s (%s)", logName, label), t);
+            final BarrageTable localResultTable = resultTable;
+            if (localResultTable != null) {
+                // this error will always be propagated to our CheckForCompletion#onError callback
+                localResultTable.handleBarrageError(tde);
+            } else {
+                checkForCompletion.onError(tde);
+            }
             cleanup();
         }
 
@@ -168,7 +184,14 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
             }
 
             log.error().append(BarrageSubscriptionImpl.this).append(": unexpectedly closed by other host").endl();
-            resultTable.handleBarrageError(new RequestCancelledException("Barrage subscription closed by server"));
+            final RequestCancelledException cancelErr =
+                    new RequestCancelledException("Barrage subscription closed by server");
+            final BarrageTable localResultTable = resultTable;
+            if (localResultTable != null) {
+                localResultTable.handleBarrageError(cancelErr);
+            } else {
+                checkForCompletion.onError(cancelErr);
+            }
             cleanup();
         }
     }
@@ -208,11 +231,16 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
             subscribed = true;
         }
 
+        boolean isFullSubscription = viewport == null;
+        final BarrageTable localResultTable = BarrageTable.make(
+                executorService, schema, isFullSubscription, checkForCompletion);
+        resultTable = localResultTable;
+
         // we must create the future before checking `isConnected` to guarantee `future` visibility in `destroy`
         if (isSnapshot) {
             future = new CompletableFutureAdapter();
         } else {
-            future = new UpdateGraphAwareFutureAdapter(resultTable.getUpdateGraph());
+            future = new UpdateGraphAwareFutureAdapter(localResultTable.getUpdateGraph());
         }
 
         if (!isConnected()) {
@@ -225,15 +253,17 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
                 columns == null ? null : (BitSet) (columns.clone()),
                 reverseViewport);
 
+        barrageMessageReader.setDeserializeTmConsumer(localResultTable.getDeserializationTmConsumer());
+
         if (!isSnapshot) {
-            resultTable.addSourceToRegistrar();
-            resultTable.addParentReference(this);
+            localResultTable.addSourceToRegistrar();
+            localResultTable.addParentReference(this);
         }
 
         // Send the initial subscription:
         observer.onNext(FlightData.newBuilder()
-                .setAppMetadata(ByteStringAccess.wrap(makeRequestInternal(
-                        viewport, columns, reverseViewport, options, tableHandle.ticketId().bytes())))
+                .setAppMetadata(ByteStringAccess.wrap(BarrageUtil.createSubscriptionRequestMetadataBytes(
+                        tableHandle.ticketId().bytes(), options, viewport, columns, reverseViewport)))
                 .build());
 
         return future;
@@ -254,6 +284,7 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
         }
     }
 
+    @OverridingMethodsMustInvokeSuper
     @Override
     protected void destroy() {
         super.destroy();
@@ -269,9 +300,10 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
             return;
         }
 
-        if (!isSnapshot) {
+        final BarrageTable localResultTable = resultTable;
+        if (!isSnapshot && localResultTable != null) {
             // Stop our result table from processing any more data.
-            resultTable.forceReferenceCountToZero();
+            localResultTable.forceReferenceCountToZero();
         }
         GrpcUtil.safelyCancel(observer, "Barrage subscription is " + reason,
                 new RequestCancelledException("Barrage subscription is " + reason));
@@ -286,49 +318,6 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
     public LogOutput append(final LogOutput logOutput) {
         return logOutput.append("Barrage/ClientSubscription/").append(logName).append("/")
                 .append(System.identityHashCode(this)).append("/");
-    }
-
-    @VisibleForTesting
-    static public ByteBuffer makeRequestInternal(
-            @Nullable final RowSet viewport,
-            @Nullable final BitSet columns,
-            boolean reverseViewport,
-            @Nullable BarrageSubscriptionOptions options,
-            byte @NotNull [] ticketId) {
-
-        final FlatBufferBuilder metadata = new FlatBufferBuilder();
-
-        int colOffset = 0;
-        if (columns != null) {
-            colOffset = BarrageSubscriptionRequest.createColumnsVector(metadata, columns.toByteArray());
-        }
-        int vpOffset = 0;
-        if (viewport != null) {
-            vpOffset = BarrageSubscriptionRequest.createViewportVector(
-                    metadata, BarrageProtoUtil.toByteBuffer(viewport));
-        }
-        int optOffset = 0;
-        if (options != null) {
-            optOffset = options.appendTo(metadata);
-        }
-
-        final int ticOffset = BarrageSubscriptionRequest.createTicketVector(metadata, ticketId);
-        BarrageSubscriptionRequest.startBarrageSubscriptionRequest(metadata);
-        BarrageSubscriptionRequest.addColumns(metadata, colOffset);
-        BarrageSubscriptionRequest.addViewport(metadata, vpOffset);
-        BarrageSubscriptionRequest.addSubscriptionOptions(metadata, optOffset);
-        BarrageSubscriptionRequest.addTicket(metadata, ticOffset);
-        BarrageSubscriptionRequest.addReverseViewport(metadata, reverseViewport);
-        metadata.finish(BarrageSubscriptionRequest.endBarrageSubscriptionRequest(metadata));
-
-        final FlatBufferBuilder wrapper = new FlatBufferBuilder();
-        final int innerOffset = wrapper.createByteVector(metadata.dataBuffer());
-        wrapper.finish(BarrageMessageWrapper.createBarrageMessageWrapper(
-                wrapper,
-                BarrageUtil.FLATBUFFER_MAGIC,
-                BarrageMessageType.BarrageSubscriptionRequest,
-                innerOffset));
-        return wrapper.dataBuffer();
     }
 
     /**
@@ -346,7 +335,7 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
             final ChunkType[] columnChunkTypes,
             final Class<?>[] columnTypes,
             final Class<?>[] componentTypes,
-            final StreamReader streamReader) {
+            final BarrageMessageReader streamReader) {
         final MethodDescriptor.Marshaller<FlightData> requestMarshaller =
                 ProtoUtils.marshaller(FlightData.getDefaultInstance());
         final MethodDescriptor<?, ?> descriptor = FlightServiceGrpc.getDoExchangeMethod();
@@ -367,14 +356,14 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
         private final ChunkType[] columnChunkTypes;
         private final Class<?>[] columnTypes;
         private final Class<?>[] componentTypes;
-        private final StreamReader streamReader;
+        private final BarrageMessageReader streamReader;
 
         public BarrageDataMarshaller(
                 final BarrageSubscriptionOptions options,
                 final ChunkType[] columnChunkTypes,
                 final Class<?>[] columnTypes,
                 final Class<?>[] componentTypes,
-                final StreamReader streamReader) {
+                final BarrageMessageReader streamReader) {
             this.options = options;
             this.columnChunkTypes = columnChunkTypes;
             this.columnTypes = columnTypes;
@@ -414,11 +403,12 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
                 return false;
             }
 
+            final BarrageTable localResultTable = resultTable;
             // @formatter:off
             final boolean correctColumns =
                     // all columns are expected
                     (expectedColumns == null
-                        && (serverColumns == null || serverColumns.cardinality() == resultTable.numColumns()))
+                        && (serverColumns == null || serverColumns.cardinality() == localResultTable.numColumns()))
                     // only specific set of columns are expected
                     || (expectedColumns != null && expectedColumns.equals(serverColumns));
 
@@ -427,22 +417,21 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
                     (correctColumns && expectedViewport == null && serverViewport == null)
                     // Viewport subscription is completed
                     || (correctColumns && expectedViewport != null
-                        && expectedReverseViewport == resultTable.getServerReverseViewport()
+                        && expectedReverseViewport == localResultTable.getServerReverseViewport()
                         && expectedViewport.equals(serverViewport));
             // @formatter:on
 
             if (isComplete) {
                 // remove all unpopulated rows from viewport snapshots
                 if (isSnapshot && serverViewport != null) {
-                    // noinspection resource
-                    WritableRowSet currentRowSet = resultTable.getRowSet().writableCast();
+                    final WritableRowSet currentRowSet = localResultTable.getRowSet().writableCast();
                     try (final RowSet populated =
                             currentRowSet.subSetForPositions(serverViewport, serverReverseViewport)) {
                         currentRowSet.retain(populated);
                     }
                 }
 
-                if (future.complete(resultTable)) {
+                if (future.complete(localResultTable)) {
                     onFutureComplete();
                 }
             }

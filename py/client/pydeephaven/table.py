@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
 """This module implements the Table and InputTable classes which are the main instruments to work with Deephaven
 data."""
@@ -12,7 +12,7 @@ import pyarrow as pa
 
 from pydeephaven._utils import to_list
 
-from pydeephaven._table_ops import MetaTableOp, SortDirection, MultijoinTablesOp
+from pydeephaven._table_ops import MetaTableOp, SortDirection, MultijoinTablesOp, NaturalJoinType
 from pydeephaven.agg import Aggregation
 from pydeephaven.dherror import DHError
 from pydeephaven._table_interface import TableInterface
@@ -282,7 +282,8 @@ class Table(TableInterface, ServerObject):
         """
         return super(Table, self).tail(num_rows)
 
-    def natural_join(self, table: Table, on: Union[str, List[str]], joins: Union[str, List[str]] = None) -> Table:
+    def natural_join(self, table: Table, on: Union[str, List[str]], joins: Union[str, List[str]] = None,
+                     type: NaturalJoinType = NaturalJoinType.ERROR_ON_DUPLICATE) -> Table:
         """The natural_join method creates a new table containing all the rows and columns of this table, 
         plus additional columns containing data from the right table. For columns appended to the left table (joins), 
         row values equal the row values from the right table where the key values in the left and right tables are 
@@ -295,6 +296,8 @@ class Table(TableInterface, ServerObject):
             joins (Union[str, List[str]], optional): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None, which means all the columns
                 from the right table, excluding those specified in 'on'
+            type (NaturalJoinType, optional): the action to be taken when duplicate right hand rows are
+                encountered; default is ERROR_ON_DUPLICATE
 
         Returns:
             a Table object
@@ -302,7 +305,7 @@ class Table(TableInterface, ServerObject):
         Raises:
             DHError
         """
-        return super().natural_join(table, on, joins)
+        return super().natural_join(table, on, joins, type)
 
     def exact_join(self, table: Table, on: Union[str, List[str]], joins: Union[str, List[str]] = None) -> Table:
         """The exact_join method creates a new table containing all the rows and columns of this table plus 
@@ -665,7 +668,8 @@ class Table(TableInterface, ServerObject):
         """
         return super(Table, self).agg_all_by(agg, by)
 
-    def update_by(self, ops: Union[UpdateByOperation, List[UpdateByOperation]], by: Union[str, List[str]]) -> Table:
+    def update_by(self, ops: Union[UpdateByOperation, List[UpdateByOperation]],
+                  by: Union[str, List[str]] = None) -> Table:
         """The update_by method creates a table with additional columns calculated from
         window-based aggregations of columns in this table. The aggregations are defined by the provided operations,
         which support incremental aggregations over the corresponding rows in the table. The aggregations will
@@ -674,7 +678,8 @@ class Table(TableInterface, ServerObject):
 
         Args:
             ops (Union[UpdateByOperatoin, List[UpdateByOperation]]): the UpdateByOperation(s) to be applied
-            by (Union[str, List[str]]): the group-by column name(s)
+            by (Union[str, List[str]]): the group-by column name(s), defaults to None, meaning all calculations are
+                performed over the entire table
 
         Returns:
             a Table object
@@ -756,6 +761,45 @@ class Table(TableInterface, ServerObject):
             DHError
         """
         return super(Table, self).where_not_in(filter_table, cols)
+    
+    def slice(self, start: int, stop: int) -> Table:
+        """Extracts a subset of a table by row positions into a new Table.
+
+        If both the start and the stop are positive, then both are counted from the beginning of the table.
+        The start is inclusive, and the stop is exclusive. slice(0, N) is equivalent to :meth:`~Table.head` (N)
+        The start must be less than or equal to the stop.
+
+        If the start is positive and the stop is negative, then the start is counted from the beginning of the
+        table, inclusively. The stop is counted from the end of the table. For example, slice(1, -1) includes all
+        rows but the first and last. If the stop is before the start, the result is an empty table.
+
+        If the start is negative, and the stop is zero, then the start is counted from the end of the table,
+        and the end of the slice is the size of the table. slice(-N, 0) is equivalent to :meth:`~Table.tail` (N).
+
+        If the start is negative and the stop is negative, they are both counted from the end of the
+        table. For example, slice(-2, -1) returns the second to last row of the table.
+
+        Args:
+            start (int): the first row position to include in the result
+            stop (int): the last row position to include in the result
+
+        Returns:
+            a new Table
+
+        Raises:
+            DHError
+
+        Examples:
+            >>> table.slice(0, 5)    # first 5 rows
+            >>> table.slice(-5, 0)   # last 5 rows
+            >>> table.slice(2, 6)    # rows from index 2 to 5
+            >>> table.slice(6, 2)    # ERROR: cannot slice start after end
+            >>> table.slice(-6, -2)  # rows from 6th last to 2nd last (exclusive)
+            >>> table.slice(-2, -6)  # ERROR: cannot slice start after end
+            >>> table.slice(2, -3)   # all rows except the first 2 and the last 3
+            >>> table.slice(-6, 8)   # rows from 6th last to index 8 (exclusive)
+        """
+        return super(Table, self).slice(start, stop)
 
 
 class InputTable(Table):

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.qst;
 
@@ -28,6 +28,7 @@ import io.deephaven.qst.table.ReverseTable;
 import io.deephaven.qst.table.SelectDistinctTable;
 import io.deephaven.qst.table.SelectTable;
 import io.deephaven.qst.table.SingleParentTable;
+import io.deephaven.qst.table.SliceTable;
 import io.deephaven.qst.table.SnapshotTable;
 import io.deephaven.qst.table.SnapshotWhenTable;
 import io.deephaven.qst.table.SortTable;
@@ -169,6 +170,13 @@ class TableAdapterImpl<TOPS extends TableOperations<TOPS, TABLE>, TABLE> impleme
     }
 
     @Override
+    public Void visit(SliceTable sliceTable) {
+        addOp(sliceTable,
+                parentOps(sliceTable).slice(sliceTable.firstPositionInclusive(), sliceTable.lastPositionExclusive()));
+        return null;
+    }
+
+    @Override
     public Void visit(ReverseTable reverseTable) {
         addOp(reverseTable, parentOps(reverseTable).reverse());
         return null;
@@ -246,7 +254,8 @@ class TableAdapterImpl<TOPS extends TableOperations<TOPS, TABLE>, TABLE> impleme
         final TOPS left = ops(naturalJoinTable.left());
         final TABLE right = table(naturalJoinTable.right());
         addOp(naturalJoinTable,
-                left.naturalJoin(right, naturalJoinTable.matches(), naturalJoinTable.additions()));
+                left.naturalJoin(right, naturalJoinTable.matches(), naturalJoinTable.additions(),
+                        naturalJoinTable.joinType()));
         return null;
     }
 

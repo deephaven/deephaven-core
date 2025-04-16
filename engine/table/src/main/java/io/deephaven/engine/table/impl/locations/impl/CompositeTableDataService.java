@@ -1,9 +1,11 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.locations.impl;
 
 import io.deephaven.base.verify.Require;
+import io.deephaven.engine.liveness.LiveSupplier;
+import io.deephaven.engine.table.impl.TableUpdateMode;
 import io.deephaven.engine.util.Formatter;
 import io.deephaven.engine.table.impl.locations.*;
 import io.deephaven.hash.KeyedObjectHashSet;
@@ -13,6 +15,8 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
@@ -115,12 +119,30 @@ public class CompositeTableDataService extends AbstractTableDataService {
         private final List<TableLocationProvider> inputProviders;
         private final String implementationName;
 
+        // What guarantees about added/removed locations can be made?
+        private final TableUpdateMode updateMode;
+        // What guarantees about added/removed rows within locations can be made?
+        private final TableUpdateMode locationUpdateMode;
+
         private TableLocationProviderImpl(@NotNull final TableDataService[] inputServices,
                 @NotNull final TableKey tableKey) {
             this.tableKey = tableKey.makeImmutable();
             inputProviders = Arrays.stream(inputServices).map(s -> s.getTableLocationProvider(this.tableKey))
                     .collect(Collectors.toList());
             implementationName = "Composite-" + inputProviders;
+
+            // Analyze the update modes of the input providers to determine the update mode of the composite provider.
+            // The resultant mode is the most permissive mode of the input providers, with the exception that we will
+            // never return APPEND_ONLY.
+            final TableUpdateMode tmpUpdateMode = TableUpdateMode.mostPermissiveMode(
+                    inputProviders.stream().map(TableLocationProvider::getUpdateMode));
+            updateMode = tmpUpdateMode == TableUpdateMode.APPEND_ONLY ? TableUpdateMode.ADD_ONLY : tmpUpdateMode;
+
+            // Analyze the location update modes of the input providers to determine the location update mode
+            // of the composite provider. The resultant mode is the most permissive mode of the input provider
+            // locations.
+            locationUpdateMode = TableUpdateMode.mostPermissiveMode(
+                    inputProviders.stream().map(TableLocationProvider::getLocationUpdateMode));
         }
 
         @Override
@@ -145,7 +167,7 @@ public class CompositeTableDataService extends AbstractTableDataService {
                     p.subscribe(listener);
                 } else {
                     p.refresh();
-                    p.getTableLocationKeys().forEach(listener::handleTableLocationKey);
+                    p.getTableLocationKeys(listener::handleTableLocationKeyAdded);
                 }
             });
         }
@@ -171,29 +193,33 @@ public class CompositeTableDataService extends AbstractTableDataService {
         }
 
         @Override
-        @NotNull
-        public Collection<ImmutableTableLocationKey> getTableLocationKeys() {
-            final Set<ImmutableTableLocationKey> locationKeys = new KeyedObjectHashSet<>(KeyKeyDefinition.INSTANCE);
+        public void getTableLocationKeys(
+                final Consumer<LiveSupplier<ImmutableTableLocationKey>> consumer,
+                final Predicate<ImmutableTableLocationKey> filter) {
+            final Set<LiveSupplier<ImmutableTableLocationKey>> locationKeys =
+                    new KeyedObjectHashSet<>(KeyKeyDefinition.INSTANCE);
             try (final SafeCloseable ignored = CompositeTableDataServiceConsistencyMonitor.INSTANCE.start()) {
-                inputProviders.stream()
-                        .map(TableLocationProvider::getTableLocationKeys)
-                        .flatMap(Collection::stream)
-                        .filter(x -> !locationKeys.add(x))
-                        .findFirst()
-                        .ifPresent(duplicateLocationKey -> {
-                            final String overlappingProviders = inputProviders.stream()
-                                    .filter(inputProvider -> inputProvider.hasTableLocationKey(duplicateLocationKey))
-                                    .map(TableLocationProvider::getName)
-                                    .collect(Collectors.joining(","));
-                            throw new TableDataException(
-                                    "Data Routing Configuration error: TableDataService elements overlap at location " +
-                                            duplicateLocationKey +
-                                            " in providers " + overlappingProviders +
-                                            ". Full TableDataService configuration:\n" +
-                                            Formatter
-                                                    .formatTableDataService(CompositeTableDataService.this.toString()));
-                        });
-                return Collections.unmodifiableCollection(locationKeys);
+                // Add all the location keys from the providers to the set, throw an exception if there are duplicates
+                inputProviders.forEach(p -> p.getTableLocationKeys(tlk -> {
+                    if (locationKeys.add(tlk)) {
+                        // Consume the key immediately (while the key is still managed by the input provider)
+                        consumer.accept(tlk);
+                        return;
+                    }
+                    // We have a duplicate key, throw a detailed exception
+                    final String overlappingProviders = inputProviders.stream()
+                            .filter(inputProvider -> inputProvider.hasTableLocationKey(tlk.get()))
+                            .map(TableLocationProvider::getName)
+                            .collect(Collectors.joining(","));
+                    throw new TableDataException(
+                            "Data Routing Configuration error: TableDataService elements overlap at location " +
+                                    tlk +
+                                    " in providers " + overlappingProviders +
+                                    ". Full TableDataService configuration:\n" +
+                                    Formatter
+                                            .formatTableDataService(CompositeTableDataService.this.toString()));
+
+                }, filter));
             }
         }
 
@@ -227,6 +253,18 @@ public class CompositeTableDataService extends AbstractTableDataService {
             }
             return location;
         }
+
+        @Override
+        @NotNull
+        public TableUpdateMode getUpdateMode() {
+            return updateMode;
+        }
+
+        @Override
+        @NotNull
+        public TableUpdateMode getLocationUpdateMode() {
+            return locationUpdateMode;
+        }
     }
 
     @Override
@@ -255,16 +293,17 @@ public class CompositeTableDataService extends AbstractTableDataService {
     // ------------------------------------------------------------------------------------------------------------------
 
     private static final class KeyKeyDefinition
-            extends KeyedObjectKey.Basic<ImmutableTableLocationKey, ImmutableTableLocationKey> {
+            extends KeyedObjectKey.Basic<ImmutableTableLocationKey, LiveSupplier<ImmutableTableLocationKey>> {
 
-        private static final KeyedObjectKey<ImmutableTableLocationKey, ImmutableTableLocationKey> INSTANCE =
+        private static final KeyedObjectKey<ImmutableTableLocationKey, LiveSupplier<ImmutableTableLocationKey>> INSTANCE =
                 new KeyKeyDefinition();
 
         private KeyKeyDefinition() {}
 
         @Override
-        public ImmutableTableLocationKey getKey(@NotNull final ImmutableTableLocationKey tableLocationKey) {
-            return tableLocationKey;
+        public ImmutableTableLocationKey getKey(
+                @NotNull final LiveSupplier<ImmutableTableLocationKey> tableLocationKey) {
+            return tableLocationKey.get();
         }
     }
 }

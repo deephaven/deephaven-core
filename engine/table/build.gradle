@@ -23,6 +23,8 @@ dependencies {
     api project(':IO')
     api project(':codec-api')
 
+    implementation project(':util-processenvironment')
+    implementation project(':util-thread')
     implementation project(':DHProcess')
     implementation project(':engine-function')
     implementation project(':engine-tuple')

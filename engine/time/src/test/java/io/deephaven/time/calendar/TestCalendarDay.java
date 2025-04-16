@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.time.calendar;
 
@@ -7,8 +7,8 @@ import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.time.DateTimeUtils;
 
 import java.time.*;
+import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 import static org.junit.Assert.assertNotEquals;
@@ -216,7 +216,7 @@ public class TestCalendarDay extends BaseArrayTestCase {
         final CalendarDay<Instant> multi = new CalendarDay<>(new TimeRange[] {period1, period2});
         assertEquals(List.of(period1, period2), multi.businessTimeRanges());
 
-        int hashTarget = Objects.hash(multi.businessTimeRanges());
+        int hashTarget = Arrays.hashCode(multi.businessTimeRanges().toArray());
         assertEquals(hashTarget, multi.hashCode());
 
         final CalendarDay<Instant> multi2 = new CalendarDay<>(new TimeRange[] {period1, period2});

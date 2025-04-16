@@ -1,0 +1,23 @@
+plugins {
+    id 'java-library'
+    id 'io.deephaven.project.register'
+}
+
+description 'util-pool: Optional extensions of the io.deephaven.base.pool module'
+
+dependencies {
+    api project(':Base')
+    api project(":IO")
+
+    compileOnly libs.jetbrains.annotations
+
+    testImplementation platform(libs.junit.bom)
+    testImplementation libs.junit.jupiter
+    testRuntimeOnly libs.junit.jupiter.engine
+    testRuntimeOnly libs.junit.platform.launcher
+    testImplementation project(path: ':Base', configuration: 'tests')
+}
+
+test {
+    useJUnitPlatform()
+}

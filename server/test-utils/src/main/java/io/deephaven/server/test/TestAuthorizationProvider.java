@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.server.test;
 
@@ -95,6 +95,14 @@ public class TestAuthorizationProvider implements AuthorizationProvider {
     @Override
     public TicketResolver.Authorization getTicketResolverAuthorization() {
         return new TicketResolver.Authorization() {
+            @Override
+            public boolean isDeniedAccess(Object source) {
+                if (delegateTicketTransformation != null) {
+                    return delegateTicketTransformation.isDeniedAccess(source);
+                }
+                return source == null;
+            }
+
             @Override
             public <T> T transform(final T source) {
                 if (delegateTicketTransformation != null) {

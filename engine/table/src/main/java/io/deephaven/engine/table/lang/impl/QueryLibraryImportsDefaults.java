@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.lang.impl;
 
@@ -79,6 +79,7 @@ public class QueryLibraryImportsDefaults implements QueryLibraryImports {
                 LongSizedDataStructure.class,
                 ConcurrentHashMap.class,
                 Chunk.class,
+                BooleanChunk.class,
                 ByteChunk.class,
                 CharChunk.class,
                 ShortChunk.class,
@@ -88,6 +89,7 @@ public class QueryLibraryImportsDefaults implements QueryLibraryImports {
                 DoubleChunk.class,
                 ObjectChunk.class,
                 WritableChunk.class,
+                WritableBooleanChunk.class,
                 WritableByteChunk.class,
                 WritableCharChunk.class,
                 WritableShortChunk.class,

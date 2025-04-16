@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.qst.table;
 
@@ -165,6 +165,11 @@ public enum ParentsVisitor implements Visitor<Stream<TableSpec>> {
     @Override
     public Stream<TableSpec> visit(TailTable tailTable) {
         return single(tailTable);
+    }
+
+    @Override
+    public Stream<TableSpec> visit(SliceTable sliceTable) {
+        return single(sliceTable);
     }
 
     @Override

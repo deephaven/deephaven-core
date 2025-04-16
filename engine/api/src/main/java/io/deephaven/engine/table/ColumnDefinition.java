@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table;
 
@@ -398,6 +398,15 @@ public class ColumnDefinition<TYPE> implements LogOutputAppendable {
         return dataType == newDataType
                 ? (ColumnDefinition<Other>) this
                 : fromGenericType(name, newDataType, componentType, columnType);
+    }
+
+    public <Other> ColumnDefinition<Other> withDataType(
+            @NotNull final Class<Other> newDataType,
+            @Nullable final Class<?> newComponentType) {
+        // noinspection unchecked
+        return dataType == newDataType && componentType == newComponentType
+                ? (ColumnDefinition<Other>) this
+                : fromGenericType(name, newDataType, newComponentType, columnType);
     }
 
     public ColumnDefinition<?> withName(@NotNull final String newName) {

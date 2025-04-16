@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit CharChunkColumnSource and run "./gradlew replicateSourcesAndChunks" to regenerate
@@ -189,7 +189,7 @@ public class ShortChunkColumnSource extends AbstractColumnSource<Short>
     }
 
     @Override
-    public void clear() {
+    public synchronized void clear() {
         totalSize = 0;
         data.forEach(SafeCloseable::close);
         data.clear();

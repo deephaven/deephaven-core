@@ -1,56 +1,125 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.locations.impl;
 
 import io.deephaven.base.verify.Require;
+import io.deephaven.engine.liveness.LiveSupplier;
+import io.deephaven.engine.liveness.ReferenceCountedLivenessNode;
 import io.deephaven.engine.table.impl.locations.ImmutableTableLocationKey;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.TableLocationProvider;
+import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Intermediates between push-based subscription to a TableLocationProvider and polling on update source refresh.
  */
-public class TableLocationSubscriptionBuffer implements TableLocationProvider.Listener {
+public class TableLocationSubscriptionBuffer extends ReferenceCountedLivenessNode
+        implements TableLocationProvider.Listener {
 
-    private static final Set<ImmutableTableLocationKey> EMPTY_TABLE_LOCATION_KEYS = Collections.emptySet();
+    private static final Map<ImmutableTableLocationKey, LiveSupplier<ImmutableTableLocationKey>> EMPTY_TABLE_LOCATION_KEYS =
+            Collections.emptyMap();
 
     private final TableLocationProvider tableLocationProvider;
 
     private boolean subscribed = false;
 
     private final Object updateLock = new Object();
-    private Set<ImmutableTableLocationKey> pendingLocationKeys = EMPTY_TABLE_LOCATION_KEYS;
 
-    private Set<ImmutableTableLocationKey> pendingLocationsRemoved = EMPTY_TABLE_LOCATION_KEYS;
+    private LocationUpdate pendingUpdate = null;
     private TableDataException pendingException = null;
 
     public TableLocationSubscriptionBuffer(@NotNull final TableLocationProvider tableLocationProvider) {
+        super(false);
         this.tableLocationProvider = Require.neqNull(tableLocationProvider, "tableLocationProvider");
     }
 
-    public static final class LocationUpdate {
-        private final Collection<ImmutableTableLocationKey> pendingAddedLocationKeys;
-        private final Collection<ImmutableTableLocationKey> pendingRemovedLocations;
+    public final class LocationUpdate implements SafeCloseable {
 
-        public LocationUpdate(@NotNull final Collection<ImmutableTableLocationKey> pendingAddedLocationKeys,
-                @NotNull final Collection<ImmutableTableLocationKey> pendingRemovedLocations) {
-            this.pendingAddedLocationKeys = pendingAddedLocationKeys;
-            this.pendingRemovedLocations = pendingRemovedLocations;
+        private final ReferenceCountedLivenessNode livenessNode = new ReferenceCountedLivenessNode(false) {};
+
+        // These sets represent adds and removes from completed transactions.
+        private Map<ImmutableTableLocationKey, LiveSupplier<ImmutableTableLocationKey>> added =
+                EMPTY_TABLE_LOCATION_KEYS;
+        private Map<ImmutableTableLocationKey, LiveSupplier<ImmutableTableLocationKey>> removed =
+                EMPTY_TABLE_LOCATION_KEYS;
+
+        private LocationUpdate() {
+            TableLocationSubscriptionBuffer.this.manage(livenessNode);
         }
 
-        public Collection<ImmutableTableLocationKey> getPendingAddedLocationKeys() {
-            return pendingAddedLocationKeys;
+        private void processAdd(@NotNull final LiveSupplier<ImmutableTableLocationKey> addedKeySupplier) {
+            final ImmutableTableLocationKey addedKey = addedKeySupplier.get();
+            // Note that we might have a remove for this key if it previously existed and is being replaced. Hence, we
+            // don't look for an existing remove, which is apparently asymmetric w.r.t. processRemove but still correct.
+            // Consumers of a LocationUpdate must process removes before adds.
+
+            // Need to verify that we don't have stacked adds (without intervening removes).
+            if (added.containsKey(addedKey)) {
+                throw new IllegalStateException("TableLocationKey " + addedKey
+                        + " was already added by a previous transaction.");
+            }
+            if (added == EMPTY_TABLE_LOCATION_KEYS) {
+                added = new HashMap<>();
+            }
+            livenessNode.manage(addedKeySupplier);
+            added.put(addedKey, addedKeySupplier);
         }
 
-        public Collection<ImmutableTableLocationKey> getPendingRemovedLocationKeys() {
-            return pendingRemovedLocations;
+        private void processRemove(@NotNull final LiveSupplier<ImmutableTableLocationKey> removedKeySupplier) {
+            final ImmutableTableLocationKey removedKey = removedKeySupplier.get();
+            // If we have a pending add, it is being cancelled by this remove.
+            if (added.remove(removedKey) != null) {
+                return;
+            }
+            // Verify that we don't have stacked removes (without intervening adds).
+            if (removed.containsKey(removedKey)) {
+                throw new IllegalStateException("TableLocationKey " + removedKey
+                        + " was already removed and has not been replaced.");
+            }
+            if (removed == EMPTY_TABLE_LOCATION_KEYS) {
+                removed = new HashMap<>();
+            }
+            livenessNode.manage(removedKeySupplier);
+            removed.put(removedKey, removedKeySupplier);
+        }
+
+        private void processTransaction(
+                @Nullable Collection<LiveSupplier<ImmutableTableLocationKey>> addedKeySuppliers,
+                @Nullable Collection<LiveSupplier<ImmutableTableLocationKey>> removedKeySuppliers) {
+            if (removedKeySuppliers != null) {
+                for (final LiveSupplier<ImmutableTableLocationKey> removedKeySupplier : removedKeySuppliers) {
+                    processRemove(removedKeySupplier);
+                }
+            }
+            if (addedKeySuppliers != null) {
+                for (final LiveSupplier<ImmutableTableLocationKey> addedKeySupplier : addedKeySuppliers) {
+                    processAdd(addedKeySupplier);
+                }
+            }
+        }
+
+        /**
+         * @return The pending location keys to add. <em>Note that removes should be processed before adds.</em>
+         */
+        public Collection<LiveSupplier<ImmutableTableLocationKey>> getPendingAddedLocationKeys() {
+            return added.values();
+        }
+
+        /**
+         * @return The pending location keys to remove. <em>Note that removes should be processed before adds.</em>
+         */
+        public Collection<LiveSupplier<ImmutableTableLocationKey>> getPendingRemovedLocationKeys() {
+            return removed.values();
+        }
+
+        @Override
+        public void close() {
+            TableLocationSubscriptionBuffer.this.unmanage(livenessNode);
         }
     }
 
@@ -60,38 +129,38 @@ public class TableLocationSubscriptionBuffer implements TableLocationProvider.Li
      * reset). No order is maintained internally. If a pending exception is thrown, this signals that the subscription
      * is no longer valid and no subsequent location keys will be returned.
      *
-     * @return The collection of pending location keys
+     * @return A {@link LocationUpdate} collecting pending added and removed location keys, or {@code null} if there are
+     *         none; the caller must {@link LocationUpdate#close() close} the returned object when done.
      */
     public synchronized LocationUpdate processPending() {
-        // TODO: Should I change this to instead re-use the collection?
         if (!subscribed) {
             if (tableLocationProvider.supportsSubscriptions()) {
                 tableLocationProvider.subscribe(this);
             } else {
-                // NB: Providers that don't support subscriptions don't tick - this single call to run is
+                // NB: Providers that don't support subscriptions don't tick - this single call to refresh is
                 // sufficient.
                 tableLocationProvider.refresh();
-                tableLocationProvider.getTableLocationKeys().forEach(this::handleTableLocationKey);
+                final Collection<LiveSupplier<ImmutableTableLocationKey>> tableLocationKeys = new ArrayList<>();
+                tableLocationProvider.getTableLocationKeys(tableLocationKeys::add);
+                handleTableLocationKeysUpdate(tableLocationKeys, List.of());
             }
             subscribed = true;
         }
-        final Collection<ImmutableTableLocationKey> resultLocationKeys;
-        final Collection<ImmutableTableLocationKey> resultLocationsRemoved;
+        final LocationUpdate resultUpdate;
         final TableDataException resultException;
         synchronized (updateLock) {
-            resultLocationKeys = pendingLocationKeys;
-            pendingLocationKeys = EMPTY_TABLE_LOCATION_KEYS;
-            resultLocationsRemoved = pendingLocationsRemoved;
-            pendingLocationsRemoved = EMPTY_TABLE_LOCATION_KEYS;
+            resultUpdate = pendingUpdate;
+            pendingUpdate = null;
             resultException = pendingException;
             pendingException = null;
         }
 
         if (resultException != null) {
-            throw new TableDataException("Processed pending exception", resultException);
+            try (final SafeCloseable ignored = resultUpdate) {
+                throw new TableDataException("Processed pending exception", resultException);
+            }
         }
-
-        return new LocationUpdate(resultLocationKeys, resultLocationsRemoved);
+        return resultUpdate;
     }
 
     /**
@@ -104,10 +173,14 @@ public class TableLocationSubscriptionBuffer implements TableLocationProvider.Li
             }
             subscribed = false;
         }
+        final LocationUpdate toClose;
         synchronized (updateLock) {
-            pendingLocationKeys = EMPTY_TABLE_LOCATION_KEYS;
-            pendingLocationsRemoved = EMPTY_TABLE_LOCATION_KEYS;
+            toClose = pendingUpdate;
+            pendingUpdate = null;
             pendingException = null;
+        }
+        if (toClose != null) {
+            toClose.close();
         }
     }
 
@@ -115,28 +188,37 @@ public class TableLocationSubscriptionBuffer implements TableLocationProvider.Li
     // TableLocationProvider.Listener implementation
     // ------------------------------------------------------------------------------------------------------------------
 
+    private LocationUpdate ensurePendingUpdate() {
+        if (pendingUpdate == null) {
+            pendingUpdate = new LocationUpdate();
+        }
+        return pendingUpdate;
+    }
+
     @Override
-    public void handleTableLocationKey(@NotNull final ImmutableTableLocationKey tableLocationKey) {
+    public void handleTableLocationKeyAdded(@NotNull final LiveSupplier<ImmutableTableLocationKey> addedKeySupplier) {
         synchronized (updateLock) {
-            if (pendingLocationKeys == EMPTY_TABLE_LOCATION_KEYS) {
-                pendingLocationKeys = new HashSet<>();
-            }
-            pendingLocationKeys.add(tableLocationKey);
+            // noinspection resource
+            ensurePendingUpdate().processAdd(addedKeySupplier);
         }
     }
 
     @Override
-    public void handleTableLocationKeyRemoved(@NotNull final ImmutableTableLocationKey tableLocationKey) {
+    public void handleTableLocationKeyRemoved(
+            @NotNull final LiveSupplier<ImmutableTableLocationKey> removedKeySupplier) {
         synchronized (updateLock) {
-            // If we remove something that was pending to be added, just discard both.
-            if (pendingLocationKeys.remove(tableLocationKey)) {
-                return;
-            }
+            // noinspection resource
+            ensurePendingUpdate().processRemove(removedKeySupplier);
+        }
+    }
 
-            if (pendingLocationsRemoved == EMPTY_TABLE_LOCATION_KEYS) {
-                pendingLocationsRemoved = new HashSet<>();
-            }
-            pendingLocationsRemoved.add(tableLocationKey);
+    @Override
+    public void handleTableLocationKeysUpdate(
+            @Nullable Collection<LiveSupplier<ImmutableTableLocationKey>> addedKeySuppliers,
+            @Nullable Collection<LiveSupplier<ImmutableTableLocationKey>> removedKeySuppliers) {
+        synchronized (updateLock) {
+            // noinspection resource
+            ensurePendingUpdate().processTransaction(addedKeySuppliers, removedKeySuppliers);
         }
     }
 

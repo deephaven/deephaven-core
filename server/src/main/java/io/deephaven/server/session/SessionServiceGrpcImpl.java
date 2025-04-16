@@ -1,8 +1,10 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.server.session;
 
+import com.github.f4b6a3.uuid.UuidCreator;
+import com.github.f4b6a3.uuid.exception.InvalidUuidException;
 import com.google.protobuf.ByteString;
 import com.google.rpc.Code;
 import io.deephaven.auth.AuthContext;
@@ -38,8 +40,10 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.io.Closeable;
 import java.lang.Object;
+import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 
@@ -51,6 +55,7 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
     public static final String DEEPHAVEN_SESSION_ID = Auth2Constants.AUTHORIZATION_HEADER;
     public static final Metadata.Key<String> SESSION_HEADER_KEY =
             Metadata.Key.of(Auth2Constants.AUTHORIZATION_HEADER, Metadata.ASCII_STRING_MARSHALLER);
+
     public static final Context.Key<SessionState> SESSION_CONTEXT_KEY =
             Context.key(Auth2Constants.AUTHORIZATION_HEADER);
 
@@ -182,11 +187,9 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
                     .queryPerformanceRecorder(queryPerformanceRecorder)
                     .require(source)
                     .onError(responseObserver)
-                    .submit(() -> {
-                        final Object o = source.get();
-                        GrpcUtil.safelyComplete(responseObserver, ExportResponse.getDefaultInstance());
-                        return o;
-                    });
+                    .onSuccess((final Object ignoredResult) -> GrpcUtil.safelyOnNextAndComplete(responseObserver,
+                            ExportResponse.getDefaultInstance()))
+                    .submit(source::get);
         }
     }
 
@@ -219,7 +222,7 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
             Ticket resultId = request.getResultId();
 
             ticketRouter.publish(session, resultId, "resultId",
-                    () -> GrpcUtil.safelyComplete(responseObserver, PublishResponse.getDefaultInstance()),
+                    () -> GrpcUtil.safelyOnNextAndComplete(responseObserver, PublishResponse.getDefaultInstance()),
                     SessionState.toErrorHandler(sre -> GrpcUtil.safelyError(responseObserver, sre)),
                     source);
         }
@@ -264,12 +267,17 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
         private final SessionService service;
         private final SessionState session;
         private final Map<Metadata.Key<String>, String> extraHeaders = new LinkedHashMap<>();
+        private final boolean setDeephavenAuthCookie;
 
-        private InterceptedCall(final SessionService service, final ServerCall<ReqT, RespT> call,
-                @Nullable final SessionState session) {
-            super(call);
-            this.service = service;
+        private InterceptedCall(
+                final SessionService service,
+                final ServerCall<ReqT, RespT> call,
+                @Nullable final SessionState session,
+                boolean setDeephavenAuthCookie) {
+            super(Objects.requireNonNull(call));
+            this.service = Objects.requireNonNull(service);
             this.session = session;
+            this.setDeephavenAuthCookie = setDeephavenAuthCookie;
         }
 
         @Override
@@ -305,6 +313,9 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
                 final SessionService.TokenExpiration exp = service.refreshToken(session);
                 if (exp != null) {
                     md.put(SESSION_HEADER_KEY, Auth2Constants.BEARER_PREFIX + exp.token.toString());
+                    if (setDeephavenAuthCookie) {
+                        AuthCookie.setDeephavenAuthCookie(md, exp.token);
+                    }
                 }
             }
         }
@@ -330,8 +341,8 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
         public SessionServiceInterceptor(
                 final SessionService service,
                 final SessionService.ErrorTransformer errorTransformer) {
-            this.service = service;
-            this.errorTransformer = errorTransformer;
+            this.service = Objects.requireNonNull(service);
+            this.errorTransformer = Objects.requireNonNull(errorTransformer);
         }
 
         @Override
@@ -344,25 +355,37 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
             final byte[] altToken = metadata.get(AuthConstants.TOKEN_KEY);
             if (altToken != null) {
                 try {
-                    session = service.getSessionForToken(UUID.fromString(new String(altToken)));
-                } catch (IllegalArgumentException ignored) {
+                    session = service.getSessionForToken(
+                            UuidCreator.fromString(new String(altToken, StandardCharsets.US_ASCII)));
+                } catch (IllegalArgumentException | InvalidUuidException ignored) {
                 }
             }
 
-            // Lookup the session using Flight Auth 2.0 token.
-            final String token = metadata.get(SESSION_HEADER_KEY);
-            if (session == null && token != null) {
-                try {
-                    session = service.getSessionForAuthToken(token);
-                } catch (AuthenticationException e) {
-                    // As an interceptor, we can't throw, so ignoring this and just returning the no-op listener.
-                    safeClose(call, AUTHENTICATION_DETAILS_INVALID, new Metadata(), false);
-                    return new ServerCall.Listener<>() {};
+            if (session == null) {
+                // Lookup the session using the auth cookie
+                final UUID uuid = AuthCookie.parseAuthCookie(metadata).orElse(null);
+                if (uuid != null) {
+                    session = service.getSessionForToken(uuid);
+                }
+            }
+
+            if (session == null) {
+                // Lookup the session using Flight Auth 2.0 token.
+                final String token = metadata.get(SESSION_HEADER_KEY);
+                if (token != null) {
+                    try {
+                        session = service.getSessionForAuthToken(token);
+                    } catch (AuthenticationException e) {
+                        // As an interceptor, we can't throw, so ignoring this and just returning the no-op listener.
+                        safeClose(call, AUTHENTICATION_DETAILS_INVALID, new Metadata(), false);
+                        return new ServerCall.Listener<>() {};
+                    }
                 }
             }
 
             // On the outer half of the call we'll install the context that includes our session.
-            final InterceptedCall<ReqT, RespT> serverCall = new InterceptedCall<>(service, call, session);
+            final InterceptedCall<ReqT, RespT> serverCall = new InterceptedCall<>(service, call, session,
+                    AuthCookie.hasDeephavenAuthCookieRequest(metadata));
             final Context context = Context.current().withValues(
                     SESSION_CONTEXT_KEY, session, SESSION_CALL_KEY, serverCall);
 
@@ -485,9 +508,9 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
                 // Indicates a very serious failure; debateable whether we should even try to send close.
                 safeClose(call, Status.INTERNAL, new Metadata(), false);
                 throw error;
-            } finally {
-                context.detach(previous);
             }
+        } finally {
+            context.detach(previous);
         }
     }
 

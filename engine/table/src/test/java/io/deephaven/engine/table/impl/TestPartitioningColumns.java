@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl;
 
@@ -10,6 +10,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.dataindex.DataIndexUtils;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
+import io.deephaven.engine.table.impl.locations.TableLocationProvider;
 import io.deephaven.engine.table.impl.select.MatchFilter.MatchType;
 import io.deephaven.engine.table.iterators.ChunkedColumnIterator;
 import io.deephaven.engine.testutil.TstUtils;
@@ -80,7 +81,9 @@ public class TestPartitioningColumns {
                             tl.handleUpdate(RowSetFactory.flat(1), 1L);
                             return tl;
                         },
-                        null),
+                        null,
+                        TableUpdateMode.STATIC,
+                        TableUpdateMode.STATIC),
                 null);
 
         for (String colName : partitionKeys) {
@@ -113,7 +116,6 @@ public class TestPartitioningColumns {
                     Assert.eqTrue(fullRowSet.containsRange(rowKey, rowKey), "fullRowSet.containsRange(rowKey, rowKey)");
                 }
             }
-
         }
 
         final Table expected = input.sort(input.getDefinition().getColumnNamesArray());

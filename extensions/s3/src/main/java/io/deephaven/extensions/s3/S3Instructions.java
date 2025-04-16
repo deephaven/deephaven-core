@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.extensions.s3;
 
@@ -35,6 +35,7 @@ public abstract class S3Instructions implements LogOutputAppendable {
     private static final Duration DEFAULT_CONNECTION_TIMEOUT = Duration.ofSeconds(2);
     private static final Duration DEFAULT_READ_TIMEOUT = Duration.ofSeconds(2);
     private static final int DEFAULT_NUM_CONCURRENT_WRITE_PARTS = 64;
+    private static final int MIN_CONCURRENT_WRITE_PARTS = 1;
 
     /**
      * We set default part size to 10 MiB. The maximum number of parts allowed is 10,000. This means maximum size of a
@@ -44,6 +45,12 @@ public abstract class S3Instructions implements LogOutputAppendable {
      * @see <a href="https://docs.aws.amazon.com/AmazonS3/latest/userguide/qfacts.html">Amazon S3 User Guide</a>
      */
     private static final int DEFAULT_WRITE_PART_SIZE = 10 << 20; // 10 MiB
+
+    /**
+     * The minimum allowed part size, as per AWS S3 API.
+     *
+     * @see <a href="https://docs.aws.amazon.com/AmazonS3/latest/userguide/qfacts.html">Amazon S3 User Guide</a>
+     */
     static final int MIN_WRITE_PART_SIZE = 5 << 20; // 5 MiB
 
     static final S3Instructions DEFAULT = builder().build();
@@ -293,9 +300,10 @@ public abstract class S3Instructions implements LogOutputAppendable {
 
     @Check
     final void boundsCheckMinNumConcurrentWriteParts() {
-        if (numConcurrentWriteParts() < 1) {
+        if (numConcurrentWriteParts() < MIN_CONCURRENT_WRITE_PARTS) {
             throw new IllegalArgumentException(
-                    "numConcurrentWriteParts(=" + numConcurrentWriteParts() + ") must be >= 1");
+                    "numConcurrentWriteParts(=" + numConcurrentWriteParts() + ") must be >= " +
+                            MIN_CONCURRENT_WRITE_PARTS);
         }
     }
 
@@ -310,6 +318,11 @@ public abstract class S3Instructions implements LogOutputAppendable {
 
     final AwsCredentialsProvider awsV2CredentialsProvider() {
         return ((AwsSdkV2Credentials) credentials()).awsV2CredentialsProvider(this);
+    }
+
+    final boolean crossRegionAccessEnabled() {
+        // Note: this can be elevated to user-level control (with the same default) in the future if necessary
+        return regionName().isEmpty();
     }
 
     // If necessary, we _could_ plumb support for "S3-compatible" services which don't support virtual-host style

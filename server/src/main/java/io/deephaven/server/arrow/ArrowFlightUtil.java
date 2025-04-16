@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.server.arrow;
 
@@ -25,7 +25,7 @@ import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.extensions.barrage.BarragePerformanceLog;
 import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
-import io.deephaven.extensions.barrage.BarrageStreamGenerator;
+import io.deephaven.extensions.barrage.BarrageMessageWriter;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.table.BarrageTable;
 import io.deephaven.extensions.barrage.util.ArrowToTableConverter;
@@ -47,6 +47,7 @@ import io.deephaven.util.SafeCloseable;
 import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 import org.apache.arrow.flatbuf.MessageHeader;
+import org.apache.arrow.flatbuf.Schema;
 import org.apache.arrow.flight.impl.Flight;
 import org.jetbrains.annotations.NotNull;
 
@@ -56,19 +57,17 @@ import java.io.InputStream;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static io.deephaven.extensions.barrage.util.BarrageUtil.DEFAULT_SNAPSHOT_DESER_OPTIONS;
-
 public class ArrowFlightUtil {
     private static final Logger log = LoggerFactory.getLogger(ArrowFlightUtil.class);
 
-    private static class MessageViewAdapter implements StreamObserver<BarrageStreamGenerator.MessageView> {
+    private static class MessageViewAdapter implements StreamObserver<BarrageMessageWriter.MessageView> {
         private final StreamObserver<InputStream> delegate;
 
         private MessageViewAdapter(StreamObserver<InputStream> delegate) {
             this.delegate = delegate;
         }
 
-        public void onNext(BarrageStreamGenerator.MessageView value) {
+        public void onNext(BarrageMessageWriter.MessageView value) {
             synchronized (delegate) {
                 try {
                     value.forEachStream(delegate::onNext);
@@ -97,7 +96,7 @@ public class ArrowFlightUtil {
             Configuration.getInstance().getIntegerWithDefault("barrage.minUpdateInterval", 1000);
 
     public static void DoGetCustom(
-            final BarrageStreamGenerator.Factory streamGeneratorFactory,
+            final BarrageMessageWriter.Factory streamGeneratorFactory,
             final SessionState session,
             final TicketRouter ticketRouter,
             final Flight.Ticket request,
@@ -120,6 +119,7 @@ public class ArrowFlightUtil {
                     .queryPerformanceRecorder(queryPerformanceRecorder)
                     .require(tableExport)
                     .onError(observer)
+                    .onSuccess(observer)
                     .submit(() -> {
                         metrics.queueNanos = System.nanoTime() - queueStartTm;
                         Object export = tableExport.get();
@@ -135,19 +135,17 @@ public class ArrowFlightUtil {
                         metrics.tableKey = BarragePerformanceLog.getKeyFor(table);
 
                         // create an adapter for the response observer
-                        final StreamObserver<BarrageStreamGenerator.MessageView> listener =
+                        final StreamObserver<BarrageMessageWriter.MessageView> listener =
                                 new MessageViewAdapter(observer);
 
                         // push the schema to the listener
                         listener.onNext(streamGeneratorFactory.getSchemaView(
-                                fbb -> BarrageUtil.makeTableSchemaPayload(fbb, DEFAULT_SNAPSHOT_DESER_OPTIONS,
+                                fbb -> BarrageUtil.makeTableSchemaPayload(fbb, BarrageUtil.DEFAULT_SNAPSHOT_OPTIONS,
                                         table.getDefinition(), table.getAttributes(), table.isFlat())));
 
                         // shared code between `DoGet` and `BarrageSnapshotRequest`
                         BarrageUtil.createAndSendSnapshot(streamGeneratorFactory, table, null, null, false,
-                                DEFAULT_SNAPSHOT_DESER_OPTIONS, listener, metrics);
-
-                        listener.onCompleted();
+                                BarrageUtil.DEFAULT_SNAPSHOT_OPTIONS, listener, metrics);
                     });
         }
     }
@@ -164,6 +162,7 @@ public class ArrowFlightUtil {
 
         private SessionState.ExportBuilder<Table> resultExportBuilder;
         private Flight.FlightDescriptor flightDescriptor;
+        private Schema schema;
 
         public DoPutObserver(
                 final SessionState session,
@@ -216,8 +215,16 @@ public class ArrowFlightUtil {
             }
 
             if (mi.header.headerType() == MessageHeader.Schema) {
-                parseSchema(mi.header);
+                schema = parseArrowSchema(mi);
                 return;
+            }
+
+            if (resultTable == null && schema != null) {
+                configureWithSchema(schema);
+            }
+            if (resultTable == null) {
+                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
+                        "Schema must be processed before record-batch messages");
             }
 
             if (mi.header.headerType() != MessageHeader.RecordBatch) {
@@ -277,6 +284,9 @@ public class ArrowFlightUtil {
             if (resultExportBuilder == null) {
                 throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
                         "Result flight descriptor never provided");
+            }
+            if (resultTable == null && schema != null) {
+                configureWithSchema(schema);
             }
             if (resultTable == null) {
                 throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
@@ -357,14 +367,14 @@ public class ArrowFlightUtil {
         private final String myPrefix;
         private final SessionState session;
 
-        private final StreamObserver<BarrageStreamGenerator.MessageView> listener;
+        private final StreamObserver<BarrageMessageWriter.MessageView> listener;
 
         private boolean isClosed = false;
 
         private boolean isFirstMsg = true;
 
         private final TicketRouter ticketRouter;
-        private final BarrageStreamGenerator.Factory streamGeneratorFactory;
+        private final BarrageMessageWriter.Factory streamGeneratorFactory;
         private final BarrageMessageProducer.Operation.Factory bmpOperationFactory;
         private final HierarchicalTableViewSubscription.Factory htvsFactory;
         private final BarrageMessageProducer.Adapter<BarrageSubscriptionRequest, BarrageSubscriptionOptions> subscriptionOptAdapter;
@@ -383,7 +393,7 @@ public class ArrowFlightUtil {
         @AssistedInject
         public DoExchangeMarshaller(
                 final TicketRouter ticketRouter,
-                final BarrageStreamGenerator.Factory streamGeneratorFactory,
+                final BarrageMessageWriter.Factory streamGeneratorFactory,
                 final BarrageMessageProducer.Operation.Factory bmpOperationFactory,
                 final HierarchicalTableViewSubscription.Factory htvsFactory,
                 final BarrageMessageProducer.Adapter<BarrageSubscriptionRequest, BarrageSubscriptionOptions> subscriptionOptAdapter,
@@ -544,6 +554,27 @@ public class ArrowFlightUtil {
                                 .queryPerformanceRecorder(queryPerformanceRecorder)
                                 .require(tableExport)
                                 .onError(listener)
+                                .onSuccess(() -> {
+                                    final HalfClosedState newState = halfClosedState.updateAndGet(current -> {
+                                        switch (current) {
+                                            case DONT_CLOSE:
+                                                // record that we have finished sending
+                                                return HalfClosedState.FINISHED_SENDING;
+                                            case CLIENT_HALF_CLOSED:
+                                                // since streaming has now finished, and client already half-closed,
+                                                // time to half close from server
+                                                return HalfClosedState.CLOSED;
+                                            case FINISHED_SENDING:
+                                            case CLOSED:
+                                                throw new IllegalStateException("Can't finish streaming twice");
+                                            default:
+                                                throw new IllegalStateException("Unknown state " + current);
+                                        }
+                                    });
+                                    if (newState == HalfClosedState.CLOSED) {
+                                        GrpcUtil.safelyComplete(listener);
+                                    }
+                                })
                                 .submit(() -> {
                                     metrics.queueNanos = System.nanoTime() - queueStartTm;
                                     Object export = tableExport.get();
@@ -586,25 +617,6 @@ public class ArrowFlightUtil {
                                     BarrageUtil.createAndSendSnapshot(streamGeneratorFactory, table, columns, viewport,
                                             reverseViewport, snapshotOptAdapter.adapt(snapshotRequest), listener,
                                             metrics);
-                                    HalfClosedState newState = halfClosedState.updateAndGet(current -> {
-                                        switch (current) {
-                                            case DONT_CLOSE:
-                                                // record that we have finished sending
-                                                return HalfClosedState.FINISHED_SENDING;
-                                            case CLIENT_HALF_CLOSED:
-                                                // since streaming has now finished, and client already half-closed,
-                                                // time to half close from server
-                                                return HalfClosedState.CLOSED;
-                                            case FINISHED_SENDING:
-                                            case CLOSED:
-                                                throw new IllegalStateException("Can't finish streaming twice");
-                                            default:
-                                                throw new IllegalStateException("Unknown state " + current);
-                                        }
-                                    });
-                                    if (newState == HalfClosedState.CLOSED) {
-                                        listener.onCompleted();
-                                    }
                                 });
                     }
                 }
@@ -614,7 +626,7 @@ public class ArrowFlightUtil {
             public void close() {
                 // no work to do for DoGetRequest close
                 // possibly safely complete if finished sending data
-                HalfClosedState newState = halfClosedState.updateAndGet(current -> {
+                final HalfClosedState newState = halfClosedState.updateAndGet(current -> {
                     switch (current) {
                         case DONT_CLOSE:
                             // record that we have half closed
@@ -630,7 +642,7 @@ public class ArrowFlightUtil {
                     }
                 });
                 if (newState == HalfClosedState.CLOSED) {
-                    listener.onCompleted();
+                    GrpcUtil.safelyComplete(listener);
                 }
             }
         }

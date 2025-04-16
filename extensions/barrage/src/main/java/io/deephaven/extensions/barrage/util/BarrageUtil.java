@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.extensions.barrage.util;
 
@@ -9,11 +9,19 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.ByteStringAccess;
 import com.google.rpc.Code;
 import io.deephaven.UncheckedDeephavenException;
+import io.deephaven.api.util.NameValidator;
+import io.deephaven.barrage.flatbuf.BarrageMessageType;
 import io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
+import io.deephaven.barrage.flatbuf.BarrageSnapshotRequest;
+import io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest;
 import io.deephaven.base.ArrayUtil;
 import io.deephaven.base.ClassUtil;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.attributes.Values;
+import io.deephaven.chunk.ChunkType;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.context.PoisonedUpdateGraph;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -26,27 +34,35 @@ import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
+import io.deephaven.extensions.barrage.BarrageMessageWriter;
+import io.deephaven.extensions.barrage.BarrageOptions;
+import io.deephaven.engine.util.ColumnFormatting;
+import io.deephaven.engine.util.input.InputTableUpdater;
 import io.deephaven.extensions.barrage.BarragePerformanceLog;
 import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
-import io.deephaven.extensions.barrage.BarrageStreamGenerator;
+import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
+import io.deephaven.extensions.barrage.BarrageTypeInfo;
+import io.deephaven.extensions.barrage.chunk.ChunkWriter;
+import io.deephaven.extensions.barrage.chunk.DefaultChunkWriterFactory;
+import io.deephaven.extensions.barrage.chunk.ChunkReader;
 import io.deephaven.extensions.barrage.chunk.vector.VectorExpansionKernel;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
+import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
 import io.deephaven.proto.flight.util.MessageHelper;
 import io.deephaven.proto.flight.util.SchemaHelper;
 import io.deephaven.proto.util.Exceptions;
-import io.deephaven.api.util.NameValidator;
-import io.deephaven.engine.util.ColumnFormatting;
-import io.deephaven.engine.util.input.InputTableUpdater;
-import io.deephaven.chunk.ChunkType;
-import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
 import io.deephaven.util.type.TypeUtils;
+import io.deephaven.vector.ObjectVector;
 import io.deephaven.vector.Vector;
 import io.grpc.stub.StreamObserver;
 import org.apache.arrow.flatbuf.KeyValue;
 import org.apache.arrow.flatbuf.Message;
 import org.apache.arrow.util.Collections2;
+import org.apache.arrow.vector.PeriodDuration;
+import org.apache.arrow.vector.types.IntervalUnit;
 import org.apache.arrow.vector.types.TimeUnit;
 import org.apache.arrow.vector.types.Types;
 import org.apache.arrow.vector.types.pojo.ArrowType;
@@ -62,19 +78,39 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.nio.ByteBuffer;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.Period;
 import java.time.ZonedDateTime;
-import java.util.*;
-import java.util.function.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.BitSet;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.IntFunction;
+import java.util.function.ToIntFunction;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class BarrageUtil {
-    public static final BarrageSnapshotOptions DEFAULT_SNAPSHOT_DESER_OPTIONS =
+    public static final BarrageSubscriptionOptions DEFAULT_SUBSCRIPTION_OPTIONS =
+            BarrageSubscriptionOptions.builder().build();
+    public static final BarrageSnapshotOptions DEFAULT_SNAPSHOT_OPTIONS =
             BarrageSnapshotOptions.builder().build();
 
     public static final long FLATBUFFER_MAGIC = 0x6E687064;
@@ -100,14 +136,41 @@ public class BarrageUtil {
     public static final ArrowType.Timestamp NANO_SINCE_EPOCH_TYPE =
             new ArrowType.Timestamp(TimeUnit.NANOSECOND, "UTC");
 
-    /** The name of the attribute that indicates that a table is flat. */
+    /**
+     * By default we'll use nanosecond resolution for Duration columns.
+     */
+    public static final ArrowType.Duration NANO_DURATION_TYPE =
+            new ArrowType.Duration(TimeUnit.NANOSECOND);
+
+    /**
+     * The name of the attribute that indicates that a table is flat.
+     */
     public static final String TABLE_ATTRIBUTE_IS_FLAT = "IsFlat";
 
-    private static final String ATTR_DH_PREFIX = "deephaven:";
+    /**
+     * The Apache Arrow metadata prefix for Deephaven attributes.
+     */
+    public static final String ATTR_DH_PREFIX = "deephaven:";
+
+    /**
+     * The deephaven metadata tag to indicate an attribute.
+     */
     private static final String ATTR_ATTR_TAG = "attribute";
+
+    /**
+     * The deephaven metadata tag to indicate an attribute's type.
+     */
     private static final String ATTR_ATTR_TYPE_TAG = "attribute_type";
-    private static final String ATTR_TYPE_TAG = "type";
-    private static final String ATTR_COMPONENT_TYPE_TAG = "componentType";
+
+    /**
+     * The deephaven metadata tag to indicate the deephaven column type.
+     */
+    public static final String ATTR_TYPE_TAG = "type";
+
+    /**
+     * The deephaven metadata tag to indicate the deephaven column component type.
+     */
+    public static final String ATTR_COMPONENT_TYPE_TAG = "componentType";
 
     private static final boolean ENFORCE_FLATBUFFER_VERSION_CHECK =
             Configuration.getInstance().getBooleanWithDefault("barrage.version.check", true);
@@ -180,14 +243,186 @@ public class BarrageUtil {
      * These are the types that get special encoding but are otherwise not primitives. TODO (core#58): add custom
      * barrage serialization/deserialization support
      */
-    private static final Set<Class<?>> supportedTypes = new HashSet<>(Collections2.<Class<?>>asImmutableList(
+    @SuppressWarnings("unchecked")
+    private static final Set<Class<?>> supportedTypes = new HashSet<>(Collections2.asImmutableList(
             BigDecimal.class,
             BigInteger.class,
-            String.class,
-            Instant.class,
             Boolean.class,
+            Duration.class,
+            Instant.class,
             LocalDate.class,
-            LocalTime.class));
+            LocalTime.class,
+            Period.class,
+            PeriodDuration.class,
+            Schema.class,
+            String.class,
+            ZonedDateTime.class));
+
+    /**
+     * Create a subscription request payload to be sent via DoExchange.
+     *
+     * @param ticketId the ticket id of the table to subscribe to
+     * @param options the barrage options
+     * @return the subscription request payload
+     */
+    public static byte[] createSubscriptionRequestMetadataBytes(
+            @NotNull final byte[] ticketId,
+            @Nullable final BarrageSubscriptionOptions options) {
+        return createSubscriptionRequestMetadataBytes(ticketId, options, null, null, false);
+    }
+
+    /**
+     * Create a subscription request payload to be sent via DoExchange.
+     *
+     * @param ticketId the ticket id of the table to subscribe to
+     * @param options the barrage options
+     * @param viewport the viewport to subscribe to
+     * @param columns the columns to subscribe to
+     * @param reverseViewport whether to reverse the viewport
+     * @return the subscription request payload
+     */
+    public static byte[] createSubscriptionRequestMetadataBytes(
+            @NotNull final byte[] ticketId,
+            @Nullable final BarrageSubscriptionOptions options,
+            @Nullable final RowSet viewport,
+            @Nullable final BitSet columns,
+            final boolean reverseViewport) {
+
+        final FlatBufferBuilder metadata = new FlatBufferBuilder();
+
+        int colOffset = 0;
+        if (columns != null) {
+            colOffset = BarrageSubscriptionRequest.createColumnsVector(metadata, columns.toByteArray());
+        }
+        int vpOffset = 0;
+        if (viewport != null) {
+            vpOffset = BarrageSubscriptionRequest.createViewportVector(
+                    metadata, BarrageProtoUtil.toByteBuffer(viewport));
+        }
+        int optOffset = 0;
+        if (options != null) {
+            optOffset = options.appendTo(metadata);
+        }
+
+        final int ticOffset = BarrageSubscriptionRequest.createTicketVector(metadata, ticketId);
+        BarrageSubscriptionRequest.startBarrageSubscriptionRequest(metadata);
+        BarrageSubscriptionRequest.addColumns(metadata, colOffset);
+        BarrageSubscriptionRequest.addViewport(metadata, vpOffset);
+        BarrageSubscriptionRequest.addSubscriptionOptions(metadata, optOffset);
+        BarrageSubscriptionRequest.addTicket(metadata, ticOffset);
+        BarrageSubscriptionRequest.addReverseViewport(metadata, reverseViewport);
+        metadata.finish(BarrageSubscriptionRequest.endBarrageSubscriptionRequest(metadata));
+
+        final FlatBufferBuilder wrapper = new FlatBufferBuilder();
+        final int innerOffset = wrapper.createByteVector(metadata.dataBuffer());
+        wrapper.finish(BarrageMessageWrapper.createBarrageMessageWrapper(
+                wrapper,
+                BarrageUtil.FLATBUFFER_MAGIC,
+                BarrageMessageType.BarrageSubscriptionRequest,
+                innerOffset));
+        return wrapper.sizedByteArray();
+    }
+
+    /**
+     * Create a snapshot request payload to be sent via DoExchange.
+     *
+     * @param ticketId the ticket id of the table to subscribe to
+     * @param options the barrage options
+     * @return the subscription request payload
+     */
+    public static byte[] createSnapshotRequestMetadataBytes(
+            @NotNull final byte[] ticketId,
+            @Nullable final BarrageSnapshotOptions options) {
+        return createSnapshotRequestMetadataBytes(ticketId, options, null, null, false);
+    }
+
+    /**
+     * Create a subscription request payload to be sent via DoExchange.
+     *
+     * @param ticketId the ticket id of the table to subscribe to
+     * @param options the barrage options
+     * @param viewport the viewport to subscribe to
+     * @param columns the columns to subscribe to
+     * @param reverseViewport whether to reverse the viewport
+     * @return the subscription request payload
+     */
+    static public byte[] createSnapshotRequestMetadataBytes(
+            @NotNull final byte[] ticketId,
+            @Nullable final BarrageSnapshotOptions options,
+            @Nullable final RowSet viewport,
+            @Nullable final BitSet columns,
+            final boolean reverseViewport) {
+
+        final FlatBufferBuilder metadata = new FlatBufferBuilder();
+
+        int colOffset = 0;
+        if (columns != null) {
+            colOffset = BarrageSnapshotRequest.createColumnsVector(metadata, columns.toByteArray());
+        }
+        int vpOffset = 0;
+        if (viewport != null) {
+            vpOffset = BarrageSnapshotRequest.createViewportVector(
+                    metadata, BarrageProtoUtil.toByteBuffer(viewport));
+        }
+        int optOffset = 0;
+        if (options != null) {
+            optOffset = options.appendTo(metadata);
+        }
+
+        final int ticOffset = BarrageSnapshotRequest.createTicketVector(metadata, ticketId);
+        BarrageSnapshotRequest.startBarrageSnapshotRequest(metadata);
+        BarrageSnapshotRequest.addColumns(metadata, colOffset);
+        BarrageSnapshotRequest.addViewport(metadata, vpOffset);
+        BarrageSnapshotRequest.addSnapshotOptions(metadata, optOffset);
+        BarrageSnapshotRequest.addTicket(metadata, ticOffset);
+        BarrageSnapshotRequest.addReverseViewport(metadata, reverseViewport);
+        metadata.finish(BarrageSnapshotRequest.endBarrageSnapshotRequest(metadata));
+
+        final FlatBufferBuilder wrapper = new FlatBufferBuilder();
+        final int innerOffset = wrapper.createByteVector(metadata.dataBuffer());
+        wrapper.finish(BarrageMessageWrapper.createBarrageMessageWrapper(
+                wrapper,
+                BarrageUtil.FLATBUFFER_MAGIC,
+                BarrageMessageType.BarrageSnapshotRequest,
+                innerOffset));
+        return wrapper.sizedByteArray();
+    }
+
+    /**
+     * Create a snapshot request payload to be sent via DoExchange.
+     *
+     * @param ticketId the ticket id of the table to subscribe to
+     * @param options the barrage options
+     * @return the subscription request payload
+     */
+    public static byte[] createSerializationOptionsMetadataBytes(
+            @NotNull final byte[] ticketId,
+            @Nullable final BarrageSubscriptionOptions options) {
+        final FlatBufferBuilder metadata = new FlatBufferBuilder();
+
+        int optOffset = 0;
+        if (options != null) {
+            optOffset = options.appendTo(metadata);
+        }
+
+        final int ticOffset = BarrageSubscriptionRequest.createTicketVector(metadata, ticketId);
+        BarrageSubscriptionRequest.startBarrageSubscriptionRequest(metadata);
+        BarrageSubscriptionRequest.addColumns(metadata, 0);
+        BarrageSubscriptionRequest.addViewport(metadata, 0);
+        BarrageSubscriptionRequest.addSubscriptionOptions(metadata, optOffset);
+        BarrageSubscriptionRequest.addTicket(metadata, ticOffset);
+        BarrageSubscriptionRequest.addReverseViewport(metadata, false);
+        metadata.finish(BarrageSubscriptionRequest.endBarrageSubscriptionRequest(metadata));
+
+        final FlatBufferBuilder wrapper = new FlatBufferBuilder();
+        final int innerOffset = wrapper.createByteVector(metadata.dataBuffer());
+        wrapper.finish(BarrageMessageWrapper.createBarrageMessageWrapper(
+                wrapper,
+                BarrageUtil.FLATBUFFER_MAGIC,
+                BarrageMessageType.BarrageSerializationOptions,
+                innerOffset));
+        return wrapper.sizedByteArray();
+    }
 
     public static ByteString schemaBytesFromTable(@NotNull final Table table) {
         return schemaBytesFromTableDefinition(table.getDefinition(), table.getAttributes(), table.isFlat());
@@ -198,7 +433,15 @@ public class BarrageUtil {
             @NotNull final Map<String, Object> attributes,
             final boolean isFlat) {
         return schemaBytes(fbb -> makeTableSchemaPayload(
-                fbb, DEFAULT_SNAPSHOT_DESER_OPTIONS, tableDefinition, attributes, isFlat));
+                fbb, DEFAULT_SNAPSHOT_OPTIONS, tableDefinition, attributes, isFlat));
+    }
+
+    public static Schema schemaFromTable(@NotNull final Table table) {
+        return makeSchema(DEFAULT_SNAPSHOT_OPTIONS, table.getDefinition(), table.getAttributes(), table.isFlat());
+    }
+
+    public static Schema toSchema(final TableDefinition definition, Map<String, Object> attributes, boolean isFlat) {
+        return makeSchema(DEFAULT_SNAPSHOT_OPTIONS, definition, attributes, isFlat);
     }
 
     public static ByteString schemaBytes(@NotNull final ToIntFunction<FlatBufferBuilder> schemaPayloadWriter) {
@@ -216,12 +459,19 @@ public class BarrageUtil {
 
     public static int makeTableSchemaPayload(
             @NotNull final FlatBufferBuilder builder,
-            @NotNull final StreamReaderOptions options,
+            @NotNull final BarrageOptions options,
+            @NotNull final TableDefinition tableDefinition,
+            @NotNull final Map<String, Object> attributes,
+            final boolean isFlat) {
+        return makeSchema(options, tableDefinition, attributes, isFlat).getSchema(builder);
+    }
+
+    public static Schema makeSchema(
+            @NotNull final BarrageOptions options,
             @NotNull final TableDefinition tableDefinition,
             @NotNull final Map<String, Object> attributes,
             final boolean isFlat) {
         final Map<String, String> schemaMetadata = attributesToMetadata(attributes, isFlat);
-
         final Map<String, String> descriptions = GridAttributes.getColumnDescriptions(attributes);
         final InputTableUpdater inputTableUpdater = (InputTableUpdater) attributes.get(Table.INPUT_TABLE_ATTRIBUTE);
         final List<Field> fields = columnDefinitionsToFields(
@@ -229,8 +479,7 @@ public class BarrageUtil {
                 ignored -> new HashMap<>(),
                 attributes, options.columnsAsList())
                 .collect(Collectors.toList());
-
-        return new Schema(fields, schemaMetadata).getSchema(builder);
+        return new Schema(fields, schemaMetadata);
     }
 
     @NotNull
@@ -290,14 +539,10 @@ public class BarrageUtil {
             @NotNull final Function<String, Map<String, String>> fieldMetadataFactory,
             @NotNull final Map<String, Object> attributes,
             final boolean columnsAsList) {
-        // Find the format columns
-        final Set<String> formatColumns = new HashSet<>();
-        columnDefinitions.stream().map(ColumnDefinition::getName)
-                .filter(ColumnFormatting::isFormattingColumn)
-                .forEach(formatColumns::add);
+        boolean wireFormatSpecified = attributes.containsKey(Table.BARRAGE_SCHEMA_ATTRIBUTE);
 
         // Find columns that are sortable
-        Set<String> sortableColumns;
+        final Set<String> sortableColumns;
         if (attributes.containsKey(GridAttributes.SORTABLE_COLUMNS_ATTRIBUTE)) {
             final String[] restrictedSortColumns =
                     attributes.get(GridAttributes.SORTABLE_COLUMNS_ATTRIBUTE).toString().split(",");
@@ -311,8 +556,12 @@ public class BarrageUtil {
                     .collect(Collectors.toSet());
         }
 
-        // Build metadata for columns and add the fields
-        return columnDefinitions.stream().map((final ColumnDefinition<?> column) -> {
+        final Schema targetSchema;
+        final Set<String> formatColumns = new HashSet<>();
+        final Map<String, Field> fieldMap = new LinkedHashMap<>();
+
+        final Function<ColumnDefinition<?>, Field> fieldFor = (final ColumnDefinition<?> column) -> {
+            Field field = fieldMap.get(column.getName());
             final String name = column.getName();
             Class<?> dataType = column.getDataType();
             Class<?> componentType = column.getComponentType();
@@ -336,7 +585,7 @@ public class BarrageUtil {
             }
 
             // Add type information
-            if (isTypeNativelySupported(dataType)) {
+            if (wireFormatSpecified || isTypeNativelySupported(dataType)) {
                 putMetadata(metadata, ATTR_TYPE_TAG, dataType.getCanonicalName());
                 if (componentType != null) {
                     if (isTypeNativelySupported(componentType)) {
@@ -365,52 +614,103 @@ public class BarrageUtil {
                 putMetadata(metadata, "inputtable.isKey", inputTableUpdater.getKeyNames().contains(name) + "");
             }
 
-            if (columnsAsList) {
-                componentType = dataType;
-                dataType = Array.newInstance(dataType, 0).getClass();
+            if (field != null) {
+                final FieldType origType = field.getFieldType();
+                // user defined metadata should override the default metadata
+                metadata.putAll(field.getMetadata());
+                final FieldType newType =
+                        new FieldType(origType.isNullable(), origType.getType(), origType.getDictionary(), metadata);
+                field = new Field(field.getName(), newType, field.getChildren());
+            } else if (Vector.class.isAssignableFrom(dataType)) {
+                field = arrowFieldForVectorType(name, dataType, componentType, metadata);
+            } else {
+                field = arrowFieldFor(name, dataType, componentType, metadata, columnsAsList);
             }
 
-            if (Vector.class.isAssignableFrom(dataType)) {
-                return arrowFieldForVectorType(name, dataType, componentType, metadata);
+            if (columnsAsList) {
+                final boolean nullable = false;
+                final FieldType wrappedType =
+                        new FieldType(nullable, Types.MinorType.LIST.getType(), null, field.getMetadata());
+                field = new Field(field.getName(), wrappedType, Collections.singletonList(field));
             }
-            return arrowFieldFor(name, dataType, componentType, metadata);
-        });
+            return field;
+        };
+
+        if (wireFormatSpecified) {
+            targetSchema = (Schema) attributes.get(Table.BARRAGE_SCHEMA_ATTRIBUTE);
+            targetSchema.getFields().forEach(field -> fieldMap.put(field.getName(), field));
+
+            fieldMap.keySet().stream()
+                    .filter(ColumnFormatting::isFormattingColumn)
+                    .forEach(formatColumns::add);
+
+            final Map<String, ColumnDefinition<?>> columnDefinitionMap = new LinkedHashMap<>();
+            columnDefinitions.stream().filter(column -> fieldMap.containsKey(column.getName()))
+                    .forEach(column -> columnDefinitionMap.put(column.getName(), column));
+
+            return fieldMap.keySet().stream().map(columnDefinitionMap::get).map(fieldFor);
+        }
+
+        // Find the format columns
+        columnDefinitions.stream().map(ColumnDefinition::getName)
+                .filter(ColumnFormatting::isFormattingColumn)
+                .forEach(formatColumns::add);
+
+        // Build metadata for columns and add the fields
+        return columnDefinitions.stream().map(fieldFor);
     }
 
     public static void putMetadata(final Map<String, String> metadata, final String key, final String value) {
         metadata.put(ATTR_DH_PREFIX + key, value);
     }
 
-    private static boolean maybeConvertForTimeUnit(
-            final TimeUnit unit,
-            final ConvertedArrowSchema result,
-            final int columnOffset) {
-        switch (unit) {
-            case NANOSECOND:
-                return true;
-            case MICROSECOND:
-                setConversionFactor(result, columnOffset, 1000);
-                return true;
-            case MILLISECOND:
-                setConversionFactor(result, columnOffset, 1000 * 1000);
-                return true;
-            case SECOND:
-                setConversionFactor(result, columnOffset, 1000 * 1000 * 1000);
-                return true;
-            default:
-                return false;
+    public static BarrageTypeInfo<Field> getDefaultType(@NotNull final Field field) {
+
+        Class<?> explicitClass = null;
+        final String explicitClassName = field.getMetadata().get(ATTR_DH_PREFIX + ATTR_TYPE_TAG);
+        if (explicitClassName != null) {
+            try {
+                explicitClass = ClassUtil.lookupClass(explicitClassName);
+            } catch (final ClassNotFoundException e) {
+                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
+                        String.format("BarrageUtil could not find class: %s", explicitClassName));
+            }
         }
+
+        final String explicitComponentTypeName = field.getMetadata().get(ATTR_DH_PREFIX + ATTR_COMPONENT_TYPE_TAG);
+        Class<?> columnComponentType = null;
+        if (explicitComponentTypeName != null) {
+            try {
+                columnComponentType = ClassUtil.lookupClass(explicitComponentTypeName);
+            } catch (final ClassNotFoundException e) {
+                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
+                        String.format("BarrageUtil could not find class: %s", explicitComponentTypeName));
+            }
+        }
+
+        if (field.getType().getTypeID() == ArrowType.ArrowTypeID.Map) {
+            return new BarrageTypeInfo<>(Map.class, null, field);
+        }
+
+        final Class<?> columnType = getDefaultType(field, explicitClass);
+        if (columnComponentType == null && columnType.isArray()) {
+            columnComponentType = columnType.getComponentType();
+        }
+
+        return new BarrageTypeInfo<>(columnType, columnComponentType, field);
     }
 
     private static Class<?> getDefaultType(
-            final ArrowType arrowType,
-            final ConvertedArrowSchema result,
-            final int columnOffset,
+            final Field arrowField,
             final Class<?> explicitType) {
-        final String exMsg = "Schema did not include `" + ATTR_DH_PREFIX + ATTR_TYPE_TAG + "` metadata for field ";
-        switch (arrowType.getTypeID()) {
+        if (explicitType != null) {
+            return explicitType;
+        }
+
+        final String exMsg = "Schema did not include `" + ATTR_DH_PREFIX + ATTR_TYPE_TAG + "` metadata for field";
+        switch (arrowField.getType().getTypeID()) {
             case Int:
-                final ArrowType.Int intType = (ArrowType.Int) arrowType;
+                final ArrowType.Int intType = (ArrowType.Int) arrowField.getType();
                 if (intType.getIsSigned()) {
                     // SIGNED
                     switch (intType.getBitWidth()) {
@@ -429,70 +729,96 @@ public class BarrageUtil {
                         case 8:
                             return short.class;
                         case 16:
-                            return int.class;
+                            return char.class;
                         case 32:
                             return long.class;
+                        case 64:
+                            return BigInteger.class;
                     }
                 }
                 throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, exMsg +
                         " of intType(signed=" + intType.getIsSigned() + ", bitWidth=" + intType.getBitWidth() + ")");
             case Bool:
-                return Boolean.class;
+                if (arrowField.isNullable()) {
+                    return Boolean.class;
+                }
+                return boolean.class;
             case Duration:
-                final ArrowType.Duration durationType = (ArrowType.Duration) arrowType;
-                final TimeUnit durationUnit = durationType.getUnit();
-                if (maybeConvertForTimeUnit(durationUnit, result, columnOffset)) {
-                    return long.class;
-                }
-                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, exMsg +
-                        " of durationType(unit=" + durationUnit.toString() + ")");
+                return Duration.class;
+            case Time:
+                return LocalTime.class;
+            case Date:
+                return LocalDate.class;
             case Timestamp:
-                final ArrowType.Timestamp timestampType = (ArrowType.Timestamp) arrowType;
+                final ArrowType.Timestamp timestampType = (ArrowType.Timestamp) arrowField.getType();
                 final String tz = timestampType.getTimezone();
-                final TimeUnit timestampUnit = timestampType.getUnit();
-                boolean conversionSuccess = maybeConvertForTimeUnit(timestampUnit, result, columnOffset);
-                if ((tz == null || "UTC".equals(tz)) && conversionSuccess) {
+                if ((tz == null || "UTC".equals(tz))) {
                     return Instant.class;
+                } else {
+                    return ZonedDateTime.class;
                 }
-                if (explicitType != null) {
-                    return explicitType;
-                }
-                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, exMsg +
-                        " of timestampType(Timezone=" + tz +
-                        ", Unit=" + timestampUnit.toString() + ")");
             case FloatingPoint:
-                final ArrowType.FloatingPoint floatingPointType = (ArrowType.FloatingPoint) arrowType;
+                final ArrowType.FloatingPoint floatingPointType = (ArrowType.FloatingPoint) arrowField.getType();
                 switch (floatingPointType.getPrecision()) {
+                    case HALF:
                     case SINGLE:
                         return float.class;
                     case DOUBLE:
                         return double.class;
-                    case HALF:
                     default:
                         throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, exMsg +
-                                " of floatingPointType(Precision=" + floatingPointType.getPrecision().toString() + ")");
+                                " of floatingPointType(Precision=" + floatingPointType.getPrecision() + ")");
                 }
+            case Decimal:
+                return BigDecimal.class;
             case Utf8:
                 return java.lang.String.class;
+            case Binary:
+            case FixedSizeBinary:
+                return byte[].class;
+            case Interval:
+                final ArrowType.Interval intervalType = (ArrowType.Interval) arrowField.getType();
+                switch (intervalType.getUnit()) {
+                    case DAY_TIME:
+                        return Duration.class;
+                    case YEAR_MONTH:
+                        return Period.class;
+                    case MONTH_DAY_NANO:
+                        return PeriodDuration.class;
+                    default:
+                        throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, exMsg +
+                                " of intervalType(IntervalUnit=" + intervalType.getUnit() + ")");
+                }
+            case Map:
+                return Map.class;
+            case Union:
+            case Null:
+                return Object.class;
             default:
-                if (explicitType != null) {
-                    return explicitType;
+                if (arrowField.getType().getTypeID() == ArrowType.ArrowTypeID.List
+                        || arrowField.getType().getTypeID() == ArrowType.ArrowTypeID.ListView
+                        || arrowField.getType().getTypeID() == ArrowType.ArrowTypeID.FixedSizeList) {
+                    final Class<?> childType = getDefaultType(arrowField.getChildren().get(0), null);
+                    return Array.newInstance(childType, 0).getClass();
+                }
+                if (arrowField.getType().getTypeID() == ArrowType.ArrowTypeID.Union) {
+                    return Object.class;
                 }
                 throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, exMsg +
-                        " of type " + arrowType.getTypeID().toString());
+                        " of type " + arrowField.getType().getTypeID().toString());
         }
     }
 
     public static class ConvertedArrowSchema {
-        public final int nCols;
-        public TableDefinition tableDef;
-        // a multiplicative factor to apply when reading; useful for eg converting arrow timestamp time units
-        // to the expected nanos value for Instant.
-        public int[] conversionFactors;
-        public Map<String, Object> attributes;
+        public final TableDefinition tableDef;
+        public final Schema arrowSchema;
+        public final Map<String, Object> attributes = new HashMap<>();
 
-        public ConvertedArrowSchema(final int nCols) {
-            this.nCols = nCols;
+        private ConvertedArrowSchema(
+                @NotNull final TableDefinition tableDef,
+                @NotNull final Schema arrowSchema) {
+            this.tableDef = tableDef;
+            this.arrowSchema = arrowSchema;
         }
 
         public ChunkType[] computeWireChunkTypes() {
@@ -503,40 +829,57 @@ public class BarrageUtil {
         }
 
         public Class<?>[] computeWireTypes() {
-            return tableDef.getColumnStream().map(ColumnDefinition::getDataType).toArray(Class[]::new);
+            return tableDef.getColumnStream()
+                    .map(ColumnDefinition::getDataType)
+                    .map(ReinterpretUtils::maybeConvertToPrimitiveDataType)
+                    .toArray(Class[]::new);
         }
 
         public Class<?>[] computeWireComponentTypes() {
             return tableDef.getColumnStream()
                     .map(ColumnDefinition::getComponentType).toArray(Class[]::new);
         }
-    }
 
-    private static void setConversionFactor(
-            final ConvertedArrowSchema result,
-            final int columnOffset,
-            final int factor) {
-        if (result.conversionFactors == null) {
-            result.conversionFactors = new int[result.nCols];
-            Arrays.fill(result.conversionFactors, 1);
+        public ChunkReader<? extends Values>[] computeChunkReaders(
+                @NotNull final ChunkReader.Factory chunkReaderFactory,
+                @NotNull final org.apache.arrow.flatbuf.Schema schema,
+                @NotNull final BarrageOptions barrageOptions) {
+            // noinspection unchecked
+            final ChunkReader<? extends Values>[] readers =
+                    (ChunkReader<? extends Values>[]) new ChunkReader[tableDef.numColumns()];
+
+            final List<ColumnDefinition<?>> columns = tableDef.getColumns();
+            for (int ii = 0; ii < tableDef.numColumns(); ++ii) {
+                final ColumnDefinition<?> columnDefinition = ReinterpretUtils.maybeConvertToPrimitive(columns.get(ii));
+                final BarrageTypeInfo<org.apache.arrow.flatbuf.Field> typeInfo = BarrageTypeInfo.make(
+                        columnDefinition.getDataType(), columnDefinition.getComponentType(), schema.fields(ii));
+                readers[ii] = chunkReaderFactory.newReader(typeInfo, barrageOptions);
+            }
+
+            return readers;
         }
-        result.conversionFactors[columnOffset] = factor;
     }
 
-    public static TableDefinition convertTableDefinition(final ExportedTableCreationResponse response) {
+    public static TableDefinition convertTableDefinition(@NotNull final ExportedTableCreationResponse response) {
         return convertArrowSchema(SchemaHelper.flatbufSchema(response)).tableDef;
     }
 
-    public static ConvertedArrowSchema convertArrowSchema(final ExportedTableCreationResponse response) {
+    public static ConvertedArrowSchema convertArrowSchema(@NotNull final ExportedTableCreationResponse response) {
         return convertArrowSchema(SchemaHelper.flatbufSchema(response));
     }
 
+    public static ConvertedArrowSchema convertArrowSchema(@NotNull final org.apache.arrow.flatbuf.Schema schema) {
+        return convertArrowSchema(schema, null);
+    }
+
     public static ConvertedArrowSchema convertArrowSchema(
-            final org.apache.arrow.flatbuf.Schema schema) {
+            @NotNull final org.apache.arrow.flatbuf.Schema schema,
+            @Nullable final BarrageOptions options) {
         return convertArrowSchema(
+                Schema.convertSchema(schema),
+                options,
                 schema.fieldsLength(),
-                i -> schema.fields(i).name(),
-                i -> ArrowType.getTypeForField(schema.fields(i)),
+                i -> Field.convertField(schema.fields(i)),
                 i -> visitor -> {
                     final org.apache.arrow.flatbuf.Field field = schema.fields(i);
                     if (field.dictionary() != null) {
@@ -557,10 +900,17 @@ public class BarrageUtil {
     }
 
     public static ConvertedArrowSchema convertArrowSchema(final Schema schema) {
+        return convertArrowSchema(schema, null);
+    }
+
+    public static ConvertedArrowSchema convertArrowSchema(
+            final Schema schema,
+            final BarrageOptions options) {
         return convertArrowSchema(
+                schema,
+                options,
                 schema.getFields().size(),
-                i -> schema.getFields().get(i).getName(),
-                i -> schema.getFields().get(i).getType(),
+                i -> schema.getFields().get(i),
                 i -> visitor -> {
                     schema.getFields().get(i).getMetadata().forEach(visitor);
                 },
@@ -568,16 +918,17 @@ public class BarrageUtil {
     }
 
     private static ConvertedArrowSchema convertArrowSchema(
+            @NotNull final Schema schema,
+            @Nullable final BarrageOptions options,
             final int numColumns,
-            final IntFunction<String> getName,
-            final IntFunction<ArrowType> getArrowType,
-            final IntFunction<Consumer<BiConsumer<String, String>>> columnMetadataVisitor,
-            final Consumer<BiConsumer<String, String>> tableMetadataVisitor) {
-        final ConvertedArrowSchema result = new ConvertedArrowSchema(numColumns);
+            @NotNull final IntFunction<Field> getField,
+            @NotNull final IntFunction<Consumer<BiConsumer<String, String>>> columnMetadataVisitor,
+            @NotNull final Consumer<BiConsumer<String, String>> tableMetadataVisitor) {
         final ColumnDefinition<?>[] columns = new ColumnDefinition[numColumns];
 
         for (int i = 0; i < numColumns; ++i) {
-            final String origName = getName.apply(i);
+            Field field = getField.apply(i);
+            final String origName = field.getName();
             final String name = NameValidator.legalizeColumnName(origName);
             final MutableObject<Class<?>> type = new MutableObject<>();
             final MutableObject<Class<?>> componentType = new MutableObject<>();
@@ -587,35 +938,52 @@ public class BarrageUtil {
                     try {
                         type.setValue(ClassUtil.lookupClass(value));
                     } catch (final ClassNotFoundException e) {
-                        throw new UncheckedDeephavenException("Could not load class from schema", e);
+                        throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
+                                String.format("BarrageUtil could not find class: %s", value));
                     }
                 } else if (key.equals(ATTR_DH_PREFIX + ATTR_COMPONENT_TYPE_TAG)) {
                     try {
                         componentType.setValue(ClassUtil.lookupClass(value));
                     } catch (final ClassNotFoundException e) {
-                        throw new UncheckedDeephavenException("Could not load class from schema", e);
+                        throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
+                                String.format("BarrageUtil could not find class: %s", value));
                     }
                 }
             });
 
-            // this has side effects such as setting the conversion factor; must call even if dest type is well known
-            Class<?> defaultType = getDefaultType(getArrowType.apply(i), result, i, type.getValue());
+            // this has side effects such as type validation; must call even if dest type is well known
+            if (options != null && options.columnsAsList()) {
+                field = field.getChildren().get(0);
+            }
+            Class<?> defaultType = getDefaultType(field, type.getValue());
 
             if (type.getValue() == null) {
                 type.setValue(defaultType);
             } else if (type.getValue() == boolean.class || type.getValue() == Boolean.class) {
-                // check existing barrage clients that might be sending int8 instead of bool
-                // TODO (deephaven-core#3403) widen this check for better assurances
-                Assert.eq(Boolean.class, "deephaven column type", defaultType, "arrow inferred type");
                 // force to boxed boolean to allow nullability in the column sources
                 type.setValue(Boolean.class);
+            }
+            if (defaultType == ObjectVector.class && componentType.getValue() == null) {
+                componentType.setValue(getDefaultType(field.getChildren().get(0), null));
             }
             columns[i] = ColumnDefinition.fromGenericType(name, type.getValue(), componentType.getValue());
         }
 
-        result.tableDef = TableDefinition.of(columns);
-
-        result.attributes = new HashMap<>();
+        final Schema resultSchema;
+        if (options == null || !options.columnsAsList()) {
+            resultSchema = schema;
+        } else {
+            // must unwrap each column's list wrapper
+            final List<Field> unwrappedFields = new ArrayList<>(numColumns);
+            for (final Field wrappedCol : schema.getFields()) {
+                Assert.eq(wrappedCol.getType().getTypeID(), "wrappedCol.getType().getTypeID()",
+                        ArrowType.ArrowTypeID.List, "ArrowType.ArrowTypeID.List");
+                final Field realCol = wrappedCol.getChildren().get(0);
+                unwrappedFields.add(new Field(wrappedCol.getName(), realCol.getFieldType(), realCol.getChildren()));
+            }
+            resultSchema = new Schema(unwrappedFields, schema.getCustomMetadata());
+        }
+        final ConvertedArrowSchema result = new ConvertedArrowSchema(TableDefinition.of(columns), resultSchema);
 
         final HashMap<String, String> attributeTypeMap = new HashMap<>();
         tableMetadataVisitor.accept((key, value) -> {
@@ -691,28 +1059,61 @@ public class BarrageUtil {
         return false;
     }
 
-    private static Field arrowFieldFor(
-            final String name, final Class<?> type, final Class<?> componentType, final Map<String, String> metadata) {
+    public static Field arrowFieldFor(
+            final String name,
+            final Class<?> type,
+            final Class<?> componentType,
+            final Map<String, String> metadata,
+            final boolean columnAsList) {
         List<Field> children = Collections.emptyList();
 
-        final FieldType fieldType = arrowFieldTypeFor(type, metadata);
+        final FieldType fieldType = arrowFieldTypeFor(type, metadata, columnAsList);
         if (fieldType.getType().isComplex()) {
-            if (type.isArray()) {
+            if (type.isArray() || Vector.class.isAssignableFrom(type)) {
                 children = Collections.singletonList(arrowFieldFor(
-                        "", componentType, componentType.getComponentType(), Collections.emptyMap()));
+                        "", componentType, componentType == null ? null : componentType.getComponentType(),
+                        Collections.emptyMap(),
+                        false));
             } else {
-                throw new UnsupportedOperationException("Arrow Complex Type Not Supported: " + fieldType.getType());
+                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
+                        "No default mapping for Arrow complex type: " + fieldType.getType());
             }
         }
 
         return new Field(name, fieldType, children);
     }
 
-    private static FieldType arrowFieldTypeFor(final Class<?> type, final Map<String, String> metadata) {
-        return new FieldType(true, arrowTypeFor(type), null, metadata);
+    public static org.apache.arrow.flatbuf.Field flatbufFieldFor(
+            final ColumnDefinition<?> columnDefinition,
+            final Map<String, String> metadata) {
+        return flatbufFieldFor(
+                columnDefinition.getName(),
+                columnDefinition.getDataType(),
+                columnDefinition.getComponentType(),
+                metadata);
     }
 
-    private static ArrowType arrowTypeFor(Class<?> type) {
+    public static org.apache.arrow.flatbuf.Field flatbufFieldFor(
+            final String name,
+            final Class<?> type,
+            final Class<?> componentType,
+            final Map<String, String> metadata) {
+        final Field field = arrowFieldFor(name, type, componentType, metadata, false);
+        final FlatBufferBuilder builder = new FlatBufferBuilder();
+        builder.finish(field.getField(builder));
+        return org.apache.arrow.flatbuf.Field.getRootAsField(builder.dataBuffer());
+    }
+
+    private static FieldType arrowFieldTypeFor(
+            final Class<?> type,
+            final Map<String, String> metadata,
+            final boolean columnAsList) {
+        return new FieldType(true, arrowTypeFor(type, columnAsList), null, metadata);
+    }
+
+    private static ArrowType arrowTypeFor(
+            Class<?> type,
+            final boolean columnAsList) {
         if (TypeUtils.isBoxedType(type)) {
             type = TypeUtils.getUnboxedType(type);
         }
@@ -736,6 +1137,12 @@ public class BarrageUtil {
                 return Types.MinorType.FLOAT8.getType();
             case Object:
                 if (type.isArray()) {
+                    if (type.getComponentType() == byte.class && !columnAsList) {
+                        return Types.MinorType.VARBINARY.getType();
+                    }
+                    return Types.MinorType.LIST.getType();
+                }
+                if (Vector.class.isAssignableFrom(type)) {
                     return Types.MinorType.LIST.getType();
                 }
                 if (type == LocalDate.class) {
@@ -745,11 +1152,21 @@ public class BarrageUtil {
                     return Types.MinorType.TIMENANO.getType();
                 }
                 if (type == BigDecimal.class
-                        || type == BigInteger.class) {
+                        || type == BigInteger.class
+                        || type == Schema.class) {
                     return Types.MinorType.VARBINARY.getType();
                 }
                 if (type == Instant.class || type == ZonedDateTime.class) {
                     return NANO_SINCE_EPOCH_TYPE;
+                }
+                if (type == Duration.class) {
+                    return NANO_DURATION_TYPE;
+                }
+                if (type == Period.class) {
+                    return new ArrowType.Interval(IntervalUnit.YEAR_MONTH);
+                }
+                if (type == PeriodDuration.class) {
+                    return new ArrowType.Interval(IntervalUnit.MONTH_DAY_NANO);
                 }
 
                 // everything gets converted to a string
@@ -765,24 +1182,49 @@ public class BarrageUtil {
         // Vectors are always lists.
         final FieldType fieldType = new FieldType(true, Types.MinorType.LIST.getType(), null, metadata);
         final Class<?> componentType = VectorExpansionKernel.getComponentType(type, knownComponentType);
+        final Class<?> innerComponentType = componentType == null ? null : componentType.getComponentType();
+
         final List<Field> children = Collections.singletonList(arrowFieldFor(
-                "", componentType, componentType.getComponentType(), Collections.emptyMap()));
+                "", componentType, innerComponentType, Collections.emptyMap(), false));
 
         return new Field(name, fieldType, children);
     }
 
     public static void createAndSendStaticSnapshot(
-            BarrageStreamGenerator.Factory streamGeneratorFactory,
+            BarrageMessageWriter.Factory bmwFactory,
             BaseTable<?> table,
             BitSet columns,
             RowSet viewport,
             boolean reverseViewport,
             BarrageSnapshotOptions snapshotRequestOptions,
-            StreamObserver<BarrageStreamGenerator.MessageView> listener,
+            StreamObserver<BarrageMessageWriter.MessageView> listener,
             BarragePerformanceLog.SnapshotMetricsHelper metrics) {
         // start with small value and grow
         long snapshotTargetCellCount = MIN_SNAPSHOT_CELL_COUNT;
         double snapshotNanosPerCell = 0.0;
+
+        final Map<String, org.apache.arrow.flatbuf.Field> fieldFor;
+        if (table.hasAttribute(Table.BARRAGE_SCHEMA_ATTRIBUTE)) {
+            fieldFor = new HashMap<>();
+            final Schema targetSchema = (Schema) table.getAttribute(Table.BARRAGE_SCHEMA_ATTRIBUTE);
+            // noinspection DataFlowIssue
+            targetSchema.getFields().forEach(f -> {
+                final FlatBufferBuilder fbb = new FlatBufferBuilder();
+                final int offset = f.getField(fbb);
+                fbb.finish(offset);
+                fieldFor.put(f.getName(), org.apache.arrow.flatbuf.Field.getRootAsField(fbb.dataBuffer()));
+            });
+        } else {
+            fieldFor = null;
+        }
+
+        // noinspection unchecked
+        final ChunkWriter<Chunk<Values>>[] chunkWriters = table.getDefinition().getColumns().stream()
+                .map(cd -> DefaultChunkWriterFactory.INSTANCE.newWriter(BarrageTypeInfo.make(
+                        ReinterpretUtils.maybeConvertToPrimitiveDataType(cd.getDataType()),
+                        cd.getComponentType(),
+                        fieldFor != null ? fieldFor.get(cd.getName()) : flatbufFieldFor(cd, Map.of()))))
+                .toArray(ChunkWriter[]::new);
 
         final long columnCount =
                 Math.max(1, columns != null ? columns.cardinality() : table.getDefinition().getColumns().size());
@@ -825,13 +1267,13 @@ public class BarrageUtil {
                     // send out the data. Note that although a `BarrageUpdateMetaData` object will
                     // be provided with each unique snapshot, vanilla Flight clients will ignore
                     // these and see only an incoming stream of batches
-                    try (final BarrageStreamGenerator bsg = streamGeneratorFactory.newGenerator(msg, metrics)) {
+                    try (final BarrageMessageWriter bmw = bmwFactory.newMessageWriter(msg, chunkWriters, metrics)) {
                         if (rsIt.hasMore()) {
-                            listener.onNext(bsg.getSnapshotView(snapshotRequestOptions,
+                            listener.onNext(bmw.getSnapshotView(snapshotRequestOptions,
                                     snapshotViewport, false,
                                     msg.rowsIncluded, columns));
                         } else {
-                            listener.onNext(bsg.getSnapshotView(snapshotRequestOptions,
+                            listener.onNext(bmw.getSnapshotView(snapshotRequestOptions,
                                     viewport, reverseViewport,
                                     msg.rowsIncluded, columns));
                         }
@@ -841,9 +1283,16 @@ public class BarrageUtil {
                         // very simplistic logic to take the last snapshot and extrapolate max
                         // number of rows that will not exceed the target UGP processing time
                         // percentage
-                        PeriodicUpdateGraph updateGraph = table.getUpdateGraph().cast();
+                        final long targetCycleDurationMillis;
+                        final UpdateGraph updateGraph = table.getUpdateGraph();
+                        if (updateGraph == null || updateGraph instanceof PoisonedUpdateGraph) {
+                            targetCycleDurationMillis = PeriodicUpdateGraph.getDefaultTargetCycleDurationMillis();
+                        } else {
+                            targetCycleDurationMillis = updateGraph.<PeriodicUpdateGraph>cast()
+                                    .getTargetCycleDurationMillis();
+                        }
                         long targetNanos = (long) (TARGET_SNAPSHOT_PERCENTAGE
-                                * updateGraph.getTargetCycleDurationMillis()
+                                * targetCycleDurationMillis
                                 * 1000000);
 
                         long nanosPerCell = elapsed / (msg.rowsIncluded.size() * columnCount);
@@ -866,20 +1315,28 @@ public class BarrageUtil {
     }
 
     public static void createAndSendSnapshot(
-            BarrageStreamGenerator.Factory streamGeneratorFactory,
+            BarrageMessageWriter.Factory bwmFactory,
             BaseTable<?> table,
             BitSet columns, RowSet viewport, boolean reverseViewport,
-            BarrageSnapshotOptions snapshotRequestOptions,
-            StreamObserver<BarrageStreamGenerator.MessageView> listener,
+            BarrageSnapshotOptions options,
+            StreamObserver<BarrageMessageWriter.MessageView> listener,
             BarragePerformanceLog.SnapshotMetricsHelper metrics) {
 
         // if the table is static and a full snapshot is requested, we can make and send multiple
         // snapshots to save memory and operate more efficiently
         if (!table.isRefreshing()) {
-            createAndSendStaticSnapshot(streamGeneratorFactory, table, columns, viewport, reverseViewport,
-                    snapshotRequestOptions, listener, metrics);
+            createAndSendStaticSnapshot(bwmFactory, table, columns, viewport, reverseViewport,
+                    options, listener, metrics);
             return;
         }
+
+        // noinspection unchecked
+        final ChunkWriter<Chunk<Values>>[] chunkWriters = table.getDefinition().getColumns().stream()
+                .map(cd -> DefaultChunkWriterFactory.INSTANCE.newWriter(BarrageTypeInfo.make(
+                        ReinterpretUtils.maybeConvertToPrimitiveDataType(cd.getDataType()),
+                        cd.getComponentType(),
+                        flatbufFieldFor(cd, Map.of()))))
+                .toArray(ChunkWriter[]::new);
 
         // otherwise snapshot the entire request and send to the client
         final BarrageMessage msg;
@@ -897,12 +1354,11 @@ public class BarrageUtil {
         msg.modColumnData = BarrageMessage.ZERO_MOD_COLUMNS; // no mod column data
 
         // translate the viewport to keyspace and make the call
-        try (final BarrageStreamGenerator bsg = streamGeneratorFactory.newGenerator(msg, metrics);
+        try (final BarrageMessageWriter bmw = bwmFactory.newMessageWriter(msg, chunkWriters, metrics);
                 final RowSet keySpaceViewport = viewport != null
                         ? msg.rowsAdded.subSetForPositions(viewport, reverseViewport)
                         : null) {
-            listener.onNext(bsg.getSnapshotView(
-                    snapshotRequestOptions, viewport, reverseViewport, keySpaceViewport, columns));
+            listener.onNext(bmw.getSnapshotView(options, viewport, reverseViewport, keySpaceViewport, columns));
         }
     }
 }

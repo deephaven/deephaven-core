@@ -10,6 +10,7 @@ import io.deephaven.engine.primitive.iterator.*;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 
 import java.util.Arrays;
+import java.lang.Math;
 
 import static io.deephaven.base.CompareUtils.compare;
 import static io.deephaven.util.QueryConstants.*;
@@ -23,6 +24,17 @@ import static io.deephaven.function.Cast.castDouble;
 @SuppressWarnings({"RedundantCast", "unused", "ManualMinMaxCalculation"})
 public class Numeric {
 
+    //////////////////////////// Constants ////////////////////////////
+
+    /**
+     * The double value that is closer than any other to e, the base of the natural logarithms.
+     */
+    static public final double E = Math.E;
+
+    /**
+     * The double value that is closer than any other to pi, the ratio of the circumference of a circle to its diameter.
+     */
+    static public final double PI = Math.PI;
 
     //////////////////////////// Object ////////////////////////////
 
@@ -3377,6 +3389,653 @@ public class Numeric {
     static public int compare(${pt.boxed} v1, ${pt.boxed} v2) {
         return compare(v1 == null ? ${pt.null} : v1, v2 == null ? ${pt.null} : v2);
     }
+
+    /**
+     * Returns the angle theta from the conversion of rectangular coordinates (x, y) to polar coordinates (r, theta).
+     * This method computes the phase theta by computing an arc tangent of y/x in the range of -pi to pi.
+     * Special cases:
+     * <ul>
+     *   <li>If either argument is NaN, then the result is NaN.</li>
+     *   <li>If the first argument is positive zero and the second argument is positive, or the first argument is positive and finite and the second argument is positive infinity, then the result is positive zero.</li>
+     *   <li>If the first argument is negative zero and the second argument is positive, or the first argument is negative and finite and the second argument is positive infinity, then the result is negative zero.</li>
+     *   <li>If the first argument is positive zero and the second argument is negative, or the first argument is positive and finite and the second argument is negative infinity, then the result is the double value closest to pi.</li>
+     *   <li>If the first argument is negative zero and the second argument is negative, or the first argument is negative and finite and the second argument is negative infinity, then the result is the double value closest to -pi.</li>
+     *   <li>If the first argument is positive and the second argument is positive zero or negative zero, or the first argument is positive infinity and the second argument is finite, then the result is the double value closest to pi/2.</li>
+     *   <li>If the first argument is negative and the second argument is positive zero or negative zero, or the first argument is negative infinity and the second argument is finite, then the result is the double value closest to -pi/2.</li>
+     *   <li>If both arguments are positive infinity, then the result is the double value closest to pi/4.</li>
+     *   <li>If the first argument is positive infinity and the second argument is negative infinity, then the result is the double value closest to 3*pi/4.</li>
+     *   <li>If the first argument is negative infinity and the second argument is positive infinity, then the result is the double value closest to -pi/4.</li>
+     *   <li>If both arguments are negative infinity, then the result is the double value closest to -3*pi/4.</li>
+     * </ul>
+     * The computed result must be within 2 ulps of the exact result. Results must be semi-monotonic.
+     *
+     * @param y the ordinate coordinate
+     * @param x the abscissa coordinate
+     * @return the theta component of the point (r, theta) in polar coordinates that corresponds to the point (x, y) in
+     *    Cartesian coordinates.  If either value is null, returns null.
+     */
+    static public double atan2(${pt.primitive} y, ${pt.primitive} x) {
+        if (isNull(x) || isNull(y)) {
+            return NULL_DOUBLE;
+        }
+
+        return Math.atan2(y, x);
+    }
+
+    /**
+     * Returns the cube root of a value.
+     *
+     * @param x the value
+     * @return the cube root of the value.  If the value is null, returns null.
+     */
+    static public double cbrt(${pt.primitive} x) {
+        if (isNull(x)) {
+            return NULL_DOUBLE;
+        }
+
+        return Math.cbrt(x);
+    }
+
+    /**
+     * Returns the hyperbolic cosine.
+     *
+     * @param x the value
+     * @return the hyperbolic cosine of the value.  If the value is null, returns null.
+     */
+    static public double cosh(${pt.primitive} x) {
+        if (isNull(x)) {
+            return NULL_DOUBLE;
+        }
+
+        return Math.cosh(x);
+    }
+
+    /**
+     * Returns e^x - 1.
+     *
+     * @param x the value
+     * @return e^x-1.  If the value is null, returns null.
+     */
+     static public double expm1(${pt.primitive} x) {
+        if (isNull(x)) {
+            return NULL_DOUBLE;
+        }
+
+        return Math.expm1(x);
+     }
+
+    /**
+     * Returns the hypotenuse of a right-angled triangle, sqrt(x^2 + y^2), without intermediate overflow or underflow.
+     *
+     * @param x the first value.
+     * @param y the second value.
+     * @return the hypotenuse of a right-angled triangle.  If either value is null, returns null.
+     */
+    static public double hypot(${pt.primitive} x, ${pt.primitive} y) {
+        if (isNull(x) || isNull(y)) {
+            return NULL_DOUBLE;
+        }
+
+        return Math.hypot(x, y);
+    }
+
+    /**
+     * Returns the base 10 logarithm of a value.
+     *
+     * @param x the value.
+     * @return the base 10 logarithm of the value.  If the value is null, returns null.
+     */
+     static public double log10(${pt.primitive} x) {
+        if (isNull(x)) {
+            return NULL_DOUBLE;
+        }
+
+        return Math.log10(x);
+     }
+
+     /**
+      * Returns the natural logarithm of the sum of the argument and 1.
+      *
+      * @param x the value.
+      * @return the natural logarithm of the sum of the argument and 1.  If the value is null, returns null.
+      */
+     static public double log1p(${pt.primitive} x) {
+        if (isNull(x)) {
+            return NULL_DOUBLE;
+        }
+
+        return Math.log1p(x);
+     }
+
+     <#if pt.valueType.isFloat >
+     /**
+      * Returns x × 2^scaleFactor rounded as if performed by a single correctly rounded floating-point multiply to a
+      * member of the ${pt.primitive} value set.
+      *
+      * @param x the value.
+      * @param scaleFactor the scale factor.
+      * @return x × 2scaleFactor rounded as if performed by a single correctly rounded floating-point multiply to a
+      *     member of the double value set.  If the either value is null, returns null.
+      */
+     static public ${pt.primitive} scalb(${pt.primitive} x, int scaleFactor) {
+        if (isNull(x) || isNull(scaleFactor)) {
+            return ${pt.null};
+        }
+
+        return Math.scalb(x, scaleFactor);
+     }
+     </#if>
+
+     /**
+      * Returns the hyperbolic sine of a value.
+      *
+      * @param x the value
+      * @return the hyperbolic sine of the value.  If the value is null, returns null.
+      */
+     static public double sinh(${pt.primitive} x) {
+        if (isNull(x)) {
+            return NULL_DOUBLE;
+        }
+
+        return Math.sinh(x);
+     }
+
+     /**
+      * Returns the hyperbolic tangent of a value.
+      *
+      * @param x the value
+      * @return the hyperbolic tangent of the value.  If the value is null, returns null.
+      */
+     static public double tanh(${pt.primitive} x) {
+        if (isNull(x)) {
+            return NULL_DOUBLE;
+        }
+
+        return Math.tanh(x);
+     }
+
+    /**
+     * Returns the first argument with the sign of the second argument.
+     *
+     * @param magnitude the value to return
+     * @param sign the sign for the return value
+     * @return the value with the magnitude of the first argument and the sign of the second argument.
+     *    If either value is null, returns null.
+     */
+    static public ${pt.primitive} copySign(${pt.primitive} magnitude, ${pt.primitive} sign) {
+        if (isNull(magnitude) || isNull(sign)) {
+            return ${pt.null};
+        }
+
+        <#if pt.valueType.isFloat >
+        return Math.copySign(magnitude, sign);
+        <#else>
+        return (${pt.primitive}) ((magnitude < 0 ? -magnitude : magnitude) * (sign < 0 ? -1 : 1));
+        </#if>
+    }
+
+    <#if pt.valueType.isInteger>
+    /**
+     * Returns the sum of its arguments, throwing an exception if the result overflows.
+     *
+     * @param x the first value.
+     * @param y the second value.
+     * @return the result of adding the arguments.  If either value is null, returns null.
+     * @throws ArithmeticException if the result overflows.
+     */
+    static public ${pt.primitive} addExact(${pt.primitive} x, ${pt.primitive} y) {
+        if (isNull(x) || isNull(y)) {
+            return ${pt.null};
+        }
+
+        <#if pt.primitive == "byte" || pt.primitive == "short">
+        int val = Math.addExact(x, y);
+
+        if ( val > ${pt.maxValue} || val < ${pt.minValue} || isNull(val) ) {
+            throw new ArithmeticException("Overflow: " + x + " + " + y);
+        }
+
+        return (${pt.primitive}) val;
+        <#else>
+        ${pt.primitive} val = Math.addExact(x, y);
+
+        if ( isNull(val) ) {
+            throw new ArithmeticException("Overflow: " + x + " + " + y);
+        }
+
+        return val;
+        </#if>
+    }
+    </#if>
+
+    <#if pt.valueType.isInteger>
+    /**
+     * Returns the difference of its arguments, throwing an exception if the result overflows.
+     *
+     * @param x the first value.
+     * @param y the second value.
+     * @return the result of subtracting the arguments.  If either value is null, returns null.
+     * @throws ArithmeticException if the result overflows.
+     */
+    static public ${pt.primitive} subtractExact(${pt.primitive} x, ${pt.primitive} y) {
+        if (isNull(x) || isNull(y)) {
+            return ${pt.null};
+        }
+
+        <#if pt.primitive == "byte" || pt.primitive == "short">
+        int val = Math.subtractExact(x, y);
+
+        if ( val > ${pt.maxValue} || val < ${pt.minValue} || isNull(val)) {
+            throw new ArithmeticException("Overflow: " + x + " - " + y);
+        }
+
+        return (${pt.primitive}) val;
+        <#else>
+        ${pt.primitive} val = Math.subtractExact(x, y);
+
+        if ( isNull(val) ) {
+            throw new ArithmeticException("Overflow: " + x + " - " + y);
+        }
+
+        return val;
+        </#if>
+    }
+    </#if>
+
+     <#if pt.valueType.isInteger>
+     /**
+      * Returns the product of the arguments, throwing an exception if the result overflows.
+      *
+      * @param x the first value.
+      * @param y the second value.
+      * @return the result of multiplying the arguments.  If either value is null, returns null.
+      * @throws ArithmeticException if the result overflows.
+      */
+     static public ${pt.primitive} multiplyExact(${pt.primitive} x, ${pt.primitive} y) {
+         if (isNull(x) || isNull(y)) {
+             return ${pt.null};
+         }
+
+         <#if pt.primitive == "byte" || pt.primitive == "short">
+         int val = Math.multiplyExact(x, y);
+
+         if ( val > ${pt.maxValue} || val < ${pt.minValue} || isNull(val) ) {
+            throw new ArithmeticException("Overflow: " + x + " * " + y);
+         }
+
+         return (${pt.primitive}) val;
+         <#else>
+        ${pt.primitive} val = Math.multiplyExact(x, y);
+
+        if ( isNull(val) ) {
+            throw new ArithmeticException("Overflow: " + x + " * " + y);
+        }
+
+        return val;
+         </#if>
+     }
+     </#if>
+
+    <#if pt.valueType.isInteger>
+    /**
+     * Returns the argument incremented by one, throwing an exception if the result overflows.
+     *
+     * @param x the value to increment.
+     * @return the result of increment by one.  If the value is null, returns null.
+     * @throws ArithmeticException if the result overflows.
+     */
+    static public ${pt.primitive} incrementExact(${pt.primitive} x) {
+        if (isNull(x)) {
+            return ${pt.null};
+        }
+
+        <#if pt.primitive == "byte" || pt.primitive == "short">
+        int val = Math.incrementExact(x);
+
+        if ( val > ${pt.maxValue} || val < ${pt.minValue} || isNull(val) ) {
+            throw new ArithmeticException("Overflow: " + x);
+        }
+
+        return (${pt.primitive}) val;
+        <#else>
+        if (x == ${pt.maxValue}) {
+            throw new ArithmeticException("Overflow: " + x);
+        }
+
+        ${pt.primitive} val = Math.incrementExact(x);
+
+        if ( isNull(val) ) {
+            throw new ArithmeticException("Overflow: " + x);
+        }
+
+        return val;
+        </#if>
+    }
+    </#if>
+
+    <#if pt.valueType.isInteger>
+    /**
+     * Returns the argument decremented by one, throwing an exception if the result overflows.
+     *
+     * @param x the value to decrement.
+     * @return the result of decrementing by one.  If the value is null, returns null.
+     * @throws ArithmeticException if the result overflows.
+     */
+    static public ${pt.primitive} decrementExact(${pt.primitive} x) {
+        if (isNull(x)) {
+            return ${pt.null};
+        }
+
+        <#if pt.primitive == "byte" || pt.primitive == "short">
+        int val = Math.decrementExact(x);
+
+        if ( val > ${pt.maxValue} || val < ${pt.minValue} || isNull(val) ) {
+            throw new ArithmeticException("Overflow: " + x);
+        }
+
+        return (${pt.primitive}) val;
+        <#else>
+        if (x == ${pt.minValue}) {
+            throw new ArithmeticException("Overflow: " + x);
+        }
+
+        ${pt.primitive} val = Math.decrementExact(x);
+
+        if ( isNull(val) ) {
+            throw new ArithmeticException("Overflow: " + x);
+        }
+
+        return val;
+        </#if>
+    }
+    </#if>
+
+     <#if pt.valueType.isInteger>
+     /**
+      * Returns the negation of the argument, throwing an exception if the result overflows.
+      *
+      * @param x the value to negate.
+      * @return the negation of the argument.  If the value is null, returns null.
+      * @throws ArithmeticException if the result overflows.
+      */
+     public static ${pt.primitive} negateExact(${pt.primitive} x) {
+         if (isNull(x)) {
+             return ${pt.null};
+         }
+
+         <#if pt.primitive == "byte" || pt.primitive == "short">
+         int val = Math.negateExact(x);
+
+         if ( val > ${pt.maxValue} || val < ${pt.minValue} || isNull(val) ) {
+            throw new ArithmeticException("Overflow: -" + x);
+         }
+
+         return (${pt.primitive}) val;
+         <#else>
+         ${pt.primitive} val = Math.negateExact(x);
+
+         if ( isNull(val) ) {
+             throw new ArithmeticException("Overflow: -" + x);
+         }
+
+         return val;
+         </#if>
+     }
+     </#if>
+
+    <#if pt.valueType.isInteger>
+     /**
+      * Returns the largest (closest to positive infinity) int value that is less than or equal to the
+      * algebraic quotient.
+      *
+      * @param x the dividend.
+      * @param y the divisor.
+      * @return the largest (closest to positive infinity) int value that is less than or equal to the
+      *    algebraic quotient.  If either value is null, returns null.
+      */
+    static public ${pt.primitive} floorDiv(${pt.primitive} x, ${pt.primitive} y) {
+        if (isNull(x) || isNull(y)) {
+            return ${pt.null};
+        }
+
+        return (${pt.primitive}) Math.floorDiv(x, y);
+    }
+    </#if>
+
+    <#if pt.valueType.isInteger>
+     /**
+      * Returns the floor modulus of the arguments.
+      *
+      * @param x the dividend.
+      * @param y the divisor.
+      * @return the floor modulus x.  If either value is null, returns null.
+      */
+    static public ${pt.primitive} floorMod(${pt.primitive} x, ${pt.primitive} y) {
+        if (isNull(x) || isNull(y)) {
+            return ${pt.null};
+        }
+
+        return (${pt.primitive}) Math.floorMod(x, y);
+    }
+    </#if>
+
+    <#if pt.valueType.isFloat>
+     /**
+      * Returns the unbiased exponent used in the representation of the argument.
+      *
+      * @param x the value.
+      * @return the unbiased exponent used in the representation of the argument.  If the value is null, returns null.
+      */
+    static public int getExponent(${pt.primitive} x) {
+        if (isNull(x)) {
+            return NULL_INT;
+        }
+
+        return Math.getExponent(x);
+    }
+    </#if>
+
+    <#if pt.valueType.isFloat>
+    /**
+     * Returns the IEEE 754 remainder of the division of the arguments.
+     *
+     * @param x the dividend.
+     * @param y the divisor.
+     * @return the IEEE 754 remainder of the division of the arguments.  If either value is null, returns null.
+     */
+    static public ${pt.primitive} IEEEremainder(${pt.primitive} x, ${pt.primitive} y) {
+        if (isNull(x) || isNull(y)) {
+            return ${pt.null};
+        }
+
+        return (${pt.primitive}) Math.IEEEremainder(x, y);
+    }
+    </#if>
+
+     <#if pt.valueType.isFloat>
+     /**
+      * Returns the floating-point number adjacent to the first argument in the direction of the second argument.
+      *
+      * @param start the starting value.
+      * @param direction the direction.
+      * @return the floating-point number adjacent to the first argument in the direction of the second argument.
+      *    If either value is null, returns null.
+      */
+     static public ${pt.primitive} nextAfter(${pt.primitive} start, ${pt.primitive} direction) {
+        if (isNull(start) || isNull(direction)) {
+            return ${pt.null};
+        }
+
+        // skip over nulls
+        ${pt.primitive} next = Math.nextAfter(start, direction);
+        return isNull(next) ? Math.nextAfter(next, direction) : next;
+     }
+     </#if>
+
+     <#if pt.valueType.isFloat>
+     /**
+      * Returns the floating-point number adjacent to the argument in the direction of positive infinity.
+      *
+      * @param x the value.
+      * @return the floating-point number adjacent to the argument in the direction of positive infinity.
+      *    If the value is null, returns null.
+      */
+     static public ${pt.primitive} nextUp(${pt.primitive} x) {
+        if (isNull(x)) {
+            return ${pt.null};
+        }
+
+        // skip over nulls
+        ${pt.primitive} next = Math.nextUp(x);
+        return isNull(next) ? Math.nextUp(next) : next;
+     }
+     </#if>
+
+     <#if pt.valueType.isFloat>
+     /**
+      * Returns the floating-point number adjacent to the argument in the direction of negative infinity.
+      *
+      * @param x the value.
+      * @return the floating-point number adjacent to the argument in the direction of negative infinity.
+      *    If the value is null, returns null.
+      */
+     static public ${pt.primitive} nextDown(${pt.primitive} x) {
+        if (isNull(x)) {
+            return ${pt.null};
+        }
+
+        // skip over nulls
+        ${pt.primitive} next = Math.nextDown(x);
+        return isNull(next) ? Math.nextDown(next) : next;
+     }
+     </#if>
+
+    /**
+     * Converts an angle measured in radians to an approximately equivalent angle measured in degrees.
+     *
+     * @param x the angle in radians
+     * @return the measurement of the angle x in degrees.  If the value is null, returns null.
+     */
+    static public double toDegrees(${pt.primitive} x) {
+        if (isNull(x)) {
+            return NULL_DOUBLE;
+        }
+
+        return Math.toDegrees(x);
+    }
+
+    /**
+     * Converts an angle measured in degrees to an approximately equivalent angle measured in radians.
+     *
+     * @param x the angle in degrees
+     * @return the measurement of the angle x in radians.  If the value is null, returns null.
+     */
+    static public double toRadians(${pt.primitive} x) {
+        if (isNull(x)) {
+            return NULL_DOUBLE;
+        }
+
+        return Math.toRadians(x);
+    }
+
+    <#if pt.valueType.isInteger>
+    /**
+     * Returns the value of the argument as an int, throwing an exception if the value overflows an int.
+     *
+     * @param x the value.
+     * @return the value as an int.  If either value is null, returns null.
+     * @throws ArithmeticException if the result overflows.
+     */
+    static public int toIntExact(${pt.primitive} x) {
+        if (isNull(x)) {
+            return NULL_INT;
+        }
+
+        <#if pt.primitive == "byte" || pt.primitive == "short" || pt.primitive == "int" >
+        return x;
+        <#else>
+        final int val = Math.toIntExact(x);
+
+        if ( isNull(val) ) {
+            throw new ArithmeticException("Overflow: ${pt.primitive} value will not fit in an int " + x);
+        }
+
+        return val;
+        </#if>
+    }
+    </#if>
+
+    <#if pt.valueType.isInteger>
+    /**
+     * Returns the value of the argument as a short, throwing an exception if the value overflows a short.
+     *
+     * @param x the value.
+     * @return the value as a short.  If either value is null, returns null.
+     * @throws ArithmeticException if the result overflows.
+     */
+    static public short toShortExact(${pt.primitive} x) {
+        if (isNull(x)) {
+            return NULL_SHORT;
+        }
+
+        <#if pt.primitive == "byte" || pt.primitive == "short" >
+        return x;
+        <#else>
+        final short val = (short) x;
+
+        if (x > Short.MAX_VALUE || x < Short.MIN_VALUE || isNull(val) ) {
+            throw new ArithmeticException("Overflow: ${pt.primitive} value will not fit in a short " + x);
+        }
+
+        return val;
+        </#if>
+    }
+    </#if>
+
+    <#if pt.valueType.isInteger>
+    /**
+     * Returns the value of the argument as a byte, throwing an exception if the value overflows a byte.
+     *
+     * @param x the value.
+     * @return the value as a byte.  If either value is null, returns null.
+     * @throws ArithmeticException if the result overflows.
+     */
+    static public short toByteExact(${pt.primitive} x) {
+        if (isNull(x)) {
+            return NULL_BYTE;
+        }
+
+        <#if pt.primitive == "byte" >
+        return x;
+        <#else>
+        final byte val = (byte) x;
+
+        if (x > Byte.MAX_VALUE || x < Byte.MIN_VALUE || isNull(val) ) {
+            throw new ArithmeticException("Overflow: ${pt.primitive} value will not fit in a byte " + x);
+        }
+
+        return val;
+        </#if>
+    }
+    </#if>
+
+    <#if pt.valueType.isFloat>
+    /**
+     * Returns the size of an ulp of the argument. An ulp, unit in the last place, of a value is the positive
+     * distance between this floating-point value and the value next larger in magnitude.
+     * Note that for non-NaN x, ulp(-x) == ulp(x).
+     *
+     * @param x the value.
+     * @return the size of an ulp of the argument.  If the value is null, returns null.
+     */
+    static public ${pt.primitive} ulp(${pt.primitive} x) {
+        if (isNull(x)) {
+            return ${pt.null};
+        }
+
+        return Math.ulp(x);
+    }
+    </#if>
 
     </#if>
     </#list>

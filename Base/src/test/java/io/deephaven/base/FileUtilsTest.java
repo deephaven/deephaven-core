@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.base;
 
@@ -52,6 +52,9 @@ public class FileUtilsTest extends TestCase {
 
         // Check if multiple slashes get normalized
         Assert.assertEquals("s3://bucket/key/", FileUtils.convertToURI("s3://bucket///key///", true).toString());
+
+        // Check if trailing slash gets added to bucket root
+        Assert.assertEquals("s3://bucket/", FileUtils.convertToURI("s3://bucket", true).toString());
 
         try {
             FileUtils.convertToURI("", false);

@@ -25,6 +25,8 @@ dependencies {
     api(project(':Integrations')) {
         because 'downstream dagger compile'
     }
+
+    implementation project(":util-processenvironment")
 }
 
 def testEmbeddedServer = Docker.registerDockerTask(project, 'testEmbeddedServer') {

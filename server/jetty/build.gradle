@@ -10,6 +10,12 @@ dependencies {
     api(project(':Integrations')) {
         because 'downstream dagger compile'
     }
+
+    implementation project(':util-thread')
+    compileOnlyApi(project(':util-thread')) {
+        because 'downstream dagger compile'
+    }
+
     runtimeOnly(project(':web'))
 
     implementation libs.dagger
@@ -20,6 +26,7 @@ dependencies {
 
     implementation platform(libs.grpc.bom)
     implementation platform(libs.jetty.bom)
+    implementation platform(libs.jetty.ee10.bom)
 
     api libs.jakarata.servlet.api
     implementation libs.jetty.servlet
@@ -48,6 +55,8 @@ dependencies {
     testImplementation project(':server-test-utils')
     testImplementation libs.junit4
     testImplementation libs.assertj
+
+    testImplementation project(':proto:proto-backplane-grpc-flight')
 
     testRuntimeOnly project(':log-to-slf4j')
     testRuntimeOnly libs.slf4j.simple

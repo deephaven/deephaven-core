@@ -1,26 +1,26 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.parquet.table.location;
 
 import io.deephaven.engine.table.impl.locations.local.URITableLocationKey;
 import io.deephaven.parquet.table.ParquetInstructions;
-import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.TableLocationKey;
 import io.deephaven.parquet.base.ParquetFileReader;
 import io.deephaven.util.channel.SeekableChannelsProvider;
 import io.deephaven.util.channel.SeekableChannelsProviderLoader;
 import org.apache.commons.io.FilenameUtils;
-import org.apache.parquet.format.converter.ParquetMetadataConverter;
 import org.apache.parquet.format.RowGroup;
+import org.apache.parquet.hadoop.metadata.FileMetaData;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
+import org.apache.parquet.schema.MessageType;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.IOException;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.IntStream;
 
 import static io.deephaven.parquet.base.ParquetUtils.PARQUET_FILE_EXTENSION;
@@ -54,9 +54,8 @@ public class ParquetTableLocationKey extends URITableLocationKey {
     public ParquetTableLocationKey(@NotNull final URI parquetFileUri, final int order,
             @Nullable final Map<String, Comparable<?>> partitions,
             @NotNull final ParquetInstructions readInstructions) {
-        this(parquetFileUri, order, partitions, readInstructions,
-                SeekableChannelsProviderLoader.getInstance().fromServiceLoader(parquetFileUri,
-                        readInstructions.getSpecialInstructions()));
+        this(parquetFileUri, order, partitions, SeekableChannelsProviderLoader.getInstance()
+                .load(parquetFileUri.getScheme(), readInstructions.getSpecialInstructions()));
     }
 
     /**
@@ -67,15 +66,36 @@ public class ParquetTableLocationKey extends URITableLocationKey {
      * @param partitions The table partitions enclosing the table location keyed by {@code this}. Note that if this
      *        parameter is {@code null}, the location will be a member of no partitions. An ordered copy of the map will
      *        be made, so the calling code is free to mutate the map after this call
-     * @param readInstructions the instructions for customizations while reading
+     * @param readInstructions the instructions for customizations while reading, unused
      * @param channelsProvider the provider for reading the file
+     * @deprecated the {@code readInstructions} parameter is unused, please
+     *             use{@link #ParquetTableLocationKey(URI, int, Map, SeekableChannelsProvider)}
      */
+    @Deprecated(forRemoval = true)
     public ParquetTableLocationKey(@NotNull final URI parquetFileUri, final int order,
             @Nullable final Map<String, Comparable<?>> partitions,
             @NotNull final ParquetInstructions readInstructions,
             @NotNull final SeekableChannelsProvider channelsProvider) {
+        this(parquetFileUri, order, partitions, channelsProvider);
+    }
+
+    /**
+     * Construct a new ParquetTableLocationKey for the supplied {@code parquetFileUri} and {@code partitions}.
+     *
+     * @param parquetFileUri The parquet file that backs the keyed location. Will be adjusted to an absolute path.
+     * @param order Explicit ordering index, taking precedence over other fields
+     * @param partitions The table partitions enclosing the table location keyed by {@code this}. Note that if this
+     *        parameter is {@code null}, the location will be a member of no partitions. An ordered copy of the map will
+     *        be made, so the calling code is free to mutate the map after this call
+     * @param channelsProvider the provider for reading the file
+     */
+    public ParquetTableLocationKey(
+            @NotNull final URI parquetFileUri,
+            final int order,
+            @Nullable final Map<String, Comparable<?>> partitions,
+            @NotNull final SeekableChannelsProvider channelsProvider) {
         super(validateParquetFile(parquetFileUri), order, partitions);
-        this.channelsProvider = channelsProvider;
+        this.channelsProvider = Objects.requireNonNull(channelsProvider);
     }
 
     private static URI validateParquetFile(@NotNull final URI parquetFileUri) {
@@ -118,8 +138,8 @@ public class ParquetTableLocationKey extends URITableLocationKey {
     }
 
     /**
-     * Get a previously-{@link #setMetadata(ParquetMetadata) set} or on-demand created {@link ParquetMetadata} for this
-     * location key's {@code file}.
+     * Get a previously-{@link #setMetadata(ParquetMetadata) set} or the {@link ParquetMetadata} for this location key's
+     * {@code file}.
      *
      * @return A {@link ParquetMetadata} for this location key's {@code file}.
      */
@@ -127,11 +147,8 @@ public class ParquetTableLocationKey extends URITableLocationKey {
         if (metadata != null) {
             return metadata;
         }
-        try {
-            return metadata = new ParquetMetadataConverter().fromParquetMetadata(getFileReader().fileMetaData);
-        } catch (IOException e) {
-            throw new TableDataException("Failed to convert Parquet file metadata: " + getURI(), e);
-        }
+        // No need to cache the metadata; it is already present on the fileReader
+        return getFileReader().getMetadata();
     }
 
     /**
@@ -142,6 +159,28 @@ public class ParquetTableLocationKey extends URITableLocationKey {
      */
     public synchronized void setMetadata(final ParquetMetadata metadata) {
         this.metadata = metadata;
+    }
+
+    /**
+     * Equivalent to {@code getMetadata().getFileMetaData()}.
+     *
+     * @return the file metadata
+     * @see #getMetadata()
+     * @see ParquetMetadata#getFileMetaData()
+     */
+    public FileMetaData getFileMetadata() {
+        return getMetadata().getFileMetaData();
+    }
+
+    /**
+     * Equivalent to {@code getFileMetadata().getSchema()}.
+     *
+     * @return the file metadata
+     * @see #getFileMetadata()
+     * @see FileMetaData#getSchema()
+     */
+    public MessageType getSchema() {
+        return getFileMetadata().getSchema();
     }
 
     /**
@@ -177,5 +216,13 @@ public class ParquetTableLocationKey extends URITableLocationKey {
      */
     public synchronized void setRowGroupIndices(final int[] rowGroupIndices) {
         this.rowGroupIndices = rowGroupIndices;
+    }
+
+    @Override
+    public synchronized void clear() {
+        metadata = null;
+        fileReader = null;
+        rowGroupIndices = null;
+        channelsProvider = null;
     }
 }

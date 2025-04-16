@@ -1,13 +1,14 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.iceberg.util;
 
 import io.deephaven.extensions.s3.S3Instructions.Builder;
 import io.deephaven.extensions.s3.testlib.SingletonContainers.MinIO;
-import io.deephaven.stats.util.OSUtil;
+import io.deephaven.base.OSUtil;
 import org.junit.jupiter.api.Assumptions;
-import org.junit.BeforeClass;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 
 import java.util.Map;
@@ -17,9 +18,11 @@ import static org.apache.iceberg.aws.s3.S3FileIOProperties.ACCESS_KEY_ID;
 import static org.apache.iceberg.aws.s3.S3FileIOProperties.ENDPOINT;
 import static org.apache.iceberg.aws.s3.S3FileIOProperties.SECRET_ACCESS_KEY;
 
+@Tag("testcontainers")
+@Deprecated
 public class IcebergMinIOTest extends IcebergToolsTest {
 
-    @BeforeClass
+    @BeforeAll
     public static void initContainer() {
         // TODO(deephaven-core#5116): MinIO testcontainers does not work on OS X
         Assumptions.assumeFalse(OSUtil.runningMacOS(), "OSUtil.runningMacOS()");
@@ -38,12 +41,11 @@ public class IcebergMinIOTest extends IcebergToolsTest {
     }
 
     @Override
-    public Map<String, String> s3Properties() {
+    public Map<String, String> properties() {
         return Map.of(
                 ENDPOINT, MinIO.s3Endpoint(),
                 CLIENT_REGION, MinIO.region(),
                 ACCESS_KEY_ID, MinIO.accessKey(),
                 SECRET_ACCESS_KEY, MinIO.secretAccessKey());
     }
-
 }

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.parquet.table.layout;
 
@@ -31,7 +31,6 @@ public final class ParquetFlatPartitionedLayout implements TableLocationKeyFinde
 
     private final URI tableRootDirectory;
     private final Map<URI, ParquetTableLocationKey> cache;
-    private final ParquetInstructions readInstructions;
     private final SeekableChannelsProvider channelsProvider;
 
     /**
@@ -42,9 +41,8 @@ public final class ParquetFlatPartitionedLayout implements TableLocationKeyFinde
             @NotNull final ParquetInstructions readInstructions) {
         this.tableRootDirectory = tableRootDirectoryURI;
         this.cache = Collections.synchronizedMap(new HashMap<>());
-        this.readInstructions = readInstructions;
-        this.channelsProvider = SeekableChannelsProviderLoader.getInstance().fromServiceLoader(tableRootDirectory,
-                readInstructions.getSpecialInstructions());
+        this.channelsProvider = SeekableChannelsProviderLoader.getInstance()
+                .load(tableRootDirectory.getScheme(), readInstructions.getSpecialInstructions());
     }
 
     public String toString() {
@@ -80,6 +78,6 @@ public final class ParquetFlatPartitionedLayout implements TableLocationKeyFinde
     }
 
     private ParquetTableLocationKey locationKey(@NotNull final URI uri) {
-        return new ParquetTableLocationKey(uri, 0, null, readInstructions, channelsProvider);
+        return new ParquetTableLocationKey(uri, 0, null, channelsProvider);
     }
 }

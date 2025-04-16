@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.web.client.api.subscription;
 
@@ -7,16 +7,13 @@ import com.google.flatbuffers.FlatBufferBuilder;
 import com.vertispan.tsdefs.annotations.TsName;
 import com.vertispan.tsdefs.annotations.TsTypeRef;
 import elemental2.core.JsArray;
-import elemental2.dom.CustomEvent;
-import elemental2.dom.CustomEventInit;
 import elemental2.promise.Promise;
 import io.deephaven.barrage.flatbuf.BarrageMessageType;
 import io.deephaven.barrage.flatbuf.BarrageSnapshotRequest;
 import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
-import io.deephaven.extensions.barrage.ColumnConversionMode;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb.FlightData;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.config_pb.ConfigValue;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.FlattenRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.config_pb.ConfigValue;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.FlattenRequest;
 import io.deephaven.util.mutable.MutableLong;
 import io.deephaven.web.client.api.Column;
 import io.deephaven.web.client.api.JsRangeSet;
@@ -24,10 +21,11 @@ import io.deephaven.web.client.api.JsTable;
 import io.deephaven.web.client.api.TableData;
 import io.deephaven.web.client.api.WorkerConnection;
 import io.deephaven.web.client.api.barrage.WebBarrageMessage;
-import io.deephaven.web.client.api.barrage.WebBarrageStreamReader;
+import io.deephaven.web.client.api.barrage.WebBarrageMessageReader;
 import io.deephaven.web.client.api.barrage.WebBarrageUtils;
 import io.deephaven.web.client.api.barrage.data.WebBarrageSubscription;
 import io.deephaven.web.client.api.barrage.stream.BiDiStream;
+import io.deephaven.web.client.api.event.Event;
 import io.deephaven.web.client.fu.JsLog;
 import io.deephaven.web.client.fu.LazyPromise;
 import io.deephaven.web.client.state.ClientTableState;
@@ -111,7 +109,7 @@ public class TableViewportSubscription extends AbstractTableSubscription {
     }
 
     public TableViewportSubscription(ClientTableState state, WorkerConnection connection, JsTable existingTable) {
-        super(state, connection);
+        super(SubscriptionType.VIEWPORT_SUBSCRIPTION, state, connection);
         this.original = existingTable;
 
         initialState = existingTable.state();
@@ -137,16 +135,14 @@ public class TableViewportSubscription extends AbstractTableSubscription {
     protected void notifyUpdate(RangeSet rowsAdded, RangeSet rowsRemoved, RangeSet totalMods, ShiftedRange[] shifted) {
         // viewport subscriptions are sometimes required to notify of size change events
         if (rowsAdded.size() != rowsRemoved.size() && originalActive) {
-            fireEventWithDetail(JsTable.EVENT_SIZECHANGED, size());
+            fireEvent(JsTable.EVENT_SIZECHANGED, size());
         }
         UpdateEventData detail = new ViewportEventData(barrageSubscription, rowStyleColumn, getColumns(), rowsAdded,
                 rowsRemoved, totalMods, shifted);
 
         detail.setOffset(this.viewportRowSet.getFirstRow());
         this.viewportData = detail;
-        CustomEventInit<UpdateEventData> event = CustomEventInit.create();
-        event.setDetail(detail);
-        refire(new CustomEvent<>(EVENT_UPDATED, event));
+        refire(new Event<>(EVENT_UPDATED, detail));
 
         if (hasListeners(EVENT_ROWADDED) || hasListeners(EVENT_ROWREMOVED) || hasListeners(EVENT_ROWUPDATED)) {
             RangeSet modifiedCopy = totalMods.copy();
@@ -175,9 +171,8 @@ public class TableViewportSubscription extends AbstractTableSubscription {
     private void fireLegacyEventOnRowsetEntries(String eventName, UpdateEventData updateEventData, RangeSet rowset) {
         if (hasListeners(eventName)) {
             rowset.indexIterator().forEachRemaining((long row) -> {
-                CustomEventInit<JsPropertyMap<?>> addedEvent = CustomEventInit.create();
-                addedEvent.setDetail(wrap((SubscriptionRow) updateEventData.getRows().getAt((int) row), (int) row));
-                fireEvent(eventName, addedEvent);
+                JsPropertyMap<?> detail = wrap((SubscriptionRow) updateEventData.getRows().getAt((int) row), (int) row);
+                fireEvent(eventName, detail);
             });
         }
     }
@@ -188,26 +183,16 @@ public class TableViewportSubscription extends AbstractTableSubscription {
 
     @Override
     public void fireEvent(String type) {
-        refire(new CustomEvent<>(type));
+        refire(new Event<>(type, null));
     }
 
     @Override
-    public <T> void fireEventWithDetail(String type, T detail) {
-        CustomEventInit<T> init = CustomEventInit.create();
-        init.setDetail(detail);
-        refire(new CustomEvent<T>(type, init));
+    public <T> void fireEvent(String type, T detail) {
+        refire(new Event<T>(type, detail));
     }
 
     @Override
-    public <T> void fireEvent(String type, CustomEventInit<T> init) {
-        refire(new CustomEvent<T>(type, init));
-    }
-
-    @Override
-    public <T> void fireEvent(String type, CustomEvent<T> e) {
-        if (!type.equals(e.type)) {
-            throw new IllegalArgumentException(type + " != " + e.type);
-        }
+    public <T> void fireEvent(Event<T> e) {
         refire(e);
     }
 
@@ -228,16 +213,16 @@ public class TableViewportSubscription extends AbstractTableSubscription {
      * @param e the event to fire
      * @param <T> the type of the custom event data
      */
-    private <T> void refire(CustomEvent<T> e) {
+    private <T> void refire(Event<T> e) {
         // explicitly calling super.fireEvent to avoid calling ourselves recursively
-        super.fireEvent(e.type, e);
+        super.fireEvent(e);
         if (originalActive && initialState == original.state()) {
             // When these fail to match, it probably means that the original's state was paused, but we're still
             // holding on to it. Since we haven't been internalClose()d yet, that means we're still waiting for
             // the new state to resolve or fail, so we can be restored, or stopped. In theory, we should put this
             // assert back, and make the pause code also tell us to pause.
             // assert initialState == original.state() : "Table owning this viewport subscription forgot to release it";
-            original.fireEvent(e.type, e);
+            original.fireEvent(e);
         }
     }
 
@@ -263,7 +248,11 @@ public class TableViewportSubscription extends AbstractTableSubscription {
 
     public void setInternalViewport(double firstRow, double lastRow, Column[] columns, Double updateIntervalMs,
             Boolean isReverseViewport) {
+        // Until we've created the stream, we just cache the requested viewport
         if (status == Status.STARTING) {
+            if (firstRow < 0 || firstRow > lastRow) {
+                throw new IllegalArgumentException("Invalid viewport row range: " + firstRow + " to " + lastRow);
+            }
             this.firstRow = firstRow;
             this.lastRow = lastRow;
             this.columns = columns;
@@ -287,8 +276,12 @@ public class TableViewportSubscription extends AbstractTableSubscription {
             isReverseViewport = false;
         }
         RangeSet viewport = RangeSet.ofRange((long) firstRow, (long) lastRow);
-        this.sendBarrageSubscriptionRequest(viewport, Js.uncheckedCast(columns), updateIntervalMs,
-                isReverseViewport);
+        try {
+            this.sendBarrageSubscriptionRequest(viewport, Js.uncheckedCast(columns), updateIntervalMs,
+                    isReverseViewport);
+        } catch (Exception e) {
+            fireEvent(JsTable.EVENT_REQUEST_FAILED, e.getMessage());
+        }
     }
 
     /**
@@ -296,7 +289,7 @@ public class TableViewportSubscription extends AbstractTableSubscription {
      */
     @JsMethod
     public void close() {
-        if (status == Status.DONE) {
+        if (isClosed()) {
             JsLog.warn("TableViewportSubscription.close called on subscription that's already done.");
         }
         retained = false;
@@ -315,13 +308,11 @@ public class TableViewportSubscription extends AbstractTableSubscription {
 
         reconnectSubscription.remove();
 
-        if (retained || status == Status.DONE) {
+        if (retained || isClosed()) {
             // the JsTable has indicated it is no longer interested in this viewport, but other calling
             // code has retained it, keep it open for now.
             return;
         }
-
-        status = Status.DONE;
 
         super.close();
     }
@@ -353,17 +344,19 @@ public class TableViewportSubscription extends AbstractTableSubscription {
         BarrageSnapshotOptions options = BarrageSnapshotOptions.builder()
                 .batchSize(WebBarrageSubscription.BATCH_SIZE)
                 .maxMessageSize(WebBarrageSubscription.MAX_MESSAGE_SIZE)
-                .columnConversionMode(ColumnConversionMode.Stringify)
                 .useDeephavenNulls(true)
                 .build();
 
-        WebBarrageSubscription snapshot =
-                WebBarrageSubscription.subscribe(state(), (serverViewport1, serverColumns, serverReverseViewport) -> {
-                }, (rowsAdded, rowsRemoved, totalMods, shifted, modifiedColumnSet) -> {
-                });
+        LazyPromise<TableData> promise = new LazyPromise<>();
+        state().onRunning(cts -> {
+            WebBarrageSubscription snapshot = WebBarrageSubscription.subscribe(
+                    SubscriptionType.SNAPSHOT, cts,
+                    (serverViewport1, serverColumns, serverReverseViewport) -> {
+                    },
+                    (rowsAdded, rowsRemoved, totalMods, shifted, modifiedColumnSet) -> {
+                    });
 
-        WebBarrageStreamReader reader = new WebBarrageStreamReader();
-        return new Promise<>((resolve, reject) -> {
+            WebBarrageMessageReader reader = new WebBarrageMessageReader();
 
             BiDiStream<FlightData, FlightData> doExchange = connection().<FlightData, FlightData>streamFactory().create(
                     headers -> connection().flightServiceClient().doExchange(headers),
@@ -375,7 +368,7 @@ public class TableViewportSubscription extends AbstractTableSubscription {
             doExchange.onData(data -> {
                 WebBarrageMessage message;
                 try {
-                    message = reader.parseFrom(options, state().chunkTypes(), state().columnTypes(),
+                    message = reader.parseFrom(options, state().columnTypes(),
                             state().componentTypes(), data);
                 } catch (IOException e) {
                     throw new RuntimeException(e);
@@ -429,19 +422,20 @@ public class TableViewportSubscription extends AbstractTableSubscription {
                     } else {
                         result = RangeSet.empty();
                     }
-                    resolve.onInvoke(new SubscriptionEventData(snapshot, rowStyleColumn, Js.uncheckedCast(columns),
+                    promise.succeed(new SubscriptionEventData(snapshot, rowStyleColumn, Js.uncheckedCast(columns),
                             result,
                             RangeSet.empty(),
                             RangeSet.empty(),
                             null));
                 } else {
-                    reject.onInvoke(status);
+                    promise.fail(status);
                 }
             });
 
             doExchange.send(payload);
             doExchange.end();
 
-        });
+        }, promise::fail, () -> promise.fail("Table was closed"));
+        return promise.asPromise();
     }
 }

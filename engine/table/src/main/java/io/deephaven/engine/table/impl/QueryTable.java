@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl;
 
@@ -196,6 +196,29 @@ public class QueryTable extends BaseTable<QueryTable> {
      */
     static boolean USE_REDIRECTED_COLUMNS_FOR_SELECT =
             Configuration.getInstance().getBooleanWithDefault("QueryTable.redirectSelect", false);
+
+    /**
+     * If the Configuration property "QueryTable.useDataIndexForWhere" is set to true (default), then permit where
+     * filters to use a data index, when applicable. If false, data indexes are not used even if present.
+     */
+    public static boolean USE_DATA_INDEX_FOR_WHERE =
+            Configuration.getInstance().getBooleanWithDefault("QueryTable.useDataIndexForWhere", true);
+
+    /**
+     * If the Configuration property "QueryTable.useDataIndexForAggregation" is set to true (default), then permit
+     * aggregation to use a data index, when applicable. If false, data indexes are not used even if present.
+     */
+    public static boolean USE_DATA_INDEX_FOR_AGGREGATION =
+            Configuration.getInstance().getBooleanWithDefault("QueryTable.useDataIndexForAggregation", true);
+
+    /**
+     * If the Configuration property "QueryTable.useDataIndexForJoins" is set to true (default), then permit naturalJoin
+     * and aj to use a data index, when applicable. If false, data indexes are not used even if present.
+     */
+    public static boolean USE_DATA_INDEX_FOR_JOINS =
+            Configuration.getInstance().getBooleanWithDefault("QueryTable.useDataIndexForJoins", true);
+
+
     /**
      * For a static select(), we would prefer to flatten the table to avoid using memory unnecessarily (because the data
      * may be spread out across many blocks depending on the input RowSet). However, the select() can become slower
@@ -263,16 +286,6 @@ public class QueryTable extends BaseTable<QueryTable> {
     public static long MINIMUM_PARALLEL_SNAPSHOT_ROWS =
             Configuration.getInstance().getLongWithDefault("QueryTable.minimumParallelSnapshotRows", 1L << 20);
 
-    // Whether we should track the entire RowSet of firstBy and lastBy operations
-    @VisibleForTesting
-    public static boolean TRACKED_LAST_BY =
-            Configuration.getInstance().getBooleanWithDefault("QueryTable.trackLastBy", false);
-    @VisibleForTesting
-    public static boolean TRACKED_FIRST_BY =
-            Configuration.getInstance().getBooleanWithDefault("QueryTable.trackFirstBy", false);
-
-    @VisibleForTesting
-    public static boolean USE_OLDER_CHUNKED_BY = false;
     @VisibleForTesting
     public static boolean USE_CHUNKED_CROSS_JOIN =
             Configuration.getInstance().getBooleanWithDefault("QueryTable.chunkedJoin", true);
@@ -755,7 +768,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                     "exactJoin(" + table + "," + Arrays.toString(columnsToMatch) + "," + Arrays.toString(columnsToMatch)
                             + ")",
                     sizeForInstrumentation(),
-                    () -> naturalJoinInternal(table, columnsToMatch, columnsToAdd, true));
+                    () -> naturalJoinInternal(table, columnsToMatch, columnsToAdd, NaturalJoinType.EXACTLY_ONE_MATCH));
         }
     }
 
@@ -857,8 +870,10 @@ public class QueryTable extends BaseTable<QueryTable> {
         final UpdateGraph updateGraph = getUpdateGraph();
         try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
             final String description = "aggregation(" + aggregationContextFactory + ", " + groupByColumns + ")";
+            final AggregationControl aggregationControl =
+                    USE_DATA_INDEX_FOR_AGGREGATION ? AggregationControl.DEFAULT : AggregationControl.IGNORE_INDEXING;
             return QueryPerformanceRecorder.withNugget(description, sizeForInstrumentation(),
-                    () -> ChunkedOperatorAggregationHelper.aggregation(
+                    () -> ChunkedOperatorAggregationHelper.aggregation(aggregationControl,
                             aggregationContextFactory, this, preserveEmpty, initialGroups, groupByColumns));
         }
     }
@@ -1225,17 +1240,18 @@ public class QueryTable extends BaseTable<QueryTable> {
     }
 
     private void initializeAndPrioritizeFilters(@NotNull final WhereFilter... filters) {
-        final DataIndexer dataIndexer = DataIndexer.existingOf(rowSet);
+        final DataIndexer dataIndexer = USE_DATA_INDEX_FOR_WHERE ? DataIndexer.existingOf(rowSet) : null;
         final int numFilters = filters.length;
         final BitSet priorityFilterIndexes = new BitSet(numFilters);
 
-        final QueryCompilerRequestProcessor.BatchProcessor compilationProcesor = QueryCompilerRequestProcessor.batch();
+        final QueryCompilerRequestProcessor.BatchProcessor compilationProcessor = QueryCompilerRequestProcessor.batch();
+
         // Initialize our filters immediately so we can examine the columns they use. Note that filter
         // initialization is safe to invoke repeatedly.
         for (final WhereFilter filter : filters) {
-            filter.init(getDefinition(), compilationProcesor);
+            filter.init(getDefinition(), compilationProcessor);
         }
-        compilationProcesor.compile();
+        compilationProcessor.compile();
 
         for (int fi = 0; fi < numFilters; ++fi) {
             final WhereFilter filter = filters[fi];
@@ -2247,29 +2263,38 @@ public class QueryTable extends BaseTable<QueryTable> {
     public Table naturalJoin(
             Table rightTable,
             Collection<? extends JoinMatch> columnsToMatch,
-            Collection<? extends JoinAddition> columnsToAdd) {
+            Collection<? extends JoinAddition> columnsToAdd,
+            NaturalJoinType joinType) {
         return naturalJoinImpl(
                 rightTable,
                 MatchPair.fromMatches(columnsToMatch),
-                MatchPair.fromAddition(columnsToAdd));
+                MatchPair.fromAddition(columnsToAdd),
+                joinType);
     }
 
-    private Table naturalJoinImpl(final Table rightTable, final MatchPair[] columnsToMatch, MatchPair[] columnsToAdd) {
+    private Table naturalJoinImpl(
+            final Table rightTable,
+            final MatchPair[] columnsToMatch,
+            final MatchPair[] columnsToAdd,
+            final NaturalJoinType joinType) {
         final UpdateGraph updateGraph = getUpdateGraph(rightTable);
         try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
             return QueryPerformanceRecorder.withNugget(
                     "naturalJoin(" + matchString(columnsToMatch) + ", " + matchString(columnsToAdd) + ")",
-                    () -> naturalJoinInternal(rightTable, columnsToMatch, columnsToAdd, false));
+                    () -> naturalJoinInternal(rightTable, columnsToMatch, columnsToAdd, joinType));
         }
     }
 
-    private Table naturalJoinInternal(final Table rightTable, final MatchPair[] columnsToMatch,
-            MatchPair[] columnsToAdd, boolean exactMatch) {
+    private Table naturalJoinInternal(
+            final Table rightTable,
+            final MatchPair[] columnsToMatch,
+            MatchPair[] columnsToAdd,
+            final NaturalJoinType joinType) {
         columnsToAdd = createColumnsToAddIfMissing(rightTable, columnsToMatch, columnsToAdd);
 
         final QueryTable rightTableCoalesced = (QueryTable) rightTable.coalesce();
 
-        return NaturalJoinHelper.naturalJoin(this, rightTableCoalesced, columnsToMatch, columnsToAdd, exactMatch);
+        return NaturalJoinHelper.naturalJoin(this, rightTableCoalesced, columnsToMatch, columnsToAdd, joinType);
     }
 
     private MatchPair[] createColumnsToAddIfMissing(Table rightTable, MatchPair[] columnsToMatch,
@@ -2377,7 +2402,8 @@ public class QueryTable extends BaseTable<QueryTable> {
                     final Table rightGrouped = rightTable.groupBy(rightColumnsToMatch)
                             .view(columnsToAddSelectColumns.values());
                     final Table naturalJoinResult = naturalJoinImpl(rightGrouped, columnsToMatch,
-                            columnsToAddAfterRename.toArray(MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY));
+                            columnsToAddAfterRename.toArray(MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY),
+                            NaturalJoinType.ERROR_ON_DUPLICATE);
                     final QueryTable ungroupedResult = (QueryTable) naturalJoinResult
                             .ungroup(columnsToUngroupBy.toArray(String[]::new));
 
@@ -3559,10 +3585,7 @@ public class QueryTable extends BaseTable<QueryTable> {
      */
     @Override
     public QueryTable copy() {
-        final UpdateGraph updateGraph = getUpdateGraph();
-        try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
-            return copy(StandardOptions.COPY_ALL);
-        }
+        return copy(StandardOptions.COPY_ALL);
     }
 
     public QueryTable copy(Predicate<String> shouldCopy) {
@@ -3841,7 +3864,9 @@ public class QueryTable extends BaseTable<QueryTable> {
     public Table wouldMatch(WouldMatchPair... matchers) {
         final UpdateGraph updateGraph = getUpdateGraph();
         try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
-            return getResult(new WouldMatchOperation(this, matchers));
+            final WouldMatchOperation operation = new WouldMatchOperation(this, matchers);
+            operation.initializeFilters(this);
+            return getResult(operation);
         }
     }
 

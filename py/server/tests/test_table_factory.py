@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
 
 import unittest
@@ -16,7 +16,7 @@ from deephaven.constants import NULL_DOUBLE, NULL_FLOAT, NULL_LONG, NULL_INT, NU
 from deephaven.table_factory import DynamicTableWriter, InputTable, ring_table
 from tests.testbase import BaseTestCase
 from deephaven.table import Table
-from deephaven.stream import blink_to_append_only, stream_to_append_only
+from deephaven.stream import blink_to_append_only, stream_to_append_only, add_only_to_blink
 
 JArrayList = jpy.get_type("java.util.ArrayList")
 _JBlinkTableTools = jpy.get_type("io.deephaven.engine.table.impl.BlinkTableTools")
@@ -380,9 +380,16 @@ class TableFactoryTestCase(BaseTestCase):
 
             with self.assertRaises(DHError) as cm:
                 InputTable(place_holder_input_table)
-            self.assertIn("not of InputTableUpdater type", str(cm.exception))
+            self.assertIn("the provided table input is not suitable for input tables.", str(cm.exception))
 
             self.assertTrue(isinstance(_wrapper.wrap_j_object(place_holder_input_table), Table))
+
+        with self.subTest("no input table"):
+            my_table = empty_table(1)
+
+            with self.assertRaises(DHError) as cm:
+                InputTable(my_table.j_table)
+            self.assertIn("the provided table input is not suitable for input tables.", str(cm.exception))
 
 
     def test_ring_table(self):
@@ -408,6 +415,17 @@ class TableFactoryTestCase(BaseTestCase):
         self.assertEqual(keyed_input_table.size, 2)
         self.assertTrue(ring_t.is_refreshing)
         self.wait_ticking_table_update(ring_t, 6, 5)
+
+    def test_add_only_to_blink(self):
+        t = time_table("PT00:00:01")
+        bt = add_only_to_blink(t)
+        self.assertTrue(bt.is_refreshing)
+        self.assertTrue(bt.is_blink)
+
+        t = empty_table(0).update("Timestamp=nowSystem()")
+        with self.assertRaises(DHError) as cm:
+            add_only_to_blink(t)
+        self.assertIn("failed to create a blink table", str(cm.exception))
 
     def test_blink_to_append_only(self):
         _JTimeTable = jpy.get_type("io.deephaven.engine.table.impl.TimeTable")

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit CharRingBufferVectorWrapper and run "./gradlew replicateUpdateBy" to regenerate
@@ -13,7 +13,7 @@ import io.deephaven.vector.ShortVector;
 import io.deephaven.vector.ShortVectorDirect;
 import io.deephaven.vector.ShortVectorSlice;
 
-public class ShortRingBufferVectorWrapper implements ShortVector, RingBufferVectorWrapper {
+public class ShortRingBufferVectorWrapper implements ShortVector, RingBufferVectorWrapper<ShortVector> {
     private final ShortRingBuffer ringBuffer;
 
     public ShortRingBufferVectorWrapper(final ShortRingBuffer ringBuffer) {

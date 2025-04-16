@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit CharSsmBackedSource and run "./gradlew replicateSegmentedSortedMultiset" to regenerate
@@ -41,7 +41,7 @@ public class ObjectSsmBackedSource extends AbstractColumnSource<ObjectVector>
         ObjectSegmentedSortedMultiset ssm = underlying.getUnsafe(key);
         if (ssm == null) {
             // region CreateNew
-            underlying.set(key, ssm = new ObjectSegmentedSortedMultiset(SsmDistinctContext.NODE_SIZE, Object.class));
+            underlying.set(key, ssm = new ObjectSegmentedSortedMultiset(SsmDistinctContext.NODE_SIZE, componentType));
             // endregion CreateNew
         }
         ssm.setTrackDeltas(trackingPrevious);

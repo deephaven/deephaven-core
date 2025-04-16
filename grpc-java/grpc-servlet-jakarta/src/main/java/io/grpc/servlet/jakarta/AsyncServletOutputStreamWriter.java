@@ -13,6 +13,7 @@
 
 package io.grpc.servlet.jakarta;
 
+import com.google.common.annotations.VisibleForTesting;
 import io.grpc.InternalLogId;
 import io.grpc.servlet.jakarta.ServletServerStream.ServletTransportState;
 import jakarta.servlet.AsyncContext;
@@ -26,6 +27,8 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
+import java.util.function.BiFunction;
+import java.util.function.BooleanSupplier;
 import java.util.logging.Logger;
 
 import static com.google.common.base.Preconditions.checkState;
@@ -35,9 +38,6 @@ import static java.util.logging.Level.FINEST;
 
 /** Handles write actions from the container thread and the application thread. */
 final class AsyncServletOutputStreamWriter {
-
-    private static final Logger logger =
-            Logger.getLogger(AsyncServletOutputStreamWriter.class.getName());
 
     /**
      * Memory boundary for write actions.
@@ -61,11 +61,11 @@ final class AsyncServletOutputStreamWriter {
      */
     private final AtomicReference<WriteState> writeState = new AtomicReference<>(WriteState.DEFAULT);
 
-    private final ServletOutputStream outputStream;
-    private final ServletTransportState transportState;
-    private final InternalLogId logId;
+    private final Log log;
+    private final BiFunction<byte[], Integer, ActionItem> writeAction;
     private final ActionItem flushAction;
     private final ActionItem completeAction;
+    private final BooleanSupplier isReady;
 
     /**
      * New write actions will be buffered into this queue if the servlet output stream is not ready or the queue is not
@@ -82,38 +82,81 @@ final class AsyncServletOutputStreamWriter {
             AsyncContext asyncContext,
             ServletTransportState transportState,
             InternalLogId logId) throws IOException {
-        this.outputStream = asyncContext.getResponse().getOutputStream();
-        this.transportState = transportState;
-        this.logId = logId;
+        Logger logger = Logger.getLogger(AsyncServletOutputStreamWriter.class.getName());
+        this.log = new Log() {
+            @Override
+            public void fine(String str, Object... params) {
+                if (logger.isLoggable(FINE)) {
+                    logger.log(FINE, "[" + logId + "]" + str, params);
+                }
+            }
+
+            @Override
+            public void finest(String str, Object... params) {
+                if (logger.isLoggable(FINEST)) {
+                    logger.log(FINEST, "[" + logId + "] " + str, params);
+                }
+            }
+
+            @Override
+            public boolean isFinestEnabled() {
+                return logger.isLoggable(FINEST);
+            }
+        };
+
+        ServletOutputStream outputStream = asyncContext.getResponse().getOutputStream();
+        this.writeAction = (byte[] bytes, Integer numBytes) -> () -> {
+            outputStream.write(bytes, 0, numBytes);
+            transportState.runOnTransportThread(() -> transportState.onSentBytes(numBytes));
+            if (log.isFinestEnabled()) {
+                log.finest("outbound data: length={0}, bytes={1}", numBytes, toHexString(bytes, numBytes));
+            }
+        };
         this.flushAction = () -> {
-            logger.log(FINEST, "[{0}] flushBuffer", logId);
+            log.finest("flushBuffer");
             asyncContext.getResponse().flushBuffer();
         };
         this.completeAction = () -> {
-            logger.log(FINE, "[{0}] call is completing", logId);
+            log.fine("call is completing");
             transportState.runOnTransportThread(
                     () -> {
                         transportState.complete();
-                        asyncContext.complete();
-                        logger.log(FINE, "[{0}] call completed", logId);
+                        // asyncContext.complete();
+                        log.fine("call completed");
                     });
+            // Jetty specific fix: When AsyncContext.complete() is called, Jetty sends a RST_STREAM with
+            // "cancel" error to the client, while other containers send "no error" in this case. Calling
+            // close() instead on the output stream still sends the RST_STREAM, but with "no error". Note
+            // that this does the opposite in at least Tomcat, so we're not going to upstream this change.
+            // See https://github.com/deephaven/deephaven-core/issues/6400
+            outputStream.close();
         };
+        this.isReady = () -> outputStream.isReady();
+    }
+
+    /**
+     * Constructor without java.util.logging and jakarta.servlet.* dependency, so that Lincheck can run.
+     *
+     * @param writeAction Provides an {@link ActionItem} to write given bytes with specified length.
+     * @param isReady Indicates whether the writer can write bytes at the moment (asynchronously).
+     */
+    @VisibleForTesting
+    AsyncServletOutputStreamWriter(
+            BiFunction<byte[], Integer, ActionItem> writeAction,
+            ActionItem flushAction,
+            ActionItem completeAction,
+            BooleanSupplier isReady,
+            Log log) {
+        this.writeAction = writeAction;
+        this.flushAction = flushAction;
+        this.completeAction = completeAction;
+        this.isReady = isReady;
+        this.log = log;
     }
 
     /** Called from application thread. */
     void writeBytes(byte[] bytes, int numBytes) throws IOException {
-        runOrBuffer(
-                // write bytes action
-                () -> {
-                    outputStream.write(bytes, 0, numBytes);
-                    transportState.runOnTransportThread(() -> transportState.onSentBytes(numBytes));
-                    if (logger.isLoggable(FINEST)) {
-                        logger.log(
-                                FINEST,
-                                "[{0}] outbound data: length = {1}, bytes = {2}",
-                                new Object[] {logId, numBytes, toHexString(bytes, numBytes)});
-                    }
-                });
+        runOrBuffer(writeAction.apply(bytes, numBytes));
     }
 
     /** Called from application thread. */
@@ -132,10 +175,9 @@ final class AsyncServletOutputStreamWriter {
 
     /** Called from the container thread {@link jakarta.servlet.WriteListener#onWritePossible()}. */
     void onWritePossible() throws IOException {
-        logger.log(
-                FINEST, "[{0}] onWritePossible: ENTRY. The servlet output stream becomes ready", logId);
+        log.finest("onWritePossible: ENTRY. The servlet output stream becomes ready");
         assureReadyAndDrainedTurnsFalse();
-        while (outputStream.isReady()) {
+        while (isReady.getAsBoolean()) {
             WriteState curState = writeState.get();
 
             ActionItem actionItem = writeChain.poll();
@@ -146,18 +188,15 @@ final class AsyncServletOutputStreamWriter {
 
             if (writeState.compareAndSet(curState, curState.withReadyAndDrained(true))) {
                 // state has not changed since.
-                logger.log(
-                        FINEST,
-                        "[{0}] onWritePossible: EXIT. All data available now is sent out and the servlet output"
-                                + " stream is still ready",
-                        logId);
+                log.finest(
+                        "onWritePossible: EXIT. All data available now is sent out and the servlet output"
+                                + " stream is still ready");
                 return;
             }
             // else, state changed by another thread (runOrBuffer()), need to drain the writeChain
             // again
         }
-        logger.log(
-                FINEST, "[{0}] onWritePossible: EXIT. The servlet output stream becomes not ready", logId);
+        log.finest("onWritePossible: EXIT. The servlet output stream becomes not ready");
     }
 
     private void assureReadyAndDrainedTurnsFalse() {
@@ -166,6 +205,8 @@ final class AsyncServletOutputStreamWriter {
         // being set to false by runOrBuffer() concurrently.
         while (writeState.get().readyAndDrained) {
             parkingThread = Thread.currentThread();
+            // Try to sleep for an extremely long time to avoid writeState being changed at exactly
+            // the time when sleep time expires (in extreme scenario, such as #9917).
             LockSupport.parkNanos(Duration.ofHours(1).toNanos()); // should return immediately
         }
         parkingThread = null;
@@ -184,12 +225,12 @@ final class AsyncServletOutputStreamWriter {
             if (actionItem == completeAction) {
                 return;
             }
-            if (!outputStream.isReady()) {
+            if (!isReady.getAsBoolean()) {
                 boolean successful =
                         writeState.compareAndSet(curState, curState.withReadyAndDrained(false));
                 LockSupport.unpark(parkingThread);
                 checkState(successful, "Bug: curState is unexpectedly changed by another thread");
-                logger.log(FINEST, "[{0}] the servlet output stream becomes not ready", logId);
+                log.finest("the servlet output stream becomes not ready");
             }
         } else { // buffer to the writeChain
             writeChain.offer(actionItem);
@@ -208,8 +249,20 @@ final class AsyncServletOutputStreamWriter {
 
     /** Write actions, e.g. writeBytes, flush, complete. */
     @FunctionalInterface
-    private interface ActionItem {
+    @VisibleForTesting
+    interface ActionItem {
         void run() throws IOException;
+    }
+
+    @VisibleForTesting // Lincheck test can not run with java.util.logging dependency.
+    interface Log {
+        default void fine(String str, Object...params) {}
+
+        default void finest(String str, Object...params) {}
+
+        default boolean isFinestEnabled() {
+            return false;
+        }
     }
 
     private static final class WriteState {

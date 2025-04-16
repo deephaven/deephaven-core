@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.web.client.api;
 
@@ -9,52 +9,54 @@ import elemental2.core.JsArray;
 import elemental2.core.JsObject;
 import elemental2.core.JsSet;
 import elemental2.core.JsWeakMap;
+import elemental2.core.TypedArray;
 import elemental2.core.Uint8Array;
-import elemental2.dom.CustomEventInit;
 import elemental2.dom.DomGlobal;
 import elemental2.promise.Promise;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.browserflight_pb_service.BrowserFlightServiceClient;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb.FlightData;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb_service.FlightServiceClient;
 import io.deephaven.javascript.proto.dhinternal.browserheaders.BrowserHeaders;
+import io.deephaven.javascript.proto.dhinternal.grpcweb.client.ClientRpcOptions;
 import io.deephaven.javascript.proto.dhinternal.grpcweb.grpc.Code;
 import io.deephaven.javascript.proto.dhinternal.grpcweb.grpc.UnaryOutput;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.application_pb.FieldInfo;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.application_pb.FieldsChangeUpdate;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.application_pb.ListFieldsRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.application_pb_service.ApplicationServiceClient;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.config_pb.ConfigValue;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.config_pb.ConfigurationConstantsRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.config_pb.ConfigurationConstantsResponse;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.config_pb_service.ConfigService;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.config_pb_service.ConfigServiceClient;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.LogSubscriptionData;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.LogSubscriptionRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb_service.ConsoleServiceClient;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.hierarchicaltable_pb_service.HierarchicalTableServiceClient;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.inputtable_pb_service.InputTableServiceClient;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.object_pb.FetchObjectResponse;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.object_pb_service.ObjectServiceClient;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.partitionedtable_pb_service.PartitionedTableServiceClient;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.ExportRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.ExportResponse;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.ReleaseRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.TerminationNotificationRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb_service.SessionServiceClient;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb_service.UnaryResponse;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.storage_pb_service.StorageServiceClient;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ApplyPreviewColumnsRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.EmptyTableRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ExportedTableCreationResponse;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ExportedTableUpdateMessage;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ExportedTableUpdatesRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.FetchTableRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.MergeTablesRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.TableReference;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.TimeTableRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb_service.TableServiceClient;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Ticket;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.TypedTicket;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.application_pb.FieldInfo;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.application_pb.FieldsChangeUpdate;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.application_pb.ListFieldsRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.application_pb_service.ApplicationServiceClient;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.config_pb.ConfigValue;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.config_pb.ConfigurationConstantsRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.config_pb.ConfigurationConstantsResponse;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.config_pb_service.ConfigService;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.config_pb_service.ConfigServiceClient;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.LogSubscriptionData;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.LogSubscriptionRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb_service.ConsoleServiceClient;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.hierarchicaltable_pb_service.HierarchicalTableServiceClient;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.inputtable_pb_service.InputTableServiceClient;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.object_pb.FetchObjectResponse;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.object_pb_service.ObjectServiceClient;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.partitionedtable_pb_service.PartitionedTableServiceClient;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.session_pb.ExportRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.session_pb.ExportResponse;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.session_pb.PublishRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.session_pb.ReleaseRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.session_pb.TerminationNotificationRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.session_pb_service.SessionServiceClient;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.session_pb_service.UnaryResponse;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.storage_pb_service.StorageServiceClient;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.ApplyPreviewColumnsRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.EmptyTableRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.ExportedTableCreationResponse;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.ExportedTableUpdateMessage;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.ExportedTableUpdatesRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.FetchTableRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.MergeTablesRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.TableReference;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.TimeTableRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb_service.TableServiceClient;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.ticket_pb.Ticket;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.ticket_pb.TypedTicket;
 import io.deephaven.web.client.api.barrage.WebBarrageUtils;
 import io.deephaven.web.client.api.barrage.def.InitialTableDefinition;
 import io.deephaven.web.client.api.barrage.stream.BiDiStream;
@@ -64,6 +66,7 @@ import io.deephaven.web.client.api.batch.TableConfig;
 import io.deephaven.web.client.api.console.JsVariableChanges;
 import io.deephaven.web.client.api.console.JsVariableDefinition;
 import io.deephaven.web.client.api.console.JsVariableType;
+import io.deephaven.web.client.api.event.HasEventHandling;
 import io.deephaven.web.client.api.grpc.UnaryWithHeaders;
 import io.deephaven.web.client.api.i18n.JsTimeZone;
 import io.deephaven.web.client.api.impl.TicketAndPromise;
@@ -77,6 +80,7 @@ import io.deephaven.web.client.api.widget.plot.JsFigure;
 import io.deephaven.web.client.fu.JsItr;
 import io.deephaven.web.client.fu.JsLog;
 import io.deephaven.web.client.fu.LazyPromise;
+import io.deephaven.web.client.ide.SharedExportBytesUnion;
 import io.deephaven.web.client.state.ClientTableState;
 import io.deephaven.web.client.state.HasTableBinding;
 import io.deephaven.web.client.state.TableReviver;
@@ -97,6 +101,7 @@ import org.apache.arrow.flatbuf.RecordBatch;
 import org.apache.arrow.flatbuf.Schema;
 
 import javax.annotation.Nullable;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -108,9 +113,6 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-
-import static io.deephaven.web.client.api.CoreClient.EVENT_REFRESH_TOKEN_UPDATED;
-import static io.deephaven.web.client.api.barrage.WebGrpcUtils.CLIENT_OPTIONS;
 
 /**
  * Non-exported class, manages the connection to a given worker server. Exported types like QueryInfo and Table will
@@ -159,7 +161,8 @@ public class WorkerConnection {
     }
 
     private final QueryConnectable<?> info;
-    private final ClientConfiguration config;
+    private final ClientRpcOptions options = ClientRpcOptions.create();
+    private final Tickets tickets;
     private final ReconnectState newSessionReconnect;
     private final TableReviver reviver;
     // un-finished fetch operations - these can fail on connection issues, won't be attempted again
@@ -204,28 +207,22 @@ public class WorkerConnection {
 
     public WorkerConnection(QueryConnectable<?> info) {
         this.info = info;
-        this.config = new ClientConfiguration();
+
+        this.tickets = new Tickets();
         state = State.Connecting;
         this.reviver = new TableReviver(this);
-        sessionServiceClient = new SessionServiceClient(info.getServerUrl(), CLIENT_OPTIONS);
-        tableServiceClient = new TableServiceClient(info.getServerUrl(), CLIENT_OPTIONS);
-        consoleServiceClient = new ConsoleServiceClient(info.getServerUrl(), CLIENT_OPTIONS);
-        flightServiceClient = new FlightServiceClient(info.getServerUrl(), CLIENT_OPTIONS);
-        applicationServiceClient =
-                new ApplicationServiceClient(info.getServerUrl(), CLIENT_OPTIONS);
-        browserFlightServiceClient =
-                new BrowserFlightServiceClient(info.getServerUrl(), CLIENT_OPTIONS);
-        inputTableServiceClient =
-                new InputTableServiceClient(info.getServerUrl(), CLIENT_OPTIONS);
-        objectServiceClient = new ObjectServiceClient(info.getServerUrl(), CLIENT_OPTIONS);
-        partitionedTableServiceClient =
-                new PartitionedTableServiceClient(info.getServerUrl(), CLIENT_OPTIONS);
-        storageServiceClient = new StorageServiceClient(info.getServerUrl(), CLIENT_OPTIONS);
-        configServiceClient = new ConfigServiceClient(info.getServerUrl(), CLIENT_OPTIONS);
-        hierarchicalTableServiceClient =
-                new HierarchicalTableServiceClient(info.getServerUrl(), CLIENT_OPTIONS);
-
-        // builder.setConnectionErrorHandler(msg -> info.failureHandled(String.valueOf(msg)));
+        sessionServiceClient = info.createClient(SessionServiceClient::new);
+        tableServiceClient = info.createClient(TableServiceClient::new);
+        consoleServiceClient = info.createClient(ConsoleServiceClient::new);
+        flightServiceClient = info.createClient(FlightServiceClient::new);
+        applicationServiceClient = info.createClient(ApplicationServiceClient::new);
+        browserFlightServiceClient = info.createClient(BrowserFlightServiceClient::new);
+        inputTableServiceClient = info.createClient(InputTableServiceClient::new);
+        objectServiceClient = info.createClient(ObjectServiceClient::new);
+        partitionedTableServiceClient = info.createClient(PartitionedTableServiceClient::new);
+        storageServiceClient = info.createClient(StorageServiceClient::new);
+        configServiceClient = info.createClient(ConfigServiceClient::new);
+        hierarchicalTableServiceClient = info.createClient(HierarchicalTableServiceClient::new);
 
         newSessionReconnect = new ReconnectState(this::connectToWorker);
 
@@ -253,21 +250,13 @@ public class WorkerConnection {
                     if (metadata().has(FLIGHT_AUTH_HEADER_NAME)) {
                         return authUpdate().then(ignore -> Promise.resolve(Boolean.FALSE));
                     }
-                    return Promise.all(
-                            info.getConnectToken().then(authToken -> {
-                                // set the proposed initial token and make the first call
-                                metadata.set(FLIGHT_AUTH_HEADER_NAME,
-                                        (authToken.getType() + " " + authToken.getValue()).trim());
-                                return Promise.resolve(authToken);
-                            }),
-                            info.getConnectOptions().then(options -> {
-                                // set other specified headers, if any
-                                JsObject.keys(options.headers).forEach((key, index) -> {
-                                    metadata.set(key, options.headers.get(key));
-                                    return null;
-                                });
-                                return Promise.resolve(options);
-                            })).then(ignore -> authUpdate()).then(ignore -> Promise.resolve(Boolean.TRUE));
+                    metadata.set(FLIGHT_AUTH_HEADER_NAME,
+                            (info.getToken().getType() + " " + info.getToken().getValue()).trim());
+                    JsObject.keys(info.getOptions().headers).forEach((key, index) -> {
+                        metadata.set(key, info.getOptions().headers.get(key));
+                        return null;
+                    });
+                    return authUpdate().then(ignore -> Promise.resolve(Boolean.TRUE));
                 }).then(newSession -> {
                     // subscribe to fatal errors
                     subscribeToTerminationNotification();
@@ -348,7 +337,7 @@ public class WorkerConnection {
                     state = State.Failed;
                     JsLog.debug("Failed to connect to worker.");
 
-                    final String failure = fail.toString();
+                    final String failure = String.valueOf(fail);
 
                     // notify all pending fetches that they failed
                     onOpen.forEach(c -> c.onFailure(failure));
@@ -386,7 +375,7 @@ public class WorkerConnection {
 
             // signal that the user needs to re-authenticate, make a new session
             // TODO (deephaven-core#3501) in theory we could make a new session for some auth types
-            info.fireEvent(CoreClient.EVENT_RECONNECT_AUTH_FAILED);
+            info.fireCriticalEvent(CoreClient.EVENT_RECONNECT_AUTH_FAILED);
         } else if (status.isTransportError()) {
             // fire deprecated event for now
             info.notifyConnectionError(status);
@@ -463,7 +452,9 @@ public class WorkerConnection {
             scheduledAuthUpdate = null;
         }
         return UnaryWithHeaders.<ConfigurationConstantsRequest, ConfigurationConstantsResponse>call(
-                this, ConfigService.GetConfigurationConstants, new ConfigurationConstantsRequest())
+                info.getServerUrl(),
+                metadata(), info.makeRpcOptions(), ConfigService.GetConfigurationConstants,
+                new ConfigurationConstantsRequest())
                 .then(result -> {
                     BrowserHeaders headers = result.getHeaders();
                     // unchecked cast is required here due to "aliasing" in ts/webpack resulting in BrowserHeaders !=
@@ -475,9 +466,6 @@ public class WorkerConnection {
                         if (!existing.getAt(0).equals(authorization.getAt(0))) {
                             // use this new token
                             metadata().set(FLIGHT_AUTH_HEADER_NAME, authorization);
-                            CustomEventInit<JsRefreshToken> init = CustomEventInit.create();
-                            init.setDetail(new JsRefreshToken(authorization.getAt(0), sessionTimeoutMs));
-                            info.fireEvent(EVENT_REFRESH_TOKEN_UPDATED, init);
                         }
                     }
 
@@ -501,15 +489,15 @@ public class WorkerConnection {
                         metadata.delete(FLIGHT_AUTH_HEADER_NAME);
 
                         // Fire an event for the UI to attempt to re-auth
-                        info.fireEvent(CoreClient.EVENT_RECONNECT_AUTH_FAILED);
+                        info.fireCriticalEvent(CoreClient.EVENT_RECONNECT_AUTH_FAILED);
 
                         // We return here rather than continue and call checkStatus()
                         return Promise.reject("Authentication failed, please reconnect");
                     }
-                    checkStatus(ResponseStreamWrapper.Status.of(result.getStatus(), result.getMessage().toString(),
+                    checkStatus(ResponseStreamWrapper.Status.of(result.getStatus(), result.getStatusMessage(),
                             result.getTrailers()));
-                    if (result.getMessage() == null || result.getMessage().toString().isEmpty()) {
-                        return Promise.reject(result.getMessage());
+                    if (result.getStatusMessage() != null && !result.getStatusMessage().isEmpty()) {
+                        return Promise.reject(result.getStatusMessage());
                     } else {
                         return Promise.reject("Error occurred while authenticating, gRPC status " + result.getStatus());
                     }
@@ -686,12 +674,12 @@ public class WorkerConnection {
                         // TODO (deephaven-core#188): eliminate this branch by applying preview cols before subscribing
                         if (applyPreviewColumns == null || applyPreviewColumns) {
                             ApplyPreviewColumnsRequest req = new ApplyPreviewColumnsRequest();
-                            req.setSourceId(TableTicket.createTableRef(varDef));
+                            req.setSourceId(Tickets.createTableRef(varDef));
                             req.setResultId(cts.getHandle().makeTicket());
                             tableServiceClient.applyPreviewColumns(req, metadata, c::apply);
                         } else {
                             FetchTableRequest req = new FetchTableRequest();
-                            req.setSourceId(TableTicket.createTableRef(varDef));
+                            req.setSourceId(Tickets.createTableRef(varDef));
                             req.setResultId(cts.getHandle().makeTicket());
                             tableServiceClient.fetchTable(req, metadata, c::apply);
                         }
@@ -790,7 +778,70 @@ public class WorkerConnection {
         }
     }
 
-    @JsMethod
+    public Promise<SharedExportBytesUnion> shareObject(ServerObject object, SharedExportBytesUnion sharedTicketBytes) {
+        if (object.getConnection() != this) {
+            return Promise.reject("Cannot share an object that comes from another server instance");
+        }
+        PublishRequest request = new PublishRequest();
+        request.setSourceId(object.typedTicket().getTicket());
+
+        Ticket ticket = sharedTicketFromStringOrBytes(sharedTicketBytes);
+        request.setResultId(ticket);
+
+        return Callbacks.grpcUnaryPromise(c -> {
+            sessionServiceClient().publishFromTicket(request, metadata(), c::apply);
+        }).then(ignore -> Promise.resolve(sharedTicketBytes));
+    }
+
+    private Ticket sharedTicketFromStringOrBytes(SharedExportBytesUnion sharedTicketBytes) {
+        final TypedArray.SetArrayUnionType array;
+        if (sharedTicketBytes.isString()) {
+            byte[] arr = sharedTicketBytes.asString().getBytes(StandardCharsets.UTF_8);
+            array = TypedArray.SetArrayUnionType.of(arr);
+        } else {
+            Uint8Array bytes = sharedTicketBytes.asUint8Array();
+            array = TypedArray.SetArrayUnionType.of(bytes);
+        }
+        return tickets.sharedTicket(array);
+    }
+
+    public Promise<?> getSharedObject(SharedExportBytesUnion sharedExportBytes, String type) {
+        if (type.equalsIgnoreCase(JsVariableType.TABLE)) {
+            return newState((callback, newState, metadata) -> {
+                Ticket ticket = newState.getHandle().makeTicket();
+
+                ExportRequest request = new ExportRequest();
+                request.setSourceId(sharedTicketFromStringOrBytes(sharedExportBytes));
+                request.setResultId(ticket);
+
+                Callbacks.grpcUnaryPromise(c -> {
+                    sessionServiceClient().exportFromTicket(request, metadata(), c::apply);
+                }).then(ignore -> {
+                    tableServiceClient().getExportedTableCreationResponse(ticket, metadata(), callback::apply);
+                    return null;
+                }, err -> {
+                    callback.apply(err, null);
+                    return null;
+                });
+
+            }, "getSharedObject")
+                    .refetch(null, metadata())
+                    .then(state -> Promise.resolve(new JsTable(this, state)));
+        }
+
+        TypedTicket result = new TypedTicket();
+        result.setTicket(getTickets().newExportTicket());
+        result.setType(type);
+
+        ExportRequest request = new ExportRequest();
+        request.setSourceId(sharedTicketFromStringOrBytes(sharedExportBytes));
+        request.setResultId(result.getTicket());
+
+        return Callbacks.grpcUnaryPromise(c -> {
+            sessionServiceClient().exportFromTicket(request, metadata(), c::apply);
+        }).then(ignore -> getObject(result));
+    }
+
     @SuppressWarnings("ConstantConditions")
     public JsRunnable subscribeToFieldUpdates(JsConsumer<JsVariableChanges> callback) {
         fieldUpdatesCallback.add(callback);
@@ -875,7 +926,7 @@ public class WorkerConnection {
     }
 
     private TicketAndPromise<?> exportScopeTicket(JsVariableDefinition varDef) {
-        Ticket ticket = getConfig().newTicket();
+        Ticket ticket = getTickets().newExportTicket();
         return new TicketAndPromise<>(ticket, whenServerReady("exportScopeTicket").then(server -> {
             ExportRequest req = new ExportRequest();
             req.setSourceId(createTypedTicket(varDef).getTicket());
@@ -924,7 +975,7 @@ public class WorkerConnection {
 
     private TypedTicket createTypedTicket(JsVariableDefinition varDef) {
         TypedTicket typedTicket = new TypedTicket();
-        typedTicket.setTicket(TableTicket.createTicket(varDef));
+        typedTicket.setTicket(Tickets.createTicket(varDef));
         typedTicket.setType(varDef.getType());
         return typedTicket;
     }
@@ -1002,7 +1053,7 @@ public class WorkerConnection {
     }
 
     public <ReqT, RespT> BiDiStream.Factory<ReqT, RespT> streamFactory() {
-        return new BiDiStream.Factory<>(this::metadata, config::newTicketInt);
+        return new BiDiStream.Factory<>(info.supportsClientStreaming(), this::metadata, tickets::newTicketInt);
     }
 
     public Promise<JsTable> newTable(String[] columnNames, String[] types, Object[][] data, String userTimeZone,
@@ -1195,10 +1246,6 @@ public class WorkerConnection {
         return null;
     }
 
-    private TableTicket newHandle() {
-        return new TableTicket(config.newTicketRaw());
-    }
-
     public RequestBatcher getBatcher(JsTable table) {
         // LATER: consider a global client.batch(()=>{}) method which causes all table statements to be batched
         // together.
@@ -1233,7 +1280,8 @@ public class WorkerConnection {
     }
 
     public ClientTableState newState(JsTableFetch fetcher, String fetchSummary) {
-        return cache.create(newHandle(), handle -> new ClientTableState(this, handle, fetcher, fetchSummary));
+        return cache.create(tickets.newTableTicket(),
+                handle -> new ClientTableState(this, handle, fetcher, fetchSummary));
     }
 
     /**
@@ -1244,13 +1292,13 @@ public class WorkerConnection {
      *         TODO: consider a fetch timeout.
      */
     public Promise<ClientTableState> newState(HasEventHandling failHandler, JsTableFetch fetcher, String fetchSummary) {
-        final TableTicket handle = newHandle();
+        final TableTicket handle = tickets.newTableTicket();
         final ClientTableState s = cache.create(handle, h -> new ClientTableState(this, h, fetcher, fetchSummary));
         return s.refetch(failHandler, metadata);
     }
 
     public ClientTableState newState(ClientTableState from, TableConfig to) {
-        return newState(from, to, newHandle());
+        return newState(from, to, tickets.newTableTicket());
     }
 
     public ClientTableState newState(ClientTableState from, TableConfig to, TableTicket handle) {
@@ -1325,8 +1373,8 @@ public class WorkerConnection {
         return false;
     }
 
-    public ClientConfiguration getConfig() {
-        return config;
+    public Tickets getTickets() {
+        return tickets;
     }
 
     public ConfigValue getServerConfigValue(String key) {

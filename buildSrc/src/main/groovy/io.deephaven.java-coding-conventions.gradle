@@ -9,7 +9,7 @@ spotless {
         eclipse().configFile("${rootDir}/style/eclipse-java-google-style.xml")
 
         licenseHeader '''//
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //''', '(' + LicenseHeaderStep.DEFAULT_JAVA_HEADER_DELIMITER + '|// (\\*\\*\\*\\*\\*|@formatter:off))'
     }
 }

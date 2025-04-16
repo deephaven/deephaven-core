@@ -1,14 +1,12 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.iceberg.TestCatalog;
 
-import org.apache.hadoop.conf.Configuration;
 import org.apache.iceberg.*;
 import org.apache.iceberg.encryption.EncryptionManager;
 import org.apache.iceberg.io.FileIO;
 import org.apache.iceberg.io.LocationProvider;
-import org.apache.iceberg.io.ResolvingFileIO;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
@@ -19,12 +17,12 @@ import java.util.Map;
 
 public class IcebergTestTable implements Table {
     private final TableMetadata metadata;
-    private final Map<String, String> properties;
-    private final Configuration hadoopConf;
+    private final FileIO fileIO;
 
-    private IcebergTestTable(@NotNull final String path, @NotNull final Map<String, String> properties) {
-        this.properties = properties;
-        hadoopConf = new Configuration();
+    private IcebergTestTable(
+            @NotNull final String path,
+            @NotNull final FileIO fileIO) {
+        this.fileIO = fileIO;
 
         final File metadataRoot = new File(path, "metadata");
 
@@ -50,8 +48,8 @@ public class IcebergTestTable implements Table {
 
     public static IcebergTestTable loadFromMetadata(
             @NotNull final String path,
-            @NotNull final Map<String, String> properties) {
-        return new IcebergTestTable(path, properties);
+            @NotNull final FileIO fileIO) {
+        return new IcebergTestTable(path, fileIO);
     }
 
     @Override
@@ -220,10 +218,7 @@ public class IcebergTestTable implements Table {
 
     @Override
     public FileIO io() {
-        final ResolvingFileIO io = new ResolvingFileIO();
-        io.setConf(hadoopConf);
-        io.initialize(properties);
-        return io;
+        return fileIO;
     }
 
     @Override

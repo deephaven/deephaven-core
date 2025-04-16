@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.generic.region;
 
@@ -97,7 +97,8 @@ public class AppendOnlyFixedSizePageRegionTest {
                 constituents[0].getDefinition(),
                 "Test SimpleSourceTable",
                 RegionedTableComponentFactoryImpl.INSTANCE,
-                new TableBackedTableLocationProvider(registrar, false, constituents),
+                new TableBackedTableLocationProvider(registrar, false, TableUpdateMode.STATIC, TableUpdateMode.STATIC,
+                        constituents),
                 registrar).coalesce();
     }
 

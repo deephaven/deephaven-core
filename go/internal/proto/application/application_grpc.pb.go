@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.2.0
 // - protoc             v4.25.3
-// source: deephaven/proto/application.proto
+// source: deephaven_core/proto/application.proto
 
 package application
 
@@ -142,5 +142,5 @@ var ApplicationService_ServiceDesc = grpc.ServiceDesc{
 			ServerStreams: true,
 		},
 	},
-	Metadata: "deephaven/proto/application.proto",
+	Metadata: "deephaven_core/proto/application.proto",
 }

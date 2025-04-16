@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.util;
 
@@ -50,6 +50,11 @@ public class DelegatingScriptSession implements ScriptSession {
         }
         knownVariables.addAll(diff.created.keySet());
         return diff;
+    }
+
+    @Override
+    public void cleanup() {
+        // do not cleanup the delegate as it is not owned by us and likely to be reused
     }
 
     @Override

@@ -1,10 +1,10 @@
 #
-# Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
 from typing import Any
 
 from pydeephaven.dherror import DHError
-from pydeephaven.proto import application_pb2_grpc, application_pb2
+from deephaven_core.proto import application_pb2_grpc, application_pb2
 
 
 class AppService:

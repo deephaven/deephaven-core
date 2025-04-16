@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.iceberg;
 
@@ -10,7 +10,8 @@ import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.iceberg.sqlite.DbResource;
 import io.deephaven.iceberg.util.IcebergCatalogAdapter;
-import io.deephaven.iceberg.util.IcebergTools;
+import io.deephaven.iceberg.util.IcebergReadInstructions;
+import io.deephaven.iceberg.util.IcebergTableAdapter;
 import org.apache.iceberg.Snapshot;
 import org.apache.iceberg.catalog.Namespace;
 import org.apache.iceberg.catalog.TableIdentifier;
@@ -28,7 +29,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * See TESTING.md and generate-pyiceberg-1.py for more details.
  */
 @Tag("security-manager-allow")
-public class PyIceberg1Test {
+class PyIceberg1Test {
     private static final Namespace NAMESPACE = Namespace.of("dh-default");
     private static final TableIdentifier CITIES_ID = TableIdentifier.of(NAMESPACE, "cities");
 
@@ -50,14 +51,16 @@ public class PyIceberg1Test {
 
     @BeforeEach
     void setUp() throws URISyntaxException {
-        catalogAdapter = IcebergTools.createAdapter(DbResource.openCatalog("pyiceberg-1"));
+        catalogAdapter = DbResource.openCatalog("pyiceberg-1");
     }
 
     @Test
     void catalogInfo() {
         assertThat(catalogAdapter.listNamespaces()).containsExactly(NAMESPACE);
         assertThat(catalogAdapter.listTables(NAMESPACE)).containsExactly(CITIES_ID);
-        final List<Snapshot> snapshots = catalogAdapter.listSnapshots(CITIES_ID);
+
+        final IcebergTableAdapter tableAdapter = catalogAdapter.loadTable(CITIES_ID);
+        final List<Snapshot> snapshots = tableAdapter.listSnapshots();
         assertThat(snapshots).hasSize(2);
         {
             final Snapshot snapshot = snapshots.get(0);
@@ -79,9 +82,15 @@ public class PyIceberg1Test {
     void cities1() {
         final Table cities1;
         {
-            final TableDefinition td = catalogAdapter.getTableDefinition(CITIES_ID.toString(), SNAPSHOT_1_ID, null);
+            final IcebergTableAdapter tableAdapter = catalogAdapter.loadTable(CITIES_ID);
+            final TableDefinition td = tableAdapter.definition(IcebergReadInstructions.builder()
+                    .snapshotId(SNAPSHOT_1_ID)
+                    .build());
             assertThat(td).isEqualTo(CITIES_1_TD);
-            cities1 = catalogAdapter.readTable(CITIES_ID, SNAPSHOT_1_ID);
+
+            cities1 = tableAdapter.table(IcebergReadInstructions.builder()
+                    .snapshotId(SNAPSHOT_1_ID)
+                    .build());
             assertThat(cities1.getDefinition()).isEqualTo(CITIES_1_TD);
         }
         final Table expectedCities1 = TableTools.newTable(CITIES_1_TD,
@@ -95,9 +104,15 @@ public class PyIceberg1Test {
     void cities2() {
         final Table cities2;
         {
-            final TableDefinition td = catalogAdapter.getTableDefinition(CITIES_ID.toString(), SNAPSHOT_2_ID, null);
+            final IcebergTableAdapter tableAdapter = catalogAdapter.loadTable(CITIES_ID);
+            final TableDefinition td = tableAdapter.definition(IcebergReadInstructions.builder()
+                    .snapshotId(SNAPSHOT_2_ID)
+                    .build());
             assertThat(td).isEqualTo(CITIES_2_TD);
-            cities2 = catalogAdapter.readTable(CITIES_ID, SNAPSHOT_2_ID);
+
+            cities2 = tableAdapter.table(IcebergReadInstructions.builder()
+                    .snapshotId(SNAPSHOT_2_ID)
+                    .build());
             assertThat(cities2.getDefinition()).isEqualTo(CITIES_2_TD);
         }
         // TODO(deephaven-core#6118): Iceberg column rename handling

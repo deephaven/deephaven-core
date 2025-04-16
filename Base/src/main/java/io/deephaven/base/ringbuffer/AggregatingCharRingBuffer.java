@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.base.ringbuffer;
 
@@ -430,11 +430,16 @@ public class AggregatingCharRingBuffer {
         final long prevHead = internalBuffer.head;
         final int prevSize = size();
 
-        internalBuffer.clear();
+        // Reset the pointers in the ring buffer without clearing the storage array. This leaves existing `identityVal`
+        // entries in place for the next `evaluate()` call.
+        internalBuffer.head = internalBuffer.tail = 0;
 
         calcHead = calcTail = 0;
-        // Reset the cleared storage entries to the identity value
+
+        // Reset the previously populated storage entries to the identity value. After this call, all entries in the
+        // storage buffer are `identityVal`
         fillWithIdentityVal(prevHead, prevSize);
+
         // Reset the tree buffer with the identity value
         Arrays.fill(treeStorage, identityVal);
     }

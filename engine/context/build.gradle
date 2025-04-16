@@ -19,8 +19,6 @@ dependencies {
 
     implementation libs.f4b6a3.uuid.creator
 
-    implementation libs.commons.text
-
     compileOnly project(':util-immutables')
     annotationProcessor libs.immutables.value
 

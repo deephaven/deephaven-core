@@ -1,10 +1,10 @@
 #
-# Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
 import unittest
 
 from deephaven import read_csv, empty_table
-from deephaven.agg import sum_, avg, count_, first, last, max_, min_, std, abs_sum, \
+from deephaven.agg import sum_, avg, count_, count_where, first, last, max_, min_, std, abs_sum, \
     var
 from deephaven.filters import Filter
 from deephaven.table import NodeType
@@ -18,6 +18,7 @@ class RollupAndTreeTableTestCase(BaseTestCase):
         self.aggs_for_rollup = [
             avg(["aggAvg=var"]),
             count_("aggCount"),
+            count_where("aggCountWhere", "var > 0"),
             first(["aggFirst=var"]),
             last(["aggLast=var"]),
             max_(["aggMax=var"]),

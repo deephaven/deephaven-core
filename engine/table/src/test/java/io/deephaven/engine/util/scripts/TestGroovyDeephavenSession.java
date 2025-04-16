@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.util.scripts;
 
@@ -57,6 +57,7 @@ public class TestGroovyDeephavenSession {
 
     @After
     public void teardown() {
+        session.cleanup();
         executionContext.close();
         LivenessScopeStack.pop(livenessScope);
         livenessScope.release();

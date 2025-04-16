@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.updateby;
 
@@ -39,9 +39,10 @@ class UpdateByWindowRollingTime extends UpdateByWindowRollingBase {
                 final TrackingRowSet timestampValidRowSet,
                 final boolean timestampsModified,
                 final int chunkSize,
-                final boolean initialStep) {
+                final boolean initialStep,
+                final Object[] bucketKeyValues) {
             super(sourceRowSet, timestampColumnSource, timestampSsa, timestampValidRowSet, timestampsModified,
-                    chunkSize, initialStep);
+                    chunkSize, initialStep, bucketKeyValues);
         }
     }
 
@@ -72,9 +73,10 @@ class UpdateByWindowRollingTime extends UpdateByWindowRollingBase {
             final TrackingRowSet timestampValidRowSet,
             final boolean timestampsModified,
             final int chunkSize,
-            final boolean isInitializeStep) {
+            final boolean isInitializeStep,
+            final Object[] bucketKeyValues) {
         return new UpdateByWindowTimeBucketContext(sourceRowSet, timestampColumnSource, timestampSsa,
-                timestampValidRowSet, timestampsModified, chunkSize, isInitializeStep);
+                timestampValidRowSet, timestampsModified, chunkSize, isInitializeStep, bucketKeyValues);
     }
 
     /**

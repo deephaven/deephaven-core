@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.util;
 
@@ -45,13 +45,17 @@ public class BarrageMessage implements SafeCloseable {
 
     public long firstSeq = -1;
     public long lastSeq = -1;
-    public long step = -1;
+    /** The size of the table after this update. -1 if unknown. */
+    public long tableSize = -1;
 
-    public boolean isSnapshot;
+    /** The RowSet the server is now respecting for this client; only set when parsing on the client. */
     public RowSet snapshotRowSet;
+    /** Whether the server-respecting viewport is a tail; only set when parsing on the client. */
     public boolean snapshotRowSetIsReversed;
+    /** The BitSet of columns the server is now respecting for this client; only set when parsing on the client. */
     public BitSet snapshotColumns;
 
+    public boolean isSnapshot;
     public RowSet rowsAdded;
     public RowSet rowsIncluded;
     public RowSet rowsRemoved;

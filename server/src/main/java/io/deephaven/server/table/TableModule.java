@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.server.table;
 
@@ -238,5 +238,10 @@ public interface TableModule {
     @IntoMap
     @BatchOpCode(BatchTableRequest.Operation.OpCase.META_TABLE)
     GrpcTableOperation<?> bindMeta(MetaTableGrpcImpl op);
+
+    @Binds
+    @IntoMap
+    @BatchOpCode(BatchTableRequest.Operation.OpCase.SLICE)
+    GrpcTableOperation<?> bindSlice(SliceGrpcImpl op);
 
 }

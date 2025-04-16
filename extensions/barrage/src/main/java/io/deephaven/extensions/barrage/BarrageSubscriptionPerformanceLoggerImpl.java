@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.extensions.barrage;
 
@@ -28,7 +28,7 @@ class BarrageSubscriptionPerformanceLoggerImpl implements BarrageSubscriptionPer
                 ExecutionContext.getContext().getUpdateGraph(),
                 BarrageSubscriptionPerformanceLoggerImpl.class.getName(),
                 Map.of(
-                        BaseTable.BARRAGE_PERFORMANCE_KEY_ATTRIBUTE,
+                        Table.BARRAGE_PERFORMANCE_KEY_ATTRIBUTE,
                         BarrageSubscriptionPerformanceLogger.getDefaultTableName()));
         blink = adapter.table();
     }

@@ -1,16 +1,19 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.iceberg.layout;
 
-import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder;
-import io.deephaven.iceberg.location.IcebergTableLocationKey;
-import io.deephaven.iceberg.util.IcebergInstructions;
 import io.deephaven.iceberg.internal.DataInstructionsProviderLoader;
+import io.deephaven.iceberg.location.IcebergTableLocationKey;
+import io.deephaven.iceberg.util.IcebergReadInstructions;
+import io.deephaven.iceberg.util.IcebergTableAdapter;
+import io.deephaven.parquet.table.ParquetInstructions;
+import io.deephaven.util.annotations.InternalUseOnly;
+import io.deephaven.util.channel.SeekableChannelsProvider;
 import org.apache.iceberg.*;
-import org.apache.iceberg.io.FileIO;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.net.URI;
 
@@ -18,31 +21,43 @@ import java.net.URI;
  * Iceberg {@link TableLocationKeyFinder location finder} for tables without partitions that will discover data files
  * from a {@link Snapshot}
  */
+@InternalUseOnly
 public final class IcebergFlatLayout extends IcebergBaseLayout {
+
     /**
-     * @param tableDef The {@link TableDefinition} that will be used for the table.
-     * @param table The {@link Table} to discover locations for.
-     * @param tableSnapshot The {@link Snapshot} from which to discover data files.
-     * @param fileIO The file IO to use for reading manifest data files.
+     * @param tableAdapter The {@link IcebergTableAdapter} that will be used to access the table.
      * @param instructions The instructions for customizations while reading.
+     * @param dataInstructionsProvider The provider for special instructions, to be used if special instructions not
+     *        provided in the {@code instructions}.
      */
+    // TODO(DH-19072): Refactor Iceberg TLKFs to reduce visibility
+    @Deprecated(forRemoval = true)
     public IcebergFlatLayout(
-            @NotNull final TableDefinition tableDef,
-            @NotNull final Table table,
-            @NotNull final Snapshot tableSnapshot,
-            @NotNull final FileIO fileIO,
-            @NotNull final IcebergInstructions instructions,
+            @NotNull final IcebergTableAdapter tableAdapter,
+            @NotNull final IcebergReadInstructions instructions,
             @NotNull final DataInstructionsProviderLoader dataInstructionsProvider) {
-        super(tableDef, table, tableSnapshot, fileIO, instructions, dataInstructionsProvider);
+        super(tableAdapter, instructions, dataInstructionsProvider);
+    }
+
+    public IcebergFlatLayout(
+            @NotNull IcebergTableAdapter tableAdapter,
+            @NotNull ParquetInstructions parquetInstructions,
+            @NotNull SeekableChannelsProvider seekableChannelsProvider,
+            @Nullable Snapshot snapshot) {
+        super(tableAdapter, parquetInstructions, seekableChannelsProvider, snapshot);
     }
 
     @Override
     public String toString() {
-        return IcebergFlatLayout.class.getSimpleName() + '[' + table.name() + ']';
+        return IcebergFlatLayout.class.getSimpleName() + '[' + tableAdapter + ']';
     }
 
     @Override
-    IcebergTableLocationKey keyFromDataFile(DataFile df, URI fileUri) {
-        return locationKey(df.format(), fileUri, null);
+    IcebergTableLocationKey keyFromDataFile(
+            @NotNull final ManifestFile manifestFile,
+            @NotNull final DataFile dataFile,
+            @NotNull final URI fileUri,
+            @NotNull final SeekableChannelsProvider channelsProvider) {
+        return locationKey(manifestFile, dataFile, fileUri, null, channelsProvider);
     }
 }

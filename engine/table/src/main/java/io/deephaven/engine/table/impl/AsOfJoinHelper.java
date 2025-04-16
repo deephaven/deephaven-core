@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl;
 
@@ -38,6 +38,7 @@ import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseableList;
 import org.jetbrains.annotations.NotNull;
 
+import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.util.*;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -1335,11 +1336,14 @@ public class AsOfJoinHelper {
                         result.notifyListeners(downstream);
                     }
 
+                    @OverridingMethodsMustInvokeSuper
                     @Override
                     protected void destroy() {
                         super.destroy();
-                        leftStampKeys.close();
-                        leftStampValues.close();
+                        getUpdateGraph().runWhenIdle(() -> {
+                            leftStampKeys.close();
+                            leftStampValues.close();
+                        });
                     }
                 });
 
@@ -1516,11 +1520,14 @@ public class AsOfJoinHelper {
                                     }
                                 }
 
+                                @OverridingMethodsMustInvokeSuper
                                 @Override
                                 protected void destroy() {
                                     super.destroy();
-                                    compactedRightStampKeys.close();
-                                    compactedRightStampValues.close();
+                                    getUpdateGraph().runWhenIdle(() -> {
+                                        compactedRightStampKeys.close();
+                                        compactedRightStampValues.close();
+                                    });
                                 }
                             });
 

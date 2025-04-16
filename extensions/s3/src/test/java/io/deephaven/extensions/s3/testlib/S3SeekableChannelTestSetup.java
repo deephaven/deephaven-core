@@ -1,11 +1,13 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.extensions.s3.testlib;
 
+import io.deephaven.extensions.s3.S3Constants;
 import io.deephaven.extensions.s3.S3Instructions;
-import io.deephaven.extensions.s3.S3SeekableChannelProviderPlugin;
+import io.deephaven.extensions.s3.UniversalS3SeekableChannelProviderPlugin;
 import io.deephaven.util.channel.SeekableChannelsProvider;
+import io.deephaven.util.channel.SeekableChannelsProviderPlugin;
 import software.amazon.awssdk.core.async.AsyncRequestBody;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
@@ -25,7 +27,11 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import static io.deephaven.extensions.s3.testlib.S3Helper.TIMEOUT_SECONDS;
+
 public abstract class S3SeekableChannelTestSetup {
+
+    protected static final String SCHEME = S3Constants.S3_URI_SCHEME;
 
     protected ExecutorService executor;
     protected S3AsyncClient asyncClient;
@@ -39,23 +45,25 @@ public abstract class S3SeekableChannelTestSetup {
         executor = Executors.newCachedThreadPool();
         bucket = UUID.randomUUID().toString();
         asyncClient = s3AsyncClient();
-        asyncClient.createBucket(CreateBucketRequest.builder().bucket(bucket).build()).get(5, TimeUnit.SECONDS);
+        asyncClient.createBucket(CreateBucketRequest.builder().bucket(bucket).build())
+                .get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
     }
 
     protected final void doTearDown() throws ExecutionException, InterruptedException, TimeoutException {
         S3Helper.deleteAllKeys(asyncClient, bucket);
-        asyncClient.deleteBucket(DeleteBucketRequest.builder().bucket(bucket).build()).get(5, TimeUnit.SECONDS);
+        asyncClient.deleteBucket(DeleteBucketRequest.builder().bucket(bucket).build())
+                .get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
         asyncClient.close();
         executor.shutdownNow();
     }
 
     protected void uploadDirectory(final Path directory, final String prefix)
             throws ExecutionException, InterruptedException, TimeoutException {
-        S3Helper.uploadDirectory(asyncClient, directory, bucket, prefix, Duration.ofSeconds(5));
+        S3Helper.uploadDirectory(asyncClient, directory, bucket, prefix, Duration.ofSeconds(TIMEOUT_SECONDS));
     }
 
     protected final URI uri(String key) {
-        return URI.create(String.format("s3://%s/%s", bucket, key));
+        return URI.create(String.format("%s://%s/%s", SCHEME, bucket, key));
     }
 
     protected final void putObject(String key, AsyncRequestBody body)
@@ -64,10 +72,10 @@ public abstract class S3SeekableChannelTestSetup {
                 TimeUnit.SECONDS);
     }
 
-    protected final SeekableChannelsProvider providerImpl(URI uri) {
-        final S3SeekableChannelProviderPlugin plugin = new S3SeekableChannelProviderPlugin();
+    protected final SeekableChannelsProvider providerImpl() {
+        final SeekableChannelsProviderPlugin plugin = new UniversalS3SeekableChannelProviderPlugin();
         final S3Instructions instructions = s3Instructions(S3Instructions.builder()).build();
-        return plugin.createProvider(uri, instructions);
+        return plugin.createProvider(SCHEME, instructions);
     }
 
     protected static ByteBuffer readAll(ReadableByteChannel channel, int maxBytes) throws IOException {

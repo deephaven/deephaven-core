@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.updateby;
 
@@ -47,7 +47,8 @@ abstract class UpdateByWindow {
         protected final boolean timestampsModified;
         /** Whether this is the creation phase of this window */
         protected final boolean initialStep;
-
+        /** Store the key values for this bucket */
+        protected final Object[] bucketKeyValues;
 
         /** An array of ColumnSources for each underlying operator */
         protected ColumnSource<?>[] inputSources;
@@ -71,12 +72,14 @@ abstract class UpdateByWindow {
                 final TrackingRowSet timestampValidRowSet,
                 final boolean timestampsModified,
                 final int chunkSize,
-                final boolean initialStep) {
+                final boolean initialStep,
+                @NotNull final Object[] bucketKeyValues) {
             this.sourceRowSet = sourceRowSet;
             this.timestampColumnSource = timestampColumnSource;
             this.timestampSsa = timestampSsa;
             this.timestampValidRowSet = timestampValidRowSet;
             this.timestampsModified = timestampsModified;
+            this.bucketKeyValues = bucketKeyValues;
 
             workingChunkSize = chunkSize;
             this.initialStep = initialStep;
@@ -91,13 +94,15 @@ abstract class UpdateByWindow {
         }
     }
 
-    abstract UpdateByWindowBucketContext makeWindowContext(final TrackingRowSet sourceRowSet,
+    abstract UpdateByWindowBucketContext makeWindowContext(
+            final TrackingRowSet sourceRowSet,
             final ColumnSource<?> timestampColumnSource,
             final LongSegmentedSortedArray timestampSsa,
             final TrackingRowSet timestampValidRowSet,
             final boolean timestampsModified,
             final int chunkSize,
-            final boolean isInitializeStep);
+            final boolean isInitializeStep,
+            final Object[] bucketKeyValues);
 
     UpdateByWindow(final UpdateByOperator[] operators,
             final int[][] operatorInputSourceSlots,

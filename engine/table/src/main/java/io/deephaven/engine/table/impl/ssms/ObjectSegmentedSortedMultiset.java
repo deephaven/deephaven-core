@@ -1,11 +1,13 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit CharSegmentedSortedMultiset and run "./gradlew replicateSegmentedSortedMultiset" to regenerate
 //
 // @formatter:off
 package io.deephaven.engine.table.impl.ssms;
+
+import java.lang.reflect.Array;
 
 import gnu.trove.set.hash.THashSet;
 
@@ -2220,11 +2222,15 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
      */
     private Object[] keyArray(long first, long last) {
         if (isEmpty()) {
-            return ArrayTypeUtils.EMPTY_OBJECT_ARRAY;
+            // region EmptyKeyArrayAllocation
+            return (Object[]) Array.newInstance(getComponentType(), 0);
+            // endregion EmptyKeyArrayAllocation
         }
 
         final int totalSize = (int) (last - first + 1);
-        final Object[] keyArray = new Object[totalSize];
+        // region KeyArrayAllocation
+        final Object[] keyArray = (Object[]) Array.newInstance(getComponentType(), totalSize);
+        // endregion KeyArrayAllocation
         if (leafCount == 1) {
             System.arraycopy(directoryValues, (int) first, keyArray, 0, totalSize);
         } else if (leafCount > 0) {

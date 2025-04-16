@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.base;
 
@@ -282,7 +282,7 @@ public class FileUtils {
                 return convertToURI(new File(uri), isDirectory);
             }
             String path = uri.getPath();
-            final boolean endsWithSlash = path.charAt(path.length() - 1) == URI_SEPARATOR_CHAR;
+            final boolean endsWithSlash = !path.isEmpty() && path.charAt(path.length() - 1) == URI_SEPARATOR_CHAR;
             if (!isDirectory && endsWithSlash) {
                 throw new IllegalArgumentException("Non-directory URI should not end with a slash: " + uri);
             }

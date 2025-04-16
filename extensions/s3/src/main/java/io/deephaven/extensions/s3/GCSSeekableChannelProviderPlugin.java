@@ -1,11 +1,12 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.extensions.s3;
 
 import com.google.auto.service.AutoService;
 import io.deephaven.util.channel.SeekableChannelsProvider;
 import io.deephaven.util.channel.SeekableChannelsProviderPlugin;
+import io.deephaven.util.channel.SeekableChannelsProviderPluginBase;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -15,7 +16,7 @@ import java.net.URI;
  * {@link SeekableChannelsProviderPlugin} implementation used for reading files from Google Cloud Storage.
  */
 @AutoService(SeekableChannelsProviderPlugin.class)
-public final class GCSSeekableChannelProviderPlugin implements SeekableChannelsProviderPlugin {
+public final class GCSSeekableChannelProviderPlugin extends SeekableChannelsProviderPluginBase {
 
     static final String GCS_URI_SCHEME = "gs";
 
@@ -25,16 +26,14 @@ public final class GCSSeekableChannelProviderPlugin implements SeekableChannelsP
             S3Instructions.builder().endpointOverride(DEFAULT_ENDPOINT_OVERRIDE).build();
 
     @Override
-    public boolean isCompatible(@NotNull final URI uri, @Nullable final Object config) {
-        return GCS_URI_SCHEME.equals(uri.getScheme());
+    public boolean isCompatible(@NotNull final String uriScheme, @Nullable final Object config) {
+        return GCS_URI_SCHEME.equals(uriScheme);
     }
 
     @Override
-    public SeekableChannelsProvider createProvider(@NotNull final URI uri, @Nullable final Object config) {
-        if (!isCompatible(uri, config)) {
-            throw new IllegalArgumentException("Arguments not compatible, provided uri " + uri);
-        }
-        return new GCSSeekableChannelProvider(s3Instructions(config));
+    protected SeekableChannelsProvider createProviderImpl(@NotNull final String uriScheme,
+            @Nullable final Object config) {
+        return new S3DelegateProvider(GCS_URI_SCHEME, new S3SeekableChannelProvider(s3Instructions(config)));
     }
 
     /**

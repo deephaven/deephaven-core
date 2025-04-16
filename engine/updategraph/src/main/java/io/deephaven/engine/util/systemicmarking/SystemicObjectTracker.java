@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.util.systemicmarking;
 
@@ -34,11 +34,21 @@ public class SystemicObjectTracker {
     }
 
     /**
-     * Marks the current thread as systemically important, this is a permanent change.
+     * Marks the current thread as systemically important. This can be changed with {@link #markThreadNotSystemic()}
      */
     public static void markThreadSystemic() {
         if (SYSTEMIC_OBJECT_MARKING_ENABLED) {
             SYSTEMIC_CREATION_THREAD.set(true);
+        }
+    }
+
+    /**
+     * Marks the current thread as not systemically important. This can be changed with {@link #markThreadSystemic()}
+     * ()}
+     */
+    public static void markThreadNotSystemic() {
+        if (SYSTEMIC_OBJECT_MARKING_ENABLED) {
+            SYSTEMIC_CREATION_THREAD.set(false);
         }
     }
 

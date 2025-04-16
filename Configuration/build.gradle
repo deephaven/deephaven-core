@@ -7,7 +7,6 @@ dependencies {
     api libs.trove
 
     implementation project(':Base')
-    implementation project(':DataStructures')
     implementation project(':IO')
     implementation project(':log-factory')
     implementation libs.commons.lang3

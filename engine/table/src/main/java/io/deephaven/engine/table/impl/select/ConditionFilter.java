@@ -1,10 +1,11 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.base.Pair;
 import io.deephaven.chunk.attributes.Any;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryCompilerImpl;
 import io.deephaven.engine.context.QueryCompilerRequest;
@@ -48,7 +49,6 @@ import static io.deephaven.engine.table.impl.select.DhFormulaColumn.COLUMN_SUFFI
  * A condition filter evaluates a formula against a table.
  */
 public class ConditionFilter extends AbstractConditionFilter {
-
     public static final int CHUNK_SIZE = ChunkUtils.DEFAULT_CHUNK_SIZE;
     private Future<Class<?>> filterKernelClassFuture = null;
     private List<Pair<String, Class<?>>> usedInputs; // that is columns and special variables
@@ -114,8 +114,19 @@ public class ConditionFilter extends AbstractConditionFilter {
 
         CONTEXT getContext(int maxChunkSize);
 
-        LongChunk<OrderedRowKeys> filter(CONTEXT context, LongChunk<OrderedRowKeys> indices,
-                Chunk... inputChunks);
+        LongChunk<OrderedRowKeys> filter(CONTEXT context, LongChunk<OrderedRowKeys> indices, Chunk... inputChunks);
+
+        int filter(
+                CONTEXT context,
+                Chunk[] inputChunks,
+                int chunkSize,
+                WritableBooleanChunk<Values> results);
+
+        int filterAnd(
+                CONTEXT context,
+                Chunk[] inputChunks,
+                int chunkSize,
+                WritableBooleanChunk<Values> results);
     }
 
 
@@ -376,6 +387,37 @@ public class ConditionFilter extends AbstractConditionFilter {
                 return resultBuilder.build();
             }
         }
+
+        @Override
+        public FilterKernel.Context getContext(int chunkSize) {
+            return filterKernel.getContext(chunkSize);
+        }
+
+        @Override
+        public LongChunk<OrderedRowKeys> filter(
+                final FilterKernel.Context context,
+                final LongChunk<OrderedRowKeys> inputKeys,
+                final Chunk<? extends Values>[] valueChunks) {
+            return filterKernel.filter(context, inputKeys, valueChunks);
+        }
+
+        @Override
+        public int filter(
+                final FilterKernel.Context context,
+                final Chunk<? extends Values>[] valueChunks,
+                final int chunkSize,
+                final WritableBooleanChunk<Values> results) {
+            return filterKernel.filter(context, valueChunks, chunkSize, results);
+        }
+
+        @Override
+        public int filterAnd(
+                final FilterKernel.Context context,
+                final Chunk<? extends Values>[] valueChunks,
+                final int chunkSize,
+                final WritableBooleanChunk<Values> results) {
+            return filterKernel.filterAnd(context, valueChunks, chunkSize, results);
+        }
     }
 
     private static String toTitleCase(String input) {
@@ -551,6 +593,105 @@ public class ConditionFilter extends AbstractConditionFilter {
                 "@Override\n" +
                 "public LongChunk<OrderedRowKeys> filter(Context __context, LongChunk<OrderedRowKeys> __indices, Chunk... __inputChunks) {\n");
         indenter.increaseLevel();
+        insertChunks(classBody, indenter);
+        indenter.indent(classBody, "final int __size = __indices.size();\n" +
+                "__context.resultChunk.setSize(0);\n" +
+                "for (int __my_i__ = 0; __my_i__ < __size; __my_i__++) {\n");
+        indenter.increaseLevel();
+        insertChunkValues(classBody, indenter);
+        classBody.append("" +
+                "            if (").append(result.getConvertedExpression()).append(") {\n" +
+                        "                __context.resultChunk.add(__indices.get(__my_i__));\n" +
+                        "            }\n" +
+                        "        }\n" +
+                        "        return __context.resultChunk;\n" +
+                        "    }\n");
+        indenter.decreaseLevel();
+        indenter.decreaseLevel();
+
+        //////////////////////////////////
+
+        indenter.indent(classBody, "\n" +
+                "@Override\n" +
+                "public int filter(final Context __context, final Chunk[] __inputChunks, final int __chunkSize, final WritableBooleanChunk<Values> __results) {\n");
+        indenter.increaseLevel();
+        insertChunks(classBody, indenter);
+
+        indenter.indent(classBody, "" +
+                "__results.setSize(__chunkSize);\n" +
+                "int __count = 0;\n" +
+                "for (int __my_i__ = 0; __my_i__ < __chunkSize; __my_i__++) {");
+        indenter.increaseLevel();
+        insertChunkValues(classBody, indenter);
+        indenter.indent(classBody, "" +
+                "final boolean __newResult = " + result.getConvertedExpression() + ";\n" +
+                "__results.set(__my_i__, __newResult);\n" +
+                "// count every true value\n" +
+                "__count += __newResult ? 1 : 0;\n");
+        indenter.decreaseLevel();
+        indenter.indent(classBody, "" +
+                "}\n" +
+                "return __count;");
+        indenter.decreaseLevel();
+        indenter.indent(classBody, "" +
+                "}\n");
+
+        //////////////////////////////////
+
+        indenter.indent(classBody, "\n" +
+                "@Override\n" +
+                "public int filterAnd(final Context __context, final Chunk[] __inputChunks, final int __chunkSize, final WritableBooleanChunk<Values> __results) {\n");
+        indenter.increaseLevel();
+        insertChunks(classBody, indenter);
+
+        indenter.indent(classBody, "" +
+                "__results.setSize(__chunkSize);\n" +
+                "int __count = 0;\n" +
+                "for (int __my_i__ = 0; __my_i__ < __chunkSize; __my_i__++) {\n");
+        indenter.increaseLevel();
+        indenter.indent(classBody, "" +
+                "final boolean __result = __results.get(__my_i__);\n" +
+                "if (!__result) {\n" +
+                "    // already false, no need to compute or increment the count\n" +
+                "    continue;\n" +
+                "}");
+        insertChunkValues(classBody, indenter);
+        indenter.indent(classBody, "" +
+                "final boolean __newResult = " + result.getConvertedExpression() + ";\n" +
+                "__results.set(__my_i__, __newResult);\n" +
+                "__results.set(__my_i__, __newResult);\n" +
+                "// increment the count if the new result is TRUE\n" +
+                "__count += __newResult ? 1 : 0;\n");
+
+        indenter.decreaseLevel();
+        indenter.indent(classBody, "" +
+                "}\n" +
+                "return __count;");
+        indenter.decreaseLevel();
+        indenter.indent(classBody, "" +
+                "}\n\n");
+
+        //////////////////////////////////
+
+        indenter.decreaseLevel();
+        indenter.indent(classBody, "" +
+                "}\n\n");
+
+        return classBody;
+    }
+
+    private void insertChunkValues(StringBuilder classBody, Indenter indenter) {
+        for (int i = 0; i < usedInputs.size(); i++) {
+            final Pair<String, Class<?>> usedInput = usedInputs.get(i);
+            final Class<?> columnType = usedInput.second;
+            final String canonicalName = columnType.getCanonicalName();
+            classBody.append(indenter).append("final ").append(canonicalName).append(" ").append(usedInput.first)
+                    .append(" =  (").append(canonicalName).append(")__columnChunk").append(i)
+                    .append(".get(__my_i__);\n");
+        }
+    }
+
+    private void insertChunks(StringBuilder classBody, Indenter indenter) {
         for (int i = 0; i < usedInputs.size(); i++) {
             final Class<?> columnType = usedInputs.get(i).second;
             final String chunkType;
@@ -563,31 +704,11 @@ public class ConditionFilter extends AbstractConditionFilter {
             classBody.append(indenter).append("final ").append(chunkType).append(" __columnChunk").append(i)
                     .append(" = __inputChunks[").append(i).append("].as").append(chunkType).append("();\n");
         }
-        indenter.indent(classBody, "final int __size = __indices.size();\n" +
-                "__context.resultChunk.setSize(0);\n" +
-                "for (int __my_i__ = 0; __my_i__ < __size; __my_i__++) {\n");
-        indenter.increaseLevel();
-        for (int i = 0; i < usedInputs.size(); i++) {
-            final Pair<String, Class<?>> usedInput = usedInputs.get(i);
-            final Class<?> columnType = usedInput.second;
-            final String canonicalName = columnType.getCanonicalName();
-            classBody.append(indenter).append("final ").append(canonicalName).append(" ").append(usedInput.first)
-                    .append(" =  (").append(canonicalName).append(")__columnChunk").append(i)
-                    .append(".get(__my_i__);\n");
-        }
-        classBody.append(
-                "            if (").append(result.getConvertedExpression()).append(") {\n" +
-                        "                __context.resultChunk.add(__indices.get(__my_i__));\n" +
-                        "            }\n" +
-                        "        }\n" +
-                        "        return __context.resultChunk;\n" +
-                        "    }\n" +
-                        "}");
-        return classBody;
     }
 
     @Override
-    protected Filter getFilter(Table table, RowSet fullSet)
+    @NotNull
+    public Filter getFilter(Table table, RowSet fullSet)
             throws InstantiationException, IllegalAccessException, NoSuchMethodException, InvocationTargetException {
         if (filter == null) {
             try {

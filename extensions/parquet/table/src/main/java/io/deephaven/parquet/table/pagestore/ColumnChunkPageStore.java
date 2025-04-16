@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.parquet.table.pagestore;
 
@@ -237,6 +237,6 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
         }
         // Create a new channel context object and a wrapper for holding it
         // noinspection unchecked
-        return (T) new ChannelContextWrapper(chunkCapacity, sharedContext, channelsProvider.makeContext());
+        return (T) new ChannelContextWrapper(chunkCapacity, sharedContext, channelsProvider.makeReadContext());
     }
 }

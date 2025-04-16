@@ -5,6 +5,7 @@ plugins {
 dependencies {
     implementation project(':Base')
     implementation project(':Util')
+    implementation project(":util-pool")
     testRuntimeOnly project(path: ':configs')
     testRuntimeOnly project(path: ':test-configs')
 

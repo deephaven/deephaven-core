@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.rowset.impl.sortedranges;
 
@@ -43,7 +43,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
             SortedRanges.class, "longDenseMaxCapacity", 256);
 
     public static final int LONG_SPARSE_MAX_CAPACITY = Configuration.getInstance().getIntegerForClassWithDefault(
-            SortedRanges.class, "longSparseCapacity", 4096);
+            SortedRanges.class, "longSparseMaxCapacity", 4096);
 
     public static final int INT_DENSE_MAX_CAPACITY = Configuration.getInstance().getIntegerForClassWithDefault(
             SortedRanges.class, "intDenseMaxCapacity", arraySizeRoundingInt(2 * LONG_DENSE_MAX_CAPACITY));

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl;
 
@@ -105,6 +105,30 @@ public class TestTableUpdateValidator extends QueryTableTestBase {
             } catch (TableAlreadyFailedException e) {
                 assertEquals("Can not listen to failed table QueryTable", e.getMessage());
             }
+        } finally {
+            QueryScope.addParam("mult", null);
+        }
+    }
+
+    @Test
+    public void testMCS() {
+        final MutableInt mult = new MutableInt(2);
+
+        final QueryTable table1 = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(), intCol("x", 1, 2, 3));
+        QueryScope.addParam("mult", mult);
+        try {
+            final Table table2 = table1.updateView("Y=x*mult.get()");
+            final QueryTable table3 = TableUpdateValidator.make((QueryTable) table2).getResultTable();
+
+            final Table table4 = table3.updateView("Z=Y*2");
+
+            ControlledUpdateGraph updateGraph = table1.updateGraph.cast();
+            updateGraph.runWithinUnitTestCycle(() -> {
+                addToTable(table1, i(6), intCol("x", 4));
+                table1.notifyListeners(i(), i(), i(6));
+            });
+
+            assertTableEquals(table1.updateView("Y=x*2", "Z=Y*2"), table4);
         } finally {
             QueryScope.addParam("mult", null);
         }

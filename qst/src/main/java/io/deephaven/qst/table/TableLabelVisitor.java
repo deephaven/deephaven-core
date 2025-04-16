@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.qst.table;
 
@@ -62,6 +62,11 @@ public class TableLabelVisitor extends TableVisitorGeneric<String> {
     @Override
     public String visit(TailTable tailTable) {
         return "tail(" + tailTable.size() + ")";
+    }
+
+    @Override
+    public String visit(SliceTable sliceTable) {
+        return String.format("slice(%d,%d)", sliceTable.firstPositionInclusive(), sliceTable.lastPositionExclusive());
     }
 
     @Override
