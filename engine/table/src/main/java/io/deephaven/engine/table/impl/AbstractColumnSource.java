@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.api.filter.Filter;
 import io.deephaven.base.stats.Stats;
 import io.deephaven.base.stats.ThreadSafeCounter;
 import io.deephaven.base.stats.Value;
@@ -25,7 +26,9 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.chunkfillers.ChunkFiller;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkMatchFilterFactory;
+import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.sources.UnboxedLongBackedColumnSource;
+import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.table.iterators.ChunkedColumnIterator;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.hash.KeyedObjectHashSet;
@@ -41,6 +44,7 @@ import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.function.Consumer;
 
 public abstract class AbstractColumnSource<T> implements
         ColumnSource<T>,
@@ -354,6 +358,71 @@ public abstract class AbstractColumnSource<T> implements
                     + ", alternateDataType=" + alternateDataType);
         }
         return doReinterpret(alternateDataType);
+    }
+
+    /**
+     * Estimate the cost of executing the provided filter on this column source. This returns a unitless value that can
+     * be used to compare the cost of different filters.
+     *
+     * @param filter The {@link Filter filter} to test.
+     * @param selection The set of rows to test.
+     * @param fullSet The full set of rows in this column source
+     * @param usePrev Whether to use the previous result
+     * @return The estimated cost of the push down operation.
+     */
+    public long estimateFilterCost(
+            WhereFilter filter,
+            RowSet selection,
+            RowSet fullSet,
+            boolean usePrev) {
+        return Long.MAX_VALUE;
+    }
+
+    /**
+     * Estimate the cost of pushing down a filter. This returns a unitless value that can be used to compare the cost of
+     * executing different filters.
+     *
+     * @param filter The {@link Filter filter} to test.
+     * @param selection The set of rows to tests.
+     * @param fullSet The full set of rows
+     * @param usePrev Whether to use the previous result
+     * @return The estimated cost of the push down operation.
+     */
+    public long estimatePushdownFilterCost(
+            WhereFilter filter,
+            RowSet selection,
+            RowSet fullSet,
+            boolean usePrev) {
+        return Long.MAX_VALUE; // No benefit to pushing down.
+    }
+
+    /**
+     * Push down the given filter to the underlying table and return the result.
+     *
+     * @param filter The {@link Filter filter} to apply.
+     * @param input The set of rows to test.
+     * @param fullSet The full set of rows
+     * @param jobScheduler The job scheduler to use for scheduling child jobs
+     * @param onComplete Consumer of the output rowsets for added and modified rows that pass the filter
+     * @param onError Consumer of any exceptions that occur during the pushdown operation
+     * @return The result of the push down operation.
+     */
+    public void pushdownFilter(
+            final WhereFilter filter,
+            final RowSet input,
+            final RowSet fullSet,
+            final JobScheduler jobScheduler,
+            final Consumer<PushdownResult> onComplete,
+            final Consumer<Exception> onError) {
+        // Default to returning all results as maybe
+        onComplete.accept(PushdownResult.of(RowSetFactory.empty(), input.copy()));
+    }
+
+    /**
+     * Get the pushdown predicate manager for this column source; returns null if there is no pushdown manager.
+     */
+    public PushdownPredicateManager pushdownManager() {
+        return null;
     }
 
     /**
