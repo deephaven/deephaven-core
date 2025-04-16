@@ -101,13 +101,13 @@ public class UpdateAncestorViz {
     }
 
     @TestUseOnly
-    static Graphviz graphviz(long[] entryIds, Table updatePerformanceLog, Table updateAncestors) {
+    static Graph graph(long[] entryIds, Table updatePerformanceLog, Table updateAncestors) {
         UpdateAncestorViz updateAncestorViz = new UpdateAncestorViz(updatePerformanceLog, updateAncestors);
         return updateAncestorViz.makeGraph(entryIds);
     }
 
     private byte[] makeSvg(long[] entryIds) throws IOException {
-        Graphviz graphviz = makeGraph(entryIds);
+        Graphviz graphviz = Graphviz.fromGraph(makeGraph(entryIds));
 
         final ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
@@ -117,19 +117,19 @@ public class UpdateAncestorViz {
     }
 
     private String makeDot(long[] entryIds) {
-        Graphviz graphviz = makeGraph(entryIds);
+        Graphviz graphviz = Graphviz.fromGraph(makeGraph(entryIds));
         return graphviz.render(Format.DOT).toString();
     }
 
     @NotNull
-    private Graphviz makeGraph(long[] entryIds) {
+    private Graph makeGraph(long[] entryIds) {
         Graph g = guru.nidi.graphviz.model.Factory.graph("deephaven_update_graph").directed()
                 .graphAttr().with(Rank.dir(Rank.RankDir.TOP_TO_BOTTOM));
 
         for (long id : entryIds) {
             g = addEntry(g, id);
         }
-        return Graphviz.fromGraph(g);
+        return g;
     }
 
     private Graph addEntry(Graph g, long id) {

@@ -77,6 +77,25 @@ public abstract class BaseUpdateGraph implements UpdateGraph, LogOutputAppendabl
         return null;
     }
 
+    public static void logPerformanceEntryAncestors(
+            @Nullable final UpdateGraph updateGraph,
+            @Nullable final PerformanceEntry performanceEntry,
+            @Nullable final Supplier<long[]> ancestors) {
+        if (performanceEntry == null || ancestors == null) {
+            return;
+        }
+        final BaseUpdateGraph bug = (BaseUpdateGraph) updateGraph;
+        if (bug.updatePerformanceTracker == null) {
+            throw new IllegalStateException("Cannot create a performance entry for a BaseUpdateGraph that has "
+                    + "not been completely constructed.");
+        }
+
+        long[] ancestorArray = ancestors.get();
+        if (ancestorArray != null && ancestorArray.length > 0) {
+            bug.updatePerformanceTracker.logAncestors(updateGraph.getName(), performanceEntry, ancestorArray);
+        }
+    }
+
     private static final KeyedObjectHashMap<String, UpdateGraph> INSTANCES = new KeyedObjectHashMap<>(
             new KeyedObjectKey.BasicAdapter<>(UpdateGraph::getName));
 

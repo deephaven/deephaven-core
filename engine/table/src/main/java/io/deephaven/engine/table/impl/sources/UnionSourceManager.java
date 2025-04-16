@@ -60,7 +60,7 @@ public class UnionSourceManager {
      * {@link MergedUnionListener#canExecute(long)}, which is mutually-synchronized with all modification operations.
      */
     private final IntrusiveDoublyLinkedQueue<LinkedListenerRecorder> listenerRecorders;
-    private final MergedListener mergedListener;
+    private final MergedUnionListener mergedListener;
     private final ConstituentChangesListenerRecorder constituentChangesListener;
     private final UpdateCommitter<UnionSourceManager> updateCommitter;
     private final ExecutionContext executionContext;
@@ -126,6 +126,9 @@ public class UnionSourceManager {
                     listenerRecorders.offer(constituentListener);
                 }
             });
+        }
+        if (mergedListener != null) {
+            mergedListener.logAllAncestors();
         }
         unionRedirection.initializePrev();
     }
@@ -266,6 +269,12 @@ public class UnionSourceManager {
         protected boolean canExecute(final long step) {
             synchronized (listenerRecorders) {
                 return listenerRecorders.stream().allMatch(lr -> lr.satisfied(step));
+            }
+        }
+
+        public void logAllAncestors() {
+            synchronized (listenerRecorders) {
+                logNewAncestors(listenerRecorders);
             }
         }
     }

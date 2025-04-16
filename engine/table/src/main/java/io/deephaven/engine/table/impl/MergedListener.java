@@ -86,18 +86,23 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
         this.dependencies = dependencies;
         this.listenerDescription = listenerDescription;
         this.result = result;
-        this.entry = PeriodicUpdateGraph.createUpdatePerformanceEntry(this.updateGraph, listenerDescription, () -> {
-            final TLongArrayList parentList = new TLongArrayList();
-            recorders.forEach(rec -> {
-                if (rec.getParent() instanceof BaseTable) {
-                    final BaseTable<?> parentBase = (BaseTable<?>) (rec.getParent());
-                    parentBase.parentPerformanceEntryIds().forEach(parentList::add);
-                }
-            });
-            return parentList.toArray();
-        });
-
+        this.entry = PeriodicUpdateGraph.createUpdatePerformanceEntry(this.updateGraph, listenerDescription, () -> getParentIdentifiers(recorders));
         this.logPrefix = System.identityHashCode(this) + " " + listenerDescription + " Merged Listener: ";
+    }
+
+    protected void logNewAncestors(Iterable<? extends ListenerRecorder> recorders) {
+        PeriodicUpdateGraph.logPerformanceEntryAncestors(this.updateGraph, this.entry, () -> getParentIdentifiers(recorders));
+    }
+
+    private static long[] getParentIdentifiers(Iterable<? extends ListenerRecorder> recorders) {
+        final TLongArrayList parentList = new TLongArrayList();
+        recorders.forEach(rec -> {
+            if (rec.getParent() instanceof BaseTable) {
+                final BaseTable<?> parentBase = (BaseTable<?>) (rec.getParent());
+                parentBase.parentPerformanceEntryIds().forEach(parentList::add);
+            }
+        });
+        return parentList.toArray();
     }
 
     private void releaseFromRecorders() {
