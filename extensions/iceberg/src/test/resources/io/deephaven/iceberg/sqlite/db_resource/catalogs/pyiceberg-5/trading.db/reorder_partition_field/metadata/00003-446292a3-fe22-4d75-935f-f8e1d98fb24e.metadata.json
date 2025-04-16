@@ -1,3 +1,163 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:36ac5a9b128ee9771b74d7341c0b0327877d9529bdec614c4465ecf5cd2c8f16
-size 2954
+{
+  "location": "catalogs/pyiceberg-5/trading.db/reorder_partition_field",
+  "table-uuid": "10dc2d72-f312-43b4-aa63-674eed57d276",
+  "last-updated-ms": 1744741319088,
+  "last-column-id": 4,
+  "schemas": [
+    {
+      "type": "struct",
+      "fields": [
+        {
+          "id": 1,
+          "name": "datetime",
+          "type": "timestamp",
+          "required": false
+        },
+        {
+          "id": 2,
+          "name": "symbol",
+          "type": "string",
+          "required": false
+        },
+        {
+          "id": 3,
+          "name": "bid",
+          "type": "double",
+          "required": false
+        },
+        {
+          "id": 4,
+          "name": "ask",
+          "type": "double",
+          "required": false
+        }
+      ],
+      "schema-id": 0,
+      "identifier-field-ids": []
+    }
+  ],
+  "current-schema-id": 0,
+  "partition-specs": [
+    {
+      "spec-id": 0,
+      "fields": [
+        {
+          "source-id": 2,
+          "field-id": 1000,
+          "transform": "identity",
+          "name": "symbol"
+        },
+        {
+          "source-id": 3,
+          "field-id": 1001,
+          "transform": "identity",
+          "name": "bid"
+        }
+      ]
+    },
+    {
+      "spec-id": 1,
+      "fields": [
+        {
+          "source-id": 2,
+          "field-id": 1000,
+          "transform": "identity",
+          "name": "sym"
+        },
+        {
+          "source-id": 3,
+          "field-id": 1001,
+          "transform": "identity",
+          "name": "bid"
+        }
+      ]
+    }
+  ],
+  "default-spec-id": 1,
+  "last-partition-id": 1001,
+  "properties": {},
+  "current-snapshot-id": 4737757161072208000,
+  "snapshots": [
+    {
+      "snapshot-id": 7622530884861315000,
+      "sequence-number": 1,
+      "timestamp-ms": 1744741319079,
+      "manifest-list": "catalogs/pyiceberg-5/trading.db/reorder_partition_field/metadata/snap-7622530884861315498-0-c4acd757-800a-46ab-91ba-b5a6cb8da124.avro",
+      "summary": {
+        "operation": "append",
+        "added-files-size": "3256",
+        "added-data-files": "2",
+        "added-records": "2",
+        "changed-partition-count": "2",
+        "total-data-files": "2",
+        "total-delete-files": "0",
+        "total-records": "2",
+        "total-files-size": "3256",
+        "total-position-deletes": "0",
+        "total-equality-deletes": "0"
+      },
+      "schema-id": 0
+    },
+    {
+      "snapshot-id": 4737757161072208000,
+      "parent-snapshot-id": 7622530884861315000,
+      "sequence-number": 2,
+      "timestamp-ms": 1744741319088,
+      "manifest-list": "catalogs/pyiceberg-5/trading.db/reorder_partition_field/metadata/snap-4737757161072207489-0-6620afea-a994-4cde-925a-ab26e015f548.avro",
+      "summary": {
+        "operation": "append",
+        "added-files-size": "4884",
+        "added-data-files": "3",
+        "added-records": "3",
+        "changed-partition-count": "3",
+        "total-data-files": "5",
+        "total-delete-files": "0",
+        "total-records": "5",
+        "total-files-size": "8140",
+        "total-position-deletes": "0",
+        "total-equality-deletes": "0"
+      },
+      "schema-id": 0
+    }
+  ],
+  "snapshot-log": [
+    {
+      "snapshot-id": 7622530884861315000,
+      "timestamp-ms": 1744741319079
+    },
+    {
+      "snapshot-id": 4737757161072208000,
+      "timestamp-ms": 1744741319088
+    }
+  ],
+  "metadata-log": [
+    {
+      "metadata-file": "catalogs/pyiceberg-5/trading.db/reorder_partition_field/metadata/00000-3e436149-0244-4c1f-9a95-54288603a583.metadata.json",
+      "timestamp-ms": 1744741319074
+    },
+    {
+      "metadata-file": "catalogs/pyiceberg-5/trading.db/reorder_partition_field/metadata/00001-dac005fe-3379-4dd0-822b-b0aae8d7ab09.metadata.json",
+      "timestamp-ms": 1744741319079
+    },
+    {
+      "metadata-file": "catalogs/pyiceberg-5/trading.db/reorder_partition_field/metadata/00002-a40df638-215d-4da3-bfe9-88e65695e374.metadata.json",
+      "timestamp-ms": 1744741319081
+    }
+  ],
+  "sort-orders": [
+    {
+      "order-id": 0,
+      "fields": []
+    }
+  ],
+  "default-sort-order-id": 0,
+  "refs": {
+    "main": {
+      "snapshot-id": 4737757161072208000,
+      "type": "branch"
+    }
+  },
+  "statistics": [],
+  "format-version": 2,
+  "last-sequence-number": 2
+}
