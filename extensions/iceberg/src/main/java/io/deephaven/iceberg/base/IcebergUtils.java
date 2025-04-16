@@ -70,7 +70,7 @@ public final class IcebergUtils {
     }
 
     /**
-     * Convert an Iceberg data type to a Deephaven type.
+     * Convert an Iceberg data type to a Deephaven type. Used for reading data from Iceberg tables.
      *
      * @param icebergType The Iceberg data type to be converted.
      * @return The converted Deephaven type.
@@ -105,17 +105,55 @@ public final class IcebergUtils {
             case FIXED: // Fall through
             case BINARY:
                 return io.deephaven.qst.type.Type.find(byte[].class);
+            case LIST:
+                return convertToDHArrayType(icebergType.asListType());
             case UUID: // Fall through
             case STRUCT: // Fall through
-            case LIST: // Fall through
             case MAP: // Fall through
             default:
-                throw new TableDataException("Unsupported iceberg column type " + typeId.name());
+                throw new TableDataException("Iceberg columns of type " + typeId.name() + "is not supported when" +
+                        " reading data from Iceberg tables");
         }
     }
 
     /**
-     * Convert a Deephaven type to an Iceberg type.
+     * Convert an Iceberg data type to a Deephaven type. Used for reading data from Iceberg tables.
+     *
+     * @param icebergListType The Iceberg list type to be converted.
+     * @return The converted Deephaven type.
+     */
+    private static io.deephaven.qst.type.Type<?> convertToDHArrayType(@NotNull final Types.ListType icebergListType) {
+        final Type.TypeID elementTypeId = icebergListType.elementType().typeId();
+        switch (elementTypeId) {
+            case BOOLEAN:
+            case DOUBLE:
+            case FLOAT:
+            case INTEGER:
+            case LONG:
+            case STRING:
+            case TIMESTAMP:
+            case DATE:
+            case TIME:
+            case DECIMAL:
+                try {
+                    return convertToDHType(icebergListType.elementType()).arrayType();
+                } catch (final TableDataException e) {
+                    // Fall through
+                }
+            case FIXED: // Fall through
+            case BINARY: // Fall through
+            case LIST: // Fall through
+            case UUID: // Fall through
+            case STRUCT: // Fall through
+            case MAP: // Fall through
+            default:
+                throw new TableDataException("Iceberg columns of type lists of " + elementTypeId.name() + "is not" +
+                        " supported when reading data from Iceberg tables");
+        }
+    }
+
+    /**
+     * Convert a Deephaven type to an Iceberg type. Used for writing data to Iceberg tables.
      *
      * @param columnType The Deephaven type to be converted.
      * @return The converted Iceberg type.
@@ -125,7 +163,8 @@ public final class IcebergUtils {
         if (icebergType != null) {
             return icebergType;
         } else {
-            throw new TableDataException("Unsupported deephaven column type " + columnType.getName());
+            throw new TableDataException("Deephaven columns of type " + columnType.getName() + "is not supported" +
+                    " when writing data to Iceberg tables");
         }
     }
 
