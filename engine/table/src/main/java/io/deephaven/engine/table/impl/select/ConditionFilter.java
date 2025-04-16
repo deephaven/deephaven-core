@@ -17,6 +17,7 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
+import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.lang.QueryLanguageParser;
 import io.deephaven.engine.table.impl.util.codegen.CodeGenerator;
 import io.deephaven.engine.context.QueryScopeParam;
@@ -759,7 +760,6 @@ public class ConditionFilter extends AbstractConditionFilter {
 
     @Override
     public boolean permitParallelization() {
-        // TODO (https://github.com/deephaven/deephaven-core/issues/4896): Assume statelessness by default.
-        return false;
+        return QueryTable.STATELESS_FILTERS_BY_DEFAULT;
     }
 }
