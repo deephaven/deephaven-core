@@ -1,5 +1,5 @@
 '''
-See TESTING.md for how to run this script.
+This script is used to generate Iceberg table with list types using PyArrow. See TESTING.md for how to run this script.
 '''
 
 import pyarrow as pa
@@ -98,23 +98,37 @@ data = [
         "time_list": [time(12, 0, 1), time(13, 0, 2)],
         "decimal_list": [Decimal("123.45"), Decimal("678.90")],
     },
+    # ----- row with a None inside a list -----
     {
         "bin_col": b"",
         "fixed_col": b"13 bytes only",
-        "long_list": [400, 500],
-        "bool_list": [False, True],
-        "double_list": [30.03, 40.04],
-        "float_list": [np.float32(3.3), np.float32(4.4)],
-        "int_list": [np.int32(30), np.int32(40)],
-        "string_list": ["foo", "bar", "baz"],
-        "timestamp_ntz_list": [datetime(2025, 1, 2, 13, 0, 1), datetime(2025, 1, 2, 13, 0, 2)],
-        "timestamp_tz_list": [
-            datetime(2025, 1, 2, 13, 0, 3, tzinfo=zoneinfo.ZoneInfo("UTC")),
-            datetime(2025, 1, 2, 13, 0, 4, tzinfo=zoneinfo.ZoneInfo("UTC")),
-        ],
-        "date_list": [date(2025, 1, 3), date(2025, 1, 4)],
-        "time_list": [time(14, 0, 3), time(15, 0, 4)],
-        "decimal_list": [Decimal("234.56"), Decimal("987.65")],
+        "long_list": [600, None, 700],
+        "bool_list": [True, False, None],
+        "double_list": [60.06, None, 70.07],
+        "float_list": [None, np.float32(5.5), np.float32(6.6)],
+        "int_list": [np.int32(50), None, np.int32(60)],
+        "string_list": [None, "alpha", "beta"],
+        "timestamp_ntz_list": [datetime(2025, 1, 3, 14, 0, 1), None],
+        "timestamp_tz_list": [None, datetime(2025, 1, 3, 14, 0, 4, tzinfo=zoneinfo.ZoneInfo("UTC"))],
+        "date_list": [date(2025, 1, 5), None, date(2025, 1, 6), None],
+        "time_list": [None, time(17, 0, 6), None],
+        "decimal_list": [None, None, None],
+    },
+    # ---------------- row with all None ----------------
+    {
+        "bin_col": None,
+        "fixed_col": None,
+        "long_list": None,
+        "bool_list": None,
+        "double_list": None,
+        "float_list": None,
+        "int_list": None,
+        "string_list": None,
+        "timestamp_ntz_list": None,
+        "timestamp_tz_list": None,
+        "date_list": None,
+        "time_list": None,
+        "decimal_list": None,
     },
 ]
 

@@ -104,7 +104,7 @@ public final class IcebergUtils {
                 return io.deephaven.qst.type.Type.find(BigDecimal.class);
             case FIXED: // Fall through
             case BINARY:
-                return io.deephaven.qst.type.Type.find(byte[].class);
+                return io.deephaven.qst.type.Type.byteType().arrayType();
             case LIST:
                 return convertToDHArrayType(icebergType.asListType());
             case UUID: // Fall through
@@ -118,7 +118,7 @@ public final class IcebergUtils {
     }
 
     /**
-     * Convert an Iceberg data type to a Deephaven type. Used for reading data from Iceberg tables.
+     * Convert an Iceberg list type to a Deephaven array type. Used for reading data from Iceberg tables.
      *
      * @param icebergListType The Iceberg list type to be converted.
      * @return The converted Deephaven type.

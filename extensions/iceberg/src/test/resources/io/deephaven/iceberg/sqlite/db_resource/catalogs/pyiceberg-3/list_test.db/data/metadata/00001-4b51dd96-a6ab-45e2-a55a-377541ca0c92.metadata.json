@@ -1,7 +1,7 @@
 {
   "location": "catalogs/pyiceberg-3/list_test.db/data",
-  "table-uuid": "968e5e8f-2037-4ca6-ac8d-fa7aac2e9b9a",
-  "last-updated-ms": 1744817636712,
+  "table-uuid": "b431b407-7d69-4385-bfee-1b052be6bc8e",
+  "last-updated-ms": 1744836016258,
   "last-column-id": 24,
   "schemas": [
     {
@@ -155,9 +155,40 @@
   "default-spec-id": 0,
   "last-partition-id": 999,
   "properties": {},
-  "snapshots": [],
-  "snapshot-log": [],
-  "metadata-log": [],
+  "current-snapshot-id": 1960835321525668600,
+  "snapshots": [
+    {
+      "snapshot-id": 1960835321525668600,
+      "sequence-number": 1,
+      "timestamp-ms": 1744836016258,
+      "manifest-list": "catalogs/pyiceberg-3/list_test.db/data/metadata/snap-1960835321525668596-0-77dc2aa8-d882-4a82-a8ab-ad36b87f4ee6.avro",
+      "summary": {
+        "operation": "append",
+        "added-files-size": "7196",
+        "added-data-files": "1",
+        "added-records": "3",
+        "total-data-files": "1",
+        "total-delete-files": "0",
+        "total-records": "3",
+        "total-files-size": "7196",
+        "total-position-deletes": "0",
+        "total-equality-deletes": "0"
+      },
+      "schema-id": 0
+    }
+  ],
+  "snapshot-log": [
+    {
+      "snapshot-id": 1960835321525668600,
+      "timestamp-ms": 1744836016258
+    }
+  ],
+  "metadata-log": [
+    {
+      "metadata-file": "catalogs/pyiceberg-3/list_test.db/data/metadata/00000-0572c01d-0cf5-45d0-970c-a6a3913cd0ff.metadata.json",
+      "timestamp-ms": 1744835990383
+    }
+  ],
   "sort-orders": [
     {
       "order-id": 0,
@@ -165,8 +196,13 @@
     }
   ],
   "default-sort-order-id": 0,
-  "refs": {},
+  "refs": {
+    "main": {
+      "snapshot-id": 1960835321525668600,
+      "type": "branch"
+    }
+  },
   "statistics": [],
   "format-version": 2,
-  "last-sequence-number": 0
+  "last-sequence-number": 1
 }

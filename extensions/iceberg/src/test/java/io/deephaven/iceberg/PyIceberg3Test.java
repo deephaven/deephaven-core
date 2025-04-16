@@ -26,11 +26,15 @@ import java.time.LocalDateTime;
 import java.net.URISyntaxException;
 import java.time.LocalTime;
 
+import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
+import static io.deephaven.util.QueryConstants.NULL_FLOAT;
+import static io.deephaven.util.QueryConstants.NULL_INT;
+import static io.deephaven.util.QueryConstants.NULL_LONG;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * This test shows that we read binary and list types written by pyiceberg. See TESTING.md and generate-pyiceberg-3.py
- * for more details.
+ * This test shows that Deephaven can read binary and list types written by pyiceberg. See TESTING.md and
+ * generate-pyiceberg-3.py for more details.
  */
 @Tag("security-manager-allow")
 class PyIceberg3Test {
@@ -38,19 +42,21 @@ class PyIceberg3Test {
     private static final TableIdentifier TABLE_IDENTIFIER = TableIdentifier.of(NAMESPACE, "data");
 
     private static final TableDefinition TABLE_DEFINITION = TableDefinition.of(
-            ColumnDefinition.of("bin_col", Type.find(byte[].class)),
-            ColumnDefinition.of("fixed_col", Type.find(byte[].class)),
-            ColumnDefinition.of("long_list", Type.find(long[].class)),
-            ColumnDefinition.of("bool_list", Type.find(Boolean[].class)),
-            ColumnDefinition.of("double_list", Type.find(double[].class)),
-            ColumnDefinition.of("float_list", Type.find(float[].class)),
-            ColumnDefinition.of("int_list", Type.find(int[].class)),
-            ColumnDefinition.of("string_list", Type.find(String[].class)),
-            ColumnDefinition.of("timestamp_ntz_list", Type.find(LocalDateTime[].class)),
-            ColumnDefinition.of("timestamp_tz_list", Type.find(Instant[].class)),
-            ColumnDefinition.of("date_list", Type.find(LocalDate[].class)),
-            ColumnDefinition.of("time_list", Type.find(LocalTime[].class)),
-            ColumnDefinition.of("decimal_list", Type.find(BigDecimal[].class)));
+            ColumnDefinition.of("bin_col", Type.byteType().arrayType()),
+            ColumnDefinition.of("fixed_col", Type.byteType().arrayType()),
+            ColumnDefinition.of("long_list", Type.longType().arrayType()),
+            ColumnDefinition.of("bool_list", Type.booleanType().boxedType().arrayType()),
+            ColumnDefinition.of("double_list", Type.doubleType().arrayType()),
+            ColumnDefinition.of("float_list", Type.floatType().arrayType()),
+            ColumnDefinition.of("int_list", Type.intType().arrayType()),
+            ColumnDefinition.of("string_list", Type.stringType().arrayType()),
+            ColumnDefinition.of("timestamp_ntz_list", Type.find(LocalDateTime.class).arrayType()),
+            ColumnDefinition.of("timestamp_tz_list", Type.find(Instant.class).arrayType()),
+            ColumnDefinition.of("date_list", Type.find(LocalDate.class).arrayType()),
+            ColumnDefinition.of("time_list", Type.find(LocalTime.class).arrayType()),
+            ColumnDefinition.of("decimal_list", Type.find(BigDecimal.class).arrayType()));
+
+    private static final byte[] EMPTY_BYTES = new byte[0];
 
     private IcebergCatalogAdapter catalogAdapter;
 
@@ -70,78 +76,69 @@ class PyIceberg3Test {
     void testData() {
         final IcebergTableAdapter tableAdapter = catalogAdapter.loadTable(TABLE_IDENTIFIER);
         final Table fromIceberg = tableAdapter.table();
-        assertThat(fromIceberg.size()).isEqualTo(2);
+        assertThat(fromIceberg.size()).isEqualTo(3);
         final Table expectedData = TableTools.newTable(
                 TABLE_DEFINITION,
                 TableTools.col("bin_col",
                         "variable length data".getBytes(StandardCharsets.UTF_8),
-                        new byte[0]),
+                        EMPTY_BYTES,
+                        null),
                 TableTools.col("fixed_col",
                         "123456789ABCD".getBytes(StandardCharsets.UTF_8),
-                        "13 bytes only".getBytes(StandardCharsets.UTF_8)),
+                        "13 bytes only".getBytes(StandardCharsets.UTF_8),
+                        null),
                 TableTools.col("long_list",
                         new long[] {100L, 200L, 300L},
-                        new long[] {400L, 500L}),
+                        new long[] {600L, NULL_LONG, 700L},
+                        null),
                 TableTools.col("bool_list",
                         new Boolean[] {true, false},
-                        new Boolean[] {false, true}),
+                        new Boolean[] {true, false, null},
+                        null),
                 TableTools.col("double_list",
                         new double[] {10.01, 20.02},
-                        new double[] {30.03, 40.04}),
+                        new double[] {60.06, NULL_DOUBLE, 70.07},
+                        null),
                 TableTools.col("float_list",
                         new float[] {1.1f, 2.2f},
-                        new float[] {3.3f, 4.4f}),
+                        new float[] {NULL_FLOAT, 5.5f, 6.6f},
+                        null),
                 TableTools.col("int_list",
                         new int[] {10, 20},
-                        new int[] {30, 40}),
+                        new int[] {50, NULL_INT, 60},
+                        null),
                 TableTools.col("string_list",
                         new String[] {"hello", "world"},
-                        new String[] {"foo", "bar", "baz"}),
+                        new String[] {null, "alpha", "beta"},
+                        null),
                 TableTools.col("timestamp_ntz_list",
                         new LocalDateTime[] {
                                 LocalDateTime.of(2025, 1, 1, 12, 0, 1),
-                                LocalDateTime.of(2025, 1, 1, 12, 0, 2)
-                        },
+                                LocalDateTime.of(2025, 1, 1, 12, 0, 2)},
                         new LocalDateTime[] {
-                                LocalDateTime.of(2025, 1, 2, 13, 0, 1),
-                                LocalDateTime.of(2025, 1, 2, 13, 0, 2)
-                        }),
+                                LocalDateTime.of(2025, 1, 3, 14, 0, 1),
+                                null},
+                        null),
                 TableTools.col("timestamp_tz_list",
                         new Instant[] {
                                 Instant.parse("2025-01-01T12:00:03Z"),
-                                Instant.parse("2025-01-01T12:00:04Z")
-                        },
+                                Instant.parse("2025-01-01T12:00:04Z")},
                         new Instant[] {
-                                Instant.parse("2025-01-02T13:00:03Z"),
-                                Instant.parse("2025-01-02T13:00:04Z")
-                        }),
+                                null,
+                                Instant.parse("2025-01-03T14:00:04Z")},
+                        null),
                 TableTools.col("date_list",
-                        new LocalDate[] {
-                                LocalDate.of(2025, 1, 1),
-                                LocalDate.of(2025, 1, 2)
-                        },
-                        new LocalDate[] {
-                                LocalDate.of(2025, 1, 3),
-                                LocalDate.of(2025, 1, 4)
-                        }),
+                        new LocalDate[] {LocalDate.of(2025, 1, 1), LocalDate.of(2025, 1, 2)},
+                        new LocalDate[] {LocalDate.of(2025, 1, 5), null, LocalDate.of(2025, 1, 6), null},
+                        null),
                 TableTools.col("time_list",
-                        new LocalTime[] {
-                                LocalTime.of(12, 0, 1),
-                                LocalTime.of(13, 0, 2)
-                        },
-                        new LocalTime[] {
-                                LocalTime.of(14, 0, 3),
-                                LocalTime.of(15, 0, 4)
-                        }),
+                        new LocalTime[] {LocalTime.of(12, 0, 1), LocalTime.of(13, 0, 2)},
+                        new LocalTime[] {null, LocalTime.of(17, 0, 6), null},
+                        null),
                 TableTools.col("decimal_list",
-                        new BigDecimal[] {
-                                new BigDecimal("123.45"),
-                                new BigDecimal("678.90")
-                        },
-                        new BigDecimal[] {
-                                new BigDecimal("234.56"),
-                                new BigDecimal("987.65")
-                        }));
+                        new BigDecimal[] {new BigDecimal("123.45"), new BigDecimal("678.90")},
+                        new BigDecimal[] {null, null, null},
+                        null));
         TstUtils.assertTableEquals(expectedData, fromIceberg);
     }
 }
