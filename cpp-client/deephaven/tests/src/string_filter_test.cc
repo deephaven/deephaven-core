@@ -5,6 +5,8 @@
 #include "deephaven/tests/test_util.h"
 
 using deephaven::client::TableHandle;
+using deephaven::client::utility::TableMaker;
+
 namespace deephaven::client::tests {
 namespace {
 void TestFilter(const char *description, const TableHandle &filtered_table,
@@ -53,11 +55,10 @@ void TestFilter(const char *description, const TableHandle &filtered_table,
     const std::vector<double> &close_data) {
   INFO(description);
   INFO(filtered_table.Stream(true));
-  CompareTable(
-      filtered_table,
-      "Ticker", ticker_data,
-      "Close", close_data
-  );
+  TableMaker expected;
+  expected.AddColumn("Ticker", ticker_data);
+  expected.AddColumn("Close", close_data);
+  TableComparerForTests::Compare(expected, filtered_table);
 }
 }  // namespace
 }  // namespace deephaven::client::tests {

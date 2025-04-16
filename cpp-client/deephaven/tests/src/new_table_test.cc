@@ -7,9 +7,6 @@
 #include "deephaven/tests/test_util.h"
 #include "deephaven/dhcore/utility/utility.h"
 
-using deephaven::client::TableHandleManager;
-using deephaven::client::TableHandle;
-using deephaven::client::SortPair;
 using deephaven::client::utility::TableMaker;
 using deephaven::dhcore::DeephavenConstants;
 
@@ -17,24 +14,24 @@ namespace deephaven::client::tests {
 TEST_CASE("New Table", "[newtable]") {
   auto tm = TableMakerForTests::Create();
 
-  // std::vector<std::optional<bool>> boolData = { {}, false, true, false, false, true };
-  std::vector<std::optional<int8_t>> byte_data = { {}, 0, 1, -1, DeephavenConstants::kMinByte, DeephavenConstants::kMaxByte };
-  std::vector<std::optional<int16_t>> short_data = { {}, 0, 1, -1, DeephavenConstants::kMinShort, DeephavenConstants::kMaxShort };
-  std::vector<std::optional<int32_t>> int_data = { {}, 0, 1, -1, DeephavenConstants::kMinInt, DeephavenConstants::kMaxInt };
-  std::vector<std::optional<int64_t>> long_data = { {}, 0L, 1L, -1L, DeephavenConstants::kMinLong, DeephavenConstants::kMaxLong };
-  std::vector<std::optional<float>> float_data = { {}, 0.0F, 1.0F, -1.0F, -3.4e+38F, std::numeric_limits<float>::max() };
-  std::vector<std::optional<double>> double_data = { {}, 0.0, 1.0, -1.0, -1.79e+308, std::numeric_limits<double>::max() };
-  std::vector<std::optional<std::string>> string_data = { {}, "", "A string", "Also a string", "AAAAAA", "ZZZZZZ" };
-
   TableMaker maker;
-  // maker.addColumn("BoolValue", boolData);
-  maker.AddColumn("ByteValue", byte_data);
-  maker.AddColumn("ShortValue", short_data);
-  maker.AddColumn("IntValue", int_data);
-  maker.AddColumn("LongValue", long_data);
-  maker.AddColumn("FloatValue", float_data);
-  maker.AddColumn("DoubleValue", double_data);
-  maker.AddColumn("StringValue", string_data);
+  maker.AddColumn<std::optional<bool>>("BoolValue",
+      { {}, false, true, false, false, true });
+  maker.AddColumn<std::optional<int8_t>>("ByteValue",
+      { {}, 0, 1, -1, DeephavenConstants::kMinByte, DeephavenConstants::kMaxByte });
+  maker.AddColumn<std::optional<int16_t>>("ShortValue",
+      { {}, 0, 1, -1, DeephavenConstants::kMinShort, DeephavenConstants::kMaxShort });
+  maker.AddColumn<std::optional<int32_t>>("IntValue",
+      { {}, 0, 1, -1, DeephavenConstants::kMinInt, DeephavenConstants::kMaxInt });
+  maker.AddColumn<std::optional<int64_t>>("LongValue",
+      { {}, 0L, 1L, -1L, DeephavenConstants::kMinLong, DeephavenConstants::kMaxLong });
+  maker.AddColumn<std::optional<float>>("FloatValue",
+      { {}, 0.0F, 1.0F, -1.0F, -3.4e+38F, std::numeric_limits<float>::max() });
+  maker.AddColumn<std::optional<double>>("DoubleValue",
+      { {}, 0.0, 1.0, -1.0, -1.79e+308, std::numeric_limits<double>::max() });
+  maker.AddColumn<std::optional<std::string>>("StringValue",
+      { {}, "", "A string", "Also a string", "AAAAAA", "ZZZZZZ" });
+
   auto temp = maker.MakeTable(tm.Client().GetManager());
   std::cout << temp.Stream(true) << '\n';
 }

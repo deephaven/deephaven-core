@@ -21,6 +21,7 @@
 #include "deephaven/client/client.h"
 #include "deephaven/client/utility/table_maker.h"
 #include "deephaven/dhcore/chunk/chunk_traits.h"
+#include "deephaven/dhcore/clienttable/client_table.h"
 #include "deephaven/dhcore/utility/utility.h"
 
 namespace deephaven::client::tests {
@@ -142,85 +143,15 @@ private:
   ColumnDataForTests columnData_;
 };
 
-namespace internal {
-void CompareTableHelper(int depth, const std::shared_ptr<arrow::Table> &table,
-    const std::string &column_name, const std::shared_ptr<arrow::Array> &data);
+class TableComparerForTests {
+  using TableMaker = deephaven::client::utility::TableMaker;
+  using ClientTable = deephaven::dhcore::clienttable::ClientTable;
 
-// base case
-inline void CompareTableRecurse(int /*depth*/, const std::shared_ptr<arrow::Table> &/*table*/) {
-}
-
-template<typename T, typename... Args>
-void CompareTableRecurse(int depth, const std::shared_ptr<arrow::Table> &table,
-    const std::string &column_name, const std::vector<T> &data, Args &&... rest) {
-  auto tc = deephaven::client::utility::internal::TypeConverter::CreateNew(data);
-  const auto &data_as_arrow = tc.Column();
-  CompareTableHelper(depth, table, column_name, data_as_arrow);
-  CompareTableRecurse(depth + 1, table, std::forward<Args>(rest)...);
-}
-
-[[nodiscard]]
-std::shared_ptr<arrow::Table> BasicValidate(const deephaven::client::TableHandle &table,
-    int expected_columns);
-}  // namespace internal
-
-template<typename... Args>
-void CompareTable(const deephaven::client::TableHandle &table, Args &&... args) {
-  auto arrow_table = internal::BasicValidate(table, sizeof...(Args) / 2);
-  internal::CompareTableRecurse(0, arrow_table, std::forward<Args>(args)...);
-}
-
-template<typename T>
-struct OptionalAdapter {
-  explicit OptionalAdapter(const std::optional<T> &value) : value_(value) {}
-
-  const std::optional<T> &value_;
-
-  friend std::ostream &operator<<(std::ostream &s, const OptionalAdapter &o) {
-    if (!o.value_.has_value()) {
-      return s << "(null)";
-    }
-    return s << *o.value_;
-  }
+public:
+  static void Compare(const TableMaker &expected, const TableHandle &actual);
+  static void Compare(const TableMaker &expected, const ClientTable &actual);
+  static void Compare(const TableMaker &expected, const arrow::Table &actual);
+  static void Compare(const arrow::Table &expected, const arrow::Table &actual);
 };
 
-template<typename T>
-void CompareColumn(const deephaven::dhcore::clienttable::ClientTable &table,
-    std::string_view column_name, const std::vector<std::optional<T>> &expected) {
-
-  using deephaven::dhcore::chunk::BooleanChunk;
-  using deephaven::dhcore::container::RowSequence;
-
-  auto num_rows = table.NumRows();
-  if (expected.size() != num_rows) {
-    auto message = fmt::format("Expected 'expected' to have size {}, have {}",
-        num_rows, expected.size());
-    throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
-  }
-  auto cs = table.GetColumn(column_name, true);
-  auto rs = RowSequence::CreateSequential(0, num_rows);
-  using chunkType_t = typename deephaven::dhcore::chunk::TypeToChunk<T>::type_t;
-  auto chunk = chunkType_t::Create(num_rows);
-  auto nulls = BooleanChunk::Create(num_rows);
-  cs->FillChunk(*rs, &chunk, &nulls);
-
-  for (size_t row_num = 0; row_num != num_rows; ++row_num) {
-    const auto &expected_elt = expected[row_num];
-
-    // expected_elt is optional<T>. Convert actual_elt to the optional<T> convention.
-    std::optional<T> actual_elt;  // Assume null
-    if (!nulls.data()[row_num]) {
-      actual_elt = chunk.data()[row_num];
-    }
-
-    if (expected_elt != actual_elt) {
-      auto message = fmt::format(R"(In column "{}", row {}, expected={}, actual={})",
-          column_name, row_num, OptionalAdapter<T>(expected_elt), OptionalAdapter<T>(actual_elt));
-      throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
-    }
-  }
-}
 }  // namespace deephaven::client::tests
-
-template<typename T>
-struct fmt::formatter<deephaven::client::tests::OptionalAdapter<T>> : ostream_formatter {};

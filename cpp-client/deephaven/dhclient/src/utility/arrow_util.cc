@@ -3,13 +3,51 @@
  */
 #include "deephaven/client/utility/arrow_util.h"
 
-#include <ostream>
+#include <cstddef>
+#include <cstdint>
+#include <cstring>
+#include <memory>
+#include <stdexcept>
+#include <string>
+#include <optional>
+#include <utility>
+
 #include <arrow/status.h>
 #include <arrow/flight/types.h>
+#include <arrow/table.h>
+#include <arrow/type.h>
+#include <arrow/visitor.h>
+#include "deephaven/client/arrowutil/arrow_array_converter.h"
+#include "deephaven/dhcore/chunk/chunk.h"
 #include "deephaven/dhcore/clienttable/schema.h"
+#include "deephaven/dhcore/column/column_source.h"
+#include "deephaven/dhcore/container/row_sequence.h"
+#include "deephaven/dhcore/types.h"
 #include "deephaven/dhcore/utility/utility.h"
+#include "deephaven/third_party/fmt/core.h"
 
+using deephaven::client::arrowutil::ArrowArrayConverter;
+using deephaven::dhcore::chunk::BooleanChunk;
+using deephaven::dhcore::chunk::CharChunk;
+using deephaven::dhcore::chunk::DateTimeChunk;
+using deephaven::dhcore::chunk::DoubleChunk;
+using deephaven::dhcore::chunk::FloatChunk;
+using deephaven::dhcore::chunk::Int8Chunk;
+using deephaven::dhcore::chunk::Int16Chunk;
+using deephaven::dhcore::chunk::Int32Chunk;
+using deephaven::dhcore::chunk::Int64Chunk;
+using deephaven::dhcore::chunk::LocalDateChunk;
+using deephaven::dhcore::chunk::LocalTimeChunk;
+using deephaven::dhcore::chunk::StringChunk;
+using deephaven::dhcore::chunk::UInt8Chunk;
+using deephaven::dhcore::chunk::UInt16Chunk;
 using deephaven::dhcore::clienttable::Schema;
+using deephaven::dhcore::column::ColumnSource;
+using deephaven::dhcore::column::ColumnSourceVisitor;
+using deephaven::dhcore::container::RowSequence;
+using deephaven::dhcore::DateTime;
+using deephaven::dhcore::LocalDate;
+using deephaven::dhcore::LocalTime;
 using deephaven::dhcore::ElementTypeId;
 using deephaven::dhcore::utility::MakeReservedVector;
 
@@ -125,6 +163,30 @@ std::optional<ElementTypeId::Enum> ArrowUtil::GetElementTypeId(const arrow::Data
   throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
 }
 
+std::shared_ptr<arrow::DataType> ArrowUtil::GetArrowType(ElementTypeId::Enum element_type_id) {
+  switch (element_type_id) {
+    case ElementTypeId::kChar: return std::make_shared<arrow::UInt16Type>();
+    case ElementTypeId::kInt8: return std::make_shared<arrow::Int8Type>();
+    case ElementTypeId::kInt16: return std::make_shared<arrow::Int16Type>();
+    case ElementTypeId::kInt32: return std::make_shared<arrow::Int32Type>();
+    case ElementTypeId::kInt64: return std::make_shared<arrow::Int64Type>();
+    case ElementTypeId::kFloat: return std::make_shared<arrow::FloatType>();
+    case ElementTypeId::kDouble: return std::make_shared<arrow::DoubleType>();
+    case ElementTypeId::kBool: return std::make_shared<arrow::BooleanType>();
+    case ElementTypeId::kString: return std::make_shared<arrow::StringType>();
+    case ElementTypeId::kTimestamp: return std::make_shared<arrow::TimestampType>(
+        arrow::TimeUnit::NANO, "UTC");
+    case ElementTypeId::kLocalDate: return std::make_shared<arrow::Date64Type>();
+    case ElementTypeId::kLocalTime: return std::make_shared<arrow::Time64Type>(arrow::TimeUnit::NANO);
+
+    default: {
+      auto message = fmt::format("Unexpected element_type_id {}",
+          static_cast<int>(element_type_id));
+      throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
+    }
+  }
+}
+
 std::shared_ptr<Schema> ArrowUtil::MakeDeephavenSchema(const arrow::Schema &schema) {
   const auto &fields = schema.fields();
   auto names = MakeReservedVector<std::string>(fields.size());
@@ -135,5 +197,33 @@ std::shared_ptr<Schema> ArrowUtil::MakeDeephavenSchema(const arrow::Schema &sche
     types.push_back(*type_id);
   }
   return Schema::Create(std::move(names), std::move(types));
+}
+std::shared_ptr<arrow::Table> ArrowUtil::MakeArrowTable(const ClientTable &client_table) {
+  auto ncols = client_table.NumColumns();
+  auto nrows = client_table.NumRows();
+  auto arrays = MakeReservedVector<std::shared_ptr<arrow::Array>>(ncols);
+
+  for (size_t i = 0; i != ncols; ++i) {
+    auto column_source = client_table.GetColumn(i);
+    auto arrow_array = ArrowArrayConverter::ColumnSourceToArray(*column_source, nrows);
+    arrays.emplace_back(std::move(arrow_array));
+  }
+
+  auto schema = MakeArrowSchema(*client_table.Schema());
+
+  return arrow::Table::Make(std::move(schema), arrays);
+}
+
+std::shared_ptr<arrow::Schema> ArrowUtil::MakeArrowSchema(
+    const deephaven::dhcore::clienttable::Schema &dh_schema) {
+  arrow::SchemaBuilder builder;
+  for (int32_t i = 0; i != dh_schema.NumCols(); ++i) {
+    const auto &name = dh_schema.Names()[i];
+    auto element_type = dh_schema.Types()[i];
+    auto arrow_type = GetArrowType(element_type);
+    auto field = std::make_shared<arrow::Field>(name, std::move(arrow_type));
+    OkOrThrow(DEEPHAVEN_LOCATION_EXPR(builder.AddField(field)));
+  }
+  return ValueOrThrow(DEEPHAVEN_LOCATION_EXPR(builder.Finish()));
 }
 }  // namespace deephaven::client::utility
