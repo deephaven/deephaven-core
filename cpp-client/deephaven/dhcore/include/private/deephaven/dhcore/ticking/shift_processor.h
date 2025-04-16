@@ -3,6 +3,7 @@
  */
 #pragma once
 
+#include <cstdint>
 #include <functional>
 #include "deephaven/dhcore/container/row_sequence.h"
 
