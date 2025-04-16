@@ -5,10 +5,12 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.WritableBooleanChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.util.hashing.ChunkEquals;
+import io.deephaven.chunk.util.hashing.ObjectChunkDeepEquals;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.rowset.RowKeyRangeShiftCallback;
 import io.deephaven.engine.rowset.RowSequence;
@@ -352,7 +354,7 @@ public class TableUpdateValidator implements QueryTable.Operation<QueryTable> {
         WritableObjectChunk<Object, Values> sourceFillChunk;
         ColumnSource.GetContext expectedGetContext;
         ChunkSink.FillFromContext expectedFillFromContext;
-        WritableBooleanChunk equalValuesDest;
+        WritableBooleanChunk<Values> equalValuesDest;
 
         private ColumnInfo(QueryTable tableToValidate, String columnName) {
             this.name = columnName;
@@ -365,7 +367,10 @@ public class TableUpdateValidator implements QueryTable.Operation<QueryTable> {
             Assert.eqTrue(this.expectedSource instanceof RowSetShiftCallback,
                     "expectedSource instanceof ShiftData.RowSetShiftCallback");
 
-            this.chunkEquals = ChunkEquals.makeEqual(source.getChunkType());
+            ChunkType chunkType = source.getChunkType();
+            this.chunkEquals = chunkType == ChunkType.Object
+                    ? ObjectChunkDeepEquals.INSTANCE
+                    : ChunkEquals.makeEqual(chunkType);
         }
 
         private ColumnSource.GetContext sourceGetContext() {
@@ -403,7 +408,7 @@ public class TableUpdateValidator implements QueryTable.Operation<QueryTable> {
             return expectedFillFromContext;
         }
 
-        private WritableBooleanChunk equalValuesDest() {
+        private WritableBooleanChunk<Values> equalValuesDest() {
             if (equalValuesDest == null) {
                 equalValuesDest = WritableBooleanChunk.makeWritableChunk(CHUNK_SIZE);
             }
