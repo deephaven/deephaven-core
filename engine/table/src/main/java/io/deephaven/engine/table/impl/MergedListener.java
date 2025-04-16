@@ -86,12 +86,14 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
         this.dependencies = dependencies;
         this.listenerDescription = listenerDescription;
         this.result = result;
-        this.entry = PeriodicUpdateGraph.createUpdatePerformanceEntry(this.updateGraph, listenerDescription, () -> getParentIdentifiers(recorders));
+        this.entry = PeriodicUpdateGraph.createUpdatePerformanceEntry(this.updateGraph, listenerDescription,
+                () -> getParentIdentifiers(recorders));
         this.logPrefix = System.identityHashCode(this) + " " + listenerDescription + " Merged Listener: ";
     }
 
     protected void logNewAncestors(Iterable<? extends ListenerRecorder> recorders) {
-        PeriodicUpdateGraph.logPerformanceEntryAncestors(this.updateGraph, this.entry, () -> getParentIdentifiers(recorders));
+        PeriodicUpdateGraph.logPerformanceEntryAncestors(this.updateGraph, this.entry,
+                () -> getParentIdentifiers(recorders));
     }
 
     private static long[] getParentIdentifiers(Iterable<? extends ListenerRecorder> recorders) {

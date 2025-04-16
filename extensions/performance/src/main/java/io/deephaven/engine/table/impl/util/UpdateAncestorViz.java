@@ -13,16 +13,14 @@ import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfLong;
 import io.deephaven.engine.table.Table;
 import io.deephaven.util.annotations.TestUseOnly;
 import io.deephaven.vector.LongVector;
+import io.deephaven.vector.LongVectorDirect;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import static guru.nidi.graphviz.model.Factory.*;
 
@@ -57,7 +55,16 @@ public class UpdateAncestorViz {
             while (id.hasNext()) {
                 final long idValue = id.nextLong();
                 entryToId.put(idValue, description.next());
-                entryToAncestors.put(idValue, ancestors.next());
+                entryToAncestors.compute(idValue, (ignoredKey, oldValue) -> {
+                    final LongVector next = ancestors.next();
+                    if (oldValue == null) {
+                        return next;
+                    } else {
+                        final long[] newArray = Arrays.copyOf(oldValue.toArray(), oldValue.intSize() + next.intSize());
+                        System.arraycopy(next.toArray(), 0, newArray, oldValue.intSize(), next.intSize());
+                        return new LongVectorDirect(newArray);
+                    }
+                });
             }
         }
     }

@@ -541,6 +541,7 @@ public class UnionSourceManager {
                 final ConstituentListenerRecorder addedListener = new ConstituentListenerRecorder(addedConstituent);
                 addedConstituent.addUpdateListener(addedListener);
                 synchronized (listenerRecorders) {
+                    // TODO: THIS LISTENER RECORDER NEEDS TO BE LOGGED TO THE ANSCESTORS TABLE
                     listenerRecorders.insertBefore(addedListener, nextListener);
                 }
             }
