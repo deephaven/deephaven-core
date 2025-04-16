@@ -34,7 +34,8 @@ public class TableToRecordListenerTest extends RefreshingTableTestCase {
     private TableToRecordListener<ObjectNode> tableToRecordListener;
 
     /**
-     * Test synchronous publication of records (i.e., table data is converted to records and published on the UGP thread).
+     * Test synchronous publication of records (i.e., table data is converted to records and published on the UGP
+     * thread).
      */
     public void testJsonRecordListenerNoAsync() {
         runJsonRecordListenerTest(false);
@@ -91,7 +92,8 @@ public class TableToRecordListenerTest extends RefreshingTableTestCase {
                         processInitialData,
                         async,
                         !async ? null : nUpdatesProcessed -> {
-                            // This is used with awaitRecordProcessing to verify that records are enqueued/processed correctly.
+                            // This is used with awaitRecordProcessing to verify that records are enqueued/processed
+                            // correctly.
                             try {
                                 l.lock();
                                 nProcessedRecords.setValue(nUpdatesProcessed);
@@ -116,7 +118,8 @@ public class TableToRecordListenerTest extends RefreshingTableTestCase {
                         throw new RuntimeException("No records processed after " + timeout + " " + timeoutUnit);
                     }
 
-                    Assert.equals(expectedRecords, "expectedRecords", nProcessedRecords.getValue(), "nProcessedRecords.getValue()");
+                    Assert.equals(expectedRecords, "expectedRecords", nProcessedRecords.getValue(),
+                            "nProcessedRecords.getValue()");
 
                     nProcessedRecords.setValue(0);
                 } catch (InterruptedException e) {

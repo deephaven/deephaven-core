@@ -50,16 +50,16 @@ public final class PartitionedTableDataArrayRetrieverImpl extends AbstractTableD
     }
 
     /**
-     * @param usePrev                            Whether to retrieve prev data instead of current
+     * @param usePrev Whether to retrieve prev data instead of current
      * @param partitionedTableConstituentsRowSet Row set of partitioned table constituents to retrieve data from
-     * @param dataArrs                           Arrays to populate with table data (created by {@link #createDataArrays})
-     * @param rowKeysList                        List to populate with row keys of the constituents from which rows were retrieved
+     * @param dataArrs Arrays to populate with table data (created by {@link #createDataArrays})
+     * @param rowKeysList List to populate with row keys of the constituents from which rows were retrieved
      */
     @Override
     public void fillDataArrays(final boolean usePrev,
-                               final RowSet partitionedTableConstituentsRowSet,
-                               final Object[] dataArrs,
-                               final TLongList rowKeysList) {
+            final RowSet partitionedTableConstituentsRowSet,
+            final Object[] dataArrs,
+            final TLongList rowKeysList) {
         // rowKeysList must be empty to start
         Assert.eqZero(rowKeysList.size(), "rowKeysList.size()");
 
@@ -71,7 +71,7 @@ public final class PartitionedTableDataArrayRetrieverImpl extends AbstractTableD
         int totalSize = 0;
         {
             int constituentIdx = 0;
-            for (RowSet.Iterator iter = partitionedTableConstituentsRowSet.iterator(); iter.hasNext(); ) {
+            for (RowSet.Iterator iter = partitionedTableConstituentsRowSet.iterator(); iter.hasNext();) {
                 long nextConstituentRowKey = iter.nextLong();
                 final Table nextConstituent = Objects.requireNonNull(constituentColumn.get(nextConstituentRowKey));
                 final int constituentIntSize = nextConstituent.intSize();
@@ -79,7 +79,8 @@ public final class PartitionedTableDataArrayRetrieverImpl extends AbstractTableD
                 constituents[constituentIdx] = nextConstituent;
                 constituentSizes[constituentIdx] = constituentIntSize;
 
-                // Update the rowKeysList with this constituent's row key, for all slots in the dataArrs that will be filled with this constituent's data
+                // Update the rowKeysList with this constituent's row key, for all slots in the dataArrs that will be
+                // filled with this constituent's data
                 rowKeysList.fill(totalSize, totalSize + constituentIntSize, nextConstituentRowKey);
 
                 totalSize = Math.addExact(totalSize, constituentIntSize);

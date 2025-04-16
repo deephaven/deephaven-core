@@ -45,8 +45,8 @@ public interface TableDataArrayRetriever {
     }
 
     /**
-     * Fills the {@code dataArrs} with data from column sources, for the positions given by
-     * {@code tableIndex}. This <b>must</b> be called <b>with</b> the LiveTableMonitor lock or under
+     * Fills the {@code dataArrs} with data from column sources, for the positions given by {@code tableIndex}. This
+     * <b>must</b> be called <b>with</b> the LiveTableMonitor lock or under
      * {@link io.deephaven.engine.table.impl.remote.ConstructSnapshot ConstructSnapshot}.
      *
      * @param usePrev Whether to retrieve prev data instead of current

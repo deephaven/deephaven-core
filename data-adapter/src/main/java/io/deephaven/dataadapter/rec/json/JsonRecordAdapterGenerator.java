@@ -131,8 +131,7 @@ public class JsonRecordAdapterGenerator {
                         "descriptor,",
                         "new PartitionedTableDataArrayRetrieverImpl(sourceTable, descriptor.getColumnNames()),",
                         CodeGenerator.repeated("columnName2", "\"[[COL_NAME]]\"[[TRAILING_COMMA]]"),
-                        ");")
-                );
+                        ");"));
 
         for (int i = 0; i < colNames.length;) {
             String colName = colNames[i];

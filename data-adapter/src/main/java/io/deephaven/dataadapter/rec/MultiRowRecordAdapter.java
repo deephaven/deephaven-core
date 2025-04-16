@@ -32,6 +32,7 @@ public interface MultiRowRecordAdapter<T> {
      * elements of {@code dataArrays are typed arrays with the same length as {@code recordsArray}).
      * <p>
      * @param recordsArray The array to populate with records
+     * 
      * @param dataArrays The array of data to store in the records
      */
     void populateRecords(T[] recordsArray, Object[] dataArrays);

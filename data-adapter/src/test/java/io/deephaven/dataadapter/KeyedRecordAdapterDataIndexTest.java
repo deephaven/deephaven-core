@@ -371,7 +371,8 @@ public class KeyedRecordAdapterDataIndexTest extends KeyedRecordAdapterTestBase 
         assertNull(keyedRecordAdapter.getRecordListCompositeKey("MissingKey", -1));
 
         // Test retrieving multiple records
-        final Map<List<?>, MyRecord> records = keyedRecordAdapter.getRecords(Arrays.asList("KeyA", 0), Arrays.asList("KeyB", 0), Arrays.asList(null, null));
+        final Map<List<?>, MyRecord> records = keyedRecordAdapter.getRecords(Arrays.asList("KeyA", 0),
+                Arrays.asList("KeyB", 0), Arrays.asList(null, null));
         assertEquals(recordA0_1, records.get(List.of("KeyA", 0)));
         assertEquals(recordB0, records.get(List.of("KeyB", 0)));
         assertEquals(recordNull, records.get(Arrays.asList(null, null)));
@@ -500,7 +501,7 @@ public class KeyedRecordAdapterDataIndexTest extends KeyedRecordAdapterTestBase 
                 Arrays.asList("KeyB", 1));
 
         // TODO: how do I know that the row for KeyA/1 is gone, even though I can still find its data??
-        //   The data is still in the column source, and the AggregationRowLookup never forgets the slot?
+        // The data is still in the column source, and the AggregationRowLookup never forgets the slot?
         assertEquals(3, recordsAfterLTM.size());
         assertEquals(recordB, recordsAfterLTM.get(Arrays.asList("KeyB", 0)));
         assertNotNull(recordsAfterLTM.get(Arrays.asList("KeyA", 0)));

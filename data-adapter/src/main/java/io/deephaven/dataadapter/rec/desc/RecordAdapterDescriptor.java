@@ -39,7 +39,7 @@ public interface RecordAdapterDescriptor<T> {
      * Creates a RecordAdapterDescriptor for a record adapter that stores the {@code columns} in a HashMap.
      *
      * @param tableDefinition
-     * @param columns         The columns to include in the map.
+     * @param columns The columns to include in the map.
      * @return A RecordAdapterDescriptor that converts each row of a table into a HashMaps.
      */
     @NotNull
@@ -85,7 +85,7 @@ public interface RecordAdapterDescriptor<T> {
         return getMultiRowAdapterSupplier().apply(sourceTable, this);
     }
 
-    default MultiRowRecordAdapter<T>  createMultiRowRecordAdapter(PartitionedTable sourcePartitionedTable) {
+    default MultiRowRecordAdapter<T> createMultiRowRecordAdapter(PartitionedTable sourcePartitionedTable) {
         return getMultiRowPartitionedTableAdapterSupplier().apply(sourcePartitionedTable, this);
     }
 

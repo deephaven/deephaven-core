@@ -368,7 +368,8 @@ public class KeyedRecordAdapterPartitionedTableTest extends KeyedRecordAdapterTe
         assertNull(keyedRecordAdapter.getRecordListCompositeKey("MissingKey", -1));
 
         // Test retrieving multiple records
-        final Map<List<?>, MyRecord> records = keyedRecordAdapter.getRecords(Arrays.asList("KeyA", 0), Arrays.asList("KeyB", 0), Arrays.asList(null, null));
+        final Map<List<?>, MyRecord> records = keyedRecordAdapter.getRecords(Arrays.asList("KeyA", 0),
+                Arrays.asList("KeyB", 0), Arrays.asList(null, null));
         assertEquals(recordA0_1, records.get(List.of("KeyA", 0)));
         assertEquals(recordB0, records.get(List.of("KeyB", 0)));
         assertEquals(recordNull, records.get(Arrays.asList(null, null)));
@@ -496,7 +497,7 @@ public class KeyedRecordAdapterPartitionedTableTest extends KeyedRecordAdapterTe
                 Arrays.asList("KeyB", 1));
 
         // TODO: how do I know that the row for KeyA/1 is gone, even though I can still find its data??
-        //   The data is still in the column source, and the AggregationRowLookup never forgets the slot?
+        // The data is still in the column source, and the AggregationRowLookup never forgets the slot?
         assertEquals(3, recordsAfterLTM.size());
         assertEquals(recordB, recordsAfterLTM.get(Arrays.asList("KeyB", 0)));
         assertNotNull(recordsAfterLTM.get(Arrays.asList("KeyA", 0)));
@@ -526,8 +527,10 @@ public class KeyedRecordAdapterPartitionedTableTest extends KeyedRecordAdapterTe
                 TableTools.col("KeyCol2", 0, 0, 1, 1, 0, 1),
                 TableTools.col("StringCol", "Aa", null, "Cc", "Dd", "Xx", "Yy"),
                 TableTools.charCol("CharCol", 'A', QueryConstants.NULL_CHAR, 'C', 'D', 'X', 'Y'),
-                TableTools.byteCol("ByteCol", (byte) 0, QueryConstants.NULL_BYTE, (byte) 3, (byte) 4, (byte) 99, (byte) 100),
-                TableTools.shortCol("ShortCol", (short) 1, QueryConstants.NULL_SHORT, (short) 3, (short) 4, (short) 99, (short) 100),
+                TableTools.byteCol("ByteCol", (byte) 0, QueryConstants.NULL_BYTE, (byte) 3, (byte) 4, (byte) 99,
+                        (byte) 100),
+                TableTools.shortCol("ShortCol", (short) 1, QueryConstants.NULL_SHORT, (short) 3, (short) 4, (short) 99,
+                        (short) 100),
                 TableTools.intCol("IntCol", 100, QueryConstants.NULL_INT, 300, 400, 900, 1000),
                 TableTools.floatCol("FloatCol", 0.1f, QueryConstants.NULL_FLOAT, 0.3f, 0.4f, 0.9f, 1.0f),
                 TableTools.longCol("LongCol", 10_000_000_000L, QueryConstants.NULL_LONG, 30_000_000_000L,

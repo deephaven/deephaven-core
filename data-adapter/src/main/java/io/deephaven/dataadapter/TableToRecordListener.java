@@ -208,7 +208,7 @@ public class TableToRecordListener<T> extends InstrumentedTableUpdateListenerAda
      */
     @Override
     public void onUpdate(TableUpdate upstream) {
-        //noinspection resource
+        // noinspection resource
         final RowSet newRecordsIndex = upstream.added().union(upstream.modified());
         final int newRecordsSize = newRecordsIndex.intSize();
 
@@ -234,7 +234,8 @@ public class TableToRecordListener<T> extends InstrumentedTableUpdateListenerAda
                 Assert.eqFalse(isShutdown.get(), "isShutdown");
                 recordsQueue.add(new TableUpdates(UpdateType.ADDED_UPDATED, newRecordsSize, dataArraysAddModify));
                 if (processRemoved) {
-                    recordsQueue.add(new TableUpdates(UpdateType.REMOVED_REPLACED, removedRecordsSize, dataArraysRemoved));
+                    recordsQueue
+                            .add(new TableUpdates(UpdateType.REMOVED_REPLACED, removedRecordsSize, dataArraysRemoved));
                 }
                 recordsQueue.notify();
             }
@@ -252,7 +253,8 @@ public class TableToRecordListener<T> extends InstrumentedTableUpdateListenerAda
         processUpdateRecords(tableDataUpdates.updateType, tableDataUpdates.nUpdates, tableDataUpdates.dataArrays);
     }
 
-    private void processUpdateRecords(@NotNull final UpdateType updateType, final int nUpdates, @NotNull final Object[] dataArrays) {
+    private void processUpdateRecords(@NotNull final UpdateType updateType, final int nUpdates,
+            @NotNull final Object[] dataArrays) {
         final T[] records = recordAdapter.createRecordsFromData(dataArrays, nUpdates);
         final Consumer<T> updateConsumer =
                 updateType == UpdateType.ADDED_UPDATED ? recordConsumer : removedRecordConsumer;

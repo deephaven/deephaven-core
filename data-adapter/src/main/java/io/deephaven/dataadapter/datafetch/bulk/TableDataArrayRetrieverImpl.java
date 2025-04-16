@@ -25,7 +25,7 @@ public final class TableDataArrayRetrieverImpl extends AbstractTableDataArrayRet
     }
 
     public void fillDataArrays(final boolean usePrev, final RowSet tableIndex, final Object[] dataArrs,
-                               final @NotNull TLongList keyConsumer) {
+            final @NotNull TLongList keyConsumer) {
         fillDataArrays(columnSources, usePrev, tableIndex, dataArrs, keyConsumer);
     }
 }

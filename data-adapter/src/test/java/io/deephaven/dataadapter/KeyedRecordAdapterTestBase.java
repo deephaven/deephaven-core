@@ -26,6 +26,7 @@ public abstract class KeyedRecordAdapterTestBase extends RefreshingTableTestCase
 
     /**
      * Get a basic test table to use for testig (which can be modified, indexed, or partitioned as needed)
+     * 
      * @return
      */
     public QueryTable getSimpleTestTable() {
@@ -33,18 +34,22 @@ public abstract class KeyedRecordAdapterTestBase extends RefreshingTableTestCase
                 i(2, 4, 6, 8, 9, 10, 12).copy().toTracking(),
                 TableTools.col("KeyCol1", "KeyA", "KeyB", "KeyA", "KeyB", "KeyA", "KeyB", null),
                 TableTools.col("KeyCol2", 0, 0, 1, 1, 0, 1, QueryConstants.NULL_INT),
-                TableTools.instantCol("KeyCol3", baseInstant, baseInstant, baseInstant.plusSeconds(1), baseInstant.plusSeconds(1), baseInstant, baseInstant.plusSeconds(1), null),
+                TableTools.instantCol("KeyCol3", baseInstant, baseInstant, baseInstant.plusSeconds(1),
+                        baseInstant.plusSeconds(1), baseInstant, baseInstant.plusSeconds(1), null),
                 TableTools.col("StringCol", "Aa", null, "Cc", "Dd", "Xx", "Yy", ""),
                 TableTools.charCol("CharCol", 'A', QueryConstants.NULL_CHAR, 'C', 'D', 'X', 'Y', '0'),
-                TableTools.byteCol("ByteCol", (byte) 0, QueryConstants.NULL_BYTE, (byte) 3, (byte) 4, (byte) 99, (byte) 100, (byte) -1),
-                TableTools.shortCol("ShortCol", (short) 1, QueryConstants.NULL_SHORT, (short) 3, (short) 4, (short) 99, (short) 100, (short) -1),
+                TableTools.byteCol("ByteCol", (byte) 0, QueryConstants.NULL_BYTE, (byte) 3, (byte) 4, (byte) 99,
+                        (byte) 100, (byte) -1),
+                TableTools.shortCol("ShortCol", (short) 1, QueryConstants.NULL_SHORT, (short) 3, (short) 4, (short) 99,
+                        (short) 100, (short) -1),
                 TableTools.intCol("IntCol", 100, QueryConstants.NULL_INT, 300, 400, 900, 1000, -1),
                 TableTools.floatCol("FloatCol", 0.1f, QueryConstants.NULL_FLOAT, 0.3f, 0.4f, 0.9f, 1.0f, -1.0f),
                 TableTools.longCol("LongCol", 10_000_000_000L, QueryConstants.NULL_LONG, 30_000_000_000L,
                         40_000_000_000L, 90_000_000_000L, 100_000_000_000L, -1L),
                 TableTools.doubleCol("DoubleCol", 1.1d, QueryConstants.NULL_DOUBLE, 3.3d, 4.4d, 9.9d, 10.0d, -1.0d),
-                TableTools.instantCol("InstantCol", baseInstant.plusSeconds(100), null, baseInstant.plusSeconds(300), baseInstant.plusSeconds(400), baseInstant.plusSeconds(900), baseInstant.plusSeconds(1000), baseInstant.plusSeconds(-1)
-            ));
+                TableTools.instantCol("InstantCol", baseInstant.plusSeconds(100), null, baseInstant.plusSeconds(300),
+                        baseInstant.plusSeconds(400), baseInstant.plusSeconds(900), baseInstant.plusSeconds(1000),
+                        baseInstant.plusSeconds(-1)));
         TableTools.show(source);
 
         return source;
@@ -67,10 +72,17 @@ public abstract class KeyedRecordAdapterTestBase extends RefreshingTableTestCase
 
         @Override
         public boolean equals(Object o) {
-            if (o == null || getClass() != o.getClass()) return false;
+            if (o == null || getClass() != o.getClass())
+                return false;
 
             MyRecord myRecord = (MyRecord) o;
-            return myKeyInt == myRecord.myKeyInt && myChar == myRecord.myChar && myByte == myRecord.myByte && myShort == myRecord.myShort && myInt == myRecord.myInt && Float.compare(myFloat, myRecord.myFloat) == 0 && myLong == myRecord.myLong && Double.compare(myDouble, myRecord.myDouble) == 0 && Objects.equals(myKeyString, myRecord.myKeyString) && Objects.equals(myKeyInstant, myRecord.myKeyInstant) && Objects.equals(myString, myRecord.myString) && Objects.equals(myInstant, myRecord.myInstant);
+            return myKeyInt == myRecord.myKeyInt && myChar == myRecord.myChar && myByte == myRecord.myByte
+                    && myShort == myRecord.myShort && myInt == myRecord.myInt
+                    && Float.compare(myFloat, myRecord.myFloat) == 0 && myLong == myRecord.myLong
+                    && Double.compare(myDouble, myRecord.myDouble) == 0
+                    && Objects.equals(myKeyString, myRecord.myKeyString)
+                    && Objects.equals(myKeyInstant, myRecord.myKeyInstant)
+                    && Objects.equals(myString, myRecord.myString) && Objects.equals(myInstant, myRecord.myInstant);
         }
 
         @Override

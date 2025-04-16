@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.dataadapter.datafetch.bulk;
 
 import gnu.trove.list.TLongList;
@@ -39,8 +42,7 @@ public abstract class AbstractTableDataArrayRetrieverImpl implements TableDataAr
         dataArraysFactory = createDataArraysFactory(colNamesToRetrieve.stream()
                 .map(tableDefinition::getColumn)
                 .map(ColumnDefinition::getDataType)
-                .toArray(Class<?>[]::new)
-        );
+                .toArray(Class<?>[]::new));
     }
 
     @Override
@@ -78,7 +80,7 @@ public abstract class AbstractTableDataArrayRetrieverImpl implements TableDataAr
     public static @NotNull IntFunction<Object[]> createDataArraysFactory(final Class<?>[] colTypes) {
         final int nCols = colTypes.length;
 
-        //noinspection unchecked
+        // noinspection unchecked
         final IntFunction<Object>[] arrayCreators = new IntFunction[nCols];
         for (int i = 0; i < nCols; i++) {
             final Class<?> colType = colTypes[i];
@@ -101,23 +103,24 @@ public abstract class AbstractTableDataArrayRetrieverImpl implements TableDataAr
     }
 
     public static void fillDataArrays(final ColumnSource<?>[] columnSources,
-                                      final boolean usePrev,
-                                      final RowSet tableIndex,
-                                      final Object[] dataArrs,
-                                      final TLongList recordDataKeys) {
+            final boolean usePrev,
+            final RowSet tableIndex,
+            final Object[] dataArrs,
+            final TLongList recordDataKeys) {
         final int chunkSize = Math.min(MAX_CHUNK_SIZE, tableIndex.intSize());
         try (final ContextHolder contextHolder = new ContextHolder(chunkSize, columnSources)) {
-            AbstractTableDataArrayRetrieverImpl.fillDataArrays(usePrev, tableIndex, columnSources, dataArrs, recordDataKeys, contextHolder, 0);
+            AbstractTableDataArrayRetrieverImpl.fillDataArrays(usePrev, tableIndex, columnSources, dataArrs,
+                    recordDataKeys, contextHolder, 0);
         }
     }
 
     public static void fillDataArrays(final boolean usePrev,
-                                      final RowSet tableIndex,
-                                      final ColumnSource<?>[] columnSources,
-                                      final Object[] dataArrs,
-                                      final TLongList recordDataKeys,
-                                      final ContextHolder contextHolder,
-                                      final int startOffset) {
+            final RowSet tableIndex,
+            final ColumnSource<?>[] columnSources,
+            final Object[] dataArrs,
+            final TLongList recordDataKeys,
+            final ContextHolder contextHolder,
+            final int startOffset) {
         int arrIdx = startOffset;
         try (final RowSequence.Iterator iter = tableIndex.getRowSequenceIterator()) {
             while (iter.hasMore()) {
@@ -147,21 +150,21 @@ public abstract class AbstractTableDataArrayRetrieverImpl implements TableDataAr
     /**
      * Populates the data arrays with data for the given index keys ({@code orderedKeys}).
      *
-     * @param rowSeq        The index keys for which to retrieve data
+     * @param rowSeq The index keys for which to retrieve data
      * @param columnSources The column sources to retrieve data from
-     * @param usePrev       Whether to use prev values ({@code true} while LTM is updating)
-     * @param typedContext  The context holder for managing FillContexts and chunks
-     * @param arrays        The arrays to populate with data
-     * @param arrOffset     The starting array index to populate in the {@code arrays}
-     * @param nRows         The number of rows for which to retrieve data
+     * @param usePrev Whether to use prev values ({@code true} while LTM is updating)
+     * @param typedContext The context holder for managing FillContexts and chunks
+     * @param arrays The arrays to populate with data
+     * @param arrOffset The starting array index to populate in the {@code arrays}
+     * @param nRows The number of rows for which to retrieve data
      */
     public static void populateArraysForRowSequence(final RowSequence rowSeq,
-                                                    final ColumnSource<?>[] columnSources,
-                                                    final boolean usePrev,
-                                                    final ContextHolder typedContext,
-                                                    final Object[] arrays,
-                                                    final int arrOffset,
-                                                    final int nRows) {
+            final ColumnSource<?>[] columnSources,
+            final boolean usePrev,
+            final ContextHolder typedContext,
+            final Object[] arrays,
+            final int arrOffset,
+            final int nRows) {
         for (int ci = 0; ci < columnSources.length; ++ci) {
             final ChunkSource.FillContext fillContext = typedContext.getFillContext(ci);
             final ResettableWritableChunk<Values> chunk = typedContext.getResettableChunk(ci);

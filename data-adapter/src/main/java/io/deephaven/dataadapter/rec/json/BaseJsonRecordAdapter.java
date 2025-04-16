@@ -24,8 +24,9 @@ public abstract class BaseJsonRecordAdapter extends BaseMultiRowRecordAdapter<Ob
 
     private final List<String> colNames;
 
-    public BaseJsonRecordAdapter(RecordAdapterDescriptor<ObjectNode> descriptor, final TableDataArrayRetriever tableDataArrayRetriever,
-                                 String... colNames) {
+    public BaseJsonRecordAdapter(RecordAdapterDescriptor<ObjectNode> descriptor,
+            final TableDataArrayRetriever tableDataArrayRetriever,
+            String... colNames) {
         super(descriptor, tableDataArrayRetriever);
         this.colNames = Collections.unmodifiableList(Arrays.asList(colNames));
     }

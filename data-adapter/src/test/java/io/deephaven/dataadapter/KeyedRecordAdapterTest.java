@@ -413,15 +413,16 @@ public class KeyedRecordAdapterTest extends KeyedRecordAdapterTestBase {
         }
 
         // Test retrieving multiple records
-        final Map<List<?>, MyRecord> records = keyedRecordAdapter.getRecords(Arrays.asList("KeyA", 0), Arrays.asList("KeyB", 0), Arrays.asList(null, null));
+        final Map<List<?>, MyRecord> records = keyedRecordAdapter.getRecords(Arrays.asList("KeyA", 0),
+                Arrays.asList("KeyB", 0), Arrays.asList(null, null));
         assertEquals(recordA0, records.get(List.of("KeyA", 0)));
         assertEquals(recordB0, records.get(List.of("KeyB", 0)));
         assertEquals(recordNull, records.get(Arrays.asList(null, null)));
     }
 
     /**
-     * Test a KeyedRecordAdapter that converts rows into instances of a custom object {@link MyRecord}, where
-     * the key columns are not part of the object.
+     * Test a KeyedRecordAdapter that converts rows into instances of a custom object {@link MyRecord}, where the key
+     * columns are not part of the object.
      */
     public void testCustomKeyedRecordAdapterWithTwoKeyColsNoKeysInObj() {
         final QueryTable source = getSimpleTestTable();
@@ -444,8 +445,8 @@ public class KeyedRecordAdapterTest extends KeyedRecordAdapterTestBase {
                         "KeyCol1", "KeyCol2");
 
         MyRecord record = keyedRecordAdapter.getRecord(Arrays.asList("KeyA", 0));
-        assertNull(record.myKeyString);     // key columns not used in populating record, so we have Java initial vals
-        assertEquals(0, record.myKeyInt);   // key columns not used in populating record, so we have Java initial vals
+        assertNull(record.myKeyString); // key columns not used in populating record, so we have Java initial vals
+        assertEquals(0, record.myKeyInt); // key columns not used in populating record, so we have Java initial vals
         assertEquals("Xx", record.myString);
         assertEquals('X', record.myChar);
         assertEquals((byte) 99, record.myByte);
@@ -456,8 +457,8 @@ public class KeyedRecordAdapterTest extends KeyedRecordAdapterTestBase {
         assertEquals(9.9d, record.myDouble);
 
         record = keyedRecordAdapter.getRecord(Arrays.asList("KeyB", 0));
-        assertNull(record.myKeyString);     // key columns not used in populating record, so we have Java initial vals
-        assertEquals(0, record.myKeyInt);   // key columns not used in populating record, so we have Java initial vals
+        assertNull(record.myKeyString); // key columns not used in populating record, so we have Java initial vals
+        assertEquals(0, record.myKeyInt); // key columns not used in populating record, so we have Java initial vals
         assertNull(record.myString);
         assertEquals(QueryConstants.NULL_CHAR, record.myChar);
         assertEquals(QueryConstants.NULL_BYTE, record.myByte);
@@ -611,20 +612,22 @@ public class KeyedRecordAdapterTest extends KeyedRecordAdapterTestBase {
         final QueryTable source = TstUtils.testRefreshingTable(
                 i(2, 4, 6, 8).copy().toTracking(),
                 TableTools.col("KeyCol1", "KeyA", "KeyB", "KeyA", "KeyB"),
-                TableTools.col("StringCol", "Aa", null, "Cc", "Dd")
-        );
+                TableTools.col("StringCol", "Aa", null, "Cc", "Dd"));
 
         {
             // Creating composite-key KeyedRecordAdapter with only one key column
             final DataIndex dataIndex = DataIndexer.getOrCreateDataIndex(source, "KeyCol1");
             try {
                 KeyedRecordAdapter.makeRecordAdapterCompositeKey(
-                                source,
-                                (TableBackedDataIndex) dataIndex,
-                                JsonRecordAdapterUtil.createJsonRecordAdapterDescriptor(source, Arrays.asList("KeyCol1", "StringCol")));
+                        source,
+                        (TableBackedDataIndex) dataIndex,
+                        JsonRecordAdapterUtil.createJsonRecordAdapterDescriptor(source,
+                                Arrays.asList("KeyCol1", "StringCol")));
                 fail("should have thrown an exception");
             } catch (IllegalArgumentException ex) {
-                assertEquals("Attempting to create composite-key KeyedRecordAdapter but dataIndex has only one key column. Use makeRecordAdapterSimpleKey instead.", ex.getMessage());
+                assertEquals(
+                        "Attempting to create composite-key KeyedRecordAdapter but dataIndex has only one key column. Use makeRecordAdapterSimpleKey instead.",
+                        ex.getMessage());
             }
         }
 
@@ -635,12 +638,14 @@ public class KeyedRecordAdapterTest extends KeyedRecordAdapterTestBase {
                 KeyedRecordAdapter.makeRecordAdapterSimpleKey(
                         source,
                         (TableBackedDataIndex) dataIndex,
-                        JsonRecordAdapterUtil.createJsonRecordAdapterDescriptor(source, Arrays.asList("KeyCol1", "StringCol")),
-                        String.class
-                        );
+                        JsonRecordAdapterUtil.createJsonRecordAdapterDescriptor(source,
+                                Arrays.asList("KeyCol1", "StringCol")),
+                        String.class);
                 fail("should have thrown an exception");
             } catch (IllegalArgumentException ex) {
-                assertEquals("Attempting to create simple-key KeyedRecordAdapter but dataIndex has multiple key columns. Use makeRecordAdapterCompositeKey instead.", ex.getMessage());
+                assertEquals(
+                        "Attempting to create simple-key KeyedRecordAdapter but dataIndex has multiple key columns. Use makeRecordAdapterCompositeKey instead.",
+                        ex.getMessage());
             }
         }
 
@@ -652,11 +657,12 @@ public class KeyedRecordAdapterTest extends KeyedRecordAdapterTestBase {
                         source,
                         (TableBackedDataIndex) dataIndex,
                         JsonRecordAdapterUtil.createJsonRecordAdapterDescriptor(source, List.of("KeyCol1")),
-                        Integer.class
-                );
+                        Integer.class);
                 fail("should have thrown an exception");
             } catch (IllegalArgumentException ex) {
-                assertEquals("Key column type mismatch: expected type java.lang.Integer, found java.lang.String in dataIndex for column KeyCol1", ex.getMessage());
+                assertEquals(
+                        "Key column type mismatch: expected type java.lang.Integer, found java.lang.String in dataIndex for column KeyCol1",
+                        ex.getMessage());
             }
         }
 
@@ -665,10 +671,10 @@ public class KeyedRecordAdapterTest extends KeyedRecordAdapterTestBase {
             try {
                 KeyedRecordAdapter.makeRecordAdapterSimpleKey(
                         source,
-                        JsonRecordAdapterUtil.createJsonRecordAdapterDescriptor(source, Arrays.asList("KeyCol1", "MissingCol123ABC")),
+                        JsonRecordAdapterUtil.createJsonRecordAdapterDescriptor(source,
+                                Arrays.asList("KeyCol1", "MissingCol123ABC")),
                         "KeyCol1",
-                        Integer.class
-                );
+                        Integer.class);
                 fail("should have thrown an exception");
             } catch (NoSuchColumnException ex) {
                 assertTrue(ex.getMessage().contains("MissingCol123ABC"));
@@ -696,8 +702,10 @@ public class KeyedRecordAdapterTest extends KeyedRecordAdapterTestBase {
                                 .addFloatColumnAdapter("FloatCol", (myRecord, s) -> myRecord.myFloat = s)
                                 .addLongColumnAdapter("LongCol", (myRecord, s) -> myRecord.myLong = s)
                                 .addDoubleColumnAdapter("DoubleCol", (myRecord, s) -> myRecord.myDouble = s)
-                                .addObjColumnAdapter("KeyCol3", Instant.class,(myRecord, s) -> myRecord.myKeyInstant = s)
-                                .addObjColumnAdapter("InstantCol", Instant.class, (myRecord, s) -> myRecord.myInstant = s)
+                                .addObjColumnAdapter("KeyCol3", Instant.class,
+                                        (myRecord, s) -> myRecord.myKeyInstant = s)
+                                .addObjColumnAdapter("InstantCol", Instant.class,
+                                        (myRecord, s) -> myRecord.myInstant = s)
                                 .build(),
                         "KeyCol3", Instant.class);
 
@@ -774,7 +782,8 @@ public class KeyedRecordAdapterTest extends KeyedRecordAdapterTestBase {
         final List<MyRecord> recordsA_composite = keyedRecordAdapter.getRecordListCompositeKey(baseInstant);
         assertEquals(recordsA, recordsA_composite);
 
-        final List<MyRecord> recordsB_composite = keyedRecordAdapter.getRecordListCompositeKey(baseInstant.plusSeconds(1));
+        final List<MyRecord> recordsB_composite =
+                keyedRecordAdapter.getRecordListCompositeKey(baseInstant.plusSeconds(1));
         assertEquals(recordsB, recordsB_composite);
 
         final List<MyRecord> recordsNull_composite = keyedRecordAdapter.getRecordListCompositeKey((Object) null);
@@ -784,7 +793,8 @@ public class KeyedRecordAdapterTest extends KeyedRecordAdapterTestBase {
         assertNull(keyedRecordAdapter.getRecordListCompositeKey(missingInstantKey));
 
         // Test retrieving multiple records (for different keys)
-        final Map<Instant, MyRecord> records = keyedRecordAdapter.getRecords(baseInstant, baseInstant.plusSeconds(1), missingInstantKey);
+        final Map<Instant, MyRecord> records =
+                keyedRecordAdapter.getRecords(baseInstant, baseInstant.plusSeconds(1), missingInstantKey);
         assertEquals(recordA, records.get(baseInstant));
         assertEquals(recordB, records.get(baseInstant.plusSeconds(1)));
         assertFalse("records.containsKey(missingInstantKey)", records.containsKey(missingInstantKey));
@@ -812,8 +822,10 @@ public class KeyedRecordAdapterTest extends KeyedRecordAdapterTestBase {
                                 .addDoubleColumnAdapter("DoubleCol", (myRecord, s) -> myRecord.myDouble = s)
                                 .addStringColumnAdapter("KeyCol1", (myRecord, s) -> myRecord.myKeyString = s)
                                 .addIntColumnAdapter("KeyCol2", (myRecord, s) -> myRecord.myKeyInt = s)
-                                .addObjColumnAdapter("KeyCol3", Instant.class,(myRecord, s) -> myRecord.myKeyInstant = s)
-                                .addObjColumnAdapter("InstantCol", Instant.class, (myRecord, s) -> myRecord.myInstant = s)
+                                .addObjColumnAdapter("KeyCol3", Instant.class,
+                                        (myRecord, s) -> myRecord.myKeyInstant = s)
+                                .addObjColumnAdapter("InstantCol", Instant.class,
+                                        (myRecord, s) -> myRecord.myInstant = s)
                                 .build(),
                         "KeyCol1", "KeyCol3");
 
@@ -877,7 +889,8 @@ public class KeyedRecordAdapterTest extends KeyedRecordAdapterTestBase {
         }
 
         // Test retrieving multiple records (for different keys)
-        final Map<List<?>, MyRecord> records = keyedRecordAdapter.getRecords(Arrays.asList("KeyA", baseInstant), Arrays.asList("KeyB", baseInstant), Arrays.asList(null, null));
+        final Map<List<?>, MyRecord> records = keyedRecordAdapter.getRecords(Arrays.asList("KeyA", baseInstant),
+                Arrays.asList("KeyB", baseInstant), Arrays.asList(null, null));
         assertEquals(recordA0, records.get(List.of("KeyA", baseInstant)));
         assertEquals(recordB0, records.get(List.of("KeyB", baseInstant)));
         assertEquals(recordNull, records.get(Arrays.asList(null, null)));

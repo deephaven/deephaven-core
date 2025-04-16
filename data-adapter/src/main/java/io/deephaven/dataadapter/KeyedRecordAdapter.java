@@ -51,7 +51,7 @@ import java.util.stream.Collectors;
  * Instantiate through {@link #makeRecordAdapterSimpleKey}/{@link #makeRecordAdapterCompositeKey}.
  *
  * @param <K> Key type. If there is one key column, {@code K} must be that column's type. If there are multiple key
- *         columns, {@code K} must be {@code List<?>}.
+ *        columns, {@code K} must be {@code List<?>}.
  * @param <T> Record type. Each retrieved row is represented by one instance of {@code T}.
  */
 public class KeyedRecordAdapter<K, T> {
@@ -71,8 +71,8 @@ public class KeyedRecordAdapter<K, T> {
      * Function to convert a list of user-friendly keys to a list of lookup keys that can be used with a
      * {@link DataIndex} or {@link AggregationRowLookup} (which operate on the base storage types for reinterpreted
      * types -- see {@link ReinterpretUtils} or {@link #getKeyReinterpreter}. The "user-friendly keys" must be either a
-     * {@code List<K>} (if there is one {@link #keyColumns key column}) or a {@code List<List<?>>} (if there
-     * are multiple key columns).
+     * {@code List<K>} (if there is one {@link #keyColumns key column}) or a {@code List<List<?>>} (if there are
+     * multiple key columns).
      */
     @NotNull
     protected final Function<List<?>, List<Object>> dataKeysListToLookupKeys;
@@ -154,7 +154,8 @@ public class KeyedRecordAdapter<K, T> {
             sourceTable = theTable;
             // TODO: assert that the dataIndex is actually on 'theTable'?
         } else if (thePartitionedTable != null) {
-            // TODO: for partitioned tables we need to worry about constituentChangesPermitted, which is independent of refreshingness of the constituent
+            // TODO: for partitioned tables we need to worry about constituentChangesPermitted, which is independent of
+            // refreshingness of the constituent
             sourceTable = thePartitionedTable.table();
             // make sure we have the expected keys
             Arrays.asList(keyColumns).forEach(colName -> Require.contains(
@@ -198,7 +199,8 @@ public class KeyedRecordAdapter<K, T> {
                     usePrev,
                     keysList);
         } else {
-            throw new UnsupportedOperationException("Only tables with Data Indexes or an AggregationRowLookup are supported. Partitioned tables not created with .partitionBy() are unsupported.");
+            throw new UnsupportedOperationException(
+                    "Only tables with Data Indexes or an AggregationRowLookup are supported. Partitioned tables not created with .partitionBy() are unsupported.");
         }
 
         final NotificationStepSource[] notificationSources;
@@ -235,7 +237,8 @@ public class KeyedRecordAdapter<K, T> {
             }
         }
 
-        // Get a record adapter descriptor that deals with the raw data (without the keys -- since they can be populated afterward)
+        // Get a record adapter descriptor that deals with the raw data (without the keys -- since they can be populated
+        // afterward)
         final RecordAdapterDescriptor<T> recordAdapterDescriptorNoKeys = recordAdapterDescriptorBuilderNoKeys.build();
 
         if (thePartitionedTable != null) {
@@ -296,7 +299,8 @@ public class KeyedRecordAdapter<K, T> {
                     final Class<?> expectedType = keyColRecordUpdater.getSourceType();
                     if (!expectedType.isAssignableFrom(keyColumnType)) {
                         throw new IllegalArgumentException(
-                                "Key column " + i + ": Record updater expects type " + expectedType + ", instead table has type " +
+                                "Key column " + i + ": Record updater expects type " + expectedType
+                                        + ", instead table has type " +
                                         keyColumnType.getCanonicalName());
                     }
 
@@ -413,8 +417,9 @@ public class KeyedRecordAdapter<K, T> {
         return new KeyedRecordAdapter<>(sourceTable, null, dataIndex, genericRecordAdapterDescriptor, keyColumns);
     }
 
-    public static <T> KeyedRecordAdapter<List<?>, Map<String, Object>> makeRecordAdapterCompositeKey(PartitionedTable sourceTable,
-                                                                                   List<String> valueColumns) {
+    public static <T> KeyedRecordAdapter<List<?>, Map<String, Object>> makeRecordAdapterCompositeKey(
+            PartitionedTable sourceTable,
+            List<String> valueColumns) {
         final List<String> keyColumnsList = new ArrayList<>(sourceTable.keyColumnNames());
 
         if (keyColumnsList.isEmpty()) {
@@ -433,7 +438,8 @@ public class KeyedRecordAdapter<K, T> {
         // Note: this requires that the constituents include the key columns -- i.e., the partitioned table is created
         // with .partitionBy(source) or .partitionBy(false, source)
         final RecordAdapterDescriptor<Map<String, Object>> genericRecordAdapterDescriptor =
-                RecordAdapterDescriptor.createGenericRecordAdapterDescriptor(sourceTable.constituentDefinition(), allCols);
+                RecordAdapterDescriptor.createGenericRecordAdapterDescriptor(sourceTable.constituentDefinition(),
+                        allCols);
         return new KeyedRecordAdapter<>(null, sourceTable, null, genericRecordAdapterDescriptor, keyColumns);
     }
 
@@ -692,10 +698,10 @@ public class KeyedRecordAdapter<K, T> {
         final List<Object> lookupKeys = dataKeysListToLookupKeys.apply(dataKeys);
 
         /*
-        * Create reference to result arrays.
-        * We can't allocate the arrays yet, since for data indexes and partitioned tables we don't know yet how many rows
-        * we're going to retrieve data from. Even from a lastBy we don't know how many of the keys are actually present.
-        */
+         * Create reference to result arrays. We can't allocate the arrays yet, since for data indexes and partitioned
+         * tables we don't know yet how many rows we're going to retrieve data from. Even from a lastBy we don't know
+         * how many of the keys are actually present.
+         */
         final MutableObject<Object[]> recordDataArrsRef = new MutableObject<>(null);
 
         // list to store the index keys for which data is retrieved
@@ -712,9 +718,11 @@ public class KeyedRecordAdapter<K, T> {
         // Now that we have retrieved a consistent snapshot, create records for each row (turning the columnar
         // data fetched from the engine into user-friendly row data)
         final int nRetrievedRecords = recordDataRowKeys.size();
-        final T[] recordsArr = multiRowRecordAdapter.createRecordsFromData(recordDataArrsRef.getValue(), nRetrievedRecords);
+        final T[] recordsArr =
+                multiRowRecordAdapter.createRecordsFromData(recordDataArrsRef.getValue(), nRetrievedRecords);
 
-        return new Result<>(recordDataRowKeys, dbRowKeyToDataKeyPositionalIndexRef.getValue(), nRetrievedRecords, recordsArr);
+        return new Result<>(recordDataRowKeys, dbRowKeyToDataKeyPositionalIndexRef.getValue(), nRetrievedRecords,
+                recordsArr);
     }
 
     private static class Result<T> {
@@ -724,9 +732,9 @@ public class KeyedRecordAdapter<K, T> {
         public final T[] recordsArr;
 
         public Result(TLongList recordDataRowKeys,
-                      TLongIntMap dbRowKeyToDataKeyPositionalIndex,
-                      int nRetrievedRecords,
-                      T[] recordsArr) {
+                TLongIntMap dbRowKeyToDataKeyPositionalIndex,
+                int nRetrievedRecords,
+                T[] recordsArr) {
             this.recordDataRowKeys = recordDataRowKeys;
             this.dbRowKeyToDataKeyPositionalIndex = dbRowKeyToDataKeyPositionalIndex;
             this.nRetrievedRecords = nRetrievedRecords;
@@ -736,7 +744,8 @@ public class KeyedRecordAdapter<K, T> {
 
     /**
      * @param lookupKeys The keys to look up in the ToMapListener
-     * @param recordDataArrsRef Reference to be populated with an array that will be filled with arrays of data for each column
+     * @param recordDataArrsRef Reference to be populated with an array that will be filled with arrays of data for each
+     *        column
      * @param recordDataKeys A list that will be populated with keys for
      * @param rowKeyToDataKeyPositionRef Map of row keys to the position (in the {@code lookupKeys} list) of the
      *        corresponding data key.
@@ -776,7 +785,8 @@ public class KeyedRecordAdapter<K, T> {
         final RowSet rowSetAcrossDataKeys = dataKeyLookupResult.rowSet;
         rowKeyToDataKeyPositionRef.setValue(dataKeyLookupResult.rowKeyToDataKeyPositionMap);
 
-        final Object[] recordDataArrs = multiRowRecordAdapter.getTableDataArrayRetriever().createDataArrays(rowSetAcrossDataKeys.intSize());
+        final Object[] recordDataArrs =
+                multiRowRecordAdapter.getTableDataArrayRetriever().createDataArrays(rowSetAcrossDataKeys.intSize());
         recordDataArrsRef.setValue(recordDataArrs);
 
         multiRowRecordAdapter.getTableDataArrayRetriever().fillDataArrays(
@@ -914,12 +924,13 @@ public class KeyedRecordAdapter<K, T> {
      * Retrieve a row set with the row keys for all rows matching {@code dataKeys}, using the given
      * {@code rowKeyLookup}.
      *
-     * @param avgRowsPerKey                 Supplier of the average number of rows per entry in the data index (i.e. {@code sourceTable.size() / dataIndex.size()})
-     * @param rowKeyLookup                  The row key lookup from the data index
+     * @param avgRowsPerKey Supplier of the average number of rows per entry in the data index (i.e.
+     *        {@code sourceTable.size() / dataIndex.size()})
+     * @param rowKeyLookup The row key lookup from the data index
      * @param dataIndexTableRowSetColSource The column source for the RowSet column in the {@link DataIndex#table() data
-     *                                      index's underlying table}
-     * @param usePrev                       Whether to use previous values
-     * @param dataKeys                      The data keys to search for
+     *        index's underlying table}
+     * @param usePrev Whether to use previous values
+     * @param dataKeys The data keys to search for
      * @return
      */
     @NotNull
@@ -957,32 +968,6 @@ public class KeyedRecordAdapter<K, T> {
                     }
                     builder.addRange(start, end);
                 }
-
-                /*
-                get me data for AAPL, GOOG
-                0 1
-                0 is GOOG
-                1 is AAPL
-
-
-
-                AAPL: 0-100, 300-399
-                GOOG: 101-200
-
-                result rowset to retrieve for: 0-200, 300-399
-
-                AAPL is dataKey 0, GOOG is dataKey 1
-
-                rowKeyToDatakeyPostionMap:
-
-                0 -> 0
-                1 -> 0
-                2 -> 0
-                ...
-
-
-
-                 */
             }
             ii++;
         }
@@ -1003,7 +988,8 @@ public class KeyedRecordAdapter<K, T> {
         final int nKeys = dataKeys.size();
         PartitionedTable x;
 
-        // TODO: use constituentFor(), or do a straight-up where() on the PartitionedTable.table(), or use the AggregationRowLookup (assuming it was produced with .partitionBy() rather than being a source table)
+        // TODO: use constituentFor(), or do a straight-up where() on the PartitionedTable.table(), or use the
+        // AggregationRowLookup (assuming it was produced with .partitionBy() rather than being a source table)
 
         final TLongIntMap rowKeyToDataKeyPositionMap = new TLongIntHashMap(nKeys);
         final RowSetBuilderRandom builder = RowSetFactory.builderRandom();
@@ -1023,10 +1009,10 @@ public class KeyedRecordAdapter<K, T> {
 
 
     /**
-     * Holder for the result of a {@link RowSetRetriever}. Consists of a {@code rowSet}, and a
-     * {code rowKeyToDataKeyPositionMap} that maps each row key in that {@code rowSet} to the position of the key it
-     * corresponds to in a list. (The list of keys itself is not part of this object, but is passed to the {@link RowSetRetriever#apply}
-     * used to create a {@code RowSetKeysForResult}.)
+     * Holder for the result of a {@link RowSetRetriever}. Consists of a {@code rowSet}, and a {code
+     * rowKeyToDataKeyPositionMap} that maps each row key in that {@code rowSet} to the position of the key it
+     * corresponds to in a list. (The list of keys itself is not part of this object, but is passed to the
+     * {@link RowSetRetriever#apply} used to create a {@code RowSetKeysForResult}.)
      */
     private static class RowSetForKeysResult {
         private final RowSet rowSet;

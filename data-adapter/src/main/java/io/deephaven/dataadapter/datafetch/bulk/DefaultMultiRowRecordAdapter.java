@@ -26,9 +26,10 @@ public class DefaultMultiRowRecordAdapter<T> extends BaseMultiRowRecordAdapter<T
     protected final RecordAdapterDescriptor<T> descriptor;
 
     /**
-     * An array of array-to-record adapters (parallel to the TableDataArrayRetriever's columns {@link TableDataArrayRetriever#getColumnNames})
-     * tableDataArrayRetriever colum sources}) used to update a record of type {@code T} with values from arrays of data
-     * retrieved from the column sources via the TableDataArrayRetriever.
+     * An array of array-to-record adapters (parallel to the TableDataArrayRetriever's columns
+     * {@link TableDataArrayRetriever#getColumnNames}) tableDataArrayRetriever colum sources}) used to update a record
+     * of type {@code T} with values from arrays of data retrieved from the column sources via the
+     * TableDataArrayRetriever.
      * <p>
      * These order of the columns is determined by the {@link #descriptor}.
      */
@@ -47,8 +48,10 @@ public class DefaultMultiRowRecordAdapter<T> extends BaseMultiRowRecordAdapter<T
     }
 
 
-    public static <T> DefaultMultiRowRecordAdapter<T> create(PartitionedTable sourceTable, RecordAdapterDescriptor<T> descriptor) {
-        final TableDataArrayRetriever tableDataArrayRetriever = new PartitionedTableDataArrayRetrieverImpl(sourceTable, descriptor.getColumnNames());
+    public static <T> DefaultMultiRowRecordAdapter<T> create(PartitionedTable sourceTable,
+            RecordAdapterDescriptor<T> descriptor) {
+        final TableDataArrayRetriever tableDataArrayRetriever =
+                new PartitionedTableDataArrayRetrieverImpl(sourceTable, descriptor.getColumnNames());
 
         return new DefaultMultiRowRecordAdapter<>(
                 sourceTable.constituentDefinition(),
@@ -56,7 +59,9 @@ public class DefaultMultiRowRecordAdapter<T> extends BaseMultiRowRecordAdapter<T
                 tableDataArrayRetriever);
     }
 
-    private DefaultMultiRowRecordAdapter(@NotNull final TableDefinition tableDefinition, @NotNull final RecordAdapterDescriptor<T> descriptor, final TableDataArrayRetriever tableDataArrayRetriever) {
+    private DefaultMultiRowRecordAdapter(@NotNull final TableDefinition tableDefinition,
+            @NotNull final RecordAdapterDescriptor<T> descriptor,
+            final TableDataArrayRetriever tableDataArrayRetriever) {
         super(descriptor, tableDataArrayRetriever);
         this.descriptor = descriptor;
 

@@ -33,7 +33,8 @@ public abstract class BaseMultiRowRecordAdapter<T> implements MultiRowRecordAdap
      */
     protected final TableDataArrayRetriever tableDataArrayRetriever;
 
-    public BaseMultiRowRecordAdapter(final RecordAdapterDescriptor<T> descriptor, final TableDataArrayRetriever tableDataArrayRetriever) {
+    public BaseMultiRowRecordAdapter(final RecordAdapterDescriptor<T> descriptor,
+            final TableDataArrayRetriever tableDataArrayRetriever) {
         // noinspection unchecked
         this(
                 tableDataArrayRetriever,

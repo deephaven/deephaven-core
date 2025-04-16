@@ -50,7 +50,7 @@ public class PyKeyedRecordAdapterTest extends RefreshingTableTestCase {
 
         {
             PyKeyedRecordAdapter.RecordRetrievalResult record =
-                    keyedRecordAdapter.getRecordsForPython(new Object[]{"KeyA"});
+                    keyedRecordAdapter.getRecordsForPython(new Object[] {"KeyA"});
 
             final long[] recordDataRowKeys = record.recordDataRowKeys;
             final TLongIntMap rowKeyToDataKeyPositionalIndex = record.rowKeyToDataKeyPositionalIndex;
@@ -72,7 +72,7 @@ public class PyKeyedRecordAdapterTest extends RefreshingTableTestCase {
 
         {
             PyKeyedRecordAdapter.RecordRetrievalResult record =
-                    keyedRecordAdapter.getRecordsForPython(new Object[]{"KeyB"});
+                    keyedRecordAdapter.getRecordsForPython(new Object[] {"KeyB"});
 
             final long[] recordDataRowKeys = record.recordDataRowKeys;
             final TLongIntMap rowKeyToDataKeyPositionalIndex = record.rowKeyToDataKeyPositionalIndex;
