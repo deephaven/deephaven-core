@@ -5,6 +5,7 @@ package io.deephaven.engine.table.impl;
 
 import com.google.common.math.LongMath;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.util.SafeCloseable;
@@ -78,12 +79,19 @@ public final class FilterResultContext implements SafeCloseable {
             pushdownNeeded = false;
         } else if (filter.getColumns().size() == 1) {
             // Get the column source and estimate the cost of applying the filter.
-            final AbstractColumnSource<?> acs =
-                    (AbstractColumnSource<?>) sourceTable.getColumnSource(filter.getColumns().get(0));
-            filterCost = acs.estimateFilterCost(filter, input, sourceTable.getRowSet(), usePrev);
-            if (pushdownNeeded) {
-                pushdownCost = acs.estimatePushdownFilterCost(filter, input, sourceTable.getRowSet(), usePrev);
-                pushdownNeeded = pushdownCost < filterCost;
+            final ColumnSource<?> source = sourceTable.getColumnSource(filter.getColumns().get(0));
+            if (source instanceof AbstractColumnSource) {
+                final AbstractColumnSource<?> acs =
+                        (AbstractColumnSource<?>) sourceTable.getColumnSource(filter.getColumns().get(0));
+                filterCost = acs.estimateFilterCost(filter, input, sourceTable.getRowSet(), usePrev);
+                if (pushdownNeeded) {
+                    pushdownCost = acs.estimatePushdownFilterCost(filter, input, sourceTable.getRowSet(), usePrev);
+                    pushdownNeeded = pushdownCost < filterCost;
+                }
+            } else {
+                // This a non-standard column source, assume it is expensive to filter with no push-down.
+                filterCost = Long.MAX_VALUE;
+                pushdownNeeded = false;
             }
         } else {
             // Estimate the filter cost by summing the costs of each column source.
