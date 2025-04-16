@@ -61,15 +61,15 @@ public class SingleElementListHeaderReader<READ_CHUNK_TYPE extends WritableChunk
 
         // offsets:
         if (offsetsBufferLength > 0) {
-            Assert.eqTrue(offsetsBufferLength >= Integer.BYTES * 2, "offsetsBufferLength > Integer.BYTES * 2");
+            Assert.geq(offsetsBufferLength, "offsetsBufferLength", Integer.BYTES * 2, "Integer.BYTES * 2");
             final int startOffset = is.readInt(); // read the first offset; should be zero
             final int endOffset = is.readInt(); // read the first offset; should be zero
             offsetsBufferLength -= Integer.BYTES * 2;
 
             totalRows = endOffset - startOffset;
-            if (outChunk != null && outChunk.capacity() - outChunk.size() >= totalRows) {
-                throw new IllegalStateException(
-                        "outChunk is not large enough to hold the number of rows: " + totalRows);
+            if (outChunk != null && outChunk.capacity() - outChunk.size() < totalRows) {
+                throw new IllegalStateException("outChunk is not large enough (capacity: " + outChunk.capacity()
+                        + " existing size: " + outChunk.size() + " numRowsToAppend: " + totalRows + ")");
             }
 
             // skip any remaining buffer
