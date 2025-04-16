@@ -111,6 +111,7 @@ public final class IcebergUtils {
             case STRUCT: // Fall through
             case MAP: // Fall through
             default:
+                // TODO (DH-19247) Add support for more types like UUID, Struct, Map
                 throw new TableDataException("Iceberg columns of type " + typeId.name() + "is not supported when" +
                         " reading data from Iceberg tables");
         }
