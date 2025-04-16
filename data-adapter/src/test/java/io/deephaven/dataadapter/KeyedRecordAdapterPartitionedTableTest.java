@@ -392,6 +392,7 @@ public class KeyedRecordAdapterPartitionedTableTest extends KeyedRecordAdapterTe
             TstUtils.addToTable(source, i(4).copy().toTracking(),
                     TableTools.col("KeyCol1", "KeyB"),
                     TableTools.col("KeyCol2", 0),
+                    TableTools.col("KeyCol3", baseInstant.plusSeconds(1)),
                     TableTools.col("StringCol", "bB"),
                     TableTools.charCol("CharCol", 'B'),
                     TableTools.byteCol("ByteCol", (byte) 2),
@@ -399,7 +400,8 @@ public class KeyedRecordAdapterPartitionedTableTest extends KeyedRecordAdapterTe
                     TableTools.intCol("IntCol", 200),
                     TableTools.floatCol("FloatCol", 0.2f),
                     TableTools.longCol("LongCol", 20_000_000_000L),
-                    TableTools.doubleCol("DoubleCol", 2.2d));
+                    TableTools.doubleCol("DoubleCol", 2.2d),
+                    TableTools.instantCol("InstantCol", baseInstant.plusSeconds(200)));
             TableTools.show(source);
             source.notifyListeners(i(), i(), i(4));
         });

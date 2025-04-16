@@ -68,12 +68,11 @@ public class KeyedRecordAdapter<K, T> {
     protected final ThrowingBiConsumer<QueryDataRetrievalOperation, String, RuntimeException> DO_LOCKED_FUNCTION;
 
     /**
-     * Function convert a list of user-friendly keys to a list of the ToMapListener's keys. The user-friendly keys must
-     * be either a {@code List<K>} (if there is one {@link #keyColumns key column}) or a {@code List<List<?>>} (if there
+     * Function to convert a list of user-friendly keys to a list of lookup keys that can be used with a
+     * {@link DataIndex} or {@link AggregationRowLookup} (which operate on the base storage types for reinterpreted
+     * types -- see {@link ReinterpretUtils} or {@link #getKeyReinterpreter}. The "user-friendly keys" must be either a
+     * {@code List<K>} (if there is one {@link #keyColumns key column}) or a {@code List<List<?>>} (if there
      * are multiple key columns).
-     * <p>
-     * This function will call {@link #dataKeyToLookupKey}; if there are multiple key columns, the keys must first be
-     * converted from a {@code List<?>} to an {@code Object[]}.
      */
     @NotNull
     protected final Function<List<?>, List<Object>> dataKeysListToLookupKeys;
@@ -84,6 +83,10 @@ public class KeyedRecordAdapter<K, T> {
     @NotNull
     private final String[] keyColumns;
 
+    /**
+     * Utility for creating the records and populating them with data. Data is extracted from the table with the
+     * {@link MultiRowRecordAdapter#getTableDataArrayRetriever()}.
+     */
     @NotNull
     protected final MultiRowRecordAdapter<T> multiRowRecordAdapter;
 
@@ -99,11 +102,6 @@ public class KeyedRecordAdapter<K, T> {
      * Whether this KeyedRecordAdapter has just one key column (as opposed to multiple key columns).
      */
     protected final boolean isSingleKeyCol;
-
-    /**
-     * List of data types for the {@link #keyColumns key columns}.
-     */
-    protected final List<Class<?>> keyColumnTypesList;
 
     /**
      * Function called (under the lock or in a snapshot) to look up the row keys corresponding to each requested data
@@ -170,14 +168,17 @@ public class KeyedRecordAdapter<K, T> {
 
         isSingleKeyCol = keyColumns.length == 1;
 
-        final ColumnSource<?>[] keyColumnSources =
-                Arrays.stream(keyColumns)
-                        .map(sourceTable::getColumnSource)
+        final ColumnSource<?>[] keyColumnSources = Arrays.stream(keyColumns)
+                .map(sourceTable::getColumnSource)
+                .toArray(ColumnSource[]::new);
+
+        final ColumnSource<?>[] keyColumnSourcesReinterpreted =
+                Arrays.stream(keyColumnSources)
                         .map(ReinterpretUtils::maybeConvertToPrimitive)
                         .toArray(ColumnSource[]::new);
 
         if (dataIndex != null) {
-            final DataIndex.RowKeyLookup rowKeyLookup = dataIndex.rowKeyLookup(keyColumnSources);
+            final DataIndex.RowKeyLookup rowKeyLookup = dataIndex.rowKeyLookup(keyColumnSourcesReinterpreted);
             final ColumnSource<RowSet> dataIndexRowSetColSource =
                     dataIndex.table().getColumnSource(dataIndex.rowSetColumnName());
 
@@ -245,10 +246,9 @@ public class KeyedRecordAdapter<K, T> {
 
         final Class<?>[] keyColumnTypes =
                 Arrays.stream(keyColumnSources).map(ColumnSource::getType).toArray(Class[]::new);
-        keyColumnTypesList = List.of(keyColumnTypes);
 
-        // Function for converting a lookup key to the corresponding reinterpreted types.
-        final Function<Object, Object> dataKeyReinterpreter = getHackyReinterpreter(keyColumnTypes);
+        // Function for converting a data key to the corresponding reinterpreted types (to be used as a lookup key).
+        final Function<Object, Object> dataKeyReinterpreter = getKeyReinterpreter(keyColumnTypes);
 
         // Set the dataKeyToMapKey, dataKeysListToMapKeys, and updateRecordWithKeyData lambdas depending on
         // whether the key is a simple key from a single column or a composite key from multiple columns:
@@ -270,7 +270,7 @@ public class KeyedRecordAdapter<K, T> {
                 final Class<?> expectedType = keyColRecordUpdater.getSourceType();
                 if (!expectedType.isAssignableFrom(keyColumnType)) {
                     throw new IllegalArgumentException(
-                            "Key column 0: Expected type " + expectedType + ", instead found type " +
+                            "Key column 0: Record updater expects type " + expectedType + ", instead table has type " +
                                     keyColumnType.getCanonicalName());
                 }
 
@@ -292,11 +292,12 @@ public class KeyedRecordAdapter<K, T> {
                 String keyColumn = keyColumns[i];
                 final RecordUpdater<T, ?> keyColRecordUpdater = keyColRecordUpdaters.get(keyColumn);
                 if (keyColRecordUpdater != null) {
+                    final Class<?> keyColumnType = keyColumnSources[i].getType();
                     final Class<?> expectedType = keyColRecordUpdater.getSourceType();
-                    if (!expectedType.isAssignableFrom(keyColumnTypes[i])) {
+                    if (!expectedType.isAssignableFrom(keyColumnType)) {
                         throw new IllegalArgumentException(
-                                "Key column " + i + ": Expected type " + expectedType + ", instead found type " +
-                                        keyColumnSources[i].getType().getCanonicalName());
+                                "Key column " + i + ": Record updater expects type " + expectedType + ", instead table has type " +
+                                        keyColumnType.getCanonicalName());
                     }
 
                     keyDataUpdaters.add(getCompositeKeyRecordUpdater(i, keyColRecordUpdater));
@@ -805,7 +806,7 @@ public class KeyedRecordAdapter<K, T> {
      *         {@code types.length > 1}, a Function that takes an {@code Object[]} of {@code types.length} and returns a
      *         parallel array with the input array's elements or their boxed primitive representations.
      */
-    private static Function<Object, Object> getHackyReinterpreter(Class<?>... types) {
+    private static Function<Object, Object> getKeyReinterpreter(Class<?>... types) {
         // TODO: is there some standard function that does this? no; just move this to reinterpretutils
         final int expectedLen = types.length;
 
@@ -816,13 +817,10 @@ public class KeyedRecordAdapter<K, T> {
 
             final Class<?> targetType = ReinterpretUtils.maybeConvertToPrimitiveDataType(origType);
             if (origType == Boolean.class && targetType == byte.class) {
-                Require.equals(targetType, "targetType", Boolean.class);
                 reinterpretFunctions[ii] = o -> BooleanUtils.booleanAsByte((Boolean) o);
             } else if (origType == Instant.class && targetType == long.class) {
-                Require.equals(targetType, "targetType", Instant.class);
                 reinterpretFunctions[ii] = o -> DateTimeUtils.epochNanos((Instant) o);
             } else if (origType == ZonedDateTime.class && targetType == long.class) {
-                Require.equals(targetType, "targetType", ZonedDateTime.class);
                 reinterpretFunctions[ii] = o -> DateTimeUtils.epochNanos((ZonedDateTime) o);
             } else if (origType != targetType) {
                 throw new IllegalStateException("Type " + origType + " must be reinterpreted as " + targetType +

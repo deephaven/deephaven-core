@@ -8,7 +8,6 @@ import io.deephaven.dataadapter.rec.desc.RecordAdapterDescriptorBuilder;
 import io.deephaven.dataadapter.rec.json.JsonRecordAdapterUtil;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.DataIndex;
-import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.impl.NoSuchColumnException;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.dataindex.TableBackedDataIndex;
@@ -18,6 +17,7 @@ import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.util.QueryConstants;
 
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -497,6 +497,7 @@ public class KeyedRecordAdapterTest extends KeyedRecordAdapterTestBase {
             TstUtils.addToTable(source, i(4).copy().toTracking(),
                     TableTools.col("KeyCol1", "KeyB"),
                     TableTools.col("KeyCol2", 0),
+                    TableTools.col("KeyCol3", baseInstant.plusSeconds(1)),
                     TableTools.col("StringCol", "bB"),
                     TableTools.charCol("CharCol", 'B'),
                     TableTools.byteCol("ByteCol", (byte) 2),
@@ -504,7 +505,8 @@ public class KeyedRecordAdapterTest extends KeyedRecordAdapterTestBase {
                     TableTools.intCol("IntCol", 200),
                     TableTools.floatCol("FloatCol", 0.2f),
                     TableTools.longCol("LongCol", 20_000_000_000L),
-                    TableTools.doubleCol("DoubleCol", 2.2d));
+                    TableTools.doubleCol("DoubleCol", 2.2d),
+                    TableTools.instantCol("InstantCol", baseInstant.plusSeconds(200)));
             TableTools.show(source);
             source.notifyListeners(i(), i(), i(4));
         });
@@ -674,5 +676,212 @@ public class KeyedRecordAdapterTest extends KeyedRecordAdapterTestBase {
         }
 
     }
+
+    /**
+     * Test with a key column of a {@link io.deephaven.engine.table.impl.sources.ReinterpretUtils reinterpreted} type.
+     */
+    public void testCustomKeyedRecordAdapterWithOneObjKeyColAndReinterperting() {
+        final QueryTable source = getSimpleTestTable();
+        TableTools.show(source);
+
+        final KeyedRecordAdapter<Instant, MyRecord> keyedRecordAdapter =
+                KeyedRecordAdapter.makeRecordAdapterSimpleKey(
+                        source,
+                        RecordAdapterDescriptorBuilder.create(MyRecord::new)
+                                .addStringColumnAdapter("StringCol", (myRecord, s) -> myRecord.myString = s)
+                                .addCharColumnAdapter("CharCol", (myRecord, s) -> myRecord.myChar = s)
+                                .addByteColumnAdapter("ByteCol", (myRecord, s) -> myRecord.myByte = s)
+                                .addShortColumnAdapter("ShortCol", (myRecord, s) -> myRecord.myShort = s)
+                                .addIntColumnAdapter("IntCol", (myRecord, s) -> myRecord.myInt = s)
+                                .addFloatColumnAdapter("FloatCol", (myRecord, s) -> myRecord.myFloat = s)
+                                .addLongColumnAdapter("LongCol", (myRecord, s) -> myRecord.myLong = s)
+                                .addDoubleColumnAdapter("DoubleCol", (myRecord, s) -> myRecord.myDouble = s)
+                                .addObjColumnAdapter("KeyCol3", Instant.class,(myRecord, s) -> myRecord.myKeyInstant = s)
+                                .addObjColumnAdapter("InstantCol", Instant.class, (myRecord, s) -> myRecord.myInstant = s)
+                                .build(),
+                        "KeyCol3", Instant.class);
+
+        final MyRecord recordA = keyedRecordAdapter.getRecord(baseInstant);
+        assertEquals(baseInstant, recordA.myKeyInstant);
+        assertEquals("Xx", recordA.myString);
+        assertEquals('X', recordA.myChar);
+        assertEquals((byte) 99, recordA.myByte);
+        assertEquals((short) 99, recordA.myShort);
+        assertEquals(900, recordA.myInt);
+        assertEquals(0.9f, recordA.myFloat);
+        assertEquals(90_000_000_000L, recordA.myLong);
+        assertEquals(9.9d, recordA.myDouble);
+        assertEquals(baseInstant.plusSeconds(900), recordA.myInstant);
+
+        final MyRecord recordB = keyedRecordAdapter.getRecord(baseInstant.plusSeconds(1));
+        assertEquals(baseInstant.plusSeconds(1), recordB.myKeyInstant);
+        assertEquals("Yy", recordB.myString);
+        assertEquals('Y', recordB.myChar);
+        assertEquals((byte) 100, recordB.myByte);
+        assertEquals((short) 100, recordB.myShort);
+        assertEquals(1000, recordB.myInt);
+        assertEquals(1.0f, recordB.myFloat);
+        assertEquals(100_000_000_000L, recordB.myLong);
+        assertEquals(10.0d, recordB.myDouble);
+        assertEquals(baseInstant.plusSeconds(1000), recordB.myInstant);
+
+        // test null key
+        final MyRecord recordNull = keyedRecordAdapter.getRecord(null);
+        assertNull(recordNull.myKeyInstant);
+        assertEquals(0, recordNull.myKeyInt);
+        assertEquals("", recordNull.myString);
+        assertEquals('0', recordNull.myChar);
+        assertEquals((byte) -1, recordNull.myByte);
+        assertEquals((short) -1, recordNull.myShort);
+        assertEquals(-1, recordNull.myInt);
+        assertEquals(-1.0f, recordNull.myFloat);
+        assertEquals(-1L, recordNull.myLong);
+        assertEquals(-1.0d, recordNull.myDouble);
+        assertEquals(baseInstant.plusSeconds(-1), recordNull.myInstant);
+
+        // test missing key:
+        final Instant missingInstantKey = Instant.parse("2000-01-01T00:00:00Z");
+        assertNull(keyedRecordAdapter.getRecord(missingInstantKey));
+
+        // getRecordList tests (only return last match due to implicit lastBy)
+        final List<MyRecord> recordsA = keyedRecordAdapter.getRecordList(baseInstant);
+        assertEquals(1, recordsA.size());
+        assertEquals("Xx", recordsA.get(0).myString);
+
+        final List<MyRecord> recordsB = keyedRecordAdapter.getRecordList(baseInstant.plusSeconds(1));
+        assertEquals(1, recordsB.size());
+        assertEquals("Yy", recordsB.get(0).myString);
+
+        final List<MyRecord> recordsNull = keyedRecordAdapter.getRecordList(null);
+        assertEquals(1, recordsNull.size());
+        assertEquals(recordNull, recordsNull.get(0));
+
+        // test single-argument composite key:
+        assertEquals(recordA, keyedRecordAdapter.getRecordCompositeKey(baseInstant));
+
+        // test missing composite key:
+        assertNull(keyedRecordAdapter.getRecordCompositeKey(missingInstantKey));
+
+        // test invalid composite key:
+        try {
+            keyedRecordAdapter.getRecordCompositeKey(baseInstant, 0);
+            fail("should have thrown an exception");
+        } catch (IllegalArgumentException ex) {
+            assertEquals("dataKey has 2 components; expected 1", ex.getMessage());
+        }
+
+        // getRecordListCompositeKey tests
+        final List<MyRecord> recordsA_composite = keyedRecordAdapter.getRecordListCompositeKey(baseInstant);
+        assertEquals(recordsA, recordsA_composite);
+
+        final List<MyRecord> recordsB_composite = keyedRecordAdapter.getRecordListCompositeKey(baseInstant.plusSeconds(1));
+        assertEquals(recordsB, recordsB_composite);
+
+        final List<MyRecord> recordsNull_composite = keyedRecordAdapter.getRecordListCompositeKey((Object) null);
+        assertEquals(1, recordsNull_composite.size());
+        assertEquals(recordNull, recordsNull_composite.get(0));
+
+        assertNull(keyedRecordAdapter.getRecordListCompositeKey(missingInstantKey));
+
+        // Test retrieving multiple records (for different keys)
+        final Map<Instant, MyRecord> records = keyedRecordAdapter.getRecords(baseInstant, baseInstant.plusSeconds(1), missingInstantKey);
+        assertEquals(recordA, records.get(baseInstant));
+        assertEquals(recordB, records.get(baseInstant.plusSeconds(1)));
+        assertFalse("records.containsKey(missingInstantKey)", records.containsKey(missingInstantKey));
+    }
+
+    /**
+     * Test with multiple key columns, with at least one of a
+     * {@link io.deephaven.engine.table.impl.sources.ReinterpretUtils reinterpreted} type.
+     */
+    public void testCustomKeyedRecordAdapterWithTwoKeyColsReinterpreting() {
+        final QueryTable source = getSimpleTestTable();
+        TableTools.show(source);
+
+        final KeyedRecordAdapter<List<?>, MyRecord> keyedRecordAdapter =
+                KeyedRecordAdapter.makeRecordAdapterCompositeKey(
+                        source,
+                        RecordAdapterDescriptorBuilder.create(MyRecord::new)
+                                .addStringColumnAdapter("StringCol", (myRecord, s) -> myRecord.myString = s)
+                                .addCharColumnAdapter("CharCol", (myRecord, s) -> myRecord.myChar = s)
+                                .addByteColumnAdapter("ByteCol", (myRecord, s) -> myRecord.myByte = s)
+                                .addShortColumnAdapter("ShortCol", (myRecord, s) -> myRecord.myShort = s)
+                                .addIntColumnAdapter("IntCol", (myRecord, s) -> myRecord.myInt = s)
+                                .addFloatColumnAdapter("FloatCol", (myRecord, s) -> myRecord.myFloat = s)
+                                .addLongColumnAdapter("LongCol", (myRecord, s) -> myRecord.myLong = s)
+                                .addDoubleColumnAdapter("DoubleCol", (myRecord, s) -> myRecord.myDouble = s)
+                                .addStringColumnAdapter("KeyCol1", (myRecord, s) -> myRecord.myKeyString = s)
+                                .addIntColumnAdapter("KeyCol2", (myRecord, s) -> myRecord.myKeyInt = s)
+                                .addObjColumnAdapter("KeyCol3", Instant.class,(myRecord, s) -> myRecord.myKeyInstant = s)
+                                .addObjColumnAdapter("InstantCol", Instant.class, (myRecord, s) -> myRecord.myInstant = s)
+                                .build(),
+                        "KeyCol1", "KeyCol3");
+
+        // getRecord tests
+        final MyRecord recordA0 = keyedRecordAdapter.getRecord(Arrays.asList("KeyA", baseInstant));
+        assertEquals("KeyA", recordA0.myKeyString);
+        assertEquals(baseInstant, recordA0.myKeyInstant);
+        assertEquals(0, recordA0.myKeyInt);
+        assertEquals("Xx", recordA0.myString);
+        assertEquals('X', recordA0.myChar);
+        assertEquals((byte) 99, recordA0.myByte);
+        assertEquals((short) 99, recordA0.myShort);
+        assertEquals(900, recordA0.myInt);
+        assertEquals(0.9f, recordA0.myFloat);
+        assertEquals(90_000_000_000L, recordA0.myLong);
+        assertEquals(9.9d, recordA0.myDouble);
+        assertEquals(baseInstant.plusSeconds(900), recordA0.myInstant);
+
+        final MyRecord recordB0 = keyedRecordAdapter.getRecord(Arrays.asList("KeyB", baseInstant));
+        assertEquals("KeyB", recordB0.myKeyString);
+        assertEquals(baseInstant, recordB0.myKeyInstant);
+        assertEquals(0, recordB0.myKeyInt);
+        assertNull(recordB0.myString);
+        assertEquals(QueryConstants.NULL_CHAR, recordB0.myChar);
+        assertEquals(QueryConstants.NULL_BYTE, recordB0.myByte);
+        assertEquals(QueryConstants.NULL_SHORT, recordB0.myShort);
+        assertEquals(QueryConstants.NULL_INT, recordB0.myInt);
+        assertEquals(QueryConstants.NULL_FLOAT, recordB0.myFloat);
+        assertEquals(QueryConstants.NULL_LONG, recordB0.myLong);
+        assertEquals(QueryConstants.NULL_DOUBLE, recordB0.myDouble);
+        assertNull(recordB0.myInstant);
+
+        // test null key
+        final MyRecord recordNull = keyedRecordAdapter.getRecord(Arrays.asList(null, null));
+        assertNull(recordNull.myKeyString);
+        assertNull(recordNull.myKeyInstant);
+        assertEquals(QueryConstants.NULL_INT, recordNull.myKeyInt);
+        assertEquals("", recordNull.myString);
+        assertEquals('0', recordNull.myChar);
+        assertEquals((byte) -1, recordNull.myByte);
+        assertEquals((short) -1, recordNull.myShort);
+        assertEquals(-1, recordNull.myInt);
+        assertEquals(-1.0f, recordNull.myFloat);
+        assertEquals(-1L, recordNull.myLong);
+        assertEquals(-1.0d, recordNull.myDouble);
+
+
+        // test composite key:
+        assertEquals(recordA0, keyedRecordAdapter.getRecordCompositeKey("KeyA", baseInstant));
+
+        // test missing key:
+        final Instant missingInstantKey = Instant.parse("2000-01-01T00:00:00Z");
+        assertNull(keyedRecordAdapter.getRecord(Arrays.asList("MissingKey", baseInstant)));
+
+        // test invalid key:
+        try {
+            keyedRecordAdapter.getRecord(Collections.singletonList("KeyA"));
+            fail("should have thrown an exception");
+        } catch (IllegalArgumentException ex) {
+            assertEquals("dataKey has 1 components; expected 2", ex.getMessage());
+        }
+
+        // Test retrieving multiple records (for different keys)
+        final Map<List<?>, MyRecord> records = keyedRecordAdapter.getRecords(Arrays.asList("KeyA", baseInstant), Arrays.asList("KeyB", baseInstant), Arrays.asList(null, null));
+        assertEquals(recordA0, records.get(List.of("KeyA", baseInstant)));
+        assertEquals(recordB0, records.get(List.of("KeyB", baseInstant)));
+        assertEquals(recordNull, records.get(Arrays.asList(null, null)));
+    }
+
 
 }
