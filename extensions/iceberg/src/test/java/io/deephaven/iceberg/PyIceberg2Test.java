@@ -35,7 +35,7 @@ import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
  * generate-pyiceberg-2.py for generating the corresponding data.
  */
 @Tag("security-manager-allow")
-class Pyiceberg2Test {
+class PyIceberg2Test {
     private static final Namespace NAMESPACE = Namespace.of("trading");
     private static final TableIdentifier TRADING_DATA = TableIdentifier.of(NAMESPACE, "data");
     private static final TableIdentifier EMPTY_DATA = TableIdentifier.of(NAMESPACE, "data_empty");
