@@ -33,9 +33,6 @@ public class ReplicateBarrageUtils {
 
         ReplicatePrimitiveCode.charToAllButBoolean("replicateBarrageUtils",
                 CHUNK_PACKAGE + "/vector/CharVectorExpansionKernel.java");
-        fixupVectorExpansionKernel(CHUNK_PACKAGE + "/vector/IntVectorExpansionKernel.java", "Int");
-        fixupVectorExpansionKernel(CHUNK_PACKAGE + "/vector/LongVectorExpansionKernel.java", "Long");
-        fixupVectorExpansionKernel(CHUNK_PACKAGE + "/vector/DoubleVectorExpansionKernel.java", "Double");
     }
 
     private static void fixupDoubleChunkReader(final @NotNull String path) throws IOException {
@@ -59,15 +56,6 @@ public class ReplicateBarrageUtils {
                 "    private static double doubleCast(float a) {",
                 "        return a == QueryConstants.NULL_FLOAT ? QueryConstants.NULL_DOUBLE : (double) a;",
                 "    }"));
-        FileUtils.writeLines(file, lines);
-    }
-
-    private static void fixupVectorExpansionKernel(final @NotNull String path, final @NotNull String type)
-            throws IOException {
-        final File file = new File(path);
-        List<String> lines = FileUtils.readLines(file, Charset.defaultCharset());
-        lines = removeImport(lines, "import io.deephaven.engine.primitive.function." + type + "Consumer;");
-        lines = addImport(lines, "import java.util.function." + type + "Consumer;");
         FileUtils.writeLines(file, lines);
     }
 }

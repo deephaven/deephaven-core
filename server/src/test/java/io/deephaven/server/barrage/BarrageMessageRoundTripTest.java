@@ -448,6 +448,8 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
             createNuggetsForTableMaker(() -> sourceTable.sort("doubleCol"));
             // test sparse(r) updates
             createNuggetsForTableMaker(() -> sourceTable.where("intCol % 12 < 5"));
+            // test for the nested Vector encoding/decoding (though most types are tested
+            createNuggetsForTableMaker(() -> sourceTable.groupBy("Sym").sort("Sym"));
         }
 
         void runTest(final Runnable simulateSourceStep) {
@@ -1295,8 +1297,9 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
                     new SharedProducerForAllClients(1, 1, size, 0, new MutableInt(MAX_STEPS)) {
                         @Override
                         public void createTable() {
+                            // note we use column name `Sym` instead of `objCol` for the groupBy op in #createNuggets
                             columnInfo = initColumnInfos(
-                                    new String[] {"longCol", "intCol", "objCol", "byteCol", "doubleCol", "floatCol",
+                                    new String[] {"longCol", "intCol", "Sym", "byteCol", "doubleCol", "floatCol",
                                             "shortCol", "charCol", "boolCol", "strArrCol", "datetimeCol",
                                             "bytePrimArray", "intPrimArray"},
                                     new SortedLongGenerator(0, Long.MAX_VALUE - 1),
@@ -1363,8 +1366,9 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
                     new SharedProducerForAllClients(1, 1, size, 0, new MutableInt(MAX_STEPS)) {
                         @Override
                         public void createTable() {
+                            // note we use column name `Sym` instead of `objCol` for the groupBy op in #createNuggets
                             columnInfo = initColumnInfos(
-                                    new String[] {"longCol", "intCol", "objCol", "byteCol", "doubleCol", "floatCol",
+                                    new String[] {"longCol", "intCol", "Sym", "byteCol", "doubleCol", "floatCol",
                                             "shortCol", "charCol", "boolCol", "strCol", "strArrCol", "datetimeCol"},
                                     new SortedLongGenerator(0, Long.MAX_VALUE - 1),
                                     new IntGenerator(10, 100, 0.1),
