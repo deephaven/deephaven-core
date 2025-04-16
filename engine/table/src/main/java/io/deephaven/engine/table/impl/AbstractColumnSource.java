@@ -27,7 +27,11 @@ import io.deephaven.engine.table.impl.chunkfillers.ChunkFiller;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkMatchFilterFactory;
 import io.deephaven.engine.table.impl.select.WhereFilter;
+import io.deephaven.engine.table.impl.sources.FillUnordered;
+import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
+import io.deephaven.engine.table.impl.sources.SingleValueColumnSource;
 import io.deephaven.engine.table.impl.sources.UnboxedLongBackedColumnSource;
+import io.deephaven.engine.table.impl.sources.regioned.RegionedColumnSource;
 import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.table.iterators.ChunkedColumnIterator;
 import io.deephaven.engine.updategraph.UpdateGraph;
@@ -375,7 +379,22 @@ public abstract class AbstractColumnSource<T> implements
             RowSet selection,
             RowSet fullSet,
             boolean usePrev) {
-        return Long.MAX_VALUE;
+        // TODO: this is unsophisticated but has the advantage of having all the comparison logic co-located
+        // for easy comparison and tuning. Alternative is to override this method in the child classes.
+
+        final long selectionSize = selection.size();
+        if (this instanceof SingleValueColumnSource || this instanceof NullValueColumnSource) {
+            // These should be able to be evaluated in a single test.
+            return 100L;
+        } else if (this instanceof FillUnordered) {
+            return 200L * selectionSize;
+        } else if (!(this instanceof RegionedColumnSource)) {
+            // TODO: where does UnionColumnSource fit? Tricky to reason about when composed of potentially
+            // different column sources. Maybe a maximum or average of the individual column sources?
+            return 500L * selectionSize;
+        }
+        // RegionedColumnSource, assuming disk / storage costs very high relative to the other column types.
+        return 1000L * selectionSize;
     }
 
     /**
