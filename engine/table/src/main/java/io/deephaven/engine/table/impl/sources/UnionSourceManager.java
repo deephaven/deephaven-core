@@ -277,6 +277,11 @@ public class UnionSourceManager {
                 logNewAncestors(listenerRecorders);
             }
         }
+
+        @Override
+        public void logNewAncestors(Iterable<? extends ListenerRecorder> recorders) {
+            super.logNewAncestors(recorders);
+        }
     }
 
     private TableUpdate getAndCheckConstituentChanges() {
@@ -322,6 +327,7 @@ public class UnionSourceManager {
         private long nextModifiedKey;
         private Table nextModifiedPreviousValue;
         private ConstituentListenerRecorder nextListener;
+        private List<ConstituentListenerRecorder> addedListeners;
 
         // Slot indexes
         private int nextCurrentSlot;
@@ -361,12 +367,16 @@ public class UnionSourceManager {
             }
             removedValues = prevConstituentIter(constituentChanges.removed());
             // noinspection resource
-            addedKeys = constituentChanges.added().iterator();
-            // noinspection resource
+            final RowSet addedConstituents = constituentChanges.added();
+            addedKeys = addedConstituents.iterator();
             modifiedKeys = constituentChanges.modified().iterator();
             modifiedPreviousValues = prevConstituentIter(constituentChanges.getModifiedPreShift());
             listeners = listenerRecorders.iterator();
             Assert.eq(listeners.next(), "first listener", constituentChangesListener, "constituentChangesListener");
+
+            if (addedConstituents.isNonempty()) {
+                addedListeners = new ArrayList<>(addedConstituents.intSize());
+            }
         }
 
         private void advanceRemoved() {
@@ -494,6 +504,11 @@ public class UnionSourceManager {
                 resultRows.insert(addedToInsert);
             }
 
+            if (addedListeners != null) {
+                mergedListener.logNewAncestors(addedListeners);
+                addedListeners.clear();
+            }
+
             return new TableUpdateImpl(
                     downstreamAdded,
                     downstreamRemoved,
@@ -540,8 +555,8 @@ public class UnionSourceManager {
             if (addedConstituent.isRefreshing()) {
                 final ConstituentListenerRecorder addedListener = new ConstituentListenerRecorder(addedConstituent);
                 addedConstituent.addUpdateListener(addedListener);
+                addedListeners.add(addedListener);
                 synchronized (listenerRecorders) {
-                    // TODO: THIS LISTENER RECORDER NEEDS TO BE LOGGED TO THE ANSCESTORS TABLE
                     listenerRecorders.insertBefore(addedListener, nextListener);
                 }
             }

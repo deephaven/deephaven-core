@@ -10,7 +10,9 @@ import io.deephaven.base.FileUtils;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryCompilerImpl;
 import io.deephaven.engine.liveness.LivenessScopeStack;
+import io.deephaven.engine.liveness.StandaloneLivenessManager;
 import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfLong;
+import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.ForkJoinPoolOperationInitializer;
 import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
@@ -18,21 +20,29 @@ import io.deephaven.engine.updategraph.impl.BaseUpdateGraph;
 import io.deephaven.engine.updategraph.impl.EventDrivenUpdateGraph;
 import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
 import io.deephaven.engine.util.TableTools;
+import io.deephaven.engine.util.input.InputTableStatusListener;
+import io.deephaven.engine.util.input.InputTableUpdater;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.function.ThrowingSupplier;
+import org.apache.commons.lang3.mutable.MutableObject;
 import org.junit.jupiter.api.*;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 
-import static io.deephaven.engine.util.TableTools.timeTable;
+import static io.deephaven.engine.util.TableTools.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class TestUpdateAncestorViz {
     EventDrivenUpdateGraph defaultUpdateGraph;
     File cacheDir;
+    private ExecutionContext executionContext;
 
     @BeforeEach
     public void before() throws IOException {
@@ -42,6 +52,12 @@ public class TestUpdateAncestorViz {
         defaultUpdateGraph = EventDrivenUpdateGraph.newBuilder(PeriodicUpdateGraph.DEFAULT_UPDATE_GRAPH_NAME).build();
         cacheDir = Files.createTempDirectory("TestUpdateAncestorViz").toFile();
         cacheDir.deleteOnExit();
+
+        executionContext = ExecutionContext.newBuilder().newQueryLibrary().newQueryScope()
+                .setQueryCompiler(QueryCompilerImpl.create(
+                        cacheDir, TestUpdateAncestorViz.class.getClassLoader()))
+                .setOperationInitializer(ForkJoinPoolOperationInitializer.fromCommonPool())
+                .setUpdateGraph(defaultUpdateGraph).build();
     }
 
     @AfterEach
@@ -80,20 +96,58 @@ public class TestUpdateAncestorViz {
                 });
     }
 
+    @Test
+    public void testDynamicMerge() throws IOException {
+        final StandaloneLivenessManager manager = new StandaloneLivenessManager(false);
+
+        final MutableObject<KeyedArrayBackedInputTable> source = new MutableObject<>();
+        final MutableObject<Table> result = new MutableObject<>();
+        testGraphGen("PartitionedTable.merge()",
+                Map.of("PartitionedTable.merge()", 1, "Update([S2])", 2),
+                () -> {
+                    final Table prototype = newTable(stringCol("Key", "Apple", "Banana"), intCol("Sentinel", 10, 20));
+                    final KeyedArrayBackedInputTable kabit = KeyedArrayBackedInputTable.make(prototype, "Key");
+                    source.setValue(kabit);
+                    manager.manage(kabit);
+
+                    final PartitionedTable partitioned = kabit.partitionBy("Key");
+                    final PartitionedTable transformed = partitioned.transform(x -> x.update("S2=Sentinel*2"));
+                    result.setValue(transformed.merge());
+                    manager.manage(result.getValue());
+                    return result.getValue();
+                });
+
+        try (final SafeCloseable ignored = executionContext.open()) {
+            final InputTableUpdater inputTableUpdater = InputTableUpdater.from(source.getValue());
+            inputTableUpdater.addAsync(newTable(stringCol("Key", "Carrot"), intCol("Sentinel", 30)), InputTableStatusListener.DEFAULT);
+        }
+
+        // do it again now that we have the data set up
+        testGraphGen("PartitionedTable.merge()",
+                Map.of("PartitionedTable.merge()", 1, "Update([S2])", 3),
+                result::getValue);
+
+        TableTools.show(result.getValue());
+
+        manager.unmanage(result.getValue());
+        manager.unmanage(source.getValue());
+
+    }
+
     private void testGraphGen(final String terminalOperation,
             final List<String> expectedNodes,
+            final ThrowingSupplier<Table, RuntimeException> testSnippet) {
+        testGraphGen(terminalOperation, expectedNodes.stream().collect(Collectors.toMap(Function.identity(), (v) -> 1)), testSnippet);
+    }
+
+    private void testGraphGen(final String terminalOperation,
+            final Map<String, Integer> expectedNodes,
             final ThrowingSupplier<Table, RuntimeException> testSnippet) {
         final Table upl = TableLoggers.updatePerformanceLog();
         final Table ua = TableLoggers.updatePerformanceAncestorsLog();
 
-        ExecutionContext executionContext = ExecutionContext.newBuilder().newQueryLibrary().newQueryScope()
-                .setQueryCompiler(QueryCompilerImpl.create(
-                        cacheDir, TestUpdateAncestorViz.class.getClassLoader()))
-                .setOperationInitializer(ForkJoinPoolOperationInitializer.fromCommonPool())
-                .setUpdateGraph(defaultUpdateGraph).build();
-
         try (final SafeCloseable ignored = executionContext.open();
-                final SafeCloseable ignored2 = LivenessScopeStack.open()) {
+             final SafeCloseable ignored2 = LivenessScopeStack.open()) {
             // noinspection unused, referential integrity
             final Table result = defaultUpdateGraph.sharedLock().computeLocked(testSnippet);
 
@@ -107,7 +161,7 @@ public class TestUpdateAncestorViz {
 
             long entry;
             try (final CloseablePrimitiveIteratorOfLong entryId =
-                    ua.where("EntryDescription=`" + terminalOperation + "`").longColumnIterator("EntryId")) {
+                    ua.firstBy("EntryId").where("EntryDescription=`" + terminalOperation + "`").longColumnIterator("EntryId")) {
                 assertTrue(entryId.hasNext());
                 entry = entryId.nextLong();
                 assertFalse(entryId.hasNext());
@@ -117,9 +171,11 @@ public class TestUpdateAncestorViz {
 
             System.out.println(Graphviz.fromGraph(graph).render(Format.DOT));
 
-            for (final String expectedNode : expectedNodes) {
+            for (final Map.Entry<String, Integer> mapEntry : expectedNodes.entrySet()) {
+                final String expectedNode = mapEntry.getKey();
+                final int expectedCount = mapEntry.getValue();
                 long count = graph.nodes().stream().filter(n -> safeContains(n.get("label"), expectedNode)).count();
-                assertEquals(1, count, () -> "Expected one node for " + expectedNode);
+                assertEquals(expectedCount, count, () -> "Expected " + expectedCount + " node for " + expectedNode);
             }
         }
     }
