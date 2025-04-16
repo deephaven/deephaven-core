@@ -1,5 +1,5 @@
 '''
-This script contains sample data used for testing Iceberg tables.
+This script contains sample data and helper methods used for testing Iceberg tables.
 '''
 import pyarrow as pa
 from datetime import datetime
@@ -16,3 +16,17 @@ DATASET_2 = pa.Table.from_pylist([
 ])
 
 MERGED_DATASET = pa.concat_tables([DATASET_1, DATASET_2])
+
+def create_table_purging_if_exists(catalog, table_identifier, schema, partition_spec = None):
+    if catalog.table_exists(table_identifier):
+        catalog.purge_table(table_identifier)
+
+    if partition_spec is None:
+        return catalog.create_table(
+            identifier=table_identifier,
+            schema=schema)
+
+    return catalog.create_table(
+        identifier=table_identifier,
+        schema=schema,
+        partition_spec=partition_spec)

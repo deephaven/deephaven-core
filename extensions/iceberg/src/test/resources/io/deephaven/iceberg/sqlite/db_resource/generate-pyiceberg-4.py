@@ -11,7 +11,7 @@ from pyiceberg.types import TimestampType, FloatType, DoubleType, StringType, Ne
 from pyiceberg.partitioning import PartitionSpec, PartitionField
 from pyiceberg.transforms import YearTransform, IdentityTransform
 
-from pyiceberg_test_utils import DATASET_1, DATASET_2
+import pyiceberg_test_utils
 
 catalog = SqlCatalog(
     "pyiceberg-4",
@@ -41,39 +41,25 @@ catalog.create_namespace_if_not_exists("trading")
 
 def drop_non_identity_partition_field():
     table_identifier = "trading.drop_non_identity_partition_field"
-    if catalog.table_exists(table_identifier):
-        catalog.purge_table(table_identifier)
+    tbl = pyiceberg_test_utils.create_table_purging_if_exists(catalog, table_identifier, schema, partition_spec)
 
-    tbl = catalog.create_table(
-        identifier=table_identifier,
-        schema=schema,
-        partition_spec=partition_spec,
-    )
-
-    tbl.append(DATASET_1)
+    tbl.append(pyiceberg_test_utils.DATASET_1)
 
     with tbl.update_spec() as update:
         update.remove_field("datetime_year")
 
-    tbl.append(DATASET_2)
+    tbl.append(pyiceberg_test_utils.DATASET_2)
 
 def drop_identity_partition_field():
     table_identifier = "trading.drop_identity_partition_field"
-    if catalog.table_exists(table_identifier):
-        catalog.purge_table(table_identifier)
+    tbl = pyiceberg_test_utils.create_table_purging_if_exists(catalog, table_identifier, schema, partition_spec)
 
-    tbl = catalog.create_table(
-        identifier=table_identifier,
-        schema=schema,
-        partition_spec=partition_spec,
-    )
-
-    tbl.append(DATASET_1)
+    tbl.append(pyiceberg_test_utils.DATASET_1)
 
     with tbl.update_spec() as update:
         update.remove_field("symbol")
 
-    tbl.append(DATASET_2)
+    tbl.append(pyiceberg_test_utils.DATASET_2)
 
 drop_non_identity_partition_field()
 drop_identity_partition_field()

@@ -11,6 +11,8 @@ from pyiceberg.types import TimestampType, FloatType, DoubleType, StringType, Ne
 from pyiceberg.partitioning import PartitionSpec, PartitionField
 from pyiceberg.transforms import DayTransform, IdentityTransform
 
+import pyiceberg_test_utils
+
 catalog = SqlCatalog(
     "pyiceberg-6",
     **{
@@ -34,11 +36,8 @@ partition_spec = PartitionSpec(
 
 catalog.create_namespace_if_not_exists("trading")
 
-tbl = catalog.create_table(
-    identifier="trading.null_partition_field",
-    schema=schema,
-    partition_spec=partition_spec,
-)
+table_identifier = "trading.null_partition_field"
+tbl = pyiceberg_test_utils.create_table_purging_if_exists(catalog, table_identifier, schema, partition_spec)
 
 # Define the data according to your Iceberg schema
 data = [

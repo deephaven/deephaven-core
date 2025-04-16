@@ -11,7 +11,7 @@ from pyiceberg.types import TimestampType, FloatType, DoubleType, StringType, Ne
 from pyiceberg.partitioning import PartitionSpec, PartitionField
 from pyiceberg.transforms import DayTransform, IdentityTransform
 
-from pyiceberg_test_utils import MERGED_DATASET
+import pyiceberg_test_utils
 
 catalog = SqlCatalog(
     "pyiceberg-2",
@@ -40,26 +40,11 @@ partition_spec = PartitionSpec(
 catalog.create_namespace_if_not_exists("trading")
 
 table_identifier = "trading.data"
-if catalog.table_exists(table_identifier):
-    catalog.purge_table(table_identifier)
-
-tbl = catalog.create_table(
-    identifier=table_identifier,
-    schema=schema,
-    partition_spec=partition_spec,
-)
+tbl = pyiceberg_test_utils.create_table_purging_if_exists(catalog, table_identifier, schema, partition_spec)
 
 # Append the table to the Iceberg table
-tbl.append(MERGED_DATASET)
+tbl.append(pyiceberg_test_utils.MERGED_DATASET)
 
 ######## Empty table testing ########
-
 table_identifier = "trading.data_empty"
-if catalog.table_exists(table_identifier):
-    catalog.purge_table(table_identifier)
-
-tbl_empty = catalog.create_table(
-    identifier=table_identifier,
-    schema=schema,
-    partition_spec=partition_spec,
-)
+tbl = pyiceberg_test_utils.create_table_purging_if_exists(catalog, table_identifier, schema, partition_spec)
