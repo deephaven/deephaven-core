@@ -120,7 +120,8 @@ public class TestUpdateAncestorViz {
 
         try (final SafeCloseable ignored = executionContext.open()) {
             final InputTableUpdater inputTableUpdater = InputTableUpdater.from(source.getValue());
-            inputTableUpdater.addAsync(newTable(stringCol("Key", "Carrot"), intCol("Sentinel", 30)), InputTableStatusListener.DEFAULT);
+            inputTableUpdater.addAsync(newTable(stringCol("Key", "Carrot"), intCol("Sentinel", 30)),
+                    InputTableStatusListener.DEFAULT);
         }
 
         // do it again now that we have the data set up
@@ -136,7 +137,8 @@ public class TestUpdateAncestorViz {
     private void testGraphGen(final String terminalOperation,
             final List<String> expectedNodes,
             final ThrowingSupplier<Table, RuntimeException> testSnippet) {
-        testGraphGen(terminalOperation, expectedNodes.stream().collect(Collectors.toMap(Function.identity(), (v) -> 1)), testSnippet);
+        testGraphGen(terminalOperation, expectedNodes.stream().collect(Collectors.toMap(Function.identity(), (v) -> 1)),
+                testSnippet);
     }
 
     private void testGraphGen(final String terminalOperation,
@@ -146,7 +148,7 @@ public class TestUpdateAncestorViz {
         final Table ua = TableLoggers.updatePerformanceAncestorsLog();
 
         try (final SafeCloseable ignored = executionContext.open();
-             final SafeCloseable ignored2 = LivenessScopeStack.open()) {
+                final SafeCloseable ignored2 = LivenessScopeStack.open()) {
             // noinspection unused, referential integrity
             final Table result = defaultUpdateGraph.sharedLock().computeLocked(testSnippet);
 
@@ -162,7 +164,8 @@ public class TestUpdateAncestorViz {
 
             long entry;
             try (final CloseablePrimitiveIteratorOfLong entryId =
-                    ua.firstBy("EntryId").where("EntryDescription=`" + terminalOperation + "`").longColumnIterator("EntryId")) {
+                    ua.firstBy("EntryId").where("EntryDescription=`" + terminalOperation + "`")
+                            .longColumnIterator("EntryId")) {
                 assertTrue(entryId.hasNext());
                 entry = entryId.nextLong();
                 assertFalse(entryId.hasNext());
