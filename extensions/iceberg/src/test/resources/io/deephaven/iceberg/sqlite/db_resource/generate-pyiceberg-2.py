@@ -11,6 +11,8 @@ from pyiceberg.types import TimestampType, FloatType, DoubleType, StringType, Ne
 from pyiceberg.partitioning import PartitionSpec, PartitionField
 from pyiceberg.transforms import DayTransform, IdentityTransform
 
+from pyiceberg_test_utils import MERGED_DATASET
+
 catalog = SqlCatalog(
     "pyiceberg-2",
     **{
@@ -37,31 +39,27 @@ partition_spec = PartitionSpec(
 
 catalog.create_namespace_if_not_exists("trading")
 
+table_identifier = "trading.data"
+if catalog.table_exists(table_identifier):
+    catalog.purge_table(table_identifier)
+
 tbl = catalog.create_table(
-    identifier="trading.data",
+    identifier=table_identifier,
     schema=schema,
     partition_spec=partition_spec,
 )
 
-# Define the data according to your Iceberg schema
-data = [
-    {"datetime": datetime(2024, 11, 27, 10, 0, 0), "symbol": "AAPL", "bid": 150.25, "ask": 151.0},
-    {"datetime": datetime(2022, 11, 27, 10, 0, 0), "symbol": "MSFT", "bid": 150.25, "ask": 151.0},
-    {"datetime": datetime(2022, 11, 26, 10, 1, 0), "symbol": "GOOG", "bid": 2800.75, "ask": 2810.5},
-    {"datetime": datetime(2023, 11, 26, 10, 2, 0), "symbol": "AMZN", "bid": 3400.5, "ask": 3420.0},
-    {"datetime": datetime(2025, 11, 28, 10, 3, 0), "symbol": "MSFT", "bid": 238.85, "ask": 250.0},
-]
-
-# Create a PyArrow Table
-table = pa.Table.from_pylist(data)
-
 # Append the table to the Iceberg table
-tbl.append(table)
+tbl.append(MERGED_DATASET)
 
 ######## Empty table testing ########
 
+table_identifier = "trading.data_empty"
+if catalog.table_exists(table_identifier):
+    catalog.purge_table(table_identifier)
+
 tbl_empty = catalog.create_table(
-    identifier="trading.data_empty",
+    identifier=table_identifier,
     schema=schema,
     partition_spec=partition_spec,
 )

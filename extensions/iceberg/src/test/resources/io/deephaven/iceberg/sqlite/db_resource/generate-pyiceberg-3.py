@@ -11,6 +11,8 @@ from pyiceberg.types import TimestampType, FloatType, DoubleType, StringType, Ne
 from pyiceberg.partitioning import PartitionSpec, PartitionField
 from pyiceberg.transforms import YearTransform, IdentityTransform
 
+from pyiceberg_test_utils import DATASET_1, DATASET_2
+
 catalog = SqlCatalog(
     "pyiceberg-3",
     **{
@@ -34,18 +36,6 @@ partition_spec = PartitionSpec(
 
 catalog.create_namespace_if_not_exists("trading")
 
-# Generate some data to be added to the tables later
-data = pa.Table.from_pylist([
-    {"datetime": datetime(2024, 11, 27, 10, 0, 0), "symbol": "AAPL", "bid": 150.25, "ask": 151.0},
-    {"datetime": datetime(2022, 11, 27, 10, 0, 0), "symbol": "MSFT", "bid": 150.25, "ask": 151.0},
-])
-
-more_data = pa.Table.from_pylist([
-    {"datetime": datetime(2022, 11, 26, 10, 1, 0), "symbol": "GOOG", "bid": 2800.75, "ask": 2810.5},
-    {"datetime": datetime(2023, 11, 26, 10, 2, 0), "symbol": "AMZN", "bid": 3400.5, "ask": 3420.0},
-    {"datetime": datetime(2025, 11, 28, 10, 3, 0), "symbol": "MSFT", "bid": 238.85, "ask": 250.0},
-])
-
 def add_non_identity_partition_field():
     table_identifier = "trading.add_non_identity_partition_field"
     if catalog.table_exists(table_identifier):
@@ -57,13 +47,13 @@ def add_non_identity_partition_field():
         partition_spec=partition_spec,
     )
 
-    tbl.append(data)
+    tbl.append(DATASET_1)
 
     # Add a non-identity partition field
     with tbl.update_spec() as update:
         update.add_field("datetime", YearTransform(), "datetime_year")
 
-    tbl.append(more_data)
+    tbl.append(DATASET_2)
 
 def add_identity_partition_field():
     table_identifier = "trading.add_identity_partition_field"
@@ -76,13 +66,13 @@ def add_identity_partition_field():
         partition_spec=partition_spec,
     )
 
-    tbl.append(data)
+    tbl.append(DATASET_1)
 
     # Add an identity partition field
     with tbl.update_spec() as update:
         update.add_field("bid", IdentityTransform())
 
-    tbl.append(more_data)
+    tbl.append(DATASET_2)
 
 add_non_identity_partition_field()
 add_identity_partition_field()

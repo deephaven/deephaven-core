@@ -25,8 +25,12 @@ original_schema = Schema(
 #  Using specific names to make clear these aren't a standard / convention
 catalog.create_namespace_if_not_exists("dh-default")
 
+table_identifier = "dh-default.cities"
+if catalog.table_exists(table_identifier):
+    catalog.purge_table(table_identifier)
+
 table = catalog.create_table(
-    "dh-default.cities",
+    identifier=table_identifier,
     schema=original_schema,
 )
 
