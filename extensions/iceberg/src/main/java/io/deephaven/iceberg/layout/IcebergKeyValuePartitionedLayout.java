@@ -33,6 +33,7 @@ public final class IcebergKeyValuePartitionedLayout extends IcebergBaseLayout {
     public static class IdentityPartitioningColData {
         final String name;
         final Class<?> type;
+        // this is a busted impl, position of partition may change between files
         final int index; // position in the partition spec
 
         public IdentityPartitioningColData(String name, Class<?> type, int index) {
@@ -65,8 +66,8 @@ public final class IcebergKeyValuePartitionedLayout extends IcebergBaseLayout {
         final List<PartitionField> partitionFields = partitionSpec.fields();
         final int numPartitionFields = partitionFields.size();
         identityPartitioningColumns = new ArrayList<>(numPartitionFields);
-        for (int fieldId = 0; fieldId < numPartitionFields; ++fieldId) {
-            final PartitionField partitionField = partitionFields.get(fieldId);
+        for (int ix = 0; ix < numPartitionFields; ++ix) {
+            final PartitionField partitionField = partitionFields.get(ix);
             if (!partitionField.transform().isIdentity()) {
                 // TODO (DH-18160): Improve support for handling non-identity transforms
                 continue;
@@ -79,7 +80,7 @@ public final class IcebergKeyValuePartitionedLayout extends IcebergBaseLayout {
                 continue;
             }
             identityPartitioningColumns.add(new IdentityPartitioningColData(dhColName,
-                    TypeUtils.getBoxedType(columnDef.getDataType()), fieldId));
+                    TypeUtils.getBoxedType(columnDef.getDataType()), ix));
         }
     }
 

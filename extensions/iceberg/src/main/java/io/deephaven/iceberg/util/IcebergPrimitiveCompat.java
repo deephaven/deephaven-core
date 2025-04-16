@@ -33,6 +33,9 @@ import java.util.Objects;
 final class IcebergPrimitiveCompat
         implements Type.Visitor<Boolean>, PrimitiveType.Visitor<Boolean>, GenericType.Visitor<Boolean> {
 
+
+
+
     // Note: "primitive" for Iceberg is not equivalent to Java primitives.
     // It means it's not a "complex" type (struct, list, map).
     private final org.apache.iceberg.types.Type.PrimitiveType pt;

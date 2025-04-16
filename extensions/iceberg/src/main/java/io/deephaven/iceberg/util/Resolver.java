@@ -5,11 +5,14 @@ package io.deephaven.iceberg.util;
 
 import io.deephaven.annotations.BuildableStyle;
 import io.deephaven.api.util.NameValidator;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.iceberg.internal.Inference;
+import io.deephaven.iceberg.internal.PartitionSpecHelper;
 import io.deephaven.iceberg.internal.SchemaHelper;
 import io.deephaven.qst.type.Type;
+import org.apache.iceberg.PartitionData;
 import org.apache.iceberg.PartitionField;
 import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.Schema;
@@ -23,11 +26,14 @@ import org.immutables.value.Value;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiConsumer;
+import java.util.stream.Collectors;
 
 /**
  * This is the necessary structure to map an Iceberg {@link Schema} to a Deephaven {@link TableDefinition}.
@@ -240,6 +246,74 @@ public abstract class Resolver {
                             partitionField));
         }
         checkCompatible(fieldPath, type);
+    }
+
+    final PartitionField partitionField(ColumnDefinition<?> column) {
+        if (!column.isPartitioning()) {
+            throw new IllegalArgumentException();
+        }
+        final ColumnInstructions ci = columnInstructions().get(column.getName());
+        final PartitionField[] pf = new PartitionField[1];
+        try {
+            consume2(true, ci, (nestedFields, partitionField) -> {
+                pf[0] = partitionField;
+            });
+        } catch (SchemaHelper.PathException e) {
+            // should have been caught during constructions
+            throw new IllegalStateException(e);
+        }
+        return Objects.requireNonNull(pf[0]);
+    }
+
+//    @Value.Derived
+//    Map<String, PartitionField> partitionFieldMap() {
+//        return Collections.unmodifiableMap(definition()
+//                .getColumnStream()
+//                .filter(ColumnDefinition::isPartitioning)
+//                .collect(Collectors.toMap(
+//                        ColumnDefinition::getName,
+//                        this::partitionField,
+//                        Assert::neverInvoked,
+//                        LinkedHashMap::new)));
+//    }
+
+    boolean hasPartitioning() {
+        return definition().getColumnStream().anyMatch(ColumnDefinition::isPartitioning);
+    }
+
+    @Value.Derived
+    List<PartitionField> partitionFields() {
+        return definition()
+                .getColumnStream()
+                .filter(ColumnDefinition::isPartitioning)
+                .map(this::partitionField)
+                .collect(Collectors.toUnmodifiableList());
+    }
+
+    final Object[] extractPartitions(PartitionSpec spec, PartitionData data) {
+
+        // org.apache.iceberg.DataFiles.newPartitionData
+
+
+
+        data.copyFor(null); // todo?
+
+
+//        PartitionSpecHelper.
+
+        final List<ColumnDefinition<?>> partitioningColumns = definition()
+                .getColumnStream()
+                .filter(ColumnDefinition::isPartitioning)
+                .collect(Collectors.toList());
+        final int L = partitioningColumns.size();
+        final Object[] x = new Object[L];
+        for (int i = 0; i < L; i++) {
+            final PartitionField partitionField = partitionField(partitioningColumns.get(i));
+
+        }
+
+
+
     }
 
     static void checkCompatible(Collection<? extends NestedField> path, Type<?> type) {

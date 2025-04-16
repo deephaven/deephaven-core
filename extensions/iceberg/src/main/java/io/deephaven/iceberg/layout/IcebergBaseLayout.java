@@ -250,6 +250,25 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
         }
     }
 
+    public static void specCheck(Table table, Snapshot snapshot) throws IOException {
+        final FileIO io = table.io();
+        final List<ManifestFile> manifestFiles = snapshot.dataManifests(io);
+        for (final ManifestFile manifestFile : manifestFiles) {
+            // 502 partition_spec_id
+            // ID of a partition spec used to write the manifest; must be listed in table metadata partition-specs
+            final int manifestFileSpecId = manifestFile.partitionSpecId();
+            try (final ManifestReader<DataFile> manifestReader = ManifestFiles.read(manifestFile, io)) {
+
+                // ID of the partition spec used to write the manifest as a string
+                final PartitionSpec partitionSpecFromAvroMetadata = manifestReader.spec();
+                for (final DataFile dataFile : manifestReader) {
+                    final int dataFileSpecId = dataFile.specId();
+                    // relationship between manifestFileSpecId, partitionSpecFromAvroMetadata, dataFileSpecId
+                }
+            }
+        }
+    }
+
     @Override
     public synchronized void findKeys(@NotNull final Consumer<IcebergTableLocationKey> locationKeyObserver) {
         if (snapshot == null) {
@@ -263,8 +282,11 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
                 checkIsDataManifest(manifestFile);
             }
             for (final ManifestFile manifestFile : manifestFiles) {
+                final int manifestFileSpecId = manifestFile.partitionSpecId();
                 try (final ManifestReader<DataFile> manifestReader = ManifestFiles.read(manifestFile, io)) {
+                    final PartitionSpec partitionSpecFromAvroMetadata = manifestReader.spec();
                     for (final DataFile dataFile : manifestReader) {
+                        final int dataFileSpecId = dataFile.specId();
                         locationKeyObserver.accept(key(table, manifestFile, manifestReader, dataFile));
                     }
                 }

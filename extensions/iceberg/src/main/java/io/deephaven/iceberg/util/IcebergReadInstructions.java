@@ -32,12 +32,13 @@ public abstract class IcebergReadInstructions {
      * The default {@link IcebergReadInstructions} to use when reading Iceberg data files. Providing this will use
      * system defaults for cloud provider-specific parameters.
      */
-    public static final IcebergReadInstructions DEFAULT = builder().build();
+    public static final IcebergReadInstructions DEFAULT = builder().usePartitionInference(false).build();
 
     public static Builder builder() {
         return ImmutableIcebergReadInstructions.builder();
     }
 
+    // TODO: this probably doesn't belong here, not relevant for inference
     public abstract Optional<TableKey> tableKey();
 
     /**
@@ -113,6 +114,8 @@ public abstract class IcebergReadInstructions {
      */
     public abstract IcebergReadInstructions withSnapshot(Snapshot value);
 
+    // todo: separate out these inference instructions?
+
     /**
      * If Deephaven {@link ColumnDefinition.ColumnType#Partitioning} columns should be inferred based on a
      * {@link PartitionSpec}. This setting is only relevant when {@link #resolver()} is not set. By default, is only
@@ -160,6 +163,10 @@ public abstract class IcebergReadInstructions {
         Builder snapshotId(long snapshotId);
 
         Builder snapshot(Snapshot snapshot);
+
+        Builder usePartitionInference(boolean usePartitionInference);
+
+        Builder useNameMapping(boolean useNameMapping);
 
         IcebergReadInstructions build();
     }
