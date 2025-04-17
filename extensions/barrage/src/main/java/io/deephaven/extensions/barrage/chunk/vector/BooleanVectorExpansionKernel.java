@@ -23,8 +23,6 @@ import io.deephaven.vector.ObjectVectorDirect;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.stream.Stream;
-
 import static io.deephaven.vector.ObjectVectorDirect.ZERO_LENGTH_VECTOR;
 
 public class BooleanVectorExpansionKernel implements VectorExpansionKernel<ObjectVector<Boolean>> {
@@ -70,19 +68,11 @@ public class BooleanVectorExpansionKernel implements VectorExpansionKernel<Objec
             }
             if (row != null) {
                 try (final CloseableIterator<Boolean> iter = row.iterator()) {
-                    Stream<Boolean> stream = iter.stream();
-                    if (fixedSizeLength > 0) {
-                        // limit length to fixedSizeLength
-                        stream = stream.limit(fixedSizeLength);
-                    } else if (fixedSizeLength < 0) {
-                        final long numToSkip = Math.max(0, row.size() + fixedSizeLength);
-                        if (numToSkip > 0) {
-                            // read from the end of the array when fixedSizeLength is negative
-                            stream = stream.skip(numToSkip);
-                        }
+                    final int numToRead = LongSizedDataStructure.intSize(
+                            DEBUG_NAME, fixedSizeLength == 0 ? row.size() : fixedSizeLength);
+                    for (int jj = 0; jj < numToRead; ++jj) {
+                        result.add(BooleanUtils.booleanAsByte(iter.next()));
                     }
-                    // copy the row into the result
-                    stream.forEach(val -> result.add(BooleanUtils.booleanAsByte(val)));
                 }
             }
             if (fixedSizeLength != 0) {
@@ -105,13 +95,12 @@ public class BooleanVectorExpansionKernel implements VectorExpansionKernel<Objec
     @Override
     public <A extends Any> WritableObjectChunk<ObjectVector<Boolean>, A> contract(
             @NotNull final Chunk<A> source,
-            int sizePerElement,
+            final int sizePerElement,
             @Nullable final IntChunk<ChunkPositions> offsets,
             @Nullable final IntChunk<ChunkLengths> lengths,
             @Nullable final WritableChunk<A> outChunk,
             final int outOffset,
             final int totalRows) {
-        sizePerElement = Math.abs(sizePerElement);
         final int itemsInBatch = offsets == null
                 ? source.size() / sizePerElement
                 : (offsets.size() - (lengths == null ? 1 : 0));
@@ -129,9 +118,6 @@ public class BooleanVectorExpansionKernel implements VectorExpansionKernel<Objec
             if (rowLen == 0) {
                 // noinspection unchecked
                 result.set(outOffset + ii, (ObjectVector<Boolean>) ZERO_LENGTH_VECTOR);
-            } else if (rowLen < 0) {
-                // note that this may occur when data sent from a native arrow client is null
-                result.set(outOffset + ii, null);
             } else {
                 final Boolean[] row = new Boolean[rowLen];
                 for (int jj = 0; jj < rowLen; ++jj) {

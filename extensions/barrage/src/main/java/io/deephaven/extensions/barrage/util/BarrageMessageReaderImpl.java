@@ -11,6 +11,7 @@ import io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
 import io.deephaven.barrage.flatbuf.BarrageModColumnMetadata;
 import io.deephaven.barrage.flatbuf.BarrageUpdateMetadata;
 import io.deephaven.base.ArrayUtil;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
@@ -150,6 +151,11 @@ public class BarrageMessageReaderImpl implements BarrageMessageReader {
                             msg.addColumnData[ci].componentType = componentTypes[ci];
                             msg.addColumnData[ci].data = new ArrayList<>();
 
+                            if (options.columnsAsList()) {
+                                // we can't accumulate multiple batches into the same chunk; leave the list empty
+                                continue;
+                            }
+
                             // create an initial chunk of the correct size
                             final int chunkSize = (int) (Math.min(msg.rowsIncluded.size(), MAX_CHUNK_SIZE));
                             final WritableChunk<Values> chunk = columnChunkTypes[ci].makeWritableChunk(chunkSize);
@@ -174,6 +180,12 @@ public class BarrageMessageReaderImpl implements BarrageMessageReader {
 
                             final BarrageModColumnMetadata mcd = metadata.modColumnNodes(ci);
                             msg.modColumnData[ci].rowsModified = extractIndex(mcd.modifiedRowsAsByteBuffer());
+                            numModRowsTotal = Math.max(numModRowsTotal, msg.modColumnData[ci].rowsModified.size());
+
+                            if (options.columnsAsList()) {
+                                // we can't accumulate multiple batches into the same chunk; leave the list empty
+                                continue;
+                            }
 
                             // create an initial chunk of the correct size
                             final int chunkSize = (int) (Math.min(msg.modColumnData[ci].rowsModified.size(),
@@ -181,8 +193,6 @@ public class BarrageMessageReaderImpl implements BarrageMessageReader {
                             final WritableChunk<Values> chunk = columnChunkTypes[ci].makeWritableChunk(chunkSize);
                             chunk.setSize(0);
                             msg.modColumnData[ci].data.add(chunk);
-
-                            numModRowsTotal = Math.max(numModRowsTotal, msg.modColumnData[ci].rowsModified.size());
                         }
                     }
 
@@ -244,30 +254,39 @@ public class BarrageMessageReaderImpl implements BarrageMessageReader {
                         for (int ci = 0; ci < msg.addColumnData.length; ++ci) {
                             final BarrageMessage.AddColumnData acd = msg.addColumnData[ci];
 
+                            if (options.columnsAsList()) {
+                                // we cannot aggregate multiple batches into the same chunk since we're not actually
+                                // sure how many rows are in the batch without reading the offsets of the list payload
+                                final WritableChunk<Values> outChunk = readers.get(ci).readChunk(
+                                        fieldNodeIter, bufferInfoIter, ois, null, 0, 0);
+                                acd.data.add(outChunk);
+                                continue;
+                            }
+
                             final long remaining = numAddRowsTotal - numAddRowsRead;
                             if (batch.length() > remaining) {
                                 throw new IllegalStateException(
                                         "Batch length exceeded the expected number of rows from app metadata");
                             }
 
-                            // select the current chunk size and read the size
+                            // need to append the batch row data to the column chunks
                             int lastChunkIndex = acd.data.size() - 1;
-                            WritableChunk<Values> chunk = (WritableChunk<Values>) acd.data.get(lastChunkIndex);
+                            WritableChunk<Values> inChunk = (WritableChunk<Values>) acd.data.get(lastChunkIndex);
 
-                            if (batch.length() > chunk.capacity() - chunk.size()) {
+                            if (batch.length() > inChunk.capacity() - inChunk.size()) {
                                 // reading the rows from this batch will overflow the existing chunk; create a new one
                                 final int chunkSize = (int) (Math.min(remaining, MAX_CHUNK_SIZE));
-                                chunk = columnChunkTypes[ci].makeWritableChunk(chunkSize);
-                                acd.data.add(chunk);
+                                inChunk = columnChunkTypes[ci].makeWritableChunk(chunkSize);
+                                acd.data.add(inChunk);
 
-                                chunk.setSize(0);
+                                inChunk.setSize(0);
                                 ++lastChunkIndex;
                             }
 
                             // fill the chunk with data and assign back into the array
-                            chunk = readers.get(ci).readChunk(fieldNodeIter, bufferInfoIter, ois, chunk, chunk.size(),
-                                    (int) batch.length());
-                            acd.data.set(lastChunkIndex, chunk);
+                            final WritableChunk<Values> outChunk = readers.get(ci).readChunk(
+                                    fieldNodeIter, bufferInfoIter, ois, inChunk, inChunk.size(), (int) batch.length());
+                            Assert.eq(outChunk, "outChunk", inChunk, "inChunk");
                         }
 
                         if (options.columnsAsList() && msg.addColumnData.length > 0) {
@@ -281,30 +300,40 @@ public class BarrageMessageReaderImpl implements BarrageMessageReader {
                         for (int ci = 0; ci < msg.modColumnData.length; ++ci) {
                             final BarrageMessage.ModColumnData mcd = msg.modColumnData[ci];
 
+                            if (options.columnsAsList()) {
+                                // we cannot aggregate multiple batches into the same chunk since we're not actually
+                                // sure how many rows are in the batch without reading the offsets of the list payload
+                                final WritableChunk<Values> outChunk = readers.get(ci).readChunk(
+                                        fieldNodeIter, bufferInfoIter, ois, null, 0, 0);
+                                mcd.data.add(outChunk);
+                                maxModRows = Math.max(outChunk.size(), maxModRows);
+                                continue;
+                            }
+
                             // another column may be larger than this column
                             long remaining = Math.max(0, mcd.rowsModified.size() - numModRowsRead);
 
-                            // need to add the batch row data to the column chunks
+                            // need to append the batch row data to the column chunks
                             int lastChunkIndex = mcd.data.size() - 1;
-                            WritableChunk<Values> chunk = (WritableChunk<Values>) mcd.data.get(lastChunkIndex);
+                            WritableChunk<Values> inChunk = (WritableChunk<Values>) mcd.data.get(lastChunkIndex);
 
                             final int numRowsToRead = LongSizedDataStructure.intSize("BarrageStreamReader",
                                     Math.min(remaining, batch.length()));
                             maxModRows = Math.max(numRowsToRead, maxModRows);
-                            if (numRowsToRead > chunk.capacity() - chunk.size()) {
+                            if (numRowsToRead > inChunk.capacity() - inChunk.size()) {
                                 // reading the rows from this batch will overflow the existing chunk; create a new one
                                 final int chunkSize = (int) (Math.min(remaining, MAX_CHUNK_SIZE));
-                                chunk = columnChunkTypes[ci].makeWritableChunk(chunkSize);
-                                mcd.data.add(chunk);
+                                inChunk = columnChunkTypes[ci].makeWritableChunk(chunkSize);
+                                mcd.data.add(inChunk);
 
-                                chunk.setSize(0);
+                                inChunk.setSize(0);
                                 ++lastChunkIndex;
                             }
 
                             // fill the chunk with data and assign back into the array
-                            mcd.data.set(lastChunkIndex,
-                                    readers.get(ci).readChunk(fieldNodeIter, bufferInfoIter, ois, chunk,
-                                            chunk.size(), numRowsToRead));
+                            final WritableChunk<Values> outChunk = readers.get(ci).readChunk(
+                                    fieldNodeIter, bufferInfoIter, ois, inChunk, inChunk.size(), numRowsToRead);
+                            Assert.eq(outChunk, "outChunk", inChunk, "inChunk");
                         }
                         numModRowsRead += maxModRows;
                     }

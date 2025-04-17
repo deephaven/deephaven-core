@@ -27,16 +27,17 @@ namespace internal {
 enum class ArrowProcessingStyle { kNormal, kBooleanOrString, kTimestamp, kLocalDate, kLocalTime };
 
 /**
- * When 'array' has dynamic type arrow::TimestampArray or arrow::Time64Array, look at the
+ * When 'array' has dynamic type arrow::TimestampArray or arrow::Time64Array, we need to look at the
  * underlying time resolution of the arrow type and calculate a conversion factor from that unit
  * to nanoseconds. For example if the underlying time unit is arrow::TimeUnit::MILLI, then the
  * conversion factor would be 1_000_000, meaning that one needs to multiply incoming millisecond
- * values by one million to convert them to nanoseconds. If 'array' is not one of those types,
- * return 1.
- * @param array The Arrow array
- * @return For supported time types, the conversion factor to nanoseconds. Otherwise, 1.
+ * values by one million to convert them to nanoseconds. This method converts the Arrow TimeUnit
+ * type to that conversion factor. If the TimeUnit is not supported, it throws an exception.
+ * @param unit The Arrow time unit.
+ * @return For supported time types, the conversion factor to nanoseconds. Otherwise, throws
+ *   exception.
  */
-size_t CalcTimeNanoScaleFactor(const arrow::Array &array);
+size_t ScaleFromUnit(arrow::TimeUnit::type unit);
 
 template<ArrowProcessingStyle Style, typename TColumnSourceBase, typename TArrowArray, typename TChunk>
 class GenericArrowColumnSource final : public TColumnSourceBase {
@@ -63,7 +64,6 @@ public:
 
   explicit GenericArrowColumnSource(std::vector<std::shared_ptr<TArrowArray>> arrays) :
       arrays_(std::move(arrays)) {
-    time_nano_scale_factor_ = arrays_.empty() ? 1 : CalcTimeNanoScaleFactor(*arrays_.front());
   }
 
   ~GenericArrowColumnSource() final = default;
@@ -163,9 +163,13 @@ public:
           const auto *src_beginp = innerp->raw_values() + relative_begin;
           const auto *src_endp = innerp->raw_values() + relative_end;
 
+          const auto *typed_type = VerboseCast<const arrow::TimestampType*>(
+              DEEPHAVEN_LOCATION_EXPR(innerp->type().get()));
+          auto time_nano_scale_factor = ScaleFromUnit(typed_type->unit());
+
           for (const auto *ip = src_beginp; ip != src_endp; ++ip) {
             auto is_null = *ip == DeephavenTraits<int64_t>::kNullValue;
-            *destp = DateTime::FromNanos(is_null ? *ip : (*ip * time_nano_scale_factor_));
+            *destp = DateTime::FromNanos(is_null ? *ip : (*ip * time_nano_scale_factor));
             ++destp;
 
             if (null_destp != nullptr) {
@@ -192,9 +196,13 @@ public:
           const auto *src_beginp = innerp->raw_values() + relative_begin;
           const auto *src_endp = innerp->raw_values() + relative_end;
 
+          const auto *typed_type = VerboseCast<const arrow::Time64Type*>(
+              DEEPHAVEN_LOCATION_EXPR(innerp->type().get()));
+          auto time_nano_scale_factor = ScaleFromUnit(typed_type->unit());
+
           for (const auto *ip = src_beginp; ip != src_endp; ++ip) {
             auto is_null = *ip == DeephavenTraits<int64_t>::kNullValue;
-            *destp = LocalTime::FromNanos(is_null ? *ip : (*ip * time_nano_scale_factor_));
+            *destp = LocalTime::FromNanos(is_null ? *ip : (*ip * time_nano_scale_factor));
             ++destp;
 
             if (null_destp != nullptr) {
@@ -219,18 +227,6 @@ public:
 
 private:
   std::vector<std::shared_ptr<TArrowArray>> arrays_;
-  /**
-   * This value is valid for Style == ArrowProcessingStyle::kTimestamp and
-   * ArrowProcessingStyle::kLocalTime, and ignored for other ArrowProcessingStyle enumeration
-   * values.
-   *
-   * These ArrowProcessingStyles come into play when processing the arrow types
-   * arrow::TimestampType and arrow::Time64Type respectively.
-   *
-   * The value stores a conversion factor from whatever the input scale is to nanoseconds.
-   * For example, if the input timescale is milliseconds, this value will be 1_000_000.
-   */
-  size_t time_nano_scale_factor_ = 1;
 };
 }  // namespace internal
 
