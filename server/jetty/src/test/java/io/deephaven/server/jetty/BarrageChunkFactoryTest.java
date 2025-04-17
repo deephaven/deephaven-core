@@ -1487,10 +1487,12 @@ public class BarrageChunkFactoryTest {
         DO_GET, DO_EXCHANGE_NO_FILTER, HEAD, TAIL, COLUMNS_AS_LIST;
 
         boolean isPreviewEnabled() {
+            // @formatter:off
             return switch (this) {
                 case HEAD, TAIL -> true;
                 default -> false;
             };
+            // @formatter:on
         }
 
         private byte[] getOptionsMetadata(final boolean reading, final int ticket) {
