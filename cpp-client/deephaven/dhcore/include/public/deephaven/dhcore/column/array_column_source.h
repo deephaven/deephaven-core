@@ -3,6 +3,11 @@
  */
 #pragma once
 
+#include <cstddef>
+#include <memory>
+#include <string>
+#include <utility>
+
 #include "deephaven/dhcore/chunk/chunk.h"
 #include "deephaven/dhcore/chunk/chunk_traits.h"
 #include "deephaven/dhcore/column/column_source.h"
@@ -196,44 +201,50 @@ class GenericArrayColumnSource final : public deephaven::dhcore::column::Mutable
   using RowSequence = deephaven::dhcore::container::RowSequence;
 
 public:
-  static std::shared_ptr<GenericArrayColumnSource> Create() {
-    auto elements = std::make_unique<T[]>(0);
-    auto nulls = std::make_unique<T[]>(0);
-    return CreateFromArrays(std::move(elements), std::move(nulls), 0);
+//  static std::shared_ptr<GenericArrayColumnSource> Create() {
+//    auto elements = std::make_unique<T[]>(0);
+//    auto nulls = std::make_unique<T[]>(0);
+//    return CreateFromArrays(std::move(elements), std::move(nulls), 0);
+//  }
+
+  static std::shared_ptr<GenericArrayColumnSource> CreateFromArrays(const ElementType &element_type,
+      std::unique_ptr<T[]> elements, std::unique_ptr<bool[]> nulls, size_t size) {
+    return std::make_shared<GenericArrayColumnSource>(Private(), element_type, std::move(elements),
+        std::move(nulls), size);
   }
 
-  static std::shared_ptr<GenericArrayColumnSource> CreateFromArrays(std::unique_ptr<T[]> elements,
-      std::unique_ptr<bool[]> nulls, size_t size) {
-    return std::make_shared<GenericArrayColumnSource>(Private(), std::move(elements), std::move(nulls),
-        size);
-  }
-
-  explicit GenericArrayColumnSource(Private, std::unique_ptr<T[]> elements,
-      std::unique_ptr<bool[]> nulls, size_t size) : data_(std::move(elements), std::move(nulls), size) {}
+  explicit GenericArrayColumnSource(Private, const ElementType &element_type,
+      std::unique_ptr<T[]> elements, std::unique_ptr<bool[]> nulls, size_t size) :
+      element_type_(element_type), data_(std::move(elements), std::move(nulls), size) {}
   ~GenericArrayColumnSource() final = default;
 
   void FillChunk(const RowSequence &rows, Chunk *dest, BooleanChunk *optional_dest_null_flags) const final {
-    typedef typename deephaven::dhcore::chunk::TypeToChunk<T>::type_t chunkType_t;
+    using chunkType_t = typename deephaven::dhcore::chunk::TypeToChunk<T>::type_t;
     ColumnSourceImpls::FillChunk<chunkType_t>(rows, dest, optional_dest_null_flags, data_);
   }
 
   void FillChunkUnordered(const UInt64Chunk &row_keys, Chunk *dest,
       BooleanChunk *optional_dest_null_flags) const final {
-    typedef typename deephaven::dhcore::chunk::TypeToChunk<T>::type_t chunkType_t;
+    using chunkType_t = typename deephaven::dhcore::chunk::TypeToChunk<T>::type_t;
     ColumnSourceImpls::FillChunkUnordered<chunkType_t>(row_keys, dest, optional_dest_null_flags, data_);
   }
 
   void FillFromChunk(const Chunk &src, const BooleanChunk *optional_src_null_flags,
       const RowSequence &rows) final {
-    typedef typename deephaven::dhcore::chunk::TypeToChunk<T>::type_t chunkType_t;
+    using chunkType_t = typename deephaven::dhcore::chunk::TypeToChunk<T>::type_t;
     ColumnSourceImpls::FillFromChunk<chunkType_t>(src, optional_src_null_flags, rows, &data_);
   }
 
   void FillFromChunkUnordered(const Chunk &src, const BooleanChunk *optional_src_null_flags,
       const UInt64Chunk &row_keys) final {
-    typedef typename deephaven::dhcore::chunk::TypeToChunk<T>::type_t chunkType_t;
+    using chunkType_t = typename deephaven::dhcore::chunk::TypeToChunk<T>::type_t;
     ColumnSourceImpls::FillFromChunkUnordered<chunkType_t>(src, optional_src_null_flags, row_keys,
         &data_);
+  }
+
+  [[nodiscard]]
+  const ElementType &GetElementType() const final {
+    return element_type_;
   }
 
   void AcceptVisitor(ColumnSourceVisitor *visitor) const final {
@@ -241,6 +252,7 @@ public:
   }
 
 private:
+  ElementType element_type_;
   internal::GenericBackingStore<T> data_;
 };
 

@@ -29,6 +29,7 @@ namespace deephaven::client::arrowutil {
 using deephaven::client::utility::OkOrThrow;
 using deephaven::client::utility::ValueOrThrow;
 using deephaven::dhcore::DateTime;
+using deephaven::dhcore::ElementType;
 using deephaven::dhcore::ElementTypeId;
 using deephaven::dhcore::LocalDate;
 using deephaven::dhcore::LocalTime;
@@ -85,73 +86,85 @@ struct ChunkedArrayToColumnSourceVisitor final : public arrow::TypeVisitor {
 
   arrow::Status Visit(const arrow::UInt16Type &/*type*/) final {
     auto arrays = DowncastChunks<arrow::UInt16Array>(*chunked_array_);
-    result_ = CharArrowColumnSource::OfArrowArrayVec(std::move(arrays));
+    result_ = CharArrowColumnSource::OfArrowArrayVec(ElementType::Of(ElementTypeId::kChar),
+        std::move(arrays));
     return arrow::Status::OK();
   }
 
   arrow::Status Visit(const arrow::Int8Type &/*type*/) final {
     auto arrays = DowncastChunks<arrow::Int8Array>(*chunked_array_);
-    result_ = Int8ArrowColumnSource::OfArrowArrayVec(std::move(arrays));
+    result_ = Int8ArrowColumnSource::OfArrowArrayVec(ElementType::Of(ElementTypeId::kInt8),
+        std::move(arrays));
     return arrow::Status::OK();
   }
 
   arrow::Status Visit(const arrow::Int16Type &/*type*/) final {
     auto arrays = DowncastChunks<arrow::Int16Array>(*chunked_array_);
-    result_ = Int16ArrowColumnSource::OfArrowArrayVec(std::move(arrays));
+    result_ = Int16ArrowColumnSource::OfArrowArrayVec(ElementType::Of(ElementTypeId::kInt16),
+        std::move(arrays));
     return arrow::Status::OK();
   }
 
   arrow::Status Visit(const arrow::Int32Type &/*type*/) final {
     auto arrays = DowncastChunks<arrow::Int32Array>(*chunked_array_);
-    result_ = Int32ArrowColumnSource::OfArrowArrayVec(std::move(arrays));
+    result_ = Int32ArrowColumnSource::OfArrowArrayVec(ElementType::Of(ElementTypeId::kInt32),
+        std::move(arrays));
     return arrow::Status::OK();
   }
 
   arrow::Status Visit(const arrow::Int64Type &/*type*/) final {
     auto arrays = DowncastChunks<arrow::Int64Array>(*chunked_array_);
-    result_ = Int64ArrowColumnSource::OfArrowArrayVec(std::move(arrays));
+    result_ = Int64ArrowColumnSource::OfArrowArrayVec(ElementType::Of(ElementTypeId::kInt64),
+        std::move(arrays));
     return arrow::Status::OK();
   }
 
   arrow::Status Visit(const arrow::FloatType &/*type*/) final {
     auto arrays = DowncastChunks<arrow::FloatArray>(*chunked_array_);
-    result_ = FloatArrowColumnSource::OfArrowArrayVec(std::move(arrays));
+    result_ = FloatArrowColumnSource::OfArrowArrayVec(ElementType::Of(ElementTypeId::kFloat),
+        std::move(arrays));
     return arrow::Status::OK();
   }
 
   arrow::Status Visit(const arrow::DoubleType &/*type*/) final {
     auto arrays = DowncastChunks<arrow::DoubleArray>(*chunked_array_);
-    result_ = DoubleArrowColumnSource::OfArrowArrayVec(std::move(arrays));
+    result_ = DoubleArrowColumnSource::OfArrowArrayVec(ElementType::Of(ElementTypeId::kDouble),
+        std::move(arrays));
     return arrow::Status::OK();
   }
 
   arrow::Status Visit(const arrow::BooleanType &/*type*/) final {
     auto arrays = DowncastChunks<arrow::BooleanArray>(*chunked_array_);
-    result_ = BooleanArrowColumnSource::OfArrowArrayVec(std::move(arrays));
+    result_ = BooleanArrowColumnSource::OfArrowArrayVec(ElementType::Of(ElementTypeId::kBool),
+        std::move(arrays));
     return arrow::Status::OK();
   }
 
   arrow::Status Visit(const arrow::StringType &/*type*/) final {
     auto arrays = DowncastChunks<arrow::StringArray>(*chunked_array_);
-    result_ = StringArrowColumnSource::OfArrowArrayVec(std::move(arrays));
+    result_ = StringArrowColumnSource::OfArrowArrayVec(ElementType::Of(ElementTypeId::kString),
+        std::move(arrays));
     return arrow::Status::OK();
   }
 
   arrow::Status Visit(const arrow::TimestampType &/*type*/) final {
     auto arrays = DowncastChunks<arrow::TimestampArray>(*chunked_array_);
-    result_ = DateTimeArrowColumnSource::OfArrowArrayVec(std::move(arrays));
+    result_ = DateTimeArrowColumnSource::OfArrowArrayVec(ElementType::Of(ElementTypeId::kTimestamp),
+        std::move(arrays));
     return arrow::Status::OK();
   }
 
   arrow::Status Visit(const arrow::Date64Type &/*type*/) final {
     auto arrays = DowncastChunks<arrow::Date64Array>(*chunked_array_);
-    result_ = LocalDateArrowColumnSource::OfArrowArrayVec(std::move(arrays));
+    result_ = LocalDateArrowColumnSource::OfArrowArrayVec(ElementType::Of(ElementTypeId::kLocalDate),
+        std::move(arrays));
     return arrow::Status::OK();
   }
 
   arrow::Status Visit(const arrow::Time64Type &/*type*/) final {
     auto arrays = DowncastChunks<arrow::Time64Array>(*chunked_array_);
-    result_ = LocalTimeArrowColumnSource::OfArrowArrayVec(std::move(arrays));
+    result_ = LocalTimeArrowColumnSource::OfArrowArrayVec(ElementType::Of(ElementTypeId::kLocalTime),
+        std::move(arrays));
     return arrow::Status::OK();
   }
 
