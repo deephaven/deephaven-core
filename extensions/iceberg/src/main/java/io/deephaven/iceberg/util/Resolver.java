@@ -9,10 +9,8 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.iceberg.internal.Inference;
-import io.deephaven.iceberg.internal.PartitionSpecHelper;
 import io.deephaven.iceberg.internal.SchemaHelper;
 import io.deephaven.qst.type.Type;
-import org.apache.iceberg.PartitionData;
 import org.apache.iceberg.PartitionField;
 import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.Schema;
@@ -51,6 +49,40 @@ public abstract class Resolver {
 
     public static Resolver infer(Schema schema) throws Inference.UnsupportedType {
         return infer(InferenceInstructions.of(schema));
+    }
+
+    /**
+     * Infer a resolver based on the {@link Schema} and {@link TableDefinition}. This uses column names to map the
+     * Deephaven columns to Iceberg fields.
+     * <p>
+     * The provided {@code tableDefinition} must not have any partitioning columns. In that case, this method will throw
+     * a {@link IllegalArgumentException}. For that case, you should use the {@link #builder()} with appropriate
+     * {@link #spec()} to build a resolver.
+     *
+     * @see #definition()
+     */
+    public static Resolver infer(final Schema schema, final TableDefinition tableDefinition) {
+        final Resolver.Builder builder = Resolver.builder()
+                .schema(schema)
+                .definition(tableDefinition);
+        for (final ColumnDefinition<?> columnDefinition : tableDefinition.getColumns()) {
+            final String dhColumnName = columnDefinition.getName();
+            if (columnDefinition.isPartitioning()) {
+                throw new IllegalArgumentException(
+                        String.format("Column `%s` is a partitioning column, use the builder with appropriate" +
+                                " partition spec to build a Resolver ", dhColumnName));
+            }
+            final NestedField icebergField = schema.findField(dhColumnName);
+            if (icebergField == null) {
+                throw new IllegalArgumentException(
+                        String.format("Column `%s` from deephaven table definition not found in Iceberg schema",
+                                dhColumnName));
+            }
+
+            final int fieldID = icebergField.fieldId();
+            builder.putColumnInstructions(dhColumnName, ColumnInstructions.schemaField(fieldID));
+        }
+        return builder.build();
     }
 
     /**

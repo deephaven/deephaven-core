@@ -6,7 +6,6 @@ package io.deephaven.iceberg.internal;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.NoSuchColumnException;
-import io.deephaven.iceberg.util.ColumnInstructions;
 import io.deephaven.iceberg.util.Resolver;
 import io.deephaven.qst.type.Type;
 import org.apache.iceberg.PartitionSpec;
@@ -21,6 +20,7 @@ import static io.deephaven.iceberg.util.ColumnInstructions.partitionField;
 import static io.deephaven.iceberg.util.ColumnInstructions.schemaField;
 import static io.deephaven.iceberg.util.ColumnInstructions.unmapped;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 
 /**
@@ -432,4 +432,59 @@ class ResolverTest {
                 ColumnDefinition.of("F1", type),
                 ColumnDefinition.of("F2", type));
     }
+
+    /** Unit tests for {@link Resolver#infer(Schema, TableDefinition)} **/
+
+    @Test
+    void simplePrimitiveMapping() {
+        final Schema schema = simpleSchema(IT);
+        final TableDefinition td = simpleDefinition(Type.intType());
+
+        final Resolver expected = Resolver.builder()
+                .schema(schema)
+                .definition(td)
+                .putColumnInstructions("F1", schemaField(42))
+                .putColumnInstructions("F2", schemaField(43))
+                .build();
+
+        assertThat(Resolver.infer(schema, td)).isEqualTo(expected);
+    }
+
+    @Test
+    void extraSchemaColumnsAreIgnored() {
+        final Schema schema = simpleSchema(IT); // F1 and F2 exist in Iceberg
+        final TableDefinition td = TableDefinition.of(
+                ColumnDefinition.ofInt("F1")); // Only map F1
+
+        final Resolver expected = Resolver.builder()
+                .schema(schema)
+                .definition(td)
+                .putColumnInstructions("F1", schemaField(42))
+                .build();
+
+        assertThat(Resolver.infer(schema, td)).isEqualTo(expected);
+    }
+
+    @Test
+    void partitioningColumnRejected() {
+        final Schema schema = simpleSchema(IT);
+        final TableDefinition td = TableDefinition.of(
+                ColumnDefinition.ofInt("F1").withPartitioning()); // should not be allowed
+
+        assertThatThrownBy(() -> Resolver.infer(schema, td))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("partitioning column");
+    }
+
+    @Test
+    void missingColumnRejected() {
+        final Schema schema = simpleSchema(IT);
+        final TableDefinition td = TableDefinition.of(
+                ColumnDefinition.ofInt("NotInSchema"));
+        assertThatThrownBy(() -> Resolver.infer(schema, td))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("not found in Iceberg schema");
+    }
+
+    /** End unit tests for {@link Resolver#infer(Schema, TableDefinition)} **/
 }
