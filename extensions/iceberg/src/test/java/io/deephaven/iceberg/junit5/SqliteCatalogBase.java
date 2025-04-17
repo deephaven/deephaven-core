@@ -569,11 +569,9 @@ public abstract class SqliteCatalogBase {
             verifySchema(parquetFiles.get(1), expectedSchema1);
         }
 
-        // TODO: This is failing because we don't map columns based on the column ID when reading. Uncomment this
-        // when #6156 is merged
-        // final Table fromIceberg = tableAdapter.table();
-        // assertTableEquals(TableTools.merge(source,
-        // moreData.renameColumns("intCol = newIntCol", "doubleCol = newDoubleCol")), fromIceberg);
+        final Table fromIceberg = table(tableAdapter, resolver);
+        assertTableEquals(TableTools.merge(source,
+                moreData.renameColumns("intCol = newIntCol", "doubleCol = newDoubleCol")), fromIceberg);
     }
 
     private void verifySchema(String path, MessageType expectedSchema) throws URISyntaxException {
