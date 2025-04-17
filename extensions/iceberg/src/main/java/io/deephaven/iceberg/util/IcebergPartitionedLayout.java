@@ -6,7 +6,6 @@ package io.deephaven.iceberg.util;
 import io.deephaven.iceberg.layout.IcebergBaseLayout;
 import io.deephaven.iceberg.location.IcebergTableLocationKey;
 import io.deephaven.parquet.table.ParquetInstructions;
-import io.deephaven.util.annotations.InternalUseOnly;
 import io.deephaven.util.channel.SeekableChannelsProvider;
 import org.apache.iceberg.DataFile;
 import org.apache.iceberg.ManifestFile;

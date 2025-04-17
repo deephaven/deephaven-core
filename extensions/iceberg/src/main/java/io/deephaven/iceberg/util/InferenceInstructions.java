@@ -121,24 +121,6 @@ public abstract class InferenceInstructions {
         InferenceInstructions build();
     }
 
-    // TODO: resolution order may _change_ in the future. if caller cares, they should be explicit and create Resolver
-    // themselves
-
-    // Note: there was originally a strict check about the partition spec schema being the same as the schema used for
-    // inference. This is *not* required, as we may be using an
-    // @Value.Check
-    // final void checkSpecSchema() {
-    // if (spec().isEmpty()) {
-    // return;
-    // }
-    // if (schema() != spec().get().schema()) {
-    // throw new IllegalArgumentException("Must use same schema instance"); // yes this is on purpose
-    // }
-    // // if (!schema().sameSchema(spec().schema())) {
-    // // throw new IllegalArgumentException("schema and spec schema are not the same");
-    // // }
-    // }
-
     private static final class FieldNameNamerFactory implements Namer.Factory {
         private final String delimiter;
 

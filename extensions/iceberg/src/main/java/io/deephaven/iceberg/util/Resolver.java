@@ -122,11 +122,6 @@ public abstract class Resolver {
      */
     public abstract Optional<NameMapping> nameMapping();
 
-    // @Value.Default
-    // boolean allowUnmappedColumns() {
-    // return false;
-    // }
-
     /**
      * Get the field path associated with the Deephaven {@code columnName}. Will return empty when the column name is
      * not in {@link #columnInstructions()}, and a result otherwise.
@@ -272,7 +267,6 @@ public abstract class Resolver {
         return Objects.requireNonNull(pf[0]);
     }
 
-    // @Value.Derived
     @Value.Lazy
     Map<String, PartitionField> partitionFieldMap() {
         return Collections.unmodifiableMap(definition()
@@ -284,15 +278,6 @@ public abstract class Resolver {
                         Assert::neverInvoked,
                         LinkedHashMap::new)));
     }
-
-    // @Value.Derived
-    // List<PartitionField> partitionFields() {
-    // return definition()
-    // .getColumnStream()
-    // .filter(ColumnDefinition::isPartitioning)
-    // .map(this::partitionField)
-    // .collect(Collectors.toUnmodifiableList());
-    // }
 
     static void checkCompatible(Collection<? extends NestedField> path, Type<?> type) {
         // We are assuming that fieldPath has been properly constructed from a Schema. This makes it a poor candidate
