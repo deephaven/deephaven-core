@@ -484,13 +484,12 @@ public abstract class IcebergToolsTest {
                 ColumnDefinition.ofDouble("Unit_Price"),
                 ColumnDefinition.ofTime("Order_Date"));
 
-        final IcebergReadInstructions localInstructions = IcebergReadInstructions.builder()
-                .resolver(IcebergUtils.resolver(tableDef))
-                .dataInstructions(instructions.dataInstructions().get())
-                .build();
-
         final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog);
         final IcebergTableAdapter tableAdapter = adapter.loadTable("sales.sales_partitioned");
+
+        final IcebergReadInstructions localInstructions = instructions(resolver(tableDef, tableAdapter.currentSchema(),
+                tableAdapter.icebergTable().spec(), YEAR, REGION, ITEM_TYPE, UNITS_SOLD, UNIT_PRICE, ORDER_DATE));
+
         final io.deephaven.engine.table.Table table = tableAdapter.table(localInstructions);
 
         // Verify we retrieved all the rows.
@@ -512,13 +511,13 @@ public abstract class IcebergToolsTest {
                 ColumnDefinition.ofDouble("Unit_Price"),
                 ColumnDefinition.ofTime("Order_Date"));
 
-        final IcebergReadInstructions localInstructions = IcebergReadInstructions.builder()
-                .resolver(IcebergUtils.resolver(tableDef))
-                .dataInstructions(instructions.dataInstructions().get())
-                .build();
-
         final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog);
         final IcebergTableAdapter tableAdapter = adapter.loadTable("sales.sales_partitioned");
+
+        final IcebergReadInstructions localInstructions =
+                instructions(resolver(tableDef, tableAdapter.currentSchema(), tableAdapter.icebergTable().spec(), MONTH,
+                        YEAR, REGION, ITEM_TYPE, UNITS_SOLD, UNIT_PRICE, ORDER_DATE));
+
         final io.deephaven.engine.table.Table table = tableAdapter.table(localInstructions);
 
         // Verify we retrieved all the rows.

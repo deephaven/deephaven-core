@@ -39,6 +39,7 @@ public final class IcebergFlatLayout extends IcebergBaseLayout {
         super(tableAdapter, instructions, dataInstructionsProvider);
     }
 
+    // TODO: should we just create a new version of this class that is internal?
     public IcebergFlatLayout(
             @NotNull IcebergTableAdapter tableAdapter,
             @NotNull ParquetInstructions parquetInstructions,

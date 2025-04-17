@@ -66,7 +66,7 @@ public final class IcebergPartitionedLayout extends IcebergBaseLayout {
             return rawValue;
         }
         return IdentityPartitionConverters.convertConstant(data.getType(ix), rawValue);
-        // todo: check
+        // todo: check types?
         /*
          * colValue = IdentityPartitionConverters.convertConstant( partitionData.getType(colData.index),
          * valueFromPartitionData); if (!colData.type.isAssignableFrom(colValue.getClass())) { throw new

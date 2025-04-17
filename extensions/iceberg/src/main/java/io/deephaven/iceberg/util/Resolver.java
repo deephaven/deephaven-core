@@ -46,6 +46,9 @@ public abstract class Resolver {
         return ImmutableResolver.builder();
     }
 
+    // todo: a version that takes Schema and TableDef and does a name-based-only guess? this is not really the same as
+    // inference (which is based solely on a Schema)
+
     /**
      * Infer a resolver based on the {@code inferenceInstructions}.
      *
