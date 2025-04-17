@@ -17,16 +17,8 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Objects;
-import java.util.concurrent.CancellationException;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Semaphore;
+import java.util.*;
+import java.util.concurrent.*;
 
 import static io.deephaven.extensions.s3.S3ReadContext.handleS3Exception;
 import static io.deephaven.extensions.s3.S3Utils.addTimeout;
@@ -287,9 +279,7 @@ class S3CompletableOutputStream extends CompletableOutputStream {
         final CreateMultipartUploadRequest.Builder builder = CreateMultipartUploadRequest.builder()
                 .bucket(uri.bucket().orElseThrow())
                 .key(uri.key().orElseThrow());
-        final Duration writeTimeout = s3Instructions.writeTimeout();
-        builder.overrideConfiguration(b -> addTimeout(b, writeTimeout));
-        final CreateMultipartUploadRequest createMultipartUploadRequest = builder.build();
+        final CreateMultipartUploadRequest createMultipartUploadRequest = generateRequest(builder, CreateMultipartUploadRequest.class);
         // Note: We can add support for other parameters like tagging, storage class, encryption, permissions, etc. in
         // future
         final CompletableFuture<CreateMultipartUploadResponse> initiateUploadFuture =
@@ -336,9 +326,7 @@ class S3CompletableOutputStream extends CompletableOutputStream {
                 .key(uri.key().orElseThrow())
                 .uploadId(uploadId)
                 .partNumber(nextPartNumber);
-        final Duration writeTimeout = s3Instructions.writeTimeout();
-        builder.overrideConfiguration(b -> addTimeout(b, writeTimeout));
-        final UploadPartRequest uploadPartRequest = builder.build();
+        final UploadPartRequest uploadPartRequest = generateRequest(builder, UploadPartRequest.class);
 
         final int partNumber = nextPartNumber;
         final CompletableFuture<UploadPartResponse> uploadPartFuture = s3AsyncClient.uploadPart(uploadPartRequest,
@@ -455,9 +443,7 @@ class S3CompletableOutputStream extends CompletableOutputStream {
                 .multipartUpload(CompletedMultipartUpload.builder()
                         .parts(completedParts)
                         .build());
-        final Duration writeTimeout = s3Instructions.writeTimeout();
-        builder.overrideConfiguration(b -> addTimeout(b, writeTimeout));
-        final CompleteMultipartUploadRequest completeRequest = builder.build();
+        final CompleteMultipartUploadRequest completeRequest = generateRequest(builder, CompleteMultipartUploadRequest.class);
         final CompletableFuture<CompleteMultipartUploadResponse> uploadFuture =
                 s3AsyncClient.completeMultipartUpload(completeRequest);
         try {
@@ -511,9 +497,7 @@ class S3CompletableOutputStream extends CompletableOutputStream {
                 .bucket(uri.bucket().orElseThrow())
                 .key(uri.key().orElseThrow())
                 .uploadId(uploadId);
-        final Duration writeTimeout = s3Instructions.writeTimeout();
-        builder.overrideConfiguration(b -> addTimeout(b, writeTimeout));
-        final AbortMultipartUploadRequest abortRequest = builder.build();
+        final AbortMultipartUploadRequest abortRequest = generateRequest(builder, AbortMultipartUploadRequest.class);
         final CompletableFuture<AbortMultipartUploadResponse> future = s3AsyncClient.abortMultipartUpload(abortRequest);
 
         // Wait for the abort to complete
@@ -524,5 +508,21 @@ class S3CompletableOutputStream extends CompletableOutputStream {
             throw handleS3Exception(e,
                     String.format("aborting multipart upload for uri %s", uri), s3Instructions);
         }
+    }
+
+    /**
+     * Applies the write timeout, then generates a request for the given builder and request class.
+     *
+     * @param builder      an instance of a {@link S3Request.Builder} class
+     * @param requestClass the class returned by this builder's {@link S3Request.Builder#build()} method
+     * @param <Request>    the {@link S3Request} type returned by the builder's {@link S3Request.Builder#build()} method
+     * @return the result of the builder's {@link S3Request.Builder#build()} method
+     */
+    private <Request extends S3Request> Request generateRequest(@NotNull S3Request.Builder builder, @SuppressWarnings("unused") @NotNull Class<Request> requestClass) {
+        final Duration writeTimeout = s3Instructions.writeTimeout();
+        builder.overrideConfiguration(b -> addTimeout(b, writeTimeout));
+
+        //noinspection unchecked
+        return (Request) builder.build();
     }
 }
