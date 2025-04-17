@@ -12,11 +12,14 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.PartitionAwareSourceTable;
 import io.deephaven.engine.table.impl.select.FormulaEvaluationException;
+import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.iceberg.base.IcebergTestUtils;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
+import io.deephaven.iceberg.base.IcebergUtils;
 import io.deephaven.iceberg.sqlite.SqliteHelper;
+import io.deephaven.iceberg.util.ColumnInstructions;
 import io.deephaven.iceberg.util.IcebergCatalogAdapter;
 import io.deephaven.iceberg.util.IcebergReadInstructions;
 import io.deephaven.iceberg.util.IcebergTableAdapter;
@@ -24,6 +27,7 @@ import io.deephaven.iceberg.util.IcebergTableImpl;
 import io.deephaven.iceberg.util.IcebergTableWriter;
 import io.deephaven.iceberg.util.IcebergUpdateMode;
 import io.deephaven.iceberg.util.IcebergWriteInstructions;
+import io.deephaven.iceberg.util.Resolver;
 import io.deephaven.iceberg.util.SortOrderProvider;
 import io.deephaven.iceberg.util.TableParquetWriterOptions;
 import io.deephaven.parquet.table.ParquetInstructions;
@@ -52,7 +56,10 @@ import org.junit.jupiter.api.io.TempDir;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -60,11 +67,16 @@ import java.util.Map;
 import java.util.List;
 import java.util.stream.Collectors;
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
+import static io.deephaven.engine.util.TableTools.booleanCol;
 import static io.deephaven.engine.util.TableTools.col;
 import static io.deephaven.engine.util.TableTools.doubleCol;
+import static io.deephaven.engine.util.TableTools.floatCol;
+import static io.deephaven.engine.util.TableTools.instantCol;
 import static io.deephaven.engine.util.TableTools.intCol;
 import static io.deephaven.engine.util.TableTools.longCol;
+import static io.deephaven.engine.util.TableTools.stringCol;
 import static io.deephaven.iceberg.layout.IcebergBaseLayout.computeSortedColumns;
+import static io.deephaven.iceberg.util.ColumnInstructions.schemaField;
 import static org.apache.parquet.schema.LogicalTypeAnnotation.intType;
 import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.DOUBLE;
 import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.INT32;
@@ -372,43 +384,45 @@ public abstract class SqliteCatalogBase {
 
     @Test
     void appendToCatalogTableWithAllDataTypesTest() {
-        final Schema schema = new Schema(
-                Types.NestedField.required(1, "booleanCol", Types.BooleanType.get()),
-                Types.NestedField.required(2, "doubleCol", Types.DoubleType.get()),
-                Types.NestedField.required(3, "floatCol", Types.FloatType.get()),
-                Types.NestedField.required(4, "intCol", Types.IntegerType.get()),
-                Types.NestedField.required(5, "longCol", Types.LongType.get()),
-                Types.NestedField.required(6, "stringCol", Types.StringType.get()),
-                Types.NestedField.required(7, "instantCol", Types.TimestampType.withZone()),
-                Types.NestedField.required(8, "localDateTimeCol", Types.TimestampType.withoutZone()),
-                Types.NestedField.required(9, "localDateCol", Types.DateType.get()),
-                Types.NestedField.required(10, "localTimeCol", Types.TimeType.get()),
-                Types.NestedField.required(11, "binaryCol", Types.BinaryType.get()));
+        final TableDefinition td = TableDefinition.of(
+                ColumnDefinition.ofBoolean("booleanCol"),
+                ColumnDefinition.ofDouble("doubleCol"),
+                ColumnDefinition.ofFloat("floatCol"),
+                ColumnDefinition.ofInt("intCol"),
+                ColumnDefinition.ofLong("longCol"),
+                ColumnDefinition.ofString("stringCol"),
+                ColumnDefinition.ofTime("instantCol"),
+                ColumnDefinition.of("localDateTimeCol", Type.find(LocalDateTime.class)),
+                ColumnDefinition.of("localDateCol", Type.find(LocalDate.class)),
+                ColumnDefinition.of("localTimeCol", Type.find(LocalTime.class)),
+                ColumnDefinition.of("binaryCol", Type.byteType().arrayType()));
+
+        final Table source = TableTools.newTable(td,
+                booleanCol("booleanCol", true, false, null),
+                doubleCol("doubleCol", 0.0, 1.1, 2.2),
+                floatCol("floatCol", 0.0f, 1.1f, 2.2f),
+                intCol("intCol", 3, 2, 1),
+                longCol("longCol", 6, 5, 4),
+                stringCol("stringCol", "foo", null, "bar"),
+                instantCol("instantCol", Instant.now(), null, Instant.EPOCH),
+                new ColumnHolder<>("localDateTimeCol", LocalDateTime.class, null, false, LocalDateTime.now(), null, LocalDateTime.now()),
+                new ColumnHolder<>("localDateCol", LocalDate.class, null, false, LocalDate.now(), null, LocalDate.now()),
+                new ColumnHolder<>("localTimeCol", LocalTime.class, null, false, LocalTime.now(), null, LocalTime.now()),
+                new ColumnHolder<>("binaryCol", byte[].class, byte.class, false, new byte[]{42, 43}, null, new byte[]{}));
+        // todo: why is binaryCol not working here?
+
         final Namespace myNamespace = Namespace.of("MyNamespace");
         final TableIdentifier myTableId = TableIdentifier.of(myNamespace, "MyTableWithAllDataTypes");
-        catalogAdapter.catalog().createTable(myTableId, schema);
-
-        final Table source = TableTools.emptyTable(10)
-                .update(
-                        "booleanCol = i % 2 == 0",
-                        "doubleCol = (double) 2.5 * i + 10",
-                        "floatCol = (float) (2.5 * i + 10)",
-                        "intCol = 2 * i + 10",
-                        "longCol = (long) (2 * i + 10)",
-                        "stringCol = String.valueOf(2 * i + 10)",
-                        "instantCol = java.time.Instant.now()",
-                        "localDateTimeCol = java.time.LocalDateTime.now()",
-                        "localDateCol = java.time.LocalDate.now()",
-                        "localTimeCol = java.time.LocalTime.now()",
-                        "binaryCol = new byte[] {(byte) i}");
+        final Resolver resolver = catalogAdapter.createTable2(myTableId, td);
         final IcebergTableAdapter tableAdapter = catalogAdapter.loadTable(myTableId);
+
         final IcebergTableWriter tableWriter = tableAdapter.tableWriter(writerOptionsBuilder()
                 .tableDefinition(source.getDefinition())
                 .build());
         tableWriter.append(IcebergWriteInstructions.builder()
                 .addTables(source)
                 .build());
-        final Table fromIceberg = tableAdapter.table();
+        final Table fromIceberg = tableAdapter.table(IcebergReadInstructions.builder().resolver(resolver).build());
         assertTableEquals(source, fromIceberg);
     }
 
@@ -605,7 +619,8 @@ public abstract class SqliteCatalogBase {
                         "doubleCol = (double) 3.5 * i + 20");
 
         final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
-        final IcebergTableAdapter tableAdapter = catalogAdapter.createTable(tableIdentifier, source.getDefinition());
+        final Resolver resolver = catalogAdapter.createTable2(tableIdentifier, source.getDefinition());
+        final IcebergTableAdapter tableAdapter = catalogAdapter.loadTable(tableIdentifier);
 
         final IcebergTableWriter tableWriter = tableAdapter.tableWriter(writerOptionsBuilder()
                 .tableDefinition(source.getDefinition())
@@ -625,7 +640,7 @@ public abstract class SqliteCatalogBase {
                 .addTables(moreData)
                 .build());
         {
-            final Table fromIceberg = tableAdapter.table();
+            final Table fromIceberg = tableAdapter.table(IcebergReadInstructions.builder().resolver(resolver).build());
             assertTableEquals(moreData, fromIceberg);
             verifySnapshots(tableIdentifier, List.of("append"));
             verifyDataFiles(tableIdentifier, List.of(moreData));
@@ -643,7 +658,7 @@ public abstract class SqliteCatalogBase {
 
         {
             // Verify that we read the data files in the correct order
-            final Table fromIceberg = tableAdapter.table();
+            final Table fromIceberg = tableAdapter.table(IcebergReadInstructions.builder().resolver(resolver).build());
             assertTableEquals(TableTools.merge(moreData, source, anotherSource), fromIceberg);
         }
     }
@@ -952,7 +967,8 @@ public abstract class SqliteCatalogBase {
                 ColumnDefinition.ofInt("intCol"),
                 ColumnDefinition.ofDouble("doubleCol"),
                 ColumnDefinition.ofString("PC").withPartitioning());
-        final IcebergTableAdapter tableAdapter = catalogAdapter.createTable(tableIdentifier, tableDefinition);
+        final Resolver resolver = catalogAdapter.createTable2(tableIdentifier, tableDefinition);
+        final IcebergTableAdapter tableAdapter = catalogAdapter.loadTable(tableIdentifier);
         final IcebergTableWriter tableWriter = tableAdapter.tableWriter(writerOptionsBuilder()
                 .tableDefinition(tableDefinition)
                 .build());
@@ -965,6 +981,7 @@ public abstract class SqliteCatalogBase {
 
         final IcebergTableImpl fromIcebergRefreshing =
                 (IcebergTableImpl) tableAdapter.table(IcebergReadInstructions.builder()
+                        .resolver(resolver)
                         .updateMode(IcebergUpdateMode.manualRefreshingMode())
                         .build());
         assertThat(tableAdapter.definition()).isEqualTo(tableDefinition);
@@ -1006,7 +1023,8 @@ public abstract class SqliteCatalogBase {
                 ColumnDefinition.ofInt("intCol"),
                 ColumnDefinition.ofDouble("doubleCol"),
                 ColumnDefinition.ofString("PC").withPartitioning());
-        final IcebergTableAdapter tableAdapter = catalogAdapter.createTable(tableIdentifier, tableDefinition);
+        final Resolver resolver = catalogAdapter.createTable2(tableIdentifier, tableDefinition);
+        final IcebergTableAdapter tableAdapter = catalogAdapter.loadTable(tableIdentifier);
         final IcebergTableWriter tableWriter = tableAdapter.tableWriter(writerOptionsBuilder()
                 .tableDefinition(tableDefinition)
                 .build());
@@ -1019,6 +1037,7 @@ public abstract class SqliteCatalogBase {
 
         final IcebergTableImpl fromIcebergRefreshing =
                 (IcebergTableImpl) tableAdapter.table(IcebergReadInstructions.builder()
+                        .resolver(resolver)
                         .updateMode(IcebergUpdateMode.autoRefreshingMode(10))
                         .build());
         assertThat(tableAdapter.definition()).isEqualTo(tableDefinition);
@@ -1350,14 +1369,27 @@ public abstract class SqliteCatalogBase {
                 .addTables(source)
                 .build());
 
-        // Now read a table with a column rename
-        final IcebergReadInstructions readInstructions = IcebergReadInstructions.builder()
-                .putColumnRenames("intCol", "renamedIntCol")
-                .build();
-        final Table fromIceberg = tableAdapter.table(readInstructions);
+
         final Table expected = source.renameColumns("renamedIntCol = intCol")
                 .sort(List.of(SortColumn.asc(ColumnName.of("renamedIntCol")),
                         SortColumn.desc(ColumnName.of("doubleCol"))));
+
+        final int intColFieldId = icebergTable.schema().findField("intCol").fieldId();
+        final int doubleColFieldId = icebergTable.schema().findField("doubleCol").fieldId();
+        final int longColFieldId = icebergTable.schema().findField("longCol").fieldId();
+
+        // Now read a table with a column rename
+        final IcebergReadInstructions readInstructions = IcebergReadInstructions.builder()
+                .resolver(Resolver.builder()
+                        .definition(expected.getDefinition())
+                        .schema(icebergTable.schema())
+                        .putColumnInstructions("renamedIntCol", schemaField(intColFieldId))
+                        .putColumnInstructions("doubleCol", schemaField(doubleColFieldId))
+                        .putColumnInstructions("longCol", schemaField(longColFieldId))
+                        .build())
+                .build();
+        final Table fromIceberg = tableAdapter.table(readInstructions);
+
         assertTableEquals(expected, fromIceberg);
 
         // Verify that the sort order is still applied
@@ -1377,7 +1409,8 @@ public abstract class SqliteCatalogBase {
                 doubleCol("doubleCol", 10.5, 2.5, 3.5, 40.5, 0.5),
                 longCol("longCol", 20L, 50L, 0L, 10L, 5L));
         final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
-        final IcebergTableAdapter tableAdapter = catalogAdapter.createTable(tableIdentifier, source.getDefinition());
+        final Resolver resolver = catalogAdapter.createTable2(tableIdentifier, source.getDefinition());
+        final IcebergTableAdapter tableAdapter = catalogAdapter.loadTable(tableIdentifier);
 
         // Update the default sort order of the underlying iceberg table
         final org.apache.iceberg.Table icebergTable = tableAdapter.icebergTable();
@@ -1397,7 +1430,12 @@ public abstract class SqliteCatalogBase {
                     ColumnDefinition.ofInt("intCol"),
                     ColumnDefinition.ofLong("longCol"));
             final IcebergReadInstructions readInstructions = IcebergReadInstructions.builder()
-                    .tableDefinition(tableDefinition)
+                    .resolver(Resolver.builder()
+                            .definition(tableDefinition)
+                            .schema(resolver.schema())
+                            .putColumnInstructions("intCol", resolver.columnInstructions().get("intCol"))
+                            .putColumnInstructions("longCol", resolver.columnInstructions().get("longCol"))
+                            .build())
                     .build();
             final Table fromIceberg = tableAdapter.table(readInstructions);
             final Table expected = source.dropColumns("doubleCol")
@@ -1419,7 +1457,12 @@ public abstract class SqliteCatalogBase {
                     ColumnDefinition.ofDouble("doubleCol"),
                     ColumnDefinition.ofLong("longCol"));
             final IcebergReadInstructions readInstructions = IcebergReadInstructions.builder()
-                    .tableDefinition(tableDefinition)
+                    .resolver(Resolver.builder()
+                            .definition(tableDefinition)
+                            .schema(resolver.schema())
+                            .putColumnInstructions("doubleCol", resolver.columnInstructions().get("doubleCol"))
+                            .putColumnInstructions("longCol", resolver.columnInstructions().get("longCol"))
+                            .build())
                     .build();
             final Table fromIceberg = tableAdapter.table(readInstructions);
             final Table expected = source

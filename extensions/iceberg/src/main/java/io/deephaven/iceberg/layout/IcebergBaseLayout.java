@@ -259,8 +259,12 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
             final int manifestFileSpecId = manifestFile.partitionSpecId();
             try (final ManifestReader<DataFile> manifestReader = ManifestFiles.read(manifestFile, io)) {
 
-                // ID of the partition spec used to write the manifest as a string
+                // From file's KV metadata:
+                // partition-spec-id: ID of the partition spec used to write the manifest as a string
+                // partition-spec: JSON fields representation of the partition spec used to write the manifest
+                // schema: JSON representation of the table schema at the time the manifest was written
                 final PartitionSpec partitionSpecFromAvroMetadata = manifestReader.spec();
+
                 for (final DataFile dataFile : manifestReader) {
                     final int dataFileSpecId = dataFile.specId();
                     // relationship between manifestFileSpecId, partitionSpecFromAvroMetadata, dataFileSpecId

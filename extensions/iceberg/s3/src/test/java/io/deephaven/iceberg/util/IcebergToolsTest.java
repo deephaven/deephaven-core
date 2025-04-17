@@ -354,7 +354,7 @@ public abstract class IcebergToolsTest {
                 ColumnDefinition.ofTime("Order_Date"));
 
         final IcebergReadInstructions localInstructions = IcebergReadInstructions.builder()
-                .tableDefinition(tableDef)
+                .resolver(IcebergUtils.resolver(tableDef))
                 .dataInstructions(instructions.dataInstructions().get())
                 .build();
 
@@ -422,7 +422,7 @@ public abstract class IcebergToolsTest {
                 ColumnDefinition.ofTime("Order_Date"));
 
         final IcebergReadInstructions localInstructions = IcebergReadInstructions.builder()
-                .tableDefinition(tableDef)
+                .resolver(IcebergUtils.resolver(tableDef))
                 .dataInstructions(instructions.dataInstructions().get())
                 .build();
 
@@ -450,7 +450,7 @@ public abstract class IcebergToolsTest {
                 ColumnDefinition.ofTime("Order_Date"));
 
         final IcebergReadInstructions localInstructions = IcebergReadInstructions.builder()
-                .tableDefinition(tableDef)
+                .resolver(IcebergUtils.resolver(tableDef))
                 .dataInstructions(instructions.dataInstructions().get())
                 .build();
 
@@ -468,7 +468,7 @@ public abstract class IcebergToolsTest {
         uploadSalesPartitioned();
 
         final IcebergReadInstructions localInstructions = IcebergReadInstructions.builder()
-                .tableDefinition(SALES_MULTI_DEFINITION)
+                .resolver(IcebergUtils.resolver(SALES_MULTI_DEFINITION))
                 .dataInstructions(instructions.dataInstructions().get())
                 .build();
 
@@ -493,7 +493,7 @@ public abstract class IcebergToolsTest {
                 ColumnDefinition.ofTime("Order_Date"));
 
         final IcebergReadInstructions localInstructions = IcebergReadInstructions.builder()
-                .tableDefinition(tableDef)
+                .resolver(IcebergUtils.resolver(tableDef))
                 .dataInstructions(instructions.dataInstructions().get())
                 .build();
 
@@ -526,7 +526,7 @@ public abstract class IcebergToolsTest {
                 ColumnDefinition.ofTime("Order_Date"));
 
         final IcebergReadInstructions localInstructions = IcebergReadInstructions.builder()
-                .tableDefinition(tableDef)
+                .resolver(IcebergUtils.resolver(tableDef))
                 .dataInstructions(instructions.dataInstructions().get())
                 .build();
 
@@ -616,7 +616,7 @@ public abstract class IcebergToolsTest {
                 ColumnDefinition.ofInt("Month").withPartitioning());
 
         final IcebergReadInstructions localInstructions = IcebergReadInstructions.builder()
-                .tableDefinition(tableDef)
+                .resolver(IcebergUtils.resolver(tableDef))
                 .putColumnRenames("Year", "Current Year")
                 .putColumnRenames("Month", "Current Month")
                 .dataInstructions(instructions.dataInstructions().get())
@@ -878,7 +878,7 @@ public abstract class IcebergToolsTest {
 
         localInstructions = IcebergReadInstructions.builder()
                 .dataInstructions(instructions.dataInstructions().get())
-                .tableDefinition(userTableDef)
+                .resolver(IcebergUtils.resolver(userTableDef))
                 .build();
 
         // Use string and current snapshot

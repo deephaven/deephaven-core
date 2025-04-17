@@ -265,56 +265,26 @@ public abstract class Resolver {
         return Objects.requireNonNull(pf[0]);
     }
 
+    @Value.Derived
+    Map<String, PartitionField> partitionFieldMap() {
+        return Collections.unmodifiableMap(definition()
+                .getColumnStream()
+                .filter(ColumnDefinition::isPartitioning)
+                .collect(Collectors.toMap(
+                        ColumnDefinition::getName,
+                        this::partitionField,
+                        Assert::neverInvoked,
+                        LinkedHashMap::new)));
+    }
+
 //    @Value.Derived
-//    Map<String, PartitionField> partitionFieldMap() {
-//        return Collections.unmodifiableMap(definition()
+//    List<PartitionField> partitionFields() {
+//        return definition()
 //                .getColumnStream()
 //                .filter(ColumnDefinition::isPartitioning)
-//                .collect(Collectors.toMap(
-//                        ColumnDefinition::getName,
-//                        this::partitionField,
-//                        Assert::neverInvoked,
-//                        LinkedHashMap::new)));
+//                .map(this::partitionField)
+//                .collect(Collectors.toUnmodifiableList());
 //    }
-
-    boolean hasPartitioning() {
-        return definition().getColumnStream().anyMatch(ColumnDefinition::isPartitioning);
-    }
-
-    @Value.Derived
-    List<PartitionField> partitionFields() {
-        return definition()
-                .getColumnStream()
-                .filter(ColumnDefinition::isPartitioning)
-                .map(this::partitionField)
-                .collect(Collectors.toUnmodifiableList());
-    }
-
-    final Object[] extractPartitions(PartitionSpec spec, PartitionData data) {
-
-        // org.apache.iceberg.DataFiles.newPartitionData
-
-
-
-        data.copyFor(null); // todo?
-
-
-//        PartitionSpecHelper.
-
-        final List<ColumnDefinition<?>> partitioningColumns = definition()
-                .getColumnStream()
-                .filter(ColumnDefinition::isPartitioning)
-                .collect(Collectors.toList());
-        final int L = partitioningColumns.size();
-        final Object[] x = new Object[L];
-        for (int i = 0; i < L; i++) {
-            final PartitionField partitionField = partitionField(partitioningColumns.get(i));
-
-        }
-
-
-
-    }
 
     static void checkCompatible(Collection<? extends NestedField> path, Type<?> type) {
         // We are assuming that fieldPath has been properly constructed from a Schema. This makes it a poor candidate

@@ -29,6 +29,7 @@ import io.deephaven.iceberg.layout.IcebergBaseLayout;
 import io.deephaven.iceberg.layout.IcebergFlatLayout;
 import io.deephaven.iceberg.layout.IcebergKeyValuePartitionedLayout;
 import io.deephaven.iceberg.layout.IcebergManualRefreshTableLocationProvider;
+import io.deephaven.iceberg.layout.IcebergPartitionedLayout;
 import io.deephaven.iceberg.layout.IcebergStaticTableLocationProvider;
 import io.deephaven.iceberg.layout.IcebergTableLocationProviderBase;
 import io.deephaven.iceberg.location.IcebergTableLocationFactory;
@@ -620,44 +621,11 @@ public class IcebergTableAdapter {
                 .setColumnResolverFactory(Shim.factory(resolver))
                 .setSpecialInstructions(specialInstructions)
                 .build();
-
-        final List<PartitionField> partitionFields = resolver.partitionFields();
+        final Map<String, PartitionField> partitionFields = resolver.partitionFieldMap();
         if (partitionFields.isEmpty()) {
             return new IcebergFlatLayout(this, parquetInstructions, channelsProvider, snapshot);
         }
-
-
-        for (final ColumnDefinition<?> partitioningColumn : partitioningColumns) {
-            final ColumnInstructions ci = Objects.requireNonNull(resolver.columnInstructions().get(partitioningColumn.getName()));
-
-        }
-
-
-
-        // We can assume due to upstream validation that there are no duplicate names (after renaming) that are included
-        // in the output definition, so we can ignore duplicates.
-        final List<PartitionField> partitionFields = partitionSpec.fields();
-        final int numPartitionFields = partitionFields.size();
-        identityPartitioningColumns = new ArrayList<>(numPartitionFields);
-        for (int fieldId = 0; fieldId < numPartitionFields; ++fieldId) {
-            final PartitionField partitionField = partitionFields.get(fieldId);
-            if (!partitionField.transform().isIdentity()) {
-                // TODO (DH-18160): Improve support for handling non-identity transforms
-                continue;
-            }
-            final String icebergColName = partitionField.name();
-            final String dhColName = instructions.columnRenames().getOrDefault(icebergColName, icebergColName);
-            final ColumnDefinition<?> columnDef = tableDef.getColumn(dhColName);
-            if (columnDef == null) {
-                // Table definition provided by the user doesn't have this column, so skip.
-                continue;
-            }
-            identityPartitioningColumns.add(new IcebergKeyValuePartitionedLayout.IdentityPartitioningColData(dhColName,
-                    TypeUtils.getBoxedType(columnDef.getDataType()), fieldId));
-        }
-
-        final List<IcebergKeyValuePartitionedLayout.IdentityPartitioningColData> ipc = null;
-        return new IcebergKeyValuePartitionedLayout(this, parquetInstructions, channelsProvider, snapshot, ipc);
+        return new IcebergPartitionedLayout(this, parquetInstructions, channelsProvider, snapshot, partitionFields);
     }
 
     private static SeekableChannelsProvider seekableChannelsProvider(

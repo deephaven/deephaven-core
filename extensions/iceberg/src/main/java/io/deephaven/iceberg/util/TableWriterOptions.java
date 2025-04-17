@@ -42,6 +42,7 @@ public abstract class TableWriterOptions {
         return SchemaProvider.fromCurrent();
     }
 
+    // todo: this needs to be updated to the same format as resolver?
     /**
      * A one-to-one {@link Map map} from Iceberg field IDs from the {@link #schemaProvider()} to Deephaven column names
      * from the {@link #tableDefinition()}.

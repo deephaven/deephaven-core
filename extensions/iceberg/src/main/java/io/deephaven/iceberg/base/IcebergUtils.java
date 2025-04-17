@@ -146,6 +146,7 @@ public final class IcebergUtils {
 
     // TODO: we may want to capture this more generally with instructions like we do for the reading side
     // TODO: not that this won't have a real schema id
+    // TODO: note, this is dangerous, only useful the _first_ time you are creating a table.
     public static Resolver resolver(@NotNull final TableDefinition tableDefinition) {
         final Resolver.Builder builder = Resolver.builder().definition(tableDefinition);
         final Collection<String> partitioningColumnNames = new ArrayList<>();
