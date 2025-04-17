@@ -137,7 +137,8 @@ class UpdatePerformanceStreamPublisher implements StreamPublisher {
 
     @Override
     public void shutdown() {
-        // this is allocating chunks just to free them; but if flush is overridden we would like the override behavior to occur
+        // this is allocating chunks just to free them; but if flush is overridden we would like the override behavior
+        // to occur
         flush();
         SafeCloseableArray.close(chunks);
         chunks = null;
