@@ -26,6 +26,12 @@ public abstract class InferenceInstructions {
         return ImmutableInferenceInstructions.builder();
     }
 
+    /**
+     * Creates a default inference instructions for {@code schema}.
+     *
+     * @param schema the schema
+     * @return the inference instructions
+     */
     public static InferenceInstructions of(Schema schema) {
         return builder().schema(schema).build();
     }
@@ -39,15 +45,17 @@ public abstract class InferenceInstructions {
      * The partition spec to use for inference.
      *
      * <p>
-     * Inferring using a partition spec for general-purpose use is dangerous. This is only meant to be applied in
-     * situations where callers are working with a fixed set of data files that have this spec (or a superset of this
-     * spec); or, when the caller is able to guarantee that all current and future data files will have this spec (or a
-     * superset of this spec).
+     * <b>Warning</b>: inferring using a partition spec for general-purpose use is dangerous. This is only meant to be
+     * applied in situations where callers are working with a fixed set of data files that have this spec (or a superset
+     * of this spec); or, when the caller is able to guarantee that all current and future data files will have this
+     * spec (or a superset of this spec).
      */
     public abstract Optional<PartitionSpec> spec();
 
     /**
-     * The namer factory. Defaults to {@code fieldName("_")}.
+     * The namer factory. Defaults to {@code fieldName("_")}, which will create Deephaven column name by joining
+     * together the {@link Types.NestedField#name() field names} with an underscore and
+     * {@link NameValidator#legalizeColumnName(String, Set) legalize} the name if necessary.
      *
      * @see Namer.Factory#fieldName(String)
      */

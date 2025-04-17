@@ -21,6 +21,7 @@ import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.iceberg.sqlite.SqliteHelper;
 import io.deephaven.iceberg.util.IcebergCatalogAdapter;
 import io.deephaven.iceberg.util.IcebergReadInstructions;
+import io.deephaven.iceberg.util.IcebergTable;
 import io.deephaven.iceberg.util.IcebergTableAdapter;
 import io.deephaven.iceberg.util.IcebergTableImpl;
 import io.deephaven.iceberg.util.IcebergTableWriter;
@@ -88,6 +89,10 @@ public abstract class SqliteCatalogBase {
 
     private IcebergCatalogAdapter catalogAdapter;
     private final EngineCleanup engineCleanup = new EngineCleanup();
+
+    public static IcebergTable table(IcebergTableAdapter tableAdapter, Resolver resolver) {
+        return tableAdapter.table(IcebergReadInstructions.builder().resolver(resolver).build());
+    }
 
     protected abstract IcebergCatalogAdapter catalogAdapter(TestInfo testInfo, Path rootDir,
             Map<String, String> properties) throws Exception;
@@ -425,7 +430,7 @@ public abstract class SqliteCatalogBase {
         tableWriter.append(IcebergWriteInstructions.builder()
                 .addTables(source)
                 .build());
-        final Table fromIceberg = tableAdapter.table(IcebergReadInstructions.builder().resolver(resolver).build());
+        final Table fromIceberg = table(tableAdapter, resolver);
         assertTableEquals(source, fromIceberg);
     }
 
@@ -497,7 +502,8 @@ public abstract class SqliteCatalogBase {
                         "doubleCol = (double) 2.5 * i + 10");
         final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
         final TableDefinition originalDefinition = source.getDefinition();
-        final IcebergTableAdapter tableAdapter = catalogAdapter.createTable(tableIdentifier, originalDefinition);
+        final Resolver resolver = catalogAdapter.createTable2(tableIdentifier, originalDefinition);
+        final IcebergTableAdapter tableAdapter = catalogAdapter.loadTable(tableIdentifier);
         {
             final IcebergTableWriter tableWriter = tableAdapter.tableWriter(writerOptionsBuilder()
                     .tableDefinition(source.getDefinition())
@@ -643,7 +649,7 @@ public abstract class SqliteCatalogBase {
                 .addTables(moreData)
                 .build());
         {
-            final Table fromIceberg = tableAdapter.table(IcebergReadInstructions.builder().resolver(resolver).build());
+            final Table fromIceberg = table(tableAdapter, resolver);
             assertTableEquals(moreData, fromIceberg);
             verifySnapshots(tableIdentifier, List.of("append"));
             verifyDataFiles(tableIdentifier, List.of(moreData));
@@ -661,7 +667,7 @@ public abstract class SqliteCatalogBase {
 
         {
             // Verify that we read the data files in the correct order
-            final Table fromIceberg = tableAdapter.table(IcebergReadInstructions.builder().resolver(resolver).build());
+            final Table fromIceberg = table(tableAdapter, resolver);
             assertTableEquals(TableTools.merge(moreData, source, anotherSource), fromIceberg);
         }
     }
@@ -839,7 +845,7 @@ public abstract class SqliteCatalogBase {
                 .build());
 
         {
-            final Table fromIceberg = tableAdapter.table(IcebergReadInstructions.builder().resolver(resolver).build());
+            final Table fromIceberg = table(tableAdapter, resolver);
             assertThat(fromIceberg.getDefinition()).isEqualTo(tableDefinition);
             assertThat(fromIceberg).isInstanceOf(PartitionAwareSourceTable.class);
             assertTableEquals(TableTools.merge(part1, part2), fromIceberg);
@@ -858,7 +864,7 @@ public abstract class SqliteCatalogBase {
                     .putColumnInstructions(BAR, resolver.columnInstructions().get(BAR))
                     .putColumnInstructions(BAZ, resolver.columnInstructions().get(BAZ))
                     .build();
-            final Table fromIceberg = tableAdapter.table(IcebergReadInstructions.builder().resolver(widened).build());
+            final Table fromIceberg = table(tableAdapter, widened);
             assertThat(fromIceberg.getDefinition()).isEqualTo(widenedTd);
             assertThat(fromIceberg).isInstanceOf(PartitionAwareSourceTable.class);
 
@@ -886,7 +892,7 @@ public abstract class SqliteCatalogBase {
                     .putColumnInstructions(BAR, resolver.columnInstructions().get(BAR))
                     .putColumnInstructions(BAZ, resolver.columnInstructions().get(BAZ))
                     .build();
-            final Table fromIceberg = tableAdapter.table(IcebergReadInstructions.builder().resolver(widened).build());
+            final Table fromIceberg = table(tableAdapter, widened);
             assertThat(fromIceberg.getDefinition()).isEqualTo(tightenedTd);
             assertThat(fromIceberg).isInstanceOf(PartitionAwareSourceTable.class);
 
@@ -1468,7 +1474,6 @@ public abstract class SqliteCatalogBase {
         tableWriterWithSorting.append(IcebergWriteInstructions.builder()
                 .addTables(source)
                 .build());
-
 
         final Table expected = source.renameColumns("renamedIntCol = intCol")
                 .sort(List.of(SortColumn.asc(ColumnName.of("renamedIntCol")),
