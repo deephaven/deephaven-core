@@ -45,26 +45,6 @@ import static io.deephaven.iceberg.base.IcebergUtils.dataFileUri;
 @InternalUseOnly
 public abstract class IcebergBaseLayout implements TableLocationKeyFinder<IcebergTableLocationKey> {
 
-    // public static void test(FileIO io, Snapshot snapshot) throws IOException {
-    // final List<ManifestFile> manifestFiles = snapshot.allManifests(io);
-    // for (final ManifestFile manifestFile : manifestFiles) {
-    // checkIsDataManifest(manifestFile);
-    // }
-    //
-    // final TableDefinition mftd = TableDefinition.of(ColumnDefinition.of("ManifestFile",
-    // Type.find(ManifestFile.class)));
-    // final io.deephaven.engine.table.Table manifestTable = TableTools.newTable(mftd, new ColumnHolder<>("Test",
-    // ManifestFile.class, null, false, manifestFiles.toArray(new ManifestFile[0])));
-    //
-    // for (final ManifestFile manifestFile : manifestFiles) {
-    // try (final ManifestReader<DataFile> manifestReader = ManifestFiles.read(manifestFile, io)) {
-    // for (final DataFile dataFile : manifestReader) {
-    // locationKeyObserver.accept(key(table, manifestFile, manifestReader, dataFile));
-    // }
-    // }
-    // }
-    // }
-
     /**
      * The {@link IcebergTableAdapter} that will be used to access the table.
      */

@@ -44,6 +44,17 @@ public abstract class Resolver {
         return ImmutableResolver.builder();
     }
 
+    /**
+     * Infer a resolver based on the default inference instructions for {@code schema}.
+     *
+     * <p>
+     * Equivalent to {@code infer(InferenceInstructions.of(schema))}.
+     *
+     * @param schema the schema to use for inference
+     * @return the resolver
+     * @throws Inference.UnsupportedType if an unsupported type is encountered
+     * @see #infer(InferenceInstructions)
+     */
     public static Resolver infer(Schema schema) throws Inference.UnsupportedType {
         return infer(InferenceInstructions.of(schema));
     }
