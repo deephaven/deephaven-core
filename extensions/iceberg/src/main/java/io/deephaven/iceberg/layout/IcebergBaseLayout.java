@@ -68,7 +68,7 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
     /**
      * The {@link IcebergTableAdapter} that will be used to access the table.
      */
-    final IcebergTableAdapter tableAdapter;
+    protected final IcebergTableAdapter tableAdapter;
 
     /**
      * The UUID of the table, if available.
@@ -200,7 +200,7 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
         }
     }
 
-    IcebergBaseLayout(
+    protected IcebergBaseLayout(
             @NotNull final IcebergTableAdapter tableAdapter,
             @NotNull final ParquetInstructions parquetInstructions,
             @NotNull final SeekableChannelsProvider seekableChannelsProvider,
@@ -225,7 +225,7 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
         this.tableDef = null;
     }
 
-    abstract IcebergTableLocationKey keyFromDataFile(
+    protected abstract IcebergTableLocationKey keyFromDataFile(
             ManifestFile manifestFile,
             DataFile dataFile,
             URI fileUri,

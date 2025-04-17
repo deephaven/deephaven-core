@@ -26,10 +26,7 @@ import io.deephaven.iceberg.internal.DataInstructionsProviderLoader;
 import io.deephaven.iceberg.internal.Shim;
 import io.deephaven.iceberg.layout.IcebergAutoRefreshTableLocationProvider;
 import io.deephaven.iceberg.layout.IcebergBaseLayout;
-import io.deephaven.iceberg.layout.IcebergFlatLayout;
-import io.deephaven.iceberg.layout.IcebergKeyValuePartitionedLayout;
 import io.deephaven.iceberg.layout.IcebergManualRefreshTableLocationProvider;
-import io.deephaven.iceberg.layout.IcebergPartitionedLayout;
 import io.deephaven.iceberg.layout.IcebergStaticTableLocationProvider;
 import io.deephaven.iceberg.layout.IcebergTableLocationProviderBase;
 import io.deephaven.iceberg.location.IcebergTableLocationFactory;
@@ -40,7 +37,6 @@ import io.deephaven.util.annotations.InternalUseOnly;
 import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.util.channel.SeekableChannelsProvider;
 import io.deephaven.util.channel.SeekableChannelsProviderLoader;
-import io.deephaven.util.type.TypeUtils;
 import org.apache.iceberg.ContentFile;
 import org.apache.iceberg.DataFile;
 import org.apache.iceberg.FileFormat;
@@ -623,7 +619,7 @@ public class IcebergTableAdapter {
                 .build();
         final Map<String, PartitionField> partitionFields = resolver.partitionFieldMap();
         if (partitionFields.isEmpty()) {
-            return new IcebergFlatLayout(this, parquetInstructions, channelsProvider, snapshot);
+            return new IcebergUnpartitionedLayout(this, parquetInstructions, channelsProvider, snapshot);
         }
         return new IcebergPartitionedLayout(this, parquetInstructions, channelsProvider, snapshot, partitionFields);
     }

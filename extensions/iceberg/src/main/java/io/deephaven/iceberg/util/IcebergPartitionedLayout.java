@@ -1,10 +1,10 @@
 //
 // Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
-package io.deephaven.iceberg.layout;
+package io.deephaven.iceberg.util;
 
+import io.deephaven.iceberg.layout.IcebergBaseLayout;
 import io.deephaven.iceberg.location.IcebergTableLocationKey;
-import io.deephaven.iceberg.util.IcebergTableAdapter;
 import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.util.annotations.InternalUseOnly;
 import io.deephaven.util.channel.SeekableChannelsProvider;
@@ -24,15 +24,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-/**
- * TODO: use with caution
- */
-@InternalUseOnly
-public final class IcebergPartitionedLayout extends IcebergBaseLayout {
+final class IcebergPartitionedLayout extends IcebergBaseLayout {
 
     private final Map<String, PartitionField> partitionFields;
 
-    public IcebergPartitionedLayout(
+    IcebergPartitionedLayout(
             @NotNull IcebergTableAdapter tableAdapter,
             @NotNull ParquetInstructions parquetInstructions,
             @NotNull SeekableChannelsProvider seekableChannelsProvider,
@@ -40,11 +36,6 @@ public final class IcebergPartitionedLayout extends IcebergBaseLayout {
             @NotNull Map<String, PartitionField> partitionFields) {
         super(tableAdapter, parquetInstructions, seekableChannelsProvider, snapshot);
         this.partitionFields = Objects.requireNonNull(partitionFields);
-    }
-
-    @Override
-    public String toString() {
-        return IcebergPartitionedLayout.class.getSimpleName() + '[' + tableAdapter + ']';
     }
 
     private static Object get(PartitionField partitionField, PartitionData data) {
@@ -84,7 +75,7 @@ public final class IcebergPartitionedLayout extends IcebergBaseLayout {
     }
 
     @Override
-    IcebergTableLocationKey keyFromDataFile(
+    protected IcebergTableLocationKey keyFromDataFile(
             @NotNull final ManifestFile manifestFile,
             @NotNull final DataFile dataFile,
             @NotNull final URI fileUri,
@@ -96,5 +87,10 @@ public final class IcebergPartitionedLayout extends IcebergBaseLayout {
             partitions.put(e.getKey(), (Comparable<?>) partitionValue);
         }
         return locationKey(manifestFile, dataFile, fileUri, partitions, channelsProvider);
+    }
+
+    @Override
+    public String toString() {
+        return IcebergPartitionedLayout.class.getSimpleName() + '[' + tableAdapter + ']';
     }
 }

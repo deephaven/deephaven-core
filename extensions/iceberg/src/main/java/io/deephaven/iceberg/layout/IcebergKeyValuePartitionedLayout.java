@@ -30,13 +30,13 @@ import java.util.*;
 public final class IcebergKeyValuePartitionedLayout extends IcebergBaseLayout {
 
     @InternalUseOnly
-    public static class IdentityPartitioningColData {
+    static class IdentityPartitioningColData {
         final String name;
         final Class<?> type;
         // this is a busted impl, position of partition may change between files
         final int index; // position in the partition spec
 
-        public IdentityPartitioningColData(String name, Class<?> type, int index) {
+        IdentityPartitioningColData(String name, Class<?> type, int index) {
             this.name = Objects.requireNonNull(name);
             this.type = Objects.requireNonNull(type);
             this.index = index;
@@ -84,23 +84,13 @@ public final class IcebergKeyValuePartitionedLayout extends IcebergBaseLayout {
         }
     }
 
-    public IcebergKeyValuePartitionedLayout(
-            @NotNull IcebergTableAdapter tableAdapter,
-            @NotNull ParquetInstructions parquetInstructions,
-            @NotNull SeekableChannelsProvider seekableChannelsProvider,
-            @Nullable Snapshot snapshot,
-            @NotNull List<IdentityPartitioningColData> identityPartitioningColumns) {
-        super(tableAdapter, parquetInstructions, seekableChannelsProvider, snapshot);
-        this.identityPartitioningColumns = Objects.requireNonNull(identityPartitioningColumns);
-    }
-
     @Override
     public String toString() {
         return IcebergKeyValuePartitionedLayout.class.getSimpleName() + '[' + tableAdapter + ']';
     }
 
     @Override
-    IcebergTableLocationKey keyFromDataFile(
+    protected IcebergTableLocationKey keyFromDataFile(
             @NotNull final ManifestFile manifestFile,
             @NotNull final DataFile dataFile,
             @NotNull final URI fileUri,
