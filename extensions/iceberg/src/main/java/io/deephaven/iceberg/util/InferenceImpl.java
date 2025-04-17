@@ -59,12 +59,14 @@ final class InferenceImpl extends TypeUtil.SchemaVisitor<Void> {
     }
 
     private boolean isSkip() {
-        if (ii.skip().isEmpty()) {
-            return false;
-        }
-        // Not the most efficient check, but should not matter given this is only done during inference.
-        final FieldPath fp = FieldPath.of(fieldPath.stream().mapToInt(Types.NestedField::fieldId).toArray());
-        return ii.skip().contains(fp);
+        return false;
+        // Note: this was a proposed implementation for skip. If we need this feature, we can re-add it in the future.
+        // if (ii.skip().isEmpty()) {
+        // return false;
+        // }
+        // // Not the most efficient check, but should not matter given this is only done during inference.
+        // final FieldPath fp = FieldPath.of(fieldPath.stream().mapToInt(Types.NestedField::fieldId).toArray());
+        // return ii.skip().contains(fp);
     }
 
     private void push(Types.NestedField field) {

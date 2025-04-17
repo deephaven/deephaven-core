@@ -350,7 +350,6 @@ public class SchemaEvolution1 {
         return InferenceInstructions.builder()
                 .schema(schema)
                 .spec(PartitionSpec.unpartitioned())
-                // .nameMapping(NameMapping.empty())
                 .build();
     }
 
@@ -358,7 +357,6 @@ public class SchemaEvolution1 {
         return InferenceInstructions.builder()
                 .schema(schema)
                 .spec(PartitionSpec.unpartitioned())
-                // .nameMapping(NameMapping.empty())
                 .failOnUnsupportedTypes(true)
                 .build();
     }

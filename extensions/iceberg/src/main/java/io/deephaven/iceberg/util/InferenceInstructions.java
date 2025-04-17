@@ -57,22 +57,13 @@ public abstract class InferenceInstructions {
     }
 
     /**
-     * If inference should fail if any of the Iceberg fields fail to map to Deephaven columns. A {@link #skip() skipped}
-     * field will not throw an exception. By default, is {@code false}.
+     * If inference should fail if any of the Iceberg fields fail to map to Deephaven columns. By default, is
+     * {@code false}.
      */
     @Value.Default
     public boolean failOnUnsupportedTypes() {
         return false;
     }
-
-    // TODO: this needs to be generalized to support partition spec stuff, likely pull class out of ColumnInstructions
-    // TODO: remove this, have unmapped?
-    /**
-     * The set of field paths to skip during inference.
-     */
-    public abstract Set<FieldPath> skip();
-
-    // todo: need to add exclusions for specific partitioning fields
 
     /**
      * The Deephaven column namer.
@@ -126,12 +117,6 @@ public abstract class InferenceInstructions {
         Builder failOnUnsupportedTypes(boolean failOnUnsupportedTypes);
 
         Builder namerFactory(Namer.Factory namerFactory);
-
-        Builder addSkip(FieldPath element);
-
-        Builder addSkip(FieldPath... elements);
-
-        Builder addAllSkip(Iterable<? extends FieldPath> elements);
 
         InferenceInstructions build();
     }

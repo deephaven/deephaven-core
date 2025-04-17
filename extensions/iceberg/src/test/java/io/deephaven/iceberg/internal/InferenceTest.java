@@ -5,7 +5,6 @@ package io.deephaven.iceberg.internal;
 
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.iceberg.util.FieldPath;
 import io.deephaven.iceberg.util.InferenceInstructions;
 import io.deephaven.iceberg.util.Resolver;
 import io.deephaven.qst.type.Type;
@@ -342,29 +341,30 @@ class InferenceTest {
                 .build());
     }
 
-    @Test
-    void skipFields() throws Inference.UnsupportedType {
-        final Schema schema = new Schema(
-                NestedField.optional(42, "F1", IT),
-                NestedField.required(43, "F2", IT),
-                NestedField.optional(44, "F3", ListType.ofOptional(1, IT)));
-
-        // We should be able to skip types, regardless of whether we support them or not.
-        // In this case, we are skipping a supported type [42], and skipping an unsupported type [44] which would
-        // otherwise cause an UnsupportedType exception.
-        final InferenceInstructions instructions = InferenceInstructions.builder()
-                .schema(schema)
-                .failOnUnsupportedTypes(true)
-                .addSkip(FieldPath.of(42))
-                .addSkip(FieldPath.of(44))
-                .build();
-
-        assertThat(Resolver.infer(instructions)).isEqualTo(Resolver.builder()
-                .schema(schema)
-                .definition(TableDefinition.of(ColumnDefinition.ofInt("F2")))
-                .putColumnInstructions("F2", schemaField(43))
-                .build());
-    }
+    // Note: this was a proposed test for a skip feature. If we need this feature, we can re-add it in the future.
+    // @Test
+    // void skipFields() throws Inference.UnsupportedType {
+    // final Schema schema = new Schema(
+    // NestedField.optional(42, "F1", IT),
+    // NestedField.required(43, "F2", IT),
+    // NestedField.optional(44, "F3", ListType.ofOptional(1, IT)));
+    //
+    // // We should be able to skip types, regardless of whether we support them or not.
+    // // In this case, we are skipping a supported type [42], and skipping an unsupported type [44] which would
+    // // otherwise cause an UnsupportedType exception.
+    // final InferenceInstructions instructions = InferenceInstructions.builder()
+    // .schema(schema)
+    // .failOnUnsupportedTypes(true)
+    // .addSkip(FieldPath.of(42))
+    // .addSkip(FieldPath.of(44))
+    // .build();
+    //
+    // assertThat(Resolver.infer(instructions)).isEqualTo(Resolver.builder()
+    // .schema(schema)
+    // .definition(TableDefinition.of(ColumnDefinition.ofInt("F2")))
+    // .putColumnInstructions("F2", schemaField(43))
+    // .build());
+    // }
 
     @Test
     void alternativeNamer() throws Inference.UnsupportedType {
