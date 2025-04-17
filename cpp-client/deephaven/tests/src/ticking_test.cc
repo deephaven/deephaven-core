@@ -301,4 +301,132 @@ TEST_CASE("Ticking Table: all the data is eventually present", "[ticking]") {
 
   table.Unsubscribe(std::move(cookie));
 }
+
+class WaitForGroupedTableCallback final : public CommonBase {
+public:
+  explicit WaitForGroupedTableCallback(size_t target) : target_(target) {}
+
+  void OnTick(deephaven::dhcore::ticking::TickingUpdate update) final {
+    const auto &current = update.Current();
+    std::cout << "=== The Full Table ===\n"
+        << current->Stream(true, true)
+        << '\n';
+    if (update.Current()->NumRows() < target_) {
+      return;
+    }
+
+    TableMaker expected;
+    expected.AddColumn<int64_t>("Key", {0, 1, 2});
+    expected.AddColumn<std::vector<std::optional<char16_t>>>("Chars", {
+        {'a', 'd', 'g', 'j'},
+        {'b', 'e', 'h'},
+        {'c', {}, 'i'}
+    });
+    expected.AddColumn<std::vector<std::optional<int8_t>>>("Bytes", {
+        {0, 3, 6, 9},
+        {1, 4, 7},
+        {2, {}, 8}
+    });
+    expected.AddColumn<std::vector<std::optional<int16_t>>>("Shorts", {
+        {0, 3, 6, 9},
+        {1, 4, 7},
+        {2, {}, 8}
+    });
+    expected.AddColumn<std::vector<std::optional<int32_t>>>("Ints", {
+        {0, 3, 6, 9},
+        {1, 4, 7},
+        {2, {}, 8}
+    });
+    expected.AddColumn<std::vector<std::optional<int64_t>>>("Longs", {
+        {0, 3, 6, 9},
+        {1, 4, 7},
+        {2, {}, 8}
+    });
+    expected.AddColumn<std::vector<std::optional<float>>>("Floats", {
+        {0, 3, 6, 9},
+        {1, 4, 7},
+        {2, {}, 8}
+    });
+    expected.AddColumn<std::vector<std::optional<double>>>("Doubles", {
+        {0, 3, 6, 9},
+        {1, 4, 7},
+        {2, {}, 8}
+    });
+    expected.AddColumn<std::vector<std::optional<bool>>>("Bools", {
+        {true, false, true, false},
+        {false, true, false},
+        {true, {}, true}
+    });
+    expected.AddColumn<std::vector<std::optional<std::string>>>("Strings", {
+        {"hello 0", "hello 3", "hello 6", "hello 9"},
+        {"hello 1", "hello 4", "hello 7"},
+        {"hello 2", {}, "hello 8"}
+    });
+    auto start = DateTime(2001, 3, 1, 12, 34, 56).Nanos();
+    auto with_offset = [&start](int64_t offset) {
+      return DateTime::FromNanos(start + offset);
+    };
+    expected.AddColumn<std::vector<std::optional<DateTime>>>("DateTimes", {
+        {with_offset(0), with_offset(3), with_offset(6), with_offset(9)},
+        {with_offset(1), with_offset(4), with_offset(7)},
+        {with_offset(2), {}, with_offset(8)}
+    });
+    expected.AddColumn<std::vector<std::optional<LocalDate>>>("LocalDates", {
+        {LocalDate::Of(2001, 3, 1), LocalDate::Of(2001, 3, 4), LocalDate::Of(2001, 3, 7), LocalDate::Of(2001, 3, 10)},
+        {LocalDate::Of(2001, 3, 2), LocalDate::Of(2001, 3, 5), LocalDate::Of(2001, 3, 8)},
+        {LocalDate::Of(2001, 3, 3), {}, LocalDate::Of(2001, 3, 9)},
+    });
+    expected.AddColumn<std::vector<std::optional<LocalTime>>>("LocalTimes", {
+        {LocalTime::Of(12, 34, 46), LocalTime::Of(12, 34, 49), LocalTime::Of(12, 34, 52), LocalTime::Of(12, 34, 55)},
+        {LocalTime::Of(12, 34, 47), LocalTime::Of(12, 34, 50), LocalTime::Of(12, 34, 53)},
+        {LocalTime::Of(12, 34, 48), {}, LocalTime::Of(12, 34, 54)}
+    });
+
+    TableComparerForTests::Compare(expected, *update.Current());
+
+    NotifyDone();
+  }
+
+private:
+  size_t target_ = 0;
+};
+
+TEST_CASE("Ticking Table: Ticking grouped data", "[ticking]") {
+  auto client = TableMakerForTests::CreateClient();
+  auto tm = client.GetManager();
+
+  auto table = tm.EmptyTable(10)
+      .Select({"Key = (ii % 3)",
+          "Chars = ii == 5 ? null : (char)(ii + 'a')",
+          "Bytes = ii == 5 ? null : (byte)ii",
+          "Shorts = ii == 5 ? null : (short)ii",
+          "Ints = ii == 5 ? null : (int)ii",
+          "Longs = ii == 5 ? null : (long)ii",
+          "Floats = ii == 5 ? null : (float)ii",
+          "Doubles = ii == 5 ? null : (double)ii",
+          "Bools = ii == 5 ? null : ((ii % 2) == 0)",
+          "Strings = ii == 5 ? null : (`hello ` + ii)",
+          "DateTimes = ii == 5 ? null : '2001-03-01T12:34:56Z' + ii",
+          "LocalDates = ii == 5 ? null : '2001-03-01' + ((int)ii * 'P1D')",
+          "LocalTimes = ii == 5 ? null : '12:34:46'.plus((int)ii * 'PT1S')"
+      })
+      .By("Key");
+
+  constexpr const int kNumTicks = 1;
+
+  auto callback = std::make_shared<WaitForGroupedTableCallback>(kNumTicks);
+  auto cookie = table.Subscribe(callback);
+
+  while (true) {
+    auto [done, eptr] = callback->WaitForUpdate();
+    if (done) {
+      break;
+    }
+    if (eptr != nullptr) {
+      std::rethrow_exception(eptr);
+    }
+  }
+
+  table.Unsubscribe(std::move(cookie));
+}
 }  // namespace deephaven::client::tests

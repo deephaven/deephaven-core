@@ -24,8 +24,8 @@ using deephaven::dhcore::column::StringArrayColumnSource;
 
 namespace deephaven::dhcore::utility {
 namespace {
-void populateArrayFromPackedData(const uint8_t *src, bool *dest, size_t num_elements, bool invert);
-void populateNullsFromDeephavenConvention(const int64_t *data_begin, bool *dest, size_t num_elements);
+void PopulateArrayFromPackedData(const uint8_t *src, bool *dest, size_t num_elements, bool invert);
+void PopulateNullsFromDeephavenConvention(const int64_t *data_begin, bool *dest, size_t num_elements);
 }  // namespace
 
 std::shared_ptr<ColumnSource>
@@ -34,8 +34,8 @@ CythonSupport::CreateBooleanColumnSource(const uint8_t *data_begin, const uint8_
   auto elements = std::make_unique<bool[]>(num_elements);
   auto nulls = std::make_unique<bool[]>(num_elements);
 
-  populateArrayFromPackedData(data_begin, elements.get(), num_elements, false);
-  populateArrayFromPackedData(validity_begin, nulls.get(), num_elements, true);
+  PopulateArrayFromPackedData(data_begin, elements.get(), num_elements, false);
+  PopulateArrayFromPackedData(validity_begin, nulls.get(), num_elements, true);
   return BooleanArrayColumnSource::CreateFromArrays(ElementType::Of(ElementTypeId::kBool),
       std::move(elements), std::move(nulls), num_elements);
 }
@@ -53,7 +53,7 @@ CythonSupport::CreateStringColumnSource(const char *text_begin, const char *text
     elements[i] = std::string(current, current + element_size);
     current += element_size;
   }
-  populateArrayFromPackedData(validity_begin, nulls.get(), num_elements, true);
+  PopulateArrayFromPackedData(validity_begin, nulls.get(), num_elements, true);
   return StringArrayColumnSource::CreateFromArrays(ElementType::Of(ElementTypeId::kString),
       std::move(elements), std::move(nulls), num_elements);
 }
@@ -67,7 +67,7 @@ CythonSupport::CreateDateTimeColumnSource(const int64_t *data_begin, const int64
   for (size_t i = 0; i != num_elements; ++i) {
     elements[i] = DateTime::FromNanos(data_begin[i]);
   }
-  populateNullsFromDeephavenConvention(data_begin, nulls.get(), num_elements);
+  PopulateNullsFromDeephavenConvention(data_begin, nulls.get(), num_elements);
   return DateTimeArrayColumnSource::CreateFromArrays(ElementType::Of(ElementTypeId::kTimestamp),
       std::move(elements), std::move(nulls), num_elements);
 }
@@ -81,7 +81,7 @@ CythonSupport::CreateLocalDateColumnSource(const int64_t *data_begin, const int6
   for (size_t i = 0; i != num_elements; ++i) {
     elements[i] = LocalDate::FromMillis(data_begin[i]);
   }
-  populateNullsFromDeephavenConvention(data_begin, nulls.get(), num_elements);
+  PopulateNullsFromDeephavenConvention(data_begin, nulls.get(), num_elements);
   return LocalDateArrayColumnSource::CreateFromArrays(ElementType::Of(ElementTypeId::kLocalDate),
       std::move(elements), std::move(nulls), num_elements);
 }
@@ -95,7 +95,7 @@ CythonSupport::CreateLocalTimeColumnSource(const int64_t *data_begin, const int6
   for (size_t i = 0; i != num_elements; ++i) {
     elements[i] = LocalTime::FromNanos(data_begin[i]);
   }
-  populateNullsFromDeephavenConvention(data_begin, nulls.get(), num_elements);
+  PopulateNullsFromDeephavenConvention(data_begin, nulls.get(), num_elements);
   return LocalTimeArrayColumnSource::CreateFromArrays(ElementType::Of(ElementTypeId::kLocalTime),
       std::move(elements), std::move(nulls), num_elements);
 }
@@ -110,7 +110,7 @@ ElementTypeId::Enum CythonSupport::GetElementTypeId(const ColumnSource &column_s
 }
 
 namespace {
-void populateArrayFromPackedData(const uint8_t *src, bool *dest, size_t num_elements, bool invert) {
+void PopulateArrayFromPackedData(const uint8_t *src, bool *dest, size_t num_elements, bool invert) {
   if (src == nullptr) {
     std::fill(dest, dest + num_elements, false);
     return;
@@ -128,7 +128,7 @@ void populateArrayFromPackedData(const uint8_t *src, bool *dest, size_t num_elem
   }
 }
 
-void populateNullsFromDeephavenConvention(const int64_t *data_begin, bool *dest, size_t num_elements) {
+void PopulateNullsFromDeephavenConvention(const int64_t *data_begin, bool *dest, size_t num_elements) {
   for (size_t i = 0; i != num_elements; ++i) {
     dest[i] = data_begin[i] == DeephavenConstants::kNullLong;
   }

@@ -6,25 +6,30 @@
 #include <limits>
 #include <cmath>
 #include <cstdint>
+#include <memory>
 #include <ostream>
-#include <stdexcept>
+#include <string>
 #include <string_view>
 #include <type_traits>
 #include "deephaven/third_party/fmt/core.h"
 #include "deephaven/third_party/fmt/ostream.h"
+
+namespace deephaven::dhcore::container {
+class ContainerBase;
+}  // namespace deephaven::dhcore::container
 
 namespace deephaven::dhcore {
 struct ElementTypeId {
   ElementTypeId() = delete;
 
   // We don't use "enum class" here because we can't figure out how to get it to work right with Cython.
-  // TODO(kosak): we are going to have to expand LIST to be a true nested type.
   enum Enum {
     kChar,
     kInt8, kInt16, kInt32, kInt64,
     kFloat, kDouble,
     kBool, kString, kTimestamp,
-    kList,
+    // TODO(kosak): remove this when we update Cython
+    kList_UNUSED,
     kLocalDate, kLocalTime
   };
 };
@@ -307,6 +312,11 @@ struct DeephavenTraits<LocalDate> {
 
 template<>
 struct DeephavenTraits<LocalTime> {
+  static constexpr bool kIsNumeric = false;
+};
+
+template<>
+struct DeephavenTraits<std::shared_ptr<deephaven::dhcore::container::ContainerBase>> {
   static constexpr bool kIsNumeric = false;
 };
 

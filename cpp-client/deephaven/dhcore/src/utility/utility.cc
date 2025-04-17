@@ -3,14 +3,15 @@
  */
 #include "deephaven/dhcore/utility/utility.h"
 
+#include <chrono>
 #include <filesystem>
 #include <ostream>
 #include <string>
-#include <vector>
 
 #include "deephaven/third_party/fmt/chrono.h"
 #include "deephaven/third_party/fmt/core.h"
 #include "deephaven/third_party/fmt/ostream.h"
+#include "deephaven/dhcore/container/container.h"
 
 #ifdef __GNUG__
 #include <cstdlib>
@@ -19,6 +20,8 @@
 #endif
 
 static_assert(FMT_VERSION >= 100000);
+
+using deephaven::dhcore::container::ContainerBase;
 
 namespace deephaven::dhcore::utility {
 
@@ -177,4 +180,7 @@ std::string ReadPasswordFromStdinNoEcho() {
   return password;
 }
 
+void ElementRenderer::Render(std::ostream &s, const std::shared_ptr<ContainerBase> &item) const {
+  s << *item;
+}
 }  // namespace deephaven::dhcore::utility

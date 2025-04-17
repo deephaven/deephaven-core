@@ -17,6 +17,7 @@
 #include "deephaven/dhcore/chunk/chunk_maker.h"
 #include "deephaven/dhcore/chunk/chunk.h"
 #include "deephaven/dhcore/clienttable/schema.h"
+#include "deephaven/dhcore/container/container.h"
 #include "deephaven/dhcore/container/row_sequence.h"
 #include "deephaven/dhcore/utility/utility.h"
 
@@ -24,6 +25,7 @@ using deephaven::dhcore::chunk::AnyChunk;
 using deephaven::dhcore::chunk::BooleanChunk;
 using deephaven::dhcore::chunk::ChunkMaker;
 using deephaven::dhcore::column::ColumnSource;
+using deephaven::dhcore::container::ContainerBase;
 using deephaven::dhcore::container::RowSequence;
 using deephaven::dhcore::container::RowSequenceIterator;
 using deephaven::dhcore::utility::ElementRenderer;
