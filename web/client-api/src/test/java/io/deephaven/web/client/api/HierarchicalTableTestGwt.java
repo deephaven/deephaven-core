@@ -626,4 +626,38 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
                 .then(this::finish).catch_(this::report);
     }
 
+    public void testCreateRollupUpdateViewUnsafe() {
+        connect(tables)
+                .then(table("static_table_to_rollup"))
+                .then(table -> {
+                    JsRollupConfig cfg = new JsRollupConfig();
+                    cfg.groupingColumns = Js.uncheckedCast(JsArray.of("X"));
+                    cfg.includeConstituents = true;
+                    cfg.aggregations = JsPropertyMap.of(JsAggregationOperation.SUM, JsArray.of("Y"));
+                    return table.rollup(cfg).then(rollupTable -> {
+
+                        JsPropertyMap<Object> col0 =
+                                JsPropertyMap.of("name", "UnsafeOp", "expression", "Runtime.exec(`ls`)", "type",
+                                        CustomColumn.TYPE_NEW);
+                        col0.set("options", JsPropertyMap.of("rollupNodeType", "aggregated"));
+
+                        JsArray<JsTable.CustomColumnArgUnionType> columns = new JsArray<>(
+                                JsTable.CustomColumnArgUnionType.of(col0));
+
+                        assertEquals(2, rollupTable.getColumns().length);
+
+                        rollupTable.applyCustomColumns(columns);
+
+                        rollupTable.setViewport(0, 99, null, null);
+                        return rollupTable.getViewportData()
+                                .then(data -> {
+                                    // After the refresh, we should have the new columns in the rollup table
+                                    rollupTable.setViewport(0, 99, rollupTable.getColumns(), null);
+                                    return rollupTable.getViewportData();
+                                })
+                                .then(data -> Promise.resolve((TreeViewportData) data));
+                    });
+                })
+                .then(this::report, this::finish);
+    }
 }
