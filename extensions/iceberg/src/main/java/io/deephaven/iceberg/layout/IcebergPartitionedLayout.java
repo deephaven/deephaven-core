@@ -61,10 +61,16 @@ public final class IcebergPartitionedLayout extends IcebergBaseLayout {
         if (ix == size) {
             throw new IllegalStateException("Contract broken");
         }
+
+        // TODO: we may want to have support to widen (or safely tighten) types here, otherwise downstream code could
+        // break?
+        // For example, DH might want a long partition column, but it's an int here.
+
         final Object rawValue = data.get(ix);
         if (!partitionField.transform().isIdentity()) {
             return rawValue;
         }
+
         return IdentityPartitionConverters.convertConstant(data.getType(ix), rawValue);
         // todo: check types?
         /*

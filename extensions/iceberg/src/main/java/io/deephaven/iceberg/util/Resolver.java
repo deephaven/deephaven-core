@@ -49,6 +49,10 @@ public abstract class Resolver {
     // todo: a version that takes Schema and TableDef and does a name-based-only guess? this is not really the same as
     // inference (which is based solely on a Schema)
 
+    public static Resolver infer(Schema schema) throws Inference.UnsupportedType {
+        return infer(InferenceInstructions.of(schema));
+    }
+
     /**
      * Infer a resolver based on the {@code inferenceInstructions}.
      *

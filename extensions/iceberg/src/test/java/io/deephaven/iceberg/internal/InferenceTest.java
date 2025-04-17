@@ -55,9 +55,7 @@ class InferenceTest {
     private static final IntegerType IT = IntegerType.get();
 
     static InferenceInstructions i(Schema schema) {
-        return InferenceInstructions.builder()
-                .schema(schema)
-                .build();
+        return InferenceInstructions.of(schema);
     }
 
     static InferenceInstructions ia(Schema schema) {

@@ -11,15 +11,14 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.PartitionAwareSourceTable;
+import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.select.FormulaEvaluationException;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.iceberg.base.IcebergTestUtils;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
-import io.deephaven.iceberg.base.IcebergUtils;
 import io.deephaven.iceberg.sqlite.SqliteHelper;
-import io.deephaven.iceberg.util.ColumnInstructions;
 import io.deephaven.iceberg.util.IcebergCatalogAdapter;
 import io.deephaven.iceberg.util.IcebergReadInstructions;
 import io.deephaven.iceberg.util.IcebergTableAdapter;
@@ -804,6 +803,103 @@ public abstract class SqliteCatalogBase {
                 part2.update("PC = 1"),
                 part3.update("PC = 2"));
         assertTableEquals(expected2, fromIceberg2.select());
+    }
+
+    @Test
+    void partitionCoercion() {
+        final String FOO = "intCol";
+        final String BAR = "doubleCol";
+        final String BAZ = "PC";
+        final TableDefinition tableDefinition = TableDefinition.of(
+                ColumnDefinition.ofInt(FOO),
+                ColumnDefinition.ofDouble(BAR),
+                ColumnDefinition.ofInt(BAZ).withPartitioning());
+
+        final Table part1 = TableTools.newTable(
+                TableTools.intCol(FOO, 3, 2, 1),
+                TableTools.doubleCol(BAR, 3.3, 2.2, 1.1),
+                TableTools.intCol(BAZ, 3, 3, 3));
+
+        final Table part2 = TableTools.newTable(
+                TableTools.intCol(FOO, 1, 2, 3, 4, 5),
+                TableTools.doubleCol(BAR, 1.1, 2.2, 3.3, 4.4, 5.5),
+                TableTools.intCol(BAZ, 1, 1, 1, 1, 1));
+
+        final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
+
+        final Resolver resolver = catalogAdapter.createTable2(tableIdentifier, tableDefinition);
+        final IcebergTableAdapter tableAdapter = catalogAdapter.loadTable(tableIdentifier);
+        final IcebergTableWriter tableWriter = tableAdapter.tableWriter(writerOptionsBuilder()
+                .tableDefinition(tableDefinition)
+                .build());
+
+        tableWriter.append(IcebergWriteInstructions.builder()
+                .addTables(part1.dropColumns(BAZ), part2.dropColumns(BAZ))
+                .addAllPartitionPaths(List.of(BAZ + "=3", BAZ + "=1"))
+                .build());
+
+        {
+            final Table fromIceberg = tableAdapter.table(IcebergReadInstructions.builder().resolver(resolver).build());
+            assertThat(fromIceberg.getDefinition()).isEqualTo(tableDefinition);
+            assertThat(fromIceberg).isInstanceOf(PartitionAwareSourceTable.class);
+            assertTableEquals(TableTools.merge(part1, part2), fromIceberg);
+        }
+
+        {
+            final TableDefinition widenedTd = TableDefinition.of(
+                    ColumnDefinition.ofInt(FOO),
+                    ColumnDefinition.ofDouble(BAR),
+                    ColumnDefinition.ofLong(BAZ).withPartitioning());
+            final Resolver widened = Resolver.builder()
+                    .definition(widenedTd)
+                    .schema(resolver.schema())
+                    .spec(resolver.spec().orElseThrow())
+                    .putColumnInstructions(FOO, resolver.columnInstructions().get(FOO))
+                    .putColumnInstructions(BAR, resolver.columnInstructions().get(BAR))
+                    .putColumnInstructions(BAZ, resolver.columnInstructions().get(BAZ))
+                    .build();
+            final Table fromIceberg = tableAdapter.table(IcebergReadInstructions.builder().resolver(widened).build());
+            assertThat(fromIceberg.getDefinition()).isEqualTo(widenedTd);
+            assertThat(fromIceberg).isInstanceOf(PartitionAwareSourceTable.class);
+
+            // Note: we should be able to fix this if we want, IcebergPartitionedLayout
+            // TODO: we should catch this at Resolver construction time if we aren't going to solve it in IPL
+            try {
+                fromIceberg.select();
+                failBecauseExceptionWasNotThrown(TableDataException.class);
+            } catch (TableDataException e) {
+                assertThat(e).cause()
+                        .hasMessageContaining("Unexpected partitioning column value type for PC: 3 is not a Long");
+            }
+        }
+
+        {
+            final TableDefinition tightenedTd = TableDefinition.of(
+                    ColumnDefinition.ofInt(FOO),
+                    ColumnDefinition.ofDouble(BAR),
+                    ColumnDefinition.ofShort(BAZ).withPartitioning());
+            final Resolver widened = Resolver.builder()
+                    .definition(tightenedTd)
+                    .schema(resolver.schema())
+                    .spec(resolver.spec().orElseThrow())
+                    .putColumnInstructions(FOO, resolver.columnInstructions().get(FOO))
+                    .putColumnInstructions(BAR, resolver.columnInstructions().get(BAR))
+                    .putColumnInstructions(BAZ, resolver.columnInstructions().get(BAZ))
+                    .build();
+            final Table fromIceberg = tableAdapter.table(IcebergReadInstructions.builder().resolver(widened).build());
+            assertThat(fromIceberg.getDefinition()).isEqualTo(tightenedTd);
+            assertThat(fromIceberg).isInstanceOf(PartitionAwareSourceTable.class);
+
+            // Note: we should be able to fix this if we want, IcebergPartitionedLayout
+            // TODO: we should catch this at Resolver construction time if we aren't going to solve it in IPL
+            try {
+                fromIceberg.select();
+                failBecauseExceptionWasNotThrown(TableDataException.class);
+            } catch (TableDataException e) {
+                assertThat(e).cause()
+                        .hasMessageContaining("Unexpected partitioning column value type for PC: 3 is not a Short");
+            }
+        }
     }
 
     @Test
