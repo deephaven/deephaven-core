@@ -12,6 +12,7 @@ import io.deephaven.engine.table.impl.util.TableLoggers;
 import io.deephaven.stream.StreamChunkUtils;
 import io.deephaven.stream.StreamConsumer;
 import io.deephaven.stream.StreamPublisher;
+import io.deephaven.util.SafeCloseableArray;
 import io.deephaven.vector.LongVector;
 import io.deephaven.vector.LongVectorDirect;
 import org.jetbrains.annotations.NotNull;
@@ -83,5 +84,9 @@ class UpdatePerformanceAncestorStreamPublisher implements StreamPublisher {
     }
 
     @Override
-    public void shutdown() {}
+    public void shutdown() {
+        flush();
+        SafeCloseableArray.close(chunks);
+        chunks = null;
+    }
 }

@@ -8,7 +8,6 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessArtifact;
-import io.deephaven.engine.liveness.PermanentLivenessManager;
 import io.deephaven.engine.liveness.SingletonLivenessManager;
 import io.deephaven.engine.table.ShiftObliviousListener;
 import io.deephaven.engine.table.Table;
