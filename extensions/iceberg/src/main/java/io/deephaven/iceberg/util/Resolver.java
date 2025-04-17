@@ -265,7 +265,8 @@ public abstract class Resolver {
         return Objects.requireNonNull(pf[0]);
     }
 
-    @Value.Derived
+    // @Value.Derived
+    @Value.Lazy
     Map<String, PartitionField> partitionFieldMap() {
         return Collections.unmodifiableMap(definition()
                 .getColumnStream()
