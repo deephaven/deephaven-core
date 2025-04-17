@@ -44,45 +44,8 @@ public abstract class Resolver {
         return ImmutableResolver.builder();
     }
 
-    // todo: a version that takes Schema and TableDef and does a name-based-only guess? this is not really the same as
-    // inference (which is based solely on a Schema)
-
     public static Resolver infer(Schema schema) throws Inference.UnsupportedType {
         return infer(InferenceInstructions.of(schema));
-    }
-
-    /**
-     * Infer a resolver based on the {@link Schema} and {@link TableDefinition}. This uses column names to map the
-     * Deephaven columns to Iceberg fields.
-     * <p>
-     * The provided {@code tableDefinition} must not have any partitioning columns. In that case, this method will throw
-     * a {@link IllegalArgumentException}. For that case, you should use the {@link #builder()} with appropriate
-     * {@link #spec()} to build a resolver.
-     *
-     * @see #definition()
-     */
-    public static Resolver infer(final Schema schema, final TableDefinition tableDefinition) {
-        final Resolver.Builder builder = Resolver.builder()
-                .schema(schema)
-                .definition(tableDefinition);
-        for (final ColumnDefinition<?> columnDefinition : tableDefinition.getColumns()) {
-            final String dhColumnName = columnDefinition.getName();
-            if (columnDefinition.isPartitioning()) {
-                throw new IllegalArgumentException(
-                        String.format("Column `%s` is a partitioning column, use the builder with appropriate" +
-                                " partition spec to build a Resolver ", dhColumnName));
-            }
-            final NestedField icebergField = schema.findField(dhColumnName);
-            if (icebergField == null) {
-                throw new IllegalArgumentException(
-                        String.format("Column `%s` from deephaven table definition not found in Iceberg schema",
-                                dhColumnName));
-            }
-
-            final int fieldID = icebergField.fieldId();
-            builder.putColumnInstructions(dhColumnName, ColumnInstructions.schemaField(fieldID));
-        }
-        return builder.build();
     }
 
     /**
@@ -108,6 +71,38 @@ public abstract class Resolver {
     public static Resolver.Builder inferBuilder(final InferenceInstructions inferenceInstructions)
             throws Inference.UnsupportedType {
         return InferenceImpl.of(inferenceInstructions);
+    }
+
+    /**
+     * Builds a simple resolver based on the matching of {@link Schema} and {@link TableDefinition} names. In most
+     * cases, callers that have both a {@code schema} and {@code definition} should prefer to build the resolver with
+     * explicit {@link NestedField#fieldId() field ids}, but this is provided for simple cases as a convenience.
+     *
+     * <p>
+     * The provided {@code definition} must not have any partitioning columns. In that case, this method will throw a
+     * {@link IllegalArgumentException}. For that case, you should use the {@link #builder()} with appropriate
+     * {@link #spec()} to build a resolver.
+     */
+    public static Resolver simple(final Schema schema, final TableDefinition definition) {
+        final Resolver.Builder builder = Resolver.builder()
+                .schema(schema)
+                .definition(definition);
+        for (final ColumnDefinition<?> columnDefinition : definition.getColumns()) {
+            final String dhColumnName = columnDefinition.getName();
+            if (columnDefinition.isPartitioning()) {
+                throw new IllegalArgumentException(
+                        String.format("Column `%s` is a partitioning column, use the builder with appropriate" +
+                                " partition spec to build a Resolver ", dhColumnName));
+            }
+            final NestedField icebergField = schema.findField(dhColumnName);
+            if (icebergField == null) {
+                throw new IllegalArgumentException(
+                        String.format("Column `%s` from deephaven table definition not found in Iceberg schema",
+                                dhColumnName));
+            }
+            builder.putColumnInstructions(dhColumnName, ColumnInstructions.schemaField(icebergField.fieldId()));
+        }
+        return builder.build();
     }
 
     /**
@@ -183,8 +178,6 @@ public abstract class Resolver {
         Builder putAllColumnInstructions(Map<String, ? extends ColumnInstructions> entries);
 
         Builder nameMapping(NameMapping nameMapping);
-
-        // Builder allowUnmappedColumns(boolean allowUnmappedColumns);
 
         Resolver build();
     }

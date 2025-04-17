@@ -433,58 +433,49 @@ class ResolverTest {
                 ColumnDefinition.of("F2", type));
     }
 
-    /** Unit tests for {@link Resolver#infer(Schema, TableDefinition)} **/
-
     @Test
     void simplePrimitiveMapping() {
         final Schema schema = simpleSchema(IT);
         final TableDefinition td = simpleDefinition(Type.intType());
-
         final Resolver expected = Resolver.builder()
                 .schema(schema)
                 .definition(td)
                 .putColumnInstructions("F1", schemaField(42))
                 .putColumnInstructions("F2", schemaField(43))
                 .build();
-
-        assertThat(Resolver.infer(schema, td)).isEqualTo(expected);
+        assertThat(Resolver.simple(schema, td)).isEqualTo(expected);
     }
 
     @Test
-    void extraSchemaColumnsAreIgnored() {
+    void simpleExtraSchemaColumnsAreIgnored() {
         final Schema schema = simpleSchema(IT); // F1 and F2 exist in Iceberg
         final TableDefinition td = TableDefinition.of(
                 ColumnDefinition.ofInt("F1")); // Only map F1
-
         final Resolver expected = Resolver.builder()
                 .schema(schema)
                 .definition(td)
                 .putColumnInstructions("F1", schemaField(42))
                 .build();
-
-        assertThat(Resolver.infer(schema, td)).isEqualTo(expected);
+        assertThat(Resolver.simple(schema, td)).isEqualTo(expected);
     }
 
     @Test
-    void partitioningColumnRejected() {
+    void simplePartitioningColumnRejected() {
         final Schema schema = simpleSchema(IT);
         final TableDefinition td = TableDefinition.of(
                 ColumnDefinition.ofInt("F1").withPartitioning()); // should not be allowed
-
-        assertThatThrownBy(() -> Resolver.infer(schema, td))
+        assertThatThrownBy(() -> Resolver.simple(schema, td))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("partitioning column");
     }
 
     @Test
-    void missingColumnRejected() {
+    void simpleMissingColumnRejected() {
         final Schema schema = simpleSchema(IT);
         final TableDefinition td = TableDefinition.of(
                 ColumnDefinition.ofInt("NotInSchema"));
-        assertThatThrownBy(() -> Resolver.infer(schema, td))
+        assertThatThrownBy(() -> Resolver.simple(schema, td))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("not found in Iceberg schema");
     }
-
-    /** End unit tests for {@link Resolver#infer(Schema, TableDefinition)} **/
 }
