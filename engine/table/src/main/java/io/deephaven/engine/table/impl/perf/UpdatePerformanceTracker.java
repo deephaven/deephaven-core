@@ -353,6 +353,9 @@ public class UpdatePerformanceTracker {
     @TestUseOnly
     public static void resetForUnitTests() {
         synchronized (UpdatePerformanceTracker.class) {
+            if (INSTANCE == null) {
+                return;
+            }
             livenessManager.unmanage(INSTANCE);
             INSTANCE = null;
         }

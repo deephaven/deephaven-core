@@ -91,6 +91,7 @@ abstract public class RefreshingTableTestCase extends BaseArrayTestCase implemen
     public void tearDown() throws Exception {
         // shutdown the UPT before we check for leaked chunks
         UpdatePerformanceTracker.resetForUnitTests();
+        livenessScopeCloseable.close();
 
         ChunkPoolReleaseTracking.checkAndDisable();
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
@@ -100,7 +101,6 @@ abstract public class RefreshingTableTestCase extends BaseArrayTestCase implemen
         // reset the execution context
         executionContext.close();
 
-        livenessScopeCloseable.close();
         AsyncClientErrorNotifier.setReporter(oldReporter);
         QueryTable.setMemoizeResults(oldMemoize);
         updateGraph.resetForUnitTests(true);
