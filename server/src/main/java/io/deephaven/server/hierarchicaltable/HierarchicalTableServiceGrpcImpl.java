@@ -22,6 +22,7 @@ import io.deephaven.engine.table.impl.BaseGridAttributes;
 import io.deephaven.engine.table.impl.hierarchical.RollupTableImpl;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
+import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.extensions.barrage.util.ExportUtil;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
@@ -36,6 +37,7 @@ import io.deephaven.server.session.*;
 import io.deephaven.server.table.ops.AggregationAdapter;
 import io.deephaven.server.table.ops.FilterTableGrpcImpl;
 import io.deephaven.server.table.ops.filter.FilterFactory;
+import io.deephaven.server.table.validation.ColumnExpressionValidator;
 import io.deephaven.util.SafeCloseable;
 import io.grpc.stub.StreamObserver;
 import org.jetbrains.annotations.NotNull;
@@ -43,6 +45,7 @@ import org.jetbrains.annotations.Nullable;
 
 import javax.inject.Inject;
 import java.lang.Object;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
@@ -245,11 +248,9 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
                         final HierarchicalTable<?> result;
                         if (inputHierarchicalTable instanceof RollupTable) {
                             final Collection<UpdateViewRequest> translatedUpdateViews =
-                                    translateAndValidateUpdateViews(request,
-                                            (BaseGridAttributes<?, ?>) inputHierarchicalTable);
+                                    translateAndValidateUpdateViews(request, inputHierarchicalTable);
                             final Collection<UpdateViewRequest> translatedFormatViews =
-                                    translateAndValidateFormatViews(request,
-                                            (BaseGridAttributes<?, ?>) inputHierarchicalTable);
+                                    translateAndValidateFormatViews(request, inputHierarchicalTable);
 
                             // For a rollup table, we require format and update views to be applied to a specific node
                             // and will not translate from one to another.
@@ -422,34 +423,51 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
     @Nullable
     private static Collection<UpdateViewRequest> translateAndValidateUpdateViews(
             @NotNull final HierarchicalTableApplyRequest request,
-            @NotNull final BaseGridAttributes<?, ?> inputHierarchicalTable) {
+            @NotNull final HierarchicalTable<?> inputHierarchicalTable) {
         if (request.getUpdateViewsCount() == 0) {
             return null;
         }
-        final Collection<UpdateViewRequest> translated = request.getUpdateViewsList().stream()
+
+        final Table source = inputHierarchicalTable.getSource();
+        final Selectable[] selectables = request.getUpdateViewsList().stream()
+                .map(uvr -> AggregationAdapter.adapt(uvr.getColumnSpec()))
+                .toArray(Selectable[]::new);
+        final String[] columnSpecs = Arrays.asList(selectables).stream()
+                .map(Strings::of)
+                .toArray(String[]::new);
+        final SelectColumn[] expressions = SelectColumn.from(selectables);
+        ColumnExpressionValidator.validateColumnExpressions(expressions, columnSpecs, source);
+
+        return request.getUpdateViewsList().stream()
                 .map(uvr -> new UpdateViewRequest(
                         AggregationAdapter.adapt(uvr.getColumnSpec()),
                         translateNodeType(uvr.getNodeType())))
                 .collect(Collectors.toList());
-
-        // TODO: what verification is needed here? We check illegal aliasing in the node recorder
-        return translated;
     }
 
     @Nullable
     private static Collection<UpdateViewRequest> translateAndValidateFormatViews(
             @NotNull final HierarchicalTableApplyRequest request,
-            @NotNull final BaseGridAttributes<?, ?> inputHierarchicalTable) {
+            @NotNull final HierarchicalTable<?> inputHierarchicalTable) {
         if (request.getFormatViewsCount() == 0) {
             return null;
         }
-        final Collection<UpdateViewRequest> translated = request.getFormatViewsList().stream()
+
+        final Table source = inputHierarchicalTable.getSource();
+        final Selectable[] selectables = request.getUpdateViewsList().stream()
+                .map(uvr -> AggregationAdapter.adapt(uvr.getColumnSpec()))
+                .toArray(Selectable[]::new);
+        final String[] columnSpecs = Arrays.asList(selectables).stream()
+                .map(Strings::of)
+                .toArray(String[]::new);
+        final SelectColumn[] expressions = SelectColumn.from(selectables);
+        ColumnExpressionValidator.validateColumnExpressions(expressions, columnSpecs, source);
+
+        return request.getFormatViewsList().stream()
                 .map(uvr -> new UpdateViewRequest(
                         AggregationAdapter.adapt(uvr.getColumnSpec()),
                         translateNodeType(uvr.getNodeType())))
                 .collect(Collectors.toList());
-
-        return translated;
     }
 
     private static SortColumn translateSort(@NotNull final SortDescriptor sortDescriptor) {

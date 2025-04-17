@@ -41,8 +41,8 @@ public class CustomColumnOptions {
     @TsTypeDef(tsType = "string")
     public static class RollupNodeType {
         /**
-         * In a rollup with constituents visible, this is all non-leaf nodes. In a rollup without constituents, all levels
-         * are aggregate nodes.
+         * In a rollup with constituents visible, this is all non-leaf nodes. In a rollup without constituents, all
+         * levels are aggregate nodes.
          */
         public static final String ROLLUP_NODE_TYPE_AGGREGATED = "aggregated";
         /**
