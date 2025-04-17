@@ -405,10 +405,14 @@ public abstract class SqliteCatalogBase {
                 longCol("longCol", 6, 5, 4),
                 stringCol("stringCol", "foo", null, "bar"),
                 instantCol("instantCol", Instant.now(), null, Instant.EPOCH),
-                new ColumnHolder<>("localDateTimeCol", LocalDateTime.class, null, false, LocalDateTime.now(), null, LocalDateTime.now()),
-                new ColumnHolder<>("localDateCol", LocalDate.class, null, false, LocalDate.now(), null, LocalDate.now()),
-                new ColumnHolder<>("localTimeCol", LocalTime.class, null, false, LocalTime.now(), null, LocalTime.now()),
-                new ColumnHolder<>("binaryCol", byte[].class, byte.class, false, new byte[]{42, 43}, null, new byte[]{}));
+                new ColumnHolder<>("localDateTimeCol", LocalDateTime.class, null, false, LocalDateTime.now(), null,
+                        LocalDateTime.now()),
+                new ColumnHolder<>("localDateCol", LocalDate.class, null, false, LocalDate.now(), null,
+                        LocalDate.now()),
+                new ColumnHolder<>("localTimeCol", LocalTime.class, null, false, LocalTime.now(), null,
+                        LocalTime.now()),
+                new ColumnHolder<>("binaryCol", byte[].class, byte.class, false, new byte[] {42, 43}, null,
+                        new byte[] {}));
         // todo: why is binaryCol not working here?
 
         final Namespace myNamespace = Namespace.of("MyNamespace");

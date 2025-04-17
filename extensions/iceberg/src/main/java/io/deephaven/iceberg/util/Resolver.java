@@ -277,14 +277,14 @@ public abstract class Resolver {
                         LinkedHashMap::new)));
     }
 
-//    @Value.Derived
-//    List<PartitionField> partitionFields() {
-//        return definition()
-//                .getColumnStream()
-//                .filter(ColumnDefinition::isPartitioning)
-//                .map(this::partitionField)
-//                .collect(Collectors.toUnmodifiableList());
-//    }
+    // @Value.Derived
+    // List<PartitionField> partitionFields() {
+    // return definition()
+    // .getColumnStream()
+    // .filter(ColumnDefinition::isPartitioning)
+    // .map(this::partitionField)
+    // .collect(Collectors.toUnmodifiableList());
+    // }
 
     static void checkCompatible(Collection<? extends NestedField> path, Type<?> type) {
         // We are assuming that fieldPath has been properly constructed from a Schema. This makes it a poor candidate

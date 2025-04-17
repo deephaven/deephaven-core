@@ -32,7 +32,7 @@ public abstract class IcebergReadInstructions {
      * The default {@link IcebergReadInstructions} to use when reading Iceberg data files. Providing this will use
      * system defaults for cloud provider-specific parameters.
      */
-    public static final IcebergReadInstructions DEFAULT = builder()/*.usePartitionInference(false)*/.build();
+    public static final IcebergReadInstructions DEFAULT = builder()/* .usePartitionInference(false) */.build();
 
     public static Builder builder() {
         return ImmutableIcebergReadInstructions.builder();
