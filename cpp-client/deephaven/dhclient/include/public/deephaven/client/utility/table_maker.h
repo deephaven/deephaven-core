@@ -8,11 +8,10 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <tuple>
 #include <utility>
 #include <vector>
 
-#include <arrow/array.h>
-#include <arrow/record_batch.h>
 #include <arrow/scalar.h>
 #include <arrow/type.h>
 #include <arrow/table.h>
@@ -22,23 +21,32 @@
 #include <arrow/array/builder_binary.h>
 #include <arrow/array/builder_nested.h>
 #include <arrow/array/builder_primitive.h>
-#include <arrow/util/key_value_metadata.h>
 
 #include "deephaven/client/client.h"
 #include "deephaven/client/utility/arrow_util.h"
 #include "deephaven/client/utility/internal_types.h"
-#include "deephaven/client/utility/misc_types.h"
 #include "deephaven/dhcore/types.h"
 #include "deephaven/dhcore/utility/utility.h"
-#include "deephaven/third_party/fmt/format.h"
 
 namespace deephaven::client::utility {
 namespace internal {
 template<typename T>
 struct ColumnBuilder {
-  // The below assert fires when this class is instantiated; i.e. when none of the specializations
-  // match. It needs to be written this way (with "is_same<T,T>") because for technical reasons it
-  // needs to be dependent on T, even if degenerately so.
+  // The legitimate usages of ColumnBuilder<T> are all template specializations, which are defined
+  // later in this same file. The definition provided here is the "fallback" definition in case none
+  // of the specializations match. For ColumnBuilder, it is always a programming error to
+  // instantiate this fallback definition, because it means the programmer is trying to make a
+  // ColumnBuilder for an unsupported type T. To prevent this from happening, we would like to put
+  // the effect of a static_assert(false) here so that the compilation fails. However, using
+  // literally "static_assert(false)" does not work because it causes the compilation to fail
+  // unconditionally, regardless of T. In a sense such a static_assert is evaluated by the compiler
+  // too early. What is needed is a static_assert that is only evaluated by the compiler "if we
+  // get here", i.e. if T does not match one of the specializations. The trick we use is to observe
+  // that in C++ an expression that does not depend on T is evaluated by the compiler when the class
+  // is defined, but an expression that *does* depend on T is evaluated only when the class is
+  // instantiated on T. So, we need a compile-time expression that (1) depends on T and (2)
+  // evaluates to false. One convenient expression that has this property is "T does not equal T",
+  // which, expressed as type_traits, is !std::is_same_v<T, T>.
   static_assert(!std::is_same_v<T, T>, "ColumnBuilder doesn't know how to work with this type");
 };
 
@@ -53,8 +61,9 @@ public:
   std::shared_ptr<arrow::Array> Finish() {
     return ValueOrThrow(DEEPHAVEN_LOCATION_EXPR(builder_->Finish()));
   }
-  const char *GetDeephavenServerTypeName() {
-    return kDeephavenTypeName;
+
+  std::tuple<std::string, std::optional<std::string>> GetDeephavenMetadata() {
+    return { kDeephavenTypeName, {}};
   }
 
   [[nodiscard]]
@@ -83,74 +92,80 @@ public:
   }
 };
 
-struct DeephavenServerConstants {
-  static const char kBool[];
-  static const char kChar16[];
-  static const char kInt8[];
-  static const char kInt16[];
-  static const char kInt32[];
-  static const char kInt64[];
-  static const char kFloat[];
-  static const char kDouble[];
-  static const char kString[];
-  static const char kDateTime[];
-  static const char kLocalDate[];
-  static const char kLocalTime[];
-  static const char kList[];
+struct DeephavenMetadataConstants {
+  struct Keys {
+    static const char kType[];
+    static const char kComponentType[];
+  };
+
+  struct Types {
+    static const char kBool[];
+    static const char kChar16[];
+    static const char kInt8[];
+    static const char kInt16[];
+    static const char kInt32[];
+    static const char kInt64[];
+    static const char kFloat[];
+    static const char kDouble[];
+    static const char kString[];
+    static const char kDateTime[];
+    static const char kLocalDate[];
+    static const char kLocalTime[];
+  };
 };
 
 template<>
 class ColumnBuilder<bool> : public TypicalBuilderBase<bool,
     arrow::BooleanBuilder,
-    DeephavenServerConstants::kBool> {
+    DeephavenMetadataConstants::Types::kBool> {
 };
 
 template<>
 class ColumnBuilder<char16_t> : public TypicalBuilderBase<char16_t, arrow::UInt16Builder,
-    DeephavenServerConstants::kChar16> {
+    DeephavenMetadataConstants::Types::kChar16> {
 };
 
 template<>
 class ColumnBuilder<int8_t> : public TypicalBuilderBase<int8_t, arrow::Int8Builder,
-    DeephavenServerConstants::kInt8> {
+    DeephavenMetadataConstants::Types::kInt8> {
 };
 
 template<>
 class ColumnBuilder<int16_t> : public TypicalBuilderBase<int16_t, arrow::Int16Builder,
-    DeephavenServerConstants::kInt16> {
+    DeephavenMetadataConstants::Types::kInt16> {
 };
 
 template<>
 class ColumnBuilder<int32_t> : public TypicalBuilderBase<int32_t, arrow::Int32Builder,
-    DeephavenServerConstants::kInt32> {
+    DeephavenMetadataConstants::Types::kInt32> {
 };
 
 template<>
 class ColumnBuilder<int64_t> : public TypicalBuilderBase<int64_t, arrow::Int64Builder,
-    DeephavenServerConstants::kInt64> {
+    DeephavenMetadataConstants::Types::kInt64> {
 };
 
 template<>
 class ColumnBuilder<float> : public TypicalBuilderBase<float, arrow::FloatBuilder,
-    DeephavenServerConstants::kFloat> {
+    DeephavenMetadataConstants::Types::kFloat> {
 };
 
 template<>
 class ColumnBuilder<double> : public TypicalBuilderBase<double, arrow::DoubleBuilder,
-    DeephavenServerConstants::kDouble> {
+    DeephavenMetadataConstants::Types::kDouble> {
 };
 
 template<>
 class ColumnBuilder<std::string> : public TypicalBuilderBase<std::string, arrow::StringBuilder,
-    DeephavenServerConstants::kString> {
+    DeephavenMetadataConstants::Types::kString> {
 };
 
 template<>
 class ColumnBuilder<deephaven::dhcore::DateTime> : public BuilderBase<arrow::TimestampBuilder,
-    DeephavenServerConstants::kDateTime> {
+    DeephavenMetadataConstants::Types::kDateTime> {
 public:
   // constructor with data type nanos
-  ColumnBuilder() : BuilderBase<arrow::TimestampBuilder, DeephavenServerConstants::kDateTime>(
+  ColumnBuilder() : BuilderBase(
       std::make_shared<arrow::TimestampBuilder>(arrow::timestamp(arrow::TimeUnit::NANO, "UTC"),
           arrow::default_memory_pool())) {
   }
@@ -162,11 +177,10 @@ public:
 
 template<>
 class ColumnBuilder<deephaven::dhcore::LocalDate> : public BuilderBase<arrow::Date64Builder,
-    DeephavenServerConstants::kLocalDate> {
+    DeephavenMetadataConstants::Types::kLocalDate> {
 public:
   // constructor with data type nanos
-  ColumnBuilder() : BuilderBase<arrow::Date64Builder, DeephavenServerConstants::kLocalDate>(
-      std::make_shared<arrow::Date64Builder>()) {
+  ColumnBuilder() : BuilderBase(std::make_shared<arrow::Date64Builder>()) {
   }
 
   void Append(const deephaven::dhcore::LocalDate &value) {
@@ -176,12 +190,10 @@ public:
 
 template<>
 class ColumnBuilder<deephaven::dhcore::LocalTime> : public BuilderBase<arrow::Time64Builder,
-    DeephavenServerConstants::kLocalTime> {
+    DeephavenMetadataConstants::Types::kLocalTime> {
 public:
-  ColumnBuilder() : BuilderBase<arrow::Time64Builder, DeephavenServerConstants::kLocalTime>(
-      std::make_shared<arrow::Time64Builder>(arrow::time64(arrow::TimeUnit::NANO),
-  arrow::default_memory_pool())) {
-
+  ColumnBuilder() : BuilderBase(std::make_shared<arrow::Time64Builder>(arrow::time64(arrow::TimeUnit::NANO),
+      arrow::default_memory_pool())) {
   }
 
   void Append(const deephaven::dhcore::LocalTime &value) {
@@ -191,10 +203,9 @@ public:
 
 template<arrow::TimeUnit::type UNIT>
 class ColumnBuilder<InternalDateTime<UNIT>> : public BuilderBase<arrow::TimestampBuilder,
-    DeephavenServerConstants::kDateTime> {
+    DeephavenMetadataConstants::Types::kDateTime> {
 public:
-  ColumnBuilder() : BuilderBase<arrow::TimestampBuilder, DeephavenServerConstants::kDateTime>(
-      std::make_shared<arrow::TimestampBuilder>(arrow::timestamp(UNIT, "UTC"),
+  ColumnBuilder() : BuilderBase(std::make_shared<arrow::TimestampBuilder>(arrow::timestamp(UNIT, "UTC"),
           arrow::default_memory_pool())) {
   }
 
@@ -205,10 +216,9 @@ public:
 
 template<arrow::TimeUnit::type UNIT>
 class ColumnBuilder<InternalLocalTime<UNIT>> : public BuilderBase<arrow::Time64Builder,
-    DeephavenServerConstants::kLocalTime> {
+    DeephavenMetadataConstants::Types::kLocalTime> {
 public:
-  ColumnBuilder() : BuilderBase<arrow::Time64Builder, DeephavenServerConstants::kLocalTime>(
-      std::make_shared<arrow::Time64Builder>(arrow::time64(UNIT),
+  ColumnBuilder() : BuilderBase(std::make_shared<arrow::Time64Builder>(arrow::time64(UNIT),
           arrow::default_memory_pool())) {
   }
 
@@ -236,8 +246,8 @@ public:
     return wrapped_column_builder_.Finish();
   }
 
-  const char *GetDeephavenServerTypeName() {
-    return wrapped_column_builder_.GetDeephavenServerTypeName();
+  std::tuple<std::string, std::optional<std::string>> GetDeephavenMetadata() {
+    return wrapped_column_builder_.GetDeephavenMetadata();
   }
 
   const auto &GetBuilder() const {
@@ -271,10 +281,14 @@ public:
     return ValueOrThrow(DEEPHAVEN_LOCATION_EXPR(builder_->Finish()));
   }
 
-  const char *GetDeephavenServerTypeName() {
-    return DeephavenServerConstants::kList;
+  std::tuple<std::string, std::optional<std::string>> GetDeephavenMetadata() {
+    auto [nested_type, nested_component_type_unused] = nested_column_builder_.GetDeephavenMetadata();
+    (void)nested_component_type_unused;
+
+    auto nested_type_as_array = nested_type + "[]";
+    return {std::move(nested_type_as_array), std::move(nested_type)};
   }
-  
+
   [[nodiscard]]
   const std::shared_ptr<arrow::ListBuilder> &GetBuilder() const {
     return builder_;
@@ -295,8 +309,12 @@ private:
  * std::vector<T2> data2 = { ... };
  * tm.AddColumn("col1", data1);
  * tm.AddColumn("col2", data2);
+ * tm.AddColumn<T3>("col3", {elt_1, elt_2, elt_3});  // youi can also inline the data like this
+ * // option 1: make an Arrow table in local memory
  * auto arrow_table = tm.MakeArrowTable();
- * auto table_handle = tm.MakeDeephavenTable(const TableHandleManager &manager);
+ * // option 2: make the table on the Deephaven server and get a TableHandle to it
+ * TableHandleManager manager = ...;
+ * auto table_handle = tm.MakeTable(manager);
  * @endcode
  */
 class TableMaker {
@@ -325,8 +343,9 @@ public:
       cb.Append(element);
     }
     auto array = cb.Finish();
-    const char *dh_type = cb.GetDeephavenServerTypeName();
-    FinishAddColumn(std::move(name), std::move(array), dh_type);
+    auto [type_name, component_type_name] = cb.GetDeephavenMetadata();
+    FinishAddColumn(std::move(name), std::move(array), std::move(type_name),
+        std::move(component_type_name));
   }
 
   template<typename T, typename GetValue, typename IsNull>
@@ -342,8 +361,9 @@ public:
       }
     }
     auto array = cb.Finish();
-    const char *dh_type = cb.GetDeephavenServerTypeName();
-    FinishAddColumn(std::move(name), std::move(array), dh_type);
+    auto [type_name, component_type_name] = cb.GetDeephavenMetadata();
+    FinishAddColumn(std::move(name), std::move(array), std::move(type_name),
+        std::move(component_type_name));
   }
 
   /**
@@ -359,21 +379,24 @@ public:
 
 private:
   void FinishAddColumn(std::string name, std::shared_ptr<arrow::Array> data,
-      std::string deephaven_server_type_name);
+      std::string deephaven_metadata_type_name,
+      std::optional<std::string> deephaven_metadata_component_type_name);
   [[nodiscard]]
   std::shared_ptr<arrow::Schema> MakeSchema() const;
   [[nodiscard]]
   std::vector<std::shared_ptr<arrow::Array>> GetColumnsNotEmpty() const;
+  void ValidateSchema() const;
 
   struct ColumnInfo {
     ColumnInfo(std::string name, std::shared_ptr<arrow::DataType> arrow_type,
-        std::string deepaven_server_type_name, std::shared_ptr<arrow::Array> data);
+        std::shared_ptr<arrow::KeyValueMetadata> arrow_metadata,
+        std::shared_ptr<arrow::Array> data);
     ColumnInfo(ColumnInfo &&other) noexcept;
     ~ColumnInfo();
 
     std::string name_;
     std::shared_ptr<arrow::DataType> arrow_type_;
-    std::string deepaven_server_type_name_;
+    std::shared_ptr<arrow::KeyValueMetadata> arrow_metadata_;
     std::shared_ptr<arrow::Array> data_;
   };
 

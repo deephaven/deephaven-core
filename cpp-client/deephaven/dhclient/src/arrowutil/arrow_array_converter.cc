@@ -183,97 +183,79 @@ std::shared_ptr<ColumnSource> ArrowArrayConverter::ChunkedArrayToColumnSource(
 
 namespace {
 struct ColumnSourceToArrayVisitor final : ColumnSourceVisitor {
-  explicit ColumnSourceToArrayVisitor(size_t num_rows) : num_rows_(num_rows),
-      row_sequence_(RowSequence::CreateSequential(0, num_rows)),
-      null_flags_(BooleanChunk::Create(num_rows)) {
-  }
+  explicit ColumnSourceToArrayVisitor(size_t num_rows) : num_rows_(num_rows) {}
 
   void Visit(const dhcore::column::CharColumnSource &source) final {
-    SimpleCopyValues<CharChunk, arrow::UInt16Builder>(source);
+    arrow::UInt16Builder builder;
+    CopyValues<CharChunk>(source, &builder, [](auto o) { return o; });
   }
 
   void Visit(const dhcore::column::Int8ColumnSource &source) final {
-    SimpleCopyValues<Int8Chunk, arrow::Int8Builder>(source);
+    arrow::Int8Builder builder;
+    CopyValues<Int8Chunk>(source, &builder, [](auto o) { return o; });
   }
 
   void Visit(const dhcore::column::Int16ColumnSource &source) final {
-    SimpleCopyValues<Int16Chunk, arrow::Int16Builder>(source);
+    arrow::Int16Builder builder;
+    CopyValues<Int16Chunk>(source, &builder, [](auto o) { return o; });
   }
 
   void Visit(const dhcore::column::Int32ColumnSource &source) final {
-    SimpleCopyValues<Int32Chunk, arrow::Int32Builder>(source);
+    arrow::Int32Builder builder;
+    CopyValues<Int32Chunk>(source, &builder, [](auto o) { return o; });
   }
 
   void Visit(const dhcore::column::Int64ColumnSource &source) final {
-    SimpleCopyValues<Int64Chunk, arrow::Int64Builder>(source);
+    arrow::Int64Builder builder;
+    CopyValues<Int64Chunk>(source, &builder, [](auto o) { return o; });
   }
 
   void Visit(const dhcore::column::FloatColumnSource &source) final {
-    SimpleCopyValues<FloatChunk, arrow::FloatBuilder>(source);
+    arrow::FloatBuilder builder;
+    CopyValues<FloatChunk>(source, &builder, [](auto o) { return o; });
   }
 
   void Visit(const dhcore::column::DoubleColumnSource &source) final {
-    SimpleCopyValues<DoubleChunk, arrow::DoubleBuilder>(source);
+    arrow::DoubleBuilder builder;
+    CopyValues<DoubleChunk>(source, &builder, [](auto o) { return o; });
   }
 
   void Visit(const dhcore::column::BooleanColumnSource &source) final {
-    SimpleCopyValues<BooleanChunk, arrow::BooleanBuilder>(source);
+    arrow::BooleanBuilder builder;
+    CopyValues<BooleanChunk>(source, &builder, [](auto o) { return o; });
   }
 
   void Visit(const dhcore::column::StringColumnSource &source) final {
-    SimpleCopyValues<StringChunk, arrow::StringBuilder>(source);
+    arrow::StringBuilder builder;
+    CopyValues<StringChunk>(source, &builder, [](const std::string &o) -> const std::string & { return o; });
   }
 
   void Visit(const dhcore::column::DateTimeColumnSource &source) final {
-    auto src_chunk = PopulateChunk<DateTimeChunk>(source);
-    auto dest_chunk = Int64Chunk::Create(num_rows_);
-    for (size_t i = 0; i != num_rows_; ++i) {
-      dest_chunk[i] = src_chunk[i].Nanos();
-    }
     arrow::TimestampBuilder builder(arrow::timestamp(arrow::TimeUnit::NANO, "UTC"),
         arrow::default_memory_pool());
-    PopulateAndFinishBuilder(dest_chunk, &builder);
+    CopyValues<DateTimeChunk>(source, &builder, [](const DateTime &o) { return o.Nanos(); });
   }
 
   void Visit(const dhcore::column::LocalDateColumnSource &source) final {
-    auto src_chunk = PopulateChunk<LocalDateChunk>(source);
-    auto dest_chunk = Int64Chunk::Create(num_rows_);
-    for (size_t i = 0; i != num_rows_; ++i) {
-      dest_chunk[i] = src_chunk[i].Millis();
-    }
     arrow::Date64Builder builder;
-    PopulateAndFinishBuilder(dest_chunk, &builder);
+    CopyValues<LocalDateChunk>(source, &builder, [](const LocalDate &o) { return o.Millis(); });
   }
 
   void Visit(const dhcore::column::LocalTimeColumnSource &source) final {
-    auto src_chunk = PopulateChunk<LocalTimeChunk>(source);
-    auto dest_chunk = Int64Chunk::Create(num_rows_);
-    for (size_t i = 0; i != num_rows_; ++i) {
-      dest_chunk[i] = src_chunk[i].Nanos();
-    }
     arrow::Time64Builder builder(arrow::time64(arrow::TimeUnit::NANO), arrow::default_memory_pool());
-    PopulateAndFinishBuilder(dest_chunk, &builder);
+    CopyValues<LocalTimeChunk>(source, &builder, [](const LocalTime &o) { return o.Nanos(); });
   }
 
-  template<typename TChunk, typename TBuilder, typename TColumnSource>
-  void SimpleCopyValues(const TColumnSource &source) {
-    auto chunk = PopulateChunk<TChunk>(source);
-    TBuilder builder;
-    PopulateAndFinishBuilder(chunk, &builder);
-  }
-
-  template<typename TChunk, typename TColumnSource>
-  TChunk PopulateChunk(const TColumnSource &source) {
+  template<typename TChunk, typename TColumnSource, typename TBuilder, typename TConverter>
+  void CopyValues(const TColumnSource &source, TBuilder *builder, const TConverter &converter) {
+    auto row_sequence = RowSequence::CreateSequential(0, num_rows_);
+    auto null_flags = BooleanChunk::Create(num_rows_);
     auto chunk = TChunk::Create(num_rows_);
-    source.FillChunk(*row_sequence_, &chunk, &null_flags_);
-    return chunk;
-  }
+    source.FillChunk(*row_sequence, &chunk, &null_flags);
 
-  template<typename TChunk, typename TBuilder>
-  void PopulateAndFinishBuilder(const TChunk &chunk, TBuilder *builder) {
     for (size_t i = 0; i != num_rows_; ++i) {
-      if (!null_flags_[i]) {
-        OkOrThrow(DEEPHAVEN_LOCATION_EXPR(builder->Append(chunk.data()[i])));
+      if (!null_flags[i]) {
+        OkOrThrow(DEEPHAVEN_LOCATION_EXPR(builder->Append(converter(chunk.data()[i]))));
       } else {
         OkOrThrow(DEEPHAVEN_LOCATION_EXPR(builder->AppendNull()));
       }
@@ -282,8 +264,6 @@ struct ColumnSourceToArrayVisitor final : ColumnSourceVisitor {
   }
 
   size_t num_rows_;
-  std::shared_ptr<RowSequence> row_sequence_;
-  BooleanChunk null_flags_;
   std::shared_ptr<arrow::Array> result_;
 };
 }  // namespace
