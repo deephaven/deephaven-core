@@ -102,7 +102,7 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
     /**
      * This table's description.
      */
-    protected final String description;
+    private final String description;
 
     /**
      * This table's update graph.
