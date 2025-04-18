@@ -62,7 +62,7 @@ import java.util.stream.Stream;
  * Base abstract class all standard table implementations.
  */
 public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends BaseGridAttributes<Table, IMPL_TYPE>
-        implements TableDefaults, NotificationStepReceiver, NotificationStepSource {
+        implements TableDefaults, NotificationStepReceiver, NotificationStepSource, HasParentPerformanceIds {
 
     private static final long serialVersionUID = 1L;
 
@@ -1364,7 +1364,8 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
      * 
      * @return a stream of performance entry ids
      */
-    LongStream parentPerformanceEntryIds() {
+    @Override
+    public LongStream parentPerformanceEntryIds() {
         return Stream.concat(Stream.of(this), parents.stream()).flatMapToLong(BaseTable::getParentPerformanceEntryIds);
     }
 

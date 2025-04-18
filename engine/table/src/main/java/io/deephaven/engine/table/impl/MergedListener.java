@@ -12,8 +12,6 @@ import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.table.TableListener;
 import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
 import io.deephaven.engine.table.impl.perf.PerformanceEntry;
-import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
-import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import io.deephaven.engine.table.impl.util.AsyncClientErrorNotifier;
 import io.deephaven.engine.table.impl.util.StepUpdater;
 import io.deephaven.engine.updategraph.AbstractNotification;
@@ -87,21 +85,27 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
         this.listenerDescription = listenerDescription;
         this.result = result;
         this.entry = PeriodicUpdateGraph.createUpdatePerformanceEntry(this.updateGraph, listenerDescription,
-                () -> getParentIdentifiers(recorders));
+                () -> getParentIdentifiers(recorders, dependencies));
         this.logPrefix = System.identityHashCode(this) + " " + listenerDescription + " Merged Listener: ";
     }
 
     protected void logNewAncestors(Iterable<? extends ListenerRecorder> recorders) {
         PeriodicUpdateGraph.logPerformanceEntryAncestors(this.updateGraph, this.entry,
-                () -> getParentIdentifiers(recorders));
+                () -> getParentIdentifiers(recorders, dependencies));
     }
 
-    private static long[] getParentIdentifiers(Iterable<? extends ListenerRecorder> recorders) {
+    private static long[] getParentIdentifiers(Iterable<? extends ListenerRecorder> recorders,
+            Iterable<NotificationQueue.Dependency> dependencies) {
         final TLongArrayList parentList = new TLongArrayList();
         recorders.forEach(rec -> {
-            if (rec.getParent() instanceof BaseTable) {
-                final BaseTable<?> parentBase = (BaseTable<?>) (rec.getParent());
+            if (rec.getParent() instanceof HasParentPerformanceIds) {
+                final HasParentPerformanceIds parentBase = (HasParentPerformanceIds) (rec.getParent());
                 parentBase.parentPerformanceEntryIds().forEach(parentList::add);
+            }
+        });
+        dependencies.forEach(dep -> {
+            if (dep instanceof HasParentPerformanceIds) {
+                ((HasParentPerformanceIds) dep).parentPerformanceEntryIds().forEach(parentList::add);
             }
         });
         return parentList.toArray();
