@@ -307,15 +307,15 @@ def query_update_performance_map(eval_number: int) -> Dict[str, Table]:
     except Exception as e:
         raise DHError(e, "failed to obtain the query update perf map.") from e
 
-def ancestor_svg(ids : Union[List[int], int], upl : Table, ancestors : Table, filename : str = None) -> str:
+def ancestor_svg(ids : Union[List[int], int], update_performance_log : Table, ancestors_log : Table, filename : str = None) -> str:
     """ Returns the contents of an SVG image containing a graph of the ancestor hierarchy derived from the passed in
     UpdatePerformanceLog and UpdatePerformanceAncestorsLog for the provided Performance Entry identifier.  This can used
     to help understand the structure of a query.
 
     Args:
         ids (Union[List[int], int]): the Performance entry identifier or identifiers (EntryId) to generate the graph for
-        upl (Table): the UpdatePerformanceLog Table
-        ancestors (Table): the UpdatePerformanceAncestorsLog Table
+        update_performance_log (Table): the UpdatePerformanceLog Table
+        ancestors_log (Table): the UpdatePerformanceAncestorsLog Table
         filename (str): the name of the output SVG file or None to not write the file, default is None
 
     Returns
@@ -328,13 +328,13 @@ def ancestor_svg(ids : Union[List[int], int], upl : Table, ancestors : Table, fi
         if isinstance(ids, int):
             ids = [ids]
         j_file = _JFile(filename) if filename is not None else None
-        svg_bytes = _JUpdateAncestorViz.svg(ids, upl.j_table, ancestors.j_table, j_file)
+        svg_bytes = _JUpdateAncestorViz.svg(ids, update_performance_log.j_table, ancestors_log.j_table, j_file)
         return str(_JString(svg_bytes))
     except Exception as e:
         raise DHError(e, "failed to produce ancestor SVG") from e
 
 
-def ancestor_image(ids : Union[List[int], int], upl : Table, ancestors : Table) -> "deephaven.ui.Element":
+def ancestor_image(ids : Union[List[int], int], update_performance_log : Table, ancestors_log : Table) -> "deephaven.ui.Element":
     """ Returns a deephaven.ui component with an embedded SVG image containing the hierarchy derived from the passed in
     UpdatePerformanceLog and UpdatePerformanceAncestorsLog for the provided Performance Entry identifier.  This can be used
     to help understand the structure of a query.
@@ -343,8 +343,8 @@ def ancestor_image(ids : Union[List[int], int], upl : Table, ancestors : Table) 
 
     Args:
         ids (Union[List[int], int]): the Performance entry identifier or identifiers (EntryId) to generate the graph for
-        upl (Table): the UpdatePerformanceLog Table
-        ancestors (Table): the UpdatePerformanceAncestorsLog Table
+        update_performance_log (Table): the UpdatePerformanceLog Table
+        ancestors_log (Table): the UpdatePerformanceAncestorsLog Table
 
     Returns
         a UI component with an embedded graph of ancestors
@@ -355,7 +355,7 @@ def ancestor_image(ids : Union[List[int], int], upl : Table, ancestors : Table) 
 
     try:
         import deephaven.ui
-        image_contents = ancestor_svg(ids, upl, ancestors).encode('utf-8')
+        image_contents = ancestor_svg(ids, update_performance_log, ancestors_log).encode('utf-8')
         return deephaven.ui.image(f"data:image/svg+xml;base64,{base64.b64encode(image_contents).decode()}")
     except ImportError:
         raise Exception("deephaven.ui is not available, consider \"pip install deephaven-plugin-ui\" in your Python virtual environment")
@@ -363,13 +363,13 @@ def ancestor_image(ids : Union[List[int], int], upl : Table, ancestors : Table) 
         raise DHError(e, "failed to produce ancestor image") from e
 
 
-def ancestor_dot(ids : Union[List[int], int], upl : Table, ancestors : Table) -> str:
+def ancestor_dot(ids : Union[List[int], int], update_performance_log : Table, ancestors_log : Table) -> str:
     """ Returns a graphviz DOT representing Deephaven update performance ancestor data.
 
     Args:
         ids (Union[List[int], int]): the Performance entry identifier or identifiers (EntryId) to generate the graph for
-        upl (Table): the UpdatePerformanceLog Table
-        ancestors (Table): the UpdatePerformanceAncestorsLog Table
+        update_performance_log (Table): the UpdatePerformanceLog Table
+        ancestors_log (Table): the UpdatePerformanceAncestorsLog Table
 
     Returns
         a string of graphviz DOT format data
@@ -380,6 +380,6 @@ def ancestor_dot(ids : Union[List[int], int], upl : Table, ancestors : Table) ->
     try:
         if isinstance(ids, int):
             ids = [ids]
-        return _JUpdateAncestorViz.dot(ids, upl.j_table, ancestors.j_table)
+        return _JUpdateAncestorViz.dot(ids, update_performance_log.j_table, ancestors_log.j_table)
     except Exception as e:
         raise DHError(e, "failed to produce ancestor DOT file") from e
