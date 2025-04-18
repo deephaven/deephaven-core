@@ -9,7 +9,7 @@ import io.deephaven.engine.table.impl.util.TableLoggers;
 import java.util.stream.LongStream;
 
 /**
- * An interface to indicate that a source has refreshing behavior and can provide {@link PerformanceEntry performance
+ * An interface to indicate that an object has refreshing behavior and can provide {@link PerformanceEntry performance
  * entry} identifiers.
  *
  * <p>

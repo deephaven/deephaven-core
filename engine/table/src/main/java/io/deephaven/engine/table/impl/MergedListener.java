@@ -91,11 +91,11 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
 
     protected void logNewAncestors(Iterable<? extends ListenerRecorder> recorders) {
         PeriodicUpdateGraph.logPerformanceEntryAncestors(this.updateGraph, this.entry,
-                () -> getParentIdentifiers(recorders, dependencies));
+                () -> getParentIdentifiers(recorders, null));
     }
 
-    private static long[] getParentIdentifiers(Iterable<? extends ListenerRecorder> recorders,
-            Iterable<NotificationQueue.Dependency> dependencies) {
+    private static long[] getParentIdentifiers(@NotNull Iterable<? extends ListenerRecorder> recorders,
+            @Nullable Iterable<NotificationQueue.Dependency> dependencies) {
         final TLongArrayList parentList = new TLongArrayList();
         recorders.forEach(rec -> {
             if (rec.getParent() instanceof HasParentPerformanceIds) {
@@ -103,11 +103,13 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
                 parentBase.parentPerformanceEntryIds().forEach(parentList::add);
             }
         });
-        dependencies.forEach(dep -> {
-            if (dep instanceof HasParentPerformanceIds) {
-                ((HasParentPerformanceIds) dep).parentPerformanceEntryIds().forEach(parentList::add);
-            }
-        });
+        if (dependencies != null) {
+            dependencies.forEach(dep -> {
+                if (dep instanceof HasParentPerformanceIds) {
+                    ((HasParentPerformanceIds) dep).parentPerformanceEntryIds().forEach(parentList::add);
+                }
+            });
+        }
         return parentList.toArray();
     }
 
