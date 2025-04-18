@@ -8,6 +8,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessArtifact;
+import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.liveness.SingletonLivenessManager;
 import io.deephaven.engine.table.ShiftObliviousListener;
 import io.deephaven.engine.table.Table;
@@ -72,7 +73,7 @@ public class UpdatePerformanceTracker {
     static final QueryPerformanceLogThreshold LOG_THRESHOLD =
             new QueryPerformanceLogThreshold("Update", 500_000L);
 
-    // we do not want an UpdatePerformanceTracker's start that occurs within a liveness scope to allow these resources
+    // We do not want an UpdatePerformanceTracker's start that occurs within a liveness scope to allow these resources
     // to be freed, the INSTANCE should remain live unless it is discarded.
     private static final SingletonLivenessManager livenessManager = new SingletonLivenessManager();
     private static InternalState INSTANCE;
@@ -82,8 +83,10 @@ public class UpdatePerformanceTracker {
         if ((local = INSTANCE) == null) {
             synchronized (UpdatePerformanceTracker.class) {
                 if ((local = INSTANCE) == null) {
-                    INSTANCE = local = new InternalState();
-                    livenessManager.manage(INSTANCE);
+                    try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+                        INSTANCE = local = new InternalState();
+                        livenessManager.manage(INSTANCE);
+                    }
                 }
             }
         }
@@ -123,6 +126,11 @@ public class UpdatePerformanceTracker {
                         publishingGraph,
                         UpdatePerformanceTracker.class.getName());
                 blink = adapter.table();
+                /*
+                 * When blink (and correspondingly ancestorBlink) is
+                 * io.deephaven.engine.liveness.ReferenceCountedLivenessReferent.destroy-ed, the adapter is closed. The
+                 * adapter then shuts down the publisher, which flushes and releases the chunks that it holds.
+                 */
                 manage(blink);
 
                 ancestorLogger = EngineTableLoggers.get().updatePerformanceAncestorLogger();

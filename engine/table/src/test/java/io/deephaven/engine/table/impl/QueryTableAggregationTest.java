@@ -85,19 +85,15 @@ public class QueryTableAggregationTest {
 
     @Rule
     public final EngineCleanup base = new EngineCleanup();
-    @NotNull
-    private SafeCloseable livenessScopeCloseable;
 
     @Before
     public void setUp() throws Exception {
         UpdatePerformanceTracker.resetForUnitTests();
         ChunkPoolReleaseTracking.enableStrict();
-        livenessScopeCloseable = LivenessScopeStack.open(new LivenessScope(true), true);
     }
 
     @After
     public void tearDown() throws Exception {
-        livenessScopeCloseable.close();
         UpdatePerformanceTracker.resetForUnitTests();
         ChunkPoolReleaseTracking.checkAndDisable();
     }
@@ -1681,13 +1677,11 @@ public class QueryTableAggregationTest {
             for (int seed = 0; seed < 1; ++seed) {
                 UpdatePerformanceTracker.resetForUnitTests();
                 ChunkPoolReleaseTracking.enableStrict();
-                try (final SafeCloseable ignored = LivenessScopeStack.open()) {
-                    System.out.println("Size = " + size + ", Seed = " + seed);
-                    testSumByIncremental(size, seed, true, true);
-                    testSumByIncremental(size, seed, true, false);
-                    testSumByIncremental(size, seed, false, true);
-                    testSumByIncremental(size, seed, false, false);
-                }
+                System.out.println("Size = " + size + ", Seed = " + seed);
+                testSumByIncremental(size, seed, true, true);
+                testSumByIncremental(size, seed, true, false);
+                testSumByIncremental(size, seed, false, true);
+                testSumByIncremental(size, seed, false, false);
                 UpdatePerformanceTracker.resetForUnitTests();
                 ChunkPoolReleaseTracking.checkAndDisable();
             }
