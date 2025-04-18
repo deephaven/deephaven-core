@@ -22,6 +22,16 @@ public class TableLoggers {
     }
 
     /**
+     * Return a table with update performance ancestor data.
+     *
+     * @return A table with update performance ancestor data.
+     */
+    @ScriptApi
+    public static QueryTable updatePerformanceAncestorsLog() {
+        return UpdatePerformanceTracker.getAncestorTable();
+    }
+
+    /**
      * Return a table with query performance data. Individual sub-operations in the query are referenced in
      * QueryOperationPerformanceLog.
      *

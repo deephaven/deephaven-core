@@ -185,8 +185,9 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
             }
             final BarrageUtil.ConvertedArrowSchema schema = BarrageUtil.convertArrowSchema(BarrageUtil.toSchema(
                     barrageMessageProducer.getTableDefinition(), attributes, sourceTable.isFlat()));
-            this.barrageTable = BarrageTable.make(updateSourceCombiner, ExecutionContext.getContext().getUpdateGraph(),
-                    null, schema, viewport == null, null);
+            this.barrageTable =
+                    BarrageTable.make(null, updateSourceCombiner, ExecutionContext.getContext().getUpdateGraph(),
+                            null, schema, viewport == null, null);
             this.barrageTable.addSourceToRegistrar();
 
             final BarrageSubscriptionOptions options = BarrageSubscriptionOptions.builder()
