@@ -307,16 +307,16 @@ def query_update_performance_map(eval_number: int) -> Dict[str, Table]:
     except Exception as e:
         raise DHError(e, "failed to obtain the query update perf map.") from e
 
-def ancestor_svg(ids : Union[List[int]|int], upl : Table, ancestors : Table, filename : str = None) -> str:
+def ancestor_svg(ids : Union[List[int], int], upl : Table, ancestors : Table, filename : str = None) -> str:
     """ Returns the contents of an SVG image containing a graph of the ancestor hierarchy derived from the passed in
     UpdatePerformanceLog and UpdatePerformanceAncestorsLog for the provided Performance Entry identifier.  This can used
     to help understand the structure of a query.
 
     Args:
-        ids (Union[List[int]|int]): the Performance entry identifier or identifiers (EntryId) to generate the graph for
+        ids (Union[List[int], int]): the Performance entry identifier or identifiers (EntryId) to generate the graph for
         upl (Table): the UpdatePerformanceLog Table
         ancestors (Table): the UpdatePerformanceAncestorsLog Table
-        file (str): the name of the output SVG file or None to not write the file, default is None
+        filename (str): the name of the output SVG file or None to not write the file, default is None
 
     Returns
         the contents of an SVG image
@@ -334,15 +334,15 @@ def ancestor_svg(ids : Union[List[int]|int], upl : Table, ancestors : Table, fil
         raise DHError(e, "failed to produce ancestor SVG") from e
 
 
-def ancestor_image(ids : Union[List[int]|int], upl : Table, ancestors : Table):
+def ancestor_image(ids : Union[List[int], int], upl : Table, ancestors : Table) -> "deephaven.ui.Element":
     """ Returns a deephaven.ui component with an embedded SVG image containing the hierarchy derived from the passed in
-    UpdatePerformanceLog and UpdatePerformanceAncestorsLog for the provided Performance Entry identifier.  This can used
+    UpdatePerformanceLog and UpdatePerformanceAncestorsLog for the provided Performance Entry identifier.  This can be used
     to help understand the structure of a query.
 
     Note that the deephaven-plugin-ui package must be installed to use this function.
 
     Args:
-        ids (Union[List[int]|int]): the Performance entry identifier or identifiers (EntryId) to generate the graph for
+        ids (Union[List[int], int]): the Performance entry identifier or identifiers (EntryId) to generate the graph for
         upl (Table): the UpdatePerformanceLog Table
         ancestors (Table): the UpdatePerformanceAncestorsLog Table
 
@@ -363,11 +363,11 @@ def ancestor_image(ids : Union[List[int]|int], upl : Table, ancestors : Table):
         raise DHError(e, "failed to produce ancestor image") from e
 
 
-def ancestor_dot(ids : Union[List[int]|int], upl : Table, ancestors : Table) -> str:
+def ancestor_dot(ids : Union[List[int], int], upl : Table, ancestors : Table) -> str:
     """ Returns a graphviz DOT representing Deephaven update performance ancestor data.
 
     Args:
-        ids (Union[List[int]|int]): the Performance entry identifier or identifiers (EntryId) to generate the graph for
+        ids (Union[List[int], int]): the Performance entry identifier or identifiers (EntryId) to generate the graph for
         upl (Table): the UpdatePerformanceLog Table
         ancestors (Table): the UpdatePerformanceAncestorsLog Table
 
