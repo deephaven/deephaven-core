@@ -1679,12 +1679,16 @@ public class QueryTableAggregationTest {
         }
         for (final int size : sizes) {
             for (int seed = 0; seed < 1; ++seed) {
+                UpdatePerformanceTracker.resetForUnitTests();
                 ChunkPoolReleaseTracking.enableStrict();
-                System.out.println("Size = " + size + ", Seed = " + seed);
-                testSumByIncremental(size, seed, true, true);
-                testSumByIncremental(size, seed, true, false);
-                testSumByIncremental(size, seed, false, true);
-                testSumByIncremental(size, seed, false, false);
+                try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+                    System.out.println("Size = " + size + ", Seed = " + seed);
+                    testSumByIncremental(size, seed, true, true);
+                    testSumByIncremental(size, seed, true, false);
+                    testSumByIncremental(size, seed, false, true);
+                    testSumByIncremental(size, seed, false, false);
+                }
+                UpdatePerformanceTracker.resetForUnitTests();
                 ChunkPoolReleaseTracking.checkAndDisable();
             }
         }
