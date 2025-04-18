@@ -87,36 +87,26 @@ final class S3ReadRequestCache {
         S3ReadRequest existingRequest = requests.get(key);
         while (true) {
             if (existingRequest != null) {
-                // Try to acquire the existing request
                 final S3ReadRequest.Acquired acquired = existingRequest.tryAcquire();
                 if (acquired != null) {
                     return acquired;
+                } else {
+                    remove(existingRequest);
                 }
-                // We could not acquire the existing request, so we need to replace it with a new one
-                if (newAcquired == null) {
-                    newAcquired = S3ReadRequest.createAndAcquire(fragmentIndex, context);
-                }
-                if (requests.replace(key, existingRequest, newAcquired.request())) {
-                    // We successfully swapped out the old request for our new one
-                    return newAcquired;
-                }
-                // Someone else modified the mapping in between, read the new mapping and loop again
-                existingRequest = requests.get(key);
-            } else {
-                if (newAcquired == null) {
-                    newAcquired = S3ReadRequest.createAndAcquire(fragmentIndex, context);
-                }
-                // Try to insert our new request if absent
-                if ((existingRequest = requests.putIfAbsent(key, newAcquired.request())) == null) {
-                    if (log.isDebugEnabled()) {
-                        log.debug().append("Added new request to cache: ").append(String.format("ctx=%d ",
-                                System.identityHashCode(context))).append(newAcquired.request().requestStr())
-                                .endl();
-                    }
-                    return newAcquired;
-                }
-                // Another thread inserted a request first, loop again
             }
+            if (newAcquired == null) {
+                newAcquired = S3ReadRequest.createAndAcquire(fragmentIndex, context);
+            }
+            if ((existingRequest = requests.putIfAbsent(key, newAcquired.request())) == null) {
+                if (log.isDebugEnabled()) {
+                    log.debug().append("Added new request to cache: ").append(String.format("ctx=%d ",
+                            System.identityHashCode(context))).append(newAcquired.request().requestStr())
+                            .endl();
+                }
+                return newAcquired;
+            }
+            // TODO(deephaven-core#5486): Instead of remove + putIfAbsent pattern, we could have used replace + get
+            // pattern, but KeyedObjectHashMap potentially has a bug in replace method.
         }
     }
 

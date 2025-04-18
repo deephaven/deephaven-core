@@ -46,8 +46,7 @@ public interface ExpansionKernel<T> {
      * fixed size. A negative {@code fixedSizeLength} will pick elements from the end of the array/vector.
      *
      * @param source The source chunk containing nested or multi-element data to expand.
-     * @param fixedSizeLength The fixed size for each row, or 0 for variable-length rows. A negative value will pick
-     *        elements from the end.
+     * @param fixedSizeLength The fixed size for each row, or 0 for variable-length rows.
      * @param offsetDest The destination {@link WritableIntChunk} to store row offsets, or {@code null} if not needed.
      * @param <A> The attribute type of the source chunk.
      * @return A flattened {@link WritableChunk} containing the expanded elements.
