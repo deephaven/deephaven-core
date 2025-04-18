@@ -12,7 +12,6 @@ import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.stream.StreamChunkUtils;
 import io.deephaven.stream.StreamConsumer;
 import io.deephaven.stream.StreamPublisher;
-import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseableArray;
 import org.jetbrains.annotations.NotNull;
 

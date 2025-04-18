@@ -144,29 +144,31 @@ public class UpdatePerformanceTracker {
         private synchronized void publish(
                 final IntervalLevelDetails intervalLevelDetails,
                 final PerformanceEntry entry) {
-            if (!encounteredError) {
-                try {
-                    publisher.add(intervalLevelDetails, entry);
-                    tableLogger.log(intervalLevelDetails, entry);
-                } catch (final IOException e) {
-                    // Don't want to log this more than once in a report
-                    log.error().append("Error publishing ").append(entry).append(" caused by: ").append(e).endl();
-                    encounteredError = true;
-                }
+            if (encounteredError) {
+                return;
+            }
+            try {
+                publisher.add(intervalLevelDetails, entry);
+                tableLogger.log(intervalLevelDetails, entry);
+            } catch (final IOException e) {
+                // Don't want to log this more than once in a report
+                log.error().append("Error publishing ").append(entry).append(" caused by: ").append(e).endl();
+                encounteredError = true;
             }
         }
 
         private synchronized void publishAncestor(String updateGraphName, PerformanceEntry entry, long[] ancestors) {
-            if (!encounteredError) {
-                try {
-                    ancestorPublisher.add(updateGraphName, entry.getId(), entry.getDescription(), ancestors);
-                    ancestorLogger.log(updateGraphName, entry.getId(), entry.getDescription(), ancestors);
-                } catch (final IOException e) {
-                    // Don't want to log this more than once in a report
-                    log.error().append("Error publishing ancestors for ").append(entry).append(" caused by: ").append(e)
-                            .endl();
-                    encounteredError = true;
-                }
+            if (encounteredError) {
+                return;
+            }
+            try {
+                ancestorPublisher.add(updateGraphName, entry.getId(), entry.getDescription(), ancestors);
+                ancestorLogger.log(updateGraphName, entry.getId(), entry.getDescription(), ancestors);
+            } catch (final IOException e) {
+                // Don't want to log this more than once in a report
+                log.error().append("Error publishing ancestors for ").append(entry).append(" caused by: ").append(e)
+                        .endl();
+                encounteredError = true;
             }
         }
     }

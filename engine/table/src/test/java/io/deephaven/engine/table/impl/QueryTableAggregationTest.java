@@ -12,6 +12,7 @@ import io.deephaven.base.FileUtils;
 import io.deephaven.chunk.util.pools.ChunkPoolReleaseTracking;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
+import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -19,6 +20,7 @@ import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
+import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.testutil.QueryTableTestBase.TableComparator;
 import io.deephaven.engine.table.impl.by.*;
@@ -83,14 +85,20 @@ public class QueryTableAggregationTest {
 
     @Rule
     public final EngineCleanup base = new EngineCleanup();
+    @NotNull
+    private SafeCloseable livenessScopeCloseable;
 
     @Before
     public void setUp() throws Exception {
+        UpdatePerformanceTracker.resetForUnitTests();
         ChunkPoolReleaseTracking.enableStrict();
+        livenessScopeCloseable = LivenessScopeStack.open(new LivenessScope(true), true);
     }
 
     @After
     public void tearDown() throws Exception {
+        livenessScopeCloseable.close();
+        UpdatePerformanceTracker.resetForUnitTests();
         ChunkPoolReleaseTracking.checkAndDisable();
     }
 
