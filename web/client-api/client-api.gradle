@@ -35,8 +35,8 @@ components {
 
 dependencies {
     gwt libs.gwt.user
-    api platform(libs.grpc.bom)
-    api variantOf(libs.grpc.api) { classifier('sources') }
+    gwt platform(libs.grpc.bom)
+    gwt libs.grpc.api
 
     gwt project(':engine-chunk')
     gwt project(':extensions-barrage')
@@ -44,16 +44,11 @@ dependencies {
     gwt project(':web-shared-beans')
     gwt project(':web-client-backplane')
     gwt libs.jetbrains.annotations
-//    api variantOf(libs.jetbrains.annotations) { classifier("sources") }
     gwt libs.immutables.value.annotations
-//    api variantOf(libs.immutables.value.annotations) { classifier("sources") }
 
     gwt libs.flatbuffers.java
-//    api variantOf(libs.flatbuffers.java) { classifier("sources") }
     gwt libs.arrow.format
-//    api variantOf(libs.arrow.format) { classifier('sources') }
     gwt libs.deephaven.barrage.format
-//    api variantOf(libs.deephaven.barrage.format) { classifier('sources') }
 
     gwt libs.vertispan.ts.defs.annotations
     typescriptDoclet libs.vertispan.ts.defs.doclet
