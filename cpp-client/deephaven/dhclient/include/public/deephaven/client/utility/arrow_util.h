@@ -3,20 +3,22 @@
  */
 #pragma once
 
-#include <iostream>
 #include <memory>
+#include <optional>
 #include <string>
-#include <vector>
 #include <arrow/type.h>
 #include <arrow/flight/types.h>
 
 #include "deephaven/dhcore/clienttable/client_table.h"
+#include "deephaven/dhcore/column/column_source.h"
 #include "deephaven/dhcore/types.h"
 #include "deephaven/dhcore/utility/utility.h"
 
 namespace deephaven::client::utility {
 class ArrowUtil {
   using ElementTypeId = deephaven::dhcore::ElementTypeId;
+  using ClientTable = deephaven::dhcore::clienttable::ClientTable;
+  using ColumnSource = deephaven::dhcore::column::ColumnSource;
   using FlightDescriptor = arrow::flight::FlightDescriptor;
   using Schema = deephaven::dhcore::clienttable::Schema;
 
@@ -40,13 +42,21 @@ public:
       bool must_succeed);
 
   /**
+   * Converts an ElementType to an Arrow DataType.
+   */
+  static std::shared_ptr<arrow::DataType> GetArrowType(ElementTypeId::Enum element_type_id);
+
+  /**
    * Convert an Arrow Schema into a Deephaven Schema
    * @param schema The arrow Schema
    * @return a Deephaven Schema
    */
   static std::shared_ptr<Schema> MakeDeephavenSchema(const arrow::Schema &schema);
-};
 
+  static std::shared_ptr<arrow::Table> MakeArrowTable(const ClientTable &client_table);
+  static std::shared_ptr<arrow::Schema> MakeArrowSchema(
+      const deephaven::dhcore::clienttable::Schema &dh_schema);
+  };
 
 /**
  * If status is OK, do nothing. Otherwise throw a runtime error with an informative message.

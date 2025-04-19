@@ -3,13 +3,20 @@
  */
 #include "deephaven/dhcore/types.h"
 
+#include <cstdint>
+#include <chrono>
+#include <cmath>
+#include <iostream>
 #include <limits>
 #include <sstream>
+#include <string>
+#include <string_view>
 
 #include "date/date.h"
 #include "deephaven/dhcore/utility/utility.h"
 #include "deephaven/third_party/fmt/chrono.h"
 #include "deephaven/third_party/fmt/format.h"
+#include "deephaven/third_party/fmt/core.h"
 #include "deephaven/third_party/fmt/ostream.h"
 
 static_assert(FMT_VERSION >= 100000);
