@@ -73,8 +73,8 @@ class GwtTools {
             }
         }
 
-        p.gradle.projectsEvaluated {
-            addGeneratedSources(p, gwtc)
+        if (p.configurations.findByName('gwt') != null) {
+            (gwtc.src as ConfigurableFileCollection).from(p.configurations.findByName('gwt'))
         }
 
         gwtDev && gwtc.doFirst {
@@ -133,16 +133,4 @@ class GwtTools {
             }
         }
     }
-
-    static void addGeneratedSources(Project project, GwtCompileTask gwtc) {
-        if (project.configurations.getByName(JavaPlugin.ANNOTATION_PROCESSOR_CONFIGURATION_NAME).dependencies) {
-            (gwtc.src as ConfigurableFileCollection).from(
-                (project.tasks.getByName(JavaPlugin.COMPILE_JAVA_TASK_NAME) as JavaCompile).options.generatedSourceOutputDirectory
-            )
-        }
-        project.configurations.getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME).allDependencies.withType(ProjectDependency)*.dependencyProject*.each {
-            Project p -> addGeneratedSources(p, gwtc)
-        }
-    }
-
 }

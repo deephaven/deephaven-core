@@ -15,44 +15,62 @@ configurations {
     js
     dts
     typescriptDoclet
+
+    gwt {
+        canBeConsumed = true
+        canBeResolved = true
+        transitive = true
+        attributes {
+            attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage, Usage.JAVA_RUNTIME))
+            attribute(DocsType.DOCS_TYPE_ATTRIBUTE, objects.named(DocsType, DocsType.SOURCES))
+        }
+    }
+    compileClasspath.extendsFrom(gwt)
 }
+components {
+    java {
+        addVariantsFromConfiguration(configurations.gwt) {}
+    }
+}
+
 dependencies {
+    gwt libs.gwt.user
     api platform(libs.grpc.bom)
     api variantOf(libs.grpc.api) { classifier('sources') }
 
-    api project(':engine-chunk')
-    api project(':extensions-barrage')
-    api project(':DataStructures')
-    api project(':web-shared-beans')
-    api project(':web-client-backplane')
-    api libs.jetbrains.annotations
-    api variantOf(libs.jetbrains.annotations) { classifier("sources") }
-    api libs.immutables.value.annotations
-    api variantOf(libs.immutables.value.annotations) { classifier("sources") }
+    gwt project(':engine-chunk')
+    gwt project(':extensions-barrage')
+    gwt project(':DataStructures')
+    gwt project(':web-shared-beans')
+    gwt project(':web-client-backplane')
+    gwt libs.jetbrains.annotations
+//    api variantOf(libs.jetbrains.annotations) { classifier("sources") }
+    gwt libs.immutables.value.annotations
+//    api variantOf(libs.immutables.value.annotations) { classifier("sources") }
 
-    api libs.flatbuffers.java
-    api variantOf(libs.flatbuffers.java) { classifier("sources") }
-    api libs.arrow.format
-    api variantOf(libs.arrow.format) { classifier('sources') }
-    api libs.deephaven.barrage.format
-    api variantOf(libs.deephaven.barrage.format) { classifier('sources') }
+    gwt libs.flatbuffers.java
+//    api variantOf(libs.flatbuffers.java) { classifier("sources") }
+    gwt libs.arrow.format
+//    api variantOf(libs.arrow.format) { classifier('sources') }
+    gwt libs.deephaven.barrage.format
+//    api variantOf(libs.deephaven.barrage.format) { classifier('sources') }
 
-    api libs.vertispan.ts.defs.annotations
+    gwt libs.vertispan.ts.defs.annotations
     typescriptDoclet libs.vertispan.ts.defs.doclet
 
-    api libs.vertispan.nio.gwt
-    api libs.vertispan.flatbuffers.gwt
+    gwt libs.vertispan.nio.gwt
+    gwt libs.vertispan.flatbuffers.gwt
 
     js project(path: ':proto:raw-js-openapi', configuration: 'js')
 
-    api libs.guava
+    gwt libs.guava
 
     testImplementation libs.junit4
     testImplementation libs.selenium.remote.driver
 
-    api libs.elemental.core
-    api libs.elemental.promise
-    api libs.elemental.dom
+    gwt libs.elemental.core
+    gwt libs.elemental.promise
+    gwt libs.elemental.dom
 
     testImplementation libs.gwt.user
 }
