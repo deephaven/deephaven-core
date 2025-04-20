@@ -5,15 +5,19 @@
 
 #include <chrono>
 #include <cstring>
+#include <cstdint>
 #include <cstdio>
+#include <exception>
+#include <stdexcept>
 #include <iostream>
 #include <memory>
 #include <optional>
 #include <string>
-#include <thread>
+#include <string_view>
 #include <typeinfo>
+#include <type_traits>
 #include <vector>
-#include "deephaven/third_party/fmt/format.h"
+#include "deephaven/third_party/fmt/core.h"
 #include "deephaven/third_party/fmt/ostream.h"
 
 namespace deephaven::dhcore::utility {
@@ -249,6 +253,18 @@ TypeName(const T& t) {
 
 [[nodiscard]] std::string
 ObjectId(const std::string &class_short_name, void* this_ptr);
+
+class ElementRenderer {
+public:
+  template<typename T>
+  void Render(std::ostream &s, const T &item) const {
+    s << item;
+  }
+
+  void Render(std::ostream &s, const bool &item) const {
+    s << (item ? "true" : "false");
+  }
+};
 }  // namespace deephaven::dhcore::utility
 
 // Add the specialization for the DebugInfo formatter
