@@ -230,7 +230,7 @@ std::shared_ptr<arrow::Schema> ArrowUtil::MakeArrowSchema(
   arrow::SchemaBuilder builder;
   for (int32_t i = 0; i != dh_schema.NumCols(); ++i) {
     const auto &name = dh_schema.Names()[i];
-    auto element_type = dh_schema.Types()[i];
+    auto element_type = dh_schema.ElementTypes()[i];
     auto arrow_type = GetArrowType(element_type);
     auto field = std::make_shared<arrow::Field>(name, std::move(arrow_type));
     OkOrThrow(DEEPHAVEN_LOCATION_EXPR(builder.AddField(field)));

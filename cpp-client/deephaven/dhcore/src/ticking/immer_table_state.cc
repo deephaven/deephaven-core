@@ -285,7 +285,7 @@ std::unique_ptr<AbstractFlexVectorBase> MakeFlexVectorFromType(const ElementType
 std::vector<std::unique_ptr<AbstractFlexVectorBase>> MakeEmptyFlexVectorsFromSchema(const Schema &schema) {
   auto ncols = schema.NumCols();
   auto result = MakeReservedVector<std::unique_ptr<AbstractFlexVectorBase>>(ncols);
-  for (const auto &type_id : schema.Types()) {
+  for (const auto &type_id : schema.ElementTypes()) {
     auto fv = MakeFlexVectorFromType(type_id);
     result.push_back(std::move(fv));
   }

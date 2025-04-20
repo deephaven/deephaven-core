@@ -25,6 +25,14 @@ class Schema {
 
 public:
   /**
+   * Factory method. This exists for backward compatibility and will be removed
+   * when we update our Cython code.
+   */
+  [[nodiscard]]
+  static std::shared_ptr<Schema> Create(std::vector<std::string> names,
+      std::vector<ElementTypeId::Enum> type_ids);
+
+  /**
    * Factory method
    */
   [[nodiscard]]
@@ -34,7 +42,8 @@ public:
    * Constructor.
    */
   Schema(Private, std::vector<std::string> names, std::vector<ElementType> types,
-      std::map<std::string_view, size_t, std::less<>> index);
+      std::vector<ElementTypeId::Enum> type_ids, std::map<std::string_view,
+      size_t, std::less<>> index);
   /**
    * Destructor.
    */
@@ -49,8 +58,17 @@ public:
   }
 
   [[nodiscard]]
-  const std::vector<ElementType> &Types() const {
+  const std::vector<ElementType> &ElementTypes() const {
     return types_;
+  }
+
+  /**
+   * Accessor. This exists for backward compatibility and will be removed
+   * when we update our Cython code.
+   */
+  [[nodiscard]]
+  const std::vector<ElementTypeId::Enum> &Types() const {
+    return type_ids_;
   }
 
   [[nodiscard]]
@@ -61,6 +79,7 @@ public:
 private:
   std::vector<std::string> names_;
   std::vector<ElementType> types_;
+  std::vector<ElementTypeId::Enum> type_ids_;
   std::map<std::string_view, size_t, std::less<>> index_;
 };
 }  // namespace deephaven::dhcore::clienttable
