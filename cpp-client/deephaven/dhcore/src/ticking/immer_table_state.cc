@@ -275,7 +275,7 @@ std::unique_ptr<AbstractFlexVectorBase> MakeFlexVectorFromType(const ElementType
     }
 
     default: {
-      auto message = fmt::format("Programming error: elementTypeId {} not supported here",
+      auto message = fmt::format("Internal error: elementTypeId {} not supported here",
           static_cast<int>(element_type.Id()));
       throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
     }

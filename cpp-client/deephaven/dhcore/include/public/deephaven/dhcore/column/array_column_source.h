@@ -201,12 +201,6 @@ class GenericArrayColumnSource final : public deephaven::dhcore::column::Mutable
   using RowSequence = deephaven::dhcore::container::RowSequence;
 
 public:
-//  static std::shared_ptr<GenericArrayColumnSource> Create() {
-//    auto elements = std::make_unique<T[]>(0);
-//    auto nulls = std::make_unique<T[]>(0);
-//    return CreateFromArrays(std::move(elements), std::move(nulls), 0);
-//  }
-
   static std::shared_ptr<GenericArrayColumnSource> CreateFromArrays(const ElementType &element_type,
       std::unique_ptr<T[]> elements, std::unique_ptr<bool[]> nulls, size_t size) {
     return std::make_shared<GenericArrayColumnSource>(Private(), element_type, std::move(elements),
