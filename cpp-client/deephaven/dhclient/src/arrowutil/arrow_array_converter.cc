@@ -6,6 +6,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -35,7 +36,6 @@ using deephaven::dhcore::ElementTypeId;
 using deephaven::dhcore::LocalDate;
 using deephaven::dhcore::LocalTime;
 using deephaven::dhcore::chunk::BooleanChunk;
-using deephaven::dhcore::chunk::Chunk;
 using deephaven::dhcore::chunk::CharChunk;
 using deephaven::dhcore::chunk::ContainerBaseChunk;
 using deephaven::dhcore::chunk::DateTimeChunk;
@@ -69,6 +69,11 @@ using deephaven::dhcore::utility::demangle;
 using deephaven::dhcore::utility::MakeReservedVector;
 
 namespace {
+/**
+ * Converts an Arrow::ChunkedArray (basically a list of std::shared_ptr<arrow::Array>) into a
+ * std::vector<std::shared_ptr<T>>, where T is some subclass of arrow::Array. We do this because it
+ * is easier to work with this downcasted representation.
+ */
 template<typename TArrowArray>
 std::vector<std::shared_ptr<TArrowArray>> DowncastChunks(const arrow::ChunkedArray &chunked_array) {
   auto downcasted = MakeReservedVector<std::shared_ptr<TArrowArray>>(chunked_array.num_chunks());
@@ -88,19 +93,11 @@ std::vector<std::shared_ptr<TArrowArray>> DowncastChunks(const arrow::ChunkedArr
 
 struct Reconstituter final : public arrow::TypeVisitor {
   Reconstituter(std::shared_ptr<ColumnSource> flattened_elements,
-      std::unique_ptr<size_t[]> slice_lengths,
-      std::unique_ptr<bool[]> slice_nulls,
-      size_t num_slices,
-      size_t flattened_size) :
+      size_t flattened_size,
+      std::vector<std::optional<size_t>> slice_lengths) :
       flattened_elements_(std::move(flattened_elements)),
-      slice_lengths_(std::move(slice_lengths)),
-      slice_nulls_(std::move(slice_nulls)),
-      num_slices_(num_slices),
       flattened_size_(flattened_size),
-      flattened_nulls_(new bool[flattened_size_]),
-      flattened_nulls_chunk_(BooleanChunk::CreateView(flattened_nulls_.get(), flattened_size_)),
-      rowSequence_(RowSequence::CreateSequential(0, flattened_size_)),
-      slices_(std::make_unique<std::shared_ptr<ContainerBase>[]>(num_slices_)) {
+      slice_lengths_(std::move(slice_lengths)) {
   }
 
   ~Reconstituter() final = default;
@@ -153,45 +150,76 @@ struct Reconstituter final : public arrow::TypeVisitor {
     return VisitHelper<LocalTime, LocalTimeChunk>(ElementTypeId::kLocalTime);
   }
 
+  arrow::Status Visit(const arrow::ListType &/*type*/) final {
+    const char *message = "Nested lists are not currently supported";
+    throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
+  }
+
   template<typename TElement, typename TChunk>
   arrow::Status VisitHelper(ElementTypeId::Enum element_type_id) {
+    // Continuing the example data we used in ChunkedArrayToColumnSourceVisitor, assume we have:
+    // flattened_elements = [a, b, c, d, e, f, null, g]
+    // flattened_size = 8
+    // slice_lengths = [3, {}, 0, 5]
+
+    // Copy the data in flattened_elements out of the ColumnSource into a shared_ptr<TElement[]>.
+    // Likewise, copy the null flags into a shared_ptr<bool[]>.
     std::shared_ptr<TElement[]> flattened_data(new TElement[flattened_size_]);
+    std::shared_ptr<bool[]> flattened_nulls(new bool[flattened_size_]);
+
     auto flattened_data_chunk = TChunk::CreateView(flattened_data.get(), flattened_size_);
-    flattened_elements_->FillChunk(*rowSequence_, &flattened_data_chunk, &flattened_nulls_chunk_);
+    auto flattened_nulls_chunk = BooleanChunk::CreateView(flattened_nulls.get(), flattened_size_);
+
+    auto row_sequence = RowSequence::CreateSequential(0, flattened_size_);
+    flattened_elements_->FillChunk(*row_sequence, &flattened_data_chunk, &flattened_nulls_chunk);
+
+    // Now take slices of the above data and null flags arrays. We use shared_ptr operations so that
+    // the slices share their refcount with the original shared_ptr they were derived from.
+
+    auto num_slices = slice_lengths_.size();
+    // Slices of the original data array.
+    auto slice_data = std::make_unique<std::shared_ptr<ContainerBase>[]>(num_slices);
+    // Whether each slice is null.
+    auto slice_nulls = std::make_unique<bool[]>(num_slices);
 
     size_t slice_offset = 0;
-    for (size_t i = 0; i != num_slices_; ++i) {
+    for (size_t i = 0; i != num_slices; ++i) {
       auto *slice_data_start = flattened_data.get() + slice_offset;
-      auto *slice_null_start = flattened_nulls_.get() + slice_offset;
+      auto *slice_null_start = flattened_nulls.get() + slice_offset;
 
-      // Make shared pointers from these slice pointers that share the lifetime of the
-      // original shared pointers
-      std::shared_ptr<TElement[]> slice_data_start_sp(flattened_data, slice_data_start);
-      std::shared_ptr<bool[]> slice_null_start_sp(flattened_nulls_, slice_null_start);
+      const auto &slice_length = slice_lengths_[i];
+      if (slice_length.has_value()) {
+        // Pointer to the start of the data for the slice.
+        std::shared_ptr<TElement[]> slice_data_start_sp(flattened_data, slice_data_start);
+        // The nulls array for the contents of this slice. In other words, this is a non-null slice
+        // that might contain a mixture of null and non-null elements.
+        std::shared_ptr<bool[]> slice_null_start_sp(flattened_nulls, slice_null_start);
 
-      auto slice_size = slice_lengths_[i];
-      auto slice = Container<TElement>::Create(std::move(slice_data_start_sp),
-          std::move(slice_null_start_sp), slice_size);
-      slices_[i] = std::move(slice);
-      slice_offset += slice_size;
+        auto slice_container = Container<TElement>::Create(std::move(slice_data_start_sp),
+            std::move(slice_null_start_sp), *slice_length);
+        slice_data[i] = std::move(slice_container);
+        slice_nulls[i] = false;
+        slice_offset += *slice_length;
+      } else {
+        slice_data[i] = nullptr;
+        slice_nulls[i] = true;
+      }
     }
 
     auto element_type = ElementType::Of(element_type_id).WrapList();
 
     result_ = ContainerArrayColumnSource::CreateFromArrays(element_type,
-        std::move(slices_), std::move(slice_nulls_), num_slices_);
+        std::move(slice_data), std::move(slice_nulls), num_slices);
     return arrow::Status::OK();
   }
 
   std::shared_ptr<ColumnSource> flattened_elements_;
-  std::unique_ptr<size_t[]> slice_lengths_;
-  std::unique_ptr<bool[]> slice_nulls_;
-  size_t num_slices_ = 0;
   size_t flattened_size_ = 0;
-  std::shared_ptr<bool[]> flattened_nulls_;
-  BooleanChunk flattened_nulls_chunk_;
-  std::shared_ptr<RowSequence> rowSequence_;
-  std::unique_ptr<std::shared_ptr<ContainerBase>[]> slices_;
+  /**
+   * For a given element, if the optional is set, it contains the element's slice length.
+   * If it is unset, the slice is null.
+   */
+  std::vector<std::optional<size_t>> slice_lengths_;
   std::shared_ptr<ContainerArrayColumnSource> result_;
 };
 
@@ -284,123 +312,95 @@ struct ChunkedArrayToColumnSourceVisitor final : public arrow::TypeVisitor {
   }
 
   /**
-   * When the element is a list, we use recursion to extract the flattened elements of the list into
-   * a single column source. Then we extract the data out of that column source into a single pair
-   * of arrays (one for the flattened data, and one for the flattened null flags), and then we
-   * reconstitute the 2D list structure as a ColumnSource<shared_ptr<ContainerBase>>, where the
-   * shared_ptr<ContainerBase> has the appropriate dynamic type.
-   *
-   * Example
-   * Input is ListArray:
-   *   [a, b, c]
-   *   null
-   *   []
-   *   [d, e, f, null, g]
-   *
-   * It has 4 slices.
-   * When it is flattened, it looks like [a, b, c, d, e, f, null, g]. There are 8 elements in the
-   * flattened data. Note: that throughout this discussion it will be important to recognize the
-   * difference between a slice that is null (the second slice, above), a slice that is empty
-   * (the third slice above), and a slice that is not null but contains a null element (the fourth
-   * element of the fourth slice above). Empty slices and null slices don't take up any space in the
-   * flattened column source, but null leaf elements do.
-   *
-   * We use recursion to create the flattened data [a, b, c, d, e, f, null, g] as a ColumnSource
-   * (of the appropriate dynamic type). This ColumnSource is only a very temporary holding area,
-   * because we immediately copy all the data back out of it. We do this as a convenience mainly
-   * because the ColumnSource has knowledge about data type conversions and Deephaven null
-   * conventions. In an alternate implementation we might be able to copy data directly from Arrow
-   * to the two target arrays, but that would require some refactoring of our code.
-   *
-   * Anyway, next we make an array of slice lengths and slice null flags. These will be inputs to
-   * the Reconstituter. In our example these arrays are of size 4 and contain:
-   *   lengths: [3, 0, 0, 5]  [bookmark #1]
-   *   null flags: [false, true, false, false]   [bookmark #2]
-   *
-   *  The first 0 in lengths is a "dontcare" because the element itself is null.
-   *  The second 0 is an actual zero in the sense that it represents a list of length 0 (not a null
-   *  entry)
-   *
-   * We then pass these arrays to the Reconstituter to finish the job of reconstituting a
-   * ColumnSource<shared_ptr<ContainerBase>> from these arrays.
-   *
-   * Inside the Reconstituter, we make two arrays for the flattened data and the flattened null
-   * flags. We use ColumnSource::FillChunk to populate these arrays. In our example these arrays
-   * are of size 8 and contain:
-   *   data: [a, b, c, d, e, f, null, g]
-   *   nulls: [false, false, false, false, false, false, true, false]
-   *
-   * These arrays are owned by shared pointers because, when we are done, there will be multiple
-   * Container<T> objects that point to (the interior) of these arrays and share their lifetime.
-   *
-   * Then the Reconstituter goes to work at recovering the original shape of the ListArray slices.
-   * To do this, it uses the flattened data we just obtained, combined with the original slice
-   * lengths (bookmark #1) and slice null flags (bookmark #2) that were passed in.
-   *
-   *   con0: size=3, data = [a, b, c], nulls=[false, false, false].
-   *         It points into the above data and nulls arrays at offset 0.
-   *   con1: size = 0, data = [], nulls = [].  This entry is null and so it doesn't matter where its
-   *         data points to
-   *   con2: size = 0, data = [], nulls = [].  This entry is of length zero, so for different
-   *         reasons it also doesn't matter where its data points to
-   *   con3: size = 5, data = [d, e, f, null, g], nulls = [false, false, false, true, false]
-   *         It points into the above data and nulls arrays at offset 3.
-   *
-   * We arrange these container objects into an array of size 4 of shared_ptr<ContainerBase>
-   *
-   * The Reconstituter also needs a null flags array of size 4 to work in tandem with this
-   * shared_ptr array. But the Reconstituter already have this null array; it was passed in as an
-   * input to the Reconstituter (see bookmark #2). In this example it is:
-   * [false, true, false, false]
-   *
-   * We provide these two arrays to ContainerArrayColumnSource::CreateFromArrays() and we are
-   * done.
-   *
-   * TODO(kosak): This code probably does not work correctly for nested lists, i.e. a grouped
-   * table that is grouped again
+   * When the element is a list, we transform it into a ColumnSource<shared_ptr<ContainerBase>>.
    */
   arrow::Status Visit(const arrow::ListType &type) final {
+    // This code can be confusing because there are multiple levels of aggregation here.
+    // 1. The incoming data is a column whose element type is list; each list represents an array of
+    //    T.
+    // 2. The lists are represented as an arrow::ListArray. ListArray stores data which logically
+    //    looks like a list<T[]> but for efficiency the data itself is stored as a flattened T[]
+    //    along with enough offset information to recover the nested structure.
+    // 3. ListArray has a upper limit on capacity. If there happens to be an enormous amount of
+    //    data, there would be multiple arrow::ListArrays.
+    // 4. These multiple ListArrays are gathered into an arrow::ChunkedArray.
+    // 5. That chunked array has been stored in our member chunked_array_.
+
+    // For convenience, we convert the ChunkedArray into a vector<shared_ptr<ListArray>>.
     auto chunked_listarrays = DowncastChunks<arrow::ListArray>(*chunked_array_);
 
-    // 1. extract offsets
-    // 2. use recursion to create a column set of values
-    // 3. use rowset operations to extract an array from that column source (hacky)
-    // 4. return a ContainerColumnSource of that array
-    auto flattened_chunks = MakeReservedVector<std::shared_ptr<arrow::Array>>(
-        chunked_listarrays.size());
-    size_t num_slices = 0;
+    // To make the code easier to follow, this is data that we could hypothetically be working with:
+    // list0 = [a, b, c]
+    // list1 = null  // a null list
+    // list2 = []  // an empty list
+    // list3 = [d, e, f, null, g]  // a non-empty list containing a null element
+
+    // list_array = [list0, list1, list2, list3]
+    // chunked_listarrays = [list_array]
+
+    // The next step is to gather some statistics:
+    // 1. slice_lengths: The length of each slice, or an empty optional indicating the slice is null
+    // 2. flattened_size: how many individual elements we have in total (over all chunks)
+    // 3. num_slices: how many slices we have. This is implicitly represented as slice_lengths.size()
+    std::vector<std::optional<size_t>> slice_lengths;
     size_t flattened_size = 0;
     for (const auto &la: chunked_listarrays) {
-      flattened_chunks.push_back(la->values());
-      num_slices += la->length();
-      flattened_size += la->values()->length();
+      for (int64_t i = 0; i != la->length(); ++i) {
+        if (la->IsNull(i)) {
+          slice_lengths.emplace_back();
+        } else {
+          auto slice_length = la->value_length(i);
+          slice_lengths.emplace_back(slice_length);
+          flattened_size += slice_length;
+        }
+      }
     }
+    // In our example we would now have:
+    // slice_lengths = [3, {}, 0, 5]
+    // flattened_size = 8
+    // num_slices = 4 (represented as slice_lengths.size())
+
+    // The next step is a deaggregation step. We make a vector which has one element for each chunk.
+    // Inside each such element are is are the flattened version of the ListArray above. Again, in
+    // practice there is typically only one chunk, so our result array will typically have only one
+    // element.
+    auto flattened_chunks = MakeReservedVector<std::shared_ptr<arrow::Array>>(
+        chunked_listarrays.size());
+    for (const auto &la: chunked_listarrays) {
+      // ListArray::values() provides the flattened version of the data that the ListArray is
+      // managing
+      flattened_chunks.push_back(la->values());
+    }
+
+    // In our example, we would now have:
+    // data = [a, b, c, d, e, f, null, g]
+    // flattened_chunks = [data]
+
+    // We convert flattened_chunks into an arrow::ChunkedArray because that is the data type our
+    // recursive call is going to expect.
     auto flattened_chunked_array = ValueOrThrow(DEEPHAVEN_LOCATION_EXPR(
         arrow::ChunkedArray::Make(std::move(flattened_chunks), type.value_type())));
+
+    // We use recursion to create a ColumnSource out of flattened_chunk_array. This operation
+    // disaggregates the chunking, so we end up with a single ColumnSource with all the data.
+    // Our ColumnSource can also handle an "enormous" amount of data without chunking, so this does
+    // not create a new limitation.
+    //
+    // Note that this was written recursively in order to anticipate deeply nested data, e.g. lists
+    // of lists (of lists...). However, the only use case currently supported is a single level of
+    // nesting.
     auto flattened_elements =
         ArrowArrayConverter::ChunkedArrayToColumnSource(std::move(flattened_chunked_array));
 
-    // We have a single column source with all the flattened data in it. Now we have to
-    // recover the offset, length, and nullness of each slice. This is unusually annoying because
-    // our input was a ChunkedArray, not just an array.
+    // In our example we would now have the following ColumnSource:
+    // flattened_elements = [a, b, c, d, e, f, null, g]
 
-    auto slice_lengths = std::make_unique<size_t[]>(num_slices);
-    auto slice_nulls = std::make_unique<bool[]>(num_slices);
-    size_t next_index = 0;
-    for (const auto &la : chunked_listarrays) {
-      for (int64_t i = 0; i != la->length(); ++i, ++next_index) {
-        slice_lengths[next_index] = la->value_length(i);
-        slice_nulls[next_index] = la->IsNull(i);
-      }
-    }
-    if (next_index != num_slices) {
-      auto message = fmt::format("Programming error: {} != {}", next_index, num_slices);
-      throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
-    }
-
-    Reconstituter reconstituter(std::move(flattened_elements), std::move(slice_lengths),
-        std::move(slice_nulls), num_slices, flattened_size);
+    // Now pass this as well as slice_lengths and flattened_size to the Reconstituter
+    Reconstituter reconstituter(std::move(flattened_elements), flattened_size,
+        std::move(slice_lengths));
     OkOrThrow(DEEPHAVEN_LOCATION_EXPR(type.value_type()->Accept(&reconstituter)));
+
+    // Return the result, which is a ContainerColumnSource.
     result_ = std::move(reconstituter.result_);
     return arrow::Status::OK();
   }
@@ -409,7 +409,6 @@ struct ChunkedArrayToColumnSourceVisitor final : public arrow::TypeVisitor {
   std::shared_ptr<ColumnSource> result_;
 };
 }  // namespace
-
 
 
 std::shared_ptr<ColumnSource> ArrowArrayConverter::ArrayToColumnSource(
@@ -424,7 +423,6 @@ std::shared_ptr<ColumnSource> ArrowArrayConverter::ChunkedArrayToColumnSource(
   OkOrThrow(DEEPHAVEN_LOCATION_EXPR(v.chunked_array_->type()->Accept(&v)));
   return std::move(v.result_);
 }
-
 
 //-------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------
@@ -550,7 +548,6 @@ struct ColumnSourceToArrayVisitor final : ColumnSourceVisitor {
         }
 
         case ElementTypeId::kTimestamp: {
-          // TODO(kosak): will we pass through non-nano units?
           array_builder_ = std::make_shared<arrow::TimestampBuilder>(
               arrow::timestamp(arrow::TimeUnit::NANO, "UTC"),
               arrow::default_memory_pool());

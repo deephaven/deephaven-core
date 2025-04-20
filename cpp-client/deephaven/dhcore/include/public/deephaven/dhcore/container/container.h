@@ -1,7 +1,6 @@
 /*
  * Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
  */
-
 #pragma once
 
 #include <cstddef>
@@ -48,17 +47,20 @@ public:
   explicit ContainerBase(size_t size) : size_(size) {}
   virtual ~ContainerBase();
 
+  [[nodiscard]]
   size_t size() const {
     return size_;
   }
 
   template<class T>
+  [[nodiscard]]
   std::shared_ptr<const Container<T>> AsContainerPtr() const {
     auto self = shared_from_this();
     return std::dynamic_pointer_cast<const Container<T>>(self);
   }
 
   template<class T>
+  [[nodiscard]]
   const Container<T> &AsContainer() const {
     return *deephaven::dhcore::utility::VerboseCast<const Container<T>*>(DEEPHAVEN_LOCATION_EXPR(this));
   }

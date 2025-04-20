@@ -28,8 +28,6 @@ struct ElementTypeId {
     kInt8, kInt16, kInt32, kInt64,
     kFloat, kDouble,
     kBool, kString, kTimestamp,
-    // TODO(kosak): remove this when we update Cython
-    kList_UNUSED,
     kLocalDate, kLocalTime
   };
 };
