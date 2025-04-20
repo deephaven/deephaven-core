@@ -3,7 +3,9 @@
  */
 #pragma once
 
+#include <cstddef>
 #include <memory>
+#include <utility>
 #include <immer/flex_vector.hpp>
 #include <immer/flex_vector_transient.hpp>
 #include "deephaven/dhcore/chunk/chunk.h"
@@ -24,7 +26,7 @@ public:
       immer::flex_vector<T> *dest_data, immer::flex_vector<bool> *optional_dest_nulls) {
     auto chunk_data = AppendHelper(src, begin, end, optional_dest_nulls);
 
-    typedef typename deephaven::dhcore::chunk::TypeToChunk<T>::type_t chunkType_t;
+    using chunkType_t = typename deephaven::dhcore::chunk::TypeToChunk<T>::type_t;
     auto *typed_chunk_data = deephaven::dhcore::utility::VerboseCast<const chunkType_t *>(
         DEEPHAVEN_LOCATION_EXPR(&chunk_data.Unwrap()));
     auto transient_data = dest_data->transient();
@@ -50,7 +52,7 @@ protected:
   using Chunk = deephaven::dhcore::chunk::Chunk;
   using ColumnSource = deephaven::dhcore::column::ColumnSource;
 public:
-  virtual ~AbstractFlexVectorBase();
+  virtual ~AbstractFlexVectorBase() = default;
 
   [[nodiscard]] virtual std::unique_ptr<AbstractFlexVectorBase> Take(size_t n) = 0;
   virtual void InPlaceDrop(size_t n) = 0;

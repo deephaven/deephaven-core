@@ -3,10 +3,11 @@
  */
 #include "deephaven/dhcore/ticking/barrage_processor.h"
 
-#include <functional>
 #include <iostream>
 #include <memory>
+#include <string>
 #include <tuple>
+#include <utility>
 #include "deephaven/dhcore/chunk/chunk_maker.h"
 #include "deephaven/dhcore/column/column_source.h"
 #include "deephaven/dhcore/immerutil/abstract_flex_vector.h"
@@ -185,7 +186,7 @@ std::vector<uint8_t> BarrageProcessor::CreateSubscriptionRequest(const void *tic
   const auto *payloadp = static_cast<int8_t*>(static_cast<void*>(payload_builder.GetBufferPointer()));
   const auto payload_size = payload_builder.GetSize();
 
-  // TODO: I'd really like to just point this buffer backwards to the thing I just created, rather
+  // TODO(kosak): I'd really like to just point this buffer backwards to the thing I just created, rather
   // then copying it. But, eh, version 2.
   flatbuffers::FlatBufferBuilder wrapper_builder(4096);
   auto payload = wrapper_builder.CreateVector(payloadp, payload_size);

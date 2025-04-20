@@ -1,12 +1,13 @@
 /*
  * Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
  */
+#include <cstddef>
+#include <immer/flex_vector.hpp>
 #include "deephaven/dhcore/chunk/chunk.h"
 #include "deephaven/dhcore/chunk/chunk_maker.h"
 #include "deephaven/dhcore/column/column_source.h"
 #include "deephaven/dhcore/container/row_sequence.h"
 #include "deephaven/dhcore/immerutil/abstract_flex_vector.h"
-#include "deephaven/dhcore/immerutil/immer_column_source.h"
 
 using deephaven::dhcore::chunk::AnyChunk;
 using deephaven::dhcore::chunk::BooleanChunk;
@@ -15,7 +16,6 @@ using deephaven::dhcore::column::ColumnSource;
 using deephaven::dhcore::container::RowSequence;
 
 namespace deephaven::dhcore::immerutil {
-AbstractFlexVectorBase::~AbstractFlexVectorBase() = default;
 
 namespace internal {
 AnyChunk FlexVectorAppender::AppendHelper(const ColumnSource &src, size_t begin, size_t end,

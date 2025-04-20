@@ -68,7 +68,7 @@ arrow::flight::FlightDescriptor ArrowUtil::ConvertTicketToFlightDescriptor(const
     throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
   }
   uint32_t value;
-  memcpy(&value, ticket.data() + 1, sizeof(uint32_t));
+  std::memcpy(&value, ticket.data() + 1, sizeof(value));
   return arrow::flight::FlightDescriptor::Path({"export", std::to_string(value)});
 };
 
