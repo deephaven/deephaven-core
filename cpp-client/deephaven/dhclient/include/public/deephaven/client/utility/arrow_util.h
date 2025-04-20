@@ -16,9 +16,9 @@
 
 namespace deephaven::client::utility {
 class ArrowUtil {
-  using ElementTypeId = deephaven::dhcore::ElementTypeId;
   using ClientTable = deephaven::dhcore::clienttable::ClientTable;
   using ColumnSource = deephaven::dhcore::column::ColumnSource;
+  using ElementType = deephaven::dhcore::ElementType;
   using FlightDescriptor = arrow::flight::FlightDescriptor;
   using Schema = deephaven::dhcore::clienttable::Schema;
 
@@ -38,13 +38,13 @@ public:
    *   and must_succeed is true, throws an exception. Otherwise (if the conversion failed
    *   and must_succeed is false), returns an unset optional.
    */
-  static std::optional<ElementTypeId::Enum> GetElementTypeId(const arrow::DataType &data_type,
+  static std::optional<ElementType> GetElementType(const arrow::DataType &data_type,
       bool must_succeed);
 
   /**
    * Converts an ElementType to an Arrow DataType.
    */
-  static std::shared_ptr<arrow::DataType> GetArrowType(ElementTypeId::Enum element_type_id);
+  static std::shared_ptr<arrow::DataType> GetArrowType(const ElementType &element_type);
 
   /**
    * Convert an Arrow Schema into a Deephaven Schema
