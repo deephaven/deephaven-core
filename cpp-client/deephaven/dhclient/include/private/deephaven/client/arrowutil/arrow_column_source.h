@@ -5,7 +5,6 @@
 #include <string>
 #include <cstdint>
 #include <arrow/array.h>
-#include "deephaven/client/arrowutil/arrow_value_converter.h"
 #include "deephaven/dhcore/chunk/chunk_traits.h"
 #include "deephaven/dhcore/column/column_source.h"
 #include "deephaven/dhcore/column/column_source_utils.h"

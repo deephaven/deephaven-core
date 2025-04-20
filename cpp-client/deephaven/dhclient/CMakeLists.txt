@@ -79,7 +79,6 @@ set(ALL_FILES
     include/private/deephaven/client/arrowutil/arrow_array_converter.h
     include/private/deephaven/client/arrowutil/arrow_client_table.h
     include/private/deephaven/client/arrowutil/arrow_column_source.h
-    include/private/deephaven/client/arrowutil/arrow_value_converter.h
     include/private/deephaven/client/arrowutil/arrow_visitors.h
 
     src/client_options.cc
