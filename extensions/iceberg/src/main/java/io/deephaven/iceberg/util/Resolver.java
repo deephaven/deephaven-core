@@ -314,11 +314,34 @@ public abstract class Resolver {
             final Type<?> type,
             final List<NestedField> fieldPath,
             @Nullable final PartitionField partitionField) {
-        // This is not a hard limitation; could be improved in the future
-        if (partitionField != null && !partitionField.transform().isIdentity()) {
-            throw new MappingException(String
-                    .format("Unable to map partition field `%s`, only identity transform is supported",
-                            partitionField));
+        if (partitionField != null) {
+            // https://iceberg.apache.org/spec/#partitioning
+            // The source columns, selected by ids, must be a primitive type and cannot be contained in a map or list,
+            // but may be nested in a struct.
+            {
+                // org.apache.iceberg.PartitionSpec.checkCompatibility should typically catch this case, but in certain
+                // cases (for example, a Catalog / metadata error), we can check for this ourselves.
+                final NestedField nestedF = fieldPath.get(fieldPath.size() - 1);
+                if (!nestedF.type().isPrimitiveType()) {
+                    throw new MappingException(
+                            String.format("Cannot partition by non-primitive source field: %s", nestedF.type()));
+                }
+            }
+            for (NestedField nestedField : fieldPath) {
+                // org.apache.iceberg.PartitionSpec.checkCompatibility does not currently catch this case
+                if (nestedField.type().isListType()) {
+                    throw new MappingException("Partition fields may not be contained in a list");
+                }
+                if (nestedField.type().isMapType()) {
+                    throw new MappingException("Partition fields may not be contained in a map");
+                }
+            }
+            // This is a DH-specific limitation right now; could be improved in the future
+            if (!partitionField.transform().isIdentity()) {
+                throw new MappingException(String
+                        .format("Unable to map partition field `%s`, only identity transform is supported",
+                                partitionField));
+            }
         }
         checkCompatible(fieldPath, type);
     }

@@ -8,13 +8,18 @@ import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.NoSuchColumnException;
 import io.deephaven.iceberg.util.Resolver;
 import io.deephaven.qst.type.Type;
+import org.apache.iceberg.PartitionFieldHack;
 import org.apache.iceberg.PartitionSpec;
+import org.apache.iceberg.PartitionSpecHack;
 import org.apache.iceberg.Schema;
 import org.apache.iceberg.exceptions.ValidationException;
+import org.apache.iceberg.transforms.Transforms;
 import org.apache.iceberg.types.Types;
 import org.apache.iceberg.types.Types.IntegerType;
 import org.apache.iceberg.types.Types.NestedField;
 import org.junit.jupiter.api.Test;
+
+import java.util.List;
 
 import static io.deephaven.iceberg.util.ColumnInstructions.partitionField;
 import static io.deephaven.iceberg.util.ColumnInstructions.schemaField;
@@ -477,5 +482,93 @@ class ResolverTest {
         assertThatThrownBy(() -> Resolver.simple(schema, td))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("not found in Iceberg schema");
+    }
+
+    @Test
+    void partitionFieldAgainstNonPrimitiveType() {
+        final Schema schema = new Schema(NestedField.optional(1, "S1", Types.StructType.of(
+                NestedField.optional(2, "F1", IT),
+                NestedField.required(3, "F2", IT))));
+
+        // https://iceberg.apache.org/spec/#partitioning
+        // > The source columns, selected by ids, must be a primitive type
+        // Normally, Iceberg itself will not allow this sort of type to be constructed
+        try {
+            PartitionSpec.builderFor(schema).identity("S1").build();
+            failBecauseExceptionWasNotThrown(ValidationException.class);
+        } catch (ValidationException e) {
+            assertThat(e).hasMessageContaining(
+                    "Cannot partition by non-primitive source field: struct<2: F1: optional int, 3: F2: required int>");
+        }
+
+        // Of course, if there was a mis-implemented Catalog, it's possible that things get deserialized without proper
+        // checks
+        final PartitionSpec manualSpec = PartitionSpecHack.newPartitionSpecUnchecked(
+                schema,
+                List.of(PartitionFieldHack.of(1, 1000, "S1_identity", Transforms.fromString("identity"))),
+                1);
+        try {
+            Resolver.builder()
+                    .schema(schema)
+                    .spec(manualSpec)
+                    .definition(TableDefinition.of(
+                            ColumnDefinition.ofInt("S1").withPartitioning(),
+                            ColumnDefinition.ofInt("S1_F2")))
+                    .putColumnInstructions("S1", schemaField(1))
+                    .putColumnInstructions("S1_F2", schemaField(3))
+                    .build();
+            failBecauseExceptionWasNotThrown(Resolver.MappingException.class);
+        } catch (Resolver.MappingException e) {
+            assertThat(e).hasMessageContaining("Unable to map Deephaven column S1");
+            assertThat(e).cause().hasMessageContaining(
+                    "Cannot partition by non-primitive source field: struct<2: F1: optional int, 3: F2: required int>");
+        }
+    }
+
+    @Test
+    void partitionFieldContainedWithinList() {
+        final Schema schema = new Schema(NestedField.optional(1, "S1", Types.ListType.ofOptional(2, IT)));
+        // https://iceberg.apache.org/spec/#partitioning
+        // > The source columns ... cannot be contained in a list
+        // Iceberg does *not* currently guard against this (may open up a PR later for this)
+        final PartitionSpec spec = PartitionSpec.builderFor(schema).identity("S1.element").build();
+        try {
+            Resolver.builder()
+                    .schema(schema)
+                    .spec(spec)
+                    .definition(TableDefinition.of(
+                            ColumnDefinition.ofInt("S1").withPartitioning()))
+                    .putColumnInstructions("S1", partitionField(spec.fields().get(0).fieldId()))
+                    .build();
+            failBecauseExceptionWasNotThrown(Resolver.MappingException.class);
+        } catch (Resolver.MappingException e) {
+            assertThat(e).hasMessageContaining("Unable to map Deephaven column S1");
+            assertThat(e).cause().hasMessageContaining("Partition fields may not be contained in a list");
+        }
+    }
+
+    @Test
+    void partitionFieldContainedWithinMap() {
+        final Schema schema = new Schema(NestedField.optional(1, "S1", Types.MapType.ofOptional(2, 3, IT, IT)));
+        // https://iceberg.apache.org/spec/#partitioning
+        // > The source columns ... cannot be contained in a map
+        // Iceberg does *not* currently guard against this (may open up a PR later for this)
+        for (final PartitionSpec spec : List.of(
+                PartitionSpec.builderFor(schema).identity("S1.key").build(),
+                PartitionSpec.builderFor(schema).identity("S1.value").build())) {
+            try {
+                Resolver.builder()
+                        .schema(schema)
+                        .spec(spec)
+                        .definition(TableDefinition.of(
+                                ColumnDefinition.ofInt("S1").withPartitioning()))
+                        .putColumnInstructions("S1", partitionField(spec.fields().get(0).fieldId()))
+                        .build();
+                failBecauseExceptionWasNotThrown(Resolver.MappingException.class);
+            } catch (Resolver.MappingException e) {
+                assertThat(e).hasMessageContaining("Unable to map Deephaven column S1");
+                assertThat(e).cause().hasMessageContaining("Partition fields may not be contained in a map");
+            }
+        }
     }
 }

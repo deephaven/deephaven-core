@@ -46,13 +46,22 @@ public final class PartitionSpecHack {
      * internal Iceberg APIs that may break in the future.
      */
     public static PartitionSpec newPartitionSpec(Schema schema, List<PartitionField> fields, int newSpecId) {
+        return newPartitionSpecBuilder(schema, fields, newSpecId).build();
+    }
+
+    public static PartitionSpec newPartitionSpecUnchecked(Schema schema, List<PartitionField> fields, int newSpecId) {
+        return newPartitionSpecBuilder(schema, fields, newSpecId).buildUnchecked();
+    }
+
+    private static PartitionSpec.Builder newPartitionSpecBuilder(Schema schema, List<PartitionField> fields,
+            int newSpecId) {
         final PartitionSpec.Builder builder = PartitionSpec
                 .builderFor(schema)
                 .withSpecId(newSpecId);
         for (final PartitionField field : fields) {
             builder.add(field.sourceId(), field.fieldId(), field.name(), field.transform());
         }
-        return builder.build();
+        return builder;
     }
 
     private static boolean hasFieldId(Schema schema, int fieldId) {
