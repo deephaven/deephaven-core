@@ -30,18 +30,27 @@ import io.deephaven.iceberg.util.IcebergWriteInstructions;
 import io.deephaven.iceberg.util.Resolver;
 import io.deephaven.iceberg.util.SortOrderProvider;
 import io.deephaven.iceberg.util.TableParquetWriterOptions;
+import io.deephaven.parquet.table.CompletedParquetWrite;
 import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.ParquetTools;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
 import io.deephaven.qst.type.Type;
 import org.apache.iceberg.AppendFiles;
 import org.apache.iceberg.DataFile;
+import org.apache.iceberg.DataFiles;
+import org.apache.iceberg.FileFormat;
 import org.apache.iceberg.NullOrder;
+import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.Schema;
 import org.apache.iceberg.Snapshot;
 import org.apache.iceberg.SortOrder;
+import org.apache.iceberg.TableProperties;
 import org.apache.iceberg.catalog.Namespace;
 import org.apache.iceberg.catalog.TableIdentifier;
+import org.apache.iceberg.io.OutputFileFactory;
+import org.apache.iceberg.mapping.MappedField;
+import org.apache.iceberg.mapping.NameMapping;
+import org.apache.iceberg.mapping.NameMappingParser;
 import org.apache.iceberg.types.Types;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
 import org.apache.parquet.schema.MessageType;
@@ -77,6 +86,9 @@ import static io.deephaven.engine.util.TableTools.longCol;
 import static io.deephaven.engine.util.TableTools.stringCol;
 import static io.deephaven.iceberg.layout.IcebergBaseLayout.computeSortedColumns;
 import static io.deephaven.iceberg.util.ColumnInstructions.schemaField;
+import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
+import static io.deephaven.util.QueryConstants.NULL_INT;
+import static io.deephaven.util.QueryConstants.NULL_LONG;
 import static org.apache.parquet.schema.LogicalTypeAnnotation.intType;
 import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.DOUBLE;
 import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.INT32;
@@ -1618,5 +1630,103 @@ public abstract class SqliteCatalogBase {
         expected = TableTools.merge(source, source);
         assertTableEquals(expected, fromIceberg);
         verifySnapshots(tableIdentifier, List.of("append", "append"));
+    }
+
+    @Test
+    void nameMapping() {
+        final String FOO = "Foo";
+        final String BAR = "Bar";
+        final String BAZ = "Baz";
+        final TableDefinition definition = TableDefinition.of(
+                ColumnDefinition.ofInt(FOO),
+                ColumnDefinition.ofDouble(BAR),
+                ColumnDefinition.ofLong(BAZ));
+        final Table source = TableTools.newTable(
+                definition,
+                intCol(FOO, 15, 0, 32, 33, 19),
+                doubleCol(BAR, 10.5, 2.5, 3.5, 40.5, 0.5),
+                longCol(BAZ, 20L, 50L, 0L, 10L, 5L));
+        final Table empty = TableTools.newTable(
+                definition,
+                intCol(FOO, NULL_INT, NULL_INT, NULL_INT, NULL_INT, NULL_INT),
+                doubleCol(BAR, NULL_DOUBLE, NULL_DOUBLE, NULL_DOUBLE, NULL_DOUBLE, NULL_DOUBLE),
+                longCol(BAZ, NULL_LONG, NULL_LONG, NULL_LONG, NULL_LONG, NULL_LONG));
+        final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.NameMappingTest");
+        final Resolver resolver = catalogAdapter.createTable2(tableIdentifier, definition);
+
+        final NameMapping nameMapping = NameMapping.of(
+                MappedField.of(resolver.columnInstructions().get(FOO).schemaFieldId().orElseThrow(), FOO),
+                MappedField.of(resolver.columnInstructions().get(BAR).schemaFieldId().orElseThrow(), BAR),
+                MappedField.of(resolver.columnInstructions().get(BAZ).schemaFieldId().orElseThrow(), BAZ));
+
+        final IcebergTableAdapter tableAdapter = catalogAdapter.loadTable(tableIdentifier);
+
+        // This is emulating a write outside of DH where the field ids are _not_ written
+        {
+            final org.apache.iceberg.Table table = tableAdapter.icebergTable();
+            final String location;
+            {
+                final OutputFileFactory off = OutputFileFactory.builderFor(table, 0, 0)
+                        .format(FileFormat.PARQUET)
+                        .build();
+                location = off.newOutputFile().encryptingOutputFile().location();
+            }
+            final CompletedParquetWrite[] completed = new CompletedParquetWrite[1];
+            ParquetTools.writeTable(source, location, ParquetInstructions.builder()
+                    .setTableDefinition(source.getDefinition())
+                    .setSpecialInstructions(dataInstructions())
+                    .setOnWriteCompleted(cpw -> completed[0] = cpw)
+                    .build());
+            final DataFile file = DataFiles.builder(PartitionSpec.unpartitioned())
+                    .withFormat(FileFormat.PARQUET)
+                    .withPath(completed[0].destination().toString())
+                    .withRecordCount(completed[0].numRows())
+                    .withFileSizeInBytes(completed[0].numBytes())
+                    .build();
+            AppendFiles append = table.newAppend();
+            append.appendFile(file);
+            append.commit();
+        }
+
+        tableAdapter.refresh();
+
+        // If there is no name mapping (and there are no field ids in the data file), the columns will all be null
+        {
+            final IcebergReadInstructions i = IcebergReadInstructions.builder()
+                    .resolver(resolver)
+                    .build();
+            assertTableEquals(empty, tableAdapter.table(i));
+        }
+
+        // We can provide an explicit name mapping to resolve in this case
+        {
+            final IcebergReadInstructions i = IcebergReadInstructions.builder()
+                    .resolver(resolver)
+                    .nameMapping(nameMapping)
+                    .build();
+            assertTableEquals(source, tableAdapter.table(i));
+        }
+
+        // Or, if the iceberg table has a name mapping, we will use that
+        tableAdapter.icebergTable()
+                .updateProperties()
+                .set(TableProperties.DEFAULT_NAME_MAPPING, NameMappingParser.toJson(nameMapping))
+                .commit();
+        tableAdapter.refresh();
+        {
+            final IcebergReadInstructions i = IcebergReadInstructions.builder()
+                    .resolver(resolver)
+                    .build();
+            assertTableEquals(source, tableAdapter.table(i));
+        }
+
+        // And even if the table does have a name mapping, we can explicitly disable it
+        {
+            final IcebergReadInstructions i = IcebergReadInstructions.builder()
+                    .resolver(resolver)
+                    .nameMapping(NameMapping.empty())
+                    .build();
+            assertTableEquals(empty, tableAdapter.table(i));
+        }
     }
 }

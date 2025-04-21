@@ -310,10 +310,21 @@ public class IcebergCatalogAdapter {
         final Resolver resolver = IcebergUtils.resolver(definition);
         final org.apache.iceberg.Table table =
                 createTable(tableIdentifier, resolver.schema(), resolver.specOrUnpartitioned());
-        // the schema from the real table will have the schema id
+        // Ensure we are using the schema returned from the catalog that has the real schema id
+        final Schema schemaFromTable = table.schema();
+        // We need to ensure the field ids are also correct, given we assume field ids start at 1
+        if (!resolver.schema().sameSchema(schemaFromTable)) {
+            // While we might be able to technically work around this by creating new column instructions, it is not
+            // something we expect to happen, and if it does, we want to know why our assumptions about catalog / table
+            // / schema creation semantics is incorrect.
+            throw new IllegalStateException(String.format(
+                    "Schema returned after table creation is inconsistent with the version we built from the definition. fromDefinition=%s, fromTable=%s",
+                    resolver.schema(), schemaFromTable));
+        }
+        // TODO: check spec
         return Resolver.builder()
                 .definition(definition)
-                .schema(table.schema())
+                .schema(schemaFromTable)
                 .spec(table.spec())
                 .putAllColumnInstructions(resolver.columnInstructions())
                 .build();
