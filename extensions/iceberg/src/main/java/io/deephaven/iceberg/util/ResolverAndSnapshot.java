@@ -70,17 +70,15 @@ final class ResolverAndSnapshot {
             final boolean withPartitionInference) {
         if (!withPartitionInference) {
             return InferenceInstructions.of(schema);
-        } else {
-            final PartitionSpec partitionSpec = partitionForInference(table, snapshot);
-            if (partitionSpec.isUnpartitioned()) {
-                return InferenceInstructions.of(schema);
-            } else {
-                return InferenceInstructions.builder()
-                        .schema(schema)
-                        .spec(partitionSpec)
-                        .build();
-            }
         }
+        final PartitionSpec partitionSpec = partitionForInference(table, snapshot);
+        if (partitionSpec.isUnpartitioned()) {
+            return InferenceInstructions.of(schema);
+        }
+        return InferenceInstructions.builder()
+                .schema(schema)
+                .spec(partitionSpec)
+                .build();
     }
 
     private final Resolver resolver;
