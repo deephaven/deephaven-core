@@ -361,9 +361,8 @@ struct ChunkedArrayToColumnSourceVisitor final : public arrow::TypeVisitor {
     // num_slices = 4 (represented as slice_lengths.size())
 
     // The next step is a deaggregation step. We make a vector which has one element for each chunk.
-    // Inside each such element are is are the flattened version of the ListArray above. Again, in
-    // practice there is typically only one chunk, so our result array will typically have only one
-    // element.
+    // Inside each such element is the flattened version of the ListArray above. Again, in practice
+    // there is typically only one chunk, so our result array will typically have only one element.
     auto flattened_chunks = MakeReservedVector<std::shared_ptr<arrow::Array>>(
         chunked_listarrays.size());
     for (const auto &la: chunked_listarrays) {
