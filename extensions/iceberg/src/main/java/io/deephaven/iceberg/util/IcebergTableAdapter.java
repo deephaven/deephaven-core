@@ -640,35 +640,6 @@ public class IcebergTableAdapter {
                 : loader.load(uriScheme, specialInstructions);
     }
 
-    // private static List<IcebergKeyValuePartitionedLayout.IdentityPartitioningColData> identityPartitioningColumns(
-    // final PartitionSpec partitionSpec,
-    // final Map<String, String> legalizedColumnRenames,
-    // final TableDefinition tableDef) {
-    // final List<IcebergKeyValuePartitionedLayout.IdentityPartitioningColData> identityPartitioningColumns;
-    // // We can assume due to upstream validation that there are no duplicate names (after renaming) that are included
-    // // in the output definition, so we can ignore duplicates.
-    // final List<PartitionField> partitionFields = partitionSpec.fields();
-    // final int numPartitionFields = partitionFields.size();
-    // identityPartitioningColumns = new ArrayList<>(numPartitionFields);
-    // for (int fieldId = 0; fieldId < numPartitionFields; ++fieldId) {
-    // final PartitionField partitionField = partitionFields.get(fieldId);
-    // if (!partitionField.transform().isIdentity()) {
-    // // TODO (DH-18160): Improve support for handling non-identity transforms
-    // continue;
-    // }
-    // final String icebergColName = partitionField.name();
-    // final String dhColName = legalizedColumnRenames.getOrDefault(icebergColName, icebergColName);
-    // final ColumnDefinition<?> columnDef = tableDef.getColumn(dhColName);
-    // if (columnDef == null) {
-    // // Table definition provided by the user doesn't have this column, so skip.
-    // continue;
-    // }
-    // identityPartitioningColumns.add(new IcebergKeyValuePartitionedLayout.IdentityPartitioningColData(
-    // dhColName, TypeUtils.getBoxedType(columnDef.getDataType()), fieldId));
-    // }
-    // return identityPartitioningColumns;
-    // }
-
     /**
      * Refresh the table with the latest information from the Iceberg catalog, including new snapshots and schema.
      */
