@@ -8,6 +8,7 @@ import io.deephaven.api.util.NameValidator;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.iceberg.base.IcebergUtils;
 import io.deephaven.iceberg.internal.Inference;
 import io.deephaven.iceberg.internal.SchemaHelper;
 import io.deephaven.qst.type.Type;
@@ -15,10 +16,13 @@ import org.apache.iceberg.PartitionField;
 import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.Schema;
 import org.apache.iceberg.transforms.Transform;
+import org.apache.iceberg.types.Types;
 import org.apache.iceberg.types.Types.NestedField;
 import org.immutables.value.Value;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -36,8 +40,71 @@ import java.util.stream.Collectors;
 @BuildableStyle
 public abstract class Resolver {
 
+    // org.apache.iceberg.TableMetadata.INITIAL_SPEC_ID
+    private static final int INITIAL_SPEC_ID = 0;
+
+    // org.apache.iceberg.TableMetadata.INITIAL_SCHEMA_ID
+    private static final int INITIAL_SCHEMA_ID = 0;
+
+    /**
+     * Java Iceberg field IDs currently start from 1, but this seems to be an <b>implementation</b> detail that is not
+     * explicitly called out by the spec. See org.apache.iceberg.TableMetadata.newTableMetadata,
+     * org.apache.iceberg.types.TypeUtil.assignFreshIds. As of now, the Iceberg APIs does not expose this information to
+     * us, so we need to make the assumption here.
+     */
+    private static final int INITIAL_FIELD_ID = 1;
+
     public static Builder builder() {
         return ImmutableResolver.builder();
+    }
+
+    /**
+     * Creates a {@link Resolver} for the given Table {@code definition}, <b>only applicable in contexts where the
+     * Iceberg Table does not exist</b>. In cases where the Iceberg Table already exist, callers must create a resolver
+     * in relationship to an existing {@link Schema} (for example, via {@link #infer(Schema)}, or manually via
+     * {@link #builder()}).
+     *
+     * <p>
+     * All columns of type {@link ColumnDefinition.ColumnType#Partitioning partitioning} will be used to create the
+     * partition spec for the table. Callers should take note of the documentation on {@link Resolver#definition()} when
+     * deciding to create an Iceberg Table with partitioning columns.
+     *
+     * @param definition the Table definition
+     * @return the resolver
+     */
+    public static Resolver from(@NotNull final TableDefinition definition) {
+        final Resolver.Builder builder = Resolver.builder().definition(definition);
+        final Collection<String> partitioningColumnNames = new ArrayList<>();
+        final List<Types.NestedField> fields = new ArrayList<>();
+        int fieldID = INITIAL_FIELD_ID;
+        for (final ColumnDefinition<?> columnDefinition : definition.getColumns()) {
+            final String dhColumnName = columnDefinition.getName();
+            final org.apache.iceberg.types.Type icebergType =
+                    IcebergUtils.convertToIcebergType(columnDefinition.getDataType());
+            fields.add(Types.NestedField.optional(fieldID, dhColumnName, icebergType));
+            if (columnDefinition.isPartitioning()) {
+                partitioningColumnNames.add(dhColumnName);
+            }
+            builder.putColumnInstructions(dhColumnName, ColumnInstructions.schemaField(fieldID));
+            fieldID++;
+        }
+        final Schema schema = new Schema(INITIAL_SCHEMA_ID, fields);
+        return builder
+                .schema(schema)
+                .spec(createPartitionSpec(schema, partitioningColumnNames, INITIAL_SPEC_ID))
+                .build();
+    }
+
+    private static PartitionSpec createPartitionSpec(
+            @NotNull final Schema schema,
+            @NotNull final Iterable<String> partitionColumnNames,
+            int newSpecId) {
+        final PartitionSpec.Builder partitionSpecBuilder = PartitionSpec.builderFor(schema)
+                .withSpecId(newSpecId);
+        for (final String partitioningColumnName : partitionColumnNames) {
+            partitionSpecBuilder.identity(partitioningColumnName);
+        }
+        return partitionSpecBuilder.build();
     }
 
     /**

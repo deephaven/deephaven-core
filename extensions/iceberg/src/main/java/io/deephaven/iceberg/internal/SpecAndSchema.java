@@ -12,6 +12,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Used to hold a {@link Schema}, {@link PartitionSpec} and {@link IcebergReadInstructions} together.
  */
+@Deprecated
 public final class SpecAndSchema {
     public final Schema schema;
     public final PartitionSpec partitionSpec;

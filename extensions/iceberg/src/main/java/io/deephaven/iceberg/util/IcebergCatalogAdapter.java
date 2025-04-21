@@ -7,8 +7,6 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
-import io.deephaven.iceberg.base.IcebergUtils;
-import io.deephaven.iceberg.internal.NameMappingUtil;
 import io.deephaven.iceberg.internal.DataInstructionsProviderLoader;
 import io.deephaven.iceberg.internal.DataInstructionsProviderPlugin;
 import io.deephaven.util.annotations.VisibleForTesting;
@@ -263,14 +261,21 @@ public class IcebergCatalogAdapter {
 
     /**
      * Create a new Iceberg table in the catalog with the given table identifier and definition.
+     *
      * <p>
      * All columns of type {@link ColumnDefinition.ColumnType#Partitioning partitioning} will be used to create the
      * partition spec for the table.
+     *
+     * <p>
+     * Note, if callers plans to use this table for reading, it may be preferable to call
+     * {@link #createTable2(TableIdentifier, TableDefinition)}, which will return a {@link Resolver} which can be
+     * provided to {@link IcebergReadInstructions}.
      *
      * @param tableIdentifier The identifier string of the new table.
      * @param definition The {@link TableDefinition} of the new table.
      * @return The {@link IcebergTableAdapter table adapter} for the new Iceberg table.
      * @throws AlreadyExistsException if the table already exists
+     * @see Resolver#from(TableDefinition)
      */
     public IcebergTableAdapter createTable(
             @NotNull final String tableIdentifier,
@@ -280,6 +285,7 @@ public class IcebergCatalogAdapter {
 
     /**
      * Create a new Iceberg table in the catalog with the given table identifier and definition.
+     *
      * <p>
      * All columns of type {@link ColumnDefinition.ColumnType#Partitioning partitioning} will be used to create the
      * partition spec for the table.
@@ -293,38 +299,38 @@ public class IcebergCatalogAdapter {
      * @param definition The {@link TableDefinition} of the new table.
      * @return The {@link IcebergTableAdapter table adapter} for the new Iceberg table.
      * @throws AlreadyExistsException if the table already exists
-     * @see IcebergUtils#resolver(TableDefinition)
+     * @see Resolver#from(TableDefinition)
      */
     public IcebergTableAdapter createTable(
             @NotNull final TableIdentifier tableIdentifier,
             @NotNull final TableDefinition definition) {
-        final Resolver resolver = IcebergUtils.resolver(definition);
-        final org.apache.iceberg.Table table =
-                createTable(tableIdentifier, resolver.schema(), resolver.specOrUnpartitioned());
+        final Resolver resolver = Resolver.from(definition);
+        final org.apache.iceberg.Table table = createTable(tableIdentifier, resolver);
         return new IcebergTableAdapter(catalog, tableIdentifier, table, dataInstructionsProvider);
     }
 
+    /**
+     * Create a new Iceberg table in the catalog with the given table identifier and definition.
+     *
+     * <p>
+     * All columns of type {@link ColumnDefinition.ColumnType#Partitioning partitioning} will be used to create the
+     * partition spec for the table.
+     *
+     * @param tableIdentifier The identifier of the new table.
+     * @param definition The {@link TableDefinition} of the new table.
+     * @return the resolver
+     * @throws AlreadyExistsException if the table already exists
+     * @see Resolver#from(TableDefinition)
+     */
     public Resolver createTable2(
             @NotNull final TableIdentifier tableIdentifier,
             @NotNull final TableDefinition definition) {
-        final Resolver resolver = IcebergUtils.resolver(definition);
-        final org.apache.iceberg.Table table =
-                createTable(tableIdentifier, resolver.schema(), resolver.specOrUnpartitioned());
-        // Ensure we are using the schema returned from the catalog that has the real schema id
-        final Schema schemaFromTable = table.schema();
-        // We need to ensure the field ids are also correct, given we assume field ids start at 1
-        if (!resolver.schema().sameSchema(schemaFromTable)) {
-            // While we might be able to technically work around this by creating new column instructions, it is not
-            // something we expect to happen, and if it does, we want to know why our assumptions about catalog / table
-            // / schema creation semantics is incorrect.
-            throw new IllegalStateException(String.format(
-                    "Schema returned after table creation is inconsistent with the version we built from the definition. fromDefinition=%s, fromTable=%s",
-                    resolver.schema(), schemaFromTable));
-        }
-        // TODO: check spec
+        final Resolver resolver = Resolver.from(definition);
+        final org.apache.iceberg.Table table = createTable(tableIdentifier, resolver);
+        // Ensure we use the actual schema / spec from the newly created table
         return Resolver.builder()
                 .definition(definition)
-                .schema(schemaFromTable)
+                .schema(table.schema())
                 .spec(table.spec())
                 .putAllColumnInstructions(resolver.columnInstructions())
                 .build();
@@ -332,11 +338,13 @@ public class IcebergCatalogAdapter {
 
     private org.apache.iceberg.Table createTable(
             @NotNull final TableIdentifier tableIdentifier,
-            @NotNull final Schema schema,
-            @NotNull final PartitionSpec partitionSpec) {
+            @NotNull final Resolver resolver) {
+        final Schema schema = resolver.schema();
+        final PartitionSpec partitionSpec = resolver.specOrUnpartitioned();
         final boolean newNamespaceCreated = createNamespaceIfNotExists(catalog, tableIdentifier.namespace());
+        final org.apache.iceberg.Table table;
         try {
-            return catalog.createTable(tableIdentifier, schema, partitionSpec,
+            table = catalog.createTable(tableIdentifier, schema, partitionSpec,
                     Map.of(TableProperties.DEFAULT_FILE_FORMAT, TableProperties.DEFAULT_FILE_FORMAT_DEFAULT));
         } catch (final Throwable throwable) {
             if (newNamespaceCreated) {
@@ -349,5 +357,23 @@ public class IcebergCatalogAdapter {
             }
             throw throwable;
         }
+        // Ensure we are using the schema returned from the catalog that has the real schema id
+        final Schema schemaFromTable = table.schema();
+        // We need to ensure the field ids are also correct, given we assume field ids start at 1
+        if (!schema.sameSchema(schemaFromTable)) {
+            // While we might be able to technically work around this by creating new column instructions, it is not
+            // something we expect to happen, and if it does, we want to know why our assumptions about catalog / table
+            // / schema creation semantics is incorrect.
+            throw new IllegalStateException(String.format(
+                    "Schema returned after table creation is inconsistent with the version we built from the definition. assumed=%s, actual=%s",
+                    schema, schemaFromTable));
+        }
+        final PartitionSpec specFromTable = table.spec();
+        if (!partitionSpec.equals(specFromTable)) {
+            throw new IllegalStateException(String.format(
+                    "PartitionSpec returned after table creation is inconsistent with the version we built from the definition. assumed=%s, actual=%s",
+                    partitionSpec, specFromTable));
+        }
+        return table;
     }
 }
