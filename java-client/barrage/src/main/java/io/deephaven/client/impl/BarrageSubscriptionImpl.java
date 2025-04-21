@@ -25,11 +25,7 @@ import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.proto.util.Exceptions;
 import io.deephaven.util.annotations.FinalDefault;
-import io.grpc.CallOptions;
-import io.grpc.ClientCall;
-import io.grpc.Context;
-import io.grpc.MethodDescriptor;
-import io.grpc.StatusRuntimeException;
+import io.grpc.*;
 import io.grpc.protobuf.ProtoUtils;
 import io.grpc.stub.ClientCallStreamObserver;
 import io.grpc.stub.ClientCalls;
@@ -55,6 +51,7 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implements BarrageSubscription {
     private static final Logger log = LoggerFactory.getLogger(BarrageSubscriptionImpl.class);
 
+    private final String channelName;
     private final String logName;
     private final TableHandle tableHandle;
     private final BarrageSubscriptionOptions options;
@@ -112,7 +109,9 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
         final ClientCall<FlightData, BarrageMessage> call;
         final Context previous = Context.ROOT.attach();
         try {
-            call = session.channel().channel().newCall(subscribeDescriptor, CallOptions.DEFAULT);
+            Channel channel = session.channel().channel();
+            channelName = channel.authority();
+            call = channel.newCall(subscribeDescriptor, CallOptions.DEFAULT);
         } finally {
             Context.ROOT.detach(previous);
         }
@@ -233,7 +232,8 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
 
         boolean isFullSubscription = viewport == null;
         final BarrageTable localResultTable = BarrageTable.make(
-                executorService, schema, isFullSubscription, checkForCompletion);
+                channelName + "/" + tableHandle.exportId(), executorService, schema, isFullSubscription,
+                checkForCompletion);
         resultTable = localResultTable;
 
         // we must create the future before checking `isConnected` to guarantee `future` visibility in `destroy`

@@ -2,15 +2,36 @@
  * Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
  */
 #include "deephaven/dhcore/clienttable/schema.h"
+
+#include <cstddef>
+#include <cstdint>
+#include <functional>
+#include <map>
+#include <memory>
+#include <optional>
+#include <stdexcept>
+#include <string_view>
+#include <string>
+#include <utility>
+#include <vector>
+
+#include "deephaven/dhcore/types.h"
 #include "deephaven/dhcore/utility/utility.h"
-#include "deephaven/third_party/fmt/format.h"
+#include "deephaven/third_party/fmt/core.h"
+
+using deephaven::dhcore::utility::MakeReservedVector;
 
 namespace deephaven::dhcore::clienttable {
-std::shared_ptr<Schema> Schema::Create(std::vector<std::string> names, std::vector<ElementTypeId::Enum> types) {
-  if (names.size() != types.size()) {
-    auto message = fmt::format("Sizes differ: {} vs {}", names.size(), types.size());
+namespace {
+std::map<std::string_view, size_t, std::less<>> ValidateAndMakeIndex(
+    const std::vector<std::string> &names, const std::vector<ElementType> &types,
+    const std::vector<ElementTypeId::Enum> &type_ids) {
+  if (names.size() != types.size() || names.size() != type_ids.size()) {
+    auto message = fmt::format("Sizes differ: {} vs {} vs {}", names.size(), types.size(),
+        type_ids.size());
     throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
   }
+
   std::map<std::string_view, size_t, std::less<>> index;
   for (size_t i = 0; i != names.size(); ++i) {
     std::string_view sv_name = names[i];
@@ -20,12 +41,40 @@ std::shared_ptr<Schema> Schema::Create(std::vector<std::string> names, std::vect
       throw std::runtime_error(message);
     }
   }
-  return std::make_shared<Schema>(Private(), std::move(names), std::move(types), std::move(index));
+  return index;
+}
+}  // namespace
+
+std::shared_ptr<Schema> Schema::Create(std::vector<std::string> names,
+    std::vector<ElementType> types) {
+  auto type_ids = MakeReservedVector<ElementTypeId::Enum>(types.size());
+  for (const auto &type : types) {
+    type_ids.push_back(type.Id());
+  }
+  auto index = ValidateAndMakeIndex(names, types, type_ids);
+
+  return std::make_shared<Schema>(Private(), std::move(names), std::move(types),
+      std::move(type_ids), std::move(index));
 }
 
-Schema::Schema(Private, std::vector<std::string> names, std::vector<ElementTypeId::Enum> types,
-     std::map<std::string_view, size_t, std::less<>> index) : names_(std::move(names)), types_(std::move(types)),
-     index_(std::move(index)) {}
+std::shared_ptr<Schema> Schema::Create(std::vector<std::string> names,
+    std::vector<ElementTypeId::Enum> type_ids) {
+  auto types = MakeReservedVector<ElementType>(type_ids.size());
+  for (auto type_id : type_ids) {
+    types.push_back(ElementType::Of(type_id));
+  }
+  auto index = ValidateAndMakeIndex(names, types, type_ids);
+
+  return std::make_shared<Schema>(Private(), std::move(names), std::move(types),
+      std::move(type_ids), std::move(index));
+}
+
+Schema::Schema(Private, std::vector<std::string> names, std::vector<ElementType> types,
+     std::vector<ElementTypeId::Enum> type_ids, std::map<std::string_view,
+     size_t, std::less<>> index) : names_(std::move(names)),
+     types_(std::move(types)), type_ids_(std::move(type_ids)), index_(std::move(index)) {
+}
+
 Schema::~Schema() = default;
 
 std::optional<int32_t> Schema::GetColumnIndex(std::string_view name, bool strict) const {

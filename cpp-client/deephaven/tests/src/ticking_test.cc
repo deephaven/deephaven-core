@@ -1,12 +1,22 @@
 /*
  * Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
  */
+#include <chrono>
 #include <condition_variable>
+#include <cstdint>
 #include <iostream>
+#include <memory>
 #include <mutex>
+#include <optional>
+#include <stdexcept>
+#include <utility>
+#include <vector>
 #include "deephaven/third_party/catch.hpp"
+#include "deephaven/third_party/fmt/core.h"
 #include "deephaven/tests/test_util.h"
 #include "deephaven/client/client.h"
+#include "deephaven/client/utility/table_maker.h"
+#include "deephaven/dhcore/chunk/chunk.h"
 #include "deephaven/dhcore/chunk/chunk_maker.h"
 #include "deephaven/dhcore/utility/utility.h"
 
@@ -229,18 +239,21 @@ public:
     local_dates[t2] = {};
     local_times[t2] = {};
 
-    CompareColumn(*current, "Chars", chars);
-    CompareColumn(*current, "Bytes", int8s);
-    CompareColumn(*current, "Shorts", int16s);
-    CompareColumn(*current, "Ints", int32s);
-    CompareColumn(*current, "Longs", int64s);
-    CompareColumn(*current, "Floats", floats);
-    CompareColumn(*current, "Doubles", doubles);
-    CompareColumn(*current, "Bools", bools);
-    CompareColumn(*current, "Strings", strings);
-    CompareColumn(*current, "DateTimes", date_times);
-    CompareColumn(*current, "LocalDates", local_dates);
-    CompareColumn(*current, "LocalTimes", local_times);
+    TableMaker expected;
+    expected.AddColumn("Chars", chars);
+    expected.AddColumn("Bytes", int8s);
+    expected.AddColumn("Shorts", int16s);
+    expected.AddColumn("Ints", int32s);
+    expected.AddColumn("Longs", int64s);
+    expected.AddColumn("Floats", floats);
+    expected.AddColumn("Doubles", doubles);
+    expected.AddColumn("Bools", bools);
+    expected.AddColumn("Strings", strings);
+    expected.AddColumn("DateTimes", date_times);
+    expected.AddColumn("LocalDates", local_dates);
+    expected.AddColumn("LocalTimes", local_times);
+
+    TableComparerForTests::Compare(expected, *current);
 
     NotifyDone();
   }
@@ -270,7 +283,8 @@ TEST_CASE("Ticking Table: all the data is eventually present", "[ticking]") {
           "LocalTimes = ii == 5 ? null : '12:34:46'.plus((int)II * 'PT1S')"
       })
       .LastBy("II")
-      .Sort(SortPair::Ascending("II"));
+      .Sort(SortPair::Ascending("II"))
+      .DropColumns({"II", "Timestamp"});
 
   auto callback = std::make_shared<WaitForPopulatedTableCallback>(target);
   auto cookie = table.Subscribe(callback);

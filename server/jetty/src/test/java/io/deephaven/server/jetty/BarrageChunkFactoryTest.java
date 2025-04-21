@@ -46,6 +46,7 @@ import io.deephaven.io.logger.LogBufferGlobal;
 import io.deephaven.plugin.Registration;
 import io.deephaven.proto.flight.util.FlightExportTicketHelper;
 import io.deephaven.server.arrow.ArrowModule;
+import io.deephaven.server.arrow.ExchangeMarshallerModule;
 import io.deephaven.server.auth.AuthorizationProvider;
 import io.deephaven.server.config.ConfigServiceModule;
 import io.deephaven.server.console.ConsoleModule;
@@ -202,6 +203,7 @@ public class BarrageChunkFactoryTest {
             FlightTestModule.class,
             JettyServerModule.class,
             JettyTestConfig.class,
+            ExchangeMarshallerModule.class,
     })
     public interface JettyTestComponent extends TestComponent {
     }
@@ -1487,10 +1489,12 @@ public class BarrageChunkFactoryTest {
         DO_GET, DO_EXCHANGE_NO_FILTER, HEAD, TAIL, COLUMNS_AS_LIST;
 
         boolean isPreviewEnabled() {
+            // @formatter:off
             return switch (this) {
                 case HEAD, TAIL -> true;
                 default -> false;
             };
+            // @formatter:on
         }
 
         private byte[] getOptionsMetadata(final boolean reading, final int ticket) {

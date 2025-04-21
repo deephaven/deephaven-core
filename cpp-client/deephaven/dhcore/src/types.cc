@@ -3,13 +3,22 @@
  */
 #include "deephaven/dhcore/types.h"
 
+#include <chrono>
+#include <cstdint>
+#include <cmath>
+#include <iostream>
 #include <limits>
+#include <stdexcept>
 #include <sstream>
+#include <string>
+#include <string_view>
 
 #include "date/date.h"
 #include "deephaven/dhcore/utility/utility.h"
 #include "deephaven/third_party/fmt/chrono.h"
+#include "deephaven/third_party/fmt/core.h"
 #include "deephaven/third_party/fmt/format.h"
+#include "deephaven/third_party/fmt/core.h"
 #include "deephaven/third_party/fmt/ostream.h"
 
 static_assert(FMT_VERSION >= 100000);
@@ -54,6 +63,15 @@ constexpr const int32_t DeephavenConstants::kMaxInt;
 constexpr const int64_t DeephavenConstants::kNullLong;
 constexpr const int64_t DeephavenConstants::kMinLong;
 constexpr const int64_t DeephavenConstants::kMaxLong;
+
+ElementType ElementType::UnwrapList() const {
+  if (list_depth_ == 0) {
+    const char *message = "Can't unwrap list of depth 0";
+    throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
+  }
+
+  return {list_depth_ - 1, element_type_id_};
+}
 
 DateTime DateTime::Parse(std::string_view iso_8601_timestamp) {
   // Special handling for "Z" timezone

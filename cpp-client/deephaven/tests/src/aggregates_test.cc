@@ -5,18 +5,7 @@
 #include "deephaven/tests/test_util.h"
 #include "deephaven/dhcore/utility/utility.h"
 
-using deephaven::client::AggAvg;
-using deephaven::client::aggSum;
-using deephaven::client::aggMin;
-using deephaven::client::aggMax;
-using deephaven::client::aggCount;
-using deephaven::client::aggCombo;
-using deephaven::client::Aggregate;
-using deephaven::client::AggregateCombo;
-using deephaven::client::TableHandleManager;
-using deephaven::client::TableHandle;
-using deephaven::client::SortPair;
-using deephaven::dhcore::DeephavenConstants;
+using deephaven::client::utility::TableMaker;
 
 namespace deephaven::client::tests {
 TEST_CASE("Various Aggregates", "[aggregates]") {
@@ -34,20 +23,13 @@ TEST_CASE("Various Aggregates", "[aggregates]") {
           Aggregate::Max("MaxClose=Close"),
           Aggregate::Count("Count")}));
 
-  std::vector<std::string> ticker_data = {"AAPL", "AAPL", "AAPL"};
-  std::vector<double> avg_close_data = {541.55};
-  std::vector<double> sum_close_data = {1083.1};
-  std::vector<double> min_close_data = {538.2};
-  std::vector<double> max_close_data = {544.9};
-  std::vector<int64_t> count_data = {2};
+  TableMaker expected;
+  expected.AddColumn<double>("AvgClose", {541.55});
+  expected.AddColumn<double>("SumClose", {1083.1});
+  expected.AddColumn<double>("MinClose", {538.2});
+  expected.AddColumn<double>("MaxClose", {544.9});
+  expected.AddColumn<int64_t>("Count", {2});
 
-  CompareTable(
-      agg_table,
-      "AvgClose", avg_close_data,
-      "SumClose", sum_close_data,
-      "MinClose", min_close_data,
-      "MaxClose", max_close_data,
-      "Count", count_data
-  );
+  TableComparerForTests::Compare(expected, agg_table);
 }
 }  // namespace deephaven::client::tests
