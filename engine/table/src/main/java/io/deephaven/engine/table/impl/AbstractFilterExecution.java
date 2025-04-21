@@ -275,7 +275,7 @@ abstract class AbstractFilterExecution {
                 // Record that we are done with the push-down.
                 frc.markPushdownComplete();
 
-                if (pushdownResult.match().isEmpty()) {
+                if (pushdownResult.maybeMatch().isEmpty()) {
                     // If there are no remaining `maybe` rows, skip the chunk filter.
                     localInput.setValue(pushdownResult.match().copy());
 
@@ -330,7 +330,7 @@ abstract class AbstractFilterExecution {
             if (frc.ppm() != null) {
                 frc.ppm().pushdownFilter(
                         sourceTable.getColumnSourceMap(),
-                        currentFilter, localInput.getValue(), sourceTable.getRowSet(), jobScheduler(),
+                        currentFilter, localInput.getValue(), sourceTable.getRowSet(), usePrev, jobScheduler(),
                         onPushdownComplete, filterNec);
             } else {
                 final AbstractColumnSource<?> acs =
@@ -338,7 +338,7 @@ abstract class AbstractFilterExecution {
                                 .getColumnSource(currentFilter.getColumns().get(0));
 
                 acs.pushdownFilter(
-                        currentFilter, localInput.getValue(), sourceTable.getRowSet(), jobScheduler(),
+                        currentFilter, localInput.getValue(), sourceTable.getRowSet(), usePrev, jobScheduler(),
                         onPushdownComplete, filterNec);
             }
             return;
@@ -353,7 +353,7 @@ abstract class AbstractFilterExecution {
             final Consumer<WritableRowSet> localConsumer = (rows) -> {
                 // Do some cleanup on the rowsets and call the consumer.
                 try (final RowSet ignored = rows; final PushdownResult ignored2 = localPushdownResult) {
-                    onFilterComplete.accept(rows.union(frc.pushdownResult().match()));
+                    onFilterComplete.accept(rows.union(localPushdownResult.match()));
                 }
             };
 
@@ -413,13 +413,18 @@ abstract class AbstractFilterExecution {
                 0, filterResultContexts, sourceTable, localInput.getValue(), usePrev);
 
         // Iterate serially through the stateless filters in this set. Each filter will successively
-        // restrict the input to the next filter, until we reach the end of the filter chain.
+        // restrict the input to the next filter, until we reach the end of the filter chain or no rows match.
         jobScheduler().iterateSerial(
                 ExecutionContext.getContext(),
                 this::append,
                 JobScheduler.DEFAULT_CONTEXT_FACTORY,
                 0, filterResultContexts.length,
                 (filterContext, filterIdx, filterNec, filterResume) -> {
+                    if (localInput.getValue().isEmpty()) {
+                        // If there are no rows left to filter, skip this filter.
+                        filterResume.run();
+                        return;
+                    }
                     executeStatelessFilter(
                             filterResultContexts, filterIdx, filterResultContexts[filterIdx].filter(),
                             localInput, filterResume, filterNec);

@@ -12,9 +12,12 @@ import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.exceptions.TableInitializationException;
+import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.ShiftObliviousListener;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
@@ -23,12 +26,14 @@ import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.select.*;
 import io.deephaven.engine.table.impl.sources.RowKeyColumnSource;
 import io.deephaven.engine.table.impl.sources.UnionRedirection;
+import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.table.impl.verify.TableAssertions;
 import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.QueryTableTestBase.TableComparator;
 import io.deephaven.engine.testutil.generator.*;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
+import io.deephaven.engine.testutil.sources.IntTestSource;
 import io.deephaven.engine.util.PrintListener;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.gui.table.filters.Condition;
@@ -50,10 +55,12 @@ import java.math.BigInteger;
 import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.Collections;
+import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
 import java.util.function.IntUnaryOperator;
 import java.util.stream.IntStream;
 
@@ -1752,5 +1759,196 @@ public abstract class QueryTableWhereTest {
         final Table ignored5 = x.where(fof2);
         // the ConditionFilters do not compare as equal, so this is unfortunate, but expected behavior
         assertNotEquals(fof1, fof2);
+    }
+
+    /**
+     * Test column sources that simulate push-down operations.
+     */
+    private static class PushdownColumnSourceHeler {
+        static void pushdownFilter(
+                final WhereFilter filter,
+                final RowSet selection,
+                final RowSet fullSet,
+                final boolean usePrev,
+                final ColumnSource<?> source,
+                final double maybePercentage,
+                final Consumer<PushdownResult> onComplete) {
+            try (final SafeCloseable scope = LivenessScopeStack.open()) {
+                final String colName = filter.getColumns().get(0);
+                final Map<String, ColumnSource<?>> csMap = Collections.singletonMap(colName, source);
+                final Table dummy = new QueryTable(fullSet.copy().toTracking(), csMap);
+
+                try (final RowSet matches = filter.filter(selection, fullSet, dummy, usePrev)) {
+                    final long size = matches.size();
+                    final long maybeSize = (long) (size * maybePercentage);
+                    final WritableRowSet addedRowSet = matches.subSetByPositionRange(0, maybeSize);
+                    final WritableRowSet maybeRowSet = matches.subSetByPositionRange(maybeSize, size);
+
+                    // Default to returning all results as maybe
+                    onComplete.accept(PushdownResult.of(addedRowSet, maybeRowSet));
+                }
+            }
+        }
+    }
+
+    private static class PushdownIntTestSource extends IntTestSource {
+        private final long pushdownCost;
+        private final double maybePercentage;
+
+        public PushdownIntTestSource(RowSet rowSet, long pushdownCost, double maybePercentage, int... data) {
+            super(rowSet, IntChunk.chunkWrap(data));
+            this.pushdownCost = pushdownCost;
+            this.maybePercentage = maybePercentage;
+        }
+
+        @Override
+        public long estimatePushdownFilterCost(WhereFilter filter, RowSet selection, RowSet fullSet, boolean usePrev) {
+            return pushdownCost;
+        }
+
+        @Override
+        public void pushdownFilter(final WhereFilter filter, final RowSet input, final RowSet fullSet,
+                final boolean usePrev, final JobScheduler jobScheduler, final Consumer<PushdownResult> onComplete,
+                final Consumer<Exception> onError) {
+            PushdownColumnSourceHeler.pushdownFilter(filter, input, fullSet, usePrev, this, maybePercentage,
+                    onComplete);
+        }
+    }
+
+    @Test
+    public void testWherePushdownSingleColumn() {
+        final WritableRowSet rowSet = RowSetFactory.flat(5);
+        final Map<String, ColumnSource<?>> csMap = Map.of(
+                "A", new PushdownIntTestSource(rowSet, 100L, 0.5, 1, 2, 3, 4, 5),
+                "B", new PushdownIntTestSource(rowSet, 90L, 0.0, 1, 2, 3, 4, 5),
+                "C", new PushdownIntTestSource(rowSet, 80L, 1.0, 1, 2, 3, 4, 5));
+
+        final Table source = new QueryTable(rowSet.toTracking(), csMap);
+        Table result;
+
+        final WhereFilter f1 = WhereFilterFactory.getExpression("A <= 4");
+        result = source.where(f1);
+        try (final RowSet expected = i(0, 1, 2, 3)) {
+            assertTrue("result.getRowSet().equals(expected)", result.getRowSet().equals(expected));
+        }
+
+        final WhereFilter f2 = WhereFilterFactory.getExpression("A >= 2");
+        result = source.where(Filter.and(f1, f2));
+        try (final RowSet expected = i(1, 2, 3)) {
+            assertTrue("result.getRowSet().equals(expected)", result.getRowSet().equals(expected));
+        }
+
+        final WhereFilter f3 = WhereFilterFactory.getExpression("B <= 4");
+        result = source.where(f3);
+        try (final RowSet expected = i(0, 1, 2, 3)) {
+            assertTrue("result.getRowSet().equals(expected)", result.getRowSet().equals(expected));
+        }
+
+        final WhereFilter f4 = WhereFilterFactory.getExpression("B >= 2");
+        result = source.where(Filter.and(f3, f4));
+        try (final RowSet expected = i(1, 2, 3)) {
+            assertTrue("result.getRowSet().equals(expected)", result.getRowSet().equals(expected));
+        }
+
+        final WhereFilter f5 = WhereFilterFactory.getExpression("C <= 4");
+        result = source.where(f5);
+        try (final RowSet expected = i(0, 1, 2, 3)) {
+            assertTrue("result.getRowSet().equals(expected)", result.getRowSet().equals(expected));
+        }
+
+        final WhereFilter f6 = WhereFilterFactory.getExpression("C >= 2");
+        result = source.where(Filter.and(f5, f6));
+        try (final RowSet expected = i(1, 2, 3)) {
+            assertTrue("result.getRowSet().equals(expected)", result.getRowSet().equals(expected));
+        }
+    }
+
+    /**
+     * Test PPM for simple verification of filter execution code.
+     */
+    private static class TestPPM implements PushdownPredicateManager {
+        private final long pushdownCost;
+        private final double maybePercentage;
+
+        public TestPPM(long pushdownCost, double maybePercentage) {
+            this.pushdownCost = pushdownCost;
+            this.maybePercentage = maybePercentage;
+        }
+
+        @Override
+        public long estimatePushdownFilterCost(
+                WhereFilter filter,
+                RowSet selection,
+                RowSet fullSet,
+                boolean usePrev) {
+            return pushdownCost;
+        }
+
+        @Override
+        public void pushdownFilter(
+                final Map<String, ColumnSource<?>> columnSourceMap,
+                final WhereFilter filter,
+                final RowSet input,
+                final RowSet fullSet,
+                final boolean usePrev,
+                final JobScheduler jobScheduler,
+                final Consumer<PushdownResult> onComplete,
+                final Consumer<Exception> onError) {
+            try (final SafeCloseable scope = LivenessScopeStack.open()) {
+                final Table dummy = new QueryTable(fullSet.copy().toTracking(), columnSourceMap);
+
+                try (final RowSet matches = filter.filter(input, fullSet, dummy, usePrev)) {
+                    final long size = matches.size();
+                    final long maybeSize = (long) (size * maybePercentage);
+                    final WritableRowSet addedRowSet = matches.subSetByPositionRange(0, maybeSize);
+                    final WritableRowSet maybeRowSet = matches.subSetByPositionRange(maybeSize, size);
+
+                    // Default to returning all results as maybe
+                    onComplete.accept(PushdownResult.of(addedRowSet, maybeRowSet));
+                }
+            }
+        }
+    }
+
+    private static class PPMIntTestSource extends IntTestSource {
+        final PushdownPredicateManager ppm;
+
+        public PPMIntTestSource(PushdownPredicateManager ppm, RowSet rowSet, int... data) {
+            super(rowSet, IntChunk.chunkWrap(data));
+            this.ppm = ppm;
+        }
+
+        @Override
+        public PushdownPredicateManager pushdownManager() {
+            return ppm;
+        }
+    }
+
+    @Test
+    public void testWherePushdownMultiColumn() {
+        final TestPPM ppm = new TestPPM(100L, 0.5);
+
+        final WritableRowSet rowSet = RowSetFactory.flat(5);
+        final Map<String, ColumnSource<?>> csMap = Map.of(
+                "A", new PPMIntTestSource(ppm, rowSet, 1, 2, 3, 4, 5),
+                "B", new PPMIntTestSource(ppm, rowSet, 1, 2, 3, 4, 5),
+                "C", new PPMIntTestSource(ppm, rowSet, 1, 2, 3, 4, 5));
+
+        final Table source = new QueryTable(rowSet.toTracking(), csMap);
+        Table result;
+
+        final WhereFilter f1 = WhereFilterFactory.getExpression("A <= 1");
+        final WhereFilter f2 = WhereFilterFactory.getExpression("B >= 5");
+
+        result = source.where(Filter.or(f1, f2));
+        try (final RowSet expected = i(0, 4)) {
+            assertTrue("result.getRowSet().equals(expected)", result.getRowSet().equals(expected));
+        }
+
+        final WhereFilter f3 = WhereFilterFactory.getExpression("C = 3");
+        result = source.where(Filter.or(f1, f2, f3));
+        try (final RowSet expected = i(0, 2, 4)) {
+            assertTrue("result.getRowSet().equals(expected)", result.getRowSet().equals(expected));
+        }
     }
 }

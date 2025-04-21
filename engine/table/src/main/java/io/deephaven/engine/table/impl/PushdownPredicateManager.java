@@ -22,6 +22,7 @@ public interface PushdownPredicateManager {
      * @param filter The {@link Filter filter} to apply.
      * @param input The set of rows to test.
      * @param fullSet The full set of rows
+     * @param usePrev Whether to use the previous result
      * @param jobScheduler The job scheduler to use for scheduling child jobs
      * @param onComplete Consumer of the output rowsets for added and modified rows that pass the filter
      * @param onError Consumer of any exceptions that occur during the pushdown operation
@@ -32,6 +33,7 @@ public interface PushdownPredicateManager {
             final WhereFilter filter,
             final RowSet input,
             final RowSet fullSet,
+            final boolean usePrev,
             final JobScheduler jobScheduler,
             final Consumer<PushdownResult> onComplete,
             final Consumer<Exception> onError) {

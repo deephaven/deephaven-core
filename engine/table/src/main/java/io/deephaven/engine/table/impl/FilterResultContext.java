@@ -87,10 +87,13 @@ public final class FilterResultContext implements SafeCloseable {
                 if (pushdownNeeded) {
                     pushdownCost = acs.estimatePushdownFilterCost(filter, input, sourceTable.getRowSet(), usePrev);
                     pushdownNeeded = pushdownCost < filterCost;
+                } else {
+                    pushdownCost = Long.MAX_VALUE;
                 }
             } else {
                 // This a non-standard column source, assume it is expensive to filter with no push-down.
                 filterCost = Long.MAX_VALUE;
+                pushdownCost = Long.MAX_VALUE;
                 pushdownNeeded = false;
             }
         } else {
@@ -107,6 +110,8 @@ public final class FilterResultContext implements SafeCloseable {
                         ? ppm.estimatePushdownFilterCost(filter, input, sourceTable.getRowSet(), usePrev)
                         : Long.MAX_VALUE;
                 pushdownNeeded = pushdownCost < filterCost;
+            } else {
+                pushdownCost = Long.MAX_VALUE;
             }
         }
     }
