@@ -6,7 +6,9 @@ package io.deephaven.iceberg.internal;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.NoSuchColumnException;
+import io.deephaven.iceberg.util.ColumnInstructions;
 import io.deephaven.iceberg.util.Resolver;
+import io.deephaven.qst.type.PrimitiveType;
 import io.deephaven.qst.type.Type;
 import org.apache.iceberg.PartitionFieldHack;
 import org.apache.iceberg.PartitionSpec;
@@ -20,6 +22,7 @@ import org.apache.iceberg.types.Types.NestedField;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static io.deephaven.iceberg.util.ColumnInstructions.partitionField;
 import static io.deephaven.iceberg.util.ColumnInstructions.schemaField;
@@ -568,6 +571,54 @@ class ResolverTest {
             } catch (Resolver.MappingException e) {
                 assertThat(e).hasMessageContaining("Unable to map Deephaven column S1");
                 assertThat(e).cause().hasMessageContaining("Partition fields may not be contained in a map");
+            }
+        }
+    }
+
+    @Test
+    void listType() {
+        final Schema schema = new Schema(NestedField.optional(1, "MyListField", Types.ListType.ofOptional(2, IT)));
+        for (final TableDefinition definition : PrimitiveType.instances()
+                .map(Type::arrayType)
+                .map(x -> ColumnDefinition.of("Foo", x))
+                .map(TableDefinition::of)
+                .collect(Collectors.toList())) {
+            for (final ColumnInstructions ci : List.of(schemaField(1), schemaField(2))) {
+                try {
+                    Resolver.builder()
+                            .definition(definition)
+                            .schema(schema)
+                            .putColumnInstructions("Foo", ci)
+                            .build();
+                    failBecauseExceptionWasNotThrown(Resolver.MappingException.class);
+                } catch (Resolver.MappingException e) {
+                    assertThat(e).hasMessageContaining("Unable to map Deephaven column Foo");
+                    assertThat(e).cause().hasMessageContaining("List type not supported");
+                }
+            }
+        }
+    }
+
+    @Test
+    void mapType() {
+        final Schema schema = new Schema(NestedField.optional(1, "MyMapField", Types.MapType.ofOptional(2, 3, IT, IT)));
+        for (final TableDefinition definition : PrimitiveType.instances()
+                .map(Type::arrayType)
+                .map(x -> ColumnDefinition.of("Foo", x))
+                .map(TableDefinition::of)
+                .collect(Collectors.toList())) {
+            for (final ColumnInstructions ci : List.of(schemaField(1), schemaField(2), schemaField(3))) {
+                try {
+                    Resolver.builder()
+                            .definition(definition)
+                            .schema(schema)
+                            .putColumnInstructions("Foo", ci)
+                            .build();
+                    failBecauseExceptionWasNotThrown(Resolver.MappingException.class);
+                } catch (Resolver.MappingException e) {
+                    assertThat(e).hasMessageContaining("Unable to map Deephaven column Foo");
+                    assertThat(e).cause().hasMessageContaining("Map type not supported");
+                }
             }
         }
     }

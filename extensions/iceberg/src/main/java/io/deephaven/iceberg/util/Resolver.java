@@ -315,17 +315,19 @@ public abstract class Resolver {
             final List<NestedField> fieldPath,
             @Nullable final PartitionField partitionField) {
         if (partitionField != null) {
+            // final org.apache.iceberg.types.Type.PrimitiveType partitionType;
             // https://iceberg.apache.org/spec/#partitioning
             // The source columns, selected by ids, must be a primitive type and cannot be contained in a map or list,
             // but may be nested in a struct.
             {
                 // org.apache.iceberg.PartitionSpec.checkCompatibility should typically catch this case, but in certain
                 // cases (for example, a Catalog / metadata error), we can check for this ourselves.
-                final NestedField nestedF = fieldPath.get(fieldPath.size() - 1);
-                if (!nestedF.type().isPrimitiveType()) {
+                final NestedField field = fieldPath.get(fieldPath.size() - 1);
+                if (!field.type().isPrimitiveType()) {
                     throw new MappingException(
-                            String.format("Cannot partition by non-primitive source field: %s", nestedF.type()));
+                            String.format("Cannot partition by non-primitive source field: %s", field.type()));
                 }
+                // partitionType = field.type().asPrimitiveType();
             }
             for (NestedField nestedField : fieldPath) {
                 // org.apache.iceberg.PartitionSpec.checkCompatibility does not currently catch this case
@@ -375,12 +377,12 @@ public abstract class Resolver {
                         LinkedHashMap::new)));
     }
 
-    static void checkCompatible(Collection<? extends NestedField> path, Type<?> type) {
+    static void checkCompatible(List<? extends NestedField> path, Type<?> type) {
         // We are assuming that fieldPath has been properly constructed from a Schema. This makes it a poor candidate
         // as public API.
         checkCompatible(path);
         // todo: compare against DH type(s)
-        final NestedField lastField = path.stream().reduce((p, n) -> n).orElseThrow();
+        final NestedField lastField = path.get(path.size() - 1);
         if (!type.walk(new IcebergPrimitiveCompat(lastField.type().asPrimitiveType()))) {
             throw new MappingException(
                     String.format("Unable to map Iceberg type `%s` to Deephaven type `%s`", lastField.type(), type));
