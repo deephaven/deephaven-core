@@ -316,8 +316,8 @@ struct ChunkedArrayToColumnSourceVisitor final : public arrow::TypeVisitor {
    */
   arrow::Status Visit(const arrow::ListType &type) final {
     // This code can be confusing because there are multiple levels of aggregation here.
-    // 1. The incoming data is a column whose element type is list; each list represents an array of
-    //    T.
+    // 1. The incoming data is a column whose element type is list; each list represents
+    //    an array of T.
     // 2. The lists are represented as an arrow::ListArray. ListArray stores data which logically
     //    looks like a list<T[]> but for efficiency the data itself is stored as a flattened T[]
     //    along with enough offset information to recover the nested structure.
