@@ -7,11 +7,11 @@ import io.deephaven.annotations.CopyableStyle;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.locations.TableKey;
-import io.deephaven.iceberg.internal.NameMappingUtil;
-import org.apache.iceberg.DataFile;
 import org.apache.iceberg.PartitionSpec;
-import org.apache.iceberg.Schema;
 import org.apache.iceberg.Snapshot;
+import org.apache.iceberg.Table;
+import org.apache.iceberg.TableProperties;
+import org.apache.iceberg.mapping.NameMapping;
 import org.apache.iceberg.mapping.NameMappingParser;
 import org.apache.iceberg.types.Types;
 import org.immutables.value.Value;
@@ -130,15 +130,15 @@ public abstract class IcebergReadInstructions {
     }
 
     /**
-     * If column resolution should use the {@link NameMappingParser naming-mapping} fallback
-     * ({@value org.apache.iceberg.TableProperties#DEFAULT_NAME_MAPPING}) when {@link Types.NestedField#fieldId() field
-     * ids} are not present in the {@link DataFile data files}. This setting is only relevant when {@link #resolver()}
-     * is not set (when set, {@link Resolver#nameMapping()} is explicitly provided). By default, is {@code true}.
+     * The name mapping. This provides a fallback for resolving fields from data files that are written without
+     * {@link Types.NestedField#fieldId() field ids}. When unset, a name mapping from the {@link Table#properties()
+     * Table property} {@value TableProperties#DEFAULT_NAME_MAPPING} will be used. Callers are encouraged to explicitly
+     * set this. Setting to {@link NameMapping#empty()} will explicitly disable name mapping.
+     *
+     * @see NameMappingParser#fromJson(String)
+     * @see <a href="https://iceberg.apache.org/spec/#column-projection">schema.name-mapping.default</a>
      */
-    @Value.Default
-    public boolean useNameMapping() {
-        return true;
-    }
+    public abstract Optional<NameMapping> nameMapping();
 
     public interface Builder {
 
@@ -167,7 +167,7 @@ public abstract class IcebergReadInstructions {
 
         Builder usePartitionInference(boolean usePartitionInference);
 
-        Builder useNameMapping(boolean useNameMapping);
+        Builder nameMapping(NameMapping nameMapping);
 
         IcebergReadInstructions build();
     }

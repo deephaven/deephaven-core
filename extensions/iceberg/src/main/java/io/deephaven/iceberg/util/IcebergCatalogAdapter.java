@@ -311,14 +311,12 @@ public class IcebergCatalogAdapter {
         final org.apache.iceberg.Table table =
                 createTable(tableIdentifier, resolver.schema(), resolver.specOrUnpartitioned());
         // the schema from the real table will have the schema id
-        final Resolver.Builder builder = Resolver.builder()
+        return Resolver.builder()
                 .definition(definition)
                 .schema(table.schema())
                 .spec(table.spec())
-                .putAllColumnInstructions(resolver.columnInstructions());
-        // Unlikely to be set, but it's possible a catalog implementation creates ones by default?
-        NameMappingUtil.readNameMappingDefault(table).ifPresent(builder::nameMapping);
-        return builder.build();
+                .putAllColumnInstructions(resolver.columnInstructions())
+                .build();
     }
 
     private org.apache.iceberg.Table createTable(

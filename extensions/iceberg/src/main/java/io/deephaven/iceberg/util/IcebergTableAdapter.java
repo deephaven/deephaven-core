@@ -23,6 +23,7 @@ import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.iceberg.base.IcebergUtils;
 import io.deephaven.iceberg.internal.DataInstructionsProviderLoader;
+import io.deephaven.iceberg.internal.NameMappingUtil;
 import io.deephaven.iceberg.internal.Shim;
 import io.deephaven.iceberg.layout.IcebergAutoRefreshTableLocationProvider;
 import io.deephaven.iceberg.layout.IcebergBaseLayout;
@@ -53,6 +54,7 @@ import org.apache.iceberg.StatisticsFile;
 import org.apache.iceberg.StructLike;
 import org.apache.iceberg.catalog.Catalog;
 import org.apache.iceberg.catalog.TableIdentifier;
+import org.apache.iceberg.mapping.NameMapping;
 import org.apache.iceberg.types.Type;
 import org.apache.iceberg.types.Types;
 import org.jetbrains.annotations.NotNull;
@@ -94,7 +96,6 @@ public class IcebergTableAdapter {
     private final org.apache.iceberg.Table table;
     private final TableIdentifier tableIdentifier;
     private final DataInstructionsProviderLoader dataInstructionsProviderLoader;
-
     private final URI locationUri;
 
     public IcebergTableAdapter(
@@ -526,9 +527,11 @@ public class IcebergTableAdapter {
             @NotNull final ResolverAndSnapshot ras,
             @NotNull final IcebergReadInstructions readInstructions) {
         final TableKey tableKey = readInstructions.tableKey().orElse(StandaloneTableKey.getInstance());
-        final Resolver resolver = ras.resolver();
-        final IcebergBaseLayout keyFinder =
-                keyFinder(resolver, ras.snapshot().orElse(null), readInstructions.dataInstructions().orElse(null));
+        final IcebergBaseLayout keyFinder = keyFinder(
+                ras.resolver(),
+                readInstructions.nameMapping().or(this::tablesNameMapping).orElse(null),
+                ras.snapshot().orElse(null),
+                readInstructions.dataInstructions().orElse(null));
         if (readInstructions.updateMode().updateType() == IcebergUpdateMode.IcebergUpdateType.STATIC) {
             return new IcebergStaticTableLocationProvider<>(
                     tableKey,
@@ -590,17 +593,21 @@ public class IcebergTableAdapter {
         throw new IllegalStateException("Unexpected TableLocationProvider: " + itlpb.getClass().getName());
     }
 
+    private Optional<NameMapping> tablesNameMapping() {
+        return NameMappingUtil.readNameMappingDefault(table);
+    }
+
     private ResolverAndSnapshot resolverAndSnapshot(@NotNull final IcebergReadInstructions readInstructions) {
         return ResolverAndSnapshot.create(
                 table,
                 readInstructions.resolver().orElse(null),
                 getSnapshot(readInstructions),
-                readInstructions.usePartitionInference(),
-                readInstructions.useNameMapping());
+                readInstructions.usePartitionInference());
     }
 
     private @NotNull IcebergBaseLayout keyFinder(
             @NotNull final Resolver resolver,
+            @Nullable final NameMapping nameMapping,
             @Nullable final Snapshot snapshot,
             @Nullable final Object dataInstructions) {
         final Object specialInstructions;
@@ -614,7 +621,7 @@ public class IcebergTableAdapter {
         }
         final ParquetInstructions parquetInstructions = ParquetInstructions.builder()
                 .setTableDefinition(resolver.definition())
-                .setColumnResolverFactory(Shim.factory(resolver))
+                .setColumnResolverFactory(Shim.factory(resolver, nameMapping))
                 .setSpecialInstructions(specialInstructions)
                 .build();
         final Map<String, PartitionField> partitionFields = resolver.partitionFieldMap();

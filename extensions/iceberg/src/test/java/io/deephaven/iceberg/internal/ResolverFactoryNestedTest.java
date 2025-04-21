@@ -8,7 +8,6 @@ import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.iceberg.util.ColumnInstructions;
 import io.deephaven.iceberg.util.Resolver;
 import io.deephaven.parquet.table.location.ParquetColumnResolver;
-import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.Schema;
 import org.apache.iceberg.mapping.MappedField;
 import org.apache.iceberg.mapping.MappedFields;
@@ -145,16 +144,17 @@ class ResolverFactoryNestedTest {
         assertThat(resolver.of("RandomColumnName")).isEmpty();
     }
 
-    private static Resolver.Builder builder() {
+    private static Resolver resolver() {
         return Resolver.builder()
                 .definition(TABLE_DEFINITION)
                 .schema(SCHEMA)
-                .putAllColumnInstructions(COLUMN_INSTRUCTIONS);
+                .putAllColumnInstructions(COLUMN_INSTRUCTIONS)
+                .build();
     }
 
     @Test
     void normal() {
-        final ResolverFactory f1 = factory(builder().build());
+        final ResolverFactory f1 = factory(resolver(), null);
 
         // This is functionally equivalent to NameMapping.empty() when no actual names are provided
         final ResolverFactory noFallbacks =
@@ -162,11 +162,11 @@ class ResolverFactoryNestedTest {
 
         // No nesting, an illustration that even if you have the inner mappings correct, it still needs to be nested
         // appropriately; it won't have any effect
-        final ResolverFactory noNesting = factory(builder().nameMapping(NameMapping.of(
+        final ResolverFactory noNesting = factory(resolver(), NameMapping.of(
                 MappedField.of(I1_ID, PQ1),
                 MappedField.of(I2_ID, PQ2),
                 MappedField.of(I3_ID, PQ3),
-                MappedField.of(I4_ID, PQ4))).build());
+                MappedField.of(I4_ID, PQ4)));
 
         // The structure is too deeply nested; it won't have any effect
         final ResolverFactory overlyNested = factory(NameMapping.of(MappedField.of(99, List.of(), mapping(
@@ -458,14 +458,14 @@ class ResolverFactoryNestedTest {
     }
 
     private static ResolverFactory factory(NameMapping nameMapping) {
-        return factory(builder().nameMapping(nameMapping).build());
+        return factory(resolver(), nameMapping);
     }
 
     private static ResolverFactory factory(MappedFields nameMapping) {
-        return factory(builder().nameMapping(NameMapping.of(nameMapping)).build());
+        return factory(resolver(), NameMapping.of(nameMapping));
     }
 
-    private static ResolverFactory factory(Resolver resolver) {
-        return new ResolverFactory(resolver);
+    private static ResolverFactory factory(Resolver resolver, NameMapping nameMapping) {
+        return new ResolverFactory(resolver, nameMapping);
     }
 }

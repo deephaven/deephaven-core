@@ -21,10 +21,10 @@ import java.util.Objects;
 
 final class InferenceImpl extends TypeUtil.SchemaVisitor<Void> {
 
-    static Resolver.Builder of(InferenceInstructions inferenceInstructions) throws Inference.UnsupportedType {
+    static Resolver of(InferenceInstructions inferenceInstructions) throws Inference.UnsupportedType {
         final InferenceImpl visitor = new InferenceImpl(inferenceInstructions);
         TypeUtil.visit(inferenceInstructions.schema(), visitor);
-        return visitor.builder();
+        return visitor.build();
     }
 
     private final InferenceInstructions ii;
@@ -46,7 +46,7 @@ final class InferenceImpl extends TypeUtil.SchemaVisitor<Void> {
                 .schema(ii.schema());
     }
 
-    Resolver.Builder builder() throws Inference.UnsupportedType {
+    Resolver build() throws Inference.UnsupportedType {
         if (ii.failOnUnsupportedTypes() && !unsupportedTypes.isEmpty()) {
             throw unsupportedTypes.get(0);
         }
@@ -55,7 +55,8 @@ final class InferenceImpl extends TypeUtil.SchemaVisitor<Void> {
             builder.spec(ii.spec().get());
         }
         return builder
-                .definition(TableDefinition.of(definitions));
+                .definition(TableDefinition.of(definitions))
+                .build();
     }
 
     private boolean isSkip() {

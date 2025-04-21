@@ -8,7 +8,6 @@ import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.iceberg.util.ColumnInstructions;
 import io.deephaven.iceberg.util.Resolver;
 import io.deephaven.parquet.table.location.ParquetColumnResolver;
-import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.Schema;
 import org.apache.iceberg.mapping.MappedField;
 import org.apache.iceberg.mapping.NameMapping;
@@ -80,23 +79,22 @@ class ResolverFactorySimpleTest {
         assertThat(resolver.of("RandomColumnName")).isEmpty();
     }
 
-    private static Resolver.Builder builder() {
+    private static Resolver resolver() {
         return Resolver.builder()
                 .definition(TABLE_DEFINITION)
                 .schema(SCHEMA)
-                .putAllColumnInstructions(COLUMN_INSTRUCTIONS);
+                .putAllColumnInstructions(COLUMN_INSTRUCTIONS)
+                .build();
     }
 
     @Test
     void normal() {
-        final ResolverFactory f1 = factory(builder().build());
+        final ResolverFactory f1 = factory(resolver(), null);
         // An illustration that the name mapping is about the parquet column names, not the Deephaven nor Iceberg names,
         // so this name mapping should have no effect
-        final ResolverFactory f2 = factory(builder()
-                .nameMapping(NameMapping.of(
-                        MappedField.of(I1_ID, List.of(I1, DH1)),
-                        MappedField.of(I2_ID, List.of(I2, DH2))))
-                .build());
+        final ResolverFactory f2 = factory(resolver(), NameMapping.of(
+                MappedField.of(I1_ID, List.of(I1, DH1)),
+                MappedField.of(I2_ID, List.of(I2, DH2))));
         for (final ResolverFactory factory : List.of(f1, f2)) {
             // Empty parquet schema, nothing can be resolved
             {
@@ -156,17 +154,13 @@ class ResolverFactorySimpleTest {
 
     @Test
     void nameMapping() {
-        final ResolverFactory f1 = factory(builder()
-                .nameMapping(NameMapping.of(
-                        MappedField.of(I1_ID, PQ1),
-                        MappedField.of(I2_ID, PQ2)))
-                .build());
+        final ResolverFactory f1 = factory(resolver(), NameMapping.of(
+                MappedField.of(I1_ID, PQ1),
+                MappedField.of(I2_ID, PQ2)));
         // Unrelated mappings should have no effect
-        final ResolverFactory extraNames = factory(builder()
-                .nameMapping(NameMapping.of(
-                        MappedField.of(I1_ID, List.of(PQ1, I1, DH1)),
-                        MappedField.of(I2_ID, List.of(PQ2, I2, DH2))))
-                .build());
+        final ResolverFactory extraNames = factory(resolver(), NameMapping.of(
+                MappedField.of(I1_ID, List.of(PQ1, I1, DH1)),
+                MappedField.of(I2_ID, List.of(PQ2, I2, DH2))));
         for (ResolverFactory factory : List.of(f1, extraNames)) {
             // Empty parquet schema, nothing can be resolved
             {
@@ -220,7 +214,7 @@ class ResolverFactorySimpleTest {
                 .putAllColumnInstructions(COLUMN_INSTRUCTIONS);
     }
 
-    private static ResolverFactory factory(Resolver resolver) {
-        return new ResolverFactory(resolver);
+    private static ResolverFactory factory(Resolver resolver, NameMapping nameMapping) {
+        return new ResolverFactory(resolver, nameMapping);
     }
 }

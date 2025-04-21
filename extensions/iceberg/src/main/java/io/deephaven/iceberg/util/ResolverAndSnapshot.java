@@ -25,8 +25,7 @@ final class ResolverAndSnapshot {
             @NotNull final Table table,
             @Nullable final Resolver explicitResolver,
             @Nullable final Snapshot explicitSnapshot,
-            final boolean withPartitionInference,
-            final boolean withNameMapping) {
+            final boolean withPartitionInference) {
         if (explicitResolver != null && explicitSnapshot != null) {
             return new ResolverAndSnapshot(explicitResolver, explicitSnapshot);
         }
@@ -41,7 +40,7 @@ final class ResolverAndSnapshot {
                 schema = table.schemas().get(explicitSnapshot.schemaId());
                 snapshot = explicitSnapshot;
             }
-            resolver = infer(table, schema, snapshot, withPartitionInference, withNameMapping);
+            resolver = infer(table, schema, snapshot, withPartitionInference);
         } else {
             Assert.eqNull(explicitSnapshot, "explicitSnapshot");
             resolver = explicitResolver;
@@ -54,20 +53,14 @@ final class ResolverAndSnapshot {
             @NotNull final Table table,
             @NotNull final Schema schema,
             @Nullable final Snapshot snapshot,
-            final boolean withPartitionInference,
-            final boolean withNameMapping) {
+            final boolean withPartitionInference) {
         final InferenceInstructions instructions =
                 inferenceInstructions(table, schema, snapshot, withPartitionInference);
-        final Resolver.Builder builder;
         try {
-            builder = Resolver.inferBuilder(instructions);
+            return Resolver.infer(instructions);
         } catch (Inference.UnsupportedType e) {
             throw new RuntimeException(e);
         }
-        if (withNameMapping) {
-            NameMappingUtil.readNameMappingDefault(table).ifPresent(builder::nameMapping);
-        }
-        return builder.build();
     }
 
     private static InferenceInstructions inferenceInstructions(

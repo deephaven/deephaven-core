@@ -27,9 +27,11 @@ import java.util.function.Supplier;
 final class ResolverFactory implements ParquetColumnResolver.Factory {
 
     private final Resolver resolver;
+    private final NameMapping nameMapping;
 
-    ResolverFactory(Resolver resolver) {
+    ResolverFactory(Resolver resolver, NameMapping nameMapping) {
         this.resolver = Objects.requireNonNull(resolver);
+        this.nameMapping = nameMapping;
     }
 
     @Override
@@ -73,7 +75,7 @@ final class ResolverFactory implements ParquetColumnResolver.Factory {
             // Note: intentionally delaying the reading of the Parquet schema as late as possible.
             final MessageType parquetSchema = key.get();
             try {
-                return Optional.of(resolve(parquetSchema, readersPath, resolver.nameMapping().orElse(null)));
+                return Optional.of(resolve(parquetSchema, readersPath, nameMapping));
             } catch (MappingException e) {
                 // TODO: we don't have enough info to know whether this is expected or not. log?
                 return Optional.empty();

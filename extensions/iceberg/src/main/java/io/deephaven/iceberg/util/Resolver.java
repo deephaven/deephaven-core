@@ -14,10 +14,6 @@ import io.deephaven.qst.type.Type;
 import org.apache.iceberg.PartitionField;
 import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.Schema;
-import org.apache.iceberg.Table;
-import org.apache.iceberg.TableProperties;
-import org.apache.iceberg.mapping.NameMapping;
-import org.apache.iceberg.mapping.NameMappingParser;
 import org.apache.iceberg.transforms.Transform;
 import org.apache.iceberg.types.Types.NestedField;
 import org.immutables.value.Value;
@@ -67,20 +63,6 @@ public abstract class Resolver {
      * @throws Inference.UnsupportedType if an unsupported type is encountered
      */
     public static Resolver infer(final InferenceInstructions inferenceInstructions) throws Inference.UnsupportedType {
-        return inferBuilder(inferenceInstructions).build();
-    }
-
-    /**
-     * Infer a resolver-builder based on the {@code inferenceInstructions}. This sets everything necessary, except
-     * leaves {@link Resolver.Builder#nameMapping(NameMapping) name-mapping} unset, allowing the caller to provide it if
-     * necessary.
-     *
-     * @param inferenceInstructions the inference instructions
-     * @return the resolver-builder
-     * @throws Inference.UnsupportedType if an unsupported type is encountered
-     */
-    public static Resolver.Builder inferBuilder(final InferenceInstructions inferenceInstructions)
-            throws Inference.UnsupportedType {
         return InferenceImpl.of(inferenceInstructions);
     }
 
@@ -151,16 +133,6 @@ public abstract class Resolver {
     public abstract Map<String, ColumnInstructions> columnInstructions();
 
     /**
-     * The name mapping. This provides a fallback for resolving columns from data files that are written without
-     * field-ids. This is typically provided from the Iceberg {@link Table#properties() Table property}
-     * {@value TableProperties#DEFAULT_NAME_MAPPING}.
-     *
-     * @see NameMappingParser#fromJson(String)
-     * @see <a href="https://iceberg.apache.org/spec/#column-projection">schema.name-mapping.default</a>
-     */
-    public abstract Optional<NameMapping> nameMapping();
-
-    /**
      * Get the field path associated with the Deephaven {@code columnName}. Will return empty when the column name is
      * not in {@link #columnInstructions()}, and a result otherwise.
      *
@@ -187,8 +159,6 @@ public abstract class Resolver {
         Builder putColumnInstructions(String columnName, ColumnInstructions columnInstructions);
 
         Builder putAllColumnInstructions(Map<String, ? extends ColumnInstructions> entries);
-
-        Builder nameMapping(NameMapping nameMapping);
 
         Resolver build();
     }
