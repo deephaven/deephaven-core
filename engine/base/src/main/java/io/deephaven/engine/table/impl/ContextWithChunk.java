@@ -6,6 +6,7 @@ package io.deephaven.engine.table.impl;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.table.Context;
+import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 
 public class ContextWithChunk<ATTR extends Any, CONTEXT extends Context> implements Context {
@@ -63,6 +64,22 @@ public class ContextWithChunk<ATTR extends Any, CONTEXT extends Context> impleme
     public static <CONTEXT extends Context> CONTEXT getContext(@NotNull Context context) {
         // noinspection unchecked,rawtypes
         return (CONTEXT) ((ContextWithChunk) context).context;
+    }
+
+    /**
+     * Makes sure that the internal array (and hence the writableChunk) is at least the specified size.
+     */
+    @SuppressWarnings("unused") // Used by Core+ in
+                                // io.deephaven.enterprise.sources.regioned.impl.ColumnRegionObjectCodecVariable
+    public void ensureSize(final int length) {
+        if (writableChunk.size() < length) {
+            if (writableChunk.capacity() < length) {
+                final SafeCloseable oldWritableChunk = writableChunk;
+                writableChunk = writableChunk.getChunkType().makeWritableChunk(length);
+                oldWritableChunk.close();
+            }
+            writableChunk.setSize(length);
+        }
     }
 
     /**
