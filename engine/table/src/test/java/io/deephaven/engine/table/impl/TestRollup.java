@@ -9,12 +9,14 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.hierarchical.HierarchicalTable;
 import io.deephaven.engine.table.hierarchical.RollupTable;
+import io.deephaven.engine.table.impl.select.FormulaCompilationException;
 import io.deephaven.engine.table.impl.select.WhereFilterFactory;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.*;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.test.types.OutOfBandTest;
+import org.jetbrains.annotations.NotNull;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -96,9 +98,12 @@ public class TestRollup extends RefreshingTableTestCase {
         final Table testTable = createTable(false, 100_000, random);
 
         final RollupTable rollupTable = testTable.rollup(aggs, false, "Sym");
+
         final Table rootTable = rollupTable.getRoot();
 
         final Table actual = rootTable.select(columnsToCompare);
+        System.out.println("*** Actual ***");
+        TableTools.show(actual, 100);
         final Table expected = testTable.aggBy(aggs);
 
         // Compare the zero-key equivalent table to the rollup table root
@@ -130,6 +135,54 @@ public class TestRollup extends RefreshingTableTestCase {
             }
             simulateShiftAwareStep(ctxt + " step == " + step, size, random, testTable, columnInfo, en);
         }
+    }
+
+    @Test
+    public void testRollupWithFilter() {
+        final Table source = newTable(
+                stringCol("GRP", "v1", "v1", "v2", "v2", "v3"),
+                intCol("AVG", 1, 2, 3, 4, 5),
+                intCol("CONST", 11, 12, 13, 14, 15));
+        final List<Aggregation> aggs = List.of(AggAvg("avg=AVG"));
+
+        final RollupTable rollup1 = source.rollup(aggs, true, "GRP");
+        final IllegalArgumentException ex1 = Assert.assertThrows(IllegalArgumentException.class,
+                () -> rollup1.withFilter(WhereFilterFactory.getExpression("AVG >= 13")));
+        assertEquals("Invalid filter found: RangeFilter(AVG greater than or equal to 13) may only use " +
+                        "non-aggregation columns, which are [GRP, CONST], but has used [AVG]", ex1.getMessage());
+        final RuntimeException ex2 = Assert.assertThrows(RuntimeException.class,
+                () -> rollup1.withFilter(WhereFilterFactory.getExpression("BOGUS = 13")));
+        assertEquals("Column \"BOGUS\" doesn't exist in this table, available columns: [GRP, AVG, CONST]",
+                ex2.getMessage());
+
+        final RollupTable rollup2 = source.rollup(aggs, true, "GRP")
+                .withFilter(WhereFilterFactory.getExpression("GRP = `v2`"));
+        final Table snapshot2 = snapshotFilteredRollup(rollup2);
+
+        final RollupTable rollup3 = source.rollup(aggs, true, "GRP")
+                .withFilter(WhereFilterFactory.getExpression("CONST >= 13 && CONST <= 14"));
+        final Table snapshot3 = snapshotFilteredRollup(rollup3);
+
+        final RollupTable rollup4 = source.rollup(aggs, true, "GRP")
+                .withFilter(WhereFilterFactory.getExpression("CONST >= 13 && GRP = `v2`"));
+        final Table snapshot4 = snapshotFilteredRollup(rollup4);
+
+
+
+
+    }
+
+    private Table snapshotFilteredRollup(RollupTable rollup) {
+        RollupTable.NodeOperationsRecorder recorder =
+                rollup.makeNodeOperationsRecorder(RollupTable.NodeType.Aggregated).sortDescending("GRP");
+        final RollupTable rollupApply = rollup.withNodeOperations(recorder);
+        final String[] arrayWithNull = new String[1];
+        final Table keyTable = newTable(
+                intCol(rollupApply.getRowDepthColumn().name(), 0),
+                stringCol("GRP", arrayWithNull),
+                byteCol("Action", HierarchicalTable.KEY_TABLE_ACTION_EXPAND_ALL));
+        final HierarchicalTable.SnapshotState ss = rollupApply.makeSnapshotState();
+        return snapshotToTable(rollupApply, ss, keyTable, ColumnName.of("Action"), null, RowSetFactory.flat(30));
     }
 
     @Test
