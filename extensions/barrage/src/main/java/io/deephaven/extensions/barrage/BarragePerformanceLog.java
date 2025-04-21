@@ -32,7 +32,7 @@ public class BarragePerformanceLog {
 
     /** Explicitly set this parameter to flush performance metrics more frequently. */
     public static final long CYCLE_DURATION_MILLIS = Configuration.getInstance().getLongForClassWithDefault(
-            BarragePerformanceLog.class, "cycleDurationMillis", 60000);
+            BarragePerformanceLog.class, "cycleDurationMillis", 15000);
 
     private static volatile BarragePerformanceLog INSTANCE;
 
