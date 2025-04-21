@@ -12,10 +12,15 @@ plugins {
 evaluationDependsOn(Docker.registryProject('selenium'))
 
 configurations {
+    // output configurations:
     js
     dts
+
+    // classpath for generating typescript via a javadoc doclet
     typescriptDoclet
 
+    // GWT compiles using all source code, from the current project and all dependencies, including
+    // any generated sources.
     gwt {
         canBeConsumed = true
         canBeResolved = true
@@ -25,8 +30,10 @@ configurations {
             attribute(DocsType.DOCS_TYPE_ATTRIBUTE, objects.named(DocsType, DocsType.SOURCES))
         }
     }
+    // The GWT plugin we use can only read from compileClasspath, so we append to that
     compileClasspath.extendsFrom(gwt)
 }
+
 components {
     java {
         addVariantsFromConfiguration(configurations.gwt) {}
