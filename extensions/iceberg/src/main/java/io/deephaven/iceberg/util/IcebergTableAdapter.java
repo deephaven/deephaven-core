@@ -570,6 +570,7 @@ public class IcebergTableAdapter {
      */
     public IcebergTable table(@NotNull final IcebergReadInstructions readInstructions) {
         // todo: should tableKey be part of readInstructions?
+        refresh();
         final ResolverAndSnapshot ras = resolverAndSnapshot(readInstructions);
         final IcebergTableLocationProviderBase<TableKey, IcebergTableLocationKey> itlpb =
                 provider2(ras, readInstructions);
