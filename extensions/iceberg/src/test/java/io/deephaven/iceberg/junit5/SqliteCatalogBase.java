@@ -382,8 +382,7 @@ public abstract class SqliteCatalogBase {
                 Types.NestedField.required(7, "instantCol", Types.TimestampType.withZone()),
                 Types.NestedField.required(8, "localDateTimeCol", Types.TimestampType.withoutZone()),
                 Types.NestedField.required(9, "localDateCol", Types.DateType.get()),
-                Types.NestedField.required(10, "localTimeCol", Types.TimeType.get()),
-                Types.NestedField.required(11, "binaryCol", Types.BinaryType.get()));
+                Types.NestedField.required(10, "localTimeCol", Types.TimeType.get()));
         final Namespace myNamespace = Namespace.of("MyNamespace");
         final TableIdentifier myTableId = TableIdentifier.of(myNamespace, "MyTableWithAllDataTypes");
         catalogAdapter.catalog().createTable(myTableId, schema);
@@ -399,8 +398,7 @@ public abstract class SqliteCatalogBase {
                         "instantCol = java.time.Instant.now()",
                         "localDateTimeCol = java.time.LocalDateTime.now()",
                         "localDateCol = java.time.LocalDate.now()",
-                        "localTimeCol = java.time.LocalTime.now()",
-                        "binaryCol = new byte[] {(byte) i}");
+                        "localTimeCol = java.time.LocalTime.now()");
         final IcebergTableAdapter tableAdapter = catalogAdapter.loadTable(myTableId);
         final IcebergTableWriter tableWriter = tableAdapter.tableWriter(writerOptionsBuilder()
                 .tableDefinition(source.getDefinition())
