@@ -3,12 +3,9 @@
 //
 package org.apache.iceberg;
 
-import io.deephaven.util.annotations.InternalUseOnly;
-
 import java.util.List;
 import java.util.stream.Collectors;
 
-@InternalUseOnly
 public final class PartitionSpecHack {
 
     // Note: we might like this to migrate to Core+, as we don't need to serialize in Core?

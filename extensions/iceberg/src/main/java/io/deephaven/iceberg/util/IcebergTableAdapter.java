@@ -468,11 +468,7 @@ public class IcebergTableAdapter {
         return null;
     }
 
-    public Resolver infer() {
-        return resolverAndSnapshot(IcebergReadInstructions.DEFAULT).resolver();
-    }
-
-    public Resolver infer(@NotNull final IcebergReadInstructions readInstructions) {
+    public Resolver resolver(@NotNull final IcebergReadInstructions readInstructions) {
         return resolverAndSnapshot(readInstructions).resolver();
     }
 
@@ -492,7 +488,7 @@ public class IcebergTableAdapter {
      * @return The table definition
      */
     public TableDefinition definition(@NotNull final IcebergReadInstructions readInstructions) {
-        return infer(readInstructions).definition();
+        return resolver(readInstructions).definition();
     }
 
     /**

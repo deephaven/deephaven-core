@@ -120,6 +120,7 @@ public abstract class IcebergReadInstructions {
     @Value.Default
     public boolean usePartitionInference() {
         // TODO: this is still dangerous, esp w/ DEFAULT
+        // TODO: should this always be false?
         return updateMode() == IcebergUpdateMode.staticMode();
     }
 

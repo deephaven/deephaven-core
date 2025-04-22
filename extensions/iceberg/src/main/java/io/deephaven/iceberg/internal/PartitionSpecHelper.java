@@ -28,7 +28,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class PartitionSpecHelper {
+public final class PartitionSpecHelper {
 
     public static Optional<PartitionField> find(PartitionSpec spec, int partitionFieldId) {
         PartitionField found = null;
@@ -80,7 +80,6 @@ public class PartitionSpecHelper {
                         .mapToObj(specsById::get)
                         .peek(Objects::requireNonNull);
     }
-
 
     /**
      * Returns the {@link PartitionSpec#specId() highest-valued} spec from {@code it} that is an
@@ -181,92 +180,5 @@ public class PartitionSpecHelper {
                 .flatMap(snapshot -> referencedSpecs(table.io(), table.specs(), snapshot))) {
             return newestUnorderedSubset(partitionSpecStream.iterator());
         }
-    }
-
-    public static PartitionSpec limit(PartitionSpec spec, Schema schema) {
-
-        final List<PartitionField> contained = new ArrayList<>(spec.fields().size());
-        for (final PartitionField field : spec.fields()) {
-            final Types.NestedField sourceField = schema.findField(field.sourceId());
-            if (sourceField == null) {
-                continue;
-            }
-            contained.add(field);
-        }
-        PartitionSpec.builderFor(schema);
-        return null;
-    }
-
-    /**
-     * {@link Partitioning#groupingKeyType(Schema, Collection)}
-     */
-    static List<PartitionField> commonDataFilePartitionFields(
-            @NotNull final FileIO io,
-            @NotNull final Map<Integer, PartitionSpec> specsById,
-            @Nullable final Snapshot snapshot) {
-        if (snapshot == null) {
-            return List.of();
-        }
-        final Set<PartitionField> intersection = new HashSet<>();
-        boolean first = true;
-        for (ManifestFile manifestFile : snapshot.dataManifests(io)) {
-            final PartitionSpec spec = specsById.get(manifestFile.partitionSpecId());
-            // We don't expect there to be a null spec; but to be safe, if we get one, we'll treat it as empty.
-            final List<PartitionField> fields = spec == null ? List.of() : spec.fields();
-            if (first) {
-                intersection.addAll(fields);
-                first = false;
-            } else {
-                intersection.retainAll(fields);
-            }
-            if (intersection.isEmpty()) {
-                break;
-            }
-        }
-        return intersection
-                .stream()
-                .sorted(Comparator.comparingInt(PartitionField::fieldId))
-                .collect(Collectors.toUnmodifiableList());
-    }
-
-    public static PartitionSpec virtualSpec(
-            @NotNull final Schema schema,
-            @NotNull final FileIO io,
-            @NotNull final Map<Integer, PartitionSpec> specsById,
-            @Nullable final Snapshot snapshot) {
-        // commonDataFilePartitionFields()
-        // .stream()
-        // .filter(PartitionSpecHelper::isIdentity)
-        // .map(pf -> SchemaHelper.findFieldPath(schema, pf))
-        final PartitionSpec.Builder builder = PartitionSpec.builderFor(schema);
-
-
-
-        // todo: should we set a negative spec id?
-        commonDataFilePartitionFields(io, specsById, snapshot)
-                .stream()
-                // .filter(PartitionSpecHelper::isIdentity)
-                .map(pf -> SchemaHelper.findFieldPath(schema, pf))
-                .filter(Optional::isPresent)
-                .map(Optional::get)
-                .map(SchemaHelper::toFieldName)
-                .forEachOrdered(builder::identity);
-        return builder.build();
-    }
-
-    private static void what(PartitionSpec.Builder builder, Schema schema, PartitionField pf) {
-
-        final List<Types.NestedField> fieldPath = SchemaHelper.findFieldPath(schema, pf).orElse(null);
-        if (fieldPath == null) {
-            return;
-        }
-        final String name = SchemaHelper.toFieldName(fieldPath);
-        builder.identity("what");
-
-
-    }
-
-    private static boolean isIdentity(PartitionField pf) {
-        return pf.transform().isIdentity();
     }
 }
