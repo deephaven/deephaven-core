@@ -257,6 +257,36 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
                 .then(this::finish).catch_(this::report);
     }
 
+    public void testTreeCustomColumnException() {
+        connect(tables)
+                .then(treeTable("static_tree"))
+                .then(treeTable -> {
+                    delayTestFinish(1500);
+                    assertFalse(treeTable.isRefreshing());
+                    assertFalse(treeTable.isClosed());
+                    assertFalse(treeTable.isIncludeConstituents());
+
+                    assertEquals(2, treeTable.getColumns().length);
+                    assertEquals("ID", treeTable.getColumns().getAt(0).getName());
+                    assertEquals("Parent", treeTable.getColumns().getAt(1).getName());
+
+                    CustomColumnOptions col0Options = new CustomColumnOptions();
+                    col0Options.rollupNodeType = "aggregated";
+                    CustomColumn col0 = new CustomColumn("ID_new", CustomColumn.TYPE_NEW, "`ID-` + ID", col0Options);
+
+                    JsArray<JsTable.CustomColumnArgUnionType> columns = new JsArray<>(
+                            JsTable.CustomColumnArgUnionType.of(col0));
+
+                    // This call should produce a UOE.
+                    treeTable.applyCustomColumns(columns);
+                    treeTable.setViewport(0, 99, treeTable.getColumns(), null);
+                    return treeTable.getViewportData();
+                })
+                // This should result in an error, report if we do not get one.
+                .then(this::report, this::finish);
+    }
+
+
     public void testTickingRollup() {
         connect(tables)
                 .then(treeTable("ticking_rollup"))
@@ -637,8 +667,9 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
                     return table.rollup(cfg).then(rollupTable -> {
 
                         JsPropertyMap<Object> col0 =
-                                JsPropertyMap.of("name", "UnsafeOp", "expression", "Runtime.exec(`ls`)", "type",
-                                        CustomColumn.TYPE_NEW);
+                                JsPropertyMap.of("name", "UnsafeOp",
+                                        "expression", "Runtime.getRuntime().exec(`ls`)",
+                                        "type", CustomColumn.TYPE_NEW);
                         col0.set("options", JsPropertyMap.of("rollupNodeType", "aggregated"));
 
                         JsArray<JsTable.CustomColumnArgUnionType> columns = new JsArray<>(

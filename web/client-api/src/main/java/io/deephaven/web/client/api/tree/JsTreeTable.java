@@ -1134,7 +1134,8 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
     }
 
     /**
-     * Adding new columns to the table based on other columns using updateView() mechanics.
+     * Adding new columns to the table based on other columns using updateView() mechanics. Rollup tables are supported
+     * but Tree tables will throw an {@link UnsupportedOperationException} if this function is called.
      *
      * @param customColumns
      * @return {@link CustomColumn} array
@@ -1142,6 +1143,11 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
     @JsMethod
     @SuppressWarnings("unusable-by-js")
     public JsArray<CustomColumn> applyCustomColumns(JsArray<JsTable.CustomColumnArgUnionType> customColumns) {
+        // Use groupedColumns to determine if this is a rollup or tree table.
+        if (groupedColumns.length == 0) {
+            throw new UnsupportedOperationException("applyCustomColumns() are not supported for Tree tables.");
+        }
+
         nextUpdateColumns = new ArrayList<>();
         customColumns.forEach((item, index) -> {
             if (item.isCustomColumn()) {
