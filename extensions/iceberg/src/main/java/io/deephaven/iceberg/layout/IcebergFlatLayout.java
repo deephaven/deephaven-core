@@ -39,6 +39,15 @@ public final class IcebergFlatLayout extends IcebergBaseLayout {
         super(tableAdapter, instructions, dataInstructionsProvider);
     }
 
+    @Deprecated(forRemoval = true)
+    public IcebergFlatLayout(
+            @NotNull IcebergTableAdapter tableAdapter,
+            @NotNull ParquetInstructions parquetInstructions,
+            @NotNull SeekableChannelsProvider seekableChannelsProvider,
+            @Nullable Snapshot snapshot) {
+        super(tableAdapter, parquetInstructions, seekableChannelsProvider, snapshot);
+    }
+
     @Override
     public String toString() {
         return IcebergFlatLayout.class.getSimpleName() + '[' + tableAdapter + ']';

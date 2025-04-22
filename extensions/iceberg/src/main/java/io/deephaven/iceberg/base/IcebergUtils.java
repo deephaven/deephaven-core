@@ -8,9 +8,8 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.iceberg.relative.RelativeFileIO;
-import io.deephaven.iceberg.internal.SpecAndSchema;
-import io.deephaven.iceberg.util.IcebergCatalogAdapter;
 import io.deephaven.iceberg.util.Resolver;
+import io.deephaven.iceberg.util.TypeInference;
 import org.apache.iceberg.DataFile;
 import org.apache.iceberg.PartitionField;
 import org.apache.iceberg.PartitionSpec;
@@ -73,6 +72,7 @@ public final class IcebergUtils {
      *
      * @param icebergType The Iceberg data type to be converted.
      * @return The converted Deephaven type.
+     * @deprecated prefer {@link TypeInference#of(Type)}
      */
     public static io.deephaven.qst.type.Type<?> convertToDHType(@NotNull final Type icebergType) {
         final Type.TypeID typeId = icebergType.typeId();
@@ -118,7 +118,7 @@ public final class IcebergUtils {
      *
      * @param columnType The Deephaven type to be converted.
      * @return The converted Iceberg type.
-     * @deprecated prefer {@link Resolver#from(TableDefinition)}
+     * @deprecated prefer {@link TypeInference#of(io.deephaven.qst.type.Type)}
      */
     public static Type convertToIcebergType(final Class<?> columnType) {
         final Type icebergType = DH_TO_ICEBERG_TYPE_MAP.get(columnType);
@@ -127,20 +127,6 @@ public final class IcebergUtils {
         } else {
             throw new TableDataException("Unsupported deephaven column type " + columnType.getName());
         }
-    }
-
-    /**
-     * Create {@link PartitionSpec} and {@link Schema} from a {@link TableDefinition}. This should only be used in the
-     * context of creating a new {@link Table}.
-     *
-     * @return A {@link SpecAndSchema} object containing the partition spec and schema, and {@code null} for read
-     *         instructions.
-     * @deprecated prefer {@link Resolver#from(TableDefinition)}
-     */
-    @Deprecated
-    public static SpecAndSchema createSpecAndSchema(@NotNull final TableDefinition tableDefinition) {
-        final Resolver resolver = Resolver.from(tableDefinition);
-        return new SpecAndSchema(resolver.schema(), resolver.spec().orElse(PartitionSpec.unpartitioned()));
     }
 
     public static boolean createNamespaceIfNotExists(

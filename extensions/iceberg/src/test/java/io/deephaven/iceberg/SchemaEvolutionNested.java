@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.iceberg;
 
 import io.deephaven.engine.table.ColumnDefinition;
@@ -171,8 +174,7 @@ public class SchemaEvolutionNested {
                         NestedField.optional(fooField2Id, "Field2", Types.IntegerType.get()))),
                 NestedField.optional(barId, "Bar", StructType.of(
                         NestedField.required(barField1Id, "Field1", Types.IntegerType.get()),
-                        NestedField.required(barField2Id, "Field2", Types.IntegerType.get())))
-        ));
+                        NestedField.required(barField2Id, "Field2", Types.IntegerType.get())))));
     }
 
     private Schema schema_1() {
@@ -182,8 +184,7 @@ public class SchemaEvolutionNested {
                         NestedField.optional(fooField2Id, "Field2", Types.IntegerType.get()))),
                 NestedField.optional(barId, "Bar", StructType.of(
                         NestedField.required(barField1Id, "Field1_B", Types.IntegerType.get()),
-                        NestedField.required(barField2Id, "Field2_B", Types.IntegerType.get())))
-        ));
+                        NestedField.required(barField2Id, "Field2_B", Types.IntegerType.get())))));
     }
 
     private Schema schema_2() {
@@ -193,8 +194,7 @@ public class SchemaEvolutionNested {
                         NestedField.optional(fooField2Id, "Field2_C", Types.IntegerType.get()))),
                 NestedField.optional(barId, "Bar", StructType.of(
                         NestedField.required(barField1Id, "Field1_B", Types.IntegerType.get()),
-                        NestedField.required(barField2Id, "Field2_B", Types.IntegerType.get())))
-        ));
+                        NestedField.required(barField2Id, "Field2_B", Types.IntegerType.get())))));
     }
 
     private void read(Table expected, IcebergReadInstructions instructions) {

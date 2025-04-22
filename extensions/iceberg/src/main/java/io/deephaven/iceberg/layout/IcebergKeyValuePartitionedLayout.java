@@ -30,13 +30,13 @@ import java.util.*;
 public final class IcebergKeyValuePartitionedLayout extends IcebergBaseLayout {
 
     @InternalUseOnly
-    static class IdentityPartitioningColData {
+    public static class IdentityPartitioningColData {
         final String name;
         final Class<?> type;
         // this is a busted impl, position of partition may change between files
         final int index; // position in the partition spec
 
-        IdentityPartitioningColData(String name, Class<?> type, int index) {
+        public IdentityPartitioningColData(String name, Class<?> type, int index) {
             this.name = Objects.requireNonNull(name);
             this.type = Objects.requireNonNull(type);
             this.index = index;
@@ -82,6 +82,17 @@ public final class IcebergKeyValuePartitionedLayout extends IcebergBaseLayout {
             identityPartitioningColumns.add(new IdentityPartitioningColData(dhColName,
                     TypeUtils.getBoxedType(columnDef.getDataType()), ix));
         }
+    }
+
+    @Deprecated(forRemoval = true)
+    public IcebergKeyValuePartitionedLayout(
+            @NotNull IcebergTableAdapter tableAdapter,
+            @NotNull ParquetInstructions parquetInstructions,
+            @NotNull SeekableChannelsProvider seekableChannelsProvider,
+            @Nullable Snapshot snapshot,
+            @NotNull List<IdentityPartitioningColData> identityPartitioningColumns) {
+        super(tableAdapter, parquetInstructions, seekableChannelsProvider, snapshot);
+        this.identityPartitioningColumns = Objects.requireNonNull(identityPartitioningColumns);
     }
 
     @Override
