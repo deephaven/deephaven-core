@@ -100,8 +100,6 @@ public class TestRollup extends RefreshingTableTestCase {
         final Table rootTable = rollupTable.getRoot();
 
         final Table actual = rootTable.select(columnsToCompare);
-        System.out.println("*** Actual ***");
-        TableTools.show(actual, 100);
         final Table expected = testTable.aggBy(aggs);
 
         // Compare the zero-key equivalent table to the rollup table root
