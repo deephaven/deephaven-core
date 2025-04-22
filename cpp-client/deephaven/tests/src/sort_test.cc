@@ -6,9 +6,6 @@
 
 #include "deephaven/dhcore/utility/utility.h"
 
-using deephaven::client::TableHandleManager;
-using deephaven::client::TableHandle;
-using deephaven::client::SortPair;
 using deephaven::client::utility::TableMaker;
 
 namespace deephaven::client::tests {
@@ -24,47 +21,31 @@ TEST_CASE("Sort demo Table", "[sort]") {
 
   auto table1 = filtered.Sort(SortPair::Descending("Ticker"), SortPair::Ascending("Volume"));
 
-  std::vector<std::string> ticker_data = {"ZNGA", "ZNGA", "XYZZY", "XRX", "XRX"};
-  std::vector<double> open_data = {541.2, 685.3, 92.3, 50.5, 83.1};
-  std::vector<int64_t> vol_data = {46123, 48300, 6060842, 87000, 345000};
-
-  CompareTable(
-      table1,
-      "Ticker", ticker_data,
-      "Open", open_data,
-      "Volume", vol_data
-  );
+  TableMaker expected;
+  expected.AddColumn<std::string>("Ticker", {"ZNGA", "ZNGA", "XYZZY", "XRX", "XRX"});
+  expected.AddColumn<double>("Open", {541.2, 685.3, 92.3, 50.5, 83.1});
+  expected.AddColumn<int64_t>("Volume", {46123, 48300, 6060842, 87000, 345000});
+  TableComparerForTests::Compare(expected, table1);
 }
 
 TEST_CASE("Sort temp Table", "[sort]") {
   auto tm = TableMakerForTests::Create();
 
-  std::vector<int32_t> int_data0{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
-  std::vector<int32_t> int_data1{0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7};
-  std::vector<int32_t> int_data2{0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3};
-  std::vector<int32_t> int_data3{0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1};
-
   TableMaker maker;
-  maker.AddColumn("IntValue0", int_data0);
-  maker.AddColumn("IntValue1", int_data1);
-  maker.AddColumn("IntValue2", int_data2);
-  maker.AddColumn("IntValue3", int_data3);
+  maker.AddColumn<int32_t>("IntValue0", {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15});
+  maker.AddColumn<int32_t>("IntValue1", {0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7});
+  maker.AddColumn<int32_t>("IntValue2", {0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3});
+  maker.AddColumn<int32_t>("IntValue3", {0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1});
 
   auto temp_table = maker.MakeTable(tm.Client().GetManager());
 
   auto sorted = temp_table.Sort(SortPair::Descending("IntValue3"), SortPair::Ascending("IntValue2"));
 
-  std::vector<int32_t> sid0{8, 9, 10, 11, 12, 13, 14, 15, 0, 1, 2, 3, 4, 5, 6, 7};
-  std::vector<int32_t> sid1{4, 4, 5, 5, 6, 6, 7, 7, 0, 0, 1, 1, 2, 2, 3, 3};
-  std::vector<int32_t> sid2{2, 2, 2, 2, 3, 3, 3, 3, 0, 0, 0, 0, 1, 1, 1, 1};
-  std::vector<int32_t> sid3{1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0};
-
-  CompareTable(
-      sorted,
-      "IntValue0", sid0,
-      "IntValue1", sid1,
-      "IntValue2", sid2,
-      "IntValue3", sid3
-  );
+  TableMaker expected;
+  expected.AddColumn<int32_t>("IntValue0", {8, 9, 10, 11, 12, 13, 14, 15, 0, 1, 2, 3, 4, 5, 6, 7});
+  expected.AddColumn<int32_t>("IntValue1", {4, 4, 5, 5, 6, 6, 7, 7, 0, 0, 1, 1, 2, 2, 3, 3});
+  expected.AddColumn<int32_t>("IntValue2", {2, 2, 2, 2, 3, 3, 3, 3, 0, 0, 0, 0, 1, 1, 1, 1});
+  expected.AddColumn<int32_t>("IntValue3", {1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0});
+  TableComparerForTests::Compare(expected, sorted);
 }
 }  // namespace deephaven::client::tests

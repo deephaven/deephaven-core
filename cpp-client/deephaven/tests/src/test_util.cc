@@ -4,13 +4,23 @@
 #include "deephaven/tests/test_util.h"
 
 #include <cstdlib>
+#include <map>
+#include <stdexcept>
+#include <string>
+#include <string_view>
+#include <vector>
+#include "deephaven/client/client.h"
+#include "deephaven/client/utility/arrow_util.h"
 #include "deephaven/client/utility/table_maker.h"
 #include "deephaven/dhcore/utility/utility.h"
+#include "deephaven/third_party/fmt/core.h"
 #include "deephaven/third_party/fmt/format.h"
 #include "deephaven/third_party/fmt/ostream.h"
 
 using deephaven::client::TableHandle;
+using deephaven::client::utility::ArrowUtil;
 using deephaven::client::utility::OkOrThrow;
+using deephaven::dhcore::utility::separatedList;
 using deephaven::client::utility::TableMaker;
 using deephaven::client::utility::ValueOrThrow;
 
@@ -168,90 +178,103 @@ TableMakerForTests::TableMakerForTests(TableMakerForTests &&) noexcept = default
 TableMakerForTests &TableMakerForTests::operator=(TableMakerForTests &&) noexcept = default;
 TableMakerForTests::~TableMakerForTests() = default;
 
+void TableComparerForTests::Compare(const TableMaker &expected, const TableHandle &actual) {
+  auto exp_as_arrow_table = expected.MakeArrowTable();
+  auto act_as_arrow_table = actual.ToArrowTable();
+  Compare(*exp_as_arrow_table, *act_as_arrow_table);
+}
 
-namespace internal {
-void CompareTableHelper(int depth, const std::shared_ptr<arrow::Table> &table,
-    const std::string &column_name, const std::shared_ptr<arrow::Array> &data) {
-  auto field = table->field(depth);
-  auto column = table->column(depth);
+void TableComparerForTests::Compare(const TableMaker &expected, const arrow::Table &actual) {
+  auto exp_as_arrow_table = expected.MakeArrowTable();
+  Compare(*exp_as_arrow_table, actual);
+}
 
-  if (field->name() != column_name) {
-    auto message = fmt::format("Column {}: Expected column name {}, have {}", depth, column_name,
-        field->name());
+void TableComparerForTests::Compare(const TableMaker &expected, const ClientTable &actual) {
+  auto exp_as_arrow_table = expected.MakeArrowTable();
+  auto act_as_arrow_table = ArrowUtil::MakeArrowTable(actual);
+  Compare(*exp_as_arrow_table, *act_as_arrow_table);
+}
+
+void TableComparerForTests::Compare(const arrow::Table &expected, const arrow::Table &actual) {
+  if (expected.num_columns() != actual.num_columns()) {
+    auto message = fmt::format("Expected table has {} columns, but actual table has {} columns",
+        expected.num_columns(), actual.num_columns());
     throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
   }
 
-  arrow::ChunkedArray chunked_data(data);
-  if (column->Equals(chunked_data)) {
-    return;
+  auto num_cols = expected.num_columns();
+  // Collect all type issues (if any) into a single exception
+  std::vector<std::string> issues;
+  for (int i = 0; i != num_cols; ++i) {
+    const auto &exp = expected.field(i);
+    const auto &act = actual.field(i);
+
+    if (exp->name() != act->name()) {
+      auto message = fmt::format("Column {}: Expected column name {}, actual is {}", i, exp->name(),
+          act->name());
+      issues.emplace_back(std::move(message));
+    }
+
+    if (!exp->type()->Equals(*act->type())) {
+      auto message = fmt::format("Column {}: Expected column type {}, actual is {}", i,
+          exp->type()->ToString(), act->type()->ToString());
+      issues.emplace_back(std::move(message));
+    }
   }
 
-  if (column->length() != chunked_data.length()) {
-    auto message = fmt::format("Column {}: Expected length {}, got {}", depth, chunked_data.length(),
-        column->length());
+  if (!issues.empty()) {
+    auto message = fmt::to_string(separatedList(issues.begin(), issues.end()));
     throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
   }
 
-  if (!column->type()->Equals(chunked_data.type())) {
-    auto message = fmt::format("Column {}: Expected type {}, got {}", depth,
-        chunked_data.type()->ToString(), column->type()->ToString());
-    throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
-  }
+  for (int i = 0; i != num_cols; ++i) {
+    const auto &exp = expected.column(i);
+    const auto &act = actual.column(i);
 
-  int64_t element_index = 0;
-  int l_chunk_num = 0;
-  int r_chunk_num = 0;
-  int l_chunk_index = 0;
-  int r_chunk_index = 0;
-  while (element_index < column->length()) {
-    if (l_chunk_num >= column->num_chunks() || r_chunk_num >= chunked_data.num_chunks()) {
-      throw std::runtime_error(DEEPHAVEN_LOCATION_STR("Logic error"));
-    }
-    const auto &l_chunk = column->chunk(l_chunk_num);
-    if (l_chunk_index == l_chunk->length()) {
-      l_chunk_index = 0;
-      ++l_chunk_num;
-      continue;
-    }
-
-    const auto &r_chunk = chunked_data.chunk(r_chunk_num);
-    if (r_chunk_index == r_chunk->length()) {
-      r_chunk_index = 0;
-      ++r_chunk_num;
-      continue;
-    }
-
-    const auto l_item = ValueOrThrow(DEEPHAVEN_LOCATION_EXPR(l_chunk->GetScalar(l_chunk_index)));
-    const auto r_item = ValueOrThrow(DEEPHAVEN_LOCATION_EXPR(r_chunk->GetScalar(r_chunk_index)));
-
-    if (!l_item->Equals(*r_item)) {
-      auto message = fmt::format("Column {}: Columns differ at element {}: {} vs {}",
-          depth, element_index, l_item->ToString(), r_item->ToString());
+    if (exp->length() != act->length()) {
+      auto message = fmt::format("Column {}: Expected length {}, actual length {}",
+          expected.field(i)->name(), exp->length(), act->length());
       throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
     }
 
-    ++element_index;
-    ++l_chunk_index;
-    ++r_chunk_index;
+    int64_t element_index = 0;
+    int exp_chunk_num = 0;
+    int act_chunk_num = 0;
+    int exp_chunk_index = 0;
+    int act_chunk_index = 0;
+    while (element_index < exp->length()) {
+      if (exp_chunk_num >= exp->num_chunks() || act_chunk_num >= act->num_chunks()) {
+        throw std::runtime_error(DEEPHAVEN_LOCATION_STR("Logic error"));
+      }
+      const auto &exp_chunk = exp->chunk(exp_chunk_num);
+      if (exp_chunk_index == exp_chunk->length()) {
+        // Exhausted current chunk on "expected" side. Bump to next chunk and start over.
+        exp_chunk_index = 0;
+        ++exp_chunk_num;
+        continue;
+      }
+
+      const auto &act_chunk = act->chunk(act_chunk_num);
+      if (act_chunk_index == act_chunk->length()) {
+        // Exhausted current chunk on "actual" side. Bump to next chunk and start over.
+        act_chunk_index = 0;
+        ++act_chunk_num;
+        continue;
+      }
+
+      const auto exp_item = ValueOrThrow(DEEPHAVEN_LOCATION_EXPR(exp_chunk->GetScalar(exp_chunk_index)));
+      const auto act_item = ValueOrThrow(DEEPHAVEN_LOCATION_EXPR(act_chunk->GetScalar(act_chunk_index)));
+
+      if (!exp_item->Equals(*act_item)) {
+        auto message = fmt::format("Column {}: Columns differ at element {}: {} vs {}",
+            expected.field(i)->name(), element_index, exp_item->ToString(), act_item->ToString());
+        throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
+      }
+
+      ++element_index;
+      ++exp_chunk_index;
+      ++act_chunk_index;
+    }
   }
-
-  // TODO(kosak): describe difference
-  throw std::runtime_error(DEEPHAVEN_LOCATION_STR("Some other difference"));
 }
-
-std::shared_ptr<arrow::Table> BasicValidate(const deephaven::client::TableHandle &table, int expected_columns) {
-  auto fsr = table.GetFlightStreamReader();
-  auto table_res = fsr->ToTable();
-  OkOrThrow(DEEPHAVEN_LOCATION_EXPR(table_res));
-
-  auto &arrow_table = *table_res;
-  if (expected_columns != arrow_table->num_columns()) {
-    auto message = fmt::format("Expected {} columns, but Table actually has {} columns",
-        expected_columns, arrow_table->num_columns());
-    throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
-  }
-
-  return std::move(arrow_table);
-}
-}  // namespace internal
 }  // namespace deephaven::client::tests

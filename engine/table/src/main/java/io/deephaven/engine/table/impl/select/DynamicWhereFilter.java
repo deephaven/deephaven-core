@@ -14,6 +14,7 @@ import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
+import io.deephaven.engine.table.impl.perf.PerformanceEntry;
 import io.deephaven.engine.table.impl.select.setinclusion.SetInclusionKernel;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.iterators.ChunkedColumnIterator;
@@ -26,13 +27,15 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.function.Function;
+import java.util.stream.LongStream;
 
 /**
  * A where filter that extracts a set of inclusion or exclusion keys from a set table.
  * <p>
  * Each time the set table ticks, the entire where filter is recalculated.
  */
-public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implements NotificationQueue.Dependency {
+public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
+        implements NotificationQueue.Dependency, HasParentPerformanceIds {
 
     private static final int CHUNK_SIZE = 1 << 16;
 
@@ -595,5 +598,14 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
         return logOutput.append("DynamicWhereFilter(")
                 .append(MatchPair.MATCH_PAIR_ARRAY_FORMATTER, sourceToSetColumnNamePairs)
                 .append(')');
+    }
+
+    @Override
+    public LongStream parentPerformanceEntryIds() {
+        if (setUpdateListener == null) {
+            return LongStream.empty();
+        }
+        final PerformanceEntry entry = setUpdateListener.getEntry();
+        return entry == null ? LongStream.empty() : LongStream.of(entry.getId());
     }
 }

@@ -87,7 +87,7 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
                 additionalPartitioningColumnFilters.stream())
                 .toArray(WhereFilter[]::new);
         final PartitionAwareSourceTable filtered = newInstance(definition,
-                description + ".where(" + additionalPartitioningColumnFilters + ')',
+                getDescription() + ".where(" + additionalPartitioningColumnFilters + ')',
                 componentFactory, locationProvider, updateSourceRegistrar, partitioningColumnDefinitions,
                 resultPartitioningColumnFilters);
         copyAttributes(filtered, CopyAttributeOperation.Filter);
@@ -155,7 +155,7 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
     @Override
     protected PartitionAwareSourceTable copy() {
         final PartitionAwareSourceTable result =
-                newInstance(definition, description, componentFactory, locationProvider,
+                newInstance(definition, getDescription(), componentFactory, locationProvider,
                         updateSourceRegistrar, partitioningColumnDefinitions, partitioningColumnFilters);
         LiveAttributeMap.copyAttributes(this, result, ak -> true);
         return result;
@@ -171,7 +171,7 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
                 || newDefinition.getPartitioningColumns().size() == partitioningColumnDefinitions.size()) {
             // Nothing changed except ordering, *or* some columns were dropped but the partitioning column was retained.
             return newInstance(newDefinition,
-                    description + "-retainColumns",
+                    getDescription() + "-retainColumns",
                     componentFactory, locationProvider, updateSourceRegistrar, partitioningColumnDefinitions,
                     partitioningColumnFilters);
         }
@@ -185,10 +185,10 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
                         .collect(Collectors.toList());
         newColumnDefinitions.addAll(droppedPartitioningColumnDefinitions);
         final PartitionAwareSourceTable redefined = newInstance(TableDefinition.of(newColumnDefinitions),
-                description + "-retainColumns",
+                getDescription() + "-retainColumns",
                 componentFactory, locationProvider, updateSourceRegistrar, partitioningColumnDefinitions,
                 partitioningColumnFilters);
-        return new DeferredViewTable(newDefinition, description + "-retainColumns",
+        return new DeferredViewTable(newDefinition, getDescription() + "-retainColumns",
                 new PartitionAwareTableReference(redefined),
                 droppedPartitioningColumnDefinitions.stream().map(ColumnDefinition::getName).toArray(String[]::new),
                 null, null);
@@ -201,7 +201,7 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
         DeferredViewTable.TableReference reference = redefined instanceof PartitionAwareSourceTable
                 ? new PartitionAwareTableReference((PartitionAwareSourceTable) redefined)
                 : new DeferredViewTable.TableReference(redefined);
-        return new DeferredViewTable(newDefinitionExternal, description + "-redefined",
+        return new DeferredViewTable(newDefinitionExternal, getDescription() + "-redefined",
                 reference, null, viewColumns, null);
     }
 

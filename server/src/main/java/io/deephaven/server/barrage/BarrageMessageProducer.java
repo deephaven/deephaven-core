@@ -20,6 +20,7 @@ import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
+import io.deephaven.engine.table.impl.select.VectorChunkAdapter;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.FillUnordered;
 import io.deephaven.engine.table.impl.sources.ObjectArraySource;
@@ -47,6 +48,7 @@ import io.deephaven.server.util.Scheduler;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseableArray;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
+import io.deephaven.vector.Vector;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 import org.apache.arrow.flatbuf.Schema;
@@ -100,16 +102,6 @@ public class BarrageMessageProducer extends LivenessArtifact
 
     private long snapshotTargetCellCount = MIN_SNAPSHOT_CELL_COUNT;
     private double snapshotNanosPerCell = 0;
-
-    /**
-     * Helper to convert from SubscriptionRequest to Options and from MessageView to InputStream.
-     *
-     * @param <T> Type to convert from.
-     * @param <V> Type to convert to.
-     */
-    public interface Adapter<T, V> {
-        V adapt(T t);
-    }
 
     public static class Operation
             implements QueryTable.MemoizableOperation<BarrageMessageProducer> {
@@ -214,8 +206,8 @@ public class BarrageMessageProducer extends LivenessArtifact
 
     private final Stats stats;
 
-    /** the possibly reinterpretted source column */
-    private final ColumnSource<?>[] sourceColumns;
+    /** the possibly reinterpretted, or vector-adapted source column */
+    private final ChunkSource.WithPrev<Values>[] chunkSources;
     /** the chunk writer per source column */
     private final ChunkWriter<Chunk<Values>>[] chunkWriters;
     /** which source columns are object columns and thus need proactive garbage collection */
@@ -343,14 +335,17 @@ public class BarrageMessageProducer extends LivenessArtifact
                     .append(updateIntervalMs).endl();
         }
 
-        sourceColumns = parent.getColumnSources().toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY);
-        deltaColumns = new WritableColumnSource[sourceColumns.length];
-        realColumnType = new Class<?>[sourceColumns.length];
-        realColumnComponentType = new Class<?>[sourceColumns.length];
+        final ColumnSource<?>[] sources =
+                parent.getColumnSources().toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY);
+        // noinspection unchecked
+        chunkSources = new ChunkSource.WithPrev[sources.length];
+        deltaColumns = new WritableColumnSource[sources.length];
+        realColumnType = new Class<?>[sources.length];
+        realColumnComponentType = new Class<?>[sources.length];
 
         // lookup ChunkWriter mappings once, as they are constant for the lifetime of this producer
         // noinspection unchecked
-        chunkWriters = (ChunkWriter<Chunk<Values>>[]) new ChunkWriter[sourceColumns.length];
+        chunkWriters = (ChunkWriter<Chunk<Values>>[]) new ChunkWriter[sources.length];
 
         final MutableInt mi = new MutableInt();
         final Schema schema = SchemaHelper.flatbufSchema(
@@ -367,13 +362,19 @@ public class BarrageMessageProducer extends LivenessArtifact
         // we start off with initial sizes of zero, because its quite possible no one will ever look at this table
         final int capacity = 0;
 
-        for (int ci = 0; ci < sourceColumns.length; ++ci) {
+        for (int ci = 0; ci < sources.length; ++ci) {
             // avoid silly reinterpretations during ser/deser by using primitive types when possible
-            realColumnType[ci] = sourceColumns[ci].getType();
-            realColumnComponentType[ci] = sourceColumns[ci].getComponentType();
-            sourceColumns[ci] = ReinterpretUtils.maybeConvertToPrimitive(sourceColumns[ci]);
+            realColumnType[ci] = sources[ci].getType();
+            realColumnComponentType[ci] = sources[ci].getComponentType();
+
+            sources[ci] = ReinterpretUtils.maybeConvertToPrimitive(sources[ci]);
+            if (Vector.class.isAssignableFrom(sources[ci].getType())) {
+                chunkSources[ci] = new VectorChunkAdapter<>(sources[ci]);
+            } else {
+                chunkSources[ci] = sources[ci];
+            }
             deltaColumns[ci] = ArrayBackedColumnSource.getMemoryColumnSource(
-                    capacity, sourceColumns[ci].getType(), sourceColumns[ci].getComponentType());
+                    capacity, sources[ci].getType(), sources[ci].getComponentType());
 
             if (deltaColumns[ci] instanceof ObjectArraySource) {
                 objectColumns.set(ci);
@@ -536,8 +537,8 @@ public class BarrageMessageProducer extends LivenessArtifact
 
             final BitSet cols;
             if (columnsToSubscribe == null) {
-                cols = new BitSet(sourceColumns.length);
-                cols.set(0, sourceColumns.length);
+                cols = new BitSet(chunkSources.length);
+                cols.set(0, chunkSources.length);
             } else {
                 cols = (BitSet) columnsToSubscribe.clone();
             }
@@ -622,8 +623,8 @@ public class BarrageMessageProducer extends LivenessArtifact
             }
             final BitSet cols;
             if (columnsToSubscribe == null) {
-                cols = new BitSet(sourceColumns.length);
-                cols.set(0, sourceColumns.length);
+                cols = new BitSet(chunkSources.length);
+                cols.set(0, chunkSources.length);
             } else {
                 cols = (BitSet) columnsToSubscribe.clone();
             }
@@ -721,25 +722,25 @@ public class BarrageMessageProducer extends LivenessArtifact
 
     private static class FillDeltaContext implements SafeCloseable {
         final int columnIndex;
-        final ColumnSource<?> sourceColumn;
+        final ChunkSource.WithPrev<Values> chunkSource;
         final WritableColumnSource<?> deltaColumn;
         final ColumnSource.GetContext sourceGetContext;
         final ChunkSink.FillFromContext deltaFillContext;
 
         public FillDeltaContext(final int columnIndex,
-                final ColumnSource<?> sourceColumn,
+                final ChunkSource.WithPrev<Values> chunkSource,
                 final WritableColumnSource<?> deltaColumn,
                 final SharedContext sharedContext,
                 final int chunkSize) {
             this.columnIndex = columnIndex;
-            this.sourceColumn = sourceColumn;
+            this.chunkSource = chunkSource;
             this.deltaColumn = deltaColumn;
-            sourceGetContext = sourceColumn.makeGetContext(chunkSize, sharedContext);
+            sourceGetContext = chunkSource.makeGetContext(chunkSize, sharedContext);
             deltaFillContext = deltaColumn.makeFillFromContext(chunkSize);
         }
 
         public void doFillChunk(final RowSequence srcKeys, final RowSequence dstKeys) {
-            deltaColumn.fillFromChunk(deltaFillContext, sourceColumn.getChunk(sourceGetContext, srcKeys), dstKeys);
+            deltaColumn.fillFromChunk(deltaFillContext, chunkSource.getChunk(sourceGetContext, srcKeys), dstKeys);
         }
 
         @Override
@@ -957,7 +958,7 @@ public class BarrageMessageProducer extends LivenessArtifact
                         continue;
                     }
                     deltaColumns[columnIndex].ensureCapacity(totalSize);
-                    fillDeltaContexts[aci++] = new FillDeltaContext(columnIndex, sourceColumns[columnIndex],
+                    fillDeltaContexts[aci++] = new FillDeltaContext(columnIndex, chunkSources[columnIndex],
                             deltaColumns[columnIndex], sharedContext, deltaChunkSize);
                 }
 
@@ -1784,8 +1785,8 @@ public class BarrageMessageProducer extends LivenessArtifact
             downstream.shifted = firstDelta.update.shifted();
             downstream.rowsIncluded = firstDelta.recordedAdds.copy();
 
-            downstream.addColumnData = new BarrageMessage.AddColumnData[sourceColumns.length];
-            downstream.modColumnData = new BarrageMessage.ModColumnData[sourceColumns.length];
+            downstream.addColumnData = new BarrageMessage.AddColumnData[chunkSources.length];
+            downstream.modColumnData = new BarrageMessage.ModColumnData[chunkSources.length];
 
             for (int ci = 0; ci < downstream.addColumnData.length; ++ci) {
                 final ColumnSource<?> deltaColumn = deltaColumns[ci];
@@ -1998,8 +1999,8 @@ public class BarrageMessageProducer extends LivenessArtifact
             downstream.rowsRemoved = coalescer.removed;
             downstream.shifted = coalescer.shifted;
             downstream.rowsIncluded = localAdded;
-            downstream.addColumnData = new BarrageMessage.AddColumnData[sourceColumns.length];
-            downstream.modColumnData = new BarrageMessage.ModColumnData[sourceColumns.length];
+            downstream.addColumnData = new BarrageMessage.AddColumnData[chunkSources.length];
+            downstream.modColumnData = new BarrageMessage.ModColumnData[chunkSources.length];
 
             for (int ci = 0; ci < downstream.addColumnData.length; ++ci) {
                 final ColumnSource<?> deltaColumn = deltaColumns[ci];

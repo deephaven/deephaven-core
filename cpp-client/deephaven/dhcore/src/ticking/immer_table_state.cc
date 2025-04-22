@@ -3,27 +3,32 @@
  */
 #include "deephaven/dhcore/ticking/immer_table_state.h"
 
-#include <optional>
+#include <cstddef>
+#include <cstdint>
+#include <memory>
+#include <stdexcept>
+#include <string>
 #include <utility>
 
 #include "deephaven/dhcore/chunk/chunk.h"
 #include "deephaven/dhcore/clienttable/schema.h"
 #include "deephaven/dhcore/column/column_source.h"
+#include "deephaven/dhcore/container/container.h"
 #include "deephaven/dhcore/container/row_sequence.h"
 #include "deephaven/dhcore/immerutil/abstract_flex_vector.h"
 #include "deephaven/dhcore/ticking/shift_processor.h"
 #include "deephaven/dhcore/types.h"
 #include "deephaven/dhcore/utility/utility.h"
-#include "deephaven/third_party/fmt/format.h"
+#include "deephaven/third_party/fmt/core.h"
 
 using deephaven::dhcore::ElementTypeId;
-using deephaven::dhcore::VisitElementTypeId;
 using deephaven::dhcore::chunk::AnyChunk;
 using deephaven::dhcore::chunk::Chunk;
 using deephaven::dhcore::chunk::ChunkVisitor;
 using deephaven::dhcore::chunk::Int64Chunk;
 using deephaven::dhcore::column::ColumnSource;
 using deephaven::dhcore::column::ColumnSourceVisitor;
+using deephaven::dhcore::container::ContainerBase;
 using deephaven::dhcore::container::RowSequence;
 using deephaven::dhcore::container::RowSequenceBuilder;
 using deephaven::dhcore::container::RowSequenceIterator;
@@ -216,77 +221,150 @@ std::shared_ptr<RowSequence> MyTable::GetRowSequence() const {
   return rb.Build();
 }
 
-struct FlexVectorFromTypeMaker final {
-  template<typename T>
-  void operator()() {
-    if constexpr(DeephavenTraits<T>::kIsNumeric) {
-      result_ = std::make_unique<NumericAbstractFlexVector<T>>();
-    } else {
-      result_ = std::make_unique<GenericAbstractFlexVector<T>>();
-    }
+std::unique_ptr<AbstractFlexVectorBase> MakeFlexVectorFromType(const ElementType &element_type) {
+  if (element_type.ListDepth() > 1) {
+    auto message = fmt::format("Don't know how to make flex vectors with list depth {}",
+        element_type.ListDepth());
+    throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
   }
 
-  std::unique_ptr<AbstractFlexVectorBase> result_;
-};
+  if (element_type.ListDepth() == 1) {
+    return std::make_unique<GenericAbstractFlexVector<std::shared_ptr<ContainerBase>>>(element_type);
+  }
+
+  // Note: element_type.ListDepth() == 0
+
+  switch (element_type.Id()) {
+    case ElementTypeId::kChar: {
+      return std::make_unique<NumericAbstractFlexVector<char16_t>>(element_type);
+    }
+
+    case ElementTypeId::kInt8: {
+      return std::make_unique<NumericAbstractFlexVector<int8_t>>(element_type);
+    }
+
+    case ElementTypeId::kInt16: {
+      return std::make_unique<NumericAbstractFlexVector<int16_t>>(element_type);
+    }
+
+    case ElementTypeId::kInt32: {
+      return std::make_unique<NumericAbstractFlexVector<int32_t>>(element_type);
+    }
+
+    case ElementTypeId::kInt64: {
+      return std::make_unique<NumericAbstractFlexVector<int64_t>>(element_type);
+    }
+
+    case ElementTypeId::kFloat: {
+      return std::make_unique<NumericAbstractFlexVector<float>>(element_type);
+    }
+
+    case ElementTypeId::kDouble: {
+      return std::make_unique<NumericAbstractFlexVector<double>>(element_type);
+    }
+
+    case ElementTypeId::kBool: {
+      return std::make_unique<GenericAbstractFlexVector<bool>>(element_type);
+    }
+
+    case ElementTypeId::kString: {
+      return std::make_unique<GenericAbstractFlexVector<std::string>>(element_type);
+    }
+
+    case ElementTypeId::kTimestamp: {
+      return std::make_unique<GenericAbstractFlexVector<DateTime>>(element_type);
+    }
+
+    case ElementTypeId::kLocalDate: {
+      return std::make_unique<GenericAbstractFlexVector<LocalDate>>(element_type);
+    }
+
+    case ElementTypeId::kLocalTime: {
+      return std::make_unique<GenericAbstractFlexVector<LocalTime>>(element_type);
+    }
+
+    default: {
+      auto message = fmt::format("Internal error: elementTypeId {} not supported here",
+          static_cast<int>(element_type.Id()));
+      throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
+    }
+  }
+}
 
 std::vector<std::unique_ptr<AbstractFlexVectorBase>> MakeEmptyFlexVectorsFromSchema(const Schema &schema) {
   auto ncols = schema.NumCols();
   auto result = MakeReservedVector<std::unique_ptr<AbstractFlexVectorBase>>(ncols);
-  for (auto type_id : schema.Types()) {
-    FlexVectorFromTypeMaker fvm;
-    VisitElementTypeId(type_id, &fvm);
-    result.push_back(std::move(fvm.result_));
+  for (const auto &type_id : schema.ElementTypes()) {
+    auto fv = MakeFlexVectorFromType(type_id);
+    result.push_back(std::move(fv));
   }
   return result;
 }
 
 struct FlexVectorFromSourceMaker final : public ColumnSourceVisitor {
   void Visit(const column::CharColumnSource &/*source*/) final {
-    result_ = std::make_unique<NumericAbstractFlexVector<char16_t>>();
+    result_ = std::make_unique<NumericAbstractFlexVector<char16_t>>(
+        ElementType::Of(ElementTypeId::kChar));
   }
 
   void Visit(const column::Int8ColumnSource &/*source*/) final {
-    result_ = std::make_unique<NumericAbstractFlexVector<int8_t>>();
+    result_ = std::make_unique<NumericAbstractFlexVector<int8_t>>(
+        ElementType::Of(ElementTypeId::kInt8));
   }
 
   void Visit(const column::Int16ColumnSource &/*source*/) final {
-    result_ = std::make_unique<NumericAbstractFlexVector<int16_t>>();
+    result_ = std::make_unique<NumericAbstractFlexVector<int16_t>>(
+        ElementType::Of(ElementTypeId::kInt16));
   }
 
   void Visit(const column::Int32ColumnSource &/*source*/) final {
-    result_ = std::make_unique<NumericAbstractFlexVector<int32_t>>();
+    result_ = std::make_unique<NumericAbstractFlexVector<int32_t>>(
+        ElementType::Of(ElementTypeId::kInt32));
   }
 
   void Visit(const column::Int64ColumnSource &/*source*/) final {
-    result_ = std::make_unique<NumericAbstractFlexVector<int64_t>>();
+    result_ = std::make_unique<NumericAbstractFlexVector<int64_t>>(
+        ElementType::Of(ElementTypeId::kInt64));
   }
 
   void Visit(const column::FloatColumnSource &/*source*/) final {
-    result_ = std::make_unique<NumericAbstractFlexVector<float>>();
+    result_ = std::make_unique<NumericAbstractFlexVector<float>>(
+        ElementType::Of(ElementTypeId::kFloat));
   }
 
   void Visit(const column::DoubleColumnSource &/*source*/) final {
-    result_ = std::make_unique<NumericAbstractFlexVector<double>>();
+    result_ = std::make_unique<NumericAbstractFlexVector<double>>(
+        ElementType::Of(ElementTypeId::kDouble));
   }
 
   void Visit(const column::BooleanColumnSource &/*source*/) final {
-    result_ = std::make_unique<GenericAbstractFlexVector<bool>>();
+    result_ = std::make_unique<GenericAbstractFlexVector<bool>>(
+        ElementType::Of(ElementTypeId::kBool));
   }
 
   void Visit(const column::StringColumnSource &/*source*/) final {
-    result_ = std::make_unique<GenericAbstractFlexVector<std::string>>();
+    result_ = std::make_unique<GenericAbstractFlexVector<std::string>>(
+        ElementType::Of(ElementTypeId::kString));
   }
 
   void Visit(const column::DateTimeColumnSource &/*source*/) final {
-    result_ = std::make_unique<GenericAbstractFlexVector<DateTime>>();
+    result_ = std::make_unique<GenericAbstractFlexVector<DateTime>>(
+        ElementType::Of(ElementTypeId::kTimestamp));
   }
 
   void Visit(const column::LocalDateColumnSource &/*source*/) final {
-    result_ = std::make_unique<GenericAbstractFlexVector<LocalDate>>();
+    result_ = std::make_unique<GenericAbstractFlexVector<LocalDate>>(
+        ElementType::Of(ElementTypeId::kLocalDate));
   }
 
   void Visit(const column::LocalTimeColumnSource &/*source*/) final {
-    result_ = std::make_unique<GenericAbstractFlexVector<LocalTime>>();
+    result_ = std::make_unique<GenericAbstractFlexVector<LocalTime>>(
+        ElementType::Of(ElementTypeId::kLocalTime));
+  }
+
+  void Visit(const column::ContainerBaseColumnSource &source) final {
+    result_ = std::make_unique<GenericAbstractFlexVector<std::shared_ptr<ContainerBase>>>(
+        source.GetElementType());
   }
 
   std::unique_ptr<AbstractFlexVectorBase> result_;

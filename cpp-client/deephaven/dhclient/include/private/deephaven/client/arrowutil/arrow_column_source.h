@@ -2,14 +2,19 @@
  * Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
  */
 #pragma once
-#include <string>
+#include <algorithm>
+#include <cstddef>
 #include <cstdint>
+#include <memory>
+#include <stdexcept>
+#include <vector>
 #include <arrow/array.h>
-#include "deephaven/client/arrowutil/arrow_value_converter.h"
-#include "deephaven/dhcore/chunk/chunk_traits.h"
+#include <arrow/type.h>
+#include "deephaven/dhcore/chunk/chunk.h"
 #include "deephaven/dhcore/column/column_source.h"
-#include "deephaven/dhcore/column/column_source_utils.h"
+#include "deephaven/dhcore/container/row_sequence.h"
 #include "deephaven/dhcore/types.h"
+#include "deephaven/dhcore/utility/utility.h"
 
 namespace deephaven::client::arrowutil {
 namespace internal {
@@ -45,25 +50,22 @@ class GenericArrowColumnSource final : public TColumnSourceBase {
   using Chunk = deephaven::dhcore::chunk::Chunk;
   using ColumnSourceVisitor = deephaven::dhcore::column::ColumnSourceVisitor;
   using DateTime = deephaven::dhcore::DateTime;
+  using ElementType = deephaven::dhcore::ElementType;
   using LocalDate = deephaven::dhcore::LocalDate;
   using LocalTime = deephaven::dhcore::LocalTime;
   using RowSequence = deephaven::dhcore::container::RowSequence;
   using UInt64Chunk = deephaven::dhcore::chunk::UInt64Chunk;
 
 public:
-  static std::shared_ptr<GenericArrowColumnSource>
-  OfArrowArray(std::shared_ptr<TArrowArray> array) {
-    std::vector<std::shared_ptr<TArrowArray>> arrays{std::move(array)};
-    return OfArrowArrayVec(std::move(arrays));
-  }
-
   static std::shared_ptr<GenericArrowColumnSource> OfArrowArrayVec(
+      const ElementType &element_type,
       std::vector<std::shared_ptr<TArrowArray>> arrays) {
-    return std::make_shared<GenericArrowColumnSource>(std::move(arrays));
+    return std::make_shared<GenericArrowColumnSource>(element_type, std::move(arrays));
   }
 
-  explicit GenericArrowColumnSource(std::vector<std::shared_ptr<TArrowArray>> arrays) :
-      arrays_(std::move(arrays)) {
+  GenericArrowColumnSource(const ElementType &element_type,
+      std::vector<std::shared_ptr<TArrowArray>> arrays) :
+      element_type_(element_type), arrays_(std::move(arrays)) {
   }
 
   ~GenericArrowColumnSource() final = default;
@@ -225,7 +227,13 @@ public:
     visitor->Visit(*this);
   }
 
+  [[nodiscard]]
+  const ElementType &GetElementType() const final {
+    return element_type_;
+  }
+
 private:
+  ElementType element_type_;
   std::vector<std::shared_ptr<TArrowArray>> arrays_;
 };
 }  // namespace internal
