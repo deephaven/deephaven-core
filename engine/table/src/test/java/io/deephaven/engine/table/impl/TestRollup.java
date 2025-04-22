@@ -164,18 +164,18 @@ public class TestRollup extends RefreshingTableTestCase {
 
         grpCount.set(0);
         final RollupTable rollup2 = rollup1.withFilter(WhereFilterFactory.getExpression("GRP = `v2`"));
-        assertEquals(0, grpCount.get());  // Should not rebase
+        assertEquals(0, grpCount.get()); // Should not rebase
         final Table snapshot2 = snapshotFilteredRollup(rollup2);
 
         grpCount.set(0);
         final RollupTable rollup3 = rollup1.withFilter(WhereFilterFactory.getExpression("CONST >= 13 && CONST <= 14"));
-        assertEquals(2, grpCount.get());  // Should rebase
+        assertEquals(2, grpCount.get()); // Should rebase
         final Table snapshot3 = snapshotFilteredRollup(rollup3);
         assertTableEquals(snapshot2, snapshot3);
 
         grpCount.set(0);
         final RollupTable rollup4 = rollup1.withFilter(WhereFilterFactory.getExpression("CONST >= 13 && GRP = `v2`"));
-        assertEquals(7, grpCount.get());  // Should rebase
+        assertEquals(7, grpCount.get()); // Should rebase
         final Table snapshot4 = snapshotFilteredRollup(rollup4);
         assertTableEquals(snapshot2, snapshot4);
 
