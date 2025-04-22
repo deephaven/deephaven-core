@@ -629,7 +629,7 @@ public class IcebergTableAdapter {
         if (partitionFields.isEmpty()) {
             return new IcebergUnpartitionedLayout(this, parquetInstructions, channelsProvider, snapshot);
         }
-        return new IcebergPartitionedLayout(this, parquetInstructions, channelsProvider, snapshot, partitionFields);
+        return new IcebergPartitionedLayout(this, parquetInstructions, channelsProvider, snapshot, resolver);
     }
 
     private static SeekableChannelsProvider seekableChannelsProvider(

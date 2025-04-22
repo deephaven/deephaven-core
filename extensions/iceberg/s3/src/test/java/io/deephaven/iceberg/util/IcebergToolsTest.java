@@ -414,15 +414,14 @@ public abstract class IcebergToolsTest {
                 ColumnDefinition.ofDouble("Unit_Price"),
                 ColumnDefinition.ofTime("Order_Date"));
 
-        final IcebergReadInstructions localInstructions =
-                instructions(resolver(tableDef, tableAdapter.currentSchema(), tableAdapter.icebergTable().spec(), YEAR,
-                        MONTH, REGION, ITEM_TYPE, UNITS_SOLD, UNIT_PRICE, ORDER_DATE));
-
-        final io.deephaven.engine.table.Table table = tableAdapter.table(localInstructions);
-
-        // Verify we retrieved all the rows.
-        Assert.eq(table.size(), "table.size()", 100_000, "expected rows in the table");
-        Assert.equals(table.getDefinition(), "table.getDefinition()", tableDef);
+        try {
+            resolver(tableDef, tableAdapter.currentSchema(), tableAdapter.icebergTable().spec(), YEAR,
+                    MONTH, REGION, ITEM_TYPE, UNITS_SOLD, UNIT_PRICE, ORDER_DATE);
+        } catch (Resolver.MappingException e) {
+            assertThat(e).hasMessageContaining("Unable to map Deephaven column year");
+            assertThat(e).cause().hasMessageContaining(
+                    "Identity transform of type `int` does not support coercion to io.deephaven.qst.type.LongType");
+        }
     }
 
     @Test

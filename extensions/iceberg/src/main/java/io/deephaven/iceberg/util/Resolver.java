@@ -315,20 +315,9 @@ public abstract class Resolver {
             final List<NestedField> fieldPath,
             @Nullable final PartitionField partitionField) {
         if (partitionField != null) {
-            // final org.apache.iceberg.types.Type.PrimitiveType partitionType;
             // https://iceberg.apache.org/spec/#partitioning
             // The source columns, selected by ids, must be a primitive type and cannot be contained in a map or list,
             // but may be nested in a struct.
-            {
-                // org.apache.iceberg.PartitionSpec.checkCompatibility should typically catch this case, but in certain
-                // cases (for example, a Catalog / metadata error), we can check for this ourselves.
-                final NestedField field = fieldPath.get(fieldPath.size() - 1);
-                if (!field.type().isPrimitiveType()) {
-                    throw new MappingException(
-                            String.format("Cannot partition by non-primitive source field: %s", field.type()));
-                }
-                // partitionType = field.type().asPrimitiveType();
-            }
             for (NestedField nestedField : fieldPath) {
                 // org.apache.iceberg.PartitionSpec.checkCompatibility does not currently catch this case
                 if (nestedField.type().isListType()) {
@@ -338,11 +327,16 @@ public abstract class Resolver {
                     throw new MappingException("Partition fields may not be contained in a map");
                 }
             }
-            // This is a DH-specific limitation right now; could be improved in the future
-            if (!partitionField.transform().isIdentity()) {
-                throw new MappingException(String
-                        .format("Unable to map partition field `%s`, only identity transform is supported",
-                                partitionField));
+            {
+                // org.apache.iceberg.PartitionSpec.checkCompatibility should typically catch this case, but in certain
+                // cases (for example, a Catalog / metadata error), we can check for this ourselves.
+                final NestedField field = fieldPath.get(fieldPath.size() - 1);
+                if (!field.type().isPrimitiveType()) {
+                    throw new MappingException(
+                            String.format("Cannot partition by non-primitive source field: %s", field.type()));
+                }
+                final org.apache.iceberg.types.Type.PrimitiveType inputType = field.type().asPrimitiveType();
+                IcebergPartitionedLayout.validateSupported(partitionField.transform(), inputType, type);
             }
         }
         checkCompatible(fieldPath, type);

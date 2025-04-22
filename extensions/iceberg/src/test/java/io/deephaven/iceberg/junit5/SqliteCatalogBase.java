@@ -866,27 +866,22 @@ public abstract class SqliteCatalogBase {
                     ColumnDefinition.ofInt(FOO),
                     ColumnDefinition.ofDouble(BAR),
                     ColumnDefinition.ofLong(BAZ).withPartitioning());
-            final Resolver widened = Resolver.builder()
-                    .definition(widenedTd)
-                    .schema(resolver.schema())
-                    .spec(resolver.spec().orElseThrow())
-                    .putColumnInstructions(FOO, resolver.columnInstructions().get(FOO))
-                    .putColumnInstructions(BAR, resolver.columnInstructions().get(BAR))
-                    .putColumnInstructions(BAZ, resolver.columnInstructions().get(BAZ))
-                    .build();
-            final Table fromIceberg = table(tableAdapter, widened);
-            assertThat(fromIceberg.getDefinition()).isEqualTo(widenedTd);
-            assertThat(fromIceberg).isInstanceOf(PartitionAwareSourceTable.class);
-
-            // Note: we should be able to fix this if we want, IcebergPartitionedLayout
-            // TODO: we should catch this at Resolver construction time if we aren't going to solve it in IPL
             try {
-                fromIceberg.select();
-                failBecauseExceptionWasNotThrown(TableDataException.class);
-            } catch (TableDataException e) {
-                assertThat(e).cause()
-                        .hasMessageContaining("Unexpected partitioning column value type for PC: 3 is not a Long");
+                Resolver.builder()
+                        .definition(widenedTd)
+                        .schema(resolver.schema())
+                        .spec(resolver.spec().orElseThrow())
+                        .putColumnInstructions(FOO, resolver.columnInstructions().get(FOO))
+                        .putColumnInstructions(BAR, resolver.columnInstructions().get(BAR))
+                        .putColumnInstructions(BAZ, resolver.columnInstructions().get(BAZ))
+                        .build();
+                failBecauseExceptionWasNotThrown(Resolver.MappingException.class);
+            } catch (Resolver.MappingException e) {
+                assertThat(e).hasMessageContaining("Unable to map Deephaven column PC");
+                assertThat(e).cause().hasMessageContaining(
+                        "Identity transform of type `int` does not support coercion to io.deephaven.qst.type.LongType");
             }
+            // Once the above is supported, we should be able to assert the values
         }
 
         {
@@ -894,27 +889,22 @@ public abstract class SqliteCatalogBase {
                     ColumnDefinition.ofInt(FOO),
                     ColumnDefinition.ofDouble(BAR),
                     ColumnDefinition.ofShort(BAZ).withPartitioning());
-            final Resolver widened = Resolver.builder()
-                    .definition(tightenedTd)
-                    .schema(resolver.schema())
-                    .spec(resolver.spec().orElseThrow())
-                    .putColumnInstructions(FOO, resolver.columnInstructions().get(FOO))
-                    .putColumnInstructions(BAR, resolver.columnInstructions().get(BAR))
-                    .putColumnInstructions(BAZ, resolver.columnInstructions().get(BAZ))
-                    .build();
-            final Table fromIceberg = table(tableAdapter, widened);
-            assertThat(fromIceberg.getDefinition()).isEqualTo(tightenedTd);
-            assertThat(fromIceberg).isInstanceOf(PartitionAwareSourceTable.class);
-
-            // Note: we should be able to fix this if we want, IcebergPartitionedLayout
-            // TODO: we should catch this at Resolver construction time if we aren't going to solve it in IPL
             try {
-                fromIceberg.select();
-                failBecauseExceptionWasNotThrown(TableDataException.class);
-            } catch (TableDataException e) {
-                assertThat(e).cause()
-                        .hasMessageContaining("Unexpected partitioning column value type for PC: 3 is not a Short");
+                Resolver.builder()
+                        .definition(tightenedTd)
+                        .schema(resolver.schema())
+                        .spec(resolver.spec().orElseThrow())
+                        .putColumnInstructions(FOO, resolver.columnInstructions().get(FOO))
+                        .putColumnInstructions(BAR, resolver.columnInstructions().get(BAR))
+                        .putColumnInstructions(BAZ, resolver.columnInstructions().get(BAZ))
+                        .build();
+                failBecauseExceptionWasNotThrown(Resolver.MappingException.class);
+            } catch (Resolver.MappingException e) {
+                assertThat(e).hasMessageContaining("Unable to map Deephaven column PC");
+                assertThat(e).cause().hasMessageContaining(
+                        "Identity transform of type `int` does not support coercion to io.deephaven.qst.type.ShortType");
             }
+            // Once the above is supported, we should be able to assert the values
         }
     }
 

@@ -21,6 +21,8 @@ import org.apache.iceberg.types.Types.IntegerType;
 import org.apache.iceberg.types.Types.NestedField;
 import org.junit.jupiter.api.Test;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -377,8 +379,7 @@ class ResolverTest {
             failBecauseExceptionWasNotThrown(Resolver.MappingException.class);
         } catch (Resolver.MappingException e) {
             assertThat(e).hasMessageContaining("Unable to map Deephaven column F1");
-            assertThat(e).cause().hasMessageContaining(
-                    "Unable to map partition field `1000: F1_bucket: bucket[99](42)`, only identity transform is supported");
+            assertThat(e).cause().hasMessageContaining("Transform `bucket[99]` is not supported");
         }
     }
 
@@ -618,6 +619,360 @@ class ResolverTest {
                 } catch (Resolver.MappingException e) {
                     assertThat(e).hasMessageContaining("Unable to map Deephaven column Foo");
                     assertThat(e).cause().hasMessageContaining("Map type not supported");
+                }
+            }
+        }
+    }
+
+    @Test
+    void stringIdentityPartition() {
+        final Schema schema = new Schema(List.of(NestedField.optional(1, "Foo", Types.StringType.get())));
+        final PartitionSpec spec = PartitionSpec.builderFor(schema).identity("Foo").build();
+        {
+            final TableDefinition td = TableDefinition.of(ColumnDefinition.ofString("Foo").withPartitioning());
+            Resolver.builder()
+                    .schema(schema)
+                    .spec(spec)
+                    .definition(td)
+                    .putColumnInstructions("Foo", partitionField(spec.fields().get(0).fieldId()))
+                    .build();
+        }
+        // No alt-type
+        {
+            final TableDefinition td = TableDefinition.of(ColumnDefinition.ofInt("Foo").withPartitioning());
+            try {
+                Resolver.builder()
+                        .schema(schema)
+                        .spec(spec)
+                        .definition(td)
+                        .putColumnInstructions("Foo", partitionField(spec.fields().get(0).fieldId()))
+                        .build();
+                failBecauseExceptionWasNotThrown(Resolver.MappingException.class);
+            } catch (Resolver.MappingException e) {
+                assertThat(e).hasMessageContaining("Unable to map Deephaven column Foo");
+                assertThat(e).cause().hasMessageContaining(
+                        "Identity transform of type `string` does not support coercion to io.deephaven.qst.type.IntType");
+            }
+        }
+    }
+
+    @Test
+    void booleanIdentityPartition() {
+        final Schema schema = new Schema(List.of(NestedField.optional(1, "Foo", Types.BooleanType.get())));
+        final PartitionSpec spec = PartitionSpec.builderFor(schema).identity("Foo").build();
+        {
+            final TableDefinition td = TableDefinition.of(ColumnDefinition.ofBoolean("Foo").withPartitioning());
+            Resolver.builder()
+                    .schema(schema)
+                    .spec(spec)
+                    .definition(td)
+                    .putColumnInstructions("Foo", partitionField(spec.fields().get(0).fieldId()))
+                    .build();
+        }
+        // No alt-type
+        {
+            final TableDefinition td = TableDefinition.of(ColumnDefinition.ofString("Foo").withPartitioning());
+            try {
+                Resolver.builder()
+                        .schema(schema)
+                        .spec(spec)
+                        .definition(td)
+                        .putColumnInstructions("Foo", partitionField(spec.fields().get(0).fieldId()))
+                        .build();
+                failBecauseExceptionWasNotThrown(Resolver.MappingException.class);
+            } catch (Resolver.MappingException e) {
+                assertThat(e).hasMessageContaining("Unable to map Deephaven column Foo");
+                assertThat(e).cause().hasMessageContaining(
+                        "Identity transform of type `boolean` does not support coercion to io.deephaven.qst.type.StringType");
+            }
+        }
+    }
+
+    @Test
+    void intIdentityPartition() {
+        final Schema schema = new Schema(List.of(NestedField.optional(1, "Foo", Types.IntegerType.get())));
+        final PartitionSpec spec = PartitionSpec.builderFor(schema).identity("Foo").build();
+        {
+            final TableDefinition td = TableDefinition.of(ColumnDefinition.ofInt("Foo").withPartitioning());
+            Resolver.builder()
+                    .schema(schema)
+                    .spec(spec)
+                    .definition(td)
+                    .putColumnInstructions("Foo", partitionField(spec.fields().get(0).fieldId()))
+                    .build();
+        }
+
+        // No widening currently
+        {
+            final TableDefinition td = TableDefinition.of(ColumnDefinition.ofLong("Foo").withPartitioning());
+            try {
+                Resolver.builder()
+                        .schema(schema)
+                        .spec(spec)
+                        .definition(td)
+                        .putColumnInstructions("Foo", partitionField(spec.fields().get(0).fieldId()))
+                        .build();
+                failBecauseExceptionWasNotThrown(Resolver.MappingException.class);
+            } catch (Resolver.MappingException e) {
+                assertThat(e).hasMessageContaining("Unable to map Deephaven column Foo");
+                assertThat(e).cause().hasMessageContaining(
+                        "Identity transform of type `int` does not support coercion to io.deephaven.qst.type.LongType");
+            }
+        }
+
+        // No tightening currently
+        {
+            final TableDefinition td = TableDefinition.of(ColumnDefinition.ofShort("Foo").withPartitioning());
+            try {
+                Resolver.builder()
+                        .schema(schema)
+                        .spec(spec)
+                        .definition(td)
+                        .putColumnInstructions("Foo", partitionField(spec.fields().get(0).fieldId()))
+                        .build();
+                failBecauseExceptionWasNotThrown(Resolver.MappingException.class);
+            } catch (Resolver.MappingException e) {
+                assertThat(e).hasMessageContaining("Unable to map Deephaven column Foo");
+                assertThat(e).cause().hasMessageContaining(
+                        "Identity transform of type `int` does not support coercion to io.deephaven.qst.type.ShortType");
+            }
+        }
+
+        // No alt-type
+        {
+            final TableDefinition td = TableDefinition.of(ColumnDefinition.ofString("Foo").withPartitioning());
+            try {
+                Resolver.builder()
+                        .schema(schema)
+                        .spec(spec)
+                        .definition(td)
+                        .putColumnInstructions("Foo", partitionField(spec.fields().get(0).fieldId()))
+                        .build();
+                failBecauseExceptionWasNotThrown(Resolver.MappingException.class);
+            } catch (Resolver.MappingException e) {
+                assertThat(e).hasMessageContaining("Unable to map Deephaven column Foo");
+                assertThat(e).cause().hasMessageContaining(
+                        "Identity transform of type `int` does not support coercion to io.deephaven.qst.type.StringType");
+            }
+        }
+    }
+
+    @Test
+    void longIdentityPartition() {
+        final Schema schema = new Schema(List.of(NestedField.optional(1, "Foo", Types.LongType.get())));
+        final PartitionSpec spec = PartitionSpec.builderFor(schema).identity("Foo").build();
+        {
+            final TableDefinition td = TableDefinition.of(ColumnDefinition.ofLong("Foo").withPartitioning());
+            Resolver.builder()
+                    .schema(schema)
+                    .spec(spec)
+                    .definition(td)
+                    .putColumnInstructions("Foo", partitionField(spec.fields().get(0).fieldId()))
+                    .build();
+        }
+
+        // No tightening currently
+        {
+            final TableDefinition td = TableDefinition.of(ColumnDefinition.ofInt("Foo").withPartitioning());
+            try {
+                Resolver.builder()
+                        .schema(schema)
+                        .spec(spec)
+                        .definition(td)
+                        .putColumnInstructions("Foo", partitionField(spec.fields().get(0).fieldId()))
+                        .build();
+                failBecauseExceptionWasNotThrown(Resolver.MappingException.class);
+            } catch (Resolver.MappingException e) {
+                assertThat(e).hasMessageContaining("Unable to map Deephaven column Foo");
+                assertThat(e).cause().hasMessageContaining(
+                        "Identity transform of type `long` does not support coercion to io.deephaven.qst.type.IntType");
+            }
+        }
+
+        // No alt-type
+        {
+            final TableDefinition td = TableDefinition.of(ColumnDefinition.ofString("Foo").withPartitioning());
+            try {
+                Resolver.builder()
+                        .schema(schema)
+                        .spec(spec)
+                        .definition(td)
+                        .putColumnInstructions("Foo", partitionField(spec.fields().get(0).fieldId()))
+                        .build();
+                failBecauseExceptionWasNotThrown(Resolver.MappingException.class);
+            } catch (Resolver.MappingException e) {
+                assertThat(e).hasMessageContaining("Unable to map Deephaven column Foo");
+                assertThat(e).cause().hasMessageContaining(
+                        "Identity transform of type `long` does not support coercion to io.deephaven.qst.type.StringType");
+            }
+        }
+    }
+
+    @Test
+    void floatIdentityPartition() {
+        final Schema schema = new Schema(List.of(NestedField.optional(1, "Foo", Types.FloatType.get())));
+        final PartitionSpec spec = PartitionSpec.builderFor(schema).identity("Foo").build();
+        {
+            final TableDefinition td = TableDefinition.of(ColumnDefinition.ofFloat("Foo").withPartitioning());
+            Resolver.builder()
+                    .schema(schema)
+                    .spec(spec)
+                    .definition(td)
+                    .putColumnInstructions("Foo", partitionField(spec.fields().get(0).fieldId()))
+                    .build();
+        }
+
+        // No widening currently
+        {
+            final TableDefinition td = TableDefinition.of(ColumnDefinition.ofDouble("Foo").withPartitioning());
+            try {
+                Resolver.builder()
+                        .schema(schema)
+                        .spec(spec)
+                        .definition(td)
+                        .putColumnInstructions("Foo", partitionField(spec.fields().get(0).fieldId()))
+                        .build();
+                failBecauseExceptionWasNotThrown(Resolver.MappingException.class);
+            } catch (Resolver.MappingException e) {
+                assertThat(e).hasMessageContaining("Unable to map Deephaven column Foo");
+                assertThat(e).cause().hasMessageContaining(
+                        "Identity transform of type `float` does not support coercion to io.deephaven.qst.type.DoubleType");
+            }
+        }
+
+        // No alt-type
+        {
+            final TableDefinition td = TableDefinition.of(ColumnDefinition.ofString("Foo").withPartitioning());
+            try {
+                Resolver.builder()
+                        .schema(schema)
+                        .spec(spec)
+                        .definition(td)
+                        .putColumnInstructions("Foo", partitionField(spec.fields().get(0).fieldId()))
+                        .build();
+                failBecauseExceptionWasNotThrown(Resolver.MappingException.class);
+            } catch (Resolver.MappingException e) {
+                assertThat(e).hasMessageContaining("Unable to map Deephaven column Foo");
+                assertThat(e).cause().hasMessageContaining(
+                        "Identity transform of type `float` does not support coercion to io.deephaven.qst.type.StringType");
+            }
+        }
+    }
+
+    @Test
+    void doubleIdentityPartition() {
+        final Schema schema = new Schema(List.of(NestedField.optional(1, "Foo", Types.DoubleType.get())));
+        final PartitionSpec spec = PartitionSpec.builderFor(schema).identity("Foo").build();
+        {
+            final TableDefinition td = TableDefinition.of(ColumnDefinition.ofDouble("Foo").withPartitioning());
+            Resolver.builder()
+                    .schema(schema)
+                    .spec(spec)
+                    .definition(td)
+                    .putColumnInstructions("Foo", partitionField(spec.fields().get(0).fieldId()))
+                    .build();
+        }
+
+        // No tightening currently
+        {
+            final TableDefinition td = TableDefinition.of(ColumnDefinition.ofFloat("Foo").withPartitioning());
+            try {
+                Resolver.builder()
+                        .schema(schema)
+                        .spec(spec)
+                        .definition(td)
+                        .putColumnInstructions("Foo", partitionField(spec.fields().get(0).fieldId()))
+                        .build();
+                failBecauseExceptionWasNotThrown(Resolver.MappingException.class);
+            } catch (Resolver.MappingException e) {
+                assertThat(e).hasMessageContaining("Unable to map Deephaven column Foo");
+                assertThat(e).cause().hasMessageContaining(
+                        "Identity transform of type `double` does not support coercion to io.deephaven.qst.type.FloatType");
+            }
+        }
+
+        // No alt-type
+        {
+            final TableDefinition td = TableDefinition.of(ColumnDefinition.ofString("Foo").withPartitioning());
+            try {
+                Resolver.builder()
+                        .schema(schema)
+                        .spec(spec)
+                        .definition(td)
+                        .putColumnInstructions("Foo", partitionField(spec.fields().get(0).fieldId()))
+                        .build();
+                failBecauseExceptionWasNotThrown(Resolver.MappingException.class);
+            } catch (Resolver.MappingException e) {
+                assertThat(e).hasMessageContaining("Unable to map Deephaven column Foo");
+                assertThat(e).cause().hasMessageContaining(
+                        "Identity transform of type `double` does not support coercion to io.deephaven.qst.type.StringType");
+            }
+        }
+    }
+
+    @Test
+    void dateIdentityPartition() {
+        final Schema schema = new Schema(List.of(NestedField.optional(1, "Foo", Types.DateType.get())));
+        final PartitionSpec spec = PartitionSpec.builderFor(schema).identity("Foo").build();
+        {
+            final TableDefinition td =
+                    TableDefinition.of(ColumnDefinition.of("Foo", Type.find(LocalDate.class)).withPartitioning());
+            Resolver.builder()
+                    .schema(schema)
+                    .spec(spec)
+                    .definition(td)
+                    .putColumnInstructions("Foo", partitionField(spec.fields().get(0).fieldId()))
+                    .build();
+        }
+        // No alt-type
+        {
+            final TableDefinition td = TableDefinition.of(ColumnDefinition.ofInt("Foo").withPartitioning());
+            try {
+                Resolver.builder()
+                        .schema(schema)
+                        .spec(spec)
+                        .definition(td)
+                        .putColumnInstructions("Foo", partitionField(spec.fields().get(0).fieldId()))
+                        .build();
+                failBecauseExceptionWasNotThrown(Resolver.MappingException.class);
+            } catch (Resolver.MappingException e) {
+                assertThat(e).hasMessageContaining("Unable to map Deephaven column Foo");
+                assertThat(e).cause().hasMessageContaining(
+                        "Identity transform of type `date` does not support coercion to io.deephaven.qst.type.IntType");
+            }
+        }
+    }
+
+    @Test
+    void unsupportedIdentityTypes() {
+        for (org.apache.iceberg.types.Type.PrimitiveType type : List.of(
+                Types.TimeType.get(),
+                Types.TimestampType.withZone(),
+                Types.TimestampType.withoutZone(),
+                Types.TimestampNanoType.withZone(),
+                Types.TimestampNanoType.withoutZone(),
+                Types.DecimalType.of(4, 4),
+                Types.BinaryType.get(),
+                Types.FixedType.ofLength(13),
+                Types.UUIDType.get(),
+                Types.UnknownType.get())) {
+            final Schema schema = new Schema(List.of(NestedField.optional(1, "Foo", type)));
+            final PartitionSpec spec = PartitionSpec.builderFor(schema).identity("Foo").build();
+            {
+                final TableDefinition td =
+                        TableDefinition.of(ColumnDefinition.of("Foo", Type.find(type.getClass())).withPartitioning());
+                try {
+                    Resolver.builder()
+                            .schema(schema)
+                            .spec(spec)
+                            .definition(td)
+                            .putColumnInstructions("Foo", partitionField(spec.fields().get(0).fieldId()))
+                            .build();
+                    failBecauseExceptionWasNotThrown(Resolver.MappingException.class);
+                } catch (Resolver.MappingException e) {
+                    assertThat(e).hasMessageContaining("Unable to map Deephaven column Foo");
+                    assertThat(e).cause().hasMessageContaining(
+                            String.format("Identity transform of type `%s` is not supported", type));
                 }
             }
         }
