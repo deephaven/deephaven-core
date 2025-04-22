@@ -66,7 +66,7 @@ final class IcebergPartitionedLayout extends IcebergBaseLayout {
         }
     }
 
-    private static Object get(PartitionField partitionField, PartitionData data) {
+    private static Object getPartitionValue(PartitionField partitionField, PartitionData data) {
         // Note: we could compute this mapping once per ManifestFile (give they are supposed to have the same partition
         // spec) but right now we are just doing it on-demand per data file.
         final List<Types.NestedField> fields = data.getPartitionType().fields();
@@ -98,7 +98,7 @@ final class IcebergPartitionedLayout extends IcebergBaseLayout {
         final PartitionData partitionData = (PartitionData) dataFile.partition();
         final Map<String, Comparable<?>> partitions = new LinkedHashMap<>(partitionFields.size());
         for (final Map.Entry<String, PartitionField> e : partitionFields.entrySet()) {
-            final Object partitionValue = get(e.getValue(), partitionData);
+            final Object partitionValue = getPartitionValue(e.getValue(), partitionData);
             partitions.put(e.getKey(), (Comparable<?>) partitionValue);
         }
         return locationKey(manifestFile, dataFile, fileUri, partitions, channelsProvider);

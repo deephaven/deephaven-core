@@ -39,6 +39,7 @@ public final class IcebergFlatLayout extends IcebergBaseLayout {
         super(tableAdapter, instructions, dataInstructionsProvider);
     }
 
+    // TODO(DH-19072): Refactor Iceberg TLKFs to reduce visibility
     @Deprecated(forRemoval = true)
     public IcebergFlatLayout(
             @NotNull IcebergTableAdapter tableAdapter,

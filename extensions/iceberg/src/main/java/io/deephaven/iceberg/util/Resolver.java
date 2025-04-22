@@ -331,7 +331,7 @@ public abstract class Resolver {
             // The source columns, selected by ids, must be a primitive type and cannot be contained in a map or list,
             // but may be nested in a struct.
             for (NestedField nestedField : fieldPath) {
-                // org.apache.iceberg.PartitionSpec.checkCompatibility does not currently catch this case
+                // https://github.com/apache/iceberg/issues/12870
                 if (nestedField.type().isListType()) {
                     throw new MappingException("Partition fields may not be contained in a list");
                 }

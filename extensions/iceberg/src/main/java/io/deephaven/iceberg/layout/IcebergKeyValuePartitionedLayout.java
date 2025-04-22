@@ -84,6 +84,7 @@ public final class IcebergKeyValuePartitionedLayout extends IcebergBaseLayout {
         }
     }
 
+    // TODO(DH-19072): Refactor Iceberg TLKFs to reduce visibility
     @Deprecated(forRemoval = true)
     public IcebergKeyValuePartitionedLayout(
             @NotNull IcebergTableAdapter tableAdapter,

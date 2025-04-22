@@ -211,14 +211,11 @@ class ResolverTest {
     void normalColumnPartitionFieldPartitionSpec() {
         final Schema schema = simpleSchema(IT);
         final PartitionSpec spec = PartitionSpec.builderFor(schema).identity("F1").build();
-        final TableDefinition td = TableDefinition.of(
-                ColumnDefinition.ofInt("F1"),
-                ColumnDefinition.ofInt("F2"));
         try {
             Resolver.builder()
                     .schema(schema)
                     .spec(spec)
-                    .definition(td)
+                    .definition(simpleDefinition(Type.intType()))
                     .putColumnInstructions("F1", partitionField(spec.fields().get(0).fieldId()))
                     .putColumnInstructions("F2", schemaField(43))
                     .build();

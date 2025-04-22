@@ -7,8 +7,6 @@ import org.apache.iceberg.Schema;
 import org.apache.iceberg.Snapshot;
 import org.apache.iceberg.Table;
 
-import java.util.Objects;
-
 /**
  * Internal class containing the implementations of {@link SchemaProvider}.
  */
@@ -51,7 +49,7 @@ class SchemaProviderInternal {
             if (schema.schemaId() != 0) {
                 // It's unfortunate that org.apache.iceberg.Schema.DEFAULT_SCHEMA_ID overlaps with a real schema id
                 throw new IllegalArgumentException(
-                        "Direct schemas should not set an schema id; use fromSchemaId instead");
+                        "Direct schemas should not set a schema id; use fromSchemaId instead");
             }
             this.schema = schema;
         }

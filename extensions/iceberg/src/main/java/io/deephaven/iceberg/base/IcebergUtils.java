@@ -8,7 +8,6 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.iceberg.relative.RelativeFileIO;
-import io.deephaven.iceberg.util.Resolver;
 import io.deephaven.iceberg.util.TypeInference;
 import org.apache.iceberg.DataFile;
 import org.apache.iceberg.PartitionField;
@@ -74,6 +73,8 @@ public final class IcebergUtils {
      * @return The converted Deephaven type.
      * @deprecated prefer {@link TypeInference#of(Type)}
      */
+    // TODO(DH-19288): Remove deprecated items after Iceberg update
+    @Deprecated(forRemoval = true)
     public static io.deephaven.qst.type.Type<?> convertToDHType(@NotNull final Type icebergType) {
         final Type.TypeID typeId = icebergType.typeId();
         switch (typeId) {
@@ -120,6 +121,8 @@ public final class IcebergUtils {
      * @return The converted Iceberg type.
      * @deprecated prefer {@link TypeInference#of(io.deephaven.qst.type.Type)}
      */
+    // TODO(DH-19288): Remove deprecated items after Iceberg update
+    @Deprecated(forRemoval = true)
     public static Type convertToIcebergType(final Class<?> columnType) {
         final Type icebergType = DH_TO_ICEBERG_TYPE_MAP.get(columnType);
         if (icebergType != null) {
