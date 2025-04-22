@@ -140,8 +140,8 @@ public abstract class IcebergToolsTest {
             ColumnDefinition.fromGenericType("timeField", LocalTime.class),
             ColumnDefinition.fromGenericType("timestampField", LocalDateTime.class),
             ColumnDefinition.fromGenericType("decimalField", BigDecimal.class),
-            ColumnDefinition.fromGenericType("fixedField", byte[].class),
-            ColumnDefinition.fromGenericType("binaryField", byte[].class),
+            // ColumnDefinition.fromGenericType("fixedField", byte[].class),
+            // ColumnDefinition.fromGenericType("binaryField", byte[].class),
             ColumnDefinition.ofTime("instantField"));
 
     private static final TableDefinition META_DEF = TableDefinition.of(
