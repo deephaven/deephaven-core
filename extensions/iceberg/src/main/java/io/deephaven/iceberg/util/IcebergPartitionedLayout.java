@@ -115,7 +115,8 @@ final class IcebergPartitionedLayout extends IcebergBaseLayout {
         // (org.apache.iceberg.data.IdentityPartitionConverters.convertConstant, Inference, etc). For example,
         // convertConstant with org.apache.iceberg.types.Types.TimestampType.shouldAdjustToUTC returns an OffsetDateTime
         // whereas we prefer to infer this as Instant. Now, this example may not be relevant (because while you _can_
-        // have an identity on a Timestamp, it seems unlikely). Ideally, all of these cases would also be tested.
+        // have an identity on a Timestamp, it seems unlikely). Ideally, all of these cases would also be tested against
+        // the actual reading code (as opposed to initial type checking).
         switch (inputType.typeId()) {
             case STRING:
                 validateStringIdentity(columnType);

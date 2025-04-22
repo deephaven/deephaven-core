@@ -47,12 +47,6 @@ public abstract class IcebergReadInstructions {
      */
     public abstract Optional<Resolver> resolver();
 
-    // todo: only relevant when resolver not set
-
-    // might be some awy to pass in desired inferenc instructions; arguably, caller _might_ want to specify namer and
-    // if inference should fail...
-    // public abstract Optional<InferenceInstructions> inferenceInstructions();
-
     /**
      * The {@link TableDefinition} to use when reading Iceberg data files.
      */

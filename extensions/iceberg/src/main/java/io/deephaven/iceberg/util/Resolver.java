@@ -16,6 +16,7 @@ import io.deephaven.qst.type.Type;
 import org.apache.iceberg.PartitionField;
 import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.Schema;
+import org.apache.iceberg.Table;
 import org.apache.iceberg.transforms.Transform;
 import org.apache.iceberg.types.Types;
 import org.apache.iceberg.types.Types.NestedField;
@@ -60,15 +61,15 @@ public abstract class Resolver {
     }
 
     /**
-     * Creates a {@link Resolver} for the given Table {@code definition}, <b>only applicable in contexts where the
-     * Iceberg Table does not exist</b>. In cases where the Iceberg Table already exist, callers must create a resolver
-     * in relationship to an existing {@link Schema} (for example, via {@link #infer(Schema)}, or manually via
-     * {@link #builder()}).
+     * Creates a {@link Resolver} from the given Table {@code definition}, <b>only applicable in contexts where an
+     * {@link Table Iceberg Table} does not already exist</b>. In cases where the {@link Table Iceberg Table} already
+     * exist, callers must create a resolver in relationship to an existing {@link Schema} (for example, via
+     * {@link #infer(Schema)}, or manually via {@link #builder()}).
      *
      * <p>
-     * All columns of type {@link ColumnDefinition.ColumnType#Partitioning partitioning} will be used to create the
-     * partition spec for the table. Callers should take note of the documentation on {@link Resolver#definition()} when
-     * deciding to create an Iceberg Table with partitioning columns.
+     * All {@link ColumnDefinition.ColumnType#Partitioning partitioning columns} will be used to create a partition spec
+     * for the table. Callers should take note of the documentation on {@link Resolver#definition()} when deciding to
+     * create an Iceberg Table with partitioning columns.
      *
      * @param definition the Table definition
      * @return the resolver
@@ -171,17 +172,14 @@ public abstract class Resolver {
     }
 
     /**
-     * The Deephaven table definition.
+     * The Deephaven table definition. Every {@link TableDefinition#getColumns() column} of this definition must be
+     * mapped via {@link #columnInstructions()}.
      *
      * <p>
-     * By default, it is expected that every column in this definition be mapped to a corresponding Iceberg field (via
-     * {@link #columnInstructions()}. In the case where a column is defined here, but not in Iceberg,
-     *
-     * <p>
-     * Callers should take care and only use {@link ColumnDefinition.ColumnType#Partitioning} columns when they know the
-     * Iceberg table will always have {@link Transform#isIdentity() identity} partitions for said columns. In the
-     * general case, Iceberg partitions may evolve over time, which can break the assumptions Deephaven makes about
-     * partitioning columns.
+     * Callers should take care and only use {@link ColumnDefinition.ColumnType#Partitioning Partitioning} columns when
+     * they know the Iceberg table will always have {@link Transform#isIdentity() identity} partitions for said columns.
+     * In the general case, Iceberg partitions may evolve over time, which can break the assumptions Deephaven makes
+     * about partitioning columns.
      */
     public abstract TableDefinition definition();
 
@@ -200,7 +198,12 @@ public abstract class Resolver {
     public abstract Optional<PartitionSpec> spec();
 
     /**
-     * The column instructions keyed by Deephaven column name.
+     * The column instructions keyed by Deephaven column name from the {@link #definition() definition}.
+     * {@link ColumnDefinition.ColumnType#Normal Normal} columns must reference a
+     * {@link ColumnInstructions#schemaField(int) schema field} (or be {@link ColumnInstructions#unmapped() unmapped}),
+     * and {@link ColumnDefinition.ColumnType#Partitioning partitioning} columns must reference a
+     * {@link ColumnInstructions#schemaField(int) schema field} or {@link ColumnInstructions#partitionField(int)
+     * partition field}.
      */
     public abstract Map<String, ColumnInstructions> columnInstructions();
 

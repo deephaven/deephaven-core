@@ -15,38 +15,67 @@ import org.immutables.value.Value;
 import java.util.List;
 import java.util.OptionalInt;
 
+/**
+ * The instructions for mapping a Deephaven column in {@link Resolver#columnInstructions()}.
+ */
 @Value.Immutable
 @BuildableStyle
 public abstract class ColumnInstructions {
 
+    /**
+     * Create an unmapped column instructions, where neither schema field, nor partition field, is referenced.
+     *
+     * @return the column instructions
+     */
     public static ColumnInstructions unmapped() {
         return ImmutableColumnInstructions.builder().build();
     }
 
+    /**
+     * Create column instructions for a schema field.
+     *
+     * @param fieldId the field id
+     * @return the column instructions
+     */
     public static ColumnInstructions schemaField(int fieldId) {
         return ImmutableColumnInstructions.builder().schemaFieldId(fieldId).build();
     }
 
-    // TODO: should we even allow user to configure this? we don't really want to expose partition columns to them
-    // (except identity, but then it's already in the schema, so they don't _need_ this).
-    // really, it means you want to use the *name* from the partition field as well
+    /**
+     * Create column instructions for a partition field.
+     *
+     * @param partitionFieldId the partition field id
+     * @return the column instructions
+     */
     public static ColumnInstructions partitionField(int partitionFieldId) {
         return ImmutableColumnInstructions.builder().partitionFieldId(partitionFieldId).build();
     }
 
-    public final boolean isUnmapped() {
+    /**
+     * The schema field id.
+     */
+    public abstract OptionalInt schemaFieldId();
+
+    /**
+     * The partition field id.
+     */
+    public abstract OptionalInt partitionFieldId();
+
+    // Note: very likely there will be additions here to support future additions; codecs, conversions, etc.
+
+    final boolean isUnmapped() {
         return schemaFieldId().isEmpty() && partitionFieldId().isEmpty();
     }
 
-    public abstract OptionalInt schemaFieldId();
+    final List<NestedField> schemaFieldPath(Schema schema) throws SchemaHelper.PathException {
+        return SchemaHelper.fieldPath(schema, schemaFieldId().orElseThrow());
+    }
 
-    public abstract OptionalInt partitionFieldId();
-
-    PartitionField partitionField(PartitionSpec spec) throws SchemaHelper.PathException {
+    final PartitionField partitionField(PartitionSpec spec) throws SchemaHelper.PathException {
         return PartitionSpecHelper.get(spec, partitionFieldId().orElseThrow());
     }
 
-    PartitionField partitionFieldFromSchemaFieldId(PartitionSpec spec) throws SchemaHelper.PathException {
+    final PartitionField partitionFieldFromSchemaFieldId(PartitionSpec spec) throws SchemaHelper.PathException {
         final int fieldId = schemaFieldId().orElseThrow();
         final List<PartitionField> partitionFields = spec.getFieldsBySourceId(fieldId);
         if (partitionFields.isEmpty()) {
@@ -64,20 +93,11 @@ public abstract class ColumnInstructions {
         return partitionFields.get(0);
     }
 
-    List<NestedField> schemaFieldPath(Schema schema) throws SchemaHelper.PathException {
-        return SchemaHelper.fieldPath(schema, schemaFieldId().orElseThrow());
-    }
-
-    // Note: very likely there will be additions here to support future additions; codecs, conversions, etc.
-
     @Value.Check
-    final void checkBase() {
-        if (isUnmapped()) {
-            return;
-        }
-        if (partitionFieldId().isPresent() == schemaFieldId().isPresent()) {
+    final void checkType() {
+        if (partitionFieldId().isPresent() && schemaFieldId().isPresent()) {
             throw new IllegalArgumentException(
-                    "ColumnInstructions must be schema based or partition based");
+                    "ColumnInstructions can't have both a schema field id and a partition field id");
         }
     }
 }
