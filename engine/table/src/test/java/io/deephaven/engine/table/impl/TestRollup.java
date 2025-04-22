@@ -147,13 +147,13 @@ public class TestRollup extends RefreshingTableTestCase {
         final IllegalArgumentException ex1 = Assert.assertThrows(IllegalArgumentException.class,
                 () -> rollup1.withFilter(WhereFilterFactory.getExpression("AVG >= 13")));
         assertEquals("Invalid filter found: RangeFilter(AVG greater than or equal to 13) may only use " +
-                        "non-aggregation columns, which are [GRP, CONST], but has used [AVG]", ex1.getMessage());
+                "non-aggregation columns, which are [GRP, CONST], but has used [AVG]", ex1.getMessage());
         final RuntimeException ex2 = Assert.assertThrows(RuntimeException.class,
                 () -> rollup1.withFilter(WhereFilterFactory.getExpression("BOGUS = 13")));
         assertEquals("Column \"BOGUS\" doesn't exist in this table, available columns: [GRP, AVG, CONST]",
                 ex2.getMessage());
 
-        final RollupTable rollup2 = source.rollup(aggs,true, "GRP")
+        final RollupTable rollup2 = source.rollup(aggs, true, "GRP")
                 .withFilter(WhereFilterFactory.getExpression("GRP = `v2`"));
         final Table snapshot2 = snapshotFilteredRollup(rollup2);
 

@@ -253,8 +253,8 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
 
         List<String> groupByColNames = groupByColumns.stream().map(ColumnName::name).collect(Collectors.toList());
         final boolean onlyGroupBy = Arrays.stream(whereFilters)
-                .allMatch(w->groupByColNames.containsAll(w.getColumns()));
-        if(!onlyGroupBy) {
+                .allMatch(w -> groupByColNames.containsAll(w.getColumns()));
+        if (!onlyGroupBy) {
             final Table filteredTable = source.where(Filter.and(whereFilters));
             return rebase(filteredTable);
         }
@@ -294,9 +294,9 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
     /**
      * Initialize and validate the supplied filters for this RollupTable.
      *
-     * @param source           The rollup {@link #getSource() source}
-     * @param aggregations     The rollup aggregations}
-     * @param filters          The filters to initialize and validate
+     * @param source The rollup {@link #getSource() source}
+     * @param aggregations The rollup aggregations}
+     * @param filters The filters to initialize and validate
      * @param exceptionFactory A factory for creating exceptions from their messages
      * @return The initialized and validated filters
      */
@@ -307,7 +307,7 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
             @NotNull final Function<String, ? extends RuntimeException> exceptionFactory) {
 
         final List<String> aggColumns = AggregationPairs.of(aggregations)
-                .map(p->p.input().name()).collect(Collectors.toList());
+                .map(p -> p.input().name()).collect(Collectors.toList());
         final List<String> validColumns = source.getColumnSourceMap().keySet().stream()
                 .filter(cn -> !aggColumns.contains(cn)).collect(Collectors.toList());
         final WhereFilter[] whereFilters = WhereFilter.from(filters);
@@ -593,12 +593,12 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
     /**
      * Reaggregate the base level and fill in the level arrays for a rollup.
      *
-     * @param levelTables           Input/output array for per-level tables, with the base level already filled
-     * @param levelRowLookups       Input/output array for per-level row lookups, with the base level already filled
+     * @param levelTables Input/output array for per-level tables, with the base level already filled
+     * @param levelRowLookups Input/output array for per-level row lookups, with the base level already filled
      * @param levelNodeTableSources Input/output array for per-level node table column sources, with the base level
-     *                              already filled
-     * @param aggregations          The aggregations
-     * @param groupByColumns        The group-by columns
+     *        already filled
+     * @param aggregations The aggregations
+     * @param groupByColumns The group-by columns
      */
     private static void rollupFromBase(
             @NotNull final QueryTable[] levelTables,
