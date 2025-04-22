@@ -9,15 +9,12 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder;
-import io.deephaven.engine.table.impl.util.ColumnHolder;
-import io.deephaven.engine.util.TableTools;
 import io.deephaven.iceberg.internal.DataInstructionsProviderLoader;
 import io.deephaven.iceberg.location.IcebergTableLocationKey;
 import io.deephaven.iceberg.location.IcebergTableParquetLocationKey;
 import io.deephaven.iceberg.util.IcebergReadInstructions;
 import io.deephaven.iceberg.util.IcebergTableAdapter;
 import io.deephaven.parquet.table.ParquetInstructions;
-import io.deephaven.qst.type.Type;
 import io.deephaven.util.annotations.InternalUseOnly;
 import io.deephaven.util.channel.SeekableChannelsProvider;
 import io.deephaven.util.channel.SeekableChannelsProviderLoader;
@@ -230,29 +227,6 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
         }
     }
 
-    public static void specCheck(Table table, Snapshot snapshot) throws IOException {
-        final FileIO io = table.io();
-        final List<ManifestFile> manifestFiles = snapshot.dataManifests(io);
-        for (final ManifestFile manifestFile : manifestFiles) {
-            // 502 partition_spec_id
-            // ID of a partition spec used to write the manifest; must be listed in table metadata partition-specs
-            final int manifestFileSpecId = manifestFile.partitionSpecId();
-            try (final ManifestReader<DataFile> manifestReader = ManifestFiles.read(manifestFile, io)) {
-
-                // From file's KV metadata:
-                // partition-spec-id: ID of the partition spec used to write the manifest as a string
-                // partition-spec: JSON fields representation of the partition spec used to write the manifest
-                // schema: JSON representation of the table schema at the time the manifest was written
-                final PartitionSpec partitionSpecFromAvroMetadata = manifestReader.spec();
-
-                for (final DataFile dataFile : manifestReader) {
-                    final int dataFileSpecId = dataFile.specId();
-                    // relationship between manifestFileSpecId, partitionSpecFromAvroMetadata, dataFileSpecId
-                }
-            }
-        }
-    }
-
     @Override
     public synchronized void findKeys(@NotNull final Consumer<IcebergTableLocationKey> locationKeyObserver) {
         if (snapshot == null) {
@@ -266,11 +240,8 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
                 checkIsDataManifest(manifestFile);
             }
             for (final ManifestFile manifestFile : manifestFiles) {
-                final int manifestFileSpecId = manifestFile.partitionSpecId();
                 try (final ManifestReader<DataFile> manifestReader = ManifestFiles.read(manifestFile, io)) {
-                    final PartitionSpec partitionSpecFromAvroMetadata = manifestReader.spec();
                     for (final DataFile dataFile : manifestReader) {
-                        final int dataFileSpecId = dataFile.specId();
                         locationKeyObserver.accept(key(table, manifestFile, manifestReader, dataFile));
                     }
                 }

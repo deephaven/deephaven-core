@@ -151,7 +151,6 @@ public class IcebergTableWriter {
         this.tableWriterOptions = verifyWriterOptions(tableWriterOptions);
         this.table = tableAdapter.icebergTable();
 
-        // TODO: this is incorrect
         this.tableSpec = table.spec();
 
         this.tableDefinition = tableWriterOptions.tableDefinition();
@@ -228,7 +227,6 @@ public class IcebergTableWriter {
      * additional checks to ensure that the table definition is compatible with schema provided by user.
      */
     private void addFieldIdsForAllColumns() {
-        // TODO: orient this around Resolver
         final Map<String, Integer> dhColumnNameToFieldId = tableWriterOptions.dhColumnNameToFieldId();
         Map<String, Integer> nameMappingDefault = null; // Lazily initialized
         for (final ColumnDefinition<?> columnDefinition : tableDefinition.getColumns()) {
