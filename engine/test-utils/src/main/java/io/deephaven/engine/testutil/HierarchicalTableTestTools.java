@@ -85,7 +85,7 @@ public class HierarchicalTableTestTools {
         for (final ColumnDefinition<?> columnDefinition : includedColumns) {
             String origName = columnDefinition.getName();
             String name = origName;
-            for(int idx = 0; dedupedColumnMap.containsKey(name); idx++) {
+            for (int idx = 0; dedupedColumnMap.containsKey(name); idx++) {
                 name = origName + idx++;
             }
             dedupedColumnMap.put(name, columnDefinition.withName(name));
