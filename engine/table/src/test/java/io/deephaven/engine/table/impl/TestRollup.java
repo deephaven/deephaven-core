@@ -145,7 +145,7 @@ public class TestRollup extends RefreshingTableTestCase {
                 intCol("CONST", 11, 12, 13, 14, 15));
         final List<Aggregation> aggs = List.of(AggAvg("avg=AVG"));
 
-        final RollupTable rollup1 = source.rollup(aggs, "GRP");
+        final RollupTable rollup1 = source.rollup(aggs, true, "GRP");
         final IllegalArgumentException ex1 = Assert.assertThrows(IllegalArgumentException.class,
                 () -> rollup1.withFilter(WhereFilterFactory.getExpression("AVG >= 13")));
         assertEquals("Invalid filter found: RangeFilter(AVG greater than or equal to 13) may only use " +
@@ -155,16 +155,16 @@ public class TestRollup extends RefreshingTableTestCase {
         assertEquals("Column \"BOGUS\" doesn't exist in this table, available columns: [GRP, AVG, CONST]",
                 ex2.getMessage());
 
-        final RollupTable rollup2 = source.rollup(aggs,"GRP")
+        final RollupTable rollup2 = source.rollup(aggs,true, "GRP")
                 .withFilter(WhereFilterFactory.getExpression("GRP = `v2`"));
         final Table snapshot2 = snapshotFilteredRollup(rollup2);
 
-        final RollupTable rollup3 = source.rollup(aggs, "GRP")
+        final RollupTable rollup3 = source.rollup(aggs, true, "GRP")
                 .withFilter(WhereFilterFactory.getExpression("CONST >= 13 && CONST <= 14"));
         final Table snapshot3 = snapshotFilteredRollup(rollup3);
         assertTableEquals(snapshot2, snapshot3);
 
-        final RollupTable rollup4 = source.rollup(aggs, "GRP")
+        final RollupTable rollup4 = source.rollup(aggs, true, "GRP")
                 .withFilter(WhereFilterFactory.getExpression("CONST >= 13 && GRP = `v2`"));
         final Table snapshot4 = snapshotFilteredRollup(rollup4);
         assertTableEquals(snapshot2, snapshot4);
