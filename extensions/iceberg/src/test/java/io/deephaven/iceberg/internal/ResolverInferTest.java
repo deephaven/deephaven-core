@@ -43,19 +43,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 
 /**
- * All of these tests run through {@link Resolver#infer(i(schema))} and {@link Resolver#infer(ia(schema))}; this is an
- * easier setup than creating or mocking our own consumer via {@link Inference#of(Schema, Inference.Consumer)}.
+ * This test specifics around {@link Resolver#infer(InferenceInstructions)}; more general validations around
+ * {@link Resolver} should be in {@link ResolverTest}.
  */
-class InferenceTest {
+class ResolverInferTest {
 
     // Note: Schema does not implement equals. In this testing, the expected and actual need to share the exact same
     // schema (not a problem, since we aren't inferring the Schema, it's given to us).
 
     private static final IntegerType IT = IntegerType.get();
-
-    static InferenceInstructions i(Schema schema) {
-        return InferenceInstructions.of(schema);
-    }
 
     static InferenceInstructions ia(Schema schema) {
         return InferenceInstructions.builder()
@@ -75,7 +71,7 @@ class InferenceTest {
     void BooleanType() throws Inference.Exception {
         final Schema schema = simpleSchema(BooleanType.get());
         final Resolver expected = simpleMapping(schema, Type.booleanType());
-        assertThat(Resolver.infer(i(schema))).isEqualTo(expected);
+        assertThat(Resolver.infer(schema)).isEqualTo(expected);
         assertThat(Resolver.infer(ia(schema))).isEqualTo(expected);
     }
 
@@ -83,7 +79,7 @@ class InferenceTest {
     void IntegerType() throws Inference.Exception {
         final Schema schema = simpleSchema(IT);
         final Resolver expected = simpleMapping(schema, Type.intType());
-        assertThat(Resolver.infer(i(schema))).isEqualTo(expected);
+        assertThat(Resolver.infer(schema)).isEqualTo(expected);
         assertThat(Resolver.infer(ia(schema))).isEqualTo(expected);
     }
 
@@ -91,7 +87,7 @@ class InferenceTest {
     void LongType() throws Inference.Exception {
         final Schema schema = simpleSchema(LongType.get());
         final Resolver expected = simpleMapping(schema, Type.longType());
-        assertThat(Resolver.infer(i(schema))).isEqualTo(expected);
+        assertThat(Resolver.infer(schema)).isEqualTo(expected);
         assertThat(Resolver.infer(ia(schema))).isEqualTo(expected);
     }
 
@@ -99,7 +95,7 @@ class InferenceTest {
     void FloatType() throws Inference.Exception {
         final Schema schema = simpleSchema(FloatType.get());
         final Resolver expected = simpleMapping(schema, Type.floatType());
-        assertThat(Resolver.infer(i(schema))).isEqualTo(expected);
+        assertThat(Resolver.infer(schema)).isEqualTo(expected);
         assertThat(Resolver.infer(ia(schema))).isEqualTo(expected);
     }
 
@@ -107,7 +103,7 @@ class InferenceTest {
     void DoubleType() throws Inference.Exception {
         final Schema schema = simpleSchema(DoubleType.get());
         final Resolver expected = simpleMapping(schema, Type.doubleType());
-        assertThat(Resolver.infer(i(schema))).isEqualTo(expected);
+        assertThat(Resolver.infer(schema)).isEqualTo(expected);
         assertThat(Resolver.infer(ia(schema))).isEqualTo(expected);
     }
 
@@ -115,7 +111,7 @@ class InferenceTest {
     void DateType() throws Inference.Exception {
         final Schema schema = simpleSchema(DateType.get());
         final Resolver expected = simpleMapping(schema, Type.find(LocalDate.class));
-        assertThat(Resolver.infer(i(schema))).isEqualTo(expected);
+        assertThat(Resolver.infer(schema)).isEqualTo(expected);
         assertThat(Resolver.infer(ia(schema))).isEqualTo(expected);
     }
 
@@ -123,7 +119,7 @@ class InferenceTest {
     void TimeType() throws Inference.Exception {
         final Schema schema = simpleSchema(TimeType.get());
         final Resolver expected = simpleMapping(schema, Type.find(LocalTime.class));
-        assertThat(Resolver.infer(i(schema))).isEqualTo(expected);
+        assertThat(Resolver.infer(schema)).isEqualTo(expected);
         assertThat(Resolver.infer(ia(schema))).isEqualTo(expected);
     }
 
@@ -131,7 +127,7 @@ class InferenceTest {
     void TimestampTypeWithZone() throws Inference.Exception {
         final Schema schema = simpleSchema(TimestampType.withZone());
         final Resolver expected = simpleMapping(schema, Type.instantType());
-        assertThat(Resolver.infer(i(schema))).isEqualTo(expected);
+        assertThat(Resolver.infer(schema)).isEqualTo(expected);
         assertThat(Resolver.infer(ia(schema))).isEqualTo(expected);
     }
 
@@ -139,14 +135,14 @@ class InferenceTest {
     void TimestampTypeWithoutZone() throws Inference.Exception {
         final Schema schema = simpleSchema(TimestampType.withoutZone());
         final Resolver expected = simpleMapping(schema, Type.find(LocalDateTime.class));
-        assertThat(Resolver.infer(i(schema))).isEqualTo(expected);
+        assertThat(Resolver.infer(schema)).isEqualTo(expected);
         assertThat(Resolver.infer(ia(schema))).isEqualTo(expected);
     }
 
     @Test
     void TimestampNanoTypeWithZone() throws Inference.Exception {
         final Schema schema = simpleSchema(TimestampNanoType.withZone());
-        assertThat(Resolver.infer(i(schema))).isEqualTo(empty(schema));
+        assertThat(Resolver.infer(schema)).isEqualTo(empty(schema));
         try {
             Resolver.infer(ia(schema));
             failBecauseExceptionWasNotThrown(Inference.Exception.class);
@@ -158,7 +154,7 @@ class InferenceTest {
     @Test
     void TimestampNanoTypeWithoutZone() throws Inference.Exception {
         final Schema schema = simpleSchema(TimestampNanoType.withoutZone());
-        assertThat(Resolver.infer(i(schema))).isEqualTo(empty(schema));
+        assertThat(Resolver.infer(schema)).isEqualTo(empty(schema));
         try {
             Resolver.infer(ia(schema));
             failBecauseExceptionWasNotThrown(Inference.Exception.class);
@@ -171,38 +167,46 @@ class InferenceTest {
     void StringType() throws Inference.Exception {
         final Schema schema = simpleSchema(StringType.get());
         final Resolver expected = simpleMapping(schema, Type.stringType());
-        assertThat(Resolver.infer(i(schema))).isEqualTo(expected);
+        assertThat(Resolver.infer(schema)).isEqualTo(expected);
         assertThat(Resolver.infer(ia(schema))).isEqualTo(expected);
     }
 
     @Test
     void BinaryType() throws Inference.Exception {
         final Schema schema = simpleSchema(BinaryType.get());
-        final Resolver expected = simpleMapping(schema, Type.byteType().arrayType());
-        assertThat(Resolver.infer(i(schema))).isEqualTo(expected);
-        assertThat(Resolver.infer(ia(schema))).isEqualTo(expected);
+        assertThat(Resolver.infer(schema)).isEqualTo(empty(schema));
+        try {
+            Resolver.infer(ia(schema));
+        } catch (Inference.UnsupportedType e) {
+            assertThat(e).hasMessageContaining("Unsupported Iceberg type `binary` at fieldName `F1`");
+            assertThat(e.type()).isEqualTo(BinaryType.get());
+        }
     }
 
     @Test
     void FixedType_4() throws Inference.Exception {
         final Schema schema = simpleSchema(FixedType.ofLength(4));
-        final Resolver expected = simpleMapping(schema, Type.byteType().arrayType());
-        assertThat(Resolver.infer(i(schema))).isEqualTo(expected);
-        assertThat(Resolver.infer(ia(schema))).isEqualTo(expected);
+        assertThat(Resolver.infer(schema)).isEqualTo(empty(schema));
+        try {
+            Resolver.infer(ia(schema));
+        } catch (Inference.UnsupportedType e) {
+            assertThat(e).hasMessageContaining("Unsupported Iceberg type `fixed[4]` at fieldName `F1`");
+            assertThat(e.type()).isEqualTo(FixedType.ofLength(4));
+        }
     }
 
     @Test
     void DecimalType_3_4() throws Inference.Exception {
         final Schema schema = simpleSchema(DecimalType.of(3, 4));
         final Resolver expected = simpleMapping(schema, Type.find(BigDecimal.class));
-        assertThat(Resolver.infer(i(schema))).isEqualTo(expected);
+        assertThat(Resolver.infer(schema)).isEqualTo(expected);
         assertThat(Resolver.infer(ia(schema))).isEqualTo(expected);
     }
 
     @Test
     void UuidType() throws Inference.Exception {
         final Schema schema = simpleSchema(UUIDType.get());
-        assertThat(Resolver.infer(i(schema))).isEqualTo(empty(schema));
+        assertThat(Resolver.infer(schema)).isEqualTo(empty(schema));
         try {
             Resolver.infer(ia(schema));
             failBecauseExceptionWasNotThrown(Inference.Exception.class);
@@ -233,7 +237,7 @@ class InferenceTest {
                 .putColumnInstructions("S2_F1", schemaField(4))
                 .putColumnInstructions("S2_F2", schemaField(5))
                 .build();
-        assertThat(Resolver.infer(i(schema))).isEqualTo(expected);
+        assertThat(Resolver.infer(schema)).isEqualTo(expected);
         assertThat(Resolver.infer(ia(schema))).isEqualTo(expected);
     }
 
@@ -251,7 +255,7 @@ class InferenceTest {
                 .putColumnInstructions("S1_S2_F1", schemaField(3))
                 .putColumnInstructions("S1_S2_F2", schemaField(4))
                 .build();
-        assertThat(Resolver.infer(i(schema))).isEqualTo(expected);
+        assertThat(Resolver.infer(schema)).isEqualTo(expected);
         assertThat(Resolver.infer(ia(schema))).isEqualTo(expected);
     }
 
@@ -262,7 +266,7 @@ class InferenceTest {
                 NestedField.optional(6, "L2", ListType.ofRequired(2, IT)),
                 NestedField.required(7, "L3", ListType.ofOptional(3, IT)),
                 NestedField.required(8, "L4", ListType.ofRequired(4, IT)));
-        assertThat(Resolver.infer(i(schema))).isEqualTo(empty(schema));
+        assertThat(Resolver.infer(schema)).isEqualTo(empty(schema));
         try {
             Resolver.infer(ia(schema));
             failBecauseExceptionWasNotThrown(Inference.Exception.class);
@@ -279,7 +283,7 @@ class InferenceTest {
                 NestedField.optional(10, "M2", MapType.ofRequired(3, 4, IT, IT)),
                 NestedField.required(11, "M3", MapType.ofOptional(5, 6, IT, IT)),
                 NestedField.required(12, "M4", MapType.ofRequired(7, 8, IT, IT)));
-        assertThat(Resolver.infer(i(schema))).isEqualTo(empty(schema));
+        assertThat(Resolver.infer(schema)).isEqualTo(empty(schema));
         try {
             Resolver.infer(ia(schema));
             failBecauseExceptionWasNotThrown(Inference.Exception.class);
@@ -292,7 +296,7 @@ class InferenceTest {
     @Test
     void VariantType() throws Inference.UnsupportedType {
         final Schema schema = simpleSchema(VariantType.get());
-        assertThat(Resolver.infer(i(schema))).isEqualTo(empty(schema));
+        assertThat(Resolver.infer(schema)).isEqualTo(empty(schema));
         try {
             Resolver.infer(ia(schema));
             failBecauseExceptionWasNotThrown(Inference.Exception.class);

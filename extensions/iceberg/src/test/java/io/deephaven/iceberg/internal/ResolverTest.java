@@ -34,7 +34,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 
 /**
- * testing mapping is tougher than testing inference because it needs to deal with type conversion logic
+ * All of these tests should resolve around explicit construction via {@link Resolver#builder()}. Other build pathways
+ * should be tested elsewhere, such as {@link ResolverFromTest} or {@link ResolverInferTest}.
  */
 class ResolverTest {
 
@@ -487,6 +488,24 @@ class ResolverTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("not found in Iceberg schema");
     }
+
+    @Test
+    void byteArray() {
+        try {
+            Resolver.builder()
+                    .schema(new Schema(List.of(NestedField.optional(1, "Foo", Types.BinaryType.get()))))
+                    .definition(TableDefinition.of(ColumnDefinition.of("Foo", Type.byteType().arrayType())))
+                    .putColumnInstructions("Foo", schemaField(1))
+                    .build();
+            failBecauseExceptionWasNotThrown(Resolver.MappingException.class);
+        } catch (Resolver.MappingException e) {
+            assertThat(e).hasMessageContaining("Unable to map Deephaven column Foo");
+            assertThat(e).cause().hasMessageContaining("Unsupported type `binary`");
+        }
+    }
+
+    // TODO: all of the expected types from ResolverFromTest (or, potential types one might assume to construct
+    // manually), we should test out here more explicitly
 
     @Test
     void partitionFieldAgainstNonPrimitiveType() {

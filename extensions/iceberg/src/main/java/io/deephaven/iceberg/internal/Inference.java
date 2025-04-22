@@ -3,6 +3,21 @@
 //
 package io.deephaven.iceberg.internal;
 
+import io.deephaven.qst.type.ArrayType;
+import io.deephaven.qst.type.BooleanType;
+import io.deephaven.qst.type.BoxedType;
+import io.deephaven.qst.type.ByteType;
+import io.deephaven.qst.type.CharType;
+import io.deephaven.qst.type.CustomType;
+import io.deephaven.qst.type.DoubleType;
+import io.deephaven.qst.type.FloatType;
+import io.deephaven.qst.type.GenericType;
+import io.deephaven.qst.type.InstantType;
+import io.deephaven.qst.type.IntType;
+import io.deephaven.qst.type.LongType;
+import io.deephaven.qst.type.PrimitiveType;
+import io.deephaven.qst.type.ShortType;
+import io.deephaven.qst.type.StringType;
 import io.deephaven.qst.type.Type;
 import org.apache.iceberg.Schema;
 import org.apache.iceberg.types.Types;
@@ -20,6 +35,10 @@ public final class Inference {
 
     public static Optional<Type<?>> of(org.apache.iceberg.types.Type.PrimitiveType primitiveType) {
         return Optional.ofNullable(ofImpl(primitiveType));
+    }
+
+    public static Optional<org.apache.iceberg.types.Type> of(Type<?> type) {
+        return Optional.ofNullable(type.walk(What.INSTANCE));
     }
 
     private static Type<?> ofImpl(org.apache.iceberg.types.Type.PrimitiveType primitiveType) {
@@ -42,10 +61,6 @@ public final class Inference {
                 return of((Types.TimestampType) primitiveType);
             case STRING:
                 return of((Types.StringType) primitiveType);
-            case BINARY:
-                return of((Types.BinaryType) primitiveType);
-            case FIXED:
-                return of((Types.FixedType) primitiveType);
             case DECIMAL:
                 return of((Types.DecimalType) primitiveType);
             case STRUCT:
@@ -57,6 +72,8 @@ public final class Inference {
             case TIMESTAMP_NANO:
                 // should be able to support UUID, maybe fixed length codec?
             case UUID:
+            case BINARY:
+            case FIXED:
             default:
                 return null;
         }
@@ -100,15 +117,6 @@ public final class Inference {
         return Type.stringType();
     }
 
-    static Type<?> of(@SuppressWarnings("unused") Types.BinaryType type) {
-        return Type.byteType().arrayType();
-    }
-
-    static Type<?> of(@SuppressWarnings("unused") Types.FixedType type) {
-        // TODO: should we have QST type that captures len?
-        return Type.byteType().arrayType();
-    }
-
     static Type<?> of(@SuppressWarnings("unused") Types.DecimalType type) {
         // todo: should we have QST type that captures scale / precision?
         return Type.find(BigDecimal.class);
@@ -144,6 +152,98 @@ public final class Inference {
 
         public org.apache.iceberg.types.Type type() {
             return fieldPath.get(fieldPath.size() - 1).type();
+        }
+    }
+
+    private enum What implements Type.Visitor<org.apache.iceberg.types.Type>,
+            PrimitiveType.Visitor<org.apache.iceberg.types.Type>, GenericType.Visitor<org.apache.iceberg.types.Type> {
+        INSTANCE;
+
+
+        @Override
+        public org.apache.iceberg.types.Type visit(PrimitiveType<?> primitiveType) {
+            return primitiveType.walk((PrimitiveType.Visitor<org.apache.iceberg.types.Type>) this);
+        }
+
+        @Override
+        public org.apache.iceberg.types.Type visit(GenericType<?> genericType) {
+            return genericType.walk((GenericType.Visitor<org.apache.iceberg.types.Type>) this);
+        }
+
+
+        @Override
+        public org.apache.iceberg.types.Type visit(BoxedType<?> boxedType) {
+            // handle boxed types the same as primitive
+            return boxedType.primitiveType().walk((PrimitiveType.Visitor<org.apache.iceberg.types.Type>) this);
+        }
+
+        @Override
+        public org.apache.iceberg.types.Type visit(StringType stringType) {
+            return Types.StringType.get();
+        }
+
+        @Override
+        public org.apache.iceberg.types.Type visit(InstantType instantType) {
+            return Types.TimestampType.withZone();
+        }
+
+        @Override
+        public org.apache.iceberg.types.Type visit(ArrayType<?, ?> arrayType) {
+            return null;
+        }
+
+        @Override
+        public org.apache.iceberg.types.Type visit(CustomType<?> customType) {
+            if (LocalDateTime.class.equals(customType.clazz())) {
+                return Types.TimestampType.withoutZone();
+            }
+            if (LocalDate.class.equals(customType.clazz())) {
+                return Types.DateType.get();
+            }
+            if (LocalTime.class.equals(customType.clazz())) {
+                return Types.TimeType.get();
+            }
+            return null;
+        }
+
+        @Override
+        public org.apache.iceberg.types.Type visit(BooleanType booleanType) {
+            return Types.BooleanType.get();
+        }
+
+        @Override
+        public org.apache.iceberg.types.Type visit(IntType intType) {
+            return Types.IntegerType.get();
+        }
+
+        @Override
+        public org.apache.iceberg.types.Type visit(LongType longType) {
+            return Types.LongType.get();
+        }
+
+        @Override
+        public org.apache.iceberg.types.Type visit(FloatType floatType) {
+            return Types.FloatType.get();
+        }
+
+        @Override
+        public org.apache.iceberg.types.Type visit(DoubleType doubleType) {
+            return Types.DoubleType.get();
+        }
+
+        @Override
+        public org.apache.iceberg.types.Type visit(ByteType byteType) {
+            return null;
+        }
+
+        @Override
+        public org.apache.iceberg.types.Type visit(CharType charType) {
+            return null;
+        }
+
+        @Override
+        public org.apache.iceberg.types.Type visit(ShortType shortType) {
+            return null;
         }
     }
 }

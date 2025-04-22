@@ -410,8 +410,7 @@ public abstract class SqliteCatalogBase {
                 ColumnDefinition.ofTime("instantCol"),
                 ColumnDefinition.of("localDateTimeCol", Type.find(LocalDateTime.class)),
                 ColumnDefinition.of("localDateCol", Type.find(LocalDate.class)),
-                ColumnDefinition.of("localTimeCol", Type.find(LocalTime.class)),
-                ColumnDefinition.of("binaryCol", Type.byteType().arrayType()));
+                ColumnDefinition.of("localTimeCol", Type.find(LocalTime.class)));
 
         final Table source = TableTools.newTable(td,
                 booleanCol("booleanCol", true, false, null),
@@ -426,10 +425,7 @@ public abstract class SqliteCatalogBase {
                 new ColumnHolder<>("localDateCol", LocalDate.class, null, false, LocalDate.now(), null,
                         LocalDate.now()),
                 new ColumnHolder<>("localTimeCol", LocalTime.class, null, false, LocalTime.now(), null,
-                        LocalTime.now()),
-                new ColumnHolder<>("binaryCol", byte[].class, byte.class, false, new byte[] {42, 43}, null,
-                        new byte[] {}));
-        // todo: why is binaryCol not working here?
+                        LocalTime.now()));
 
         final Namespace myNamespace = Namespace.of("MyNamespace");
         final TableIdentifier myTableId = TableIdentifier.of(myNamespace, "MyTableWithAllDataTypes");

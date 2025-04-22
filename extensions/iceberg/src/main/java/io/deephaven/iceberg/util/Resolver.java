@@ -8,6 +8,7 @@ import io.deephaven.api.util.NameValidator;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.iceberg.base.IcebergUtils;
 import io.deephaven.iceberg.internal.Inference;
 import io.deephaven.iceberg.internal.SchemaHelper;
@@ -79,8 +80,11 @@ public abstract class Resolver {
         int fieldID = INITIAL_FIELD_ID;
         for (final ColumnDefinition<?> columnDefinition : definition.getColumns()) {
             final String dhColumnName = columnDefinition.getName();
-            final org.apache.iceberg.types.Type icebergType =
-                    IcebergUtils.convertToIcebergType(columnDefinition.getDataType());
+            final Type<?> type = Type.find(columnDefinition.getDataType(), columnDefinition.getComponentType());
+            final org.apache.iceberg.types.Type icebergType = Inference.of(type).orElse(null);
+            if (icebergType == null) {
+                throw new MappingException("Unsupported deephaven column type " + type);
+            }
             fields.add(Types.NestedField.optional(fieldID, dhColumnName, icebergType));
             if (columnDefinition.isPartitioning()) {
                 partitioningColumnNames.add(dhColumnName);
@@ -89,10 +93,11 @@ public abstract class Resolver {
             fieldID++;
         }
         final Schema schema = new Schema(INITIAL_SCHEMA_ID, fields);
-        return builder
-                .schema(schema)
-                .spec(createPartitionSpec(schema, partitioningColumnNames, INITIAL_SPEC_ID))
-                .build();
+        final PartitionSpec spec = createPartitionSpec(schema, partitioningColumnNames, INITIAL_SPEC_ID);
+        if (spec.isPartitioned()) {
+            builder.spec(spec);
+        }
+        return builder.schema(schema).build();
     }
 
     private static PartitionSpec createPartitionSpec(
@@ -442,14 +447,12 @@ public abstract class Resolver {
     }
 
     static void checkCompatible(org.apache.iceberg.types.Type.PrimitiveType type) {
-        // do we even support this type? note: it's _possible_ there are cases where there is a primitive type where
-        // we don't support inference, but do support compatibility with DH type... TODO
-        Inference.of(type).orElseThrow(() -> new MappingException("todo"));
-        // try {
-        //
-        // } catch (Inference.UnsupportedType e) {
-        // throw new MappingException(e.getMessage());
-        // }
+        // If we can't infer a type, we can't support it more generally at this time (this may not be true in the future
+        // depending on things like additional options on ColumnInstruction guiding compatibility).
+        Type<?> inferredType = Inference.of(type).orElse(null);
+        if (inferredType == null) {
+            throw new MappingException(String.format("Unsupported type `%s`", type));
+        }
     }
 
     public static class MappingException extends RuntimeException {

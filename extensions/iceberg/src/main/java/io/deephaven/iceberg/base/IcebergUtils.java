@@ -118,6 +118,7 @@ public final class IcebergUtils {
      *
      * @param columnType The Deephaven type to be converted.
      * @return The converted Iceberg type.
+     * @deprecated prefer {@link Resolver#from(TableDefinition)}
      */
     public static Type convertToIcebergType(final Class<?> columnType) {
         final Type icebergType = DH_TO_ICEBERG_TYPE_MAP.get(columnType);
