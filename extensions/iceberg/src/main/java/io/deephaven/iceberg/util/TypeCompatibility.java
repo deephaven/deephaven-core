@@ -39,10 +39,12 @@ public final class TypeCompatibility {
      * @return {@code true} if the types are compatible, {@code false} otherwise
      */
     public static boolean isCompatible(Type<?> type, org.apache.iceberg.types.Type icebergType) {
-        if (!icebergType.isPrimitiveType()) {
-            return false;
+        if (icebergType.isPrimitiveType()) {
+            return PrimitiveCompat.of(type, icebergType.asPrimitiveType());
+        } else if (icebergType.isListType()) {
+            return ListCompat.of(type, icebergType.asListType());
         }
-        return PrimitiveCompat.of(type, icebergType.asPrimitiveType());
+        return false;
     }
 
     private static final class PrimitiveCompat
@@ -118,12 +120,12 @@ public final class TypeCompatibility {
 
         @Override
         public Boolean visit(ByteType byteType) {
-            return false;
+            return isIntegral();
         }
 
         @Override
         public Boolean visit(CharType charType) {
-            return false;
+            return isIntegral();
         }
 
         @Override
@@ -161,6 +163,67 @@ public final class TypeCompatibility {
         private boolean isIntegral() {
             return pt == Types.IntegerType.get()
                     || pt == Types.LongType.get();
+        }
+    }
+
+    private static final class ListCompat implements Type.Visitor<Boolean>, GenericType.Visitor<Boolean> {
+
+        private final org.apache.iceberg.types.Type.PrimitiveType elementType;
+
+        public static boolean of(Type<?> type, Types.ListType icebergType) {
+            if (icebergType.elementType() == null) {
+                throw new IllegalArgumentException("ListType must have an element type");
+            }
+            if (!icebergType.elementType().isPrimitiveType()) {
+                throw new IllegalArgumentException("ListType must have a primitive element type, found " +
+                        icebergType.elementType());
+            }
+            return type.walk(new ListCompat(icebergType));
+        }
+
+        private ListCompat(Types.ListType lt) {
+            Objects.requireNonNull(lt);
+            this.elementType = lt.elementType().asPrimitiveType();
+        }
+
+        @Override
+        public Boolean visit(GenericType<?> genericType) {
+            return genericType.walk((GenericType.Visitor<Boolean>) this);
+        }
+
+        @Override
+        public Boolean visit(ArrayType<?, ?> arrayType) {
+            final Type componentType = arrayType.componentType();
+            if (!(componentType instanceof PrimitiveType<?>)) {
+                return false;
+            }
+            // TODO Talk to Devin why we need to do this cast
+            return (Boolean) componentType.walk(new PrimitiveCompat(elementType));
+        }
+
+        @Override
+        public Boolean visit(BoxedType<?> boxedType) {
+            return false;
+        }
+
+        @Override
+        public Boolean visit(StringType stringType) {
+            return false;
+        }
+
+        @Override
+        public Boolean visit(InstantType instantType) {
+            return false;
+        }
+
+        @Override
+        public Boolean visit(CustomType<?> customType) {
+            return false;
+        }
+
+        @Override
+        public Boolean visit(PrimitiveType<?> primitiveType) {
+            return false;
         }
     }
 }

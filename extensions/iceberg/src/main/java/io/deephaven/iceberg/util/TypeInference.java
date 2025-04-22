@@ -241,7 +241,12 @@ public final class TypeInference {
 
         @Override
         public org.apache.iceberg.types.Type visit(ArrayType<?, ?> arrayType) {
+            final Type componentType = arrayType.componentType();
+            if (!(componentType instanceof PrimitiveType<?>)) {
+                return null;
+            }
             return null;
+            // return (Boolean) componentType.walk(new TypeCompatibility.PrimitiveCompat(elementType));
         }
 
         @Override
@@ -285,20 +290,17 @@ public final class TypeInference {
 
         @Override
         public org.apache.iceberg.types.Type visit(ByteType byteType) {
-            // TODO(DH-18253): Add support to write more types to iceberg tables
-            return null;
+            return Types.IntegerType.get();
         }
 
         @Override
         public org.apache.iceberg.types.Type visit(CharType charType) {
-            // TODO(DH-18253): Add support to write more types to iceberg tables
-            return null;
+            return Types.IntegerType.get();
         }
 
         @Override
         public org.apache.iceberg.types.Type visit(ShortType shortType) {
-            // TODO(DH-18253): Add support to write more types to iceberg tables
-            return null;
+            return Types.IntegerType.get();
         }
     }
 }

@@ -42,16 +42,17 @@ public final class IcebergUtils {
 
     static {
         DH_TO_ICEBERG_TYPE_MAP.put(Boolean.class, Types.BooleanType.get());
-        DH_TO_ICEBERG_TYPE_MAP.put(double.class, Types.DoubleType.get());
-        DH_TO_ICEBERG_TYPE_MAP.put(float.class, Types.FloatType.get());
+        DH_TO_ICEBERG_TYPE_MAP.put(byte.class, Types.IntegerType.get());
+        DH_TO_ICEBERG_TYPE_MAP.put(short.class, Types.IntegerType.get());
         DH_TO_ICEBERG_TYPE_MAP.put(int.class, Types.IntegerType.get());
         DH_TO_ICEBERG_TYPE_MAP.put(long.class, Types.LongType.get());
+        DH_TO_ICEBERG_TYPE_MAP.put(float.class, Types.FloatType.get());
+        DH_TO_ICEBERG_TYPE_MAP.put(double.class, Types.DoubleType.get());
         DH_TO_ICEBERG_TYPE_MAP.put(String.class, Types.StringType.get());
         DH_TO_ICEBERG_TYPE_MAP.put(Instant.class, Types.TimestampType.withZone());
         DH_TO_ICEBERG_TYPE_MAP.put(LocalDateTime.class, Types.TimestampType.withoutZone());
         DH_TO_ICEBERG_TYPE_MAP.put(LocalDate.class, Types.DateType.get());
         DH_TO_ICEBERG_TYPE_MAP.put(LocalTime.class, Types.TimeType.get());
-        DH_TO_ICEBERG_TYPE_MAP.put(byte[].class, Types.BinaryType.get());
         // TODO (deephaven-core#6327) Add support for more types like ZonedDateTime, Big Decimals, and Lists
     }
 

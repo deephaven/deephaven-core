@@ -267,14 +267,8 @@ public class IcebergTableWriter {
                 throw new IllegalArgumentException("Column " + columnName + " not found in the schema or " +
                         "the name mapping for the table");
             }
-            final Type expectedIcebergType = nestedField.type();
-            final Class<?> dhType = columnDefinition.getDataType();
-            final Type convertedIcebergType = convertToIcebergType(dhType);
-            if (!expectedIcebergType.equals(convertedIcebergType)) {
-                throw new IllegalArgumentException("Column " + columnName + " has type " + dhType + " in table " +
-                        "definition but type " + expectedIcebergType + " in Iceberg schema");
-            }
 
+            verifyCompatible(nestedField, columnDefinition);
             fieldIdToColumnName.put(fieldId, columnName);
         }
     }
@@ -346,6 +340,36 @@ public class IcebergTableWriter {
     }
 
     /**
+     * Verify that Deephaven column with provided definition is compatible for writing to the Iceberg column with the
+     * provided schema.
+     */
+    private static void verifyCompatible(
+            @NotNull final Types.NestedField icebergField,
+            @NotNull final ColumnDefinition<?> columnDefinition) {
+        final Type expectedIcebergType = icebergField.type();
+        final String dhColumnName = columnDefinition.getName();
+        final Class<?> dhDataType = columnDefinition.getDataType();
+        final Class<?> dhComponentType = columnDefinition.getComponentType();
+        if (dhComponentType == null) {
+            final Type convertedIcebergType = convertToIcebergType(dhDataType);
+            if (!expectedIcebergType.equals(convertedIcebergType)) {
+                throw new IllegalArgumentException("Column " + dhColumnName + " has type " + dhDataType + " in table " +
+                        "definition but type " + expectedIcebergType + " in Iceberg schema");
+            }
+        } else {
+            if (!expectedIcebergType.isListType()) {
+                throw new IllegalArgumentException("Column " + dhColumnName + " is not a list type in the schema but " +
+                        "has a component type " + dhComponentType + " in the table definition");
+            }
+            final Type convertedIcebergType = convertToIcebergType(dhComponentType);
+            if (!expectedIcebergType.asListType().elementType().equals(convertedIcebergType)) {
+                throw new IllegalArgumentException("Column " + dhColumnName + " has component type " + dhComponentType +
+                        " in table definition but type " + expectedIcebergType + " in Iceberg schema");
+            }
+        }
+    }
+
+    /**
      * Append the provided Deephaven {@link IcebergWriteInstructions#tables()} as new partitions to the existing Iceberg
      * table in a single snapshot. This method will not perform any compatibility checks between the existing schema and
      * the provided Deephaven tables.
@@ -366,7 +390,7 @@ public class IcebergTableWriter {
      * @param writeInstructions The instructions for customizations while writing.
      */
     public List<DataFile> writeDataFiles(@NotNull final IcebergWriteInstructions writeInstructions) {
-        verifyCompatible(writeInstructions.tables(), nonPartitioningTableDefinition);
+        verifyDefinitionCompatible(writeInstructions.tables(), nonPartitioningTableDefinition);
         final List<String> partitionPaths = writeInstructions.partitionPaths();
         verifyPartitionPaths(tableSpec, partitionPaths);
         final List<PartitionData> partitionData;
@@ -384,9 +408,9 @@ public class IcebergTableWriter {
     }
 
     /**
-     * Verify that all the tables are compatible with the provided table definition.
+     * Verify that all the Deephaven tables are compatible with the provided table definition.
      */
-    private static void verifyCompatible(
+    private static void verifyDefinitionCompatible(
             @NotNull final Iterable<Table> tables,
             @NotNull final TableDefinition expectedDefinition) {
         for (final Table table : tables) {
