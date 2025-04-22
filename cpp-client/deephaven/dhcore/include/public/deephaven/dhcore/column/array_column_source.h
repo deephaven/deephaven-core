@@ -12,6 +12,7 @@
 #include "deephaven/dhcore/chunk/chunk_traits.h"
 #include "deephaven/dhcore/column/column_source.h"
 #include "deephaven/dhcore/column/column_source_utils.h"
+#include "deephaven/dhcore/container/container.h"
 #include "deephaven/dhcore/types.h"
 
 namespace deephaven::dhcore::column {
@@ -255,4 +256,6 @@ using StringArrayColumnSource = GenericArrayColumnSource<std::string>;
 using DateTimeArrayColumnSource = GenericArrayColumnSource<DateTime>;
 using LocalDateArrayColumnSource = GenericArrayColumnSource<LocalDate>;
 using LocalTimeArrayColumnSource = GenericArrayColumnSource<LocalTime>;
+using ContainerArrayColumnSource =
+    GenericArrayColumnSource<std::shared_ptr<deephaven::dhcore::container::ContainerBase>>;
 }  // namespace deephaven::dhcore::column
