@@ -10,6 +10,8 @@ from pyiceberg.io.pyarrow import PYARROW_PARQUET_FIELD_ID_KEY
 import pyarrow as pa
 
 TABLE_ID = ("schema-evolution", "nested-rename")
+
+# Deephaven does not support multiple optional nested levels, so we'll just make either the outer or the inner fields required
 SCHEMA_INIT = Schema(
     NestedField(
         field_id=-1,
@@ -18,13 +20,14 @@ SCHEMA_INIT = Schema(
             NestedField(field_id=-1, name="Field1", field_type=IntegerType()),
             NestedField(field_id=-1, name="Field2", field_type=IntegerType()),
         ),
+        required=True,
     ),
     NestedField(
         field_id=-1,
         name="Bar",
         field_type=StructType(
-            NestedField(field_id=-1, name="Field1", field_type=IntegerType()),
-            NestedField(field_id=-1, name="Field2", field_type=IntegerType()),
+            NestedField(required=True, field_id=-1, name="Field1", field_type=IntegerType()),
+            NestedField(required=True, field_id=-1, name="Field2", field_type=IntegerType()),
         ),
     ),
 )
@@ -37,6 +40,7 @@ catalog = SqlCatalog(
     },
 )
 
+#catalog.drop_table(TABLE_ID)
 iceberg_table = catalog.create_table(TABLE_ID, SCHEMA_INIT)
 
 FOO = iceberg_table.schema().find_field("Foo")
@@ -79,6 +83,7 @@ class PyArrowTest2:
                 ),
             ]),
             metadata={PYARROW_PARQUET_FIELD_ID_KEY: str(FOO.field_id)},
+            nullable=False,
         ),
         pa.field(
             name=_BAR_NAME,
@@ -87,11 +92,13 @@ class PyArrowTest2:
                     name=_F1_NAME,
                     type=pa.int32(),
                     metadata={PYARROW_PARQUET_FIELD_ID_KEY: str(BAR_F1.field_id)},
+                    nullable=False,
                 ),
                 pa.field(
                     name=_F2_NAME,
                     type=pa.int32(),
                     metadata={PYARROW_PARQUET_FIELD_ID_KEY: str(BAR_F2.field_id)},
+                    nullable=False,
                 ),
             ]),
             metadata={PYARROW_PARQUET_FIELD_ID_KEY: str(BAR.field_id)},

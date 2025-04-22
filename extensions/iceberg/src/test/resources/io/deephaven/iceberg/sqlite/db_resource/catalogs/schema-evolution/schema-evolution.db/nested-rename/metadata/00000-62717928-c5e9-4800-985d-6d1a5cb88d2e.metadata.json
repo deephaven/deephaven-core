@@ -1,7 +1,7 @@
 {
     "location": "catalogs/schema-evolution/schema-evolution.db/nested-rename",
-    "table-uuid": "e6d68be9-3a65-4959-8195-90a11679e406",
-    "last-updated-ms": 1742580949831,
+    "table-uuid": "496dddca-a3bc-4b3e-98ab-daad44f1f17b",
+    "last-updated-ms": 1745355255283,
     "last-column-id": 6,
     "schemas": [
         {
@@ -27,7 +27,7 @@
                             }
                         ]
                     },
-                    "required": false
+                    "required": true
                 },
                 {
                     "id": 2,
@@ -39,13 +39,13 @@
                                 "id": 5,
                                 "name": "Field1",
                                 "type": "int",
-                                "required": false
+                                "required": true
                             },
                             {
                                 "id": 6,
                                 "name": "Field2",
                                 "type": "int",
-                                "required": false
+                                "required": true
                             }
                         ]
                     },

@@ -139,7 +139,6 @@ public class SchemaEvolution1 {
         read(expected(IDEF_2, 50, false), readSnapshotAs(4, 2));
         read(expected(IDEF_3, 50, true), readSnapshotAs(4, 3));
         read(expected3(IDEF_4, 50), readSnapshotAs(4, 4));
-
     }
 
     @Test
@@ -342,13 +341,6 @@ public class SchemaEvolution1 {
                 NestedField.of(fieldId1, true, "Field1_D", IntegerType.get()),
                 NestedField.of(fieldId2, true, "Field2_D", IntegerType.get()),
                 NestedField.of(fieldId3, true, "Field3_D", IntegerType.get()));
-    }
-
-    static InferenceInstructions i(Schema schema) {
-        return InferenceInstructions.builder()
-                .schema(schema)
-                .spec(PartitionSpec.unpartitioned())
-                .build();
     }
 
     static InferenceInstructions ia(Schema schema) {
