@@ -1,8 +1,9 @@
 //
 // Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
-package io.deephaven.iceberg.internal;
+package io.deephaven.iceberg.util;
 
+import io.deephaven.iceberg.internal.SchemaHelper;
 import io.deephaven.qst.type.ArrayType;
 import io.deephaven.qst.type.BooleanType;
 import io.deephaven.qst.type.BoxedType;
@@ -31,14 +32,59 @@ import java.util.Objects;
 import java.util.Optional;
 
 
-public final class Inference {
+public final class TypeInference {
 
-    public static Optional<Type<?>> of(org.apache.iceberg.types.Type.PrimitiveType primitiveType) {
-        return Optional.ofNullable(ofImpl(primitiveType));
+    /**
+     * Infers the "best" Deephaven type from the {@code icebergType}. If a value is returned, it is guaranteed to be
+     * {@link Resolver#isCompatible(Type, org.apache.iceberg.types.Type) compatible} with {@code icebergType}.
+     *
+     * <p>
+     * An empty return does not necessarily mean the {@code icebergType} has no Deephaven type that it can work with,
+     * just that no "best" Deephaven type was inferred.
+     *
+     * @param icebergType the Iceberg type
+     * @return the Deephaven type
+     */
+    public static Optional<Type<?>> of(org.apache.iceberg.types.Type icebergType) {
+        if (!icebergType.isPrimitiveType()) {
+            return Optional.empty();
+        }
+        // We may support List here in the future, or other.
+        final Type<?> type = ofImpl(icebergType.asPrimitiveType());
+        if (type == null) {
+            return Optional.empty();
+        }
+        try {
+            Resolver.checkCompatible(type, icebergType);
+        } catch (Resolver.MappingException e) {
+            throw new IllegalStateException("Inference is inconsistent with resolving capabilities", e);
+        }
+        return Optional.of(type);
     }
 
+    /**
+     * Infers the "best" Iceberg type from the Deephaven {@code type}. If a value is returned, it is guaranteed to be
+     * {@link Resolver#isCompatible(Type, org.apache.iceberg.types.Type) compatible} with {@code type}.
+     *
+     * <p>
+     * An empty return does not necessarily mean the Deephaven {@code type} has no Iceberg type that it can work with.
+     * For example, a {@link BigDecimal} Deephaven type may not infer a "best" {@link Types.DecimalType}, but it's
+     * possible that a specific {@link Types.DecimalType} is compatible with a {@link BigDecimal} Deephaven type.
+     *
+     * @param type the Deephaven type
+     * @return the Iceberg type
+     */
     public static Optional<org.apache.iceberg.types.Type> of(Type<?> type) {
-        return Optional.ofNullable(type.walk(What.INSTANCE));
+        org.apache.iceberg.types.Type icebergType = type.walk(BestIcebergType.INSTANCE);
+        if (icebergType == null) {
+            return Optional.empty();
+        }
+        try {
+            Resolver.checkCompatible(type, icebergType);
+        } catch (Resolver.MappingException e) {
+            throw new IllegalStateException("Inference is inconsistent with resolving capabilities", e);
+        }
+        return Optional.of(icebergType);
     }
 
     private static Type<?> ofImpl(org.apache.iceberg.types.Type.PrimitiveType primitiveType) {
@@ -155,10 +201,11 @@ public final class Inference {
         }
     }
 
-    private enum What implements Type.Visitor<org.apache.iceberg.types.Type>,
-            PrimitiveType.Visitor<org.apache.iceberg.types.Type>, GenericType.Visitor<org.apache.iceberg.types.Type> {
+    private enum BestIcebergType implements
+            Type.Visitor<org.apache.iceberg.types.Type>,
+            PrimitiveType.Visitor<org.apache.iceberg.types.Type>,
+            GenericType.Visitor<org.apache.iceberg.types.Type> {
         INSTANCE;
-
 
         @Override
         public org.apache.iceberg.types.Type visit(PrimitiveType<?> primitiveType) {

@@ -7,7 +7,6 @@ import io.deephaven.api.util.NameValidator;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.iceberg.internal.Inference;
 import io.deephaven.iceberg.internal.PartitionSpecHelper;
 import io.deephaven.qst.type.Type;
 import org.apache.iceberg.PartitionField;
@@ -21,7 +20,7 @@ import java.util.Objects;
 
 final class InferenceImpl extends TypeUtil.SchemaVisitor<Void> {
 
-    static Resolver of(InferenceInstructions inferenceInstructions) throws Inference.UnsupportedType {
+    static Resolver of(InferenceInstructions inferenceInstructions) throws TypeInference.UnsupportedType {
         final InferenceImpl visitor = new InferenceImpl(inferenceInstructions);
         TypeUtil.visit(inferenceInstructions.schema(), visitor);
         return visitor.build();
@@ -33,7 +32,7 @@ final class InferenceImpl extends TypeUtil.SchemaVisitor<Void> {
     // build results
     private final Resolver.Builder builder;
     private final List<ColumnDefinition<?>> definitions = new ArrayList<>();
-    private final List<Inference.UnsupportedType> unsupportedTypes = new ArrayList<>();
+    private final List<TypeInference.UnsupportedType> unsupportedTypes = new ArrayList<>();
 
     // state
     private int skipDepth = 0; // if skipDepth > 0, we should skip inference on any types we visit
@@ -46,7 +45,7 @@ final class InferenceImpl extends TypeUtil.SchemaVisitor<Void> {
                 .schema(ii.schema());
     }
 
-    Resolver build() throws Inference.UnsupportedType {
+    Resolver build() throws TypeInference.UnsupportedType {
         if (ii.failOnUnsupportedTypes() && !unsupportedTypes.isEmpty()) {
             throw unsupportedTypes.get(0);
         }
@@ -89,9 +88,9 @@ final class InferenceImpl extends TypeUtil.SchemaVisitor<Void> {
         if (skipDepth != 0) {
             return null;
         }
-        final Type<?> type = Inference.of(primitive).orElse(null);
+        final Type<?> type = TypeInference.of(primitive).orElse(null);
         if (type == null) {
-            unsupportedTypes.add(new Inference.UnsupportedType(ii.schema(), fieldPath));
+            unsupportedTypes.add(new TypeInference.UnsupportedType(ii.schema(), fieldPath));
             return null;
         }
 
@@ -144,7 +143,7 @@ final class InferenceImpl extends TypeUtil.SchemaVisitor<Void> {
         if (skipDepth != 0) {
             return null;
         }
-        unsupportedTypes.add(new Inference.UnsupportedType(ii.schema(), fieldPath));
+        unsupportedTypes.add(new TypeInference.UnsupportedType(ii.schema(), fieldPath));
         return null;
     }
 
@@ -153,7 +152,7 @@ final class InferenceImpl extends TypeUtil.SchemaVisitor<Void> {
         if (skipDepth != 0) {
             return null;
         }
-        unsupportedTypes.add(new Inference.UnsupportedType(ii.schema(), fieldPath));
+        unsupportedTypes.add(new TypeInference.UnsupportedType(ii.schema(), fieldPath));
         return null;
     }
 
@@ -162,7 +161,7 @@ final class InferenceImpl extends TypeUtil.SchemaVisitor<Void> {
         if (skipDepth != 0) {
             return null;
         }
-        unsupportedTypes.add(new Inference.UnsupportedType(ii.schema(), fieldPath));
+        unsupportedTypes.add(new TypeInference.UnsupportedType(ii.schema(), fieldPath));
         return null;
     }
 

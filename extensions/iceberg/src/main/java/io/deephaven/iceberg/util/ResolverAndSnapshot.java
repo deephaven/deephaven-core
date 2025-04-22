@@ -4,8 +4,6 @@
 package io.deephaven.iceberg.util;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.iceberg.internal.Inference;
-import io.deephaven.iceberg.internal.NameMappingUtil;
 import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.Schema;
 import org.apache.iceberg.Snapshot;
@@ -58,7 +56,7 @@ final class ResolverAndSnapshot {
                 inferenceInstructions(table, schema, snapshot, withPartitionInference);
         try {
             return Resolver.infer(instructions);
-        } catch (Inference.UnsupportedType e) {
+        } catch (TypeInference.UnsupportedType e) {
             throw new RuntimeException(e);
         }
     }

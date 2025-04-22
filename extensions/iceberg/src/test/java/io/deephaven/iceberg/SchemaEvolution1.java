@@ -8,12 +8,10 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.util.TableTools;
-import io.deephaven.iceberg.internal.Inference;
+import io.deephaven.iceberg.util.TypeInference;
 import io.deephaven.iceberg.sqlite.DbResource;
-import io.deephaven.iceberg.util.ColumnInstructions;
 import io.deephaven.iceberg.util.InferenceInstructions;
 import io.deephaven.iceberg.util.Resolver;
-import io.deephaven.iceberg.util.FieldPath;
 import io.deephaven.iceberg.util.IcebergReadInstructions;
 import io.deephaven.iceberg.util.IcebergTableAdapter;
 import io.deephaven.util.QueryConstants;
@@ -100,7 +98,7 @@ public class SchemaEvolution1 {
     }
 
     @Test
-    void inference() throws Inference.Exception {
+    void inference() throws TypeInference.Exception {
         // This is a meta test, making sure test setup is correct
         assertThat(Resolver.infer(ia(schema_0())).definition()).isEqualTo(IDEF_0);
         assertThat(Resolver.infer(ia(schema_1())).definition()).isEqualTo(IDEF_1);
@@ -117,7 +115,7 @@ public class SchemaEvolution1 {
     }
 
     @Test
-    void readLatestAs() throws Inference.Exception {
+    void readLatestAs() throws TypeInference.Exception {
         read(expected(IDEF_0, 60, false), readLatestAs(0));
         read(expected(IDEF_1, 60, false), readLatestAs(1));
         read(expected(IDEF_2, 60, false), readLatestAs(2));
@@ -126,7 +124,7 @@ public class SchemaEvolution1 {
     }
 
     @Test
-    void readSnapshot5As() throws Inference.Exception {
+    void readSnapshot5As() throws TypeInference.Exception {
         read(expected(IDEF_0, 60, false), readSnapshotAs(5, 0));
         read(expected(IDEF_1, 60, false), readSnapshotAs(5, 1));
         read(expected(IDEF_2, 60, false), readSnapshotAs(5, 2));
@@ -135,7 +133,7 @@ public class SchemaEvolution1 {
     }
 
     @Test
-    void readSnapshot4As() throws Inference.Exception {
+    void readSnapshot4As() throws TypeInference.Exception {
         read(expected(IDEF_0, 50, false), readSnapshotAs(4, 0));
         read(expected(IDEF_1, 50, false), readSnapshotAs(4, 1));
         read(expected(IDEF_2, 50, false), readSnapshotAs(4, 2));
@@ -145,7 +143,7 @@ public class SchemaEvolution1 {
     }
 
     @Test
-    void readSnapshot3As() throws Inference.Exception {
+    void readSnapshot3As() throws TypeInference.Exception {
         read(expected(IDEF_0, 40, false), readSnapshotAs(3, 0));
         read(expected(IDEF_1, 40, false), readSnapshotAs(3, 1));
         read(expected(IDEF_2, 40, false), readSnapshotAs(3, 2));
@@ -154,7 +152,7 @@ public class SchemaEvolution1 {
     }
 
     @Test
-    void readSnapshot2As() throws Inference.Exception {
+    void readSnapshot2As() throws TypeInference.Exception {
         read(expected(IDEF_0, 30, false), readSnapshotAs(2, 0));
         read(expected(IDEF_1, 30, false), readSnapshotAs(2, 1));
         read(expected(IDEF_2, 30, false), readSnapshotAs(2, 2));
@@ -163,7 +161,7 @@ public class SchemaEvolution1 {
     }
 
     @Test
-    void readSnapshot1As() throws Inference.Exception {
+    void readSnapshot1As() throws TypeInference.Exception {
         read(expected(IDEF_0, 20, false), readSnapshotAs(1, 0));
         read(expected(IDEF_1, 20, false), readSnapshotAs(1, 1));
         read(expected(IDEF_2, 20, false), readSnapshotAs(1, 2));
@@ -172,7 +170,7 @@ public class SchemaEvolution1 {
     }
 
     @Test
-    void readSnapshot0As() throws Inference.Exception {
+    void readSnapshot0As() throws TypeInference.Exception {
         read(expected(IDEF_0, 10, false), readSnapshotAs(0, 0));
         read(expected(IDEF_1, 10, false), readSnapshotAs(0, 1));
         read(expected(IDEF_2, 10, false), readSnapshotAs(0, 2));
@@ -285,13 +283,13 @@ public class SchemaEvolution1 {
         return data;
     }
 
-    private IcebergReadInstructions readLatestAs(int schemaVersion) throws Inference.Exception {
+    private IcebergReadInstructions readLatestAs(int schemaVersion) throws TypeInference.Exception {
         return IcebergReadInstructions.builder()
                 .resolver(Resolver.infer(ia(schema(schemaVersion))))
                 .build();
     }
 
-    private IcebergReadInstructions readSnapshotAs(int snapshotIx, int schemaVersion) throws Inference.Exception {
+    private IcebergReadInstructions readSnapshotAs(int snapshotIx, int schemaVersion) throws TypeInference.Exception {
         return IcebergReadInstructions.builder()
                 .snapshot(tableAdapter.listSnapshots().get(snapshotIx))
                 .resolver(Resolver.infer(ia(schema(schemaVersion))))

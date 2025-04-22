@@ -5,6 +5,7 @@ package io.deephaven.iceberg.internal;
 
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.iceberg.util.TypeInference;
 import io.deephaven.iceberg.util.InferenceInstructions;
 import io.deephaven.iceberg.util.Resolver;
 import io.deephaven.qst.type.Type;
@@ -68,7 +69,7 @@ class ResolverInferTest {
     }
 
     @Test
-    void BooleanType() throws Inference.Exception {
+    void BooleanType() throws TypeInference.Exception {
         final Schema schema = simpleSchema(BooleanType.get());
         final Resolver expected = simpleMapping(schema, Type.booleanType());
         assertThat(Resolver.infer(schema)).isEqualTo(expected);
@@ -76,7 +77,7 @@ class ResolverInferTest {
     }
 
     @Test
-    void IntegerType() throws Inference.Exception {
+    void IntegerType() throws TypeInference.Exception {
         final Schema schema = simpleSchema(IT);
         final Resolver expected = simpleMapping(schema, Type.intType());
         assertThat(Resolver.infer(schema)).isEqualTo(expected);
@@ -84,7 +85,7 @@ class ResolverInferTest {
     }
 
     @Test
-    void LongType() throws Inference.Exception {
+    void LongType() throws TypeInference.Exception {
         final Schema schema = simpleSchema(LongType.get());
         final Resolver expected = simpleMapping(schema, Type.longType());
         assertThat(Resolver.infer(schema)).isEqualTo(expected);
@@ -92,7 +93,7 @@ class ResolverInferTest {
     }
 
     @Test
-    void FloatType() throws Inference.Exception {
+    void FloatType() throws TypeInference.Exception {
         final Schema schema = simpleSchema(FloatType.get());
         final Resolver expected = simpleMapping(schema, Type.floatType());
         assertThat(Resolver.infer(schema)).isEqualTo(expected);
@@ -100,7 +101,7 @@ class ResolverInferTest {
     }
 
     @Test
-    void DoubleType() throws Inference.Exception {
+    void DoubleType() throws TypeInference.Exception {
         final Schema schema = simpleSchema(DoubleType.get());
         final Resolver expected = simpleMapping(schema, Type.doubleType());
         assertThat(Resolver.infer(schema)).isEqualTo(expected);
@@ -108,7 +109,7 @@ class ResolverInferTest {
     }
 
     @Test
-    void DateType() throws Inference.Exception {
+    void DateType() throws TypeInference.Exception {
         final Schema schema = simpleSchema(DateType.get());
         final Resolver expected = simpleMapping(schema, Type.find(LocalDate.class));
         assertThat(Resolver.infer(schema)).isEqualTo(expected);
@@ -116,7 +117,7 @@ class ResolverInferTest {
     }
 
     @Test
-    void TimeType() throws Inference.Exception {
+    void TimeType() throws TypeInference.Exception {
         final Schema schema = simpleSchema(TimeType.get());
         final Resolver expected = simpleMapping(schema, Type.find(LocalTime.class));
         assertThat(Resolver.infer(schema)).isEqualTo(expected);
@@ -124,7 +125,7 @@ class ResolverInferTest {
     }
 
     @Test
-    void TimestampTypeWithZone() throws Inference.Exception {
+    void TimestampTypeWithZone() throws TypeInference.Exception {
         final Schema schema = simpleSchema(TimestampType.withZone());
         final Resolver expected = simpleMapping(schema, Type.instantType());
         assertThat(Resolver.infer(schema)).isEqualTo(expected);
@@ -132,7 +133,7 @@ class ResolverInferTest {
     }
 
     @Test
-    void TimestampTypeWithoutZone() throws Inference.Exception {
+    void TimestampTypeWithoutZone() throws TypeInference.Exception {
         final Schema schema = simpleSchema(TimestampType.withoutZone());
         final Resolver expected = simpleMapping(schema, Type.find(LocalDateTime.class));
         assertThat(Resolver.infer(schema)).isEqualTo(expected);
@@ -140,31 +141,31 @@ class ResolverInferTest {
     }
 
     @Test
-    void TimestampNanoTypeWithZone() throws Inference.Exception {
+    void TimestampNanoTypeWithZone() throws TypeInference.Exception {
         final Schema schema = simpleSchema(TimestampNanoType.withZone());
         assertThat(Resolver.infer(schema)).isEqualTo(empty(schema));
         try {
             Resolver.infer(ia(schema));
-            failBecauseExceptionWasNotThrown(Inference.Exception.class);
-        } catch (Inference.UnsupportedType e) {
+            failBecauseExceptionWasNotThrown(TypeInference.Exception.class);
+        } catch (TypeInference.UnsupportedType e) {
             assertThat(e).hasMessageContaining("Unsupported Iceberg type `timestamptz_ns` at fieldName `F1`");
         }
     }
 
     @Test
-    void TimestampNanoTypeWithoutZone() throws Inference.Exception {
+    void TimestampNanoTypeWithoutZone() throws TypeInference.Exception {
         final Schema schema = simpleSchema(TimestampNanoType.withoutZone());
         assertThat(Resolver.infer(schema)).isEqualTo(empty(schema));
         try {
             Resolver.infer(ia(schema));
-            failBecauseExceptionWasNotThrown(Inference.Exception.class);
-        } catch (Inference.UnsupportedType e) {
+            failBecauseExceptionWasNotThrown(TypeInference.Exception.class);
+        } catch (TypeInference.UnsupportedType e) {
             assertThat(e).hasMessageContaining("Unsupported Iceberg type `timestamp_ns` at fieldName `F1`");
         }
     }
 
     @Test
-    void StringType() throws Inference.Exception {
+    void StringType() throws TypeInference.Exception {
         final Schema schema = simpleSchema(StringType.get());
         final Resolver expected = simpleMapping(schema, Type.stringType());
         assertThat(Resolver.infer(schema)).isEqualTo(expected);
@@ -172,31 +173,31 @@ class ResolverInferTest {
     }
 
     @Test
-    void BinaryType() throws Inference.Exception {
+    void BinaryType() throws TypeInference.Exception {
         final Schema schema = simpleSchema(BinaryType.get());
         assertThat(Resolver.infer(schema)).isEqualTo(empty(schema));
         try {
             Resolver.infer(ia(schema));
-        } catch (Inference.UnsupportedType e) {
+        } catch (TypeInference.UnsupportedType e) {
             assertThat(e).hasMessageContaining("Unsupported Iceberg type `binary` at fieldName `F1`");
             assertThat(e.type()).isEqualTo(BinaryType.get());
         }
     }
 
     @Test
-    void FixedType_4() throws Inference.Exception {
+    void FixedType_4() throws TypeInference.Exception {
         final Schema schema = simpleSchema(FixedType.ofLength(4));
         assertThat(Resolver.infer(schema)).isEqualTo(empty(schema));
         try {
             Resolver.infer(ia(schema));
-        } catch (Inference.UnsupportedType e) {
+        } catch (TypeInference.UnsupportedType e) {
             assertThat(e).hasMessageContaining("Unsupported Iceberg type `fixed[4]` at fieldName `F1`");
             assertThat(e.type()).isEqualTo(FixedType.ofLength(4));
         }
     }
 
     @Test
-    void DecimalType_3_4() throws Inference.Exception {
+    void DecimalType_3_4() throws TypeInference.Exception {
         final Schema schema = simpleSchema(DecimalType.of(3, 4));
         final Resolver expected = simpleMapping(schema, Type.find(BigDecimal.class));
         assertThat(Resolver.infer(schema)).isEqualTo(expected);
@@ -204,20 +205,20 @@ class ResolverInferTest {
     }
 
     @Test
-    void UuidType() throws Inference.Exception {
+    void UuidType() throws TypeInference.Exception {
         final Schema schema = simpleSchema(UUIDType.get());
         assertThat(Resolver.infer(schema)).isEqualTo(empty(schema));
         try {
             Resolver.infer(ia(schema));
-            failBecauseExceptionWasNotThrown(Inference.Exception.class);
-        } catch (Inference.UnsupportedType e) {
+            failBecauseExceptionWasNotThrown(TypeInference.Exception.class);
+        } catch (TypeInference.UnsupportedType e) {
             assertThat(e).hasMessageContaining("Unsupported Iceberg type `uuid` at fieldName `F1`");
             assertThat(e.type()).isEqualTo(UUIDType.get());
         }
     }
 
     @Test
-    void StructType() throws Inference.Exception {
+    void StructType() throws TypeInference.Exception {
         final Schema schema = new Schema(
                 NestedField.optional(3, "S1", StructType.of(
                         NestedField.optional(1, "F1", IT),
@@ -242,7 +243,7 @@ class ResolverInferTest {
     }
 
     @Test
-    void NestedStructType() throws Inference.Exception {
+    void NestedStructType() throws TypeInference.Exception {
         final Schema schema = new Schema(NestedField.optional(1, "S1", StructType.of(
                 NestedField.optional(2, "S2", StructType.of(
                         NestedField.optional(3, "F1", IT),
@@ -260,7 +261,7 @@ class ResolverInferTest {
     }
 
     @Test
-    void ListType() throws Inference.Exception {
+    void ListType() throws TypeInference.Exception {
         final Schema schema = new Schema(
                 NestedField.optional(5, "L1", ListType.ofOptional(1, IT)),
                 NestedField.optional(6, "L2", ListType.ofRequired(2, IT)),
@@ -269,15 +270,15 @@ class ResolverInferTest {
         assertThat(Resolver.infer(schema)).isEqualTo(empty(schema));
         try {
             Resolver.infer(ia(schema));
-            failBecauseExceptionWasNotThrown(Inference.Exception.class);
-        } catch (Inference.UnsupportedType e) {
+            failBecauseExceptionWasNotThrown(TypeInference.Exception.class);
+        } catch (TypeInference.UnsupportedType e) {
             assertThat(e).hasMessageContaining("Unsupported Iceberg type `list<int>` at fieldName `L1`");
             assertThat(e.type()).isEqualTo(ListType.ofOptional(1, IT));
         }
     }
 
     @Test
-    void MapType() throws Inference.Exception {
+    void MapType() throws TypeInference.Exception {
         final Schema schema = new Schema(
                 NestedField.optional(9, "M1", MapType.ofOptional(1, 2, IT, IT)),
                 NestedField.optional(10, "M2", MapType.ofRequired(3, 4, IT, IT)),
@@ -286,28 +287,28 @@ class ResolverInferTest {
         assertThat(Resolver.infer(schema)).isEqualTo(empty(schema));
         try {
             Resolver.infer(ia(schema));
-            failBecauseExceptionWasNotThrown(Inference.Exception.class);
-        } catch (Inference.UnsupportedType e) {
+            failBecauseExceptionWasNotThrown(TypeInference.Exception.class);
+        } catch (TypeInference.UnsupportedType e) {
             assertThat(e).hasMessageContaining("Unsupported Iceberg type `map<int, int>` at fieldName `M1`");
             assertThat(e.type()).isEqualTo(MapType.ofOptional(1, 2, IT, IT));
         }
     }
 
     @Test
-    void VariantType() throws Inference.UnsupportedType {
+    void VariantType() throws TypeInference.UnsupportedType {
         final Schema schema = simpleSchema(VariantType.get());
         assertThat(Resolver.infer(schema)).isEqualTo(empty(schema));
         try {
             Resolver.infer(ia(schema));
-            failBecauseExceptionWasNotThrown(Inference.Exception.class);
-        } catch (Inference.UnsupportedType e) {
+            failBecauseExceptionWasNotThrown(TypeInference.Exception.class);
+        } catch (TypeInference.UnsupportedType e) {
             assertThat(e).hasMessageContaining("Unsupported Iceberg type `variant` at fieldName `F1`");
             assertThat(e.type()).isEqualTo(VariantType.get());
         }
     }
 
     @Test
-    void identityPartition() throws Inference.UnsupportedType {
+    void identityPartition() throws TypeInference.UnsupportedType {
         final Schema schema = simpleSchema(IT);
         final PartitionSpec spec = PartitionSpec.builderFor(schema).identity("F1").build();
         final InferenceInstructions ii = InferenceInstructions.builder()
@@ -327,7 +328,7 @@ class ResolverInferTest {
     }
 
     @Test
-    void skipUnknownPartition() throws Inference.UnsupportedType {
+    void skipUnknownPartition() throws TypeInference.UnsupportedType {
         final Schema schema = simpleSchema(IT);
         final PartitionSpec spec = PartitionSpec.builderFor(schema).bucket("F1", 99).build();
         final InferenceInstructions ii = InferenceInstructions.builder()
@@ -371,7 +372,7 @@ class ResolverInferTest {
     // }
 
     @Test
-    void alternativeNamer() throws Inference.UnsupportedType {
+    void alternativeNamer() throws TypeInference.UnsupportedType {
         final Schema schema = simpleSchema(IT);
         final InferenceInstructions instructions = InferenceInstructions.builder()
                 .schema(schema)

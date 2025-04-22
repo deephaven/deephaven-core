@@ -8,9 +8,6 @@ import io.deephaven.api.util.NameValidator;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.table.impl.locations.TableDataException;
-import io.deephaven.iceberg.base.IcebergUtils;
-import io.deephaven.iceberg.internal.Inference;
 import io.deephaven.iceberg.internal.SchemaHelper;
 import io.deephaven.qst.type.Type;
 import org.apache.iceberg.PartitionField;
@@ -82,9 +79,9 @@ public abstract class Resolver {
         for (final ColumnDefinition<?> columnDefinition : definition.getColumns()) {
             final String dhColumnName = columnDefinition.getName();
             final Type<?> type = Type.find(columnDefinition.getDataType(), columnDefinition.getComponentType());
-            final org.apache.iceberg.types.Type icebergType = Inference.of(type).orElse(null);
+            final org.apache.iceberg.types.Type icebergType = TypeInference.of(type).orElse(null);
             if (icebergType == null) {
-                throw new MappingException("Unsupported deephaven column type " + type);
+                throw new MappingException("Unsupported Deephaven column type " + type);
             }
             fields.add(Types.NestedField.optional(fieldID, dhColumnName, icebergType));
             if (columnDefinition.isPartitioning()) {
@@ -121,10 +118,10 @@ public abstract class Resolver {
      *
      * @param schema the schema to use for inference
      * @return the resolver
-     * @throws Inference.UnsupportedType if an unsupported type is encountered
+     * @throws TypeInference.UnsupportedType if an unsupported type is encountered
      * @see #infer(InferenceInstructions)
      */
-    public static Resolver infer(Schema schema) throws Inference.UnsupportedType {
+    public static Resolver infer(Schema schema) throws TypeInference.UnsupportedType {
         return infer(InferenceInstructions.of(schema));
     }
 
@@ -133,9 +130,10 @@ public abstract class Resolver {
      *
      * @param inferenceInstructions the inference instructions
      * @return the resolver
-     * @throws Inference.UnsupportedType if an unsupported type is encountered
+     * @throws TypeInference.UnsupportedType if an unsupported type is encountered
      */
-    public static Resolver infer(final InferenceInstructions inferenceInstructions) throws Inference.UnsupportedType {
+    public static Resolver infer(final InferenceInstructions inferenceInstructions)
+            throws TypeInference.UnsupportedType {
         return InferenceImpl.of(inferenceInstructions);
     }
 
@@ -452,10 +450,19 @@ public abstract class Resolver {
     static void checkCompatible(org.apache.iceberg.types.Type.PrimitiveType type) {
         // If we can't infer a type, we can't support it more generally at this time (this may not be true in the future
         // depending on things like additional options on ColumnInstruction guiding compatibility).
-        Type<?> inferredType = Inference.of(type).orElse(null);
+        Type<?> inferredType = TypeInference.of(type).orElse(null);
         if (inferredType == null) {
             throw new MappingException(String.format("Unsupported type `%s`", type));
         }
+    }
+
+    public static boolean isCompatible(Type<?> type, org.apache.iceberg.types.Type icebergType) {
+        // TODO
+        return true;
+    }
+
+    public static void checkCompatible(Type<?> type, org.apache.iceberg.types.Type icebergType) {
+        // TODO
     }
 
     public static class MappingException extends RuntimeException {

@@ -5,13 +5,12 @@ package io.deephaven.iceberg.internal;
 
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.iceberg.util.TypeInference;
 import io.deephaven.iceberg.util.InferenceInstructions;
 import io.deephaven.iceberg.util.Resolver;
 import io.deephaven.qst.type.Type;
-import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.Schema;
 import org.apache.iceberg.SchemaParser;
-import org.apache.iceberg.types.Types;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -45,7 +44,7 @@ class S3MetadataTableTest {
     }
 
     @Test
-    void inference() throws IOException, Inference.UnsupportedType {
+    void inference() throws IOException, TypeInference.UnsupportedType {
         final Schema schema = s3MetadataSchema();
         // TODO: add description to ColumnDefinition?
         assertThat(Resolver.infer(InferenceInstructions.of(schema))).isEqualTo(Resolver.builder()
