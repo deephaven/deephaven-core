@@ -36,7 +36,7 @@ public final class TypeInference {
 
     /**
      * Infers the "best" Deephaven type from the {@code icebergType}. If a value is returned, it is guaranteed to be
-     * {@link Resolver#isCompatible(Type, org.apache.iceberg.types.Type) compatible} with {@code icebergType}.
+     * {@link TypeCompatibility#isCompatible(Type, org.apache.iceberg.types.Type) compatible} with {@code icebergType}.
      *
      * <p>
      * An empty return does not necessarily mean the {@code icebergType} has no Deephaven type that it can work with,
@@ -54,17 +54,17 @@ public final class TypeInference {
         if (type == null) {
             return Optional.empty();
         }
-        try {
-            Resolver.checkCompatible(type, icebergType);
-        } catch (Resolver.MappingException e) {
-            throw new IllegalStateException("Inference is inconsistent with resolving capabilities", e);
+        if (!TypeCompatibility.isCompatible(type, icebergType)) {
+            throw new IllegalStateException(
+                    String.format("Inference is inconsistent with stated type compatibilities, type=%s, icebergType=%s",
+                            type, icebergType));
         }
         return Optional.of(type);
     }
 
     /**
      * Infers the "best" Iceberg type from the Deephaven {@code type}. If a value is returned, it is guaranteed to be
-     * {@link Resolver#isCompatible(Type, org.apache.iceberg.types.Type) compatible} with {@code type}.
+     * {@link TypeCompatibility#isCompatible(Type, org.apache.iceberg.types.Type) compatible} with {@code type}.
      *
      * <p>
      * An empty return does not necessarily mean the Deephaven {@code type} has no Iceberg type that it can work with.
@@ -79,10 +79,10 @@ public final class TypeInference {
         if (icebergType == null) {
             return Optional.empty();
         }
-        try {
-            Resolver.checkCompatible(type, icebergType);
-        } catch (Resolver.MappingException e) {
-            throw new IllegalStateException("Inference is inconsistent with resolving capabilities", e);
+        if (!TypeCompatibility.isCompatible(type, icebergType)) {
+            throw new IllegalStateException(
+                    String.format("Inference is inconsistent with stated type compatibilities, type=%s, icebergType=%s",
+                            type, icebergType));
         }
         return Optional.of(icebergType);
     }
@@ -280,16 +280,19 @@ public final class TypeInference {
 
         @Override
         public org.apache.iceberg.types.Type visit(ByteType byteType) {
+            // should we infer this as IntegerType?
             return null;
         }
 
         @Override
         public org.apache.iceberg.types.Type visit(CharType charType) {
+            // should we infer this as IntegerType? FixedType[2]?
             return null;
         }
 
         @Override
         public org.apache.iceberg.types.Type visit(ShortType shortType) {
+            // should we infer this as IntegerType?
             return null;
         }
     }

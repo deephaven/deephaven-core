@@ -284,7 +284,6 @@ class ResolverTest {
 
     @Test
     void invalidMappingType() {
-        // TODO: we should try to be thorough in describing what we do and do not support
         try {
             Resolver.builder()
                     .schema(simpleSchema(IT))
@@ -296,7 +295,7 @@ class ResolverTest {
         } catch (Resolver.MappingException e) {
             assertThat(e).hasMessageContaining("Unable to map Deephaven column F1");
             assertThat(e).cause().hasMessageContaining(
-                    "Unable to map Iceberg type `int` to Deephaven type `io.deephaven.qst.type.StringType`");
+                    "Incompatible types @ `F1`, icebergType=`int`, type=`io.deephaven.qst.type.StringType`");
         }
     }
 
@@ -334,7 +333,7 @@ class ResolverTest {
         } catch (Resolver.MappingException e) {
             assertThat(e).hasMessageContaining("Unable to map Deephaven column S1_S2");
             assertThat(e).cause().hasMessageContaining(
-                    "Only support mapping to primitive types, field=[2: S2: optional struct<3: F1: optional int, 4: F2: required int>]");
+                    "Incompatible types @ `S1.S2`, icebergType=`struct<3: F1: optional int, 4: F2: required int>`, type=`io.deephaven.qst.type.IntType`");
         }
     }
 
@@ -500,7 +499,8 @@ class ResolverTest {
             failBecauseExceptionWasNotThrown(Resolver.MappingException.class);
         } catch (Resolver.MappingException e) {
             assertThat(e).hasMessageContaining("Unable to map Deephaven column Foo");
-            assertThat(e).cause().hasMessageContaining("Unsupported type `binary`");
+            assertThat(e).cause().hasMessageContaining(
+                    "Incompatible types @ `Foo`, icebergType=`binary`, type=`NativeArrayType{clazz=class [B, componentType=io.deephaven.qst.type.ByteType}`");
         }
     }
 
@@ -603,18 +603,29 @@ class ResolverTest {
                 .map(x -> ColumnDefinition.of("Foo", x))
                 .map(TableDefinition::of)
                 .collect(Collectors.toList())) {
-            for (final ColumnInstructions ci : List.of(schemaField(1), schemaField(2))) {
-                try {
-                    Resolver.builder()
-                            .definition(definition)
-                            .schema(schema)
-                            .putColumnInstructions("Foo", ci)
-                            .build();
-                    failBecauseExceptionWasNotThrown(Resolver.MappingException.class);
-                } catch (Resolver.MappingException e) {
-                    assertThat(e).hasMessageContaining("Unable to map Deephaven column Foo");
-                    assertThat(e).cause().hasMessageContaining("List type not supported");
-                }
+            try {
+                Resolver.builder()
+                        .definition(definition)
+                        .schema(schema)
+                        .putColumnInstructions("Foo", schemaField(1))
+                        .build();
+                failBecauseExceptionWasNotThrown(Resolver.MappingException.class);
+            } catch (Resolver.MappingException e) {
+                assertThat(e).hasMessageContaining("Unable to map Deephaven column Foo");
+                assertThat(e).cause()
+                        .hasMessageContaining("Incompatible types @ `MyListField`, icebergType=`list<int>`");
+            }
+            try {
+                Resolver.builder()
+                        .definition(definition)
+                        .schema(schema)
+                        .putColumnInstructions("Foo", schemaField(2))
+                        .build();
+                failBecauseExceptionWasNotThrown(Resolver.MappingException.class);
+            } catch (Resolver.MappingException e) {
+                assertThat(e).hasMessageContaining("Unable to map Deephaven column Foo");
+                assertThat(e).cause().hasMessageContaining(
+                        "List subpath @ `MyListField` (in `MyListField.element`) is not supported");
             }
         }
     }
@@ -627,18 +638,41 @@ class ResolverTest {
                 .map(x -> ColumnDefinition.of("Foo", x))
                 .map(TableDefinition::of)
                 .collect(Collectors.toList())) {
-            for (final ColumnInstructions ci : List.of(schemaField(1), schemaField(2), schemaField(3))) {
-                try {
-                    Resolver.builder()
-                            .definition(definition)
-                            .schema(schema)
-                            .putColumnInstructions("Foo", ci)
-                            .build();
-                    failBecauseExceptionWasNotThrown(Resolver.MappingException.class);
-                } catch (Resolver.MappingException e) {
-                    assertThat(e).hasMessageContaining("Unable to map Deephaven column Foo");
-                    assertThat(e).cause().hasMessageContaining("Map type not supported");
-                }
+            try {
+                Resolver.builder()
+                        .definition(definition)
+                        .schema(schema)
+                        .putColumnInstructions("Foo", schemaField(1))
+                        .build();
+                failBecauseExceptionWasNotThrown(Resolver.MappingException.class);
+            } catch (Resolver.MappingException e) {
+                assertThat(e).hasMessageContaining("Unable to map Deephaven column Foo");
+                assertThat(e).cause()
+                        .hasMessageContaining("Incompatible types @ `MyMapField`, icebergType=`map<int, int>`");
+            }
+            try {
+                Resolver.builder()
+                        .definition(definition)
+                        .schema(schema)
+                        .putColumnInstructions("Foo", schemaField(2))
+                        .build();
+                failBecauseExceptionWasNotThrown(Resolver.MappingException.class);
+            } catch (Resolver.MappingException e) {
+                assertThat(e).hasMessageContaining("Unable to map Deephaven column Foo");
+                assertThat(e).cause()
+                        .hasMessageContaining("Map subpath @ `MyMapField` (in `MyMapField.key`) is not supported");
+            }
+            try {
+                Resolver.builder()
+                        .definition(definition)
+                        .schema(schema)
+                        .putColumnInstructions("Foo", schemaField(3))
+                        .build();
+                failBecauseExceptionWasNotThrown(Resolver.MappingException.class);
+            } catch (Resolver.MappingException e) {
+                assertThat(e).hasMessageContaining("Unable to map Deephaven column Foo");
+                assertThat(e).cause()
+                        .hasMessageContaining("Map subpath @ `MyMapField` (in `MyMapField.value`) is not supported");
             }
         }
     }

@@ -202,6 +202,10 @@ public abstract class Resolver {
      * and {@link ColumnDefinition.ColumnType#Partitioning partitioning} columns must reference a
      * {@link ColumnInstructions#schemaField(int) schema field} or {@link ColumnInstructions#partitionField(int)
      * partition field}.
+     *
+     * <p>
+     * The {@link #definition()} and {@link #schema()} types must be
+     * {@link TypeCompatibility#isCompatible(Type, org.apache.iceberg.types.Type)}.
      */
     public abstract Map<String, ColumnInstructions> columnInstructions();
 
@@ -380,22 +384,19 @@ public abstract class Resolver {
     static void checkCompatible(List<? extends NestedField> path, Type<?> type) {
         // We are assuming that fieldPath has been properly constructed from a Schema. This makes it a poor candidate
         // as public API.
-        checkCompatible(path);
-        // todo: compare against DH type(s)
+        checkPath(path);
         final NestedField lastField = path.get(path.size() - 1);
-        if (!type.walk(new IcebergPrimitiveCompat(lastField.type().asPrimitiveType()))) {
+        if (!TypeCompatibility.isCompatible(type, lastField.type())) {
             throw new MappingException(
-                    String.format("Unable to map Iceberg type `%s` to Deephaven type `%s`", lastField.type(), type));
+                    String.format("Incompatible types @ `%s`, icebergType=`%s`, type=`%s`",
+                            SchemaHelper.toFieldName(path), lastField.type(), type));
         }
     }
 
-    static void checkCompatible(Collection<? extends NestedField> fieldPath) {
-        // We are assuming that fieldPath has been properly constructed from a Schema. This makes it a poor candidate
-        // as public API.
-        if (fieldPath.isEmpty()) {
+    static void checkPath(List<? extends NestedField> path) {
+        if (path.isEmpty()) {
             throw new MappingException("Can't map an empty field path");
         }
-
         // We should make sure that we standardize on the correct level of mapping. For example, if we eventually
         // support List<Primitive>, we should make sure the fieldPath points to the *List* instead of the primitive, as
         // it's a better representation of the desired DH type. Although, we should arguably be able to support
@@ -422,47 +423,18 @@ public abstract class Resolver {
         // "MyBar" -> Struct1/Struct2/Bar
         // "Struct1Present" -> present(Struct1)
         // "Struct2Present" -> present(Struct1/Struct2) (would be null if Struct1 is not present)
-
-        NestedField lastField = null;
-        for (final NestedField nestedField : fieldPath) {
-            if (nestedField.type().isListType()) {
-                throw new MappingException("List type not supported"); // todo better error
+        final List<NestedField> subPath = new ArrayList<>(path.size());
+        for (final NestedField field : path.subList(0, path.size() - 1)) {
+            subPath.add(field);
+            if (field.type().isListType()) {
+                throw new MappingException(String.format("List subpath @ `%s` (in `%s`) is not supported",
+                        SchemaHelper.toFieldName(subPath), SchemaHelper.toFieldName(path))); // todo better error
             }
-            if (nestedField.type().isMapType()) {
-                throw new MappingException("Map type not supported"); // todo better error
+            if (field.type().isMapType()) {
+                throw new MappingException(String.format("Map subpath @ `%s` (in `%s`) is not supported",
+                        SchemaHelper.toFieldName(subPath), SchemaHelper.toFieldName(path))); // todo better error
             }
-            // We *do* support struct mapping implicitly.
-            lastField = nestedField;
         }
-        if (!lastField.type().isPrimitiveType()) {
-            // This could be extended in the future with support for:
-            // * List<Primitive>
-            // * List<List<...<Primitive>...>
-            // * Map<Primitive, Primitive>
-            // * Map<List<Primitive>, List<Primitive>>
-            // * Struct<...> (if DH theoretically allowed struct columns, unlikely but possible)
-            // * Other combinations of above.
-            throw new MappingException(String.format("Only support mapping to primitive types, field=[%s]", lastField));
-        }
-        checkCompatible(lastField.type().asPrimitiveType());
-    }
-
-    static void checkCompatible(org.apache.iceberg.types.Type.PrimitiveType type) {
-        // If we can't infer a type, we can't support it more generally at this time (this may not be true in the future
-        // depending on things like additional options on ColumnInstruction guiding compatibility).
-        Type<?> inferredType = TypeInference.of(type).orElse(null);
-        if (inferredType == null) {
-            throw new MappingException(String.format("Unsupported type `%s`", type));
-        }
-    }
-
-    public static boolean isCompatible(Type<?> type, org.apache.iceberg.types.Type icebergType) {
-        // TODO
-        return true;
-    }
-
-    public static void checkCompatible(Type<?> type, org.apache.iceberg.types.Type icebergType) {
-        // TODO
     }
 
     public static class MappingException extends RuntimeException {
@@ -475,5 +447,4 @@ public abstract class Resolver {
             super(message, cause);
         }
     }
-
 }
