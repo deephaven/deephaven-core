@@ -158,7 +158,6 @@ public class TestRollup extends RefreshingTableTestCase {
         final RollupTable rollup2 = source.rollup(aggs,"GRP")
                 .withFilter(WhereFilterFactory.getExpression("GRP = `v2`"));
         final Table snapshot2 = snapshotFilteredRollup(rollup2);
-//        TableTools.showWithRowSet(snapshot2);
 
         final RollupTable rollup3 = source.rollup(aggs, "GRP")
                 .withFilter(WhereFilterFactory.getExpression("CONST >= 13 && CONST <= 14"));
@@ -169,6 +168,10 @@ public class TestRollup extends RefreshingTableTestCase {
                 .withFilter(WhereFilterFactory.getExpression("CONST >= 13 && GRP = `v2`"));
         final Table snapshot4 = snapshotFilteredRollup(rollup4);
         assertTableEquals(snapshot2, snapshot4);
+
+        freeSnapshotTableChunks(snapshot2);
+        freeSnapshotTableChunks(snapshot3);
+        freeSnapshotTableChunks(snapshot4);
     }
 
     private Table snapshotFilteredRollup(RollupTable rollup) {
