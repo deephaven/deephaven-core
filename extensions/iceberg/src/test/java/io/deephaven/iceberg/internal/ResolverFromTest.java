@@ -47,7 +47,8 @@ class ResolverFromTest {
             Resolver.from(TableDefinition.of(ColumnDefinition.of("Foo", Type.shortType())));
             failBecauseExceptionWasNotThrown(Resolver.MappingException.class);
         } catch (Resolver.MappingException e) {
-            assertThat(e).hasMessageContaining("Unsupported Deephaven column type io.deephaven.qst.type.ShortType");
+            assertThat(e).hasMessageContaining(
+                    "Unable to infer the best Iceberg type for Deephaven column type `io.deephaven.qst.type.ShortType`");
         }
     }
 
@@ -69,7 +70,7 @@ class ResolverFromTest {
             failBecauseExceptionWasNotThrown(Resolver.MappingException.class);
         } catch (Resolver.MappingException e) {
             assertThat(e).hasMessageContaining(
-                    "Unsupported Deephaven column type NativeArrayType{clazz=class [B, componentType=io.deephaven.qst.type.ByteType}");
+                    "Unable to infer the best Iceberg type for Deephaven column type `NativeArrayType{clazz=class [B, componentType=io.deephaven.qst.type.ByteType}`");
         }
     }
 
@@ -80,7 +81,7 @@ class ResolverFromTest {
             failBecauseExceptionWasNotThrown(Resolver.MappingException.class);
         } catch (Resolver.MappingException e) {
             assertThat(e).hasMessageContaining(
-                    "Unsupported Deephaven column type NativeArrayType{clazz=class [S, componentType=io.deephaven.qst.type.ShortType}");
+                    "Unable to infer the best Iceberg type for Deephaven column type `NativeArrayType{clazz=class [S, componentType=io.deephaven.qst.type.ShortType}`");
         }
     }
 
@@ -91,7 +92,7 @@ class ResolverFromTest {
             failBecauseExceptionWasNotThrown(Resolver.MappingException.class);
         } catch (Resolver.MappingException e) {
             assertThat(e).hasMessageContaining(
-                    "Unsupported Deephaven column type NativeArrayType{clazz=class [I, componentType=io.deephaven.qst.type.IntType}");
+                    "Unable to infer the best Iceberg type for Deephaven column type `NativeArrayType{clazz=class [I, componentType=io.deephaven.qst.type.IntType}`");
         }
     }
 }

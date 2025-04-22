@@ -61,7 +61,8 @@ public abstract class Resolver {
      * Creates a {@link Resolver} from the given Table {@code definition}, <b>only applicable in contexts where an
      * {@link Table Iceberg Table} does not already exist</b>. In cases where the {@link Table Iceberg Table} already
      * exist, callers must create a resolver in relationship to an existing {@link Schema} (for example, via
-     * {@link #infer(Schema)}, or manually via {@link #builder()}).
+     * {@link #infer(Schema)}, or manually via {@link #builder()}). Column type inference is done via
+     * {@link TypeInference#of(Type)}.
      *
      * <p>
      * All {@link ColumnDefinition.ColumnType#Partitioning partitioning columns} will be used to create a partition spec
@@ -81,7 +82,8 @@ public abstract class Resolver {
             final Type<?> type = Type.find(columnDefinition.getDataType(), columnDefinition.getComponentType());
             final org.apache.iceberg.types.Type icebergType = TypeInference.of(type).orElse(null);
             if (icebergType == null) {
-                throw new MappingException("Unsupported Deephaven column type " + type);
+                throw new MappingException(
+                        String.format("Unable to infer the best Iceberg type for Deephaven column type `%s`", type));
             }
             fields.add(Types.NestedField.optional(fieldID, dhColumnName, icebergType));
             if (columnDefinition.isPartitioning()) {
