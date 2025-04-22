@@ -55,7 +55,7 @@ import java.util.Set;
 /**
  * This class manages an Iceberg {@link org.apache.iceberg.Table table} and provides methods to interact with it.
  */
-public class IcebergTableAdapter {
+public final class IcebergTableAdapter {
     @VisibleForTesting
     static final TableDefinition SNAPSHOT_DEFINITION = TableDefinition.of(
             ColumnDefinition.ofLong("Id"),
@@ -88,7 +88,6 @@ public class IcebergTableAdapter {
      * {@link Catalog} used to access this table.
      */
     public Catalog catalog() {
-        // TODO: this should go
         return catalog;
     }
 

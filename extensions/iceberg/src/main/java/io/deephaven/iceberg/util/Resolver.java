@@ -430,11 +430,11 @@ public abstract class Resolver {
             subPath.add(field);
             if (field.type().isListType()) {
                 throw new MappingException(String.format("List subpath @ `%s` (in `%s`) is not supported",
-                        SchemaHelper.toFieldName(subPath), SchemaHelper.toFieldName(path))); // todo better error
+                        SchemaHelper.toFieldName(subPath), SchemaHelper.toFieldName(path)));
             }
             if (field.type().isMapType()) {
                 throw new MappingException(String.format("Map subpath @ `%s` (in `%s`) is not supported",
-                        SchemaHelper.toFieldName(subPath), SchemaHelper.toFieldName(path))); // todo better error
+                        SchemaHelper.toFieldName(subPath), SchemaHelper.toFieldName(path)));
             }
         }
     }
