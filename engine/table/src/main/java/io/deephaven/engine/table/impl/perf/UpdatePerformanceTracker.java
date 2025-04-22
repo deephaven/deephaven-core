@@ -80,8 +80,8 @@ public class UpdatePerformanceTracker {
     private static InternalState INSTANCE;
 
     /**
-     * Retrieves or initializes the singleton instance of {@code InternalState}.
-     * If the instance does not exist, it is created.
+     * Retrieves or initializes the singleton instance of {@code InternalState}. If the instance does not exist, it is
+     * created.
      *
      * @return the singleton instance of {@code InternalState}
      */
@@ -258,7 +258,7 @@ public class UpdatePerformanceTracker {
     public void logAncestors(String updateGraphName, PerformanceEntry entry, Supplier<long[]> ancestors) {
         final InternalState state = maybeGetInternalState();
         if (state != null) {
-            final long [] ancestorArray = ancestors.get();
+            final long[] ancestorArray = ancestors.get();
             if (ancestorArray != null && ancestorArray.length > 0) {
                 state.publishAncestor(updateGraphName, entry, ancestorArray);
             }
