@@ -5,6 +5,7 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.agg.Aggregation;
+import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.hierarchical.HierarchicalTable;
@@ -20,6 +21,8 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 
 import static io.deephaven.api.agg.Aggregation.*;
 import static io.deephaven.engine.testutil.HierarchicalTableTestTools.freeSnapshotTableChunks;
@@ -135,10 +138,18 @@ public class TestRollup extends RefreshingTableTestCase {
 
     @Test
     public void testRollupWithFilter() {
-        final Table source = newTable(
+        final Table sourceUncounted = newTable(
                 stringCol("GRP", "v1", "v1", "v2", "v2", "v3"),
                 intCol("AVG", 1, 2, 3, 4, 5),
                 intCol("CONST", 11, 12, 13, 14, 15));
+        final AtomicInteger grpCount = new AtomicInteger(0);
+        final Function<String, String> countingIdentity = (s) -> {
+            grpCount.incrementAndGet();
+            return s;
+        };
+        QueryScope.addParam("countingIdentity", countingIdentity);
+        final Table source = sourceUncounted.updateView("GRP=(String)countingIdentity.apply(GRP)");
+
         final List<Aggregation> aggs = List.of(AggAvg("avg=AVG"));
 
         final RollupTable rollup1 = source.rollup(aggs, true, "GRP");
@@ -151,17 +162,20 @@ public class TestRollup extends RefreshingTableTestCase {
         assertEquals("Column \"BOGUS\" doesn't exist in this table, available columns: [GRP, AVG, CONST]",
                 ex2.getMessage());
 
-        final RollupTable rollup2 = source.rollup(aggs, true, "GRP")
-                .withFilter(WhereFilterFactory.getExpression("GRP = `v2`"));
+        grpCount.set(0);
+        final RollupTable rollup2 = rollup1.withFilter(WhereFilterFactory.getExpression("GRP = `v2`"));
+        assertEquals(0, grpCount.get());  // Should not rebase
         final Table snapshot2 = snapshotFilteredRollup(rollup2);
 
-        final RollupTable rollup3 = source.rollup(aggs, true, "GRP")
-                .withFilter(WhereFilterFactory.getExpression("CONST >= 13 && CONST <= 14"));
+        grpCount.set(0);
+        final RollupTable rollup3 = rollup1.withFilter(WhereFilterFactory.getExpression("CONST >= 13 && CONST <= 14"));
+        assertEquals(2, grpCount.get());  // Should rebase
         final Table snapshot3 = snapshotFilteredRollup(rollup3);
         assertTableEquals(snapshot2, snapshot3);
 
-        final RollupTable rollup4 = source.rollup(aggs, true, "GRP")
-                .withFilter(WhereFilterFactory.getExpression("CONST >= 13 && GRP = `v2`"));
+        grpCount.set(0);
+        final RollupTable rollup4 = rollup1.withFilter(WhereFilterFactory.getExpression("CONST >= 13 && GRP = `v2`"));
+        assertEquals(7, grpCount.get());  // Should rebase
         final Table snapshot4 = snapshotFilteredRollup(rollup4);
         assertTableEquals(snapshot2, snapshot4);
 
