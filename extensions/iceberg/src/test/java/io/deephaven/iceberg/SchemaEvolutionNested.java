@@ -197,10 +197,6 @@ public class SchemaEvolutionNested {
         ));
     }
 
-    private void read(Table expected, Resolver di) {
-        read(expected, IcebergReadInstructions.builder().resolver(di).build());
-    }
-
     private void read(Table expected, IcebergReadInstructions instructions) {
         assertThat(tableAdapter.definition(instructions)).isEqualTo(expected.getDefinition());
         TstUtils.assertTableEquals(expected, tableAdapter.table(instructions));
