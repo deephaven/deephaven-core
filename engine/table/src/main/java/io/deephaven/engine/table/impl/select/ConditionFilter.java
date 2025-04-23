@@ -714,7 +714,7 @@ public class ConditionFilter extends AbstractConditionFilter {
             try {
                 filterKernelClass = filterKernelClassFuture.get(0, TimeUnit.SECONDS);
             } catch (InterruptedException | TimeoutException e) {
-                throw new IllegalStateException("Formula factory not already compiled!");
+                throw new IllegalStateException("Formula factory not already compiled!", e);
             } catch (ExecutionException e) {
                 throw new FormulaCompilationException("Formula compilation error for: " + formula, e.getCause());
             }

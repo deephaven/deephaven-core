@@ -261,11 +261,12 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
             // the future must already be completed or else it is an error
             formulaFactory = formulaFactoryFuture.get(0, TimeUnit.SECONDS);
         } catch (InterruptedException | TimeoutException e) {
-            throw new IllegalStateException("Formula factory not already compiled!");
+            throw new IllegalStateException("Formula factory not already compiled!", e);
         } catch (ExecutionException e) {
             throw new UncheckedDeephavenException("Error creating formula factory for " + columnName, e.getCause());
         }
-        formula = formulaFactory.createFormula(StringEscapeUtils.escapeJava(columnName), rowSet, initLazyMap, columnsToData, params);
+        formula = formulaFactory.createFormula(StringEscapeUtils.escapeJava(columnName), rowSet, initLazyMap,
+                columnsToData, params);
 
         return formula;
     }
