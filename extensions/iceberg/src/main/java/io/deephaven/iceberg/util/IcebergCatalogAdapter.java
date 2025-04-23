@@ -4,7 +4,10 @@
 package io.deephaven.iceberg.util;
 
 import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.iceberg.internal.DataInstructionsProviderLoader;
@@ -19,13 +22,16 @@ import org.apache.iceberg.catalog.Namespace;
 import org.apache.iceberg.catalog.SupportsNamespaces;
 import org.apache.iceberg.catalog.TableIdentifier;
 import org.apache.iceberg.exceptions.AlreadyExistsException;
+import org.apache.iceberg.mapping.NameMapping;
+import org.apache.iceberg.rest.RESTCatalog;
+import org.apache.iceberg.rest.ResourcePaths;
 import org.apache.iceberg.transforms.Transforms;
 import org.apache.iceberg.types.Types;
 import org.jetbrains.annotations.NotNull;
-import org.apache.iceberg.rest.RESTCatalog;
-import org.apache.iceberg.rest.ResourcePaths;
 
-import java.util.*;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 import static io.deephaven.iceberg.base.IcebergUtils.createNamespaceIfNotExists;
 import static io.deephaven.iceberg.base.IcebergUtils.dropNamespaceIfExists;
@@ -231,28 +237,45 @@ public class IcebergCatalogAdapter {
     }
 
     /**
-     * Load an Iceberg table from the catalog.
+     * Load an Iceberg table from the catalog without a default resolver.
      *
      * @param tableIdentifier The identifier of the table to load.
      * @return The {@link IcebergTableAdapter table adapter} for the Iceberg table.
+     * @see TableIdentifier#parse(String)
      */
     public IcebergTableAdapter loadTable(final String tableIdentifier) {
         return loadTable(TableIdentifier.parse(tableIdentifier));
     }
 
     /**
-     * Load an Iceberg table from the catalog.
+     * Load an Iceberg table from the catalog without a default resolver.
      *
      * @param tableIdentifier The identifier of the table to load.
      * @return The {@link IcebergTableAdapter table adapter} for the Iceberg table.
      */
     public IcebergTableAdapter loadTable(@NotNull final TableIdentifier tableIdentifier) {
-        // Load the table from the catalog.
-        final org.apache.iceberg.Table table = catalog.loadTable(tableIdentifier);
+        return loadTable(LoadTableOptions.builder().id(tableIdentifier).build());
+    }
+
+    public IcebergTableAdapter loadTable(@NotNull final LoadTableOptions options) {
+        final org.apache.iceberg.Table table = catalog.loadTable(options.id());
         if (table == null) {
-            throw new IllegalArgumentException("Table not found: " + tableIdentifier);
+            throw new IllegalArgumentException("Table not found: " + options.id());
         }
-        return new IcebergTableAdapter(catalog, tableIdentifier, table, dataInstructionsProvider);
+        final Resolver resolver;
+        try {
+            resolver = ((ResolverProviderImpl) options.resolver()).resolver(table);
+        } catch (TypeInference.UnsupportedType e) {
+            throw new RuntimeException(e);
+        }
+        final NameMapping nameMapping = ((NameMappingProviderImpl) options.nameMapping()).create(table);
+        return new IcebergTableAdapter(
+                catalog,
+                options.id(),
+                table,
+                dataInstructionsProvider,
+                resolver,
+                nameMapping);
     }
 
     /**
@@ -306,7 +329,10 @@ public class IcebergCatalogAdapter {
         final Resolver internalResolver = Resolver.from(definition);
         final org.apache.iceberg.Table table =
                 createTable(tableIdentifier, internalResolver.schema(), internalResolver.specOrUnpartitioned());
-        return new IcebergTableAdapter(catalog, tableIdentifier, table, dataInstructionsProvider);
+        final Resolver resolver = Resolver.refreshIds(internalResolver, table.schema(), table.spec());
+        // we aren't ever creating name mappings during create atm.
+        return new IcebergTableAdapter(catalog, tableIdentifier, table, dataInstructionsProvider, resolver,
+                NameMapping.empty());
     }
 
     /**

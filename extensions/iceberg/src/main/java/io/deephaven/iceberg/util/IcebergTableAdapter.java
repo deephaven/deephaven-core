@@ -69,17 +69,23 @@ public final class IcebergTableAdapter {
     private final TableIdentifier tableIdentifier;
     private final DataInstructionsProviderLoader dataInstructionsProviderLoader;
     private final URI locationUri;
+    private final Resolver resolver;
+    private final NameMapping nameMapping;
 
     public IcebergTableAdapter(
             final Catalog catalog,
             final TableIdentifier tableIdentifier,
             final org.apache.iceberg.Table table,
-            final DataInstructionsProviderLoader dataInstructionsProviderLoader) {
+            final DataInstructionsProviderLoader dataInstructionsProviderLoader,
+            final Resolver resolver,
+            final NameMapping nameMapping) {
         this.catalog = catalog;
         this.table = table;
         this.tableIdentifier = tableIdentifier;
         this.dataInstructionsProviderLoader = dataInstructionsProviderLoader;
         this.locationUri = IcebergUtils.locationUri(table);
+        this.resolver = resolver; // todo: allow null?
+        this.nameMapping = nameMapping; // todo: allow null?
     }
 
     /**
@@ -94,6 +100,10 @@ public final class IcebergTableAdapter {
      */
     public TableIdentifier tableIdentifier() {
         return tableIdentifier;
+    }
+
+    public Optional<Resolver> resolver() {
+        return Optional.ofNullable(resolver);
     }
 
     /**
@@ -442,7 +452,7 @@ public final class IcebergTableAdapter {
         final TableKey tableKey = readInstructions.tableKey().orElse(StandaloneTableKey.getInstance());
         final IcebergBaseLayout keyFinder = keyFinder(
                 ras.resolver(),
-                readInstructions.nameMapping().or(this::tablesNameMapping).orElse(null),
+                readInstructions.nameMapping().orElse(nameMapping),
                 ras.snapshot().orElse(null),
                 readInstructions.dataInstructions().orElse(null));
         if (readInstructions.updateMode().updateType() == IcebergUpdateMode.IcebergUpdateType.STATIC) {
@@ -478,7 +488,7 @@ public final class IcebergTableAdapter {
     private ResolverAndSnapshot resolverAndSnapshot(@NotNull final IcebergReadInstructions readInstructions) {
         return ResolverAndSnapshot.create(
                 table,
-                readInstructions.resolver().orElse(null),
+                readInstructions.resolver().orElse(resolver),
                 getSnapshot(readInstructions),
                 readInstructions.usePartitionInference());
     }
