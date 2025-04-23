@@ -7,6 +7,7 @@ import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.channel.CompletableOutputStream;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import software.amazon.awssdk.awscore.AwsRequest;
 import software.amazon.awssdk.core.async.AsyncRequestBody;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.S3Uri;
@@ -279,7 +280,7 @@ class S3CompletableOutputStream extends CompletableOutputStream {
         final CreateMultipartUploadRequest.Builder builder = CreateMultipartUploadRequest.builder()
                 .bucket(uri.bucket().orElseThrow())
                 .key(uri.key().orElseThrow());
-        final CreateMultipartUploadRequest createMultipartUploadRequest = generateRequest(builder, CreateMultipartUploadRequest.class);
+        final CreateMultipartUploadRequest createMultipartUploadRequest = applyOverrideConfiguration(builder).build();
         // Note: We can add support for other parameters like tagging, storage class, encryption, permissions, etc. in
         // future
         final CompletableFuture<CreateMultipartUploadResponse> initiateUploadFuture =
@@ -326,7 +327,7 @@ class S3CompletableOutputStream extends CompletableOutputStream {
                 .key(uri.key().orElseThrow())
                 .uploadId(uploadId)
                 .partNumber(nextPartNumber);
-        final UploadPartRequest uploadPartRequest = generateRequest(builder, UploadPartRequest.class);
+        final UploadPartRequest uploadPartRequest = applyOverrideConfiguration(builder).build();
 
         final int partNumber = nextPartNumber;
         final CompletableFuture<UploadPartResponse> uploadPartFuture = s3AsyncClient.uploadPart(uploadPartRequest,
@@ -443,7 +444,7 @@ class S3CompletableOutputStream extends CompletableOutputStream {
                 .multipartUpload(CompletedMultipartUpload.builder()
                         .parts(completedParts)
                         .build());
-        final CompleteMultipartUploadRequest completeRequest = generateRequest(builder, CompleteMultipartUploadRequest.class);
+        final CompleteMultipartUploadRequest completeRequest = applyOverrideConfiguration(builder).build();
         final CompletableFuture<CompleteMultipartUploadResponse> uploadFuture =
                 s3AsyncClient.completeMultipartUpload(completeRequest);
         try {
@@ -497,7 +498,7 @@ class S3CompletableOutputStream extends CompletableOutputStream {
                 .bucket(uri.bucket().orElseThrow())
                 .key(uri.key().orElseThrow())
                 .uploadId(uploadId);
-        final AbortMultipartUploadRequest abortRequest = generateRequest(builder, AbortMultipartUploadRequest.class);
+        final AbortMultipartUploadRequest abortRequest = applyOverrideConfiguration(builder).build();
         final CompletableFuture<AbortMultipartUploadResponse> future = s3AsyncClient.abortMultipartUpload(abortRequest);
 
         // Wait for the abort to complete
@@ -513,16 +514,12 @@ class S3CompletableOutputStream extends CompletableOutputStream {
     /**
      * Applies the write timeout, then generates a request for the given builder and request class.
      *
-     * @param builder      an instance of a {@link S3Request.Builder} class
-     * @param requestClass the class returned by this builder's {@link S3Request.Builder#build()} method
-     * @param <Request>    the {@link S3Request} type returned by the builder's {@link S3Request.Builder#build()} method
-     * @return the result of the builder's {@link S3Request.Builder#build()} method
+     * @param builder an instance of a {@link S3Request.Builder} class
+     * @return the builder
      */
-    private <Request extends S3Request> Request generateRequest(@NotNull S3Request.Builder builder, @SuppressWarnings("unused") @NotNull Class<Request> requestClass) {
+    private <B extends AwsRequest.Builder> B applyOverrideConfiguration(@NotNull B builder) {
         final Duration writeTimeout = s3Instructions.writeTimeout();
         builder.overrideConfiguration(b -> addTimeout(b, writeTimeout));
-
-        //noinspection unchecked
-        return (Request) builder.build();
+        return builder;
     }
 }
