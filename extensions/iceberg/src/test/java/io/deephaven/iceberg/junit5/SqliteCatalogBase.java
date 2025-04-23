@@ -49,6 +49,7 @@ import org.apache.iceberg.catalog.Namespace;
 import org.apache.iceberg.catalog.TableIdentifier;
 import org.apache.iceberg.io.OutputFileFactory;
 import org.apache.iceberg.mapping.MappedField;
+import org.apache.iceberg.mapping.MappingUtil;
 import org.apache.iceberg.mapping.NameMapping;
 import org.apache.iceberg.mapping.NameMappingParser;
 import org.apache.iceberg.types.Types;
@@ -1639,12 +1640,6 @@ public abstract class SqliteCatalogBase {
                 longCol(BAZ, NULL_LONG, NULL_LONG, NULL_LONG, NULL_LONG, NULL_LONG));
         final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.NameMappingTest");
         final Resolver resolver = catalogAdapter.createTable2(tableIdentifier, definition);
-
-        final NameMapping nameMapping = NameMapping.of(
-                MappedField.of(resolver.columnInstructions().get(FOO).schemaFieldId().orElseThrow(), FOO),
-                MappedField.of(resolver.columnInstructions().get(BAR).schemaFieldId().orElseThrow(), BAR),
-                MappedField.of(resolver.columnInstructions().get(BAZ).schemaFieldId().orElseThrow(), BAZ));
-
         final IcebergTableAdapter tableAdapter = catalogAdapter.loadTable(tableIdentifier);
 
         // This is emulating a write outside of DH where the field ids are _not_ written
@@ -1674,23 +1669,20 @@ public abstract class SqliteCatalogBase {
             append.commit();
         }
 
-        tableAdapter.refresh();
-
         // If there is no name mapping (and there are no field ids in the data file), the columns will all be null
         {
-            final IcebergReadInstructions i = IcebergReadInstructions.builder()
+            assertTableEquals(empty, tableAdapter.table(IcebergReadInstructions.builder()
                     .resolver(resolver)
-                    .build();
-            assertTableEquals(empty, tableAdapter.table(i));
+                    .build()));
         }
 
         // We can provide an explicit name mapping to resolve in this case
+        final NameMapping nameMapping = MappingUtil.create(resolver.schema());
         {
-            final IcebergReadInstructions i = IcebergReadInstructions.builder()
+            assertTableEquals(source, tableAdapter.table(IcebergReadInstructions.builder()
                     .resolver(resolver)
                     .nameMapping(nameMapping)
-                    .build();
-            assertTableEquals(source, tableAdapter.table(i));
+                    .build()));
         }
 
         // Or, if the iceberg table has a name mapping, we will use that
@@ -1698,21 +1690,18 @@ public abstract class SqliteCatalogBase {
                 .updateProperties()
                 .set(TableProperties.DEFAULT_NAME_MAPPING, NameMappingParser.toJson(nameMapping))
                 .commit();
-        tableAdapter.refresh();
         {
-            final IcebergReadInstructions i = IcebergReadInstructions.builder()
+            assertTableEquals(source, tableAdapter.table(IcebergReadInstructions.builder()
                     .resolver(resolver)
-                    .build();
-            assertTableEquals(source, tableAdapter.table(i));
+                    .build()));
         }
 
         // And even if the table does have a name mapping, we can explicitly disable it
         {
-            final IcebergReadInstructions i = IcebergReadInstructions.builder()
+            assertTableEquals(empty, tableAdapter.table(IcebergReadInstructions.builder()
                     .resolver(resolver)
                     .nameMapping(NameMapping.empty())
-                    .build();
-            assertTableEquals(empty, tableAdapter.table(i));
+                    .build()));
         }
     }
 }

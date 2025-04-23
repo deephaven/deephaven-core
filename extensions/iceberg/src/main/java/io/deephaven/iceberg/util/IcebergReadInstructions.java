@@ -11,6 +11,7 @@ import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.Snapshot;
 import org.apache.iceberg.Table;
 import org.apache.iceberg.TableProperties;
+import org.apache.iceberg.mapping.MappingUtil;
 import org.apache.iceberg.mapping.NameMapping;
 import org.apache.iceberg.mapping.NameMappingParser;
 import org.apache.iceberg.types.Types;
@@ -128,7 +129,7 @@ public abstract class IcebergReadInstructions {
      * set this when they care about reproducible results. Setting to {@link NameMapping#empty()} will explicitly
      * disable name mapping.
      *
-     * @see NameMappingParser#fromJson(String)
+     * @see MappingUtil
      * @see <a href="https://iceberg.apache.org/spec/#column-projection">schema.name-mapping.default</a>
      */
     public abstract Optional<NameMapping> nameMapping();

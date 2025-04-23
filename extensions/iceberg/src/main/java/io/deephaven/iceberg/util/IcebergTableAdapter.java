@@ -19,7 +19,6 @@ import io.deephaven.engine.table.impl.sources.regioned.RegionedTableComponentFac
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.iceberg.base.IcebergUtils;
 import io.deephaven.iceberg.internal.DataInstructionsProviderLoader;
-import io.deephaven.iceberg.internal.NameMappingUtil;
 import io.deephaven.iceberg.internal.Shim;
 import io.deephaven.iceberg.layout.IcebergAutoRefreshTableLocationProvider;
 import io.deephaven.iceberg.layout.IcebergBaseLayout;
