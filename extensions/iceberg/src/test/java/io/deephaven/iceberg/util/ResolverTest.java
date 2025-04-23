@@ -1,13 +1,11 @@
 //
 // Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
-package io.deephaven.iceberg.internal;
+package io.deephaven.iceberg.util;
 
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.NoSuchColumnException;
-import io.deephaven.iceberg.util.ColumnInstructions;
-import io.deephaven.iceberg.util.Resolver;
 import io.deephaven.qst.type.PrimitiveType;
 import io.deephaven.qst.type.Type;
 import org.apache.iceberg.PartitionFieldHack;
@@ -22,7 +20,6 @@ import org.apache.iceberg.types.Types.NestedField;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
-import java.time.LocalTime;
 import java.util.List;
 import java.util.stream.Collectors;
 

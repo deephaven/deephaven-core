@@ -1,9 +1,8 @@
 //
 // Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
-package io.deephaven.iceberg.internal;
+package io.deephaven.iceberg.util;
 
-import io.deephaven.iceberg.util.FieldPath;
 import org.apache.iceberg.PartitionField;
 import org.apache.iceberg.Schema;
 import org.apache.iceberg.types.Type;
@@ -16,7 +15,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-public final class SchemaHelper {
+final class SchemaHelper {
 
     public static boolean hasFieldPath(Schema schema, int[] idPath) {
         try {

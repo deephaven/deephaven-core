@@ -4,7 +4,6 @@
 package io.deephaven.iceberg.util;
 
 import io.deephaven.annotations.SimpleStyle;
-import io.deephaven.iceberg.internal.SchemaHelper;
 import org.apache.iceberg.PartitionField;
 import org.apache.iceberg.Schema;
 import org.apache.iceberg.types.Type;

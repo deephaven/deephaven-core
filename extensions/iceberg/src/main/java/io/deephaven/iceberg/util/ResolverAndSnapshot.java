@@ -14,7 +14,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Objects;
 import java.util.Optional;
 
-import static io.deephaven.iceberg.internal.PartitionSpecHelper.partitionForInference;
+import static io.deephaven.iceberg.util.PartitionSpecHelper.partitionForInference;
 
 
 final class ResolverAndSnapshot {

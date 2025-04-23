@@ -3,7 +3,6 @@
 //
 package io.deephaven.iceberg.util;
 
-import io.deephaven.iceberg.internal.SchemaHelper;
 import io.deephaven.qst.type.ArrayType;
 import io.deephaven.qst.type.BooleanType;
 import io.deephaven.qst.type.BoxedType;

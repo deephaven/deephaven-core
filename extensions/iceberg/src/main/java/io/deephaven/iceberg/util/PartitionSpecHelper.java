@@ -1,7 +1,7 @@
 //
 // Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
-package io.deephaven.iceberg.internal;
+package io.deephaven.iceberg.util;
 
 import org.apache.iceberg.ManifestFile;
 import org.apache.iceberg.PartitionField;
@@ -20,7 +20,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-public final class PartitionSpecHelper {
+final class PartitionSpecHelper {
 
     public static Optional<PartitionField> find(PartitionSpec spec, int partitionFieldId) {
         PartitionField found = null;
