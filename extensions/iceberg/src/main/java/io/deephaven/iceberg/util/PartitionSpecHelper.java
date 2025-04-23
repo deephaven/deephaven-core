@@ -36,6 +36,20 @@ final class PartitionSpecHelper {
         return Optional.ofNullable(found);
     }
 
+    public static Optional<PartitionField> find(PartitionSpec spec, String name) {
+        PartitionField found = null;
+        for (final PartitionField partitionField : spec.fields()) {
+            if (name.equals(partitionField.name())) {
+                if (found != null) {
+                    throw new IllegalStateException(String
+                            .format("Found multiple partition fields with partition field name `%s`", name));
+                }
+                found = partitionField;
+            }
+        }
+        return Optional.ofNullable(found);
+    }
+
     public static PartitionField get(PartitionSpec spec, int partitionFieldId) throws SchemaHelper.PathException {
         final Optional<PartitionField> partitionField = find(spec, partitionFieldId);
         if (partitionField.isEmpty()) {

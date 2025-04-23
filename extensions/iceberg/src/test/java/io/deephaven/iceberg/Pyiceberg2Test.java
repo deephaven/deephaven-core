@@ -10,6 +10,7 @@ import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.iceberg.sqlite.DbResource;
 import io.deephaven.iceberg.util.IcebergCatalogAdapter;
+import io.deephaven.iceberg.util.IcebergReadInstructions;
 import io.deephaven.iceberg.util.IcebergTableAdapter;
 import org.apache.iceberg.PartitionField;
 import org.apache.iceberg.PartitionSpec;
@@ -73,7 +74,8 @@ class Pyiceberg2Test {
     @Test
     void testDefinition() {
         final IcebergTableAdapter tableAdapter = catalogAdapter.loadTable(TRADING_DATA);
-        final TableDefinition td = tableAdapter.definition();
+        final TableDefinition td =
+                tableAdapter.definition(IcebergReadInstructions.builder().usePartitionInference(true).build());
         assertThat(td).isEqualTo(TABLE_DEFINITION);
 
         // Check the partition spec

@@ -98,4 +98,14 @@ public abstract class ColumnInstructions {
                     "ColumnInstructions can't have both a schema field id and a partition field id");
         }
     }
+
+    final ColumnInstructions reassignWithSchemaField(int fieldId) {
+        // May need to have more copy logic here in the future
+        return ColumnInstructions.schemaField(fieldId);
+    }
+
+    final ColumnInstructions reassignWithPartitionField(int partitionFieldId) {
+        // May need to have more copy logic here in the future
+        return ColumnInstructions.partitionField(partitionFieldId);
+    }
 }

@@ -521,9 +521,8 @@ class ResolverTest {
         // Of course, if there was a mis-implemented Catalog, it's possible that things get deserialized without proper
         // checks
         final PartitionSpec manualSpec = PartitionSpecHack.newPartitionSpecUnchecked(
-                schema,
-                List.of(PartitionFieldHack.of(1, 1000, "S1_identity", Transforms.fromString("identity"))),
-                1);
+                1, schema,
+                List.of(PartitionFieldHack.of(1, 1000, "S1_identity", Transforms.identity())));
         try {
             Resolver.builder()
                     .schema(schema)

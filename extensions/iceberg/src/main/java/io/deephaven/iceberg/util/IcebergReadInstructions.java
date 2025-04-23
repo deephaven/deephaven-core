@@ -8,6 +8,7 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.locations.TableKey;
 import org.apache.iceberg.PartitionSpec;
+import org.apache.iceberg.Schema;
 import org.apache.iceberg.Snapshot;
 import org.apache.iceberg.Table;
 import org.apache.iceberg.TableProperties;
@@ -33,15 +34,16 @@ public abstract class IcebergReadInstructions {
      * The default {@link IcebergReadInstructions} to use when reading Iceberg data files. Providing this will use
      * system defaults for cloud provider-specific parameters.
      */
-    public static final IcebergReadInstructions DEFAULT = builder()/* .usePartitionInference(false) */.build();
+    public static final IcebergReadInstructions DEFAULT = builder().build();
 
     public static Builder builder() {
         return ImmutableIcebergReadInstructions.builder();
     }
 
     /**
-     * The table definition instructions. Callers are encouraged to set this when they care about reproducible results.
-     * If not set, one will be {@link Resolver#infer(InferenceInstructions) inferred}.
+     * The resolver. Callers are encouraged to set this to explicitly define the relation between the desired Deephaven
+     * {@link TableDefinition} and the existing Iceberg {@link Schema}. If not set, one will be
+     * {@link Resolver#infer(InferenceInstructions) inferred}.
      */
     public abstract Optional<Resolver> resolver();
 

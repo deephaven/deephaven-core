@@ -19,7 +19,7 @@ public final class PartitionSpecHack {
      *
      * <p>
      * This method is unsafe to use in the case where {@code spec} actually needs to be limited, as it relies on
-     * {@link #newPartitionSpec(Schema, List, int)}.
+     * {@link #newPartitionSpec(int, Schema, List)}.
      *
      * <p>
      * This method serves as a helper to normalize serialization use cases, where we only want / need to serialize the
@@ -35,23 +35,23 @@ public final class PartitionSpecHack {
                 ? spec
                 : partitionFields.isEmpty()
                         ? PartitionSpec.unpartitioned()
-                        : newPartitionSpec(schema, partitionFields, -1);
+                        : newPartitionSpec(-1, schema, partitionFields);
     }
 
     /**
      * Creates a new partition spec using {@code fields}, bound to {@code schema}. This method is unsafe, as it uses
      * internal Iceberg APIs that may break in the future.
      */
-    public static PartitionSpec newPartitionSpec(Schema schema, List<PartitionField> fields, int newSpecId) {
-        return newPartitionSpecBuilder(schema, fields, newSpecId).build();
+    public static PartitionSpec newPartitionSpec(int newSpecId, Schema schema, List<PartitionField> fields) {
+        return newPartitionSpecBuilder(newSpecId, schema, fields).build();
     }
 
-    public static PartitionSpec newPartitionSpecUnchecked(Schema schema, List<PartitionField> fields, int newSpecId) {
-        return newPartitionSpecBuilder(schema, fields, newSpecId).buildUnchecked();
+    public static PartitionSpec newPartitionSpecUnchecked(int newSpecId, Schema schema, List<PartitionField> fields) {
+        return newPartitionSpecBuilder(newSpecId, schema, fields).buildUnchecked();
     }
 
-    private static PartitionSpec.Builder newPartitionSpecBuilder(Schema schema, List<PartitionField> fields,
-            int newSpecId) {
+    private static PartitionSpec.Builder newPartitionSpecBuilder(int newSpecId, Schema schema,
+            List<PartitionField> fields) {
         final PartitionSpec.Builder builder = PartitionSpec
                 .builderFor(schema)
                 .withSpecId(newSpecId);

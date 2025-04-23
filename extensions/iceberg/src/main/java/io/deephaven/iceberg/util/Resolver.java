@@ -9,11 +9,13 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.qst.type.Type;
+import io.deephaven.util.annotations.VisibleForTesting;
 import org.apache.iceberg.PartitionField;
 import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.Schema;
 import org.apache.iceberg.Table;
 import org.apache.iceberg.transforms.Transform;
+import org.apache.iceberg.types.TypeUtil;
 import org.apache.iceberg.types.Types;
 import org.apache.iceberg.types.Types.NestedField;
 import org.immutables.value.Value;
@@ -32,7 +34,7 @@ import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
 /**
- * This is the necessary structure to map an Iceberg {@link Schema} to a Deephaven {@link TableDefinition}.
+ * The relationship between a Deephaven {@link TableDefinition} and an Iceberg {@link Schema}.
  */
 @Value.Immutable
 @BuildableStyle
@@ -54,49 +56,6 @@ public abstract class Resolver {
 
     public static Builder builder() {
         return ImmutableResolver.builder();
-    }
-
-    /**
-     * Creates a {@link Resolver} from the given Table {@code definition}, <b>only applicable in contexts where an
-     * {@link Table Iceberg Table} does not already exist</b>. In cases where the {@link Table Iceberg Table} already
-     * exist, callers must create a resolver in relationship to an existing {@link Schema} (for example, via
-     * {@link #infer(Schema)}, or manually via {@link #builder()}). Column type inference is done via
-     * {@link TypeInference#of(Type)}.
-     *
-     * <p>
-     * All {@link ColumnDefinition.ColumnType#Partitioning partitioning columns} will be used to create a partition spec
-     * for the table. Callers should take note of the documentation on {@link Resolver#definition()} when deciding to
-     * create an Iceberg Table with partitioning columns.
-     *
-     * @param definition the Table definition
-     * @return the resolver
-     */
-    public static Resolver from(@NotNull final TableDefinition definition) {
-        final Resolver.Builder builder = Resolver.builder().definition(definition);
-        final Collection<String> partitioningColumnNames = new ArrayList<>();
-        final List<Types.NestedField> fields = new ArrayList<>();
-        int fieldID = INITIAL_FIELD_ID;
-        for (final ColumnDefinition<?> columnDefinition : definition.getColumns()) {
-            final String dhColumnName = columnDefinition.getName();
-            final Type<?> type = Type.find(columnDefinition.getDataType(), columnDefinition.getComponentType());
-            final org.apache.iceberg.types.Type icebergType = TypeInference.of(type).orElse(null);
-            if (icebergType == null) {
-                throw new MappingException(
-                        String.format("Unable to infer the best Iceberg type for Deephaven column type `%s`", type));
-            }
-            fields.add(Types.NestedField.optional(fieldID, dhColumnName, icebergType));
-            if (columnDefinition.isPartitioning()) {
-                partitioningColumnNames.add(dhColumnName);
-            }
-            builder.putColumnInstructions(dhColumnName, ColumnInstructions.schemaField(fieldID));
-            fieldID++;
-        }
-        final Schema schema = new Schema(INITIAL_SCHEMA_ID, fields);
-        final PartitionSpec spec = createPartitionSpec(schema, partitioningColumnNames, INITIAL_SPEC_ID);
-        if (spec.isPartitioned()) {
-            builder.spec(spec);
-        }
-        return builder.schema(schema).build();
     }
 
     private static PartitionSpec createPartitionSpec(
@@ -447,5 +406,85 @@ public abstract class Resolver {
         public MappingException(String message, Throwable cause) {
             super(message, cause);
         }
+    }
+
+    // todo: if we want this to be public, we need refreshIds to be public
+    /**
+     * Creates a {@link Resolver} from the given Table {@code definition}, <b>only applicable in contexts where an
+     * {@link Table Iceberg Table} does not already exist</b>. In cases where the {@link Table Iceberg Table} already
+     * exist, callers must create a resolver in relationship to an existing {@link Schema} (for example, via
+     * {@link #infer(Schema)}, or manually via {@link #builder()}). Column type inference is done via
+     * {@link TypeInference#of(Type)}.
+     *
+     * <p>
+     * All {@link ColumnDefinition.ColumnType#Partitioning partitioning columns} will be used to create a partition spec
+     * for the table. Callers should take note of the documentation on {@link Resolver#definition()} when deciding to
+     * create an Iceberg Table with partitioning columns.
+     *
+     * @param definition the Table definition
+     * @return the resolver
+     */
+    public static Resolver from(@NotNull final TableDefinition definition) {
+        final Resolver.Builder builder = Resolver.builder().definition(definition);
+        final Collection<String> partitioningColumnNames = new ArrayList<>();
+        final List<Types.NestedField> fields = new ArrayList<>();
+        int fieldID = INITIAL_FIELD_ID;
+        for (final ColumnDefinition<?> columnDefinition : definition.getColumns()) {
+            final String dhColumnName = columnDefinition.getName();
+            final Type<?> type = Type.find(columnDefinition.getDataType(), columnDefinition.getComponentType());
+            final org.apache.iceberg.types.Type icebergType = TypeInference.of(type).orElse(null);
+            if (icebergType == null) {
+                throw new MappingException(
+                        String.format("Unable to infer the best Iceberg type for Deephaven column type `%s`", type));
+            }
+            fields.add(Types.NestedField.optional(fieldID, dhColumnName, icebergType));
+            if (columnDefinition.isPartitioning()) {
+                partitioningColumnNames.add(dhColumnName);
+            }
+            builder.putColumnInstructions(dhColumnName, ColumnInstructions.schemaField(fieldID));
+            fieldID++;
+        }
+        final Schema schema = new Schema(INITIAL_SCHEMA_ID, fields);
+        final PartitionSpec spec = createPartitionSpec(schema, partitioningColumnNames, INITIAL_SPEC_ID);
+        if (spec.isPartitioned()) {
+            builder.spec(spec);
+        }
+        return builder.schema(schema).build();
+    }
+
+    @VisibleForTesting
+    static Resolver refreshIds(
+            final Resolver internalResolver,
+            final Schema freshSchema,
+            final PartitionSpec freshSpec) {
+        final Builder builder = builder()
+                .definition(internalResolver.definition())
+                .schema(freshSchema);
+        if (internalResolver.spec().isPresent()) {
+            builder.spec(freshSpec);
+        }
+        final Map<Integer, String> internalById = TypeUtil.indexNameById(internalResolver.schema().asStruct());
+        final Map<String, Integer> freshByName = TypeUtil.indexByName(freshSchema.asStruct());
+        for (final Map.Entry<String, ColumnInstructions> e : internalResolver.columnInstructions().entrySet()) {
+            final ColumnInstructions internalCi = e.getValue();
+            final ColumnInstructions freshCi;
+            if (internalCi.isUnmapped()) {
+                freshCi = internalCi;
+            } else if (internalCi.schemaFieldId().isPresent()) {
+                final String name = internalById.get(internalCi.schemaFieldId().getAsInt());
+                final int freshId = freshByName.get(name);
+                freshCi = internalCi.reassignWithSchemaField(freshId);
+            } else if (internalCi.partitionFieldId().isPresent()) {
+                final PartitionField internalPf = PartitionSpecHelper
+                        .find(internalResolver.spec().orElseThrow(), internalCi.partitionFieldId().getAsInt())
+                        .orElseThrow();
+                final PartitionField freshPf = PartitionSpecHelper.find(freshSpec, internalPf.name()).orElseThrow();
+                freshCi = internalCi.reassignWithPartitionField(freshPf.fieldId());
+            } else {
+                throw new IllegalStateException();
+            }
+            builder.putColumnInstructions(e.getKey(), freshCi);
+        }
+        return builder.build();
     }
 }
