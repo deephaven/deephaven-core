@@ -5,9 +5,11 @@ package io.deephaven.iceberg.util;
 
 import io.deephaven.annotations.BuildableStyle;
 import io.deephaven.api.util.NameValidator;
+import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.qst.type.Type;
 import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.Schema;
+import org.apache.iceberg.transforms.Transforms;
 import org.apache.iceberg.types.Types;
 import org.immutables.value.Value;
 
@@ -37,12 +39,16 @@ public abstract class InferenceInstructions {
     }
 
     /**
-     * The schema to use for inference.
+     * The schema to use for {@link Resolver#infer(InferenceInstructions) inference}. The resulting
+     * {@link Resolver#definition() definition} will have columns in the same order as defined by this {@link Schema}.
      */
     public abstract Schema schema();
 
     /**
-     * The partition spec to use for inference.
+     * The partition spec to use for {@link Resolver#infer(InferenceInstructions) inference}. The
+     * {@link Transforms#identity() identity} transforms of this {@link PartitionSpec} will be used to make the
+     * resulting {@link Resolver#definition() definition} have the relevant
+     * {@link ColumnDefinition.ColumnType#Partitioning Partitioning} columns.
      *
      * <p>
      * <b>Warning</b>: inferring using a partition spec for general-purpose use is dangerous. This is only meant to be

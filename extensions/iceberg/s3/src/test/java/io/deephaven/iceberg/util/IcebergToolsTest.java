@@ -184,6 +184,7 @@ public abstract class IcebergToolsTest {
 
         instructions = IcebergReadInstructions.builder()
                 .dataInstructions(s3Instructions)
+                .usePartitionInference(true)
                 .build();
     }
 

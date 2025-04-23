@@ -712,7 +712,8 @@ public abstract class SqliteCatalogBase {
                 ColumnDefinition.ofInt("intCol"),
                 ColumnDefinition.ofDouble("doubleCol"),
                 ColumnDefinition.ofString("PC").withPartitioning());
-        final IcebergTableAdapter tableAdapter = catalogAdapter.createTable(tableIdentifier, partitioningTableDef);
+        final Resolver resolver = catalogAdapter.createTable2(tableIdentifier, partitioningTableDef);
+        final IcebergTableAdapter tableAdapter = catalogAdapter.loadTable(tableIdentifier);
         final IcebergTableWriter tableWriter = tableAdapter.tableWriter(writerOptionsBuilder()
                 .tableDefinition(partitioningTableDef)
                 .build());
@@ -731,8 +732,9 @@ public abstract class SqliteCatalogBase {
                 .addTables(part1, part2)
                 .addAllPartitionPaths(partitionPaths)
                 .build());
-        final Table fromIceberg = tableAdapter.table();
-        assertThat(tableAdapter.definition()).isEqualTo(partitioningTableDef);
+        final IcebergReadInstructions ri = IcebergReadInstructions.builder().resolver(resolver).build();
+        final Table fromIceberg = tableAdapter.table(ri);
+        assertThat(tableAdapter.definition(ri)).isEqualTo(partitioningTableDef);
         assertThat(fromIceberg.getDefinition()).isEqualTo(partitioningTableDef);
         assertThat(fromIceberg).isInstanceOf(PartitionAwareSourceTable.class);
         final Table expected = TableTools.merge(
@@ -748,7 +750,7 @@ public abstract class SqliteCatalogBase {
                 .addTables(part3)
                 .addPartitionPaths(partitionPath)
                 .build());
-        final Table fromIceberg2 = tableAdapter.table();
+        final Table fromIceberg2 = tableAdapter.table(ri);
         final Table expected2 = TableTools.merge(
                 part1.update("PC = `cat`"),
                 part2.update("PC = `apple`"),
@@ -770,7 +772,8 @@ public abstract class SqliteCatalogBase {
                 ColumnDefinition.ofInt("intCol"),
                 ColumnDefinition.ofDouble("doubleCol"),
                 ColumnDefinition.ofInt("PC").withPartitioning());
-        final IcebergTableAdapter tableAdapter = catalogAdapter.createTable(tableIdentifier, tableDefinition);
+        final Resolver resolver = catalogAdapter.createTable2(tableIdentifier, tableDefinition);
+        final IcebergTableAdapter tableAdapter = catalogAdapter.loadTable(tableIdentifier);
         final IcebergTableWriter tableWriter = tableAdapter.tableWriter(writerOptionsBuilder()
                 .tableDefinition(tableDefinition)
                 .build());
@@ -793,8 +796,9 @@ public abstract class SqliteCatalogBase {
                 .addTables(part1, part2)
                 .addAllPartitionPaths(List.of("PC=3", "PC=1"))
                 .build());
-        final Table fromIceberg = tableAdapter.table();
-        assertThat(tableAdapter.definition()).isEqualTo(tableDefinition);
+        final IcebergReadInstructions ri = IcebergReadInstructions.builder().resolver(resolver).build();
+        final Table fromIceberg = tableAdapter.table(ri);
+        assertThat(tableAdapter.definition(ri)).isEqualTo(tableDefinition);
         assertThat(fromIceberg.getDefinition()).isEqualTo(tableDefinition);
         assertThat(fromIceberg).isInstanceOf(PartitionAwareSourceTable.class);
         final Table expected = TableTools.merge(
@@ -918,7 +922,8 @@ public abstract class SqliteCatalogBase {
                 ColumnDefinition.ofInt("data"));
 
         final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
-        final IcebergTableAdapter tableAdapter = catalogAdapter.createTable(tableIdentifier, definition);
+        final Resolver resolver = catalogAdapter.createTable2(tableIdentifier, definition);
+        final IcebergTableAdapter tableAdapter = catalogAdapter.loadTable(tableIdentifier);
 
         final Table source = TableTools.emptyTable(10)
                 .update("data = (int) 2 * i + 10");
@@ -938,8 +943,9 @@ public abstract class SqliteCatalogBase {
                 .addTables(source)
                 .addAllPartitionPaths(partitionPaths)
                 .build());
-        final Table fromIceberg = tableAdapter.table();
-        assertThat(tableAdapter.definition()).isEqualTo(definition);
+        final IcebergReadInstructions ri = IcebergReadInstructions.builder().resolver(resolver).build();
+        final Table fromIceberg = tableAdapter.table(ri);
+        assertThat(tableAdapter.definition(ri)).isEqualTo(definition);
         assertThat(fromIceberg.getDefinition()).isEqualTo(definition);
         assertThat(fromIceberg).isInstanceOf(PartitionAwareSourceTable.class);
 
@@ -1081,13 +1087,12 @@ public abstract class SqliteCatalogBase {
                 .build());
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
-
-        final IcebergTableImpl fromIcebergRefreshing =
-                (IcebergTableImpl) tableAdapter.table(IcebergReadInstructions.builder()
-                        .resolver(resolver)
-                        .updateMode(IcebergUpdateMode.manualRefreshingMode())
-                        .build());
-        assertThat(tableAdapter.definition()).isEqualTo(tableDefinition);
+        final IcebergReadInstructions ri = IcebergReadInstructions.builder()
+                .resolver(resolver)
+                .updateMode(IcebergUpdateMode.manualRefreshingMode())
+                .build();
+        final IcebergTableImpl fromIcebergRefreshing = (IcebergTableImpl) tableAdapter.table(ri);
+        assertThat(tableAdapter.definition(ri)).isEqualTo(tableDefinition);
         assertThat(fromIcebergRefreshing.getDefinition()).isEqualTo(tableDefinition);
         assertThat(fromIcebergRefreshing).isInstanceOf(PartitionAwareSourceTable.class);
         final Table expected = TableTools.merge(
@@ -1138,12 +1143,12 @@ public abstract class SqliteCatalogBase {
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
 
-        final IcebergTableImpl fromIcebergRefreshing =
-                (IcebergTableImpl) tableAdapter.table(IcebergReadInstructions.builder()
-                        .resolver(resolver)
-                        .updateMode(IcebergUpdateMode.autoRefreshingMode(10))
-                        .build());
-        assertThat(tableAdapter.definition()).isEqualTo(tableDefinition);
+        final IcebergReadInstructions ri = IcebergReadInstructions.builder()
+                .resolver(resolver)
+                .updateMode(IcebergUpdateMode.autoRefreshingMode(10))
+                .build();
+        final IcebergTableImpl fromIcebergRefreshing = (IcebergTableImpl) tableAdapter.table(ri);
+        assertThat(tableAdapter.definition(ri)).isEqualTo(tableDefinition);
         assertThat(fromIcebergRefreshing.getDefinition()).isEqualTo(tableDefinition);
         assertThat(fromIcebergRefreshing).isInstanceOf(PartitionAwareSourceTable.class);
         final Table expected = TableTools.merge(

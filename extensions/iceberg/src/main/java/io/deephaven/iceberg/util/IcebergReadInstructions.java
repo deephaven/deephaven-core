@@ -13,7 +13,7 @@ import org.apache.iceberg.Table;
 import org.apache.iceberg.TableProperties;
 import org.apache.iceberg.mapping.MappingUtil;
 import org.apache.iceberg.mapping.NameMapping;
-import org.apache.iceberg.mapping.NameMappingParser;
+import org.apache.iceberg.transforms.Transforms;
 import org.apache.iceberg.types.Types;
 import org.immutables.value.Value;
 import org.immutables.value.Value.Immutable;
@@ -106,20 +106,34 @@ public abstract class IcebergReadInstructions {
      */
     public abstract IcebergReadInstructions withSnapshot(Snapshot value);
 
-    // todo: separate out these inference instructions?
-
     /**
-     * If Deephaven {@link ColumnDefinition.ColumnType#Partitioning} columns should be inferred based on a
-     * {@link PartitionSpec}. This setting is only relevant when {@link #resolver()} is not set. By default, is only
-     * {@code true} when {@link #updateMode()} is {@link IcebergUpdateMode#staticMode() static}. While callers can
-     * explicitly set this to {@code true}, it is not generally safe to do so. See the caveats on
-     * {@link InferenceInstructions#spec()}.
+     * If Deephaven {@link ColumnDefinition.ColumnType#Partitioning Partitioning} columns should be inferred based on
+     * the common {@link Transforms#identity() identity} transforms across all the {@link PartitionSpec partition specs}
+     * reachable from the {@link Snapshot} at the time of implicit {@link Resolver} construction (
+     * {@link IcebergTableAdapter#table(IcebergReadInstructions) table},
+     * {@link IcebergTableAdapter#definition(IcebergReadInstructions) definition}, or
+     * {@link IcebergTableAdapter#resolver(IcebergReadInstructions) resolver}). This inference is done on a
+     * "best-effort" basis, and should not be relied on for anything other than exploratory purposes. Callers that need
+     * more concrete inference with respect to partitioning columns can perform their own
+     * {@link Resolver#infer(InferenceInstructions) inference} with an explicit {@link InferenceInstructions#spec()
+     * partition spec}.
+     *
+     * <p>
+     * This setting is only relevant when {@link #resolver()} is not set. As such, it is an error to set this to
+     * {@code true} when a {@link #resolver} is set.
+     *
+     * <p>
+     * By default, is {@code false}.
+     *
+     * <p>
+     * While callers can explicitly set this to {@code true}, it is not generally safe to do so. It is safe to set this
+     * to {@code true} when {@link #updateMode()} is {@link IcebergUpdateMode#staticMode() static}, but the resulting
+     * {@link IcebergTableAdapter#resolver(IcebergReadInstructions) resolver} may not be generalizable to other
+     * snapshots.
      */
     @Value.Default
     public boolean usePartitionInference() {
-        // TODO: this is still dangerous, esp w/ DEFAULT
-        // TODO: should this always be false?
-        return updateMode() == IcebergUpdateMode.staticMode();
+        return false;
     }
 
     /**
@@ -158,7 +172,7 @@ public abstract class IcebergReadInstructions {
 
         Builder updateMode(IcebergUpdateMode updateMode);
 
-        Builder snapshotId(long snapshotId);
+        Builder snapshotId(long snapshotId);;
 
         Builder snapshot(Snapshot snapshot);
 
@@ -177,6 +191,14 @@ public abstract class IcebergReadInstructions {
                 snapshotId().getAsLong() != snapshot().get().snapshotId()) {
             throw new IllegalArgumentException("If both snapshotID and snapshot are provided, the snapshot Ids " +
                     "must match, found " + snapshotId().getAsLong() + " and " + snapshot().get().snapshotId());
+        }
+    }
+
+    @Value.Check
+    final void checkUsePartitionInference() {
+        if (usePartitionInference() && resolver().isPresent()) {
+            throw new IllegalArgumentException(
+                    "usePartitionInference should not be true when a resolver is present");
         }
     }
 }
