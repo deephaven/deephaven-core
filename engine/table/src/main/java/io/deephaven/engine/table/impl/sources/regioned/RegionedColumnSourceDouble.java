@@ -25,9 +25,11 @@ abstract class RegionedColumnSourceDouble<ATTR extends Values>
         extends RegionedColumnSourceArray<Double, ATTR, ColumnRegionDouble<ATTR>>
         implements ColumnSourceGetDefaults.ForDouble /* MIXIN_INTERFACES */ {
 
-    RegionedColumnSourceDouble(@NotNull final ColumnRegionDouble<ATTR> nullRegion,
+    RegionedColumnSourceDouble(
+            @NotNull final RegionedColumnSourceManager manager,
+            @NotNull final ColumnRegionDouble<ATTR> nullRegion,
             @NotNull final MakeDeferred<ATTR, ColumnRegionDouble<ATTR>> makeDeferred) {
-        super(nullRegion, double.class, makeDeferred);
+        super(manager, nullRegion, double.class, makeDeferred);
     }
 
     @Override
@@ -51,15 +53,15 @@ abstract class RegionedColumnSourceDouble<ATTR extends Values>
     // endregion reinterpretation
 
     static final class AsValues extends RegionedColumnSourceDouble<Values> implements MakeRegionDefault {
-        AsValues() {
-            super(ColumnRegionDouble.createNull(PARAMETERS.regionMask), DeferredColumnRegionDouble::new);
+        AsValues(final RegionedColumnSourceManager manager) {
+            super(manager, ColumnRegionDouble.createNull(PARAMETERS.regionMask), DeferredColumnRegionDouble::new);
         }
     }
 
     static final class Partitioning extends RegionedColumnSourceDouble<Values> {
-
-        Partitioning() {
-            super(ColumnRegionDouble.createNull(PARAMETERS.regionMask),
+        Partitioning(final RegionedColumnSourceManager manager) {
+            super(manager,
+                    ColumnRegionDouble.createNull(PARAMETERS.regionMask),
                     (pm, rs) -> rs.get() // No need to interpose a deferred region in this case
             );
         }

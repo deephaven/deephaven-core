@@ -26,10 +26,12 @@ abstract class RegionedColumnSourceReferencing<DATA_TYPE, ATTR extends Values, N
     @NotNull
     private final RegionedColumnSourceBase<NATIVE_DATA_TYPE, ATTR, NATIVE_REGION_TYPE> nativeSource;
 
-    RegionedColumnSourceReferencing(@NotNull final NATIVE_REGION_TYPE nullRegion,
+    RegionedColumnSourceReferencing(
+            @NotNull final RegionedColumnSourceManager manager,
+            @NotNull final NATIVE_REGION_TYPE nullRegion,
             @NotNull Class<DATA_TYPE> type,
             @NotNull RegionedColumnSourceBase<NATIVE_DATA_TYPE, ATTR, NATIVE_REGION_TYPE> nativeSource) {
-        super(type);
+        super(manager, type);
         this.nullRegion = new ColumnRegionReferencing.Null<>(nullRegion);
         this.nativeSource = nativeSource;
     }

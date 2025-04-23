@@ -19,6 +19,8 @@ abstract class RegionedColumnSourceBase<DATA_TYPE, ATTR extends Values, REGION_T
         extends AbstractColumnSource<DATA_TYPE>
         implements RegionedPageStore<Values, ATTR, REGION_TYPE>, RegionedColumnSource<DATA_TYPE> {
 
+    protected final RegionedColumnSourceManager manager;
+
     static final Parameters PARAMETERS;
     static {
         PARAMETERS =
@@ -29,12 +31,18 @@ abstract class RegionedColumnSourceBase<DATA_TYPE, ATTR extends Values, REGION_T
                 "SUB_REGION_ELEMENT_INDEX_ADDRESS_BITS");
     }
 
-    RegionedColumnSourceBase(@NotNull final Class<DATA_TYPE> type, @Nullable final Class<?> componentType) {
+    RegionedColumnSourceBase(
+            @NotNull final RegionedColumnSourceManager manager,
+            @NotNull final Class<DATA_TYPE> type,
+            @Nullable final Class<?> componentType) {
         super(type, componentType);
+        this.manager = manager;
     }
 
-    RegionedColumnSourceBase(@NotNull final Class<DATA_TYPE> type) {
-        this(type, null);
+    RegionedColumnSourceBase(
+            @NotNull final RegionedColumnSourceManager manager,
+            @NotNull final Class<DATA_TYPE> type) {
+        this(manager, type, null);
     }
 
     @Override

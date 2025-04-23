@@ -160,7 +160,7 @@ public class RegionedColumnSourceManager implements ColumnSourceManager, Delegat
         for (final ColumnDefinition<?> columnDefinition : columnDefinitions) {
             columnSources.put(
                     columnDefinition.getName(),
-                    componentFactory.createRegionedColumnSource(columnDefinition, codecMappings));
+                    componentFactory.createRegionedColumnSource(this, columnDefinition, codecMappings));
         }
 
         // Create the table that will hold the location data
