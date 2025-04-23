@@ -51,18 +51,25 @@ public class MapChunkReader<T> extends BaseChunkReader<WritableObjectChunk<T, Va
         final long offsetsBufferLength = bufferInfoIter.nextLong();
         final long structValidityBufferLength = bufferInfoIter.nextLong();
 
+        final WritableObjectChunk<T, Values> chunk = BaseChunkReader.castOrCreateChunk(
+                outChunk,
+                outOffset,
+                Math.max(totalRows, nodeInfo.numElements),
+                WritableObjectChunk::makeWritableChunk,
+                WritableChunk::asWritableObjectChunk);
+
         if (nodeInfo.numElements == 0) {
+            // must consume any advertised inner payload even though there "aren't any rows"
             is.skipBytes(LongSizedDataStructure.intSize(DEBUG_NAME,
                     validityBufferLength + offsetsBufferLength + structValidityBufferLength));
             try (final WritableChunk<Values> ignored =
                     keyReader.readChunk(fieldNodeIter, bufferInfoIter, is, null, 0, 0);
                     final WritableChunk<Values> ignored2 =
                             valueReader.readChunk(fieldNodeIter, bufferInfoIter, is, null, 0, 0)) {
-                return WritableObjectChunk.makeWritableChunk(nodeInfo.numElements);
+                return chunk;
             }
         }
 
-        final WritableObjectChunk<T, Values> chunk;
         final int numValidityLongs = (nodeInfo.numElements + 63) / 64;
         final int numOffsets = nodeInfo.numElements + 1;
         try (final WritableLongChunk<Values> isValid = WritableLongChunk.makeWritableChunk(numValidityLongs);
@@ -99,13 +106,6 @@ public class MapChunkReader<T> extends BaseChunkReader<WritableObjectChunk<T, Va
                 final ObjectChunk<Object, ? extends Values> keys = keyBoxer.box(keysPrim).asObjectChunk();
                 final ObjectChunk<Object, ? extends Values> values = valueBoxer.box(valuesPrim).asObjectChunk();
 
-                chunk = castOrCreateChunk(
-                        outChunk,
-                        outOffset,
-                        Math.max(totalRows, nodeInfo.numElements),
-                        WritableObjectChunk::makeWritableChunk,
-                        WritableChunk::asWritableObjectChunk);
-
                 long nextValid = 0;
                 for (int ii = 0; ii < nodeInfo.numElements; nextValid >>= 1, ++ii) {
                     if ((ii % 64) == 0) {
@@ -127,5 +127,4 @@ public class MapChunkReader<T> extends BaseChunkReader<WritableObjectChunk<T, Va
 
         return chunk;
     }
-
 }

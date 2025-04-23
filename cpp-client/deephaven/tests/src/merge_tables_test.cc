@@ -4,6 +4,8 @@
 #include "deephaven/third_party/catch.hpp"
 #include "deephaven/tests/test_util.h"
 
+using deephaven::client::utility::TableMaker;
+
 namespace deephaven::client::tests {
 TEST_CASE("Merge Tables", "[Merge]") {
   auto tm = TableMakerForTests::Create();
@@ -18,20 +20,14 @@ TEST_CASE("Merge Tables", "[Merge]") {
   auto merged = aapl_table.Merge({znga_table});
   std::cout << merged.Stream(true) << '\n';
 
-  std::vector<std::string> import_date_data = {"2017-11-01", "2017-11-01", "2017-11-01",
-      "2017-11-01", "2017-11-01"};
-  std::vector<std::string> ticker_data = {"AAPL", "AAPL", "AAPL", "ZNGA", "ZNGA"};
-  std::vector<double> open_data = {22.1, 26.8, 31.5, 541.2, 685.3};
-  std::vector<double> close_data = {23.5, 24.2, 26.7, 538.2, 544.9};
-  std::vector<int64_t> vol_data = {100000, 250000, 19000, 46123, 48300};
+  TableMaker expected;
+  expected.AddColumn<std::string>("ImportDate", {"2017-11-01", "2017-11-01", "2017-11-01",
+      "2017-11-01", "2017-11-01"});
+  expected.AddColumn<std::string>("Ticker", {"AAPL", "AAPL", "AAPL", "ZNGA", "ZNGA"});
+  expected.AddColumn<double>("Open", {22.1, 26.8, 31.5, 541.2, 685.3});
+  expected.AddColumn<double>("Close", {23.5, 24.2, 26.7, 538.2, 544.9});
+  expected.AddColumn<int64_t>("Volume", {100000, 250000, 19000, 46123, 48300});
 
-  CompareTable(
-      merged,
-      "ImportDate", import_date_data,
-      "Ticker", ticker_data,
-      "Open", open_data,
-      "Close", close_data,
-      "Volume", vol_data
-  );
+  TableComparerForTests::Compare(expected, merged);
 }
 }  // namespace deephaven::client::tests

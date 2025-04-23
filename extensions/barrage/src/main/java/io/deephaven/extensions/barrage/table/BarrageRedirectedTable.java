@@ -56,7 +56,9 @@ public class BarrageRedirectedTable extends BarrageTable {
      */
     protected final boolean isFullSubscription;
 
-    protected BarrageRedirectedTable(final UpdateSourceRegistrar registrar,
+    protected BarrageRedirectedTable(
+            @Nullable final String channelName,
+            final UpdateSourceRegistrar registrar,
             final NotificationQueue notificationQueue,
             @Nullable final ScheduledExecutorService executorService,
             final LinkedHashMap<String, ColumnSource<?>> columns,
@@ -66,7 +68,8 @@ public class BarrageRedirectedTable extends BarrageTable {
             final boolean isFlat,
             final boolean isFullSubscription,
             @Nullable final ViewportChangedCallback vpCallback) {
-        super(registrar, notificationQueue, executorService, columns, writableSources, attributes, vpCallback);
+        super(channelName, registrar, notificationQueue, executorService, columns, writableSources, attributes,
+                vpCallback);
         this.rowRedirection = rowRedirection;
         this.isFullSubscription = isFullSubscription;
         if (!isFullSubscription || isFlat) {

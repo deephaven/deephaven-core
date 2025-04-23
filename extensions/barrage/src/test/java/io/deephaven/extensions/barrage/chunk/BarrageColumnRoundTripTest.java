@@ -43,6 +43,7 @@ import io.deephaven.vector.LongVectorDirect;
 import org.apache.arrow.flatbuf.Field;
 import org.apache.arrow.flatbuf.Schema;
 import org.apache.arrow.vector.types.TimeUnit;
+import org.apache.arrow.vector.types.Types;
 import org.apache.arrow.vector.types.pojo.ArrowType;
 import org.apache.arrow.vector.types.pojo.FieldType;
 import org.jetbrains.annotations.Nullable;
@@ -77,16 +78,20 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
     private static final int FIXED_LIST_LEN = 4;
     private static final int MAX_LIST_LEN = 10;
 
-    private static final BarrageSubscriptionOptions OPT_DEFAULT_DH_NULLS =
+    private static final BarrageSubscriptionOptions OPT_DEFAULT = BarrageSubscriptionOptions.builder()
+            .build();
+    private static final BarrageSubscriptionOptions OPT_DH_NULLS =
             BarrageSubscriptionOptions.builder()
                     .useDeephavenNulls(true)
                     .build();
-    private static final BarrageSubscriptionOptions OPT_DEFAULT = BarrageSubscriptionOptions.builder()
+    private static final BarrageSubscriptionOptions OPT_COLUMNS_AS_LIST = BarrageSubscriptionOptions.builder()
+            .columnsAsList(true)
             .build();
 
     private static final BarrageSubscriptionOptions[] OPTIONS = new BarrageSubscriptionOptions[] {
-            OPT_DEFAULT_DH_NULLS,
-            OPT_DEFAULT
+            OPT_DEFAULT,
+            OPT_DH_NULLS,
+            OPT_COLUMNS_AS_LIST,
     };
 
     private static WritableChunk<Values> readChunk(
@@ -579,7 +584,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
     }
 
     public void testStringSerializationDHNulls() throws IOException {
-        testRoundTripSerialization(SpecialMode.NONE, OPT_DEFAULT_DH_NULLS, String.class,
+        testRoundTripSerialization(SpecialMode.NONE, OPT_DH_NULLS, String.class,
                 initObjectChunk(Integer::toString),
                 new ObjectIdentityValidator<>());
     }
@@ -590,7 +595,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
     }
 
     public void testUniqueToStringSerializationDHNulls() throws IOException {
-        testRoundTripSerialization(SpecialMode.NONE, OPT_DEFAULT_DH_NULLS, Object.class, initObjectChunk(Unique::new),
+        testRoundTripSerialization(SpecialMode.NONE, OPT_DH_NULLS, Object.class, initObjectChunk(Unique::new),
                 new ObjectToStringValidator<>());
     }
 
@@ -600,7 +605,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
     }
 
     public void testStringArrayDHNullsSerialization() throws IOException {
-        testRoundTripSerialization(SpecialMode.NONE, OPT_DEFAULT_DH_NULLS, String[].class,
+        testRoundTripSerialization(SpecialMode.NONE, OPT_DH_NULLS, String[].class,
                 BarrageColumnRoundTripTest::initStringArrayChunk, new ObjectIdentityValidator<>());
     }
 
@@ -611,7 +616,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
     }
 
     public void testLongArraySerializationDHNulls() throws IOException {
-        testRoundTripSerialization(SpecialMode.NONE, OPT_DEFAULT_DH_NULLS, long[].class,
+        testRoundTripSerialization(SpecialMode.NONE, OPT_DH_NULLS, long[].class,
                 BarrageColumnRoundTripTest::initLongArrayChunk,
                 new LongArrayIdentityValidator());
     }
@@ -964,7 +969,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
             }
         }
 
-        Field field;
+        final Field writerField;
         if (mode == SpecialMode.MAP) {
             final Map<String, String> attributes = new LinkedHashMap<>();
             attributes.put(DH_TYPE_TAG, Map.class.getCanonicalName());
@@ -983,7 +988,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
 
             byte[] schemaBytes = pojoSchema.serializeAsMessage();
             Schema schema = SchemaHelper.flatbufSchema(ByteBuffer.wrap(schemaBytes));
-            field = schema.fields(0);
+            writerField = schema.fields(0);
         } else if (mode == SpecialMode.VAR_LEN_LIST) {
             final Map<String, String> attributes = new LinkedHashMap<>();
             attributes.put(DH_TYPE_TAG, String[].class.getCanonicalName());
@@ -1000,7 +1005,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
 
             byte[] schemaBytes = pojoSchema.serializeAsMessage();
             Schema schema = SchemaHelper.flatbufSchema(ByteBuffer.wrap(schemaBytes));
-            field = schema.fields(0);
+            writerField = schema.fields(0);
         } else if (mode == SpecialMode.FIXED_LEN_LIST) {
             final Map<String, String> attributes = new LinkedHashMap<>();
             attributes.put(DH_TYPE_TAG, String[].class.getCanonicalName());
@@ -1018,7 +1023,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
 
             byte[] schemaBytes = pojoSchema.serializeAsMessage();
             Schema schema = SchemaHelper.flatbufSchema(ByteBuffer.wrap(schemaBytes));
-            field = schema.fields(0);
+            writerField = schema.fields(0);
         } else if (mode == SpecialMode.ZDT_WITH_FACTOR || mode == SpecialMode.ZDT) {
             final Map<String, String> attributes = new LinkedHashMap<>();
             attributes.put(DH_TYPE_TAG, ZonedDateTime.class.getCanonicalName());
@@ -1032,12 +1037,34 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
 
             byte[] schemaBytes = pojoSchema.serializeAsMessage();
             Schema schema = SchemaHelper.flatbufSchema(ByteBuffer.wrap(schemaBytes));
-            field = schema.fields(0);
+            writerField = schema.fields(0);
         } else {
             ByteString schemaBytes = BarrageUtil.schemaBytesFromTableDefinition(
                     TableDefinition.of(ColumnDefinition.of("col", Type.find(readType))), Collections.emptyMap(), false);
             Schema schema = SchemaHelper.flatbufSchema(schemaBytes.asReadOnlyByteBuffer());
-            field = schema.fields(0);
+            writerField = schema.fields(0);
+        }
+
+        final Field readerField;
+        if (!options.columnsAsList()) {
+            readerField = writerField;
+        } else {
+            // the reader needs to see this field as wrapped in a list to properly pick a chunk reader and decode
+
+            final org.apache.arrow.vector.types.pojo.Field origFieldPojo =
+                    org.apache.arrow.vector.types.pojo.Field.convertField(writerField);
+            final List<org.apache.arrow.vector.types.pojo.Field> children = new ArrayList<>();
+            children.add(origFieldPojo);
+
+            final FieldType fieldType = new FieldType(
+                    false, Types.MinorType.LIST.getType(), origFieldPojo.getDictionary(), origFieldPojo.getMetadata());
+            final org.apache.arrow.vector.types.pojo.Schema pojoSchema =
+                    new org.apache.arrow.vector.types.pojo.Schema(Collections.singletonList(
+                            new org.apache.arrow.vector.types.pojo.Field("col", fieldType, children)));
+
+            byte[] schemaBytes = pojoSchema.serializeAsMessage();
+            Schema schema = SchemaHelper.flatbufSchema(ByteBuffer.wrap(schemaBytes));
+            readerField = schema.fields(0);
         }
 
         final WritableChunk<Values> srcData = chunkType.makeWritableChunk(NUM_ROWS);
@@ -1048,17 +1075,33 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
         data.copyFromChunk(srcData, 0, 0, srcData.size());
 
         final ChunkWriter<Chunk<Values>> writer = DefaultChunkWriterFactory.INSTANCE
-                .newWriter(BarrageTypeInfo.make(type, type.getComponentType(), field));
+                .newWriter(BarrageTypeInfo.make(type, type.getComponentType(), writerField));
         try (SafeCloseable ignored = srcData;
                 final ChunkWriter.Context context = writer.makeContext(data, 0)) {
             // full sub logic
             try (final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream();
                     final ChunkWriter.DrainableColumn column = writer.getInputStream(context, null, options)) {
+                final int numRows = srcData.size();
 
                 final ArrayList<ChunkWriter.FieldNodeInfo> fieldNodes = new ArrayList<>();
+                final LongStream.Builder bufferNodes = LongStream.builder();
+                if (options.columnsAsList()) {
+                    // if we are sending columns as a list, we need to add the list buffers before each column
+                    final SingleElementListHeaderWriter listHeader = new SingleElementListHeaderWriter(numRows);
+                    listHeader.visitFieldNodes((numElements, nullCount) -> fieldNodes
+                            .add(new ChunkWriter.FieldNodeInfo(numElements, nullCount)));
+                    listHeader.visitBuffers(bufferNodes::add);
+
+                    final int startSize = baos.size();
+                    final int available = listHeader.available();
+                    listHeader.drainTo(baos);
+                    if (available != baos.size() - startSize) {
+                        throw new IllegalStateException("available=" + available + ", baos.size()=" + baos.size());
+                    }
+                }
+
                 column.visitFieldNodes((numElements, nullCount) -> fieldNodes
                         .add(new ChunkWriter.FieldNodeInfo(numElements, nullCount)));
-                final LongStream.Builder bufferNodes = LongStream.builder();
                 column.visitBuffers(bufferNodes::add);
                 final int startSize = baos.size();
                 final int available = column.available();
@@ -1076,8 +1119,8 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
                     WritableChunk<Values> rtData = null;
                     try {
                         rtData = readChunk(options, readType, readType.getComponentType(),
-                                field, fieldNodes.iterator(), Arrays.stream(buffers).iterator(), dis, outChunk,
-                                origSize, 0);
+                                readerField, fieldNodes.iterator(), Arrays.stream(buffers).iterator(), dis, outChunk,
+                                origSize, numRows);
                         Assert.eq(srcData.size(), "srcData.size()", rtData.size() - origSize,
                                 "rtData.size() - origSize");
                         validator.assertExpected(srcData, rtData, null, origSize);
@@ -1101,11 +1144,27 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
             try (final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream();
                     final ChunkWriter.DrainableColumn column =
                             writer.getInputStream(context, RowSetFactory.empty(), options)) {
+                final int numRows = 0;
 
                 final ArrayList<ChunkWriter.FieldNodeInfo> fieldNodes = new ArrayList<>();
+                final LongStream.Builder bufferNodes = LongStream.builder();
+                if (options.columnsAsList()) {
+                    // if we are sending columns as a list, we need to add the list buffers before each column
+                    final SingleElementListHeaderWriter listHeader = new SingleElementListHeaderWriter(numRows);
+                    listHeader.visitFieldNodes((numElements, nullCount) -> fieldNodes
+                            .add(new ChunkWriter.FieldNodeInfo(numElements, nullCount)));
+                    listHeader.visitBuffers(bufferNodes::add);
+
+                    final int startSize = baos.size();
+                    final int available = listHeader.available();
+                    listHeader.drainTo(baos);
+                    if (available != baos.size() - startSize) {
+                        throw new IllegalStateException("available=" + available + ", baos.size()=" + baos.size());
+                    }
+                }
+
                 column.visitFieldNodes((numElements, nullCount) -> fieldNodes
                         .add(new ChunkWriter.FieldNodeInfo(numElements, nullCount)));
-                final LongStream.Builder bufferNodes = LongStream.builder();
                 column.visitBuffers(bufferNodes::add);
                 final long[] buffers = bufferNodes.build().toArray();
                 column.drainTo(baos);
@@ -1118,8 +1177,8 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
                     WritableChunk<Values> rtData = null;
                     try {
                         rtData = readChunk(options, readType, readType.getComponentType(),
-                                field, fieldNodes.iterator(), Arrays.stream(buffers).iterator(), dis, outChunk,
-                                origSize, 0);
+                                readerField, fieldNodes.iterator(), Arrays.stream(buffers).iterator(), dis, outChunk,
+                                origSize, numRows);
                         Assert.eq(rtData.size(), "rtData.size()", 0);
                     } finally {
                         if (outChunk == null && rtData != null) {
@@ -1149,11 +1208,27 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
                     final RowSet subset = builder.build();
                     final ChunkWriter.DrainableColumn column =
                             writer.getInputStream(context, subset, options)) {
+                final int numRows = subset.intSize();
 
                 final ArrayList<ChunkWriter.FieldNodeInfo> fieldNodes = new ArrayList<>();
+                final LongStream.Builder bufferNodes = LongStream.builder();
+                if (options.columnsAsList()) {
+                    // if we are sending columns as a list, we need to add the list buffers before each column
+                    final SingleElementListHeaderWriter listHeader = new SingleElementListHeaderWriter(numRows);
+                    listHeader.visitFieldNodes((numElements, nullCount) -> fieldNodes
+                            .add(new ChunkWriter.FieldNodeInfo(numElements, nullCount)));
+                    listHeader.visitBuffers(bufferNodes::add);
+
+                    final int startSize = baos.size();
+                    final int available = listHeader.available();
+                    listHeader.drainTo(baos);
+                    if (available != baos.size() - startSize) {
+                        throw new IllegalStateException("available=" + available + ", baos.size()=" + baos.size());
+                    }
+                }
+
                 column.visitFieldNodes((numElements, nullCount) -> fieldNodes
                         .add(new ChunkWriter.FieldNodeInfo(numElements, nullCount)));
-                final LongStream.Builder bufferNodes = LongStream.builder();
                 column.visitBuffers(bufferNodes::add);
                 final long[] buffers = bufferNodes.build().toArray();
                 column.drainTo(baos);
@@ -1166,8 +1241,8 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
                     WritableChunk<Values> rtData = null;
                     try {
                         rtData = readChunk(options, readType, readType.getComponentType(),
-                                field, fieldNodes.iterator(), Arrays.stream(buffers).iterator(), dis, outChunk,
-                                origSize, 0);
+                                readerField, fieldNodes.iterator(), Arrays.stream(buffers).iterator(), dis, outChunk,
+                                origSize, numRows);
                         Assert.eq(subset.intSize(), "subset.intSize()", rtData.size() - origSize, "rtData.size()");
                         validator.assertExpected(srcData, rtData, subset, 0);
                     } finally {

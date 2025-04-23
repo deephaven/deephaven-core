@@ -24,6 +24,7 @@ import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.SortOperation;
 import io.deephaven.engine.table.impl.by.AggregationProcessor;
 import io.deephaven.engine.table.impl.by.AggregationRowLookup;
+import io.deephaven.engine.table.impl.by.rollup.RollupAggregationOutputs;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
@@ -112,6 +113,7 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
         super(initialAttributes, source, levelTables[0]);
 
         this.aggregations = aggregations;
+
         this.includesConstituents = includesConstituents;
         this.groupByColumns = groupByColumns;
 
@@ -246,8 +248,17 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
         if (filters.length == 0) {
             return noopResult();
         }
-        final WhereFilter[] whereFilters = initializeAndValidateFilters(source, groupByColumns, Arrays.asList(filters),
+        final WhereFilter[] whereFilters = initializeAndValidateFilters(source, aggregations, Arrays.asList(filters),
                 IllegalArgumentException::new);
+
+        List<String> groupByColNames = groupByColumns.stream().map(ColumnName::name).collect(Collectors.toList());
+        final boolean onlyGroupBy = Arrays.stream(whereFilters)
+                .allMatch(w -> groupByColNames.containsAll(w.getColumns()));
+        if (!onlyGroupBy) {
+            final Table filteredTable = source.where(Filter.and(whereFilters));
+            return rebase(filteredTable);
+        }
+
         final QueryTable filteredBaseLevel = (QueryTable) levelTables[numLevels - 1].where(Filter.and(whereFilters));
         final AggregationRowLookup baseLevelRowLookup = levelRowLookups[numLevels - 1];
         final RowSet filteredBaseLevelRowSet = filteredBaseLevel.getRowSet();
@@ -284,26 +295,31 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
      * Initialize and validate the supplied filters for this RollupTable.
      *
      * @param source The rollup {@link #getSource() source}
-     * @param groupByColumns The rollup {@link #getGroupByColumns() group-by columns}
+     * @param aggregations The rollup aggregations}
      * @param filters The filters to initialize and validate
      * @param exceptionFactory A factory for creating exceptions from their messages
      * @return The initialized and validated filters
      */
     public static WhereFilter[] initializeAndValidateFilters(
             @NotNull final Table source,
-            @NotNull final Collection<? extends ColumnName> groupByColumns,
+            @NotNull final Collection<? extends Aggregation> aggregations,
             @NotNull final Collection<? extends Filter> filters,
             @NotNull final Function<String, ? extends RuntimeException> exceptionFactory) {
+
+        final List<String> aggColumns = AggregationPairs.of(aggregations)
+                .map(p -> p.input().name()).collect(Collectors.toList());
+        final List<String> validColumns = source.getColumnSourceMap().keySet().stream()
+                .filter(cn -> !aggColumns.contains(cn)).collect(Collectors.toList());
         final WhereFilter[] whereFilters = WhereFilter.from(filters);
         final QueryCompilerRequestProcessor.BatchProcessor compilationProcessor = QueryCompilerRequestProcessor.batch();
         for (final WhereFilter whereFilter : whereFilters) {
             whereFilter.init(source.getDefinition(), compilationProcessor);
-            final List<String> invalidColumnsUsed = whereFilter.getColumns().stream().map(ColumnName::of)
-                    .filter(cn -> !groupByColumns.contains(cn)).map(ColumnName::name).collect(Collectors.toList());
+            final List<String> invalidColumnsUsed = whereFilter.getColumns().stream()
+                    .filter(cn -> !validColumns.contains(cn)).collect(Collectors.toList());
             if (!invalidColumnsUsed.isEmpty()) {
                 throw exceptionFactory.apply(
-                        "Invalid filter found: " + whereFilter + " may only use group-by columns, which are "
-                                + names(groupByColumns) + ", but has also used " + invalidColumnsUsed);
+                        "Invalid filter found: " + whereFilter + " may only use non-aggregation columns, which are "
+                                + validColumns + ", but has used " + invalidColumnsUsed);
             }
             final boolean usesArrays = !whereFilter.getColumnArrays().isEmpty();
             if (usesArrays) {

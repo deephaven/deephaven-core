@@ -3,17 +3,20 @@
  */
 #include "deephaven/dhcore/utility/cython_support.h"
 
+#include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <memory>
+#include <stdexcept>
 #include <string>
-#include <vector>
-#include "deephaven/dhcore/clienttable/client_table.h"
-#include "deephaven/dhcore/clienttable/schema.h"
+#include <utility>
+#include "deephaven/dhcore/types.h"
 #include "deephaven/dhcore/utility/utility.h"
 #include "deephaven/dhcore/column/column_source.h"
 #include "deephaven/dhcore/column/array_column_source.h"
 
 using deephaven::dhcore::column::BooleanArrayColumnSource;
 using deephaven::dhcore::column::ColumnSource;
-using deephaven::dhcore::column::ColumnSourceVisitor;
 using deephaven::dhcore::column::DateTimeArrayColumnSource;
 using deephaven::dhcore::column::LocalDateArrayColumnSource;
 using deephaven::dhcore::column::LocalTimeArrayColumnSource;
@@ -21,8 +24,8 @@ using deephaven::dhcore::column::StringArrayColumnSource;
 
 namespace deephaven::dhcore::utility {
 namespace {
-void populateArrayFromPackedData(const uint8_t *src, bool *dest, size_t num_elements, bool invert);
-void populateNullsFromDeephavenConvention(const int64_t *data_begin, bool *dest, size_t num_elements);
+void PopulateArrayFromPackedData(const uint8_t *src, bool *dest, size_t num_elements, bool invert);
+void PopulateNullsFromDeephavenConvention(const int64_t *data_begin, bool *dest, size_t num_elements);
 }  // namespace
 
 std::shared_ptr<ColumnSource>
@@ -31,10 +34,10 @@ CythonSupport::CreateBooleanColumnSource(const uint8_t *data_begin, const uint8_
   auto elements = std::make_unique<bool[]>(num_elements);
   auto nulls = std::make_unique<bool[]>(num_elements);
 
-  populateArrayFromPackedData(data_begin, elements.get(), num_elements, false);
-  populateArrayFromPackedData(validity_begin, nulls.get(), num_elements, true);
-  return BooleanArrayColumnSource::CreateFromArrays(std::move(elements), std::move(nulls),
-      num_elements);
+  PopulateArrayFromPackedData(data_begin, elements.get(), num_elements, false);
+  PopulateArrayFromPackedData(validity_begin, nulls.get(), num_elements, true);
+  return BooleanArrayColumnSource::CreateFromArrays(ElementType::Of(ElementTypeId::kBool),
+      std::move(elements), std::move(nulls), num_elements);
 }
 
 std::shared_ptr<ColumnSource>
@@ -50,9 +53,9 @@ CythonSupport::CreateStringColumnSource(const char *text_begin, const char *text
     elements[i] = std::string(current, current + element_size);
     current += element_size;
   }
-  populateArrayFromPackedData(validity_begin, nulls.get(), num_elements, true);
-  return StringArrayColumnSource::CreateFromArrays(std::move(elements), std::move(nulls),
-      num_elements);
+  PopulateArrayFromPackedData(validity_begin, nulls.get(), num_elements, true);
+  return StringArrayColumnSource::CreateFromArrays(ElementType::Of(ElementTypeId::kString),
+      std::move(elements), std::move(nulls), num_elements);
 }
 
 std::shared_ptr<ColumnSource>
@@ -64,9 +67,9 @@ CythonSupport::CreateDateTimeColumnSource(const int64_t *data_begin, const int64
   for (size_t i = 0; i != num_elements; ++i) {
     elements[i] = DateTime::FromNanos(data_begin[i]);
   }
-  populateNullsFromDeephavenConvention(data_begin, nulls.get(), num_elements);
-  return DateTimeArrayColumnSource::CreateFromArrays(std::move(elements), std::move(nulls),
-      num_elements);
+  PopulateNullsFromDeephavenConvention(data_begin, nulls.get(), num_elements);
+  return DateTimeArrayColumnSource::CreateFromArrays(ElementType::Of(ElementTypeId::kTimestamp),
+      std::move(elements), std::move(nulls), num_elements);
 }
 
 std::shared_ptr<ColumnSource>
@@ -78,9 +81,9 @@ CythonSupport::CreateLocalDateColumnSource(const int64_t *data_begin, const int6
   for (size_t i = 0; i != num_elements; ++i) {
     elements[i] = LocalDate::FromMillis(data_begin[i]);
   }
-  populateNullsFromDeephavenConvention(data_begin, nulls.get(), num_elements);
-  return LocalDateArrayColumnSource::CreateFromArrays(std::move(elements), std::move(nulls),
-      num_elements);
+  PopulateNullsFromDeephavenConvention(data_begin, nulls.get(), num_elements);
+  return LocalDateArrayColumnSource::CreateFromArrays(ElementType::Of(ElementTypeId::kLocalDate),
+      std::move(elements), std::move(nulls), num_elements);
 }
 
 std::shared_ptr<ColumnSource>
@@ -92,73 +95,22 @@ CythonSupport::CreateLocalTimeColumnSource(const int64_t *data_begin, const int6
   for (size_t i = 0; i != num_elements; ++i) {
     elements[i] = LocalTime::FromNanos(data_begin[i]);
   }
-  populateNullsFromDeephavenConvention(data_begin, nulls.get(), num_elements);
-  return LocalTimeArrayColumnSource::CreateFromArrays(std::move(elements), std::move(nulls),
-      num_elements);
+  PopulateNullsFromDeephavenConvention(data_begin, nulls.get(), num_elements);
+  return LocalTimeArrayColumnSource::CreateFromArrays(ElementType::Of(ElementTypeId::kLocalTime),
+      std::move(elements), std::move(nulls), num_elements);
 }
-
-namespace {
-struct ElementTypeIdVisitor final : ColumnSourceVisitor {
-  void Visit(const column::CharColumnSource &/*source*/) final {
-    elementTypeId_ = ElementTypeId::kChar;
-  }
-
-  void Visit(const column::Int8ColumnSource &/*source*/) final {
-    elementTypeId_ = ElementTypeId::kInt8;
-  }
-
-  void Visit(const column::Int16ColumnSource &/*source*/) final {
-    elementTypeId_ = ElementTypeId::kInt16;
-  }
-
-  void Visit(const column::Int32ColumnSource &/*source*/) final {
-    elementTypeId_ = ElementTypeId::kInt32;
-  }
-
-  void Visit(const column::Int64ColumnSource &/*source*/) final {
-    elementTypeId_ = ElementTypeId::kInt64;
-  }
-
-  void Visit(const column::FloatColumnSource &/*source*/) final {
-    elementTypeId_ = ElementTypeId::kFloat;
-  }
-
-  void Visit(const column::DoubleColumnSource &/*source*/) final {
-    elementTypeId_ = ElementTypeId::kDouble;
-  }
-
-  void Visit(const column::BooleanColumnSource &/*source*/) final {
-    elementTypeId_ = ElementTypeId::kBool;
-  }
-
-  void Visit(const column::StringColumnSource &/*source*/) final {
-    elementTypeId_ = ElementTypeId::kString;
-  }
-
-  void Visit(const column::DateTimeColumnSource &/*source*/) final {
-    elementTypeId_ = ElementTypeId::kTimestamp;
-  }
-
-  void Visit(const column::LocalDateColumnSource &/*source*/) final {
-    elementTypeId_ = ElementTypeId::kLocalDate;
-  }
-
-  void Visit(const column::LocalTimeColumnSource &/*source*/) final {
-    elementTypeId_ = ElementTypeId::kLocalTime;
-  }
-
-  ElementTypeId::Enum elementTypeId_ = ElementTypeId::kChar;
-};
-}  // namespace
 
 ElementTypeId::Enum CythonSupport::GetElementTypeId(const ColumnSource &column_source) {
-  ElementTypeIdVisitor v;
-  column_source.AcceptVisitor(&v);
-  return v.elementTypeId_;
+  const auto &element_type = column_source.GetElementType();
+  if (element_type.ListDepth() != 0) {
+    const char *message = "GetElementTypeId does not support non-zero list depth";
+    throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
+  }
+  return element_type.Id();
 }
 
 namespace {
-void populateArrayFromPackedData(const uint8_t *src, bool *dest, size_t num_elements, bool invert) {
+void PopulateArrayFromPackedData(const uint8_t *src, bool *dest, size_t num_elements, bool invert) {
   if (src == nullptr) {
     std::fill(dest, dest + num_elements, false);
     return;
@@ -176,7 +128,7 @@ void populateArrayFromPackedData(const uint8_t *src, bool *dest, size_t num_elem
   }
 }
 
-void populateNullsFromDeephavenConvention(const int64_t *data_begin, bool *dest, size_t num_elements) {
+void PopulateNullsFromDeephavenConvention(const int64_t *data_begin, bool *dest, size_t num_elements) {
   for (size_t i = 0; i != num_elements; ++i) {
     dest[i] = data_begin[i] == DeephavenConstants::kNullLong;
   }

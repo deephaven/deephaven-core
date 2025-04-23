@@ -3,6 +3,7 @@
 //
 package io.deephaven.server.jetty;
 
+import com.google.common.base.Charsets;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import dagger.Component;
 import dagger.Module;
@@ -25,6 +26,7 @@ import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.updategraph.OperationInitializer;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.AbstractScriptSession;
@@ -44,6 +46,7 @@ import io.deephaven.io.logger.LogBufferGlobal;
 import io.deephaven.plugin.Registration;
 import io.deephaven.proto.flight.util.FlightExportTicketHelper;
 import io.deephaven.server.arrow.ArrowModule;
+import io.deephaven.server.arrow.ExchangeMarshallerModule;
 import io.deephaven.server.auth.AuthorizationProvider;
 import io.deephaven.server.config.ConfigServiceModule;
 import io.deephaven.server.console.ConsoleModule;
@@ -190,6 +193,7 @@ public class BarrageChunkFactoryTest {
             return JettyConfig.builder()
                     .port(0)
                     .tokenExpire(Duration.of(5, ChronoUnit.MINUTES))
+                    .allowedHttpMethods(Set.of("POST"))
                     .build();
         }
     }
@@ -200,6 +204,7 @@ public class BarrageChunkFactoryTest {
             FlightTestModule.class,
             JettyServerModule.class,
             JettyTestConfig.class,
+            ExchangeMarshallerModule.class,
     })
     public interface JettyTestComponent extends TestComponent {
     }
@@ -560,7 +565,7 @@ public class BarrageChunkFactoryTest {
 
             @Override
             public Schema newSchema(boolean isNullable) {
-                return createSchema(isNullable, isDefault, new ArrowType.Duration(timeUnit), dhType);
+                return createSchema(isNullable, isDefaultUpload, new ArrowType.Duration(timeUnit), dhType);
             }
 
             @Override
@@ -607,7 +612,7 @@ public class BarrageChunkFactoryTest {
 
             @Override
             public Schema newSchema(boolean isNullable) {
-                return createSchema(isNullable, isDefault, new ArrowType.Int(8, true), dhType);
+                return createSchema(isNullable, isDefaultUpload, new ArrowType.Int(8, true), dhType);
             }
 
             @Override
@@ -625,6 +630,7 @@ public class BarrageChunkFactoryTest {
             }
         }
 
+        // note that byte[] defaults to VarBinary rather than VarList as byte arrays often have special treatment
         new Test(byte.class, Number::byteValue, QueryConstants.NULL_BYTE).isDefault().runTest();
         new Test(char.class, n -> (byte) (char) n.intValue(), (byte) QueryConstants.NULL_CHAR).runTest();
         new Test(short.class, Number::shortValue, QueryConstants.NULL_SHORT).runTest();
@@ -649,7 +655,7 @@ public class BarrageChunkFactoryTest {
 
             @Override
             public Schema newSchema(boolean isNullable) {
-                return createSchema(isNullable, isDefault, new ArrowType.Int(8, false), dhType);
+                return createSchema(isNullable, isDefaultUpload, new ArrowType.Int(8, false), dhType);
             }
 
             @Override
@@ -669,7 +675,7 @@ public class BarrageChunkFactoryTest {
 
         new Test(byte.class, Number::byteValue, QueryConstants.NULL_BYTE).runTest();
         new Test(char.class, n -> (byte) (char) n.intValue(), (byte) QueryConstants.NULL_CHAR).runTest();
-        new Test(short.class, Number::shortValue, QueryConstants.NULL_SHORT).isDefault().runTest();
+        new Test(short.class, Number::shortValue, QueryConstants.NULL_SHORT).isDefaultUpload().runTest();
         new Test(int.class).runTest();
         new Test(long.class).runTest();
         new Test(float.class).runTest();
@@ -691,7 +697,7 @@ public class BarrageChunkFactoryTest {
 
             @Override
             public Schema newSchema(boolean isNullable) {
-                return createSchema(isNullable, isDefault, new ArrowType.Int(16, true), dhType);
+                return createSchema(isNullable, isDefaultUpload, new ArrowType.Int(16, true), dhType);
             }
 
             @Override
@@ -733,7 +739,7 @@ public class BarrageChunkFactoryTest {
 
             @Override
             public Schema newSchema(boolean isNullable) {
-                return createSchema(isNullable, isDefault, new ArrowType.Int(16, false), dhType);
+                return createSchema(isNullable, isDefaultUpload, new ArrowType.Int(16, false), dhType);
             }
 
             @Override
@@ -753,7 +759,8 @@ public class BarrageChunkFactoryTest {
 
         // convert to char to avoid sign extension, then an int to return a Number
         new Test(byte.class, n -> (int) (char) n.byteValue(), (int) (char) QueryConstants.NULL_BYTE).runTest();
-        new Test(char.class, n -> (int) (char) n.intValue(), (int) QueryConstants.NULL_CHAR).isDefault().runTest();
+        new Test(char.class, n -> (int) (char) n.intValue(), (int) QueryConstants.NULL_CHAR).isDefaultUpload()
+                .runTest();
         new Test(short.class, n -> (int) (char) n.shortValue(), (int) (char) QueryConstants.NULL_SHORT).runTest();
         new Test(int.class).runTest();
         new Test(long.class).runTest();
@@ -776,7 +783,7 @@ public class BarrageChunkFactoryTest {
 
             @Override
             public Schema newSchema(boolean isNullable) {
-                return createSchema(isNullable, isDefault, new ArrowType.Int(32, true), dhType);
+                return createSchema(isNullable, isDefaultUpload, new ArrowType.Int(32, true), dhType);
             }
 
             @Override
@@ -818,7 +825,7 @@ public class BarrageChunkFactoryTest {
 
             @Override
             public Schema newSchema(boolean isNullable) {
-                return createSchema(isNullable, isDefault, new ArrowType.Int(32, false), dhType);
+                return createSchema(isNullable, isDefaultUpload, new ArrowType.Int(32, false), dhType);
             }
 
             @Override
@@ -840,7 +847,7 @@ public class BarrageChunkFactoryTest {
         new Test(char.class, n -> 0xFFFF & n.intValue(), 0xFFFF & QueryConstants.NULL_CHAR).runTest();
         new Test(short.class, n -> 0xFFFF & n.shortValue(), 0xFFFF & QueryConstants.NULL_SHORT).runTest();
         new Test(int.class).runTest();
-        new Test(long.class).isDefault().runTest();
+        new Test(long.class).isDefaultUpload().runTest();
         new Test(float.class, n -> (int) n.floatValue(), (int) QueryConstants.NULL_FLOAT).runTest();
         new Test(double.class).runTest();
         new Test(BigInteger.class).runTest();
@@ -861,7 +868,7 @@ public class BarrageChunkFactoryTest {
 
             @Override
             public Schema newSchema(boolean isNullable) {
-                return createSchema(isNullable, isDefault, new ArrowType.Int(64, true), dhType);
+                return createSchema(isNullable, isDefaultUpload, new ArrowType.Int(64, true), dhType);
             }
 
             @Override
@@ -903,7 +910,7 @@ public class BarrageChunkFactoryTest {
 
             @Override
             public Schema newSchema(boolean isNullable) {
-                return createSchema(isNullable, isDefault, new ArrowType.Int(64, false), dhType);
+                return createSchema(isNullable, isDefaultUpload, new ArrowType.Int(64, false), dhType);
             }
 
             @Override
@@ -928,7 +935,8 @@ public class BarrageChunkFactoryTest {
         new Test(long.class).runTest();
         new Test(float.class, n -> (long) n.floatValue(), (long) QueryConstants.NULL_FLOAT).runTest();
         new Test(double.class, n -> (long) n.doubleValue(), (long) QueryConstants.NULL_DOUBLE).runTest();
-        new Test(BigInteger.class, Number::longValue, QueryConstants.NULL_LONG).isDefault().runTest();
+        // Note that BigInteger is the default for upload, but default download is our custom encoding of BigInteger
+        new Test(BigInteger.class, Number::longValue, QueryConstants.NULL_LONG).runTest();
         new Test(BigDecimal.class, Number::longValue, QueryConstants.NULL_LONG).runTest();
     }
 
@@ -950,7 +958,8 @@ public class BarrageChunkFactoryTest {
         // 128-bit tests
         for (int scale : new int[] {0, 9, 18, 27, 36}) {
             if (scale < 1) {
-                new DecimalRoundTripTest(BigDecimal.class, 1, scale).isDefault().runTest();
+                // is default for upload only as we custom encode BigDecimal by default
+                new DecimalRoundTripTest(BigDecimal.class, 1, scale).isDefaultUpload().runTest();
                 new DecimalRoundTripTest(BigInteger.class, 1, scale).runTest();
             }
             if (scale < 19) {
@@ -981,7 +990,8 @@ public class BarrageChunkFactoryTest {
         // 256-bit tests
         for (int scale : new int[] {0, 19, 38, 75}) {
             if (scale < 1) {
-                new Decimal256RoundTripTest(BigDecimal.class, 1, scale).isDefault().runTest();
+                // is default for upload only as we custom encode BigDecimal by default
+                new Decimal256RoundTripTest(BigDecimal.class, 1, scale).isDefaultUpload().runTest();
                 new Decimal256RoundTripTest(BigInteger.class, 1, scale).runTest();
             }
             if (scale < 38) {
@@ -1016,7 +1026,7 @@ public class BarrageChunkFactoryTest {
 
     @Test
     public void testFixedSizeBinary() throws Exception {
-        new FixedSizeBinaryRoundTripTest(byte[].class, 16).isDefault().skipMapKey().runTest();
+        new FixedSizeBinaryRoundTripTest(byte[].class, 16).isDefaultUpload().skipMapKey().runTest();
         new FixedSizeBinaryRoundTripTest(ByteVector.class, 12).skipMapKey().runTest();
         new FixedSizeBinaryRoundTripTest(ByteBuffer.class, 21).skipMapKey().runTest();
     }
@@ -1045,11 +1055,13 @@ public class BarrageChunkFactoryTest {
     @Test
     public void testTimestamp() throws Exception {
         new TimeStampRoundTripTest(Instant.class, TimeUnit.NANOSECOND).isDefault().runTest();
-        new TimeStampRoundTripTest(Instant.class, TimeUnit.MICROSECOND).runTest();
-        new TimeStampRoundTripTest(Instant.class, TimeUnit.MILLISECOND).runTest();
-        new TimeStampRoundTripTest(Instant.class, TimeUnit.SECOND).runTest();
+        new TimeStampRoundTripTest(Instant.class, TimeUnit.MICROSECOND).isDefaultUpload().runTest();
+        new TimeStampRoundTripTest(Instant.class, TimeUnit.MILLISECOND).isDefaultUpload().runTest();
+        new TimeStampRoundTripTest(Instant.class, TimeUnit.SECOND).isDefaultUpload().runTest();
 
-        new TimeStampRoundTripTest(ZonedDateTime.class, TimeUnit.NANOSECOND, "America/New_York").isDefault().runTest();
+        // note that default for upload only as the column source may lose the time zone
+        new TimeStampRoundTripTest(ZonedDateTime.class, TimeUnit.NANOSECOND, "America/New_York").isDefaultUpload()
+                .runTest();
         new TimeStampRoundTripTest(ZonedDateTime.class, TimeUnit.MICROSECOND, "America/New_York").runTest();
         new TimeStampRoundTripTest(ZonedDateTime.class, TimeUnit.MILLISECOND, "America/New_York").runTest();
         new TimeStampRoundTripTest(ZonedDateTime.class, TimeUnit.SECOND, "America/New_York").runTest();
@@ -1068,28 +1080,28 @@ public class BarrageChunkFactoryTest {
     @Test
     public void testDuration() throws Exception {
         new DurationRoundTripTest(Duration.class, TimeUnit.NANOSECOND).isDefault().runTest();
-        new DurationRoundTripTest(Duration.class, TimeUnit.MICROSECOND).isDefault().runTest();
-        new DurationRoundTripTest(Duration.class, TimeUnit.MILLISECOND).isDefault().runTest();
-        new DurationRoundTripTest(Duration.class, TimeUnit.SECOND).isDefault().runTest();
+        new DurationRoundTripTest(Duration.class, TimeUnit.MICROSECOND).isDefaultUpload().runTest();
+        new DurationRoundTripTest(Duration.class, TimeUnit.MILLISECOND).isDefaultUpload().runTest();
+        new DurationRoundTripTest(Duration.class, TimeUnit.SECOND).isDefaultUpload().runTest();
     }
 
     @Test
     public void testTime() throws Exception {
         new TimeRoundTripTest(LocalTime.class, TimeUnit.NANOSECOND).isDefault().runTest();
-        new TimeRoundTripTest(LocalTime.class, TimeUnit.MICROSECOND).isDefault().runTest();
-        new TimeRoundTripTest(LocalTime.class, TimeUnit.MILLISECOND).isDefault().runTest();
-        new TimeRoundTripTest(LocalTime.class, TimeUnit.SECOND).isDefault().runTest();
+        new TimeRoundTripTest(LocalTime.class, TimeUnit.MICROSECOND).isDefaultUpload().runTest();
+        new TimeRoundTripTest(LocalTime.class, TimeUnit.MILLISECOND).isDefaultUpload().runTest();
+        new TimeRoundTripTest(LocalTime.class, TimeUnit.SECOND).isDefaultUpload().runTest();
     }
 
     @Test
     public void testDate() throws Exception {
-        new DateRoundTripTest(LocalDate.class, DateUnit.DAY).isDefault().runTest();
+        new DateRoundTripTest(LocalDate.class, DateUnit.DAY).isDefaultUpload().runTest();
         new DateRoundTripTest(LocalDate.class, DateUnit.MILLISECOND).isDefault().runTest();
     }
 
     @Test
     public void testInterval() throws Exception {
-        new IntervalRoundTripTest(Duration.class, IntervalUnit.DAY_TIME).isDefault().runTest();
+        new IntervalRoundTripTest(Duration.class, IntervalUnit.DAY_TIME).isDefaultUpload().runTest();
         new IntervalRoundTripTest(Period.class, IntervalUnit.YEAR_MONTH).isDefault().runTest();
         new IntervalRoundTripTest(PeriodDuration.class, IntervalUnit.MONTH_DAY_NANO).isDefault().runTest();
 
@@ -1312,7 +1324,7 @@ public class BarrageChunkFactoryTest {
                     }
                 }
             }
-        }.isDefault().runTest();
+        }.isDefaultUpload().runTest();
     }
 
     @Test
@@ -1358,6 +1370,7 @@ public class BarrageChunkFactoryTest {
         }.runTest();
 
         new CustomBinaryRoundTripTest(Schema.class) {
+
             @Override
             public int initializeRoot(@NotNull final VarBinaryVector source) {
                 source.reallocDataBuffer(NUM_ROWS * 256);
@@ -1383,7 +1396,7 @@ public class BarrageChunkFactoryTest {
             new RoundTripTest<ViewVarCharVector>(String.class) {
                 @Override
                 public Schema newSchema(boolean isNullable) {
-                    return createSchema(isNullable, isDefault, new ArrowType.Utf8View(), String.class);
+                    return createSchema(isNullable, isDefaultUpload, new ArrowType.Utf8View(), String.class);
                 }
             }.runTest();
             Assert.statementNeverExecuted("Should have thrown an exception");
@@ -1473,17 +1486,38 @@ public class BarrageChunkFactoryTest {
         return values.length;
     }
 
-    protected enum TestArrayPreviewMode {
-        NONE, DO_EXCHANGE_NO_FILTER, HEAD, TAIL;
+    protected enum TestRPCMethod {
+        DO_GET, DO_EXCHANGE_NO_FILTER, HEAD, TAIL, COLUMNS_AS_LIST;
 
-        boolean isEnabled() {
-            switch (this) {
-                case HEAD:
-                case TAIL:
-                    return true;
-                default:
-                    return false;
+        boolean isPreviewEnabled() {
+            // @formatter:off
+            return switch (this) {
+                case HEAD, TAIL -> true;
+                default -> false;
+            };
+            // @formatter:on
+        }
+
+        private byte[] getOptionsMetadata(final boolean reading, final int ticket) {
+            if (!reading && this == TestRPCMethod.COLUMNS_AS_LIST) {
+                return BarrageUtil.createSerializationOptionsMetadataBytes(
+                        flightTicketFor(ticket).getBytes(), getSubscriptionOptions());
+            } else {
+                return BarrageUtil.createSubscriptionRequestMetadataBytes(
+                        flightTicketFor(ticket).getBytes(), getSubscriptionOptions());
             }
+        }
+
+        private BarrageSubscriptionOptions getSubscriptionOptions() {
+            final BarrageSubscriptionOptions.Builder options = BarrageSubscriptionOptions.builder();
+            if (this == TestRPCMethod.HEAD) {
+                options.previewListLengthLimit(HEAD_LIST_ITEM_LEN);
+            } else if (this == TestRPCMethod.TAIL) {
+                options.previewListLengthLimit(-HEAD_LIST_ITEM_LEN);
+            } else if (this == TestRPCMethod.COLUMNS_AS_LIST) {
+                options.columnsAsList(true);
+            }
+            return options.build();
         }
     }
     protected enum TestNullMode {
@@ -1537,6 +1571,16 @@ public class BarrageChunkFactoryTest {
             }
         }
 
+        boolean isFixedLength() {
+            switch (this) {
+                case FIXED_ARRAY:
+                case FIXED_VECTOR:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
         boolean isView() {
             switch (this) {
                 case VIEW_ARRAY:
@@ -1565,6 +1609,10 @@ public class BarrageChunkFactoryTest {
                 default:
                     return false;
             }
+        }
+
+        boolean requiresSchema() {
+            return isFixedLength() || isView() || isUnion() || isMap();
         }
     }
 
@@ -1596,6 +1644,7 @@ public class BarrageChunkFactoryTest {
         protected Class<?> dhType;
         protected Class<?> componentType;
         protected boolean isDefault;
+        protected boolean isDefaultUpload;
         protected boolean skipMapKey;
 
         public RoundTripTest(@NotNull final Class<?> dhType) {
@@ -1624,6 +1673,13 @@ public class BarrageChunkFactoryTest {
 
         public <RTT extends RoundTripTest<T>> RTT isDefault() {
             isDefault = true;
+            isDefaultUpload = true;
+            // noinspection unchecked
+            return (RTT) this;
+        }
+
+        public <RTT extends RoundTripTest<T>> RTT isDefaultUpload() {
+            isDefaultUpload = true;
             // noinspection unchecked
             return (RTT) this;
         }
@@ -1653,6 +1709,7 @@ public class BarrageChunkFactoryTest {
 
             if (dhType.isPrimitive()) {
                 isDefault = false;
+                isDefaultUpload = false;
                 dhType = TypeUtils.getBoxedType(dhType);
                 runBoxedTestsOnly();
             }
@@ -1684,28 +1741,35 @@ public class BarrageChunkFactoryTest {
                 final TestWrapMode wrapMode,
                 final TestNullMode nullMode) throws Exception {
             if (!wrapMode.isArrayLike()) {
-                runTest(wrapMode, nullMode, TestArrayPreviewMode.NONE);
+                runTest(wrapMode, nullMode, TestRPCMethod.DO_GET);
                 return;
             }
-            for (TestArrayPreviewMode previewMode : TestArrayPreviewMode.values()) {
-                runTest(wrapMode, nullMode, previewMode);
+            for (TestRPCMethod rpcMethod : TestRPCMethod.values()) {
+                runTest(wrapMode, nullMode, rpcMethod);
             }
         }
 
         public void runTest(
                 final TestWrapMode wrapMode,
                 final TestNullMode nullMode,
-                final TestArrayPreviewMode previewMode) throws Exception {
+                final TestRPCMethod rpcMethod) throws Exception {
             final boolean isNullable = nullMode != TestNullMode.NOT_NULLABLE;
             final boolean hasNulls = isNullable && nullMode != TestNullMode.NONE;
             final int listItemLength;
             final boolean resetIsDefault = isDefault && nullMode == TestNullMode.NULL_WIRE;
+            final boolean resetIsDefaultUploadOnly = isDefaultUpload && nullMode == TestNullMode.NULL_WIRE;
             if (resetIsDefault) {
                 isDefault = false;
+            }
+            if (resetIsDefaultUploadOnly) {
+                isDefaultUpload = false;
             }
             Schema schema = newSchema(isNullable);
             if (resetIsDefault) {
                 isDefault = true;
+            }
+            if (resetIsDefaultUploadOnly) {
+                isDefaultUpload = true;
             }
 
             if (wrapMode == TestWrapMode.NONE) {
@@ -1802,15 +1866,24 @@ public class BarrageChunkFactoryTest {
                 schema = new Schema(Collections.singletonList(new Field(COLUMN_NAME, fieldType, null)));
             }
 
+            if (rpcMethod == TestRPCMethod.COLUMNS_AS_LIST) {
+                // we always have a single column; wrap it in a list
+                final Field field = schema.getFields().get(0);
+                final ArrowType listType = new ArrowType.List();
+                final FieldType fieldType = new FieldType(false, listType, null, field.getMetadata());
+                schema = new Schema(Collections.singletonList(new Field(
+                        field.getName(), fieldType, Collections.singletonList(field))));
+            }
+
             try (final VectorSchemaRoot source = VectorSchemaRoot.create(schema, allocator)) {
                 source.allocateNew();
-                final FieldVector dataVector = getDataVector(wrapMode, nullMode, source, listItemLength);
+                final FieldVector dataVector = getDataVector(wrapMode, nullMode, rpcMethod, source, listItemLength);
 
                 if (nullMode == TestNullMode.EMPTY) {
-                    source.setRowCount(0);
+                    setSourceRowCount(rpcMethod, source, 0);
                 } else {
                     // pre-allocate buffers
-                    source.setRowCount(NUM_ROWS);
+                    setSourceRowCount(rpcMethod, source, NUM_ROWS);
 
                     int numRows;
                     if (nullMode != TestNullMode.NULL_WIRE) {
@@ -1821,11 +1894,11 @@ public class BarrageChunkFactoryTest {
                     }
 
                     if (nullMode == TestNullMode.ALL || nullMode == TestNullMode.NULL_WIRE) {
-                        for (int ii = 0; ii < source.getRowCount(); ++ii) {
+                        for (int ii = 0; ii < numRows; ++ii) {
                             dataVector.setNull(ii);
                         }
                     } else if (nullMode == TestNullMode.SOME) {
-                        for (int ii = 0; ii < source.getRowCount(); ++ii) {
+                        for (int ii = 0; ii < numRows; ++ii) {
                             if (rnd.nextBoolean()) {
                                 dataVector.setNull(ii);
                             }
@@ -1835,20 +1908,20 @@ public class BarrageChunkFactoryTest {
                     if (nullMode == TestNullMode.NULL_WIRE) {
                         // do nothing
                     } else if (wrapMode == TestWrapMode.UNION_DENSE) {
-                        final DenseUnionVector unionVec = (DenseUnionVector) source.getVector(0);
+                        final DenseUnionVector unionVec = (DenseUnionVector) getWrapModeVector(rpcMethod, source);
                         for (int ii = 0; ii < numRows; ++ii) {
                             unionVec.setTypeId(ii, (byte) 0);
                             unionVec.setOffset(ii, ii);
                         }
                     } else if (wrapMode == TestWrapMode.UNION_SPARSE) {
-                        final UnionVector unionVec = (UnionVector) source.getVector(0);
+                        final UnionVector unionVec = (UnionVector) getWrapModeVector(rpcMethod, source);
                         final Types.MinorType minorType = dataVector.getMinorType();
                         for (int ii = 0; ii < numRows; ++ii) {
                             unionVec.setType(ii, minorType);
                         }
                     } else if (wrapMode.isMap()) {
                         int itemsConsumed = 0;
-                        final MapVector mapVector = (MapVector) source.getVector(0);
+                        final MapVector mapVector = (MapVector) getWrapModeVector(rpcMethod, source);
                         final StructVector entriesVector = (StructVector) mapVector.getDataVector();
 
                         for (int ii = 0; ii < numRows; ++ii) {
@@ -1896,7 +1969,8 @@ public class BarrageChunkFactoryTest {
                             int realRows = numRows / listItemLength;
                             dataVector.setValueCount(realRows * listItemLength);
                             for (int ii = 0; ii < realRows; ++ii) {
-                                FixedSizeListVector listVector = (FixedSizeListVector) source.getVector(0);
+                                FixedSizeListVector listVector =
+                                        (FixedSizeListVector) getWrapModeVector(rpcMethod, source);
                                 if (hasNulls && rnd.nextBoolean()) {
                                     listVector.setNull(ii);
                                     // to simplify validation, set inner values to null
@@ -1907,11 +1981,11 @@ public class BarrageChunkFactoryTest {
                                     listVector.setNotNull(ii);
                                 }
                             }
-                            source.setRowCount(realRows);
+                            setSourceRowCount(rpcMethod, source, realRows);
                             numRows = realRows;
                         } else if (wrapMode.isVariableLength()) {
                             int itemsConsumed = 0;
-                            final ListVector listVector = (ListVector) source.getVector(0);
+                            final ListVector listVector = (ListVector) getWrapModeVector(rpcMethod, source);
                             for (int ii = 0; ii < numRows; ++ii) {
                                 if (hasNulls && rnd.nextBoolean()) {
                                     listVector.setNull(ii);
@@ -1928,7 +2002,7 @@ public class BarrageChunkFactoryTest {
                             }
                             dataVector.setValueCount(itemsConsumed);
                         } else {
-                            final ListViewVector listVector = (ListViewVector) source.getVector(0);
+                            final ListViewVector listVector = (ListViewVector) getWrapModeVector(rpcMethod, source);
                             dataVector.setValueCount(numRows);
                             int maxItemWritten = 0;
                             for (int ii = 0; ii < numRows; ++ii) {
@@ -1949,13 +2023,17 @@ public class BarrageChunkFactoryTest {
 
                     // finally set the row count after the list vectors have been set, or else inner vectors might
                     // be cleared
-                    source.setRowCount(numRows);
+                    setSourceRowCount(rpcMethod, source, numRows);
                 }
 
+                final boolean doExch = rpcMethod != TestRPCMethod.DO_GET;
                 int flightDescriptorTicketValue = nextTicket++;
                 FlightDescriptor descriptor = FlightDescriptor.path("export", flightDescriptorTicketValue + "");
                 FlightClient.ClientStreamListener putStream =
                         flightClient.startPut(descriptor, source, new AsyncPutListener());
+                if (doExch) {
+                    putStream.putMetadata(getArrowBufMetadata(rpcMethod, false, flightDescriptorTicketValue));
+                }
                 putStream.putNext();
                 putStream.completed();
 
@@ -1970,7 +2048,10 @@ public class BarrageChunkFactoryTest {
                 // block until we're done, so we can get the table and see what is inside
                 putStream.getResult();
                 Table uploadedTable = tableFuture.get();
-                assertEquals(source.getRowCount(), uploadedTable.size());
+                final int outerRowCount = rpcMethod != TestRPCMethod.COLUMNS_AS_LIST
+                        ? source.getRowCount()
+                        : getWrapModeVector(rpcMethod, source).getValueCount();
+                assertEquals(outerRowCount, uploadedTable.size());
                 assertEquals(1, uploadedTable.getColumnSourceMap().size());
                 ColumnSource<Object> columnSource = uploadedTable.getColumnSource(COLUMN_NAME);
                 assertNotNull(columnSource);
@@ -1993,7 +2074,15 @@ public class BarrageChunkFactoryTest {
                     assertEquals(dhType, columnSource.getComponentType());
                 }
 
-                final boolean doExch = previewMode != TestArrayPreviewMode.NONE;
+                // remove the uploaded DoPut schema; we want to test that defaults go both ways
+                if (isDefault && !wrapMode.requiresSchema() && (dhType != byte.class || !wrapMode.isArrayLike())) {
+                    // note that byte[] gets special treatment in the data world; is VarBinary instead of VarList
+                    flightDescriptorTicketValue = nextTicket++;
+                    currentSession.newExport(flightDescriptorTicketValue).submit(
+                            () -> uploadedTable.withoutAttributes(Collections.singletonList(
+                                    BaseTable.BARRAGE_SCHEMA_ATTRIBUTE)));
+                }
+
                 try (FlightStream stream = doExch
                         ? null
                         : flightClient.getStream(flightTicketFor(flightDescriptorTicketValue));
@@ -2004,20 +2093,8 @@ public class BarrageChunkFactoryTest {
                     if (!doExch) {
                         dest = stream.getRoot();
                     } else {
-                        final BarrageSubscriptionOptions.Builder options = BarrageSubscriptionOptions.builder();
-                        if (previewMode == TestArrayPreviewMode.HEAD) {
-                            options.previewListLengthLimit(HEAD_LIST_ITEM_LEN);
-                        } else if (previewMode == TestArrayPreviewMode.TAIL) {
-                            options.previewListLengthLimit(-HEAD_LIST_ITEM_LEN);
-                        }
-
-                        final byte[] request = BarrageUtil.createSubscriptionRequestMetadataBytes(
-                                flightTicketFor(flightDescriptorTicketValue).getBytes(),
-                                options.build());
-                        final ArrowBuf metadata = allocator.buffer(request.length);
-                        metadata.writeBytes(request);
-                        xStream.getWriter().putMetadata(metadata);
-
+                        xStream.getWriter()
+                                .putMetadata(getArrowBufMetadata(rpcMethod, true, flightDescriptorTicketValue));
                         dest = xStream.getReader().getRoot();
                     }
 
@@ -2029,16 +2106,16 @@ public class BarrageChunkFactoryTest {
                             // do nothing
                         } else if (wrapMode == TestWrapMode.UNION_DENSE) {
                             validateDenseUnion(nullMode,
-                                    (DenseUnionVector) source.getVector(0),
-                                    (DenseUnionVector) dest.getVector(0));
+                                    (DenseUnionVector) getWrapModeVector(rpcMethod, source),
+                                    (DenseUnionVector) getWrapModeVector(rpcMethod, dest));
                         } else if (wrapMode == TestWrapMode.UNION_SPARSE) {
                             validateSparseUnion(nullMode,
-                                    (UnionVector) source.getVector(0),
-                                    (UnionVector) dest.getVector(0));
+                                    (UnionVector) getWrapModeVector(rpcMethod, source),
+                                    (UnionVector) getWrapModeVector(rpcMethod, dest));
                         } else if (wrapMode != TestWrapMode.NONE) {
-                            validateList(wrapMode, previewMode,
-                                    (BaseListVector) source.getVector(0),
-                                    (BaseListVector) dest.getVector(0));
+                            validateList(wrapMode, rpcMethod,
+                                    (BaseListVector) getWrapModeVector(rpcMethod, source),
+                                    (BaseListVector) getWrapModeVector(rpcMethod, dest));
                         }
 
                         if (nullMode == TestNullMode.NULL_WIRE) {
@@ -2046,15 +2123,16 @@ public class BarrageChunkFactoryTest {
                         } else if (wrapMode == TestWrapMode.NONE || wrapMode.isUnion()) {
                             // noinspection unchecked
                             validate(nullMode, (T) dataVector,
-                                    (T) getDataVector(wrapMode, nullMode, dest, listItemLength));
+                                    (T) getDataVector(wrapMode, nullMode, rpcMethod, dest, listItemLength));
                         } else if (wrapMode.isView()) {
                             // TODO: rm this branch when https://github.com/apache/arrow-java/issues/471 is fixed
 
                             // DH will unwrap the view, so to validate the data vector we need to unwrap it as well
                             try (final ListViewVector newView =
-                                    (ListViewVector) schema.getFields().get(0).createVector(allocator)) {
+                                    (ListViewVector) getWrapModeVector(rpcMethod, source).getField()
+                                            .createVector(allocator)) {
                                 newView.setValueCount(source.getRowCount());
-                                final ListViewVector sourceArr = (ListViewVector) source.getVector(0);
+                                final ListViewVector sourceArr = (ListViewVector) getWrapModeVector(rpcMethod, source);
                                 int totalLen = 0;
                                 for (int ii = 0; ii < source.getRowCount(); ++ii) {
                                     if (!sourceArr.isNull(ii)) {
@@ -2062,7 +2140,7 @@ public class BarrageChunkFactoryTest {
                                         // totalLen += sourceArr.getElementEndIndex(ii) -
                                         // sourceArr.getElementStartIndex(ii);
                                         int size = sourceArr.getObject(ii).size();
-                                        if (previewMode.isEnabled()) {
+                                        if (rpcMethod.isPreviewEnabled()) {
                                             size = Math.min(size, HEAD_LIST_ITEM_LEN);
                                         }
                                         totalLen += size;
@@ -2073,19 +2151,19 @@ public class BarrageChunkFactoryTest {
                                 newView.getDataVector().setValueCount(totalLen);
                                 if (dhType == ZonedDateTime.class || dhType == LocalDateTime.class) {
                                     // TODO: remove branch when https://github.com/apache/arrow-java/issues/551 is fixed
-                                    filterZonedDateTimeSource(wrapMode, previewMode, sourceArr, newView, source,
+                                    filterZonedDateTimeSource(wrapMode, rpcMethod, sourceArr, newView, source,
                                             listItemLength);
                                 } else if ((dataVector instanceof DurationVector)
                                         && !(this instanceof IntervalRoundTripTest)) {
                                     // TODO: remove branch when https://github.com/apache/arrow-java/issues/558 is fixed
-                                    filterDurationSource(wrapMode, previewMode, sourceArr, newView, source,
+                                    filterDurationSource(wrapMode, rpcMethod, sourceArr, newView, source,
                                             listItemLength);
                                 } else {
                                     for (int ii = 0; ii < source.getRowCount(); ++ii) {
                                         if (sourceArr.isNull(ii)) {
                                             newView.setNull(ii);
                                         } else {
-                                            copyListItem(previewMode, newView, sourceArr, ii);
+                                            copyListItem(rpcMethod, newView, sourceArr, ii);
                                         }
                                     }
                                 }
@@ -2101,21 +2179,22 @@ public class BarrageChunkFactoryTest {
 
                                     // noinspection unchecked
                                     validate(nullMode, (T) valueVectors,
-                                            (T) getDataVector(wrapMode, nullMode, dest, listItemLength));
+                                            (T) getDataVector(wrapMode, nullMode, rpcMethod, dest, listItemLength));
                                 }
                             }
                         } else {
                             // any null values will not be sent back, so we need to filter the source to match
                             try (final BaseListVector newView =
-                                    (BaseListVector) schema.getFields().get(0).createVector(allocator)) {
+                                    (BaseListVector) getWrapModeVector(rpcMethod, source).getField()
+                                            .createVector(allocator)) {
                                 newView.setValueCount(source.getRowCount());
-                                final BaseListVector sourceArr = (BaseListVector) source.getVector(0);
+                                final BaseListVector sourceArr = (BaseListVector) getWrapModeVector(rpcMethod, source);
                                 int totalLen = 0;
                                 for (int ii = 0; ii < source.getRowCount(); ++ii) {
                                     if (!sourceArr.isNull(ii)) {
                                         int size =
                                                 sourceArr.getElementEndIndex(ii) - sourceArr.getElementStartIndex(ii);
-                                        if (previewMode.isEnabled()) {
+                                        if (rpcMethod.isPreviewEnabled()) {
                                             size = Math.min(size, HEAD_LIST_ITEM_LEN);
                                         }
                                         totalLen += size;
@@ -2127,12 +2206,12 @@ public class BarrageChunkFactoryTest {
                                 newView.getChildrenFromFields().forEach(c -> c.setValueCount(finTotalLen));
                                 if (dhType == ZonedDateTime.class || dhType == LocalDateTime.class) {
                                     // TODO: remove branch when https://github.com/apache/arrow-java/issues/551 is fixed
-                                    filterZonedDateTimeSource(wrapMode, previewMode, sourceArr, newView, source,
+                                    filterZonedDateTimeSource(wrapMode, rpcMethod, sourceArr, newView, source,
                                             listItemLength);
                                 } else if ((dataVector instanceof DurationVector)
                                         && !(this instanceof IntervalRoundTripTest)) {
                                     // TODO: remove branch when https://github.com/apache/arrow-java/issues/558 is fixed
-                                    filterDurationSource(wrapMode, previewMode, sourceArr, newView, source,
+                                    filterDurationSource(wrapMode, rpcMethod, sourceArr, newView, source,
                                             listItemLength);
                                 } else {
                                     for (int ii = 0; ii < source.getRowCount(); ++ii) {
@@ -2141,7 +2220,7 @@ public class BarrageChunkFactoryTest {
                                         } else {
                                             // TODO: use when https://github.com/apache/arrow-java/issues/559 is fixed
                                             // newView.copyFrom(ii, ii, sourceArr);
-                                            copyListItem(previewMode, newView, sourceArr, ii);
+                                            copyListItem(rpcMethod, newView, sourceArr, ii);
                                         }
                                     }
                                 }
@@ -2157,7 +2236,7 @@ public class BarrageChunkFactoryTest {
 
                                     // noinspection unchecked
                                     validate(nullMode, (T) valueVectors,
-                                            (T) getDataVector(wrapMode, nullMode, dest, listItemLength));
+                                            (T) getDataVector(wrapMode, nullMode, rpcMethod, dest, listItemLength));
                                 }
                             }
                         }
@@ -2178,9 +2257,39 @@ public class BarrageChunkFactoryTest {
         }
     }
 
+    private static FieldVector getWrapModeVector(TestRPCMethod rpcMethod, VectorSchemaRoot source) {
+        FieldVector retVal = source.getVector(0);
+        if (rpcMethod == TestRPCMethod.COLUMNS_AS_LIST) {
+            retVal = retVal.getChildrenFromFields().get(0);
+        }
+        return retVal;
+    }
+
+    private static void setSourceRowCount(TestRPCMethod rpcMethod, VectorSchemaRoot source, int numRows) {
+        if (rpcMethod == TestRPCMethod.COLUMNS_AS_LIST) {
+            source.setRowCount(1);
+            for (final FieldVector wrappedField : source.getFieldVectors()) {
+                List<FieldVector> children = wrappedField.getChildrenFromFields();
+                Assert.eq(children.size(), "children.size()", 1);
+                ((ListVector) wrappedField).startNewValue(0);
+                ((ListVector) wrappedField).endValue(0, numRows);
+            }
+        } else {
+            source.setRowCount(numRows);
+        }
+    }
+
+    private @NotNull ArrowBuf getArrowBufMetadata(TestRPCMethod rpcMethod, boolean reading,
+            int flightDescriptorTicketValue) {
+        final byte[] request = rpcMethod.getOptionsMetadata(reading, flightDescriptorTicketValue);
+        final ArrowBuf metadata = allocator.buffer(request.length);
+        metadata.writeBytes(request);
+        return metadata;
+    }
+
     private static void filterZonedDateTimeSource(
             final TestWrapMode wrapMode,
-            final TestArrayPreviewMode previewMode,
+            final TestRPCMethod previewMode,
             @NotNull final BaseListVector sourceArr,
             @NotNull final BaseListVector newView,
             @NotNull final VectorSchemaRoot source,
@@ -2207,8 +2316,8 @@ public class BarrageChunkFactoryTest {
                 // TODO: use when https://github.com/apache/arrow-java/issues/470 is fixed
                 // int len = sourceArr.getElementEndIndex(ii) - srcStartOffset;
                 int len = ((Collection<?>) sourceArr.getObject(ii)).size();
-                if (previewMode.isEnabled()) {
-                    if (previewMode == TestArrayPreviewMode.TAIL && len > HEAD_LIST_ITEM_LEN) {
+                if (previewMode.isPreviewEnabled()) {
+                    if (previewMode == TestRPCMethod.TAIL && len > HEAD_LIST_ITEM_LEN) {
                         srcStartOffset += len - HEAD_LIST_ITEM_LEN;
                     }
                     len = Math.min(len, HEAD_LIST_ITEM_LEN);
@@ -2235,7 +2344,7 @@ public class BarrageChunkFactoryTest {
 
     private static void filterDurationSource(
             final TestWrapMode wrapMode,
-            final TestArrayPreviewMode previewMode,
+            final TestRPCMethod previewMode,
             @NotNull final BaseListVector sourceArr,
             @NotNull final BaseListVector newView,
             @NotNull final VectorSchemaRoot source,
@@ -2262,8 +2371,8 @@ public class BarrageChunkFactoryTest {
                 // TODO: use when https://github.com/apache/arrow-java/issues/470 is fixed
                 // int len = sourceArr.getElementEndIndex(ii) - srcStartOffset;
                 int len = ((Collection<?>) sourceArr.getObject(ii)).size();
-                if (previewMode.isEnabled()) {
-                    if (previewMode == TestArrayPreviewMode.TAIL && len > HEAD_LIST_ITEM_LEN) {
+                if (previewMode.isPreviewEnabled()) {
+                    if (previewMode == TestRPCMethod.TAIL && len > HEAD_LIST_ITEM_LEN) {
                         srcStartOffset += len - HEAD_LIST_ITEM_LEN;
                     }
                     len = Math.min(len, HEAD_LIST_ITEM_LEN);
@@ -2291,7 +2400,7 @@ public class BarrageChunkFactoryTest {
     }
 
     private void copyListItem(
-            final TestArrayPreviewMode previewMode,
+            final TestRPCMethod previewMode,
             @NotNull final BaseListVector dest,
             @NotNull final BaseListVector source,
             final int index) {
@@ -2305,10 +2414,10 @@ public class BarrageChunkFactoryTest {
             int len = ((Collection<?>) source.getObject(index)).size();
 
             int srcOffset = source.getElementStartIndex(index);
-            if (previewMode == TestArrayPreviewMode.TAIL && len > HEAD_LIST_ITEM_LEN) {
+            if (previewMode == TestRPCMethod.TAIL && len > HEAD_LIST_ITEM_LEN) {
                 srcOffset += len - HEAD_LIST_ITEM_LEN;
             }
-            if (previewMode.isEnabled()) {
+            if (previewMode.isPreviewEnabled()) {
                 len = Math.min(len, HEAD_LIST_ITEM_LEN);
             }
 
@@ -2348,9 +2457,9 @@ public class BarrageChunkFactoryTest {
         FieldWriter childWriter = getListWriterForReader(childReader, out);
         int endOffset = in.size();
         int startOffset = 0;
-        if (previewMode == TestArrayPreviewMode.TAIL && endOffset > HEAD_LIST_ITEM_LEN) {
+        if (previewMode == TestRPCMethod.TAIL && endOffset > HEAD_LIST_ITEM_LEN) {
             startOffset = endOffset - HEAD_LIST_ITEM_LEN;
-        } else if (previewMode == TestArrayPreviewMode.HEAD) {
+        } else if (previewMode == TestRPCMethod.HEAD) {
             endOffset = Math.min(endOffset, HEAD_LIST_ITEM_LEN);
         }
         for (int ii = startOffset; ii < endOffset; ++ii) {
@@ -2551,7 +2660,7 @@ public class BarrageChunkFactoryTest {
 
     private static void validateList(
             final TestWrapMode wrapMode,
-            final TestArrayPreviewMode previewMode,
+            final TestRPCMethod previewMode,
             final BaseListVector source,
             final BaseListVector dest) {
         assertEquals(source.getValueCount(), dest.getValueCount());
@@ -2568,7 +2677,7 @@ public class BarrageChunkFactoryTest {
                 }
                 int srcLen = source.getElementEndIndex(ii) - source.getElementStartIndex(ii);
                 int dstLen = dest.getElementEndIndex(ii) - dest.getElementStartIndex(ii);
-                if (previewMode.isEnabled()) {
+                if (previewMode.isPreviewEnabled()) {
                     srcLen = Math.min(srcLen, HEAD_LIST_ITEM_LEN);
                 }
                 assertEquals(srcLen, dstLen);
@@ -2579,30 +2688,33 @@ public class BarrageChunkFactoryTest {
     private static FieldVector getDataVector(
             final TestWrapMode wrapMode,
             final TestNullMode nullMode,
+            final TestRPCMethod rpcMethod,
             final VectorSchemaRoot source,
             final int listItemLength) {
 
+        FieldVector targetVector = getWrapModeVector(rpcMethod, source);
+
         if (wrapMode == TestWrapMode.NONE || nullMode == TestNullMode.NULL_WIRE) {
-            return source.getVector(0);
+            return targetVector;
         } else if (wrapMode.isUnion()) {
-            return ((AbstractContainerVector) source.getVector(0)).getChild(COLUMN_NAME);
+            return ((AbstractContainerVector) targetVector).getChild(COLUMN_NAME);
         } else {
             if (listItemLength != 0) {
-                final FixedSizeListVector arrayVector = (FixedSizeListVector) source.getVector(0);
+                final FixedSizeListVector arrayVector = (FixedSizeListVector) targetVector;
                 return arrayVector.getDataVector();
             } else if (wrapMode.isVariableLength()) {
-                final ListVector arrayVector = (ListVector) source.getVector(0);
+                final ListVector arrayVector = (ListVector) targetVector;
                 return arrayVector.getDataVector();
             } else if (wrapMode == TestWrapMode.MAP_KEY) {
-                final MapVector mapVector = (MapVector) source.getVector(0);
+                final MapVector mapVector = (MapVector) targetVector;
                 final StructVector arrayVector = (StructVector) mapVector.getDataVector();
                 return arrayVector.getChild("key");
             } else if (wrapMode == TestWrapMode.MAP_VALUE) {
-                final MapVector mapVector = (MapVector) source.getVector(0);
+                final MapVector mapVector = (MapVector) targetVector;
                 final StructVector arrayVector = (StructVector) mapVector.getDataVector();
                 return arrayVector.getChild("value");
             } else {
-                final ListViewVector arrayVector = (ListViewVector) source.getVector(0);
+                final ListViewVector arrayVector = (ListViewVector) targetVector;
                 return arrayVector.getDataVector();
             }
         }
@@ -2673,7 +2785,7 @@ public class BarrageChunkFactoryTest {
 
         @Override
         public Schema newSchema(boolean isNullable) {
-            return createSchema(isNullable, isDefault, new ArrowType.Bool(), dhType);
+            return createSchema(isNullable, isDefaultUpload, new ArrowType.Bool(), dhType);
         }
 
         @Override
@@ -2748,7 +2860,7 @@ public class BarrageChunkFactoryTest {
 
         @Override
         public Schema newSchema(boolean isNullable) {
-            return createSchema(isNullable, isDefault, new ArrowType.Decimal(precision, scale, 128), dhType);
+            return createSchema(isNullable, isDefaultUpload, new ArrowType.Decimal(precision, scale, 128), dhType);
         }
 
         @Override
@@ -2814,7 +2926,7 @@ public class BarrageChunkFactoryTest {
 
         @Override
         public Schema newSchema(boolean isNullable) {
-            return createSchema(isNullable, isDefault, new ArrowType.Decimal(precision, scale, 256), dhType);
+            return createSchema(isNullable, isDefaultUpload, new ArrowType.Decimal(precision, scale, 256), dhType);
         }
 
         @Override
@@ -2894,18 +3006,20 @@ public class BarrageChunkFactoryTest {
 
         public FloatingPointRoundTripTest checkIfDefault() {
             if (fpp == FloatingPointPrecision.HALF && dhType == float.class) {
-                isDefault = true;
+                isDefaultUpload = true;
             } else if (fpp == FloatingPointPrecision.SINGLE && dhType == float.class) {
                 isDefault = true;
+                isDefaultUpload = true;
             } else if (fpp == FloatingPointPrecision.DOUBLE && dhType == double.class) {
                 isDefault = true;
+                isDefaultUpload = true;
             }
             return this;
         }
 
         @Override
         public Schema newSchema(boolean isNullable) {
-            return createSchema(isNullable, isDefault, new ArrowType.FloatingPoint(fpp), dhType);
+            return createSchema(isNullable, isDefaultUpload, new ArrowType.FloatingPoint(fpp), dhType);
         }
 
         @Override
@@ -2996,7 +3110,7 @@ public class BarrageChunkFactoryTest {
 
         @Override
         public Schema newSchema(boolean isNullable) {
-            return createSchema(isNullable, isDefault, new ArrowType.Timestamp(timeUnit, timeZone), dhType);
+            return createSchema(isNullable, isDefaultUpload, new ArrowType.Timestamp(timeUnit, timeZone), dhType);
         }
 
         @Override
@@ -3060,7 +3174,7 @@ public class BarrageChunkFactoryTest {
 
         @Override
         public Schema newSchema(boolean isNullable) {
-            return createSchema(isNullable, isDefault, new ArrowType.Duration(timeUnit), dhType);
+            return createSchema(isNullable, isDefaultUpload, new ArrowType.Duration(timeUnit), dhType);
         }
 
         @Override
@@ -3106,7 +3220,7 @@ public class BarrageChunkFactoryTest {
             } else {
                 bw = 64;
             }
-            return createSchema(isNullable, isDefault, new ArrowType.Time(timeUnit, bw), dhType);
+            return createSchema(isNullable, isDefaultUpload, new ArrowType.Time(timeUnit, bw), dhType);
         }
 
         @Override
@@ -3164,7 +3278,7 @@ public class BarrageChunkFactoryTest {
 
         @Override
         public Schema newSchema(boolean isNullable) {
-            return createSchema(isNullable, isDefault, new ArrowType.Date(dateUnit), dhType);
+            return createSchema(isNullable, isDefaultUpload, new ArrowType.Date(dateUnit), dhType);
         }
 
         @Override
@@ -3216,7 +3330,7 @@ public class BarrageChunkFactoryTest {
 
         @Override
         public Schema newSchema(boolean isNullable) {
-            return createSchema(isNullable, isDefault, new ArrowType.Interval(intervalUnit), dhType);
+            return createSchema(isNullable, isDefaultUpload, new ArrowType.Interval(intervalUnit), dhType);
         }
 
         @Override
@@ -3230,21 +3344,22 @@ public class BarrageChunkFactoryTest {
                 switch (intervalUnit) {
                     case YEAR_MONTH: {
                         final IntervalYearVector iv = (IntervalYearVector) source;
-                        final int months = Math.abs(rnd.nextInt());
+                        final int months = rnd.nextInt(1 << 24);
                         iv.set(ii, months);
                         break;
                     }
                     case DAY_TIME: {
                         final IntervalDayVector iv = (IntervalDayVector) source;
-                        final int days = Math.abs(rnd.nextInt());
+                        // note that we can only represent ~100k days in a signed long of nanos
+                        final int days = rnd.nextInt(100_000);
                         final int milliseconds = dhType == Period.class ? 0 : rnd.nextInt(24 * 60 * 60 * 1_000);
                         iv.set(ii, days, milliseconds);
                         break;
                     }
                     case MONTH_DAY_NANO: {
                         final IntervalMonthDayNanoVector iv = (IntervalMonthDayNanoVector) source;
-                        final int months = Math.abs(rnd.nextInt());
-                        final int days = Math.abs(rnd.nextInt());
+                        final int months = rnd.nextInt(1 << 24);
+                        final int days = rnd.nextInt(50_000);
                         final long nanos = Math.abs(rnd.nextLong()) % (24 * 60 * 60 * 1_000_000_000L);
                         iv.set(ii, months, days, dhType == Period.class ? 0 : nanos);
                         break;
@@ -3281,7 +3396,7 @@ public class BarrageChunkFactoryTest {
 
         @Override
         public Schema newSchema(boolean isNullable) {
-            return createSchema(isNullable, isDefault, new ArrowType.Binary(), dhType);
+            return createSchema(isNullable, isDefaultUpload, new ArrowType.Binary(), dhType);
         }
 
         @Override
@@ -3323,7 +3438,7 @@ public class BarrageChunkFactoryTest {
 
         @Override
         public Schema newSchema(boolean isNullable) {
-            return createSchema(isNullable, isDefault, new ArrowType.FixedSizeBinary(fixedLength), dhType);
+            return createSchema(isNullable, isDefaultUpload, new ArrowType.FixedSizeBinary(fixedLength), dhType);
         }
 
         @Override
@@ -3362,8 +3477,18 @@ public class BarrageChunkFactoryTest {
         }
 
         @Override
+        public Object truncate(BaseVariableWidthVector source, int ii) {
+            // override "truncate" to convert to String to guarantee unique keys when wrap mode is MAP_KEY
+            Object innerObj = super.truncate(source, ii);
+            if (innerObj instanceof byte[]) {
+                return new String((byte[]) innerObj, Charsets.UTF_8);
+            }
+            return innerObj;
+        }
+
+        @Override
         public Schema newSchema(boolean isNullable) {
-            return createSchema(isNullable, isDefault, arrowType, dhType);
+            return createSchema(isNullable, isDefaultUpload, arrowType, dhType);
         }
 
         @Override
@@ -3408,7 +3533,7 @@ public class BarrageChunkFactoryTest {
 
         @Override
         public Schema newSchema(boolean isNullable) {
-            return createSchema(isNullable, isDefault, new ArrowType.Binary(), dhType);
+            return createSchema(isNullable, isDefaultUpload, new ArrowType.Binary(), dhType);
         }
 
         @Override

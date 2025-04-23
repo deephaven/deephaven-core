@@ -16,6 +16,7 @@ import io.deephaven.engine.table.impl.locations.ImmutableTableLocationKey;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.TableLocationProvider;
 import io.deephaven.engine.table.impl.locations.TableLocationRemovedException;
+import io.deephaven.engine.table.impl.perf.PerformanceEntry;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationSubscriptionBuffer;
@@ -28,12 +29,14 @@ import org.jetbrains.annotations.NotNull;
 import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
 /**
  * Basic uncoalesced table that only adds keys.
  */
-public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> extends RedefinableTable<IMPL_TYPE> {
+public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> extends RedefinableTable<IMPL_TYPE>
+        implements HasRefreshingSource {
 
     /**
      * Component factory. Mostly held for redefinitions.
@@ -146,7 +149,7 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
             if (locationsInitialized) {
                 return;
             }
-            QueryPerformanceRecorder.withNugget(description + ".initializeAvailableLocations()", () -> {
+            QueryPerformanceRecorder.withNugget(getDescription() + ".initializeAvailableLocations()", () -> {
                 if (isRefreshing()) {
                     final TableLocationSubscriptionBuffer locationBuffer =
                             new TableLocationSubscriptionBuffer(locationProvider);
@@ -219,7 +222,8 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
             if (locationSizesInitialized) {
                 return;
             }
-            QueryPerformanceRecorder.withNugget(description + ".initializeLocationSizes()", sizeForInstrumentation(),
+            QueryPerformanceRecorder.withNugget(getDescription() + ".initializeLocationSizes()",
+                    sizeForInstrumentation(),
                     () -> {
                         Assert.eqNull(rowSet, "rowSet");
                         try {
@@ -241,7 +245,7 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
         private final TableLocationSubscriptionBuffer locationBuffer;
 
         private LocationChangePoller(@NotNull final TableLocationSubscriptionBuffer locationBuffer) {
-            super(SourceTable.this.updateSourceRegistrar, SourceTable.this, description + ".rowSetUpdateSource");
+            super(SourceTable.this.updateSourceRegistrar, SourceTable.this, getDescription() + ".rowSetUpdateSource");
             this.locationBuffer = locationBuffer;
         }
 
@@ -354,5 +358,17 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
                 locationChangePoller.locationBuffer.reset();
             }
         }
+    }
+
+    @Override
+    @NotNull
+    public Stream<PerformanceEntry> sourceEntries() {
+        if (updateSourceRegistrar != null) {
+            final PerformanceEntry entry = locationChangePoller.getEntry();
+            if (entry != null) {
+                return Stream.of(entry);
+            }
+        }
+        return Stream.empty();
     }
 }

@@ -16,11 +16,11 @@ public abstract class ShiftObliviousInstrumentedListener extends InstrumentedTab
     private RowSet initialImageClone;
 
     public ShiftObliviousInstrumentedListener(@Nullable final String description) {
-        super(description, false);
+        super(description, false, null);
     }
 
     public ShiftObliviousInstrumentedListener(@Nullable final String description, final boolean terminalListener) {
-        super(description, terminalListener);
+        super(description, terminalListener, null);
     }
 
     @Override

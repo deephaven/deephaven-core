@@ -3,11 +3,12 @@
  */
 #pragma once
 
-#include <any>
+#include <cstdint>
+#include <memory>
 #include <string>
-#include <vector>
 #include "deephaven/dhcore/types.h"
 #include "deephaven/dhcore/chunk/chunk.h"
+#include "deephaven/dhcore/container/container.h"
 #include "deephaven/dhcore/container/row_sequence.h"
 #include "deephaven/dhcore/utility/utility.h"
 
@@ -70,6 +71,13 @@ public:
    */
   virtual void FillChunkUnordered(const UInt64Chunk &rows, Chunk *dest_data,
       BooleanChunk *optional_dest_null_flags) const = 0;
+
+  /**
+   * Get the ElementType of the ColumnSource
+   * @return The ElementType of this ColumnSource
+   */
+  [[nodiscard]]
+  virtual const ElementType &GetElementType() const = 0;
 
   /**
    * Implement the Visitor pattern.
@@ -182,6 +190,10 @@ using LocalDateColumnSource = GenericColumnSource<deephaven::dhcore::LocalDate>;
  * Convenience using.
  */
 using LocalTimeColumnSource = GenericColumnSource<deephaven::dhcore::LocalTime>;
+/**
+ * Convenience using.
+ */
+using ContainerBaseColumnSource = GenericColumnSource<std::shared_ptr<deephaven::dhcore::container::ContainerBase>>;
 
 // the mutable per-type interfaces
 template<typename T>
@@ -245,5 +257,9 @@ public:
    * Implements the visitor pattern.
    */
   virtual void Visit(const LocalTimeColumnSource &) = 0;
+  /**
+   * Implements the visitor pattern.
+   */
+  virtual void Visit(const ContainerBaseColumnSource &) = 0;
 };
 }  // namespace deephaven::dhcore::column
