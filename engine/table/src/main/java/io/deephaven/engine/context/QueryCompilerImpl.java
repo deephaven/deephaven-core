@@ -113,13 +113,18 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
     public static final String DYNAMIC_CLASS_PREFIX = "io.deephaven.dynamic";
 
     public static QueryCompilerImpl create(File cacheDirectory, ClassLoader classLoader) {
-        return new QueryCompilerImpl(cacheDirectory, classLoader, true);
+        return new QueryCompilerImpl(cacheDirectory, classLoader, true, null);
     }
 
     static QueryCompilerImpl createForUnitTests() {
+        return createForUnitTests(null);
+    }
+
+    static QueryCompilerImpl createForUnitTests(final List<String> classNamesForAnnotationProcessing) {
         final Path queryCompilerDir = DataDir.get()
                 .resolve("io.deephaven.engine.context.QueryCompiler.createForUnitTests");
-        return new QueryCompilerImpl(queryCompilerDir.toFile(), QueryCompilerImpl.class.getClassLoader(), false);
+        return new QueryCompilerImpl(queryCompilerDir.toFile(), QueryCompilerImpl.class.getClassLoader(), false,
+                classNamesForAnnotationProcessing);
     }
 
     private final Map<String, CompletionStageFuture<Class<?>>> knownClasses = new HashMap<>();
@@ -129,11 +134,14 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
     private final File classDestination;
     private final Set<File> additionalClassLocations;
     private final WritableURLClassLoader ucl;
+    // This is for test use only, specifying a non-null list causes an error without a specific source to be generated.
+    private final List<String> classNamesForAnnotationProcessing;
 
     private QueryCompilerImpl(
             @NotNull final File classDestination,
             @NotNull final ClassLoader parentClassLoader,
-            boolean classDestinationIsAlsoClassSource) {
+            boolean classDestinationIsAlsoClassSource,
+            final List<String> classNamesForAnnotationProcessing) {
         ensureJavaCompiler();
 
         this.classDestination = classDestination;
@@ -152,6 +160,8 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
         if (classDestinationIsAlsoClassSource) {
             addClassSource(classDestination);
         }
+
+        this.classNamesForAnnotationProcessing = classNamesForAnnotationProcessing;
     }
 
     @Override
@@ -947,6 +957,7 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
                 "--should-stop=ifError=GENERATE");
 
         final MutableInt numFailures = new MutableInt(0);
+        final List<RuntimeException> globalFailures = new ArrayList<>();
         compiler.getTask(compilerOutput,
                 fileManager,
                 diagnostic -> {
@@ -955,6 +966,16 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
                     }
 
                     final JavaSourceFromString source = (JavaSourceFromString) diagnostic.getSource();
+
+                    if (source == null) {
+                        // If we have no source, then mark every request as a failure.
+                        final UncheckedDeephavenException err = new UncheckedDeephavenException(
+                                "Error Invoking Compiler, no source present in diagnostic:\n"
+                                        + diagnostic.getMessage(Locale.getDefault()));
+                        globalFailures.add(err);
+                        return;
+                    }
+
                     final UncheckedDeephavenException err = new UncheckedDeephavenException("Error Compiling "
                             + source.description + "\n" + diagnostic.getMessage(Locale.getDefault()));
                     if (source.resolver.completeExceptionally(err)) {
@@ -963,11 +984,19 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
                     }
                 },
                 compilerOptions,
-                null,
+                classNamesForAnnotationProcessing,
                 requests.subList(startInclusive, endExclusive).stream()
                         .map(CompilationRequestAttempt::makeSource)
                         .collect(Collectors.toList()))
                 .call();
+
+        if (!globalFailures.isEmpty()) {
+            final RuntimeException e0 = globalFailures.get(0);
+            for (int ii = 1; ii < globalFailures.size(); ++ii) {
+                e0.addSuppressed(globalFailures.get(ii));
+            }
+            throw e0;
+        }
 
         final boolean wantRetry = numFailures.get() > 0 && numFailures.get() != endExclusive - startInclusive;
 
