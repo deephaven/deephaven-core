@@ -11,7 +11,6 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.PartitionAwareSourceTable;
-import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.select.FormulaEvaluationException;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
@@ -27,9 +26,11 @@ import io.deephaven.iceberg.util.IcebergTableImpl;
 import io.deephaven.iceberg.util.IcebergTableWriter;
 import io.deephaven.iceberg.util.IcebergUpdateMode;
 import io.deephaven.iceberg.util.IcebergWriteInstructions;
+import io.deephaven.iceberg.util.InferenceInstructions;
 import io.deephaven.iceberg.util.Resolver;
 import io.deephaven.iceberg.util.SortOrderProvider;
 import io.deephaven.iceberg.util.TableParquetWriterOptions;
+import io.deephaven.iceberg.util.TypeInference;
 import io.deephaven.parquet.table.CompletedParquetWrite;
 import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.ParquetTools;
@@ -48,7 +49,6 @@ import org.apache.iceberg.TableProperties;
 import org.apache.iceberg.catalog.Namespace;
 import org.apache.iceberg.catalog.TableIdentifier;
 import org.apache.iceberg.io.OutputFileFactory;
-import org.apache.iceberg.mapping.MappedField;
 import org.apache.iceberg.mapping.MappingUtil;
 import org.apache.iceberg.mapping.NameMapping;
 import org.apache.iceberg.mapping.NameMappingParser;
@@ -1620,22 +1620,32 @@ public abstract class SqliteCatalogBase {
     }
 
     @Test
-    void testFailOnUnsupportedTypes() {
-        final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.testFailOnUnsupportedTypes");
+    void testUnsupportedTypes() {
+        final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.testUnsupportedTypes");
 
         final Schema schema = new Schema(
                 Types.NestedField.of(1, false, "intCol", Types.IntegerType.get()),
                 Types.NestedField.of(2, false, "doubleCol", Types.DoubleType.get()),
                 Types.NestedField.of(3, false, "uuidCol", Types.UUIDType.get())); // Unsupported
 
+        final TableDefinition definition = TableDefinition.of(
+                ColumnDefinition.ofInt("intCol"),
+                ColumnDefinition.ofDouble("doubleCol"));
+
         catalogAdapter.catalog().createTable(tableIdentifier, schema, PartitionSpec.unpartitioned());
 
+        // By default, the internal inference will be lenient and only map fields that DH supports
         final IcebergTableAdapter tableAdapter = catalogAdapter.loadTable(tableIdentifier);
+        assertThat(tableAdapter.definition()).isEqualTo(definition);
+        assertThat(tableAdapter.table().getDefinition()).isEqualTo(definition);
+
+        // The decision on whether to fail is determined when the resolver is constructed, and callers can choose to
+        // explicitly fail if they prefer
         try {
-            tableAdapter.table();
-            failBecauseExceptionWasNotThrown(TableDataException.class);
-        } catch (TableDataException e) {
-            assertThat(e).hasMessageContaining("Unsupported iceberg column type UUID");
+            Resolver.infer(InferenceInstructions.builder().schema(schema).failOnUnsupportedTypes(true).build());
+            failBecauseExceptionWasNotThrown(TypeInference.UnsupportedType.class);
+        } catch (TypeInference.UnsupportedType e) {
+            assertThat(e).hasMessageContaining("Unsupported Iceberg type `uuid` at fieldName `uuidCol`");
         }
     }
 
