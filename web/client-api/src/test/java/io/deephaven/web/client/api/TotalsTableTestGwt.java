@@ -11,9 +11,16 @@ import io.deephaven.web.client.api.event.Event;
 import io.deephaven.web.client.api.filter.FilterCondition;
 import io.deephaven.web.client.api.filter.FilterValue;
 import io.deephaven.web.client.api.subscription.ViewportData;
+import io.deephaven.web.client.api.tree.enums.JsAggregationOperation;
 import jsinterop.base.Js;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
+
+import static java.util.Map.entry;
 
 public class TotalsTableTestGwt extends AbstractAsyncGwtTestCase {
     private final TableSourceBuilder tables = new TableSourceBuilder()
@@ -23,6 +30,20 @@ public class TotalsTableTestGwt extends AbstractAsyncGwtTestCase {
                     "empty_table(5).update_view([(\"I = (double)i\", \"J = (double) i * i\", \"K = (double) i % 2\")])"
                             +
                             ".with_attributes({'TotalsTable':'false,false,Count;J=Min:Avg,K=Skip,;'})");
+
+    // This will need to be updated to reflect values from JsTotalsTableConfig.knownAggTypes
+    // These are the values calculated for each Agg for column I of the "hasTotals" table
+    private final Map<String, Double> AggValueMap = Map.ofEntries(
+            entry(JsAggregationOperation.MIN, 0.0),
+            entry(JsAggregationOperation.MAX, 4.0),
+            entry(JsAggregationOperation.SUM, 10.0),
+            entry(JsAggregationOperation.ABS_SUM, 10.0),
+            entry(JsAggregationOperation.VAR, 2.5),
+            entry(JsAggregationOperation.AVG, 2.0),
+            entry(JsAggregationOperation.MEDIAN, 2.0),
+            entry(JsAggregationOperation.STD, 1.5811388300841898),
+            entry(JsAggregationOperation.FIRST, 0.0),
+            entry(JsAggregationOperation.LAST, 4.0));
 
     public void testQueryDefinedConfigs() {
         connect(tables)
@@ -367,6 +388,36 @@ public class TotalsTableTestGwt extends AbstractAsyncGwtTestCase {
                             table.getTotalsTable(config).then(checkForBothTotalsTables),
                             table.getGrandTotalsTable(config).then(checkForBothTotalsTables)
                     });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    public void testCreateTotalsTableAggTypes() {
+        connect(tables)
+                .then(table("hasTotals"))
+                .then(table -> {
+                    List<Supplier<Promise<JsTotalsTable>>> tests = new ArrayList<>();
+                    List<String> aggs = JsTotalsTableConfig.knownAggTypes;
+                    for (int i = 0; i < aggs.size(); i++) {
+                        String operation = aggs.get(i);
+                        JsTotalsTableConfig config = new JsTotalsTableConfig();
+                        config.operationMap.set("I",
+                                Js.uncheckedCast(new JsString[] {toJsString(operation)}));
+                        tests.add(() -> table.getTotalsTable(config).then(totals -> {
+                            totals.setViewport(0, 100, null, null, null);
+
+                            return waitForEvent(totals, JsTable.EVENT_UPDATED, update -> {
+                                ViewportData viewportData = (ViewportData) update.getDetail();
+                                assertEquals(1, viewportData.getRows().length);
+                                if (AggValueMap.containsKey(operation)) {
+                                    assertEquals(AggValueMap.get(operation),
+                                            viewportData.getRows().getAt(0).get(totals.findColumn("I")).asDouble());
+                                }
+                            }, 1500);
+                        }));
+                    }
+
+                    return tests.stream().reduce((p1, p2) -> () -> p1.get().then(result -> p2.get())).get().get();
                 })
                 .then(this::finish).catch_(this::report);
     }

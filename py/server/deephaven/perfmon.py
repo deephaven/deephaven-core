@@ -5,9 +5,10 @@
 """ Tools to obtain internal, Deephaven logs as tables, and tools to analyze the performance of the Deephaven
 system and Deephaven queries.
 """
-from typing import Dict
+from typing import Dict, Union, List
 
 import jpy
+import base64
 
 from deephaven import DHError
 from deephaven.jcompat import j_map_to_dict
@@ -17,6 +18,9 @@ from deephaven.update_graph import auto_locking_ctx
 _JPerformanceQueries = jpy.get_type("io.deephaven.engine.table.impl.util.PerformanceQueries")
 _JMetricsManager = jpy.get_type("io.deephaven.util.metrics.MetricsManager")
 _JTableLoggers = jpy.get_type("io.deephaven.engine.table.impl.util.TableLoggers")
+_JUpdateAncestorViz = jpy.get_type("io.deephaven.engine.table.impl.util.UpdateAncestorViz")
+_JString = jpy.get_type("java.lang.String")
+_JFile = jpy.get_type("java.io.File")
 
 
 def process_info_log() -> Table:
@@ -96,6 +100,7 @@ def query_performance_log() -> Table:
     except Exception as e:
         raise DHError(e, "failed to obtain the query performance log table.") from e
 
+
 def query_operation_performance_tree_table() -> TreeTable:
     """ Returns a tree table with Deephaven performance data for individual subqueries.
 
@@ -108,7 +113,7 @@ def query_operation_performance_tree_table() -> TreeTable:
     try:
         with auto_locking_ctx(query_performance_log()):
             return TreeTable(j_tree_table=_JPerformanceQueries.queryOperationPerformanceAsTreeTable(),
-                             id_col = "EvalKey", parent_col = "ParentEvalKey")
+                             id_col="EvalKey", parent_col="ParentEvalKey")
     except Exception as e:
         raise DHError(e, "failed to obtain the query operation performance log as tree table.") from e
 
@@ -126,7 +131,7 @@ def query_performance_tree_table() -> TreeTable:
     try:
         with auto_locking_ctx(query_performance_log()):
             return TreeTable(j_tree_table=_JPerformanceQueries.queryPerformanceAsTreeTable(),
-                             id_col = "EvaluationNumber", parent_col = "ParentEvaluationNumber")
+                             id_col="EvaluationNumber", parent_col="ParentEvaluationNumber")
     except Exception as e:
         raise DHError(e, "failed to obtain the query performance log as tree table.") from e
 
@@ -142,6 +147,21 @@ def update_performance_log() -> Table:
     """
     try:
         return Table(j_table=_JTableLoggers.updatePerformanceLog())
+    except Exception as e:
+        raise DHError(e, "failed to obtain the update performance log table.") from e
+
+
+def update_performance_ancestors_log() -> Table:
+    """ Returns a table with Deephaven update performance ancestor data.
+
+    Returns
+        a Table
+
+    Raises:
+        DHError
+    """
+    try:
+        return Table(j_table=_JTableLoggers.updatePerformanceAncestorsLog())
     except Exception as e:
         raise DHError(e, "failed to obtain the update performance log table.") from e
 
@@ -289,3 +309,81 @@ def query_update_performance_map(eval_number: int) -> Dict[str, Table]:
         return d
     except Exception as e:
         raise DHError(e, "failed to obtain the query update perf map.") from e
+
+
+def ancestor_svg(ids: Union[List[int], int], update_perf_log: Table, ancestors_log: Table, filename: str = None) -> str:
+    """ Returns the contents of an SVG image containing a graph of the ancestor hierarchy derived from the passed in
+    UpdatePerformanceLog and UpdatePerformanceAncestorsLog for the provided Performance Entry identifier. This can be used
+    to help understand the structure of a query.
+
+    Args:
+        ids (Union[List[int], int]): the Performance entry identifier or identifiers (EntryId) to generate the graph for
+        update_perf_log (Table): the UpdatePerformanceLog Table
+        ancestors_log (Table): the UpdatePerformanceAncestorsLog Table
+        filename (str): the name of the output SVG file or None to not write the file, default is None
+
+    Returns
+        the contents of an SVG image
+
+    Raises:
+        DHError
+    """
+    try:
+        if isinstance(ids, int):
+            ids = [ids]
+        j_file = _JFile(filename) if filename is not None else None
+        svg_bytes = _JUpdateAncestorViz.svg(ids, update_perf_log.j_table, ancestors_log.j_table, j_file)
+        return str(_JString(svg_bytes))
+    except Exception as e:
+        raise DHError(e, "failed to produce ancestor SVG") from e
+
+
+def ancestor_image(ids: Union[List[int], int], update_perf_log: Table, ancestors_log: Table) -> "deephaven.ui.Element":
+    """ Returns a deephaven.ui component with an embedded SVG image containing the hierarchy derived from the passed in
+    UpdatePerformanceLog and UpdatePerformanceAncestorsLog for the provided Performance Entry identifier.  This can be used
+    to help understand the structure of a query.
+
+    Note that the deephaven-plugin-ui package must be installed to use this function.
+
+    Args:
+        ids (Union[List[int], int]): the Performance entry identifier or identifiers (EntryId) to generate the graph for
+        update_perf_log (Table): the UpdatePerformanceLog Table
+        ancestors_log (Table): the UpdatePerformanceAncestorsLog Table
+
+    Returns
+        a UI component with an embedded graph of ancestors
+
+    Raises:
+        DHError
+    """
+
+    try:
+        import deephaven.ui
+        image_contents = ancestor_svg(ids, update_perf_log, ancestors_log).encode('utf-8')
+        return deephaven.ui.image(f"data:image/svg+xml;base64,{base64.b64encode(image_contents).decode()}")
+    except ImportError:
+        raise Exception("deephaven.ui is not available, consider \"pip install deephaven-plugin-ui\" in your Python virtual environment")
+    except Exception as e:
+        raise DHError(e, "failed to produce ancestor image") from e
+
+
+def ancestor_dot(ids: Union[List[int], int], update_perf_log: Table, ancestors_log: Table) -> str:
+    """ Returns a graphviz DOT representing Deephaven update performance ancestor data.
+
+    Args:
+        ids (Union[List[int], int]): the Performance entry identifier or identifiers (EntryId) to generate the graph for
+        update_perf_log (Table): the UpdatePerformanceLog Table
+        ancestors_log (Table): the UpdatePerformanceAncestorsLog Table
+
+    Returns
+        a string of graphviz DOT format data
+
+    Raises:
+        DHError
+    """
+    try:
+        if isinstance(ids, int):
+            ids = [ids]
+        return _JUpdateAncestorViz.dot(ids, update_perf_log.j_table, ancestors_log.j_table)
+    except Exception as e:
+        raise DHError(e, "failed to produce ancestor DOT file") from e

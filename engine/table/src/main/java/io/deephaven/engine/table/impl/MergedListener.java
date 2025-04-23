@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.table.impl;
 
+import gnu.trove.list.array.TLongArrayList;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.context.ExecutionContext;
@@ -83,8 +84,33 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
         this.dependencies = dependencies;
         this.listenerDescription = listenerDescription;
         this.result = result;
-        this.entry = PeriodicUpdateGraph.createUpdatePerformanceEntry(this.updateGraph, listenerDescription);
+        this.entry = PeriodicUpdateGraph.createUpdatePerformanceEntry(this.updateGraph, listenerDescription,
+                () -> getParentIdentifiers(recorders, dependencies));
         this.logPrefix = System.identityHashCode(this) + " " + listenerDescription + " Merged Listener: ";
+    }
+
+    protected void logNewAncestors(Iterable<? extends ListenerRecorder> recorders) {
+        PeriodicUpdateGraph.logPerformanceEntryAncestors(this.updateGraph, this.entry,
+                () -> getParentIdentifiers(recorders, null));
+    }
+
+    private static long[] getParentIdentifiers(@NotNull Iterable<? extends ListenerRecorder> recorders,
+            @Nullable Iterable<NotificationQueue.Dependency> dependencies) {
+        final TLongArrayList parentList = new TLongArrayList();
+        recorders.forEach(rec -> {
+            if (rec.getParent() instanceof HasParentPerformanceIds) {
+                final HasParentPerformanceIds parentBase = (HasParentPerformanceIds) (rec.getParent());
+                parentBase.parentPerformanceEntryIds().forEach(parentList::add);
+            }
+        });
+        if (dependencies != null) {
+            dependencies.forEach(dep -> {
+                if (dep instanceof HasParentPerformanceIds) {
+                    ((HasParentPerformanceIds) dep).parentPerformanceEntryIds().forEach(parentList::add);
+                }
+            });
+        }
+        return parentList.toArray();
     }
 
     private void releaseFromRecorders() {
@@ -94,6 +120,11 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
     @Override
     public UpdateGraph getUpdateGraph() {
         return updateGraph;
+    }
+
+    @Nullable
+    public PerformanceEntry getEntry() {
+        return entry;
     }
 
     protected Iterable<? extends ListenerRecorder> getRecorders() {

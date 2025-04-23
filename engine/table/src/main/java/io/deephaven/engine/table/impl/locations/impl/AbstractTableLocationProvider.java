@@ -6,6 +6,7 @@ package io.deephaven.engine.table.impl.locations.impl;
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.liveness.LiveSupplier;
+import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.liveness.ReferenceCountedLivenessNode;
 import io.deephaven.engine.liveness.StandaloneLivenessManager;
 import io.deephaven.engine.table.Table;
@@ -100,7 +101,8 @@ public abstract class AbstractTableLocationProvider
         }
 
         /**
-         * Create the {@link TableLocation} for this key, if it has not already been created, and return it.
+         * Create the {@link TableLocation} for this key and {@link #manage(LivenessReferent)} it if it has not already
+         * been created, and return it.
          */
         private TableLocation getTableLocation() {
             TableLocation localTableLocation;
@@ -109,8 +111,9 @@ public abstract class AbstractTableLocationProvider
                     if ((localTableLocation = tableLocation) == null) {
                         // Make a new location, have the tracked key manage it, then store the location in the tracked
                         // key.
-                        tableLocation = localTableLocation = makeTableLocation(key);
+                        localTableLocation = makeTableLocation(key);
                         manage(localTableLocation);
+                        tableLocation = localTableLocation;
                     }
                 }
             }

@@ -43,7 +43,6 @@ import io.deephaven.util.type.TypeUtils;
 import io.deephaven.vector.ByteVector;
 import io.deephaven.vector.Vector;
 import org.apache.arrow.vector.PeriodDuration;
-import org.apache.arrow.vector.types.TimeUnit;
 import org.apache.arrow.vector.types.UnionMode;
 import org.apache.arrow.vector.types.pojo.ArrowType;
 import org.apache.arrow.vector.types.pojo.Field;
@@ -55,7 +54,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.math.RoundingMode;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
@@ -82,13 +80,13 @@ import static io.deephaven.extensions.barrage.chunk.FactoryHelper.maskIfOverflow
  */
 public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
     public static final Logger log = LoggerFactory.getLogger(DefaultChunkWriterFactory.class);
-    public static final ChunkWriter.Factory INSTANCE = new DefaultChunkWriterFactory();
+    public static final DefaultChunkWriterFactory INSTANCE = new DefaultChunkWriterFactory();
 
     /**
      * This supplier interface simplifies the cost to operate off of the ArrowType directly since the Arrow POJO is not
      * yet supported over GWT.
      */
-    protected interface ArrowTypeChunkWriterSupplier {
+    public interface ArrowTypeChunkWriterSupplier {
         ChunkWriter<? extends Chunk<Values>> make(
                 final BarrageTypeInfo<Field> typeInfo);
     }
@@ -349,7 +347,7 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
     }
 
     @SuppressWarnings("unchecked")
-    protected void register(
+    public void register(
             final ArrowType.ArrowTypeID arrowType,
             final Class<?> deephavenType,
             final ArrowTypeChunkWriterSupplier chunkWriterFactory) {

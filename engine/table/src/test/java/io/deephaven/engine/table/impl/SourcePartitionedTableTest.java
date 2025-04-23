@@ -10,8 +10,10 @@ import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.locations.*;
 import io.deephaven.engine.table.iterators.ChunkedColumnIterator;
 import io.deephaven.engine.testutil.locations.DependentRegistrar;
@@ -27,8 +29,11 @@ import io.deephaven.util.process.ProcessEnvironment;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
+import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.Set;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Stream;
 
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.*;
@@ -67,58 +72,81 @@ public class SourcePartitionedTableTest extends RefreshingTableTestCase {
     private DependentRegistrar registrar;
     private TableBackedTableLocationProvider tlp;
 
-    private SourcePartitionedTable setUpData() {
-        p1 = testRefreshingTable(ir(0, 3).toTracking(),
+    private SourcePartitionedTable setUpData(final boolean refreshing) {
+        final TableDefinition constituentDefinition = TableDefinition.of(
+                ColumnDefinition.ofString("TableName").withPartitioning(),
+                ColumnDefinition.ofString("Sym"),
+                ColumnDefinition.ofInt("intCol"),
+                ColumnDefinition.ofDouble("doubleCol"));
+
+        p1 = testTable(ir(0, 3).toTracking(),
+                stringCol("TableName", "p1", "p1", "p1", "p1"),
                 stringCol("Sym", "aa", "bb", "aa", "bb"),
                 intCol("intCol", 10, 20, 40, 60),
                 doubleCol("doubleCol", 0.1, 0.2, 0.4, 0.6));
         p1.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, true);
+        p1 = p1.copy(constituentDefinition, a -> true);
 
-        p2 = testRefreshingTable(ir(0, 3).toTracking(),
+        p2 = testTable(ir(0, 3).toTracking(),
+                stringCol("TableName", "p2", "p2", "p2", "p2"),
                 stringCol("Sym", "cc", "dd", "cc", "dd"),
                 intCol("intCol", 100, 200, 400, 600),
                 doubleCol("doubleCol", 0.1, 0.2, 0.4, 0.6));
         p2.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, true);
+        p2 = p2.copy(constituentDefinition, a -> true);
 
-        p3 = testRefreshingTable(ir(0, 3).toTracking(),
+        p3 = testTable(ir(0, 3).toTracking(),
+                stringCol("TableName", "p3", "p3", "p3", "p3"),
                 stringCol("Sym", "ee", "ff", "ee", "ff"),
                 intCol("intCol", 1000, 2000, 4000, 6000),
                 doubleCol("doubleCol", 0.1, 0.2, 0.4, 0.6));
         p3.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, true);
+        p3 = p3.copy(constituentDefinition, a -> true);
 
-        p4 = testRefreshingTable(ir(0, 3).toTracking(),
+        p4 = testTable(ir(0, 3).toTracking(),
+                stringCol("TableName", "p4", "p4", "p4", "p4"),
                 stringCol("Sym", "gg", "hh", "gg", "hh"),
                 intCol("intCol", 10000, 20000, 40000, 60000),
                 doubleCol("doubleCol", 0.1, 0.2, 0.4, 0.6));
         p4.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, true);
+        p4 = p4.copy(constituentDefinition, a -> true);
 
-        p5 = testRefreshingTable(i().toTracking(), // Initially empty
+        p5 = testTable(i().toTracking(), // Initially empty
+                stringCol("TableName"),
                 stringCol("Sym"),
                 intCol("intCol"),
                 doubleCol("doubleCol"));
         p5.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, true);
+        p5 = p5.copy(constituentDefinition, a -> true);
+
+        if (refreshing) {
+            Stream.of(p1, p2, p3, p4, p5).forEach(t -> t.setRefreshing(true));
+        }
 
         registrar = new DependentRegistrar();
         tlp = new TableBackedTableLocationProvider(
                 registrar,
-                true,
-                TableUpdateMode.ADD_REMOVE,
-                TableUpdateMode.ADD_REMOVE,
-                p1, p2);
+                refreshing,
+                refreshing ? TableUpdateMode.ADD_REMOVE : TableUpdateMode.STATIC,
+                refreshing ? TableUpdateMode.ADD_REMOVE : TableUpdateMode.STATIC);
 
-        return new SourcePartitionedTable(p1.getDefinition(),
-                t -> t,
+        tlp.add(p1, Map.of("TableName", "p1"));
+        tlp.add(p2, Map.of("TableName", "p2"));
+
+        return new SourcePartitionedTable(
+                p1.getDefinition(),
+                null,
                 tlp,
-                true,
-                true,
-                l -> true);
+                refreshing,
+                refreshing,
+                null);
     }
 
     private void verifyStringColumnContents(Table table, String columnName, String... expectedValues) {
         final ColumnSource<String> columnSource = table.getColumnSource(columnName);
-        final Set<String> expectedSym = Set.of(expectedValues);
+        final List<String> expectedSym = List.of(expectedValues);
 
-        final Set<String> actualSym = new HashSet<>();
+        final List<String> actualSym = new ArrayList<>();
         try (final CloseableIterator<String> symIterator = ChunkedColumnIterator.make(
                 columnSource, table.getRowSet(), 1024)) {
             symIterator.forEachRemaining(actualSym::add);
@@ -128,7 +156,7 @@ public class SourcePartitionedTableTest extends RefreshingTableTestCase {
 
     @Test
     public void testAddAndRemoveLocations() {
-        final SourcePartitionedTable spt = setUpData();
+        final SourcePartitionedTable spt = setUpData(true);
 
         final Table partitionTable = spt.table();
 
@@ -189,7 +217,7 @@ public class SourcePartitionedTableTest extends RefreshingTableTestCase {
         // Add a new location (p3)
         ////////////////////////////////////////////
 
-        tlp.add(p3);
+        tlp.add(p3, Map.of("TableName", "p3"));
 
         updateGraph.getDelegate().startCycleForUnitTests(false);
         updateGraph.refreshSources();
@@ -217,7 +245,7 @@ public class SourcePartitionedTableTest extends RefreshingTableTestCase {
 
         tlks = tlp.getTableLocationKeys().stream().sorted().toArray(ImmutableTableLocationKey[]::new);
         tlp.removeTableLocationKey(tlks[0]);
-        tlp.add(p4);
+        tlp.add(p4, Map.of("TableName", "p4"));
 
         updateGraph.getDelegate().startCycleForUnitTests(false);
         updateGraph.refreshSources();
@@ -245,12 +273,14 @@ public class SourcePartitionedTableTest extends RefreshingTableTestCase {
          */
         final TableLocation location5;
         try (final SafeCloseable ignored = LivenessScopeStack.open(new LivenessScope(), true)) {
-            final QueryTable p5 = testRefreshingTable(ir(0, 3).toTracking(),
+            QueryTable p5 = testRefreshingTable(ir(0, 3).toTracking(),
+                    stringCol("TableName", "p5", "p5", "p5", "p5"),
                     stringCol("Sym", "ii", "jj", "ii", "jj"),
                     intCol("intCol", 10000, 20000, 40000, 60000),
                     doubleCol("doubleCol", 0.1, 0.2, 0.4, 0.6));
             p5.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, true);
-            tlp.add(p5);
+            p5 = p5.copy(p1.getDefinition(), a -> true);
+            tlp.add(p5, Map.of("TableName", "p5"));
 
             updateGraph.getDelegate().startCycleForUnitTests(false);
             updateGraph.refreshSources();
@@ -339,7 +369,7 @@ public class SourcePartitionedTableTest extends RefreshingTableTestCase {
      */
     @Test
     public void testRemoveAndFail() {
-        final SourcePartitionedTable spt = setUpData();
+        final SourcePartitionedTable spt = setUpData(true);
 
         final Table partitionTable = spt.table();
         assertEquals(2, partitionTable.size());
@@ -391,12 +421,12 @@ public class SourcePartitionedTableTest extends RefreshingTableTestCase {
      */
     @Test
     public void testCantReadPrev() {
-        final SourcePartitionedTable spt = setUpData();
+        final SourcePartitionedTable spt = setUpData(true);
 
         final Table merged = spt.merge();
-        final Table aggs = merged.sumBy("Sym");
+        final Table aggs = merged.sumBy("TableName", "Sym");
 
-        Table expected = TableTools.merge(p1, p2).sumBy("Sym");
+        Table expected = TableTools.merge(p1, p2).sumBy("TableName", "Sym");
         assertTableEquals(expected, aggs);
 
         ImmutableTableLocationKey[] tlks = tlp.getTableLocationKeys()
@@ -417,24 +447,82 @@ public class SourcePartitionedTableTest extends RefreshingTableTestCase {
 
     @Test
     public void testInitiallyEmptyLocation() {
-        final SourcePartitionedTable spt = setUpData();
+        final SourcePartitionedTable spt = setUpData(true);
         final Table ptSummary = spt.merge().selectDistinct("Sym");
         verifyStringColumnContents(ptSummary, "Sym", "aa", "bb", "cc", "dd");
-        tlp.add(p5);
+        tlp.add(p5, Map.of("TableName", "p5"));
+
+        // Observe an empty p5 constituent.
         updateGraph.getDelegate().runWithinUnitTestCycle(() -> {
             updateGraph.refreshSources();
-            // We refreshed the source first, so it won't see a new size for the location backed by p5 on this cycle.
+        }, true);
+
+        // p5 was initially empty, so it should not be included in the result yet.
+        verifyStringColumnContents(ptSummary, "Sym", "aa", "bb", "cc", "dd");
+
+        // Grow p5 to include some data, and notify the listeners to trigger a refresh.
+        updateGraph.getDelegate().runWithinUnitTestCycle(() -> {
+            updateGraph.refreshSources();
             addToTable(p5, ir(0, 3),
+                    stringCol("TableName", "p5", "p5", "p5", "p5"),
                     stringCol("Sym", "ii", "jj", "kk", "ll"),
                     intCol("intCol", 10000, 20000, 40000, 60000),
                     doubleCol("doubleCol", 0.1, 0.2, 0.4, 0.6));
+            p5.notifyListeners(ir(0, 3), i(), i());
         }, true);
+
+        // The table-backed TL hasn't seen the new rows for p5 yet...
         verifyStringColumnContents(ptSummary, "Sym", "aa", "bb", "cc", "dd");
+
         updateGraph.getDelegate().runWithinUnitTestCycle(() -> {
             updateGraph.refreshSources();
-            // Now the source has been refreshed, so it should see the new size of the location backed by p5, and
-            // include it in the result.
         }, true);
+
+        // Now the table-backed TL has seen the new rows for p5, and the summary table should include them.
         verifyStringColumnContents(ptSummary, "Sym", "aa", "bb", "cc", "dd", "ii", "jj", "kk", "ll");
+    }
+
+    @Test
+    public void testStatic() throws InterruptedException {
+        SourcePartitionedTable spt;
+        Table ptSummary;
+        final TableLocationKey p2tlk;
+        final TableLocation p2tl;
+        Table c2;
+        // Avoid the default liveness scope used for unit tests so that we don't hold onto anything unintentionally
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            spt = setUpData(false);
+            ptSummary = spt.merge().selectDistinct("Sym");
+            verifyStringColumnContents(ptSummary, "Sym", "aa", "bb", "cc", "dd");
+            verifyStringColumnContents(spt.table(), "TableName", "p1", "p2");
+            p2tlk = spt.table().getColumnSource(spt.keyColumnNames().toArray(String[]::new)[0], TableLocationKey.class)
+                    .get(1);
+            p2tl = tlp.getTableLocation(p2tlk);
+            c2 = spt.constituentFor(p2tlk);
+        }
+        assertNotNull(p2tl.getRowSet());
+
+        tlp.removeTableLocationKey(p2tlk);
+        System.gc();
+        verifyStringColumnContents(c2, "TableName", "p2", "p2", "p2", "p2");
+        verifyStringColumnContents(spt.table(), "TableName", "p1", "p2");
+        assertNotNull(p2tl.getRowSet());
+
+        ptSummary = null;
+        System.gc();
+        verifyStringColumnContents(c2, "TableName", "p2", "p2", "p2", "p2");
+        verifyStringColumnContents(spt.table(), "TableName", "p1", "p2");
+        assertNotNull(p2tl.getRowSet());
+
+        c2 = null;
+        System.gc();
+        verifyStringColumnContents(spt.table(), "TableName", "p1", "p2");
+        assertNotNull(p2tl.getRowSet());
+
+        // TODO: DH-19011: Make this test pass, and then improve it to not have a sleep if possible:
+        // spt = null;
+        // System.gc();
+        // Thread.sleep(5000);
+        // assertNull(p2tl.getRowSet());
     }
 }

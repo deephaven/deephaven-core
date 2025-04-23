@@ -13,6 +13,7 @@ import io.deephaven.engine.table.impl.util.EngineMetrics;
 import io.deephaven.engine.table.impl.util.ServerStateTracker;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
+import io.deephaven.engine.util.AbstractScriptSession;
 import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
@@ -88,7 +89,7 @@ public class DeephavenApiServer {
 
     private final GrpcServer server;
     private final UpdateGraph ug;
-    private final LogInit logInit;
+    private final Provider<LogInit> logInit;
     private final Provider<Set<BusinessCalendar>> calendars;
     private final Scheduler scheduler;
     private final Provider<ScriptSession> scriptSessionProvider;
@@ -105,7 +106,7 @@ public class DeephavenApiServer {
     public DeephavenApiServer(
             final GrpcServer server,
             @Named(PeriodicUpdateGraph.DEFAULT_UPDATE_GRAPH_NAME) final UpdateGraph ug,
-            final LogInit logInit,
+            final Provider<LogInit> logInit,
             final Provider<Set<BusinessCalendar>> calendars,
             final Scheduler scheduler,
             final Provider<ScriptSession> scriptSessionProvider,
@@ -162,6 +163,10 @@ public class DeephavenApiServer {
         ProcessEnvironment.getGlobalShutdownManager().registerTask(ShutdownManager.OrderingCategory.MIDDLE,
                 sessionService::onShutdown);
 
+        // Let's also clear the class cache directory on a successful shutdown.
+        ProcessEnvironment.getGlobalShutdownManager().registerTask(ShutdownManager.OrderingCategory.MIDDLE,
+                () -> scriptSessionProvider.get().cleanup());
+
         // Finally, wait for the http server to be finished stopping
         ProcessEnvironment.getGlobalShutdownManager().registerTask(ShutdownManager.OrderingCategory.LAST, () -> {
             try {
@@ -173,8 +178,9 @@ public class DeephavenApiServer {
             }
         });
 
+        // Ensure that our logging is configured no later than this point
         log.info().append("Configuring logging...").endl();
-        logInit.run();
+        logInit.get();
 
         for (BusinessCalendar calendar : calendars.get()) {
             Calendars.addCalendar(calendar);

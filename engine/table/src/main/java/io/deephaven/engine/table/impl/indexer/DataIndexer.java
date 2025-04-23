@@ -304,7 +304,7 @@ public class DataIndexer implements TrackingRowSet.Indexer {
         }
         if (!rootCache.add(pathFor(dataIndex.keyColumnNamesByIndexedColumn().keySet()), dataIndex)) {
             throw new IllegalStateException(String.format("Attempted to add a duplicate index %s for key columns %s",
-                    dataIndex, dataIndex.keyColumnNamesByIndexedColumn().keySet()));
+                    dataIndex, dataIndex.keyColumnNamesByIndexedColumn().values()));
         }
     }
 

@@ -122,15 +122,6 @@ public class GenerateArrowColumnSources {
                                 .addStatement("$T localDateTime = vector.getObject(posInBlock)", LocalDateTime.class)
                                 .addStatement("return localDateTime != null ? localDateTime.toLocalTime() : null")
                                 .build()));
-
-        final ClassName instant = ClassName.get("java.time", "Instant");
-        generateArrowColumnSource("ArrowInstantColumnSource", instant, instant, TimeStampVector.class,
-                "get", "ForObject", WritableObjectChunk.class, List.of(
-                        preparePrivateExtractMethod(instant, TimeStampVector.class)
-                                .addStatement(
-                                        "return vector.isSet(posInBlock) == 0 ? null : io.deephaven.time.DateTimeUtils.epochNanosToInstant(vector.get(posInBlock))",
-                                        instant)
-                                .build()));
     }
 
     @NotNull

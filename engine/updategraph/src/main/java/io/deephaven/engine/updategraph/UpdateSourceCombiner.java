@@ -3,12 +3,13 @@
 //
 package io.deephaven.engine.updategraph;
 
-import io.deephaven.base.WeakReferenceManager;
+import io.deephaven.util.datastructures.ArrayWeakReferenceManager;
+import io.deephaven.util.datastructures.WeakReferenceManager;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.OverridingMethodsMustInvokeSuper;
-import java.util.Collections;
+import java.util.function.Supplier;
 
 /**
  * Update source that combines multiple sources in order to force them to be refreshed as a unit within the
@@ -17,11 +18,33 @@ import java.util.Collections;
 public class UpdateSourceCombiner extends LivenessArtifact implements Runnable, UpdateSourceRegistrar {
 
     private final UpdateGraph updateGraph;
+    private final boolean parallel;
+    private final WeakReferenceManager<Runnable> sources;
 
-    private final WeakReferenceManager<Runnable> combinedTables = new WeakReferenceManager<>(true);
+    /**
+     * Construct an UpdateSourceCombiner with default parameters. The result will process updates serially, and will use
+     * a concurrent {@link ArrayWeakReferenceManager}.
+     *
+     * @param updateGraph The {@link UpdateGraph} to register with
+     */
+    public UpdateSourceCombiner(@NotNull final UpdateGraph updateGraph) {
+        this(updateGraph, false, ArrayWeakReferenceManager::new);
+    }
 
-    public UpdateSourceCombiner(final UpdateGraph updateGraph) {
+    /**
+     * Construct an UpdateSourceCombiner.
+     * 
+     * @param updateGraph The {@link UpdateGraph} to register with
+     * @param parallel Whether to process updates in parallel
+     * @param weakReferenceManagerFactory Factory for the {@link WeakReferenceManager} to use when holding sources
+     */
+    public UpdateSourceCombiner(
+            @NotNull final UpdateGraph updateGraph,
+            final boolean parallel,
+            @NotNull final Supplier<WeakReferenceManager<Runnable>> weakReferenceManagerFactory) {
         this.updateGraph = updateGraph;
+        this.parallel = parallel;
+        this.sources = weakReferenceManagerFactory.get();
     }
 
     /**
@@ -34,7 +57,7 @@ public class UpdateSourceCombiner extends LivenessArtifact implements Runnable, 
 
     @Override
     public void run() {
-        combinedTables.forEachValidReference(Runnable::run);
+        sources.forEachValidReference(Runnable::run, parallel);
     }
 
     @Override
@@ -49,12 +72,12 @@ public class UpdateSourceCombiner extends LivenessArtifact implements Runnable, 
             // combiner as a parent, in order to ensure the integrity of the resulting DAG.
             dynamicUpdateSource.addParentReference(this);
         }
-        combinedTables.add(updateSource);
+        sources.add(updateSource);
     }
 
     @Override
     public void removeSource(@NotNull final Runnable updateSource) {
-        combinedTables.removeAll(Collections.singleton(updateSource));
+        sources.remove(updateSource);
     }
 
     /**

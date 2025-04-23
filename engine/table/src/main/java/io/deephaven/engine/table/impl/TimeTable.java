@@ -19,6 +19,7 @@ import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.DataIndex;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.perf.PerformanceEntry;
 import io.deephaven.engine.table.impl.sources.FillUnordered;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.engine.util.TableTools;
@@ -35,6 +36,7 @@ import java.time.Instant;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Stream;
 
 import static io.deephaven.time.DateTimeUtils.currentClock;
 import static io.deephaven.time.DateTimeUtils.epochNanos;
@@ -53,7 +55,7 @@ import static io.deephaven.util.type.TypeUtils.box;
  *
  * @implNote The constructor publishes {@code this} to the {@link UpdateSourceRegistrar} and thus cannot be subclassed.
  */
-public final class TimeTable extends QueryTable implements Runnable {
+public final class TimeTable extends QueryTable implements Runnable, HasRefreshingSource {
 
     public static class Builder {
         private UpdateSourceRegistrar registrar = ExecutionContext.getContext().getUpdateGraph();
@@ -169,6 +171,11 @@ public final class TimeTable extends QueryTable implements Runnable {
     @TestUseOnly
     public void run() {
         refresh(true);
+    }
+
+    @Override
+    public String getDescription() {
+        return name;
     }
 
     private class SourceRefresher extends InstrumentedTableUpdateSource {
@@ -482,5 +489,14 @@ public final class TimeTable extends QueryTable implements Runnable {
                 return true;
             }
         }
+    }
+
+    @NotNull
+    @Override
+    public Stream<PerformanceEntry> sourceEntries() {
+        if (refresher.getEntry() != null) {
+            return Stream.of(refresher.getEntry());
+        }
+        return Stream.empty();
     }
 }

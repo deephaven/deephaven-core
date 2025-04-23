@@ -4,8 +4,9 @@
 #include <iostream>
 #include "deephaven/third_party/catch.hpp"
 #include "deephaven/tests/test_util.h"
+#include "deephaven/client/client.h"
 #include "deephaven/client/utility/internal_types.h"
-#include "deephaven/client/utility/misc_types.h"
+#include "deephaven/client/utility/table_maker.h"
 #include "deephaven/dhcore/container/row_sequence.h"
 #include "deephaven/dhcore/types.h"
 

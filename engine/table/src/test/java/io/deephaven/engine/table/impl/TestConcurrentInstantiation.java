@@ -9,6 +9,7 @@ import io.deephaven.base.SleepUtil;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
+import io.deephaven.engine.liveness.Liveness;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -621,7 +622,9 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         final Table tableUpdate = TstUtils.testRefreshingTable(i(1, 2, 4).toTracking(),
                 col("x", 4, 3, 1), col("y", "d", "c", "a"), col("z", true, true, true), col("u", 16, 12, 4));
 
-        final Callable<Table> callable = () -> table.updateView("u=x*4").where("z").sortDescending("x");
+        final Callable<Table> callable =
+                () -> LivenessScopeStack.computeEnclosed(() -> table.updateView("u=x*4").where("z").sortDescending("x"),
+                        true, Table::isRefreshing);
 
         updateGraph.startCycleForUnitTests(false);
 

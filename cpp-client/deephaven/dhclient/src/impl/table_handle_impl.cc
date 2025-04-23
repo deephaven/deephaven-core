@@ -3,14 +3,13 @@
  */
 #include "deephaven/client/impl/table_handle_impl.h"
 
-#include <deque>
+#include <stdexcept>
 #include <memory>
 #include <mutex>
+#include <utility>
 #include <arrow/flight/client.h>
 #include <arrow/flight/types.h>
-#include <arrow/scalar.h>
 #include <arrow/type.h>
-#include <arrow/table.h>
 #include "deephaven/client/impl/table_handle_manager_impl.h"
 #include "deephaven/client/impl/update_by_operation_impl.h"
 #include "deephaven/client/client.h"
@@ -23,8 +22,6 @@
 #include "deephaven/dhcore/container/row_sequence.h"
 #include "deephaven/dhcore/ticking/ticking.h"
 #include "deephaven/dhcore/utility/utility.h"
-#include "deephaven/third_party/fmt/format.h"
-#include "deephaven/third_party/fmt/ranges.h"
 
 using io::deephaven::proto::backplane::grpc::AddTableRequest;
 using io::deephaven::proto::backplane::grpc::AddTableResponse;
@@ -603,26 +600,6 @@ std::shared_ptr<SubscriptionHandle> TableHandleImpl::Subscribe(std::shared_ptr<T
 void TableHandleImpl::Unsubscribe(const std::shared_ptr<SubscriptionHandle> &handle) {
   managerImpl_->RemoveSubscriptionHandle(handle);
   handle->Cancel();
-}
-
-void TableHandleImpl::LookupHelper(const std::string &column_name,
-    std::initializer_list<ElementTypeId::Enum> valid_types) {
-  auto schema = Schema();
-  auto index = *schema->GetColumnIndex(column_name, true);
-  auto actual_type = schema->Types()[index];
-  for (auto type : valid_types) {
-    if (actual_type == type) {
-      return;
-    }
-  }
-
-  auto renderable_valid_types = MakeReservedVector<int32_t>(valid_types.size());
-  for (const auto &item : valid_types) {
-    renderable_valid_types.push_back(static_cast<int32_t>(item));
-  }
-  auto message = fmt::format("Column lookup for {}: Expected Arrow type: one of {{{}}}. Actual type {}",
-      column_name, renderable_valid_types, static_cast<int>(actual_type));
-  throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
 }
 
 void TableHandleImpl::BindToVariable(std::string variable) {

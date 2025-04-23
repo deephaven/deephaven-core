@@ -1,11 +1,24 @@
 /*
  * Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
  */
+#include <cstdint>
+#include <cstdlib>
+#include <cstring>
+#include <exception>
 #include <iostream>
+#include <memory>
+#include <stdexcept>
+#include <string>
+#include <utility>
+#include <vector>
 #include "deephaven/client/client.h"
 #include "deephaven/client/flight.h"
 #include "deephaven/client/utility/table_maker.h"
 #include "deephaven/dhcore/utility/utility.h"
+
+#include <arrow/flight/client.h>
+#include <arrow/type.h>
+#include <arrow/util/key_value_metadata.h>
 
 using deephaven::client::Client;
 using deephaven::client::TableHandle;
@@ -122,7 +135,8 @@ void Doit(const TableHandleManager &manager) {
   OkOrThrow(DEEPHAVEN_LOCATION_EXPR(res));
 
   // 13. Make a RecordBatch containing both the schema and the data
-  auto batch = arrow::RecordBatch::Make(schema, static_cast<std::int64_t>(num_rows), std::move(columns));
+  auto batch = arrow::RecordBatch::Make(schema,
+      static_cast<std::int64_t>(num_rows), std::move(columns));
   OkOrThrow(DEEPHAVEN_LOCATION_EXPR(res->writer->WriteRecordBatch(*batch)));
   OkOrThrow(DEEPHAVEN_LOCATION_EXPR(res->writer->DoneWriting()));
 

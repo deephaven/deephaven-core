@@ -13,9 +13,12 @@ import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.UpdateErrorReporter;
+import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import io.deephaven.engine.table.impl.util.AsyncClientErrorNotifier;
 import io.deephaven.engine.table.impl.util.AsyncErrorLogger;
 import io.deephaven.engine.testutil.*;
+import io.deephaven.engine.updategraph.UpdateGraph;
+import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.util.ExceptionDetails;
 import io.deephaven.util.SafeCloseable;
@@ -58,6 +61,14 @@ abstract public class RefreshingTableTestCase extends BaseArrayTestCase implemen
         oldProcessEnvironment = ProcessEnvironment.tryGet();
         ProcessEnvironment.set(FakeProcessEnvironment.INSTANCE, true);
 
+        // clear out any old performance tracker and update graph
+        UpdatePerformanceTracker.resetForUnitTests();
+        PeriodicUpdateGraph.removeInstance(PeriodicUpdateGraph.DEFAULT_UPDATE_GRAPH_NAME);
+        // the primary PUG needs to be named DEFAULT or else UpdatePerformanceTracker will fail to initialize
+        PeriodicUpdateGraph.newBuilder(PeriodicUpdateGraph.DEFAULT_UPDATE_GRAPH_NAME)
+                .numUpdateThreads(PeriodicUpdateGraph.NUM_THREADS_DEFAULT_UPDATE_GRAPH)
+                .existingOrBuild();
+
         // initialize the unit test's execution context
         executionContext = TestExecutionContext.createForUnitTests().open();
 
@@ -78,6 +89,10 @@ abstract public class RefreshingTableTestCase extends BaseArrayTestCase implemen
 
     @Override
     public void tearDown() throws Exception {
+        // shutdown the UPT before we check for leaked chunks
+        UpdatePerformanceTracker.resetForUnitTests();
+        livenessScopeCloseable.close();
+
         ChunkPoolReleaseTracking.checkAndDisable();
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.setSerialTableOperationsSafe(oldSerialSafe);
@@ -86,7 +101,6 @@ abstract public class RefreshingTableTestCase extends BaseArrayTestCase implemen
         // reset the execution context
         executionContext.close();
 
-        livenessScopeCloseable.close();
         AsyncClientErrorNotifier.setReporter(oldReporter);
         QueryTable.setMemoizeResults(oldMemoize);
         updateGraph.resetForUnitTests(true);

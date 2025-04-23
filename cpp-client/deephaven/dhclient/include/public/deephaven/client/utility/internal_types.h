@@ -3,7 +3,8 @@
  */
 #pragma once
 
-#include <arrow/flight/types.h>
+#include <cstdint>
+#include <arrow/type.h>
 
 namespace deephaven::client::utility {
 /**

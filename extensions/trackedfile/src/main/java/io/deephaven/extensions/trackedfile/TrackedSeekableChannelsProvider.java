@@ -44,8 +44,14 @@ final class TrackedSeekableChannelsProvider implements SeekableChannelsProvider 
     }
 
     @Override
-    public SeekableChannelContext makeContext() {
+    public SeekableChannelContext makeReadContext() {
         return new BaseSeekableChannelContext();
+    }
+
+    @Override
+    public WriteContext makeWriteContext() {
+        // Write context is not used in this provider
+        return WriteContext.NULL_INSTANCE;
     }
 
     @Override
@@ -74,8 +80,11 @@ final class TrackedSeekableChannelsProvider implements SeekableChannelsProvider 
     }
 
     @Override
-    public CompletableOutputStream getOutputStream(@NotNull final URI uri, int bufferSizeHint) throws IOException {
-        return new LocalCompletableOutputStream(new File(uri), this, bufferSizeHint);
+    public CompletableOutputStream getOutputStream(
+            @NotNull final WriteContext channelContext,
+            @NotNull final URI uri,
+            int bufferSizeHint) throws IOException {
+        return new LocalCompletableOutputStream(new File(uri), this, bufferSizeHint, channelContext);
     }
 
     @Override

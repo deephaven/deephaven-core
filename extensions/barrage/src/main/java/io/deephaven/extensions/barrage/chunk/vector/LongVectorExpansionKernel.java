@@ -7,8 +7,6 @@
 // @formatter:off
 package io.deephaven.extensions.barrage.chunk.vector;
 
-import java.util.function.LongConsumer;
-
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.IntChunk;
@@ -20,14 +18,13 @@ import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
-import io.deephaven.engine.primitive.iterator.CloseableIterator;
+import io.deephaven.extensions.barrage.chunk.BaseChunkReader;
+import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfLong;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.vector.LongVector;
 import io.deephaven.vector.LongVectorDirect;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.stream.Stream;
 
 import static io.deephaven.vector.LongVectorDirect.ZERO_LENGTH_VECTOR;
 
@@ -73,15 +70,12 @@ public class LongVectorExpansionKernel implements VectorExpansionKernel<LongVect
                 offsetsDest.set(ii, result.size());
             }
             if (row != null) {
-                final LongConsumer consumer = result::add;
-                try (final CloseableIterator<Long> iter = row.iterator()) {
-                    Stream<Long> stream = iter.stream();
-                    if (fixedSizeLength > 0) {
-                        // limit length to fixedSizeLength
-                        stream = stream.limit(fixedSizeLength);
+                try (final CloseablePrimitiveIteratorOfLong iter = row.iterator()) {
+                    final int numToRead = LongSizedDataStructure.intSize(
+                            DEBUG_NAME, fixedSizeLength == 0 ? row.size() : fixedSizeLength);
+                    for (int jj = 0; jj < numToRead; ++jj) {
+                        result.add(iter.nextLong());
                     }
-                    // copy the row into the result
-                    stream.forEach(consumer::accept);
                 }
             }
             if (fixedSizeLength != 0) {
@@ -104,32 +98,22 @@ public class LongVectorExpansionKernel implements VectorExpansionKernel<LongVect
     @Override
     public <A extends Any> WritableObjectChunk<LongVector, A> contract(
             @NotNull final Chunk<A> source,
-            int sizePerElement,
+            final int sizePerElement,
             @Nullable final IntChunk<ChunkPositions> offsets,
             @Nullable final IntChunk<ChunkLengths> lengths,
             @Nullable final WritableChunk<A> outChunk,
             final int outOffset,
             final int totalRows) {
-        if (source.size() == 0) {
-            if (outChunk != null) {
-                return outChunk.asWritableObjectChunk();
-            }
-            return WritableObjectChunk.makeWritableChunk(totalRows);
-        }
-
-        sizePerElement = Math.abs(sizePerElement);
         final int itemsInBatch = offsets == null
                 ? source.size() / sizePerElement
                 : (offsets.size() - (lengths == null ? 1 : 0));
         final LongChunk<A> typedSource = source.asLongChunk();
-        final WritableObjectChunk<LongVector, A> result;
-        if (outChunk != null) {
-            result = outChunk.asWritableObjectChunk();
-        } else {
-            final int numRows = Math.max(itemsInBatch, totalRows);
-            result = WritableObjectChunk.makeWritableChunk(numRows);
-            result.setSize(numRows);
-        }
+        final WritableObjectChunk<LongVector, A> result = BaseChunkReader.castOrCreateChunk(
+                outChunk,
+                outOffset,
+                Math.max(totalRows, itemsInBatch),
+                WritableObjectChunk::makeWritableChunk,
+                WritableChunk::asWritableObjectChunk);
 
         for (int ii = 0; ii < itemsInBatch; ++ii) {
             final int offset = offsets == null ? ii * sizePerElement : offsets.get(ii);

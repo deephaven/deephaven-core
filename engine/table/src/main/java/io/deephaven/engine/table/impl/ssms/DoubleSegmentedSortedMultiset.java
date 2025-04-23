@@ -2208,11 +2208,15 @@ public final class DoubleSegmentedSortedMultiset implements SegmentedSortedMulti
      */
     private double[] keyArray(long first, long last) {
         if (isEmpty()) {
+            // region EmptyKeyArrayAllocation
             return ArrayTypeUtils.EMPTY_DOUBLE_ARRAY;
+            // endregion EmptyKeyArrayAllocation
         }
 
         final int totalSize = (int) (last - first + 1);
+        // region KeyArrayAllocation
         final double[] keyArray = new double[totalSize];
+        // endregion KeyArrayAllocation
         if (leafCount == 1) {
             System.arraycopy(directoryValues, (int) first, keyArray, 0, totalSize);
         } else if (leafCount > 0) {

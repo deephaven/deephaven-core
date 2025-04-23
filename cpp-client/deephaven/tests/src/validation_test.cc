@@ -1,17 +1,21 @@
 /*
  * Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
  */
-#include "deephaven/third_party/catch.hpp"
-#include "deephaven/tests/test_util.h"
-#include "deephaven/dhcore/utility/utility.h"
-#include "deephaven/third_party/fmt/format.h"
-#include "deephaven/third_party/fmt/ostream.h"
-#include "deephaven/third_party/fmt/ranges.h"
+#include <exception>
+#include <iostream>
+#include <stdexcept>
+#include <string>
+#include <string_view>
+#include <vector>
 
-using deephaven::client::TableHandleManager;
+#include "deephaven/client/client.h"
+#include "deephaven/tests/test_util.h"
+#include "deephaven/third_party/catch.hpp"
+#include "deephaven/third_party/fmt/core.h"
+#include "deephaven/third_party/fmt/ranges.h"
+#include "deephaven/third_party/fmt/ostream.h"
+
 using deephaven::client::TableHandle;
-using deephaven::dhcore::utility::SimpleOstringstream;
-using deephaven::dhcore::utility::separatedList;
 
 namespace deephaven::client::tests {
 namespace {

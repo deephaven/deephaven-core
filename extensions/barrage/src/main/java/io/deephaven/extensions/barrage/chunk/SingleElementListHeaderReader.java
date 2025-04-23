@@ -3,6 +3,7 @@
 //
 package io.deephaven.extensions.barrage.chunk;
 
+import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.extensions.barrage.BarrageOptions;
@@ -48,27 +49,36 @@ public class SingleElementListHeaderReader<READ_CHUNK_TYPE extends WritableChunk
             @NotNull final DataInput is,
             @Nullable final WritableChunk<Values> outChunk,
             final int outOffset,
-            final int totalRows) throws IOException {
+            int totalRows) throws IOException {
         final ChunkWriter.FieldNodeInfo nodeInfo = fieldNodeIter.next();
         final long validityBufferLength = bufferInfoIter.nextLong();
-        final long offsetsBufferLength = bufferInfoIter.nextLong();
-
-        if (nodeInfo.numElements == 0) {
-            is.skipBytes(LongSizedDataStructure.intSize(DEBUG_NAME, validityBufferLength + offsetsBufferLength));
-            return componentReader.readChunk(fieldNodeIter, bufferInfoIter, is, null, 0, 0);
-        }
+        long offsetsBufferLength = bufferInfoIter.nextLong();
 
         // skip validity buffer:
-        int jj = 0;
         if (validityBufferLength > 0) {
             is.skipBytes(LongSizedDataStructure.intSize(DEBUG_NAME, validityBufferLength));
         }
 
-        // skip offsets:
+        // offsets:
         if (offsetsBufferLength > 0) {
-            is.skipBytes(LongSizedDataStructure.intSize(DEBUG_NAME, offsetsBufferLength));
+            Assert.geq(offsetsBufferLength, "offsetsBufferLength", Integer.BYTES * 2, "Integer.BYTES * 2");
+            final int startOffset = is.readInt(); // read the first offset; should be zero
+            final int endOffset = is.readInt(); // read the first offset; should be zero
+            offsetsBufferLength -= Integer.BYTES * 2;
+
+            totalRows = endOffset - startOffset;
+            if (outChunk != null && outChunk.capacity() - outChunk.size() < totalRows) {
+                throw new IllegalStateException("outChunk is not large enough (capacity: " + outChunk.capacity()
+                        + " existing size: " + outChunk.size() + " numRowsToAppend: " + totalRows + ")");
+            }
+
+            // skip any remaining buffer
+            if (offsetsBufferLength > 0) {
+                is.skipBytes(LongSizedDataStructure.intSize(DEBUG_NAME, offsetsBufferLength));
+            }
         }
 
-        return componentReader.readChunk(fieldNodeIter, bufferInfoIter, is, null, 0, 0);
+        // note that the out chunk already accounts for columns-as-a-list single-element list headers
+        return componentReader.readChunk(fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows);
     }
 }
