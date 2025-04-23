@@ -1620,6 +1620,26 @@ public abstract class SqliteCatalogBase {
     }
 
     @Test
+    void testFailOnUnsupportedTypes() {
+        final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.testFailOnUnsupportedTypes");
+
+        final Schema schema = new Schema(
+                Types.NestedField.of(1, false, "intCol", Types.IntegerType.get()),
+                Types.NestedField.of(2, false, "doubleCol", Types.DoubleType.get()),
+                Types.NestedField.of(3, false, "uuidCol", Types.UUIDType.get())); // Unsupported
+
+        catalogAdapter.catalog().createTable(tableIdentifier, schema, PartitionSpec.unpartitioned());
+
+        final IcebergTableAdapter tableAdapter = catalogAdapter.loadTable(tableIdentifier);
+        try {
+            tableAdapter.table();
+            failBecauseExceptionWasNotThrown(TableDataException.class);
+        } catch (TableDataException e) {
+            assertThat(e).hasMessageContaining("Unsupported iceberg column type UUID");
+        }
+    }
+
+    @Test
     void nameMapping() {
         final String FOO = "Foo";
         final String BAR = "Bar";

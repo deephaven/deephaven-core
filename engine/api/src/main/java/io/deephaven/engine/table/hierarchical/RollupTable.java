@@ -81,9 +81,10 @@ public interface RollupTable extends HierarchicalTable<RollupTable> {
     TableDefinition getNodeDefinition(@NotNull NodeType nodeType);
 
     /**
-     * Apply a filter to the group-by columns of this RollupTable in order to produce a new RollupTable.
+     * Apply a filter to the source table for this RollupTable before applying the rollup operation. This filter must
+     * use only non-aggregate columns and must not use column arrays.
      *
-     * @param filter The filter to apply; must only reference the group-by columns and must not use column arrays
+     * @param filter The filter to apply; must only reference non-aggregate columns and must not use column arrays
      * @return The new RollupTable
      */
     RollupTable withFilter(Filter filter);
