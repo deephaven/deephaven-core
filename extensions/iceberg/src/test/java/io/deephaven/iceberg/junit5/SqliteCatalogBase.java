@@ -11,6 +11,7 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.PartitionAwareSourceTable;
+import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.select.FormulaEvaluationException;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.util.TableTools;
@@ -33,6 +34,7 @@ import io.deephaven.qst.type.Type;
 import org.apache.iceberg.AppendFiles;
 import org.apache.iceberg.DataFile;
 import org.apache.iceberg.NullOrder;
+import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.Schema;
 import org.apache.iceberg.Snapshot;
 import org.apache.iceberg.SortOrder;
@@ -1472,5 +1474,25 @@ public abstract class SqliteCatalogBase {
         expected = TableTools.merge(source, source);
         assertTableEquals(expected, fromIceberg);
         verifySnapshots(tableIdentifier, List.of("append", "append"));
+    }
+
+    @Test
+    void testFailOnUnsupportedTypes() {
+        final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.testFailOnUnsupportedTypes");
+
+        final Schema schema = new Schema(
+                Types.NestedField.of(1, false, "intCol", Types.IntegerType.get()),
+                Types.NestedField.of(2, false, "doubleCol", Types.DoubleType.get()),
+                Types.NestedField.of(3, false, "uuidCol", Types.UUIDType.get())); // Unsupported
+
+        catalogAdapter.catalog().createTable(tableIdentifier, schema, PartitionSpec.unpartitioned());
+
+        final IcebergTableAdapter tableAdapter = catalogAdapter.loadTable(tableIdentifier);
+        try {
+            tableAdapter.table();
+            failBecauseExceptionWasNotThrown(TableDataException.class);
+        } catch (TableDataException e) {
+            assertThat(e).hasMessageContaining("Unsupported iceberg column type UUID");
+        }
     }
 }
