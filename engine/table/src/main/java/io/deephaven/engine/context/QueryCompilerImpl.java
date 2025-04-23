@@ -947,6 +947,7 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
                 "--should-stop=ifError=GENERATE");
 
         final MutableInt numFailures = new MutableInt(0);
+        final List<RuntimeException> globalFailures = new ArrayList<>();
         compiler.getTask(compilerOutput,
                 fileManager,
                 diagnostic -> {
@@ -955,6 +956,14 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
                     }
 
                     final JavaSourceFromString source = (JavaSourceFromString) diagnostic.getSource();
+
+                    if (source == null) {
+                        // If we have no source, then mark every request as a failure.
+                        final UncheckedDeephavenException err = new UncheckedDeephavenException("Error Invoking Compiler, no source present in diagnostic:\n" + diagnostic.getMessage(Locale.getDefault()));
+                        globalFailures.add(err);
+                        return;
+                    }
+
                     final UncheckedDeephavenException err = new UncheckedDeephavenException("Error Compiling "
                             + source.description + "\n" + diagnostic.getMessage(Locale.getDefault()));
                     if (source.resolver.completeExceptionally(err)) {
@@ -968,6 +977,14 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
                         .map(CompilationRequestAttempt::makeSource)
                         .collect(Collectors.toList()))
                 .call();
+
+        if (!globalFailures.isEmpty()) {
+            final RuntimeException e0 = globalFailures.get(0);
+            for (int ii = 1; ii < globalFailures.size(); ++ii) {
+                e0.addSuppressed(globalFailures.get(ii));
+            }
+            throw e0;
+        }
 
         final boolean wantRetry = numFailures.get() > 0 && numFailures.get() != endExclusive - startInclusive;
 
