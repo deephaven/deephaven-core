@@ -39,7 +39,7 @@ import static io.deephaven.engine.util.TableTools.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class TestUpdateAncestorViz {
-    private static boolean VERBOSE = false;
+    private static boolean VERBOSE = true;
 
     EventDrivenUpdateGraph defaultUpdateGraph;
     File cacheDir;
@@ -98,7 +98,7 @@ public class TestUpdateAncestorViz {
     }
 
     @Test
-    public void testDynamicMerge() throws IOException {
+    public void testDynamicMerge() {
         final StandaloneLivenessManager manager = new StandaloneLivenessManager(false);
 
         final MutableObject<KeyedArrayBackedInputTable> source = new MutableObject<>();
