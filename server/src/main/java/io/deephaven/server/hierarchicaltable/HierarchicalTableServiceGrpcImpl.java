@@ -238,7 +238,7 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
                                         makeWhereFilters(finishedConditions, nodeDefinition);
                                 RollupTableImpl.initializeAndValidateFilters(
                                         rollupTable.getSource(),
-                                        rollupTable.getGroupByColumns(),
+                                        rollupTable.getAggregations(),
                                         filters,
                                         message -> Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, message));
                                 rollupTable = rollupTable.withFilter(Filter.and(filters));
