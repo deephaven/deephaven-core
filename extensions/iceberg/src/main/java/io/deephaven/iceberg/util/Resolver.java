@@ -256,8 +256,15 @@ public abstract class Resolver {
         final List<NestedField> fieldPath;
         final PartitionField partitionField;
         if (ci.schemaFieldId().isPresent()) {
-            fieldPath = ci.schemaFieldPath(schema());
-            partitionField = isPartitioningColumn ? ci.partitionFieldFromSchemaFieldId(specOrUnpartitioned()) : null;
+            fieldPath = ci.schemaFieldPathById(schema());
+            partitionField = isPartitioningColumn
+                    ? ci.partitionFieldFromSchemaFieldId(specOrUnpartitioned())
+                    : null;
+        } else if (ci.schemaFieldName().isPresent()) {
+            fieldPath = ci.schemaFieldPathByName(schema());
+            partitionField = isPartitioningColumn
+                    ? ci.partitionFieldFromSchemaFieldName(schema(), specOrUnpartitioned())
+                    : null;
         } else {
             if (!isPartitioningColumn) {
                 throw new MappingException(

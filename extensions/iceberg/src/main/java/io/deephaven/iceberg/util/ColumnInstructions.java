@@ -11,6 +11,7 @@ import org.apache.iceberg.types.Types.NestedField;
 import org.immutables.value.Value;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.OptionalInt;
 
 /**
@@ -30,13 +31,27 @@ public abstract class ColumnInstructions {
     }
 
     /**
-     * Create column instructions for a schema field.
+     * Create column instructions for a schema field by {@link NestedField#fieldId() field id}.
      *
      * @param fieldId the field id
      * @return the column instructions
      */
     public static ColumnInstructions schemaField(int fieldId) {
         return ImmutableColumnInstructions.builder().schemaFieldId(fieldId).build();
+    }
+
+    /**
+     * Create column instructions for a schema field by field name.
+     *
+     * <p>
+     * Warning: referencing a field by name is discouraged, as it is not guaranteed to be a stable reference across
+     * {@link Schema} evolution. This is provided as a convenience.
+     *
+     * @param fieldName the field name
+     * @return the column instructions
+     */
+    public static ColumnInstructions schemaFieldName(String fieldName) {
+        return ImmutableColumnInstructions.builder().schemaFieldName(fieldName).build();
     }
 
     /**
@@ -52,21 +67,31 @@ public abstract class ColumnInstructions {
     /**
      * The schema field id.
      */
-    public abstract OptionalInt schemaFieldId();
+    abstract OptionalInt schemaFieldId();
+
+    /**
+     * The schema field name.
+     */
+    abstract Optional<String> schemaFieldName();
 
     /**
      * The partition field id.
      */
-    public abstract OptionalInt partitionFieldId();
+    abstract OptionalInt partitionFieldId();
 
     // Note: very likely there will be additions here to support future additions; codecs, conversions, etc.
 
     final boolean isUnmapped() {
-        return schemaFieldId().isEmpty() && partitionFieldId().isEmpty();
+        return schemaFieldId().isEmpty() && schemaFieldName().isEmpty() && partitionFieldId().isEmpty();
     }
 
-    final List<NestedField> schemaFieldPath(Schema schema) throws SchemaHelper.PathException {
+    final List<NestedField> schemaFieldPathById(Schema schema) throws SchemaHelper.PathException {
         return SchemaHelper.fieldPath(schema, schemaFieldId().orElseThrow());
+    }
+
+    final List<NestedField> schemaFieldPathByName(Schema schema) throws SchemaHelper.PathException {
+        final NestedField field = fieldByName(schema);
+        return SchemaHelper.fieldPath(schema, field.fieldId());
     }
 
     final PartitionField partitionField(PartitionSpec spec) throws SchemaHelper.PathException {
@@ -74,7 +99,35 @@ public abstract class ColumnInstructions {
     }
 
     final PartitionField partitionFieldFromSchemaFieldId(PartitionSpec spec) throws SchemaHelper.PathException {
-        final int fieldId = schemaFieldId().orElseThrow();
+        return partitionFieldImpl(spec, schemaFieldId().orElseThrow());
+    }
+
+    final PartitionField partitionFieldFromSchemaFieldName(Schema schema, PartitionSpec spec)
+            throws SchemaHelper.PathException {
+        return partitionFieldImpl(spec, fieldByName(schema).fieldId());
+    }
+
+    final ColumnInstructions reassignWithSchemaField(int fieldId) {
+        // May need to have more copy logic here in the future
+        return ColumnInstructions.schemaField(fieldId);
+    }
+
+    final ColumnInstructions reassignWithPartitionField(int partitionFieldId) {
+        // May need to have more copy logic here in the future
+        return ColumnInstructions.partitionField(partitionFieldId);
+    }
+
+    private NestedField fieldByName(Schema schema) {
+        final String fieldName = schemaFieldName().orElseThrow();
+        final NestedField field = schema.findField(fieldName);
+        if (field == null) {
+            throw new Resolver.MappingException(String.format("Unable to find field by name: `%s`", fieldName));
+        }
+        return field;
+    }
+
+    private static PartitionField partitionFieldImpl(PartitionSpec spec, int fieldId)
+            throws SchemaHelper.PathException {
         final List<PartitionField> partitionFields = spec.getFieldsBySourceId(fieldId);
         if (partitionFields.isEmpty()) {
             throw new SchemaHelper.PathException(String
@@ -89,23 +142,5 @@ public abstract class ColumnInstructions {
                     fieldId, spec));
         }
         return partitionFields.get(0);
-    }
-
-    @Value.Check
-    final void checkType() {
-        if (partitionFieldId().isPresent() && schemaFieldId().isPresent()) {
-            throw new IllegalArgumentException(
-                    "ColumnInstructions can't have both a schema field id and a partition field id");
-        }
-    }
-
-    final ColumnInstructions reassignWithSchemaField(int fieldId) {
-        // May need to have more copy logic here in the future
-        return ColumnInstructions.schemaField(fieldId);
-    }
-
-    final ColumnInstructions reassignWithPartitionField(int partitionFieldId) {
-        // May need to have more copy logic here in the future
-        return ColumnInstructions.partitionField(partitionFieldId);
     }
 }

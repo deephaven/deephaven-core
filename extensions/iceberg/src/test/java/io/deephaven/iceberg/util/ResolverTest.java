@@ -25,6 +25,7 @@ import java.util.stream.Collectors;
 
 import static io.deephaven.iceberg.util.ColumnInstructions.partitionField;
 import static io.deephaven.iceberg.util.ColumnInstructions.schemaField;
+import static io.deephaven.iceberg.util.ColumnInstructions.schemaFieldName;
 import static io.deephaven.iceberg.util.ColumnInstructions.unmapped;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -79,7 +80,6 @@ class ResolverTest {
                 .putColumnInstructions("F2", schemaField(43))
                 .putColumnInstructions("F3", schemaField(43))
                 .build();
-
     }
 
     @Test
@@ -109,6 +109,22 @@ class ResolverTest {
                         ColumnDefinition.ofInt("S1_S2_F2")))
                 .putColumnInstructions("S1_S2_F1", schemaField(3))
                 .putColumnInstructions("S1_S2_F2", schemaField(4))
+                .build();
+    }
+
+    @Test
+    void nestedStructByName() {
+        final Schema schema = new Schema(NestedField.optional(1, "S1", Types.StructType.of(
+                NestedField.optional(2, "S2", Types.StructType.of(
+                        NestedField.optional(3, "F1", IT),
+                        NestedField.required(4, "F2", IT))))));
+        Resolver.builder()
+                .schema(schema)
+                .definition(TableDefinition.of(
+                        ColumnDefinition.ofInt("S1_S2_F1"),
+                        ColumnDefinition.ofInt("S1_S2_F2")))
+                .putColumnInstructions("S1_S2_F1", schemaFieldName("S1.S2.F1"))
+                .putColumnInstructions("S1_S2_F2", schemaFieldName("S1.S2.F2"))
                 .build();
     }
 
@@ -184,6 +200,22 @@ class ResolverTest {
                 .spec(spec)
                 .definition(td)
                 .putColumnInstructions("F1", partitionField(spec.fields().get(0).fieldId()))
+                .putColumnInstructions("F2", schemaField(43))
+                .build();
+    }
+
+    @Test
+    void partitioningColumnSchemaFieldNamePartitionSpec() {
+        final Schema schema = simpleSchema(IT);
+        final PartitionSpec spec = PartitionSpec.builderFor(schema).identity("F1").build();
+        final TableDefinition td = TableDefinition.of(
+                ColumnDefinition.ofInt("F1").withPartitioning(),
+                ColumnDefinition.ofInt("F2"));
+        Resolver.builder()
+                .schema(schema)
+                .spec(spec)
+                .definition(td)
+                .putColumnInstructions("F1", schemaFieldName("F1"))
                 .putColumnInstructions("F2", schemaField(43))
                 .build();
     }
@@ -298,9 +330,7 @@ class ResolverTest {
         try {
             Resolver.builder()
                     .schema(simpleSchema(IT))
-                    .definition(TableDefinition.of(
-                            ColumnDefinition.of("F1", Type.intType()),
-                            ColumnDefinition.of("F2", Type.intType())))
+                    .definition(simpleDefinition(Type.intType()))
                     .putColumnInstructions("F1", schemaField(42))
                     .putColumnInstructions("F2", schemaField(44))
                     .build();
@@ -308,6 +338,22 @@ class ResolverTest {
         } catch (Resolver.MappingException e) {
             assertThat(e).hasMessageContaining("Unable to map Deephaven column F2");
             assertThat(e).cause().hasMessageContaining("Unable to find field id 44");
+        }
+    }
+
+    @Test
+    void invalidFieldName() {
+        try {
+            Resolver.builder()
+                    .schema(simpleSchema(IT))
+                    .definition(simpleDefinition(Type.intType()))
+                    .putColumnInstructions("F1", schemaFieldName("DoesNotExist"))
+                    .putColumnInstructions("F2", schemaField(43))
+                    .build();
+            failBecauseExceptionWasNotThrown(Resolver.MappingException.class);
+        } catch (Resolver.MappingException e) {
+            assertThat(e).hasMessageContaining("Unable to map Deephaven column F1");
+            assertThat(e).cause().hasMessageContaining("Unable to find field by name: `DoesNotExist`");
         }
     }
 
