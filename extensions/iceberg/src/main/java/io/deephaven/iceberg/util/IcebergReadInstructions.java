@@ -5,11 +5,11 @@ package io.deephaven.iceberg.util;
 
 import io.deephaven.annotations.CopyableStyle;
 import io.deephaven.engine.table.TableDefinition;
-import org.apache.iceberg.Schema;
 import org.apache.iceberg.Snapshot;
 import org.immutables.value.Value;
 import org.immutables.value.Value.Immutable;
 
+import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalLong;
@@ -32,19 +32,11 @@ public abstract class IcebergReadInstructions {
     }
 
     /**
-     * The resolver. Callers are encouraged to set this to explicitly define the relation between the desired Deephaven
-     * {@link TableDefinition} and the existing Iceberg {@link Schema}. If not set, one will be
-     * {@link Resolver#infer(InferenceInstructions) inferred}.
-     */
-    @Deprecated
-    public abstract Optional<Resolver> resolver();
-
-    /**
      * The {@link TableDefinition} to use when reading Iceberg data files.
      */
     @Deprecated
     public final Optional<TableDefinition> tableDefinition() {
-        return resolver().map(Resolver::definition);
+        return Optional.empty();
     }
 
     /**
@@ -59,13 +51,17 @@ public abstract class IcebergReadInstructions {
      * data files.
      */
     @Deprecated
-    public abstract Map<String, String> columnRenames();
+    public final Map<String, String> columnRenames() {
+        return Collections.emptyMap();
+    }
 
     /**
      * Return a copy of this instructions object with the column renames replaced by {@code entries}.
      */
     @Deprecated
-    public abstract IcebergReadInstructions withColumnRenames(Map<String, ? extends String> entries);
+    public final IcebergReadInstructions withColumnRenames(Map<String, ? extends String> entries) {
+        return this;
+    }
 
     /**
      * The {@link IcebergUpdateMode} mode to use when reading the Iceberg data files. Default is
@@ -103,9 +99,6 @@ public abstract class IcebergReadInstructions {
     public interface Builder {
 
         @Deprecated
-        Builder resolver(Resolver resolver);
-
-        @Deprecated
         default Builder tableDefinition(TableDefinition tableDefinition) {
             return this;
         }
@@ -113,10 +106,14 @@ public abstract class IcebergReadInstructions {
         Builder dataInstructions(Object s3Instructions);
 
         @Deprecated
-        Builder putColumnRenames(String key, String value);
+        default Builder putColumnRenames(String key, String value) {
+            return this;
+        }
 
         @Deprecated
-        Builder putAllColumnRenames(Map<String, ? extends String> entries);
+        default Builder putAllColumnRenames(Map<String, ? extends String> entries) {
+            return this;
+        }
 
         Builder updateMode(IcebergUpdateMode updateMode);
 
