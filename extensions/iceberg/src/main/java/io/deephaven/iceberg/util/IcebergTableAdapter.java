@@ -366,7 +366,8 @@ public final class IcebergTableAdapter {
      */
     public IcebergTable table(@NotNull final IcebergReadInstructions readInstructions) {
         refresh();
-        final IcebergTableLocationProviderBase<TableKey, IcebergTableLocationKey> p = provider(readInstructions);
+        final IcebergTableLocationProviderBase<TableKey, IcebergTableLocationKey> p = provider(
+                StandaloneTableKey.getInstance(), readInstructions);
         if (p instanceof IcebergStaticTableLocationProvider) {
             return new IcebergTableImpl(
                     resolver.definition(),
@@ -429,10 +430,10 @@ public final class IcebergTableAdapter {
 
     @InternalUseOnly
     public IcebergTableLocationProviderBase<TableKey, IcebergTableLocationKey> provider(
+            @NotNull final TableKey tableKey,
             @NotNull final IcebergReadInstructions readInstructions) {
         // Core+ will use this, as their extended format is based on TLPs hooks instead of Table hooks.
         final Snapshot snapshot = snapshot(readInstructions);
-        final TableKey tableKey = readInstructions.tableKey().orElse(StandaloneTableKey.getInstance());
         final IcebergBaseLayout keyFinder = keyFinder(
                 snapshot,
                 readInstructions.dataInstructions().orElse(null));

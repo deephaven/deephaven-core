@@ -5,7 +5,6 @@ package io.deephaven.iceberg.util;
 
 import io.deephaven.annotations.CopyableStyle;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.table.impl.locations.TableKey;
 import org.apache.iceberg.Schema;
 import org.apache.iceberg.Snapshot;
 import org.immutables.value.Value;
@@ -101,12 +100,6 @@ public abstract class IcebergReadInstructions {
      */
     public abstract IcebergReadInstructions withSnapshot(Snapshot value);
 
-    /**
-     * The table key.
-     */
-    @Deprecated
-    public abstract Optional<TableKey> tableKey();
-
     public interface Builder {
 
         @Deprecated
@@ -130,9 +123,6 @@ public abstract class IcebergReadInstructions {
         Builder snapshotId(long snapshotId);
 
         Builder snapshot(Snapshot snapshot);
-
-        @Deprecated
-        Builder tableKey(TableKey tableKey);
 
         IcebergReadInstructions build();
     }
