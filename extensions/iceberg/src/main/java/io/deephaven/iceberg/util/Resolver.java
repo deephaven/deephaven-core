@@ -409,7 +409,7 @@ public abstract class Resolver {
      * {@link Table Iceberg Table} does not already exist</b>. In cases where the {@link Table Iceberg Table} already
      * exist, callers must create a resolver in relationship to an existing {@link Schema} (for example, via
      * {@link #infer(Schema)}, or manually via {@link #builder()}). Column type inference is done via
-     * {@link TypeInference#of(Type)}.
+     * {@link TypeInference#of(Type, TypeUtil.NextID)}.
      *
      * <p>
      * All {@link ColumnDefinition.ColumnType#Partitioning partitioning columns} will be used to create a partition spec
