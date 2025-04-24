@@ -168,10 +168,9 @@ class IcebergTestCase(BaseTestCase):
                 "x": dtypes.int32,
                 "y": dtypes.double,
                 "z": dtypes.double,
-            }, column_instructions={
-                "x": 1,
-                "y": "y"
-            }
+            },
+            column_instructions={"x": 1, "y": "y"},
+            schema_provider=iceberg.SchemaProvider.from_schema_id(99),
         )
         iceberg.UnboundResolver(
             table_definition=[
@@ -180,9 +179,6 @@ class IcebergTestCase(BaseTestCase):
                 col_def("y", dtypes.double),
                 col_def("z", dtypes.double),
             ],
-            column_instructions={
-                "Partition": 42,
-                "x": 1,
-                "y": "y"
-            }
+            column_instructions={"Partition": 42, "x": 1, "y": "y"},
+            schema_provider=iceberg.SchemaProvider.from_schema_id(99),
         )
