@@ -140,19 +140,6 @@ public abstract class IcebergReadInstructions {
     }
 
     /**
-     * The name mapping. This provides a fallback for resolving fields from data files that are written without
-     * {@link Types.NestedField#fieldId() field ids}. When unset, a name mapping from the {@link Table#properties()
-     * Table property} {@value TableProperties#DEFAULT_NAME_MAPPING} will be used. Callers are encouraged to explicitly
-     * set this when they care about reproducible results. Setting to {@link NameMapping#empty()} will explicitly
-     * disable name mapping.
-     *
-     * @see MappingUtil
-     * @see <a href="https://iceberg.apache.org/spec/#column-projection">schema.name-mapping.default</a>
-     */
-    @Deprecated
-    public abstract Optional<NameMapping> nameMapping();
-
-    /**
      * The table key.
      */
     @Deprecated
@@ -183,9 +170,6 @@ public abstract class IcebergReadInstructions {
 
         @Deprecated
         Builder usePartitionInference(boolean usePartitionInference);
-
-        @Deprecated
-        Builder nameMapping(NameMapping nameMapping);
 
         @Deprecated
         Builder tableKey(TableKey tableKey);

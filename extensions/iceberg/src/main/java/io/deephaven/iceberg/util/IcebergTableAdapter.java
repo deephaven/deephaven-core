@@ -86,7 +86,7 @@ public final class IcebergTableAdapter {
         this.dataInstructionsProviderLoader = dataInstructionsProviderLoader;
         this.locationUri = IcebergUtils.locationUri(table);
         this.resolver = Objects.requireNonNull(resolver);
-        this.nameMapping = nameMapping; // todo: allow null?
+        this.nameMapping = Objects.requireNonNull(nameMapping);
     }
 
     /**
@@ -450,7 +450,7 @@ public final class IcebergTableAdapter {
         final TableKey tableKey = readInstructions.tableKey().orElse(StandaloneTableKey.getInstance());
         final IcebergBaseLayout keyFinder = keyFinder(
                 ras.resolver(),
-                readInstructions.nameMapping().orElse(nameMapping),
+                nameMapping,
                 ras.snapshot().orElse(null),
                 readInstructions.dataInstructions().orElse(null));
         if (readInstructions.updateMode().updateType() == IcebergUpdateMode.IcebergUpdateType.STATIC) {

@@ -6,6 +6,7 @@ package io.deephaven.iceberg.util;
 import io.deephaven.annotations.BuildableStyle;
 import org.apache.iceberg.catalog.TableIdentifier;
 import org.apache.iceberg.mapping.NameMapping;
+import org.apache.iceberg.types.Types;
 import org.immutables.value.Value;
 
 /**
@@ -33,7 +34,8 @@ public abstract class LoadTableOptions {
     }
 
     /**
-     * The name mapping provider. By default, is {@link NameMappingProvider#fromTable()}.
+     * The name mapping provider, a fallback for resolving fields from data files that are written without
+     * {@link Types.NestedField#fieldId() field ids}. By default, is {@link NameMappingProvider#fromTable()}.
      */
     @Value.Default
     public NameMappingProvider nameMapping() {
