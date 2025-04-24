@@ -30,7 +30,7 @@ final class ResolverFactory implements ParquetColumnResolver.Factory {
 
     ResolverFactory(Resolver resolver, NameMapping nameMapping) {
         this.resolver = Objects.requireNonNull(resolver);
-        this.nameMapping = nameMapping;
+        this.nameMapping = Objects.requireNonNull(nameMapping);
     }
 
     @Override
@@ -85,9 +85,9 @@ final class ResolverFactory implements ParquetColumnResolver.Factory {
     private static List<String> resolve(
             final MessageType schema,
             final List<Types.NestedField> readersPath,
-            @Nullable final NameMapping nameMapping) throws MappingException {
+            final NameMapping nameMapping) throws MappingException {
         Type current = schema;
-        MappedFields fallbackFields = nameMapping == null ? null : nameMapping.asMappedFields();
+        MappedFields fallbackFields = nameMapping.asMappedFields();
         final List<String> out = new ArrayList<>();
         for (final Types.NestedField readerField : readersPath) {
             final MappedField fallback = fallbackFields == null ? null : fallbackFields.field(readerField.fieldId());
@@ -211,11 +211,11 @@ final class ResolverFactory implements ParquetColumnResolver.Factory {
     }
 
     private static void checkCompatible(Type ptype, org.apache.iceberg.types.Type.PrimitiveType readerPrimitiveType) {
-        // TODO
+
     }
 
     private static void checkCompatible(Type ptype, Types.StructType readerStructType) {
-        // TODO
+
     }
 
     private static void checkCompatible(List<Type> ptypes, Types.ListType readerListType) {

@@ -87,7 +87,7 @@ class ResolverFactorySimpleTest {
 
     @Test
     void normal() {
-        final ResolverFactory f1 = factory(resolver(), null);
+        final ResolverFactory f1 = factory(resolver(), NameMapping.empty());
         // An illustration that the name mapping is about the parquet column names, not the Deephaven nor Iceberg names,
         // so this name mapping should have no effect
         final ResolverFactory f2 = factory(resolver(), NameMapping.of(

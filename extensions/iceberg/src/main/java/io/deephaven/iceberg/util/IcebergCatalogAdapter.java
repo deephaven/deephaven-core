@@ -305,7 +305,8 @@ public class IcebergCatalogAdapter {
      * {@code definition}. Their types will be inferred via {@link TypeInference#of(Type, TypeUtil.NextID)} . The
      * {@link ColumnDefinition.ColumnType#Partitioning partitioning columns} will be used as
      * {@link Transforms#identity() identity transforms} for the {@link PartitionSpec}. Callers should take note of the
-     * documentation on {@link Resolver#definition()} when deciding to create an Iceberg Table with partitioning columns.
+     * documentation on {@link Resolver#definition()} when deciding to create an Iceberg Table with partitioning
+     * columns.
      *
      * @param tableIdentifier The identifier of the new table.
      * @param definition The {@link TableDefinition} of the new table.
@@ -325,7 +326,8 @@ public class IcebergCatalogAdapter {
      * {@code definition}. Their types will be inferred via {@link TypeInference#of(Type, TypeUtil.NextID)} . The
      * {@link ColumnDefinition.ColumnType#Partitioning partitioning columns} will be used as
      * {@link Transforms#identity() identity transforms} for the {@link PartitionSpec}. Callers should take note of the
-     * documentation on {@link Resolver#definition()} when deciding to create an Iceberg Table with partitioning columns.
+     * documentation on {@link Resolver#definition()} when deciding to create an Iceberg Table with partitioning
+     * columns.
      *
      * @param tableIdentifier The identifier of the new table.
      * @param definition The {@link TableDefinition} of the new table.
@@ -339,7 +341,8 @@ public class IcebergCatalogAdapter {
         final org.apache.iceberg.Table table =
                 createTable(tableIdentifier, internalResolver.schema(), internalResolver.specOrUnpartitioned());
         final Resolver resolver = Resolver.refreshIds(internalResolver, table.schema(), table.spec());
-        return new IcebergTableAdapter(catalog, tableIdentifier, table, dataInstructionsProvider, resolver, NameMapping.empty());
+        return new IcebergTableAdapter(catalog, tableIdentifier, table, dataInstructionsProvider, resolver,
+                NameMapping.empty());
     }
 
     private org.apache.iceberg.Table createTable(

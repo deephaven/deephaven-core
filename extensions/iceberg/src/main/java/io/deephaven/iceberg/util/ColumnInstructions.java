@@ -22,7 +22,7 @@ import java.util.OptionalInt;
 public abstract class ColumnInstructions {
 
     /**
-     * Create an unmapped column instructions, where neither schema field, nor partition field, is referenced.
+     * Create an unmapped column instructions, where neither schema field nor partition field is referenced.
      *
      * @return the column instructions
      */

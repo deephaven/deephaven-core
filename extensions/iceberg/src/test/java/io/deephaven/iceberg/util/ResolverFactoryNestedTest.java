@@ -152,7 +152,7 @@ class ResolverFactoryNestedTest {
 
     @Test
     void normal() {
-        final ResolverFactory f1 = factory(resolver(), null);
+        final ResolverFactory f1 = factory(resolver(), NameMapping.empty());
 
         // This is functionally equivalent to NameMapping.empty() when no actual names are provided
         final ResolverFactory noFallbacks =
