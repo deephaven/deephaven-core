@@ -5,6 +5,7 @@ package io.deephaven.iceberg.util;
 
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.NoSuchColumnException;
 import io.deephaven.qst.type.Type;
 import org.apache.iceberg.Schema;
 import org.apache.iceberg.types.Types;
@@ -148,6 +149,19 @@ class UnboundResolverTest {
         } catch (Resolver.MappingException e) {
             assertThat(e).hasMessageContaining("Unable to map Deephaven column F1");
             assertThat(e).cause().hasMessageContaining("Unable to find field id 9999");
+        }
+    }
+
+    @Test
+    void unknownColumnName() {
+        try {
+            UnboundResolver.builder()
+                    .definition(TableDefinition.of(ColumnDefinition.ofInt("Foo")))
+                    .putColumnInstructions("Bar", ColumnInstructions.schemaField(1))
+                    .build();
+            failBecauseExceptionWasNotThrown(NoSuchColumnException.class);
+        } catch (NoSuchColumnException e) {
+            assertThat(e).hasMessageContaining("Unknown column names [Bar], available column names are [Foo]");
         }
     }
 }

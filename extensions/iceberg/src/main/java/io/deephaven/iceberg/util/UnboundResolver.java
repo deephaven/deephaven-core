@@ -8,7 +8,6 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
 import org.apache.iceberg.Schema;
 import org.apache.iceberg.Table;
-import org.apache.iceberg.types.Types;
 import org.immutables.value.Value;
 
 import java.util.Map;
@@ -83,5 +82,10 @@ public abstract class UnboundResolver extends ResolverProviderImpl implements Re
         Builder putAllColumnInstructions(Map<String, ? extends ColumnInstructions> entries);
 
         UnboundResolver build();
+    }
+
+    @Value.Check
+    final void checkKeys() {
+        definition().checkHasColumns(columnInstructions().keySet());
     }
 }
