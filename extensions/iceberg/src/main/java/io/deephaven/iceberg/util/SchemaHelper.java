@@ -17,15 +17,6 @@ import java.util.stream.Collectors;
 
 final class SchemaHelper {
 
-    public static boolean hasFieldPath(Schema schema, int[] idPath) {
-        try {
-            fieldPath(schema, idPath);
-        } catch (PathException e) {
-            return false;
-        }
-        return true;
-    }
-
     public static List<NestedField> fieldPath(Schema schema, int fieldId) throws PathException {
         final FieldPath fieldPath = FieldPath.get(schema, fieldId);
         try {
@@ -36,29 +27,12 @@ final class SchemaHelper {
         }
     }
 
-    public static String fieldName(Schema schema, int fieldId) throws PathException {
-        return toFieldName(fieldPath(schema, fieldId));
-    }
-
     public static List<NestedField> fieldPath(Schema schema, int[] idPath) throws PathException {
         return path(schema.asStruct(), idPath);
     }
 
     public static List<NestedField> fieldPath(Schema schema, String[] namePath) throws PathException {
         return path(schema.asStruct(), namePath);
-    }
-
-    public static Optional<List<NestedField>> findFieldPath(Schema schema, PartitionField partitionField) {
-        final FieldPath fieldPath = FieldPath.find(schema, partitionField).orElse(null);
-        if (fieldPath == null) {
-            return Optional.empty();
-        }
-        try {
-            return Optional.of(fieldPath.resolve(schema));
-        } catch (PathException e) {
-            // this should have failed during the get if it was not found
-            throw new IllegalStateException(e);
-        }
     }
 
     public static List<NestedField> fieldPath(Schema schema, PartitionField partitionField) throws PathException {
@@ -77,10 +51,6 @@ final class SchemaHelper {
                 .map(NestedField::name)
                 .collect(Collectors.joining("."));
     }
-
-    // public static String toNameString(Collection<? extends NestedField> context) {
-    // return context.stream().map(NestedField::name).collect(Collectors.joining(", ", "[", "]"));
-    // }
 
     private static List<NestedField> path(final Type.NestedType type, final int[] idPath) throws PathException {
         Type currentType = type;
@@ -127,8 +97,6 @@ final class SchemaHelper {
         }
         return null;
     }
-
-    // todo: typed exceptions?
 
     public static class PathException extends Exception {
 

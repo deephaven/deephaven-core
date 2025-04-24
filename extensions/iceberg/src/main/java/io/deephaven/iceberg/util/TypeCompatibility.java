@@ -72,7 +72,7 @@ public final class TypeCompatibility {
 
         @Override
         public Boolean visit(BoxedType<?> boxedType) {
-            // likely, should follow same rules as primitives?
+            // same rules as primitives
             return boxedType.primitiveType().walk((PrimitiveType.Visitor<Boolean>) this);
         }
 
@@ -89,9 +89,7 @@ public final class TypeCompatibility {
 
         @Override
         public Boolean visit(ArrayType<?, ?> arrayType) {
-            // todo: more advanced array walk later
-            // return Type.byteType().arrayType().equals(arrayType)
-            // && (pt == Types.BinaryType.get() || pt instanceof Types.FixedType);
+            // TODO(DH-18253): Add support to write more types to iceberg tables
             return false;
         }
 
@@ -130,31 +128,26 @@ public final class TypeCompatibility {
 
         @Override
         public Boolean visit(ShortType shortType) {
-            // todo: should we allow LongType?
             return isIntegral();
         }
 
         @Override
         public Boolean visit(IntType intType) {
-            // todo: should we allow LongType?
             return isIntegral();
         }
 
         @Override
         public Boolean visit(LongType longType) {
-            // todo: should we allow IntegerType?
             return isIntegral();
         }
 
         @Override
         public Boolean visit(FloatType floatType) {
-            // todo: should we allow DoubleType / integral types?
             return isNumeric();
         }
 
         @Override
         public Boolean visit(DoubleType doubleType) {
-            // todo: should we allow FloatType / integral types?
             return isNumeric();
         }
 

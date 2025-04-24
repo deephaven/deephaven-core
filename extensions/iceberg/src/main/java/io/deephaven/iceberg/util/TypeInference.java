@@ -169,7 +169,7 @@ public final class TypeInference {
     }
 
     static Type<?> of(@SuppressWarnings("unused") Types.DecimalType type) {
-        // todo: should we have QST type that captures scale / precision?
+        // We may want to have DH type that captures precision and scale
         return Type.find(BigDecimal.class);
     }
 
@@ -285,19 +285,19 @@ public final class TypeInference {
 
         @Override
         public org.apache.iceberg.types.Type visit(ByteType byteType) {
-            // should we infer this as IntegerType?
+            // TODO(DH-18253): Add support to write more types to iceberg tables
             return null;
         }
 
         @Override
         public org.apache.iceberg.types.Type visit(CharType charType) {
-            // should we infer this as IntegerType? FixedType[2]?
+            // TODO(DH-18253): Add support to write more types to iceberg tables
             return null;
         }
 
         @Override
         public org.apache.iceberg.types.Type visit(ShortType shortType) {
-            // should we infer this as IntegerType?
+            // TODO(DH-18253): Add support to write more types to iceberg tables
             return null;
         }
     }

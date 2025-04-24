@@ -135,10 +135,13 @@ final class PartitionSpecHelper {
         return true;
     }
 
+    // Deciding to keep this method around for a little bit for the comments in partitionForInference in case we want to
+    // bring this back in the future.
     /**
      * Returns a spec that is "safe" to use for partition inference when considering only the data files referenced by
      * {@code snapshot}.
      */
+    @SuppressWarnings("unused")
     public static PartitionSpec partitionForInference(
             @NotNull final Table table,
             @Nullable final Snapshot snapshot) {

@@ -33,7 +33,7 @@ abstract class FieldPath {
     }
 
     /**
-     * Creates a field path that resolves fields via {@link NestedField#fieldId()}}. This method ensures that the field
+     * Creates a field path that resolves fields via {@link NestedField#fieldId()}. This method ensures that the field
      * id path exists in {@code schema}.
      *
      * @param schema the schema
@@ -41,8 +41,8 @@ abstract class FieldPath {
      * @return the field path
      */
     public static FieldPath of(Schema schema, int... fieldIdPath) throws SchemaHelper.PathException {
-        // Check that the fieldIdPath is resolvable
-        SchemaHelper.fieldPath(schema, fieldIdPath); // todo
+        // This checks that the fieldIdPath is correct
+        SchemaHelper.fieldPath(schema, fieldIdPath);
         return of(fieldIdPath);
     }
 
@@ -55,12 +55,8 @@ abstract class FieldPath {
     }
 
     public static FieldPath get(Schema schema, PartitionField partitionField) throws SchemaHelper.PathException {
-        final Optional<FieldPath> fieldPath = find(schema, partitionField);
-        if (fieldPath.isEmpty()) {
-            throw new SchemaHelper.PathException(
-                    String.format("Unable to find partition field `%s` in schema", partitionField));
-        }
-        return fieldPath.get();
+        return find(schema, partitionField).orElseThrow(() -> new SchemaHelper.PathException(
+                String.format("Unable to find partition field `%s` in schema", partitionField)));
     }
 
     public static Optional<FieldPath> find(Schema schema, int fieldId) {
@@ -116,9 +112,5 @@ abstract class FieldPath {
 
     public final List<NestedField> resolve(Schema schema) throws SchemaHelper.PathException {
         return SchemaHelper.fieldPath(schema, path());
-    }
-
-    final boolean isContainedIn(Schema schema) {
-        return SchemaHelper.hasFieldPath(schema, path());
     }
 }
