@@ -46,7 +46,6 @@ public abstract class UnboundResolver extends ResolverProviderImpl implements Re
      */
     abstract Map<String, ColumnInstructions> columnInstructionsMap();
 
-    @Value.Lazy
     public Resolver resolver(Table table) {
         final Schema schema = ((SchemaProviderInternal.SchemaProviderImpl) schema()).getSchema(table);
         final TableDefinition tableDefinition = tableDefinition();
