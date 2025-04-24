@@ -9,7 +9,6 @@ package io.deephaven.vector;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
-import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfInt;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
@@ -95,7 +94,7 @@ public class IntVectorSlice extends IntVector.Indirect {
     }
 
     @Override
-    public CloseablePrimitiveIteratorOfInt iterator(final long fromIndexInclusive, final long toIndexExclusive) {
+    public Iterator iterator(final long fromIndexInclusive, final long toIndexExclusive) {
         Require.leq(fromIndexInclusive, "fromIndexInclusive", toIndexExclusive, "toIndexExclusive");
         final long totalWanted = toIndexExclusive - fromIndexInclusive;
         long nextIndexWanted = fromIndexInclusive + offsetIndex;
@@ -119,16 +118,16 @@ public class IntVectorSlice extends IntVector.Indirect {
             includedInnerLength = 0;
         }
 
-        final CloseablePrimitiveIteratorOfInt initialNullsIterator = includedInitialNulls > 0
-                ? CloseablePrimitiveIteratorOfInt.repeat(NULL_INT, includedInitialNulls)
+        final Iterator initialNullsIterator = includedInitialNulls > 0
+                ? Iterator.repeat(NULL_INT, includedInitialNulls)
                 : null;
-        final CloseablePrimitiveIteratorOfInt innerIterator = includedInnerLength > 0
+        final Iterator innerIterator = includedInnerLength > 0
                 ? innerVector.iterator(firstIncludedInnerOffset, firstIncludedInnerOffset + includedInnerLength)
                 : null;
-        final CloseablePrimitiveIteratorOfInt finalNullsIterator = remaining > 0
-                ? CloseablePrimitiveIteratorOfInt.repeat(NULL_INT, remaining)
+        final Iterator finalNullsIterator = remaining > 0
+                ? Iterator.repeat(NULL_INT, remaining)
                 : null;
-        return CloseablePrimitiveIteratorOfInt.maybeConcat(initialNullsIterator, innerIterator, finalNullsIterator);
+        return Iterator.maybeConcat(initialNullsIterator, innerIterator, finalNullsIterator);
     }
 
     @Override

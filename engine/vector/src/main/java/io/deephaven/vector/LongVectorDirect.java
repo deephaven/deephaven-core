@@ -8,7 +8,6 @@
 package io.deephaven.vector;
 
 import io.deephaven.base.verify.Require;
-import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfLong;
 import io.deephaven.util.annotations.ArrayType;
 import io.deephaven.util.annotations.ArrayTypeGetter;
 import org.jetbrains.annotations.NotNull;
@@ -62,9 +61,9 @@ public final class LongVectorDirect implements LongVector {
     }
 
     @Override
-    public CloseablePrimitiveIteratorOfLong iterator(final long fromIndexInclusive, final long toIndexExclusive) {
+    public Iterator iterator(final long fromIndexInclusive, final long toIndexExclusive) {
         if (fromIndexInclusive == 0 && toIndexExclusive == data.length) {
-            return CloseablePrimitiveIteratorOfLong.of(data);
+            return Iterator.of(data);
         }
         return LongVector.super.iterator(fromIndexInclusive, toIndexExclusive);
     }

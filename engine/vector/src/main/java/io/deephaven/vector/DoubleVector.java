@@ -12,11 +12,22 @@ import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfDouble
 import io.deephaven.qst.type.DoubleType;
 import io.deephaven.qst.type.PrimitiveVectorType;
 import io.deephaven.util.QueryConstants;
+import io.deephaven.util.SafeCloseableArray;
 import io.deephaven.util.annotations.FinalDefault;
+import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
+import java.util.NoSuchElementException;
+import java.util.Objects;
+import java.util.PrimitiveIterator;
+import java.util.Spliterator;
+import java.util.Spliterators;
+import java.util.function.Consumer;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 /**
  * A {@link Vector} of primitive doubles.
@@ -55,7 +66,7 @@ public interface DoubleVector extends Vector<DoubleVector>, Iterable<Double> {
 
     @Override
     @FinalDefault
-    default CloseablePrimitiveIteratorOfDouble iterator() {
+    default Iterator iterator() {
         return iterator(0, size());
     }
 
@@ -67,9 +78,9 @@ public interface DoubleVector extends Vector<DoubleVector>, Iterable<Double> {
      * @param toIndexExclusive The first position after {@code fromIndexInclusive} to not include
      * @return An iterator over the requested slice
      */
-    default CloseablePrimitiveIteratorOfDouble iterator(final long fromIndexInclusive, final long toIndexExclusive) {
+    default Iterator iterator(final long fromIndexInclusive, final long toIndexExclusive) {
         Require.leq(fromIndexInclusive, "fromIndexInclusive", toIndexExclusive, "toIndexExclusive");
-        return new CloseablePrimitiveIteratorOfDouble() {
+        return new Iterator() {
 
             long nextIndex = fromIndexInclusive;
 
@@ -230,6 +241,191 @@ public interface DoubleVector extends Vector<DoubleVector>, Iterable<Double> {
 
         protected final Object writeReplace() {
             return getDirect();
+        }
+    }
+
+    interface Iterator extends CloseablePrimitiveIteratorOfDouble {
+        @Override
+        @FinalDefault
+        default Double next() {
+            return TypeUtils.box(nextDouble());
+        }
+
+        @Override
+        @FinalDefault
+        default void forEachRemaining(@NotNull final Consumer<? super Double> action) {
+            forEachRemaining((final double element) -> action.accept(TypeUtils.box(element)));
+        }
+
+        /**
+         * A re-usable, immutable DoubleColumnIterator with no elements.
+         */
+        Iterator EMPTY = new Iterator() {
+            @Override
+            public double nextDouble() {
+                throw new NoSuchElementException();
+            }
+
+            @Override
+            public boolean hasNext() {
+                return false;
+            }
+        };
+
+        // region streamAsInt
+        // endregion streamAsInt
+
+        /**
+         * Get a DoubleColumnIterator with no elements. The result does not need to be {@link #close() closed}.
+         *
+         * @return A DoubleColumnIterator with no elements
+         */
+        static Iterator empty() {
+            return EMPTY;
+        }
+
+        /**
+         * Create a DoubleColumnIterator over an array of {@code double}. The result does not need to be
+         * {@link #close() closed}.
+         *
+         * @param values The elements to iterate
+         * @return A DoubleColumnIterator of {@code values}
+         */
+        static Iterator of(@NotNull final double... values) {
+            Objects.requireNonNull(values);
+            return new Iterator() {
+
+                private int valueIndex;
+
+                @Override
+                public double nextDouble() {
+                    if (valueIndex < values.length) {
+                        return values[valueIndex++];
+                    }
+                    throw new NoSuchElementException();
+                }
+
+                @Override
+                public boolean hasNext() {
+                    return valueIndex < values.length;
+                }
+            };
+        }
+
+        /**
+         * Create a DoubleColumnIterator that repeats {@code value}, {@code repeatCount} times. The result does not
+         * need to be {@link #close() closed}.
+         *
+         * @param value The value to repeat
+         * @param repeatCount The number of repetitions
+         * @return A DoubleColumnIterator that repeats {@code value}, {@code repeatCount} times
+         */
+        static Iterator repeat(final double value, final long repeatCount) {
+            return new Iterator() {
+
+                private long repeatIndex;
+
+                @Override
+                public double nextDouble() {
+                    if (repeatIndex < repeatCount) {
+                        ++repeatIndex;
+                        return value;
+                    }
+                    throw new NoSuchElementException();
+                }
+
+                @Override
+                public boolean hasNext() {
+                    return repeatIndex < repeatCount;
+                }
+            };
+        }
+
+        /**
+         * Create a DoubleColumnIterator that concatenates an array of non-{@code null} {@code subIterators}. The
+         * result only needs to be {@link #close() closed} if any of the {@code subIterators} require it.
+         *
+         * @param subIterators The iterators to concatenate, none of which should be {@code null}. If directly passing
+         *        an array, ensure that this iterator has full ownership.
+         * @return A DoubleColumnIterator concatenating all elements from {@code subIterators}
+         */
+        static Iterator concat(@NotNull final Iterator... subIterators) {
+            Objects.requireNonNull(subIterators);
+            if (subIterators.length == 0) {
+                return empty();
+            }
+            if (subIterators.length == 1) {
+                return subIterators[0];
+            }
+            return new Iterator() {
+
+                private boolean hasNextChecked;
+                private int subIteratorIndex;
+
+                @Override
+                public double nextDouble() {
+                    if (hasNext()) {
+                        hasNextChecked = false;
+                        return subIterators[subIteratorIndex].nextDouble();
+                    }
+                    throw new NoSuchElementException();
+                }
+
+                @Override
+                public boolean hasNext() {
+                    if (hasNextChecked) {
+                        return true;
+                    }
+                    for (; subIteratorIndex < subIterators.length; ++subIteratorIndex) {
+                        if (subIterators[subIteratorIndex].hasNext()) {
+                            return hasNextChecked = true;
+                        }
+                    }
+                    return false;
+                }
+
+                @Override
+                public void close() {
+                    SafeCloseableArray.close(subIterators);
+                }
+            };
+        }
+
+        /**
+         * Return a DoubleColumnIterator that concatenates the contents of any non-{@code null}
+         * DoubleColumnIterator found amongst {@code first}, {@code second}, and {@code third}.
+         *
+         * @param first The first iterator to consider concatenating
+         * @param second The second iterator to consider concatenating
+         * @param third The third iterator to consider concatenating
+         * @return A DoubleColumnIterator that concatenates all elements as specified
+         */
+        static Iterator maybeConcat(
+                @Nullable final Iterator first,
+                @Nullable final Iterator second,
+                @Nullable final Iterator third) {
+            if (first != null) {
+                if (second != null) {
+                    if (third != null) {
+                        return concat(first, second, third);
+                    }
+                    return concat(first, second);
+                }
+                if (third != null) {
+                    return concat(first, third);
+                }
+                return first;
+            }
+            if (second != null) {
+                if (third != null) {
+                    return concat(second, third);
+                }
+                return second;
+            }
+            if (third != null) {
+                return third;
+            }
+            return empty();
         }
     }
 }

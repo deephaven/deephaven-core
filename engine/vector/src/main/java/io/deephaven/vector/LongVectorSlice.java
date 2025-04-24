@@ -9,7 +9,6 @@ package io.deephaven.vector;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
-import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfLong;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
@@ -95,7 +94,7 @@ public class LongVectorSlice extends LongVector.Indirect {
     }
 
     @Override
-    public CloseablePrimitiveIteratorOfLong iterator(final long fromIndexInclusive, final long toIndexExclusive) {
+    public Iterator iterator(final long fromIndexInclusive, final long toIndexExclusive) {
         Require.leq(fromIndexInclusive, "fromIndexInclusive", toIndexExclusive, "toIndexExclusive");
         final long totalWanted = toIndexExclusive - fromIndexInclusive;
         long nextIndexWanted = fromIndexInclusive + offsetIndex;
@@ -119,16 +118,16 @@ public class LongVectorSlice extends LongVector.Indirect {
             includedInnerLength = 0;
         }
 
-        final CloseablePrimitiveIteratorOfLong initialNullsIterator = includedInitialNulls > 0
-                ? CloseablePrimitiveIteratorOfLong.repeat(NULL_LONG, includedInitialNulls)
+        final Iterator initialNullsIterator = includedInitialNulls > 0
+                ? Iterator.repeat(NULL_LONG, includedInitialNulls)
                 : null;
-        final CloseablePrimitiveIteratorOfLong innerIterator = includedInnerLength > 0
+        final Iterator innerIterator = includedInnerLength > 0
                 ? innerVector.iterator(firstIncludedInnerOffset, firstIncludedInnerOffset + includedInnerLength)
                 : null;
-        final CloseablePrimitiveIteratorOfLong finalNullsIterator = remaining > 0
-                ? CloseablePrimitiveIteratorOfLong.repeat(NULL_LONG, remaining)
+        final Iterator finalNullsIterator = remaining > 0
+                ? Iterator.repeat(NULL_LONG, remaining)
                 : null;
-        return CloseablePrimitiveIteratorOfLong.maybeConcat(initialNullsIterator, innerIterator, finalNullsIterator);
+        return Iterator.maybeConcat(initialNullsIterator, innerIterator, finalNullsIterator);
     }
 
     @Override

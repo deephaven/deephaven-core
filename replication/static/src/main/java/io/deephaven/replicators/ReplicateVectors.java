@@ -6,6 +6,7 @@ package io.deephaven.replicators;
 import io.deephaven.replication.ReplicatePrimitiveCode;
 import io.deephaven.replication.ReplicationUtils;
 import org.apache.commons.io.FileUtils;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.io.IOException;
@@ -23,23 +24,13 @@ public class ReplicateVectors {
 
         final String charVectorJavaPath = "engine/vector/src/main/java/io/deephaven/vector/CharVector.java";
 
-        ReplicatePrimitiveCode.charToAllButBooleanAndFloats(TASK, charVectorJavaPath, serialVersionUIDs);
+        ReplicatePrimitiveCode.charToByte(TASK, charVectorJavaPath, serialVersionUIDs);
+        ReplicatePrimitiveCode.charToShort(TASK, charVectorJavaPath, serialVersionUIDs);
 
-        final String floatPath = ReplicatePrimitiveCode.charToFloat(TASK, charVectorJavaPath, serialVersionUIDs);
-        final File floatFile = new File(floatPath);
-        List<String> floatLines = FileUtils.readLines(floatFile, Charset.defaultCharset());
-        floatLines = ReplicationUtils.simpleFixup(floatLines, "ElementEquals",
-                "aIterator\\.nextFloat\\(\\) != bIterator\\.nextFloat\\(\\)",
-                "Float.floatToIntBits(aIterator.nextFloat()) != Float.floatToIntBits(bIterator.nextFloat())");
-        FileUtils.writeLines(floatFile, floatLines);
-
-        final String doublePath = ReplicatePrimitiveCode.charToDouble(TASK, charVectorJavaPath, serialVersionUIDs);
-        final File doubleFile = new File(doublePath);
-        List<String> doubleLines = FileUtils.readLines(doubleFile, Charset.defaultCharset());
-        doubleLines = ReplicationUtils.simpleFixup(doubleLines, "ElementEquals",
-                "aIterator\\.nextDouble\\(\\) != bIterator\\.nextDouble\\(\\)",
-                "Double.doubleToLongBits(aIterator.nextDouble()) != Double.doubleToLongBits(bIterator.nextDouble())");
-        FileUtils.writeLines(doubleFile, doubleLines);
+        fixupCharToInt(ReplicatePrimitiveCode.charToInteger(TASK, charVectorJavaPath, serialVersionUIDs));
+        fixupCharToLong(ReplicatePrimitiveCode.charToLong(TASK, charVectorJavaPath, serialVersionUIDs));
+        fixupCharToFloat(ReplicatePrimitiveCode.charToFloat(TASK, charVectorJavaPath, serialVersionUIDs));
+        fixupCharToDouble(ReplicatePrimitiveCode.charToDouble(TASK, charVectorJavaPath, serialVersionUIDs));
 
         ReplicatePrimitiveCode.charToAllButBoolean(TASK,
                 "engine/vector/src/main/java/io/deephaven/vector/CharVectorDirect.java",
@@ -50,5 +41,68 @@ public class ReplicateVectors {
         ReplicatePrimitiveCode.charToAllButBoolean(TASK,
                 "engine/vector/src/main/java/io/deephaven/vector/CharSubVector.java",
                 serialVersionUIDs);
+    }
+
+    public static void fixupCharToInt(@NotNull final String path) throws IOException {
+        final File file = new File(path);
+        List<String> lines = FileUtils.readLines(file, Charset.defaultCharset());
+        lines = ReplicationUtils.removeImport(lines,
+                "import io.deephaven.engine.primitive.function.IntToIntFunction;");
+        lines = ReplicationUtils.replaceRegion(lines, "streamAsInt",
+                ReplicationUtils.indent(List.of(
+                        "",
+                        "/**",
+                        "* Create a boxed {@link Stream} over the remaining elements of this IntegerColumnIterator. The result <em>must</em>",
+                        "* be {@link java.util.stream.BaseStream#close() closed} in order to ensure resources are released. A",
+                        "* try-with-resources block is strongly encouraged.",
+                        "*",
+                        "* @return A boxed {@link Stream} over the remaining contents of this iterator. Must be {@link Stream#close()",
+                        "*         closed}.",
+                        "*/",
+                        "@Override",
+                        "@FinalDefault",
+                        "default Stream<Integer> stream() {",
+                        "   return intStream().mapToObj(TypeUtils::box);",
+                        "}"), 8));
+        FileUtils.writeLines(file, lines);
+    }
+
+    public static void fixupCharToLong(@NotNull final String path) throws IOException {
+        final File file = new File(path);
+        List<String> lines = FileUtils.readLines(file, Charset.defaultCharset());
+        lines = ReplicationUtils.removeImport(lines,
+                "import io.deephaven.engine.primitive.function.LongToIntFunction;");
+        lines = ReplicationUtils.removeRegion(lines, "streamAsInt");
+        FileUtils.writeLines(file, lines);
+    }
+
+    public static void fixupCharToDouble(@NotNull final String path) throws IOException {
+        final File file = new File(path);
+        List<String> lines = FileUtils.readLines(file, Charset.defaultCharset());
+        lines = ReplicationUtils.removeImport(lines,
+                "import io.deephaven.engine.primitive.function.DoubleToIntFunction;");
+        lines = ReplicationUtils.simpleFixup(lines, "ElementEquals",
+                "aIterator\\.nextDouble\\(\\) != bIterator\\.nextDouble\\(\\)",
+                "Double.doubleToLongBits(aIterator.nextDouble()) != Double.doubleToLongBits(bIterator.nextDouble())");
+        lines = ReplicationUtils.removeRegion(lines, "streamAsInt");
+        FileUtils.writeLines(file, lines);
+    }
+
+    public static void fixupCharToFloat(@NotNull final String path) throws IOException {
+        final File file = new File(path);
+        List<String> lines = FileUtils.readLines(file, Charset.defaultCharset());
+        lines = ReplicationUtils.addImport(lines,
+                "import java.util.stream.DoubleStream;");
+        lines = ReplicationUtils.simpleFixup(lines, "ElementEquals",
+                "aIterator\\.nextFloat\\(\\) != bIterator\\.nextFloat\\(\\)",
+                "Float.floatToIntBits(aIterator.nextFloat()) != Float.floatToIntBits(bIterator.nextFloat())");
+        lines = ReplicationUtils.removeImport(lines,
+                "import io.deephaven.engine.primitive.function.FloatToIntFunction;");
+        lines = ReplicationUtils.simpleFixup(lines, "streamAsInt",
+                "streamAsInt\\(", "streamAsDouble(",
+                "IntStream", "DoubleStream",
+                "NULL_INT", "NULL_DOUBLE",
+                "\\(int\\)", "(double)");
+        FileUtils.writeLines(file, lines);
     }
 }

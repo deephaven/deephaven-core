@@ -34,7 +34,8 @@ public class ReplicateColumnIterators {
         {
             charToByte(TASK, CHAR_IFACE_PATH, Collections.emptyMap());
             charToShort(TASK, CHAR_IFACE_PATH, Collections.emptyMap());
-            fixupIntToDouble(charToFloat(TASK, CHAR_IFACE_PATH, Collections.emptyMap()));
+            fixupCharToInt(charToInteger(TASK, CHAR_IFACE_PATH, Collections.emptyMap()));
+            fixupCharToFloat(charToFloat(TASK, CHAR_IFACE_PATH, Collections.emptyMap()));
         }
         {
             fixupChunkSize(intToLong(TASK, INT_IFACE_PATH, Collections.emptyMap(), "interface"), "long");
@@ -48,14 +49,14 @@ public class ReplicateColumnIterators {
         }
     }
 
-    private static void fixupChunkSize(@NotNull final String path, @NotNull final String primitive) throws IOException {
+    private static void fixupChunkSize(@NotNull final String path, @NotNull final String primitive)
+            throws IOException {
         final File file = new File(path);
         final List<String> inputLines = FileUtils.readLines(file, Charset.defaultCharset());
-        final List<String> outputLines =
-                ReplicationUtils.simpleFixup(
-                        ReplicationUtils.simpleFixup(inputLines,
-                                "chunkSize", primitive + " chunkSize", "int chunkSize"),
-                        "currentSize", primitive + " currentSize", "int currentSize");
+        final List<String> outputLines = ReplicationUtils.simpleFixup(
+                ReplicationUtils.simpleFixup(inputLines,
+                        "chunkSize", primitive + " chunkSize", "int chunkSize"),
+                "currentSize", primitive + " currentSize", "int currentSize");
         FileUtils.writeLines(file, outputLines);
     }
 
@@ -72,7 +73,40 @@ public class ReplicateColumnIterators {
         }
     }
 
-    private static void fixupIntToDouble(@NotNull final String path) throws IOException {
+    private static void fixupCharToInt(@NotNull final String path) throws IOException {
+        final File file = new File(path);
+        List<String> lines = ReplicationUtils.removeRegion(
+                FileUtils.readLines(file, Charset.defaultCharset()), "streamAsInt");
+        lines = ReplicationUtils.removeImport(lines,
+                "import io.deephaven.engine.primitive.function.IntToIntFunction;",
+                "import java.util.PrimitiveIterator;");
+        lines = ReplicationUtils.addImport(lines,
+                "import io.deephaven.util.type.TypeUtils;");
+        lines = ReplicationUtils.replaceRegion(lines, "stream",
+                ReplicationUtils.indent(List.of(
+                        "/**",
+                        " * Create an unboxed {@link IntStream} over the remaining elements of this IntegerColumnIterator. The result",
+                        " * <em>must</em> be {@link java.util.stream.BaseStream#close() closed} in order to ensure resources are released. A",
+                        " * try-with-resources block is strongly encouraged.",
+                        " *",
+                        " * @return An unboxed {@link IntStream} over the remaining contents of this iterator. Must be {@link Stream#close()",
+                        " *         closed}.",
+                        " */",
+                        "@Override",
+                        "@FinalDefault",
+                        "default IntStream intStream() {",
+                        "    return StreamSupport.intStream(",
+                        "            Spliterators.spliterator(",
+                        "                    this,",
+                        "                    remaining(),",
+                        "                    Spliterator.IMMUTABLE | Spliterator.ORDERED),",
+                        "            false)",
+                        "            .onClose(this::close);",
+                        "}"), 4));
+        FileUtils.writeLines(file, lines);
+    }
+
+    private static void fixupCharToFloat(@NotNull final String path) throws IOException {
         final File file = new File(path);
         final List<String> lines = ReplicationUtils.globalReplacements(
                 FileUtils.readLines(file, Charset.defaultCharset()),
@@ -81,12 +115,7 @@ public class ReplicateColumnIterators {
                 "\\(int\\)", "(double)",
                 "\\{@code int\\}", "{@code double}",
                 "OfInt", "OfDouble",
-                "IntToLongFunction", "IntToDoubleFunction",
                 "FloatToIntFunction", "FloatToDoubleFunction",
-                "applyAsLong", "applyAsDouble",
-                "applyAsInt", "applyAsDouble",
-                "primitive int", "primitive double",
-                "IntStream", "DoubleStream",
                 "intStream", "doubleStream",
                 "streamAsInt", "streamAsDouble");
         FileUtils.writeLines(file, lines);
