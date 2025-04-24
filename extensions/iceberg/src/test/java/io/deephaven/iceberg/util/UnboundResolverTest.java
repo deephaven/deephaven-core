@@ -94,17 +94,6 @@ class UnboundResolverTest {
     }
 
     @Test
-    void unboundResolverPartitioningColumnRejected() {
-        final TableDefinition td = TableDefinition.of(
-                ColumnDefinition.ofInt("F1").withPartitioning()); // should not be allowed
-        assertThatThrownBy(() -> UnboundResolver.builder()
-                .definition(td)
-                .build())
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("partitioning column");
-    }
-
-    @Test
     void schemaFieldNotFoundInMapRejected() {
         TableDefinition td = TableDefinition.of(
                 ColumnDefinition.ofInt("F1"));

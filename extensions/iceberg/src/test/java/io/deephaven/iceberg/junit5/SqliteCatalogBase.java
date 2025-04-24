@@ -100,7 +100,6 @@ import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.INT32;
 import static org.apache.parquet.schema.Types.buildMessage;
 import static org.apache.parquet.schema.Types.optional;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 
 public abstract class SqliteCatalogBase {
@@ -1864,12 +1863,96 @@ public abstract class SqliteCatalogBase {
                 .id(tableIdentifier)
                 .resolver(UnboundResolver.builder()
                         .definition(updatedDefinition)
-                        .putColumnInstructions("IC", schemaField(schema.findField("intCol").fieldId())) // Map to
-                                                                                                        // intCol
+                        // IC maps to intCol
+                        .putColumnInstructions("IC", schemaField(schema.findField("intCol").fieldId()))
                         .build())
                 .build());
         final Table fromIceberg = tableAdapterWithUnboundResolver.table();
         final Table expected = source.renameColumns("IC = intCol");
         assertTableEquals(expected, fromIceberg);
+    }
+
+    @Test
+    void unboundResolverWithPartitioningColumn() {
+        // Create a partitioned iceberg table
+        final Table part1 = TableTools.emptyTable(10)
+                .update("intCol = (int) 2 * i + 10",
+                        "doubleCol = (double) 2.5 * i + 10");
+        final Table part2 = TableTools.emptyTable(5)
+                .update("intCol = (int) 3 * i + 20",
+                        "doubleCol = (double) 3.5 * i + 20");
+        final List<String> partitionPaths = List.of("PC=cat", "PC=apple");
+        final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
+
+        final TableDefinition partitioningTableDef = TableDefinition.of(
+                ColumnDefinition.ofInt("intCol"),
+                ColumnDefinition.ofDouble("doubleCol"),
+                ColumnDefinition.ofString("partitioningCol").withPartitioning());
+        final IcebergTableAdapter tableAdapter = catalogAdapter.createTable(tableIdentifier, partitioningTableDef);
+        final IcebergTableWriter tableWriter = tableAdapter.tableWriter(writerOptionsBuilder()
+                .tableDefinition(partitioningTableDef)
+                .build());
+        tableWriter.append(IcebergWriteInstructions.builder()
+                .addTables(part1, part2)
+                .addAllPartitionPaths(partitionPaths)
+                .build());
+
+        // Load the table with a definition with renames
+        final TableDefinition updatedDefinition = TableDefinition.of(
+                ColumnDefinition.ofInt("IC"),
+                ColumnDefinition.ofDouble("doubleCol"),
+                ColumnDefinition.ofString("SC").withPartitioning());
+
+        final Schema schema = catalogAdapter.catalog().loadTable(tableIdentifier).schema();
+        final IcebergTableAdapter tableAdapterWithUnboundResolver = catalogAdapter.loadTable(LoadTableOptions.builder()
+                .id(tableIdentifier)
+                .resolver(UnboundResolver.builder()
+                        .definition(updatedDefinition)
+                        // IC maps to intCol
+                        .putColumnInstructions("IC", schemaField(schema.findField("intCol").fieldId()))
+                        // SC maps partitioningCol
+                        .putColumnInstructions("SC", schemaField(schema.findField("partitioningCol").fieldId()))
+                        .build())
+                .build());
+        final Table fromIceberg = tableAdapterWithUnboundResolver.table();
+
+        final Table expected = TableTools.merge(
+                part1.update("SC = `cat`"),
+                part2.update("SC = `apple`"))
+                .renameColumns("IC = intCol");
+        assertTableEquals(expected, fromIceberg.select());
+        assertTableEquals(expected, fromIceberg);
+    }
+
+    @Test
+    void unboundResolverWithMissingPartitioningColumn() {
+        // Create a non-partitioned iceberg table
+        final Table source = TableTools.emptyTable(10)
+                .update("intCol = (int) 2 * i + 10",
+                        "doubleCol = (double) 2.5 * i + 10",
+                        "stringCol = `cat`");
+        final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
+        unboundResolverTestHelper(tableIdentifier, source);
+
+        // Load the table with a partitioning definition
+        final TableDefinition updatedDefinition = TableDefinition.of(
+                ColumnDefinition.ofInt("intCol"),
+                ColumnDefinition.ofDouble("doubleCol"),
+                ColumnDefinition.ofString("stringCol").withPartitioning());
+
+        final Schema schema = catalogAdapter.catalog().loadTable(tableIdentifier).schema();
+        final int stringColFieldId = schema.findField("stringCol").fieldId();
+        try {
+            catalogAdapter.loadTable(LoadTableOptions.builder()
+                    .id(tableIdentifier)
+                    .resolver(UnboundResolver.builder()
+                            .definition(updatedDefinition)
+                            .build())
+                    .build());
+        } catch (Resolver.MappingException e) {
+            assertThat(e).hasMessageContaining("Unable to map Deephaven column stringCol");
+            assertThat(e.getCause()).hasMessageContaining("No PartitionField with source field id " +
+                    stringColFieldId + " exists in PartitionSpec");
+        }
     }
 }
