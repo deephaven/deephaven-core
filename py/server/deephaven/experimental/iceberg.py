@@ -419,8 +419,8 @@ class UnboundResolver(JObjectWrapper):
             table_definition (TableDefinitionLike): the table definition
             column_instructions (Optional[Mapping[str, Union[int, str]]]): The map from Deephaven column names to
                 instructions for mapping to Iceberg columns. An int value will be treated as a schema field id, and a
-                str value will be treated as a schema field name. Any columns from table_definition not in this map will be
-                assumed to be exact name matches for the fields in the Schema. Callers are encouraged to use schema
+                str value will be treated as a schema field name. Any columns from table_definition not in this map will
+                be assumed as exact name matches for the fields in the Schema. Callers are encouraged to use schema
                 field ids as they will remain valid across Iceberg Schema evolution.
             schema_provider (Optional[SchemaProvider]): The Iceberg Schema to be used for inference. Defaults to
                 `None`, which means use the current schema from the Iceberg Table.

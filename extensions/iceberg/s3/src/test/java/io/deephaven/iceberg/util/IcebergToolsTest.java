@@ -216,13 +216,6 @@ public abstract class IcebergToolsTest {
                 .build();
     }
 
-    @Deprecated
-    IcebergReadInstructions instructions(Resolver resolver) {
-        return IcebergReadInstructions.builder()
-                .dataInstructions(s3Instructions(S3Instructions.builder()).build())
-                .build();
-    }
-
     @AfterEach
     void tearDown() throws Exception {
         resourceCatalog.close();
@@ -396,8 +389,7 @@ public abstract class IcebergToolsTest {
 
         final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog);
         final IcebergTableAdapter tableAdapter = adapter.loadTable("sales.sales_single");
-        final io.deephaven.engine.table.Table table =
-                tableAdapter.table(instructions(resolver(SALES_SINGLE_DEFINITION, tableAdapter.currentSchema())));
+        final io.deephaven.engine.table.Table table = tableAdapter.table(instructions);
 
         // Verify we retrieved all the rows.
         Assert.eq(table.size(), "table.size()", 100_000, "expected rows in the table");
@@ -687,9 +679,6 @@ public abstract class IcebergToolsTest {
         final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog);
         final IcebergTableAdapter tableAdapter = adapter.loadTable("sales.sales_multi");
         final List<Snapshot> snapshots = tableAdapter.listSnapshots();
-
-        final IcebergReadInstructions instructions =
-                instructions(resolver(SALES_MULTI_DEFINITION, tableAdapter.currentSchema()));
 
         // Verify we retrieved all the rows.
         final io.deephaven.engine.table.Table table0 =
