@@ -27,7 +27,7 @@ public abstract class UnboundResolver extends ResolverProviderImpl implements Re
 
     /**
      * The table definition to use for to build the {@link Resolver}. Any partitioning columns in the table definition
-     * will be internally mapped to partition fields from the Iceberg table.
+     * will be internally mapped to partition fields from the latest spec of the Iceberg table.
      *
      * @see Resolver#definition()
      */
