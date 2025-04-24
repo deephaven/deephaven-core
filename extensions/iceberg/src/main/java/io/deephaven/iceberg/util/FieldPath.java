@@ -20,7 +20,7 @@ import java.util.Optional;
  */
 @Value.Immutable
 @SimpleStyle
-public abstract class FieldPath {
+abstract class FieldPath {
 
     /**
      * Creates a field path that resolves fields via {@link NestedField#fieldId()}.
@@ -114,8 +114,6 @@ public abstract class FieldPath {
     @Value.Parameter
     abstract int[] path();
 
-    // todo: make package private
-    // todo
     public final List<NestedField> resolve(Schema schema) throws SchemaHelper.PathException {
         return SchemaHelper.fieldPath(schema, path());
     }
