@@ -26,9 +26,10 @@ public abstract class UnboundResolver extends ResolverProviderImpl implements Re
     }
 
     /**
-     * The table definition to use for to build the {@link Resolver}. The provided definition must not have any
-     * partitioning columns. In that case, this method will throw an {@link IllegalArgumentException}. For that case,
-     * you should use the {@link Resolver#builder()} with appropriate {@link Resolver#spec()} to build a resolver.
+     * The table definition to use for to build the {@link Resolver}. Any partitioning columns in the table definition
+     * will be internally mapped to partition fields from the latest spec of the Iceberg table.
+     *
+     * @see Resolver#definition()
      */
     public abstract TableDefinition definition();
 
@@ -53,6 +54,9 @@ public abstract class UnboundResolver extends ResolverProviderImpl implements Re
         final Resolver.Builder builder = Resolver.builder()
                 .schema(schema)
                 .definition(definition());
+        if (!definition().getPartitioningColumns().isEmpty()) {
+            builder.spec(table.spec());
+        }
         for (final ColumnDefinition<?> columnDefinition : definition().getColumns()) {
             final String dhColumnName = columnDefinition.getName();
             ColumnInstructions instructions = columnInstructionsMap.get(dhColumnName);
@@ -87,17 +91,6 @@ public abstract class UnboundResolver extends ResolverProviderImpl implements Re
         Builder putAllColumnInstructions(Map<String, ? extends ColumnInstructions> entries);
 
         UnboundResolver build();
-    }
-
-    @Value.Check
-    final void checkNoPartitioningColumn() {
-        for (final ColumnDefinition<?> columnDefinition : definition().getColumns()) {
-            if (columnDefinition.isPartitioning()) {
-                throw new IllegalArgumentException(
-                        String.format("Column `%s` is a partitioning column, use the builder with appropriate" +
-                                " partition spec to build a Resolver ", columnDefinition.getName()));
-            }
-        }
     }
 
     @Value.Check
