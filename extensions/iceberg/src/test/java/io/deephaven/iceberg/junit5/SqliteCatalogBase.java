@@ -31,9 +31,11 @@ import io.deephaven.iceberg.util.LoadTableOptions;
 import io.deephaven.iceberg.util.NameMappingProvider;
 import io.deephaven.iceberg.util.Resolver;
 import io.deephaven.iceberg.util.ResolverProviderInference;
+import io.deephaven.iceberg.util.SchemaProvider;
 import io.deephaven.iceberg.util.SortOrderProvider;
 import io.deephaven.iceberg.util.TableParquetWriterOptions;
 import io.deephaven.iceberg.util.TypeInference;
+import io.deephaven.iceberg.util.UnboundResolver;
 import io.deephaven.parquet.table.CompletedParquetWrite;
 import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.ParquetTools;
@@ -90,6 +92,7 @@ import static io.deephaven.engine.util.TableTools.intCol;
 import static io.deephaven.engine.util.TableTools.longCol;
 import static io.deephaven.engine.util.TableTools.stringCol;
 import static io.deephaven.iceberg.layout.IcebergBaseLayout.computeSortedColumns;
+import static io.deephaven.iceberg.util.ColumnInstructions.partitionField;
 import static io.deephaven.iceberg.util.ColumnInstructions.schemaField;
 import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 import static io.deephaven.util.QueryConstants.NULL_INT;
@@ -100,6 +103,7 @@ import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.INT32;
 import static org.apache.parquet.schema.Types.buildMessage;
 import static org.apache.parquet.schema.Types.optional;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 
 public abstract class SqliteCatalogBase {
@@ -1792,4 +1796,170 @@ public abstract class SqliteCatalogBase {
             assertTableEquals(expected, tableAdapter.table());
         }
     }
+
+    /** Begin tests for {@link UnboundResolver} */
+
+    private static final Types.IntegerType IT = Types.IntegerType.get();
+
+    private static Schema simpleSchema(org.apache.iceberg.types.Type type) {
+        return new Schema(
+                Types.NestedField.optional(42, "F1", type),
+                Types.NestedField.required(43, "F2", type));
+    }
+
+    private static TableDefinition simpleDefinition(Type<?> type) {
+        return TableDefinition.of(
+                ColumnDefinition.of("F1", type),
+                ColumnDefinition.of("F2", type));
+    }
+
+    private org.apache.iceberg.Table simpleTable(Schema schema) {
+        return catalogAdapter.catalog().createTable(
+                TableIdentifier.parse("MyNamespace.SimpleTable"),
+                schema,
+                PartitionSpec.unpartitioned());
+    }
+
+    @Test
+    void unboundResolverPrimitiveMapping() {
+        final org.apache.iceberg.Table table = simpleTable(simpleSchema(IT));
+        final Schema schema = table.schema();
+        final TableDefinition td = simpleDefinition(Type.intType());
+        final Resolver actual = UnboundResolver.builder()
+                .tableDefinition(td)
+                .build()
+                .resolver(table);
+        final Resolver expected = Resolver.builder()
+                .schema(schema)
+                .definition(td)
+                .putColumnInstructions("F1", schemaField(schema.findField("F1").fieldId()))
+                .putColumnInstructions("F2", schemaField(schema.findField("F2").fieldId()))
+                .build();
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    void unboundResolverExtraSchemaColumnsAreIgnored() {
+        final org.apache.iceberg.Table table = simpleTable(simpleSchema(IT)); // F1 and F2 exist in Iceberg
+        final Schema schema = table.schema();
+        final TableDefinition td = TableDefinition.of(
+                ColumnDefinition.ofInt("F1")); // Only map F1
+        final Resolver actual = UnboundResolver.builder()
+                .tableDefinition(td)
+                .build()
+                .resolver(table);
+        final Resolver expected = Resolver.builder()
+                .schema(schema)
+                .definition(td)
+                .putColumnInstructions("F1", schemaField(schema.findField("F1").fieldId()))
+                .build();
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    void unboundResolverExplicitMappingRenamedColumn() {
+        final org.apache.iceberg.Table table = simpleTable(simpleSchema(IT));
+        final Schema schema = table.schema();
+        TableDefinition td = TableDefinition.of(
+                ColumnDefinition.ofInt("S1"),
+                ColumnDefinition.ofInt("F2"));
+
+        final int f1FieldId = schema.findField("F1").fieldId(); // Map to S1
+        final Resolver actual = UnboundResolver.builder()
+                .tableDefinition(td)
+                .putColumnInstructionsMap("S1", schemaField(f1FieldId))
+                .build()
+                .resolver(table);
+
+        final Resolver expected = Resolver.builder()
+                .schema(schema)
+                .definition(td)
+                .putColumnInstructions("S1", schemaField(f1FieldId))
+                .putColumnInstructions("F2", schemaField(schema.findField("F2").fieldId()))
+                .build();
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    void useCustomSchemaForBuildingUnboundResolver() {
+        final org.apache.iceberg.Table table = simpleTable(simpleSchema(IT));
+        final Schema oldSchema = table.schema();
+        final TableDefinition td = TableDefinition.of(
+                ColumnDefinition.ofInt("S1"),
+                ColumnDefinition.ofInt("S2"));
+
+        // Drop a column to update the schema
+        table.updateSchema().deleteColumn("F1").commit();
+        assertThat(table.schema().findField("F1")).isNull();
+
+        final int f1FieldId = oldSchema.findField("F1").fieldId(); // Map to S1
+        final int f2FieldId = oldSchema.findField("F2").fieldId(); // Map to S2
+        final Resolver actual = UnboundResolver.builder()
+                .tableDefinition(td)
+                .schema(SchemaProvider.fromSchema(oldSchema))
+                .putColumnInstructionsMap("S1", schemaField(f1FieldId))
+                .putColumnInstructionsMap("S2", schemaField(f2FieldId))
+                .build()
+                .resolver(table);
+        final Resolver expected = Resolver.builder()
+                .schema(oldSchema)
+                .definition(td)
+                .putColumnInstructions("S1", schemaField(f1FieldId))
+                .putColumnInstructions("S2", schemaField(f2FieldId))
+                .build();
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    void unboundResolverPartitioningColumnRejected() {
+        final TableDefinition td = TableDefinition.of(
+                ColumnDefinition.ofInt("F1").withPartitioning()); // should not be allowed
+        assertThatThrownBy(() -> UnboundResolver.builder()
+                .tableDefinition(td)
+                .build())
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("partitioning column");
+    }
+
+    @Test
+    void schemaFieldNotFoundInMapRejected() {
+        TableDefinition td = TableDefinition.of(
+                ColumnDefinition.ofInt("F1"));
+        assertThatThrownBy(() -> UnboundResolver.builder()
+                .tableDefinition(td)
+                .putColumnInstructionsMap("F1", partitionField(99)) // schemaFieldID missing in instruction
+                .build())
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("does not have schema field id");
+    }
+
+    @Test
+    void unboundResolverMissingColumnRejected() {
+        final org.apache.iceberg.Table table = simpleTable(simpleSchema(IT));
+        final TableDefinition td = TableDefinition.of(
+                ColumnDefinition.ofInt("NotInSchema"));
+        assertThatThrownBy(() -> UnboundResolver.builder()
+                .tableDefinition(td)
+                .build()
+                .resolver(table))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("not found in Iceberg schema");
+    }
+
+    @Test
+    void schemaFieldIdNotInSchemaRejected() {
+        final org.apache.iceberg.Table table = simpleTable(simpleSchema(IT));
+        TableDefinition td = TableDefinition.of(
+                ColumnDefinition.ofInt("F1"));
+
+        assertThatThrownBy(() -> UnboundResolver.builder()
+                .tableDefinition(td)
+                .putColumnInstructionsMap("F1", schemaField(9999)) // schema field with ID=9999 not present
+                .build()
+                .resolver(table))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("not found in provided schema");
+    }
+
+    /** End of test for {@link UnboundResolver} **/
 }

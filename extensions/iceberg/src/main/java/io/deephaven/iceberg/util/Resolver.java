@@ -87,38 +87,6 @@ public abstract class Resolver {
     }
 
     /**
-     * Builds a simple resolver based on the matching of {@link Schema} and {@link TableDefinition} names. In most
-     * cases, callers that have both a {@code schema} and {@code definition} should prefer to build the resolver with
-     * explicit {@link NestedField#fieldId() field ids}, but this is provided for simple cases as a convenience.
-     *
-     * <p>
-     * The provided {@code definition} must not have any partitioning columns. In that case, this method will throw a
-     * {@link IllegalArgumentException}. For that case, you should use the {@link #builder()} with appropriate
-     * {@link #spec()} to build a resolver.
-     */
-    public static Resolver simple(final Schema schema, final TableDefinition definition) {
-        final Resolver.Builder builder = Resolver.builder()
-                .schema(schema)
-                .definition(definition);
-        for (final ColumnDefinition<?> columnDefinition : definition.getColumns()) {
-            final String dhColumnName = columnDefinition.getName();
-            if (columnDefinition.isPartitioning()) {
-                throw new IllegalArgumentException(
-                        String.format("Column `%s` is a partitioning column, use the builder with appropriate" +
-                                " partition spec to build a Resolver ", dhColumnName));
-            }
-            final NestedField icebergField = schema.findField(dhColumnName);
-            if (icebergField == null) {
-                throw new IllegalArgumentException(
-                        String.format("Column `%s` from deephaven table definition not found in Iceberg schema",
-                                dhColumnName));
-            }
-            builder.putColumnInstructions(dhColumnName, ColumnInstructions.schemaField(icebergField.fieldId()));
-        }
-        return builder.build();
-    }
-
-    /**
      * The Deephaven table definition. Every {@link TableDefinition#getColumns() column} of this definition must be
      * mapped via {@link #columnInstructions()}.
      *
