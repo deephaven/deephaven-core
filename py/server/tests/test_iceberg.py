@@ -151,7 +151,7 @@ class IcebergTestCase(BaseTestCase):
             iceberg.SchemaProvider.from_snapshot_id(42)
 
         with self.subTest("from_current_snapshot"):
-         iceberg.SchemaProvider.from_current_snapshot()
+            iceberg.SchemaProvider.from_current_snapshot()
 
     def test_sort_order_provider(self):
         with self.subTest("unsorted"):
@@ -181,18 +181,26 @@ class IcebergTestCase(BaseTestCase):
             iceberg.ResolverProviderInference(fail_on_unsupported_types=True)
 
         with self.subTest("schema_provider"):
-            iceberg.ResolverProviderInference(schema_provider=iceberg.SchemaProvider.from_current())
-            iceberg.ResolverProviderInference(schema_provider=iceberg.SchemaProvider.from_schema_id(42))
+            iceberg.ResolverProviderInference(
+                schema_provider=iceberg.SchemaProvider.from_current()
+            )
+            iceberg.ResolverProviderInference(
+                schema_provider=iceberg.SchemaProvider.from_schema_id(42)
+            )
 
     def test_unbound_resolver(self):
-        iceberg.UnboundResolver(table_definition={
-            "x": dtypes.int32,
-            "y": dtypes.double,
-            "z": dtypes.double,
-        })
-        iceberg.UnboundResolver(table_definition=[
-             col_def("Partition", dtypes.int32, column_type=ColumnType.PARTITIONING),
-             col_def("x", dtypes.int32),
-             col_def("y", dtypes.double),
-             col_def("z", dtypes.double),
-        ])
+        iceberg.UnboundResolver(
+            table_definition={
+                "x": dtypes.int32,
+                "y": dtypes.double,
+                "z": dtypes.double,
+            }
+        )
+        iceberg.UnboundResolver(
+            table_definition=[
+                col_def("Partition", dtypes.int32, column_type=ColumnType.PARTITIONING),
+                col_def("x", dtypes.int32),
+                col_def("y", dtypes.double),
+                col_def("z", dtypes.double),
+            ]
+        )

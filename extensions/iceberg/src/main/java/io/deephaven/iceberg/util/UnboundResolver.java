@@ -21,7 +21,7 @@ import java.util.Map;
 @BuildableStyle
 public abstract class UnboundResolver extends ResolverProviderImpl implements ResolverProvider {
 
-    public static UnboundResolver.Builder builder() {
+    public static Builder builder() {
         return ImmutableUnboundResolver.builder();
     }
 
