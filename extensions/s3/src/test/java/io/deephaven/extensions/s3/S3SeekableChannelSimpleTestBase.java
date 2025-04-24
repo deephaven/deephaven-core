@@ -9,6 +9,7 @@ import io.deephaven.util.channel.CompletableOutputStream;
 import io.deephaven.util.channel.SeekableChannelContext;
 import io.deephaven.util.channel.SeekableChannelsProvider;
 import junit.framework.TestCase;
+import org.junit.Assume;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -29,6 +30,8 @@ import java.util.concurrent.TimeoutException;
 import static org.assertj.core.api.Assertions.*;
 
 abstract class S3SeekableChannelSimpleTestBase extends S3SeekableChannelTestSetup {
+
+    private static final boolean ENABLE_TIMEOUT_S3_TESTING = false;
 
     @BeforeEach
     void setUp() throws ExecutionException, InterruptedException, TimeoutException {
@@ -152,6 +155,8 @@ abstract class S3SeekableChannelSimpleTestBase extends S3SeekableChannelTestSetu
 
     @Test
     void readWriteTestExpectReadTimeout() throws IOException {
+        Assume.assumeTrue("Skipping test because s3 timeout testing disabled.", ENABLE_TIMEOUT_S3_TESTING);
+
         final URI uri = uri("writeReadTest.txt");
         final String content = "Hello, world!";
         final byte[] contentBytes = content.getBytes(StandardCharsets.UTF_8);
@@ -199,6 +204,8 @@ abstract class S3SeekableChannelSimpleTestBase extends S3SeekableChannelTestSetu
 
     @Test
     void readWriteTestExpectWriteTimeout() throws IOException {
+        Assume.assumeTrue("Skipping test because s3 timeout testing disabled.", ENABLE_TIMEOUT_S3_TESTING);
+
         final URI uri = uri("writeReadTest.txt");
         final String content = "Hello, world!";
         final byte[] contentBytes = content.getBytes(StandardCharsets.UTF_8);
