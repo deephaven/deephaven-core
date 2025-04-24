@@ -1647,7 +1647,7 @@ public abstract class SqliteCatalogBase {
                     .build());
         } catch (RuntimeException e) {
             assertThat(e).cause().isInstanceOf(TypeInference.UnsupportedType.class);
-            assertThat(e).cause().hasMessageContaining(" Unsupported Iceberg type `uuid` at fieldName `uuidCol`");
+            assertThat(e).cause().hasMessageContaining("Unsupported Iceberg type `uuid` at fieldName `uuidCol`");
         }
     }
 

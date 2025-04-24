@@ -237,26 +237,39 @@ public class IcebergCatalogAdapter {
     }
 
     /**
-     * Load an Iceberg table from the catalog without a default resolver.
+     * Load an Iceberg table from the catalog.
+     *
+     * <p>
+     * Equivalent to {@code loadTable(LoadTableOptions.builder().id(tableIdentifier).build())}.
      *
      * @param tableIdentifier The identifier of the table to load.
      * @return The {@link IcebergTableAdapter table adapter} for the Iceberg table.
-     * @see TableIdentifier#parse(String)
+     * @see #loadTable(LoadTableOptions)
      */
     public IcebergTableAdapter loadTable(final String tableIdentifier) {
-        return loadTable(TableIdentifier.parse(tableIdentifier));
+        return loadTable(LoadTableOptions.builder().id(tableIdentifier).build());
     }
 
     /**
-     * Load an Iceberg table from the catalog without a default resolver.
+     * Load an Iceberg table from the catalog.
+     *
+     * <p>
+     * Equivalent to {@code loadTable(LoadTableOptions.builder().id(tableIdentifier).build())}.
      *
      * @param tableIdentifier The identifier of the table to load.
      * @return The {@link IcebergTableAdapter table adapter} for the Iceberg table.
+     * @see #loadTable(LoadTableOptions)
      */
     public IcebergTableAdapter loadTable(@NotNull final TableIdentifier tableIdentifier) {
         return loadTable(LoadTableOptions.builder().id(tableIdentifier).build());
     }
 
+    /**
+     * Load an Iceberg table from the catalog with {@code options}.
+     *
+     * @param options The load table options
+     * @return The {@link IcebergTableAdapter table adapter} for the Iceberg table.
+     */
     public IcebergTableAdapter loadTable(@NotNull final LoadTableOptions options) {
         final org.apache.iceberg.Table table = catalog.loadTable(options.id());
         if (table == null) {

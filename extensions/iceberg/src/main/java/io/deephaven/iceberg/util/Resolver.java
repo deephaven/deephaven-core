@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
@@ -56,18 +57,6 @@ public abstract class Resolver {
 
     public static Builder builder() {
         return ImmutableResolver.builder();
-    }
-
-    private static PartitionSpec createPartitionSpec(
-            @NotNull final Schema schema,
-            @NotNull final Iterable<String> partitionColumnNames,
-            int newSpecId) {
-        final PartitionSpec.Builder partitionSpecBuilder = PartitionSpec.builderFor(schema)
-                .withSpecId(newSpecId);
-        for (final String partitioningColumnName : partitionColumnNames) {
-            partitionSpecBuilder.identity(partitioningColumnName);
-        }
-        return partitionSpecBuilder.build();
     }
 
     /**
@@ -408,7 +397,6 @@ public abstract class Resolver {
         }
     }
 
-    // todo: if we want this to be public, we need refreshIds to be public
     /**
      * Creates a {@link Resolver} from the given Table {@code definition}, <b>only applicable in contexts where an
      * {@link Table Iceberg Table} does not already exist</b>. In cases where the {@link Table Iceberg Table} already
@@ -424,25 +412,26 @@ public abstract class Resolver {
      * @param definition the Table definition
      * @return the resolver
      */
-    public static Resolver from(@NotNull final TableDefinition definition) {
+    @VisibleForTesting
+    static Resolver from(@NotNull final TableDefinition definition) {
         final Resolver.Builder builder = Resolver.builder().definition(definition);
         final Collection<String> partitioningColumnNames = new ArrayList<>();
         final List<Types.NestedField> fields = new ArrayList<>();
-        int fieldID = INITIAL_FIELD_ID;
+        final TypeUtil.NextID nextID = new AtomicInteger(INITIAL_FIELD_ID)::getAndIncrement;
         for (final ColumnDefinition<?> columnDefinition : definition.getColumns()) {
             final String dhColumnName = columnDefinition.getName();
             final Type<?> type = Type.find(columnDefinition.getDataType(), columnDefinition.getComponentType());
-            final org.apache.iceberg.types.Type icebergType = TypeInference.of(type).orElse(null);
+            final org.apache.iceberg.types.Type icebergType = TypeInference.of(type, nextID).orElse(null);
             if (icebergType == null) {
                 throw new MappingException(
                         String.format("Unable to infer the best Iceberg type for Deephaven column type `%s`", type));
             }
-            fields.add(Types.NestedField.optional(fieldID, dhColumnName, icebergType));
+            final int fieldId = nextID.get();
+            fields.add(Types.NestedField.optional(fieldId, dhColumnName, icebergType));
             if (columnDefinition.isPartitioning()) {
                 partitioningColumnNames.add(dhColumnName);
             }
-            builder.putColumnInstructions(dhColumnName, ColumnInstructions.schemaField(fieldID));
-            fieldID++;
+            builder.putColumnInstructions(dhColumnName, ColumnInstructions.schemaField(fieldId));
         }
         final Schema schema = new Schema(INITIAL_SCHEMA_ID, fields);
         final PartitionSpec spec = createPartitionSpec(schema, partitioningColumnNames, INITIAL_SPEC_ID);
@@ -450,6 +439,18 @@ public abstract class Resolver {
             builder.spec(spec);
         }
         return builder.schema(schema).build();
+    }
+
+    private static PartitionSpec createPartitionSpec(
+            @NotNull final Schema schema,
+            @NotNull final Iterable<String> partitionColumnNames,
+            int newSpecId) {
+        final PartitionSpec.Builder partitionSpecBuilder = PartitionSpec.builderFor(schema)
+                .withSpecId(newSpecId);
+        for (final String partitioningColumnName : partitionColumnNames) {
+            partitionSpecBuilder.identity(partitioningColumnName);
+        }
+        return partitionSpecBuilder.build();
     }
 
     @VisibleForTesting

@@ -16,8 +16,10 @@ import io.deephaven.vector.IntVector;
 import io.deephaven.vector.LongVector;
 import io.deephaven.vector.ObjectVector;
 import io.deephaven.vector.ShortVector;
+import org.apache.iceberg.types.TypeUtil;
 import org.apache.iceberg.types.Types;
 import org.assertj.core.api.OptionalAssert;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -25,11 +27,19 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 class TypeInferenceFromDeephavenTypeTest {
+
+    private TypeUtil.NextID nextId;
+
+    @BeforeEach
+    void setUp() {
+        nextId = new AtomicInteger(1)::getAndIncrement;
+    }
 
     @Test
     void booleanType() {
@@ -148,12 +158,12 @@ class TypeInferenceFromDeephavenTypeTest {
         assertInference(ObjectVector.type(CustomType.of(SomeCustomType.class))).isEmpty();
     }
 
-    private static OptionalAssert<org.apache.iceberg.types.Type> assertInference(Class<?> clazz) {
+    private OptionalAssert<org.apache.iceberg.types.Type> assertInference(Class<?> clazz) {
         return assertInference(Type.find(clazz));
     }
 
-    private static OptionalAssert<org.apache.iceberg.types.Type> assertInference(Type<?> type) {
-        return assertThat(TypeInference.of(type));
+    private OptionalAssert<org.apache.iceberg.types.Type> assertInference(Type<?> type) {
+        return assertThat(TypeInference.of(type, nextId));
     }
 
     public static class SomeCustomType {

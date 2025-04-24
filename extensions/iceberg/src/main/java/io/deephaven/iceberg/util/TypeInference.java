@@ -20,7 +20,9 @@ import io.deephaven.qst.type.ShortType;
 import io.deephaven.qst.type.StringType;
 import io.deephaven.qst.type.Type;
 import org.apache.iceberg.Schema;
+import org.apache.iceberg.types.TypeUtil;
 import org.apache.iceberg.types.Types;
+import org.jetbrains.annotations.NotNull;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -71,9 +73,13 @@ public final class TypeInference {
      * possible that a specific {@link Types.DecimalType} is compatible with a {@link BigDecimal} Deephaven type.
      *
      * @param type the Deephaven type
+     * @param nextId the next id to use for created types
      * @return the Iceberg type
      */
-    public static Optional<org.apache.iceberg.types.Type> of(Type<?> type) {
+    public static Optional<org.apache.iceberg.types.Type> of(
+            @NotNull final Type<?> type,
+            @NotNull final TypeUtil.NextID nextId) {
+        Objects.requireNonNull(nextId);
         org.apache.iceberg.types.Type icebergType = type.walk(BestIcebergType.INSTANCE);
         if (icebergType == null) {
             return Optional.empty();
