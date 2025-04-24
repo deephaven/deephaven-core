@@ -6,6 +6,12 @@ package io.deephaven.iceberg.util;
 import org.apache.iceberg.Table;
 
 public interface ResolverProvider {
+    /**
+     * An explicit resolver provider.
+     *
+     * @param resolver the resolver
+     * @return the provider for {@code resolver}
+     */
     static ResolverProvider of(Resolver resolver) {
         return new ResolverProviderImpl() {
             @Override
@@ -15,11 +21,16 @@ public interface ResolverProvider {
         };
     }
 
-    static ResolverProvider infer() {
-        return inferenceBuilder().build();
-    }
-
-    static ResolverProviderInference.Builder inferenceBuilder() {
-        return ImmutableResolverProviderInference.builder();
+    /**
+     * The default inference resolver.
+     *
+     * <p>
+     * Equivalent to {@code ResolverProviderInference.builder().build()}.
+     *
+     * @return the default inference resolver
+     * @see ResolverProviderInference
+     */
+    static ResolverProviderInference infer() {
+        return ResolverProviderInference.builder().build();
     }
 }

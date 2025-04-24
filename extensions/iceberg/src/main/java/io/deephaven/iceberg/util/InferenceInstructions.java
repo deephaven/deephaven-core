@@ -12,6 +12,7 @@ import org.apache.iceberg.Schema;
 import org.apache.iceberg.transforms.Transforms;
 import org.apache.iceberg.types.Types;
 import org.immutables.value.Value;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -23,6 +24,10 @@ import java.util.stream.Collectors;
 @Value.Immutable
 @BuildableStyle
 public abstract class InferenceInstructions {
+
+    static Namer.Factory defaultNamerFactory() {
+        return Namer.Factory.fieldName("_");
+    }
 
     public static Builder builder() {
         return ImmutableInferenceInstructions.builder();
@@ -67,7 +72,7 @@ public abstract class InferenceInstructions {
      */
     @Value.Default
     public Namer.Factory namerFactory() {
-        return Namer.Factory.fieldName("_");
+        return defaultNamerFactory();
     }
 
     /**

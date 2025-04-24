@@ -4,10 +4,22 @@
 package io.deephaven.iceberg.util;
 
 import io.deephaven.annotations.BuildableStyle;
+import io.deephaven.api.util.NameValidator;
+import io.deephaven.engine.table.ColumnDefinition;
+import org.apache.iceberg.Schema;
 import org.apache.iceberg.Table;
+import org.apache.iceberg.types.Types;
 import org.immutables.value.Value;
 
+import java.util.Set;
 
+
+/**
+ * This provides a consolidated set of inference options for use in {@link LoadTableOptions}. A {@link Resolver} will
+ * be inferred based on the {@link Table#schema() latest schema} (and {@link Table#spec() latest spec} if {@link #usePartitioningColumns()}).
+ * This is a counterpart to the more advanced {@link InferenceInstructions}, which requires the callers to provide
+ * specific {@link Schema}.
+ */
 @Value.Immutable
 @BuildableStyle
 public abstract class ResolverProviderInference extends ResolverProviderImpl implements ResolverProvider {
@@ -16,19 +28,38 @@ public abstract class ResolverProviderInference extends ResolverProviderImpl imp
         return ImmutableResolverProviderInference.builder();
     }
 
+    /**
+     * If {@link ColumnDefinition.ColumnType#Partitioning Partitioning} columns should be inferred based on the {@link Table#spec() latest spec}.
+     *
+     * <p>
+     * <b>Warning</b>: inferring partition columns for general-purpose use is dangerous. This is only meant to be
+     * applied in situations where caller knows that the {@link Table#spec() latest spec} is safe to use for inference.
+     * See {@link InferenceInstructions#spec()} for more details.
+     */
     @Value.Default
     public boolean usePartitioningColumns() {
         return false;
     }
 
+    /**
+     * If inference should fail if any of the Iceberg fields fail to map to Deephaven columns. By default, is
+     * {@code false}.
+     */
     @Value.Default
     public boolean failOnUnsupportedTypes() {
         return false;
     }
 
+    /**
+     * The namer factory. Defaults to {@code fieldName("_")}, which will create Deephaven column name by joining
+     * together the {@link Types.NestedField#name() field names} with an underscore and
+     * {@link NameValidator#legalizeColumnName(String, Set) legalize} the name if necessary.
+     *
+     * @see InferenceInstructions.Namer.Factory#fieldName(String)
+     */
     @Value.Default
     public InferenceInstructions.Namer.Factory namerFactory() {
-        return InferenceInstructions.Namer.Factory.fieldName("_");
+        return InferenceInstructions.defaultNamerFactory();
     }
 
     public interface Builder {

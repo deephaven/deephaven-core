@@ -7,6 +7,9 @@ import io.deephaven.annotations.BuildableStyle;
 import org.apache.iceberg.catalog.TableIdentifier;
 import org.immutables.value.Value;
 
+/**
+ * The options available for {@link IcebergCatalogAdapter#loadTable(LoadTableOptions) loadTable}.
+ */
 @Value.Immutable
 @BuildableStyle
 public abstract class LoadTableOptions {
@@ -15,13 +18,22 @@ public abstract class LoadTableOptions {
         return ImmutableLoadTableOptions.builder();
     }
 
+    /**
+     * The table identifier.
+     */
     public abstract TableIdentifier id();
 
+    /**
+     * The resolver provider. By default, is {@link ResolverProvider#infer()}.
+     */
     @Value.Default
     public ResolverProvider resolver() {
         return ResolverProvider.infer();
     }
 
+    /**
+     * The name mapping provider. By default, is {@link NameMappingProvider#fromTable()}.
+     */
     @Value.Default
     public NameMappingProvider nameMapping() {
         return NameMappingProvider.fromTable();
