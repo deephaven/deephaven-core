@@ -11,7 +11,6 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.locations.TableKey;
-import io.deephaven.engine.table.impl.locations.TableLocationProvider;
 import io.deephaven.engine.table.impl.locations.impl.StandaloneTableKey;
 import io.deephaven.engine.table.impl.locations.util.TableDataRefreshService;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
@@ -293,17 +292,6 @@ public final class IcebergTableAdapter {
     }
 
     /**
-     * The resolver when using {@code readInstructions}. If {@link IcebergReadInstructions#resolver()} is set, it will
-     * be returned, otherwise, one will be {@link Resolver#infer(InferenceInstructions) inferred}.
-     *
-     * @param readInstructions The instructions for customizations while reading the table.
-     * @return the resolver
-     */
-    public Resolver resolver(@NotNull final IcebergReadInstructions readInstructions) {
-        return resolverAndSnapshot(readInstructions).resolver();
-    }
-
-    /**
      * The {@link TableDefinition Table definition} for this Iceberg table.
      *
      * @return The table definition
@@ -320,11 +308,10 @@ public final class IcebergTableAdapter {
      *
      * @param readInstructions The instructions for customizations while reading the table.
      * @return The table definition
-     * @see #resolver(IcebergReadInstructions)
      */
     @Deprecated
     public TableDefinition definition(@NotNull final IcebergReadInstructions readInstructions) {
-        return resolver(readInstructions).definition();
+        return resolver.definition();
     }
 
     /**
@@ -353,7 +340,7 @@ public final class IcebergTableAdapter {
      */
     @Deprecated
     public Table definitionTable(final IcebergReadInstructions readInstructions) {
-        return TableTools.metaTable(definition(readInstructions));
+        return TableTools.metaTable(resolver.definition());
     }
 
     /**
@@ -379,11 +366,10 @@ public final class IcebergTableAdapter {
      */
     public IcebergTable table(@NotNull final IcebergReadInstructions readInstructions) {
         refresh();
-        final ResolverAndSnapshot ras = resolverAndSnapshot(readInstructions);
-        final IcebergTableLocationProviderBase<TableKey, IcebergTableLocationKey> p = provider(ras, readInstructions);
+        final IcebergTableLocationProviderBase<TableKey, IcebergTableLocationKey> p = provider(readInstructions);
         if (p instanceof IcebergStaticTableLocationProvider) {
             return new IcebergTableImpl(
-                    ras.resolver().definition(),
+                    resolver.definition(),
                     tableIdentifier.toString(),
                     RegionedTableComponentFactoryImpl.INSTANCE,
                     p,
@@ -392,7 +378,7 @@ public final class IcebergTableAdapter {
         if (p instanceof IcebergManualRefreshTableLocationProvider
                 || p instanceof IcebergAutoRefreshTableLocationProvider) {
             return new IcebergTableImpl(
-                    ras.resolver().definition(),
+                    resolver.definition(),
                     tableIdentifier.toString(),
                     RegionedTableComponentFactoryImpl.INSTANCE,
                     p,
@@ -442,19 +428,13 @@ public final class IcebergTableAdapter {
     }
 
     @InternalUseOnly
-    public TableLocationProvider provider(@NotNull final IcebergReadInstructions readInstructions) {
-        // Core+ will use this, as their extended format is based on TLPs hooks instead of Table hooks.
-        return provider(resolverAndSnapshot(readInstructions), readInstructions);
-    }
-
-    private IcebergTableLocationProviderBase<TableKey, IcebergTableLocationKey> provider(
-            @NotNull final ResolverAndSnapshot ras,
+    public IcebergTableLocationProviderBase<TableKey, IcebergTableLocationKey> provider(
             @NotNull final IcebergReadInstructions readInstructions) {
+        // Core+ will use this, as their extended format is based on TLPs hooks instead of Table hooks.
+        final Snapshot snapshot = snapshot(readInstructions);
         final TableKey tableKey = readInstructions.tableKey().orElse(StandaloneTableKey.getInstance());
         final IcebergBaseLayout keyFinder = keyFinder(
-                ras.resolver(),
-                nameMapping,
-                ras.snapshot().orElse(null),
+                snapshot,
                 readInstructions.dataInstructions().orElse(null));
         if (readInstructions.updateMode().updateType() == IcebergUpdateMode.IcebergUpdateType.STATIC) {
             return new IcebergStaticTableLocationProvider<>(
@@ -482,21 +462,14 @@ public final class IcebergTableAdapter {
         }
     }
 
-    private Optional<NameMapping> tablesNameMapping() {
-        return NameMappingUtil.readNameMappingDefault(table);
-    }
-
-    private ResolverAndSnapshot resolverAndSnapshot(@NotNull final IcebergReadInstructions readInstructions) {
-        return ResolverAndSnapshot.create(
-                table,
-                readInstructions.resolver().orElse(resolver),
-                getSnapshot(readInstructions),
-                readInstructions.usePartitionInference());
+    private Snapshot snapshot(@NotNull final IcebergReadInstructions readInstructions) {
+        final Snapshot explicitSnapshot = getSnapshot(readInstructions);
+        return explicitSnapshot == null
+                ? table.currentSnapshot()
+                : explicitSnapshot;
     }
 
     private @NotNull IcebergBaseLayout keyFinder(
-            @NotNull final Resolver resolver,
-            @Nullable final NameMapping nameMapping,
             @Nullable final Snapshot snapshot,
             @Nullable final Object dataInstructions) {
         final Object specialInstructions;

@@ -3,10 +3,8 @@
 //
 package io.deephaven.iceberg.util;
 
-import io.deephaven.engine.table.TableDefinition;
 import org.apache.iceberg.DataFile;
 import org.apache.iceberg.ManifestFile;
-import org.apache.iceberg.Schema;
 import org.apache.iceberg.Snapshot;
 import org.apache.iceberg.io.FileIO;
 import org.junit.jupiter.api.Test;
@@ -29,28 +27,6 @@ class IcebergReadInstructionsTest {
         } catch (IllegalArgumentException e) {
             assertThat(e)
                     .hasMessageContaining("If both snapshotID and snapshot are provided, the snapshot Ids must match");
-        }
-    }
-
-    @Test
-    void usePartitionInference() {
-        assertThat(IcebergReadInstructions.DEFAULT)
-                .extracting(IcebergReadInstructions::usePartitionInference)
-                .isEqualTo(false);
-        assertThat(IcebergReadInstructions.builder().usePartitionInference(true).build())
-                .extracting(IcebergReadInstructions::usePartitionInference)
-                .isEqualTo(true);
-        try {
-            IcebergReadInstructions.builder()
-                    .resolver(Resolver.builder()
-                            .schema(new Schema())
-                            .definition(TableDefinition.of(List.of()))
-                            .build())
-                    .usePartitionInference(true)
-                    .build();
-            failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
-        } catch (IllegalArgumentException e) {
-            assertThat(e).hasMessageContaining("usePartitionInference should not be true when a resolver is present");
         }
     }
 

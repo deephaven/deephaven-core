@@ -5,9 +5,7 @@ package io.deephaven.iceberg.junit5;
 
 import io.deephaven.iceberg.sqlite.SqliteHelper;
 import io.deephaven.iceberg.util.IcebergCatalogAdapter;
-import io.deephaven.iceberg.util.IcebergReadInstructions;
 import io.deephaven.iceberg.util.IcebergTools;
-import io.deephaven.iceberg.util.Resolver;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestInfo;
@@ -34,16 +32,5 @@ final class FileWarehouseSqliteCatalogTest extends SqliteCatalogBase {
         // no relative support needed, we don't need this data to be persistent / portable
         SqliteHelper.setLocalFileIoProperties(properties, rootDir, catalogName, false);
         return IcebergTools.createAdapter(catalogName, properties);
-    }
-
-    //
-
-
-    public void test() {
-
-        IcebergReadInstructions.builder()
-                .resolver(Resolver.builder().build())
-                .usePartitionInference(true)
-                .build();
     }
 }

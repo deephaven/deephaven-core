@@ -39,6 +39,7 @@ import io.deephaven.parquet.table.ParquetTools;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
 import io.deephaven.qst.type.Type;
 import org.apache.iceberg.AppendFiles;
+import org.apache.iceberg.ContentFile;
 import org.apache.iceberg.DataFile;
 import org.apache.iceberg.DataFiles;
 import org.apache.iceberg.FileFormat;
@@ -104,10 +105,6 @@ public abstract class SqliteCatalogBase {
 
     private IcebergCatalogAdapter catalogAdapter;
     private final EngineCleanup engineCleanup = new EngineCleanup();
-
-    public static IcebergTable table(IcebergTableAdapter tableAdapter, Resolver resolver) {
-        return tableAdapter.table(IcebergReadInstructions.builder().resolver(resolver).build());
-    }
 
     protected abstract IcebergCatalogAdapter catalogAdapter(TestInfo testInfo, Path rootDir,
             Map<String, String> properties) throws Exception;
@@ -432,8 +429,7 @@ public abstract class SqliteCatalogBase {
 
         final Namespace myNamespace = Namespace.of("MyNamespace");
         final TableIdentifier myTableId = TableIdentifier.of(myNamespace, "MyTableWithAllDataTypes");
-        final Resolver resolver = catalogAdapter.createTable2(myTableId, td);
-        final IcebergTableAdapter tableAdapter = catalogAdapter.loadTable(myTableId);
+        final IcebergTableAdapter tableAdapter = catalogAdapter.createTable(myTableId, td);
 
         final IcebergTableWriter tableWriter = tableAdapter.tableWriter(writerOptionsBuilder()
                 .tableDefinition(source.getDefinition())
@@ -441,8 +437,7 @@ public abstract class SqliteCatalogBase {
         tableWriter.append(IcebergWriteInstructions.builder()
                 .addTables(source)
                 .build());
-        final Table fromIceberg = table(tableAdapter, resolver);
-        assertTableEquals(source, fromIceberg);
+        assertTableEquals(source, tableAdapter.table());
     }
 
     @Test
@@ -513,8 +508,7 @@ public abstract class SqliteCatalogBase {
                         "doubleCol = (double) 2.5 * i + 10");
         final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
         final TableDefinition originalDefinition = source.getDefinition();
-        final Resolver resolver = catalogAdapter.createTable2(tableIdentifier, originalDefinition);
-        final IcebergTableAdapter tableAdapter = catalogAdapter.loadTable(tableIdentifier);
+        final IcebergTableAdapter tableAdapter = catalogAdapter.createTable(tableIdentifier, originalDefinition);
         {
             final IcebergTableWriter tableWriter = tableAdapter.tableWriter(writerOptionsBuilder()
                     .tableDefinition(source.getDefinition())
@@ -580,7 +574,7 @@ public abstract class SqliteCatalogBase {
             verifySchema(parquetFiles.get(1), expectedSchema1);
         }
 
-        final Table fromIceberg = table(tableAdapter, resolver);
+        final Table fromIceberg = tableAdapter.table();
         assertTableEquals(TableTools.merge(source,
                 moreData.renameColumns("intCol = newIntCol", "doubleCol = newDoubleCol")), fromIceberg);
     }
@@ -609,7 +603,7 @@ public abstract class SqliteCatalogBase {
         for (int i = 0; i < dhTables.size(); i++) {
             final Table dhTable = dhTables.get(i);
             final DataFile dataFile = dataFileList.get(i);
-            final String parquetFilePath = dataFile.path().toString();
+            final String parquetFilePath = dataFile.location();
             final Table fromParquet = ParquetTools.readTable(parquetFilePath, ParquetInstructions.builder()
                     .setSpecialInstructions(dataInstructions())
                     .build());
@@ -623,7 +617,7 @@ public abstract class SqliteCatalogBase {
     private List<String> getAllParquetFilesFromDataFiles(final TableIdentifier tableIdentifier) {
         final org.apache.iceberg.Table table = catalogAdapter.catalog().loadTable(tableIdentifier);
         return IcebergTestUtils.allDataFiles(table, table.currentSnapshot())
-                .map(dataFile -> dataFile.path().toString())
+                .map(ContentFile::location)
                 .collect(Collectors.toList());
     }
 
@@ -637,8 +631,7 @@ public abstract class SqliteCatalogBase {
                         "doubleCol = (double) 3.5 * i + 20");
 
         final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
-        final Resolver resolver = catalogAdapter.createTable2(tableIdentifier, source.getDefinition());
-        final IcebergTableAdapter tableAdapter = catalogAdapter.loadTable(tableIdentifier);
+        final IcebergTableAdapter tableAdapter = catalogAdapter.createTable(tableIdentifier, source.getDefinition());
 
         final IcebergTableWriter tableWriter = tableAdapter.tableWriter(writerOptionsBuilder()
                 .tableDefinition(source.getDefinition())
@@ -658,7 +651,7 @@ public abstract class SqliteCatalogBase {
                 .addTables(moreData)
                 .build());
         {
-            final Table fromIceberg = table(tableAdapter, resolver);
+            final Table fromIceberg = tableAdapter.table();
             assertTableEquals(moreData, fromIceberg);
             verifySnapshots(tableIdentifier, List.of("append"));
             verifyDataFiles(tableIdentifier, List.of(moreData));
@@ -676,7 +669,7 @@ public abstract class SqliteCatalogBase {
 
         {
             // Verify that we read the data files in the correct order
-            final Table fromIceberg = table(tableAdapter, resolver);
+            final Table fromIceberg = tableAdapter.table();
             assertTableEquals(TableTools.merge(moreData, source, anotherSource), fromIceberg);
         }
     }
@@ -714,8 +707,7 @@ public abstract class SqliteCatalogBase {
                 ColumnDefinition.ofInt("intCol"),
                 ColumnDefinition.ofDouble("doubleCol"),
                 ColumnDefinition.ofString("PC").withPartitioning());
-        final Resolver resolver = catalogAdapter.createTable2(tableIdentifier, partitioningTableDef);
-        final IcebergTableAdapter tableAdapter = catalogAdapter.loadTable(tableIdentifier);
+        final IcebergTableAdapter tableAdapter = catalogAdapter.createTable(tableIdentifier, partitioningTableDef);
         final IcebergTableWriter tableWriter = tableAdapter.tableWriter(writerOptionsBuilder()
                 .tableDefinition(partitioningTableDef)
                 .build());
@@ -734,9 +726,8 @@ public abstract class SqliteCatalogBase {
                 .addTables(part1, part2)
                 .addAllPartitionPaths(partitionPaths)
                 .build());
-        final IcebergReadInstructions ri = IcebergReadInstructions.builder().resolver(resolver).build();
-        final Table fromIceberg = tableAdapter.table(ri);
-        assertThat(tableAdapter.definition(ri)).isEqualTo(partitioningTableDef);
+        final Table fromIceberg = tableAdapter.table();
+        assertThat(tableAdapter.definition()).isEqualTo(partitioningTableDef);
         assertThat(fromIceberg.getDefinition()).isEqualTo(partitioningTableDef);
         assertThat(fromIceberg).isInstanceOf(PartitionAwareSourceTable.class);
         final Table expected = TableTools.merge(
@@ -752,7 +743,7 @@ public abstract class SqliteCatalogBase {
                 .addTables(part3)
                 .addPartitionPaths(partitionPath)
                 .build());
-        final Table fromIceberg2 = tableAdapter.table(ri);
+        final Table fromIceberg2 = tableAdapter.table();
         final Table expected2 = TableTools.merge(
                 part1.update("PC = `cat`"),
                 part2.update("PC = `apple`"),
@@ -774,8 +765,7 @@ public abstract class SqliteCatalogBase {
                 ColumnDefinition.ofInt("intCol"),
                 ColumnDefinition.ofDouble("doubleCol"),
                 ColumnDefinition.ofInt("PC").withPartitioning());
-        final Resolver resolver = catalogAdapter.createTable2(tableIdentifier, tableDefinition);
-        final IcebergTableAdapter tableAdapter = catalogAdapter.loadTable(tableIdentifier);
+        final IcebergTableAdapter tableAdapter = catalogAdapter.createTable(tableIdentifier, tableDefinition);
         final IcebergTableWriter tableWriter = tableAdapter.tableWriter(writerOptionsBuilder()
                 .tableDefinition(tableDefinition)
                 .build());
@@ -798,9 +788,8 @@ public abstract class SqliteCatalogBase {
                 .addTables(part1, part2)
                 .addAllPartitionPaths(List.of("PC=3", "PC=1"))
                 .build());
-        final IcebergReadInstructions ri = IcebergReadInstructions.builder().resolver(resolver).build();
-        final Table fromIceberg = tableAdapter.table(ri);
-        assertThat(tableAdapter.definition(ri)).isEqualTo(tableDefinition);
+        final Table fromIceberg = tableAdapter.table();
+        assertThat(tableAdapter.definition()).isEqualTo(tableDefinition);
         assertThat(fromIceberg.getDefinition()).isEqualTo(tableDefinition);
         assertThat(fromIceberg).isInstanceOf(PartitionAwareSourceTable.class);
         final Table expected = TableTools.merge(
@@ -846,8 +835,7 @@ public abstract class SqliteCatalogBase {
 
         final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
 
-        final Resolver resolver = catalogAdapter.createTable2(tableIdentifier, tableDefinition);
-        final IcebergTableAdapter tableAdapter = catalogAdapter.loadTable(tableIdentifier);
+        final IcebergTableAdapter tableAdapter = catalogAdapter.createTable(tableIdentifier, tableDefinition);
         final IcebergTableWriter tableWriter = tableAdapter.tableWriter(writerOptionsBuilder()
                 .tableDefinition(tableDefinition)
                 .build());
@@ -858,7 +846,7 @@ public abstract class SqliteCatalogBase {
                 .build());
 
         {
-            final Table fromIceberg = table(tableAdapter, resolver);
+            final Table fromIceberg = tableAdapter.table();
             assertThat(fromIceberg.getDefinition()).isEqualTo(tableDefinition);
             assertThat(fromIceberg).isInstanceOf(PartitionAwareSourceTable.class);
             assertTableEquals(TableTools.merge(part1, part2), fromIceberg);
@@ -872,11 +860,11 @@ public abstract class SqliteCatalogBase {
             try {
                 Resolver.builder()
                         .definition(widenedTd)
-                        .schema(resolver.schema())
-                        .spec(resolver.spec().orElseThrow())
-                        .putColumnInstructions(FOO, resolver.columnInstructions().get(FOO))
-                        .putColumnInstructions(BAR, resolver.columnInstructions().get(BAR))
-                        .putColumnInstructions(BAZ, resolver.columnInstructions().get(BAZ))
+                        .schema(tableAdapter.resolver().schema())
+                        .spec(tableAdapter.resolver().spec().orElseThrow())
+                        .putColumnInstructions(FOO, tableAdapter.resolver().columnInstructions().get(FOO))
+                        .putColumnInstructions(BAR, tableAdapter.resolver().columnInstructions().get(BAR))
+                        .putColumnInstructions(BAZ, tableAdapter.resolver().columnInstructions().get(BAZ))
                         .build();
                 failBecauseExceptionWasNotThrown(Resolver.MappingException.class);
             } catch (Resolver.MappingException e) {
@@ -895,11 +883,11 @@ public abstract class SqliteCatalogBase {
             try {
                 Resolver.builder()
                         .definition(tightenedTd)
-                        .schema(resolver.schema())
-                        .spec(resolver.spec().orElseThrow())
-                        .putColumnInstructions(FOO, resolver.columnInstructions().get(FOO))
-                        .putColumnInstructions(BAR, resolver.columnInstructions().get(BAR))
-                        .putColumnInstructions(BAZ, resolver.columnInstructions().get(BAZ))
+                        .schema(tableAdapter.resolver().schema())
+                        .spec(tableAdapter.resolver().spec().orElseThrow())
+                        .putColumnInstructions(FOO, tableAdapter.resolver().columnInstructions().get(FOO))
+                        .putColumnInstructions(BAR, tableAdapter.resolver().columnInstructions().get(BAR))
+                        .putColumnInstructions(BAZ, tableAdapter.resolver().columnInstructions().get(BAZ))
                         .build();
                 failBecauseExceptionWasNotThrown(Resolver.MappingException.class);
             } catch (Resolver.MappingException e) {
@@ -924,8 +912,7 @@ public abstract class SqliteCatalogBase {
                 ColumnDefinition.ofInt("data"));
 
         final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
-        final Resolver resolver = catalogAdapter.createTable2(tableIdentifier, definition);
-        final IcebergTableAdapter tableAdapter = catalogAdapter.loadTable(tableIdentifier);
+        final IcebergTableAdapter tableAdapter = catalogAdapter.createTable(tableIdentifier, definition);
 
         final Table source = TableTools.emptyTable(10)
                 .update("data = (int) 2 * i + 10");
@@ -945,9 +932,8 @@ public abstract class SqliteCatalogBase {
                 .addTables(source)
                 .addAllPartitionPaths(partitionPaths)
                 .build());
-        final IcebergReadInstructions ri = IcebergReadInstructions.builder().resolver(resolver).build();
-        final Table fromIceberg = tableAdapter.table(ri);
-        assertThat(tableAdapter.definition(ri)).isEqualTo(definition);
+        final Table fromIceberg = tableAdapter.table();
+        assertThat(tableAdapter.definition()).isEqualTo(definition);
         assertThat(fromIceberg.getDefinition()).isEqualTo(definition);
         assertThat(fromIceberg).isInstanceOf(PartitionAwareSourceTable.class);
 
@@ -1078,8 +1064,7 @@ public abstract class SqliteCatalogBase {
                 ColumnDefinition.ofInt("intCol"),
                 ColumnDefinition.ofDouble("doubleCol"),
                 ColumnDefinition.ofString("PC").withPartitioning());
-        final Resolver resolver = catalogAdapter.createTable2(tableIdentifier, tableDefinition);
-        final IcebergTableAdapter tableAdapter = catalogAdapter.loadTable(tableIdentifier);
+        final IcebergTableAdapter tableAdapter = catalogAdapter.createTable(tableIdentifier, tableDefinition);
         final IcebergTableWriter tableWriter = tableAdapter.tableWriter(writerOptionsBuilder()
                 .tableDefinition(tableDefinition)
                 .build());
@@ -1090,11 +1075,10 @@ public abstract class SqliteCatalogBase {
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         final IcebergReadInstructions ri = IcebergReadInstructions.builder()
-                .resolver(resolver)
                 .updateMode(IcebergUpdateMode.manualRefreshingMode())
                 .build();
         final IcebergTableImpl fromIcebergRefreshing = (IcebergTableImpl) tableAdapter.table(ri);
-        assertThat(tableAdapter.definition(ri)).isEqualTo(tableDefinition);
+        assertThat(tableAdapter.definition()).isEqualTo(tableDefinition);
         assertThat(fromIcebergRefreshing.getDefinition()).isEqualTo(tableDefinition);
         assertThat(fromIcebergRefreshing).isInstanceOf(PartitionAwareSourceTable.class);
         final Table expected = TableTools.merge(
@@ -1133,8 +1117,7 @@ public abstract class SqliteCatalogBase {
                 ColumnDefinition.ofInt("intCol"),
                 ColumnDefinition.ofDouble("doubleCol"),
                 ColumnDefinition.ofString("PC").withPartitioning());
-        final Resolver resolver = catalogAdapter.createTable2(tableIdentifier, tableDefinition);
-        final IcebergTableAdapter tableAdapter = catalogAdapter.loadTable(tableIdentifier);
+        final IcebergTableAdapter tableAdapter = catalogAdapter.createTable(tableIdentifier, tableDefinition);
         final IcebergTableWriter tableWriter = tableAdapter.tableWriter(writerOptionsBuilder()
                 .tableDefinition(tableDefinition)
                 .build());
@@ -1146,11 +1129,10 @@ public abstract class SqliteCatalogBase {
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
 
         final IcebergReadInstructions ri = IcebergReadInstructions.builder()
-                .resolver(resolver)
                 .updateMode(IcebergUpdateMode.autoRefreshingMode(10))
                 .build();
         final IcebergTableImpl fromIcebergRefreshing = (IcebergTableImpl) tableAdapter.table(ri);
-        assertThat(tableAdapter.definition(ri)).isEqualTo(tableDefinition);
+        assertThat(tableAdapter.definition()).isEqualTo(tableDefinition);
         assertThat(fromIcebergRefreshing.getDefinition()).isEqualTo(tableDefinition);
         assertThat(fromIcebergRefreshing).isInstanceOf(PartitionAwareSourceTable.class);
         final Table expected = TableTools.merge(
@@ -1487,19 +1469,21 @@ public abstract class SqliteCatalogBase {
         final int doubleColFieldId = icebergTable.schema().findField("doubleCol").fieldId();
         final int longColFieldId = icebergTable.schema().findField("longCol").fieldId();
 
-        // Now read a table with a column rename
-        final IcebergReadInstructions readInstructions = IcebergReadInstructions.builder()
-                .resolver(Resolver.builder()
-                        .definition(expected.getDefinition())
-                        .schema(icebergTable.schema())
-                        .putColumnInstructions("renamedIntCol", schemaField(intColFieldId))
-                        .putColumnInstructions("doubleCol", schemaField(doubleColFieldId))
-                        .putColumnInstructions("longCol", schemaField(longColFieldId))
-                        .build())
-                .build();
-        final Table fromIceberg = tableAdapter.table(readInstructions);
-
-        assertTableEquals(expected, fromIceberg);
+        {
+            // Now read a table with a column rename
+            final IcebergTableAdapter ta = catalogAdapter.loadTable(LoadTableOptions.builder()
+                    .id(tableIdentifier)
+                    .resolver(Resolver.builder()
+                            .definition(expected.getDefinition())
+                            .schema(icebergTable.schema())
+                            .putColumnInstructions("renamedIntCol", schemaField(intColFieldId))
+                            .putColumnInstructions("doubleCol", schemaField(doubleColFieldId))
+                            .putColumnInstructions("longCol", schemaField(longColFieldId))
+                            .build())
+                    .build());
+            final Table fromIceberg = ta.table();
+            assertTableEquals(expected, fromIceberg);
+        }
 
         // Verify that the sort order is still applied
         final ParquetInstructions parquetInstructions = ParquetInstructions.builder()
@@ -1518,8 +1502,7 @@ public abstract class SqliteCatalogBase {
                 doubleCol("doubleCol", 10.5, 2.5, 3.5, 40.5, 0.5),
                 longCol("longCol", 20L, 50L, 0L, 10L, 5L));
         final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
-        final Resolver resolver = catalogAdapter.createTable2(tableIdentifier, source.getDefinition());
-        final IcebergTableAdapter tableAdapter = catalogAdapter.loadTable(tableIdentifier);
+        final IcebergTableAdapter tableAdapter = catalogAdapter.createTable(tableIdentifier, source.getDefinition());
 
         // Update the default sort order of the underlying iceberg table
         final org.apache.iceberg.Table icebergTable = tableAdapter.icebergTable();
@@ -1538,15 +1521,17 @@ public abstract class SqliteCatalogBase {
             final TableDefinition tableDefinition = TableDefinition.of(
                     ColumnDefinition.ofInt("intCol"),
                     ColumnDefinition.ofLong("longCol"));
-            final IcebergReadInstructions readInstructions = IcebergReadInstructions.builder()
+            final Resolver resolver = tableAdapter.resolver();
+            final IcebergTableAdapter ta = catalogAdapter.loadTable(LoadTableOptions.builder()
+                    .id(tableIdentifier)
                     .resolver(Resolver.builder()
                             .definition(tableDefinition)
                             .schema(resolver.schema())
                             .putColumnInstructions("intCol", resolver.columnInstructions().get("intCol"))
                             .putColumnInstructions("longCol", resolver.columnInstructions().get("longCol"))
                             .build())
-                    .build();
-            final Table fromIceberg = tableAdapter.table(readInstructions);
+                    .build());
+            final Table fromIceberg = ta.table();
             final Table expected = source.dropColumns("doubleCol")
                     .sort(List.of(SortColumn.asc(ColumnName.of("intCol"))));
             assertTableEquals(expected, fromIceberg);
@@ -1555,7 +1540,7 @@ public abstract class SqliteCatalogBase {
             final ParquetInstructions parquetInstructions = ParquetInstructions.builder()
                     .setTableDefinition(tableDefinition)
                     .build();
-            verifySortOrder(tableAdapter, List.of(
+            verifySortOrder(ta, List.of(
                     List.of(SortColumn.asc(ColumnName.of("intCol")))),
                     parquetInstructions);
         }
@@ -1565,15 +1550,18 @@ public abstract class SqliteCatalogBase {
             final TableDefinition tableDefinition = TableDefinition.of(
                     ColumnDefinition.ofDouble("doubleCol"),
                     ColumnDefinition.ofLong("longCol"));
-            final IcebergReadInstructions readInstructions = IcebergReadInstructions.builder()
+            IcebergTableAdapter ta = catalogAdapter.loadTable(LoadTableOptions.builder()
+                    .id(tableIdentifier)
                     .resolver(Resolver.builder()
                             .definition(tableDefinition)
-                            .schema(resolver.schema())
-                            .putColumnInstructions("doubleCol", resolver.columnInstructions().get("doubleCol"))
-                            .putColumnInstructions("longCol", resolver.columnInstructions().get("longCol"))
+                            .schema(tableAdapter.resolver().schema())
+                            .putColumnInstructions("doubleCol",
+                                    tableAdapter.resolver().columnInstructions().get("doubleCol"))
+                            .putColumnInstructions("longCol",
+                                    tableAdapter.resolver().columnInstructions().get("longCol"))
                             .build())
-                    .build();
-            final Table fromIceberg = tableAdapter.table(readInstructions);
+                    .build());
+            final Table fromIceberg = ta.table();
             final Table expected = source
                     .sort(List.of(SortColumn.asc(ColumnName.of("intCol")), SortColumn.desc(ColumnName.of("doubleCol"))))
                     .dropColumns("intCol");
@@ -1583,7 +1571,7 @@ public abstract class SqliteCatalogBase {
             final ParquetInstructions parquetInstructions = ParquetInstructions.builder()
                     .setTableDefinition(tableDefinition)
                     .build();
-            verifySortOrder(tableAdapter, List.of(List.of()), parquetInstructions);
+            verifySortOrder(ta, List.of(List.of()), parquetInstructions);
         }
     }
 

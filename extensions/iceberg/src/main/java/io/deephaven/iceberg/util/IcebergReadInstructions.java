@@ -10,12 +10,7 @@ import io.deephaven.engine.table.impl.locations.TableKey;
 import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.Schema;
 import org.apache.iceberg.Snapshot;
-import org.apache.iceberg.Table;
-import org.apache.iceberg.TableProperties;
-import org.apache.iceberg.mapping.MappingUtil;
-import org.apache.iceberg.mapping.NameMapping;
 import org.apache.iceberg.transforms.Transforms;
-import org.apache.iceberg.types.Types;
 import org.immutables.value.Value;
 import org.immutables.value.Value.Immutable;
 
@@ -45,6 +40,7 @@ public abstract class IcebergReadInstructions {
      * {@link TableDefinition} and the existing Iceberg {@link Schema}. If not set, one will be
      * {@link Resolver#infer(InferenceInstructions) inferred}.
      */
+    @Deprecated
     public abstract Optional<Resolver> resolver();
 
     /**
@@ -147,6 +143,7 @@ public abstract class IcebergReadInstructions {
 
     public interface Builder {
 
+        @Deprecated
         Builder resolver(Resolver resolver);
 
         @Deprecated
@@ -164,7 +161,7 @@ public abstract class IcebergReadInstructions {
 
         Builder updateMode(IcebergUpdateMode updateMode);
 
-        Builder snapshotId(long snapshotId);;
+        Builder snapshotId(long snapshotId);
 
         Builder snapshot(Snapshot snapshot);
 
@@ -183,14 +180,6 @@ public abstract class IcebergReadInstructions {
                 snapshotId().getAsLong() != snapshot().get().snapshotId()) {
             throw new IllegalArgumentException("If both snapshotID and snapshot are provided, the snapshot Ids " +
                     "must match, found " + snapshotId().getAsLong() + " and " + snapshot().get().snapshotId());
-        }
-    }
-
-    @Value.Check
-    final void checkUsePartitionInference() {
-        if (usePartitionInference() && resolver().isPresent()) {
-            throw new IllegalArgumentException(
-                    "usePartitionInference should not be true when a resolver is present");
         }
     }
 }

@@ -348,6 +348,7 @@ public class IcebergCatalogAdapter {
      * @throws AlreadyExistsException if the table already exists
      * @see Resolver#from(TableDefinition)
      */
+    @Deprecated
     public Resolver createTable2(
             @NotNull final TableIdentifier tableIdentifier,
             @NotNull final TableDefinition definition) {

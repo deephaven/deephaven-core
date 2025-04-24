@@ -8,15 +8,19 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.util.TableTools;
-import io.deephaven.iceberg.util.TypeInference;
 import io.deephaven.iceberg.sqlite.DbResource;
-import io.deephaven.iceberg.util.InferenceInstructions;
-import io.deephaven.iceberg.util.Resolver;
 import io.deephaven.iceberg.util.IcebergReadInstructions;
 import io.deephaven.iceberg.util.IcebergTableAdapter;
+import io.deephaven.iceberg.util.InferenceInstructions;
+import io.deephaven.iceberg.util.LoadTableOptions;
+import io.deephaven.iceberg.util.Resolver;
+import io.deephaven.iceberg.util.ResolverProviderInference;
+import io.deephaven.iceberg.util.SchemaProvider;
+import io.deephaven.iceberg.util.TypeInference;
 import io.deephaven.util.QueryConstants;
 import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.Schema;
+import org.apache.iceberg.Snapshot;
 import org.apache.iceberg.catalog.TableIdentifier;
 import org.apache.iceberg.types.Types.IntegerType;
 import org.apache.iceberg.types.Types.NestedField;
@@ -26,6 +30,7 @@ import org.junit.jupiter.api.Test;
 
 import java.net.URISyntaxException;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 import static io.deephaven.iceberg.util.ColumnInstructions.schemaField;
@@ -60,15 +65,26 @@ public class SchemaEvolution1 {
             ColumnDefinition.ofInt("Field2_D"),
             ColumnDefinition.ofInt("Field3_D"));
 
-    private IcebergTableAdapter tableAdapter;
     private int fieldId1;
     private int fieldId2;
     private int fieldId3;
 
+    private static IcebergTableAdapter loadTable(LoadTableOptions options) throws URISyntaxException {
+        return DbResource.openCatalog(CATALOG_NAME).loadTable(options);
+    }
+
+    private static IcebergTableAdapter loadWithSchema(SchemaProvider schema) throws URISyntaxException {
+        return loadTable(builder().resolver(ResolverProviderInference.builder().schema(schema).build()).build());
+    }
+
+    private static LoadTableOptions.Builder builder() {
+        return LoadTableOptions.builder().id(TABLE_ID);
+    }
+
     @BeforeEach
     void setUp() throws URISyntaxException {
-        tableAdapter = DbResource.openCatalog(CATALOG_NAME).loadTable(TABLE_ID);
         {
+            final IcebergTableAdapter tableAdapter = DbResource.openCatalog(CATALOG_NAME).loadTable(TABLE_ID);
             final Schema initialSchema = tableAdapter.currentSchema();
             fieldId1 = initialSchema.findField(IDEF_4.getColumnNames().get(0)).fieldId();
             fieldId2 = initialSchema.findField(IDEF_4.getColumnNames().get(1)).fieldId();
@@ -77,7 +93,8 @@ public class SchemaEvolution1 {
     }
 
     @Test
-    void schemas() {
+    void schemas() throws URISyntaxException {
+        final IcebergTableAdapter tableAdapter = DbResource.openCatalog(CATALOG_NAME).loadTable(TABLE_ID);
         // This is a meta test, making sure test setup is correct
         {
             final Map<Integer, Schema> schemas = tableAdapter.schemas();
@@ -92,7 +109,8 @@ public class SchemaEvolution1 {
     }
 
     @Test
-    void snapshots() {
+    void snapshots() throws URISyntaxException {
+        final IcebergTableAdapter tableAdapter = DbResource.openCatalog(CATALOG_NAME).loadTable(TABLE_ID);
         // This is a meta test, making sure test setup is correct
         assertThat(tableAdapter.listSnapshots()).hasSize(6);
     }
@@ -108,77 +126,37 @@ public class SchemaEvolution1 {
     }
 
     @Test
-    void readLatest() {
-        final Table expected = expected3(IDEF_4, 60);
-        assertThat(tableAdapter.definition()).isEqualTo(IDEF_4);
-        TstUtils.assertTableEquals(expected, tableAdapter.table());
+    void schemaLatestAt() throws URISyntaxException {
+        schemaYAt(IDEF_4, SchemaProvider.fromCurrent());
     }
 
     @Test
-    void readLatestAs() throws TypeInference.Exception {
-        read(expected(IDEF_0, 60, false), readLatestAs(0));
-        read(expected(IDEF_1, 60, false), readLatestAs(1));
-        read(expected(IDEF_2, 60, false), readLatestAs(2));
-        read(expected(IDEF_3, 60, true), readLatestAs(3));
-        read(expected3(IDEF_4, 60), readLatestAs(4));
+    void schema0At() throws URISyntaxException {
+        schemaXAt(IDEF_0, SchemaProvider.fromSchemaId(0), false);
     }
 
     @Test
-    void readSnapshot5As() throws TypeInference.Exception {
-        read(expected(IDEF_0, 60, false), readSnapshotAs(5, 0));
-        read(expected(IDEF_1, 60, false), readSnapshotAs(5, 1));
-        read(expected(IDEF_2, 60, false), readSnapshotAs(5, 2));
-        read(expected(IDEF_3, 60, true), readSnapshotAs(5, 3));
-        read(expected3(IDEF_4, 60), readSnapshotAs(5, 4));
+    void schema1At() throws URISyntaxException {
+        schemaXAt(IDEF_1, SchemaProvider.fromSchemaId(1), false);
     }
 
     @Test
-    void readSnapshot4As() throws TypeInference.Exception {
-        read(expected(IDEF_0, 50, false), readSnapshotAs(4, 0));
-        read(expected(IDEF_1, 50, false), readSnapshotAs(4, 1));
-        read(expected(IDEF_2, 50, false), readSnapshotAs(4, 2));
-        read(expected(IDEF_3, 50, true), readSnapshotAs(4, 3));
-        read(expected3(IDEF_4, 50), readSnapshotAs(4, 4));
+    void schema2At() throws URISyntaxException {
+        schemaXAt(IDEF_2, SchemaProvider.fromSchemaId(2), false);
     }
 
     @Test
-    void readSnapshot3As() throws TypeInference.Exception {
-        read(expected(IDEF_0, 40, false), readSnapshotAs(3, 0));
-        read(expected(IDEF_1, 40, false), readSnapshotAs(3, 1));
-        read(expected(IDEF_2, 40, false), readSnapshotAs(3, 2));
-        read(expected(IDEF_3, 40, true), readSnapshotAs(3, 3));
-        read(expected3(IDEF_4, 40), readSnapshotAs(3, 4));
+    void schema3At() throws URISyntaxException {
+        schemaXAt(IDEF_3, SchemaProvider.fromSchemaId(3), true);
     }
 
     @Test
-    void readSnapshot2As() throws TypeInference.Exception {
-        read(expected(IDEF_0, 30, false), readSnapshotAs(2, 0));
-        read(expected(IDEF_1, 30, false), readSnapshotAs(2, 1));
-        read(expected(IDEF_2, 30, false), readSnapshotAs(2, 2));
-        read(expected(IDEF_3, 30, true), readSnapshotAs(2, 3));
-        read(expected3(IDEF_4, 30), readSnapshotAs(2, 4));
+    void schema4At() throws URISyntaxException {
+        schemaYAt(IDEF_4, SchemaProvider.fromSchemaId(4));
     }
 
     @Test
-    void readSnapshot1As() throws TypeInference.Exception {
-        read(expected(IDEF_0, 20, false), readSnapshotAs(1, 0));
-        read(expected(IDEF_1, 20, false), readSnapshotAs(1, 1));
-        read(expected(IDEF_2, 20, false), readSnapshotAs(1, 2));
-        read(expected(IDEF_3, 20, true), readSnapshotAs(1, 3));
-        read(expected3(IDEF_4, 20), readSnapshotAs(1, 4));
-    }
-
-    @Test
-    void readSnapshot0As() throws TypeInference.Exception {
-        read(expected(IDEF_0, 10, false), readSnapshotAs(0, 0));
-        read(expected(IDEF_1, 10, false), readSnapshotAs(0, 1));
-        read(expected(IDEF_2, 10, false), readSnapshotAs(0, 2));
-        read(expected(IDEF_3, 10, true), readSnapshotAs(0, 3));
-        read(expected3(IDEF_4, 10), readSnapshotAs(0, 4));
-    }
-
-    @Test
-    void customDefinitions() {
+    void customDefinitions() throws URISyntaxException {
         // subset, just id1
         {
             final String col1 = "Foo";
@@ -186,11 +164,13 @@ public class SchemaEvolution1 {
             final Table expected = TableTools.newTable(
                     td,
                     TableTools.intCol(col1, data(60, false)));
-            read(expected, Resolver.builder()
+            final IcebergTableAdapter ta = loadTable(builder().resolver(Resolver.builder()
                     .schema(schema_4())
                     .definition(td)
                     .putColumnInstructions(col1, schemaField(fieldId1))
+                    .build())
                     .build());
+            TstUtils.assertTableEquals(expected, ta.table());
         }
         // subset, just id2
         {
@@ -199,11 +179,13 @@ public class SchemaEvolution1 {
             final Table expected = TableTools.newTable(
                     td,
                     TableTools.intCol(col2, data(60, true)));
-            read(expected, Resolver.builder()
+            final IcebergTableAdapter ta = loadTable(builder().resolver(Resolver.builder()
                     .schema(schema_4())
                     .definition(td)
                     .putColumnInstructions(col2, schemaField(fieldId2))
+                    .build())
                     .build());
+            TstUtils.assertTableEquals(expected, ta.table());
         }
         // subset, just id3 (ideally, )
         {
@@ -212,11 +194,13 @@ public class SchemaEvolution1 {
             final Table expected = TableTools.newTable(
                     td,
                     TableTools.intCol(col3, nullData(60)));
-            read(expected, Resolver.builder()
+            final IcebergTableAdapter ta = loadTable(builder().resolver(Resolver.builder()
                     .schema(schema_4())
                     .definition(td)
                     .putColumnInstructions(col3, schemaField(fieldId3))
+                    .build())
                     .build());
+            TstUtils.assertTableEquals(expected, ta.table());
         }
         // superset
         {
@@ -235,24 +219,45 @@ public class SchemaEvolution1 {
                     TableTools.intCol(col2, data(60, true)),
                     TableTools.intCol(col3, nullData(60)),
                     TableTools.intCol(col4, nullData(60)));
-            read(expected, Resolver.builder()
+            final IcebergTableAdapter ta = loadTable(builder().resolver(Resolver.builder()
                     .schema(schema_4())
                     .definition(td)
                     .putColumnInstructions(col1, schemaField(fieldId1))
                     .putColumnInstructions(col2, schemaField(fieldId2))
                     .putColumnInstructions(col3, schemaField(fieldId3))
                     .putColumnInstructions(col4, unmapped())
+                    .build())
                     .build());
+            TstUtils.assertTableEquals(expected, ta.table());
         }
     }
 
-    private void read(Table expected, Resolver di) {
-        read(expected, IcebergReadInstructions.builder().resolver(di).build());
+    static void schemaXAt(TableDefinition def, SchemaProvider schema, boolean swapped) throws URISyntaxException {
+        final IcebergTableAdapter ta = loadWithSchema(schema);
+        final List<Snapshot> snapshots = ta.listSnapshots();
+        TstUtils.assertTableEquals(expected(def, 10, swapped), ta.table(si(snapshots, 0)));
+        TstUtils.assertTableEquals(expected(def, 20, swapped), ta.table(si(snapshots, 1)));
+        TstUtils.assertTableEquals(expected(def, 30, swapped), ta.table(si(snapshots, 2)));
+        TstUtils.assertTableEquals(expected(def, 40, swapped), ta.table(si(snapshots, 3)));
+        TstUtils.assertTableEquals(expected(def, 50, swapped), ta.table(si(snapshots, 4)));
+        TstUtils.assertTableEquals(expected(def, 60, swapped), ta.table(si(snapshots, 5)));
+        TstUtils.assertTableEquals(expected(def, 60, swapped), ta.table());
     }
 
-    private void read(Table expected, IcebergReadInstructions instructions) {
-        assertThat(tableAdapter.definition(instructions)).isEqualTo(expected.getDefinition());
-        TstUtils.assertTableEquals(expected, tableAdapter.table(instructions));
+    static void schemaYAt(TableDefinition def, SchemaProvider schema) throws URISyntaxException {
+        final IcebergTableAdapter ta = loadWithSchema(schema);
+        final List<Snapshot> snapshots = ta.listSnapshots();
+        TstUtils.assertTableEquals(expected3(def, 10), ta.table(si(snapshots, 0)));
+        TstUtils.assertTableEquals(expected3(def, 20), ta.table(si(snapshots, 1)));
+        TstUtils.assertTableEquals(expected3(def, 30), ta.table(si(snapshots, 2)));
+        TstUtils.assertTableEquals(expected3(def, 40), ta.table(si(snapshots, 3)));
+        TstUtils.assertTableEquals(expected3(def, 50), ta.table(si(snapshots, 4)));
+        TstUtils.assertTableEquals(expected3(def, 60), ta.table(si(snapshots, 5)));
+        TstUtils.assertTableEquals(expected3(def, 60), ta.table());
+    }
+
+    private static IcebergReadInstructions si(List<Snapshot> snapshots, int index) {
+        return IcebergReadInstructions.builder().snapshot(snapshots.get(index)).build();
     }
 
     private static Table expected(TableDefinition td, int size, boolean swapped) {
@@ -280,36 +285,6 @@ public class SchemaEvolution1 {
         final int[] data = new int[size];
         Arrays.fill(data, QueryConstants.NULL_INT);
         return data;
-    }
-
-    private IcebergReadInstructions readLatestAs(int schemaVersion) throws TypeInference.Exception {
-        return IcebergReadInstructions.builder()
-                .resolver(Resolver.infer(ia(schema(schemaVersion))))
-                .build();
-    }
-
-    private IcebergReadInstructions readSnapshotAs(int snapshotIx, int schemaVersion) throws TypeInference.Exception {
-        return IcebergReadInstructions.builder()
-                .snapshot(tableAdapter.listSnapshots().get(snapshotIx))
-                .resolver(Resolver.infer(ia(schema(schemaVersion))))
-                .build();
-    }
-
-    private Schema schema(int version) {
-        switch (version) {
-            case 0:
-                return schema_0();
-            case 1:
-                return schema_1();
-            case 2:
-                return schema_2();
-            case 3:
-                return schema_3();
-            case 4:
-                return schema_4();
-            default:
-                throw new IllegalStateException();
-        }
     }
 
     private Schema schema_0() {
