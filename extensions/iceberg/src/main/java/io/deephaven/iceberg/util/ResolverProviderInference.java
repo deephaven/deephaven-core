@@ -17,7 +17,7 @@ import java.util.Set;
 /**
  * This provides a consolidated set of inference options for use in {@link LoadTableOptions}. A {@link Resolver} will be
  * inferred based on the {@link Table#schema() latest schema} (and {@link Table#spec() latest spec} if
- * {@link #usePartitioningColumns()}). This is a counterpart to the more advanced {@link InferenceInstructions}, which
+ * {@link #inferPartitioningColumns()}). This is a counterpart to the more advanced {@link InferenceInstructions}, which
  * requires the callers to provide specific {@link Schema}.
  */
 @Value.Immutable
@@ -35,10 +35,11 @@ public abstract class ResolverProviderInference extends ResolverProviderImpl imp
      * <p>
      * <b>Warning</b>: inferring partition columns for general-purpose use is dangerous. This is only meant to be
      * applied in situations where caller knows that the {@link Table#spec() latest spec} is safe to use for inference.
-     * See {@link InferenceInstructions#spec()} for more details.
+     *
+     * @see InferenceInstructions#spec() InferenceInstructions for more details.
      */
     @Value.Default
-    public boolean usePartitioningColumns() {
+    public boolean inferPartitioningColumns() {
         return false;
     }
 
@@ -73,7 +74,7 @@ public abstract class ResolverProviderInference extends ResolverProviderImpl imp
 
     public interface Builder {
 
-        Builder usePartitioningColumns(boolean usePartitioningColumns);
+        Builder inferPartitioningColumns(boolean inferPartitioningColumns);
 
         Builder failOnUnsupportedTypes(boolean failOnUnsupportedTypes);
 
@@ -88,7 +89,7 @@ public abstract class ResolverProviderInference extends ResolverProviderImpl imp
     final Resolver resolver(Table table) throws TypeInference.UnsupportedType {
         InferenceInstructions.Builder builder = inferenceBuilder()
                 .schema(((SchemaProviderInternal.SchemaProviderImpl) schema()).getSchema(table));
-        if (usePartitioningColumns()) {
+        if (inferPartitioningColumns()) {
             builder.spec(table.spec());
         }
         return Resolver.infer(builder.build());

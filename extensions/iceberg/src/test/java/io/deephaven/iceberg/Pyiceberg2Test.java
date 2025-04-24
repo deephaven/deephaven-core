@@ -10,7 +10,6 @@ import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.iceberg.sqlite.DbResource;
 import io.deephaven.iceberg.util.IcebergCatalogAdapter;
-import io.deephaven.iceberg.util.IcebergReadInstructions;
 import io.deephaven.iceberg.util.IcebergTableAdapter;
 import io.deephaven.iceberg.util.LoadTableOptions;
 import io.deephaven.iceberg.util.ResolverProviderInference;
@@ -49,7 +48,7 @@ class Pyiceberg2Test {
             ColumnDefinition.ofDouble("bid"),
             ColumnDefinition.ofDouble("ask"));
     private static final ResolverProviderInference INFER_WITH_PARTITIONS =
-            ResolverProviderInference.builder().usePartitioningColumns(true).build();
+            ResolverProviderInference.builder().inferPartitioningColumns(true).build();
 
     private IcebergCatalogAdapter catalogAdapter;
 

@@ -91,9 +91,8 @@ class IcebergUpdateMode(JObjectWrapper):
 
 class IcebergReadInstructions(JObjectWrapper):
     """
-    `IcebergReadInstructions` specifies the instructions for reading an Iceberg table into Deephaven. These
-    include column rename instructions and table definitions, as well as special data instructions for loading data
-    files from the cloud.
+    `IcebergReadInstructions` specifies the instructions for reading an Iceberg table into Deephaven. These include
+    special data instructions for loading data files from the cloud.
     """
 
     j_object_type = _JIcebergReadInstructions
@@ -364,11 +363,11 @@ class ResolverProviderInference(JObjectWrapper):
     j_object_type = _JResolverProviderInference
 
     def __init__(self,
-                 use_partitioning_columns: bool = False,
+                 infer_partitioning_columns: bool = False,
                  fail_on_unsupported_types: bool = False,
                  schema_provider: Optional[SchemaProvider] = None):
         builder = _JResolverProviderInference.builder()
-        builder.usePartitioningColumns(use_partitioning_columns)
+        builder.inferPartitioningColumns(infer_partitioning_columns)
         builder.failOnUnsupportedTypes(fail_on_unsupported_types)
         if schema_provider:
             builder.schema(schema_provider.j_object)
@@ -574,16 +573,15 @@ class IcebergTableAdapter(JObjectWrapper):
         Returns the Deephaven table definition as a Deephaven table.
 
         Args:
-            instructions (Optional[IcebergReadInstructions]): the instructions for reading the table. These instructions
-                can include column renames, table definition, and specific data instructions for reading the data files
-                from the provider. If omitted, the table will be read with default instructions.
+            instructions (Optional[IcebergReadInstructions]): has no effect, deprecated
 
         Returns:
             a table containing the table definition.
         """
 
         if instructions:
-            return Table(self.j_object.definitionTable(instructions.j_object))
+            warn('The instructions parameter is deprecated, has no effect', DeprecationWarning, stacklevel=2)
+
         return Table(self.j_object.definitionTable())
 
     def table(self, instructions: Optional[IcebergReadInstructions] = None) -> IcebergTable:

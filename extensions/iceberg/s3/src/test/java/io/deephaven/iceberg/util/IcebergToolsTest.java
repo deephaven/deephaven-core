@@ -86,7 +86,7 @@ public abstract class IcebergToolsTest {
     private static final ColumnInstructions MONTH = schemaField(7);
 
     private static final ResolverProviderInference RESOLVE_WITH_PARTITIONING = ResolverProviderInference.builder()
-            .usePartitioningColumns(true)
+            .inferPartitioningColumns(true)
             .build();
 
     private static IcebergTableAdapter load(IcebergCatalogAdapter adapter, String id, TableDefinition definition) {
