@@ -12,9 +12,9 @@ import io.deephaven.iceberg.sqlite.DbResource;
 import io.deephaven.iceberg.util.IcebergReadInstructions;
 import io.deephaven.iceberg.util.IcebergTableAdapter;
 import io.deephaven.iceberg.util.InferenceInstructions;
+import io.deephaven.iceberg.util.InferenceResolver;
 import io.deephaven.iceberg.util.LoadTableOptions;
 import io.deephaven.iceberg.util.Resolver;
-import io.deephaven.iceberg.util.ResolverProviderInference;
 import io.deephaven.iceberg.util.SchemaProvider;
 import io.deephaven.iceberg.util.TypeInference;
 import org.apache.iceberg.PartitionSpec;
@@ -65,7 +65,7 @@ public class SchemaEvolutionNested {
     }
 
     private static IcebergTableAdapter loadWithSchema(SchemaProvider schema) throws URISyntaxException {
-        return loadTable(builder().resolver(ResolverProviderInference.builder().schema(schema).build()).build());
+        return loadTable(builder().resolver(InferenceResolver.builder().schema(schema).build()).build());
     }
 
     private static LoadTableOptions.Builder builder() {

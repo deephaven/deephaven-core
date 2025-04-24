@@ -85,7 +85,7 @@ public abstract class IcebergToolsTest {
     private static final ColumnInstructions YEAR = schemaField(6);
     private static final ColumnInstructions MONTH = schemaField(7);
 
-    private static final ResolverProviderInference RESOLVE_WITH_PARTITIONING = ResolverProviderInference.builder()
+    private static final InferenceResolver RESOLVE_WITH_PARTITIONING = InferenceResolver.builder()
             .inferPartitioningColumns(true)
             .build();
 

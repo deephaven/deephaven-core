@@ -13,7 +13,7 @@ import io.deephaven.iceberg.util.IcebergCatalogAdapter;
 import io.deephaven.iceberg.util.IcebergReadInstructions;
 import io.deephaven.iceberg.util.IcebergTableAdapter;
 import io.deephaven.iceberg.util.LoadTableOptions;
-import io.deephaven.iceberg.util.ResolverProviderInference;
+import io.deephaven.iceberg.util.InferenceResolver;
 import io.deephaven.iceberg.util.SchemaProvider;
 import org.apache.iceberg.Snapshot;
 import org.apache.iceberg.catalog.Namespace;
@@ -87,7 +87,7 @@ class PyIceberg1Test {
         {
             final IcebergTableAdapter tableAdapter = catalogAdapter.loadTable(LoadTableOptions.builder()
                     .id(CITIES_ID)
-                    .resolver(ResolverProviderInference.builder()
+                    .resolver(InferenceResolver.builder()
                             .schema(SchemaProvider.fromSnapshotId(SNAPSHOT_1_ID))
                             .build())
                     .build());
@@ -112,7 +112,7 @@ class PyIceberg1Test {
         {
             final IcebergTableAdapter tableAdapter = catalogAdapter.loadTable(LoadTableOptions.builder()
                     .id(CITIES_ID)
-                    .resolver(ResolverProviderInference.builder()
+                    .resolver(InferenceResolver.builder()
                             .schema(SchemaProvider.fromSnapshotId(SNAPSHOT_2_ID))
                             .build())
                     .build());

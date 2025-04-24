@@ -18,14 +18,14 @@ import java.util.Set;
  * This provides a consolidated set of inference options for use in {@link LoadTableOptions}. A {@link Resolver} will be
  * inferred based on the {@link Table#schema() latest schema} (and {@link Table#spec() latest spec} if
  * {@link #inferPartitioningColumns()}). This is a counterpart to the more advanced {@link InferenceInstructions}, which
- * requires the callers to provide specific {@link Schema}.
+ * requires the callers to provide a specific {@link Schema}.
  */
 @Value.Immutable
 @BuildableStyle
-public abstract class ResolverProviderInference extends ResolverProviderImpl implements ResolverProvider {
+public abstract class InferenceResolver extends ResolverProviderImpl implements ResolverProvider {
 
     public static Builder builder() {
-        return ImmutableResolverProviderInference.builder();
+        return ImmutableInferenceResolver.builder();
     }
 
     /**
@@ -82,7 +82,7 @@ public abstract class ResolverProviderInference extends ResolverProviderImpl imp
 
         Builder schema(SchemaProvider schema);
 
-        ResolverProviderInference build();
+        InferenceResolver build();
     }
 
     @Override

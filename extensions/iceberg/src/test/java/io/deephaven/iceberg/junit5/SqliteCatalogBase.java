@@ -29,7 +29,7 @@ import io.deephaven.iceberg.util.InferenceInstructions;
 import io.deephaven.iceberg.util.LoadTableOptions;
 import io.deephaven.iceberg.util.NameMappingProvider;
 import io.deephaven.iceberg.util.Resolver;
-import io.deephaven.iceberg.util.ResolverProviderInference;
+import io.deephaven.iceberg.util.InferenceResolver;
 import io.deephaven.iceberg.util.SortOrderProvider;
 import io.deephaven.iceberg.util.TableParquetWriterOptions;
 import io.deephaven.iceberg.util.TypeInference;
@@ -1642,7 +1642,7 @@ public abstract class SqliteCatalogBase {
         try {
             catalogAdapter.loadTable(LoadTableOptions.builder()
                     .id(tableIdentifier)
-                    .resolver(ResolverProviderInference.builder()
+                    .resolver(InferenceResolver.builder()
                             .failOnUnsupportedTypes(true)
                             .build())
                     .build());
@@ -1785,7 +1785,7 @@ public abstract class SqliteCatalogBase {
                     longCol(BAZ, 20L, 50L, 0L, 10L, 5L));
             final IcebergTableAdapter tableAdapter = catalogAdapter.loadTable(LoadTableOptions.builder()
                     .id(id)
-                    .resolver(ResolverProviderInference.builder()
+                    .resolver(InferenceResolver.builder()
                             .namerFactory(namerFactory)
                             .build())
                     .build());

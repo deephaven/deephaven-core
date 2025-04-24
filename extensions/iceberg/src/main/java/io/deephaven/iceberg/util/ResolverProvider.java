@@ -25,12 +25,12 @@ public interface ResolverProvider {
      * The default inference resolver.
      *
      * <p>
-     * Equivalent to {@code ResolverProviderInference.builder().build()}.
+     * Equivalent to {@code InferenceResolver.builder().build()}.
      *
      * @return the default inference resolver
-     * @see ResolverProviderInference
+     * @see InferenceResolver
      */
-    static ResolverProviderInference infer() {
-        return ResolverProviderInference.builder().build();
+    static InferenceResolver infer() {
+        return InferenceResolver.builder().build();
     }
 }

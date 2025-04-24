@@ -6,6 +6,7 @@ from __future__ import annotations
 from typing import Optional, Dict, Union, Sequence, Mapping
 
 import jpy
+from abc import ABC
 from warnings import warn
 
 from deephaven import DHError
@@ -28,7 +29,7 @@ _JIcebergTable = jpy.get_type("io.deephaven.iceberg.util.IcebergTable")
 _JIcebergTools = jpy.get_type("io.deephaven.iceberg.util.IcebergTools")
 _JLoadTableOptions = jpy.get_type("io.deephaven.iceberg.util.LoadTableOptions")
 _JResolverProvider = jpy.get_type("io.deephaven.iceberg.util.ResolverProvider")
-_JResolverProviderInference = jpy.get_type("io.deephaven.iceberg.util.ResolverProviderInference")
+_JInferenceResolver = jpy.get_type("io.deephaven.iceberg.util.InferenceResolver")
 _JUnboundResolver = jpy.get_type("io.deephaven.iceberg.util.UnboundResolver")
 _JColumnInstructions = jpy.get_type("io.deephaven.iceberg.util.ColumnInstructions")
 
@@ -360,15 +361,15 @@ class SortOrderProvider(JObjectWrapper):
         return SortOrderProvider(self._j_object.withFailOnUnmapped(fail_on_unmapped))
 
 
-class ResolverProviderInference(JObjectWrapper):
+class InferenceResolver(JObjectWrapper):
 
-    j_object_type = _JResolverProviderInference
+    j_object_type = _JInferenceResolver
 
     def __init__(self,
                  infer_partitioning_columns: bool = False,
                  fail_on_unsupported_types: bool = False,
                  schema_provider: Optional[SchemaProvider] = None):
-        builder = _JResolverProviderInference.builder()
+        builder = _JInferenceResolver.builder()
         builder.inferPartitioningColumns(infer_partitioning_columns)
         builder.failOnUnsupportedTypes(fail_on_unsupported_types)
         if schema_provider:
@@ -389,7 +390,7 @@ class UnboundResolver(JObjectWrapper):
                  column_instructions: Optional[Mapping[str, Union[int, str]]] = None,
                  schema_provider: Optional[SchemaProvider] = None):
         builder = _JUnboundResolver.builder()
-        builder.tableDefinition(TableDefinition(table_definition).j_table_definition)
+        builder.definition(TableDefinition(table_definition).j_table_definition)
         if column_instructions:
             for column_name, value in column_instructions.items():
                 if isinstance(value, int):
@@ -693,13 +694,13 @@ class IcebergCatalogAdapter(JObjectWrapper):
 
         return Table(self.j_object.tables(namespace))
 
-    def load_table(self, table_identifier: str, resolver_provider: ResolverProviderInference = None) -> IcebergTableAdapter:
+    def load_table(self, table_identifier: str, resolver_provider: InferenceResolver = None) -> IcebergTableAdapter:
         """
         Load the table from the catalog.
 
         Args:
             table_identifier (str): the table to read.
-            resolver_provider (ResolverProviderInference): the resolver provider.
+            resolver_provider (InferenceResolver): the resolver provider.
 
         Returns:
             Table: the table read from the catalog.
