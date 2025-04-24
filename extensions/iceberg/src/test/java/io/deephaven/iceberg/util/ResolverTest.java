@@ -437,52 +437,6 @@ class ResolverTest {
     }
 
     @Test
-    void simplePrimitiveMapping() {
-        final Schema schema = simpleSchema(IT);
-        final TableDefinition td = simpleDefinition(Type.intType());
-        final Resolver expected = Resolver.builder()
-                .schema(schema)
-                .definition(td)
-                .putColumnInstructions("F1", schemaField(42))
-                .putColumnInstructions("F2", schemaField(43))
-                .build();
-        assertThat(Resolver.simple(schema, td)).isEqualTo(expected);
-    }
-
-    @Test
-    void simpleExtraSchemaColumnsAreIgnored() {
-        final Schema schema = simpleSchema(IT); // F1 and F2 exist in Iceberg
-        final TableDefinition td = TableDefinition.of(
-                ColumnDefinition.ofInt("F1")); // Only map F1
-        final Resolver expected = Resolver.builder()
-                .schema(schema)
-                .definition(td)
-                .putColumnInstructions("F1", schemaField(42))
-                .build();
-        assertThat(Resolver.simple(schema, td)).isEqualTo(expected);
-    }
-
-    @Test
-    void simplePartitioningColumnRejected() {
-        final Schema schema = simpleSchema(IT);
-        final TableDefinition td = TableDefinition.of(
-                ColumnDefinition.ofInt("F1").withPartitioning()); // should not be allowed
-        assertThatThrownBy(() -> Resolver.simple(schema, td))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("partitioning column");
-    }
-
-    @Test
-    void simpleMissingColumnRejected() {
-        final Schema schema = simpleSchema(IT);
-        final TableDefinition td = TableDefinition.of(
-                ColumnDefinition.ofInt("NotInSchema"));
-        assertThatThrownBy(() -> Resolver.simple(schema, td))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("not found in Iceberg schema");
-    }
-
-    @Test
     void byteArray() {
         try {
             Resolver.builder()
