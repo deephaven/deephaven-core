@@ -107,7 +107,7 @@ public abstract class IcebergReadInstructions {
 
         @Deprecated
         default Builder tableDefinition(TableDefinition tableDefinition) {
-            throw new UnsupportedOperationException("Use definitionInstructions");
+            return this;
         }
 
         Builder dataInstructions(Object s3Instructions);

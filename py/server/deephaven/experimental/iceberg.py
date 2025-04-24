@@ -6,6 +6,7 @@ from __future__ import annotations
 from typing import Optional, Dict, Union, Sequence
 
 import jpy
+from warnings import warn
 
 from deephaven import DHError
 from deephaven._wrapper import JObjectWrapper
@@ -25,6 +26,9 @@ _JIcebergTableAdapter = jpy.get_type("io.deephaven.iceberg.util.IcebergTableAdap
 _JIcebergTableWriter = jpy.get_type("io.deephaven.iceberg.util.IcebergTableWriter")
 _JIcebergTable = jpy.get_type("io.deephaven.iceberg.util.IcebergTable")
 _JIcebergTools = jpy.get_type("io.deephaven.iceberg.util.IcebergTools")
+_JLoadTableOptions = jpy.get_type("io.deephaven.iceberg.util.LoadTableOptions")
+_JResolverProvider = jpy.get_type("io.deephaven.iceberg.util.ResolverProvider")
+_JResolverProviderInference = jpy.get_type("io.deephaven.iceberg.util.ResolverProviderInference")
 
 # IcebergToolsS3 is an optional library
 try:
@@ -104,14 +108,11 @@ class IcebergReadInstructions(JObjectWrapper):
         Initializes the instructions using the provided parameters.
 
         Args:
-            table_definition (Optional[TableDefinitionLike]): the table definition; if omitted,
-                the definition is inferred from the Iceberg schema. Setting a definition guarantees the returned table
-                will have that definition. This is useful for specifying a subset of the Iceberg schema columns.
+            table_definition (Optional[TableDefinitionLike]): this parameter is deprecated and has no effect
             data_instructions (Optional[s3.S3Instructions]): Special instructions for reading data files, useful when
                 reading files from a non-local file system, like S3. If omitted, the data instructions will be derived
                 from the catalog.
-            column_renames (Optional[Dict[str, str]]): A dictionary of old to new column names that will be renamed in
-                the output table.
+            column_renames (Optional[Dict[str, str]]): this parameter is deprecated and has no effect
             update_mode (Optional[IcebergUpdateMode]): The update mode for the table. If omitted, the default update
                 mode of :py:func:`IcebergUpdateMode.static() <IcebergUpdateMode.static>` is used.
             snapshot_id (Optional[int]): the snapshot id to read; if omitted the most recent snapshot will be selected.
@@ -124,14 +125,13 @@ class IcebergReadInstructions(JObjectWrapper):
             builder = self.j_object_type.builder()
 
             if table_definition:
-                builder.tableDefinition(TableDefinition(table_definition).j_table_definition)
+                warn('The table_definition parameter is deprecated, has no effect', DeprecationWarning, stacklevel=2)
 
             if data_instructions:
                 builder.dataInstructions(data_instructions.j_object)
 
             if column_renames:
-                for old_name, new_name in column_renames.items():
-                    builder.putColumnRenames(old_name, new_name)
+                warn('This column_renames parameter is deprecated, has no effect', DeprecationWarning, stacklevel=2)
 
             if update_mode:
                 builder.updateMode(update_mode.j_object)
@@ -357,6 +357,26 @@ class SortOrderProvider(JObjectWrapper):
             the `SortOrderProvider` object.
         """
         return SortOrderProvider(self._j_object.withFailOnUnmapped(fail_on_unmapped))
+
+
+class ResolverProviderInference(JObjectWrapper):
+
+    j_object_type = _JResolverProviderInference
+
+    def __init__(self,
+                 use_partitioning_columns: bool = False,
+                 fail_on_unsupported_types: bool = False,
+                 schema_provider: Optional[SchemaProvider] = None):
+        builder = _JResolverProviderInference.builder()
+        builder.usePartitioningColumns(use_partitioning_columns)
+        builder.failOnUnsupportedTypes(fail_on_unsupported_types)
+        if schema_provider:
+            builder.schema(schema_provider.j_object)
+        self._j_object = builder.build()
+
+    @property
+    def j_object(self) -> jpy.JType:
+        return self._j_object
 
 
 class TableParquetWriterOptions(JObjectWrapper):
@@ -645,18 +665,22 @@ class IcebergCatalogAdapter(JObjectWrapper):
 
         return Table(self.j_object.tables(namespace))
 
-    def load_table(self, table_identifier: str) -> IcebergTableAdapter:
+    def load_table(self, table_identifier: str, resolver_provider: ResolverProviderInference = None) -> IcebergTableAdapter:
         """
         Load the table from the catalog.
 
         Args:
             table_identifier (str): the table to read.
+            resolver_provider (ResolverProviderInference): the resolver provider.
 
         Returns:
             Table: the table read from the catalog.
         """
-
-        return IcebergTableAdapter(self.j_object.loadTable(table_identifier))
+        builder = _JLoadTableOptions.builder()
+        builder.id(table_identifier)
+        if resolver_provider:
+            builder.resolver(resolver_provider.j_object)
+        return IcebergTableAdapter(self.j_object.loadTable(builder.build()))
 
     def create_table(self, table_identifier: str, table_definition: TableDefinitionLike) -> IcebergTableAdapter:
         """
