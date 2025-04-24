@@ -1881,7 +1881,7 @@ public abstract class SqliteCatalogBase {
         final Table part2 = TableTools.emptyTable(5)
                 .update("intCol = (int) 3 * i + 20",
                         "doubleCol = (double) 3.5 * i + 20");
-        final List<String> partitionPaths = List.of("PC=cat", "PC=apple");
+        final List<String> partitionPaths = List.of("partitioningCol=cat", "partitioningCol=apple");
         final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
 
         final TableDefinition partitioningTableDef = TableDefinition.of(
