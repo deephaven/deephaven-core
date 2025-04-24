@@ -41,6 +41,13 @@ public interface SchemaProvider {
     }
 
     /**
+     * Use the schema from the snapshot with the given ID.
+     */
+    static SchemaProvider fromSnapshotId(final long snapshotId) {
+        return new SchemaProviderInternal.SnapshotIdSchemaProvider(snapshotId);
+    }
+
+    /**
      * Use the schema from the current snapshot of the table.
      */
     static SchemaProvider fromCurrentSnapshot() {

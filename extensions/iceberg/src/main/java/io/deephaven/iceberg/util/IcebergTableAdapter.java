@@ -47,6 +47,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
@@ -84,7 +85,7 @@ public final class IcebergTableAdapter {
         this.tableIdentifier = tableIdentifier;
         this.dataInstructionsProviderLoader = dataInstructionsProviderLoader;
         this.locationUri = IcebergUtils.locationUri(table);
-        this.resolver = resolver; // todo: allow null?
+        this.resolver = Objects.requireNonNull(resolver);
         this.nameMapping = nameMapping; // todo: allow null?
     }
 
@@ -300,21 +301,16 @@ public final class IcebergTableAdapter {
     }
 
     /**
-     * The {@link TableDefinition Table definition} for this Iceberg table when using
-     * {@link IcebergReadInstructions#DEFAULT default read instructions}.
-     *
-     * <p>
-     * Equivalent to {@code definition(IcebergReadInstructions.DEFAULT)}.
+     * The {@link TableDefinition Table definition} for this Iceberg table.
      *
      * @return The table definition
-     * @see #definition(IcebergReadInstructions)
      */
     public TableDefinition definition() {
-        return definition(IcebergReadInstructions.DEFAULT);
+        return resolver.definition();
     }
 
     /**
-     * The {@link TableDefinition Table definition} for this this Iceberg table when using {@code readInstructions}.
+     * The {@link TableDefinition Table definition} for this Iceberg table when using {@code readInstructions}.
      *
      * <p>
      * Equivalent to {@code resolver(readInstructions).definition()}.
@@ -323,6 +319,7 @@ public final class IcebergTableAdapter {
      * @return The table definition
      * @see #resolver(IcebergReadInstructions)
      */
+    @Deprecated
     public TableDefinition definition(@NotNull final IcebergReadInstructions readInstructions) {
         return resolver(readInstructions).definition();
     }
@@ -351,6 +348,7 @@ public final class IcebergTableAdapter {
      * @param readInstructions The instructions for customizations while reading the table.
      * @return The table definition as a Deephaven table
      */
+    @Deprecated
     public Table definitionTable(final IcebergReadInstructions readInstructions) {
         return TableTools.metaTable(definition(readInstructions));
     }

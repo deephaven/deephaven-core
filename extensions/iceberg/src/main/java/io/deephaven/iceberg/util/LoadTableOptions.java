@@ -5,6 +5,7 @@ package io.deephaven.iceberg.util;
 
 import io.deephaven.annotations.BuildableStyle;
 import org.apache.iceberg.catalog.TableIdentifier;
+import org.apache.iceberg.mapping.NameMapping;
 import org.immutables.value.Value;
 
 /**
@@ -39,10 +40,24 @@ public abstract class LoadTableOptions {
         return NameMappingProvider.fromTable();
     }
 
+    // public abstract Optional<TableKey> tableKey();
+
     public interface Builder {
+        default Builder id(String id) {
+            return id(TableIdentifier.parse(id));
+        }
+
         Builder id(TableIdentifier id);
 
+        default Builder resolver(Resolver resolver) {
+            return resolver(ResolverProvider.of(resolver));
+        }
+
         Builder resolver(ResolverProvider resolver);
+
+        default Builder nameMapping(NameMapping nameMapping) {
+            return nameMapping(NameMappingProvider.of(nameMapping));
+        }
 
         Builder nameMapping(NameMappingProvider nameMapping);
 

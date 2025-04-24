@@ -27,6 +27,8 @@ import io.deephaven.iceberg.util.IcebergTableWriter;
 import io.deephaven.iceberg.util.IcebergUpdateMode;
 import io.deephaven.iceberg.util.IcebergWriteInstructions;
 import io.deephaven.iceberg.util.InferenceInstructions;
+import io.deephaven.iceberg.util.LoadTableOptions;
+import io.deephaven.iceberg.util.NameMappingProvider;
 import io.deephaven.iceberg.util.Resolver;
 import io.deephaven.iceberg.util.SortOrderProvider;
 import io.deephaven.iceberg.util.TableParquetWriterOptions;
@@ -1674,8 +1676,9 @@ public abstract class SqliteCatalogBase {
                 doubleCol(BAR, NULL_DOUBLE, NULL_DOUBLE, NULL_DOUBLE, NULL_DOUBLE, NULL_DOUBLE),
                 longCol(BAZ, NULL_LONG, NULL_LONG, NULL_LONG, NULL_LONG, NULL_LONG));
         final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.NameMappingTest");
-        final Resolver resolver = catalogAdapter.createTable2(tableIdentifier, definition);
-        final IcebergTableAdapter tableAdapter = catalogAdapter.loadTable(tableIdentifier);
+
+        final IcebergTableAdapter tableAdapter = catalogAdapter.createTable(tableIdentifier, definition);
+        final Resolver resolver = tableAdapter.resolver().orElseThrow();
 
         // This is emulating a write outside of DH where the field ids are _not_ written
         {
@@ -1705,38 +1708,40 @@ public abstract class SqliteCatalogBase {
         }
 
         // If there is no name mapping (and there are no field ids in the data file), the columns will all be null
-        {
-            assertTableEquals(empty, tableAdapter.table(IcebergReadInstructions.builder()
-                    .resolver(resolver)
-                    .build()));
-        }
+        assertTableEquals(empty, tableAdapter.table());
 
-        // We can provide an explicit name mapping to resolve in this case
-        final NameMapping nameMapping = MappingUtil.create(resolver.schema());
+        // We can be explicit and provide one during loadTable, the columns will be present
+        final NameMapping nameMapping = MappingUtil.create(tableAdapter.currentSchema());
         {
-            assertTableEquals(source, tableAdapter.table(IcebergReadInstructions.builder()
+            final IcebergTableAdapter ta = catalogAdapter.loadTable(LoadTableOptions.builder()
+                    .id(tableIdentifier)
                     .resolver(resolver)
                     .nameMapping(nameMapping)
-                    .build()));
+                    .build());
+            assertTableEquals(source, ta.table());
         }
 
-        // Or, if the iceberg table has a name mapping, we will use that
+        // Or, if the iceberg table has a name mapping, we will use that on the next loadTable
         tableAdapter.icebergTable()
                 .updateProperties()
                 .set(TableProperties.DEFAULT_NAME_MAPPING, NameMappingParser.toJson(nameMapping))
                 .commit();
         {
-            assertTableEquals(source, tableAdapter.table(IcebergReadInstructions.builder()
+            final IcebergTableAdapter ta = catalogAdapter.loadTable(LoadTableOptions.builder()
+                    .id(tableIdentifier)
                     .resolver(resolver)
-                    .build()));
+                    .build());
+            assertTableEquals(source, ta.table());
         }
 
         // And even if the table does have a name mapping, we can explicitly disable it
         {
-            assertTableEquals(empty, tableAdapter.table(IcebergReadInstructions.builder()
+            final IcebergTableAdapter ta = catalogAdapter.loadTable(LoadTableOptions.builder()
+                    .id(tableIdentifier)
                     .resolver(resolver)
-                    .nameMapping(NameMapping.empty())
-                    .build()));
+                    .nameMapping(NameMappingProvider.empty())
+                    .build());
+            assertTableEquals(empty, ta.table());
         }
     }
 }

@@ -85,6 +85,10 @@ public abstract class IcebergToolsTest {
     private static final ColumnInstructions YEAR = schemaField(6);
     private static final ColumnInstructions MONTH = schemaField(7);
 
+    private static final ResolverProviderInference RESOLVE_WITH_PARTITIONING = ResolverProviderInference.builder()
+            .usePartitioningColumns(true)
+            .build();
+
     private static Resolver resolver(TableDefinition definition, Schema schema) {
         return resolver(definition, schema, REGION, ITEM_TYPE, UNITS_SOLD, UNIT_PRICE, ORDER_DATE);
     }
@@ -184,7 +188,6 @@ public abstract class IcebergToolsTest {
 
         instructions = IcebergReadInstructions.builder()
                 .dataInstructions(s3Instructions)
-                .usePartitionInference(true)
                 .build();
     }
 
@@ -338,7 +341,10 @@ public abstract class IcebergToolsTest {
         uploadSalesPartitioned();
 
         final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog);
-        final IcebergTableAdapter tableAdapter = adapter.loadTable("sales.sales_partitioned");
+        final IcebergTableAdapter tableAdapter = adapter.loadTable(LoadTableOptions.builder()
+                .id("sales.sales_partitioned")
+                .resolver(RESOLVE_WITH_PARTITIONING)
+                .build());
         final io.deephaven.engine.table.Table table = tableAdapter.table(instructions);
 
         // Verify we retrieved all the rows.
@@ -378,7 +384,10 @@ public abstract class IcebergToolsTest {
         uploadSalesPartitioned();
 
         final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog);
-        final IcebergTableAdapter tableAdapter = adapter.loadTable("sales.sales_partitioned");
+        final IcebergTableAdapter tableAdapter = adapter.loadTable(LoadTableOptions.builder()
+                .id("sales.sales_partitioned")
+                .resolver(RESOLVE_WITH_PARTITIONING)
+                .build());
         final io.deephaven.engine.table.Table table = tableAdapter.table(instructions);
 
         // Verify we retrieved all the rows.
@@ -391,7 +400,10 @@ public abstract class IcebergToolsTest {
         uploadSalesPartitioned();
 
         final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog);
-        final IcebergTableAdapter tableAdapter = adapter.loadTable("sales.sales_partitioned");
+        final IcebergTableAdapter tableAdapter = adapter.loadTable(LoadTableOptions.builder()
+                .id("sales.sales_partitioned")
+                .resolver(RESOLVE_WITH_PARTITIONING)
+                .build());
         final io.deephaven.engine.table.Table table = tableAdapter.table(instructions);
 
         // Verify we retrieved all the rows.

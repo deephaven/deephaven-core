@@ -61,9 +61,9 @@ class SchemaProviderInternal {
     }
 
     static class SnapshotIdSchemaProvider implements SchemaProviderImpl {
-        private final int snapshotId;
+        private final long snapshotId;
 
-        SnapshotIdSchemaProvider(final int snapshotId) {
+        SnapshotIdSchemaProvider(final long snapshotId) {
             this.snapshotId = snapshotId;
         }
 
@@ -97,7 +97,7 @@ class SchemaProviderInternal {
         return schema;
     }
 
-    private static Schema getSchemaForSnapshotId(final Table table, final int snapshotId) {
+    private static Schema getSchemaForSnapshotId(final Table table, final long snapshotId) {
         final Snapshot snapshot = table.snapshot(snapshotId);
         if (snapshot == null) {
             throw new IllegalArgumentException("Snapshot with ID " + snapshotId + " not found for table " +

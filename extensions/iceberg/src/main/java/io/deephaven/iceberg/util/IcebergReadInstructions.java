@@ -134,6 +134,7 @@ public abstract class IcebergReadInstructions {
      * snapshots.
      */
     @Value.Default
+    @Deprecated
     public boolean usePartitionInference() {
         return false;
     }
@@ -148,11 +149,13 @@ public abstract class IcebergReadInstructions {
      * @see MappingUtil
      * @see <a href="https://iceberg.apache.org/spec/#column-projection">schema.name-mapping.default</a>
      */
+    @Deprecated
     public abstract Optional<NameMapping> nameMapping();
 
     /**
      * The table key.
      */
+    @Deprecated
     public abstract Optional<TableKey> tableKey();
 
     public interface Builder {
@@ -178,10 +181,13 @@ public abstract class IcebergReadInstructions {
 
         Builder snapshot(Snapshot snapshot);
 
+        @Deprecated
         Builder usePartitionInference(boolean usePartitionInference);
 
+        @Deprecated
         Builder nameMapping(NameMapping nameMapping);
 
+        @Deprecated
         Builder tableKey(TableKey tableKey);
 
         IcebergReadInstructions build();
