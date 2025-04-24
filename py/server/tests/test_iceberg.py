@@ -183,3 +183,16 @@ class IcebergTestCase(BaseTestCase):
         with self.subTest("schema_provider"):
             iceberg.ResolverProviderInference(schema_provider=iceberg.SchemaProvider.from_current())
             iceberg.ResolverProviderInference(schema_provider=iceberg.SchemaProvider.from_schema_id(42))
+
+    def test_unbound_resolver(self):
+        iceberg.UnboundResolver(table_definition={
+            "x": dtypes.int32,
+            "y": dtypes.double,
+            "z": dtypes.double,
+        })
+        iceberg.UnboundResolver(table_definition=[
+             col_def("Partition", dtypes.int32, column_type=ColumnType.PARTITIONING),
+             col_def("x", dtypes.int32),
+             col_def("y", dtypes.double),
+             col_def("z", dtypes.double),
+        ])

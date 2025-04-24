@@ -3,7 +3,7 @@
 #
 """ This module adds Iceberg table support into Deephaven. """
 from __future__ import annotations
-from typing import Optional, Dict, Union, Sequence
+from typing import Optional, Dict, Union, Sequence, Mapping
 
 import jpy
 from warnings import warn
@@ -29,6 +29,8 @@ _JIcebergTools = jpy.get_type("io.deephaven.iceberg.util.IcebergTools")
 _JLoadTableOptions = jpy.get_type("io.deephaven.iceberg.util.LoadTableOptions")
 _JResolverProvider = jpy.get_type("io.deephaven.iceberg.util.ResolverProvider")
 _JResolverProviderInference = jpy.get_type("io.deephaven.iceberg.util.ResolverProviderInference")
+_JUnboundResolver = jpy.get_type("io.deephaven.iceberg.util.UnboundResolver")
+_JColumnInstructions = jpy.get_type("io.deephaven.iceberg.util.ColumnInstructions")
 
 # IcebergToolsS3 is an optional library
 try:
@@ -369,6 +371,34 @@ class ResolverProviderInference(JObjectWrapper):
         builder = _JResolverProviderInference.builder()
         builder.inferPartitioningColumns(infer_partitioning_columns)
         builder.failOnUnsupportedTypes(fail_on_unsupported_types)
+        if schema_provider:
+            builder.schema(schema_provider.j_object)
+        self._j_object = builder.build()
+
+    @property
+    def j_object(self) -> jpy.JType:
+        return self._j_object
+
+
+class UnboundResolver(JObjectWrapper):
+
+    j_object_type = _JUnboundResolver
+
+    def __init__(self,
+                 table_definition: TableDefinitionLike,
+                 column_instructions: Optional[Mapping[str, Union[int, str]]] = None,
+                 schema_provider: Optional[SchemaProvider] = None):
+        builder = _JUnboundResolver.builder()
+        builder.tableDefinition(TableDefinition(table_definition).j_table_definition)
+        if column_instructions:
+            for column_name, value in column_instructions.items():
+                if isinstance(value, int):
+                    ci = _JColumnInstructions.schemaField(value)
+                elif isinstance(value, str):
+                    ci = _JColumnInstructions.schemaFieldName(value)
+                else:
+                    raise DHError(message="Unexpected value in Mapping")
+                builder.putColumnInstructionsMap(column_name, ci)
         if schema_provider:
             builder.schema(schema_provider.j_object)
         self._j_object = builder.build()
