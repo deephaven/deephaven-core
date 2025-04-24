@@ -1102,7 +1102,6 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
      * @param sort
      * @return {@link Sort} array
      */
-    @SuppressWarnings("unusable-by-js")
     public JsArray<Sort> applySort(Sort[] sort) {
         for (int i = 0; i < sort.length; i++) {
             if (sort[i].getDirection().equalsIgnoreCase("reverse")) {
@@ -1124,7 +1123,6 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
      * @param filter
      * @return {@link FilterCondition} array
      */
-    @SuppressWarnings("unusable-by-js")
     public JsArray<FilterCondition> applyFilter(FilterCondition[] filter) {
         nextFilters = Arrays.asList(filter);
 
@@ -1141,7 +1139,6 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
      * @return {@link CustomColumn} array
      */
     @JsMethod
-    @SuppressWarnings("unusable-by-js")
     public JsArray<CustomColumn> applyCustomColumns(JsArray<JsTable.CustomColumnArgUnionType> customColumns) {
         // Use groupedColumns to determine if this is a rollup or tree table.
         if (groupedColumns.length == 0) {
