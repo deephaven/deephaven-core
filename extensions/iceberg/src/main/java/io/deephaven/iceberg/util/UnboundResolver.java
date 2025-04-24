@@ -8,13 +8,15 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
 import org.apache.iceberg.Schema;
 import org.apache.iceberg.Table;
+import org.apache.iceberg.transforms.Transform;
 import org.immutables.value.Value;
 
 import java.util.Map;
 
 /**
  * This is a resolver provider that will build a {@link Resolver} without needing to refer to an explicit Iceberg
- * {@link Schema} (as you need to do when building a {@link Resolver}). This is provided as a convenience for cases
+ * {@link Schema}. This is useful when the caller knows the definition of the table they want to load, and can provide
+ * an explicit mapping between the Deephaven columns and Iceberg fields. This is provided as a convenience for cases
  * where explicitly building a {@link Resolver} would be more tedious.
  */
 @Value.Immutable
@@ -26,8 +28,13 @@ public abstract class UnboundResolver extends ResolverProviderImpl implements Re
     }
 
     /**
-     * The table definition to use for to build the {@link Resolver}. Any partitioning columns in the table definition
-     * will be internally mapped to partition fields from the latest spec of the Iceberg table.
+     * The table definition.
+     *
+     * <p>
+     * Callers should take care and only use {@link ColumnDefinition.ColumnType#Partitioning Partitioning} columns when
+     * they know the Iceberg table will always have {@link Transform#isIdentity() identity} partitions for said columns.
+     * In the general case, Iceberg partitions may evolve over time, which can break the assumptions Deephaven makes
+     * about partitioning columns.
      *
      * @see Resolver#definition()
      */

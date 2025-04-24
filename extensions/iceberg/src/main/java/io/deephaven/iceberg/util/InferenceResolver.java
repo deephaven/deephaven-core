@@ -15,10 +15,10 @@ import java.util.Set;
 
 
 /**
- * This provides a consolidated set of inference options for use in {@link LoadTableOptions}. A {@link Resolver} will be
- * inferred based on the {@link Table#schema() latest schema} (and {@link Table#spec() latest spec} if
- * {@link #inferPartitioningColumns()}). This is a counterpart to the more advanced {@link InferenceInstructions}, which
- * requires the callers to provide a specific {@link Schema}.
+ * This provides a consolidated set of inference options for use in {@link LoadTableOptions}. This is useful when the
+ * caller does not know the structure of the table to be loaded, and wants the resulting Deephaven definition (and
+ * mapping to the Iceberg fields) to be inferred. This is a counterpart to the more advanced
+ * {@link InferenceInstructions}, which requires the callers to be more explicit about the {@link Schema}.
  */
 @Value.Immutable
 @BuildableStyle
@@ -30,7 +30,7 @@ public abstract class InferenceResolver extends ResolverProviderImpl implements 
 
     /**
      * If {@link ColumnDefinition.ColumnType#Partitioning Partitioning} columns should be inferred based on the
-     * {@link Table#spec() latest spec}.
+     * {@link Table#spec() latest spec}. By default, is {@code false}.
      *
      * <p>
      * <b>Warning</b>: inferring partition columns for general-purpose use is dangerous. This is only meant to be

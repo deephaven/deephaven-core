@@ -362,6 +362,11 @@ class SortOrderProvider(JObjectWrapper):
 
 
 class InferenceResolver(JObjectWrapper):
+    """
+    This provides a set of inference options for use in :meth:`~IcebergTableAdapter.load_table`. This is useful when the
+    caller does not know the structure of the table to be loaded, and wants the resulting Deephaven Table definition
+    (and mapping to the Iceberg fields) to be inferred.
+    """
 
     j_object_type = _JInferenceResolver
 
@@ -369,6 +374,19 @@ class InferenceResolver(JObjectWrapper):
                  infer_partitioning_columns: bool = False,
                  fail_on_unsupported_types: bool = False,
                  schema_provider: Optional[SchemaProvider] = None):
+        """
+        Initializes the `InferenceResolver` object.
+
+        Args:
+            infer_partitioning_columns (bool): if Partitioning column should be inferred based on the latest Iceberg
+                PartitionSpec. By default, is `False`. Warning: inferring partition columns for general-purpose use is
+                dangerous. This is only meant to be applied in situations where caller knows that the latest Iceberg
+                PartitionSpec contains identity transforms that are not expected to ever change.
+            fail_on_unsupported_types (bool): If inference should fail if any of the Iceberg fields fail to map to
+                Deephaven columns. By default, is `False`.
+            schema_provider (Optional[SchemaProvider]): The Iceberg Schema to be used for inference. Defaults to
+                `None`, which means use the current schema from the Iceberg Table.
+        """
         builder = _JInferenceResolver.builder()
         builder.inferPartitioningColumns(infer_partitioning_columns)
         builder.failOnUnsupportedTypes(fail_on_unsupported_types)
@@ -382,6 +400,11 @@ class InferenceResolver(JObjectWrapper):
 
 
 class UnboundResolver(JObjectWrapper):
+    """
+    This provides a set of resolver options for use in :meth:`~IcebergTableAdapter.load_table`. This is useful when the
+    caller knows the definition of the table they want to load, and can provide an explicit mapping between the
+    Deephaven columns and Iceberg fields.
+    """
 
     j_object_type = _JUnboundResolver
 
@@ -389,6 +412,19 @@ class UnboundResolver(JObjectWrapper):
                  table_definition: TableDefinitionLike,
                  column_instructions: Optional[Mapping[str, Union[int, str]]] = None,
                  schema_provider: Optional[SchemaProvider] = None):
+        """
+        Initializes the `UnboundResolver` object.
+
+        Args:
+            table_definition (TableDefinitionLike): the table definition
+            column_instructions (Optional[Mapping[str, Union[int, str]]]): The map from Deephaven column names to
+                instructions for mapping to Iceberg columns. An int value will be treated as a schema field id, and a
+                str value will be treated as a schema field name. Any columns from table_definition not in this map will be
+                assumed to be exact name matches for the fields in the Schema. Callers are encouraged to use schema
+                field ids as they will remain valid across Iceberg Schema evolution.
+            schema_provider (Optional[SchemaProvider]): The Iceberg Schema to be used for inference. Defaults to
+                `None`, which means use the current schema from the Iceberg Table.
+        """
         builder = _JUnboundResolver.builder()
         builder.definition(TableDefinition(table_definition).j_table_definition)
         if column_instructions:
@@ -694,21 +730,20 @@ class IcebergCatalogAdapter(JObjectWrapper):
 
         return Table(self.j_object.tables(namespace))
 
-    def load_table(self, table_identifier: str, resolver_provider: InferenceResolver = None) -> IcebergTableAdapter:
+    def load_table(self, table_identifier: str, resolver: Union[InferenceResolver, UnboundResolver] = None) -> IcebergTableAdapter:
         """
         Load the table from the catalog.
 
         Args:
             table_identifier (str): the table to read.
-            resolver_provider (InferenceResolver): the resolver provider.
+            resolver (Union[InferenceResolver, UnboundResolver]): the resolver
 
         Returns:
             Table: the table read from the catalog.
         """
         builder = _JLoadTableOptions.builder()
         builder.id(table_identifier)
-        if resolver_provider:
-            builder.resolver(resolver_provider.j_object)
+        builder.resolver(resolver.j_object if resolver else InferenceResolver())
         return IcebergTableAdapter(self.j_object.loadTable(builder.build()))
 
     def create_table(self, table_identifier: str, table_definition: TableDefinitionLike) -> IcebergTableAdapter:
