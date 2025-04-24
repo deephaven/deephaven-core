@@ -736,7 +736,8 @@ class IcebergCatalogAdapter(JObjectWrapper):
 
         Args:
             table_identifier (str): the table to read.
-            resolver (Union[InferenceResolver, UnboundResolver]): the resolver
+            resolver (Union[InferenceResolver, UnboundResolver]): the resolver, defaults to None, meaning to use a
+                InferenceResolver with all the default options.
 
         Returns:
             Table: the table read from the catalog.
