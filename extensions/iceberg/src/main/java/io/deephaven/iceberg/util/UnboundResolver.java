@@ -15,7 +15,7 @@ import java.util.Map;
 
 /**
  * Used to build a simple resolver using a {@link Schema} and {@link TableDefinition} names. Useful when implementing
- * simple column renames when mapping iceberg columns to Deephaven columns.
+ * simple column renames when mapping Iceberg fields to Deephaven columns.
  */
 @Value.Immutable
 @BuildableStyle
@@ -26,6 +26,19 @@ public abstract class UnboundResolver extends ResolverProviderImpl implements Re
     }
 
     /**
+     * The table definition to use for to build the {@link Resolver}. The provided definition must not have any
+     * partitioning columns. In that case, this method will throw an {@link IllegalArgumentException}. For that case,
+     * you should use the {@link Resolver#builder()} with appropriate {@link Resolver#spec()} to build a resolver.
+     */
+    public abstract TableDefinition definition();
+
+    /**
+     * The map from Deephaven column names to instructions for mapping to Iceberg columns. Users can use this to provide
+     * the schema field ID to map corresponding Iceberg column to the Deephaven column.
+     */
+    public abstract Map<String, ColumnInstructions> columnInstructions();
+
+    /**
      * The schema to use for inference. By default, is {@link SchemaProvider#fromCurrent()}.
      */
     @Value.Default
@@ -33,27 +46,14 @@ public abstract class UnboundResolver extends ResolverProviderImpl implements Re
         return SchemaProvider.fromCurrent();
     }
 
-    /**
-     * The table definition to use for to build the {@link Resolver}. The provided definition must not have any
-     * partitioning columns. In that case, this method will throw an {@link IllegalArgumentException}. For that case,
-     * you should use the {@link Resolver#builder()} with appropriate {@link Resolver#spec()} to build a resolver.
-     */
-    abstract TableDefinition tableDefinition();
-
-    /**
-     * The map from Deephaven column names to instructions for mapping to Iceberg columns. Users can use this to provide
-     * the schema field ID to map corresponding Iceberg column to the Deephaven column.
-     */
-    abstract Map<String, ColumnInstructions> columnInstructionsMap();
-
-    public Resolver resolver(Table table) {
+    @Override
+    final Resolver resolver(Table table) {
         final Schema schema = ((SchemaProviderInternal.SchemaProviderImpl) schema()).getSchema(table);
-        final TableDefinition tableDefinition = tableDefinition();
-        final Map<String, ColumnInstructions> columnInstructionsMap = columnInstructionsMap();
+        final Map<String, ColumnInstructions> columnInstructionsMap = columnInstructions();
         final Resolver.Builder builder = Resolver.builder()
                 .schema(schema)
-                .definition(tableDefinition);
-        for (final ColumnDefinition<?> columnDefinition : tableDefinition.getColumns()) {
+                .definition(definition());
+        for (final ColumnDefinition<?> columnDefinition : definition().getColumns()) {
             final String dhColumnName = columnDefinition.getName();
             ColumnInstructions instructions = columnInstructionsMap.get(dhColumnName);
             if (instructions == null) {
@@ -80,18 +80,18 @@ public abstract class UnboundResolver extends ResolverProviderImpl implements Re
     public interface Builder {
         Builder schema(SchemaProvider schema);
 
-        Builder tableDefinition(TableDefinition tableDefinition);
+        Builder definition(TableDefinition definition);
 
-        Builder putColumnInstructionsMap(String key, ColumnInstructions value);
+        Builder putColumnInstructions(String key, ColumnInstructions value);
 
-        Builder putAllColumnInstructionsMap(Map<String, ? extends ColumnInstructions> entries);
+        Builder putAllColumnInstructions(Map<String, ? extends ColumnInstructions> entries);
 
         UnboundResolver build();
     }
 
     @Value.Check
     final void checkNoPartitioningColumn() {
-        for (final ColumnDefinition<?> columnDefinition : tableDefinition().getColumns()) {
+        for (final ColumnDefinition<?> columnDefinition : definition().getColumns()) {
             if (columnDefinition.isPartitioning()) {
                 throw new IllegalArgumentException(
                         String.format("Column `%s` is a partitioning column, use the builder with appropriate" +
@@ -102,10 +102,10 @@ public abstract class UnboundResolver extends ResolverProviderImpl implements Re
 
     @Value.Check
     final void verifySchemaIdPresentInMapping() {
-        if (columnInstructionsMap().isEmpty()) {
+        if (columnInstructions().isEmpty()) {
             return;
         }
-        for (final Map.Entry<String, ColumnInstructions> entry : columnInstructionsMap().entrySet()) {
+        for (final Map.Entry<String, ColumnInstructions> entry : columnInstructions().entrySet()) {
             final String columnNameFromMap = entry.getKey();
             final ColumnInstructions instructions = entry.getValue();
             if (instructions.schemaFieldId().isEmpty()) {

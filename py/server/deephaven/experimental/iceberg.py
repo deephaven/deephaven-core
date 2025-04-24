@@ -398,7 +398,7 @@ class UnboundResolver(JObjectWrapper):
                     ci = _JColumnInstructions.schemaFieldName(value)
                 else:
                     raise DHError(message="Unexpected value in Mapping")
-                builder.putColumnInstructionsMap(column_name, ci)
+                builder.putColumnInstructions(column_name, ci)
         if schema_provider:
             builder.schema(schema_provider.j_object)
         self._j_object = builder.build()

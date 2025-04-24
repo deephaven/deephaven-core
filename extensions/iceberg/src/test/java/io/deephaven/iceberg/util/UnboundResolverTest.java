@@ -39,7 +39,7 @@ class UnboundResolverTest {
         final TableDefinition td = simpleDefinition(Type.intType());
         final Resolver actual = UnboundResolver.builder()
                 .schema(SchemaProvider.fromSchema(schema))
-                .tableDefinition(td)
+                .definition(td)
                 .build()
                 .resolver(null);
         final Resolver expected = Resolver.builder()
@@ -58,7 +58,7 @@ class UnboundResolverTest {
                 ColumnDefinition.ofInt("F1")); // Only map F1
         final Resolver actual = UnboundResolver.builder()
                 .schema(SchemaProvider.fromSchema(schema))
-                .tableDefinition(td)
+                .definition(td)
                 .build()
                 .resolver(null);
         final Resolver expected = Resolver.builder()
@@ -79,8 +79,8 @@ class UnboundResolverTest {
         final int f1FieldId = schema.findField("F1").fieldId(); // Map to S1
         final Resolver actual = UnboundResolver.builder()
                 .schema(SchemaProvider.fromSchema(schema))
-                .tableDefinition(td)
-                .putColumnInstructionsMap("S1", schemaField(f1FieldId))
+                .definition(td)
+                .putColumnInstructions("S1", schemaField(f1FieldId))
                 .build()
                 .resolver(null);
 
@@ -98,7 +98,7 @@ class UnboundResolverTest {
         final TableDefinition td = TableDefinition.of(
                 ColumnDefinition.ofInt("F1").withPartitioning()); // should not be allowed
         assertThatThrownBy(() -> UnboundResolver.builder()
-                .tableDefinition(td)
+                .definition(td)
                 .build())
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("partitioning column");
@@ -109,8 +109,8 @@ class UnboundResolverTest {
         TableDefinition td = TableDefinition.of(
                 ColumnDefinition.ofInt("F1"));
         assertThatThrownBy(() -> UnboundResolver.builder()
-                .tableDefinition(td)
-                .putColumnInstructionsMap("F1", partitionField(99)) // schemaFieldID missing in instruction
+                .definition(td)
+                .putColumnInstructions("F1", partitionField(99)) // schemaFieldID missing in instruction
                 .build())
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("does not have schema field id");
@@ -123,7 +123,7 @@ class UnboundResolverTest {
                 ColumnDefinition.ofInt("NotInSchema"));
         assertThatThrownBy(() -> UnboundResolver.builder()
                 .schema(SchemaProvider.fromSchema(schema))
-                .tableDefinition(td)
+                .definition(td)
                 .build()
                 .resolver(null))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -138,8 +138,8 @@ class UnboundResolverTest {
 
         assertThatThrownBy(() -> UnboundResolver.builder()
                 .schema(SchemaProvider.fromSchema(schema))
-                .tableDefinition(td)
-                .putColumnInstructionsMap("F1", schemaField(9999)) // schema field with ID=9999 not present
+                .definition(td)
+                .putColumnInstructions("F1", schemaField(9999)) // schema field with ID=9999 not present
                 .build()
                 .resolver(null))
                 .isInstanceOf(IllegalArgumentException.class)

@@ -20,7 +20,6 @@ import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.iceberg.sqlite.SqliteHelper;
 import io.deephaven.iceberg.util.IcebergCatalogAdapter;
 import io.deephaven.iceberg.util.IcebergReadInstructions;
-import io.deephaven.iceberg.util.IcebergTable;
 import io.deephaven.iceberg.util.IcebergTableAdapter;
 import io.deephaven.iceberg.util.IcebergTableImpl;
 import io.deephaven.iceberg.util.IcebergTableWriter;
@@ -31,7 +30,6 @@ import io.deephaven.iceberg.util.LoadTableOptions;
 import io.deephaven.iceberg.util.NameMappingProvider;
 import io.deephaven.iceberg.util.Resolver;
 import io.deephaven.iceberg.util.ResolverProviderInference;
-import io.deephaven.iceberg.util.SchemaProvider;
 import io.deephaven.iceberg.util.SortOrderProvider;
 import io.deephaven.iceberg.util.TableParquetWriterOptions;
 import io.deephaven.iceberg.util.TypeInference;
@@ -92,7 +90,6 @@ import static io.deephaven.engine.util.TableTools.intCol;
 import static io.deephaven.engine.util.TableTools.longCol;
 import static io.deephaven.engine.util.TableTools.stringCol;
 import static io.deephaven.iceberg.layout.IcebergBaseLayout.computeSortedColumns;
-import static io.deephaven.iceberg.util.ColumnInstructions.partitionField;
 import static io.deephaven.iceberg.util.ColumnInstructions.schemaField;
 import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 import static io.deephaven.util.QueryConstants.NULL_INT;
@@ -1822,7 +1819,7 @@ public abstract class SqliteCatalogBase {
         final IcebergTableAdapter tableAdapterWithUnboundResolver = catalogAdapter.loadTable(LoadTableOptions.builder()
                 .id(tableIdentifier)
                 .resolver(UnboundResolver.builder()
-                        .tableDefinition(source.getDefinition())
+                        .definition(source.getDefinition())
                         .build())
                 .build());
         final Table fromIceberg = tableAdapterWithUnboundResolver.table();
@@ -1843,7 +1840,7 @@ public abstract class SqliteCatalogBase {
         final IcebergTableAdapter tableAdapterWithUnboundResolver = catalogAdapter.loadTable(LoadTableOptions.builder()
                 .id(tableIdentifier)
                 .resolver(UnboundResolver.builder()
-                        .tableDefinition(updatedDefinition)
+                        .definition(updatedDefinition)
                         .build())
                 .build());
         final Table fromIceberg = tableAdapterWithUnboundResolver.table();
@@ -1866,9 +1863,9 @@ public abstract class SqliteCatalogBase {
         final IcebergTableAdapter tableAdapterWithUnboundResolver = catalogAdapter.loadTable(LoadTableOptions.builder()
                 .id(tableIdentifier)
                 .resolver(UnboundResolver.builder()
-                        .tableDefinition(updatedDefinition)
-                        .putColumnInstructionsMap("IC", schemaField(schema.findField("intCol").fieldId())) // Map to
-                                                                                                           // intCol
+                        .definition(updatedDefinition)
+                        .putColumnInstructions("IC", schemaField(schema.findField("intCol").fieldId())) // Map to
+                                                                                                        // intCol
                         .build())
                 .build());
         final Table fromIceberg = tableAdapterWithUnboundResolver.table();
