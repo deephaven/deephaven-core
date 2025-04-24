@@ -1227,9 +1227,9 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
     }
 
     /**
-     * The current filter configuration of this Tree Table.
+     * The current list of custom columns added to this Tree Table.
      *
-     * @return {@link FilterCondition} array
+     * @return {@link CustomColumn} array
      */
     @JsProperty
     public JsArray<CustomColumn> getUpdateColumns() {
