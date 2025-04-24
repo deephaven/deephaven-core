@@ -348,29 +348,6 @@ public class IcebergCatalogAdapter {
                 NameMapping.empty());
     }
 
-    /**
-     * Create a new Iceberg table in this catalog with the given {@code tableIdentifier} and {@code definition}. The
-     * resulting table's {@link Schema} will have {@link Types.NestedField fields} with the same name and order as
-     * {@code definition}. Their types will be inferred via {@link TypeInference#of(Type)}. The
-     * {@link ColumnDefinition.ColumnType#Partitioning partitioning columns} will be used as
-     * {@link Transforms#identity() identity transforms} for the {@link PartitionSpec}.
-     *
-     * @param tableIdentifier The identifier of the new table.
-     * @param definition The {@link TableDefinition} of the new table.
-     * @return the resolver
-     * @throws AlreadyExistsException if the table already exists
-     * @see Resolver#from(TableDefinition)
-     */
-    @Deprecated
-    public Resolver createTable2(
-            @NotNull final TableIdentifier tableIdentifier,
-            @NotNull final TableDefinition definition) {
-        final Resolver internalResolver = Resolver.from(definition);
-        final org.apache.iceberg.Table table =
-                createTable(tableIdentifier, internalResolver.schema(), internalResolver.specOrUnpartitioned());
-        return Resolver.refreshIds(internalResolver, table.schema(), table.spec());
-    }
-
     private org.apache.iceberg.Table createTable(
             @NotNull final TableIdentifier tableIdentifier,
             @NotNull final Schema schema,

@@ -168,6 +168,7 @@ public abstract class IcebergToolsTest {
             ColumnDefinition.fromGenericType("timeField", LocalTime.class),
             ColumnDefinition.fromGenericType("timestampField", LocalDateTime.class),
             ColumnDefinition.fromGenericType("decimalField", BigDecimal.class),
+            // TODO(DH-18253): Add support to write more types to iceberg tables
             // ColumnDefinition.fromGenericType("fixedField", byte[].class),
             // ColumnDefinition.fromGenericType("binaryField", byte[].class),
             ColumnDefinition.ofTime("instantField"));
