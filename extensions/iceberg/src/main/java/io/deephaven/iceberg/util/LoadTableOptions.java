@@ -49,21 +49,38 @@ public abstract class LoadTableOptions {
     }
 
     public interface Builder {
+        /**
+         * A helper to set the {@link #id() table identifier}. Equivalent to {@code id(TableIdentifier.parse(id))}.
+         *
+         * @see TableIdentifier#parse(String)
+         */
         default Builder id(String id) {
             return id(TableIdentifier.parse(id));
         }
 
-        Builder id(TableIdentifier id);
-
+        /**
+         * A helper to set an explicit {@link #resolver()}. Equivalent to
+         * {@code resolver(ResolverProvider.of(resolver))}.
+         *
+         * @see ResolverProvider#of(Resolver)
+         */
         default Builder resolver(Resolver resolver) {
             return resolver(ResolverProvider.of(resolver));
         }
 
-        Builder resolver(ResolverProvider resolver);
-
+        /**
+         * A helper to set an explicit {@link #nameMapping()}. Equivalent to
+         * {@code nameMapping(NameMappingProvider.of(nameMapping))}.
+         *
+         * @see NameMappingProvider#of(NameMapping)
+         */
         default Builder nameMapping(NameMapping nameMapping) {
             return nameMapping(NameMappingProvider.of(nameMapping));
         }
+
+        Builder id(TableIdentifier id);
+
+        Builder resolver(ResolverProvider resolver);
 
         Builder nameMapping(NameMappingProvider nameMapping);
 
