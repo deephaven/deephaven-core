@@ -83,8 +83,8 @@ import java.util.stream.Collectors;
  * It is suggested that the viewport be changed to the desired position (usually the first N rows) after any filter/sort
  * change is made. Likewise, {@link #getViewportData()} will always return the most recent data, and will not wait if a
  * new operation is pending.</li>
- * <li>Custom columns are not directly supported. If the TreeTable was created client-side, the original Table can have
- * custom columns applied, and the TreeTable can be recreated.</li>
+ * <li>Custom columns are supported on Rollup tables, but not on Tree tables. If the TreeTable was created client-side,
+ * the original Table can have custom columns applied, and the TreeTable can be recreated.</li>
  * <li>Whereas Table has a {@link JsTable#getTotalsTableConfig()} property, it is defined here as a method,
  * {@link #getTotalsTableConfig()}. This returns a promise so the config can be fetched asynchronously.</li>
  * <li>Totals Tables for trees vary in behavior between tree tables and roll-up tables. This behavior is based on the
@@ -1159,7 +1159,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
 
         replaceSubscription(RebuildStep.UPDATE_VIEW);
 
-        return getUpdateColumns();
+        return getCustomColumns();
     }
 
     @JsProperty
@@ -1229,7 +1229,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
      * @return {@link CustomColumn} array
      */
     @JsProperty
-    public JsArray<CustomColumn> getUpdateColumns() {
+    public JsArray<CustomColumn> getCustomColumns() {
         return JsItr.slice(updateColumns);
     }
 
