@@ -79,10 +79,10 @@ public final class IcebergTableAdapter {
             final DataInstructionsProviderLoader dataInstructionsProviderLoader,
             final Resolver resolver,
             final NameMapping nameMapping) {
-        this.catalog = catalog;
-        this.table = table;
-        this.tableIdentifier = tableIdentifier;
-        this.dataInstructionsProviderLoader = dataInstructionsProviderLoader;
+        this.catalog = Objects.requireNonNull(catalog);
+        this.table = Objects.requireNonNull(table);
+        this.tableIdentifier = Objects.requireNonNull(tableIdentifier);
+        this.dataInstructionsProviderLoader = Objects.requireNonNull(dataInstructionsProviderLoader);
         this.locationUri = IcebergUtils.locationUri(table);
         this.resolver = Objects.requireNonNull(resolver);
         this.nameMapping = Objects.requireNonNull(nameMapping);
@@ -301,13 +301,11 @@ public final class IcebergTableAdapter {
     }
 
     /**
-     * The {@link TableDefinition Table definition} for this Iceberg table when using {@code readInstructions}.
-     *
-     * <p>
-     * Equivalent to {@code resolver(readInstructions).definition()}.
+     * The {@link TableDefinition Table definition} for this Iceberg table.
      *
      * @param readInstructions The instructions for customizations while reading the table.
      * @return The table definition
+     * @deprecated use {@link #definition()}
      */
     @Deprecated
     public TableDefinition definition(@NotNull final IcebergReadInstructions readInstructions) {
@@ -315,32 +313,25 @@ public final class IcebergTableAdapter {
     }
 
     /**
-     * The {@link TableTools#metaTable(TableDefinition) metadata Table} for this Iceberg table when using
-     * {@link IcebergReadInstructions#DEFAULT default read instructions}.
-     *
-     * <p>
-     * Equivalent to {@code definitionTable(IcebergReadInstructions.DEFAULT)}.
+     * The {@link TableTools#metaTable(TableDefinition) metadata Table} for this Iceberg table.
      *
      * @return The table definition as a Deephaven table
      * @see #definitionTable(IcebergReadInstructions)
      */
     public Table definitionTable() {
-        return definitionTable(IcebergReadInstructions.DEFAULT);
+        return TableTools.metaTable(resolver.definition());
     }
 
     /**
-     * The {@link TableTools#metaTable(TableDefinition) metadata Table} for this Iceberg table when using
-     * {@code readInstructions}.
-     *
-     * <p>
-     * Equivalent to {@code TableTools.metaTable(definition(readInstructions))}.
+     * The {@link TableTools#metaTable(TableDefinition) metadata Table} for this Iceberg table.
      *
      * @param readInstructions The instructions for customizations while reading the table.
      * @return The table definition as a Deephaven table
+     * @deprecated use {@link #definitionTable()}
      */
     @Deprecated
     public Table definitionTable(final IcebergReadInstructions readInstructions) {
-        return TableTools.metaTable(resolver.definition());
+        return definitionTable();
     }
 
     /**

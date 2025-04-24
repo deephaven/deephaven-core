@@ -26,6 +26,7 @@ import org.apache.iceberg.mapping.NameMapping;
 import org.apache.iceberg.rest.RESTCatalog;
 import org.apache.iceberg.rest.ResourcePaths;
 import org.apache.iceberg.transforms.Transforms;
+import org.apache.iceberg.types.TypeUtil;
 import org.apache.iceberg.types.Types;
 import org.jetbrains.annotations.NotNull;
 
@@ -301,19 +302,17 @@ public class IcebergCatalogAdapter {
     /**
      * Create a new Iceberg table in this catalog with the given {@code tableIdentifier} and {@code definition}. The
      * resulting table's {@link Schema} will have {@link Types.NestedField fields} with the same name and order as
-     * {@code definition}. Their types will be inferred via {@link TypeInference#of(Type)}. The
+     * {@code definition}. Their types will be inferred via {@link TypeInference#of(Type, TypeUtil.NextID)} . The
      * {@link ColumnDefinition.ColumnType#Partitioning partitioning columns} will be used as
-     * {@link Transforms#identity() identity transforms} for the {@link PartitionSpec}.
-     * <p>
-     * Note, if callers plans to use this table for reading, it may be preferable to call
-     * {@link #createTable2(TableIdentifier, TableDefinition)}, which will return a {@link Resolver} which can be
-     * provided to {@link IcebergReadInstructions}.
+     * {@link Transforms#identity() identity transforms} for the {@link PartitionSpec}. Callers should take note of the
+     * documentation on {@link Resolver#definition()} when deciding to create an Iceberg Table with partitioning columns.
      *
      * @param tableIdentifier The identifier of the new table.
      * @param definition The {@link TableDefinition} of the new table.
      * @return the resolver
      * @throws AlreadyExistsException if the table already exists
      */
+    @SuppressWarnings("unused")
     public IcebergTableAdapter createTable(
             @NotNull final String tableIdentifier,
             @NotNull final TableDefinition definition) {
@@ -323,13 +322,10 @@ public class IcebergCatalogAdapter {
     /**
      * Create a new Iceberg table in this catalog with the given {@code tableIdentifier} and {@code definition}. The
      * resulting table's {@link Schema} will have {@link Types.NestedField fields} with the same name and order as
-     * {@code definition}. Their types will be inferred via {@link TypeInference#of(Type)}. The
+     * {@code definition}. Their types will be inferred via {@link TypeInference#of(Type, TypeUtil.NextID)} . The
      * {@link ColumnDefinition.ColumnType#Partitioning partitioning columns} will be used as
-     * {@link Transforms#identity() identity transforms} for the {@link PartitionSpec}.
-     * <p>
-     * Note, if callers plans to use this table for reading, it may be preferable to call
-     * {@link #createTable2(TableIdentifier, TableDefinition)}, which will return a {@link Resolver} which can be
-     * provided to {@link IcebergReadInstructions}.
+     * {@link Transforms#identity() identity transforms} for the {@link PartitionSpec}. Callers should take note of the
+     * documentation on {@link Resolver#definition()} when deciding to create an Iceberg Table with partitioning columns.
      *
      * @param tableIdentifier The identifier of the new table.
      * @param definition The {@link TableDefinition} of the new table.
@@ -343,9 +339,7 @@ public class IcebergCatalogAdapter {
         final org.apache.iceberg.Table table =
                 createTable(tableIdentifier, internalResolver.schema(), internalResolver.specOrUnpartitioned());
         final Resolver resolver = Resolver.refreshIds(internalResolver, table.schema(), table.spec());
-        // we aren't ever creating name mappings during create atm.
-        return new IcebergTableAdapter(catalog, tableIdentifier, table, dataInstructionsProvider, resolver,
-                NameMapping.empty());
+        return new IcebergTableAdapter(catalog, tableIdentifier, table, dataInstructionsProvider, resolver, NameMapping.empty());
     }
 
     private org.apache.iceberg.Table createTable(
