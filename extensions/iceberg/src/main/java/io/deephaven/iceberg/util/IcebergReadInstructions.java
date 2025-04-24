@@ -4,13 +4,10 @@
 package io.deephaven.iceberg.util;
 
 import io.deephaven.annotations.CopyableStyle;
-import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.locations.TableKey;
-import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.Schema;
 import org.apache.iceberg.Snapshot;
-import org.apache.iceberg.transforms.Transforms;
 import org.immutables.value.Value;
 import org.immutables.value.Value.Immutable;
 
@@ -105,37 +102,6 @@ public abstract class IcebergReadInstructions {
     public abstract IcebergReadInstructions withSnapshot(Snapshot value);
 
     /**
-     * If Deephaven {@link ColumnDefinition.ColumnType#Partitioning Partitioning} columns should be inferred based on
-     * the common {@link Transforms#identity() identity} transforms across all the {@link PartitionSpec partition specs}
-     * reachable from the {@link Snapshot} at the time of implicit {@link Resolver} construction (
-     * {@link IcebergTableAdapter#table(IcebergReadInstructions) table},
-     * {@link IcebergTableAdapter#definition(IcebergReadInstructions) definition}, or
-     * {@link IcebergTableAdapter#resolver(IcebergReadInstructions) resolver}). This inference is done on a
-     * "best-effort" basis, and should not be relied on for anything other than exploratory purposes. Callers that need
-     * more concrete inference with respect to partitioning columns can perform their own
-     * {@link Resolver#infer(InferenceInstructions) inference} with an explicit {@link InferenceInstructions#spec()
-     * partition spec}.
-     *
-     * <p>
-     * This setting is only relevant when {@link #resolver()} is not set. As such, it is an error to set this to
-     * {@code true} when a {@link #resolver} is set.
-     *
-     * <p>
-     * By default, is {@code false}.
-     *
-     * <p>
-     * While callers can explicitly set this to {@code true}, it is not generally safe to do so. It is safe to set this
-     * to {@code true} when {@link #updateMode()} is {@link IcebergUpdateMode#staticMode() static}, but the resulting
-     * {@link IcebergTableAdapter#resolver(IcebergReadInstructions) resolver} may not be generalizable to other
-     * snapshots.
-     */
-    @Value.Default
-    @Deprecated
-    public boolean usePartitionInference() {
-        return false;
-    }
-
-    /**
      * The table key.
      */
     @Deprecated
@@ -164,9 +130,6 @@ public abstract class IcebergReadInstructions {
         Builder snapshotId(long snapshotId);
 
         Builder snapshot(Snapshot snapshot);
-
-        @Deprecated
-        Builder usePartitionInference(boolean usePartitionInference);
 
         @Deprecated
         Builder tableKey(TableKey tableKey);

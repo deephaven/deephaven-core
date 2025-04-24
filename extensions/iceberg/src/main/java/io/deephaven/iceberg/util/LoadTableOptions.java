@@ -42,8 +42,6 @@ public abstract class LoadTableOptions {
         return NameMappingProvider.fromTable();
     }
 
-    // public abstract Optional<TableKey> tableKey();
-
     public interface Builder {
         default Builder id(String id) {
             return id(TableIdentifier.parse(id));
