@@ -14,8 +14,9 @@ import org.immutables.value.Value;
 import java.util.Map;
 
 /**
- * Used to build a simple resolver using a {@link Schema} and {@link TableDefinition} names. Useful when implementing
- * simple column renames when mapping Iceberg fields to Deephaven columns.
+ * This is a resolver provider that will build a {@link Resolver} without needing to refer to an explicit Iceberg
+ * {@link Schema} (as you need to do when building a {@link Resolver}). This is provided as a convenience for cases
+ * where explicitly building a {@link Resolver} would be more tedious.
  */
 @Value.Immutable
 @BuildableStyle
@@ -34,8 +35,11 @@ public abstract class UnboundResolver extends ResolverProviderImpl implements Re
     public abstract TableDefinition definition();
 
     /**
-     * The map from Deephaven column names to instructions for mapping to Iceberg columns. Users can use this to provide
-     * the schema field ID to map corresponding Iceberg column to the Deephaven column.
+     * The map from Deephaven column names to instructions for mapping to Iceberg columns. Any columns from
+     * {@link #definition()} not in this map will be assumed to be exact name matches for the fields in the
+     * {@link Schema}.
+     *
+     * @see Resolver#columnInstructions()
      */
     public abstract Map<String, ColumnInstructions> columnInstructions();
 
@@ -61,21 +65,9 @@ public abstract class UnboundResolver extends ResolverProviderImpl implements Re
             final String dhColumnName = columnDefinition.getName();
             ColumnInstructions instructions = columnInstructionsMap.get(dhColumnName);
             if (instructions == null) {
-                final Types.NestedField icebergField = schema.findField(dhColumnName);
-                if (icebergField == null) {
-                    throw new IllegalArgumentException(
-                            String.format("Column `%s` from deephaven table definition not found in Iceberg schema",
-                                    dhColumnName));
-                }
-                instructions = ColumnInstructions.schemaField(icebergField.fieldId());
-            } else {
-                final int fieldId = instructions.schemaFieldId().getAsInt();
-                if (schema.findField(fieldId) == null) {
-                    throw new IllegalArgumentException(
-                            String.format("Field ID %d derived from column instructions map for column %s not found " +
-                                    "in provided schema", fieldId, dhColumnName));
-                }
+                instructions = ColumnInstructions.schemaFieldName(dhColumnName);
             }
+            // else {}, pass along the instructions as-is
             builder.putColumnInstructions(dhColumnName, instructions);
         }
         return builder.build();
@@ -91,21 +83,5 @@ public abstract class UnboundResolver extends ResolverProviderImpl implements Re
         Builder putAllColumnInstructions(Map<String, ? extends ColumnInstructions> entries);
 
         UnboundResolver build();
-    }
-
-    @Value.Check
-    final void verifySchemaIdPresentInMapping() {
-        if (columnInstructions().isEmpty()) {
-            return;
-        }
-        for (final Map.Entry<String, ColumnInstructions> entry : columnInstructions().entrySet()) {
-            final String columnNameFromMap = entry.getKey();
-            final ColumnInstructions instructions = entry.getValue();
-            if (instructions.schemaFieldId().isEmpty()) {
-                throw new IllegalArgumentException(
-                        String.format("Column `%s` from column instructions map does not have schema field id",
-                                columnNameFromMap));
-            }
-        }
     }
 }

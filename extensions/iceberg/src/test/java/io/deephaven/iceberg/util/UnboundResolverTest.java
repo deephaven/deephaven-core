@@ -12,8 +12,9 @@ import org.junit.jupiter.api.Test;
 
 import static io.deephaven.iceberg.util.ColumnInstructions.partitionField;
 import static io.deephaven.iceberg.util.ColumnInstructions.schemaField;
+import static io.deephaven.iceberg.util.ColumnInstructions.schemaFieldName;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 
 /**
  * Tests for {@link UnboundResolver}.
@@ -45,8 +46,8 @@ class UnboundResolverTest {
         final Resolver expected = Resolver.builder()
                 .schema(schema)
                 .definition(td)
-                .putColumnInstructions("F1", schemaField(schema.findField("F1").fieldId()))
-                .putColumnInstructions("F2", schemaField(schema.findField("F2").fieldId()))
+                .putColumnInstructions("F1", schemaFieldName("F1"))
+                .putColumnInstructions("F2", schemaFieldName("F2"))
                 .build();
         assertThat(actual).isEqualTo(expected);
     }
@@ -64,7 +65,7 @@ class UnboundResolverTest {
         final Resolver expected = Resolver.builder()
                 .schema(schema)
                 .definition(td)
-                .putColumnInstructions("F1", schemaField(schema.findField("F1").fieldId()))
+                .putColumnInstructions("F1", schemaFieldName("F1"))
                 .build();
         assertThat(actual).isEqualTo(expected);
     }
@@ -88,35 +89,47 @@ class UnboundResolverTest {
                 .schema(schema)
                 .definition(td)
                 .putColumnInstructions("S1", schemaField(f1FieldId))
-                .putColumnInstructions("F2", schemaField(schema.findField("F2").fieldId()))
+                .putColumnInstructions("F2", schemaFieldName("F2"))
                 .build();
         assertThat(actual).isEqualTo(expected);
     }
 
     @Test
-    void schemaFieldNotFoundInMapRejected() {
+    void partitionFieldUsedWithoutPartitioningColumn() {
+        final Schema schema = simpleSchema(IT);
         TableDefinition td = TableDefinition.of(
                 ColumnDefinition.ofInt("F1"));
-        assertThatThrownBy(() -> UnboundResolver.builder()
-                .definition(td)
-                .putColumnInstructions("F1", partitionField(99)) // schemaFieldID missing in instruction
-                .build())
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("does not have schema field id");
+        try {
+            UnboundResolver.builder()
+                    .schema(SchemaProvider.fromSchema(schema))
+                    .definition(td)
+                    .putColumnInstructions("F1", partitionField(99))
+                    .build()
+                    .resolver(null);
+            failBecauseExceptionWasNotThrown(Resolver.MappingException.class);
+        } catch (Resolver.MappingException e) {
+            assertThat(e).hasMessageContaining("Unable to map Deephaven column F1");
+            assertThat(e).cause().hasMessageContaining(
+                    "Should only specify Iceberg partitionField in combination with a Deephaven partitioning column");
+        }
     }
 
     @Test
     void unboundResolverMissingColumnRejected() {
         final Schema schema = simpleSchema(IT);
-        final TableDefinition td = TableDefinition.of(
+        TableDefinition td = TableDefinition.of(
                 ColumnDefinition.ofInt("NotInSchema"));
-        assertThatThrownBy(() -> UnboundResolver.builder()
-                .schema(SchemaProvider.fromSchema(schema))
-                .definition(td)
-                .build()
-                .resolver(null))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("not found in Iceberg schema");
+        try {
+            UnboundResolver.builder()
+                    .schema(SchemaProvider.fromSchema(schema))
+                    .definition(td)
+                    .build()
+                    .resolver(null);
+            failBecauseExceptionWasNotThrown(Resolver.MappingException.class);
+        } catch (Resolver.MappingException e) {
+            assertThat(e).hasMessageContaining("Unable to map Deephaven column NotInSchema");
+            assertThat(e).cause().hasMessageContaining("Unable to find field by name: `NotInSchema`");
+        }
     }
 
     @Test
@@ -124,14 +137,17 @@ class UnboundResolverTest {
         final Schema schema = simpleSchema(IT);
         TableDefinition td = TableDefinition.of(
                 ColumnDefinition.ofInt("F1"));
-
-        assertThatThrownBy(() -> UnboundResolver.builder()
-                .schema(SchemaProvider.fromSchema(schema))
-                .definition(td)
-                .putColumnInstructions("F1", schemaField(9999)) // schema field with ID=9999 not present
-                .build()
-                .resolver(null))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("not found in provided schema");
+        try {
+            UnboundResolver.builder()
+                    .schema(SchemaProvider.fromSchema(schema))
+                    .definition(td)
+                    .putColumnInstructions("F1", schemaField(9999)) // schema field with ID=9999 not present
+                    .build()
+                    .resolver(null);
+            failBecauseExceptionWasNotThrown(Resolver.MappingException.class);
+        } catch (Resolver.MappingException e) {
+            assertThat(e).hasMessageContaining("Unable to map Deephaven column F1");
+            assertThat(e).cause().hasMessageContaining("Unable to find field id 9999");
+        }
     }
 }

@@ -115,10 +115,11 @@ public abstract class Resolver {
     /**
      * The column instructions keyed by Deephaven column name from the {@link #definition() definition}.
      * {@link ColumnDefinition.ColumnType#Normal Normal} columns must reference a
-     * {@link ColumnInstructions#schemaField(int) schema field} (or be {@link ColumnInstructions#unmapped() unmapped}),
-     * and {@link ColumnDefinition.ColumnType#Partitioning partitioning} columns must reference a
-     * {@link ColumnInstructions#schemaField(int) schema field} or {@link ColumnInstructions#partitionField(int)
-     * partition field}.
+     * {@link ColumnInstructions#schemaField(int) schema field}, {@link ColumnInstructions#schemaFieldName(String)
+     * schema field name}, or be {@link ColumnInstructions#unmapped() unmapped}; and
+     * {@link ColumnDefinition.ColumnType#Partitioning partitioning} columns must reference a
+     * {@link ColumnInstructions#schemaField(int) schema field}, {@link ColumnInstructions#schemaFieldName(String)
+     * schema field name}, or {@link ColumnInstructions#partitionField(int) partition field}.
      *
      * <p>
      * The {@link #definition()} and {@link #schema()} types must be
