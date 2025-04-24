@@ -30,6 +30,7 @@ import io.deephaven.iceberg.util.InferenceInstructions;
 import io.deephaven.iceberg.util.LoadTableOptions;
 import io.deephaven.iceberg.util.NameMappingProvider;
 import io.deephaven.iceberg.util.Resolver;
+import io.deephaven.iceberg.util.ResolverProviderInference;
 import io.deephaven.iceberg.util.SortOrderProvider;
 import io.deephaven.iceberg.util.TableParquetWriterOptions;
 import io.deephaven.iceberg.util.TypeInference;
@@ -1630,17 +1631,23 @@ public abstract class SqliteCatalogBase {
         catalogAdapter.catalog().createTable(tableIdentifier, schema, PartitionSpec.unpartitioned());
 
         // By default, the internal inference will be lenient and only map fields that DH supports
-        final IcebergTableAdapter tableAdapter = catalogAdapter.loadTable(tableIdentifier);
-        assertThat(tableAdapter.definition()).isEqualTo(definition);
-        assertThat(tableAdapter.table().getDefinition()).isEqualTo(definition);
+        {
+            final IcebergTableAdapter tableAdapter = catalogAdapter.loadTable(tableIdentifier);
+            assertThat(tableAdapter.definition()).isEqualTo(definition);
+            assertThat(tableAdapter.table().getDefinition()).isEqualTo(definition);
+        }
 
-        // The decision on whether to fail is determined when the resolver is constructed, and callers can choose to
-        // explicitly fail if they prefer
+        // Callers can explicit decide to do stricter inference, which will fail if any types are unsupported
         try {
-            Resolver.infer(InferenceInstructions.builder().schema(schema).failOnUnsupportedTypes(true).build());
-            failBecauseExceptionWasNotThrown(TypeInference.UnsupportedType.class);
-        } catch (TypeInference.UnsupportedType e) {
-            assertThat(e).hasMessageContaining("Unsupported Iceberg type `uuid` at fieldName `uuidCol`");
+            catalogAdapter.loadTable(LoadTableOptions.builder()
+                    .id(tableIdentifier)
+                    .resolver(ResolverProviderInference.builder()
+                            .failOnUnsupportedTypes(true)
+                            .build())
+                    .build());
+        } catch (RuntimeException e) {
+            assertThat(e).cause().isInstanceOf(TypeInference.UnsupportedType.class);
+            assertThat(e).cause().hasMessageContaining(" Unsupported Iceberg type `uuid` at fieldName `uuidCol`");
         }
     }
 
@@ -1729,6 +1736,60 @@ public abstract class SqliteCatalogBase {
                     .nameMapping(NameMappingProvider.empty())
                     .build());
             assertTableEquals(empty, ta.table());
+        }
+    }
+
+    @Test
+    void inferWithDifferentNamer() {
+        final TableIdentifier id = TableIdentifier.parse("MyNamespace.inferWithDifferentNamer");
+        final int fooId;
+        final int barId;
+        final int bazId;
+        {
+            final String FOO = "Foo";
+            final String BAR = "Bar";
+            final String BAZ = "Baz";
+            final TableDefinition definition = TableDefinition.of(
+                    ColumnDefinition.ofInt(FOO),
+                    ColumnDefinition.ofDouble(BAR),
+                    ColumnDefinition.ofLong(BAZ));
+            final Table source = TableTools.newTable(
+                    definition,
+                    intCol(FOO, 15, 0, 32, 33, 19),
+                    doubleCol(BAR, 10.5, 2.5, 3.5, 40.5, 0.5),
+                    longCol(BAZ, 20L, 50L, 0L, 10L, 5L));
+            final IcebergTableAdapter tableAdapter = catalogAdapter.createTable(id, definition);
+            fooId = tableAdapter.resolver().schema().findField(FOO).fieldId();
+            barId = tableAdapter.resolver().schema().findField(BAR).fieldId();
+            bazId = tableAdapter.resolver().schema().findField(BAZ).fieldId();
+            tableAdapter.tableWriter(TableParquetWriterOptions.builder().tableDefinition(definition).build())
+                    .append(IcebergWriteInstructions.builder().addTables(source).build());
+            assertThat(tableAdapter.definition()).isEqualTo(definition);
+            assertTableEquals(source, tableAdapter.table());
+        }
+
+        {
+            final InferenceInstructions.Namer.Factory namerFactory = InferenceInstructions.Namer.Factory.fieldId();
+            final String FOO = "FieldId_" + fooId;
+            final String BAR = "FieldId_" + barId;
+            final String BAZ = "FieldId_" + bazId;
+            final TableDefinition definition = TableDefinition.of(
+                    ColumnDefinition.ofInt(FOO),
+                    ColumnDefinition.ofDouble(BAR),
+                    ColumnDefinition.ofLong(BAZ));
+            final Table expected = TableTools.newTable(
+                    definition,
+                    intCol(FOO, 15, 0, 32, 33, 19),
+                    doubleCol(BAR, 10.5, 2.5, 3.5, 40.5, 0.5),
+                    longCol(BAZ, 20L, 50L, 0L, 10L, 5L));
+            final IcebergTableAdapter tableAdapter = catalogAdapter.loadTable(LoadTableOptions.builder()
+                    .id(id)
+                    .resolver(ResolverProviderInference.builder()
+                            .namerFactory(namerFactory)
+                            .build())
+                    .build());
+            assertThat(tableAdapter.definition()).isEqualTo(definition);
+            assertTableEquals(expected, tableAdapter.table());
         }
     }
 }

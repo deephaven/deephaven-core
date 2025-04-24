@@ -63,6 +63,9 @@ public abstract class ResolverProviderInference extends ResolverProviderImpl imp
         return InferenceInstructions.defaultNamerFactory();
     }
 
+    /**
+     * The schema to use for inference. By default, is {@link SchemaProvider#fromCurrent()}.
+     */
     @Value.Default
     public SchemaProvider schema() {
         return SchemaProvider.fromCurrent();
@@ -83,7 +86,6 @@ public abstract class ResolverProviderInference extends ResolverProviderImpl imp
 
     @Override
     final Resolver resolver(Table table) throws TypeInference.UnsupportedType {
-
         InferenceInstructions.Builder builder = inferenceBuilder()
                 .schema(((SchemaProviderInternal.SchemaProviderImpl) schema()).getSchema(table));
         if (usePartitioningColumns()) {

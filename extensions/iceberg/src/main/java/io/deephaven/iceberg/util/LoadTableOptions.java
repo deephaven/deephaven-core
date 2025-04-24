@@ -4,6 +4,8 @@
 package io.deephaven.iceberg.util;
 
 import io.deephaven.annotations.BuildableStyle;
+import io.deephaven.engine.table.TableDefinition;
+import org.apache.iceberg.Schema;
 import org.apache.iceberg.catalog.TableIdentifier;
 import org.apache.iceberg.mapping.NameMapping;
 import org.apache.iceberg.types.Types;
@@ -26,7 +28,9 @@ public abstract class LoadTableOptions {
     public abstract TableIdentifier id();
 
     /**
-     * The resolver provider. By default, is {@link ResolverProvider#infer()}.
+     * The resolver provider. By default, is {@link ResolverProvider#infer()}. Callers are encouraged to set this to an
+     * {@link ResolverProvider#of(Resolver) explicit resolver} to precisely control the relation between the desired
+     * Deephaven {@link TableDefinition} and the existing Iceberg {@link Schema}.
      */
     @Value.Default
     public ResolverProvider resolver() {
@@ -35,7 +39,9 @@ public abstract class LoadTableOptions {
 
     /**
      * The name mapping provider, a fallback for resolving fields from data files that are written without
-     * {@link Types.NestedField#fieldId() field ids}. By default, is {@link NameMappingProvider#fromTable()}.
+     * {@link Types.NestedField#fieldId() field ids}. By default, is {@link NameMappingProvider#fromTable()}. Callers
+     * are encouraged to set this to an {@link NameMappingProvider#of(NameMapping) explicit name mapping} to precisely
+     * control column resolution fallback.
      */
     @Value.Default
     public NameMappingProvider nameMapping() {
