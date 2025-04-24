@@ -1678,7 +1678,6 @@ public abstract class SqliteCatalogBase {
         final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.NameMappingTest");
 
         final IcebergTableAdapter tableAdapter = catalogAdapter.createTable(tableIdentifier, definition);
-        final Resolver resolver = tableAdapter.resolver().orElseThrow();
 
         // This is emulating a write outside of DH where the field ids are _not_ written
         {
@@ -1715,7 +1714,7 @@ public abstract class SqliteCatalogBase {
         {
             final IcebergTableAdapter ta = catalogAdapter.loadTable(LoadTableOptions.builder()
                     .id(tableIdentifier)
-                    .resolver(resolver)
+                    .resolver(tableAdapter.resolver())
                     .nameMapping(nameMapping)
                     .build());
             assertTableEquals(source, ta.table());
@@ -1729,7 +1728,7 @@ public abstract class SqliteCatalogBase {
         {
             final IcebergTableAdapter ta = catalogAdapter.loadTable(LoadTableOptions.builder()
                     .id(tableIdentifier)
-                    .resolver(resolver)
+                    .resolver(tableAdapter.resolver())
                     .build());
             assertTableEquals(source, ta.table());
         }
@@ -1738,7 +1737,7 @@ public abstract class SqliteCatalogBase {
         {
             final IcebergTableAdapter ta = catalogAdapter.loadTable(LoadTableOptions.builder()
                     .id(tableIdentifier)
-                    .resolver(resolver)
+                    .resolver(tableAdapter.resolver())
                     .nameMapping(NameMappingProvider.empty())
                     .build());
             assertTableEquals(empty, ta.table());

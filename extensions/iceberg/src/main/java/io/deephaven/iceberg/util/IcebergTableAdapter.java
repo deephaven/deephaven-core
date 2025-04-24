@@ -103,8 +103,11 @@ public final class IcebergTableAdapter {
         return tableIdentifier;
     }
 
-    public Optional<Resolver> resolver() {
-        return Optional.ofNullable(resolver);
+    /**
+     * The resolver.
+     */
+    public Resolver resolver() {
+        return resolver;
     }
 
     /**
