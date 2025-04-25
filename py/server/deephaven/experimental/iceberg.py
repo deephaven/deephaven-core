@@ -6,7 +6,6 @@ from __future__ import annotations
 from typing import Optional, Dict, Union, Sequence, Mapping
 
 import jpy
-from abc import ABC
 from warnings import warn
 
 from deephaven import DHError
@@ -127,13 +126,21 @@ class IcebergReadInstructions(JObjectWrapper):
             builder = self.j_object_type.builder()
 
             if table_definition:
-                warn('The table_definition parameter is deprecated, has no effect', DeprecationWarning, stacklevel=2)
+                warn(
+                    "The table_definition parameter is deprecated, has no effect",
+                    DeprecationWarning,
+                    stacklevel=2,
+                )
 
             if data_instructions:
                 builder.dataInstructions(data_instructions.j_object)
 
             if column_renames:
-                warn('This column_renames parameter is deprecated, has no effect', DeprecationWarning, stacklevel=2)
+                warn(
+                    "This column_renames parameter is deprecated, has no effect",
+                    DeprecationWarning,
+                    stacklevel=2,
+                )
 
             if update_mode:
                 builder.updateMode(update_mode.j_object)
@@ -370,10 +377,12 @@ class InferenceResolver(JObjectWrapper):
 
     j_object_type = _JInferenceResolver
 
-    def __init__(self,
-                 infer_partitioning_columns: bool = False,
-                 fail_on_unsupported_types: bool = False,
-                 schema_provider: Optional[SchemaProvider] = None):
+    def __init__(
+        self,
+        infer_partitioning_columns: bool = False,
+        fail_on_unsupported_types: bool = False,
+        schema_provider: Optional[SchemaProvider] = None,
+    ):
         """
         Initializes the `InferenceResolver` object.
 
@@ -408,10 +417,12 @@ class UnboundResolver(JObjectWrapper):
 
     j_object_type = _JUnboundResolver
 
-    def __init__(self,
-                 table_definition: TableDefinitionLike,
-                 column_instructions: Optional[Mapping[str, Union[int, str]]] = None,
-                 schema_provider: Optional[SchemaProvider] = None):
+    def __init__(
+        self,
+        table_definition: TableDefinitionLike,
+        column_instructions: Optional[Mapping[str, Union[int, str]]] = None,
+        schema_provider: Optional[SchemaProvider] = None,
+    ):
         """
         Initializes the `UnboundResolver` object.
 
@@ -647,28 +658,51 @@ class IcebergTableAdapter(JObjectWrapper):
         """
 
         if instructions:
-            warn('The instructions parameter is deprecated, has no effect', DeprecationWarning, stacklevel=2)
+            warn(
+                "The instructions parameter is deprecated, has no effect",
+                DeprecationWarning,
+                stacklevel=2,
+            )
 
         return Table(self.j_object.definitionTable())
 
-    def table(self, instructions: Optional[IcebergReadInstructions] = None) -> IcebergTable:
+    def table(
+        self,
+        instructions: Optional[IcebergReadInstructions] = None,
+        snapshot_id: Optional[int] = None,
+        update_mode: Optional[IcebergUpdateMode] = None,
+        data_instructions: Optional[s3.S3Instructions] = None,
+    ) -> IcebergTable:
         """
-        Reads the table using the provided instructions. Optionally, a snapshot id can be provided to read a specific
-        snapshot of the table.
+        Reads the table using the provided instructions.
 
         Args:
-            instructions (Optional[IcebergReadInstructions]): the instructions for reading the table. These instructions
-                can include column renames, table definition, and specific data instructions for reading the data files
-                from the provider. If omitted, the table will be read in `static()` mode without column renames or data
-                instructions.
+            instructions (Optional[IcebergReadInstructions]): deprecated, use other parameters directly
+            snapshot_id (Optional[int]): the snapshot id to read; if omitted the most recent snapshot will be selected.
+            update_mode (Optional[IcebergUpdateMode]): The update mode for the table. If omitted, the default update
+                mode of :py:func:`IcebergUpdateMode.static() <IcebergUpdateMode.static>` is used.
+            data_instructions (Optional[s3.S3Instructions]): Special instructions for reading data files, useful when
+                reading files from a non-local file system, like S3. If omitted, the data instructions will be derived
+                from the catalog.
 
         Returns:
             the table read from the catalog.
         """
-
-        if instructions:
-            return IcebergTable(self.j_object.table(instructions.j_object))
-        return IcebergTable(self.j_object.table())
+        if snapshot_id or update_mode or data_instructions:
+            instructions = IcebergReadInstructions(
+                snapshot_id=snapshot_id,
+                update_mode=update_mode,
+                data_instructions=data_instructions,
+            )
+        elif instructions:
+            warn(
+                "instructions on table are deprecated, prefer settings the other parameters",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+        else:
+            instructions = IcebergReadInstructions()
+        return IcebergTable(self.j_object.table(instructions.j_object))
 
     def table_writer(self, writer_options: TableParquetWriterOptions) -> IcebergTableWriter:
         """
@@ -730,7 +764,11 @@ class IcebergCatalogAdapter(JObjectWrapper):
 
         return Table(self.j_object.tables(namespace))
 
-    def load_table(self, table_identifier: str, resolver: Union[InferenceResolver, UnboundResolver] = None) -> IcebergTableAdapter:
+    def load_table(
+        self,
+        table_identifier: str,
+        resolver: Union[InferenceResolver, UnboundResolver] = None,
+    ) -> IcebergTableAdapter:
         """
         Load the table from the catalog.
 
@@ -744,7 +782,7 @@ class IcebergCatalogAdapter(JObjectWrapper):
         """
         builder = _JLoadTableOptions.builder()
         builder.id(table_identifier)
-        builder.resolver(resolver.j_object if resolver else InferenceResolver())
+        builder.resolver((resolver if resolver else InferenceResolver()).j_object)
         return IcebergTableAdapter(self.j_object.loadTable(builder.build()))
 
     def create_table(self, table_identifier: str, table_definition: TableDefinitionLike) -> IcebergTableAdapter:
