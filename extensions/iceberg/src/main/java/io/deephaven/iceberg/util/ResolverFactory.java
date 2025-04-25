@@ -61,6 +61,14 @@ final class ResolverFactory implements ParquetColumnResolver.Factory {
             this.key = Objects.requireNonNull(key);
         }
 
+        private boolean has(List<Types.NestedField> path) {
+            // Note: may need additional spec to make sure this interpretation is correct.
+            // See https://lists.apache.org/thread/98m6d7b08fzxkbxlm78c5tnx5zp93mgc
+            // Check from Iceberg metadata if this column is even present here:
+            return SchemaHelper.hasFieldPath(manifestPartitionSpec.schema(),
+                    path.stream().mapToInt(Types.NestedField::fieldId).toArray());
+        }
+
         @Override
         public Optional<List<String>> of(String columnName) {
             final List<Types.NestedField> readersPath = resolver.resolve(columnName).orElse(null);
@@ -68,11 +76,7 @@ final class ResolverFactory implements ParquetColumnResolver.Factory {
                 // DH did not map this column name
                 return Optional.empty();
             }
-            // Note: may need additional spec to make sure this interpretation is correct.
-            // See https://lists.apache.org/thread/98m6d7b08fzxkbxlm78c5tnx5zp93mgc
-            // Check from Iceberg metadata if this column is even present here:
-            if (!SchemaHelper.hasFieldPath(manifestPartitionSpec.schema(),
-                    readersPath.stream().mapToInt(Types.NestedField::fieldId).toArray())) {
+            if (!has(readersPath)) {
                 return Optional.empty();
             }
             // Note: intentionally delaying the reading of the Parquet schema as late as possible.
