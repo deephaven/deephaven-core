@@ -357,26 +357,7 @@ public final class IcebergTableAdapter {
      */
     public IcebergTable table(@NotNull final IcebergReadInstructions readInstructions) {
         refresh();
-        final IcebergTableLocationProviderBase<TableKey, IcebergTableLocationKey> p = provider(
-                StandaloneTableKey.getInstance(), readInstructions);
-        if (p instanceof IcebergStaticTableLocationProvider) {
-            return new IcebergTableImpl(
-                    resolver.definition(),
-                    tableIdentifier.toString(),
-                    RegionedTableComponentFactoryImpl.INSTANCE,
-                    p,
-                    null);
-        }
-        if (p instanceof IcebergManualRefreshTableLocationProvider
-                || p instanceof IcebergAutoRefreshTableLocationProvider) {
-            return new IcebergTableImpl(
-                    resolver.definition(),
-                    tableIdentifier.toString(),
-                    RegionedTableComponentFactoryImpl.INSTANCE,
-                    p,
-                    ExecutionContext.getContext().getUpdateGraph());
-        }
-        throw new IllegalStateException("Unexpected TableLocationProvider: " + p.getClass().getName());
+        return table(StandaloneTableKey.getInstance(), readInstructions);
     }
 
     /**
@@ -419,6 +400,34 @@ public final class IcebergTableAdapter {
         return locationUri;
     }
 
+    // Visible for DHE
+    @InternalUseOnly
+    public IcebergTable table(
+            @NotNull final TableKey tableKey,
+            @NotNull final IcebergReadInstructions readInstructions) {
+        final IcebergTableLocationProviderBase<TableKey, IcebergTableLocationKey> p =
+                provider(tableKey, readInstructions);
+        if (p instanceof IcebergStaticTableLocationProvider) {
+            return new IcebergTableImpl(
+                    resolver.definition(),
+                    tableIdentifier.toString(),
+                    RegionedTableComponentFactoryImpl.INSTANCE,
+                    p,
+                    null);
+        }
+        if (p instanceof IcebergManualRefreshTableLocationProvider
+                || p instanceof IcebergAutoRefreshTableLocationProvider) {
+            return new IcebergTableImpl(
+                    resolver.definition(),
+                    tableIdentifier.toString(),
+                    RegionedTableComponentFactoryImpl.INSTANCE,
+                    p,
+                    ExecutionContext.getContext().getUpdateGraph());
+        }
+        throw new IllegalStateException("Unexpected TableLocationProvider: " + p.getClass().getName());
+    }
+
+    // Visible for DHE
     @InternalUseOnly
     public IcebergTableLocationProviderBase<TableKey, IcebergTableLocationKey> provider(
             @NotNull final TableKey tableKey,

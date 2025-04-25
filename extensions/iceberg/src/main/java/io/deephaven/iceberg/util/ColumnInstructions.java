@@ -64,26 +64,32 @@ public abstract class ColumnInstructions {
         return ImmutableColumnInstructions.builder().partitionFieldId(partitionFieldId).build();
     }
 
+    // Implementation note: it's important that all the fields to construct this be publicly accessible. See
+    // implementation note on Resolver.
+
     /**
      * The schema field id.
      */
-    abstract OptionalInt schemaFieldId();
+    public abstract OptionalInt schemaFieldId();
 
     /**
      * The schema field name.
      */
-    abstract Optional<String> schemaFieldName();
+    public abstract Optional<String> schemaFieldName();
 
     /**
      * The partition field id.
      */
-    abstract OptionalInt partitionFieldId();
+    public abstract OptionalInt partitionFieldId();
 
-    // Note: very likely there will be additions here to support future additions; codecs, conversions, etc.
-
-    final boolean isUnmapped() {
+    /**
+     * If this is an unmapped instructions. That is, there is no reference to a schema field nor partition field.
+     */
+    public final boolean isUnmapped() {
         return schemaFieldId().isEmpty() && schemaFieldName().isEmpty() && partitionFieldId().isEmpty();
     }
+
+    // Note: very likely there will be additions here to support future additions; codecs, conversions, etc.
 
     final List<NestedField> schemaFieldPathById(Schema schema) throws SchemaHelper.PathException {
         return SchemaHelper.fieldPath(schema, schemaFieldId().orElseThrow());

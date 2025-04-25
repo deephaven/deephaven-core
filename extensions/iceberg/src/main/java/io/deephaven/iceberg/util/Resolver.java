@@ -86,6 +86,11 @@ public abstract class Resolver {
         return InferenceImpl.of(inferenceInstructions);
     }
 
+    // Implementation note: it's important that all the fields to construct a Resolver be publicly accessible so that
+    // callers who use inference can understand precisely how the Resolver was constructed. This implies that the
+    // various build setters should have public getters for the respective fields. This applies transitively as well,
+    // so ColumnInstructions needs to adhere to this as well.
+
     /**
      * The Deephaven table definition. Every {@link TableDefinition#getColumns() column} of this definition must be
      * mapped via {@link #columnInstructions()}.
