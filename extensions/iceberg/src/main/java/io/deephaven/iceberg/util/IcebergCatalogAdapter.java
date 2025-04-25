@@ -14,6 +14,7 @@ import io.deephaven.iceberg.internal.DataInstructionsProviderLoader;
 import io.deephaven.iceberg.internal.DataInstructionsProviderPlugin;
 import io.deephaven.qst.type.Type;
 import io.deephaven.util.annotations.VisibleForTesting;
+import org.apache.iceberg.BaseMetadataTable;
 import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.Schema;
 import org.apache.iceberg.TableProperties;
@@ -275,6 +276,10 @@ public class IcebergCatalogAdapter {
         final org.apache.iceberg.Table table = catalog.loadTable(options.id());
         if (table == null) {
             throw new IllegalArgumentException("Table not found: " + options.id());
+        }
+        if (table instanceof BaseMetadataTable) {
+            // TODO(DH-19314): Add support for reading Iceberg metadata tables
+            throw new IllegalArgumentException("Metadata tables are not currently supported");
         }
         final Resolver resolver;
         try {

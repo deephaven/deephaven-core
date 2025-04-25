@@ -46,6 +46,7 @@ import org.apache.iceberg.ContentFile;
 import org.apache.iceberg.DataFile;
 import org.apache.iceberg.DataFiles;
 import org.apache.iceberg.FileFormat;
+import org.apache.iceberg.MetadataTableType;
 import org.apache.iceberg.NullOrder;
 import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.Schema;
@@ -1995,6 +1996,20 @@ public abstract class SqliteCatalogBase {
             assertThat(e).hasMessageContaining("Unable to map Deephaven column stringCol");
             assertThat(e.getCause()).hasMessageContaining("No PartitionField with source field id " +
                     stringColFieldId + " exists in PartitionSpec");
+        }
+    }
+
+    @Test
+    void metadataTables() {
+        final String id = "MyNamespace.MetadataTables";
+        catalogAdapter.createTable(id, TableDefinition.of(ColumnDefinition.ofInt("Foo")));
+        for (final MetadataTableType type : MetadataTableType.values()) {
+            try {
+                catalogAdapter.loadTable(id + "." + type.name());
+                failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
+            } catch (IllegalArgumentException e) {
+                assertThat(e).hasMessageContaining("Metadata tables are not currently supported");
+            }
         }
     }
 }
