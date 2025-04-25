@@ -5,7 +5,9 @@ package io.deephaven.iceberg.util;
 
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.parquet.table.location.ParquetColumnResolver;
+import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.Schema;
 import org.apache.iceberg.mapping.MappedField;
 import org.apache.iceberg.mapping.NameMapping;
@@ -48,6 +50,8 @@ class ResolverFactorySimpleTest {
             NestedField.optional(I1_ID, I1, IntegerType.get()),
             NestedField.required(I2_ID, I2, IntegerType.get()));
 
+    private static final PartitionSpec SPEC = PartitionSpec.builderFor(SCHEMA).build();
+
     private static final Map<String, ColumnInstructions> COLUMN_INSTRUCTIONS = Map.of(
             DH1, schemaField(I1_ID),
             DH2, schemaField(I2_ID));
@@ -58,12 +62,20 @@ class ResolverFactorySimpleTest {
         if (hasColumn1) {
             assertThat(resolver.of(DH1)).hasValue(List.of(PQ1));
         } else {
-            assertThat(resolver.of(DH1)).isEmpty();
+            try {
+                resolver.of(DH1);
+            } catch (TableDataException e) {
+                assertThat(e).hasMessageContaining("Unable to resolve column `dh_col1` for file `test`");
+            }
         }
         if (hasColumn2) {
             assertThat(resolver.of(DH2)).hasValue(List.of(PQ2));
         } else {
-            assertThat(resolver.of(DH2)).isEmpty();
+            try {
+                resolver.of(DH2);
+            } catch (TableDataException e) {
+                assertThat(e).hasMessageContaining("Unable to resolve column `dh_col2` for file `test`");
+            }
         }
         nonDhNamesAlwaysEmpty(resolver);
     }
@@ -96,13 +108,13 @@ class ResolverFactorySimpleTest {
         for (final ResolverFactory factory : List.of(f1, f2)) {
             // Empty parquet schema, nothing can be resolved
             {
-                final ParquetColumnResolver resolver = factory.of(buildMessage().named("root"));
+                final ParquetColumnResolver resolver = factory.of(SPEC, buildMessage().named("root"));
                 check(resolver, false, false);
             }
 
             // Parquet schema without field ids does not resolve with normal resolver
             {
-                final ParquetColumnResolver resolver = factory.of(buildMessage()
+                final ParquetColumnResolver resolver = factory.of(SPEC, buildMessage()
                         .addFields(
                                 optional(INT32).as(INT32_TYPE).named(PQ1),
                                 required(INT32).as(INT32_TYPE).named(PQ2))
@@ -112,7 +124,7 @@ class ResolverFactorySimpleTest {
 
             // Parquet schema with field ids, resolves based on the column instructions
             {
-                final ParquetColumnResolver resolver = factory.of(buildMessage()
+                final ParquetColumnResolver resolver = factory.of(SPEC, buildMessage()
                         .addFields(
                                 optional(INT32).id(I1_ID).as(INT32_TYPE).named(PQ1),
                                 required(INT32).id(I2_ID).as(INT32_TYPE).named(PQ2))
@@ -123,7 +135,7 @@ class ResolverFactorySimpleTest {
             // Parquet schema with duplicate field ids does not resolve the duplicated field (but does resolve correct
             // ones)
             {
-                final ParquetColumnResolver resolver = factory.of(buildMessage()
+                final ParquetColumnResolver resolver = factory.of(SPEC, buildMessage()
                         .addFields(
                                 optional(INT32).id(I1_ID).as(INT32_TYPE).named(PQ1),
                                 required(INT32).id(I2_ID).as(INT32_TYPE).named(PQ2),
@@ -135,7 +147,7 @@ class ResolverFactorySimpleTest {
             // Duplication detection is at the _current_ level; duplicate field ids at a different level will still
             // "work"
             {
-                final ParquetColumnResolver resolver = factory.of(buildMessage()
+                final ParquetColumnResolver resolver = factory.of(SPEC, buildMessage()
                         .addFields(
                                 optional(INT32).id(I1_ID).as(INT32_TYPE).named(PQ1),
                                 required(INT32).id(I2_ID).as(INT32_TYPE).named(PQ2),
@@ -162,13 +174,13 @@ class ResolverFactorySimpleTest {
         for (ResolverFactory factory : List.of(f1, extraNames)) {
             // Empty parquet schema, nothing can be resolved
             {
-                final ParquetColumnResolver resolver = factory.of(buildMessage().named("root"));
+                final ParquetColumnResolver resolver = factory.of(SPEC, buildMessage().named("root"));
                 check(resolver, false, false);
             }
 
             // Parquet schema without field ids, resolves based on fallback
             {
-                final ParquetColumnResolver resolver = factory.of(buildMessage()
+                final ParquetColumnResolver resolver = factory.of(SPEC, buildMessage()
                         .addFields(
                                 optional(INT32).as(INT32_TYPE).named(PQ1),
                                 required(INT32).as(INT32_TYPE).named(PQ2))
@@ -178,7 +190,7 @@ class ResolverFactorySimpleTest {
 
             // Parquet schema with duplicate names does not resolve the duplicated field (but does resolve correct ones)
             {
-                final ParquetColumnResolver resolver = factory.of(buildMessage()
+                final ParquetColumnResolver resolver = factory.of(SPEC, buildMessage()
                         .addFields(
                                 optional(INT32).as(INT32_TYPE).named(PQ1),
                                 required(INT32).as(INT32_TYPE).named(PQ2),
@@ -189,7 +201,7 @@ class ResolverFactorySimpleTest {
 
             // Duplication detection is at the _current_ level; duplicate names at a different level will still "work"
             {
-                final ParquetColumnResolver resolver = factory.of(buildMessage()
+                final ParquetColumnResolver resolver = factory.of(SPEC, buildMessage()
                         .addFields(
                                 optional(INT32).as(INT32_TYPE).named(PQ1),
                                 required(INT32).as(INT32_TYPE).named(PQ2),
@@ -213,6 +225,6 @@ class ResolverFactorySimpleTest {
     }
 
     private static ResolverFactory factory(Resolver resolver, NameMapping nameMapping) {
-        return new ResolverFactory(resolver, nameMapping);
+        return new ResolverFactory(resolver, nameMapping, false);
     }
 }

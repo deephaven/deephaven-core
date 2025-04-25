@@ -768,6 +768,7 @@ class IcebergCatalogAdapter(JObjectWrapper):
         self,
         table_identifier: str,
         resolver: Union[InferenceResolver, UnboundResolver] = None,
+        ignore_resolving_errors: bool = False,
     ) -> IcebergTableAdapter:
         """
         Load the table from the catalog.
@@ -776,6 +777,10 @@ class IcebergCatalogAdapter(JObjectWrapper):
             table_identifier (str): the table to read.
             resolver (Union[InferenceResolver, UnboundResolver]): the resolver, defaults to None, meaning to use a
                 InferenceResolver with all the default options.
+            ignore_resolving_errors (bool): Controls whether to ignore unexpected resolving errors by silently returning
+                null data for columns that can't be resolved in DataFiles where they should be present. These errors may
+                be a sign of an incorrect resolver or name mapping; or an Iceberg metadata / data issue. By default, is
+                `False`.
 
         Returns:
             Table: the table read from the catalog.
@@ -783,6 +788,7 @@ class IcebergCatalogAdapter(JObjectWrapper):
         builder = _JLoadTableOptions.builder()
         builder.id(table_identifier)
         builder.resolver((resolver if resolver else InferenceResolver()).j_object)
+        builder.ignoreResolvingErrors(ignore_resolving_errors)
         return IcebergTableAdapter(self.j_object.loadTable(builder.build()))
 
     def create_table(self, table_identifier: str, table_definition: TableDefinitionLike) -> IcebergTableAdapter:

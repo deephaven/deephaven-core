@@ -16,6 +16,15 @@ import java.util.stream.Collectors;
 
 final class SchemaHelper {
 
+    public static boolean hasFieldPath(Schema schema, int[] idPath) {
+        try {
+            fieldPath(schema, idPath);
+        } catch (PathException e) {
+            return false;
+        }
+        return true;
+    }
+
     public static List<NestedField> fieldPath(Schema schema, int fieldId) throws PathException {
         final FieldPath fieldPath = FieldPath.get(schema, fieldId);
         try {

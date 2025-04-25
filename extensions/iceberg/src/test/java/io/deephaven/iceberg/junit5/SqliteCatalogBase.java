@@ -7,10 +7,12 @@ import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.SortColumn;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.exceptions.TableInitializationException;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.PartitionAwareSourceTable;
+import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.select.FormulaEvaluationException;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
@@ -248,7 +250,7 @@ public abstract class SqliteCatalogBase {
                         "doubleCol = (double) 2.5 * i + 10");
         final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
 
-        final IcebergTableAdapter tableAdapter = catalogAdapter.createTable(tableIdentifier, source.getDefinition());
+        IcebergTableAdapter tableAdapter = catalogAdapter.createTable(tableIdentifier, source.getDefinition());
         final IcebergTableWriter tableWriter = tableAdapter.tableWriter(writerOptionsBuilder()
                 .tableDefinition(source.getDefinition())
                 .build());
@@ -270,10 +272,27 @@ public abstract class SqliteCatalogBase {
             tableWriterWithOneColumn.append(IcebergWriteInstructions.builder()
                     .addTables(singleColumnSource)
                     .build());
-            fromIceberg = tableAdapter.table();
-            expected = TableTools.merge(source, singleColumnSource.update("doubleCol = NULL_DOUBLE"));
-            assertTableEquals(expected, fromIceberg);
             verifySnapshots(tableIdentifier, List.of("append", "append"));
+
+            try {
+                tableAdapter.table().select();
+                failBecauseExceptionWasNotThrown(TableInitializationException.class);
+            } catch (TableInitializationException e) {
+                assertThat(e).hasMessageContaining("Error while initializing");
+                assertThat(e).cause()
+                        .isInstanceOf(TableDataException.class)
+                        .hasMessageContaining("Unable to resolve column `doubleCol`");
+            }
+
+            // Let's use a lenient adapter for the rest of the tests so we can read this data
+            tableAdapter = catalogAdapter.loadTable(LoadTableOptions.builder()
+                    .id(tableIdentifier)
+                    .resolver(tableAdapter.resolver())
+                    .ignoreResolvingErrors(true)
+                    .build());
+
+            expected = TableTools.merge(source, singleColumnSource.update("doubleCol = NULL_DOUBLE"));
+            assertTableEquals(expected, tableAdapter.table());
         }
 
         // Append more data
@@ -1701,8 +1720,27 @@ public abstract class SqliteCatalogBase {
             append.commit();
         }
 
-        // If there is no name mapping (and there are no field ids in the data file), the columns will all be null
-        assertTableEquals(empty, tableAdapter.table());
+        // In this case, the error is pointing out that something is wrong w/ the resolver
+        try {
+            tableAdapter.table().select();
+            failBecauseExceptionWasNotThrown(TableInitializationException.class);
+        } catch (TableInitializationException e) {
+            assertThat(e).hasMessageContaining("Error while initializing");
+            assertThat(e).cause()
+                    .isInstanceOf(TableDataException.class)
+                    .hasMessageContaining("Unable to resolve column");
+        }
+
+        // If we are using a lenient table adapter, a failure to resolve (in this case, no field id and no name mapping)
+        // will result in empty columns
+        {
+            final IcebergTableAdapter ta = catalogAdapter.loadTable(LoadTableOptions.builder()
+                    .id(tableIdentifier)
+                    .resolver(tableAdapter.resolver())
+                    .ignoreResolvingErrors(true)
+                    .build());
+            assertTableEquals(empty, ta.table());
+        }
 
         // We can be explicit and provide one during loadTable, the columns will be present
         final NameMapping nameMapping = MappingUtil.create(tableAdapter.currentSchema());
@@ -1728,12 +1766,31 @@ public abstract class SqliteCatalogBase {
             assertTableEquals(source, ta.table());
         }
 
-        // And even if the table does have a name mapping, we can explicitly disable it
+        // If we explicitly disable name mapping, and it's necessary for resolution, we will fail:
         {
             final IcebergTableAdapter ta = catalogAdapter.loadTable(LoadTableOptions.builder()
                     .id(tableIdentifier)
                     .resolver(tableAdapter.resolver())
                     .nameMapping(NameMappingProvider.empty())
+                    .build());
+            try {
+                ta.table().select();
+                failBecauseExceptionWasNotThrown(TableInitializationException.class);
+            } catch (TableInitializationException e) {
+                assertThat(e).hasMessageContaining("Error while initializing");
+                assertThat(e).cause()
+                        .isInstanceOf(TableDataException.class)
+                        .hasMessageContaining("Unable to resolve column");
+            }
+        }
+
+        // Of course, we can explicitly disable name mapping and be lenient:
+        {
+            final IcebergTableAdapter ta = catalogAdapter.loadTable(LoadTableOptions.builder()
+                    .id(tableIdentifier)
+                    .resolver(tableAdapter.resolver())
+                    .nameMapping(NameMappingProvider.empty())
+                    .ignoreResolvingErrors(true)
                     .build());
             assertTableEquals(empty, ta.table());
         }

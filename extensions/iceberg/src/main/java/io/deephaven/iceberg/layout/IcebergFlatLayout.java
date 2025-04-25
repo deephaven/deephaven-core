@@ -56,10 +56,11 @@ public final class IcebergFlatLayout extends IcebergBaseLayout {
 
     @Override
     protected IcebergTableLocationKey keyFromDataFile(
+            @NotNull final PartitionSpec manifestPartitionSpec,
             @NotNull final ManifestFile manifestFile,
             @NotNull final DataFile dataFile,
             @NotNull final URI fileUri,
             @NotNull final SeekableChannelsProvider channelsProvider) {
-        return locationKey(manifestFile, dataFile, fileUri, null, channelsProvider);
+        return locationKey(manifestPartitionSpec, manifestFile, dataFile, fileUri, null, channelsProvider);
     }
 }

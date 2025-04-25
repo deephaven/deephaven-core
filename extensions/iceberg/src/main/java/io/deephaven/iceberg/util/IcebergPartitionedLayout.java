@@ -13,6 +13,7 @@ import org.apache.iceberg.DataFile;
 import org.apache.iceberg.ManifestFile;
 import org.apache.iceberg.PartitionData;
 import org.apache.iceberg.PartitionField;
+import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.Snapshot;
 import org.apache.iceberg.data.IdentityPartitionConverters;
 import org.apache.iceberg.transforms.Transform;
@@ -91,6 +92,7 @@ final class IcebergPartitionedLayout extends IcebergBaseLayout {
 
     @Override
     protected IcebergTableLocationKey keyFromDataFile(
+            @NotNull final PartitionSpec manifestPartitionSpec,
             @NotNull final ManifestFile manifestFile,
             @NotNull final DataFile dataFile,
             @NotNull final URI fileUri,
@@ -101,7 +103,7 @@ final class IcebergPartitionedLayout extends IcebergBaseLayout {
             final Object partitionValue = getPartitionValue(e.getValue(), partitionData);
             partitions.put(e.getKey(), (Comparable<?>) partitionValue);
         }
-        return locationKey(manifestFile, dataFile, fileUri, partitions, channelsProvider);
+        return locationKey(manifestPartitionSpec, manifestFile, dataFile, fileUri, partitions, channelsProvider);
     }
 
     @Override

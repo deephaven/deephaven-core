@@ -103,6 +103,7 @@ public final class IcebergKeyValuePartitionedLayout extends IcebergBaseLayout {
 
     @Override
     protected IcebergTableLocationKey keyFromDataFile(
+            @NotNull final PartitionSpec manifestPartitionSpec,
             @NotNull final ManifestFile manifestFile,
             @NotNull final DataFile dataFile,
             @NotNull final URI fileUri,
@@ -127,6 +128,6 @@ public final class IcebergKeyValuePartitionedLayout extends IcebergBaseLayout {
             }
             partitions.put(colName, (Comparable<?>) colValue);
         }
-        return locationKey(manifestFile, dataFile, fileUri, partitions, channelsProvider);
+        return locationKey(manifestPartitionSpec, manifestFile, dataFile, fileUri, partitions, channelsProvider);
     }
 }

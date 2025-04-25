@@ -3,11 +3,13 @@
 //
 package io.deephaven.iceberg.util;
 
+import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.TableKey;
 import io.deephaven.iceberg.location.IcebergTableParquetLocationKey;
 import io.deephaven.parquet.table.location.ParquetColumnResolver;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
 import io.deephaven.util.annotations.VisibleForTesting;
+import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.mapping.MappedField;
 import org.apache.iceberg.mapping.MappedFields;
 import org.apache.iceberg.mapping.NameMapping;
@@ -27,29 +29,35 @@ final class ResolverFactory implements ParquetColumnResolver.Factory {
 
     private final Resolver resolver;
     private final NameMapping nameMapping;
+    private final boolean ignoreErrors;
 
-    ResolverFactory(Resolver resolver, NameMapping nameMapping) {
+    ResolverFactory(Resolver resolver, NameMapping nameMapping, boolean ignoreErrors) {
         this.resolver = Objects.requireNonNull(resolver);
         this.nameMapping = Objects.requireNonNull(nameMapping);
+        this.ignoreErrors = ignoreErrors;
     }
 
     @Override
     public ParquetColumnResolver of(TableKey tableKey, ParquetTableLocationKey tableLocationKey) {
-        return new ResolverImpl(((IcebergTableParquetLocationKey) tableLocationKey)::getSchema);
+        final IcebergTableParquetLocationKey tlk = (IcebergTableParquetLocationKey) tableLocationKey;
+        return new ResolverImpl(tlk.getURI().toString(), tlk.manifestPartitionSpec(), tlk::getSchema);
     }
 
     @VisibleForTesting
-    ParquetColumnResolver of(MessageType readersSchema) {
-        return new ResolverImpl(() -> readersSchema);
+    ParquetColumnResolver of(PartitionSpec manifestPartitionSpec, MessageType readersSchema) {
+        return new ResolverImpl("test", manifestPartitionSpec, () -> readersSchema);
     }
 
     private class ResolverImpl implements ParquetColumnResolver {
 
+        private final String file;
+        private final PartitionSpec manifestPartitionSpec;
         // Using Supplier instead of IcebergTableParquetLocationKey to greatly aid in test-ability.
-        // private final IcebergTableParquetLocationKey key;
         private final Supplier<MessageType> key;
 
-        public ResolverImpl(Supplier<MessageType> key) {
+        public ResolverImpl(String file, PartitionSpec manifestPartitionSpec, Supplier<MessageType> key) {
+            this.file = Objects.requireNonNull(file);
+            this.manifestPartitionSpec = Objects.requireNonNull(manifestPartitionSpec);
             this.key = Objects.requireNonNull(key);
         }
 
@@ -60,25 +68,31 @@ final class ResolverFactory implements ParquetColumnResolver.Factory {
                 // DH did not map this column name
                 return Optional.empty();
             }
-            // Note: if Iceberg had a way to relay the writer's schema, we could use it to check whether the parquet
-            // file even has this field and could potentially save ourselves from needing te read the file itself to
-            // check. As it stands now, we need to read the schema and physically check if it's been written out or not.
+            // Note: may need additional spec to make sure this interpretation is correct.
             // See https://lists.apache.org/thread/98m6d7b08fzxkbxlm78c5tnx5zp93mgc
-            // final List<Types.NestedField> writersFields;
-            // try {
-            // writersFields = resolver.resolveVia(columnName, key.writersSchema()).orElse(null);
-            // } catch (SchemaHelper.PathException e) {
-            // // Writer did not write this column
-            // return Optional.empty();
-            // }
-            // Note: intentionally delaying the reading of the Parquet schema as late as possible.
-            final MessageType parquetSchema = key.get();
-            try {
-                return Optional.of(resolve(parquetSchema, readersPath, nameMapping));
-            } catch (MappingException e) {
-                // TODO: we don't have enough info to know whether this is expected or not. log?
+            // Check from Iceberg metadata if this column is even present here:
+            if (!SchemaHelper.hasFieldPath(manifestPartitionSpec.schema(),
+                    readersPath.stream().mapToInt(Types.NestedField::fieldId).toArray())) {
                 return Optional.empty();
             }
+            // Note: intentionally delaying the reading of the Parquet schema as late as possible.
+            final MessageType parquetSchema = key.get();
+            final List<String> parquetPath;
+            try {
+                parquetPath = resolve(parquetSchema, readersPath, nameMapping);
+            } catch (MappingException e) {
+                if (ignoreErrors) {
+                    return Optional.empty();
+                }
+                // In the future, we may want to provide callers more options on how they want to handle the various
+                // exceptional cases.
+                throw new TableDataException(
+                        String.format(
+                                "Unable to resolve column `%s` for file `%s`. It's possible that Iceberg metadata / data is inconsistent, or provided Resolver / NameMapping is incorrect.",
+                                columnName, file),
+                        e);
+            }
+            return Optional.of(parquetPath);
         }
     }
 

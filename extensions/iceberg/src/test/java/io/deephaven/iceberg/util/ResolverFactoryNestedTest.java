@@ -5,7 +5,9 @@ package io.deephaven.iceberg.util;
 
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.parquet.table.location.ParquetColumnResolver;
+import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.Schema;
 import org.apache.iceberg.mapping.MappedField;
 import org.apache.iceberg.mapping.MappedFields;
@@ -71,6 +73,8 @@ class ResolverFactoryNestedTest {
                     NestedField.optional(I3_ID, I3, IntegerType.get()),
                     NestedField.required(I4_ID, I4, IntegerType.get()))));
 
+    private static final PartitionSpec SPEC = PartitionSpec.builderFor(SCHEMA).build();
+
     private static final Map<String, ColumnInstructions> COLUMN_INSTRUCTIONS = Map.of(
             DH1, schemaField(I1_ID),
             DH2, schemaField(I2_ID),
@@ -103,22 +107,38 @@ class ResolverFactoryNestedTest {
         if (hasColumn1) {
             assertThat(resolver.of(DH1)).hasValue(List.of(PQG1, PQ1));
         } else {
-            assertThat(resolver.of(DH1)).isEmpty();
+            try {
+                resolver.of(DH1);
+            } catch (TableDataException e) {
+                assertThat(e).hasMessageContaining("Unable to resolve column `dh_col1` for file `test`");
+            }
         }
         if (hasColumn2) {
             assertThat(resolver.of(DH2)).hasValue(List.of(PQG1, PQ2));
         } else {
-            assertThat(resolver.of(DH2)).isEmpty();
+            try {
+                resolver.of(DH2);
+            } catch (TableDataException e) {
+                assertThat(e).hasMessageContaining("Unable to resolve column `dh_col2` for file `test`");
+            }
         }
         if (hasColumn3) {
             assertThat(resolver.of(DH3)).hasValue(List.of(PQG2, PQ3));
         } else {
-            assertThat(resolver.of(DH3)).isEmpty();
+            try {
+                resolver.of(DH3);
+            } catch (TableDataException e) {
+                assertThat(e).hasMessageContaining("Unable to resolve column `dh_col3` for file `test`");
+            }
         }
         if (hasColumn4) {
             assertThat(resolver.of(DH4)).hasValue(List.of(PQG2, PQ4));
         } else {
-            assertThat(resolver.of(DH4)).isEmpty();
+            try {
+                resolver.of(DH4);
+            } catch (TableDataException e) {
+                assertThat(e).hasMessageContaining("Unable to resolve column `dh_col4` for file `test`");
+            }
         }
         nonDhNamesAlwaysEmpty(resolver);
     }
@@ -206,13 +226,13 @@ class ResolverFactoryNestedTest {
                 badInnerIds, badOuterIds)) {
             // Empty parquet schema, nothing can be resolved
             {
-                final ParquetColumnResolver resolver = factory.of(buildMessage().named("root"));
+                final ParquetColumnResolver resolver = factory.of(SPEC, buildMessage().named("root"));
                 check(resolver, false, false, false, false);
             }
 
             // Parquet schema without field ids does not resolve with normal resolver
             {
-                final ParquetColumnResolver resolver = factory.of(buildMessage()
+                final ParquetColumnResolver resolver = factory.of(SPEC, buildMessage()
                         .addFields(
                                 optionalGroup()
                                         .addFields(
@@ -230,7 +250,7 @@ class ResolverFactoryNestedTest {
 
             // Parquet schema without outer field ids does not resolve with normal resolver
             {
-                final ParquetColumnResolver resolver = factory.of(buildMessage()
+                final ParquetColumnResolver resolver = factory.of(SPEC, buildMessage()
                         .addFields(
                                 optionalGroup()
                                         .addFields(
@@ -248,7 +268,7 @@ class ResolverFactoryNestedTest {
 
             // Parquet schema without inner field ids does not resolve with normal resolver
             {
-                final ParquetColumnResolver resolver = factory.of(buildMessage()
+                final ParquetColumnResolver resolver = factory.of(SPEC, buildMessage()
                         .addFields(
                                 optionalGroup()
                                         .id(IS1_ID)
@@ -268,7 +288,7 @@ class ResolverFactoryNestedTest {
 
             // Parquet schema with field ids, resolves based on the column instructions
             {
-                final ParquetColumnResolver resolver = factory.of(buildMessage()
+                final ParquetColumnResolver resolver = factory.of(SPEC, buildMessage()
                         .addFields(
                                 optionalGroup()
                                         .id(IS1_ID)
@@ -289,7 +309,7 @@ class ResolverFactoryNestedTest {
             // Parquet schema with duplicate field ids does not resolve the duplicated field (but does resolve correct
             // ones)
             {
-                final ParquetColumnResolver resolver = factory.of(buildMessage()
+                final ParquetColumnResolver resolver = factory.of(SPEC, buildMessage()
                         .addFields(
                                 optionalGroup()
                                         .id(IS1_ID)
@@ -310,7 +330,7 @@ class ResolverFactoryNestedTest {
 
             // Duplicate group will not recurse
             {
-                final ParquetColumnResolver resolver = factory.of(buildMessage()
+                final ParquetColumnResolver resolver = factory.of(SPEC, buildMessage()
                         .addFields(
                                 optionalGroup()
                                         .id(IS1_ID)
@@ -337,7 +357,7 @@ class ResolverFactoryNestedTest {
             // Duplication detection is at the _current_ level; duplicate field ids at a different level will still
             // "work"
             {
-                final ParquetColumnResolver resolver = factory.of(buildMessage()
+                final ParquetColumnResolver resolver = factory.of(SPEC, buildMessage()
                         .addFields(
                                 optionalGroup()
                                         .id(IS1_ID)
@@ -383,13 +403,13 @@ class ResolverFactoryNestedTest {
         for (final ResolverFactory factory : List.of(f1, extraNames)) {
             // Empty parquet schema, nothing can be resolved
             {
-                final ParquetColumnResolver resolver = factory.of(buildMessage().named("root"));
+                final ParquetColumnResolver resolver = factory.of(SPEC, buildMessage().named("root"));
                 check(resolver, false, false, false, false);
             }
 
             // Parquet schema without field ids, resolves based on fallback
             {
-                final ParquetColumnResolver resolver = factory.of(buildMessage()
+                final ParquetColumnResolver resolver = factory.of(SPEC, buildMessage()
                         .addFields(
                                 optionalGroup()
                                         .addFields(
@@ -409,7 +429,7 @@ class ResolverFactoryNestedTest {
             // PQ2 field is repeated, so will not resolve.
             // PQG2 group is repeated, so will not recurse.
             {
-                final ParquetColumnResolver resolver = factory.of(buildMessage()
+                final ParquetColumnResolver resolver = factory.of(SPEC, buildMessage()
                         .addFields(
                                 optionalGroup()
                                         .addFields(
@@ -433,7 +453,7 @@ class ResolverFactoryNestedTest {
 
             // Duplication detection is at the _current_ level; duplicate names at a different level will still "work"
             {
-                final ParquetColumnResolver resolver = factory.of(buildMessage()
+                final ParquetColumnResolver resolver = factory.of(SPEC, buildMessage()
                         .addFields(
                                 optionalGroup()
                                         .addFields(
@@ -464,6 +484,6 @@ class ResolverFactoryNestedTest {
     }
 
     private static ResolverFactory factory(Resolver resolver, NameMapping nameMapping) {
-        return new ResolverFactory(resolver, nameMapping);
+        return new ResolverFactory(resolver, nameMapping, false);
     }
 }

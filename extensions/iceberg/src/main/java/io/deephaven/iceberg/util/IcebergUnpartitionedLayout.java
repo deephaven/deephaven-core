@@ -9,6 +9,7 @@ import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.util.channel.SeekableChannelsProvider;
 import org.apache.iceberg.DataFile;
 import org.apache.iceberg.ManifestFile;
+import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.Snapshot;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -27,11 +28,12 @@ final class IcebergUnpartitionedLayout extends IcebergBaseLayout {
 
     @Override
     protected IcebergTableLocationKey keyFromDataFile(
+            @NotNull final PartitionSpec manifestPartitionSpec,
             @NotNull final ManifestFile manifestFile,
             @NotNull final DataFile dataFile,
             @NotNull final URI fileUri,
             @NotNull final SeekableChannelsProvider channelsProvider) {
-        return locationKey(manifestFile, dataFile, fileUri, null, channelsProvider);
+        return locationKey(manifestPartitionSpec, manifestFile, dataFile, fileUri, null, channelsProvider);
     }
 
     @Override

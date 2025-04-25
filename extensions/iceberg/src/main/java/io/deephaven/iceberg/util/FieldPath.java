@@ -113,4 +113,8 @@ abstract class FieldPath {
     public final List<NestedField> resolve(Schema schema) throws SchemaHelper.PathException {
         return SchemaHelper.fieldPath(schema, path());
     }
+
+    final boolean isContainedIn(Schema schema) {
+        return SchemaHelper.hasFieldPath(schema, path());
+    }
 }

@@ -71,6 +71,7 @@ public final class IcebergTableAdapter {
     private final URI locationUri;
     private final Resolver resolver;
     private final NameMapping nameMapping;
+    private final boolean ignoreResolvingErrors;
 
     public IcebergTableAdapter(
             final Catalog catalog,
@@ -78,7 +79,8 @@ public final class IcebergTableAdapter {
             final org.apache.iceberg.Table table,
             final DataInstructionsProviderLoader dataInstructionsProviderLoader,
             final Resolver resolver,
-            final NameMapping nameMapping) {
+            final NameMapping nameMapping,
+            final boolean ignoreResolvingErrors) {
         this.catalog = Objects.requireNonNull(catalog);
         this.table = Objects.requireNonNull(table);
         this.tableIdentifier = Objects.requireNonNull(tableIdentifier);
@@ -86,6 +88,7 @@ public final class IcebergTableAdapter {
         this.locationUri = IcebergUtils.locationUri(table);
         this.resolver = Objects.requireNonNull(resolver);
         this.nameMapping = Objects.requireNonNull(nameMapping);
+        this.ignoreResolvingErrors = ignoreResolvingErrors;
     }
 
     /**
@@ -484,7 +487,7 @@ public final class IcebergTableAdapter {
         }
         final ParquetInstructions parquetInstructions = ParquetInstructions.builder()
                 .setTableDefinition(resolver.definition())
-                .setColumnResolverFactory(new ResolverFactory(resolver, nameMapping))
+                .setColumnResolverFactory(new ResolverFactory(resolver, nameMapping, ignoreResolvingErrors))
                 .setSpecialInstructions(specialInstructions)
                 .build();
         final Map<String, PartitionField> partitionFields = resolver.partitionFieldMap();

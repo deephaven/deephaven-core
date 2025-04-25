@@ -100,6 +100,7 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
      * @return A new {@link IcebergTableLocationKey}
      */
     protected IcebergTableLocationKey locationKey(
+            @NotNull final PartitionSpec manifestPartitionSpec,
             @NotNull final ManifestFile manifestFile,
             @NotNull final DataFile dataFile,
             @NotNull final URI fileUri,
@@ -107,7 +108,8 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
             @NotNull final SeekableChannelsProvider channelsProvider) {
         final org.apache.iceberg.FileFormat format = dataFile.format();
         if (format == org.apache.iceberg.FileFormat.PARQUET) {
-            return new IcebergTableParquetLocationKey(catalogName, tableUuid, tableIdentifier, manifestFile, dataFile,
+            return new IcebergTableParquetLocationKey(catalogName, tableUuid, tableIdentifier, manifestPartitionSpec,
+                    manifestFile, dataFile,
                     fileUri, 0, partitions, parquetInstructions, channelsProvider,
                     computeSortedColumns(tableAdapter.icebergTable(), dataFile, parquetInstructions));
         }
@@ -203,6 +205,7 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
     }
 
     protected abstract IcebergTableLocationKey keyFromDataFile(
+            PartitionSpec manifestPartitionSpec,
             ManifestFile manifestFile,
             DataFile dataFile,
             URI fileUri,
@@ -210,6 +213,7 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
 
     private IcebergTableLocationKey key(
             final Table table,
+            final PartitionSpec manifestPartitionSpec,
             final ManifestFile manifestFile,
             final ManifestReader<?> ignoredManifestReader,
             final DataFile dataFile) {
@@ -217,7 +221,7 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
         // ie, ManifestReader.spec(), ManifestReader.spec().schema()
         // See https://lists.apache.org/thread/88md2fdk17k26cl4gj3sz6sdbtwcgbk5
         final URI fileUri = dataFileUri(table, dataFile);
-        return keyFromDataFile(manifestFile, dataFile, fileUri, seekableChannelsProvider);
+        return keyFromDataFile(manifestPartitionSpec, manifestFile, dataFile, fileUri, seekableChannelsProvider);
     }
 
     private static void checkIsDataManifest(ManifestFile manifestFile) {
@@ -241,8 +245,10 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
             }
             for (final ManifestFile manifestFile : manifestFiles) {
                 try (final ManifestReader<DataFile> manifestReader = ManifestFiles.read(manifestFile, io)) {
+                    final PartitionSpec manifestPartitionSpec = manifestReader.spec();
                     for (final DataFile dataFile : manifestReader) {
-                        locationKeyObserver.accept(key(table, manifestFile, manifestReader, dataFile));
+                        locationKeyObserver
+                                .accept(key(table, manifestPartitionSpec, manifestFile, manifestReader, dataFile));
                     }
                 }
             }
