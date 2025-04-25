@@ -104,7 +104,8 @@ class IcebergReadInstructions(JObjectWrapper):
                  data_instructions: Optional[s3.S3Instructions] = None,
                  column_renames: Optional[Dict[str, str]] = None,
                  update_mode: Optional[IcebergUpdateMode] = None,
-                 snapshot_id: Optional[int] = None):
+                 snapshot_id: Optional[int] = None,
+                 ignore_resolving_errors: bool = False):
         """
         Initializes the instructions using the provided parameters.
 
@@ -117,7 +118,10 @@ class IcebergReadInstructions(JObjectWrapper):
             update_mode (Optional[IcebergUpdateMode]): The update mode for the table. If omitted, the default update
                 mode of :py:func:`IcebergUpdateMode.static() <IcebergUpdateMode.static>` is used.
             snapshot_id (Optional[int]): the snapshot id to read; if omitted the most recent snapshot will be selected.
-
+            ignore_resolving_errors (bool): Controls whether to ignore unexpected resolving errors by silently returning
+                null data for columns that can't be resolved in DataFiles where they should be present. These errors may
+                be a sign of an incorrect resolver or name mapping; or an Iceberg metadata / data issue. By default, is
+                `False`.
         Raises:
             DHError: If unable to build the instructions object.
         """
@@ -147,6 +151,8 @@ class IcebergReadInstructions(JObjectWrapper):
 
             if snapshot_id:
                 builder.snapshotId(snapshot_id)
+
+            builder.ignoreResolvingErrors(ignore_resolving_errors)
 
             self._j_object = builder.build()
         except Exception as e:
@@ -672,6 +678,7 @@ class IcebergTableAdapter(JObjectWrapper):
         snapshot_id: Optional[int] = None,
         update_mode: Optional[IcebergUpdateMode] = None,
         data_instructions: Optional[s3.S3Instructions] = None,
+        ignore_resolving_errors: bool = False,
     ) -> IcebergTable:
         """
         Reads the table using the provided instructions.
@@ -684,15 +691,19 @@ class IcebergTableAdapter(JObjectWrapper):
             data_instructions (Optional[s3.S3Instructions]): Special instructions for reading data files, useful when
                 reading files from a non-local file system, like S3. If omitted, the data instructions will be derived
                 from the catalog.
-
+            ignore_resolving_errors (bool): Controls whether to ignore unexpected resolving errors by silently returning
+                null data for columns that can't be resolved in DataFiles where they should be present. These errors may
+                be a sign of an incorrect resolver or name mapping; or an Iceberg metadata / data issue. By default, is
+                `False`.
         Returns:
             the table read from the catalog.
         """
-        if snapshot_id or update_mode or data_instructions:
+        if snapshot_id or update_mode or data_instructions or ignore_resolving_errors:
             instructions = IcebergReadInstructions(
                 snapshot_id=snapshot_id,
                 update_mode=update_mode,
                 data_instructions=data_instructions,
+                ignore_resolving_errors=ignore_resolving_errors,
             )
         elif instructions:
             warn(
@@ -768,7 +779,6 @@ class IcebergCatalogAdapter(JObjectWrapper):
         self,
         table_identifier: str,
         resolver: Union[InferenceResolver, UnboundResolver] = None,
-        ignore_resolving_errors: bool = False,
     ) -> IcebergTableAdapter:
         """
         Load the table from the catalog.
@@ -777,10 +787,6 @@ class IcebergCatalogAdapter(JObjectWrapper):
             table_identifier (str): the table to read.
             resolver (Union[InferenceResolver, UnboundResolver]): the resolver, defaults to None, meaning to use a
                 InferenceResolver with all the default options.
-            ignore_resolving_errors (bool): Controls whether to ignore unexpected resolving errors by silently returning
-                null data for columns that can't be resolved in DataFiles where they should be present. These errors may
-                be a sign of an incorrect resolver or name mapping; or an Iceberg metadata / data issue. By default, is
-                `False`.
 
         Returns:
             Table: the table read from the catalog.
@@ -788,7 +794,6 @@ class IcebergCatalogAdapter(JObjectWrapper):
         builder = _JLoadTableOptions.builder()
         builder.id(table_identifier)
         builder.resolver((resolver if resolver else InferenceResolver()).j_object)
-        builder.ignoreResolvingErrors(ignore_resolving_errors)
         return IcebergTableAdapter(self.j_object.loadTable(builder.build()))
 
     def create_table(self, table_identifier: str, table_definition: TableDefinitionLike) -> IcebergTableAdapter:

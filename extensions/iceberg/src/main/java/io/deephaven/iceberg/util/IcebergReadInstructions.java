@@ -5,7 +5,9 @@ package io.deephaven.iceberg.util;
 
 import io.deephaven.annotations.CopyableStyle;
 import io.deephaven.engine.table.TableDefinition;
+import org.apache.iceberg.DataFile;
 import org.apache.iceberg.Snapshot;
+import org.apache.iceberg.mapping.NameMapping;
 import org.immutables.value.Value;
 import org.immutables.value.Value.Immutable;
 
@@ -96,6 +98,16 @@ public abstract class IcebergReadInstructions {
      */
     public abstract IcebergReadInstructions withSnapshot(Snapshot value);
 
+    /**
+     * Controls whether to ignore unexpected resolving errors by silently returning {@code null} data for columns that
+     * can't be resolved in {@link DataFile} where they should be present. These errors may be a sign of an incorrect
+     * {@link Resolver} or {@link NameMapping}; or an Iceberg metadata / data issue. By default, is {@code false}.
+     */
+    @Value.Default
+    public boolean ignoreResolvingErrors() {
+        return false;
+    }
+
     public interface Builder {
 
         @Deprecated
@@ -120,6 +132,8 @@ public abstract class IcebergReadInstructions {
         Builder snapshotId(long snapshotId);
 
         Builder snapshot(Snapshot snapshot);
+
+        Builder ignoreResolvingErrors(boolean ignoreResolvingErrors);
 
         IcebergReadInstructions build();
     }

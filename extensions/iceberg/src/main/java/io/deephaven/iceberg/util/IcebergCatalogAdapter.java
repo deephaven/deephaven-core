@@ -289,8 +289,7 @@ public class IcebergCatalogAdapter {
                 table,
                 dataInstructionsProvider,
                 resolver,
-                nameMapping,
-                options.ignoreResolvingErrors());
+                nameMapping);
     }
 
     /**
@@ -343,7 +342,7 @@ public class IcebergCatalogAdapter {
                 createTable(tableIdentifier, internalResolver.schema(), internalResolver.specOrUnpartitioned());
         final Resolver resolver = Resolver.refreshIds(internalResolver, table.schema(), table.spec());
         return new IcebergTableAdapter(catalog, tableIdentifier, table, dataInstructionsProvider, resolver,
-                NameMapping.empty(), false);
+                NameMapping.empty());
     }
 
     private org.apache.iceberg.Table createTable(

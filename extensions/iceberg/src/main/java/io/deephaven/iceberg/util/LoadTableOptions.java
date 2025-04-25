@@ -5,7 +5,6 @@ package io.deephaven.iceberg.util;
 
 import io.deephaven.annotations.BuildableStyle;
 import io.deephaven.engine.table.TableDefinition;
-import org.apache.iceberg.DataFile;
 import org.apache.iceberg.Schema;
 import org.apache.iceberg.catalog.TableIdentifier;
 import org.apache.iceberg.mapping.NameMapping;
@@ -49,16 +48,6 @@ public abstract class LoadTableOptions {
         return NameMappingProvider.fromTable();
     }
 
-    /**
-     * Controls whether to ignore unexpected resolving errors by silently returning {@code null} data for columns that
-     * can't be resolved in {@link DataFile} where they should be present. These errors may be a sign of an incorrect
-     * {@link #resolver()} or {@link #nameMapping()}; or an Iceberg metadata / data issue. By default, is {@code false}.
-     */
-    @Value.Default
-    public boolean ignoreResolvingErrors() {
-        return false;
-    }
-
     public interface Builder {
         /**
          * A helper to set the {@link #id() table identifier}. Equivalent to {@code id(TableIdentifier.parse(id))}.
@@ -94,8 +83,6 @@ public abstract class LoadTableOptions {
         Builder resolver(ResolverProvider resolver);
 
         Builder nameMapping(NameMappingProvider nameMapping);
-
-        Builder ignoreResolvingErrors(boolean ignoreResolvingErrors);
 
         LoadTableOptions build();
     }

@@ -109,6 +109,9 @@ public abstract class SqliteCatalogBase {
     private IcebergCatalogAdapter catalogAdapter;
     private final EngineCleanup engineCleanup = new EngineCleanup();
 
+    private static final IcebergReadInstructions IGNORE_ERRORS =
+            IcebergReadInstructions.builder().ignoreResolvingErrors(true).build();
+
     protected abstract IcebergCatalogAdapter catalogAdapter(TestInfo testInfo, Path rootDir,
             Map<String, String> properties) throws Exception;
 
@@ -257,8 +260,7 @@ public abstract class SqliteCatalogBase {
         tableWriter.append(IcebergWriteInstructions.builder()
                 .addTables(source)
                 .build());
-        Table fromIceberg = tableAdapter.table();
-        assertTableEquals(source, fromIceberg);
+        assertTableEquals(source, tableAdapter.table());
         verifySnapshots(tableIdentifier, List.of("append"));
 
         // Append a table with just the int column
@@ -284,15 +286,8 @@ public abstract class SqliteCatalogBase {
                         .hasMessageContaining("Unable to resolve column `doubleCol`");
             }
 
-            // Let's use a lenient adapter for the rest of the tests so we can read this data
-            tableAdapter = catalogAdapter.loadTable(LoadTableOptions.builder()
-                    .id(tableIdentifier)
-                    .resolver(tableAdapter.resolver())
-                    .ignoreResolvingErrors(true)
-                    .build());
-
             expected = TableTools.merge(source, singleColumnSource.update("doubleCol = NULL_DOUBLE"));
-            assertTableEquals(expected, tableAdapter.table());
+            assertTableEquals(expected, tableAdapter.table(IGNORE_ERRORS));
         }
 
         // Append more data
@@ -302,9 +297,8 @@ public abstract class SqliteCatalogBase {
         tableWriter.append(IcebergWriteInstructions.builder()
                 .addTables(moreData)
                 .build());
-        fromIceberg = tableAdapter.table();
         final Table expected2 = TableTools.merge(expected, moreData);
-        assertTableEquals(expected2, fromIceberg);
+        assertTableEquals(expected2, tableAdapter.table(IGNORE_ERRORS));
         verifySnapshots(tableIdentifier, List.of("append", "append", "append"));
 
         // Append an empty table
@@ -313,8 +307,7 @@ public abstract class SqliteCatalogBase {
                         "intCol = (int) 3 * i + 20",
                         "doubleCol = (double) 3.5 * i + 20"))
                 .build());
-        fromIceberg = tableAdapter.table();
-        assertTableEquals(expected2, fromIceberg);
+        assertTableEquals(expected2, tableAdapter.table(IGNORE_ERRORS));
         verifySnapshots(tableIdentifier, List.of("append", "append", "append", "append"));
     }
 
@@ -1733,14 +1726,7 @@ public abstract class SqliteCatalogBase {
 
         // If we are using a lenient table adapter, a failure to resolve (in this case, no field id and no name mapping)
         // will result in empty columns
-        {
-            final IcebergTableAdapter ta = catalogAdapter.loadTable(LoadTableOptions.builder()
-                    .id(tableIdentifier)
-                    .resolver(tableAdapter.resolver())
-                    .ignoreResolvingErrors(true)
-                    .build());
-            assertTableEquals(empty, ta.table());
-        }
+        assertTableEquals(empty, tableAdapter.table(IGNORE_ERRORS));
 
         // We can be explicit and provide one during loadTable, the columns will be present
         final NameMapping nameMapping = MappingUtil.create(tableAdapter.currentSchema());
@@ -1790,9 +1776,8 @@ public abstract class SqliteCatalogBase {
                     .id(tableIdentifier)
                     .resolver(tableAdapter.resolver())
                     .nameMapping(NameMappingProvider.empty())
-                    .ignoreResolvingErrors(true)
                     .build());
-            assertTableEquals(empty, ta.table());
+            assertTableEquals(empty, ta.table(IGNORE_ERRORS));
         }
     }
 
