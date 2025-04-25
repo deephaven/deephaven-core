@@ -22,7 +22,7 @@ configurations {
     // GWT compiles using all source code, from the current project and all dependencies, including
     // any generated sources.
     gwt {
-        canBeConsumed = true
+        canBeConsumed = false
         canBeResolved = true
         transitive = true
         attributes {
@@ -30,15 +30,41 @@ configurations {
             attribute(DocsType.DOCS_TYPE_ATTRIBUTE, objects.named(DocsType, DocsType.SOURCES))
         }
     }
-    // The GWT plugin we use can only read from compileClasspath, so we append to that
+    sourcesElements {
+        transitive = true
+        extendsFrom(gwt)
+    }
+//    gwtJar {
+//        canBeConsumed = true
+//        canBeResolved = false
+//        attributes {
+//            attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage, Usage.JAVA_RUNTIME))
+//            attribute(DocsType.DOCS_TYPE_ATTRIBUTE, objects.named(DocsType, DocsType.SOURCES))
+//        }
+//        def addArtifacts = { Provider<Iterable<?>> sources ->
+//            outgoing.artifacts(sources) {
+//                builtBy sources
+//            }
+//        }
+//        outgoing.artifact(tasks.named(sourceSets.main.jarTaskName))
+////        addArtifacts(sourceSets.named('main').map {it.output.generatedSourcesDirs})
+////        addArtifacts(sourceSets.named('main').map {it.java.sourceDirectories})
+//    }
+//    // The GWT plugin we use can only read from compileClasspath, so we append to that
+//    gwtJar.extendsFrom(gwt)
+//    compileClasspath.extendsFrom(gwtJar)
+//    runtimeClasspath.extendsFrom(gwtJar)
+
     compileClasspath.extendsFrom(gwt)
+    runtimeClasspath.extendsFrom(gwt)
+    apiElements.extendsFrom(gwt)
 }
 
-components {
-    java {
-        addVariantsFromConfiguration(configurations.gwt) {}
-    }
-}
+//components {
+//    java {
+//        addVariantsFromConfiguration(configurations.gwtJar) {}
+//    }
+//}
 
 dependencies {
     gwt libs.gwt.user
@@ -50,14 +76,19 @@ dependencies {
     gwt project(':DataStructures')
     gwt project(':web-shared-beans')
     gwt project(':web-client-backplane')
-    gwt libs.jetbrains.annotations
-    gwt libs.immutables.value.annotations
+    gwt project(':engine-query-constants')
+    gwt project(":IO")
+
+    api libs.jetbrains.annotations
+    api libs.immutables.value.annotations
+    api project(':util-immutables')
+    api libs.immutables.value.annotations
 
     gwt libs.flatbuffers.java
     gwt libs.arrow.format
     gwt libs.deephaven.barrage.format
 
-    gwt libs.vertispan.ts.defs.annotations
+    api libs.vertispan.ts.defs.annotations
     typescriptDoclet libs.vertispan.ts.defs.doclet
 
     gwt libs.vertispan.nio.gwt
