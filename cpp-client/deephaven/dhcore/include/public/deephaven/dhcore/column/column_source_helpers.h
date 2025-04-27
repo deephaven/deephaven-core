@@ -3,9 +3,11 @@
  */
 #pragma once
 
-#include <type_traits>
-
+#include <cstdint>
+#include <memory>
+#include <string>
 #include "deephaven/dhcore/column/column_source.h"
+#include "deephaven/dhcore/types.h"
 
 namespace deephaven::dhcore::column {
 namespace internal {
