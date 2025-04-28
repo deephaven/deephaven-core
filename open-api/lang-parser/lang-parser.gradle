@@ -52,9 +52,6 @@ sourceSets {
         java {
             srcDirs = [ 'src/main/java/', compileJavacc.outputDirectory, compileJjtree.outputDirectory ]
         }
-        resources {
-            srcDirs = [ 'src/main/resources' ]
-        }
     }
 }
 */
@@ -63,9 +60,6 @@ sourceSets {
     main {
         java {
             srcDirs = [ 'src/main/java/', 'src/javacc/java', 'src/jjtree/java' ]
-        }
-        resources {
-            srcDirs = [ 'src/main/resources' ]
         }
     }
 }

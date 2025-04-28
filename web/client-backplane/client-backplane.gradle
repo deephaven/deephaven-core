@@ -2,8 +2,6 @@ plugins {
     id 'io.deephaven.project.register'
 }
 
-GwtTools.gwtLib project
-
 dependencies {
     implementation libs.jsinterop.base
     compileOnly libs.jsinterop.annotations

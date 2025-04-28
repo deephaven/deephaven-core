@@ -24,19 +24,6 @@ dependencies {
     testRuntimeOnly libs.slf4j.simple
 }
 
-sourceSets {
-    main {
-        resources {
-            srcDir 'src/main/java' exclude '**/*.java'
-        }
-    }
-    test {
-        resources {
-            srcDir 'src/test/java' exclude '**/*.java'
-        }
-    }
-}
-
 test {
     useJUnit()
 
