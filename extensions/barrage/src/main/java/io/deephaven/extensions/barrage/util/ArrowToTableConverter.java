@@ -11,7 +11,6 @@ import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
-import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.BarrageTypeInfo;
@@ -175,8 +174,8 @@ public class ArrowToTableConverter {
             throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, "Schema evolution not supported");
         }
 
-        final BarrageUtil.ConvertedArrowSchema result = BarrageUtil.convertArrowSchema(schema);
-        final BarrageTable res = BarrageTable.make(null, result, true, null);
+        final BarrageUtil.ConvertedArrowSchema result = BarrageUtil.convertArrowSchema(schema, options);
+        final BarrageTable res = BarrageTable.make(ArrowToTableConverter.class.getName(), null, result, true, null);
         res.setFlat();
 
         columnTypes = result.computeWireTypes();
@@ -208,15 +207,17 @@ public class ArrowToTableConverter {
         msg.shifted = RowSetShiftData.EMPTY;
 
         // include all columns as add-columns
-        int numRowsAdded = LongSizedDataStructure.intSize("RecordBatch.length()", batch.length());
+        int numRowsAdded = options.columnsAsList()
+                ? 0
+                : LongSizedDataStructure.intSize("RecordBatch.length()", batch.length());
         msg.addColumnData = new BarrageMessage.AddColumnData[numColumns];
         for (int ci = 0; ci < numColumns; ++ci) {
             final BarrageMessage.AddColumnData acd = new BarrageMessage.AddColumnData();
             msg.addColumnData[ci] = acd;
             msg.addColumnData[ci].data = new ArrayList<>();
             try {
-                acd.data.add(readers.get(ci).readChunk(fieldNodeIter, bufferInfoIter, mi.inputStream, null, 0,
-                        LongSizedDataStructure.intSize("ArrowToTableConverter", batch.length())));
+                acd.data.add(readers.get(ci).readChunk(
+                        fieldNodeIter, bufferInfoIter, mi.inputStream, null, 0, numRowsAdded));
             } catch (final IOException unexpected) {
                 throw new UncheckedDeephavenException(unexpected);
             }

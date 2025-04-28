@@ -18,16 +18,13 @@ import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
-import io.deephaven.engine.primitive.function.ShortConsumer;
-import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.extensions.barrage.chunk.BaseChunkReader;
+import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfShort;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.vector.ShortVector;
 import io.deephaven.vector.ShortVectorDirect;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.stream.Stream;
 
 import static io.deephaven.vector.ShortVectorDirect.ZERO_LENGTH_VECTOR;
 
@@ -73,15 +70,12 @@ public class ShortVectorExpansionKernel implements VectorExpansionKernel<ShortVe
                 offsetsDest.set(ii, result.size());
             }
             if (row != null) {
-                final ShortConsumer consumer = result::add;
-                try (final CloseableIterator<Short> iter = row.iterator()) {
-                    Stream<Short> stream = iter.stream();
-                    if (fixedSizeLength > 0) {
-                        // limit length to fixedSizeLength
-                        stream = stream.limit(fixedSizeLength);
+                try (final CloseablePrimitiveIteratorOfShort iter = row.iterator()) {
+                    final int numToRead = LongSizedDataStructure.intSize(
+                            DEBUG_NAME, fixedSizeLength == 0 ? row.size() : fixedSizeLength);
+                    for (int jj = 0; jj < numToRead; ++jj) {
+                        result.add(iter.nextShort());
                     }
-                    // copy the row into the result
-                    stream.forEach(consumer::accept);
                 }
             }
             if (fixedSizeLength != 0) {
@@ -104,13 +98,12 @@ public class ShortVectorExpansionKernel implements VectorExpansionKernel<ShortVe
     @Override
     public <A extends Any> WritableObjectChunk<ShortVector, A> contract(
             @NotNull final Chunk<A> source,
-            int sizePerElement,
+            final int sizePerElement,
             @Nullable final IntChunk<ChunkPositions> offsets,
             @Nullable final IntChunk<ChunkLengths> lengths,
             @Nullable final WritableChunk<A> outChunk,
             final int outOffset,
             final int totalRows) {
-        sizePerElement = Math.abs(sizePerElement);
         final int itemsInBatch = offsets == null
                 ? source.size() / sizePerElement
                 : (offsets.size() - (lengths == null ? 1 : 0));

@@ -46,8 +46,7 @@ TEST_CASE("Fetch the entire table (small)", "[client_table]") {
       });
   std::cout << th.Stream(true) << '\n';
 
-  auto ct = th.ToClientTable();
-  auto schema = ct->Schema();
+  auto arrow_table = th.ToArrowTable();
 
   auto chars = MakeReservedVector<std::optional<char16_t>>(target);
   auto int8s = MakeReservedVector<std::optional<int8_t>>(target);
@@ -95,17 +94,19 @@ TEST_CASE("Fetch the entire table (small)", "[client_table]") {
   local_dates[t2] = {};
   local_times[t2] = {};
 
-  CompareColumn(*ct, "Chars", chars);
-  CompareColumn(*ct, "Bytes", int8s);
-  CompareColumn(*ct, "Shorts", int16s);
-  CompareColumn(*ct, "Ints", int32s);
-  CompareColumn(*ct, "Longs", int64s);
-  CompareColumn(*ct, "Floats", floats);
-  CompareColumn(*ct, "Doubles", doubles);
-  CompareColumn(*ct, "Bools", bools);
-  CompareColumn(*ct, "Strings", strings);
-  CompareColumn(*ct, "DateTimes", date_times);
-  CompareColumn(*ct, "LocalDates", local_dates);
-  CompareColumn(*ct, "LocalTimes", local_times);
+  TableMaker expected;
+  expected.AddColumn("Chars", chars);
+  expected.AddColumn("Bytes", int8s);
+  expected.AddColumn("Shorts", int16s);
+  expected.AddColumn("Ints", int32s);
+  expected.AddColumn("Longs", int64s);
+  expected.AddColumn("Floats", floats);
+  expected.AddColumn("Doubles", doubles);
+  expected.AddColumn("Bools", bools);
+  expected.AddColumn("Strings", strings);
+  expected.AddColumn("DateTimes", date_times);
+  expected.AddColumn("LocalDates", local_dates);
+  expected.AddColumn("LocalTimes", local_times);
+  TableComparerForTests::Compare(expected, *arrow_table);
 }
 }  // namespace deephaven::client::tests

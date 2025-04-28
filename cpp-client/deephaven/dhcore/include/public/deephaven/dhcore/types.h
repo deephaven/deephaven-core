@@ -5,88 +5,87 @@
 
 #include <limits>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
+#include <memory>
 #include <ostream>
-#include "deephaven/dhcore/utility/utility.h"
+#include <string>
+#include <string_view>
+#include <type_traits>
+#include "deephaven/third_party/fmt/core.h"
+#include "deephaven/third_party/fmt/format.h"
 #include "deephaven/third_party/fmt/ostream.h"
 
+namespace deephaven::dhcore::container {
+class ContainerBase;
+}  // namespace deephaven::dhcore::container
+
 namespace deephaven::dhcore {
-struct ElementTypeId {
+class ElementTypeId {
+public:
   ElementTypeId() = delete;
 
   // We don't use "enum class" here because we can't figure out how to get it to work right with Cython.
-  // TODO(kosak): we are going to have to expand LIST to be a true nested type.
   enum Enum {
     kChar,
     kInt8, kInt16, kInt32, kInt64,
     kFloat, kDouble,
     kBool, kString, kTimestamp,
-    kList,
     kLocalDate, kLocalTime
   };
+
+  static constexpr size_t kEnumSize = 12;
+
+  static const char *ToString(Enum id);
+
+private:
+  static const char *kHumanReadableConstants[kEnumSize];
+};
+
+class ElementType {
+public:
+  static ElementType Of(ElementTypeId::Enum element_type_id) {
+    return {0, element_type_id};
+  }
+
+  ElementType() = default;
+
+  ElementType(uint32_t list_depth, ElementTypeId::Enum element_type_id) :
+    list_depth_(list_depth), element_type_id_(element_type_id) {}
+
+  [[nodiscard]]
+  uint32_t ListDepth() const { return list_depth_; }
+  [[nodiscard]]
+  ElementTypeId::Enum Id() const { return element_type_id_; }
+
+  [[nodiscard]]
+  ElementType WrapList() const {
+    return {list_depth_ + 1, element_type_id_};
+  }
+
+  [[nodiscard]]
+  ElementType UnwrapList() const;
+
+  [[nodiscard]]
+  std::string ToString() const {
+    return fmt::to_string(*this);
+  }
+
+private:
+  uint32_t list_depth_ = 0;
+  ElementTypeId::Enum element_type_id_ = ElementTypeId::kInt8;  // arbitrary default
+
+  friend bool operator==(const ElementType &lhs, const ElementType &rhs) {
+    return lhs.list_depth_ == rhs.list_depth_ &&
+        lhs.element_type_id_ == rhs.element_type_id_;
+  }
+
+  friend std::ostream &operator<<(std::ostream &s, const ElementType &o);
 };
 
 class DateTime;
 class LocalDate;
 class LocalTime;
-
-template<typename T>
-void VisitElementTypeId(ElementTypeId::Enum type_id, T *visitor) {
-  switch (type_id) {
-    case ElementTypeId::kChar: {
-      visitor->template operator()<char16_t>();
-      break;
-    }
-    case ElementTypeId::kInt8: {
-      visitor->template operator()<int8_t>();
-      break;
-    }
-    case ElementTypeId::kInt16: {
-      visitor->template operator()<int16_t>();
-      break;
-    }
-    case ElementTypeId::kInt32: {
-      visitor->template operator()<int32_t>();
-      break;
-    }
-    case ElementTypeId::kInt64: {
-      visitor->template operator()<int64_t>();
-      break;
-    }
-    case ElementTypeId::kFloat: {
-      visitor->template operator()<float>();
-      break;
-    }
-    case ElementTypeId::kDouble: {
-      visitor->template operator()<double>();
-      break;
-    }
-    case ElementTypeId::kBool: {
-      visitor->template operator()<bool>();
-      break;
-    }
-    case ElementTypeId::kString: {
-      visitor->template operator()<std::string>();
-      break;
-    }
-    case ElementTypeId::kTimestamp: {
-      visitor->template operator()<deephaven::dhcore::DateTime>();
-      break;
-    }
-    case ElementTypeId::kLocalDate: {
-      visitor->template operator()<deephaven::dhcore::LocalDate>();
-      break;
-    }
-    case ElementTypeId::kLocalTime: {
-      visitor->template operator()<deephaven::dhcore::LocalTime>();
-      break;
-    }
-    default: {
-      auto message = fmt::format("Unrecognized ElementTypeId {}", static_cast<int>(type_id));
-      throw std::runtime_error(message);
-    }
-  }
-}
 
 class DeephavenConstants {
 public:
@@ -333,6 +332,11 @@ struct DeephavenTraits<LocalDate> {
 
 template<>
 struct DeephavenTraits<LocalTime> {
+  static constexpr bool kIsNumeric = false;
+};
+
+template<>
+struct DeephavenTraits<std::shared_ptr<deephaven::dhcore::container::ContainerBase>> {
   static constexpr bool kIsNumeric = false;
 };
 
@@ -583,3 +587,4 @@ private:
 template<> struct fmt::formatter<deephaven::dhcore::DateTime> : ostream_formatter {};
 template<> struct fmt::formatter<deephaven::dhcore::LocalDate> : ostream_formatter {};
 template<> struct fmt::formatter<deephaven::dhcore::LocalTime> : ostream_formatter {};
+template<> struct fmt::formatter<deephaven::dhcore::ElementType> : ostream_formatter {};

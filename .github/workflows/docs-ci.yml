@@ -437,14 +437,14 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: protobuf-docs-${{ steps.dhc-version.outputs.version }}
-          path: 'proto/proto-backplane-grpc/build/generated/source/proto/main/proto-doc/single-html/index.html'
+          path: 'proto/proto-backplane-grpc/build/protoc-output/proto-doc/single-html/index.html'
 
       - name: Deploy Protobuf Docs
         if: ${{ github.event_name == 'push' }}
         uses: burnett01/rsync-deployments@5.2
         with:
           switches: -rlptDvz --delete
-          path: proto/proto-backplane-grpc/build/generated/source/proto/main/proto-doc/single-html/index.html
+          path: proto/proto-backplane-grpc/build/protoc-output/proto-doc/single-html/index.html
           remote_path: deephaven-core-v2/${{ github.ref_name }}/client-api/protobuf/
           remote_host: ${{ secrets.DOCS_HOST }}
           remote_port: ${{ secrets.DOCS_PORT }}

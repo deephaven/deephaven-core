@@ -3,6 +3,7 @@
 //
 package io.deephaven.extensions.barrage.chunk;
 
+import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.WritableLongChunk;
@@ -57,16 +58,23 @@ public class ListChunkReader<T> extends BaseChunkReader<WritableObjectChunk<T, V
         // have a lengths buffer if ListView instead of List
         final long lengthsBufferLength = mode != Mode.VIEW ? 0 : bufferInfoIter.nextLong();
 
+        WritableObjectChunk<T, Values> chunk = BaseChunkReader.castOrCreateChunk(
+                outChunk,
+                outOffset,
+                Math.max(totalRows, nodeInfo.numElements),
+                WritableObjectChunk::makeWritableChunk,
+                WritableChunk::asWritableObjectChunk);
+
         if (nodeInfo.numElements == 0) {
+            // must consume any advertised inner payload even though there "aren't any rows"
             is.skipBytes(LongSizedDataStructure.intSize(DEBUG_NAME,
                     validityBufferLength + offsetsBufferLength + lengthsBufferLength));
             try (final WritableChunk<Values> ignored =
                     componentReader.readChunk(fieldNodeIter, bufferInfoIter, is, null, 0, 0)) {
-                return WritableObjectChunk.makeWritableChunk(nodeInfo.numElements);
+                return chunk;
             }
         }
 
-        final WritableObjectChunk<T, Values> chunk;
         final int numValidityLongs = (nodeInfo.numElements + 63) / 64;
         final int numOffsets = nodeInfo.numElements + (mode == Mode.VARIABLE ? 1 : 0);
         try (final WritableLongChunk<Values> isValid = WritableLongChunk.makeWritableChunk(numValidityLongs);
@@ -112,9 +120,12 @@ public class ListChunkReader<T> extends BaseChunkReader<WritableObjectChunk<T, V
             try (final WritableChunk<Values> inner =
                     componentReader.readChunk(fieldNodeIter, bufferInfoIter, is, null, 0, 0)) {
                 // noinspection unchecked
-                chunk = (WritableObjectChunk<T, Values>) kernel.contract(inner, fixedSizeLength, offsets, lengths,
-
-                        outChunk, outOffset, totalRows);
+                chunk = (WritableObjectChunk<T, Values>) kernel.contract(
+                        inner, fixedSizeLength, offsets, lengths, chunk, outOffset, totalRows);
+                if (outChunk != null) {
+                    // expect our kernel to have returned the same chunk
+                    Assert.eq(chunk, "chunk", outChunk, "outChunk");
+                }
 
                 long nextValid = 0;
                 for (int ii = 0; ii < nodeInfo.numElements;) {

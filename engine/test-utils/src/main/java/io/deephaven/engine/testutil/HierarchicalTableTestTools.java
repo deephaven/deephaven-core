@@ -81,9 +81,20 @@ public class HierarchicalTableTestTools {
                 : Math.min(rows.lastRowKey() + 1, expandedSize) - rows.firstRowKey();
         assertThat(snapshotSize).isEqualTo(expectedSnapshotSize);
 
-        final LinkedHashMap<String, ColumnSource<?>> sources = new LinkedHashMap<>(includedColumns.length);
-        for (int ci = 0; ci < includedColumns.length; ++ci) {
-            final ColumnDefinition<?> columnDefinition = includedColumns[ci];
+        final LinkedHashMap<String, ColumnDefinition<?>> dedupedColumnMap = new LinkedHashMap<>();
+        for (final ColumnDefinition<?> columnDefinition : includedColumns) {
+            String origName = columnDefinition.getName();
+            String name = origName;
+            for (int idx = 0; dedupedColumnMap.containsKey(name); idx++) {
+                name = origName + idx++;
+            }
+            dedupedColumnMap.put(name, columnDefinition.withName(name));
+        }
+        final ColumnDefinition<?>[] dedupedColumns = dedupedColumnMap.values().toArray(ColumnDefinition[]::new);
+
+        final LinkedHashMap<String, ColumnSource<?>> sources = new LinkedHashMap<>();
+        for (int ci = 0; ci < dedupedColumns.length; ++ci) {
+            final ColumnDefinition<?> columnDefinition = dedupedColumns[ci];
             // noinspection unchecked
             final WritableChunk<? extends Values> chunk = chunks[ci];
             final ChunkColumnSource<?> chunkColumnSource = ChunkColumnSource.make(
@@ -106,7 +117,7 @@ public class HierarchicalTableTestTools {
 
         // noinspection resource
         return new QueryTable(
-                TableDefinition.of(includedColumns),
+                TableDefinition.of(dedupedColumns),
                 RowSetFactory.flat(snapshotSize).toTracking(),
                 sources);
     }

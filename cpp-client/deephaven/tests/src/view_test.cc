@@ -5,8 +5,7 @@
 #include "deephaven/tests/test_util.h"
 #include "deephaven/dhcore/utility/utility.h"
 
-using deephaven::client::TableHandleManager;
-using deephaven::client::TableHandle;
+using deephaven::client::utility::TableMaker;
 
 namespace deephaven::client::tests {
 TEST_CASE("View", "[View]") {
@@ -16,15 +15,10 @@ TEST_CASE("View", "[View]") {
   // literal strings
   auto t1 = table.LastBy("Ticker").View("Ticker", "Close", "Volume");
 
-  std::vector<std::string> ticker_data = {"XRX", "XYZZY", "IBM", "GME", "AAPL", "ZNGA", "T"};
-  std::vector<double> close_data = {53.8, 88.5, 38.7, 453, 26.7, 544.9, 13.4};
-  std::vector<int64_t> vol_data = {87000, 6060842, 138000, 138000000, 19000, 48300, 1500};
-
-  CompareTable(
-      t1,
-      "Ticker", ticker_data,
-      "Close", close_data,
-      "Volume", vol_data
-  );
+  TableMaker expected;
+  expected.AddColumn<std::string>("Ticker", {"XRX", "XYZZY", "IBM", "GME", "AAPL", "ZNGA", "T"});
+  expected.AddColumn<double>("Close", {53.8, 88.5, 38.7, 453, 26.7, 544.9, 13.4});
+  expected.AddColumn<int64_t>("Volume", {87000, 6060842, 138000, 138000000, 19000, 48300, 1500});
+  TableComparerForTests::Compare(expected, t1);
 }
 }  // namespace deephaven::client::tests

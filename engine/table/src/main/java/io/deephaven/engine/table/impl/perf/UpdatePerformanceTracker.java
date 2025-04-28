@@ -7,6 +7,9 @@ import io.deephaven.base.clock.Clock;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.liveness.LivenessArtifact;
+import io.deephaven.engine.liveness.LivenessScopeStack;
+import io.deephaven.engine.liveness.SingletonLivenessManager;
 import io.deephaven.engine.table.ShiftObliviousListener;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdateListener;
@@ -15,6 +18,7 @@ import io.deephaven.engine.table.impl.InstrumentedTableUpdateListener;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.ShiftObliviousInstrumentedListener;
 import io.deephaven.engine.tablelogger.EngineTableLoggers;
+import io.deephaven.engine.tablelogger.UpdatePerformanceAncestorLogger;
 import io.deephaven.engine.tablelogger.UpdatePerformanceLogLogger;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.updategraph.impl.BaseUpdateGraph;
@@ -35,6 +39,7 @@ import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Supplier;
 
 /**
  * <p>
@@ -56,34 +61,71 @@ public class UpdatePerformanceTracker {
     public static final long REPORT_INTERVAL_MILLIS = Configuration.getInstance().getLongForClassWithDefault(
             UpdatePerformanceTracker.class, "reportIntervalMillis", 60 * 1000L);
 
+    /**
+     * Should all UpdatePerformanceTracker entries be logged once, to permit ancestor discovery even if they would
+     * otherwise not qualify for logging based on the {@link #LOG_THRESHOLD log threshold}.
+     */
+    public static final boolean LOG_ALL_ENTRIES_ONCE = Configuration.getInstance().getBooleanForClassWithDefault(
+            UpdatePerformanceTracker.class, "logAllEntriesOnce", false);
+
     private static final Logger log = LoggerFactory.getLogger(UpdatePerformanceTracker.class);
 
     // aggregate update performance entries less than 500us by default
     static final QueryPerformanceLogThreshold LOG_THRESHOLD =
             new QueryPerformanceLogThreshold("Update", 500_000L);
 
+    // We do not want an UpdatePerformanceTracker's start that occurs within a liveness scope to allow these resources
+    // to be freed, the INSTANCE should remain live unless it is discarded.
+    private static final SingletonLivenessManager livenessManager = new SingletonLivenessManager();
     private static InternalState INSTANCE;
 
+    /**
+     * Retrieves or initializes the singleton instance of {@code InternalState}. If the instance does not exist, it is
+     * created.
+     *
+     * @return the singleton instance of {@code InternalState}
+     */
     private static InternalState getInternalState() {
         InternalState local;
         if ((local = INSTANCE) == null) {
             synchronized (UpdatePerformanceTracker.class) {
                 if ((local = INSTANCE) == null) {
-                    INSTANCE = local = new InternalState();
+                    try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+                        INSTANCE = local = new InternalState();
+                        livenessManager.manage(INSTANCE);
+                    }
                 }
             }
         }
         return local;
     }
 
-    private static class InternalState {
+    /**
+     * Retrieves the singleton instance of {@code InternalState} if it exists; otherwise, returns {@code null}.
+     *
+     * @return the singleton {@code InternalState} instance if it is initialized, or {@code null} if it is not
+     */
+    private static InternalState maybeGetInternalState() {
+        // we are satisfied to return null here
+        return INSTANCE;
+    }
+
+    private static class InternalState extends LivenessArtifact {
         private final UpdatePerformanceLogLogger tableLogger;
         private final UpdatePerformanceStreamPublisher publisher;
+
+        private final UpdatePerformanceAncestorLogger ancestorLogger;
+        private final UpdatePerformanceAncestorStreamPublisher ancestorPublisher;
 
         // Eventually, we can close the StreamToBlinkTableAdapter
         @SuppressWarnings("FieldCanBeLocal")
         private final StreamToBlinkTableAdapter adapter;
         private final Table blink;
+
+        // Eventually, we can close the StreamToBlinkTableAdapter
+        @SuppressWarnings("FieldCanBeLocal")
+        private final StreamToBlinkTableAdapter ancestorAdapter;
+        private final Table ancestorBlink;
 
         private boolean encounteredError = false;
 
@@ -101,6 +143,22 @@ public class UpdatePerformanceTracker {
                         publishingGraph,
                         UpdatePerformanceTracker.class.getName());
                 blink = adapter.table();
+                /*
+                 * When blink (and correspondingly ancestorBlink) is
+                 * io.deephaven.engine.liveness.ReferenceCountedLivenessReferent.destroy-ed, the adapter is closed. The
+                 * adapter then shuts down the publisher, which flushes and releases the chunks that it holds.
+                 */
+                manage(blink);
+
+                ancestorLogger = EngineTableLoggers.get().updatePerformanceAncestorLogger();
+                ancestorPublisher = new UpdatePerformanceAncestorStreamPublisher();
+                ancestorAdapter = new StreamToBlinkTableAdapter(
+                        UpdatePerformanceAncestorStreamPublisher.definition(),
+                        ancestorPublisher,
+                        publishingGraph,
+                        UpdatePerformanceTracker.class.getName() + "-Ancestors");
+                ancestorBlink = ancestorAdapter.table();
+                manage(ancestorBlink);
             }
         }
 
@@ -111,15 +169,31 @@ public class UpdatePerformanceTracker {
         private synchronized void publish(
                 final IntervalLevelDetails intervalLevelDetails,
                 final PerformanceEntry entry) {
-            if (!encounteredError) {
-                try {
-                    publisher.add(intervalLevelDetails, entry);
-                    tableLogger.log(intervalLevelDetails, entry);
-                } catch (final IOException e) {
-                    // Don't want to log this more than once in a report
-                    log.error().append("Error publishing ").append(entry).append(" caused by: ").append(e).endl();
-                    encounteredError = true;
-                }
+            if (encounteredError) {
+                return;
+            }
+            try {
+                publisher.add(intervalLevelDetails, entry);
+                tableLogger.log(intervalLevelDetails, entry);
+            } catch (final IOException e) {
+                // Don't want to log this more than once in a report
+                log.error().append("Error publishing ").append(entry).append(" caused by: ").append(e).endl();
+                encounteredError = true;
+            }
+        }
+
+        private synchronized void publishAncestor(String updateGraphName, PerformanceEntry entry, long[] ancestors) {
+            if (encounteredError) {
+                return;
+            }
+            try {
+                ancestorPublisher.add(updateGraphName, entry.getId(), entry.getDescription(), ancestors);
+                ancestorLogger.log(updateGraphName, entry.getId(), entry.getDescription(), ancestors);
+            } catch (final IOException e) {
+                // Don't want to log this more than once in a report
+                log.error().append("Error publishing ancestors for ").append(entry).append(" caused by: ").append(e)
+                        .endl();
+                encounteredError = true;
             }
         }
     }
@@ -172,6 +246,22 @@ public class UpdatePerformanceTracker {
                     intervalEndTimeEpochNanos);
         } finally {
             intervalStartTimeEpochNanos = intervalEndTimeEpochNanos;
+        }
+    }
+
+    /**
+     * Log an array of ancestors for the provided entry.
+     * 
+     * @param entry entry of entry to log for
+     * @param ancestors array of ancestor ids
+     */
+    public void logAncestors(String updateGraphName, PerformanceEntry entry, Supplier<long[]> ancestors) {
+        final InternalState state = maybeGetInternalState();
+        if (state != null) {
+            final long[] ancestorArray = ancestors.get();
+            if (ancestorArray != null && ancestorArray.length > 0) {
+                state.publishAncestor(updateGraphName, entry, ancestorArray);
+            }
         }
     }
 
@@ -288,9 +378,18 @@ public class UpdatePerformanceTracker {
         return (QueryTable) BlinkTableTools.blinkToAppendOnly(getInternalState().blink);
     }
 
+    @NotNull
+    public static QueryTable getAncestorTable() {
+        return (QueryTable) BlinkTableTools.blinkToAppendOnly(getInternalState().ancestorBlink);
+    }
+
     @TestUseOnly
     public static void resetForUnitTests() {
         synchronized (UpdatePerformanceTracker.class) {
+            if (INSTANCE == null) {
+                return;
+            }
+            livenessManager.unmanage(INSTANCE);
             INSTANCE = null;
         }
     }

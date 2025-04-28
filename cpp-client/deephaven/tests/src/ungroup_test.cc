@@ -4,11 +4,10 @@
 #include "deephaven/third_party/catch.hpp"
 #include "deephaven/tests/test_util.h"
 
+using deephaven::client::utility::TableMaker;
+
 namespace deephaven::client::tests {
-// TODO(kosak): This test is currently disabled (by membership in the [.] test group).
-// The reason is because each cell in the grouped column comes back as the Arrow type list<double>,
-// but the library does not currently know how to deserialize Arrow list types.
-TEST_CASE("Ungroup columns", "[.]") {
+TEST_CASE("Ungroup columns", "[ungroup]") {
   auto tm = TableMakerForTests::Create();
   auto table = tm.Table();
 
@@ -17,23 +16,20 @@ TEST_CASE("Ungroup columns", "[.]") {
   auto by_table = table.Where("Ticker == `AAPL`").View("Ticker", "Close").By("Ticker");
   std::cout << by_table.Stream(true) << '\n';
   auto ungrouped = by_table.Ungroup("Close");
+  std::cout << ungrouped.Stream(true) << '\n';
 
-  std::vector<std::string> ticker_data = {"AAPL"};
-  std::vector<std::string> close_data = {"[23.5,24.2,26.7]"};
+  {
+    TableMaker expected;
+    expected.AddColumn<std::string>("Ticker", {"AAPL"});
+    expected.AddColumn<std::vector<double>>("Close", {{23.5, 24.2, 26.7}});
+    TableComparerForTests::Compare(expected, by_table);
+  }
 
-  CompareTable(
-      by_table,
-      "Ticker", ticker_data,
-      "Close", close_data
-  );
-
-  std::vector<std::string> ug_ticker_data = {"AAPL", "AAPL", "AAPL"};
-  std::vector<double> ug_close_data = {23.5, 24.2, 26.7};
-
-  CompareTable(
-      ungrouped,
-      "Ticker", ug_ticker_data,
-      "Close", ug_close_data
-  );
+  {
+    TableMaker expected;
+    expected.AddColumn<std::string>("Ticker", {"AAPL", "AAPL", "AAPL"});
+    expected.AddColumn<double>("Close", {23.5, 24.2, 26.7});
+    TableComparerForTests::Compare(expected, ungrouped);
+  }
 }
 }  // namespace deephaven::client::tests

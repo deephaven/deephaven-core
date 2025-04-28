@@ -11,6 +11,8 @@ import io.deephaven.engine.util.TableTools;
 import io.deephaven.iceberg.sqlite.DbResource;
 import io.deephaven.iceberg.util.IcebergCatalogAdapter;
 import io.deephaven.iceberg.util.IcebergTableAdapter;
+import io.deephaven.iceberg.util.InferenceResolver;
+import io.deephaven.iceberg.util.LoadTableOptions;
 import org.apache.iceberg.PartitionField;
 import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.Snapshot;
@@ -45,6 +47,8 @@ class Pyiceberg2Test {
             ColumnDefinition.ofString("symbol").withPartitioning(),
             ColumnDefinition.ofDouble("bid"),
             ColumnDefinition.ofDouble("ask"));
+    private static final InferenceResolver INFER_WITH_PARTITIONS =
+            InferenceResolver.builder().inferPartitioningColumns(true).build();
 
     private IcebergCatalogAdapter catalogAdapter;
 
@@ -72,7 +76,10 @@ class Pyiceberg2Test {
 
     @Test
     void testDefinition() {
-        final IcebergTableAdapter tableAdapter = catalogAdapter.loadTable(TRADING_DATA);
+        final IcebergTableAdapter tableAdapter = catalogAdapter.loadTable(LoadTableOptions.builder()
+                .id(TRADING_DATA)
+                .resolver(INFER_WITH_PARTITIONS)
+                .build());
         final TableDefinition td = tableAdapter.definition();
         assertThat(td).isEqualTo(TABLE_DEFINITION);
 
@@ -90,7 +97,10 @@ class Pyiceberg2Test {
 
     @Test
     void testData() {
-        final IcebergTableAdapter tableAdapter = catalogAdapter.loadTable(TRADING_DATA);
+        final IcebergTableAdapter tableAdapter = catalogAdapter.loadTable(LoadTableOptions.builder()
+                .id(TRADING_DATA)
+                .resolver(INFER_WITH_PARTITIONS)
+                .build());
         final Table fromIceberg = tableAdapter.table();
         assertThat(fromIceberg.size()).isEqualTo(5);
         final Table expectedData = TableTools.newTable(TABLE_DEFINITION,

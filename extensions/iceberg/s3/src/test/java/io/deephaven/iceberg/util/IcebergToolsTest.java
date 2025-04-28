@@ -9,11 +9,11 @@ import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.extensions.s3.S3Instructions;
 import io.deephaven.iceberg.TestCatalog.IcebergTestCatalog;
+import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.Schema;
 import io.deephaven.iceberg.base.IcebergUtils;
 import org.apache.iceberg.Snapshot;
@@ -42,11 +42,15 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static io.deephaven.iceberg.util.ColumnInstructions.schemaField;
 import static io.deephaven.iceberg.util.IcebergCatalogAdapter.NAMESPACE_DEFINITION;
 import static io.deephaven.iceberg.util.IcebergCatalogAdapter.TABLES_DEFINITION;
 import static io.deephaven.iceberg.util.IcebergTableAdapter.SNAPSHOT_DEFINITION;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 
 /**
  * @deprecated tests against a fresh catalog should be added to {@link io.deephaven.iceberg.junit5.SqliteCatalogBase}
@@ -70,6 +74,78 @@ public abstract class IcebergToolsTest {
             ColumnDefinition.ofDouble("Unit_Price"),
             ColumnDefinition.ofTime("Order_Date"));
 
+    // these field ids are the same across all the Iceberg tables
+    private static final ColumnInstructions REGION = schemaField(1);
+    private static final ColumnInstructions ITEM_TYPE = schemaField(2);
+    private static final ColumnInstructions UNITS_SOLD = schemaField(3);
+    private static final ColumnInstructions UNIT_PRICE = schemaField(4);
+    private static final ColumnInstructions ORDER_DATE = schemaField(5);
+
+    // could also be partitionField
+    private static final ColumnInstructions YEAR = schemaField(6);
+    private static final ColumnInstructions MONTH = schemaField(7);
+
+    private static final InferenceResolver RESOLVE_WITH_PARTITIONING = InferenceResolver.builder()
+            .inferPartitioningColumns(true)
+            .build();
+
+    private static IcebergTableAdapter load(IcebergCatalogAdapter adapter, String id, TableDefinition definition) {
+        return adapter.loadTable(LoadTableOptions.builder()
+                .id(id)
+                .resolver(new MyResolver(table -> resolver(definition, table.schema())))
+                .build());
+    }
+
+    private static IcebergTableAdapter load(IcebergCatalogAdapter adapter, String id, TableDefinition definition,
+            ColumnInstructions... columnInstructions) {
+        return adapter.loadTable(LoadTableOptions.builder()
+                .id(id)
+                .resolver(new MyResolver(table -> resolver(definition, table.schema(), columnInstructions)))
+                .build());
+    }
+
+    private static IcebergTableAdapter loadPartitions(IcebergCatalogAdapter adapter, String id,
+            TableDefinition definition, ColumnInstructions... columnInstructions) {
+        return adapter.loadTable(LoadTableOptions.builder()
+                .id(id)
+                .resolver(
+                        new MyResolver(table -> resolver(definition, table.schema(), table.spec(), columnInstructions)))
+                .build());
+    }
+
+    private static Resolver resolver(TableDefinition definition, Schema schema) {
+        return resolver(definition, schema, REGION, ITEM_TYPE, UNITS_SOLD, UNIT_PRICE, ORDER_DATE);
+    }
+
+    private static Resolver resolver(TableDefinition definition, Schema schema,
+            ColumnInstructions... columnInstructions) {
+        if (definition.numColumns() != columnInstructions.length) {
+            throw new IllegalArgumentException();
+        }
+        Resolver.Builder builder = Resolver.builder()
+                .schema(schema)
+                .definition(definition);
+        for (int i = 0; i < columnInstructions.length; i++) {
+            builder.putColumnInstructions(definition.getColumnNames().get(i), columnInstructions[i]);
+        }
+        return builder.build();
+    }
+
+    private static Resolver resolver(TableDefinition definition, Schema schema, PartitionSpec spec,
+            ColumnInstructions... columnInstructions) {
+        if (definition.numColumns() != columnInstructions.length) {
+            throw new IllegalArgumentException();
+        }
+        Resolver.Builder builder = Resolver.builder()
+                .schema(schema)
+                .spec(spec)
+                .definition(definition);
+        for (int i = 0; i < columnInstructions.length; i++) {
+            builder.putColumnInstructions(definition.getColumnNames().get(i), columnInstructions[i]);
+        }
+        return builder.build();
+    }
+
     private static final TableDefinition SALES_MULTI_DEFINITION = SALES_SINGLE_DEFINITION;
 
     private static final TableDefinition SALES_PARTITIONED_DEFINITION = TableDefinition.of(
@@ -92,8 +168,9 @@ public abstract class IcebergToolsTest {
             ColumnDefinition.fromGenericType("timeField", LocalTime.class),
             ColumnDefinition.fromGenericType("timestampField", LocalDateTime.class),
             ColumnDefinition.fromGenericType("decimalField", BigDecimal.class),
-            ColumnDefinition.fromGenericType("fixedField", byte[].class),
-            ColumnDefinition.fromGenericType("binaryField", byte[].class),
+            // TODO(DH-18253): Add support to write more types to iceberg tables
+            // ColumnDefinition.fromGenericType("fixedField", byte[].class),
+            // ColumnDefinition.fromGenericType("binaryField", byte[].class),
             ColumnDefinition.ofTime("instantField"));
 
     private static final TableDefinition META_DEF = TableDefinition.of(
@@ -282,7 +359,10 @@ public abstract class IcebergToolsTest {
         uploadSalesPartitioned();
 
         final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog);
-        final IcebergTableAdapter tableAdapter = adapter.loadTable("sales.sales_partitioned");
+        final IcebergTableAdapter tableAdapter = adapter.loadTable(LoadTableOptions.builder()
+                .id("sales.sales_partitioned")
+                .resolver(RESOLVE_WITH_PARTITIONING)
+                .build());
         final io.deephaven.engine.table.Table table = tableAdapter.table(instructions);
 
         // Verify we retrieved all the rows.
@@ -321,7 +401,10 @@ public abstract class IcebergToolsTest {
         uploadSalesPartitioned();
 
         final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog);
-        final IcebergTableAdapter tableAdapter = adapter.loadTable("sales.sales_partitioned");
+        final IcebergTableAdapter tableAdapter = adapter.loadTable(LoadTableOptions.builder()
+                .id("sales.sales_partitioned")
+                .resolver(RESOLVE_WITH_PARTITIONING)
+                .build());
         final io.deephaven.engine.table.Table table = tableAdapter.table(instructions);
 
         // Verify we retrieved all the rows.
@@ -334,7 +417,10 @@ public abstract class IcebergToolsTest {
         uploadSalesPartitioned();
 
         final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog);
-        final IcebergTableAdapter tableAdapter = adapter.loadTable("sales.sales_partitioned");
+        final IcebergTableAdapter tableAdapter = adapter.loadTable(LoadTableOptions.builder()
+                .id("sales.sales_partitioned")
+                .resolver(RESOLVE_WITH_PARTITIONING)
+                .build());
         final io.deephaven.engine.table.Table table = tableAdapter.table(instructions);
 
         // Verify we retrieved all the rows.
@@ -343,34 +429,28 @@ public abstract class IcebergToolsTest {
     }
 
     @Test
-    void testOpenTablePartitionTypeException() {
-        final TableDefinition tableDef = TableDefinition.of(
-                ColumnDefinition.ofLong("year").withPartitioning(),
-                ColumnDefinition.ofInt("month").withPartitioning(),
-                ColumnDefinition.ofLong("Region"),
-                ColumnDefinition.ofString("Item_Type"),
-                ColumnDefinition.ofDouble("Units_Sold"),
-                ColumnDefinition.ofLong("Unit_Price"),
-                ColumnDefinition.ofTime("Order_Date"));
-
-        final IcebergReadInstructions localInstructions = IcebergReadInstructions.builder()
-                .tableDefinition(tableDef)
-                .dataInstructions(instructions.dataInstructions().get())
-                .build();
+    void testOpenTablePartitionTypeException() throws ExecutionException, InterruptedException, TimeoutException {
+        uploadSalesPartitioned();
 
         final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog);
         final IcebergTableAdapter tableAdapter = adapter.loadTable("sales.sales_partitioned");
 
-        for (Runnable runnable : Arrays.<Runnable>asList(
-                () -> tableAdapter.table(localInstructions),
-                () -> tableAdapter.definition(localInstructions),
-                () -> tableAdapter.definitionTable(localInstructions))) {
-            try {
-                runnable.run();
-                Assert.statementNeverExecuted("Expected an exception for missing columns");
-            } catch (final TableDefinition.IncompatibleTableDefinitionException e) {
-                Assert.eqTrue(e.getMessage().startsWith("Table definition incompatibilities"), "Exception message");
-            }
+        final TableDefinition tableDef = TableDefinition.of(
+                ColumnDefinition.ofLong("year").withPartitioning(),
+                ColumnDefinition.ofInt("month").withPartitioning(),
+                ColumnDefinition.ofString("Region"),
+                ColumnDefinition.ofString("Item_Type"),
+                ColumnDefinition.ofInt("Units_Sold"),
+                ColumnDefinition.ofDouble("Unit_Price"),
+                ColumnDefinition.ofTime("Order_Date"));
+
+        try {
+            resolver(tableDef, tableAdapter.currentSchema(), tableAdapter.icebergTable().spec(), YEAR,
+                    MONTH, REGION, ITEM_TYPE, UNITS_SOLD, UNIT_PRICE, ORDER_DATE);
+        } catch (Resolver.MappingException e) {
+            assertThat(e).hasMessageContaining("Unable to map Deephaven column year");
+            assertThat(e).cause().hasMessageContaining(
+                    "Identity transform of type `int` does not support coercion to io.deephaven.qst.type.LongType");
         }
     }
 
@@ -386,22 +466,10 @@ public abstract class IcebergToolsTest {
                 ColumnDefinition.ofInt("UnitsSold"),
                 ColumnDefinition.ofDouble("UnitPrice"),
                 ColumnDefinition.ofTime("OrderDate"));
-
-        final IcebergReadInstructions localInstructions = IcebergReadInstructions.builder()
-                .tableDefinition(renamed)
-                .dataInstructions(instructions.dataInstructions().get())
-                .putColumnRenames("Region", "RegionName")
-                .putColumnRenames("Item_Type", "ItemType")
-                .putColumnRenames("Units_Sold", "UnitsSold")
-                .putColumnRenames("Unit_Price", "UnitPrice")
-                .putColumnRenames("Order_Date", "OrderDate")
-                .putColumnRenames("year", "__year")
-                .putColumnRenames("month", "__month")
-                .build();
-
         final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog);
-        final IcebergTableAdapter tableAdapter = adapter.loadTable("sales.sales_partitioned");
-        final io.deephaven.engine.table.Table table = tableAdapter.table(localInstructions);
+        final IcebergTableAdapter tableAdapter = loadPartitions(adapter, "sales.sales_partitioned", renamed, YEAR,
+                MONTH, REGION, ITEM_TYPE, UNITS_SOLD, UNIT_PRICE, ORDER_DATE);
+        final io.deephaven.engine.table.Table table = tableAdapter.table(instructions);
 
         // Verify we retrieved all the rows.
         Assert.eq(table.size(), "table.size()", 100_000, "expected rows in the table");
@@ -421,14 +489,10 @@ public abstract class IcebergToolsTest {
                 ColumnDefinition.ofDouble("Unit_Price"),
                 ColumnDefinition.ofTime("Order_Date"));
 
-        final IcebergReadInstructions localInstructions = IcebergReadInstructions.builder()
-                .tableDefinition(tableDef)
-                .dataInstructions(instructions.dataInstructions().get())
-                .build();
-
         final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog);
-        final IcebergTableAdapter tableAdapter = adapter.loadTable("sales.sales_partitioned");
-        final io.deephaven.engine.table.Table table = tableAdapter.table(localInstructions);
+        final IcebergTableAdapter tableAdapter = loadPartitions(adapter, "sales.sales_partitioned", tableDef, YEAR,
+                REGION, ITEM_TYPE, UNITS_SOLD, UNIT_PRICE, ORDER_DATE);
+        final io.deephaven.engine.table.Table table = tableAdapter.table(instructions);
 
         // Verify we retrieved all the rows.
         Assert.eq(table.size(), "table.size()", 100_000, "expected rows in the table");
@@ -449,14 +513,10 @@ public abstract class IcebergToolsTest {
                 ColumnDefinition.ofDouble("Unit_Price"),
                 ColumnDefinition.ofTime("Order_Date"));
 
-        final IcebergReadInstructions localInstructions = IcebergReadInstructions.builder()
-                .tableDefinition(tableDef)
-                .dataInstructions(instructions.dataInstructions().get())
-                .build();
-
         final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog);
-        final IcebergTableAdapter tableAdapter = adapter.loadTable("sales.sales_partitioned");
-        final io.deephaven.engine.table.Table table = tableAdapter.table(localInstructions);
+        final IcebergTableAdapter tableAdapter = loadPartitions(adapter, "sales.sales_partitioned", tableDef, MONTH,
+                YEAR, REGION, ITEM_TYPE, UNITS_SOLD, UNIT_PRICE, ORDER_DATE);
+        final io.deephaven.engine.table.Table table = tableAdapter.table(instructions);
 
         // Verify we retrieved all the rows.
         Assert.eq(table.size(), "table.size()", 100_000, "expected rows in the table");
@@ -467,14 +527,9 @@ public abstract class IcebergToolsTest {
     void testZeroPartitioningColumns() throws ExecutionException, InterruptedException, TimeoutException {
         uploadSalesPartitioned();
 
-        final IcebergReadInstructions localInstructions = IcebergReadInstructions.builder()
-                .tableDefinition(SALES_MULTI_DEFINITION)
-                .dataInstructions(instructions.dataInstructions().get())
-                .build();
-
         final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog);
-        final IcebergTableAdapter tableAdapter = adapter.loadTable("sales.sales_partitioned");
-        final io.deephaven.engine.table.Table table = tableAdapter.table(localInstructions);
+        final IcebergTableAdapter tableAdapter = load(adapter, "sales.sales_partitioned", SALES_MULTI_DEFINITION);
+        final io.deephaven.engine.table.Table table = tableAdapter.table(instructions);
 
         // Verify we retrieved all the rows.
         Assert.eq(table.size(), "table.size()", 100_000, "expected rows in the table");
@@ -483,6 +538,8 @@ public abstract class IcebergToolsTest {
 
     @Test
     void testIncorrectPartitioningColumns() throws ExecutionException, InterruptedException, TimeoutException {
+        uploadSalesPartitioned();
+
         final TableDefinition tableDef = TableDefinition.of(
                 ColumnDefinition.ofInt("month").withPartitioning(),
                 ColumnDefinition.ofInt("year").withPartitioning(),
@@ -492,58 +549,39 @@ public abstract class IcebergToolsTest {
                 ColumnDefinition.ofDouble("Unit_Price"),
                 ColumnDefinition.ofTime("Order_Date"));
 
-        final IcebergReadInstructions localInstructions = IcebergReadInstructions.builder()
-                .tableDefinition(tableDef)
-                .dataInstructions(instructions.dataInstructions().get())
-                .build();
-
         final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog);
         final IcebergTableAdapter tableAdapter = adapter.loadTable("sales.sales_partitioned");
 
-        for (Runnable runnable : Arrays.<Runnable>asList(
-                () -> tableAdapter.table(localInstructions),
-                () -> tableAdapter.definition(localInstructions),
-                () -> tableAdapter.definitionTable(localInstructions))) {
-            try {
-                runnable.run();
-                Assert.statementNeverExecuted("Expected an exception for missing columns");
-            } catch (final TableDataException e) {
-                Assert.eqTrue(e.getMessage().startsWith("The following columns are not partitioned"),
-                        "Exception message");
-            }
+        try {
+            resolver(tableDef, tableAdapter.currentSchema(), tableAdapter.icebergTable().spec(), MONTH, YEAR, REGION,
+                    ITEM_TYPE, UNITS_SOLD, UNIT_PRICE, ORDER_DATE);
+            failBecauseExceptionWasNotThrown(Resolver.MappingException.class);
+        } catch (Resolver.MappingException e) {
+            assertThat(e).hasMessageContaining("Unable to map Deephaven column Region");
         }
     }
 
     @Test
-    void testMissingPartitioningColumns() {
+    void testMissingPartitioningColumns() throws ExecutionException, InterruptedException, TimeoutException {
+        uploadSalesPartitioned();
+
         final TableDefinition tableDef = TableDefinition.of(
                 ColumnDefinition.ofInt("__year").withPartitioning(), // Incorrect name
                 ColumnDefinition.ofInt("__month").withPartitioning(), // Incorrect name
-                ColumnDefinition.ofLong("Region"),
+                ColumnDefinition.ofString("Region"),
                 ColumnDefinition.ofString("Item_Type"),
-                ColumnDefinition.ofDouble("Units_Sold"),
-                ColumnDefinition.ofLong("Unit_Price"),
+                ColumnDefinition.ofInt("Units_Sold"),
+                ColumnDefinition.ofDouble("Unit_Price"),
                 ColumnDefinition.ofTime("Order_Date"));
 
-        final IcebergReadInstructions localInstructions = IcebergReadInstructions.builder()
-                .tableDefinition(tableDef)
-                .dataInstructions(instructions.dataInstructions().get())
-                .build();
-
         final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog);
-        final IcebergTableAdapter tableAdapter = adapter.loadTable("sales.sales_partitioned");
+        final IcebergTableAdapter tableAdapter = loadPartitions(adapter, "sales.sales_partitioned", tableDef, YEAR,
+                MONTH, REGION, ITEM_TYPE, UNITS_SOLD, UNIT_PRICE, ORDER_DATE);
 
-        for (Runnable runnable : Arrays.<Runnable>asList(
-                () -> tableAdapter.table(localInstructions),
-                () -> tableAdapter.definition(localInstructions),
-                () -> tableAdapter.definitionTable(localInstructions))) {
-            try {
-                runnable.run();
-                Assert.statementNeverExecuted("Expected an exception for missing columns");
-            } catch (final TableDefinition.IncompatibleTableDefinitionException e) {
-                Assert.eqTrue(e.getMessage().startsWith("Table definition incompatibilities"), "Exception message");
-            }
-        }
+        final io.deephaven.engine.table.Table table = tableAdapter.table(instructions);
+        // Verify we retrieved all the rows.
+        Assert.eq(table.size(), "table.size()", 100_000, "expected rows in the table");
+        Assert.equals(table.getDefinition(), "table.getDefinition()", tableDef);
     }
 
     @Test
@@ -568,13 +606,9 @@ public abstract class IcebergToolsTest {
     void testOpenTableColumnLegalization() throws ExecutionException, InterruptedException, TimeoutException {
         uploadSalesRenamed();
 
-        final IcebergReadInstructions localInstructions = IcebergReadInstructions.builder()
-                .dataInstructions(instructions.dataInstructions().get())
-                .build();
-
         final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog);
-        final IcebergTableAdapter tableAdapter = adapter.loadTable("sales.sales_renamed");
-        final io.deephaven.engine.table.Table table = tableAdapter.table(localInstructions);
+        final IcebergTableAdapter tableAdapter = load(adapter, "sales.sales_renamed", SALES_RENAMED_DEFINITION);
+        final io.deephaven.engine.table.Table table = tableAdapter.table(instructions);
 
         // Verify we retrieved all the rows.
         Assert.eq(table.size(), "table.size()", 100_000, "expected rows in the table");
@@ -586,73 +620,38 @@ public abstract class IcebergToolsTest {
             throws ExecutionException, InterruptedException, TimeoutException {
         uploadSalesRenamed();
 
-        final IcebergReadInstructions localInstructions = IcebergReadInstructions.builder()
-                .dataInstructions(instructions.dataInstructions().get())
-                .putColumnRenames("Item&Type", "Item_Type")
-                .putColumnRenames("Units/Sold", "Units_Sold")
-                .build();
-
-
         final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog);
-        final IcebergTableAdapter tableAdapter = adapter.loadTable("sales.sales_renamed");
-        final io.deephaven.engine.table.Table table = tableAdapter.table(localInstructions);
-
-        final TableDefinition expected = TableDefinition.of(
-                ColumnDefinition.ofString("Region_Name"),
-                ColumnDefinition.ofString("Item_Type"),
-                ColumnDefinition.ofInt("Units_Sold"),
-                ColumnDefinition.ofDouble("Unit_Price"),
-                ColumnDefinition.ofTime("Order_Date"));
+        final IcebergTableAdapter tableAdapter = load(adapter, "sales.sales_renamed", SALES_RENAMED_DEFINITION);
+        final io.deephaven.engine.table.Table table = tableAdapter.table(instructions);
 
         // Verify we retrieved all the rows.
         Assert.eq(table.size(), "table.size()", 100_000, "expected rows in the table");
-        Assert.equals(table.getDefinition(), "table.getDefinition()", expected);
+        Assert.equals(table.getDefinition(), "table.getDefinition()", SALES_RENAMED_DEFINITION);
     }
 
     @Test
-    void testOpenTableColumnLegalizationPartitionException() {
+    void testOpenTableColumnLegalizationPartitionException()
+            throws ExecutionException, InterruptedException, TimeoutException {
+        uploadSalesPartitioned();
+
         final TableDefinition tableDef = TableDefinition.of(
                 ColumnDefinition.ofInt("Year").withPartitioning(),
                 ColumnDefinition.ofInt("Month").withPartitioning());
 
-        final IcebergReadInstructions localInstructions = IcebergReadInstructions.builder()
-                .tableDefinition(tableDef)
-                .putColumnRenames("Year", "Current Year")
-                .putColumnRenames("Month", "Current Month")
-                .dataInstructions(instructions.dataInstructions().get())
-                .build();
-
         final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog);
-        final IcebergTableAdapter tableAdapter = adapter.loadTable("sales.sales_partitioned");
+        final IcebergTableAdapter tableAdapter =
+                loadPartitions(adapter, "sales.sales_partitioned", tableDef, YEAR, MONTH);
 
-        for (Runnable runnable : Arrays.<Runnable>asList(
-                () -> tableAdapter.table(localInstructions),
-                () -> tableAdapter.definition(localInstructions),
-                () -> tableAdapter.definitionTable(localInstructions))) {
-            try {
-                runnable.run();
-                Assert.statementNeverExecuted("Expected an exception for missing columns");
-            } catch (final TableDataException e) {
-                Assert.eqTrue(e.getMessage().contains("invalid column name provided"), "Exception message");
-            }
-        }
+        final io.deephaven.engine.table.Table table = tableAdapter.table(instructions);
+        // Verify we retrieved all the rows.
+        Assert.eq(table.size(), "table.size()", 100_000, "expected rows in the table");
+        Assert.equals(table.getDefinition(), "table.getDefinition()", tableDef);
     }
 
     @Test
     void testOpenTableColumnRenamePartitioningColumns()
             throws ExecutionException, InterruptedException, TimeoutException {
         uploadSalesPartitioned();
-
-        final IcebergReadInstructions localInstructions = IcebergReadInstructions.builder()
-                .dataInstructions(instructions.dataInstructions().get())
-                .putColumnRenames("VendorID", "vendor_id")
-                .putColumnRenames("month", "__month")
-                .putColumnRenames("year", "__year")
-                .build();
-
-        final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog);
-        final IcebergTableAdapter tableAdapter = adapter.loadTable("sales.sales_partitioned");
-        final io.deephaven.engine.table.Table table = tableAdapter.table(localInstructions);
 
         final TableDefinition expected = TableDefinition.of(
                 ColumnDefinition.ofString("Region"),
@@ -662,6 +661,11 @@ public abstract class IcebergToolsTest {
                 ColumnDefinition.ofTime("Order_Date"),
                 ColumnDefinition.ofInt("__year").withPartitioning(),
                 ColumnDefinition.ofInt("__month").withPartitioning());
+
+        final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog);
+        final IcebergTableAdapter tableAdapter = loadPartitions(adapter, "sales.sales_partitioned", expected, REGION,
+                ITEM_TYPE, UNITS_SOLD, UNIT_PRICE, ORDER_DATE, YEAR, MONTH);
+        final io.deephaven.engine.table.Table table = tableAdapter.table(instructions);
 
         // Verify we retrieved all the rows.
         Assert.eq(table.size(), "table.size()", 100_000, "100_000 rows in the table");
@@ -678,32 +682,32 @@ public abstract class IcebergToolsTest {
 
         // Verify we retrieved all the rows.
         final io.deephaven.engine.table.Table table0 =
-                tableAdapter.table(instructions.withSnapshotId(snapshots.get(0).snapshotId()));
+                tableAdapter.table(instructions.withSnapshot(snapshots.get(0)));
         Assert.eq(table0.size(), "table0.size()", 18073, "expected rows in the table");
         Assert.equals(table0.getDefinition(), "table0.getDefinition()", SALES_MULTI_DEFINITION);
 
         final io.deephaven.engine.table.Table table1 =
-                tableAdapter.table(instructions.withSnapshotId(snapshots.get(1).snapshotId()));
+                tableAdapter.table(instructions.withSnapshot(snapshots.get(1)));
         Assert.eq(table1.size(), "table1.size()", 54433, "expected rows in the table");
         Assert.equals(table1.getDefinition(), "table1.getDefinition()", SALES_MULTI_DEFINITION);
 
         final io.deephaven.engine.table.Table table2 =
-                tableAdapter.table(instructions.withSnapshotId(snapshots.get(2).snapshotId()));
+                tableAdapter.table(instructions.withSnapshot(snapshots.get(2)));
         Assert.eq(table2.size(), "table2.size()", 72551, "expected rows in the table");
         Assert.equals(table2.getDefinition(), "table2.getDefinition()", SALES_MULTI_DEFINITION);
 
         final io.deephaven.engine.table.Table table3 =
-                tableAdapter.table(instructions.withSnapshotId(snapshots.get(3).snapshotId()));
+                tableAdapter.table(instructions.withSnapshot(snapshots.get(3)));
         Assert.eq(table3.size(), "table3.size()", 100_000, "expected rows in the table");
         Assert.equals(table3.getDefinition(), "table3.getDefinition()", SALES_MULTI_DEFINITION);
 
         final io.deephaven.engine.table.Table table4 =
-                tableAdapter.table(instructions.withSnapshotId(snapshots.get(4).snapshotId()));
+                tableAdapter.table(instructions.withSnapshot(snapshots.get(4)));
         Assert.eq(table4.size(), "table4.size()", 100_000, "expected rows in the table");
         Assert.equals(table4.getDefinition(), "table4.getDefinition()", SALES_MULTI_DEFINITION);
 
         final io.deephaven.engine.table.Table table5 =
-                tableAdapter.table(instructions.withSnapshotId(snapshots.get(5).snapshotId()));
+                tableAdapter.table(instructions.withSnapshot(snapshots.get(5)));
         Assert.eq(table5.size(), "table5.size()", 0, "expected rows in the table");
         Assert.equals(table5.getDefinition(), "table5.getDefinition()", SALES_MULTI_DEFINITION);
     }
@@ -764,7 +768,9 @@ public abstract class IcebergToolsTest {
     }
 
     @Test
-    void testTableDefinition() {
+    void testTableDefinition() throws ExecutionException, InterruptedException, TimeoutException {
+        uploadSalesMulti();
+
         final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog);
         final IcebergTableAdapter tableAdapter = adapter.loadTable("sales.sales_multi");
         final List<Snapshot> snapshots = tableAdapter.listSnapshots();
@@ -791,7 +797,9 @@ public abstract class IcebergToolsTest {
     }
 
     @Test
-    void testTableSchema() {
+    void testTableSchema() throws ExecutionException, InterruptedException, TimeoutException {
+        uploadSalesMulti();
+
         final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog);
         final IcebergTableAdapter tableAdapter = adapter.loadTable("sales.sales_multi");
 
@@ -813,7 +821,9 @@ public abstract class IcebergToolsTest {
     }
 
     @Test
-    void testTableDefinitionTable() {
+    void testTableDefinitionTable() throws ExecutionException, InterruptedException, TimeoutException {
+        uploadSalesMulti();
+
         final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog);
         final IcebergTableAdapter tableAdapter = adapter.loadTable("sales.sales_multi");
         final List<Snapshot> snapshots = tableAdapter.listSnapshots();
@@ -845,45 +855,34 @@ public abstract class IcebergToolsTest {
     }
 
     @Test
-    void testTableDefinitionWithInstructions() {
+    void testTableDefinitionWithInstructions() throws ExecutionException, InterruptedException, TimeoutException {
+        uploadSalesMulti();
+
         final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog);
-        final IcebergTableAdapter tableAdapter = adapter.loadTable("sales.sales_multi");
-
-        IcebergReadInstructions localInstructions = IcebergReadInstructions.builder()
-                .dataInstructions(instructions.dataInstructions().get())
-                .putColumnRenames("Region", "Area")
-                .putColumnRenames("Item_Type", "ItemType")
-                .putColumnRenames("Units_Sold", "UnitsSold")
-                .putColumnRenames("Unit_Price", "UnitPrice")
-                .putColumnRenames("Order_Date", "OrderDate")
-                .build();
-
-        final TableDefinition renamed = TableDefinition.of(
-                ColumnDefinition.ofString("Area"),
-                ColumnDefinition.ofString("ItemType"),
-                ColumnDefinition.ofInt("UnitsSold"),
-                ColumnDefinition.ofDouble("UnitPrice"),
-                ColumnDefinition.ofTime("OrderDate"));
-
-        // Use string and current snapshot
-        TableDefinition tableDef = tableAdapter.definition(localInstructions);
-        Assert.equals(tableDef, "tableDef", renamed);
-
+        {
+            final TableDefinition renamed = TableDefinition.of(
+                    ColumnDefinition.ofString("Area"),
+                    ColumnDefinition.ofString("ItemType"),
+                    ColumnDefinition.ofInt("UnitsSold"),
+                    ColumnDefinition.ofDouble("UnitPrice"),
+                    ColumnDefinition.ofTime("OrderDate"));
+            final IcebergTableAdapter tableAdapter = load(adapter, "sales.sales_multi", renamed);
+            // Use string and current snapshot
+            TableDefinition tableDef = tableAdapter.definition();
+            Assert.equals(tableDef, "tableDef", renamed);
+        }
         /////////////////////////////////////////////////////
-
-        final TableDefinition userTableDef = TableDefinition.of(
-                ColumnDefinition.ofString("Region"),
-                ColumnDefinition.ofString("Item_Type"),
-                ColumnDefinition.ofTime("Order_Date"));
-
-        localInstructions = IcebergReadInstructions.builder()
-                .dataInstructions(instructions.dataInstructions().get())
-                .tableDefinition(userTableDef)
-                .build();
-
-        // Use string and current snapshot
-        tableDef = tableAdapter.definition(localInstructions);
-        Assert.equals(tableDef, "tableDef", userTableDef);
+        {
+            final TableDefinition userTableDef = TableDefinition.of(
+                    ColumnDefinition.ofString("Region"),
+                    ColumnDefinition.ofString("Item_Type"),
+                    ColumnDefinition.ofTime("Order_Date"));
+            final IcebergTableAdapter tableAdapter =
+                    load(adapter, "sales.sales_multi", userTableDef, REGION, ITEM_TYPE, ORDER_DATE);
+            // Use string and current snapshot
+            TableDefinition tableDef = tableAdapter.definition();
+            Assert.equals(tableDef, "tableDef", userTableDef);
+        }
     }
 
     @Test
@@ -945,6 +944,19 @@ public abstract class IcebergToolsTest {
 
             // Deephaven type == Java type
             Assert.eq(javaType, javaType.getName(), deephavenType.clazz(), deephavenType.clazz().getName());
+        }
+    }
+
+    private static class MyResolver extends ResolverProviderImpl {
+        private final Function<org.apache.iceberg.Table, Resolver> f;
+
+        public MyResolver(Function<org.apache.iceberg.Table, Resolver> f) {
+            this.f = Objects.requireNonNull(f);
+        }
+
+        @Override
+        Resolver resolver(org.apache.iceberg.Table table) {
+            return f.apply(table);
         }
     }
 }

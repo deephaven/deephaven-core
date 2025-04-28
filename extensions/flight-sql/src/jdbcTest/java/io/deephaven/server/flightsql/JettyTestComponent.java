@@ -15,6 +15,7 @@ import io.deephaven.server.runner.ExecutionContextUnitTestModule;
 import javax.inject.Singleton;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
+import java.util.Set;
 
 @Singleton
 @Component(modules = {
@@ -32,6 +33,7 @@ public interface JettyTestComponent extends TestComponent {
             return JettyConfig.builder()
                     .port(0)
                     .tokenExpire(Duration.of(5, ChronoUnit.MINUTES))
+                    .allowedHttpMethods(Set.of("POST"))
                     .build();
         }
     }

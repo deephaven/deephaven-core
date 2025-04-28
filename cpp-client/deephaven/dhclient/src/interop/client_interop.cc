@@ -3,18 +3,27 @@
  */
 #include "deephaven/client/interop/client_interop.h"
 
-#include <codecvt>
-#include <locale>
-#include <arrow/table.h>
+#include <cstddef>
+#include <cstdint>
+#include <memory>
+#include <stdexcept>
+#include <string>
+#include <utility>
+#include <vector>
+
 #include "deephaven/client/client.h"
 #include "deephaven/client/client_options.h"
 #include "deephaven/client/subscription/subscription_handle.h"
 #include "deephaven/client/update_by.h"
 #include "deephaven/client/utility/arrow_util.h"
+#include "deephaven/client/utility/misc_types.h"
 #include "deephaven/client/utility/table_maker.h"
+#include "deephaven/dhcore/chunk/chunk.h"
 #include "deephaven/dhcore/interop/interop_util.h"
+#include "deephaven/dhcore/ticking/ticking.h"
+#include "deephaven/dhcore/types.h"
 #include "deephaven/dhcore/utility/utility.h"
-#include "deephaven/third_party/fmt/format.h"
+#include "deephaven/third_party/fmt/core.h"
 
 using deephaven::client::Aggregate;
 using deephaven::client::AggregateCombo;
@@ -237,7 +246,7 @@ void deephaven_client_TableHandle_GetSchema(
     StringPoolBuilder builder;
     for (int32_t i = 0; i != num_columns; ++i) {
       column_handles[i] = builder.Add(schema->Names()[i]);
-      column_types[i] = static_cast<int32_t>(schema->Types()[i]);
+      column_types[i] = static_cast<int32_t>(schema->ElementTypes()[i].Id());
     }
     *string_pool_handle = builder.Build();
   });
@@ -794,7 +803,7 @@ void deephaven_client_ArrowTable_GetSchema(
     for (int32_t i = 0; i != num_columns; ++i) {
       const auto &field = schema->fields()[i];
       column_handles[i] = builder.Add(field->name());
-      auto element_type_id = *ArrowUtil::GetElementTypeId(*field->type(), true);
+      auto element_type_id = ArrowUtil::GetElementType(*field->type(), true)->Id();
       column_types[i] = static_cast<int32_t>(element_type_id);
     }
     *string_pool_handle = builder.Build();
@@ -838,7 +847,7 @@ void deephaven_client_ClientTable_Schema(NativePtr<ClientTableSpWrapper> self,
     StringPoolBuilder builder;
     for (int32_t i = 0; i != num_columns; ++i) {
       column_handles[i] = builder.Add(schema->Names()[i]);
-      column_types[i] = static_cast<int32_t>(schema->Types()[i]);
+      column_types[i] = static_cast<int32_t>(schema->ElementTypes()[i].Id());
     }
     *string_pool_handle = builder.Build();
   });

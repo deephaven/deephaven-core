@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl.hierarchical;
 
 import io.deephaven.api.ColumnName;
+import io.deephaven.api.Selectable;
 import io.deephaven.api.SortColumn;
 import io.deephaven.api.Strings;
 import io.deephaven.api.agg.Aggregation;
@@ -24,6 +25,7 @@ import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.SortOperation;
 import io.deephaven.engine.table.impl.by.AggregationProcessor;
 import io.deephaven.engine.table.impl.by.AggregationRowLookup;
+import io.deephaven.engine.table.impl.by.rollup.RollupAggregationOutputs;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
@@ -112,6 +114,7 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
         super(initialAttributes, source, levelTables[0]);
 
         this.aggregations = aggregations;
+
         this.includesConstituents = includesConstituents;
         this.groupByColumns = groupByColumns;
 
@@ -246,8 +249,17 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
         if (filters.length == 0) {
             return noopResult();
         }
-        final WhereFilter[] whereFilters = initializeAndValidateFilters(source, groupByColumns, Arrays.asList(filters),
+        final WhereFilter[] whereFilters = initializeAndValidateFilters(source, aggregations, Arrays.asList(filters),
                 IllegalArgumentException::new);
+
+        List<String> groupByColNames = groupByColumns.stream().map(ColumnName::name).collect(Collectors.toList());
+        final boolean onlyGroupBy = Arrays.stream(whereFilters)
+                .allMatch(w -> groupByColNames.containsAll(w.getColumns()));
+        if (!onlyGroupBy) {
+            final Table filteredTable = source.where(Filter.and(whereFilters));
+            return rebase(filteredTable);
+        }
+
         final QueryTable filteredBaseLevel = (QueryTable) levelTables[numLevels - 1].where(Filter.and(whereFilters));
         final AggregationRowLookup baseLevelRowLookup = levelRowLookups[numLevels - 1];
         final RowSet filteredBaseLevelRowSet = filteredBaseLevel.getRowSet();
@@ -280,30 +292,45 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
                 newFilters, availableColumnDefinitions);
     }
 
+    @Override
+    public RollupTable withUpdateView(@NotNull final String... columns) {
+        return withUpdateView(Selectable.from(columns));
+    }
+
+    @Override
+    public RollupTable withUpdateView(Collection<Selectable> columns) {
+        return withNodeOperations(makeNodeOperationsRecorder(NodeType.Aggregated).updateView(columns));
+    }
+
     /**
      * Initialize and validate the supplied filters for this RollupTable.
      *
      * @param source The rollup {@link #getSource() source}
-     * @param groupByColumns The rollup {@link #getGroupByColumns() group-by columns}
+     * @param aggregations The rollup aggregations}
      * @param filters The filters to initialize and validate
      * @param exceptionFactory A factory for creating exceptions from their messages
      * @return The initialized and validated filters
      */
     public static WhereFilter[] initializeAndValidateFilters(
             @NotNull final Table source,
-            @NotNull final Collection<? extends ColumnName> groupByColumns,
+            @NotNull final Collection<? extends Aggregation> aggregations,
             @NotNull final Collection<? extends Filter> filters,
             @NotNull final Function<String, ? extends RuntimeException> exceptionFactory) {
+
+        final List<String> aggColumns = AggregationPairs.of(aggregations)
+                .map(p -> p.input().name()).collect(Collectors.toList());
+        final List<String> validColumns = source.getColumnSourceMap().keySet().stream()
+                .filter(cn -> !aggColumns.contains(cn)).collect(Collectors.toList());
         final WhereFilter[] whereFilters = WhereFilter.from(filters);
         final QueryCompilerRequestProcessor.BatchProcessor compilationProcessor = QueryCompilerRequestProcessor.batch();
         for (final WhereFilter whereFilter : whereFilters) {
             whereFilter.init(source.getDefinition(), compilationProcessor);
-            final List<String> invalidColumnsUsed = whereFilter.getColumns().stream().map(ColumnName::of)
-                    .filter(cn -> !groupByColumns.contains(cn)).map(ColumnName::name).collect(Collectors.toList());
+            final List<String> invalidColumnsUsed = whereFilter.getColumns().stream()
+                    .filter(cn -> !validColumns.contains(cn)).collect(Collectors.toList());
             if (!invalidColumnsUsed.isEmpty()) {
                 throw exceptionFactory.apply(
-                        "Invalid filter found: " + whereFilter + " may only use group-by columns, which are "
-                                + names(groupByColumns) + ", but has also used " + invalidColumnsUsed);
+                        "Invalid filter found: " + whereFilter + " may only use non-aggregation columns, which are "
+                                + validColumns + ", but has used " + invalidColumnsUsed);
             }
             final boolean usesArrays = !whereFilter.getColumnArrays().isEmpty();
             if (usesArrays) {
@@ -334,7 +361,8 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
                 continue;
             }
             final RollupNodeOperationsRecorder recorderTyped = (RollupNodeOperationsRecorder) recorder;
-            if (!recorderTyped.getRecordedFormats().isEmpty()) {
+            if (!recorderTyped.getRecordedFormats().isEmpty() || !recorderTyped.getRecordedUpdateViews().isEmpty()) {
+                // Need to rebuild the available column definitions.
                 newAvailableColumnDefinitions = null;
             }
             switch (recorderTyped.getNodeType()) {
@@ -363,7 +391,11 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
         RollupNodeOperationsRecorder constituent = makeNodeOperationsRecorder(NodeType.Constituent);
         final TableDefinition aggregatedTableDefinition = getNodeDefinition(NodeType.Aggregated);
         final TableDefinition constituentTableDefinition = getNodeDefinition(NodeType.Constituent);
+
         constituent = translateFormats(aggregated, constituent, aggregatedTableDefinition, constituentTableDefinition);
+        constituent =
+                translateUpdateViews(aggregated, constituent, aggregatedTableDefinition, constituentTableDefinition);
+
         final Map<String, String> aggregatedConstituentPairs = AggregationPairs.of(aggregations)
                 .collect(Collectors.toMap(p -> p.output().name(), p -> p.input().name()));
         final Set<String> groupByColumnNames =
@@ -398,6 +430,34 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
             return constituent;
         }
         return (RollupNodeOperationsRecorder) constituent.withFormats(constituentFormats.stream());
+    }
+
+    private static RollupNodeOperationsRecorder translateUpdateViews(
+            @NotNull final RollupNodeOperationsRecorder aggregated,
+            @NotNull final RollupNodeOperationsRecorder constituent,
+            @NotNull final TableDefinition aggregatedTableDefinition,
+            @NotNull final TableDefinition constituentTableDefinition) {
+        if (aggregated.getRecordedUpdateViews().isEmpty()) {
+            return constituent;
+        }
+        final List<Selectable> constituentViews = aggregated.getRecordedUpdateViews().stream()
+                .filter((final SelectColumn aggregatedView) -> Stream
+                        .concat(aggregatedView.getColumns().stream(), aggregatedView.getColumnArrays().stream())
+                        .allMatch((final String columnName) -> {
+                            final ColumnDefinition<?> constituentColumnDefinition =
+                                    constituentTableDefinition.getColumn(columnName);
+                            if (constituentColumnDefinition == null) {
+                                return false;
+                            }
+                            final ColumnDefinition<?> aggregatedColumnDefinition =
+                                    aggregatedTableDefinition.getColumn(columnName);
+                            return constituentColumnDefinition.isCompatible(aggregatedColumnDefinition);
+                        }))
+                .collect(Collectors.toList());
+        if (constituentViews.isEmpty()) {
+            return constituent;
+        }
+        return (RollupNodeOperationsRecorder) constituent.updateView(constituentViews);
     }
 
     private static RollupNodeOperationsRecorder translateSorts(
@@ -767,7 +827,8 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
 
     @Override
     Table applyNodeFormatsAndFilters(final long nodeId, @NotNull final Table nodeBaseTable) {
-        return BaseNodeOperationsRecorder.applyFormats(nodeOperations(nodeId), nodeBaseTable);
+        Table result = RollupNodeOperationsRecorder.applyUpdateViews(nodeOperations(nodeId), nodeBaseTable);
+        return BaseNodeOperationsRecorder.applyFormats(nodeOperations(nodeId), result);
         // NB: There is no node-level filtering for rollups
     }
 
