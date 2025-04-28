@@ -33,10 +33,8 @@ configurations {
         extendsFrom(gwt)
     }
 
-    testCompileClasspath.extendsFrom(gwt)
-    testRuntimeClasspath.extendsFrom(gwt)
-    compileClasspath.extendsFrom(gwt)
-    apiElements.extendsFrom(gwt)
+    testImplementation.extendsFrom(gwt)
+    api.extendsFrom(gwt)
 }
 
 dependencies {
@@ -75,6 +73,10 @@ dependencies {
 
     testImplementation libs.junit4
     testImplementation libs.selenium.remote.driver
+
+    // These aren't being picked up from the other configurations, need to be added directly
+    testImplementation(libs.jetbrains.annotations)
+    testImplementation(libs.immutables.value.annotations)
 }
 
 GwtTools.gwtCompile project, 'io.deephaven.web.DeephavenApi', 'Create a jar of client JS API'
