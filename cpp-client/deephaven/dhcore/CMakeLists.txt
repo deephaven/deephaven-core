@@ -51,6 +51,7 @@ set(ALL_FILES
     include/public/deephaven/dhcore/column/column_source.h
     include/public/deephaven/dhcore/column/column_source_helpers.h
     include/public/deephaven/dhcore/column/column_source_utils.h
+    include/public/deephaven/dhcore/column/container_column_source.h
     include/public/deephaven/dhcore/container/container.h
     include/public/deephaven/dhcore/container/container_util.h
     include/public/deephaven/dhcore/container/row_sequence.h
