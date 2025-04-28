@@ -3,7 +3,9 @@
  */
 #pragma once
 
+#include <algorithm>
 #include <cstddef>
+#include <cstdint>
 #include <memory>
 #include <string>
 #include <utility>
@@ -13,6 +15,7 @@
 #include "deephaven/dhcore/column/column_source.h"
 #include "deephaven/dhcore/column/column_source_utils.h"
 #include "deephaven/dhcore/container/container.h"
+#include "deephaven/dhcore/container/row_sequence.h"
 #include "deephaven/dhcore/types.h"
 
 namespace deephaven::dhcore::column {
@@ -56,49 +59,6 @@ protected:
 };
 
 /**
- * This is the backing store used for the numeric types, which have the property that "null" is
- * represented By a special Deephaven constant.
- */
-template<typename T>
-class NumericBackingStore : public BackingStoreBase {
-  using ColumnSourceImpls = deephaven::dhcore::column::ColumnSourceImpls;
-public:
-  NumericBackingStore() {
-    data_ = std::make_unique<T[]>(0);
-  }
-
-  void Get(size_t begin_index, size_t end_index, T *dest, bool *optional_null_flags) const {
-    ColumnSourceImpls::AssertRangeValid(begin_index, end_index, capacity_);
-    for (auto i = begin_index; i != end_index; ++i) {
-      const auto &value = data_[i];
-      *dest++ = value;
-      if (optional_null_flags != nullptr) {
-        auto is_null = value == deephaven::dhcore::DeephavenTraits<T>::NULL_VALUE;
-        *optional_null_flags++ = is_null;
-      }
-    }
-  }
-
-  void Set(size_t begin_index, size_t end_index, const T *src, const bool *optional_null_flags) const {
-    ColumnSourceImpls::AssertRangeValid(begin_index, end_index, capacity_);
-    for (auto i = begin_index; i != end_index; ++i) {
-      if (optional_null_flags != nullptr && *optional_null_flags++) {
-        data_[i] = deephaven::dhcore::DeephavenTraits<T>::NULL_VALUE;
-        continue;
-      }
-      data_[i] = *src++;
-    }
-  }
-
-  void EnsureCapacity(size_t requested_capacity) {
-    GrowIfNeeded(requested_capacity, &data_, nullptr);
-  }
-
-private:
-  std::unique_ptr<T[]> data_;
-};
-
-/**
  * This is the backing store used for other types like std::string, bool, and DateTime, which track
  * the "null" flag explicitly.
  */
@@ -138,60 +98,10 @@ private:
 };
 }  // namespace internal
 
-template<typename T>
-class NumericArrayColumnSource final : public deephaven::dhcore::column::MutableNumericColumnSource<T>,
-    std::enable_shared_from_this<NumericArrayColumnSource<T>> {
-  struct Private {
-  };
-  using BooleanChunk = deephaven::dhcore::chunk::BooleanChunk;
-  using Chunk = deephaven::dhcore::chunk::Chunk;
-  using UInt64Chunk = deephaven::dhcore::chunk::UInt64Chunk;
-  using ColumnSourceImpls = deephaven::dhcore::column::ColumnSourceImpls;
-  using ColumnSourceVisitor = deephaven::dhcore::column::ColumnSourceVisitor;
-  using RowSequence = deephaven::dhcore::container::RowSequence;
-
-public:
-  static std::shared_ptr <NumericArrayColumnSource> Create() {
-    return std::make_shared<NumericArrayColumnSource<T>>(Private());
-  }
-
-  explicit NumericArrayColumnSource(Private) {}
-
-  ~NumericArrayColumnSource() final = default;
-
-  void FillChunk(const RowSequence &rows, Chunk *dest, BooleanChunk *optional_null_flags) const final {
-    typedef typename deephaven::dhcore::chunk::TypeToChunk<T>::type_t chunkType_t;
-    ColumnSourceImpls::FillChunk<chunkType_t>(rows, dest, optional_null_flags, data_);
-  }
-
-  void FillChunkUnordered(const UInt64Chunk &row_keys, Chunk *dest, BooleanChunk *optional_null_flags) const final {
-    typedef typename deephaven::dhcore::chunk::TypeToChunk<T>::type_t chunkType_t;
-    ColumnSourceImpls::FillChunkUnordered<chunkType_t>(row_keys, dest, optional_null_flags, data_);
-  }
-
-  void FillFromChunk(const Chunk &src, const BooleanChunk *optional_null_flags, const RowSequence &rows) final {
-    typedef typename deephaven::dhcore::chunk::TypeToChunk<T>::type_t chunkType_t;
-    ColumnSourceImpls::FillFromChunk<chunkType_t>(src, optional_null_flags, rows, &data_);
-  }
-
-  void FillFromChunkUnordered(const Chunk &src, const BooleanChunk *optional_null_flags,
-      const UInt64Chunk &row_keys) final {
-    typedef typename deephaven::dhcore::chunk::TypeToChunk<T>::type_t chunkType_t;
-    ColumnSourceImpls::FillFromChunkUnordered<chunkType_t>(src, optional_null_flags,
-        row_keys, &data_);
-  }
-
-  void AcceptVisitor(ColumnSourceVisitor *visitor) const final {
-    visitor->Visit(*this);
-  }
-
-private:
-  internal::NumericBackingStore<T> data_;
-};
 
 template<typename T>
-class GenericArrayColumnSource final : public deephaven::dhcore::column::MutableGenericColumnSource<T>,
-    std::enable_shared_from_this<GenericArrayColumnSource<T>> {
+class GenericArrayColumnSource final : public MutableGenericColumnSource<T>,
+  public std::enable_shared_from_this<GenericArrayColumnSource<T>> {
   struct Private {
   };
   using BooleanChunk = deephaven::dhcore::chunk::BooleanChunk;
@@ -250,6 +160,13 @@ private:
   ElementType element_type_;
   internal::GenericBackingStore<T> data_;
 };
+
+using Int8ArrayColumnSource = GenericArrayColumnSource<int8_t>;
+using Int16ArrayColumnSource = GenericArrayColumnSource<int16_t>;
+using Int32ArrayColumnSource = GenericArrayColumnSource<int32_t>;
+using Int64ArrayColumnSource = GenericArrayColumnSource<int64_t>;
+using FloatArrayColumnSource = GenericArrayColumnSource<float>;
+using DoubleArrayColumnSource = GenericArrayColumnSource<double>;
 
 using BooleanArrayColumnSource = GenericArrayColumnSource<bool>;
 using StringArrayColumnSource = GenericArrayColumnSource<std::string>;

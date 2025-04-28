@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl.hierarchical;
 
 import io.deephaven.api.ColumnName;
+import io.deephaven.api.Selectable;
 import io.deephaven.api.SortColumn;
 import io.deephaven.api.Strings;
 import io.deephaven.api.agg.Aggregation;
@@ -291,6 +292,16 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
                 newFilters, availableColumnDefinitions);
     }
 
+    @Override
+    public RollupTable withUpdateView(@NotNull final String... columns) {
+        return withUpdateView(Selectable.from(columns));
+    }
+
+    @Override
+    public RollupTable withUpdateView(Collection<Selectable> columns) {
+        return withNodeOperations(makeNodeOperationsRecorder(NodeType.Aggregated).updateView(columns));
+    }
+
     /**
      * Initialize and validate the supplied filters for this RollupTable.
      *
@@ -350,7 +361,8 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
                 continue;
             }
             final RollupNodeOperationsRecorder recorderTyped = (RollupNodeOperationsRecorder) recorder;
-            if (!recorderTyped.getRecordedFormats().isEmpty()) {
+            if (!recorderTyped.getRecordedFormats().isEmpty() || !recorderTyped.getRecordedUpdateViews().isEmpty()) {
+                // Need to rebuild the available column definitions.
                 newAvailableColumnDefinitions = null;
             }
             switch (recorderTyped.getNodeType()) {
@@ -379,7 +391,11 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
         RollupNodeOperationsRecorder constituent = makeNodeOperationsRecorder(NodeType.Constituent);
         final TableDefinition aggregatedTableDefinition = getNodeDefinition(NodeType.Aggregated);
         final TableDefinition constituentTableDefinition = getNodeDefinition(NodeType.Constituent);
+
         constituent = translateFormats(aggregated, constituent, aggregatedTableDefinition, constituentTableDefinition);
+        constituent =
+                translateUpdateViews(aggregated, constituent, aggregatedTableDefinition, constituentTableDefinition);
+
         final Map<String, String> aggregatedConstituentPairs = AggregationPairs.of(aggregations)
                 .collect(Collectors.toMap(p -> p.output().name(), p -> p.input().name()));
         final Set<String> groupByColumnNames =
@@ -414,6 +430,34 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
             return constituent;
         }
         return (RollupNodeOperationsRecorder) constituent.withFormats(constituentFormats.stream());
+    }
+
+    private static RollupNodeOperationsRecorder translateUpdateViews(
+            @NotNull final RollupNodeOperationsRecorder aggregated,
+            @NotNull final RollupNodeOperationsRecorder constituent,
+            @NotNull final TableDefinition aggregatedTableDefinition,
+            @NotNull final TableDefinition constituentTableDefinition) {
+        if (aggregated.getRecordedUpdateViews().isEmpty()) {
+            return constituent;
+        }
+        final List<Selectable> constituentViews = aggregated.getRecordedUpdateViews().stream()
+                .filter((final SelectColumn aggregatedView) -> Stream
+                        .concat(aggregatedView.getColumns().stream(), aggregatedView.getColumnArrays().stream())
+                        .allMatch((final String columnName) -> {
+                            final ColumnDefinition<?> constituentColumnDefinition =
+                                    constituentTableDefinition.getColumn(columnName);
+                            if (constituentColumnDefinition == null) {
+                                return false;
+                            }
+                            final ColumnDefinition<?> aggregatedColumnDefinition =
+                                    aggregatedTableDefinition.getColumn(columnName);
+                            return constituentColumnDefinition.isCompatible(aggregatedColumnDefinition);
+                        }))
+                .collect(Collectors.toList());
+        if (constituentViews.isEmpty()) {
+            return constituent;
+        }
+        return (RollupNodeOperationsRecorder) constituent.updateView(constituentViews);
     }
 
     private static RollupNodeOperationsRecorder translateSorts(
@@ -783,7 +827,8 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
 
     @Override
     Table applyNodeFormatsAndFilters(final long nodeId, @NotNull final Table nodeBaseTable) {
-        return BaseNodeOperationsRecorder.applyFormats(nodeOperations(nodeId), nodeBaseTable);
+        Table result = RollupNodeOperationsRecorder.applyUpdateViews(nodeOperations(nodeId), nodeBaseTable);
+        return BaseNodeOperationsRecorder.applyFormats(nodeOperations(nodeId), result);
         // NB: There is no node-level filtering for rollups
     }
 

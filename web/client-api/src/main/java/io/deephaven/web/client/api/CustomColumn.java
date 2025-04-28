@@ -8,6 +8,7 @@ import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
+import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(namespace = "dh")
@@ -49,12 +50,20 @@ public class CustomColumn {
     private final String name;
     private final String type;
     private final String expression;
+    private final CustomColumnOptions options;
 
     @JsIgnore
-    public CustomColumn(String name, String type, String expression) {
+    public CustomColumn(String name, String type, String expression, Object options) {
         this.name = name;
         this.type = type;
         this.expression = expression;
+        if (options instanceof CustomColumnOptions) {
+            this.options = (CustomColumnOptions) options;
+        } else if (options == null) {
+            this.options = new CustomColumnOptions();
+        } else {
+            this.options = new CustomColumnOptions(Js.cast(options));
+        }
     }
 
     @JsIgnore
@@ -74,6 +83,7 @@ public class CustomColumn {
             name = descriptorName;
             type = TYPE_NEW;
         }
+        options = new CustomColumnOptions();
         // Substring from after the name and equals sign
         expression = descriptorExpression.substring(descriptorName.length() + 1);
     }
@@ -87,6 +97,18 @@ public class CustomColumn {
         name = source.getAsAny("name").asString();
         type = source.getAsAny("type").asString();
         expression = source.getAsAny("expression").asString();
+
+        // We expect the options to be provided as part of a top-level map, not nested into a separate object
+        if (source.has("options")) {
+            Object options = source.get("options");
+            if (options instanceof CustomColumnOptions) {
+                this.options = (CustomColumnOptions) options;
+            } else {
+                this.options = new CustomColumnOptions(Js.cast(options));
+            }
+        } else {
+            options = new CustomColumnOptions();
+        }
     }
 
     /**
@@ -126,6 +148,16 @@ public class CustomColumn {
         return expression;
     }
 
+    /**
+     * The options for this custom column.
+     *
+     * @return CustomColumOptions
+     */
+    @JsProperty
+    public CustomColumnOptions getOptions() {
+        return options;
+    }
+
     @JsMethod
     public String valueOf() {
         return toString();
@@ -135,5 +167,15 @@ public class CustomColumn {
     @Override
     public String toString() {
         return "" + name + getNameSuffix(type) + "=" + expression;
+    }
+
+    @JsMethod
+    public static CustomColumn from(String columnInfo) {
+        // Parse the column info from the formatted string (produced from toString())
+        String[] parts = columnInfo.split("=");
+        if (parts.length != 2) {
+            throw new IllegalArgumentException("Invalid column info: " + columnInfo);
+        }
+        return new CustomColumn(parts[0], TYPE_NEW, parts[1], new CustomColumnOptions());
     }
 }

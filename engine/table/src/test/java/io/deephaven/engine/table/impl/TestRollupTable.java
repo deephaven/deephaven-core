@@ -10,9 +10,12 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.hierarchical.HierarchicalTable;
 import io.deephaven.engine.table.hierarchical.RollupTable;
+import io.deephaven.engine.testutil.ColumnInfo;
+import io.deephaven.engine.testutil.EvalNuggetInterface;
+import io.deephaven.engine.testutil.TstUtils;
+import io.deephaven.engine.testutil.generator.IntGenerator;
+import io.deephaven.engine.testutil.generator.SetGenerator;
 import io.deephaven.engine.table.impl.select.WhereFilterFactory;
-import io.deephaven.engine.testutil.*;
-import io.deephaven.engine.testutil.generator.*;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.test.types.OutOfBandTest;
@@ -20,7 +23,10 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
@@ -32,7 +38,7 @@ import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.engine.util.TableTools.byteCol;
 
 @Category(OutOfBandTest.class)
-public class TestRollup extends RefreshingTableTestCase {
+public class TestRollupTable extends RefreshingTableTestCase {
     // This is the list of supported aggregations for rollup. These are all using `intCol` as the column to aggregate
     // because the re-aggregation logic is effectively the same for all column types.
     private final Collection<Aggregation> aggs = List.of(
@@ -77,26 +83,20 @@ public class TestRollup extends RefreshingTableTestCase {
             "wsum"
     };
 
-    @SuppressWarnings("rawtypes")
-    private final ColumnInfo[] columnInfo = initColumnInfos(
-            new String[] {"Sym", "intCol"},
-            new SetGenerator<>("a", "b", "c", "d"),
-            new IntGenerator(10, 100));
-
-    private QueryTable createTable(boolean refreshing, int size, Random random) {
-        return getTable(refreshing, size, random, columnInfo);
-    }
-
-    @Override
-    public void setUp() throws Exception {
-        super.setUp();
-    }
-
+    /**
+     * Perform a large table test, comparing the rollup table root to the zero-key equivalent table, incorporating all
+     * supported aggregations.
+     */
     @Test
-    public void testRollup() {
+    public void testRollupVsZeroKeyStatic() {
         final Random random = new Random(0);
         // Create the test table
-        final Table testTable = createTable(false, 100_000, random);
+        final ColumnInfo[] columnInfo = initColumnInfos(
+                new String[] {"Sym", "intCol"},
+                new SetGenerator<>("a", "b", "c", "d"),
+                new IntGenerator(10, 1_000));
+
+        final Table testTable = getTable(false, 100_000, random, columnInfo);
 
         final RollupTable rollupTable = testTable.rollup(aggs, false, "Sym");
 
@@ -109,8 +109,12 @@ public class TestRollup extends RefreshingTableTestCase {
         TstUtils.assertTableEquals(actual, expected);
     }
 
+    /**
+     * Perform a large table test, comparing the rollup table root to the zero-key equivalent table, incorporating all
+     * supported aggregations.
+     */
     @Test
-    public void testRollupIncremental() {
+    public void testRollupVsZeroKeyIncremental() {
         for (int size = 10; size <= 1000; size *= 10) {
             testRollupIncrementalInternal("size-" + size, size);
         }
@@ -119,7 +123,13 @@ public class TestRollup extends RefreshingTableTestCase {
     private void testRollupIncrementalInternal(final String ctxt, final int size) {
         final Random random = new Random(0);
 
-        final QueryTable testTable = createTable(true, size * 10, random);
+        final ColumnInfo[] columnInfo = initColumnInfos(
+                new String[] {"Sym", "intCol"},
+                new SetGenerator<>("a", "b", "c", "d"),
+                new IntGenerator(10, 1_000));
+
+        final QueryTable testTable = getTable(true, 100_000, random, columnInfo);
+
         EvalNuggetInterface[] en = new EvalNuggetInterface[] {
                 new QueryTableTest.TableComparator(
                         testTable.rollup(aggs, false, "Sym")

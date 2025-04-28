@@ -27,6 +27,18 @@ dependencies {
     runtimeOnly libs.awssdk.sts
     implementation libs.awssdk.glue
 
+    // For some reason, this property flag does not seem to be working. But keeping block here, as it is useful to
+    // uncomment when you are working with S3 Tables Catalog.
+//    if (hasProperty('devS3Tables')) {
+//        // Useful for local development when using temporary credentials via `aws sso login`
+//         runtimeOnly libs.awssdk.sso
+//         runtimeOnly libs.awssdk.ssooidc
+//
+//        // Useful for creating an S3 Tables Iceberg Catalog. May want to include this by default in the future.
+//         runtimeOnly libs.awssdk.s3tables
+//         runtimeOnly libs.s3.tables.catalog.for.iceberg
+//    }
+
     // We don't want to explicitly pull in dependencies for dynamodb (org.apache.iceberg.aws.dynamodb.DynamoDbCatalog),
     // but we need to be able to compile against it to implement AwsClientFactory
     compileOnly libs.awssdk.dynamodb

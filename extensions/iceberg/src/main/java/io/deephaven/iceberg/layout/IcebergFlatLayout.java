@@ -39,6 +39,8 @@ public final class IcebergFlatLayout extends IcebergBaseLayout {
         super(tableAdapter, instructions, dataInstructionsProvider);
     }
 
+    // TODO(DH-19072): Refactor Iceberg TLKFs to reduce visibility
+    @Deprecated(forRemoval = true)
     public IcebergFlatLayout(
             @NotNull IcebergTableAdapter tableAdapter,
             @NotNull ParquetInstructions parquetInstructions,
@@ -53,11 +55,12 @@ public final class IcebergFlatLayout extends IcebergBaseLayout {
     }
 
     @Override
-    IcebergTableLocationKey keyFromDataFile(
+    protected IcebergTableLocationKey keyFromDataFile(
+            @NotNull final PartitionSpec manifestPartitionSpec,
             @NotNull final ManifestFile manifestFile,
             @NotNull final DataFile dataFile,
             @NotNull final URI fileUri,
             @NotNull final SeekableChannelsProvider channelsProvider) {
-        return locationKey(manifestFile, dataFile, fileUri, null, channelsProvider);
+        return locationKey(manifestPartitionSpec, manifestFile, dataFile, fileUri, null, channelsProvider);
     }
 }

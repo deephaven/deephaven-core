@@ -431,6 +431,41 @@ public class HierarchicalTableApplyRequest {
         }
 
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface FormatViewsListFieldType {
+            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+            public interface ColumnSpecFieldType {
+                @JsOverlay
+                static HierarchicalTableApplyRequest.ToObjectReturnType.FormatViewsListFieldType.ColumnSpecFieldType create() {
+                    return Js.uncheckedCast(JsPropertyMap.of());
+                }
+
+                @JsProperty
+                String getRaw();
+
+                @JsProperty
+                void setRaw(String raw);
+            }
+
+            @JsOverlay
+            static HierarchicalTableApplyRequest.ToObjectReturnType.FormatViewsListFieldType create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            HierarchicalTableApplyRequest.ToObjectReturnType.FormatViewsListFieldType.ColumnSpecFieldType getColumnSpec();
+
+            @JsProperty
+            double getNodeType();
+
+            @JsProperty
+            void setColumnSpec(
+                    HierarchicalTableApplyRequest.ToObjectReturnType.FormatViewsListFieldType.ColumnSpecFieldType columnSpec);
+
+            @JsProperty
+            void setNodeType(double nodeType);
+        }
+
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface ResultHierarchicalTableIdFieldType {
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
             public interface GetTicketUnionType {
@@ -523,6 +558,9 @@ public class HierarchicalTableApplyRequest {
         JsArray<HierarchicalTableApplyRequest.ToObjectReturnType.FiltersListFieldType> getFiltersList();
 
         @JsProperty
+        JsArray<HierarchicalTableApplyRequest.ToObjectReturnType.FormatViewsListFieldType> getFormatViewsList();
+
+        @JsProperty
         Object getInputHierarchicalTableId();
 
         @JsProperty
@@ -530,6 +568,9 @@ public class HierarchicalTableApplyRequest {
 
         @JsProperty
         JsArray<HierarchicalTableApplyRequest.ToObjectReturnType.SortsListFieldType> getSortsList();
+
+        @JsProperty
+        JsArray<Object> getUpdateViewsList();
 
         @JsOverlay
         default void setFiltersList(
@@ -542,6 +583,18 @@ public class HierarchicalTableApplyRequest {
         @JsProperty
         void setFiltersList(
                 JsArray<HierarchicalTableApplyRequest.ToObjectReturnType.FiltersListFieldType> filtersList);
+
+        @JsOverlay
+        default void setFormatViewsList(
+                HierarchicalTableApplyRequest.ToObjectReturnType.FormatViewsListFieldType[] formatViewsList) {
+            setFormatViewsList(
+                    Js.<JsArray<HierarchicalTableApplyRequest.ToObjectReturnType.FormatViewsListFieldType>>uncheckedCast(
+                            formatViewsList));
+        }
+
+        @JsProperty
+        void setFormatViewsList(
+                JsArray<HierarchicalTableApplyRequest.ToObjectReturnType.FormatViewsListFieldType> formatViewsList);
 
         @JsProperty
         void setInputHierarchicalTableId(Object inputHierarchicalTableId);
@@ -560,6 +613,14 @@ public class HierarchicalTableApplyRequest {
             setSortsList(
                     Js.<JsArray<HierarchicalTableApplyRequest.ToObjectReturnType.SortsListFieldType>>uncheckedCast(
                             sortsList));
+        }
+
+        @JsProperty
+        void setUpdateViewsList(JsArray<Object> updateViewsList);
+
+        @JsOverlay
+        default void setUpdateViewsList(Object[] updateViewsList) {
+            setUpdateViewsList(Js.<JsArray<Object>>uncheckedCast(updateViewsList));
         }
     }
 
@@ -974,6 +1035,41 @@ public class HierarchicalTableApplyRequest {
         }
 
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface FormatViewsListFieldType {
+            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+            public interface ColumnSpecFieldType {
+                @JsOverlay
+                static HierarchicalTableApplyRequest.ToObjectReturnType0.FormatViewsListFieldType.ColumnSpecFieldType create() {
+                    return Js.uncheckedCast(JsPropertyMap.of());
+                }
+
+                @JsProperty
+                String getRaw();
+
+                @JsProperty
+                void setRaw(String raw);
+            }
+
+            @JsOverlay
+            static HierarchicalTableApplyRequest.ToObjectReturnType0.FormatViewsListFieldType create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            HierarchicalTableApplyRequest.ToObjectReturnType0.FormatViewsListFieldType.ColumnSpecFieldType getColumnSpec();
+
+            @JsProperty
+            double getNodeType();
+
+            @JsProperty
+            void setColumnSpec(
+                    HierarchicalTableApplyRequest.ToObjectReturnType0.FormatViewsListFieldType.ColumnSpecFieldType columnSpec);
+
+            @JsProperty
+            void setNodeType(double nodeType);
+        }
+
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface ResultHierarchicalTableIdFieldType {
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
             public interface GetTicketUnionType {
@@ -1066,6 +1162,9 @@ public class HierarchicalTableApplyRequest {
         JsArray<HierarchicalTableApplyRequest.ToObjectReturnType0.FiltersListFieldType> getFiltersList();
 
         @JsProperty
+        JsArray<HierarchicalTableApplyRequest.ToObjectReturnType0.FormatViewsListFieldType> getFormatViewsList();
+
+        @JsProperty
         Object getInputHierarchicalTableId();
 
         @JsProperty
@@ -1073,6 +1172,9 @@ public class HierarchicalTableApplyRequest {
 
         @JsProperty
         JsArray<HierarchicalTableApplyRequest.ToObjectReturnType0.SortsListFieldType> getSortsList();
+
+        @JsProperty
+        JsArray<Object> getUpdateViewsList();
 
         @JsOverlay
         default void setFiltersList(
@@ -1085,6 +1187,18 @@ public class HierarchicalTableApplyRequest {
         @JsProperty
         void setFiltersList(
                 JsArray<HierarchicalTableApplyRequest.ToObjectReturnType0.FiltersListFieldType> filtersList);
+
+        @JsOverlay
+        default void setFormatViewsList(
+                HierarchicalTableApplyRequest.ToObjectReturnType0.FormatViewsListFieldType[] formatViewsList) {
+            setFormatViewsList(
+                    Js.<JsArray<HierarchicalTableApplyRequest.ToObjectReturnType0.FormatViewsListFieldType>>uncheckedCast(
+                            formatViewsList));
+        }
+
+        @JsProperty
+        void setFormatViewsList(
+                JsArray<HierarchicalTableApplyRequest.ToObjectReturnType0.FormatViewsListFieldType> formatViewsList);
 
         @JsProperty
         void setInputHierarchicalTableId(Object inputHierarchicalTableId);
@@ -1103,6 +1217,14 @@ public class HierarchicalTableApplyRequest {
             setSortsList(
                     Js.<JsArray<HierarchicalTableApplyRequest.ToObjectReturnType0.SortsListFieldType>>uncheckedCast(
                             sortsList));
+        }
+
+        @JsProperty
+        void setUpdateViewsList(JsArray<Object> updateViewsList);
+
+        @JsOverlay
+        default void setUpdateViewsList(Object[] updateViewsList) {
+            setUpdateViewsList(Js.<JsArray<Object>>uncheckedCast(updateViewsList));
         }
     }
 
@@ -1123,13 +1245,27 @@ public class HierarchicalTableApplyRequest {
 
     public native Condition addFilters(Condition value);
 
+    public native UpdateViewRequest addFormatViews();
+
+    public native UpdateViewRequest addFormatViews(UpdateViewRequest value, double index);
+
+    public native UpdateViewRequest addFormatViews(UpdateViewRequest value);
+
     public native SortDescriptor addSorts();
 
     public native SortDescriptor addSorts(SortDescriptor value, double index);
 
     public native SortDescriptor addSorts(SortDescriptor value);
 
+    public native UpdateViewRequest addUpdateViews();
+
+    public native UpdateViewRequest addUpdateViews(UpdateViewRequest value, double index);
+
+    public native UpdateViewRequest addUpdateViews(UpdateViewRequest value);
+
     public native void clearFiltersList();
+
+    public native void clearFormatViewsList();
 
     public native void clearInputHierarchicalTableId();
 
@@ -1137,13 +1273,19 @@ public class HierarchicalTableApplyRequest {
 
     public native void clearSortsList();
 
+    public native void clearUpdateViewsList();
+
     public native JsArray<Condition> getFiltersList();
+
+    public native JsArray<UpdateViewRequest> getFormatViewsList();
 
     public native Ticket getInputHierarchicalTableId();
 
     public native Ticket getResultHierarchicalTableId();
 
     public native JsArray<SortDescriptor> getSortsList();
+
+    public native JsArray<UpdateViewRequest> getUpdateViewsList();
 
     public native boolean hasInputHierarchicalTableId();
 
@@ -1158,6 +1300,13 @@ public class HierarchicalTableApplyRequest {
 
     public native void setFiltersList(JsArray<Condition> value);
 
+    public native void setFormatViewsList(JsArray<UpdateViewRequest> value);
+
+    @JsOverlay
+    public final void setFormatViewsList(UpdateViewRequest[] value) {
+        setFormatViewsList(Js.<JsArray<UpdateViewRequest>>uncheckedCast(value));
+    }
+
     public native void setInputHierarchicalTableId();
 
     public native void setInputHierarchicalTableId(Ticket value);
@@ -1171,6 +1320,13 @@ public class HierarchicalTableApplyRequest {
     @JsOverlay
     public final void setSortsList(SortDescriptor[] value) {
         setSortsList(Js.<JsArray<SortDescriptor>>uncheckedCast(value));
+    }
+
+    public native void setUpdateViewsList(JsArray<UpdateViewRequest> value);
+
+    @JsOverlay
+    public final void setUpdateViewsList(UpdateViewRequest[] value) {
+        setUpdateViewsList(Js.<JsArray<UpdateViewRequest>>uncheckedCast(value));
     }
 
     public native HierarchicalTableApplyRequest.ToObjectReturnType0 toObject();
