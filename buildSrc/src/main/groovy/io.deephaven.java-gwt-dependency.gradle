@@ -1,10 +1,10 @@
 plugins {
     id 'java'
-    id 'signing'
     id 'maven-publish'
 }
 
 configurations {
+    // Indicate that Gradle's dependency metadata should allow picking up dependencies of source jars
     sourcesElements {
         transitive = true
         extendsFrom compileClasspath
