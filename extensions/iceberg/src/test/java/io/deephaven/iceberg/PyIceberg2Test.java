@@ -41,7 +41,7 @@ class PyIceberg2Test {
     private static final TableIdentifier EMPTY_DATA = TableIdentifier.of(NAMESPACE, "data_empty");
 
     // This will need to be updated if the data is regenerated
-    private static final long SNAPSHOT_1_ID = 852447233313026200L;
+    private static final long SNAPSHOT_1_ID = 4829521301453334000L;
 
     private static final TableDefinition TABLE_DEFINITION = TableDefinition.of(
             ColumnDefinition.fromGenericType("datetime", LocalDateTime.class),

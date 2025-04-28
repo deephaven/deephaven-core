@@ -1,7 +1,7 @@
 {
   "location": "catalogs/pyiceberg-2/trading.db/data",
-  "table-uuid": "4bd0ed87-b587-49bb-9a93-9b3098b47b47",
-  "last-updated-ms": 1744742014430,
+  "table-uuid": "a5558248-9763-436d-8c54-7518217e464f",
+  "last-updated-ms": 1745869746513,
   "last-column-id": 4,
   "schemas": [
     {

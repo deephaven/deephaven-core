@@ -1,7 +1,7 @@
 {
   "location": "catalogs/pyiceberg-2/trading.db/data",
-  "table-uuid": "4bd0ed87-b587-49bb-9a93-9b3098b47b47",
-  "last-updated-ms": 1744742014490,
+  "table-uuid": "a5558248-9763-436d-8c54-7518217e464f",
+  "last-updated-ms": 1745869746583,
   "last-column-id": 4,
   "schemas": [
     {
@@ -59,13 +59,13 @@
   "default-spec-id": 0,
   "last-partition-id": 1001,
   "properties": {},
-  "current-snapshot-id": 852447233313026200,
+  "current-snapshot-id": 4829521301453334000,
   "snapshots": [
     {
-      "snapshot-id": 852447233313026200,
+      "snapshot-id": 4829521301453334000,
       "sequence-number": 1,
-      "timestamp-ms": 1744742014490,
-      "manifest-list": "catalogs/pyiceberg-2/trading.db/data/metadata/snap-852447233313026215-0-886f0192-ac41-413e-ad24-6887bc2cee9f.avro",
+      "timestamp-ms": 1745869746583,
+      "manifest-list": "catalogs/pyiceberg-2/trading.db/data/metadata/snap-4829521301453333875-0-58be8a95-d527-4dd2-826e-bfe188c53c53.avro",
       "summary": {
         "operation": "append",
         "added-files-size": "8140",
@@ -84,14 +84,14 @@
   ],
   "snapshot-log": [
     {
-      "snapshot-id": 852447233313026200,
-      "timestamp-ms": 1744742014490
+      "snapshot-id": 4829521301453334000,
+      "timestamp-ms": 1745869746583
     }
   ],
   "metadata-log": [
     {
-      "metadata-file": "catalogs/pyiceberg-2/trading.db/data/metadata/00000-292a1a97-aa9a-4c29-ba4c-28ff2d504624.metadata.json",
-      "timestamp-ms": 1744742014430
+      "metadata-file": "catalogs/pyiceberg-2/trading.db/data/metadata/00000-51b5b0bd-ba21-4231-be26-54d8dcc591ab.metadata.json",
+      "timestamp-ms": 1745869746513
     }
   ],
   "sort-orders": [
@@ -103,7 +103,7 @@
   "default-sort-order-id": 0,
   "refs": {
     "main": {
-      "snapshot-id": 852447233313026200,
+      "snapshot-id": 4829521301453334000,
       "type": "branch"
     }
   },
