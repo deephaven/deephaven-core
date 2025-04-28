@@ -28,18 +28,18 @@ protected:
 
 public:
   virtual ~ContainerVisitor() = default;
-  virtual void Visit(const Container<char16_t> *) = 0;
-  virtual void Visit(const Container<int8_t> *) = 0;
-  virtual void Visit(const Container<int16_t> *) = 0;
-  virtual void Visit(const Container<int32_t> *) = 0;
-  virtual void Visit(const Container<int64_t> *) = 0;
-  virtual void Visit(const Container<float> *) = 0;
-  virtual void Visit(const Container<double> *) = 0;
-  virtual void Visit(const Container<bool> *) = 0;
-  virtual void Visit(const Container<std::string> *) = 0;
-  virtual void Visit(const Container<DateTime> *) = 0;
-  virtual void Visit(const Container<LocalDate> *) = 0;
-  virtual void Visit(const Container<LocalTime> *) = 0;
+  virtual void Visit(const Container<char16_t> *container) = 0;
+  virtual void Visit(const Container<int8_t> *container) = 0;
+  virtual void Visit(const Container<int16_t> *container) = 0;
+  virtual void Visit(const Container<int32_t> *container) = 0;
+  virtual void Visit(const Container<int64_t> *container) = 0;
+  virtual void Visit(const Container<float> *container) = 0;
+  virtual void Visit(const Container<double> *container) = 0;
+  virtual void Visit(const Container<bool> *container) = 0;
+  virtual void Visit(const Container<std::string> *container) = 0;
+  virtual void Visit(const Container<DateTime> *container) = 0;
+  virtual void Visit(const Container<LocalDate> *container) = 0;
+  virtual void Visit(const Container<LocalTime> *container) = 0;
 };
 
 class ContainerBase : public std::enable_shared_from_this<ContainerBase> {
@@ -103,12 +103,16 @@ public:
     return nulls_[index];
   }
 
-  const T *begin() const {
+  const T *data() const {
     return data_.get();
   }
 
+  const T *begin() const {
+    return data();
+  }
+
   const T *end() const {
-    return begin() + size();
+    return data() + size();
   }
 
 private:

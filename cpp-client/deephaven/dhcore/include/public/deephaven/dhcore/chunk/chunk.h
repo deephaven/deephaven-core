@@ -3,6 +3,7 @@
  */
 #pragma once
 
+#include <cstddef>
 #include <iostream>
 #include <memory>
 #include <string_view>
@@ -241,6 +242,7 @@ using ContainerBaseChunk = GenericChunk<std::shared_ptr<deephaven::dhcore::conta
  */
 class ChunkVisitor {
 public:
+  virtual ~ChunkVisitor() = default;
   /**
    * Implements the visitor pattern.
    */
