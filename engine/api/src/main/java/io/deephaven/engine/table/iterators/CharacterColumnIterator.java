@@ -4,8 +4,8 @@
 package io.deephaven.engine.table.iterators;
 
 import io.deephaven.engine.primitive.function.CharToIntFunction;
+import io.deephaven.engine.primitive.iterator.DeephavenValueIteratorOfChar;
 import io.deephaven.util.annotations.FinalDefault;
-import io.deephaven.vector.CharVector;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.PrimitiveIterator;
@@ -18,11 +18,11 @@ import java.util.stream.StreamSupport;
 /**
  * {@link ColumnIterator} implementation for columns of primitive chars.
  */
-public interface CharacterColumnIterator extends ColumnIterator<Character>, CharVector.Iterator {
+public interface CharacterColumnIterator extends ColumnIterator<Character>, DeephavenValueIteratorOfChar {
 
     // region streamAsInt
     /**
-     * Create a {@link IntStream} over the remaining elements of this ChunkedCharacterColumnIterator by applying
+     * Create a {@link IntStream} over the remaining elements of this CharacterColumnIterator by applying
      * {@code adapter} to each element. The result <em>must</em> be {@link java.util.stream.BaseStream#close() closed}
      * in order to ensure resources are released. A try-with-resources block is strongly encouraged.
      *
@@ -44,8 +44,8 @@ public interface CharacterColumnIterator extends ColumnIterator<Character>, Char
 
     // region stream
     /**
-     * Create a boxed {@link Stream} over the remaining elements of this CharColumnIterator. The result <em>must</em> be
-     * {@link java.util.stream.BaseStream#close() closed} in order to ensure resources are released. A
+     * Create a boxed {@link Stream} over the remaining elements of this CharacterColumnIterator. The result
+     * <em>must</em> be {@link java.util.stream.BaseStream#close() closed} in order to ensure resources are released. A
      * try-with-resources block is strongly encouraged.
      *
      * @return A boxed {@link Stream} over the remaining contents of this iterator. Must be {@link Stream#close()

@@ -7,29 +7,17 @@
 // @formatter:off
 package io.deephaven.vector;
 
-import java.util.stream.DoubleStream;
-
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfFloat;
+import io.deephaven.engine.primitive.iterator.DeephavenValueIteratorOfFloat;
 import io.deephaven.qst.type.FloatType;
 import io.deephaven.qst.type.PrimitiveVectorType;
 import io.deephaven.util.QueryConstants;
-import io.deephaven.util.SafeCloseableArray;
 import io.deephaven.util.annotations.FinalDefault;
-import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
-import java.util.NoSuchElementException;
-import java.util.Objects;
-import java.util.PrimitiveIterator;
-import java.util.Spliterator;
-import java.util.Spliterators;
-import java.util.function.Consumer;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 /**
  * A {@link Vector} of primitive floats.
@@ -68,7 +56,7 @@ public interface FloatVector extends Vector<FloatVector>, Iterable<Float> {
 
     @Override
     @FinalDefault
-    default Iterator iterator() {
+    default DeephavenValueIteratorOfFloat iterator() {
         return iterator(0, size());
     }
 
@@ -80,9 +68,9 @@ public interface FloatVector extends Vector<FloatVector>, Iterable<Float> {
      * @param toIndexExclusive The first position after {@code fromIndexInclusive} to not include
      * @return An iterator over the requested slice
      */
-    default Iterator iterator(final long fromIndexInclusive, final long toIndexExclusive) {
+    default DeephavenValueIteratorOfFloat iterator(final long fromIndexInclusive, final long toIndexExclusive) {
         Require.leq(fromIndexInclusive, "fromIndexInclusive", toIndexExclusive, "toIndexExclusive");
-        return new Iterator() {
+        return new DeephavenValueIteratorOfFloat() {
 
             long nextIndex = fromIndexInclusive;
 
@@ -243,207 +231,6 @@ public interface FloatVector extends Vector<FloatVector>, Iterable<Float> {
 
         protected final Object writeReplace() {
             return getDirect();
-        }
-    }
-
-    interface Iterator extends CloseablePrimitiveIteratorOfFloat {
-        @Override
-        @FinalDefault
-        default Float next() {
-            return TypeUtils.box(nextFloat());
-        }
-
-        @Override
-        @FinalDefault
-        default void forEachRemaining(@NotNull final Consumer<? super Float> action) {
-            forEachRemaining((final float element) -> action.accept(TypeUtils.box(element)));
-        }
-
-        /**
-         * A re-usable, immutable FloatColumnIterator with no elements.
-         */
-        Iterator EMPTY = new Iterator() {
-            @Override
-            public float nextFloat() {
-                throw new NoSuchElementException();
-            }
-
-            @Override
-            public boolean hasNext() {
-                return false;
-            }
-        };
-
-        // region streamAsInt
-        /**
-         * Create an unboxed {@link DoubleStream} over the remaining elements of this ChunkedFloatColumnIterator by casting
-         * each element to {@code int} with the appropriate adjustment of {@link io.deephaven.util.QueryConstants#NULL_FLOAT
-         * NULL_FLOAT} to {@link io.deephaven.util.QueryConstants#NULL_DOUBLE NULL_DOUBLE}. The result <em>must</em> be
-         * {@link java.util.stream.BaseStream#close() closed} in order to ensure resources are released. A
-         * try-with-resources block is strongly encouraged.
-         *
-         * @return An unboxed {@link DoubleStream} over the remaining contents of this iterator. Must be {@link Stream#close()
-         *         closed}.
-         */
-        @Override
-        @FinalDefault
-        default DoubleStream streamAsDouble() {
-            return streamAsDouble(
-                    (final float value) -> value == QueryConstants.NULL_FLOAT ? QueryConstants.NULL_DOUBLE : (double) value);
-        }
-        // endregion streamAsInt
-
-        /**
-         * Get a FloatColumnIterator with no elements. The result does not need to be {@link #close() closed}.
-         *
-         * @return A FloatColumnIterator with no elements
-         */
-        static Iterator empty() {
-            return EMPTY;
-        }
-
-        /**
-         * Create a FloatColumnIterator over an array of {@code float}. The result does not need to be
-         * {@link #close() closed}.
-         *
-         * @param values The elements to iterate
-         * @return A FloatColumnIterator of {@code values}
-         */
-        static Iterator of(@NotNull final float... values) {
-            Objects.requireNonNull(values);
-            return new Iterator() {
-
-                private int valueIndex;
-
-                @Override
-                public float nextFloat() {
-                    if (valueIndex < values.length) {
-                        return values[valueIndex++];
-                    }
-                    throw new NoSuchElementException();
-                }
-
-                @Override
-                public boolean hasNext() {
-                    return valueIndex < values.length;
-                }
-            };
-        }
-
-        /**
-         * Create a FloatColumnIterator that repeats {@code value}, {@code repeatCount} times. The result does not
-         * need to be {@link #close() closed}.
-         *
-         * @param value The value to repeat
-         * @param repeatCount The number of repetitions
-         * @return A FloatColumnIterator that repeats {@code value}, {@code repeatCount} times
-         */
-        static Iterator repeat(final float value, final long repeatCount) {
-            return new Iterator() {
-
-                private long repeatIndex;
-
-                @Override
-                public float nextFloat() {
-                    if (repeatIndex < repeatCount) {
-                        ++repeatIndex;
-                        return value;
-                    }
-                    throw new NoSuchElementException();
-                }
-
-                @Override
-                public boolean hasNext() {
-                    return repeatIndex < repeatCount;
-                }
-            };
-        }
-
-        /**
-         * Create a FloatColumnIterator that concatenates an array of non-{@code null} {@code subIterators}. The
-         * result only needs to be {@link #close() closed} if any of the {@code subIterators} require it.
-         *
-         * @param subIterators The iterators to concatenate, none of which should be {@code null}. If directly passing
-         *        an array, ensure that this iterator has full ownership.
-         * @return A FloatColumnIterator concatenating all elements from {@code subIterators}
-         */
-        static Iterator concat(@NotNull final Iterator... subIterators) {
-            Objects.requireNonNull(subIterators);
-            if (subIterators.length == 0) {
-                return empty();
-            }
-            if (subIterators.length == 1) {
-                return subIterators[0];
-            }
-            return new Iterator() {
-
-                private boolean hasNextChecked;
-                private int subIteratorIndex;
-
-                @Override
-                public float nextFloat() {
-                    if (hasNext()) {
-                        hasNextChecked = false;
-                        return subIterators[subIteratorIndex].nextFloat();
-                    }
-                    throw new NoSuchElementException();
-                }
-
-                @Override
-                public boolean hasNext() {
-                    if (hasNextChecked) {
-                        return true;
-                    }
-                    for (; subIteratorIndex < subIterators.length; ++subIteratorIndex) {
-                        if (subIterators[subIteratorIndex].hasNext()) {
-                            return hasNextChecked = true;
-                        }
-                    }
-                    return false;
-                }
-
-                @Override
-                public void close() {
-                    SafeCloseableArray.close(subIterators);
-                }
-            };
-        }
-
-        /**
-         * Return a FloatColumnIterator that concatenates the contents of any non-{@code null}
-         * FloatColumnIterator found amongst {@code first}, {@code second}, and {@code third}.
-         *
-         * @param first The first iterator to consider concatenating
-         * @param second The second iterator to consider concatenating
-         * @param third The third iterator to consider concatenating
-         * @return A FloatColumnIterator that concatenates all elements as specified
-         */
-        static Iterator maybeConcat(
-                @Nullable final Iterator first,
-                @Nullable final Iterator second,
-                @Nullable final Iterator third) {
-            if (first != null) {
-                if (second != null) {
-                    if (third != null) {
-                        return concat(first, second, third);
-                    }
-                    return concat(first, second);
-                }
-                if (third != null) {
-                    return concat(first, third);
-                }
-                return first;
-            }
-            if (second != null) {
-                if (third != null) {
-                    return concat(second, third);
-                }
-                return second;
-            }
-            if (third != null) {
-                return third;
-            }
-            return empty();
         }
     }
 }

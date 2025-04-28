@@ -8,6 +8,7 @@
 package io.deephaven.vector;
 
 import io.deephaven.base.verify.Require;
+import io.deephaven.engine.primitive.iterator.DeephavenValueIteratorOfInt;
 import io.deephaven.util.annotations.ArrayType;
 import io.deephaven.util.annotations.ArrayTypeGetter;
 import org.jetbrains.annotations.NotNull;
@@ -61,9 +62,9 @@ public final class IntVectorDirect implements IntVector {
     }
 
     @Override
-    public Iterator iterator(final long fromIndexInclusive, final long toIndexExclusive) {
+    public DeephavenValueIteratorOfInt iterator(final long fromIndexInclusive, final long toIndexExclusive) {
         if (fromIndexInclusive == 0 && toIndexExclusive == data.length) {
-            return Iterator.of(data);
+            return DeephavenValueIteratorOfInt.of(data);
         }
         return IntVector.super.iterator(fromIndexInclusive, toIndexExclusive);
     }

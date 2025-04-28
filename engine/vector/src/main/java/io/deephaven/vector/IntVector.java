@@ -9,25 +9,15 @@ package io.deephaven.vector;
 
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfInt;
+import io.deephaven.engine.primitive.iterator.DeephavenValueIteratorOfInt;
 import io.deephaven.qst.type.IntType;
 import io.deephaven.qst.type.PrimitiveVectorType;
 import io.deephaven.util.QueryConstants;
-import io.deephaven.util.SafeCloseableArray;
 import io.deephaven.util.annotations.FinalDefault;
-import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
-import java.util.NoSuchElementException;
-import java.util.Objects;
-import java.util.PrimitiveIterator;
-import java.util.Spliterator;
-import java.util.Spliterators;
-import java.util.function.Consumer;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 /**
  * A {@link Vector} of primitive ints.
@@ -66,7 +56,7 @@ public interface IntVector extends Vector<IntVector>, Iterable<Integer> {
 
     @Override
     @FinalDefault
-    default Iterator iterator() {
+    default DeephavenValueIteratorOfInt iterator() {
         return iterator(0, size());
     }
 
@@ -78,9 +68,9 @@ public interface IntVector extends Vector<IntVector>, Iterable<Integer> {
      * @param toIndexExclusive The first position after {@code fromIndexInclusive} to not include
      * @return An iterator over the requested slice
      */
-    default Iterator iterator(final long fromIndexInclusive, final long toIndexExclusive) {
+    default DeephavenValueIteratorOfInt iterator(final long fromIndexInclusive, final long toIndexExclusive) {
         Require.leq(fromIndexInclusive, "fromIndexInclusive", toIndexExclusive, "toIndexExclusive");
-        return new Iterator() {
+        return new DeephavenValueIteratorOfInt() {
 
             long nextIndex = fromIndexInclusive;
 
@@ -241,205 +231,6 @@ public interface IntVector extends Vector<IntVector>, Iterable<Integer> {
 
         protected final Object writeReplace() {
             return getDirect();
-        }
-    }
-
-    interface Iterator extends CloseablePrimitiveIteratorOfInt {
-        @Override
-        @FinalDefault
-        default Integer next() {
-            return TypeUtils.box(nextInt());
-        }
-
-        @Override
-        @FinalDefault
-        default void forEachRemaining(@NotNull final Consumer<? super Integer> action) {
-            forEachRemaining((final int element) -> action.accept(TypeUtils.box(element)));
-        }
-
-        /**
-         * A re-usable, immutable IntegerColumnIterator with no elements.
-         */
-        Iterator EMPTY = new Iterator() {
-            @Override
-            public int nextInt() {
-                throw new NoSuchElementException();
-            }
-
-            @Override
-            public boolean hasNext() {
-                return false;
-            }
-        };
-
-        // region streamAsInt
-        
-        /**
-        * Create a boxed {@link Stream} over the remaining elements of this IntegerColumnIterator. The result <em>must</em>
-        * be {@link java.util.stream.BaseStream#close() closed} in order to ensure resources are released. A
-        * try-with-resources block is strongly encouraged.
-        *
-        * @return A boxed {@link Stream} over the remaining contents of this iterator. Must be {@link Stream#close()
-        *         closed}.
-        */
-        @Override
-        @FinalDefault
-        default Stream<Integer> stream() {
-           return intStream().mapToObj(TypeUtils::box);
-        }
-        // endregion streamAsInt
-
-        /**
-         * Get a IntegerColumnIterator with no elements. The result does not need to be {@link #close() closed}.
-         *
-         * @return A IntegerColumnIterator with no elements
-         */
-        static Iterator empty() {
-            return EMPTY;
-        }
-
-        /**
-         * Create a IntegerColumnIterator over an array of {@code int}. The result does not need to be
-         * {@link #close() closed}.
-         *
-         * @param values The elements to iterate
-         * @return A IntegerColumnIterator of {@code values}
-         */
-        static Iterator of(@NotNull final int... values) {
-            Objects.requireNonNull(values);
-            return new Iterator() {
-
-                private int valueIndex;
-
-                @Override
-                public int nextInt() {
-                    if (valueIndex < values.length) {
-                        return values[valueIndex++];
-                    }
-                    throw new NoSuchElementException();
-                }
-
-                @Override
-                public boolean hasNext() {
-                    return valueIndex < values.length;
-                }
-            };
-        }
-
-        /**
-         * Create a IntegerColumnIterator that repeats {@code value}, {@code repeatCount} times. The result does not
-         * need to be {@link #close() closed}.
-         *
-         * @param value The value to repeat
-         * @param repeatCount The number of repetitions
-         * @return A IntegerColumnIterator that repeats {@code value}, {@code repeatCount} times
-         */
-        static Iterator repeat(final int value, final long repeatCount) {
-            return new Iterator() {
-
-                private long repeatIndex;
-
-                @Override
-                public int nextInt() {
-                    if (repeatIndex < repeatCount) {
-                        ++repeatIndex;
-                        return value;
-                    }
-                    throw new NoSuchElementException();
-                }
-
-                @Override
-                public boolean hasNext() {
-                    return repeatIndex < repeatCount;
-                }
-            };
-        }
-
-        /**
-         * Create a IntegerColumnIterator that concatenates an array of non-{@code null} {@code subIterators}. The
-         * result only needs to be {@link #close() closed} if any of the {@code subIterators} require it.
-         *
-         * @param subIterators The iterators to concatenate, none of which should be {@code null}. If directly passing
-         *        an array, ensure that this iterator has full ownership.
-         * @return A IntegerColumnIterator concatenating all elements from {@code subIterators}
-         */
-        static Iterator concat(@NotNull final Iterator... subIterators) {
-            Objects.requireNonNull(subIterators);
-            if (subIterators.length == 0) {
-                return empty();
-            }
-            if (subIterators.length == 1) {
-                return subIterators[0];
-            }
-            return new Iterator() {
-
-                private boolean hasNextChecked;
-                private int subIteratorIndex;
-
-                @Override
-                public int nextInt() {
-                    if (hasNext()) {
-                        hasNextChecked = false;
-                        return subIterators[subIteratorIndex].nextInt();
-                    }
-                    throw new NoSuchElementException();
-                }
-
-                @Override
-                public boolean hasNext() {
-                    if (hasNextChecked) {
-                        return true;
-                    }
-                    for (; subIteratorIndex < subIterators.length; ++subIteratorIndex) {
-                        if (subIterators[subIteratorIndex].hasNext()) {
-                            return hasNextChecked = true;
-                        }
-                    }
-                    return false;
-                }
-
-                @Override
-                public void close() {
-                    SafeCloseableArray.close(subIterators);
-                }
-            };
-        }
-
-        /**
-         * Return a IntegerColumnIterator that concatenates the contents of any non-{@code null}
-         * IntegerColumnIterator found amongst {@code first}, {@code second}, and {@code third}.
-         *
-         * @param first The first iterator to consider concatenating
-         * @param second The second iterator to consider concatenating
-         * @param third The third iterator to consider concatenating
-         * @return A IntegerColumnIterator that concatenates all elements as specified
-         */
-        static Iterator maybeConcat(
-                @Nullable final Iterator first,
-                @Nullable final Iterator second,
-                @Nullable final Iterator third) {
-            if (first != null) {
-                if (second != null) {
-                    if (third != null) {
-                        return concat(first, second, third);
-                    }
-                    return concat(first, second);
-                }
-                if (third != null) {
-                    return concat(first, third);
-                }
-                return first;
-            }
-            if (second != null) {
-                if (third != null) {
-                    return concat(second, third);
-                }
-                return second;
-            }
-            if (third != null) {
-                return third;
-            }
-            return empty();
         }
     }
 }

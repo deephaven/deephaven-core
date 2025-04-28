@@ -9,6 +9,7 @@ package io.deephaven.vector;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
+import io.deephaven.engine.primitive.iterator.DeephavenValueIteratorOfDouble;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
@@ -94,7 +95,7 @@ public class DoubleVectorSlice extends DoubleVector.Indirect {
     }
 
     @Override
-    public Iterator iterator(final long fromIndexInclusive, final long toIndexExclusive) {
+    public DeephavenValueIteratorOfDouble iterator(final long fromIndexInclusive, final long toIndexExclusive) {
         Require.leq(fromIndexInclusive, "fromIndexInclusive", toIndexExclusive, "toIndexExclusive");
         final long totalWanted = toIndexExclusive - fromIndexInclusive;
         long nextIndexWanted = fromIndexInclusive + offsetIndex;
@@ -118,16 +119,30 @@ public class DoubleVectorSlice extends DoubleVector.Indirect {
             includedInnerLength = 0;
         }
 
-        final Iterator initialNullsIterator = includedInitialNulls > 0
-                ? Iterator.repeat(NULL_DOUBLE, includedInitialNulls)
-                : null;
-        final Iterator innerIterator = includedInnerLength > 0
+        final DeephavenValueIteratorOfDouble innerIterator = includedInnerLength > 0
                 ? innerVector.iterator(firstIncludedInnerOffset, firstIncludedInnerOffset + includedInnerLength)
                 : null;
-        final Iterator finalNullsIterator = remaining > 0
-                ? Iterator.repeat(NULL_DOUBLE, remaining)
-                : null;
-        return Iterator.maybeConcat(initialNullsIterator, innerIterator, finalNullsIterator);
+        final long includedRemainingNulls = remaining;
+        if (includedInitialNulls == 0 && includedRemainingNulls == 0) {
+            return includedInnerLength == 0 ? DeephavenValueIteratorOfDouble.empty() : innerIterator;
+        }
+        return new DeephavenValueIteratorOfDouble() {
+            private long nextIndex = 0;
+
+            @Override
+            public double nextDouble() {
+                nextIndex++;
+                if (nextIndex <= includedInitialNulls || nextIndex > includedInitialNulls + includedInnerLength) {
+                    return NULL_DOUBLE;
+                }
+                return innerIterator.nextDouble();
+            }
+
+            @Override
+            public boolean hasNext() {
+                return nextIndex < includedInitialNulls + includedInnerLength + includedRemainingNulls;
+            }
+        };
     }
 
     @Override

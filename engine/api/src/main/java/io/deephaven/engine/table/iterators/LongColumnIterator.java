@@ -9,8 +9,8 @@ package io.deephaven.engine.table.iterators;
 
 import io.deephaven.util.type.TypeUtils;
 
+import io.deephaven.engine.primitive.iterator.DeephavenValueIteratorOfLong;
 import io.deephaven.util.annotations.FinalDefault;
-import io.deephaven.vector.LongVector;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Spliterator;
@@ -22,7 +22,7 @@ import java.util.stream.StreamSupport;
 /**
  * {@link ColumnIterator} implementation for columns of primitive longs.
  */
-public interface LongColumnIterator extends ColumnIterator<Long>, LongVector.Iterator {
+public interface LongColumnIterator extends ColumnIterator<Long>, DeephavenValueIteratorOfLong {
 
     // region streamAsLong
     // endregion streamAsLong

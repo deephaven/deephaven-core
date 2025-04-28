@@ -8,8 +8,8 @@
 package io.deephaven.engine.table.iterators;
 
 import io.deephaven.engine.primitive.function.ByteToIntFunction;
+import io.deephaven.engine.primitive.iterator.DeephavenValueIteratorOfByte;
 import io.deephaven.util.annotations.FinalDefault;
-import io.deephaven.vector.ByteVector;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.PrimitiveIterator;
@@ -22,11 +22,11 @@ import java.util.stream.StreamSupport;
 /**
  * {@link ColumnIterator} implementation for columns of primitive bytes.
  */
-public interface ByteColumnIterator extends ColumnIterator<Byte>, ByteVector.Iterator {
+public interface ByteColumnIterator extends ColumnIterator<Byte>, DeephavenValueIteratorOfByte {
 
     // region streamAsInt
     /**
-     * Create a {@link IntStream} over the remaining elements of this ChunkedByteColumnIterator by applying
+     * Create a {@link IntStream} over the remaining elements of this ByteColumnIterator by applying
      * {@code adapter} to each element. The result <em>must</em> be {@link java.util.stream.BaseStream#close() closed}
      * in order to ensure resources are released. A try-with-resources block is strongly encouraged.
      *
@@ -48,8 +48,8 @@ public interface ByteColumnIterator extends ColumnIterator<Byte>, ByteVector.Ite
 
     // region stream
     /**
-     * Create a boxed {@link Stream} over the remaining elements of this ByteColumnIterator. The result <em>must</em> be
-     * {@link java.util.stream.BaseStream#close() closed} in order to ensure resources are released. A
+     * Create a boxed {@link Stream} over the remaining elements of this ByteColumnIterator. The result
+     * <em>must</em> be {@link java.util.stream.BaseStream#close() closed} in order to ensure resources are released. A
      * try-with-resources block is strongly encouraged.
      *
      * @return A boxed {@link Stream} over the remaining contents of this iterator. Must be {@link Stream#close()

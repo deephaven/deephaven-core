@@ -9,25 +9,15 @@ package io.deephaven.vector;
 
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfLong;
+import io.deephaven.engine.primitive.iterator.DeephavenValueIteratorOfLong;
 import io.deephaven.qst.type.LongType;
 import io.deephaven.qst.type.PrimitiveVectorType;
 import io.deephaven.util.QueryConstants;
-import io.deephaven.util.SafeCloseableArray;
 import io.deephaven.util.annotations.FinalDefault;
-import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
-import java.util.NoSuchElementException;
-import java.util.Objects;
-import java.util.PrimitiveIterator;
-import java.util.Spliterator;
-import java.util.Spliterators;
-import java.util.function.Consumer;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 /**
  * A {@link Vector} of primitive longs.
@@ -66,7 +56,7 @@ public interface LongVector extends Vector<LongVector>, Iterable<Long> {
 
     @Override
     @FinalDefault
-    default Iterator iterator() {
+    default DeephavenValueIteratorOfLong iterator() {
         return iterator(0, size());
     }
 
@@ -78,9 +68,9 @@ public interface LongVector extends Vector<LongVector>, Iterable<Long> {
      * @param toIndexExclusive The first position after {@code fromIndexInclusive} to not include
      * @return An iterator over the requested slice
      */
-    default Iterator iterator(final long fromIndexInclusive, final long toIndexExclusive) {
+    default DeephavenValueIteratorOfLong iterator(final long fromIndexInclusive, final long toIndexExclusive) {
         Require.leq(fromIndexInclusive, "fromIndexInclusive", toIndexExclusive, "toIndexExclusive");
-        return new Iterator() {
+        return new DeephavenValueIteratorOfLong() {
 
             long nextIndex = fromIndexInclusive;
 
@@ -241,191 +231,6 @@ public interface LongVector extends Vector<LongVector>, Iterable<Long> {
 
         protected final Object writeReplace() {
             return getDirect();
-        }
-    }
-
-    interface Iterator extends CloseablePrimitiveIteratorOfLong {
-        @Override
-        @FinalDefault
-        default Long next() {
-            return TypeUtils.box(nextLong());
-        }
-
-        @Override
-        @FinalDefault
-        default void forEachRemaining(@NotNull final Consumer<? super Long> action) {
-            forEachRemaining((final long element) -> action.accept(TypeUtils.box(element)));
-        }
-
-        /**
-         * A re-usable, immutable LongColumnIterator with no elements.
-         */
-        Iterator EMPTY = new Iterator() {
-            @Override
-            public long nextLong() {
-                throw new NoSuchElementException();
-            }
-
-            @Override
-            public boolean hasNext() {
-                return false;
-            }
-        };
-
-        // region streamAsInt
-        // endregion streamAsInt
-
-        /**
-         * Get a LongColumnIterator with no elements. The result does not need to be {@link #close() closed}.
-         *
-         * @return A LongColumnIterator with no elements
-         */
-        static Iterator empty() {
-            return EMPTY;
-        }
-
-        /**
-         * Create a LongColumnIterator over an array of {@code long}. The result does not need to be
-         * {@link #close() closed}.
-         *
-         * @param values The elements to iterate
-         * @return A LongColumnIterator of {@code values}
-         */
-        static Iterator of(@NotNull final long... values) {
-            Objects.requireNonNull(values);
-            return new Iterator() {
-
-                private int valueIndex;
-
-                @Override
-                public long nextLong() {
-                    if (valueIndex < values.length) {
-                        return values[valueIndex++];
-                    }
-                    throw new NoSuchElementException();
-                }
-
-                @Override
-                public boolean hasNext() {
-                    return valueIndex < values.length;
-                }
-            };
-        }
-
-        /**
-         * Create a LongColumnIterator that repeats {@code value}, {@code repeatCount} times. The result does not
-         * need to be {@link #close() closed}.
-         *
-         * @param value The value to repeat
-         * @param repeatCount The number of repetitions
-         * @return A LongColumnIterator that repeats {@code value}, {@code repeatCount} times
-         */
-        static Iterator repeat(final long value, final long repeatCount) {
-            return new Iterator() {
-
-                private long repeatIndex;
-
-                @Override
-                public long nextLong() {
-                    if (repeatIndex < repeatCount) {
-                        ++repeatIndex;
-                        return value;
-                    }
-                    throw new NoSuchElementException();
-                }
-
-                @Override
-                public boolean hasNext() {
-                    return repeatIndex < repeatCount;
-                }
-            };
-        }
-
-        /**
-         * Create a LongColumnIterator that concatenates an array of non-{@code null} {@code subIterators}. The
-         * result only needs to be {@link #close() closed} if any of the {@code subIterators} require it.
-         *
-         * @param subIterators The iterators to concatenate, none of which should be {@code null}. If directly passing
-         *        an array, ensure that this iterator has full ownership.
-         * @return A LongColumnIterator concatenating all elements from {@code subIterators}
-         */
-        static Iterator concat(@NotNull final Iterator... subIterators) {
-            Objects.requireNonNull(subIterators);
-            if (subIterators.length == 0) {
-                return empty();
-            }
-            if (subIterators.length == 1) {
-                return subIterators[0];
-            }
-            return new Iterator() {
-
-                private boolean hasNextChecked;
-                private int subIteratorIndex;
-
-                @Override
-                public long nextLong() {
-                    if (hasNext()) {
-                        hasNextChecked = false;
-                        return subIterators[subIteratorIndex].nextLong();
-                    }
-                    throw new NoSuchElementException();
-                }
-
-                @Override
-                public boolean hasNext() {
-                    if (hasNextChecked) {
-                        return true;
-                    }
-                    for (; subIteratorIndex < subIterators.length; ++subIteratorIndex) {
-                        if (subIterators[subIteratorIndex].hasNext()) {
-                            return hasNextChecked = true;
-                        }
-                    }
-                    return false;
-                }
-
-                @Override
-                public void close() {
-                    SafeCloseableArray.close(subIterators);
-                }
-            };
-        }
-
-        /**
-         * Return a LongColumnIterator that concatenates the contents of any non-{@code null}
-         * LongColumnIterator found amongst {@code first}, {@code second}, and {@code third}.
-         *
-         * @param first The first iterator to consider concatenating
-         * @param second The second iterator to consider concatenating
-         * @param third The third iterator to consider concatenating
-         * @return A LongColumnIterator that concatenates all elements as specified
-         */
-        static Iterator maybeConcat(
-                @Nullable final Iterator first,
-                @Nullable final Iterator second,
-                @Nullable final Iterator third) {
-            if (first != null) {
-                if (second != null) {
-                    if (third != null) {
-                        return concat(first, second, third);
-                    }
-                    return concat(first, second);
-                }
-                if (third != null) {
-                    return concat(first, third);
-                }
-                return first;
-            }
-            if (second != null) {
-                if (third != null) {
-                    return concat(second, third);
-                }
-                return second;
-            }
-            if (third != null) {
-                return third;
-            }
-            return empty();
         }
     }
 }

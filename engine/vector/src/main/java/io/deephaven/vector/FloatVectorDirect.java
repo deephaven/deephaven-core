@@ -8,6 +8,7 @@
 package io.deephaven.vector;
 
 import io.deephaven.base.verify.Require;
+import io.deephaven.engine.primitive.iterator.DeephavenValueIteratorOfFloat;
 import io.deephaven.util.annotations.ArrayType;
 import io.deephaven.util.annotations.ArrayTypeGetter;
 import org.jetbrains.annotations.NotNull;
@@ -61,9 +62,9 @@ public final class FloatVectorDirect implements FloatVector {
     }
 
     @Override
-    public Iterator iterator(final long fromIndexInclusive, final long toIndexExclusive) {
+    public DeephavenValueIteratorOfFloat iterator(final long fromIndexInclusive, final long toIndexExclusive) {
         if (fromIndexInclusive == 0 && toIndexExclusive == data.length) {
-            return Iterator.of(data);
+            return DeephavenValueIteratorOfFloat.of(data);
         }
         return FloatVector.super.iterator(fromIndexInclusive, toIndexExclusive);
     }

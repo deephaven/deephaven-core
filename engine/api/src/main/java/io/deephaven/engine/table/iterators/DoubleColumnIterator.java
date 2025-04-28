@@ -9,8 +9,8 @@ package io.deephaven.engine.table.iterators;
 
 import io.deephaven.util.type.TypeUtils;
 
+import io.deephaven.engine.primitive.iterator.DeephavenValueIteratorOfDouble;
 import io.deephaven.util.annotations.FinalDefault;
-import io.deephaven.vector.DoubleVector;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Spliterator;
@@ -22,7 +22,7 @@ import java.util.stream.StreamSupport;
 /**
  * {@link ColumnIterator} implementation for columns of primitive doubles.
  */
-public interface DoubleColumnIterator extends ColumnIterator<Double>, DoubleVector.Iterator {
+public interface DoubleColumnIterator extends ColumnIterator<Double>, DeephavenValueIteratorOfDouble {
 
     // region streamAsDouble
     // endregion streamAsDouble

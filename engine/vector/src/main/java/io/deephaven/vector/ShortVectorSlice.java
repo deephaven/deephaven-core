@@ -9,6 +9,7 @@ package io.deephaven.vector;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
+import io.deephaven.engine.primitive.iterator.DeephavenValueIteratorOfShort;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
@@ -94,7 +95,7 @@ public class ShortVectorSlice extends ShortVector.Indirect {
     }
 
     @Override
-    public Iterator iterator(final long fromIndexInclusive, final long toIndexExclusive) {
+    public DeephavenValueIteratorOfShort iterator(final long fromIndexInclusive, final long toIndexExclusive) {
         Require.leq(fromIndexInclusive, "fromIndexInclusive", toIndexExclusive, "toIndexExclusive");
         final long totalWanted = toIndexExclusive - fromIndexInclusive;
         long nextIndexWanted = fromIndexInclusive + offsetIndex;
@@ -118,16 +119,30 @@ public class ShortVectorSlice extends ShortVector.Indirect {
             includedInnerLength = 0;
         }
 
-        final Iterator initialNullsIterator = includedInitialNulls > 0
-                ? Iterator.repeat(NULL_SHORT, includedInitialNulls)
-                : null;
-        final Iterator innerIterator = includedInnerLength > 0
+        final DeephavenValueIteratorOfShort innerIterator = includedInnerLength > 0
                 ? innerVector.iterator(firstIncludedInnerOffset, firstIncludedInnerOffset + includedInnerLength)
                 : null;
-        final Iterator finalNullsIterator = remaining > 0
-                ? Iterator.repeat(NULL_SHORT, remaining)
-                : null;
-        return Iterator.maybeConcat(initialNullsIterator, innerIterator, finalNullsIterator);
+        final long includedRemainingNulls = remaining;
+        if (includedInitialNulls == 0 && includedRemainingNulls == 0) {
+            return includedInnerLength == 0 ? DeephavenValueIteratorOfShort.empty() : innerIterator;
+        }
+        return new DeephavenValueIteratorOfShort() {
+            private long nextIndex = 0;
+
+            @Override
+            public short nextShort() {
+                nextIndex++;
+                if (nextIndex <= includedInitialNulls || nextIndex > includedInitialNulls + includedInnerLength) {
+                    return NULL_SHORT;
+                }
+                return innerIterator.nextShort();
+            }
+
+            @Override
+            public boolean hasNext() {
+                return nextIndex < includedInitialNulls + includedInnerLength + includedRemainingNulls;
+            }
+        };
     }
 
     @Override

@@ -13,6 +13,7 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.ResettableWritableFloatChunk;
 import io.deephaven.chunk.WritableFloatChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.primitive.iterator.DeephavenValueIteratorOfFloat;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ChunkSource;
@@ -149,7 +150,7 @@ public class FloatVectorColumnWrapper extends FloatVector.Indirect {
     }
 
     @Override
-    public Iterator iterator(final long fromIndexInclusive, final long toIndexExclusive) {
+    public DeephavenValueIteratorOfFloat iterator(final long fromIndexInclusive, final long toIndexExclusive) {
         final long rowSetSize = rowSet.size();
         if (startPadding == 0 && endPadding == 0 && fromIndexInclusive == 0 && toIndexExclusive == rowSetSize) {
             if (rowSetSize >= CHUNKED_COLUMN_ITERATOR_SIZE_THRESHOLD) {
@@ -185,19 +186,39 @@ public class FloatVectorColumnWrapper extends FloatVector.Indirect {
             includedRows = 0;
         }
 
-        final Iterator initialNullsIterator = includedInitialNulls > 0
-                ? Iterator.repeat(NULL_FLOAT, includedInitialNulls)
-                : null;
-        final Iterator rowsIterator = includedRows > CHUNKED_COLUMN_ITERATOR_SIZE_THRESHOLD
+        final DeephavenValueIteratorOfFloat rowsIterator = includedRows > CHUNKED_COLUMN_ITERATOR_SIZE_THRESHOLD
                 ? new ChunkedFloatColumnIterator(columnSource, rowSet, DEFAULT_CHUNK_SIZE, firstIncludedRowKey,
                         includedRows)
                 : includedRows > 0
                         ? new SerialFloatColumnIterator(columnSource, rowSet, firstIncludedRowKey, includedRows)
                         : null;
-        final Iterator finalNullsIterator = remaining > 0
-                ? Iterator.repeat(NULL_FLOAT, remaining)
-                : null;
-        return Iterator.maybeConcat(initialNullsIterator, rowsIterator, finalNullsIterator);
+
+        final long includedRemainingNulls = remaining;
+        if (includedInitialNulls == 0 && includedRemainingNulls == 0) {
+            return rowsIterator == null ? DeephavenValueIteratorOfFloat.empty() : rowsIterator;
+        }
+        return new FloatColumnIterator() {
+            private long nextIndex = 0;
+
+            @Override
+            public float nextFloat() {
+                nextIndex++;
+                if (nextIndex <= includedInitialNulls || nextIndex > includedInitialNulls + includedRows) {
+                    return NULL_FLOAT;
+                }
+                return rowsIterator.nextFloat();
+            }
+
+            @Override
+            public boolean hasNext() {
+                return nextIndex < includedInitialNulls + includedRows + includedRemainingNulls;
+            }
+
+            @Override
+            public long remaining() {
+                return includedInitialNulls + includedRows + includedRemainingNulls - nextIndex;
+            }
+        };
     }
 
     @Override

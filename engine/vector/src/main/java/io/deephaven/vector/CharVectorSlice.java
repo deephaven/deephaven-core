@@ -5,6 +5,7 @@ package io.deephaven.vector;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
+import io.deephaven.engine.primitive.iterator.DeephavenValueIteratorOfChar;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
@@ -90,7 +91,7 @@ public class CharVectorSlice extends CharVector.Indirect {
     }
 
     @Override
-    public Iterator iterator(final long fromIndexInclusive, final long toIndexExclusive) {
+    public DeephavenValueIteratorOfChar iterator(final long fromIndexInclusive, final long toIndexExclusive) {
         Require.leq(fromIndexInclusive, "fromIndexInclusive", toIndexExclusive, "toIndexExclusive");
         final long totalWanted = toIndexExclusive - fromIndexInclusive;
         long nextIndexWanted = fromIndexInclusive + offsetIndex;
@@ -114,16 +115,30 @@ public class CharVectorSlice extends CharVector.Indirect {
             includedInnerLength = 0;
         }
 
-        final Iterator initialNullsIterator = includedInitialNulls > 0
-                ? Iterator.repeat(NULL_CHAR, includedInitialNulls)
-                : null;
-        final Iterator innerIterator = includedInnerLength > 0
+        final DeephavenValueIteratorOfChar innerIterator = includedInnerLength > 0
                 ? innerVector.iterator(firstIncludedInnerOffset, firstIncludedInnerOffset + includedInnerLength)
                 : null;
-        final Iterator finalNullsIterator = remaining > 0
-                ? Iterator.repeat(NULL_CHAR, remaining)
-                : null;
-        return Iterator.maybeConcat(initialNullsIterator, innerIterator, finalNullsIterator);
+        final long includedRemainingNulls = remaining;
+        if (includedInitialNulls == 0 && includedRemainingNulls == 0) {
+            return includedInnerLength == 0 ? DeephavenValueIteratorOfChar.empty() : innerIterator;
+        }
+        return new DeephavenValueIteratorOfChar() {
+            private long nextIndex = 0;
+
+            @Override
+            public char nextChar() {
+                nextIndex++;
+                if (nextIndex <= includedInitialNulls || nextIndex > includedInitialNulls + includedInnerLength) {
+                    return NULL_CHAR;
+                }
+                return innerIterator.nextChar();
+            }
+
+            @Override
+            public boolean hasNext() {
+                return nextIndex < includedInitialNulls + includedInnerLength + includedRemainingNulls;
+            }
+        };
     }
 
     @Override

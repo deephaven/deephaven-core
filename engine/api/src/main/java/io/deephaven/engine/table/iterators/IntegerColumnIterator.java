@@ -9,8 +9,8 @@ package io.deephaven.engine.table.iterators;
 
 import io.deephaven.util.type.TypeUtils;
 
+import io.deephaven.engine.primitive.iterator.DeephavenValueIteratorOfInt;
 import io.deephaven.util.annotations.FinalDefault;
-import io.deephaven.vector.IntVector;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Spliterator;
@@ -22,7 +22,7 @@ import java.util.stream.StreamSupport;
 /**
  * {@link ColumnIterator} implementation for columns of primitive ints.
  */
-public interface IntegerColumnIterator extends ColumnIterator<Integer>, IntVector.Iterator {
+public interface IntegerColumnIterator extends ColumnIterator<Integer>, DeephavenValueIteratorOfInt {
 
     // region streamAsInt
     // endregion streamAsInt
