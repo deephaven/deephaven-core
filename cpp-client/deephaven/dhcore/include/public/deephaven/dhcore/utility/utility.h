@@ -173,6 +173,20 @@ DESTP VerboseCast(const DebugInfo &debug_info, SRCP ptr) {
   throw std::runtime_error(message);
 }
 
+template<typename DEST, typename SRC>
+std::shared_ptr<DEST> VerboseSharedPtrCast(const DebugInfo &debug_info, std::shared_ptr<SRC> ptr) {
+  auto typed_ptr = std::dynamic_pointer_cast<DEST>(ptr);
+  if (typed_ptr != nullptr) {
+    return typed_ptr;
+  }
+  typedef decltype(std::declval<DEST>()) destType_t;
+  auto message = fmt::format("{}: Expected type {}. Got type {}",
+      debug_info,
+      demangle(typeid(destType_t).name()),
+      demangle(typeid(*ptr).name()));
+  throw std::runtime_error(message);
+}
+
 std::string GetWhat(std::exception_ptr eptr);
 
 namespace internal {

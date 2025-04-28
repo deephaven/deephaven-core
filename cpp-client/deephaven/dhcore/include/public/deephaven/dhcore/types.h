@@ -5,6 +5,7 @@
 
 #include <limits>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <ostream>
@@ -12,6 +13,7 @@
 #include <string_view>
 #include <type_traits>
 #include "deephaven/third_party/fmt/core.h"
+#include "deephaven/third_party/fmt/format.h"
 #include "deephaven/third_party/fmt/ostream.h"
 
 namespace deephaven::dhcore::container {
@@ -19,7 +21,8 @@ class ContainerBase;
 }  // namespace deephaven::dhcore::container
 
 namespace deephaven::dhcore {
-struct ElementTypeId {
+class ElementTypeId {
+public:
   ElementTypeId() = delete;
 
   // We don't use "enum class" here because we can't figure out how to get it to work right with Cython.
@@ -30,6 +33,13 @@ struct ElementTypeId {
     kBool, kString, kTimestamp,
     kLocalDate, kLocalTime
   };
+
+  static constexpr size_t kEnumSize = 12;
+
+  static const char *ToString(Enum id);
+
+private:
+  static const char *kHumanReadableConstants[kEnumSize];
 };
 
 class ElementType {
@@ -56,9 +66,21 @@ public:
   [[nodiscard]]
   ElementType UnwrapList() const;
 
+  [[nodiscard]]
+  std::string ToString() const {
+    return fmt::to_string(*this);
+  }
+
 private:
   uint32_t list_depth_ = 0;
-  ElementTypeId::Enum element_type_id_ = ElementTypeId::kInt8;
+  ElementTypeId::Enum element_type_id_ = ElementTypeId::kInt8;  // arbitrary default
+
+  friend bool operator==(const ElementType &lhs, const ElementType &rhs) {
+    return lhs.list_depth_ == rhs.list_depth_ &&
+        lhs.element_type_id_ == rhs.element_type_id_;
+  }
+
+  friend std::ostream &operator<<(std::ostream &s, const ElementType &o);
 };
 
 class DateTime;
@@ -565,3 +587,4 @@ private:
 template<> struct fmt::formatter<deephaven::dhcore::DateTime> : ostream_formatter {};
 template<> struct fmt::formatter<deephaven::dhcore::LocalDate> : ostream_formatter {};
 template<> struct fmt::formatter<deephaven::dhcore::LocalTime> : ostream_formatter {};
+template<> struct fmt::formatter<deephaven::dhcore::ElementType> : ostream_formatter {};
