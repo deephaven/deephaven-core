@@ -329,6 +329,10 @@ public class RegionedColumnSourceManager implements ColumnSourceManager, Delegat
             // locations, this is a valid approach.
             final TableLocation firstLocation = includedTableLocations.iterator().next().location;
             for (final String[] keyColumnNames : firstLocation.getDataIndexColumns()) {
+                // Skip adding additional indexes on partitioning columns
+                if (keyColumnNames.length == 1 && partitioningColumnValueSources.containsKey(keyColumnNames[0])) {
+                    continue;
+                }
                 // Here, we assume the data index is present on all included locations. MergedDataIndex.validate() will
                 // be used to test this before attempting to materialize the data index table later on.
                 final ColumnSource<?>[] keySources = Arrays.stream(keyColumnNames)

@@ -3,9 +3,10 @@
 #
 """ This module adds Iceberg table support into Deephaven. """
 from __future__ import annotations
-from typing import Optional, Dict, Union, Sequence
+from typing import Optional, Dict, Union, Sequence, Mapping
 
 import jpy
+from warnings import warn
 
 from deephaven import DHError
 from deephaven._wrapper import JObjectWrapper
@@ -25,6 +26,11 @@ _JIcebergTableAdapter = jpy.get_type("io.deephaven.iceberg.util.IcebergTableAdap
 _JIcebergTableWriter = jpy.get_type("io.deephaven.iceberg.util.IcebergTableWriter")
 _JIcebergTable = jpy.get_type("io.deephaven.iceberg.util.IcebergTable")
 _JIcebergTools = jpy.get_type("io.deephaven.iceberg.util.IcebergTools")
+_JLoadTableOptions = jpy.get_type("io.deephaven.iceberg.util.LoadTableOptions")
+_JResolverProvider = jpy.get_type("io.deephaven.iceberg.util.ResolverProvider")
+_JInferenceResolver = jpy.get_type("io.deephaven.iceberg.util.InferenceResolver")
+_JUnboundResolver = jpy.get_type("io.deephaven.iceberg.util.UnboundResolver")
+_JColumnInstructions = jpy.get_type("io.deephaven.iceberg.util.ColumnInstructions")
 
 # IcebergToolsS3 is an optional library
 try:
@@ -87,9 +93,8 @@ class IcebergUpdateMode(JObjectWrapper):
 
 class IcebergReadInstructions(JObjectWrapper):
     """
-    `IcebergReadInstructions` specifies the instructions for reading an Iceberg table into Deephaven. These
-    include column rename instructions and table definitions, as well as special data instructions for loading data
-    files from the cloud.
+    `IcebergReadInstructions` specifies the instructions for reading an Iceberg table into Deephaven. These include
+    special data instructions for loading data files from the cloud.
     """
 
     j_object_type = _JIcebergReadInstructions
@@ -99,23 +104,24 @@ class IcebergReadInstructions(JObjectWrapper):
                  data_instructions: Optional[s3.S3Instructions] = None,
                  column_renames: Optional[Dict[str, str]] = None,
                  update_mode: Optional[IcebergUpdateMode] = None,
-                 snapshot_id: Optional[int] = None):
+                 snapshot_id: Optional[int] = None,
+                 ignore_resolving_errors: bool = False):
         """
         Initializes the instructions using the provided parameters.
 
         Args:
-            table_definition (Optional[TableDefinitionLike]): the table definition; if omitted,
-                the definition is inferred from the Iceberg schema. Setting a definition guarantees the returned table
-                will have that definition. This is useful for specifying a subset of the Iceberg schema columns.
+            table_definition (Optional[TableDefinitionLike]): this parameter is deprecated and has no effect
             data_instructions (Optional[s3.S3Instructions]): Special instructions for reading data files, useful when
                 reading files from a non-local file system, like S3. If omitted, the data instructions will be derived
                 from the catalog.
-            column_renames (Optional[Dict[str, str]]): A dictionary of old to new column names that will be renamed in
-                the output table.
+            column_renames (Optional[Dict[str, str]]): this parameter is deprecated and has no effect
             update_mode (Optional[IcebergUpdateMode]): The update mode for the table. If omitted, the default update
                 mode of :py:func:`IcebergUpdateMode.static() <IcebergUpdateMode.static>` is used.
             snapshot_id (Optional[int]): the snapshot id to read; if omitted the most recent snapshot will be selected.
-
+            ignore_resolving_errors (bool): Controls whether to ignore unexpected resolving errors by silently returning
+                null data for columns that can't be resolved in DataFiles where they should be present. These errors may
+                be a sign of an incorrect resolver or name mapping; or an Iceberg metadata / data issue. By default, is
+                `False`.
         Raises:
             DHError: If unable to build the instructions object.
         """
@@ -124,20 +130,29 @@ class IcebergReadInstructions(JObjectWrapper):
             builder = self.j_object_type.builder()
 
             if table_definition:
-                builder.tableDefinition(TableDefinition(table_definition).j_table_definition)
+                warn(
+                    "The table_definition parameter is deprecated, has no effect",
+                    DeprecationWarning,
+                    stacklevel=2,
+                )
 
             if data_instructions:
                 builder.dataInstructions(data_instructions.j_object)
 
             if column_renames:
-                for old_name, new_name in column_renames.items():
-                    builder.putColumnRenames(old_name, new_name)
+                warn(
+                    "This column_renames parameter is deprecated, has no effect",
+                    DeprecationWarning,
+                    stacklevel=2,
+                )
 
             if update_mode:
                 builder.updateMode(update_mode.j_object)
 
             if snapshot_id:
                 builder.snapshotId(snapshot_id)
+
+            builder.ignoreResolvingErrors(ignore_resolving_errors)
 
             self._j_object = builder.build()
         except Exception as e:
@@ -359,6 +374,94 @@ class SortOrderProvider(JObjectWrapper):
         return SortOrderProvider(self._j_object.withFailOnUnmapped(fail_on_unmapped))
 
 
+class InferenceResolver(JObjectWrapper):
+    """
+    This provides a set of inference options for use in :meth:`~IcebergTableAdapter.load_table`. This is useful when the
+    caller does not know the structure of the table to be loaded, and wants the resulting Deephaven Table definition
+    (and mapping to the Iceberg fields) to be inferred.
+    """
+
+    j_object_type = _JInferenceResolver
+
+    def __init__(
+        self,
+        infer_partitioning_columns: bool = False,
+        fail_on_unsupported_types: bool = False,
+        schema_provider: Optional[SchemaProvider] = None,
+    ):
+        """
+        Initializes the `InferenceResolver` object.
+
+        Args:
+            infer_partitioning_columns (bool): if Partitioning column should be inferred based on the latest Iceberg
+                PartitionSpec. By default, is `False`. Warning: inferring partition columns for general-purpose use is
+                dangerous. This is only meant to be applied in situations where caller knows that the latest Iceberg
+                PartitionSpec contains identity transforms that are not expected to ever change.
+            fail_on_unsupported_types (bool): If inference should fail if any of the Iceberg fields fail to map to
+                Deephaven columns. By default, is `False`.
+            schema_provider (Optional[SchemaProvider]): The Iceberg Schema to be used for inference. Defaults to
+                `None`, which means use the current schema from the Iceberg Table.
+        """
+        builder = _JInferenceResolver.builder()
+        builder.inferPartitioningColumns(infer_partitioning_columns)
+        builder.failOnUnsupportedTypes(fail_on_unsupported_types)
+        if schema_provider:
+            builder.schema(schema_provider.j_object)
+        self._j_object = builder.build()
+
+    @property
+    def j_object(self) -> jpy.JType:
+        return self._j_object
+
+
+class UnboundResolver(JObjectWrapper):
+    """
+    This provides a set of resolver options for use in :meth:`~IcebergTableAdapter.load_table`. This is useful when the
+    caller knows the definition of the table they want to load, and can provide an explicit mapping between the
+    Deephaven columns and Iceberg fields.
+    """
+
+    j_object_type = _JUnboundResolver
+
+    def __init__(
+        self,
+        table_definition: TableDefinitionLike,
+        column_instructions: Optional[Mapping[str, Union[int, str]]] = None,
+        schema_provider: Optional[SchemaProvider] = None,
+    ):
+        """
+        Initializes the `UnboundResolver` object.
+
+        Args:
+            table_definition (TableDefinitionLike): the table definition
+            column_instructions (Optional[Mapping[str, Union[int, str]]]): The map from Deephaven column names to
+                instructions for mapping to Iceberg columns. An int value will be treated as a schema field id, and a
+                str value will be treated as a schema field name. Any columns from table_definition not in this map will
+                be assumed as exact name matches for the fields in the Schema. Callers are encouraged to use schema
+                field ids as they will remain valid across Iceberg Schema evolution.
+            schema_provider (Optional[SchemaProvider]): The Iceberg Schema to be used for inference. Defaults to
+                `None`, which means use the current schema from the Iceberg Table.
+        """
+        builder = _JUnboundResolver.builder()
+        builder.definition(TableDefinition(table_definition).j_table_definition)
+        if column_instructions:
+            for column_name, value in column_instructions.items():
+                if isinstance(value, int):
+                    ci = _JColumnInstructions.schemaField(value)
+                elif isinstance(value, str):
+                    ci = _JColumnInstructions.schemaFieldName(value)
+                else:
+                    raise DHError(message="Unexpected value in Mapping")
+                builder.putColumnInstructions(column_name, ci)
+        if schema_provider:
+            builder.schema(schema_provider.j_object)
+        self._j_object = builder.build()
+
+    @property
+    def j_object(self) -> jpy.JType:
+        return self._j_object
+
+
 class TableParquetWriterOptions(JObjectWrapper):
     """
     `TableParquetWriterOptions` provides specialized instructions for configuring `IcebergTableWriter`
@@ -554,36 +657,63 @@ class IcebergTableAdapter(JObjectWrapper):
         Returns the Deephaven table definition as a Deephaven table.
 
         Args:
-            instructions (Optional[IcebergReadInstructions]): the instructions for reading the table. These instructions
-                can include column renames, table definition, and specific data instructions for reading the data files
-                from the provider. If omitted, the table will be read with default instructions.
+            instructions (Optional[IcebergReadInstructions]): has no effect, deprecated
 
         Returns:
             a table containing the table definition.
         """
 
         if instructions:
-            return Table(self.j_object.definitionTable(instructions.j_object))
+            warn(
+                "The instructions parameter is deprecated, has no effect",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+
         return Table(self.j_object.definitionTable())
 
-    def table(self, instructions: Optional[IcebergReadInstructions] = None) -> IcebergTable:
+    def table(
+        self,
+        instructions: Optional[IcebergReadInstructions] = None,
+        snapshot_id: Optional[int] = None,
+        update_mode: Optional[IcebergUpdateMode] = None,
+        data_instructions: Optional[s3.S3Instructions] = None,
+        ignore_resolving_errors: bool = False,
+    ) -> IcebergTable:
         """
-        Reads the table using the provided instructions. Optionally, a snapshot id can be provided to read a specific
-        snapshot of the table.
+        Reads the table using the provided instructions.
 
         Args:
-            instructions (Optional[IcebergReadInstructions]): the instructions for reading the table. These instructions
-                can include column renames, table definition, and specific data instructions for reading the data files
-                from the provider. If omitted, the table will be read in `static()` mode without column renames or data
-                instructions.
-
+            instructions (Optional[IcebergReadInstructions]): deprecated, use other parameters directly
+            snapshot_id (Optional[int]): the snapshot id to read; if omitted the most recent snapshot will be selected.
+            update_mode (Optional[IcebergUpdateMode]): The update mode for the table. If omitted, the default update
+                mode of :py:func:`IcebergUpdateMode.static() <IcebergUpdateMode.static>` is used.
+            data_instructions (Optional[s3.S3Instructions]): Special instructions for reading data files, useful when
+                reading files from a non-local file system, like S3. If omitted, the data instructions will be derived
+                from the catalog.
+            ignore_resolving_errors (bool): Controls whether to ignore unexpected resolving errors by silently returning
+                null data for columns that can't be resolved in DataFiles where they should be present. These errors may
+                be a sign of an incorrect resolver or name mapping; or an Iceberg metadata / data issue. By default, is
+                `False`.
         Returns:
             the table read from the catalog.
         """
-
-        if instructions:
-            return IcebergTable(self.j_object.table(instructions.j_object))
-        return IcebergTable(self.j_object.table())
+        if snapshot_id or update_mode or data_instructions or ignore_resolving_errors:
+            instructions = IcebergReadInstructions(
+                snapshot_id=snapshot_id,
+                update_mode=update_mode,
+                data_instructions=data_instructions,
+                ignore_resolving_errors=ignore_resolving_errors,
+            )
+        elif instructions:
+            warn(
+                "instructions on table are deprecated, prefer settings the other parameters",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+        else:
+            instructions = IcebergReadInstructions()
+        return IcebergTable(self.j_object.table(instructions.j_object))
 
     def table_writer(self, writer_options: TableParquetWriterOptions) -> IcebergTableWriter:
         """
@@ -645,18 +775,26 @@ class IcebergCatalogAdapter(JObjectWrapper):
 
         return Table(self.j_object.tables(namespace))
 
-    def load_table(self, table_identifier: str) -> IcebergTableAdapter:
+    def load_table(
+        self,
+        table_identifier: str,
+        resolver: Union[InferenceResolver, UnboundResolver] = None,
+    ) -> IcebergTableAdapter:
         """
         Load the table from the catalog.
 
         Args:
             table_identifier (str): the table to read.
+            resolver (Union[InferenceResolver, UnboundResolver]): the resolver, defaults to None, meaning to use a
+                InferenceResolver with all the default options.
 
         Returns:
             Table: the table read from the catalog.
         """
-
-        return IcebergTableAdapter(self.j_object.loadTable(table_identifier))
+        builder = _JLoadTableOptions.builder()
+        builder.id(table_identifier)
+        builder.resolver((resolver if resolver else InferenceResolver()).j_object)
+        return IcebergTableAdapter(self.j_object.loadTable(builder.build()))
 
     def create_table(self, table_identifier: str, table_definition: TableDefinitionLike) -> IcebergTableAdapter:
         """

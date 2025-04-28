@@ -3,13 +3,23 @@
  */
 #include "deephaven/dhcore/types.h"
 
+#include <chrono>
+#include <cstddef>
+#include <cstdint>
+#include <cmath>
+#include <iostream>
 #include <limits>
+#include <stdexcept>
 #include <sstream>
+#include <string>
+#include <string_view>
 
 #include "date/date.h"
 #include "deephaven/dhcore/utility/utility.h"
 #include "deephaven/third_party/fmt/chrono.h"
+#include "deephaven/third_party/fmt/core.h"
 #include "deephaven/third_party/fmt/format.h"
+#include "deephaven/third_party/fmt/core.h"
 #include "deephaven/third_party/fmt/ostream.h"
 
 static_assert(FMT_VERSION >= 100000);
@@ -54,6 +64,43 @@ constexpr const int32_t DeephavenConstants::kMaxInt;
 constexpr const int64_t DeephavenConstants::kNullLong;
 constexpr const int64_t DeephavenConstants::kMinLong;
 constexpr const int64_t DeephavenConstants::kMaxLong;
+
+const char *ElementTypeId::kHumanReadableConstants[] = {
+  "char",
+  "int8", "int16", "int32", "int64",
+  "float", "double",
+  "bool", "string", "DateTime",
+  "LocalDate", "LocalTime"
+};
+
+const char *ElementTypeId::ToString(Enum id) {
+  auto index = static_cast<size_t>(id);
+  if (index >= kEnumSize) {
+    auto message = fmt::format("ElementTypeId {} is out of range", index);
+    throw std::runtime_error(message);
+  }
+  return kHumanReadableConstants[index];
+}
+
+ElementType ElementType::UnwrapList() const {
+  if (list_depth_ == 0) {
+    const char *message = "Can't unwrap list of depth 0";
+    throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
+  }
+
+  return {list_depth_ - 1, element_type_id_};
+}
+
+std::ostream &operator<<(std::ostream &s, const ElementType &o) {
+  for (uint32_t i = 0; i != o.list_depth_; ++i) {
+    s << "list<";
+  }
+  s << ElementTypeId::ToString(o.element_type_id_);
+  for (uint32_t i = 0; i != o.list_depth_; ++i) {
+    s << ">";
+  }
+  return s;
+}
 
 DateTime DateTime::Parse(std::string_view iso_8601_timestamp) {
   // Special handling for "Z" timezone

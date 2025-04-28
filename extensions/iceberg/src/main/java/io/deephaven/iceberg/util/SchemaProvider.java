@@ -36,7 +36,7 @@ public interface SchemaProvider {
     /**
      * Use the schema from the snapshot with the given ID.
      */
-    static SchemaProvider fromSnapshotId(final int snapshotId) {
+    static SchemaProvider fromSnapshotId(final long snapshotId) {
         return new SchemaProviderInternal.SnapshotIdSchemaProvider(snapshotId);
     }
 

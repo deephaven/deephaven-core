@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.hierarchical;
 
 import io.deephaven.api.ColumnName;
+import io.deephaven.api.Selectable;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.engine.table.Table;
@@ -81,19 +82,39 @@ public interface RollupTable extends HierarchicalTable<RollupTable> {
     TableDefinition getNodeDefinition(@NotNull NodeType nodeType);
 
     /**
-     * Apply a filter to the group-by columns of this RollupTable in order to produce a new RollupTable.
+     * Apply a filter to the source table for this RollupTable before applying the rollup operation. This filter must
+     * use only non-aggregate columns and must not use column arrays.
      *
-     * @param filter The filter to apply; must only reference the group-by columns and must not use column arrays
+     * @param filter The filter to apply; must only reference non-aggregate columns and must not use column arrays
      * @return The new RollupTable
      */
     RollupTable withFilter(Filter filter);
+
+    /**
+     * Apply a view to this RollupTable in order to produce a new RollupTable with additional columns at the aggregated
+     * node level.
+     *
+     * @param columns The new columns to add
+     * @return The new RollupTable
+     */
+    RollupTable withUpdateView(Collection<Selectable> columns);
+
+    /**
+     * Apply a view to this RollupTable in order to produce a new RollupTable with additional columns at the aggregated
+     * node level.
+     *
+     * @param columns The new columns to add
+     * @return The new RollupTable
+     */
+    RollupTable withUpdateView(String... columns);
 
     /**
      * Recorder for node-level operations to be applied when gathering snapshots.
      */
     interface NodeOperationsRecorder extends
             FormatOperationsRecorder<NodeOperationsRecorder>,
-            SortOperationsRecorder<NodeOperationsRecorder> {
+            SortOperationsRecorder<NodeOperationsRecorder>,
+            UpdateViewOperationsRecorder<NodeOperationsRecorder> {
 
         /**
          * Test if this NodeOperationsRecorder has recorded any operations.
@@ -134,14 +155,14 @@ public interface RollupTable extends HierarchicalTable<RollupTable> {
      * @return Node-level operations for constituent nodes
      */
     NodeOperationsRecorder translateAggregatedNodeOperationsForConstituentNodes(
-            @NotNull NodeOperationsRecorder aggregatedNodeOperationsToTranslate);
+            @NotNull RollupTable.NodeOperationsRecorder aggregatedNodeOperationsToTranslate);
 
     /**
      * Create a new RollupTable based on {@code newSource}, inheriting this RollupTable's {@link #getAggregations()
      * aggregations}, {@link #includesConstituents() constituent inclusion}, {@link #getGroupByColumns() group-by
      * columns}, {@link #withNodeOperations(NodeOperationsRecorder...) node operations}, and {@link #withFilter(Filter)
      * filters}.
-     * 
+     *
      * @param newSource A new source table that must have the same definition as the source of this rollup; that is
      *        {@code newSource.getDefinition().equals(getSource().getDefinition())} must be {@code true}
      *

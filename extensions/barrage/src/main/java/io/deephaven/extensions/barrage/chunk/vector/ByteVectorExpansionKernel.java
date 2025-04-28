@@ -18,16 +18,13 @@ import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
-import io.deephaven.engine.primitive.function.ByteConsumer;
-import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.extensions.barrage.chunk.BaseChunkReader;
+import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfByte;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.vector.ByteVector;
 import io.deephaven.vector.ByteVectorDirect;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.stream.Stream;
 
 import static io.deephaven.vector.ByteVectorDirect.ZERO_LENGTH_VECTOR;
 
@@ -73,15 +70,12 @@ public class ByteVectorExpansionKernel implements VectorExpansionKernel<ByteVect
                 offsetsDest.set(ii, result.size());
             }
             if (row != null) {
-                final ByteConsumer consumer = result::add;
-                try (final CloseableIterator<Byte> iter = row.iterator()) {
-                    Stream<Byte> stream = iter.stream();
-                    if (fixedSizeLength > 0) {
-                        // limit length to fixedSizeLength
-                        stream = stream.limit(fixedSizeLength);
+                try (final CloseablePrimitiveIteratorOfByte iter = row.iterator()) {
+                    final int numToRead = LongSizedDataStructure.intSize(
+                            DEBUG_NAME, fixedSizeLength == 0 ? row.size() : fixedSizeLength);
+                    for (int jj = 0; jj < numToRead; ++jj) {
+                        result.add(iter.nextByte());
                     }
-                    // copy the row into the result
-                    stream.forEach(consumer::accept);
                 }
             }
             if (fixedSizeLength != 0) {
@@ -104,13 +98,12 @@ public class ByteVectorExpansionKernel implements VectorExpansionKernel<ByteVect
     @Override
     public <A extends Any> WritableObjectChunk<ByteVector, A> contract(
             @NotNull final Chunk<A> source,
-            int sizePerElement,
+            final int sizePerElement,
             @Nullable final IntChunk<ChunkPositions> offsets,
             @Nullable final IntChunk<ChunkLengths> lengths,
             @Nullable final WritableChunk<A> outChunk,
             final int outOffset,
             final int totalRows) {
-        sizePerElement = Math.abs(sizePerElement);
         final int itemsInBatch = offsets == null
                 ? source.size() / sizePerElement
                 : (offsets.size() - (lengths == null ? 1 : 0));

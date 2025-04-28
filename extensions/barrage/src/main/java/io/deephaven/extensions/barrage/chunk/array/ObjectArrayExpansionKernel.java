@@ -94,7 +94,7 @@ public class ObjectArrayExpansionKernel<T> implements ArrayExpansionKernel<T[]> 
     @Override
     public <A extends Any> WritableObjectChunk<T[], A> contract(
             @NotNull final Chunk<A> source,
-            int sizePerElement,
+            final int sizePerElement,
             @Nullable final IntChunk<ChunkPositions> offsets,
             @Nullable final IntChunk<ChunkLengths> lengths,
             @Nullable final WritableChunk<A> outChunk,

@@ -3,11 +3,12 @@
  */
 #pragma once
 
-#include <any>
+#include <cstdint>
+#include <memory>
 #include <string>
-#include <vector>
 #include "deephaven/dhcore/types.h"
 #include "deephaven/dhcore/chunk/chunk.h"
+#include "deephaven/dhcore/container/container.h"
 #include "deephaven/dhcore/container/row_sequence.h"
 #include "deephaven/dhcore/utility/utility.h"
 
@@ -72,6 +73,13 @@ public:
       BooleanChunk *optional_dest_null_flags) const = 0;
 
   /**
+   * Get the ElementType of the ColumnSource
+   * @return The ElementType of this ColumnSource
+   */
+  [[nodiscard]]
+  virtual const ElementType &GetElementType() const = 0;
+
+  /**
    * Implement the Visitor pattern.
    */
   virtual void AcceptVisitor(ColumnSourceVisitor *visitor) const = 0;
@@ -121,14 +129,7 @@ public:
 };
 
 /**
- * Refinement of ColumnSource for the Deephaven numeric types (int8_t, int16_t, etc).
- */
-template<typename T>
-class NumericColumnSource : public virtual ColumnSource {
-};
-
-/**
- * Refinement of ColumnSource for the Deephaven non-numeric types (bool, string, DateTime).
+ * Generic refinement of ColumnSource
  */
 template<typename T>
 class GenericColumnSource : public virtual ColumnSource {
@@ -137,31 +138,31 @@ class GenericColumnSource : public virtual ColumnSource {
 /**
  * Convenience using.
  */
-using CharColumnSource = NumericColumnSource<char16_t>;
+using CharColumnSource = GenericColumnSource<char16_t>;
 /**
  * Convenience using.
  */
-using Int8ColumnSource = NumericColumnSource<int8_t>;
+using Int8ColumnSource = GenericColumnSource<int8_t>;
 /**
  * Convenience using.
  */
-using Int16ColumnSource = NumericColumnSource<int16_t>;
+using Int16ColumnSource = GenericColumnSource<int16_t>;
 /**
  * Convenience using.
  */
-using Int32ColumnSource = NumericColumnSource<int32_t>;
+using Int32ColumnSource = GenericColumnSource<int32_t>;
 /**
  * Convenience using.
  */
-using Int64ColumnSource = NumericColumnSource<int64_t>;
+using Int64ColumnSource = GenericColumnSource<int64_t>;
 /**
  * Convenience using.
  */
-using FloatColumnSource = NumericColumnSource<float>;
+using FloatColumnSource = GenericColumnSource<float>;
 /**
  * Convenience using.
  */
-using DoubleColumnSource = NumericColumnSource<double>;
+using DoubleColumnSource = GenericColumnSource<double>;
 /**
  * Convenience using.
  */
@@ -182,12 +183,12 @@ using LocalDateColumnSource = GenericColumnSource<deephaven::dhcore::LocalDate>;
  * Convenience using.
  */
 using LocalTimeColumnSource = GenericColumnSource<deephaven::dhcore::LocalTime>;
+/**
+ * Convenience using.
+ */
+using ContainerBaseColumnSource = GenericColumnSource<std::shared_ptr<deephaven::dhcore::container::ContainerBase>>;
 
 // the mutable per-type interfaces
-template<typename T>
-class MutableNumericColumnSource : public NumericColumnSource<T>, public MutableColumnSource {
-};
-
 template<typename T>
 class MutableGenericColumnSource : public GenericColumnSource<T>, public MutableColumnSource {
 };
@@ -197,6 +198,7 @@ class MutableGenericColumnSource : public GenericColumnSource<T>, public Mutable
  */
 class ColumnSourceVisitor {
 public:
+  virtual ~ColumnSourceVisitor() = default;
   /**
    * Implements the visitor pattern.
    */
@@ -245,5 +247,9 @@ public:
    * Implements the visitor pattern.
    */
   virtual void Visit(const LocalTimeColumnSource &) = 0;
+  /**
+   * Implements the visitor pattern.
+   */
+  virtual void Visit(const ContainerBaseColumnSource &) = 0;
 };
 }  // namespace deephaven::dhcore::column

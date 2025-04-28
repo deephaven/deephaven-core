@@ -66,8 +66,16 @@ public class UnionChunkReader<T> extends BaseChunkReader<WritableObjectChunk<T, 
         // if Dense we also have an offset buffer
         final long offsetsBufferLength = mode == Mode.Dense ? bufferInfoIter.nextLong() : 0;
 
+        final WritableObjectChunk<T, Values> result = castOrCreateChunk(
+                outChunk,
+                outOffset,
+                Math.max(totalRows, nodeInfo.numElements),
+                WritableObjectChunk::makeWritableChunk,
+                WritableChunk::asWritableObjectChunk);
+
         int numRows = nodeInfo.numElements;
         if (numRows == 0) {
+            // must consume any advertised inner payload even though there "aren't any rows"
             is.skipBytes(LongSizedDataStructure.intSize(DEBUG_NAME, coiBufferLength + offsetsBufferLength));
             for (final ChunkReader<? extends WritableChunk<Values>> reader : readers) {
                 // noinspection EmptyTryBlock
@@ -75,7 +83,7 @@ public class UnionChunkReader<T> extends BaseChunkReader<WritableObjectChunk<T, 
                     // do nothing; we need each reader to consume fieldNodeIter and bufferInfoIter
                 }
             }
-            return WritableObjectChunk.makeWritableChunk(numRows);
+            return result;
         }
 
         try (final WritableByteChunk<ChunkPositions> columnsOfInterest =
@@ -128,13 +136,6 @@ public class UnionChunkReader<T> extends BaseChunkReader<WritableObjectChunk<T, 
                 // noinspection unchecked
                 chunks[ii] = (ObjectChunk<T, Values>) boxer.box(chunk);
             }
-
-            final WritableObjectChunk<T, Values> result = castOrCreateChunk(
-                    outChunk,
-                    outOffset,
-                    Math.max(totalRows, nodeInfo.numElements),
-                    WritableObjectChunk::makeWritableChunk,
-                    WritableChunk::asWritableObjectChunk);
 
             for (int ii = 0; ii < columnsOfInterest.size(); ++ii) {
                 final byte coi = columnsOfInterest.get(ii);

@@ -210,6 +210,8 @@ public class ParquetTableLocation extends AbstractTableLocation {
 
     List<String> getColumnPath(@NotNull String columnName, String parquetColumnNameOrDefault) {
         initialize();
+        // In the future, we could make this more granular so that the resolver can be constructed without calling
+        // initialize first.
         if (resolver != null) {
             // empty list will result in exists=false
             return resolver.of(columnName).orElse(List.of());

@@ -16,6 +16,7 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.exceptions.TableAlreadyFailedException;
 import io.deephaven.engine.exceptions.UpdateGraphConflictException;
+import io.deephaven.engine.table.impl.perf.PerformanceEntry;
 import io.deephaven.engine.table.impl.util.StepUpdater;
 import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.updategraph.UpdateGraph;
@@ -54,13 +55,14 @@ import java.util.concurrent.locks.Condition;
 import java.util.function.BiConsumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
 /**
  * Base abstract class all standard table implementations.
  */
 public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends BaseGridAttributes<Table, IMPL_TYPE>
-        implements TableDefaults, NotificationStepReceiver, NotificationStepSource {
+        implements TableDefaults, NotificationStepReceiver, NotificationStepSource, HasParentPerformanceIds {
 
     private static final long serialVersionUID = 1L;
 
@@ -100,7 +102,7 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
     /**
      * This table's description.
      */
-    protected final String description;
+    private final String description;
 
     /**
      * This table's update graph.
@@ -170,12 +172,12 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
 
     @Override
     public String toString() {
-        return description;
+        return getDescription();
     }
 
     @Override
     public LogOutput append(@NotNull final LogOutput logOutput) {
-        return logOutput.append(description);
+        return logOutput.append(getDescription());
     }
 
     // ------------------------------------------------------------------------------------------------------------------
@@ -571,7 +573,7 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
     @Override
     public void addUpdateListener(@NotNull final TableUpdateListener listener) {
         if (isFailed) {
-            throw new TableAlreadyFailedException("Can not listen to failed table " + description);
+            throw new TableAlreadyFailedException("Can not listen to failed table " + getDescription());
         }
         if (isRefreshing()) {
             // ensure that listener is in the same update graph if applicable
@@ -586,7 +588,7 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
     public boolean addUpdateListener(
             @NotNull final TableUpdateListener listener, final long requiredLastNotificationStep) {
         if (isFailed) {
-            throw new TableAlreadyFailedException("Can not listen to failed table " + description);
+            throw new TableAlreadyFailedException("Can not listen to failed table " + getDescription());
         }
 
         if (!isRefreshing()) {
@@ -965,7 +967,10 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
         private final boolean canReuseModifiedColumnSet;
 
         public ListenerImpl(String description, Table parent, BaseTable<?> dependent) {
-            super(description);
+            super(description, false, () -> {
+                return (Stream.concat((Stream<Object>) ((BaseTable) parent).parents.stream(), Stream.of(parent)))
+                        .flatMapToLong(BaseTable::getParentPerformanceEntryIds).toArray();
+            });
             this.parent = parent;
             this.dependent = dependent;
             if (parent.isRefreshing()) {
@@ -1352,5 +1357,49 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
         // happen or happen out of order if the listeners were GC'd and not explicitly left unmanaged.
         childListenerReferences.clear();
         parents.clear();
+    }
+
+    /**
+     * Get a LongStream of {@link PerformanceEntry} {@link PerformanceEntry#getId() identifiers} for this table.
+     * 
+     * @return a stream of performance entry ids
+     */
+    @Override
+    public LongStream parentPerformanceEntryIds() {
+        return Stream.concat(Stream.of(this), parents.stream()).flatMapToLong(BaseTable::getParentPerformanceEntryIds);
+    }
+
+    /**
+     * For a given parent, determine if a performance entry is available.
+     *
+     * <p>
+     * Only refreshing sources have performance entry IDs and are included in the stream. ListenerRecorders are ignored,
+     * as the MergedListener provides an appropriate description and parent information.
+     * </p>
+     *
+     * @param p the parent to interrogate
+     * @return a stream of performance entry identifiers
+     */
+    @NotNull
+    private static LongStream getParentPerformanceEntryIds(Object p) {
+        if (p instanceof ListenerRecorder) {
+            // the merged listener takes care of us
+            return LongStream.empty();
+        }
+
+        if (p instanceof InstrumentedTableListenerBase) {
+            final PerformanceEntry entry = ((InstrumentedTableListenerBase) p).getEntry();
+            if (entry != null) {
+                return LongStream.of(entry.getId());
+            }
+        } else if (p instanceof HasRefreshingSource) {
+            return ((HasRefreshingSource) p).sourceEntries().mapToLong(PerformanceEntry::getId);
+        } else if (p instanceof MergedListener) {
+            final PerformanceEntry entry = ((MergedListener) p).getEntry();
+            if (entry != null) {
+                return LongStream.of(entry.getId());
+            }
+        }
+        return LongStream.empty();
     }
 }

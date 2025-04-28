@@ -5,16 +5,25 @@
 
 #include <chrono>
 #include <cstring>
+#include <cstdint>
 #include <cstdio>
+#include <exception>
+#include <stdexcept>
 #include <iostream>
 #include <memory>
 #include <optional>
 #include <string>
-#include <thread>
+#include <string_view>
 #include <typeinfo>
+#include <type_traits>
 #include <vector>
-#include "deephaven/third_party/fmt/format.h"
+#include "deephaven/third_party/fmt/core.h"
 #include "deephaven/third_party/fmt/ostream.h"
+
+// Forward declaration
+namespace deephaven::dhcore::container {
+class ContainerBase;
+} // namespace deephaven::dhcore::container
 
 namespace deephaven::dhcore::utility {
 template<typename Dest, typename Src>
@@ -92,7 +101,7 @@ std::ostream &operator<<(std::ostream &s, const SeparatedListAdaptor<Iterator, C
 }
 
 template<typename T>
-void defaultCallback(std::ostream &s, const T &item) {
+void DefaultCallback(std::ostream &s, const T &item) {
   s << item;
 }
 }  // namespace internal
@@ -101,7 +110,7 @@ template<typename Iterator>
 auto separatedList(Iterator begin, Iterator end, const char *separator = ", ") {
   return internal::SeparatedListAdaptor<Iterator, void (*)(std::ostream &s,
       const std::remove_reference_t<decltype(*std::declval<Iterator>())> &)>(
-      begin, end, separator, &internal::defaultCallback);
+      begin, end, separator, &internal::DefaultCallback);
 }
 
 template<typename Iterator, typename Callback>
@@ -157,6 +166,20 @@ DESTP VerboseCast(const DebugInfo &debug_info, SRCP ptr) {
     return typed_ptr;
   }
   typedef decltype(*std::declval<DESTP>()) destType_t;
+  auto message = fmt::format("{}: Expected type {}. Got type {}",
+      debug_info,
+      demangle(typeid(destType_t).name()),
+      demangle(typeid(*ptr).name()));
+  throw std::runtime_error(message);
+}
+
+template<typename DEST, typename SRC>
+std::shared_ptr<DEST> VerboseSharedPtrCast(const DebugInfo &debug_info, std::shared_ptr<SRC> ptr) {
+  auto typed_ptr = std::dynamic_pointer_cast<DEST>(ptr);
+  if (typed_ptr != nullptr) {
+    return typed_ptr;
+  }
+  typedef decltype(std::declval<DEST>()) destType_t;
   auto message = fmt::format("{}: Expected type {}. Got type {}",
       debug_info,
       demangle(typeid(destType_t).name()),
@@ -249,7 +272,25 @@ TypeName(const T& t) {
 
 [[nodiscard]] std::string
 ObjectId(const std::string &class_short_name, void* this_ptr);
+
+class ElementRenderer {
+public:
+  template<typename T>
+  void Render(std::ostream &s, const T &item) const {
+    s << item;
+  }
+
+  void Render(std::ostream &s,
+      const std::shared_ptr<deephaven::dhcore::container::ContainerBase> &item) const;
+
+  void Render(std::ostream &s, const bool &item) const {
+    s << (item ? "true" : "false");
+  }
+};
 }  // namespace deephaven::dhcore::utility
 
 // Add the specialization for the DebugInfo formatter
 template<> struct fmt::formatter<deephaven::dhcore::utility::DebugInfo> : fmt::ostream_formatter {};
+
+template<typename Iterator, typename Callback>
+struct fmt::formatter<deephaven::dhcore::utility::internal::SeparatedListAdaptor<Iterator, Callback>> : fmt::ostream_formatter {};

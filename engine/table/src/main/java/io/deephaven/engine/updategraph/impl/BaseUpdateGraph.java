@@ -57,16 +57,37 @@ public abstract class BaseUpdateGraph implements UpdateGraph, LogOutputAppendabl
     @Nullable
     public static PerformanceEntry createUpdatePerformanceEntry(
             @Nullable final UpdateGraph updateGraph,
-            @Nullable final String description) {
+            @Nullable final String description,
+            @Nullable final Supplier<long[]> ancestors) {
         if (updateGraph instanceof BaseUpdateGraph) {
             final BaseUpdateGraph bug = (BaseUpdateGraph) updateGraph;
             if (bug.updatePerformanceTracker != null) {
-                return bug.updatePerformanceTracker.getEntry(description);
+                final PerformanceEntry entry = bug.updatePerformanceTracker.getEntry(description);
+                if (ancestors != null && entry != null) {
+                    bug.updatePerformanceTracker.logAncestors(updateGraph.getName(), entry, ancestors);
+                }
+                return entry;
             }
             throw new IllegalStateException("Cannot create a performance entry for a BaseUpdateGraph that has "
                     + "not been completely constructed.");
         }
         return null;
+    }
+
+    public static void logPerformanceEntryAncestors(
+            @Nullable final UpdateGraph updateGraph,
+            @Nullable final PerformanceEntry performanceEntry,
+            @Nullable final Supplier<long[]> ancestors) {
+        if (performanceEntry == null || ancestors == null) {
+            return;
+        }
+        final BaseUpdateGraph bug = (BaseUpdateGraph) updateGraph;
+        if (bug.updatePerformanceTracker == null) {
+            throw new IllegalStateException("Cannot create a performance entry for a BaseUpdateGraph that has "
+                    + "not been completely constructed.");
+        }
+
+        bug.updatePerformanceTracker.logAncestors(updateGraph.getName(), performanceEntry, ancestors);
     }
 
     private static final KeyedObjectHashMap<String, UpdateGraph> INSTANCES = new KeyedObjectHashMap<>(

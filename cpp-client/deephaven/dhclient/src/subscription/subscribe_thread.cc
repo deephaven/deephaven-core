@@ -6,12 +6,25 @@
 #include <arrow/array.h>
 #include <arrow/buffer.h>
 #include <arrow/scalar.h>
-#include <atomic>
+#include <arrow/flight/client.h>
+#include <cstddef>
+#include <cstdint>
+#include <exception>
+#include <future>
+#include <memory>
+#include <mutex>
+#include <stdexcept>
+#include <thread>
+#include <utility>
+#include <vector>
 #include <grpc/support/log.h>
 #include "deephaven/client/arrowutil/arrow_column_source.h"
+#include "deephaven/client/arrowutil/arrow_array_converter.h"
 #include "deephaven/client/server/server.h"
 #include "deephaven/client/utility/arrow_util.h"
 #include "deephaven/client/utility/executor.h"
+#include "deephaven/dhcore/chunk/chunk.h"
+#include "deephaven/dhcore/column/column_source.h"
 #include "deephaven/dhcore/ticking/ticking.h"
 #include "deephaven/dhcore/utility/utility.h"
 #include "deephaven/dhcore/ticking/barrage_processor.h"
@@ -24,6 +37,7 @@ using deephaven::dhcore::ticking::TickingCallback;
 using deephaven::dhcore::utility::MakeReservedVector;
 using deephaven::dhcore::utility::separatedList;
 using deephaven::dhcore::utility::VerboseCast;
+using deephaven::client::arrowutil::ArrowArrayConverter;
 using deephaven::client::arrowutil::BooleanArrowColumnSource;
 using deephaven::client::arrowutil::CharArrowColumnSource;
 using deephaven::client::arrowutil::DateTimeArrowColumnSource;
@@ -111,7 +125,6 @@ struct ColumnSourceAndSize {
   size_t size_ = 0;
 };
 
-ColumnSourceAndSize ArrayToColumnSource(const arrow::Array &array);
 }  // namespace
 
 std::shared_ptr<SubscriptionHandle> SubscriptionThread::Start(std::shared_ptr<Server> server,
@@ -209,6 +222,7 @@ void UpdateProcessor::Cancel() {
   guard.unlock();
 
   fsr_->Cancel();
+  (void)fsw_->Close();
   thread_.join();
 }
 
@@ -221,6 +235,31 @@ void UpdateProcessor::RunUntilCancelled(std::shared_ptr<UpdateProcessor> self) {
       self->callback_->OnFailure(std::current_exception());
     }
   }
+}
+
+/**
+ * The columns coming back from Barrage are all wrapped in a list. This is done in order to
+ * satisfy an Arrow invariant that all the columns coming back in a message have the same length.
+ * In Barrage, in the modify case, the columns that come in may have different sizes. But we
+ * wrap them in an additional List container. So instead of sending e.g.
+ * IntArray[12 items], DoubleArray[5 items]
+ * Barrage will send
+ * List[1 item], List[1 item]
+ * where the sole element in the first item is the IntArray[12 items]
+ * and the sole element in the second item is the DoubleArray[5 items]
+ */
+std::shared_ptr<arrow::Array> UnwrapList(const arrow::Array &array) {
+  const auto *list_array = VerboseCast<const arrow::ListArray *>(DEEPHAVEN_LOCATION_EXPR(&array));
+
+  if (list_array->length() != 1) {
+    auto message = fmt::format("Expected array of length 1, got {}", array.length());
+    throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
+  }
+
+  const auto list_element = list_array->GetScalar(0).ValueOrDie();
+  const auto *list_scalar = VerboseCast<const arrow::ListScalar *>(
+      DEEPHAVEN_LOCATION_EXPR(list_element.get()));
+  return list_scalar->value;
 }
 
 void UpdateProcessor::RunForeverHelper() {
@@ -239,9 +278,10 @@ void UpdateProcessor::RunForeverHelper() {
     auto column_sources = MakeReservedVector<std::shared_ptr<ColumnSource>>(cols.size());
     auto sizes = MakeReservedVector<size_t>(cols.size());
     for (const auto &col : cols) {
-      auto css = ArrayToColumnSource(*col);
-      column_sources.push_back(std::move(css.columnSource_));
-      sizes.push_back(css.size_);
+      auto array = UnwrapList(*col);
+      sizes.push_back(array->length());
+      auto cs = ArrowArrayConverter::ArrayToColumnSource(std::move(array));
+      column_sources.push_back(std::move(cs));
     }
 
     const void *metadata = nullptr;
@@ -262,102 +302,5 @@ OwningBuffer::OwningBuffer(std::vector<uint8_t> data) :
     arrow::Buffer(data.data(), static_cast<int64_t>(data.size())), data_(std::move(data)) {}
 OwningBuffer::~OwningBuffer() = default;
 
-struct ArrayToColumnSourceVisitor final : public arrow::ArrayVisitor {
-  explicit ArrayToColumnSourceVisitor(const std::shared_ptr<arrow::Array> &array) : array_(array) {}
-
-  arrow::Status Visit(const arrow::Int8Array &/*array*/) final {
-    auto typed_array = std::dynamic_pointer_cast<arrow::Int8Array>(array_);
-    result_ = Int8ArrowColumnSource::OfArrowArray(std::move(typed_array));
-    return arrow::Status::OK();
-  }
-
-  arrow::Status Visit(const arrow::Int16Array &/*array*/) final {
-    auto typed_array = std::dynamic_pointer_cast<arrow::Int16Array>(array_);
-    result_ = Int16ArrowColumnSource::OfArrowArray(std::move(typed_array));
-    return arrow::Status::OK();
-  }
-
-  arrow::Status Visit(const arrow::Int32Array &/*array*/) final {
-    auto typed_array = std::dynamic_pointer_cast<arrow::Int32Array>(array_);
-    result_ = Int32ArrowColumnSource::OfArrowArray(std::move(typed_array));
-    return arrow::Status::OK();
-  }
-
-  arrow::Status Visit(const arrow::Int64Array &/*array*/) final {
-    auto typed_array = std::dynamic_pointer_cast<arrow::Int64Array>(array_);
-    result_ = Int64ArrowColumnSource::OfArrowArray(std::move(typed_array));
-    return arrow::Status::OK();
-  }
-
-  arrow::Status Visit(const arrow::FloatArray &/*array*/) final {
-    auto typed_array = std::dynamic_pointer_cast<arrow::FloatArray>(array_);
-    result_ = FloatArrowColumnSource::OfArrowArray(std::move(typed_array));
-    return arrow::Status::OK();
-  }
-
-  arrow::Status Visit(const arrow::DoubleArray &/*array*/) final {
-    auto typed_array = std::dynamic_pointer_cast<arrow::DoubleArray>(array_);
-    result_ = DoubleArrowColumnSource::OfArrowArray(std::move(typed_array));
-    return arrow::Status::OK();
-  }
-
-  arrow::Status Visit(const arrow::BooleanArray &/*array*/) final {
-    auto typed_array = std::dynamic_pointer_cast<arrow::BooleanArray>(array_);
-    result_ = BooleanArrowColumnSource::OfArrowArray(std::move(typed_array));
-    return arrow::Status::OK();
-  }
-
-  arrow::Status Visit(const arrow::UInt16Array &/*array*/) final {
-    auto typed_array = std::dynamic_pointer_cast<arrow::UInt16Array>(array_);
-    result_ = CharArrowColumnSource::OfArrowArray(std::move(typed_array));
-    return arrow::Status::OK();
-  }
-
-  arrow::Status Visit(const arrow::StringArray &/*array*/) final {
-    auto typed_array = std::dynamic_pointer_cast<arrow::StringArray>(array_);
-    result_ = StringArrowColumnSource::OfArrowArray(std::move(typed_array));
-    return arrow::Status::OK();
-  }
-
-  arrow::Status Visit(const arrow::TimestampArray &/*array*/) final {
-    auto typed_array = std::dynamic_pointer_cast<arrow::TimestampArray>(array_);
-    result_ = DateTimeArrowColumnSource::OfArrowArray(std::move(typed_array));
-    return arrow::Status::OK();
-  }
-
-  arrow::Status Visit(const arrow::Date64Array &/*array*/) final {
-    auto typed_array = std::dynamic_pointer_cast<arrow::Date64Array>(array_);
-    result_ = LocalDateArrowColumnSource::OfArrowArray(std::move(typed_array));
-    return arrow::Status::OK();
-  }
-
-  arrow::Status Visit(const arrow::Time64Array &/*array*/) final {
-    auto typed_array = std::dynamic_pointer_cast<arrow::Time64Array>(array_);
-    result_ = LocalTimeArrowColumnSource::OfArrowArray(std::move(typed_array));
-    return arrow::Status::OK();
-  }
-
-  const std::shared_ptr<arrow::Array> &array_;
-  std::shared_ptr<ColumnSource> result_;
-};
-
-// Creates a non-owning chunk of the right type that points to the corresponding array data.
-ColumnSourceAndSize ArrayToColumnSource(const arrow::Array &array) {
-  const auto *list_array = VerboseCast<const arrow::ListArray *>(DEEPHAVEN_LOCATION_EXPR(&array));
-
-  if (list_array->length() != 1) {
-    auto message = fmt::format("Expected array of length 1, got {}", array.length());
-    throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
-  }
-
-  const auto list_element = list_array->GetScalar(0).ValueOrDie();
-  const auto *list_scalar = VerboseCast<const arrow::ListScalar *>(
-      DEEPHAVEN_LOCATION_EXPR(list_element.get()));
-  const auto &list_scalar_value = list_scalar->value;
-
-  ArrayToColumnSourceVisitor v(list_scalar_value);
-  OkOrThrow(DEEPHAVEN_LOCATION_EXPR(list_scalar_value->Accept(&v)));
-  return {std::move(v.result_), static_cast<size_t>(list_scalar_value->length())};
-}
 }  // namespace
 }  // namespace deephaven::client::subscription

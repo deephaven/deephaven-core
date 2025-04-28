@@ -306,8 +306,6 @@ public class ParquetTools {
             @NotNull final Table sourceTable,
             @NotNull final String destinationDir,
             @NotNull final ParquetInstructions writeInstructions) {
-        final Collection<List<String>> indexColumns =
-                writeInstructions.getIndexColumns().orElseGet(() -> indexedColumnNames(sourceTable));
         final TableDefinition definition = writeInstructions.getTableDefinition().orElse(sourceTable.getDefinition());
         final List<ColumnDefinition<?>> partitioningColumns = definition.getPartitioningColumns();
         if (partitioningColumns.isEmpty()) {
@@ -320,6 +318,20 @@ public class ParquetTools {
         final TableDefinition keyTableDefinition = TableDefinition.of(partitioningColumns);
         final TableDefinition leafDefinition =
                 getNonKeyTableDefinition(new HashSet<>(Arrays.asList(partitioningColNames)), definition);
+
+        final Collection<List<String>> indexColumns;
+        if (writeInstructions.getIndexColumns().isPresent()) {
+            indexColumns = writeInstructions.getIndexColumns().get();
+            verifyNotAddingIndexOnPartitioningColumn(indexColumns, partitionedTable.keyColumnNames());
+        } else {
+            // Skip writing any existing indexes that are on partitioning columns, but don't fail
+            final Collection<List<String>> existingIndexes = indexedColumnNames(sourceTable);
+            final Set<String> keyColumnNames = partitionedTable.keyColumnNames();
+            indexColumns = existingIndexes.stream()
+                    .filter(index -> !isIndexOnPartitioningColumn(index, keyColumnNames))
+                    .collect(Collectors.toList());
+        }
+
         writeKeyValuePartitionedTableImpl(partitionedTable, keyTableDefinition, leafDefinition, destinationDir,
                 writeInstructions, indexColumns, Optional.of(sourceTable));
     }
@@ -341,7 +353,6 @@ public class ParquetTools {
             @NotNull final PartitionedTable partitionedTable,
             @NotNull final String destinationDir,
             @NotNull final ParquetInstructions writeInstructions) {
-        final Collection<List<String>> indexColumns = writeInstructions.getIndexColumns().orElse(EMPTY_INDEXES);
         final TableDefinition keyTableDefinition, leafDefinition;
         if (writeInstructions.getTableDefinition().isEmpty()) {
             keyTableDefinition = getKeyTableDefinition(partitionedTable.keyColumnNames(),
@@ -353,8 +364,33 @@ public class ParquetTools {
             keyTableDefinition = getKeyTableDefinition(partitionedTable.keyColumnNames(), definition);
             leafDefinition = getNonKeyTableDefinition(partitionedTable.keyColumnNames(), definition);
         }
+
+        final Collection<List<String>> indexColumns;
+        if (writeInstructions.getIndexColumns().isPresent()) {
+            indexColumns = writeInstructions.getIndexColumns().get();
+            verifyNotAddingIndexOnPartitioningColumn(indexColumns, partitionedTable.keyColumnNames());
+        } else {
+            indexColumns = EMPTY_INDEXES;
+        }
+
         writeKeyValuePartitionedTableImpl(partitionedTable, keyTableDefinition, leafDefinition, destinationDir,
                 writeInstructions, indexColumns, Optional.empty());
+    }
+
+    private static void verifyNotAddingIndexOnPartitioningColumn(
+            @NotNull final Collection<List<String>> indexColumnsCollection,
+            @NotNull final Collection<String> partitioningColumnNames) {
+        for (final List<String> indexColumns : indexColumnsCollection) {
+            if (isIndexOnPartitioningColumn(indexColumns, partitioningColumnNames)) {
+                throw new IllegalArgumentException("Cannot add index on partitioning column " + indexColumns.get(0));
+            }
+        }
+    }
+
+    private static boolean isIndexOnPartitioningColumn(
+            @NotNull final List<String> indexColumns,
+            @NotNull final Collection<String> partitioningColumnNames) {
+        return indexColumns.size() == 1 && partitioningColumnNames.contains(indexColumns.get(0));
     }
 
     /**

@@ -12,6 +12,16 @@ java {
   withSourcesJar()
 }
 
+// Any published source jar should contain apt-generated sources
+// See https://github.com/gradle/gradle/issues/33287
+sourceSets.configureEach { sourceSet ->
+  if (tasks.names.contains(sourceSet.getSourcesJarTaskName())) {
+    tasks.named(sourceSet.getSourcesJarTaskName(), Jar) {
+      from sourceSet.output.generatedSourcesDirs
+    }
+  }
+}
+
 tasks.withType(Javadoc) {
   // https://github.com/gradle/gradle/issues/19869
   options.addStringOption('sourcepath', sourceSets.main.allJava.getSourceDirectories().getAsPath())
