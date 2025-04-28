@@ -13,7 +13,7 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.ResettableWritableDoubleChunk;
 import io.deephaven.chunk.WritableDoubleChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.primitive.iterator.DeephavenValueIteratorOfDouble;
+import io.deephaven.engine.primitive.value.iterator.ValueIteratorOfDouble;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ChunkSource;
@@ -150,7 +150,7 @@ public class DoubleVectorColumnWrapper extends DoubleVector.Indirect {
     }
 
     @Override
-    public DeephavenValueIteratorOfDouble iterator(final long fromIndexInclusive, final long toIndexExclusive) {
+    public ValueIteratorOfDouble iterator(final long fromIndexInclusive, final long toIndexExclusive) {
         final long rowSetSize = rowSet.size();
         if (startPadding == 0 && endPadding == 0 && fromIndexInclusive == 0 && toIndexExclusive == rowSetSize) {
             if (rowSetSize >= CHUNKED_COLUMN_ITERATOR_SIZE_THRESHOLD) {
@@ -186,7 +186,7 @@ public class DoubleVectorColumnWrapper extends DoubleVector.Indirect {
             includedRows = 0;
         }
 
-        final DeephavenValueIteratorOfDouble rowsIterator = includedRows > CHUNKED_COLUMN_ITERATOR_SIZE_THRESHOLD
+        final ValueIteratorOfDouble rowsIterator = includedRows > CHUNKED_COLUMN_ITERATOR_SIZE_THRESHOLD
                 ? new ChunkedDoubleColumnIterator(columnSource, rowSet, DEFAULT_CHUNK_SIZE, firstIncludedRowKey,
                         includedRows)
                 : includedRows > 0
@@ -195,7 +195,7 @@ public class DoubleVectorColumnWrapper extends DoubleVector.Indirect {
 
         final long includedRemainingNulls = remaining;
         if (includedInitialNulls == 0 && includedRemainingNulls == 0) {
-            return rowsIterator == null ? DeephavenValueIteratorOfDouble.empty() : rowsIterator;
+            return rowsIterator == null ? ValueIteratorOfDouble.empty() : rowsIterator;
         }
         return new DoubleColumnIterator() {
             private long nextIndex = 0;

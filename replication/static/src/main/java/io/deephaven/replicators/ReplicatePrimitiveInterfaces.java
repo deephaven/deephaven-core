@@ -23,8 +23,8 @@ public class ReplicatePrimitiveInterfaces {
     private static final String CHAR_TO_INT_PATH =
             "engine/primitive/src/main/java/io/deephaven/engine/primitive/function/CharToIntFunction.java";
 
-    private static final String CHAR_NULL_AWARE_ITERATOR_PATH =
-            "engine/primitive/src/main/java/io/deephaven/engine/primitive/iterator/DeephavenValueIteratorOfChar.java";
+    private static final String CHAR_VALUE_ITERATOR_PATH =
+            "engine/primitive/src/main/java/io/deephaven/engine/primitive/value/iterator/ValueIteratorOfChar.java";
 
     private static final String CHAR_ITERATOR_PATH =
             "engine/primitive/src/main/java/io/deephaven/engine/primitive/iterator/CloseablePrimitiveIteratorOfChar.java";
@@ -82,41 +82,101 @@ public class ReplicatePrimitiveInterfaces {
                     "int subIteratorIndex");
         }
         {
-            charToShortAndByte(TASK, CHAR_NULL_AWARE_ITERATOR_PATH);
-            fixupCharToInt(charToInteger(TASK, CHAR_NULL_AWARE_ITERATOR_PATH, null));
-            fixupCharToLong(charToLong(TASK, CHAR_NULL_AWARE_ITERATOR_PATH));
-            fixupCharToFloat(charToFloat(TASK, CHAR_NULL_AWARE_ITERATOR_PATH, null));
-            fixupCharToDouble(charToDouble(TASK, CHAR_NULL_AWARE_ITERATOR_PATH, null));
+            charToShortAndByte(TASK, CHAR_VALUE_ITERATOR_PATH);
+            fixupCharToInt(charToInteger(TASK, CHAR_VALUE_ITERATOR_PATH, null));
+            fixupCharToLong(charToLong(TASK, CHAR_VALUE_ITERATOR_PATH));
+            fixupCharToFloat(charToFloat(TASK, CHAR_VALUE_ITERATOR_PATH, null));
+            fixupCharToDouble(charToDouble(TASK, CHAR_VALUE_ITERATOR_PATH, null));
         }
     }
 
     public static void fixupCharToInt(@NotNull final String path) throws IOException {
         final File file = new File(path);
         List<String> lines = FileUtils.readLines(file, Charset.defaultCharset());
+        lines = ReplicationUtils.removeImport(lines,
+                "import io.deephaven.engine.primitive.function.IntToIntFunction;");
         lines = ReplicationUtils.replaceRegion(lines, "streamAsInt",
                 ReplicationUtils.indent(List.of(
                         "",
                         "/**",
-                        "* Create a boxed {@link Stream} over the remaining elements of this IntegerColumnIterator. The result <em>must</em>",
-                        "* be {@link java.util.stream.BaseStream#close() closed} in order to ensure resources are released. A",
-                        "* try-with-resources block is strongly encouraged.",
-                        "*",
-                        "* @return A boxed {@link Stream} over the remaining contents of this iterator. Must be {@link Stream#close()",
-                        "*         closed}.",
-                        "*/",
+                        " * Create a boxed {@link Stream} over the remaining elements of this DeephavenValueIteratorOfInt. ",
+                        " * The result <em>must</em>, be {@link java.util.stream.BaseStream#close() closed} in order ",
+                        " * to ensure resources are released. A try-with-resources block is strongly encouraged.",
+                        " *",
+                        " * @return A boxed {@link Stream} over the remaining contents of this iterator. Must be {@link Stream#close()",
+                        " *         closed}.",
+                        " */",
                         "@Override",
                         "@FinalDefault",
                         "default Stream<Integer> stream() {",
                         "   return intStream().mapToObj(TypeUtils::box);",
-                        "}"), 8));
+                        "}"), 4));
+        lines = ReplicationUtils.replaceRegion(lines, "stream",
+                ReplicationUtils.indent(List.of(
+                        "/**",
+                        " * Create an unboxed {@link IntStream} over the remaining elements of this IntegerColumnIterator. The result",
+                        " * <em>must</em> be {@link java.util.stream.BaseStream#close() closed} in order to ensure resources are released. A",
+                        " * try-with-resources block is strongly encouraged.",
+                        " *",
+                        " * @return An unboxed {@link IntStream} over the remaining contents of this iterator. Must be {@link Stream#close()",
+                        " *         closed}.",
+                        " */",
+                        "@Override",
+                        "@FinalDefault",
+                        "default IntStream intStream() {",
+                        "    return StreamSupport.intStream(",
+                        "            Spliterators.spliterator(",
+                        "                    this,",
+                        "                    remaining(),",
+                        "                    Spliterator.IMMUTABLE | Spliterator.ORDERED),",
+                        "            false)",
+                        "            .onClose(this::close);",
+                        "}"), 4));
         FileUtils.writeLines(file, lines);
     }
-
 
     public static void fixupCharToLong(@NotNull final String path) throws IOException {
         final File file = new File(path);
         List<String> lines = FileUtils.readLines(file, Charset.defaultCharset());
         lines = ReplicationUtils.removeRegion(lines, "streamAsInt");
+        lines = ReplicationUtils.removeImport(lines,
+                "import io.deephaven.engine.primitive.function.LongToIntFunction;");
+        lines = ReplicationUtils.addImport(lines,
+                "import java.util.stream.LongStream;");
+        lines = ReplicationUtils.replaceRegion(lines, "stream",
+                ReplicationUtils.indent(List.of("    /**",
+                        " * Create an unboxed {@link LongStream} over the remaining elements of this ValueIteratorOfLong. The result",
+                        " * <em>must</em> be {@link java.util.stream.BaseStream#close() closed} in order to ensure resources are released. A",
+                        " * try-with-resources block is strongly encouraged.",
+                        " *",
+                        " * @return An unboxed {@link LongStream} over the remaining contents of this iterator. Must be {@link Stream#close()",
+                        " *         closed}.",
+                        " */",
+                        "@Override",
+                        "@FinalDefault",
+                        "default LongStream longStream() {",
+                        "    return StreamSupport.longStream(",
+                        "            Spliterators.spliterator(",
+                        "                    this,",
+                        "                    remaining(),",
+                        "                    Spliterator.IMMUTABLE | Spliterator.ORDERED),",
+                        "            false)",
+                        "            .onClose(this::close);",
+                        "}",
+                        "",
+                        "/**",
+                        " * Create a boxed {@link Stream} over the remaining elements of this ValueIteratorOfLong. The result <em>must</em>",
+                        " * be {@link java.util.stream.BaseStream#close() closed} in order to ensure resources are released. A",
+                        " * try-with-resources block is strongly encouraged.",
+                        " *",
+                        " * @return A boxed {@link Stream} over the remaining contents of this iterator. Must be {@link Stream#close()",
+                        " *         closed}.",
+                        " */",
+                        "@Override",
+                        "@FinalDefault",
+                        "default Stream<Long> stream() {",
+                        "    return longStream().mapToObj(TypeUtils::box);",
+                        "}"), 4));
         FileUtils.writeLines(file, lines);
     }
 
@@ -124,19 +184,67 @@ public class ReplicatePrimitiveInterfaces {
         final File file = new File(path);
         List<String> lines = FileUtils.readLines(file, Charset.defaultCharset());
         lines = ReplicationUtils.removeRegion(lines, "streamAsInt");
+        lines = ReplicationUtils.removeImport(lines,
+                "import io.deephaven.engine.primitive.function.DoubleToIntFunction;");
+        lines = ReplicationUtils.addImport(lines,
+                "import java.util.stream.DoubleStream;");
+        lines = ReplicationUtils.replaceRegion(lines, "stream",
+                ReplicationUtils.indent(List.of(
+                        "/**",
+                        " * Create an unboxed {@link DoubleStream} over the remaining elements of this ValueIteratorOfDouble. The result",
+                        " * <em>must</em> be {@link java.util.stream.BaseStream#close() closed} in order to ensure resources are released. A",
+                        " * try-with-resources block is strongly encouraged.",
+                        " *",
+                        " * @return An unboxed {@link DoubleStream} over the remaining contents of this iterator. Must be {@link Stream#close()",
+                        " *         closed}.",
+                        " */",
+                        "@Override",
+                        "@FinalDefault",
+                        "default DoubleStream doubleStream() {",
+                        "    return StreamSupport.doubleStream(",
+                        "            Spliterators.spliterator(",
+                        "                    this,",
+                        "                    remaining(),",
+                        "                    Spliterator.IMMUTABLE | Spliterator.ORDERED),",
+                        "            false)",
+                        "            .onClose(this::close);",
+                        "}",
+                        "",
+                        "/**",
+                        " * Create a boxed {@link Stream} over the remaining elements of this ValueIteratorOfDouble. The result <em>must</em>",
+                        " * be {@link java.util.stream.BaseStream#close() closed} in order to ensure resources are released. A",
+                        " * try-with-resources block is strongly encouraged.",
+                        " *",
+                        " * @return A boxed {@link Stream} over the remaining contents of this iterator. Must be {@link Stream#close()",
+                        " *         closed}.",
+                        " */",
+                        "@Override",
+                        "@FinalDefault",
+                        "default Stream<Double> stream() {",
+                        "    return doubleStream().mapToObj(TypeUtils::box);",
+                        "}"), 4));
         FileUtils.writeLines(file, lines);
     }
 
     public static void fixupCharToFloat(@NotNull final String path) throws IOException {
         final File file = new File(path);
         List<String> lines = FileUtils.readLines(file, Charset.defaultCharset());
+        lines = ReplicationUtils.removeImport(lines,
+                "import io.deephaven.engine.primitive.function.FloatToIntFunction;",
+                "import java.util.stream.IntStream;");
         lines = ReplicationUtils.addImport(lines,
-                "import java.util.stream.DoubleStream;");
+                "import java.util.stream.DoubleStream;",
+                "import io.deephaven.engine.primitive.function.FloatToDoubleFunction;");
+
         lines = ReplicationUtils.simpleFixup(lines, "streamAsInt",
                 "streamAsInt\\(", "streamAsDouble(",
                 "IntStream", "DoubleStream",
                 "NULL_INT", "NULL_DOUBLE",
-                "\\(int\\)", "(double)");
+                "\\(int\\)", "(double)",
+                "\\{@code int\\}", "{@code double}",
+                "OfInt", "OfDouble",
+                "FloatToIntFunction", "FloatToDoubleFunction",
+                "intStream", "doubleStream");
         FileUtils.writeLines(file, lines);
     }
 }

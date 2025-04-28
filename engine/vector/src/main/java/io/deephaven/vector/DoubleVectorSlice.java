@@ -9,7 +9,7 @@ package io.deephaven.vector;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
-import io.deephaven.engine.primitive.iterator.DeephavenValueIteratorOfDouble;
+import io.deephaven.engine.primitive.value.iterator.ValueIteratorOfDouble;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
@@ -95,7 +95,7 @@ public class DoubleVectorSlice extends DoubleVector.Indirect {
     }
 
     @Override
-    public DeephavenValueIteratorOfDouble iterator(final long fromIndexInclusive, final long toIndexExclusive) {
+    public ValueIteratorOfDouble iterator(final long fromIndexInclusive, final long toIndexExclusive) {
         Require.leq(fromIndexInclusive, "fromIndexInclusive", toIndexExclusive, "toIndexExclusive");
         final long totalWanted = toIndexExclusive - fromIndexInclusive;
         long nextIndexWanted = fromIndexInclusive + offsetIndex;
@@ -119,14 +119,14 @@ public class DoubleVectorSlice extends DoubleVector.Indirect {
             includedInnerLength = 0;
         }
 
-        final DeephavenValueIteratorOfDouble innerIterator = includedInnerLength > 0
+        final ValueIteratorOfDouble innerIterator = includedInnerLength > 0
                 ? innerVector.iterator(firstIncludedInnerOffset, firstIncludedInnerOffset + includedInnerLength)
                 : null;
         final long includedRemainingNulls = remaining;
         if (includedInitialNulls == 0 && includedRemainingNulls == 0) {
-            return includedInnerLength == 0 ? DeephavenValueIteratorOfDouble.empty() : innerIterator;
+            return includedInnerLength == 0 ? ValueIteratorOfDouble.empty() : innerIterator;
         }
-        return new DeephavenValueIteratorOfDouble() {
+        return new ValueIteratorOfDouble() {
             private long nextIndex = 0;
 
             @Override
@@ -141,6 +141,11 @@ public class DoubleVectorSlice extends DoubleVector.Indirect {
             @Override
             public boolean hasNext() {
                 return nextIndex < includedInitialNulls + includedInnerLength + includedRemainingNulls;
+            }
+
+            @Override
+            public long remaining() {
+                return includedInitialNulls + includedInnerLength + includedRemainingNulls - nextIndex;
             }
         };
     }

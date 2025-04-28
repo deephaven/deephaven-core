@@ -9,7 +9,7 @@ package io.deephaven.vector;
 
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfDouble;
-import io.deephaven.engine.primitive.iterator.DeephavenValueIteratorOfDouble;
+import io.deephaven.engine.primitive.value.iterator.ValueIteratorOfDouble;
 import io.deephaven.qst.type.DoubleType;
 import io.deephaven.qst.type.PrimitiveVectorType;
 import io.deephaven.util.QueryConstants;
@@ -56,7 +56,7 @@ public interface DoubleVector extends Vector<DoubleVector>, Iterable<Double> {
 
     @Override
     @FinalDefault
-    default DeephavenValueIteratorOfDouble iterator() {
+    default ValueIteratorOfDouble iterator() {
         return iterator(0, size());
     }
 
@@ -68,9 +68,9 @@ public interface DoubleVector extends Vector<DoubleVector>, Iterable<Double> {
      * @param toIndexExclusive The first position after {@code fromIndexInclusive} to not include
      * @return An iterator over the requested slice
      */
-    default DeephavenValueIteratorOfDouble iterator(final long fromIndexInclusive, final long toIndexExclusive) {
+    default ValueIteratorOfDouble iterator(final long fromIndexInclusive, final long toIndexExclusive) {
         Require.leq(fromIndexInclusive, "fromIndexInclusive", toIndexExclusive, "toIndexExclusive");
-        return new DeephavenValueIteratorOfDouble() {
+        return new ValueIteratorOfDouble() {
 
             long nextIndex = fromIndexInclusive;
 
@@ -82,6 +82,11 @@ public interface DoubleVector extends Vector<DoubleVector>, Iterable<Double> {
             @Override
             public boolean hasNext() {
                 return nextIndex < toIndexExclusive;
+            }
+
+            @Override
+            public long remaining() {
+                return toIndexExclusive - nextIndex;
             }
         };
     }

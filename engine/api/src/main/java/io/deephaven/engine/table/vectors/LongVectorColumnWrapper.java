@@ -13,7 +13,7 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.ResettableWritableLongChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.primitive.iterator.DeephavenValueIteratorOfLong;
+import io.deephaven.engine.primitive.value.iterator.ValueIteratorOfLong;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ChunkSource;
@@ -150,7 +150,7 @@ public class LongVectorColumnWrapper extends LongVector.Indirect {
     }
 
     @Override
-    public DeephavenValueIteratorOfLong iterator(final long fromIndexInclusive, final long toIndexExclusive) {
+    public ValueIteratorOfLong iterator(final long fromIndexInclusive, final long toIndexExclusive) {
         final long rowSetSize = rowSet.size();
         if (startPadding == 0 && endPadding == 0 && fromIndexInclusive == 0 && toIndexExclusive == rowSetSize) {
             if (rowSetSize >= CHUNKED_COLUMN_ITERATOR_SIZE_THRESHOLD) {
@@ -186,7 +186,7 @@ public class LongVectorColumnWrapper extends LongVector.Indirect {
             includedRows = 0;
         }
 
-        final DeephavenValueIteratorOfLong rowsIterator = includedRows > CHUNKED_COLUMN_ITERATOR_SIZE_THRESHOLD
+        final ValueIteratorOfLong rowsIterator = includedRows > CHUNKED_COLUMN_ITERATOR_SIZE_THRESHOLD
                 ? new ChunkedLongColumnIterator(columnSource, rowSet, DEFAULT_CHUNK_SIZE, firstIncludedRowKey,
                         includedRows)
                 : includedRows > 0
@@ -195,7 +195,7 @@ public class LongVectorColumnWrapper extends LongVector.Indirect {
 
         final long includedRemainingNulls = remaining;
         if (includedInitialNulls == 0 && includedRemainingNulls == 0) {
-            return rowsIterator == null ? DeephavenValueIteratorOfLong.empty() : rowsIterator;
+            return rowsIterator == null ? ValueIteratorOfLong.empty() : rowsIterator;
         }
         return new LongColumnIterator() {
             private long nextIndex = 0;

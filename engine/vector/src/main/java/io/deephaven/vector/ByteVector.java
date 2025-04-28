@@ -9,7 +9,7 @@ package io.deephaven.vector;
 
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfByte;
-import io.deephaven.engine.primitive.iterator.DeephavenValueIteratorOfByte;
+import io.deephaven.engine.primitive.value.iterator.ValueIteratorOfByte;
 import io.deephaven.qst.type.ByteType;
 import io.deephaven.qst.type.PrimitiveVectorType;
 import io.deephaven.util.QueryConstants;
@@ -56,7 +56,7 @@ public interface ByteVector extends Vector<ByteVector>, Iterable<Byte> {
 
     @Override
     @FinalDefault
-    default DeephavenValueIteratorOfByte iterator() {
+    default ValueIteratorOfByte iterator() {
         return iterator(0, size());
     }
 
@@ -68,9 +68,9 @@ public interface ByteVector extends Vector<ByteVector>, Iterable<Byte> {
      * @param toIndexExclusive The first position after {@code fromIndexInclusive} to not include
      * @return An iterator over the requested slice
      */
-    default DeephavenValueIteratorOfByte iterator(final long fromIndexInclusive, final long toIndexExclusive) {
+    default ValueIteratorOfByte iterator(final long fromIndexInclusive, final long toIndexExclusive) {
         Require.leq(fromIndexInclusive, "fromIndexInclusive", toIndexExclusive, "toIndexExclusive");
-        return new DeephavenValueIteratorOfByte() {
+        return new ValueIteratorOfByte() {
 
             long nextIndex = fromIndexInclusive;
 
@@ -82,6 +82,11 @@ public interface ByteVector extends Vector<ByteVector>, Iterable<Byte> {
             @Override
             public boolean hasNext() {
                 return nextIndex < toIndexExclusive;
+            }
+
+            @Override
+            public long remaining() {
+                return toIndexExclusive - nextIndex;
             }
         };
     }

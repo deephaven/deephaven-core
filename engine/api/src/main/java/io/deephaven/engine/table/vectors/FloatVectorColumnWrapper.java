@@ -13,7 +13,7 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.ResettableWritableFloatChunk;
 import io.deephaven.chunk.WritableFloatChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.primitive.iterator.DeephavenValueIteratorOfFloat;
+import io.deephaven.engine.primitive.value.iterator.ValueIteratorOfFloat;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ChunkSource;
@@ -150,7 +150,7 @@ public class FloatVectorColumnWrapper extends FloatVector.Indirect {
     }
 
     @Override
-    public DeephavenValueIteratorOfFloat iterator(final long fromIndexInclusive, final long toIndexExclusive) {
+    public ValueIteratorOfFloat iterator(final long fromIndexInclusive, final long toIndexExclusive) {
         final long rowSetSize = rowSet.size();
         if (startPadding == 0 && endPadding == 0 && fromIndexInclusive == 0 && toIndexExclusive == rowSetSize) {
             if (rowSetSize >= CHUNKED_COLUMN_ITERATOR_SIZE_THRESHOLD) {
@@ -186,7 +186,7 @@ public class FloatVectorColumnWrapper extends FloatVector.Indirect {
             includedRows = 0;
         }
 
-        final DeephavenValueIteratorOfFloat rowsIterator = includedRows > CHUNKED_COLUMN_ITERATOR_SIZE_THRESHOLD
+        final ValueIteratorOfFloat rowsIterator = includedRows > CHUNKED_COLUMN_ITERATOR_SIZE_THRESHOLD
                 ? new ChunkedFloatColumnIterator(columnSource, rowSet, DEFAULT_CHUNK_SIZE, firstIncludedRowKey,
                         includedRows)
                 : includedRows > 0
@@ -195,7 +195,7 @@ public class FloatVectorColumnWrapper extends FloatVector.Indirect {
 
         final long includedRemainingNulls = remaining;
         if (includedInitialNulls == 0 && includedRemainingNulls == 0) {
-            return rowsIterator == null ? DeephavenValueIteratorOfFloat.empty() : rowsIterator;
+            return rowsIterator == null ? ValueIteratorOfFloat.empty() : rowsIterator;
         }
         return new FloatColumnIterator() {
             private long nextIndex = 0;

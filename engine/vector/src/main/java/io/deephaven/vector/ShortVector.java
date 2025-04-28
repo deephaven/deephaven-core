@@ -9,7 +9,7 @@ package io.deephaven.vector;
 
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfShort;
-import io.deephaven.engine.primitive.iterator.DeephavenValueIteratorOfShort;
+import io.deephaven.engine.primitive.value.iterator.ValueIteratorOfShort;
 import io.deephaven.qst.type.ShortType;
 import io.deephaven.qst.type.PrimitiveVectorType;
 import io.deephaven.util.QueryConstants;
@@ -56,7 +56,7 @@ public interface ShortVector extends Vector<ShortVector>, Iterable<Short> {
 
     @Override
     @FinalDefault
-    default DeephavenValueIteratorOfShort iterator() {
+    default ValueIteratorOfShort iterator() {
         return iterator(0, size());
     }
 
@@ -68,9 +68,9 @@ public interface ShortVector extends Vector<ShortVector>, Iterable<Short> {
      * @param toIndexExclusive The first position after {@code fromIndexInclusive} to not include
      * @return An iterator over the requested slice
      */
-    default DeephavenValueIteratorOfShort iterator(final long fromIndexInclusive, final long toIndexExclusive) {
+    default ValueIteratorOfShort iterator(final long fromIndexInclusive, final long toIndexExclusive) {
         Require.leq(fromIndexInclusive, "fromIndexInclusive", toIndexExclusive, "toIndexExclusive");
-        return new DeephavenValueIteratorOfShort() {
+        return new ValueIteratorOfShort() {
 
             long nextIndex = fromIndexInclusive;
 
@@ -82,6 +82,11 @@ public interface ShortVector extends Vector<ShortVector>, Iterable<Short> {
             @Override
             public boolean hasNext() {
                 return nextIndex < toIndexExclusive;
+            }
+
+            @Override
+            public long remaining() {
+                return toIndexExclusive - nextIndex;
             }
         };
     }

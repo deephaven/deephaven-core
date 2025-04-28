@@ -5,7 +5,7 @@ package io.deephaven.vector;
 
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfChar;
-import io.deephaven.engine.primitive.iterator.DeephavenValueIteratorOfChar;
+import io.deephaven.engine.primitive.value.iterator.ValueIteratorOfChar;
 import io.deephaven.qst.type.CharType;
 import io.deephaven.qst.type.PrimitiveVectorType;
 import io.deephaven.util.QueryConstants;
@@ -52,7 +52,7 @@ public interface CharVector extends Vector<CharVector>, Iterable<Character> {
 
     @Override
     @FinalDefault
-    default DeephavenValueIteratorOfChar iterator() {
+    default ValueIteratorOfChar iterator() {
         return iterator(0, size());
     }
 
@@ -64,9 +64,9 @@ public interface CharVector extends Vector<CharVector>, Iterable<Character> {
      * @param toIndexExclusive The first position after {@code fromIndexInclusive} to not include
      * @return An iterator over the requested slice
      */
-    default DeephavenValueIteratorOfChar iterator(final long fromIndexInclusive, final long toIndexExclusive) {
+    default ValueIteratorOfChar iterator(final long fromIndexInclusive, final long toIndexExclusive) {
         Require.leq(fromIndexInclusive, "fromIndexInclusive", toIndexExclusive, "toIndexExclusive");
-        return new DeephavenValueIteratorOfChar() {
+        return new ValueIteratorOfChar() {
 
             long nextIndex = fromIndexInclusive;
 
@@ -78,6 +78,11 @@ public interface CharVector extends Vector<CharVector>, Iterable<Character> {
             @Override
             public boolean hasNext() {
                 return nextIndex < toIndexExclusive;
+            }
+
+            @Override
+            public long remaining() {
+                return toIndexExclusive - nextIndex;
             }
         };
     }
