@@ -35,7 +35,7 @@ class PyIceberg3aTest {
 
     private static final TableDefinition TABLE_DEFINITION = TableDefinition.of(
             ColumnDefinition.fromGenericType("datetime", LocalDateTime.class),
-            ColumnDefinition.ofString("symbol").withPartitioning(),
+            ColumnDefinition.ofString("symbol"),
             ColumnDefinition.ofDouble("bid"),
             ColumnDefinition.ofDouble("ask"));
 

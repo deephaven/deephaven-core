@@ -1,0 +1,157 @@
+{
+  "location": "catalogs/pyiceberg-4/trading.db/drop_identity_partition_field",
+  "table-uuid": "ef605c2b-47f7-4f19-88ed-dea726d4bf04",
+  "last-updated-ms": 1745866016280,
+  "last-column-id": 4,
+  "schemas": [
+    {
+      "type": "struct",
+      "fields": [
+        {
+          "id": 1,
+          "name": "datetime",
+          "type": "timestamp",
+          "required": false
+        },
+        {
+          "id": 2,
+          "name": "symbol",
+          "type": "string",
+          "required": false
+        },
+        {
+          "id": 3,
+          "name": "bid",
+          "type": "double",
+          "required": false
+        },
+        {
+          "id": 4,
+          "name": "ask",
+          "type": "double",
+          "required": false
+        }
+      ],
+      "schema-id": 0,
+      "identifier-field-ids": []
+    }
+  ],
+  "current-schema-id": 0,
+  "partition-specs": [
+    {
+      "spec-id": 0,
+      "fields": [
+        {
+          "source-id": 2,
+          "field-id": 1000,
+          "transform": "identity",
+          "name": "symbol"
+        },
+        {
+          "source-id": 1,
+          "field-id": 1001,
+          "transform": "year",
+          "name": "datetime_year"
+        }
+      ]
+    },
+    {
+      "spec-id": 1,
+      "fields": [
+        {
+          "source-id": 1,
+          "field-id": 1001,
+          "transform": "year",
+          "name": "datetime_year"
+        }
+      ]
+    }
+  ],
+  "default-spec-id": 1,
+  "last-partition-id": 1001,
+  "properties": {},
+  "current-snapshot-id": 3744626085289023000,
+  "snapshots": [
+    {
+      "snapshot-id": 1179323962611064000,
+      "sequence-number": 1,
+      "timestamp-ms": 1745866016265,
+      "manifest-list": "catalogs/pyiceberg-4/trading.db/drop_identity_partition_field/metadata/snap-1179323962611064003-0-d16c418f-eeea-4d60-8ca0-ab7f3e9f6620.avro",
+      "summary": {
+        "operation": "append",
+        "added-files-size": "3256",
+        "added-data-files": "2",
+        "added-records": "2",
+        "changed-partition-count": "2",
+        "total-data-files": "2",
+        "total-delete-files": "0",
+        "total-records": "2",
+        "total-files-size": "3256",
+        "total-position-deletes": "0",
+        "total-equality-deletes": "0"
+      },
+      "schema-id": 0
+    },
+    {
+      "snapshot-id": 3744626085289023000,
+      "parent-snapshot-id": 1179323962611064000,
+      "sequence-number": 2,
+      "timestamp-ms": 1745866016280,
+      "manifest-list": "catalogs/pyiceberg-4/trading.db/drop_identity_partition_field/metadata/snap-3744626085289023097-0-0e433faa-787f-431b-b9b9-3f05133457bb.avro",
+      "summary": {
+        "operation": "append",
+        "added-files-size": "4884",
+        "added-data-files": "3",
+        "added-records": "3",
+        "changed-partition-count": "3",
+        "total-data-files": "5",
+        "total-delete-files": "0",
+        "total-records": "5",
+        "total-files-size": "8140",
+        "total-position-deletes": "0",
+        "total-equality-deletes": "0"
+      },
+      "schema-id": 0
+    }
+  ],
+  "snapshot-log": [
+    {
+      "snapshot-id": 1179323962611064000,
+      "timestamp-ms": 1745866016265
+    },
+    {
+      "snapshot-id": 3744626085289023000,
+      "timestamp-ms": 1745866016280
+    }
+  ],
+  "metadata-log": [
+    {
+      "metadata-file": "catalogs/pyiceberg-4/trading.db/drop_identity_partition_field/metadata/00000-d9c2b060-4652-4809-ab36-f1266539ec1b.metadata.json",
+      "timestamp-ms": 1745866016254
+    },
+    {
+      "metadata-file": "catalogs/pyiceberg-4/trading.db/drop_identity_partition_field/metadata/00001-0e0e47d8-2e90-4658-8dbf-97ba594cabf4.metadata.json",
+      "timestamp-ms": 1745866016265
+    },
+    {
+      "metadata-file": "catalogs/pyiceberg-4/trading.db/drop_identity_partition_field/metadata/00002-672156cc-4eda-4a4b-b7a3-3d9bfe28422e.metadata.json",
+      "timestamp-ms": 1745866016270
+    }
+  ],
+  "sort-orders": [
+    {
+      "order-id": 0,
+      "fields": []
+    }
+  ],
+  "default-sort-order-id": 0,
+  "refs": {
+    "main": {
+      "snapshot-id": 3744626085289023000,
+      "type": "branch"
+    }
+  },
+  "statistics": [],
+  "format-version": 2,
+  "last-sequence-number": 2
+}

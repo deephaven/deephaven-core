@@ -40,7 +40,13 @@ class PyIceberg6Test {
 
     private static final TableIdentifier TABLE_ID = TableIdentifier.of(NAMESPACE, "null_partition_field");
 
-    private static final TableDefinition TABLE_DEFINITION = TableDefinition.of(
+    private static final TableDefinition READ_DEFINITION = TableDefinition.of(
+            ColumnDefinition.fromGenericType("datetime", LocalDateTime.class),
+            ColumnDefinition.ofString("symbol"),
+            ColumnDefinition.ofDouble("bid"),
+            ColumnDefinition.ofDouble("ask"));
+
+    private static final TableDefinition WRITE_DEFINITION = TableDefinition.of(
             ColumnDefinition.fromGenericType("datetime", LocalDateTime.class),
             ColumnDefinition.ofString("symbol").withPartitioning(),
             ColumnDefinition.ofDouble("bid"),
@@ -58,7 +64,7 @@ class PyIceberg6Test {
     void testDefinition() {
         final IcebergTableAdapter tableAdapter = catalogAdapter.loadTable(TABLE_ID);
         final TableDefinition td = tableAdapter.definition();
-        assertThat(td).isEqualTo(TABLE_DEFINITION);
+        assertThat(td).isEqualTo(READ_DEFINITION);
     }
 
     @Test
@@ -88,7 +94,7 @@ class PyIceberg6Test {
         final Table fromIceberg = tableAdapter.table();
         final IcebergTableWriter tableWriter = tableAdapter.tableWriter(
                 TableParquetWriterOptions.builder()
-                        .tableDefinition(TABLE_DEFINITION)
+                        .tableDefinition(WRITE_DEFINITION)
                         .build());
         final Table data = TableTools.newTable(
                 TableTools.col("datetime", LocalDateTime.of(2022, 11, 27, 10, 0, 0)),

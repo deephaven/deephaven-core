@@ -51,7 +51,7 @@ def drop_identity_partition_field():
     tbl.append(pyiceberg_test_utils.DATASET_2)
 
 def rename_partition_field():
-    table_identifier = "trading.reorder_partition_field"
+    table_identifier = "trading.rename_partition_field"
     tbl = pyiceberg_test_utils.create_table_purging_if_exists(catalog, table_identifier, schema, partition_spec)
 
     tbl.append(pyiceberg_test_utils.DATASET_1)
