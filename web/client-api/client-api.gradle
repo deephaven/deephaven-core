@@ -20,51 +20,24 @@ configurations {
     typescriptDoclet
 
     // GWT compiles using all source code, from the current project and all dependencies, including
-    // any generated sources.
+    // any generated sources. This configuration lets us pick up not just sources, but source jars.
     gwt {
-        canBeConsumed = false
-        canBeResolved = true
-        transitive = true
         attributes {
             attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage, Usage.JAVA_RUNTIME))
             attribute(DocsType.DOCS_TYPE_ATTRIBUTE, objects.named(DocsType, DocsType.SOURCES))
         }
     }
+    // Easy way for downstream projects to get this and upstream sources
     sourcesElements {
         transitive = true
         extendsFrom(gwt)
     }
-//    gwtJar {
-//        canBeConsumed = true
-//        canBeResolved = false
-//        attributes {
-//            attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage, Usage.JAVA_RUNTIME))
-//            attribute(DocsType.DOCS_TYPE_ATTRIBUTE, objects.named(DocsType, DocsType.SOURCES))
-//        }
-//        def addArtifacts = { Provider<Iterable<?>> sources ->
-//            outgoing.artifacts(sources) {
-//                builtBy sources
-//            }
-//        }
-//        outgoing.artifact(tasks.named(sourceSets.main.jarTaskName))
-////        addArtifacts(sourceSets.named('main').map {it.output.generatedSourcesDirs})
-////        addArtifacts(sourceSets.named('main').map {it.java.sourceDirectories})
-//    }
-//    // The GWT plugin we use can only read from compileClasspath, so we append to that
-//    gwtJar.extendsFrom(gwt)
-//    compileClasspath.extendsFrom(gwtJar)
-//    runtimeClasspath.extendsFrom(gwtJar)
 
+    testCompileClasspath.extendsFrom(gwt)
+    testRuntimeClasspath.extendsFrom(gwt)
     compileClasspath.extendsFrom(gwt)
-    runtimeClasspath.extendsFrom(gwt)
     apiElements.extendsFrom(gwt)
 }
-
-//components {
-//    java {
-//        addVariantsFromConfiguration(configurations.gwtJar) {}
-//    }
-//}
 
 dependencies {
     gwt libs.gwt.user
@@ -79,10 +52,8 @@ dependencies {
     gwt project(':engine-query-constants')
     gwt project(":IO")
 
-    api libs.jetbrains.annotations
-    api libs.immutables.value.annotations
+    // Promote this to compile+runtime, so GWT can see it
     api project(':util-immutables')
-    api libs.immutables.value.annotations
 
     gwt libs.flatbuffers.java
     gwt libs.arrow.format
@@ -98,14 +69,12 @@ dependencies {
 
     gwt libs.guava
 
-    testImplementation libs.junit4
-    testImplementation libs.selenium.remote.driver
-
     gwt libs.elemental.core
     gwt libs.elemental.promise
     gwt libs.elemental.dom
 
-    testImplementation libs.gwt.user
+    testImplementation libs.junit4
+    testImplementation libs.selenium.remote.driver
 }
 
 GwtTools.gwtCompile project, 'io.deephaven.web.DeephavenApi', 'Create a jar of client JS API'

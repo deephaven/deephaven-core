@@ -98,8 +98,6 @@ class GwtTools {
                 sub.substitute(sub.module("com.google.gwt:gwt-dev"))
                         .using(sub.module("org.gwtproject:gwt-dev:${gwtVersion}"))
             }
-            c.exclude(group: 'org.eclipse.jdt')
-            c.exclude(group: 'org.eclipse.jetty')
         }
         if (compile) {
             String warPath = new File(p.buildDir, 'gwt').absolutePath
