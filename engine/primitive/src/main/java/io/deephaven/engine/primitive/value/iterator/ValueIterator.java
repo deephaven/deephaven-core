@@ -30,7 +30,6 @@ public interface ValueIterator<TYPE> extends CloseableIterator<TYPE> {
      *         closed}.
      */
     @Override
-    @FinalDefault
     default Stream<TYPE> stream() {
         return StreamSupport.stream(
                 Spliterators.spliterator(
