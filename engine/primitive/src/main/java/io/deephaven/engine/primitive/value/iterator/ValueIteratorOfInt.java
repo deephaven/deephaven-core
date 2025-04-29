@@ -106,8 +106,8 @@ public interface ValueIteratorOfInt extends CloseablePrimitiveIteratorOfInt, Val
     }
 
     /**
-     * Create a ValueIteratorOfInt over an array of {@code int}. The result does not need to be
-     * {@link #close() closed}.
+     * Create a ValueIteratorOfInt over an array of {@code int}. The result does not need to be {@link #close()
+     * closed}.
      *
      * @param values The elements to iterate
      * @return A ValueIteratorOfInt of {@code values}

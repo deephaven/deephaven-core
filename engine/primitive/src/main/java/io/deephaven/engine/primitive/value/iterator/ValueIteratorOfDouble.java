@@ -108,8 +108,8 @@ public interface ValueIteratorOfDouble extends CloseablePrimitiveIteratorOfDoubl
     }
 
     /**
-     * Create a ValueIteratorOfDouble over an array of {@code double}. The result does not need to be
-     * {@link #close() closed}.
+     * Create a ValueIteratorOfDouble over an array of {@code double}. The result does not need to be {@link #close()
+     * closed}.
      *
      * @param values The elements to iterate
      * @return A ValueIteratorOfDouble of {@code values}

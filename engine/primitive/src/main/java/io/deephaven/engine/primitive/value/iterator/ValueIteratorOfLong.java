@@ -108,8 +108,8 @@ public interface ValueIteratorOfLong extends CloseablePrimitiveIteratorOfLong, V
     }
 
     /**
-     * Create a ValueIteratorOfLong over an array of {@code long}. The result does not need to be
-     * {@link #close() closed}.
+     * Create a ValueIteratorOfLong over an array of {@code long}. The result does not need to be {@link #close()
+     * closed}.
      *
      * @param values The elements to iterate
      * @return A ValueIteratorOfLong of {@code values}

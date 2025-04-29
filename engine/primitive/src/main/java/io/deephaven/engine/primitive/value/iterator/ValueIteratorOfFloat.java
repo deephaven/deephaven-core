@@ -41,8 +41,8 @@ public interface ValueIteratorOfFloat extends CloseablePrimitiveIteratorOfFloat,
 
     // region streamAsInt
     /**
-     * Create an unboxed {@link DoubleStream} over the remaining elements of this ValueIteratorOfFloat by casting
-     * each element to {@code double} with the appropriate adjustment of {@link io.deephaven.util.QueryConstants#NULL_FLOAT
+     * Create an unboxed {@link DoubleStream} over the remaining elements of this ValueIteratorOfFloat by casting each
+     * element to {@code double} with the appropriate adjustment of {@link io.deephaven.util.QueryConstants#NULL_FLOAT
      * NULL_FLOAT} to {@link io.deephaven.util.QueryConstants#NULL_DOUBLE NULL_DOUBLE}. The result <em>must</em> be
      * {@link java.util.stream.BaseStream#close() closed} in order to ensure resources are released. A
      * try-with-resources block is strongly encouraged.
@@ -80,8 +80,8 @@ public interface ValueIteratorOfFloat extends CloseablePrimitiveIteratorOfFloat,
 
     // region stream
     /**
-     * Create a boxed {@link Stream} over the remaining elements of this ValueIteratorOfFloat. The result
-     * <em>must</em> be {@link java.util.stream.BaseStream#close() closed} in order to ensure resources are released. A
+     * Create a boxed {@link Stream} over the remaining elements of this ValueIteratorOfFloat. The result <em>must</em>
+     * be {@link java.util.stream.BaseStream#close() closed} in order to ensure resources are released. A
      * try-with-resources block is strongly encouraged.
      *
      * @return A boxed {@link Stream} over the remaining contents of this iterator. Must be {@link Stream#close()
@@ -130,8 +130,8 @@ public interface ValueIteratorOfFloat extends CloseablePrimitiveIteratorOfFloat,
     }
 
     /**
-     * Create a ValueIteratorOfFloat over an array of {@code float}. The result does not need to be
-     * {@link #close() closed}.
+     * Create a ValueIteratorOfFloat over an array of {@code float}. The result does not need to be {@link #close()
+     * closed}.
      *
      * @param values The elements to iterate
      * @return A ValueIteratorOfFloat of {@code values}

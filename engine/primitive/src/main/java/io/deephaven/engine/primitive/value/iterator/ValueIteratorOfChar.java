@@ -36,8 +36,8 @@ public interface ValueIteratorOfChar extends CloseablePrimitiveIteratorOfChar, V
 
     // region streamAsInt
     /**
-     * Create an unboxed {@link IntStream} over the remaining elements of this ValueIteratorOfChar by casting
-     * each element to {@code int} with the appropriate adjustment of {@link io.deephaven.util.QueryConstants#NULL_CHAR
+     * Create an unboxed {@link IntStream} over the remaining elements of this ValueIteratorOfChar by casting each
+     * element to {@code int} with the appropriate adjustment of {@link io.deephaven.util.QueryConstants#NULL_CHAR
      * NULL_CHAR} to {@link io.deephaven.util.QueryConstants#NULL_INT NULL_INT}. The result <em>must</em> be
      * {@link java.util.stream.BaseStream#close() closed} in order to ensure resources are released. A
      * try-with-resources block is strongly encouraged.
@@ -75,8 +75,8 @@ public interface ValueIteratorOfChar extends CloseablePrimitiveIteratorOfChar, V
 
     // region stream
     /**
-     * Create a boxed {@link Stream} over the remaining elements of this ValueIteratorOfChar. The result
-     * <em>must</em> be {@link java.util.stream.BaseStream#close() closed} in order to ensure resources are released. A
+     * Create a boxed {@link Stream} over the remaining elements of this ValueIteratorOfChar. The result <em>must</em>
+     * be {@link java.util.stream.BaseStream#close() closed} in order to ensure resources are released. A
      * try-with-resources block is strongly encouraged.
      *
      * @return A boxed {@link Stream} over the remaining contents of this iterator. Must be {@link Stream#close()
@@ -125,8 +125,8 @@ public interface ValueIteratorOfChar extends CloseablePrimitiveIteratorOfChar, V
     }
 
     /**
-     * Create a ValueIteratorOfChar over an array of {@code char}. The result does not need to be
-     * {@link #close() closed}.
+     * Create a ValueIteratorOfChar over an array of {@code char}. The result does not need to be {@link #close()
+     * closed}.
      *
      * @param values The elements to iterate
      * @return A ValueIteratorOfChar of {@code values}

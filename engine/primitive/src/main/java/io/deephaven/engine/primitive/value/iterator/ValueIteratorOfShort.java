@@ -40,8 +40,8 @@ public interface ValueIteratorOfShort extends CloseablePrimitiveIteratorOfShort,
 
     // region streamAsInt
     /**
-     * Create an unboxed {@link IntStream} over the remaining elements of this ValueIteratorOfShort by casting
-     * each element to {@code int} with the appropriate adjustment of {@link io.deephaven.util.QueryConstants#NULL_SHORT
+     * Create an unboxed {@link IntStream} over the remaining elements of this ValueIteratorOfShort by casting each
+     * element to {@code int} with the appropriate adjustment of {@link io.deephaven.util.QueryConstants#NULL_SHORT
      * NULL_SHORT} to {@link io.deephaven.util.QueryConstants#NULL_INT NULL_INT}. The result <em>must</em> be
      * {@link java.util.stream.BaseStream#close() closed} in order to ensure resources are released. A
      * try-with-resources block is strongly encouraged.
@@ -79,8 +79,8 @@ public interface ValueIteratorOfShort extends CloseablePrimitiveIteratorOfShort,
 
     // region stream
     /**
-     * Create a boxed {@link Stream} over the remaining elements of this ValueIteratorOfShort. The result
-     * <em>must</em> be {@link java.util.stream.BaseStream#close() closed} in order to ensure resources are released. A
+     * Create a boxed {@link Stream} over the remaining elements of this ValueIteratorOfShort. The result <em>must</em>
+     * be {@link java.util.stream.BaseStream#close() closed} in order to ensure resources are released. A
      * try-with-resources block is strongly encouraged.
      *
      * @return A boxed {@link Stream} over the remaining contents of this iterator. Must be {@link Stream#close()
@@ -129,8 +129,8 @@ public interface ValueIteratorOfShort extends CloseablePrimitiveIteratorOfShort,
     }
 
     /**
-     * Create a ValueIteratorOfShort over an array of {@code short}. The result does not need to be
-     * {@link #close() closed}.
+     * Create a ValueIteratorOfShort over an array of {@code short}. The result does not need to be {@link #close()
+     * closed}.
      *
      * @param values The elements to iterate
      * @return A ValueIteratorOfShort of {@code values}
