@@ -455,6 +455,26 @@ public abstract class SqliteCatalogBase {
     }
 
     @Test
+    void appendByteArrayToBinaryColTest() {
+        final Schema schema = new Schema(
+                Types.NestedField.required(1, "binaryCol", Types.BinaryType.get()));
+        final Namespace myNamespace = Namespace.of("MyNamespace");
+        final TableIdentifier myTableId = TableIdentifier.of(myNamespace, "appendToBinaryColTest");
+        catalogAdapter.catalog().createTable(myTableId, schema);
+        final Table source = TableTools.emptyTable(10)
+                .update("binaryCol = new byte[] {(byte) i}");
+        final IcebergTableAdapter tableAdapter = catalogAdapter.loadTable(myTableId);
+        try {
+            tableAdapter.tableWriter(writerOptionsBuilder()
+                    .tableDefinition(source.getDefinition())
+                    .build());
+            failBecauseExceptionWasNotThrown(TableDataException.class);
+        } catch (TableDataException e) {
+            assertThat(e).hasMessageContaining("Unsupported deephaven column type");
+        }
+    }
+
+    @Test
     void testFailureInWrite() {
         // Try creating a new iceberg table with bad data
         final Table badSource = TableTools.emptyTable(5)
