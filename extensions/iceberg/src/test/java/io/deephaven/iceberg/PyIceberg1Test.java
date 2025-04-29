@@ -36,8 +36,8 @@ class PyIceberg1Test {
     private static final TableIdentifier CITIES_ID = TableIdentifier.of(NAMESPACE, "cities");
 
     // This will need to be updated if the data is regenerated
-    private static final long SNAPSHOT_1_ID = 1743193108934390800L;
-    private static final long SNAPSHOT_2_ID = 4630159959461529000L;
+    private static final long SNAPSHOT_1_ID = 1743193108934390753L;
+    private static final long SNAPSHOT_2_ID = 4630159959461529013L;
 
     private static final TableDefinition CITIES_1_TD = TableDefinition.of(
             ColumnDefinition.ofString("city"),

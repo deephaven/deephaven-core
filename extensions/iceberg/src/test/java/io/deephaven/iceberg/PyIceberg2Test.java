@@ -11,6 +11,8 @@ import io.deephaven.engine.util.TableTools;
 import io.deephaven.iceberg.sqlite.DbResource;
 import io.deephaven.iceberg.util.IcebergCatalogAdapter;
 import io.deephaven.iceberg.util.IcebergTableAdapter;
+import io.deephaven.iceberg.util.InferenceResolver;
+import io.deephaven.iceberg.util.LoadTableOptions;
 import io.deephaven.iceberg.util.TableParquetWriterOptions;
 import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.Schema;
@@ -27,7 +29,6 @@ import java.util.List;
 
 import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 
 /**
  * This test verifies how DH interacts with an Iceberg table with non-identity partitioning spec. See TESTING.md and
@@ -44,9 +45,11 @@ class PyIceberg2Test {
 
     private static final TableDefinition TABLE_DEFINITION = TableDefinition.of(
             ColumnDefinition.fromGenericType("datetime", LocalDateTime.class),
-            ColumnDefinition.ofString("symbol"),
+            ColumnDefinition.ofString("symbol").withPartitioning(),
             ColumnDefinition.ofDouble("bid"),
             ColumnDefinition.ofDouble("ask"));
+    private static final InferenceResolver INFER_WITH_PARTITIONS =
+            InferenceResolver.builder().inferPartitioningColumns(true).build();
 
     private IcebergCatalogAdapter catalogAdapter;
 
@@ -98,7 +101,10 @@ class PyIceberg2Test {
 
     @Test
     void testDefinition() {
-        final IcebergTableAdapter tableAdapter = catalogAdapter.loadTable(TRADING_DATA);
+        final IcebergTableAdapter tableAdapter = catalogAdapter.loadTable(LoadTableOptions.builder()
+                .id(TRADING_DATA)
+                .resolver(INFER_WITH_PARTITIONS)
+                .build());
         final TableDefinition td = tableAdapter.definition();
         assertThat(td).isEqualTo(TABLE_DEFINITION);
     }
@@ -133,19 +139,5 @@ class PyIceberg2Test {
                 TableTools.doubleCol("bid"),
                 TableTools.doubleCol("ask"));
         TstUtils.assertTableEquals(expectedData, fromIceberg);
-    }
-
-    @Test
-    void testWriteData() {
-        final IcebergTableAdapter tableAdapter = catalogAdapter.loadTable(EMPTY_DATA);
-        try {
-            tableAdapter.tableWriter(
-                    TableParquetWriterOptions.builder()
-                            .tableDefinition(TABLE_DEFINITION)
-                            .build());
-            failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
-        } catch (IllegalArgumentException e) {
-            assertThat(e).hasMessageContaining("Partitioning column datetime_day has non-identity transform");
-        }
     }
 }
