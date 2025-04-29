@@ -147,7 +147,7 @@ public interface ValueIteratorOfByte extends CloseablePrimitiveIteratorOfByte, V
 
     /**
      * Wraps a ValueIteratorOfByte with set number of prefix nulls, postfix nulls, or both. The result must be
-     * {@link #close()* closed}.
+     * {@link #close() closed}.
      *
      * @param iterator The ValueIteratorOfByte to wrap
      * @param prefixNulls The number of nulls to add to the beginning of the iterator

@@ -144,7 +144,7 @@ public interface ValueIteratorOfInt extends CloseablePrimitiveIteratorOfInt, Val
 
     /**
      * Wraps a ValueIteratorOfInt with set number of prefix nulls, postfix nulls, or both. The result must be
-     * {@link #close()* closed}.
+     * {@link #close() closed}.
      *
      * @param iterator The ValueIteratorOfInt to wrap
      * @param prefixNulls The number of nulls to add to the beginning of the iterator
