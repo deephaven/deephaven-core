@@ -16,8 +16,6 @@ import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.generator.*;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.util.mutable.MutableInt;
-import io.deephaven.vector.CharVector;
-import io.deephaven.vector.CharVectorDirect;
 import org.junit.*;
 
 import java.util.Objects;
