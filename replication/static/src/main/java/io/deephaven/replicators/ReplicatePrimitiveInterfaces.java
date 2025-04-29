@@ -94,7 +94,10 @@ public class ReplicatePrimitiveInterfaces {
         final File file = new File(path);
         List<String> lines = FileUtils.readLines(file, Charset.defaultCharset());
         lines = ReplicationUtils.removeImport(lines,
-                "import io.deephaven.engine.primitive.function.IntToIntFunction;");
+                "import io.deephaven.engine.primitive.function.IntToIntFunction;",
+                "import io.deephaven.engine.primitive.function.IntConsumer;");
+        lines = ReplicationUtils.addImport(lines,
+                "import java.util.function.IntConsumer;");
         lines = ReplicationUtils.replaceRegion(lines, "streamAsInt",
                 ReplicationUtils.indent(List.of(
                         "/**",
@@ -137,9 +140,11 @@ public class ReplicatePrimitiveInterfaces {
         final File file = new File(path);
         List<String> lines = FileUtils.readLines(file, Charset.defaultCharset());
         lines = ReplicationUtils.removeImport(lines,
-                "import io.deephaven.engine.primitive.function.LongToIntFunction;");
+                "import io.deephaven.engine.primitive.function.LongToIntFunction;",
+                "import io.deephaven.engine.primitive.function.LongConsumer;");
         lines = ReplicationUtils.addImport(lines,
-                "import java.util.stream.LongStream;");
+                "import java.util.stream.LongStream;",
+                "import java.util.function.LongConsumer;");
         lines = ReplicationUtils.replaceRegion(lines, "streamAsInt",
                 ReplicationUtils.indent(List.of("    /**",
                         " * Create an unboxed {@link LongStream} over the remaining elements of this ValueIteratorOfLong. The result",
@@ -181,9 +186,11 @@ public class ReplicatePrimitiveInterfaces {
         final File file = new File(path);
         List<String> lines = FileUtils.readLines(file, Charset.defaultCharset());
         lines = ReplicationUtils.removeImport(lines,
-                "import io.deephaven.engine.primitive.function.DoubleToIntFunction;");
+                "import io.deephaven.engine.primitive.function.DoubleToIntFunction;",
+                "import io.deephaven.engine.primitive.function.DoubleConsumer;");
         lines = ReplicationUtils.addImport(lines,
-                "import java.util.stream.DoubleStream;");
+                "import java.util.stream.DoubleStream;",
+                "import java.util.function.DoubleConsumer;");
         lines = ReplicationUtils.replaceRegion(lines, "streamAsInt",
                 ReplicationUtils.indent(List.of(
                         "/**",

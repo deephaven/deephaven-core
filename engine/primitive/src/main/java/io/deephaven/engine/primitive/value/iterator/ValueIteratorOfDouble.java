@@ -8,8 +8,8 @@
 package io.deephaven.engine.primitive.value.iterator;
 
 import java.util.stream.DoubleStream;
+import java.util.function.DoubleConsumer;
 
-import io.deephaven.engine.primitive.function.DoubleConsumer;
 import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfDouble;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.FinalDefault;

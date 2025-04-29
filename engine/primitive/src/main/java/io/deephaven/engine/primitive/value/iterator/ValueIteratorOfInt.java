@@ -7,7 +7,8 @@
 // @formatter:off
 package io.deephaven.engine.primitive.value.iterator;
 
-import io.deephaven.engine.primitive.function.IntConsumer;
+import java.util.function.IntConsumer;
+
 import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfInt;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.FinalDefault;

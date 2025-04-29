@@ -8,8 +8,8 @@
 package io.deephaven.engine.primitive.value.iterator;
 
 import java.util.stream.LongStream;
+import java.util.function.LongConsumer;
 
-import io.deephaven.engine.primitive.function.LongConsumer;
 import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfLong;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.FinalDefault;
