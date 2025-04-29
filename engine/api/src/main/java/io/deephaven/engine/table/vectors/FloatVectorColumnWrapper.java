@@ -192,33 +192,7 @@ public class FloatVectorColumnWrapper extends FloatVector.Indirect {
                 : includedRows > 0
                         ? new SerialFloatColumnIterator(columnSource, rowSet, firstIncludedRowKey, includedRows)
                         : null;
-
-        final long includedRemainingNulls = remaining;
-        if (includedInitialNulls == 0 && includedRemainingNulls == 0) {
-            return rowsIterator == null ? ValueIteratorOfFloat.empty() : rowsIterator;
-        }
-        return new FloatColumnIterator() {
-            private long nextIndex = 0;
-
-            @Override
-            public float nextFloat() {
-                nextIndex++;
-                if (nextIndex <= includedInitialNulls || nextIndex > includedInitialNulls + includedRows) {
-                    return NULL_FLOAT;
-                }
-                return rowsIterator.nextFloat();
-            }
-
-            @Override
-            public boolean hasNext() {
-                return nextIndex < includedInitialNulls + includedRows + includedRemainingNulls;
-            }
-
-            @Override
-            public long remaining() {
-                return includedInitialNulls + includedRows + includedRemainingNulls - nextIndex;
-            }
-        };
+        return ValueIteratorOfFloat.wrapWithNulls(rowsIterator, includedInitialNulls, remaining);
     }
 
     @Override

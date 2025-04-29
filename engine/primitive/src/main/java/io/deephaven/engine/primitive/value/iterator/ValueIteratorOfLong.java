@@ -14,6 +14,7 @@ import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.FinalDefault;
 import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.NoSuchElementException;
 import java.util.Objects;
@@ -40,9 +41,6 @@ public interface ValueIteratorOfLong extends CloseablePrimitiveIteratorOfLong, V
     }
 
     // region streamAsInt
-    // endregion streamAsInt
-
-    // region stream
         /**
      * Create an unboxed {@link LongStream} over the remaining elements of this ValueIteratorOfLong. The result
      * <em>must</em> be {@link java.util.stream.BaseStream#close() closed} in order to ensure resources are released. A
@@ -76,7 +74,7 @@ public interface ValueIteratorOfLong extends CloseablePrimitiveIteratorOfLong, V
     default Stream<Long> stream() {
         return longStream().mapToObj(TypeUtils::box);
     }
-    // endregion stream
+    // endregion streamAsInt
 
     /**
      * A re-usable, immutable ValueIteratorOfLong with no elements.
@@ -136,6 +134,47 @@ public interface ValueIteratorOfLong extends CloseablePrimitiveIteratorOfLong, V
             @Override
             public long remaining() {
                 return values.length - valueIndex;
+            }
+        };
+    }
+
+    /**
+     * Wraps a ValueIteratorOfLong with set number of prefix nulls, postfix nulls, or both. The result must be
+     * {@link #close()* closed}.
+     *
+     * @param iterator The ValueIteratorOfLong to wrap
+     * @param prefixNulls The number of nulls to add to the beginning of the iterator
+     * @param postfixNulls The number of nulls to add to the end of the iterator
+     * @return A ValueIterator with the specified number of prefix and postfix nulls
+     */
+    static ValueIteratorOfLong wrapWithNulls(
+            @Nullable final ValueIteratorOfLong iterator,
+            long prefixNulls,
+            long postfixNulls) {
+
+        if (prefixNulls == 0 && postfixNulls == 0) {
+            return iterator == null ? ValueIteratorOfLong.empty() : iterator;
+        }
+        final long initialLength = prefixNulls + postfixNulls + (iterator == null ? 0 : iterator.remaining());
+        return new ValueIteratorOfLong() {
+            private long nextIndex = 0;
+
+            @Override
+            public long nextLong() {
+                if (nextIndex++ < prefixNulls || iterator == null || !iterator.hasNext()) {
+                    return QueryConstants.NULL_LONG;
+                }
+                return iterator.nextLong();
+            }
+
+            @Override
+            public boolean hasNext() {
+                return nextIndex < initialLength;
+            }
+
+            @Override
+            public long remaining() {
+                return initialLength - nextIndex;
             }
         };
     }

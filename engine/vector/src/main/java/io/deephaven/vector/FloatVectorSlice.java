@@ -122,32 +122,7 @@ public class FloatVectorSlice extends FloatVector.Indirect {
         final ValueIteratorOfFloat innerIterator = includedInnerLength > 0
                 ? innerVector.iterator(firstIncludedInnerOffset, firstIncludedInnerOffset + includedInnerLength)
                 : null;
-        final long includedRemainingNulls = remaining;
-        if (includedInitialNulls == 0 && includedRemainingNulls == 0) {
-            return includedInnerLength == 0 ? ValueIteratorOfFloat.empty() : innerIterator;
-        }
-        return new ValueIteratorOfFloat() {
-            private long nextIndex = 0;
-
-            @Override
-            public float nextFloat() {
-                nextIndex++;
-                if (nextIndex <= includedInitialNulls || nextIndex > includedInitialNulls + includedInnerLength) {
-                    return NULL_FLOAT;
-                }
-                return innerIterator.nextFloat();
-            }
-
-            @Override
-            public boolean hasNext() {
-                return nextIndex < includedInitialNulls + includedInnerLength + includedRemainingNulls;
-            }
-
-            @Override
-            public long remaining() {
-                return includedInitialNulls + includedInnerLength + includedRemainingNulls - nextIndex;
-            }
-        };
+        return ValueIteratorOfFloat.wrapWithNulls(innerIterator, includedInitialNulls, remaining);
     }
 
     @Override

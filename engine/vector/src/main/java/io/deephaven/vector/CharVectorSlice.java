@@ -118,32 +118,7 @@ public class CharVectorSlice extends CharVector.Indirect {
         final ValueIteratorOfChar innerIterator = includedInnerLength > 0
                 ? innerVector.iterator(firstIncludedInnerOffset, firstIncludedInnerOffset + includedInnerLength)
                 : null;
-        final long includedRemainingNulls = remaining;
-        if (includedInitialNulls == 0 && includedRemainingNulls == 0) {
-            return includedInnerLength == 0 ? ValueIteratorOfChar.empty() : innerIterator;
-        }
-        return new ValueIteratorOfChar() {
-            private long nextIndex = 0;
-
-            @Override
-            public char nextChar() {
-                nextIndex++;
-                if (nextIndex <= includedInitialNulls || nextIndex > includedInitialNulls + includedInnerLength) {
-                    return NULL_CHAR;
-                }
-                return innerIterator.nextChar();
-            }
-
-            @Override
-            public boolean hasNext() {
-                return nextIndex < includedInitialNulls + includedInnerLength + includedRemainingNulls;
-            }
-
-            @Override
-            public long remaining() {
-                return includedInitialNulls + includedInnerLength + includedRemainingNulls - nextIndex;
-            }
-        };
+        return ValueIteratorOfChar.wrapWithNulls(innerIterator, includedInitialNulls, remaining);
     }
 
     @Override

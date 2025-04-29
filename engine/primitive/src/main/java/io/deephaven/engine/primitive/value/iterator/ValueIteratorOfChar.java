@@ -9,6 +9,7 @@ import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.FinalDefault;
 import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.NoSuchElementException;
 import java.util.Objects;
@@ -53,9 +54,9 @@ public interface ValueIteratorOfChar extends CloseablePrimitiveIteratorOfChar, V
     }
 
     /**
-     * Create a {@link IntStream} over the remaining elements of this CharacterColumnIterator by applying
-     * {@code adapter} to each element. The result <em>must</em> be {@link java.util.stream.BaseStream#close() closed}
-     * in order to ensure resources are released. A try-with-resources block is strongly encouraged.
+     * Create a {@link IntStream} over the remaining elements of this ValueIteratorOfChar by applying {@code adapter} to
+     * each element. The result <em>must</em> be {@link java.util.stream.BaseStream#close() closed} in order to ensure
+     * resources are released. A try-with-resources block is strongly encouraged.
      *
      * @return A {@link IntStream} over the remaining contents of this iterator. Must be {@link Stream#close() closed}.
      */
@@ -72,28 +73,6 @@ public interface ValueIteratorOfChar extends CloseablePrimitiveIteratorOfChar, V
                 .onClose(this::close);
     }
     // endregion streamAsInt
-
-    // region stream
-    /**
-     * Create a boxed {@link Stream} over the remaining elements of this ValueIteratorOfChar. The result <em>must</em>
-     * be {@link java.util.stream.BaseStream#close() closed} in order to ensure resources are released. A
-     * try-with-resources block is strongly encouraged.
-     *
-     * @return A boxed {@link Stream} over the remaining contents of this iterator. Must be {@link Stream#close()
-     *         closed}.
-     */
-    @Override
-    @FinalDefault
-    default Stream<Character> stream() {
-        return StreamSupport.stream(
-                Spliterators.spliterator(
-                        this,
-                        remaining(),
-                        Spliterator.IMMUTABLE | Spliterator.ORDERED),
-                false)
-                .onClose(this::close);
-    }
-    // endregion stream
 
     /**
      * A re-usable, immutable ValueIteratorOfChar with no elements.
@@ -153,6 +132,47 @@ public interface ValueIteratorOfChar extends CloseablePrimitiveIteratorOfChar, V
             @Override
             public long remaining() {
                 return values.length - valueIndex;
+            }
+        };
+    }
+
+    /**
+     * Wraps a ValueIteratorOfChar with set number of prefix nulls, postfix nulls, or both. The result must be
+     * {@link #close()* closed}.
+     *
+     * @param iterator The ValueIteratorOfChar to wrap
+     * @param prefixNulls The number of nulls to add to the beginning of the iterator
+     * @param postfixNulls The number of nulls to add to the end of the iterator
+     * @return A ValueIterator with the specified number of prefix and postfix nulls
+     */
+    static ValueIteratorOfChar wrapWithNulls(
+            @Nullable final ValueIteratorOfChar iterator,
+            long prefixNulls,
+            long postfixNulls) {
+
+        if (prefixNulls == 0 && postfixNulls == 0) {
+            return iterator == null ? ValueIteratorOfChar.empty() : iterator;
+        }
+        final long initialLength = prefixNulls + postfixNulls + (iterator == null ? 0 : iterator.remaining());
+        return new ValueIteratorOfChar() {
+            private long nextIndex = 0;
+
+            @Override
+            public char nextChar() {
+                if (nextIndex++ < prefixNulls || iterator == null || !iterator.hasNext()) {
+                    return QueryConstants.NULL_CHAR;
+                }
+                return iterator.nextChar();
+            }
+
+            @Override
+            public boolean hasNext() {
+                return nextIndex < initialLength;
+            }
+
+            @Override
+            public long remaining() {
+                return initialLength - nextIndex;
             }
         };
     }

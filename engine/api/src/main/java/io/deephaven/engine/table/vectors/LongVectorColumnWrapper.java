@@ -192,33 +192,7 @@ public class LongVectorColumnWrapper extends LongVector.Indirect {
                 : includedRows > 0
                         ? new SerialLongColumnIterator(columnSource, rowSet, firstIncludedRowKey, includedRows)
                         : null;
-
-        final long includedRemainingNulls = remaining;
-        if (includedInitialNulls == 0 && includedRemainingNulls == 0) {
-            return rowsIterator == null ? ValueIteratorOfLong.empty() : rowsIterator;
-        }
-        return new LongColumnIterator() {
-            private long nextIndex = 0;
-
-            @Override
-            public long nextLong() {
-                nextIndex++;
-                if (nextIndex <= includedInitialNulls || nextIndex > includedInitialNulls + includedRows) {
-                    return NULL_LONG;
-                }
-                return rowsIterator.nextLong();
-            }
-
-            @Override
-            public boolean hasNext() {
-                return nextIndex < includedInitialNulls + includedRows + includedRemainingNulls;
-            }
-
-            @Override
-            public long remaining() {
-                return includedInitialNulls + includedRows + includedRemainingNulls - nextIndex;
-            }
-        };
+        return ValueIteratorOfLong.wrapWithNulls(rowsIterator, includedInitialNulls, remaining);
     }
 
     @Override

@@ -192,33 +192,7 @@ public class DoubleVectorColumnWrapper extends DoubleVector.Indirect {
                 : includedRows > 0
                         ? new SerialDoubleColumnIterator(columnSource, rowSet, firstIncludedRowKey, includedRows)
                         : null;
-
-        final long includedRemainingNulls = remaining;
-        if (includedInitialNulls == 0 && includedRemainingNulls == 0) {
-            return rowsIterator == null ? ValueIteratorOfDouble.empty() : rowsIterator;
-        }
-        return new DoubleColumnIterator() {
-            private long nextIndex = 0;
-
-            @Override
-            public double nextDouble() {
-                nextIndex++;
-                if (nextIndex <= includedInitialNulls || nextIndex > includedInitialNulls + includedRows) {
-                    return NULL_DOUBLE;
-                }
-                return rowsIterator.nextDouble();
-            }
-
-            @Override
-            public boolean hasNext() {
-                return nextIndex < includedInitialNulls + includedRows + includedRemainingNulls;
-            }
-
-            @Override
-            public long remaining() {
-                return includedInitialNulls + includedRows + includedRemainingNulls - nextIndex;
-            }
-        };
+        return ValueIteratorOfDouble.wrapWithNulls(rowsIterator, includedInitialNulls, remaining);
     }
 
     @Override

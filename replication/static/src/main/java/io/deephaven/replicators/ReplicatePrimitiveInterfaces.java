@@ -97,22 +97,6 @@ public class ReplicatePrimitiveInterfaces {
                 "import io.deephaven.engine.primitive.function.IntToIntFunction;");
         lines = ReplicationUtils.replaceRegion(lines, "streamAsInt",
                 ReplicationUtils.indent(List.of(
-                        "",
-                        "/**",
-                        " * Create a boxed {@link Stream} over the remaining elements of this DeephavenValueIteratorOfInt. ",
-                        " * The result <em>must</em>, be {@link java.util.stream.BaseStream#close() closed} in order ",
-                        " * to ensure resources are released. A try-with-resources block is strongly encouraged.",
-                        " *",
-                        " * @return A boxed {@link Stream} over the remaining contents of this iterator. Must be {@link Stream#close()",
-                        " *         closed}.",
-                        " */",
-                        "@Override",
-                        "@FinalDefault",
-                        "default Stream<Integer> stream() {",
-                        "   return intStream().mapToObj(TypeUtils::box);",
-                        "}"), 4));
-        lines = ReplicationUtils.replaceRegion(lines, "stream",
-                ReplicationUtils.indent(List.of(
                         "/**",
                         " * Create an unboxed {@link IntStream} over the remaining elements of this IntegerColumnIterator. The result",
                         " * <em>must</em> be {@link java.util.stream.BaseStream#close() closed} in order to ensure resources are released. A",
@@ -131,6 +115,20 @@ public class ReplicatePrimitiveInterfaces {
                         "                    Spliterator.IMMUTABLE | Spliterator.ORDERED),",
                         "            false)",
                         "            .onClose(this::close);",
+                        "}",
+                        "",
+                        "/**",
+                        " * Create a boxed {@link Stream} over the remaining elements of this DeephavenValueIteratorOfInt. ",
+                        " * The result <em>must</em>, be {@link java.util.stream.BaseStream#close() closed} in order ",
+                        " * to ensure resources are released. A try-with-resources block is strongly encouraged.",
+                        " *",
+                        " * @return A boxed {@link Stream} over the remaining contents of this iterator. Must be {@link Stream#close()",
+                        " *         closed}.",
+                        " */",
+                        "@Override",
+                        "@FinalDefault",
+                        "default Stream<Integer> stream() {",
+                        "   return intStream().mapToObj(TypeUtils::box);",
                         "}"), 4));
         FileUtils.writeLines(file, lines);
     }
@@ -138,12 +136,11 @@ public class ReplicatePrimitiveInterfaces {
     public static void fixupCharToLong(@NotNull final String path) throws IOException {
         final File file = new File(path);
         List<String> lines = FileUtils.readLines(file, Charset.defaultCharset());
-        lines = ReplicationUtils.removeRegion(lines, "streamAsInt");
         lines = ReplicationUtils.removeImport(lines,
                 "import io.deephaven.engine.primitive.function.LongToIntFunction;");
         lines = ReplicationUtils.addImport(lines,
                 "import java.util.stream.LongStream;");
-        lines = ReplicationUtils.replaceRegion(lines, "stream",
+        lines = ReplicationUtils.replaceRegion(lines, "streamAsInt",
                 ReplicationUtils.indent(List.of("    /**",
                         " * Create an unboxed {@link LongStream} over the remaining elements of this ValueIteratorOfLong. The result",
                         " * <em>must</em> be {@link java.util.stream.BaseStream#close() closed} in order to ensure resources are released. A",
@@ -183,12 +180,11 @@ public class ReplicatePrimitiveInterfaces {
     public static void fixupCharToDouble(@NotNull final String path) throws IOException {
         final File file = new File(path);
         List<String> lines = FileUtils.readLines(file, Charset.defaultCharset());
-        lines = ReplicationUtils.removeRegion(lines, "streamAsInt");
         lines = ReplicationUtils.removeImport(lines,
                 "import io.deephaven.engine.primitive.function.DoubleToIntFunction;");
         lines = ReplicationUtils.addImport(lines,
                 "import java.util.stream.DoubleStream;");
-        lines = ReplicationUtils.replaceRegion(lines, "stream",
+        lines = ReplicationUtils.replaceRegion(lines, "streamAsInt",
                 ReplicationUtils.indent(List.of(
                         "/**",
                         " * Create an unboxed {@link DoubleStream} over the remaining elements of this ValueIteratorOfDouble. The result",

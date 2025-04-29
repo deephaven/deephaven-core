@@ -192,33 +192,7 @@ public class ByteVectorColumnWrapper extends ByteVector.Indirect {
                 : includedRows > 0
                         ? new SerialByteColumnIterator(columnSource, rowSet, firstIncludedRowKey, includedRows)
                         : null;
-
-        final long includedRemainingNulls = remaining;
-        if (includedInitialNulls == 0 && includedRemainingNulls == 0) {
-            return rowsIterator == null ? ValueIteratorOfByte.empty() : rowsIterator;
-        }
-        return new ByteColumnIterator() {
-            private long nextIndex = 0;
-
-            @Override
-            public byte nextByte() {
-                nextIndex++;
-                if (nextIndex <= includedInitialNulls || nextIndex > includedInitialNulls + includedRows) {
-                    return NULL_BYTE;
-                }
-                return rowsIterator.nextByte();
-            }
-
-            @Override
-            public boolean hasNext() {
-                return nextIndex < includedInitialNulls + includedRows + includedRemainingNulls;
-            }
-
-            @Override
-            public long remaining() {
-                return includedInitialNulls + includedRows + includedRemainingNulls - nextIndex;
-            }
-        };
+        return ValueIteratorOfByte.wrapWithNulls(rowsIterator, includedInitialNulls, remaining);
     }
 
     @Override

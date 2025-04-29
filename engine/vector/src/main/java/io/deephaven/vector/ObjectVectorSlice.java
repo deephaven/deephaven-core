@@ -5,7 +5,7 @@ package io.deephaven.vector;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
-import io.deephaven.engine.primitive.iterator.CloseableIterator;
+import io.deephaven.engine.primitive.value.iterator.ValueIterator;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
@@ -90,7 +90,7 @@ public class ObjectVectorSlice<COMPONENT_TYPE> extends ObjectVector.Indirect<COM
     }
 
     @Override
-    public CloseableIterator<COMPONENT_TYPE> iterator(final long fromIndexInclusive, final long toIndexExclusive) {
+    public ValueIterator<COMPONENT_TYPE> iterator(final long fromIndexInclusive, final long toIndexExclusive) {
         Require.leq(fromIndexInclusive, "fromIndexInclusive", toIndexExclusive, "toIndexExclusive");
         final long totalWanted = toIndexExclusive - fromIndexInclusive;
         long nextIndexWanted = fromIndexInclusive + offsetIndex;
@@ -114,16 +114,10 @@ public class ObjectVectorSlice<COMPONENT_TYPE> extends ObjectVector.Indirect<COM
             includedInnerLength = 0;
         }
 
-        final CloseableIterator<COMPONENT_TYPE> initialNullsIterator = includedInitialNulls > 0
-                ? CloseableIterator.repeat(null, includedInitialNulls)
-                : null;
-        final CloseableIterator<COMPONENT_TYPE> innerIterator = includedInnerLength > 0
+        final ValueIterator<COMPONENT_TYPE> innerIterator = includedInnerLength > 0
                 ? innerVector.iterator(firstIncludedInnerOffset, firstIncludedInnerOffset + includedInnerLength)
                 : null;
-        final CloseableIterator<COMPONENT_TYPE> finalNullsIterator = remaining > 0
-                ? CloseableIterator.repeat(null, remaining)
-                : null;
-        return CloseableIterator.maybeConcat(initialNullsIterator, innerIterator, finalNullsIterator);
+        return ValueIterator.wrapWithNulls(innerIterator, includedInitialNulls, remaining);
     }
 
     @Override

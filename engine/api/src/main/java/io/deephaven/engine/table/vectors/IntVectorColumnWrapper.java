@@ -192,33 +192,7 @@ public class IntVectorColumnWrapper extends IntVector.Indirect {
                 : includedRows > 0
                         ? new SerialIntegerColumnIterator(columnSource, rowSet, firstIncludedRowKey, includedRows)
                         : null;
-
-        final long includedRemainingNulls = remaining;
-        if (includedInitialNulls == 0 && includedRemainingNulls == 0) {
-            return rowsIterator == null ? ValueIteratorOfInt.empty() : rowsIterator;
-        }
-        return new IntegerColumnIterator() {
-            private long nextIndex = 0;
-
-            @Override
-            public int nextInt() {
-                nextIndex++;
-                if (nextIndex <= includedInitialNulls || nextIndex > includedInitialNulls + includedRows) {
-                    return NULL_INT;
-                }
-                return rowsIterator.nextInt();
-            }
-
-            @Override
-            public boolean hasNext() {
-                return nextIndex < includedInitialNulls + includedRows + includedRemainingNulls;
-            }
-
-            @Override
-            public long remaining() {
-                return includedInitialNulls + includedRows + includedRemainingNulls - nextIndex;
-            }
-        };
+        return ValueIteratorOfInt.wrapWithNulls(rowsIterator, includedInitialNulls, remaining);
     }
 
     @Override

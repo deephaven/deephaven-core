@@ -12,6 +12,7 @@ import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.FinalDefault;
 import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.NoSuchElementException;
 import java.util.Objects;
@@ -38,23 +39,6 @@ public interface ValueIteratorOfInt extends CloseablePrimitiveIteratorOfInt, Val
     }
 
     // region streamAsInt
-    
-    /**
-     * Create a boxed {@link Stream} over the remaining elements of this DeephavenValueIteratorOfInt. 
-     * The result <em>must</em>, be {@link java.util.stream.BaseStream#close() closed} in order 
-     * to ensure resources are released. A try-with-resources block is strongly encouraged.
-     *
-     * @return A boxed {@link Stream} over the remaining contents of this iterator. Must be {@link Stream#close()
-     *         closed}.
-     */
-    @Override
-    @FinalDefault
-    default Stream<Integer> stream() {
-       return intStream().mapToObj(TypeUtils::box);
-    }
-    // endregion streamAsInt
-
-    // region stream
     /**
      * Create an unboxed {@link IntStream} over the remaining elements of this IntegerColumnIterator. The result
      * <em>must</em> be {@link java.util.stream.BaseStream#close() closed} in order to ensure resources are released. A
@@ -74,7 +58,21 @@ public interface ValueIteratorOfInt extends CloseablePrimitiveIteratorOfInt, Val
                 false)
                 .onClose(this::close);
     }
-    // endregion stream
+    
+    /**
+     * Create a boxed {@link Stream} over the remaining elements of this DeephavenValueIteratorOfInt. 
+     * The result <em>must</em>, be {@link java.util.stream.BaseStream#close() closed} in order 
+     * to ensure resources are released. A try-with-resources block is strongly encouraged.
+     *
+     * @return A boxed {@link Stream} over the remaining contents of this iterator. Must be {@link Stream#close()
+     *         closed}.
+     */
+    @Override
+    @FinalDefault
+    default Stream<Integer> stream() {
+       return intStream().mapToObj(TypeUtils::box);
+    }
+    // endregion streamAsInt
 
     /**
      * A re-usable, immutable ValueIteratorOfInt with no elements.
@@ -134,6 +132,47 @@ public interface ValueIteratorOfInt extends CloseablePrimitiveIteratorOfInt, Val
             @Override
             public long remaining() {
                 return values.length - valueIndex;
+            }
+        };
+    }
+
+    /**
+     * Wraps a ValueIteratorOfInt with set number of prefix nulls, postfix nulls, or both. The result must be
+     * {@link #close()* closed}.
+     *
+     * @param iterator The ValueIteratorOfInt to wrap
+     * @param prefixNulls The number of nulls to add to the beginning of the iterator
+     * @param postfixNulls The number of nulls to add to the end of the iterator
+     * @return A ValueIterator with the specified number of prefix and postfix nulls
+     */
+    static ValueIteratorOfInt wrapWithNulls(
+            @Nullable final ValueIteratorOfInt iterator,
+            long prefixNulls,
+            long postfixNulls) {
+
+        if (prefixNulls == 0 && postfixNulls == 0) {
+            return iterator == null ? ValueIteratorOfInt.empty() : iterator;
+        }
+        final long initialLength = prefixNulls + postfixNulls + (iterator == null ? 0 : iterator.remaining());
+        return new ValueIteratorOfInt() {
+            private long nextIndex = 0;
+
+            @Override
+            public int nextInt() {
+                if (nextIndex++ < prefixNulls || iterator == null || !iterator.hasNext()) {
+                    return QueryConstants.NULL_INT;
+                }
+                return iterator.nextInt();
+            }
+
+            @Override
+            public boolean hasNext() {
+                return nextIndex < initialLength;
+            }
+
+            @Override
+            public long remaining() {
+                return initialLength - nextIndex;
             }
         };
     }

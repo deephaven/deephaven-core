@@ -122,32 +122,7 @@ public class ByteVectorSlice extends ByteVector.Indirect {
         final ValueIteratorOfByte innerIterator = includedInnerLength > 0
                 ? innerVector.iterator(firstIncludedInnerOffset, firstIncludedInnerOffset + includedInnerLength)
                 : null;
-        final long includedRemainingNulls = remaining;
-        if (includedInitialNulls == 0 && includedRemainingNulls == 0) {
-            return includedInnerLength == 0 ? ValueIteratorOfByte.empty() : innerIterator;
-        }
-        return new ValueIteratorOfByte() {
-            private long nextIndex = 0;
-
-            @Override
-            public byte nextByte() {
-                nextIndex++;
-                if (nextIndex <= includedInitialNulls || nextIndex > includedInitialNulls + includedInnerLength) {
-                    return NULL_BYTE;
-                }
-                return innerIterator.nextByte();
-            }
-
-            @Override
-            public boolean hasNext() {
-                return nextIndex < includedInitialNulls + includedInnerLength + includedRemainingNulls;
-            }
-
-            @Override
-            public long remaining() {
-                return includedInitialNulls + includedInnerLength + includedRemainingNulls - nextIndex;
-            }
-        };
+        return ValueIteratorOfByte.wrapWithNulls(innerIterator, includedInitialNulls, remaining);
     }
 
     @Override

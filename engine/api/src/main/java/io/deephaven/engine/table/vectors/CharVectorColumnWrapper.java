@@ -188,33 +188,7 @@ public class CharVectorColumnWrapper extends CharVector.Indirect {
                 : includedRows > 0
                         ? new SerialCharacterColumnIterator(columnSource, rowSet, firstIncludedRowKey, includedRows)
                         : null;
-
-        final long includedRemainingNulls = remaining;
-        if (includedInitialNulls == 0 && includedRemainingNulls == 0) {
-            return rowsIterator == null ? ValueIteratorOfChar.empty() : rowsIterator;
-        }
-        return new CharacterColumnIterator() {
-            private long nextIndex = 0;
-
-            @Override
-            public char nextChar() {
-                nextIndex++;
-                if (nextIndex <= includedInitialNulls || nextIndex > includedInitialNulls + includedRows) {
-                    return NULL_CHAR;
-                }
-                return rowsIterator.nextChar();
-            }
-
-            @Override
-            public boolean hasNext() {
-                return nextIndex < includedInitialNulls + includedRows + includedRemainingNulls;
-            }
-
-            @Override
-            public long remaining() {
-                return includedInitialNulls + includedRows + includedRemainingNulls - nextIndex;
-            }
-        };
+        return ValueIteratorOfChar.wrapWithNulls(rowsIterator, includedInitialNulls, remaining);
     }
 
     @Override

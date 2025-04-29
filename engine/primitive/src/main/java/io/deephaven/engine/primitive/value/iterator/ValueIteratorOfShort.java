@@ -13,6 +13,7 @@ import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.FinalDefault;
 import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.NoSuchElementException;
 import java.util.Objects;
@@ -57,9 +58,9 @@ public interface ValueIteratorOfShort extends CloseablePrimitiveIteratorOfShort,
     }
 
     /**
-     * Create a {@link IntStream} over the remaining elements of this ShortColumnIterator by applying
-     * {@code adapter} to each element. The result <em>must</em> be {@link java.util.stream.BaseStream#close() closed}
-     * in order to ensure resources are released. A try-with-resources block is strongly encouraged.
+     * Create a {@link IntStream} over the remaining elements of this ValueIteratorOfShort by applying {@code adapter} to
+     * each element. The result <em>must</em> be {@link java.util.stream.BaseStream#close() closed} in order to ensure
+     * resources are released. A try-with-resources block is strongly encouraged.
      *
      * @return A {@link IntStream} over the remaining contents of this iterator. Must be {@link Stream#close() closed}.
      */
@@ -76,28 +77,6 @@ public interface ValueIteratorOfShort extends CloseablePrimitiveIteratorOfShort,
                 .onClose(this::close);
     }
     // endregion streamAsInt
-
-    // region stream
-    /**
-     * Create a boxed {@link Stream} over the remaining elements of this ValueIteratorOfShort. The result <em>must</em>
-     * be {@link java.util.stream.BaseStream#close() closed} in order to ensure resources are released. A
-     * try-with-resources block is strongly encouraged.
-     *
-     * @return A boxed {@link Stream} over the remaining contents of this iterator. Must be {@link Stream#close()
-     *         closed}.
-     */
-    @Override
-    @FinalDefault
-    default Stream<Short> stream() {
-        return StreamSupport.stream(
-                Spliterators.spliterator(
-                        this,
-                        remaining(),
-                        Spliterator.IMMUTABLE | Spliterator.ORDERED),
-                false)
-                .onClose(this::close);
-    }
-    // endregion stream
 
     /**
      * A re-usable, immutable ValueIteratorOfShort with no elements.
@@ -157,6 +136,47 @@ public interface ValueIteratorOfShort extends CloseablePrimitiveIteratorOfShort,
             @Override
             public long remaining() {
                 return values.length - valueIndex;
+            }
+        };
+    }
+
+    /**
+     * Wraps a ValueIteratorOfShort with set number of prefix nulls, postfix nulls, or both. The result must be
+     * {@link #close()* closed}.
+     *
+     * @param iterator The ValueIteratorOfShort to wrap
+     * @param prefixNulls The number of nulls to add to the beginning of the iterator
+     * @param postfixNulls The number of nulls to add to the end of the iterator
+     * @return A ValueIterator with the specified number of prefix and postfix nulls
+     */
+    static ValueIteratorOfShort wrapWithNulls(
+            @Nullable final ValueIteratorOfShort iterator,
+            long prefixNulls,
+            long postfixNulls) {
+
+        if (prefixNulls == 0 && postfixNulls == 0) {
+            return iterator == null ? ValueIteratorOfShort.empty() : iterator;
+        }
+        final long initialLength = prefixNulls + postfixNulls + (iterator == null ? 0 : iterator.remaining());
+        return new ValueIteratorOfShort() {
+            private long nextIndex = 0;
+
+            @Override
+            public short nextShort() {
+                if (nextIndex++ < prefixNulls || iterator == null || !iterator.hasNext()) {
+                    return QueryConstants.NULL_SHORT;
+                }
+                return iterator.nextShort();
+            }
+
+            @Override
+            public boolean hasNext() {
+                return nextIndex < initialLength;
+            }
+
+            @Override
+            public long remaining() {
+                return initialLength - nextIndex;
             }
         };
     }

@@ -122,32 +122,7 @@ public class IntVectorSlice extends IntVector.Indirect {
         final ValueIteratorOfInt innerIterator = includedInnerLength > 0
                 ? innerVector.iterator(firstIncludedInnerOffset, firstIncludedInnerOffset + includedInnerLength)
                 : null;
-        final long includedRemainingNulls = remaining;
-        if (includedInitialNulls == 0 && includedRemainingNulls == 0) {
-            return includedInnerLength == 0 ? ValueIteratorOfInt.empty() : innerIterator;
-        }
-        return new ValueIteratorOfInt() {
-            private long nextIndex = 0;
-
-            @Override
-            public int nextInt() {
-                nextIndex++;
-                if (nextIndex <= includedInitialNulls || nextIndex > includedInitialNulls + includedInnerLength) {
-                    return NULL_INT;
-                }
-                return innerIterator.nextInt();
-            }
-
-            @Override
-            public boolean hasNext() {
-                return nextIndex < includedInitialNulls + includedInnerLength + includedRemainingNulls;
-            }
-
-            @Override
-            public long remaining() {
-                return includedInitialNulls + includedInnerLength + includedRemainingNulls - nextIndex;
-            }
-        };
+        return ValueIteratorOfInt.wrapWithNulls(innerIterator, includedInitialNulls, remaining);
     }
 
     @Override

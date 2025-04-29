@@ -192,33 +192,7 @@ public class ShortVectorColumnWrapper extends ShortVector.Indirect {
                 : includedRows > 0
                         ? new SerialShortColumnIterator(columnSource, rowSet, firstIncludedRowKey, includedRows)
                         : null;
-
-        final long includedRemainingNulls = remaining;
-        if (includedInitialNulls == 0 && includedRemainingNulls == 0) {
-            return rowsIterator == null ? ValueIteratorOfShort.empty() : rowsIterator;
-        }
-        return new ShortColumnIterator() {
-            private long nextIndex = 0;
-
-            @Override
-            public short nextShort() {
-                nextIndex++;
-                if (nextIndex <= includedInitialNulls || nextIndex > includedInitialNulls + includedRows) {
-                    return NULL_SHORT;
-                }
-                return rowsIterator.nextShort();
-            }
-
-            @Override
-            public boolean hasNext() {
-                return nextIndex < includedInitialNulls + includedRows + includedRemainingNulls;
-            }
-
-            @Override
-            public long remaining() {
-                return includedInitialNulls + includedRows + includedRemainingNulls - nextIndex;
-            }
-        };
+        return ValueIteratorOfShort.wrapWithNulls(rowsIterator, includedInitialNulls, remaining);
     }
 
     @Override

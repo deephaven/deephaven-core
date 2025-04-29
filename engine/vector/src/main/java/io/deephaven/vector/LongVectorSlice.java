@@ -122,32 +122,7 @@ public class LongVectorSlice extends LongVector.Indirect {
         final ValueIteratorOfLong innerIterator = includedInnerLength > 0
                 ? innerVector.iterator(firstIncludedInnerOffset, firstIncludedInnerOffset + includedInnerLength)
                 : null;
-        final long includedRemainingNulls = remaining;
-        if (includedInitialNulls == 0 && includedRemainingNulls == 0) {
-            return includedInnerLength == 0 ? ValueIteratorOfLong.empty() : innerIterator;
-        }
-        return new ValueIteratorOfLong() {
-            private long nextIndex = 0;
-
-            @Override
-            public long nextLong() {
-                nextIndex++;
-                if (nextIndex <= includedInitialNulls || nextIndex > includedInitialNulls + includedInnerLength) {
-                    return NULL_LONG;
-                }
-                return innerIterator.nextLong();
-            }
-
-            @Override
-            public boolean hasNext() {
-                return nextIndex < includedInitialNulls + includedInnerLength + includedRemainingNulls;
-            }
-
-            @Override
-            public long remaining() {
-                return includedInitialNulls + includedInnerLength + includedRemainingNulls - nextIndex;
-            }
-        };
+        return ValueIteratorOfLong.wrapWithNulls(innerIterator, includedInitialNulls, remaining);
     }
 
     @Override
