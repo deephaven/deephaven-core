@@ -141,15 +141,6 @@ CythonSupport::CreateLocalDateColumnSource(const int64_t *data_begin, const int6
       std::move(elements), std::move(nulls), num_elements);
 }
 
-ElementTypeId::Enum CythonSupport::GetElementTypeId(const ColumnSource &column_source) {
-  const auto &element_type = column_source.GetElementType();
-  if (element_type.ListDepth() != 0) {
-    const char *message = "GetElementTypeId does not support non-zero list depth";
-    throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
-  }
-  return element_type.Id();
-}
-
 std::shared_ptr<ColumnSource>
 CythonSupport::CreateLocalTimeColumnSource(const int64_t *data_begin, const int64_t *data_end,
     const uint8_t *validity_begin, const uint8_t *validity_end, size_t num_elements) {

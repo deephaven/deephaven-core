@@ -28,11 +28,6 @@ public:
   static std::shared_ptr<ColumnSource> CreateLocalTimeColumnSource(const int64_t *data_begin, const int64_t *data_end,
       const uint8_t *validity_begin, const uint8_t *validity_end, size_t num_elements);
 
-  /**
-   * For backwards compatibility. Will be removed when Cython is updated.
-   */
-  static ElementTypeId::Enum GetElementTypeId(const ColumnSource &column_source);
-
   static std::shared_ptr<ColumnSource> SlicesToColumnSource(
       const ColumnSource &data, size_t data_size,
       const ColumnSource &lengths, size_t lengths_size);
