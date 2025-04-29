@@ -9,6 +9,7 @@ package io.deephaven.engine.primitive.value.iterator;
 
 import java.util.stream.DoubleStream;
 
+import io.deephaven.engine.primitive.function.DoubleConsumer;
 import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfDouble;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.FinalDefault;
@@ -37,7 +38,11 @@ public interface ValueIteratorOfDouble extends CloseablePrimitiveIteratorOfDoubl
     @Override
     @FinalDefault
     default void forEachRemaining(@NotNull final Consumer<? super Double> action) {
-        forEachRemaining((final double element) -> action.accept(TypeUtils.box(element)));
+        if (action instanceof DoubleConsumer) {
+            forEachRemaining((DoubleConsumer) action);
+        } else {
+            forEachRemaining((final double element) -> action.accept(TypeUtils.box(element)));
+        }
     }
 
     // region streamAsInt

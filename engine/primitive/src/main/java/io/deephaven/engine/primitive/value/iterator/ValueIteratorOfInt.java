@@ -7,6 +7,7 @@
 // @formatter:off
 package io.deephaven.engine.primitive.value.iterator;
 
+import io.deephaven.engine.primitive.function.IntConsumer;
 import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfInt;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.FinalDefault;
@@ -35,7 +36,11 @@ public interface ValueIteratorOfInt extends CloseablePrimitiveIteratorOfInt, Val
     @Override
     @FinalDefault
     default void forEachRemaining(@NotNull final Consumer<? super Integer> action) {
-        forEachRemaining((final int element) -> action.accept(TypeUtils.box(element)));
+        if (action instanceof IntConsumer) {
+            forEachRemaining((IntConsumer) action);
+        } else {
+            forEachRemaining((final int element) -> action.accept(TypeUtils.box(element)));
+        }
     }
 
     // region streamAsInt

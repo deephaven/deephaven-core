@@ -7,6 +7,7 @@
 // @formatter:off
 package io.deephaven.engine.primitive.value.iterator;
 
+import io.deephaven.engine.primitive.function.ShortConsumer;
 import io.deephaven.engine.primitive.function.ShortToIntFunction;
 import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfShort;
 import io.deephaven.util.QueryConstants;
@@ -36,7 +37,11 @@ public interface ValueIteratorOfShort extends CloseablePrimitiveIteratorOfShort,
     @Override
     @FinalDefault
     default void forEachRemaining(@NotNull final Consumer<? super Short> action) {
-        forEachRemaining((final short element) -> action.accept(TypeUtils.box(element)));
+        if (action instanceof ShortConsumer) {
+            forEachRemaining((ShortConsumer) action);
+        } else {
+            forEachRemaining((final short element) -> action.accept(TypeUtils.box(element)));
+        }
     }
 
     // region streamAsInt

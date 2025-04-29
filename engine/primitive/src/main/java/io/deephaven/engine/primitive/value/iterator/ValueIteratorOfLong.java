@@ -9,6 +9,7 @@ package io.deephaven.engine.primitive.value.iterator;
 
 import java.util.stream.LongStream;
 
+import io.deephaven.engine.primitive.function.LongConsumer;
 import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfLong;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.FinalDefault;
@@ -37,7 +38,11 @@ public interface ValueIteratorOfLong extends CloseablePrimitiveIteratorOfLong, V
     @Override
     @FinalDefault
     default void forEachRemaining(@NotNull final Consumer<? super Long> action) {
-        forEachRemaining((final long element) -> action.accept(TypeUtils.box(element)));
+        if (action instanceof LongConsumer) {
+            forEachRemaining((LongConsumer) action);
+        } else {
+            forEachRemaining((final long element) -> action.accept(TypeUtils.box(element)));
+        }
     }
 
     // region streamAsInt

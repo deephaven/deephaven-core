@@ -7,6 +7,7 @@
 // @formatter:off
 package io.deephaven.engine.primitive.value.iterator;
 
+import io.deephaven.engine.primitive.function.ByteConsumer;
 import io.deephaven.engine.primitive.function.ByteToIntFunction;
 import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfByte;
 import io.deephaven.util.QueryConstants;
@@ -36,7 +37,11 @@ public interface ValueIteratorOfByte extends CloseablePrimitiveIteratorOfByte, V
     @Override
     @FinalDefault
     default void forEachRemaining(@NotNull final Consumer<? super Byte> action) {
-        forEachRemaining((final byte element) -> action.accept(TypeUtils.box(element)));
+        if (action instanceof ByteConsumer) {
+            forEachRemaining((ByteConsumer) action);
+        } else {
+            forEachRemaining((final byte element) -> action.accept(TypeUtils.box(element)));
+        }
     }
 
     // region streamAsInt

@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.primitive.value.iterator;
 
+import io.deephaven.engine.primitive.function.CharConsumer;
 import io.deephaven.engine.primitive.function.CharToIntFunction;
 import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfChar;
 import io.deephaven.util.QueryConstants;
@@ -32,7 +33,11 @@ public interface ValueIteratorOfChar extends CloseablePrimitiveIteratorOfChar, V
     @Override
     @FinalDefault
     default void forEachRemaining(@NotNull final Consumer<? super Character> action) {
-        forEachRemaining((final char element) -> action.accept(TypeUtils.box(element)));
+        if (action instanceof CharConsumer) {
+            forEachRemaining((CharConsumer) action);
+        } else {
+            forEachRemaining((final char element) -> action.accept(TypeUtils.box(element)));
+        }
     }
 
     // region streamAsInt
