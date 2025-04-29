@@ -5,7 +5,9 @@ package io.deephaven.server.hierarchicaltable;
 
 import com.google.rpc.Code;
 import io.deephaven.api.ColumnName;
+import io.deephaven.api.Selectable;
 import io.deephaven.api.SortColumn;
+import io.deephaven.api.Strings;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.auth.codegen.impl.HierarchicalTableServiceContextualAuthWiring;
@@ -20,6 +22,7 @@ import io.deephaven.engine.table.impl.BaseGridAttributes;
 import io.deephaven.engine.table.impl.hierarchical.RollupTableImpl;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
+import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.extensions.barrage.util.ExportUtil;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
@@ -34,6 +37,7 @@ import io.deephaven.server.session.*;
 import io.deephaven.server.table.ops.AggregationAdapter;
 import io.deephaven.server.table.ops.FilterTableGrpcImpl;
 import io.deephaven.server.table.ops.filter.FilterFactory;
+import io.deephaven.server.table.validation.ColumnExpressionValidator;
 import io.deephaven.util.SafeCloseable;
 import io.grpc.stub.StreamObserver;
 import org.jetbrains.annotations.NotNull;
@@ -41,6 +45,7 @@ import org.jetbrains.annotations.Nullable;
 
 import javax.inject.Inject;
 import java.lang.Object;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
@@ -56,6 +61,16 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
     private final SessionService sessionService;
     private final HierarchicalTableServiceContextualAuthWiring authWiring;
     private final TicketResolver.Authorization authTransformation;
+
+    private static class UpdateViewRequest {
+        final Selectable columnSpec;
+        final RollupTable.NodeType nodeType;
+
+        UpdateViewRequest(final Selectable columnSpec, final RollupTable.NodeType nodeType) {
+            this.columnSpec = columnSpec;
+            this.nodeType = nodeType;
+        }
+    }
 
     @Inject
     public HierarchicalTableServiceGrpcImpl(
@@ -217,28 +232,89 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
                         authWiring.checkPermissionApply(session.getAuthContext(), request,
                                 List.of(inputHierarchicalTable.getSource()));
 
-                        if (request.getFiltersCount() == 0 && request.getSortsCount() == 0) {
+                        if (request.getFiltersCount() == 0
+                                && request.getSortsCount() == 0
+                                && request.getUpdateViewsCount() == 0
+                                && request.getFormatViewsCount() == 0) {
                             throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, "No operations specified");
                         }
                         final Collection<Condition> finishedConditions = request.getFiltersCount() == 0
                                 ? null
                                 : FilterTableGrpcImpl.finishConditions(request.getFiltersList());
+
                         final Collection<SortColumn> translatedSorts =
                                 translateAndValidateSorts(request, (BaseGridAttributes<?, ?>) inputHierarchicalTable);
 
                         final HierarchicalTable<?> result;
                         if (inputHierarchicalTable instanceof RollupTable) {
+                            final Collection<UpdateViewRequest> translatedUpdateViews =
+                                    translateAndValidateUpdateViews(request, inputHierarchicalTable);
+                            final Collection<UpdateViewRequest> translatedFormatViews =
+                                    translateAndValidateFormatViews(request, inputHierarchicalTable);
+
+                            // For a rollup table, we require format and update views to be applied to a specific node
+                            // and will not translate from one to another.
+
                             RollupTable rollupTable = (RollupTable) inputHierarchicalTable;
                             // Rollups only support filtering on the group-by columns, so we can safely use the
                             // aggregated node definition here.
                             final TableDefinition nodeDefinition =
                                     rollupTable.getNodeDefinition(RollupTable.NodeType.Aggregated);
+                            // Order to follow is updateView, format, sort, filter
+                            if (translatedUpdateViews != null) {
+                                // extract the Aggregated update views
+                                final Collection<Selectable> aggregatedUpdateViews = translatedUpdateViews.stream()
+                                        .filter(uvr -> uvr.nodeType == RollupTable.NodeType.Aggregated)
+                                        .map(uvr -> uvr.columnSpec)
+                                        .collect(Collectors.toList());
+                                final RollupTable.NodeOperationsRecorder aggregatedViews =
+                                        rollupTable.makeNodeOperationsRecorder(RollupTable.NodeType.Aggregated)
+                                                .updateView(aggregatedUpdateViews);
+                                if (rollupTable.includesConstituents()) {
+                                    // extract the Constituent update views
+                                    final Collection<Selectable> constituentUpdateViews = translatedUpdateViews.stream()
+                                            .filter(uvr -> uvr.nodeType == RollupTable.NodeType.Constituent)
+                                            .map(uvr -> uvr.columnSpec)
+                                            .collect(Collectors.toList());
+
+                                    final RollupTable.NodeOperationsRecorder constituentViews =
+                                            rollupTable.makeNodeOperationsRecorder(RollupTable.NodeType.Constituent)
+                                                    .updateView(constituentUpdateViews);
+                                    rollupTable = rollupTable.withNodeOperations(aggregatedViews, constituentViews);
+                                } else {
+                                    rollupTable = rollupTable.withNodeOperations(aggregatedViews);
+                                }
+                            }
+                            if (translatedFormatViews != null) {
+                                // extract the Aggregated format views
+                                final String[] aggregatedFormatViews = translatedFormatViews.stream()
+                                        .filter(uvr -> uvr.nodeType == RollupTable.NodeType.Aggregated)
+                                        .map(uvr -> Strings.of(uvr.columnSpec))
+                                        .toArray(String[]::new);
+                                final RollupTable.NodeOperationsRecorder aggregatedFormats =
+                                        rollupTable.makeNodeOperationsRecorder(RollupTable.NodeType.Aggregated)
+                                                .formatColumns(aggregatedFormatViews);
+                                if (rollupTable.includesConstituents()) {
+                                    // extract the Constituent update views
+                                    final String[] constituentFormatViews = translatedFormatViews.stream()
+                                            .filter(uvr -> uvr.nodeType == RollupTable.NodeType.Constituent)
+                                            .map(uvr -> Strings.of(uvr.columnSpec))
+                                            .toArray(String[]::new);
+
+                                    final RollupTable.NodeOperationsRecorder constituentViews =
+                                            rollupTable.makeNodeOperationsRecorder(RollupTable.NodeType.Constituent)
+                                                    .formatColumns(constituentFormatViews);
+                                    rollupTable = rollupTable.withNodeOperations(aggregatedFormats, constituentViews);
+                                } else {
+                                    rollupTable = rollupTable.withNodeOperations(aggregatedFormats);
+                                }
+                            }
                             if (finishedConditions != null) {
                                 final Collection<? extends WhereFilter> filters =
                                         makeWhereFilters(finishedConditions, nodeDefinition);
                                 RollupTableImpl.initializeAndValidateFilters(
                                         rollupTable.getSource(),
-                                        rollupTable.getGroupByColumns(),
+                                        rollupTable.getAggregations(),
                                         filters,
                                         message -> Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, message));
                                 rollupTable = rollupTable.withFilter(Filter.and(filters));
@@ -330,6 +406,68 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
             }
         }
         return translatedSorts;
+    }
+
+    private static RollupTable.NodeType translateNodeType(final RollupNodeType nodeType) {
+        switch (nodeType) {
+            case AGGREGATED:
+                return RollupTable.NodeType.Aggregated;
+            case CONSTITUENT:
+                return RollupTable.NodeType.Constituent;
+            default:
+                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
+                        "Unsupported or unknown node type: " + nodeType);
+        }
+    }
+
+    @Nullable
+    private static Collection<UpdateViewRequest> translateAndValidateUpdateViews(
+            @NotNull final HierarchicalTableApplyRequest request,
+            @NotNull final HierarchicalTable<?> inputHierarchicalTable) {
+        if (request.getUpdateViewsCount() == 0) {
+            return null;
+        }
+
+        final Table source = inputHierarchicalTable.getSource();
+        final Selectable[] selectables = request.getUpdateViewsList().stream()
+                .map(uvr -> AggregationAdapter.adapt(uvr.getColumnSpec()))
+                .toArray(Selectable[]::new);
+        final String[] columnSpecs = Arrays.asList(selectables).stream()
+                .map(Strings::of)
+                .toArray(String[]::new);
+        final SelectColumn[] expressions = SelectColumn.from(selectables);
+        ColumnExpressionValidator.validateColumnExpressions(expressions, columnSpecs, source);
+
+        return request.getUpdateViewsList().stream()
+                .map(uvr -> new UpdateViewRequest(
+                        AggregationAdapter.adapt(uvr.getColumnSpec()),
+                        translateNodeType(uvr.getNodeType())))
+                .collect(Collectors.toList());
+    }
+
+    @Nullable
+    private static Collection<UpdateViewRequest> translateAndValidateFormatViews(
+            @NotNull final HierarchicalTableApplyRequest request,
+            @NotNull final HierarchicalTable<?> inputHierarchicalTable) {
+        if (request.getFormatViewsCount() == 0) {
+            return null;
+        }
+
+        final Table source = inputHierarchicalTable.getSource();
+        final Selectable[] selectables = request.getUpdateViewsList().stream()
+                .map(uvr -> AggregationAdapter.adapt(uvr.getColumnSpec()))
+                .toArray(Selectable[]::new);
+        final String[] columnSpecs = Arrays.asList(selectables).stream()
+                .map(Strings::of)
+                .toArray(String[]::new);
+        final SelectColumn[] expressions = SelectColumn.from(selectables);
+        ColumnExpressionValidator.validateColumnExpressions(expressions, columnSpecs, source);
+
+        return request.getFormatViewsList().stream()
+                .map(uvr -> new UpdateViewRequest(
+                        AggregationAdapter.adapt(uvr.getColumnSpec()),
+                        translateNodeType(uvr.getNodeType())))
+                .collect(Collectors.toList());
     }
 
     private static SortColumn translateSort(@NotNull final SortDescriptor sortDescriptor) {

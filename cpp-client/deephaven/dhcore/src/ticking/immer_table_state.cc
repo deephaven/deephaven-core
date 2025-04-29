@@ -13,6 +13,7 @@
 #include "deephaven/dhcore/chunk/chunk.h"
 #include "deephaven/dhcore/clienttable/schema.h"
 #include "deephaven/dhcore/column/column_source.h"
+#include "deephaven/dhcore/container/container.h"
 #include "deephaven/dhcore/container/row_sequence.h"
 #include "deephaven/dhcore/immerutil/abstract_flex_vector.h"
 #include "deephaven/dhcore/ticking/shift_processor.h"
@@ -27,6 +28,7 @@ using deephaven::dhcore::chunk::ChunkVisitor;
 using deephaven::dhcore::chunk::Int64Chunk;
 using deephaven::dhcore::column::ColumnSource;
 using deephaven::dhcore::column::ColumnSourceVisitor;
+using deephaven::dhcore::container::ContainerBase;
 using deephaven::dhcore::container::RowSequence;
 using deephaven::dhcore::container::RowSequenceBuilder;
 using deephaven::dhcore::container::RowSequenceIterator;
@@ -220,10 +222,17 @@ std::shared_ptr<RowSequence> MyTable::GetRowSequence() const {
 }
 
 std::unique_ptr<AbstractFlexVectorBase> MakeFlexVectorFromType(const ElementType &element_type) {
-  if (element_type.ListDepth() != 0) {
-    const char *message = "Don't know how to make flex vectors with element types that are lists";
+  if (element_type.ListDepth() > 1) {
+    auto message = fmt::format("Don't know how to make flex vectors with list depth {}",
+        element_type.ListDepth());
     throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
   }
+
+  if (element_type.ListDepth() == 1) {
+    return std::make_unique<GenericAbstractFlexVector<std::shared_ptr<ContainerBase>>>(element_type);
+  }
+
+  // Note: element_type.ListDepth() == 0
 
   switch (element_type.Id()) {
     case ElementTypeId::kChar: {
@@ -351,6 +360,11 @@ struct FlexVectorFromSourceMaker final : public ColumnSourceVisitor {
   void Visit(const column::LocalTimeColumnSource &/*source*/) final {
     result_ = std::make_unique<GenericAbstractFlexVector<LocalTime>>(
         ElementType::Of(ElementTypeId::kLocalTime));
+  }
+
+  void Visit(const column::ContainerBaseColumnSource &source) final {
+    result_ = std::make_unique<GenericAbstractFlexVector<std::shared_ptr<ContainerBase>>>(
+        source.GetElementType());
   }
 
   std::unique_ptr<AbstractFlexVectorBase> result_;

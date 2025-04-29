@@ -1,8 +1,12 @@
 /*
  * Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
  */
-#include "deephaven/third_party/catch.hpp"
+#include <cstdint>
+#include <iostream>
+#include <memory>
 #include "deephaven/dhcore/utility/utility.h"
+#include "deephaven/third_party/catch.hpp"
+#include "deephaven/third_party/fmt/core.h"
 
 using deephaven::dhcore::utility::Base64Encode;
 using deephaven::dhcore::utility::Basename;
@@ -13,6 +17,8 @@ using deephaven::dhcore::utility::GetHostname;
 using deephaven::dhcore::utility::ObjectId;
 using deephaven::dhcore::utility::SetEnv;
 using deephaven::dhcore::utility::UnsetEnv;
+using deephaven::dhcore::utility::VerboseCast;
+using deephaven::dhcore::utility::VerboseSharedPtrCast;
 
 namespace deephaven::client::tests {
 TEST_CASE("Base64encode", "[utility]") {
@@ -106,5 +112,29 @@ TEST_CASE("SetEnv", "[utility]") {
     auto value = GetEnv(unlikely_key);
     REQUIRE(!value.has_value());
   }
+}
+
+namespace {
+struct Mammal {
+  virtual ~Mammal() = default;
+};
+
+struct Cow : Mammal {
+};
+
+struct Fish {
+  virtual ~Fish() = default;
+};
+}  // namespace
+
+TEST_CASE("VerboseCast", "[utility]") {
+  auto cow = std::make_shared<Cow>();
+  std::shared_ptr<Mammal> mammal = cow;
+
+  CHECK_NOTHROW(VerboseCast<Cow*>(DEEPHAVEN_LOCATION_EXPR(mammal.get())));
+  CHECK_THROWS(VerboseCast<Fish*>(DEEPHAVEN_LOCATION_EXPR(mammal.get())));
+
+  CHECK_NOTHROW(VerboseSharedPtrCast<Cow>(DEEPHAVEN_LOCATION_EXPR(mammal)));
+  CHECK_THROWS(VerboseSharedPtrCast<Fish>(DEEPHAVEN_LOCATION_EXPR(mammal)));
 }
 }  // namespace deephaven::client::tests

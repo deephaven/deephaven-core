@@ -13,6 +13,7 @@
 #include "deephaven/client/arrowutil/arrow_column_source.h"
 #include "deephaven/client/utility/arrow_util.h"
 #include "deephaven/dhcore/column/array_column_source.h"
+#include "deephaven/dhcore/container/container.h"
 #include "deephaven/dhcore/types.h"
 #include "deephaven/dhcore/utility/utility.h"
 #include "deephaven/third_party/fmt/core.h"
@@ -33,6 +34,9 @@ using deephaven::client::utility::OkOrThrow;
 using deephaven::client::utility::ValueOrThrow;
 using deephaven::dhcore::clienttable::ClientTable;
 using deephaven::dhcore::column::ColumnSource;
+using deephaven::dhcore::column::ContainerArrayColumnSource;
+using deephaven::dhcore::container::Container;
+using deephaven::dhcore::container::ContainerBase;
 using deephaven::dhcore::DateTime;
 using deephaven::dhcore::DeephavenTraits;
 using deephaven::dhcore::utility::MakeReservedVector;

@@ -4,13 +4,17 @@
 package io.deephaven.iceberg.util;
 
 import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
-import io.deephaven.iceberg.base.IcebergUtils;
 import io.deephaven.iceberg.internal.DataInstructionsProviderLoader;
 import io.deephaven.iceberg.internal.DataInstructionsProviderPlugin;
+import io.deephaven.qst.type.Type;
 import io.deephaven.util.annotations.VisibleForTesting;
+import org.apache.iceberg.BaseMetadataTable;
 import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.Schema;
 import org.apache.iceberg.TableProperties;
@@ -19,11 +23,17 @@ import org.apache.iceberg.catalog.Namespace;
 import org.apache.iceberg.catalog.SupportsNamespaces;
 import org.apache.iceberg.catalog.TableIdentifier;
 import org.apache.iceberg.exceptions.AlreadyExistsException;
-import org.jetbrains.annotations.NotNull;
+import org.apache.iceberg.mapping.NameMapping;
 import org.apache.iceberg.rest.RESTCatalog;
 import org.apache.iceberg.rest.ResourcePaths;
+import org.apache.iceberg.transforms.Transforms;
+import org.apache.iceberg.types.TypeUtil;
+import org.apache.iceberg.types.Types;
+import org.jetbrains.annotations.NotNull;
 
-import java.util.*;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 import static io.deephaven.iceberg.base.IcebergUtils.createNamespaceIfNotExists;
 import static io.deephaven.iceberg.base.IcebergUtils.dropNamespaceIfExists;
@@ -231,26 +241,60 @@ public class IcebergCatalogAdapter {
     /**
      * Load an Iceberg table from the catalog.
      *
+     * <p>
+     * Equivalent to {@code loadTable(LoadTableOptions.builder().id(tableIdentifier).build())}.
+     *
      * @param tableIdentifier The identifier of the table to load.
      * @return The {@link IcebergTableAdapter table adapter} for the Iceberg table.
+     * @see #loadTable(LoadTableOptions)
      */
     public IcebergTableAdapter loadTable(final String tableIdentifier) {
-        return loadTable(TableIdentifier.parse(tableIdentifier));
+        return loadTable(LoadTableOptions.builder().id(tableIdentifier).build());
     }
 
     /**
      * Load an Iceberg table from the catalog.
      *
+     * <p>
+     * Equivalent to {@code loadTable(LoadTableOptions.builder().id(tableIdentifier).build())}.
+     *
      * @param tableIdentifier The identifier of the table to load.
      * @return The {@link IcebergTableAdapter table adapter} for the Iceberg table.
+     * @see #loadTable(LoadTableOptions)
      */
     public IcebergTableAdapter loadTable(@NotNull final TableIdentifier tableIdentifier) {
-        // Load the table from the catalog.
-        final org.apache.iceberg.Table table = catalog.loadTable(tableIdentifier);
+        return loadTable(LoadTableOptions.builder().id(tableIdentifier).build());
+    }
+
+    /**
+     * Load an Iceberg table from the catalog with {@code options}.
+     *
+     * @param options The load table options
+     * @return The {@link IcebergTableAdapter table adapter} for the Iceberg table.
+     */
+    public IcebergTableAdapter loadTable(@NotNull final LoadTableOptions options) {
+        final org.apache.iceberg.Table table = catalog.loadTable(options.id());
         if (table == null) {
-            throw new IllegalArgumentException("Table not found: " + tableIdentifier);
+            throw new IllegalArgumentException("Table not found: " + options.id());
         }
-        return new IcebergTableAdapter(catalog, tableIdentifier, table, dataInstructionsProvider);
+        if (table instanceof BaseMetadataTable) {
+            // TODO(DH-19314): Add support for reading Iceberg metadata tables
+            throw new IllegalArgumentException("Metadata tables are not currently supported");
+        }
+        final Resolver resolver;
+        try {
+            resolver = ((ResolverProviderImpl) options.resolver()).resolver(table);
+        } catch (TypeInference.UnsupportedType e) {
+            throw new RuntimeException(e);
+        }
+        final NameMapping nameMapping = ((NameMappingProviderImpl) options.nameMapping()).create(table);
+        return new IcebergTableAdapter(
+                catalog,
+                options.id(),
+                table,
+                dataInstructionsProvider,
+                resolver,
+                nameMapping);
     }
 
     /**
@@ -261,16 +305,20 @@ public class IcebergCatalogAdapter {
     }
 
     /**
-     * Create a new Iceberg table in the catalog with the given table identifier and definition.
-     * <p>
-     * All columns of type {@link ColumnDefinition.ColumnType#Partitioning partitioning} will be used to create the
-     * partition spec for the table.
+     * Create a new Iceberg table in this catalog with the given {@code tableIdentifier} and {@code definition}. The
+     * resulting table's {@link Schema} will have {@link Types.NestedField fields} with the same name and order as
+     * {@code definition}. Their types will be inferred via {@link TypeInference#of(Type, TypeUtil.NextID)} . The
+     * {@link ColumnDefinition.ColumnType#Partitioning partitioning columns} will be used as
+     * {@link Transforms#identity() identity transforms} for the {@link PartitionSpec}. Callers should take note of the
+     * documentation on {@link Resolver#definition()} when deciding to create an Iceberg Table with partitioning
+     * columns.
      *
-     * @param tableIdentifier The identifier string of the new table.
+     * @param tableIdentifier The identifier of the new table.
      * @param definition The {@link TableDefinition} of the new table.
-     * @return The {@link IcebergTableAdapter table adapter} for the new Iceberg table.
+     * @return the resolver
      * @throws AlreadyExistsException if the table already exists
      */
+    @SuppressWarnings("unused")
     public IcebergTableAdapter createTable(
             @NotNull final String tableIdentifier,
             @NotNull final TableDefinition definition) {
@@ -278,33 +326,39 @@ public class IcebergCatalogAdapter {
     }
 
     /**
-     * Create a new Iceberg table in the catalog with the given table identifier and definition.
-     * <p>
-     * All columns of type {@link ColumnDefinition.ColumnType#Partitioning partitioning} will be used to create the
-     * partition spec for the table.
+     * Create a new Iceberg table in this catalog with the given {@code tableIdentifier} and {@code definition}. The
+     * resulting table's {@link Schema} will have {@link Types.NestedField fields} with the same name and order as
+     * {@code definition}. Their types will be inferred via {@link TypeInference#of(Type, TypeUtil.NextID)} . The
+     * {@link ColumnDefinition.ColumnType#Partitioning partitioning columns} will be used as
+     * {@link Transforms#identity() identity transforms} for the {@link PartitionSpec}. Callers should take note of the
+     * documentation on {@link Resolver#definition()} when deciding to create an Iceberg Table with partitioning
+     * columns.
      *
      * @param tableIdentifier The identifier of the new table.
      * @param definition The {@link TableDefinition} of the new table.
-     * @return The {@link IcebergTableAdapter table adapter} for the new Iceberg table.
+     * @return the resolver
      * @throws AlreadyExistsException if the table already exists
      */
     public IcebergTableAdapter createTable(
             @NotNull final TableIdentifier tableIdentifier,
             @NotNull final TableDefinition definition) {
-        final IcebergUtils.SpecAndSchema specAndSchema = IcebergUtils.createSpecAndSchema(definition);
-        return createTable(tableIdentifier, specAndSchema.schema, specAndSchema.partitionSpec);
+        final Resolver internalResolver = Resolver.from(definition);
+        final org.apache.iceberg.Table table =
+                createTable(tableIdentifier, internalResolver.schema(), internalResolver.specOrUnpartitioned());
+        final Resolver resolver = Resolver.refreshIds(internalResolver, table.schema(), table.spec());
+        return new IcebergTableAdapter(catalog, tableIdentifier, table, dataInstructionsProvider, resolver,
+                NameMapping.empty());
     }
 
-    private IcebergTableAdapter createTable(
+    private org.apache.iceberg.Table createTable(
             @NotNull final TableIdentifier tableIdentifier,
             @NotNull final Schema schema,
             @NotNull final PartitionSpec partitionSpec) {
         final boolean newNamespaceCreated = createNamespaceIfNotExists(catalog, tableIdentifier.namespace());
+        final org.apache.iceberg.Table table;
         try {
-            final org.apache.iceberg.Table table =
-                    catalog.createTable(tableIdentifier, schema, partitionSpec,
-                            Map.of(TableProperties.DEFAULT_FILE_FORMAT, TableProperties.DEFAULT_FILE_FORMAT_DEFAULT));
-            return new IcebergTableAdapter(catalog, tableIdentifier, table, dataInstructionsProvider);
+            table = catalog.createTable(tableIdentifier, schema, partitionSpec,
+                    Map.of(TableProperties.DEFAULT_FILE_FORMAT, TableProperties.DEFAULT_FILE_FORMAT_DEFAULT));
         } catch (final Throwable throwable) {
             if (newNamespaceCreated) {
                 // Delete it to avoid leaving a partial namespace in the catalog
@@ -316,5 +370,7 @@ public class IcebergCatalogAdapter {
             }
             throw throwable;
         }
+        return table;
     }
+
 }

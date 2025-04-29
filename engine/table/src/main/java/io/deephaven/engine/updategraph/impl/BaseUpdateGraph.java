@@ -64,10 +64,7 @@ public abstract class BaseUpdateGraph implements UpdateGraph, LogOutputAppendabl
             if (bug.updatePerformanceTracker != null) {
                 final PerformanceEntry entry = bug.updatePerformanceTracker.getEntry(description);
                 if (ancestors != null && entry != null) {
-                    long[] ancestorArray = ancestors.get();
-                    if (ancestorArray != null && ancestorArray.length > 0) {
-                        bug.updatePerformanceTracker.logAncestors(updateGraph.getName(), entry, ancestorArray);
-                    }
+                    bug.updatePerformanceTracker.logAncestors(updateGraph.getName(), entry, ancestors);
                 }
                 return entry;
             }
@@ -90,10 +87,7 @@ public abstract class BaseUpdateGraph implements UpdateGraph, LogOutputAppendabl
                     + "not been completely constructed.");
         }
 
-        long[] ancestorArray = ancestors.get();
-        if (ancestorArray != null && ancestorArray.length > 0) {
-            bug.updatePerformanceTracker.logAncestors(updateGraph.getName(), performanceEntry, ancestorArray);
-        }
+        bug.updatePerformanceTracker.logAncestors(updateGraph.getName(), performanceEntry, ancestors);
     }
 
     private static final KeyedObjectHashMap<String, UpdateGraph> INSTANCES = new KeyedObjectHashMap<>(

@@ -39,6 +39,7 @@ import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Supplier;
 
 /**
  * <p>
@@ -78,6 +79,12 @@ public class UpdatePerformanceTracker {
     private static final SingletonLivenessManager livenessManager = new SingletonLivenessManager();
     private static InternalState INSTANCE;
 
+    /**
+     * Retrieves or initializes the singleton instance of {@code InternalState}. If the instance does not exist, it is
+     * created.
+     *
+     * @return the singleton instance of {@code InternalState}
+     */
     private static InternalState getInternalState() {
         InternalState local;
         if ((local = INSTANCE) == null) {
@@ -91,6 +98,16 @@ public class UpdatePerformanceTracker {
             }
         }
         return local;
+    }
+
+    /**
+     * Retrieves the singleton instance of {@code InternalState} if it exists; otherwise, returns {@code null}.
+     *
+     * @return the singleton {@code InternalState} instance if it is initialized, or {@code null} if it is not
+     */
+    private static InternalState maybeGetInternalState() {
+        // we are satisfied to return null here
+        return INSTANCE;
     }
 
     private static class InternalState extends LivenessArtifact {
@@ -238,8 +255,14 @@ public class UpdatePerformanceTracker {
      * @param entry entry of entry to log for
      * @param ancestors array of ancestor ids
      */
-    public void logAncestors(String updateGraphName, PerformanceEntry entry, long[] ancestors) {
-        getInternalState().publishAncestor(updateGraphName, entry, ancestors);
+    public void logAncestors(String updateGraphName, PerformanceEntry entry, Supplier<long[]> ancestors) {
+        final InternalState state = maybeGetInternalState();
+        if (state != null) {
+            final long[] ancestorArray = ancestors.get();
+            if (ancestorArray != null && ancestorArray.length > 0) {
+                state.publishAncestor(updateGraphName, entry, ancestorArray);
+            }
+        }
     }
 
     public void enableUnitTestMode() {

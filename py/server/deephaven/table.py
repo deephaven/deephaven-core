@@ -75,6 +75,7 @@ _JNodeType = jpy.get_type("io.deephaven.engine.table.hierarchical.RollupTable$No
 _JFormatOperationsRecorder = jpy.get_type("io.deephaven.engine.table.hierarchical.FormatOperationsRecorder")
 _JSortOperationsRecorder = jpy.get_type("io.deephaven.engine.table.hierarchical.SortOperationsRecorder")
 _JFilterOperationsRecorder = jpy.get_type("io.deephaven.engine.table.hierarchical.FilterOperationsRecorder")
+_JUpdateViewOperationsRecorder = jpy.get_type("io.deephaven.engine.table.hierarchical.UpdateViewOperationsRecorder")
 
 # MultiJoin Table and input
 _JMultiJoinInput = jpy.get_type("io.deephaven.engine.table.MultiJoinInput")
@@ -166,9 +167,18 @@ class _FilterOperationsRecorder(Protocol):
         j_filter_ops_recorder = jpy.cast(self.j_node_ops_recorder, _JFilterOperationsRecorder)
         return self.__class__(j_filter_ops_recorder.where(and_(filters).j_filter))
 
+class _UpdateViewOperationsRecorder(Protocol):
+    """A mixin for creating updateView operations to be applied to individual nodes of RollupTable."""
+
+    def update_view(self, formulas: Union[str, Sequence[str]]):
+        """Returns a new recorder with the :meth:`~deephaven.table.Table.update_view` operation applied to nodes."""
+        formulas = to_sequence(formulas)
+        j_update_view_ops_recorder = jpy.cast(self.j_node_ops_recorder, _JUpdateViewOperationsRecorder)
+        return self.__class__(j_update_view_ops_recorder.updateView(*formulas))
+
 
 class RollupNodeOperationsRecorder(JObjectWrapper, _FormatOperationsRecorder,
-                                   _SortOperationsRecorder):
+                                   _SortOperationsRecorder, _UpdateViewOperationsRecorder):
     """Recorder for node-level operations to be applied when gathering snapshots of RollupTable. Supported operations
     include column formatting and sorting.
 
@@ -270,6 +280,25 @@ class RollupTable(JObjectWrapper):
                                include_constituents=self.include_constituents, aggs=self.aggs, by=self.by)
         except Exception as e:
             raise DHError(e, "with_filters operation on RollupTable failed.") from e
+
+    def with_update_view(self, formulas: Union[str, Sequence[str]]) -> RollupTable:
+        """Returns a new RollupTable by applying the given set of filters to the group-by columns of this RollupTable.
+
+        Args:
+            formulas (Union[str, Sequence[str]]): the column formula(s)
+
+        Returns:
+            a new RollupTable
+
+        Raises:
+            DHError
+        """
+        try:
+            formulas = to_sequence(formulas)
+            return RollupTable(j_rollup_table=self.j_rollup_table.withUpdateView(*formulas),
+                               include_constituents=self.include_constituents, aggs=self.aggs, by=self.by)
+        except Exception as e:
+            raise DHError(e, "with_update_view operation on RollupTable failed.") from e
 
 
 class TreeNodeOperationsRecorder(JObjectWrapper, _FormatOperationsRecorder,
