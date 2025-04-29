@@ -13,7 +13,6 @@ import io.deephaven.iceberg.util.IcebergCatalogAdapter;
 import io.deephaven.iceberg.util.IcebergTableAdapter;
 import io.deephaven.iceberg.util.InferenceResolver;
 import io.deephaven.iceberg.util.LoadTableOptions;
-import io.deephaven.iceberg.util.TableParquetWriterOptions;
 import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.Schema;
 import org.apache.iceberg.Snapshot;
@@ -26,8 +25,8 @@ import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
 import java.util.List;
-
 import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -111,7 +110,10 @@ class PyIceberg2Test {
 
     @Test
     void testReadData() {
-        final IcebergTableAdapter tableAdapter = catalogAdapter.loadTable(TRADING_DATA);
+        final IcebergTableAdapter tableAdapter = catalogAdapter.loadTable(LoadTableOptions.builder()
+                .id(TRADING_DATA)
+                .resolver(INFER_WITH_PARTITIONS)
+                .build());
         final Table fromIceberg = tableAdapter.table();
         assertThat(fromIceberg.size()).isEqualTo(5);
         final Table expectedData = TableTools.newTable(TABLE_DEFINITION,
