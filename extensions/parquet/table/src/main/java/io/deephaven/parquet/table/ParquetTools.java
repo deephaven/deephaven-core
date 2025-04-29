@@ -691,7 +691,7 @@ public class ParquetTools {
                 for (int idx = outputStreams.size() - 1; idx >= 0; idx--) {
                     try {
                         outputStreams.get(idx).rollback();
-                    } catch (IOException e1) {
+                    } catch (Exception e1) {
                         log.error().append("Error in rolling back output stream ").append(e1).endl();
                     }
                 }
