@@ -16,11 +16,10 @@ import java.util.ServiceLoader;
 import java.util.stream.Collectors;
 
 /**
- * Helper to load resources based on configuration. Any resource specified in configuration be give a boolean "enabled"
- * with true to allow the resources to be served and false to have them be excluded, with a default of true. Resources
- * may also specify a positive integer "priority" to determine the order in which they are served, lowest first,
- * allowing higher priority resources to override those with lower priority. Default priority is
- * {@value Integer#MAX_VALUE}.
+ * Helper to load resources based on configuration. Any resource specified in configuration may be give a boolean
+ * "enabled" with true to allow the resources to be served and false to have them be excluded, with a default of true.
+ * Resources may also specify a positive integer "priority" to determine the order in which they are served, lowest
+ * first, allowing more important resources to override others. Default priority is {@value Integer#MAX_VALUE}.
  */
 public class ServerResources {
     private static final Logger log = LoggerFactory.getLogger(ServerResources.class);
