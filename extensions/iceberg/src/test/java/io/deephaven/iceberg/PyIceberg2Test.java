@@ -25,8 +25,7 @@ import org.junit.jupiter.api.Test;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import static io.deephaven.iceberg.PyIcebergTestUtils.EXPECTED_DATA;
-
+import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 
@@ -41,7 +40,7 @@ class PyIceberg2Test {
     private static final TableIdentifier EMPTY_DATA = TableIdentifier.of(NAMESPACE, "data_empty");
 
     // This will need to be updated if the data is regenerated
-    private static final long SNAPSHOT_1_ID = 4829521301453334000L;
+    private static final long SNAPSHOT_1_ID = 2806418501596315192L;
 
     private static final TableDefinition TABLE_DEFINITION = TableDefinition.of(
             ColumnDefinition.fromGenericType("datetime", LocalDateTime.class),
@@ -109,7 +108,18 @@ class PyIceberg2Test {
         final IcebergTableAdapter tableAdapter = catalogAdapter.loadTable(TRADING_DATA);
         final Table fromIceberg = tableAdapter.table();
         assertThat(fromIceberg.size()).isEqualTo(5);
-        TstUtils.assertTableEquals(EXPECTED_DATA, fromIceberg.sort("datetime", "symbol"));
+        final Table expectedData = TableTools.newTable(TABLE_DEFINITION,
+                TableTools.col("datetime",
+                        LocalDateTime.of(2024, 11, 27, 10, 0, 0),
+                        LocalDateTime.of(2024, 11, 27, 10, 0, 0),
+                        LocalDateTime.of(2024, 11, 26, 10, 1, 0),
+                        LocalDateTime.of(2024, 11, 26, 10, 2, 0),
+                        LocalDateTime.of(2024, 11, 28, 10, 3, 0)),
+                TableTools.stringCol("symbol", "AAPL", "MSFT", "GOOG", "AMZN", "MSFT"),
+                TableTools.doubleCol("bid", 150.25, 150.25, 2800.75, 3400.5, NULL_DOUBLE),
+                TableTools.doubleCol("ask", 151.0, 151.0, 2810.5, 3420.0, 250.0));
+        TstUtils.assertTableEquals(expectedData.sort("datetime", "symbol"),
+                fromIceberg.sort("datetime", "symbol"));
     }
 
     @Test
