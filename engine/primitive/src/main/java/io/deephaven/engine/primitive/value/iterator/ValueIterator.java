@@ -103,8 +103,8 @@ public interface ValueIterator<TYPE> extends CloseableIterator<TYPE> {
     }
 
     /**
-     * Wraps a ValueIterator with set number of prefix nulls, postfix nulls, or both. The result must be
-     * {@link #close() closed}.
+     * Wraps a ValueIterator with set number of prefix nulls, postfix nulls, or both. The result must be {@link #close()
+     * closed}.
      *
      * @param iterator The ValueIterator to wrap
      * @param prefixNulls The number of nulls to add to the beginning of the iterator
