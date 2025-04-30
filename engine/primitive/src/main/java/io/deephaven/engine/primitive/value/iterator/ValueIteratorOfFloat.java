@@ -64,11 +64,11 @@ public interface ValueIteratorOfFloat extends CloseablePrimitiveIteratorOfFloat,
     }
 
     /**
-     * Create a {@link DoubleStream} over the remaining elements of this ValueIteratorOfFloat by applying {@code adapter} to
-     * each element. The result <em>must</em> be {@link java.util.stream.BaseStream#close() closed} in order to ensure
-     * resources are released. A try-with-resources block is strongly encouraged.
+     * Create an {@link DoubleStream} over the remaining elements of this ValueIteratorOfFloat by applying {@code adapter}
+     * to each element. The result <em>must</em> be {@link java.util.stream.BaseStream#close() closed} in order to
+     * ensure resources are released. A try-with-resources block is strongly encouraged.
      *
-     * @return A {@link DoubleStream} over the remaining contents of this iterator. Must be {@link Stream#close() closed}.
+     * @return An {@link DoubleStream} over the remaining contents of this iterator. Must be {@link Stream#close() closed}.
      */
     @Override
     @FinalDefault
@@ -153,7 +153,7 @@ public interface ValueIteratorOfFloat extends CloseablePrimitiveIteratorOfFloat,
      * @param iterator The ValueIteratorOfFloat to wrap
      * @param prefixNulls The number of nulls to add to the beginning of the iterator
      * @param postfixNulls The number of nulls to add to the end of the iterator
-     * @return A ValueIterator with the specified number of prefix and postfix nulls
+     * @return A ValueIteratorOfFloat with the specified number of prefix and postfix nulls
      */
     static ValueIteratorOfFloat wrapWithNulls(
             @Nullable final ValueIteratorOfFloat iterator,
@@ -169,6 +169,9 @@ public interface ValueIteratorOfFloat extends CloseablePrimitiveIteratorOfFloat,
 
             @Override
             public float nextFloat() {
+                if (nextIndex >= initialLength) {
+                    throw new NoSuchElementException();
+                }
                 if (nextIndex++ < prefixNulls || iterator == null || !iterator.hasNext()) {
                     return QueryConstants.NULL_FLOAT;
                 }

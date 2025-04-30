@@ -150,7 +150,7 @@ public interface ValueIteratorOfLong extends CloseablePrimitiveIteratorOfLong, V
      * @param iterator The ValueIteratorOfLong to wrap
      * @param prefixNulls The number of nulls to add to the beginning of the iterator
      * @param postfixNulls The number of nulls to add to the end of the iterator
-     * @return A ValueIterator with the specified number of prefix and postfix nulls
+     * @return A ValueIteratorOfLong with the specified number of prefix and postfix nulls
      */
     static ValueIteratorOfLong wrapWithNulls(
             @Nullable final ValueIteratorOfLong iterator,
@@ -166,6 +166,9 @@ public interface ValueIteratorOfLong extends CloseablePrimitiveIteratorOfLong, V
 
             @Override
             public long nextLong() {
+                if (nextIndex >= initialLength) {
+                    throw new NoSuchElementException();
+                }
                 if (nextIndex++ < prefixNulls || iterator == null || !iterator.hasNext()) {
                     return QueryConstants.NULL_LONG;
                 }

@@ -4,7 +4,6 @@
 package io.deephaven.engine.primitive.value.iterator;
 
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
-import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -22,12 +21,11 @@ public interface ValueIterator<TYPE> extends CloseableIterator<TYPE> {
     long remaining();
 
     /**
-     * Create a boxed {@link Stream} over the remaining elements of this ValueIterator. The result <em>must</em> be
+     * Create a {@link Stream} over the remaining elements of this ValueIterator. The result <em>must</em> be
      * {@link java.util.stream.BaseStream#close() closed} in order to ensure resources are released. A
      * try-with-resources block is strongly encouraged.
      *
-     * @return A boxed {@link Stream} over the remaining contents of this iterator. Must be {@link Stream#close()
-     *         closed}.
+     * @return A {@link Stream} over the remaining contents of this iterator. Must be {@link Stream#close() closed}.
      */
     @Override
     default Stream<TYPE> stream() {
@@ -125,6 +123,9 @@ public interface ValueIterator<TYPE> extends CloseableIterator<TYPE> {
 
             @Override
             public TYPE next() {
+                if (nextIndex >= initialLength) {
+                    throw new NoSuchElementException();
+                }
                 if (nextIndex++ < prefixNulls || iterator == null || !iterator.hasNext()) {
                     return null;
                 }

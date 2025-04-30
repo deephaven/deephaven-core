@@ -149,7 +149,7 @@ public interface ValueIteratorOfInt extends CloseablePrimitiveIteratorOfInt, Val
      * @param iterator The ValueIteratorOfInt to wrap
      * @param prefixNulls The number of nulls to add to the beginning of the iterator
      * @param postfixNulls The number of nulls to add to the end of the iterator
-     * @return A ValueIterator with the specified number of prefix and postfix nulls
+     * @return A ValueIteratorOfInt with the specified number of prefix and postfix nulls
      */
     static ValueIteratorOfInt wrapWithNulls(
             @Nullable final ValueIteratorOfInt iterator,
@@ -165,6 +165,9 @@ public interface ValueIteratorOfInt extends CloseablePrimitiveIteratorOfInt, Val
 
             @Override
             public int nextInt() {
+                if (nextIndex >= initialLength) {
+                    throw new NoSuchElementException();
+                }
                 if (nextIndex++ < prefixNulls || iterator == null || !iterator.hasNext()) {
                     return QueryConstants.NULL_INT;
                 }

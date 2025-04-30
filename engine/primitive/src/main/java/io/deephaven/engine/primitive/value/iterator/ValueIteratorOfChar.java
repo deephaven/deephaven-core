@@ -59,11 +59,11 @@ public interface ValueIteratorOfChar extends CloseablePrimitiveIteratorOfChar, V
     }
 
     /**
-     * Create a {@link IntStream} over the remaining elements of this ValueIteratorOfChar by applying {@code adapter} to
-     * each element. The result <em>must</em> be {@link java.util.stream.BaseStream#close() closed} in order to ensure
-     * resources are released. A try-with-resources block is strongly encouraged.
+     * Create an {@link IntStream} over the remaining elements of this ValueIteratorOfChar by applying {@code adapter}
+     * to each element. The result <em>must</em> be {@link java.util.stream.BaseStream#close() closed} in order to
+     * ensure resources are released. A try-with-resources block is strongly encouraged.
      *
-     * @return A {@link IntStream} over the remaining contents of this iterator. Must be {@link Stream#close() closed}.
+     * @return An {@link IntStream} over the remaining contents of this iterator. Must be {@link Stream#close() closed}.
      */
     @Override
     @FinalDefault
@@ -148,7 +148,7 @@ public interface ValueIteratorOfChar extends CloseablePrimitiveIteratorOfChar, V
      * @param iterator The ValueIteratorOfChar to wrap
      * @param prefixNulls The number of nulls to add to the beginning of the iterator
      * @param postfixNulls The number of nulls to add to the end of the iterator
-     * @return A ValueIterator with the specified number of prefix and postfix nulls
+     * @return A ValueIteratorOfChar with the specified number of prefix and postfix nulls
      */
     static ValueIteratorOfChar wrapWithNulls(
             @Nullable final ValueIteratorOfChar iterator,
@@ -164,6 +164,9 @@ public interface ValueIteratorOfChar extends CloseablePrimitiveIteratorOfChar, V
 
             @Override
             public char nextChar() {
+                if (nextIndex >= initialLength) {
+                    throw new NoSuchElementException();
+                }
                 if (nextIndex++ < prefixNulls || iterator == null || !iterator.hasNext()) {
                     return QueryConstants.NULL_CHAR;
                 }

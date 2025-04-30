@@ -63,11 +63,11 @@ public interface ValueIteratorOfShort extends CloseablePrimitiveIteratorOfShort,
     }
 
     /**
-     * Create a {@link IntStream} over the remaining elements of this ValueIteratorOfShort by applying {@code adapter} to
-     * each element. The result <em>must</em> be {@link java.util.stream.BaseStream#close() closed} in order to ensure
-     * resources are released. A try-with-resources block is strongly encouraged.
+     * Create an {@link IntStream} over the remaining elements of this ValueIteratorOfShort by applying {@code adapter}
+     * to each element. The result <em>must</em> be {@link java.util.stream.BaseStream#close() closed} in order to
+     * ensure resources are released. A try-with-resources block is strongly encouraged.
      *
-     * @return A {@link IntStream} over the remaining contents of this iterator. Must be {@link Stream#close() closed}.
+     * @return An {@link IntStream} over the remaining contents of this iterator. Must be {@link Stream#close() closed}.
      */
     @Override
     @FinalDefault
@@ -152,7 +152,7 @@ public interface ValueIteratorOfShort extends CloseablePrimitiveIteratorOfShort,
      * @param iterator The ValueIteratorOfShort to wrap
      * @param prefixNulls The number of nulls to add to the beginning of the iterator
      * @param postfixNulls The number of nulls to add to the end of the iterator
-     * @return A ValueIterator with the specified number of prefix and postfix nulls
+     * @return A ValueIteratorOfShort with the specified number of prefix and postfix nulls
      */
     static ValueIteratorOfShort wrapWithNulls(
             @Nullable final ValueIteratorOfShort iterator,
@@ -168,6 +168,9 @@ public interface ValueIteratorOfShort extends CloseablePrimitiveIteratorOfShort,
 
             @Override
             public short nextShort() {
+                if (nextIndex >= initialLength) {
+                    throw new NoSuchElementException();
+                }
                 if (nextIndex++ < prefixNulls || iterator == null || !iterator.hasNext()) {
                     return QueryConstants.NULL_SHORT;
                 }

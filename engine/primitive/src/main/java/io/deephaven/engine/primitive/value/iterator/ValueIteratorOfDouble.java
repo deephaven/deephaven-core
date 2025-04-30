@@ -150,7 +150,7 @@ public interface ValueIteratorOfDouble extends CloseablePrimitiveIteratorOfDoubl
      * @param iterator The ValueIteratorOfDouble to wrap
      * @param prefixNulls The number of nulls to add to the beginning of the iterator
      * @param postfixNulls The number of nulls to add to the end of the iterator
-     * @return A ValueIterator with the specified number of prefix and postfix nulls
+     * @return A ValueIteratorOfDouble with the specified number of prefix and postfix nulls
      */
     static ValueIteratorOfDouble wrapWithNulls(
             @Nullable final ValueIteratorOfDouble iterator,
@@ -166,6 +166,9 @@ public interface ValueIteratorOfDouble extends CloseablePrimitiveIteratorOfDoubl
 
             @Override
             public double nextDouble() {
+                if (nextIndex >= initialLength) {
+                    throw new NoSuchElementException();
+                }
                 if (nextIndex++ < prefixNulls || iterator == null || !iterator.hasNext()) {
                     return QueryConstants.NULL_DOUBLE;
                 }
