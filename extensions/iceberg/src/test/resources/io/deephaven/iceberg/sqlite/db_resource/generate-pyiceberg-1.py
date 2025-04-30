@@ -8,6 +8,8 @@ from pyiceberg.catalog.sql import SqlCatalog
 
 import pyarrow as pa
 
+import pyiceberg_test_utils
+
 catalog = SqlCatalog(
     "pyiceberg-1",
     **{
@@ -23,12 +25,10 @@ original_schema = Schema(
 )
 
 #  Using specific names to make clear these aren't a standard / convention
-catalog.create_namespace("dh-default")
+catalog.create_namespace_if_not_exists("dh-default")
 
-table = catalog.create_table(
-    "dh-default.cities",
-    schema=original_schema,
-)
+table_identifier = "dh-default.cities"
+table = pyiceberg_test_utils.create_table_purging_if_exists(catalog, table_identifier, original_schema)
 
 # Add some data
 table.append(
