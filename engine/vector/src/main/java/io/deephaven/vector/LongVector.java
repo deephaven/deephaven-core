@@ -9,6 +9,7 @@ package io.deephaven.vector;
 
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfLong;
+import io.deephaven.engine.primitive.value.iterator.ValueIteratorOfLong;
 import io.deephaven.qst.type.LongType;
 import io.deephaven.qst.type.PrimitiveVectorType;
 import io.deephaven.util.QueryConstants;
@@ -55,7 +56,7 @@ public interface LongVector extends Vector<LongVector>, Iterable<Long> {
 
     @Override
     @FinalDefault
-    default CloseablePrimitiveIteratorOfLong iterator() {
+    default ValueIteratorOfLong iterator() {
         return iterator(0, size());
     }
 
@@ -67,9 +68,9 @@ public interface LongVector extends Vector<LongVector>, Iterable<Long> {
      * @param toIndexExclusive The first position after {@code fromIndexInclusive} to not include
      * @return An iterator over the requested slice
      */
-    default CloseablePrimitiveIteratorOfLong iterator(final long fromIndexInclusive, final long toIndexExclusive) {
+    default ValueIteratorOfLong iterator(final long fromIndexInclusive, final long toIndexExclusive) {
         Require.leq(fromIndexInclusive, "fromIndexInclusive", toIndexExclusive, "toIndexExclusive");
-        return new CloseablePrimitiveIteratorOfLong() {
+        return new ValueIteratorOfLong() {
 
             long nextIndex = fromIndexInclusive;
 
@@ -81,6 +82,11 @@ public interface LongVector extends Vector<LongVector>, Iterable<Long> {
             @Override
             public boolean hasNext() {
                 return nextIndex < toIndexExclusive;
+            }
+
+            @Override
+            public long remaining() {
+                return toIndexExclusive - nextIndex;
             }
         };
     }

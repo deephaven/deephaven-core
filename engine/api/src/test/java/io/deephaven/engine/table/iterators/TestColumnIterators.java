@@ -4,9 +4,13 @@
 package io.deephaven.engine.table.iterators;
 
 import io.deephaven.chunk.*;
+import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.sources.chunkcolumnsource.ChunkColumnSource;
 import io.deephaven.engine.testutil.ColumnInfo;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.generator.*;
@@ -16,7 +20,17 @@ import org.junit.*;
 
 import java.util.Objects;
 import java.util.Random;
+import java.util.function.Consumer;
+import java.util.function.DoubleConsumer;
+import java.util.function.IntConsumer;
 
+import static io.deephaven.util.QueryConstants.NULL_BYTE;
+import static io.deephaven.util.QueryConstants.NULL_CHAR;
+import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
+import static io.deephaven.util.QueryConstants.NULL_FLOAT;
+import static io.deephaven.util.QueryConstants.NULL_INT;
+import static io.deephaven.util.QueryConstants.NULL_LONG;
+import static io.deephaven.util.QueryConstants.NULL_SHORT;
 import static io.deephaven.util.type.TypeUtils.box;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertTrue;
@@ -89,6 +103,69 @@ public class TestColumnIterators {
         }
     }
 
+    private static ChunkColumnSource<Character> createCharacterSource() {
+        final WritableCharChunk<Values> data = WritableCharChunk.makeWritableChunk(10_000);
+        for (int ei = 0; ei < data.size(); ++ei) {
+            data.set(ei, ei % 4 == 0 ? NULL_CHAR : (char) ei);
+        }
+
+        // noinspection unchecked
+        final ChunkColumnSource<Character> source =
+                (ChunkColumnSource<Character>) ChunkColumnSource.make(ChunkType.Char, char.class);
+        source.addChunk(data);
+        return source;
+    }
+
+    @Test
+    public void testCharacterColumnIteratorForBoxedNulls() {
+        final ChunkColumnSource<Character> source = createCharacterSource();
+        try (final RowSet rowset = RowSetFactory.flat(10_000);
+                final CharacterColumnIterator serial = new SerialCharacterColumnIterator(source, rowset);
+                final CharacterColumnIterator chunked = new ChunkedCharacterColumnIterator(source, rowset)) {
+
+            final MutableInt numNulls = new MutableInt(0);
+            final Consumer<Character> nullValidator = c -> {
+                if (c == null) {
+                    numNulls.add(1);
+                } else if (c == NULL_CHAR) {
+                    throw new IllegalStateException("Expected null, but got boxed NULL_CHAR");
+                }
+            };
+            serial.stream().forEach(nullValidator);
+            assertEquals("(rowset.size() + 3) / 4 == nulNulls.get()", (rowset.size() + 3) / 4, numNulls.get());
+
+            numNulls.set(0);
+            chunked.stream().forEach(nullValidator);
+            assertEquals("(rowset.size() + 3) / 4 == nulNulls.get()", (rowset.size() + 3) / 4, numNulls.get());
+        }
+        source.clear();
+    }
+
+    @Test
+    public void testCharacterColumnIteratorForStreamAsIntNulls() {
+        final ChunkColumnSource<Character> source = createCharacterSource();
+
+        try (final RowSet rowset = RowSetFactory.flat(10_000);
+                final CharacterColumnIterator serial = new SerialCharacterColumnIterator(source, rowset);
+                final CharacterColumnIterator chunked = new ChunkedCharacterColumnIterator(source, rowset)) {
+            final MutableInt numNulls = new MutableInt(0);
+            final IntConsumer nullValidator = c -> {
+                if (c == NULL_INT) {
+                    numNulls.add(1);
+                } else if (c == NULL_CHAR) {
+                    throw new IllegalStateException("Expected NULL_INT, but got NULL_CHAR");
+                }
+            };
+            serial.streamAsInt().forEach(nullValidator);
+            assertEquals("(rowset.size() + 3) / 4 == nulNulls.get()", (rowset.size() + 3) / 4, numNulls.get());
+
+            numNulls.set(0);
+            chunked.streamAsInt().forEach(nullValidator);
+            assertEquals("(rowset.size() + 3) / 4 == nulNulls.get()", (rowset.size() + 3) / 4, numNulls.get());
+        }
+        source.clear();
+    }
+
     @Test
     public void testByteColumnIterators() {
         final ColumnSource<Byte> source = input.getColumnSource("ByteCol", byte.class);
@@ -125,6 +202,69 @@ public class TestColumnIterators {
                             box(data.get(nextValueIndex.getAndIncrement())))))
                     .count());
         }
+    }
+
+    private static ChunkColumnSource<Byte> createByteSource() {
+        final WritableByteChunk<Values> data = WritableByteChunk.makeWritableChunk(10_000);
+        for (int ei = 0; ei < data.size(); ++ei) {
+            data.set(ei, ei % 4 == 0 ? NULL_BYTE : (byte) ei);
+        }
+
+        // noinspection unchecked
+        final ChunkColumnSource<Byte> source =
+                (ChunkColumnSource<Byte>) ChunkColumnSource.make(ChunkType.Byte, byte.class);
+        source.addChunk(data);
+        return source;
+    }
+
+    @Test
+    public void testByteColumnIteratorForBoxedNulls() {
+        final ChunkColumnSource<Byte> source = createByteSource();
+        try (final RowSet rowset = RowSetFactory.flat(10_000);
+                final ByteColumnIterator serial = new SerialByteColumnIterator(source, rowset);
+                final ByteColumnIterator chunked = new ChunkedByteColumnIterator(source, rowset)) {
+
+            final MutableInt numNulls = new MutableInt(0);
+            final Consumer<Byte> nullValidator = c -> {
+                if (c == null) {
+                    numNulls.add(1);
+                } else if (c == NULL_BYTE) {
+                    throw new IllegalStateException("Expected null, but got boxed NULL_BYTE");
+                }
+            };
+            serial.stream().forEach(nullValidator);
+            assertEquals("(rowset.size() + 3) / 4 == nulNulls.get()", (rowset.size() + 3) / 4, numNulls.get());
+
+            numNulls.set(0);
+            chunked.stream().forEach(nullValidator);
+            assertEquals("(rowset.size() + 3) / 4 == nulNulls.get()", (rowset.size() + 3) / 4, numNulls.get());
+        }
+        source.clear();
+    }
+
+    @Test
+    public void testByteColumnIteratorForStreamAsIntNulls() {
+        final ChunkColumnSource<Byte> source = createByteSource();
+
+        try (final RowSet rowset = RowSetFactory.flat(10_000);
+                final ByteColumnIterator serial = new SerialByteColumnIterator(source, rowset);
+                final ByteColumnIterator chunked = new ChunkedByteColumnIterator(source, rowset)) {
+            final MutableInt numNulls = new MutableInt(0);
+            final IntConsumer nullValidator = c -> {
+                if (c == NULL_INT) {
+                    numNulls.add(1);
+                } else if (c == NULL_BYTE) {
+                    throw new IllegalStateException("Expected NULL_INT, but got NULL_BYTE");
+                }
+            };
+            serial.streamAsInt().forEach(nullValidator);
+            assertEquals("(rowset.size() + 3) / 4 == nulNulls.get()", (rowset.size() + 3) / 4, numNulls.get());
+
+            numNulls.set(0);
+            chunked.streamAsInt().forEach(nullValidator);
+            assertEquals("(rowset.size() + 3) / 4 == nulNulls.get()", (rowset.size() + 3) / 4, numNulls.get());
+        }
+        source.clear();
     }
 
     @Test
@@ -165,6 +305,69 @@ public class TestColumnIterators {
         }
     }
 
+    private static ChunkColumnSource<Short> createShortSource() {
+        final WritableShortChunk<Values> data = WritableShortChunk.makeWritableChunk(10_000);
+        for (int ei = 0; ei < data.size(); ++ei) {
+            data.set(ei, ei % 4 == 0 ? NULL_SHORT : (short) ei);
+        }
+
+        // noinspection unchecked
+        final ChunkColumnSource<Short> source =
+                (ChunkColumnSource<Short>) ChunkColumnSource.make(ChunkType.Short, short.class);
+        source.addChunk(data);
+        return source;
+    }
+
+    @Test
+    public void testShortColumnIteratorForBoxedNulls() {
+        final ChunkColumnSource<Short> source = createShortSource();
+        try (final RowSet rowset = RowSetFactory.flat(10_000);
+                final ShortColumnIterator serial = new SerialShortColumnIterator(source, rowset);
+                final ShortColumnIterator chunked = new ChunkedShortColumnIterator(source, rowset)) {
+
+            final MutableInt numNulls = new MutableInt(0);
+            final Consumer<Short> nullValidator = c -> {
+                if (c == null) {
+                    numNulls.add(1);
+                } else if (c == NULL_SHORT) {
+                    throw new IllegalStateException("Expected null, but got boxed NULL_SHORT");
+                }
+            };
+            serial.stream().forEach(nullValidator);
+            assertEquals("(rowset.size() + 3) / 4 == nulNulls.get()", (rowset.size() + 3) / 4, numNulls.get());
+
+            numNulls.set(0);
+            chunked.stream().forEach(nullValidator);
+            assertEquals("(rowset.size() + 3) / 4 == nulNulls.get()", (rowset.size() + 3) / 4, numNulls.get());
+        }
+        source.clear();
+    }
+
+    @Test
+    public void testShortColumnIteratorForStreamAsIntNulls() {
+        final ChunkColumnSource<Short> source = createShortSource();
+
+        try (final RowSet rowset = RowSetFactory.flat(10_000);
+                final ShortColumnIterator serial = new SerialShortColumnIterator(source, rowset);
+                final ShortColumnIterator chunked = new ChunkedShortColumnIterator(source, rowset)) {
+            final MutableInt numNulls = new MutableInt(0);
+            final IntConsumer nullValidator = c -> {
+                if (c == NULL_INT) {
+                    numNulls.add(1);
+                } else if (c == NULL_SHORT) {
+                    throw new IllegalStateException("Expected NULL_INT, but got NULL_SHORT");
+                }
+            };
+            serial.streamAsInt().forEach(nullValidator);
+            assertEquals("(rowset.size() + 3) / 4 == nulNulls.get()", (rowset.size() + 3) / 4, numNulls.get());
+
+            numNulls.set(0);
+            chunked.streamAsInt().forEach(nullValidator);
+            assertEquals("(rowset.size() + 3) / 4 == nulNulls.get()", (rowset.size() + 3) / 4, numNulls.get());
+        }
+        source.clear();
+    }
+
     @Test
     public void testIntegerColumnIterators() {
         final ColumnSource<Integer> source = input.getColumnSource("IntCol", int.class);
@@ -201,6 +404,44 @@ public class TestColumnIterators {
                             box(data.get(nextValueIndex.getAndIncrement())))))
                     .count());
         }
+    }
+
+    private static ChunkColumnSource<Integer> createIntegerSource() {
+        final WritableIntChunk<Values> data = WritableIntChunk.makeWritableChunk(10_000);
+        for (int ei = 0; ei < data.size(); ++ei) {
+            data.set(ei, ei % 4 == 0 ? NULL_INT : ei);
+        }
+
+        // noinspection unchecked
+        final ChunkColumnSource<Integer> source =
+                (ChunkColumnSource<Integer>) ChunkColumnSource.make(ChunkType.Int, int.class);
+        source.addChunk(data);
+        return source;
+    }
+
+    @Test
+    public void testIntegerColumnIteratorForBoxedNulls() {
+        final ChunkColumnSource<Integer> source = createIntegerSource();
+        try (final RowSet rowset = RowSetFactory.flat(10_000);
+                final IntegerColumnIterator serial = new SerialIntegerColumnIterator(source, rowset);
+                final IntegerColumnIterator chunked = new ChunkedIntegerColumnIterator(source, rowset)) {
+
+            final MutableInt numNulls = new MutableInt(0);
+            final Consumer<Integer> nullValidator = c -> {
+                if (c == null) {
+                    numNulls.add(1);
+                } else if (c == NULL_INT) {
+                    throw new IllegalStateException("Expected null, but got boxed NULL_INT");
+                }
+            };
+            serial.stream().forEach(nullValidator);
+            assertEquals("(rowset.size() + 3) / 4 == nulNulls.get()", (rowset.size() + 3) / 4, numNulls.get());
+
+            numNulls.set(0);
+            chunked.stream().forEach(nullValidator);
+            assertEquals("(rowset.size() + 3) / 4 == nulNulls.get()", (rowset.size() + 3) / 4, numNulls.get());
+        }
+        source.clear();
     }
 
     @Test
@@ -241,6 +482,44 @@ public class TestColumnIterators {
         }
     }
 
+    private static ChunkColumnSource<Long> createLongSource() {
+        final WritableLongChunk<Values> data = WritableLongChunk.makeWritableChunk(10_000);
+        for (int ei = 0; ei < data.size(); ++ei) {
+            data.set(ei, ei % 4 == 0 ? NULL_LONG : (long) ei);
+        }
+
+        // noinspection unchecked
+        final ChunkColumnSource<Long> source =
+                (ChunkColumnSource<Long>) ChunkColumnSource.make(ChunkType.Long, long.class);
+        source.addChunk(data);
+        return source;
+    }
+
+    @Test
+    public void testLongColumnIteratorForBoxedNulls() {
+        final ChunkColumnSource<Long> source = createLongSource();
+        try (final RowSet rowset = RowSetFactory.flat(10_000);
+                final LongColumnIterator serial = new SerialLongColumnIterator(source, rowset);
+                final LongColumnIterator chunked = new ChunkedLongColumnIterator(source, rowset)) {
+
+            final MutableInt numNulls = new MutableInt(0);
+            final Consumer<Long> nullValidator = c -> {
+                if (c == null) {
+                    numNulls.add(1);
+                } else if (c == NULL_LONG) {
+                    throw new IllegalStateException("Expected null, but got boxed NULL_LONG");
+                }
+            };
+            serial.stream().forEach(nullValidator);
+            assertEquals("(rowset.size() + 3) / 4 == nulNulls.get()", (rowset.size() + 3) / 4, numNulls.get());
+
+            numNulls.set(0);
+            chunked.stream().forEach(nullValidator);
+            assertEquals("(rowset.size() + 3) / 4 == nulNulls.get()", (rowset.size() + 3) / 4, numNulls.get());
+        }
+        source.clear();
+    }
+
     @Test
     public void testFloatColumnIterators() {
         final ColumnSource<Float> source = input.getColumnSource("FloatCol", float.class);
@@ -279,6 +558,69 @@ public class TestColumnIterators {
         }
     }
 
+    private static ChunkColumnSource<Float> createFloatSource() {
+        final WritableFloatChunk<Values> data = WritableFloatChunk.makeWritableChunk(10_000);
+        for (int ei = 0; ei < data.size(); ++ei) {
+            data.set(ei, ei % 4 == 0 ? NULL_FLOAT : (float) ei);
+        }
+
+        // noinspection unchecked
+        final ChunkColumnSource<Float> source =
+                (ChunkColumnSource<Float>) ChunkColumnSource.make(ChunkType.Float, float.class);
+        source.addChunk(data);
+        return source;
+    }
+
+    @Test
+    public void testFloatColumnIteratorForBoxedNulls() {
+        final ChunkColumnSource<Float> source = createFloatSource();
+        try (final RowSet rowset = RowSetFactory.flat(10_000);
+                final FloatColumnIterator serial = new SerialFloatColumnIterator(source, rowset);
+                final FloatColumnIterator chunked = new ChunkedFloatColumnIterator(source, rowset)) {
+
+            final MutableInt numNulls = new MutableInt(0);
+            final Consumer<Float> nullValidator = c -> {
+                if (c == null) {
+                    numNulls.add(1);
+                } else if (c == NULL_FLOAT) {
+                    throw new IllegalStateException("Expected null, but got boxed NULL_FLOAT");
+                }
+            };
+            serial.stream().forEach(nullValidator);
+            assertEquals("(rowset.size() + 3) / 4 == nulNulls.get()", (rowset.size() + 3) / 4, numNulls.get());
+
+            numNulls.set(0);
+            chunked.stream().forEach(nullValidator);
+            assertEquals("(rowset.size() + 3) / 4 == nulNulls.get()", (rowset.size() + 3) / 4, numNulls.get());
+        }
+        source.clear();
+    }
+
+    @Test
+    public void testFloatColumnIteratorForStreamAsIntNulls() {
+        final ChunkColumnSource<Float> source = createFloatSource();
+
+        try (final RowSet rowset = RowSetFactory.flat(10_000);
+                final FloatColumnIterator serial = new SerialFloatColumnIterator(source, rowset);
+                final FloatColumnIterator chunked = new ChunkedFloatColumnIterator(source, rowset)) {
+            final MutableInt numNulls = new MutableInt(0);
+            final DoubleConsumer nullValidator = c -> {
+                if (c == NULL_DOUBLE) {
+                    numNulls.add(1);
+                } else if (c == NULL_FLOAT) {
+                    throw new IllegalStateException("Expected NULL_DOUBLE, but got NULL_FLOAT");
+                }
+            };
+            serial.streamAsDouble().forEach(nullValidator);
+            assertEquals("(rowset.size() + 3) / 4 == nulNulls.get()", (rowset.size() + 3) / 4, numNulls.get());
+
+            numNulls.set(0);
+            chunked.streamAsDouble().forEach(nullValidator);
+            assertEquals("(rowset.size() + 3) / 4 == nulNulls.get()", (rowset.size() + 3) / 4, numNulls.get());
+        }
+        source.clear();
+    }
+
     @Test
     public void testDoubleColumnIterators() {
         final ColumnSource<Double> source = input.getColumnSource("DoubleCol", double.class);
@@ -315,6 +657,44 @@ public class TestColumnIterators {
                             box(data.get(nextValueIndex.getAndIncrement())))))
                     .count());
         }
+    }
+
+    private static ChunkColumnSource<Double> createDoubleSource() {
+        final WritableDoubleChunk<Values> data = WritableDoubleChunk.makeWritableChunk(10_000);
+        for (int ei = 0; ei < data.size(); ++ei) {
+            data.set(ei, ei % 4 == 0 ? NULL_DOUBLE : (double) ei);
+        }
+
+        // noinspection unchecked
+        final ChunkColumnSource<Double> source =
+                (ChunkColumnSource<Double>) ChunkColumnSource.make(ChunkType.Double, double.class);
+        source.addChunk(data);
+        return source;
+    }
+
+    @Test
+    public void testDoubleColumnIteratorForBoxedNulls() {
+        final ChunkColumnSource<Double> source = createDoubleSource();
+        try (final RowSet rowset = RowSetFactory.flat(10_000);
+                final DoubleColumnIterator serial = new SerialDoubleColumnIterator(source, rowset);
+                final DoubleColumnIterator chunked = new ChunkedDoubleColumnIterator(source, rowset)) {
+
+            final MutableInt numNulls = new MutableInt(0);
+            final Consumer<Double> nullValidator = c -> {
+                if (c == null) {
+                    numNulls.add(1);
+                } else if (c == NULL_DOUBLE) {
+                    throw new IllegalStateException("Expected null, but got boxed NULL_DOUBLE");
+                }
+            };
+            serial.stream().forEach(nullValidator);
+            assertEquals("(rowset.size() + 3) / 4 == nulNulls.get()", (rowset.size() + 3) / 4, numNulls.get());
+
+            numNulls.set(0);
+            chunked.stream().forEach(nullValidator);
+            assertEquals("(rowset.size() + 3) / 4 == nulNulls.get()", (rowset.size() + 3) / 4, numNulls.get());
+        }
+        source.clear();
     }
 
     @Test

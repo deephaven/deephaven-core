@@ -9,7 +9,7 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.ResettableWritableCharChunk;
 import io.deephaven.chunk.WritableCharChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfChar;
+import io.deephaven.engine.primitive.value.iterator.ValueIteratorOfChar;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ChunkSource;
@@ -21,8 +21,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
 
-import static io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfChar.maybeConcat;
-import static io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfChar.repeat;
 import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
 import static io.deephaven.engine.table.vectors.VectorColumnWrapperConstants.CHUNKED_COLUMN_ITERATOR_SIZE_THRESHOLD;
 import static io.deephaven.engine.table.iterators.ChunkedColumnIterator.DEFAULT_CHUNK_SIZE;
@@ -148,7 +146,7 @@ public class CharVectorColumnWrapper extends CharVector.Indirect {
     }
 
     @Override
-    public CloseablePrimitiveIteratorOfChar iterator(final long fromIndexInclusive, final long toIndexExclusive) {
+    public ValueIteratorOfChar iterator(final long fromIndexInclusive, final long toIndexExclusive) {
         final long rowSetSize = rowSet.size();
         if (startPadding == 0 && endPadding == 0 && fromIndexInclusive == 0 && toIndexExclusive == rowSetSize) {
             if (rowSetSize >= CHUNKED_COLUMN_ITERATOR_SIZE_THRESHOLD) {
@@ -184,19 +182,13 @@ public class CharVectorColumnWrapper extends CharVector.Indirect {
             includedRows = 0;
         }
 
-        final CloseablePrimitiveIteratorOfChar initialNullsIterator = includedInitialNulls > 0
-                ? repeat(NULL_CHAR, includedInitialNulls)
-                : null;
-        final CloseablePrimitiveIteratorOfChar rowsIterator = includedRows > CHUNKED_COLUMN_ITERATOR_SIZE_THRESHOLD
+        final ValueIteratorOfChar rowsIterator = includedRows > CHUNKED_COLUMN_ITERATOR_SIZE_THRESHOLD
                 ? new ChunkedCharacterColumnIterator(columnSource, rowSet, DEFAULT_CHUNK_SIZE, firstIncludedRowKey,
                         includedRows)
                 : includedRows > 0
                         ? new SerialCharacterColumnIterator(columnSource, rowSet, firstIncludedRowKey, includedRows)
                         : null;
-        final CloseablePrimitiveIteratorOfChar finalNullsIterator = remaining > 0
-                ? repeat(NULL_CHAR, remaining)
-                : null;
-        return maybeConcat(initialNullsIterator, rowsIterator, finalNullsIterator);
+        return ValueIteratorOfChar.wrapWithNulls(rowsIterator, includedInitialNulls, remaining);
     }
 
     @Override

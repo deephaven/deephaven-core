@@ -8,7 +8,7 @@
 package io.deephaven.vector;
 
 import io.deephaven.base.verify.Require;
-import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfDouble;
+import io.deephaven.engine.primitive.value.iterator.ValueIteratorOfDouble;
 import io.deephaven.util.annotations.ArrayType;
 import io.deephaven.util.annotations.ArrayTypeGetter;
 import org.jetbrains.annotations.NotNull;
@@ -62,9 +62,9 @@ public final class DoubleVectorDirect implements DoubleVector {
     }
 
     @Override
-    public CloseablePrimitiveIteratorOfDouble iterator(final long fromIndexInclusive, final long toIndexExclusive) {
+    public ValueIteratorOfDouble iterator(final long fromIndexInclusive, final long toIndexExclusive) {
         if (fromIndexInclusive == 0 && toIndexExclusive == data.length) {
-            return CloseablePrimitiveIteratorOfDouble.of(data);
+            return ValueIteratorOfDouble.of(data);
         }
         return DoubleVector.super.iterator(fromIndexInclusive, toIndexExclusive);
     }
