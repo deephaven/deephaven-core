@@ -83,7 +83,7 @@ class PyIceberg2Test {
                 Types.NestedField.optional(2, "symbol", Types.StringType.get()),
                 Types.NestedField.optional(3, "bid", Types.DoubleType.get()),
                 Types.NestedField.optional(4, "ask", Types.DoubleType.get()));
-        assertThat(actualSchema.sameSchema(expectedSchema)).isTrue();
+        assertThat(actualSchema).usingEquals(Schema::sameSchema).isEqualTo(expectedSchema);
         // Note that non-identity partition fields are not included in the schema
     }
 

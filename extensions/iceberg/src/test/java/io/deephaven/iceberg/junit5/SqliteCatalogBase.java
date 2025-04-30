@@ -966,7 +966,7 @@ public abstract class SqliteCatalogBase {
     }
 
     @Test
-    void testPartitionedAppendWithUnupportedPartitioningTypes() {
+    void testPartitionedAppendWithUnsupportedPartitioningTypes() {
         final TableDefinition definition = TableDefinition.of(
                 ColumnDefinition.of("InstantPC", Type.find(Instant.class)).withPartitioning(), // Unsupported
                 ColumnDefinition.ofInt("data"));
@@ -2086,78 +2086,65 @@ public abstract class SqliteCatalogBase {
     }
 
     /**
-     * @param icebergTableTransform How to update the Iceberg table
-     * @param dhTableExpectedTransform How to derive the expected Deephaven Table
+     * @param schemaUpdate Updates to apply to the Iceberg table schema
+     * @param dhTableTransform How to derive the expected Deephaven Table
      */
     private void verifySchemaEvolution(
-            Consumer<org.apache.iceberg.Table> icebergTableTransform,
-            Function<Table, Table> dhTableExpectedTransform)
-            throws TypeInference.UnsupportedType {
-
+            final Consumer<org.apache.iceberg.UpdateSchema> schemaUpdate,
+            final Function<Table, Table> dhTableTransform) {
+        // Create the source table and its adapter
         final SchemaEvolutionTestContext ctx = createSourceTable();
+        final Table source = ctx.source;
+        final IcebergTableAdapter tableAdapter = ctx.tableAdapter;
 
         // Update schema
-        final org.apache.iceberg.Table icebergTable = ctx.tableAdapter.icebergTable();
-        icebergTableTransform.accept(icebergTable);
+        final org.apache.iceberg.Table icebergTable = tableAdapter.icebergTable();
+        final org.apache.iceberg.UpdateSchema update = icebergTable.updateSchema();
+        schemaUpdate.accept(update);
+        update.commit();
 
         // Read with the old table adapter
-        assertTableEquals(ctx.source, ctx.tableAdapter.table());
+        assertTableEquals(source, tableAdapter.table());
 
         // Infer using the new schema
-        final Resolver resolver = Resolver.infer(icebergTable.schema());
-        final IcebergTableAdapter newTableAdapter =
-                catalogAdapter.loadTable(
-                        LoadTableOptions.builder()
-                                .id(ctx.tableAdapter.tableIdentifier())
-                                .resolver(resolver)
-                                .build());
-        final Table expected = dhTableExpectedTransform.apply(ctx.source);
+        final IcebergTableAdapter newTableAdapter = catalogAdapter.loadTable(tableAdapter.tableIdentifier());
+        final Table expected = dhTableTransform.apply(source);
         assertTableEquals(expected, newTableAdapter.table());
     }
 
     @Test
-    void addColumn() throws TypeInference.UnsupportedType {
+    void addColumn() {
         verifySchemaEvolution(
-                t -> t.updateSchema()
-                        .addColumn("floatCol", Types.FloatType.get())
-                        .commit(),
-                src -> src.update("floatCol = (float) null"));
+                updateSchema -> updateSchema.addColumn("floatCol", Types.FloatType.get()),
+                dhTable -> dhTable.update("floatCol = (float) null"));
     }
 
     @Test
-    void dropColumn() throws TypeInference.UnsupportedType {
+    void dropColumn() {
         verifySchemaEvolution(
-                t -> t.updateSchema()
-                        .deleteColumn("doubleCol")
-                        .commit(),
-                src -> src.dropColumns("doubleCol"));
+                updateSchema -> updateSchema.deleteColumn("doubleCol"),
+                dhTable -> dhTable.dropColumns("doubleCol"));
     }
 
     @Test
-    void renameColumn() throws TypeInference.UnsupportedType {
+    void renameColumn() {
         verifySchemaEvolution(
-                t -> t.updateSchema()
-                        .renameColumn("intCol", "renamedIntCol")
-                        .commit(),
-                src -> src.renameColumns("renamedIntCol = intCol"));
+                updateSchema -> updateSchema.renameColumn("intCol", "renamedIntCol"),
+                dhTable -> dhTable.renameColumns("renamedIntCol = intCol"));
     }
 
     @Test
-    void reorderColumn() throws TypeInference.UnsupportedType {
+    void reorderColumn() {
         verifySchemaEvolution(
-                t -> t.updateSchema()
-                        .moveAfter("intCol", "longCol")
-                        .commit(),
-                src -> src.moveColumnsDown("intCol"));
+                updateSchema -> updateSchema.moveAfter("intCol", "longCol"),
+                dhTable -> dhTable.moveColumnsDown("intCol"));
     }
 
     @Test
-    void promoteType() throws TypeInference.UnsupportedType {
+    void promoteType() {
         verifySchemaEvolution(
-                t -> t.updateSchema()
-                        .updateColumn("intCol", Types.LongType.get())
-                        .commit(),
-                src -> src.update("intCol = (long) intCol"));
+                updateSchema -> updateSchema.updateColumn("intCol", Types.LongType.get()),
+                dhTable -> dhTable.update("intCol = (long) intCol"));
     }
 
     /*--- End of tests for schema evolution ---*/
