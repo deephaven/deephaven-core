@@ -482,7 +482,7 @@ public class HierarchicalTableViewSubscription extends LivenessArtifact {
         @Override
         public synchronized void run() {
             final Instant now = scheduler.instantMillis();
-            if (!running) {
+            if (running) {
                 scheduler.runAfterDelay(BarragePerformanceLog.CYCLE_DURATION_MILLIS, this);
             }
 
