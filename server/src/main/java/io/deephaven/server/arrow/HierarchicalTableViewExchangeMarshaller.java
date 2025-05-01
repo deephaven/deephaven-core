@@ -82,25 +82,20 @@ public class HierarchicalTableViewExchangeMarshaller implements ExchangeMarshall
 
         htvs.setViewport(columns, viewport, reverseViewport);
 
-        return new Subscription(htvs, isRefreshing);
+        return new Subscription(htvs);
     }
 
     private static class Subscription implements ExchangeMarshaller.Subscription {
         private final HierarchicalTableViewSubscription htvs;
-        private final boolean isRefreshing;
 
-        private Subscription(final HierarchicalTableViewSubscription htvs,
-                final boolean isRefreshing) {
+        private Subscription(final HierarchicalTableViewSubscription htvs) {
             this.htvs = htvs;
-            this.isRefreshing = isRefreshing;
         }
 
         @Override
         public LivenessReferent toManage() {
-            if (isRefreshing) {
-                return htvs;
-            }
-            return null;
+            // always manage the subscription; we use destroy to cleanup and flush barrage metrics
+            return htvs;
         }
 
         @Override
