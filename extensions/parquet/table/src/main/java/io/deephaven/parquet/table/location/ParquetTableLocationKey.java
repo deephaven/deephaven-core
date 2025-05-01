@@ -152,7 +152,7 @@ public class ParquetTableLocationKey extends URITableLocationKey {
     }
 
     /**
-     * Set the {@link ParquetMetadata} that will be returned by {@link #getMetadata()} ()}. Pass {@code null} to force
+     * Set the {@link ParquetMetadata} that will be returned by {@link #getMetadata()}. Pass {@code null} to force
      * on-demand construction at the next invocation.
      *
      * @param metadata The new {@link ParquetMetadata}

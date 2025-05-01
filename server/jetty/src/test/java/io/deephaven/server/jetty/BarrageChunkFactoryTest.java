@@ -193,6 +193,7 @@ public class BarrageChunkFactoryTest {
             return JettyConfig.builder()
                     .port(0)
                     .tokenExpire(Duration.of(5, ChronoUnit.MINUTES))
+                    .allowedHttpMethods(Set.of("POST"))
                     .build();
         }
     }

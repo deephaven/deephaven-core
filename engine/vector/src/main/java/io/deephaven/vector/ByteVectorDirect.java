@@ -8,7 +8,7 @@
 package io.deephaven.vector;
 
 import io.deephaven.base.verify.Require;
-import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfByte;
+import io.deephaven.engine.primitive.value.iterator.ValueIteratorOfByte;
 import io.deephaven.util.annotations.ArrayType;
 import io.deephaven.util.annotations.ArrayTypeGetter;
 import org.jetbrains.annotations.NotNull;
@@ -62,9 +62,9 @@ public final class ByteVectorDirect implements ByteVector {
     }
 
     @Override
-    public CloseablePrimitiveIteratorOfByte iterator(final long fromIndexInclusive, final long toIndexExclusive) {
+    public ValueIteratorOfByte iterator(final long fromIndexInclusive, final long toIndexExclusive) {
         if (fromIndexInclusive == 0 && toIndexExclusive == data.length) {
-            return CloseablePrimitiveIteratorOfByte.of(data);
+            return ValueIteratorOfByte.of(data);
         }
         return ByteVector.super.iterator(fromIndexInclusive, toIndexExclusive);
     }

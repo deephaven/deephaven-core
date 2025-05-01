@@ -20,6 +20,11 @@
 #include "deephaven/third_party/fmt/core.h"
 #include "deephaven/third_party/fmt/ostream.h"
 
+// Forward declaration
+namespace deephaven::dhcore::container {
+class ContainerBase;
+} // namespace deephaven::dhcore::container
+
 namespace deephaven::dhcore::utility {
 template<typename Dest, typename Src>
 inline Dest Bit_cast(const Src &item) {
@@ -168,6 +173,20 @@ DESTP VerboseCast(const DebugInfo &debug_info, SRCP ptr) {
   throw std::runtime_error(message);
 }
 
+template<typename DEST, typename SRC>
+std::shared_ptr<DEST> VerboseSharedPtrCast(const DebugInfo &debug_info, std::shared_ptr<SRC> ptr) {
+  auto typed_ptr = std::dynamic_pointer_cast<DEST>(ptr);
+  if (typed_ptr != nullptr) {
+    return typed_ptr;
+  }
+  typedef decltype(std::declval<DEST>()) destType_t;
+  auto message = fmt::format("{}: Expected type {}. Got type {}",
+      debug_info,
+      demangle(typeid(destType_t).name()),
+      demangle(typeid(*ptr).name()));
+  throw std::runtime_error(message);
+}
+
 std::string GetWhat(std::exception_ptr eptr);
 
 namespace internal {
@@ -260,6 +279,9 @@ public:
   void Render(std::ostream &s, const T &item) const {
     s << item;
   }
+
+  void Render(std::ostream &s,
+      const std::shared_ptr<deephaven::dhcore::container::ContainerBase> &item) const;
 
   void Render(std::ostream &s, const bool &item) const {
     s << (item ? "true" : "false");

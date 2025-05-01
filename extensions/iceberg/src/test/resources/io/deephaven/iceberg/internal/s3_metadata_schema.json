@@ -1,0 +1,167 @@
+{
+  "type": "struct",
+  "schema-id": 0,
+  "fields": [
+    {
+      "id": 1,
+      "name": "bucket",
+      "required": true,
+      "type": "string",
+      "doc": "The general purpose bucket name."
+    },
+    {
+      "id": 2,
+      "name": "key",
+      "required": true,
+      "type": "string",
+      "doc": "The object key name (or key) that uniquely identifies the object in the bucket."
+    },
+    {
+      "id": 3,
+      "name": "sequence_number",
+      "required": true,
+      "type": "string",
+      "doc": "The sequence number, which is an ordinal that's included in the records for a given\nobject. To order records of the same bucket and key, you can sort on sequence_number.\nFor a given bucket and key, a lexicographically larger sequence_number implies that the\nrecord was introduced to the bucket more recently."
+    },
+    {
+      "id": 4,
+      "name": "record_type",
+      "required": true,
+      "type": "string",
+      "doc": "The type of this record, one of CREATE, UPDATE_METADATA, or DELETE."
+    },
+    {
+      "id": 5,
+      "name": "record_timestamp",
+      "required": true,
+      "type": "timestamp",
+      "doc": "The timestamp that's associated with this record."
+    },
+    {
+      "id": 6,
+      "name": "version_id",
+      "required": false,
+      "type": "string",
+      "doc": "The object's version ID. When you enable versioning on a bucket, Amazon S3 assigns a\nversion number to objects that are added to the bucket. Objects that are stored in your\nbucket before you set the versioning state have a version ID of null."
+    },
+    {
+      "id": 7,
+      "name": "is_delete_marker",
+      "required": false,
+      "type": "boolean",
+      "doc": "The object's delete marker status. If the object is a delete marker, this value is True.\nOtherwise, it's False."
+    },
+    {
+      "id": 8,
+      "name": "size",
+      "required": false,
+      "type": "long",
+      "doc": "The object size in bytes, not including the size of incomplete multipart uploads or\nobject metadata. If is_delete_marker is True, the size is 0."
+    },
+    {
+      "id": 9,
+      "name": "last_modified_date",
+      "required": false,
+      "type": "timestamp",
+      "doc": "The object creation date or the last modified date, whichever is the latest."
+    },
+    {
+      "id": 10,
+      "name": "e_tag",
+      "required": false,
+      "type": "string",
+      "doc": "The entity tag (ETag), which is a hash of the object. The ETag reflects changes only to\nthe contents of an object, not to its metadata."
+    },
+    {
+      "id": 11,
+      "name": "storage_class",
+      "required": false,
+      "type": "string",
+      "doc": "The storage class that's used for storing the object."
+    },
+    {
+      "id": 12,
+      "name": "is_multipart",
+      "required": false,
+      "type": "boolean",
+      "doc": "The object's upload type. If the object was uploaded as a multipart upload, this value\nis True. Otherwise, it's False."
+    },
+    {
+      "id": 13,
+      "name": "encryption_status",
+      "required": false,
+      "type": "string",
+      "doc": "The object's server-side encryption status, depending on what kind of encryption key is\nused. If the object isn't encrypted, the value is null."
+    },
+    {
+      "id": 14,
+      "name": "is_bucket_key_enabled",
+      "required": false,
+      "type": "boolean",
+      "doc": "The object's S3 Bucket Key enablement status. If the object uses an S3 Bucket Key for\nSSE-KMS, this value is True. Otherwise, it's False."
+    },
+    {
+      "id": 15,
+      "name": "kms_key_arn",
+      "required": false,
+      "type": "string",
+      "doc": "The Amazon Resource Name (ARN) for the KMS key with which the object is encrypted, for\nrows where encryption_status is SSE-KMS or DSSE-KMS. If the object isn't encrypted with\nSSE-KMS or DSSE-KMS, the value is null. Note: If a row represents an object version that\nno longer existed at the time that a delete or overwrite event was processed,\nkms_key_arn contains a null value, even if the encryption_status column value is SSE-KMS\nor DSSE-KMS."
+    },
+    {
+      "id": 16,
+      "name": "checksum_algorithm",
+      "required": false,
+      "type": "string",
+      "doc": "The algorithm thatâs used to create the checksum for the object. If no checksum is\npresent, this value is null."
+    },
+    {
+      "id": 17,
+      "name": "object_tags",
+      "required": false,
+      "type": {
+        "type": "map",
+        "key-id": 22,
+        "key": "string",
+        "value-id": 23,
+        "value": "string",
+        "value-required": false
+      },
+      "doc": "The object tags that are associated with the object. Object tags are stored as a map of\nkey-value pairs. If an object has no object tags, an empty map (\"{}\") is stored. Note:\nIf the record_type value is DELETE, the object_tags column contains a null value. If the\nrecord_type value is CREATE or UPDATE_METADATA, rows that represent object versions that\nno longer existed at the time that a delete or overwrite event was processed will\ncontain a null value in the object_tags column."
+    },
+    {
+      "id": 18,
+      "name": "user_metadata",
+      "required": false,
+      "type": {
+        "type": "map",
+        "key-id": 24,
+        "key": "string",
+        "value-id": 25,
+        "value": "string",
+        "value-required": false
+      },
+      "doc": "The user metadata that's associated with the object. User metadata is stored as a map of\nkey-value pairs. If an object has no user metadata, an empty map (\"{}\") is stored. Note:\nIf the record_type value is DELETE, the user_metadata column contains a null value. If\nthe record_type value is CREATE or UPDATE_METADATA, rows that represent object versions\nthat no longer existed at the time that a delete or overwrite event was processed will\ncontain a null value in the user_metadata column."
+    },
+    {
+      "id": 19,
+      "name": "requester",
+      "required": false,
+      "type": "string",
+      "doc": "The AWS account ID of the requester or the AWS service principal that made the request."
+    },
+    {
+      "id": 20,
+      "name": "source_ip_address",
+      "required": false,
+      "type": "string",
+      "doc": "The source IP address of the request. For records that are generated by a user request,\nthis column contains the source IP address of the request. For actions taken by Amazon\nS3 or another AWS service on behalf of the user, this column contains a null value."
+    },
+    {
+      "id": 21,
+      "name": "request_id",
+      "required": false,
+      "type": "string",
+      "doc": "The request ID that's associated with the request."
+    }
+  ]
+}

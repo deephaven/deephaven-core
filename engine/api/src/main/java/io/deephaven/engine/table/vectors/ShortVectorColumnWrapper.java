@@ -13,7 +13,7 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.ResettableWritableShortChunk;
 import io.deephaven.chunk.WritableShortChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfShort;
+import io.deephaven.engine.primitive.value.iterator.ValueIteratorOfShort;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ChunkSource;
@@ -25,8 +25,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
 
-import static io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfShort.maybeConcat;
-import static io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfShort.repeat;
 import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
 import static io.deephaven.engine.table.vectors.VectorColumnWrapperConstants.CHUNKED_COLUMN_ITERATOR_SIZE_THRESHOLD;
 import static io.deephaven.engine.table.iterators.ChunkedColumnIterator.DEFAULT_CHUNK_SIZE;
@@ -152,7 +150,7 @@ public class ShortVectorColumnWrapper extends ShortVector.Indirect {
     }
 
     @Override
-    public CloseablePrimitiveIteratorOfShort iterator(final long fromIndexInclusive, final long toIndexExclusive) {
+    public ValueIteratorOfShort iterator(final long fromIndexInclusive, final long toIndexExclusive) {
         final long rowSetSize = rowSet.size();
         if (startPadding == 0 && endPadding == 0 && fromIndexInclusive == 0 && toIndexExclusive == rowSetSize) {
             if (rowSetSize >= CHUNKED_COLUMN_ITERATOR_SIZE_THRESHOLD) {
@@ -188,19 +186,13 @@ public class ShortVectorColumnWrapper extends ShortVector.Indirect {
             includedRows = 0;
         }
 
-        final CloseablePrimitiveIteratorOfShort initialNullsIterator = includedInitialNulls > 0
-                ? repeat(NULL_SHORT, includedInitialNulls)
-                : null;
-        final CloseablePrimitiveIteratorOfShort rowsIterator = includedRows > CHUNKED_COLUMN_ITERATOR_SIZE_THRESHOLD
+        final ValueIteratorOfShort rowsIterator = includedRows > CHUNKED_COLUMN_ITERATOR_SIZE_THRESHOLD
                 ? new ChunkedShortColumnIterator(columnSource, rowSet, DEFAULT_CHUNK_SIZE, firstIncludedRowKey,
                         includedRows)
                 : includedRows > 0
                         ? new SerialShortColumnIterator(columnSource, rowSet, firstIncludedRowKey, includedRows)
                         : null;
-        final CloseablePrimitiveIteratorOfShort finalNullsIterator = remaining > 0
-                ? repeat(NULL_SHORT, remaining)
-                : null;
-        return maybeConcat(initialNullsIterator, rowsIterator, finalNullsIterator);
+        return ValueIteratorOfShort.wrapWithNulls(rowsIterator, includedInitialNulls, remaining);
     }
 
     @Override

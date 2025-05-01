@@ -46,6 +46,11 @@ class SchemaProviderInternal {
         private final Schema schema;
 
         DirectSchemaProvider(final Schema schema) {
+            if (schema.schemaId() != 0) {
+                // It's unfortunate that org.apache.iceberg.Schema.DEFAULT_SCHEMA_ID overlaps with a real schema id
+                throw new IllegalArgumentException(
+                        "Direct schemas should not set a schema id; use fromSchemaId instead");
+            }
             this.schema = schema;
         }
 
@@ -56,9 +61,9 @@ class SchemaProviderInternal {
     }
 
     static class SnapshotIdSchemaProvider implements SchemaProviderImpl {
-        private final int snapshotId;
+        private final long snapshotId;
 
-        SnapshotIdSchemaProvider(final int snapshotId) {
+        SnapshotIdSchemaProvider(final long snapshotId) {
             this.snapshotId = snapshotId;
         }
 
@@ -92,7 +97,7 @@ class SchemaProviderInternal {
         return schema;
     }
 
-    private static Schema getSchemaForSnapshotId(final Table table, final int snapshotId) {
+    private static Schema getSchemaForSnapshotId(final Table table, final long snapshotId) {
         final Snapshot snapshot = table.snapshot(snapshotId);
         if (snapshot == null) {
             throw new IllegalArgumentException("Snapshot with ID " + snapshotId + " not found for table " +

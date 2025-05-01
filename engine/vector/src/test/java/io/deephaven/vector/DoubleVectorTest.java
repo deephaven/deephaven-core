@@ -10,6 +10,8 @@ package io.deephaven.vector;
 // region IteratorTypeImport
 import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfDouble;
 // endregion IteratorTypeImport
+import io.deephaven.util.QueryConstants;
+import io.deephaven.util.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
@@ -18,6 +20,7 @@ import java.util.stream.IntStream;
 
 import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 // endregion NullConstantImport
+import static io.deephaven.util.QueryConstants.NULL_INT;
 import static junit.framework.TestCase.*;
 
 /**
@@ -194,6 +197,28 @@ public abstract class DoubleVectorTest {
         assertEquals(DoubleVector.type().clazz(), DoubleVector.class);
         // endregion TestType
     }
+
+    @Test
+    public void testForBoxedNulls() {
+        final double[] data = new double[10_000];
+        for (int ei = 0; ei < data.length; ++ei) {
+            data[ei] = ei % 4 == 0 ? NULL_DOUBLE : (double) ei;
+        }
+        final DoubleVector vector = makeTestVector(data);
+        assertEquals(vector, new DoubleVectorDirect(vector.toArray()));
+        final MutableInt numNulls = new MutableInt(0);
+        vector.iterator().stream().forEach(c -> {
+            if (c == null) {
+                numNulls.add(1);
+            } else if (c == NULL_DOUBLE) {
+                throw new IllegalStateException("Expected null, but got boxed NULL_DOUBLE");
+            }
+        });
+        assertEquals("numNulls.get() == (data.length + 3) / 4", (data.length + 3) / 4, numNulls.get());
+    }
+
+    // region streamAsIntTest
+    // endregion streamAsIntTest
 
     private static void checkSubVector(
             final DoubleVector vector,

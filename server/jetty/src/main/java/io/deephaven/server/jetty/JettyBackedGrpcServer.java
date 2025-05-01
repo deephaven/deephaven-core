@@ -3,7 +3,10 @@
 //
 package io.deephaven.server.jetty;
 
+import io.deephaven.base.verify.Require;
+import io.deephaven.configuration.Configuration;
 import io.deephaven.server.browserstreaming.BrowserStreamInterceptor;
+import io.deephaven.server.resources.ServerResources;
 import io.deephaven.server.runner.GrpcServer;
 import io.deephaven.ssl.config.CiphersIntermediate;
 import io.deephaven.ssl.config.ProtocolsIntermediate;
@@ -55,7 +58,9 @@ import org.eclipse.jetty.server.handler.CrossOriginHandler;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.component.Graceful;
+import org.eclipse.jetty.util.resource.CombinedResource;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 import javax.inject.Inject;
@@ -100,11 +105,14 @@ public class JettyBackedGrpcServer implements GrpcServer {
 
         final WebAppContext context =
                 new WebAppContext("/", null, null, null, new ErrorPageErrorHandler(), NO_SESSIONS);
-        String knownFile = "/ide/index.html";
-        URL ide = JettyBackedGrpcServer.class.getResource(knownFile);
-        Resource jarContents =
-                context.getResourceFactory().newResource(ide.toExternalForm().replace("!" + knownFile, "!/"));
-        context.setBaseResource(ControlledCacheResource.wrap(jarContents));
+
+        List<String> urls = ServerResources.resourcesFromServiceLoader(Configuration.getInstance());
+        Resource resources = ResourceFactory.combine(urls.stream().map(url -> {
+            Resource resource = context.getResourceFactory().newResource(url);
+            Require.neqNull(resource, "newResource(" + url + ")");
+            return resource;
+        }).toList());
+        context.setBaseResource(ControlledCacheResource.wrap(resources));
         context.setInitParameter(DefaultServlet.CONTEXT_INIT + "dirAllowed", "false");
 
         // Cache all of the appropriate assets folders
@@ -333,6 +341,10 @@ public class JettyBackedGrpcServer implements GrpcServer {
         // https://www.eclipse.org/jetty/documentation/jetty-11/programming-guide/index.html#pg-server-http-connector-protocol-http2-tls
         final HttpConfiguration httpConfig = new HttpConfiguration();
         httpConfig.addCustomizer(new ForwardedRequestCustomizer());
+        httpConfig.addCustomizer(new AllowedHttpMethodsCustomizer(config.allowedHttpMethods()));
+        if (!config.extraHeaders().isEmpty()) {
+            httpConfig.addCustomizer(new ConfiguredHeadersCustomizer(config.extraHeaders()));
+        }
         final HttpConnectionFactory http11 = config.http1OrDefault() ? new HttpConnectionFactory(httpConfig) : null;
         final ServerConnector serverConnector;
         if (config.ssl().isPresent()) {

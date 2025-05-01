@@ -10,6 +10,7 @@ import org.apache.iceberg.aws.s3.S3FileIOProperties;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.glue.GlueClient;
 import software.amazon.awssdk.services.kms.KmsClient;
+import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.S3Client;
 
 import java.util.Map;
@@ -100,6 +101,11 @@ public final class DeephavenAwsClientFactory implements AwsClientFactory, S3File
         // implementation is backed by the same configuration primitives that our own async S3 client uses. It is well
         // tested and provides parity between how Iceberg S3 and Deephaven S3 clients are initialized.
         return S3ClientFactory.getSyncClient(instructions);
+    }
+
+    @Override
+    public S3AsyncClient s3Async() {
+        return S3ClientFactory.getAsyncClient(instructions);
     }
 
     @Override

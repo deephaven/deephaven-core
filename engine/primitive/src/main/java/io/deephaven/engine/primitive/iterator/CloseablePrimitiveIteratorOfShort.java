@@ -71,7 +71,7 @@ public interface CloseablePrimitiveIteratorOfShort extends CloseablePrimitiveIte
 
             @Override
             public int nextInt() {
-                return adapter.applyAsInt(CloseablePrimitiveIteratorOfShort.this.next());
+                return adapter.applyAsInt(CloseablePrimitiveIteratorOfShort.this.nextShort());
             }
 
             @Override
