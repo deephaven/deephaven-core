@@ -100,6 +100,13 @@ public class GetTableRequest {
 
         @JsProperty
         void setResultId(Object resultId);
+
+
+        @JsProperty
+        void setUniqueBehavior(int behavior);
+
+        @JsProperty
+        int getUniqueBehavior();
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -160,6 +167,12 @@ public class GetTableRequest {
                         Js.<GetTableRequest.ToObjectReturnType0.PartitionedTableFieldType.GetTicketUnionType>uncheckedCast(
                                 ticket));
             }
+
+            @JsProperty
+            void setUniqueBehavior(int behavior);
+
+            @JsProperty
+            int getUniqueBehavior();
         }
 
         @JsOverlay
@@ -228,6 +241,12 @@ public class GetTableRequest {
     public native void setResultId();
 
     public native void setResultId(Ticket value);
+
+    public native int getUniqueBehavior();
+
+    public native void setUniqueBehavior();
+
+    public native void setUniqueBehavior(int value);
 
     public native GetTableRequest.ToObjectReturnType0 toObject();
 

@@ -7,8 +7,13 @@ import com.google.rpc.Code;
 import io.deephaven.auth.codegen.impl.PartitionedTableServiceContextualAuthWiring;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableUpdate;
+import io.deephaven.engine.table.impl.BaseTable;
+import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.partitioned.PartitionedTableImpl;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
@@ -21,6 +26,7 @@ import io.deephaven.proto.util.Exceptions;
 import io.deephaven.server.auth.AuthorizationProvider;
 import io.deephaven.server.session.*;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.annotations.TestUseOnly;
 import io.grpc.stub.StreamObserver;
 import org.jetbrains.annotations.NotNull;
 
@@ -153,43 +159,30 @@ public class PartitionedTableServiceGrpcImpl extends PartitionedTableServiceGrpc
                         Table keyTable = keys.get();
                         authWiring.checkPermissionGetTable(session.getAuthContext(), request,
                                 List.of(partitionedTable.get().table(), keyTable));
-                        if (!keyTable.isRefreshing()) {
-                            long keyTableSize = keyTable.size();
-                            if (keyTableSize != 1) {
+
+                        final PartitionedTable partitionedTable1 = partitionedTable.get();
+                        final boolean requiresLock =
+                                keyTable.isRefreshing() || partitionedTable1.table().isRefreshing();
+
+                        if (requiresLock) {
+                            // validate the update graphs are the same
+                            final UpdateGraph keyUpdateGraph = keyTable.getUpdateGraph();
+                            final UpdateGraph ptUpdateGraph = partitionedTable1.table().getUpdateGraph();
+                            if (keyUpdateGraph != null && ptUpdateGraph != null && ptUpdateGraph != keyUpdateGraph) {
                                 throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
-                                        "Provided key table does not have one row, instead has " + keyTableSize);
+                                        "Provided key table UpdateGraph is inconsistent with PartitionedTable UpdateGraph");
                             }
-                            long row = keyTable.getRowSet().firstRowKey();
-                            Object[] values =
-                                    partitionedTable.get().keyColumnNames().stream()
-                                            .map(keyTable::getColumnSource)
-                                            .map(cs -> cs.get(row))
-                                            .toArray();
-                            table = partitionedTable.get().constituentFor(values);
+                            if (keyUpdateGraph != null) {
+                                table = keyUpdateGraph.sharedLock()
+                                        .computeLocked(() -> getConstituents(keyTable, partitionedTable1, request));
+                            } else {
+                                table = ptUpdateGraph.sharedLock()
+                                        .computeLocked(() -> getConstituents(keyTable, partitionedTable1, request));
+                            }
                         } else {
-                            table = keyTable.getUpdateGraph().sharedLock().computeLocked(() -> {
-                                long keyTableSize = keyTable.size();
-                                if (keyTableSize != 1) {
-                                    throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
-                                            "Provided key table does not have one row, instead has " + keyTableSize);
-                                }
-                                Table requestedRow = partitionedTable.get().table().whereIn(keyTable,
-                                        partitionedTable.get().keyColumnNames().toArray(String[]::new));
-                                if (requestedRow.size() != 1) {
-                                    if (requestedRow.isEmpty()) {
-                                        throw Exceptions.statusRuntimeException(Code.NOT_FOUND,
-                                                "Key matches zero rows in the partitioned table");
-                                    } else {
-                                        throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
-                                                "Key matches more than one entry in the partitioned table: "
-                                                        + requestedRow.size());
-                                    }
-                                }
-                                return (Table) requestedRow
-                                        .getColumnSource(partitionedTable.get().constituentColumnName())
-                                        .get(requestedRow.getRowSet().firstRowKey());
-                            });
+                            table = getConstituents(keyTable, partitionedTable1, request);
                         }
+
                         table = authorizationTransformation.transform(table);
                         if (table == null) {
                             throw Exceptions.statusRuntimeException(
@@ -198,5 +191,57 @@ public class PartitionedTableServiceGrpcImpl extends PartitionedTableServiceGrpc
                         return table;
                     });
         }
+    }
+
+    @TestUseOnly
+    Table getConstituents(Table keyTable, PartitionedTable partitionedTable, @NotNull GetTableRequest request) {
+        final boolean uniqueStaticResult;
+
+        switch (request.getUniqueBehavior()) {
+            case NOT_SET_UNIQUE_BEHAVIOR:
+            case REQUIRE_UNIQUE_RESULTS_STATIC_SINGLE_KEY:
+                uniqueStaticResult = true;
+                break;
+            case PERMIT_MULTIPLE_KEYS:
+                uniqueStaticResult = false;
+                break;
+            case UNRECOGNIZED:
+            default:
+                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
+                        "Invalid unique behavior " + request.getUniqueBehaviorValue());
+        }
+
+        if (uniqueStaticResult) {
+            keyTable = keyTable.snapshot();
+            final long keyTableSize = keyTable.size();
+            if (keyTableSize != 1) {
+                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
+                        "Provided key table does not have one row, instead has " + keyTableSize);
+            }
+        }
+
+        Table requestedRows =
+                partitionedTable.table().whereIn(keyTable, partitionedTable.keyColumnNames().toArray(String[]::new));
+
+        if (uniqueStaticResult) {
+            if (requestedRows.isRefreshing()) {
+                requestedRows = requestedRows.snapshot();
+            }
+
+            final long resultPartitionsSize = requestedRows.size();
+            if (resultPartitionsSize != 1) {
+                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
+                        "Filtered PartitionedTable has more than one constituent, " + resultPartitionsSize
+                                + " constituents found.");
+            }
+        }
+
+        return new PartitionedTableImpl(requestedRows,
+                partitionedTable.keyColumnNames(),
+                partitionedTable.uniqueKeys(),
+                partitionedTable.constituentColumnName(),
+                partitionedTable.constituentDefinition(),
+                true,
+                false).merge();
     }
 }
