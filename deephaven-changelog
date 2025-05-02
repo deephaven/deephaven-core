@@ -16,9 +16,12 @@
 {% endif %}
 
 {# Now group the rest of the commits and display them -#}
-{% for type, typed_commits in commits | sort(attribute="type")| group_by(attribute="type") -%}
+{% set typed_commit_map = commits | group_by(attribute="type") -%}
+{% set type_order = ["Features", "Bug Fixes", "Performance Improvements", "Miscellaneous Chores", "Documentation", "Refactoring", "Build system", "Style"] -%}
+{% for type in type_order -%}
+{% if typed_commit_map[type] -%}
 #### {{ type | upper_first }}
-{% for scope, scoped_commits in typed_commits | group_by(attribute="scope") -%}
+{% for scope, scoped_commits in typed_commit_map[type] | group_by(attribute="scope") -%}
 
 {% for commit in scoped_commits | sort(attribute="scope") -%}
     {% if commit.author and repository_url -%}
@@ -35,7 +38,7 @@
 
 {% endfor -%}
 
-{% for commit in typed_commits | unscoped -%}
+{% for commit in typed_commit_map[type] | unscoped -%}
     {% if commit.author and repository_url -%}
         {% set author = "@" ~ commit.author -%}
         {% set author_link = platform ~ "/" ~ commit.author -%}
@@ -47,5 +50,5 @@
     {% set shorthand = commit.id | truncate(length=7, end="") -%}
     - {{ commit.summary }} - ([{{shorthand}}]({{ commit_link }})) - {{ author }}
 {% endfor -%}
-
+{% endif %}
 {% endfor -%}
