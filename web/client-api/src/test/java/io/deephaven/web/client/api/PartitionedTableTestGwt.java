@@ -4,7 +4,6 @@
 package io.deephaven.web.client.api;
 
 import elemental2.core.JsArray;
-import elemental2.dom.DomGlobal;
 import io.deephaven.web.client.api.event.Event;
 
 public class PartitionedTableTestGwt extends AbstractAsyncGwtTestCase {
