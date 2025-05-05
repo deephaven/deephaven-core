@@ -34,7 +34,8 @@ public class ReplicateColumnIterators {
         {
             charToByte(TASK, CHAR_IFACE_PATH, Collections.emptyMap());
             charToShort(TASK, CHAR_IFACE_PATH, Collections.emptyMap());
-            fixupIntToDouble(charToFloat(TASK, CHAR_IFACE_PATH, Collections.emptyMap()));
+            charToInteger(TASK, CHAR_IFACE_PATH, Collections.emptyMap());
+            charToFloat(TASK, CHAR_IFACE_PATH, Collections.emptyMap());
         }
         {
             fixupChunkSize(intToLong(TASK, INT_IFACE_PATH, Collections.emptyMap(), "interface"), "long");
@@ -48,14 +49,14 @@ public class ReplicateColumnIterators {
         }
     }
 
-    private static void fixupChunkSize(@NotNull final String path, @NotNull final String primitive) throws IOException {
+    private static void fixupChunkSize(@NotNull final String path, @NotNull final String primitive)
+            throws IOException {
         final File file = new File(path);
         final List<String> inputLines = FileUtils.readLines(file, Charset.defaultCharset());
-        final List<String> outputLines =
-                ReplicationUtils.simpleFixup(
-                        ReplicationUtils.simpleFixup(inputLines,
-                                "chunkSize", primitive + " chunkSize", "int chunkSize"),
-                        "currentSize", primitive + " currentSize", "int currentSize");
+        final List<String> outputLines = ReplicationUtils.simpleFixup(
+                ReplicationUtils.simpleFixup(inputLines,
+                        "chunkSize", primitive + " chunkSize", "int chunkSize"),
+                "currentSize", primitive + " currentSize", "int currentSize");
         FileUtils.writeLines(file, outputLines);
     }
 
@@ -72,23 +73,5 @@ public class ReplicateColumnIterators {
         }
     }
 
-    private static void fixupIntToDouble(@NotNull final String path) throws IOException {
-        final File file = new File(path);
-        final List<String> lines = ReplicationUtils.globalReplacements(
-                FileUtils.readLines(file, Charset.defaultCharset()),
-                "IntStream", "DoubleStream",
-                "NULL_INT", "NULL_DOUBLE",
-                "\\(int\\)", "(double)",
-                "\\{@code int\\}", "{@code double}",
-                "OfInt", "OfDouble",
-                "IntToLongFunction", "IntToDoubleFunction",
-                "FloatToIntFunction", "FloatToDoubleFunction",
-                "applyAsLong", "applyAsDouble",
-                "applyAsInt", "applyAsDouble",
-                "primitive int", "primitive double",
-                "IntStream", "DoubleStream",
-                "intStream", "doubleStream",
-                "streamAsInt", "streamAsDouble");
-        FileUtils.writeLines(file, lines);
-    }
+
 }

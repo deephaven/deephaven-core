@@ -71,7 +71,7 @@ public interface CloseablePrimitiveIteratorOfByte extends CloseablePrimitiveIter
 
             @Override
             public int nextInt() {
-                return adapter.applyAsInt(CloseablePrimitiveIteratorOfByte.this.next());
+                return adapter.applyAsInt(CloseablePrimitiveIteratorOfByte.this.nextByte());
             }
 
             @Override

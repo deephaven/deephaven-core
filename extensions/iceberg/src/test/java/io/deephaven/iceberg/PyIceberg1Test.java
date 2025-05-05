@@ -22,7 +22,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
-import java.net.URISyntaxException;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -53,7 +52,7 @@ class PyIceberg1Test {
     private IcebergCatalogAdapter catalogAdapter;
 
     @BeforeEach
-    void setUp() throws URISyntaxException {
+    void setUp() {
         catalogAdapter = DbResource.openCatalog("pyiceberg-1");
     }
 

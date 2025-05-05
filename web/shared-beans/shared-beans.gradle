@@ -1,9 +1,8 @@
 plugins {
     id 'io.deephaven.project.register'
     id 'java-library'
+    id 'io.deephaven.java-gwt-dependency'
 }
-
-GwtTools.gwtLib project
 
 dependencies {
     api project(':open-api-shared-fu')
@@ -12,11 +11,7 @@ dependencies {
     testImplementation libs.guava
 
     implementation libs.elemental.core
-    compileOnly libs.javax.validation.api
 
-    // upgrade inherited dependencies to become transitive
+    compileOnly libs.google.findbugs.jsr305
     compileOnly libs.jsinterop.annotations
-
-    // non-transitive dependency
-    compileOnly libs.gwt.user
 }

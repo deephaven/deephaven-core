@@ -86,6 +86,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import java.util.List;
+import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
 import static io.deephaven.engine.util.TableTools.booleanCol;
@@ -979,7 +981,7 @@ public abstract class SqliteCatalogBase {
     }
 
     @Test
-    void testPartitionedAppendWithAllPartitioningTypes() {
+    void testPartitionedAppendWithAllSupportedPartitioningTypes() {
         final TableDefinition definition = TableDefinition.of(
                 ColumnDefinition.ofString("StringPC").withPartitioning(),
                 ColumnDefinition.ofBoolean("BooleanPC").withPartitioning(),
@@ -1026,6 +1028,44 @@ public abstract class SqliteCatalogBase {
                 "LocalDatePC = LocalDate.parse(`2023-10-01`)")
                 .moveColumns(7, "data");
         assertTableEquals(expected, fromIceberg);
+    }
+
+    @Test
+    void testPartitionedAppendWithUnsupportedPartitioningTypes() {
+        final TableDefinition definition = TableDefinition.of(
+                ColumnDefinition.of("InstantPC", Type.find(Instant.class)).withPartitioning(), // Unsupported
+                ColumnDefinition.ofInt("data"));
+        final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
+
+        // Try to create this Iceberg table using Deephaven
+        try {
+            catalogAdapter.createTable(tableIdentifier, definition);
+            failBecauseExceptionWasNotThrown(Resolver.MappingException.class);
+        } catch (Resolver.MappingException e) {
+            assertThat(e.getMessage()).contains("Unable to map Deephaven column InstantPC");
+            assertThat(e).cause().hasMessageContaining("Identity transform of type `timestamptz` is not supported");
+        }
+
+        // Create this table directly using Iceberg catalog
+        final Schema schema = new Schema(
+                Types.NestedField.of(1, true, "InstantPC", Types.TimestampType.withZone()),
+                Types.NestedField.of(2, false, "data", Types.IntegerType.get()));
+        final PartitionSpec spec = PartitionSpec.builderFor(schema)
+                .identity("InstantPC")
+                .build();
+        catalogAdapter.catalog().createTable(tableIdentifier, schema, spec);
+
+        final IcebergTableAdapter tableAdapter = catalogAdapter.loadTable(tableIdentifier);
+        final Table source = TableTools.newTable(
+                intCol("data", 15, 0, 32, 33, 19));
+        try {
+            tableAdapter.tableWriter(writerOptionsBuilder()
+                    .tableDefinition(definition)
+                    .build());
+            failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
+        } catch (IllegalArgumentException e) {
+            assertThat(e.getMessage()).contains("Unsupported partitioning column type class java.time.Instant ");
+        }
     }
 
     @Test
@@ -2077,4 +2117,100 @@ public abstract class SqliteCatalogBase {
             }
         }
     }
+
+    /*--- Begin tests for schema evolution ---*/
+
+    // A container to hold the source table and its adapter.
+    private static class SchemaEvolutionTestContext {
+        final Table source;
+        final IcebergTableAdapter tableAdapter;
+
+        SchemaEvolutionTestContext(Table source, IcebergTableAdapter tableAdapter) {
+            this.source = source;
+            this.tableAdapter = tableAdapter;
+        }
+    }
+
+    /**
+     * Helper that creates and writes the source table.
+     */
+    private SchemaEvolutionTestContext createSourceTable() {
+        final Table source = TableTools.newTable(
+                intCol("intCol", 15, 0, 32, 33, 19),
+                doubleCol("doubleCol", 10.5, 2.5, 3.5, 40.5, 0.5),
+                longCol("longCol", 20L, 50L, 0L, 10L, 5L));
+        final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
+        final IcebergTableAdapter tableAdapter = catalogAdapter.createTable(tableIdentifier, source.getDefinition());
+        final IcebergTableWriter tableWriter = tableAdapter.tableWriter(writerOptionsBuilder()
+                .tableDefinition(source.getDefinition())
+                .build());
+        tableWriter.append(IcebergWriteInstructions.builder()
+                .addTables(source)
+                .build());
+        return new SchemaEvolutionTestContext(source, tableAdapter);
+    }
+
+    /**
+     * @param schemaUpdate Updates to apply to the Iceberg table schema
+     * @param dhTableTransform How to derive the expected Deephaven Table
+     */
+    private void verifySchemaEvolution(
+            final Consumer<org.apache.iceberg.UpdateSchema> schemaUpdate,
+            final Function<Table, Table> dhTableTransform) {
+        // Create the source table and its adapter
+        final SchemaEvolutionTestContext ctx = createSourceTable();
+        final Table source = ctx.source;
+        final IcebergTableAdapter tableAdapter = ctx.tableAdapter;
+
+        // Update schema
+        final org.apache.iceberg.Table icebergTable = tableAdapter.icebergTable();
+        final org.apache.iceberg.UpdateSchema update = icebergTable.updateSchema();
+        schemaUpdate.accept(update);
+        update.commit();
+
+        // Read with the old table adapter
+        assertTableEquals(source, tableAdapter.table());
+
+        // Infer using the new schema
+        final IcebergTableAdapter newTableAdapter = catalogAdapter.loadTable(tableAdapter.tableIdentifier());
+        final Table expected = dhTableTransform.apply(source);
+        assertTableEquals(expected, newTableAdapter.table());
+    }
+
+    @Test
+    void addColumn() {
+        verifySchemaEvolution(
+                updateSchema -> updateSchema.addColumn("floatCol", Types.FloatType.get()),
+                dhTable -> dhTable.update("floatCol = (float) null"));
+    }
+
+    @Test
+    void dropColumn() {
+        verifySchemaEvolution(
+                updateSchema -> updateSchema.deleteColumn("doubleCol"),
+                dhTable -> dhTable.dropColumns("doubleCol"));
+    }
+
+    @Test
+    void renameColumn() {
+        verifySchemaEvolution(
+                updateSchema -> updateSchema.renameColumn("intCol", "renamedIntCol"),
+                dhTable -> dhTable.renameColumns("renamedIntCol = intCol"));
+    }
+
+    @Test
+    void reorderColumn() {
+        verifySchemaEvolution(
+                updateSchema -> updateSchema.moveAfter("intCol", "longCol"),
+                dhTable -> dhTable.moveColumnsDown("intCol"));
+    }
+
+    @Test
+    void promoteType() {
+        verifySchemaEvolution(
+                updateSchema -> updateSchema.updateColumn("intCol", Types.LongType.get()),
+                dhTable -> dhTable.update("intCol = (long) intCol"));
+    }
+
+    /*--- End of tests for schema evolution ---*/
 }

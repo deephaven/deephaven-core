@@ -9,7 +9,7 @@ package io.deephaven.vector;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
-import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfByte;
+import io.deephaven.engine.primitive.value.iterator.ValueIteratorOfByte;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
@@ -95,7 +95,7 @@ public class ByteVectorSlice extends ByteVector.Indirect {
     }
 
     @Override
-    public CloseablePrimitiveIteratorOfByte iterator(final long fromIndexInclusive, final long toIndexExclusive) {
+    public ValueIteratorOfByte iterator(final long fromIndexInclusive, final long toIndexExclusive) {
         Require.leq(fromIndexInclusive, "fromIndexInclusive", toIndexExclusive, "toIndexExclusive");
         final long totalWanted = toIndexExclusive - fromIndexInclusive;
         long nextIndexWanted = fromIndexInclusive + offsetIndex;
@@ -119,16 +119,10 @@ public class ByteVectorSlice extends ByteVector.Indirect {
             includedInnerLength = 0;
         }
 
-        final CloseablePrimitiveIteratorOfByte initialNullsIterator = includedInitialNulls > 0
-                ? CloseablePrimitiveIteratorOfByte.repeat(NULL_BYTE, includedInitialNulls)
-                : null;
-        final CloseablePrimitiveIteratorOfByte innerIterator = includedInnerLength > 0
+        final ValueIteratorOfByte innerIterator = includedInnerLength > 0
                 ? innerVector.iterator(firstIncludedInnerOffset, firstIncludedInnerOffset + includedInnerLength)
                 : null;
-        final CloseablePrimitiveIteratorOfByte finalNullsIterator = remaining > 0
-                ? CloseablePrimitiveIteratorOfByte.repeat(NULL_BYTE, remaining)
-                : null;
-        return CloseablePrimitiveIteratorOfByte.maybeConcat(initialNullsIterator, innerIterator, finalNullsIterator);
+        return ValueIteratorOfByte.wrapWithNulls(innerIterator, includedInitialNulls, remaining);
     }
 
     @Override

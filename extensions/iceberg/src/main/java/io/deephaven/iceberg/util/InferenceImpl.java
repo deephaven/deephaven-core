@@ -155,7 +155,7 @@ final class InferenceImpl extends TypeUtil.SchemaVisitor<Void> {
     }
 
     @Override
-    public Void variant() {
+    public Void variant(Types.VariantType variant) {
         if (skipDepth != 0) {
             return null;
         }

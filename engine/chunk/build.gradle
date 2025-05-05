@@ -1,6 +1,7 @@
 plugins {
     id 'java-library'
     id 'io.deephaven.project.register'
+    id 'io.deephaven.java-gwt-dependency'
 }
 
 description 'Engine Chunks: Array-like data structures for dense, efficient data movement'

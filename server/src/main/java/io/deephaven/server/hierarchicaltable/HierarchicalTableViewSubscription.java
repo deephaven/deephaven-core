@@ -481,13 +481,12 @@ public class HierarchicalTableViewSubscription extends LivenessArtifact {
 
         @Override
         public synchronized void run() {
-            if (!running) {
-                return;
+            final Instant now = scheduler.instantMillis();
+            if (running) {
+                scheduler.runAfterDelay(BarragePerformanceLog.CYCLE_DURATION_MILLIS, this);
             }
 
-            final Instant now = scheduler.instantMillis();
-            scheduler.runAfterDelay(BarragePerformanceLog.CYCLE_DURATION_MILLIS, this);
-
+            // note: if we were stopped, run one last time to flush any non-zero state
             final BarrageSubscriptionPerformanceLogger logger =
                     BarragePerformanceLog.getInstance().getSubscriptionLogger();
             synchronized (logger) {
