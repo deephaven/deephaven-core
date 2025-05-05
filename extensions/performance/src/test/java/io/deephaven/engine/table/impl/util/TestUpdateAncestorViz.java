@@ -101,6 +101,12 @@ public class TestUpdateAncestorViz {
     public void testDynamicMerge() {
         final StandaloneLivenessManager manager = new StandaloneLivenessManager(false);
 
+        // because we have two separate calls to testGraphGen we should make sure to keep these around for the duration
+        final Table upl = TableLoggers.updatePerformanceLog();
+        final Table ua = TableLoggers.updatePerformanceAncestorsLog();
+        manager.manage(upl);
+        manager.manage(ua);
+
         final MutableObject<KeyedArrayBackedInputTable> source = new MutableObject<>();
         final MutableObject<Table> result = new MutableObject<>();
         testGraphGen("PartitionedTable.merge()",
@@ -131,7 +137,8 @@ public class TestUpdateAncestorViz {
 
         manager.unmanage(result.getValue());
         manager.unmanage(source.getValue());
-
+        manager.unmanage(upl);
+        manager.unmanage(ua);
     }
 
     private void testGraphGen(final String terminalOperation,
