@@ -7,9 +7,6 @@ import com.google.rpc.Code;
 import io.deephaven.auth.codegen.impl.PartitionedTableServiceContextualAuthWiring;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.TableUpdate;
-import io.deephaven.engine.table.impl.BaseTable;
-import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.partitioned.PartitionedTableImpl;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
@@ -160,28 +157,7 @@ public class PartitionedTableServiceGrpcImpl extends PartitionedTableServiceGrpc
                         authWiring.checkPermissionGetTable(session.getAuthContext(), request,
                                 List.of(partitionedTable.get().table(), keyTable));
 
-                        final PartitionedTable partitionedTable1 = partitionedTable.get();
-                        final boolean requiresLock =
-                                keyTable.isRefreshing() || partitionedTable1.table().isRefreshing();
-
-                        if (requiresLock) {
-                            // validate the update graphs are the same
-                            final UpdateGraph keyUpdateGraph = keyTable.getUpdateGraph();
-                            final UpdateGraph ptUpdateGraph = partitionedTable1.table().getUpdateGraph();
-                            if (keyUpdateGraph != null && ptUpdateGraph != null && ptUpdateGraph != keyUpdateGraph) {
-                                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
-                                        "Provided key table UpdateGraph is inconsistent with PartitionedTable UpdateGraph");
-                            }
-                            if (keyUpdateGraph != null) {
-                                table = keyUpdateGraph.sharedLock()
-                                        .computeLocked(() -> getConstituents(keyTable, partitionedTable1, request));
-                            } else {
-                                table = ptUpdateGraph.sharedLock()
-                                        .computeLocked(() -> getConstituents(keyTable, partitionedTable1, request));
-                            }
-                        } else {
-                            table = getConstituents(keyTable, partitionedTable1, request);
-                        }
+                        table = lockAndGetConstituents(request, keyTable, partitionedTable.get());
 
                         table = authorizationTransformation.transform(table);
                         if (table == null) {
@@ -194,7 +170,32 @@ public class PartitionedTableServiceGrpcImpl extends PartitionedTableServiceGrpc
     }
 
     @TestUseOnly
-    Table getConstituents(Table keyTable, PartitionedTable partitionedTable, @NotNull GetTableRequest request) {
+    Table lockAndGetConstituents(@NotNull final GetTableRequest request, final Table keyTable,
+            final PartitionedTable partitionedTable) {
+        final boolean requiresLock = keyTable.isRefreshing() || partitionedTable.table().isRefreshing();
+
+        if (requiresLock) {
+            // validate the update graphs are the same
+            final UpdateGraph keyUpdateGraph = keyTable.getUpdateGraph();
+            final UpdateGraph ptUpdateGraph = partitionedTable.table().getUpdateGraph();
+            if (keyUpdateGraph != null && ptUpdateGraph != null && ptUpdateGraph != keyUpdateGraph) {
+                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
+                        "Provided key table UpdateGraph is inconsistent with PartitionedTable UpdateGraph");
+            }
+            if (keyUpdateGraph != null) {
+                return keyUpdateGraph.sharedLock()
+                        .computeLocked(() -> getConstituents(request, keyTable, partitionedTable));
+            } else {
+                return ptUpdateGraph.sharedLock()
+                        .computeLocked(() -> getConstituents(request, keyTable, partitionedTable));
+            }
+        } else {
+            return getConstituents(request, keyTable, partitionedTable);
+        }
+    }
+
+    @TestUseOnly
+    Table getConstituents(@NotNull GetTableRequest request, Table keyTable, PartitionedTable partitionedTable) {
         final boolean uniqueStaticResult;
 
         switch (request.getUniqueBehavior()) {
@@ -226,6 +227,8 @@ public class PartitionedTableServiceGrpcImpl extends PartitionedTableServiceGrpc
         if (uniqueStaticResult) {
             if (requestedRows.isRefreshing()) {
                 requestedRows = requestedRows.snapshot();
+                // TODO: maybe this fix instead
+                // requestedRows.setRefreshing(true);
             }
 
             final long resultPartitionsSize = requestedRows.size();

@@ -77,7 +77,10 @@ public class UnionSourceManager {
         constituentRows = coalescedPartitions.getRowSet();
         constituentTables = coalescedPartitions.getColumnSource(partitionedTable.constituentColumnName());
 
-        final boolean refreshing = coalescedPartitions.isRefreshing();
+        // TODO: PICK THIS FIX (or the ohter one)
+        final boolean refreshing =
+                coalescedPartitions.isRefreshing() || currConstituents().anyMatch(Table::isRefreshing);
+        // final boolean refreshing = coalescedPartitions.isRefreshing();
         final int initialNumSlots = constituentRows.intSize();
 
         // noinspection resource
