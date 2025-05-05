@@ -179,7 +179,7 @@ protected:
 
 template<typename T>
 class NumericImmerColumnSource final : public ImmerColumnSource,
-    public deephaven::dhcore::column::NumericColumnSource<T>,
+    public deephaven::dhcore::column::GenericColumnSource<T>,
     std::enable_shared_from_this<NumericImmerColumnSource<T>> {
   struct Private {};
 

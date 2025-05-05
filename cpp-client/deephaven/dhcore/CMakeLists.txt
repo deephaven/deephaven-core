@@ -18,6 +18,7 @@ set(ALL_FILES
     src/column/column_source.cc
     src/column/column_source_helpers.cc
     src/column/column_source_utils.cc
+    src/container/container.cc
     src/container/row_sequence.cc
     src/immerutil/abstract_flex_vector.cc
     src/immerutil/immer_column_source.cc
@@ -50,6 +51,9 @@ set(ALL_FILES
     include/public/deephaven/dhcore/column/column_source.h
     include/public/deephaven/dhcore/column/column_source_helpers.h
     include/public/deephaven/dhcore/column/column_source_utils.h
+    include/public/deephaven/dhcore/column/container_column_source.h
+    include/public/deephaven/dhcore/container/container.h
+    include/public/deephaven/dhcore/container/container_util.h
     include/public/deephaven/dhcore/container/row_sequence.h
     include/public/deephaven/dhcore/interop/testapi/basic_interop_interactions.h
     include/public/deephaven/dhcore/interop/interop_util.h

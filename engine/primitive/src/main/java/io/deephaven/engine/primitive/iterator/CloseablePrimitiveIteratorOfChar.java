@@ -67,7 +67,7 @@ public interface CloseablePrimitiveIteratorOfChar extends CloseablePrimitiveIter
 
             @Override
             public int nextInt() {
-                return adapter.applyAsInt(CloseablePrimitiveIteratorOfChar.this.next());
+                return adapter.applyAsInt(CloseablePrimitiveIteratorOfChar.this.nextChar());
             }
 
             @Override

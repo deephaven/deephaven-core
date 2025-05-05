@@ -41,7 +41,6 @@ plot3 = Figure().plot_xy(series_name="Random numbers", t=empty_table(30).update(
         self.assertEqual(ref.type, "Table")
         plugin_client.close()
 
-    @unittest.skip("need to wait for https://github.com/deephaven/deephaven-core/issues/5996")
     def test_publish_fetch_figure(self):
         plugin_client = self.session.plugin_client(self.session.exportable_objects["plot3"])
         self.assertIsNotNone(plugin_client)
@@ -99,7 +98,6 @@ plot3 = Figure().plot_xy(series_name="Random numbers", t=empty_table(30).update(
 
         plugin_client.close()
 
-    @unittest.skip("need to wait for https://github.com/deephaven/deephaven-core/issues/5996")
     def test_publish_fetch_pandas(self):
         plugin_client = self.session.plugin_client(self.session.exportable_objects["df"])
         self.assertIsNotNone(plugin_client)

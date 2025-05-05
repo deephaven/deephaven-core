@@ -347,4 +347,40 @@ public class TestQueryCompiler {
         Assert.eqTrue(resolvers[0].getFuture().isDone(), "resolvers[0].getFuture().isDone()");
         Assert.neqNull(resolvers[0].getFuture().get(), "resolvers[1].getFuture().get()");
     }
+
+    /**
+     * In DH-19289 a customer's Javac error caused us to produce an NPE instead of the actual error because the
+     * diagnostic error did not include a source. We create a bad annotation processor argument to simulate a similar
+     * situation.
+     */
+    @Test
+    public void testBadCompile() {
+        final String goodProgram = String.join("\n",
+                "public class FineFormula {",
+                "   public static void main (String [] args) {",
+                "   }",
+                "}");
+
+        QueryCompilerRequest[] requests = new QueryCompilerRequest[] {
+                QueryCompilerRequest.builder()
+                        .description("Test Good Compile")
+                        .className("FineFormula")
+                        .classBody(goodProgram)
+                        .packageNameRoot("com.deephaven.test")
+                        .build(),
+        };
+
+        // noinspection unchecked
+        CompletionStageFuture.Resolver<Class<?>>[] resolvers =
+                (CompletionStageFuture.Resolver<Class<?>>[]) new CompletionStageFuture.Resolver[] {
+                        CompletionStageFuture.make(),
+                };
+
+        final QueryCompilerImpl badCompiler = QueryCompilerImpl.createForUnitTests(List.of("InvalidClassArgument"));
+        UncheckedDeephavenException e = org.junit.Assert.assertThrows(UncheckedDeephavenException.class,
+                () -> badCompiler.compile(requests, resolvers));
+        org.junit.Assert.assertEquals("Error Invoking Compiler, no source present in diagnostic:\n" +
+                "Class names, 'InvalidClassArgument', are only accepted if annotation processing is explicitly requested",
+                e.getMessage());
+    }
 }

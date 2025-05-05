@@ -10,11 +10,14 @@ package io.deephaven.vector;
 // region IteratorTypeImport
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
 // endregion IteratorTypeImport
+import io.deephaven.util.QueryConstants;
+import io.deephaven.util.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
 // region NullConstantImport
 // endregion NullConstantImport
+import static io.deephaven.util.QueryConstants.NULL_INT;
 import static junit.framework.TestCase.*;
 
 /**
@@ -191,6 +194,28 @@ public abstract class ObjectVectorTest {
         assertEquals(ObjectVector.type(io.deephaven.qst.type.StringType.of()).clazz(), ObjectVector.class);
         // endregion TestType
     }
+
+    @Test
+    public void testForBoxedNulls() {
+        final Object[] data = new Object[10_000];
+        for (int ei = 0; ei < data.length; ++ei) {
+            data[ei] = ei % 4 == 0 ? null : ei;
+        }
+        final ObjectVector<Object> vector = makeTestVector(data);
+        assertEquals(vector, new ObjectVectorDirect<>(vector.toArray()));
+        final MutableInt numNulls = new MutableInt(0);
+        vector.iterator().stream().forEach(c -> {
+            if (c == null) {
+                numNulls.add(1);
+            } else if (c == null) {
+                throw new IllegalStateException("Expected null, but got boxed null");
+            }
+        });
+        assertEquals("numNulls.get() == (data.length + 3) / 4", (data.length + 3) / 4, numNulls.get());
+    }
+
+    // region streamAsIntTest
+    // endregion streamAsIntTest
 
     private static void checkSubVector(
             final ObjectVector<Object> vector,

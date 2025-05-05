@@ -5,10 +5,13 @@ package io.deephaven.iceberg.util;
 
 import io.deephaven.annotations.CopyableStyle;
 import io.deephaven.engine.table.TableDefinition;
+import org.apache.iceberg.DataFile;
 import org.apache.iceberg.Snapshot;
+import org.apache.iceberg.mapping.NameMapping;
 import org.immutables.value.Value;
 import org.immutables.value.Value.Immutable;
 
+import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalLong;
@@ -33,7 +36,10 @@ public abstract class IcebergReadInstructions {
     /**
      * The {@link TableDefinition} to use when reading Iceberg data files.
      */
-    public abstract Optional<TableDefinition> tableDefinition();
+    @Deprecated
+    public final Optional<TableDefinition> tableDefinition() {
+        return Optional.empty();
+    }
 
     /**
      * The data instructions to use for reading the Iceberg data files (might be S3Instructions or other cloud
@@ -46,12 +52,18 @@ public abstract class IcebergReadInstructions {
      * A {@link Map map} of rename instructions from Iceberg to Deephaven column names to use when reading the Iceberg
      * data files.
      */
-    public abstract Map<String, String> columnRenames();
+    @Deprecated
+    public final Map<String, String> columnRenames() {
+        return Collections.emptyMap();
+    }
 
     /**
      * Return a copy of this instructions object with the column renames replaced by {@code entries}.
      */
-    public abstract IcebergReadInstructions withColumnRenames(Map<String, ? extends String> entries);
+    @Deprecated
+    public final IcebergReadInstructions withColumnRenames(Map<String, ? extends String> entries) {
+        return this;
+    }
 
     /**
      * The {@link IcebergUpdateMode} mode to use when reading the Iceberg data files. Default is
@@ -86,20 +98,42 @@ public abstract class IcebergReadInstructions {
      */
     public abstract IcebergReadInstructions withSnapshot(Snapshot value);
 
+    /**
+     * Controls whether to ignore unexpected resolving errors by silently returning {@code null} data for columns that
+     * can't be resolved in {@link DataFile} where they should be present. These errors may be a sign of an incorrect
+     * {@link Resolver} or {@link NameMapping}; or an Iceberg metadata / data issue. By default, is {@code false}.
+     */
+    @Value.Default
+    public boolean ignoreResolvingErrors() {
+        return false;
+    }
+
     public interface Builder {
-        Builder tableDefinition(TableDefinition tableDefinition);
+
+        @Deprecated
+        default Builder tableDefinition(TableDefinition tableDefinition) {
+            return this;
+        }
 
         Builder dataInstructions(Object s3Instructions);
 
-        Builder putColumnRenames(String key, String value);
+        @Deprecated
+        default Builder putColumnRenames(String key, String value) {
+            return this;
+        }
 
-        Builder putAllColumnRenames(Map<String, ? extends String> entries);
+        @Deprecated
+        default Builder putAllColumnRenames(Map<String, ? extends String> entries) {
+            return this;
+        }
 
         Builder updateMode(IcebergUpdateMode updateMode);
 
         Builder snapshotId(long snapshotId);
 
         Builder snapshot(Snapshot snapshot);
+
+        Builder ignoreResolvingErrors(boolean ignoreResolvingErrors);
 
         IcebergReadInstructions build();
     }

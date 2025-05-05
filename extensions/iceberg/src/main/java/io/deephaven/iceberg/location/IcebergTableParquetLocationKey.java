@@ -12,6 +12,7 @@ import io.deephaven.util.annotations.InternalUseOnly;
 import org.apache.iceberg.DataFile;
 import org.apache.iceberg.ManifestFile;
 import io.deephaven.util.channel.SeekableChannelsProvider;
+import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.catalog.TableIdentifier;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -60,6 +61,8 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
      */
     private final long dataFilePos;
 
+    private final PartitionSpec manifestPartitionSpec;
+
     /**
      * The {@link ManifestFile#sequenceNumber()} of the manifest file from which the data file was discovered.
      */
@@ -94,6 +97,7 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
             @Nullable final String catalogName,
             @Nullable final UUID tableUuid,
             @NotNull final TableIdentifier tableIdentifier,
+            @NotNull final PartitionSpec manifestPartitionSpec,
             @NotNull final ManifestFile manifestFile,
             @NotNull final DataFile dataFile,
             @NotNull final URI fileUri,
@@ -118,10 +122,15 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
         // This should never be null because we are discovering this data file through a non-null manifest file
         dataFilePos = Require.neqNull(dataFile.pos(), "dataFile.pos()");
 
+        this.manifestPartitionSpec = Objects.requireNonNull(manifestPartitionSpec);
         manifestSequenceNumber = manifestFile.sequenceNumber();
 
         this.readInstructions = readInstructions;
         this.sortedColumns = Require.neqNull(sortedColumns, "sortedColumns");
+    }
+
+    public PartitionSpec manifestPartitionSpec() {
+        return manifestPartitionSpec;
     }
 
     @Override

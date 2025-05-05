@@ -3,7 +3,6 @@
 //
 package io.deephaven.iceberg.util;
 
-import io.deephaven.api.util.NameValidator;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.ColumnDefinition;
@@ -11,18 +10,19 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.TableKey;
 import io.deephaven.engine.table.impl.locations.impl.StandaloneTableKey;
 import io.deephaven.engine.table.impl.locations.util.TableDataRefreshService;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.engine.table.impl.sources.regioned.RegionedTableComponentFactoryImpl;
-import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.iceberg.base.IcebergUtils;
-import io.deephaven.iceberg.base.IcebergUtils.SpecAndSchema;
 import io.deephaven.iceberg.internal.DataInstructionsProviderLoader;
-import io.deephaven.iceberg.layout.*;
+import io.deephaven.iceberg.layout.IcebergAutoRefreshTableLocationProvider;
+import io.deephaven.iceberg.layout.IcebergBaseLayout;
+import io.deephaven.iceberg.layout.IcebergManualRefreshTableLocationProvider;
+import io.deephaven.iceberg.layout.IcebergStaticTableLocationProvider;
+import io.deephaven.iceberg.layout.IcebergTableLocationProviderBase;
 import io.deephaven.iceberg.location.IcebergTableLocationFactory;
 import io.deephaven.iceberg.location.IcebergTableLocationKey;
 import io.deephaven.parquet.table.ParquetInstructions;
@@ -31,29 +31,29 @@ import io.deephaven.util.annotations.InternalUseOnly;
 import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.util.channel.SeekableChannelsProvider;
 import io.deephaven.util.channel.SeekableChannelsProviderLoader;
-import io.deephaven.util.type.TypeUtils;
 import org.apache.iceberg.PartitionField;
-import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.Schema;
 import org.apache.iceberg.Snapshot;
 import org.apache.iceberg.catalog.Catalog;
 import org.apache.iceberg.catalog.TableIdentifier;
-import org.apache.iceberg.types.Type;
-import org.apache.iceberg.types.Types;
+import org.apache.iceberg.mapping.NameMapping;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.net.URI;
 import java.time.Instant;
-import java.util.*;
-import java.util.stream.Collectors;
-
-import static io.deephaven.iceberg.base.IcebergUtils.convertToDHType;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 
 /**
  * This class manages an Iceberg {@link org.apache.iceberg.Table table} and provides methods to interact with it.
  */
-public class IcebergTableAdapter {
+public final class IcebergTableAdapter {
     @VisibleForTesting
     static final TableDefinition SNAPSHOT_DEFINITION = TableDefinition.of(
             ColumnDefinition.ofLong("Id"),
@@ -68,19 +68,24 @@ public class IcebergTableAdapter {
     private final org.apache.iceberg.Table table;
     private final TableIdentifier tableIdentifier;
     private final DataInstructionsProviderLoader dataInstructionsProviderLoader;
-
     private final URI locationUri;
+    private final Resolver resolver;
+    private final NameMapping nameMapping;
 
     public IcebergTableAdapter(
             final Catalog catalog,
             final TableIdentifier tableIdentifier,
             final org.apache.iceberg.Table table,
-            final DataInstructionsProviderLoader dataInstructionsProviderLoader) {
-        this.catalog = catalog;
-        this.table = table;
-        this.tableIdentifier = tableIdentifier;
-        this.dataInstructionsProviderLoader = dataInstructionsProviderLoader;
+            final DataInstructionsProviderLoader dataInstructionsProviderLoader,
+            final Resolver resolver,
+            final NameMapping nameMapping) {
+        this.catalog = Objects.requireNonNull(catalog);
+        this.table = Objects.requireNonNull(table);
+        this.tableIdentifier = Objects.requireNonNull(tableIdentifier);
+        this.dataInstructionsProviderLoader = Objects.requireNonNull(dataInstructionsProviderLoader);
         this.locationUri = IcebergUtils.locationUri(table);
+        this.resolver = Objects.requireNonNull(resolver);
+        this.nameMapping = Objects.requireNonNull(nameMapping);
     }
 
     /**
@@ -95,6 +100,13 @@ public class IcebergTableAdapter {
      */
     public TableIdentifier tableIdentifier() {
         return tableIdentifier;
+    }
+
+    /**
+     * The resolver.
+     */
+    public Resolver resolver() {
+        return resolver;
     }
 
     /**
@@ -280,249 +292,72 @@ public class IcebergTableAdapter {
     }
 
     /**
-     * Retrieve the schema and partition spec for the table based on the provided read instructions. Also, populate the
-     * read instructions with the requested snapshot, or the latest snapshot if none is requested.
-     */
-    private SpecAndSchema getSpecAndSchema(@NotNull final IcebergReadInstructions readInstructions) {
-        final Snapshot snapshot;
-        final Schema schema;
-        final PartitionSpec partitionSpec;
-        final IcebergReadInstructions updatedInstructions;
-
-        final Snapshot snapshotFromInstructions = getSnapshot(readInstructions);
-        if (snapshotFromInstructions == null) {
-            synchronized (this) {
-                // Refresh only once and record the current schema and partition spec.
-                refresh();
-                snapshot = table.currentSnapshot();
-                schema = table.schema();
-                partitionSpec = table.spec();
-            }
-            if (snapshot != null) {
-                // Update the read instructions with the snapshot.
-                updatedInstructions = readInstructions.withSnapshot(snapshot);
-            } else {
-                updatedInstructions = readInstructions;
-            }
-        } else {
-            // Use the schema from the snapshot
-            snapshot = snapshotFromInstructions;
-            schema = schema(snapshot.schemaId()).orElseThrow(() -> new IllegalArgumentException(
-                    "Schema with id " + snapshot.schemaId() + " not found for table " + tableIdentifier + ", snapshot "
-                            + snapshot.snapshotId()));
-            partitionSpec = table.spec();
-            updatedInstructions = readInstructions.withSnapshot(snapshot);
-        }
-
-        return new SpecAndSchema(schema, partitionSpec, updatedInstructions);
-    }
-
-    /**
-     * Return {@link TableDefinition table definition} corresponding to this iceberg table
+     * The {@link TableDefinition Table definition} for this Iceberg table.
      *
      * @return The table definition
      */
     public TableDefinition definition() {
-        return definition(IcebergReadInstructions.DEFAULT);
+        return resolver.definition();
     }
 
     /**
-     * Return {@link TableDefinition table definition} corresponding to this iceberg table
+     * The {@link TableDefinition Table definition} for this Iceberg table.
      *
      * @param readInstructions The instructions for customizations while reading the table.
      * @return The table definition
+     * @deprecated use {@link #definition()}
      */
+    @Deprecated
     public TableDefinition definition(@NotNull final IcebergReadInstructions readInstructions) {
-        final SpecAndSchema specAndSchema = getSpecAndSchema(readInstructions);
-        final Schema schema = specAndSchema.schema;
-        final PartitionSpec partitionSpec = specAndSchema.partitionSpec;
-        final IcebergReadInstructions updatedInstructions = specAndSchema.readInstructions;
-
-        return fromSchema(schema,
-                partitionSpec,
-                updatedInstructions.tableDefinition().orElse(null),
-                getRenameColumnMap(table, schema, updatedInstructions));
+        return resolver.definition();
     }
 
     /**
-     * Return {@link Table table} containing the {@link TableDefinition definition} of this Iceberg table.
+     * The {@link TableTools#metaTable(TableDefinition) metadata Table} for this Iceberg table.
      *
      * @return The table definition as a Deephaven table
+     * @see #definitionTable(IcebergReadInstructions)
      */
     public Table definitionTable() {
-        return definitionTable(IcebergReadInstructions.DEFAULT);
+        return TableTools.metaTable(resolver.definition());
     }
 
     /**
-     * Return {@link Table table} containing the {@link TableDefinition definition} of this Iceberg table.
+     * The {@link TableTools#metaTable(TableDefinition) metadata Table} for this Iceberg table.
      *
      * @param readInstructions The instructions for customizations while reading the table.
      * @return The table definition as a Deephaven table
+     * @deprecated use {@link #definitionTable()}
      */
+    @Deprecated
     public Table definitionTable(final IcebergReadInstructions readInstructions) {
-        return TableTools.metaTable(definition(readInstructions));
+        return definitionTable();
     }
 
     /**
-     * Read the latest snapshot of this Iceberg table from the Iceberg catalog as a Deephaven {@link Table table}.
+     * Read the latest snapshot of this Iceberg table from the Iceberg catalog as a Deephaven {@link Table table} using
+     * {@link IcebergReadInstructions#DEFAULT default read instructions}.
+     *
+     * <p>
+     * Equivalent to {@code table(IcebergReadInstructions.DEFAULT)}.
      *
      * @return The loaded table
+     * @see #table(IcebergReadInstructions)
      */
     public IcebergTable table() {
         return table(IcebergReadInstructions.DEFAULT);
     }
 
     /**
-     * Read a snapshot of this Iceberg table from the Iceberg catalog as a Deephaven {@link Table table}.
+     * Read this Iceberg table from the Iceberg catalog as a Deephaven {@link Table table} using
+     * {@code readInstructions}.
      *
      * @param readInstructions The instructions for customizations while reading the table.
      * @return The loaded table
      */
     public IcebergTable table(@NotNull final IcebergReadInstructions readInstructions) {
-        final SpecAndSchema specAndSchema = getSpecAndSchema(readInstructions);
-        final Schema schema = specAndSchema.schema;
-        final PartitionSpec partitionSpec = specAndSchema.partitionSpec;
-        IcebergReadInstructions updatedInstructions = specAndSchema.readInstructions;
-
-        // Get the user supplied table definition.
-        final TableDefinition userTableDef = updatedInstructions.tableDefinition().orElse(null);
-
-        // Map all the column names in the schema to their legalized names.
-        final Map<String, String> legalizedColumnRenames = getRenameColumnMap(table, schema, updatedInstructions);
-
-        // Get the table definition from the schema (potentially limited by the user supplied table definition and
-        // applying column renames).
-        final TableDefinition tableDef = fromSchema(schema, partitionSpec, userTableDef, legalizedColumnRenames);
-
-        // Create the final instructions with the legalized column renames.
-        updatedInstructions = updatedInstructions.withColumnRenames(legalizedColumnRenames);
-
-        final Snapshot snapshot = getSnapshot(updatedInstructions);
-        final ParquetInstructions parquetInstructions;
-        final SeekableChannelsProvider seekableChannelsProvider;
-        {
-            final String uriScheme = locationUri().getScheme();
-            // Add the data instructions if provided as part of the IcebergReadInstructions, or else attempt to create
-            // data instructions from the properties collection and URI scheme.
-            final Object specialInstructions = updatedInstructions.dataInstructions()
-                    .orElseGet(() -> dataInstructionsProviderLoader.load(uriScheme));
-            parquetInstructions = parquetInstructions(tableDef, legalizedColumnRenames, specialInstructions);
-            seekableChannelsProvider = seekableChannelsProvider(uriScheme, specialInstructions);
-        }
-
-        final IcebergBaseLayout keyFinder;
-        if (partitionSpec.isUnpartitioned()) {
-            // Create the flat layout location key finder
-            keyFinder = new IcebergFlatLayout(this, parquetInstructions, seekableChannelsProvider, snapshot);
-        } else {
-            // Create the partitioning column location key finder
-            keyFinder = new IcebergKeyValuePartitionedLayout(this, parquetInstructions, seekableChannelsProvider,
-                    snapshot, identityPartitioningColumns(partitionSpec, legalizedColumnRenames, tableDef));
-        }
-
-        if (updatedInstructions.updateMode().updateType() == IcebergUpdateMode.IcebergUpdateType.STATIC) {
-            final IcebergTableLocationProviderBase<TableKey, IcebergTableLocationKey> locationProvider =
-                    new IcebergStaticTableLocationProvider<>(
-                            StandaloneTableKey.getInstance(),
-                            keyFinder,
-                            new IcebergTableLocationFactory(),
-                            tableIdentifier);
-
-            return new IcebergTableImpl(
-                    tableDef,
-                    tableIdentifier.toString(),
-                    RegionedTableComponentFactoryImpl.INSTANCE,
-                    locationProvider,
-                    null);
-        }
-
-        final UpdateSourceRegistrar updateSourceRegistrar = ExecutionContext.getContext().getUpdateGraph();
-        final IcebergTableLocationProviderBase<TableKey, IcebergTableLocationKey> locationProvider;
-
-        if (updatedInstructions.updateMode().updateType() == IcebergUpdateMode.IcebergUpdateType.MANUAL_REFRESHING) {
-            locationProvider = new IcebergManualRefreshTableLocationProvider<>(
-                    StandaloneTableKey.getInstance(),
-                    keyFinder,
-                    new IcebergTableLocationFactory(),
-                    this,
-                    tableIdentifier);
-        } else {
-            locationProvider = new IcebergAutoRefreshTableLocationProvider<>(
-                    StandaloneTableKey.getInstance(),
-                    keyFinder,
-                    new IcebergTableLocationFactory(),
-                    TableDataRefreshService.getSharedRefreshService(),
-                    updatedInstructions.updateMode().autoRefreshMs(),
-                    this,
-                    tableIdentifier);
-        }
-
-        return new IcebergTableImpl(
-                tableDef,
-                tableIdentifier.toString(),
-                RegionedTableComponentFactoryImpl.INSTANCE,
-                locationProvider,
-                updateSourceRegistrar);
-    }
-
-    private static SeekableChannelsProvider seekableChannelsProvider(
-            final String uriScheme,
-            final Object specialInstructions) {
-        final SeekableChannelsProviderLoader loader = SeekableChannelsProviderLoader.getInstance();
-        return S3_SCHEMES.contains(uriScheme)
-                ? loader.load(S3_SCHEMES, specialInstructions)
-                : loader.load(uriScheme, specialInstructions);
-    }
-
-    private static ParquetInstructions parquetInstructions(
-            final TableDefinition tableDef,
-            final Map<String, String> legalizedColumnRenames,
-            final Object specialInstructions) {
-        // Start with user-supplied instructions (if provided).
-        final ParquetInstructions.Builder builder = new ParquetInstructions.Builder();
-
-        // Add the table definition.
-        builder.setTableDefinition(tableDef);
-
-        // Add any column rename mappings.
-        if (!legalizedColumnRenames.isEmpty()) {
-            for (Map.Entry<String, String> entry : legalizedColumnRenames.entrySet()) {
-                builder.addColumnNameMapping(entry.getKey(), entry.getValue());
-            }
-        }
-        if (specialInstructions != null) {
-            builder.setSpecialInstructions(specialInstructions);
-        }
-        return builder.build();
-    }
-
-    private static List<IcebergKeyValuePartitionedLayout.IdentityPartitioningColData> identityPartitioningColumns(
-            final PartitionSpec partitionSpec,
-            final Map<String, String> legalizedColumnRenames,
-            final TableDefinition tableDef) {
-        final List<IcebergKeyValuePartitionedLayout.IdentityPartitioningColData> identityPartitioningColumns;
-        // We can assume due to upstream validation that there are no duplicate names (after renaming) that are included
-        // in the output definition, so we can ignore duplicates.
-        final List<PartitionField> partitionFields = partitionSpec.fields();
-        final int numPartitionFields = partitionFields.size();
-        identityPartitioningColumns = new ArrayList<>(numPartitionFields);
-        for (int fieldId = 0; fieldId < numPartitionFields; ++fieldId) {
-            final PartitionField partitionField = partitionFields.get(fieldId);
-            if (!partitionField.transform().isIdentity()) {
-                // TODO (DH-18160): Improve support for handling non-identity transforms
-                continue;
-            }
-            final String icebergColName = partitionField.name();
-            final String dhColName = legalizedColumnRenames.getOrDefault(icebergColName, icebergColName);
-            final ColumnDefinition<?> columnDef = tableDef.getColumn(dhColName);
-            if (columnDef == null) {
-                // Table definition provided by the user doesn't have this column, so skip.
-                continue;
-            }
-            identityPartitioningColumns.add(new IcebergKeyValuePartitionedLayout.IdentityPartitioningColData(
-                    dhColName, TypeUtils.getBoxedType(columnDef.getDataType()), fieldId));
-        }
-        return identityPartitioningColumns;
+        refresh();
+        return table(StandaloneTableKey.getInstance(), readInstructions);
     }
 
     /**
@@ -545,119 +380,6 @@ public class IcebergTableAdapter {
     }
 
     /**
-     * Get a legalized column rename map from a table schema and user instructions.
-     */
-    private Map<String, String> getRenameColumnMap(
-            @NotNull final org.apache.iceberg.Table table,
-            @NotNull final Schema schema,
-            @NotNull final IcebergReadInstructions instructions) {
-
-        final Set<String> takenNames = new HashSet<>();
-
-        // Map all the column names in the schema to their legalized names.
-        final Map<String, String> legalizedColumnRenames = new HashMap<>();
-
-        // Validate user-supplied names meet legalization instructions
-        for (final Map.Entry<String, String> entry : instructions.columnRenames().entrySet()) {
-            final String destinationName = entry.getValue();
-            if (!NameValidator.isValidColumnName(destinationName)) {
-                throw new TableDataException(
-                        String.format("%s - invalid column name provided (%s)", table, destinationName));
-            }
-            // Add these renames to the legalized list.
-            legalizedColumnRenames.put(entry.getKey(), destinationName);
-            takenNames.add(destinationName);
-        }
-
-        for (final Types.NestedField field : schema.columns()) {
-            final String name = field.name();
-            // Do we already have a valid rename for this column from the user or a partitioned column?
-            if (!legalizedColumnRenames.containsKey(name)) {
-                final String legalizedName =
-                        NameValidator.legalizeColumnName(name, s -> s.replace(" ", "_"), takenNames);
-                if (!legalizedName.equals(name)) {
-                    legalizedColumnRenames.put(name, legalizedName);
-                    takenNames.add(legalizedName);
-                }
-            }
-        }
-
-        return legalizedColumnRenames;
-    }
-
-    /**
-     * Create a single {@link TableDefinition} from a given Schema, PartitionSpec, and TableDefinition. Takes into
-     * account {@link Map<> column rename instructions}
-     *
-     * @param schema The schema of the table.
-     * @param partitionSpec The partition specification of the table.
-     * @param userTableDef The table definition.
-     * @param columnRenameMap The map for renaming columns.
-     * @return The generated TableDefinition.
-     */
-    private static TableDefinition fromSchema(
-            @NotNull final Schema schema,
-            @NotNull final PartitionSpec partitionSpec,
-            @Nullable final TableDefinition userTableDef,
-            @NotNull final Map<String, String> columnRenameMap) {
-
-        final Set<String> columnNames = userTableDef != null
-                ? userTableDef.getColumnNameSet()
-                : null;
-
-        final Set<String> partitionNames =
-                partitionSpec.fields().stream()
-                        .map(PartitionField::name)
-                        .map(colName -> columnRenameMap.getOrDefault(colName, colName))
-                        .collect(Collectors.toSet());
-
-        final List<ColumnDefinition<?>> columns = new ArrayList<>();
-
-        for (final Types.NestedField field : schema.columns()) {
-            final String name = columnRenameMap.getOrDefault(field.name(), field.name());
-            // Skip columns that are not in the provided table definition.
-            if (columnNames != null && !columnNames.contains(name)) {
-                continue;
-            }
-            final Type type = field.type();
-            final io.deephaven.qst.type.Type<?> qstType = convertToDHType(type);
-            final ColumnDefinition<?> column;
-            if (partitionNames.contains(name)) {
-                column = ColumnDefinition.of(name, qstType).withPartitioning();
-            } else {
-                column = ColumnDefinition.of(name, qstType);
-            }
-            columns.add(column);
-        }
-
-        final TableDefinition icebergTableDef = TableDefinition.of(columns);
-        if (userTableDef == null) {
-            return icebergTableDef;
-        }
-
-        // If the user supplied a table definition, make sure it's fully compatible.
-        final TableDefinition tableDef = icebergTableDef.checkCompatibility(userTableDef);
-
-        // Ensure that the user has not marked non-partitioned columns as partitioned.
-        final Set<String> userPartitionColumns = userTableDef.getPartitioningColumns().stream()
-                .map(ColumnDefinition::getName)
-                .collect(Collectors.toSet());
-        final Set<String> partitionColumns = tableDef.getPartitioningColumns().stream()
-                .map(ColumnDefinition::getName)
-                .collect(Collectors.toSet());
-
-        // The working partitioning column set must be a super-set of the user-supplied set.
-        if (!partitionColumns.containsAll(userPartitionColumns)) {
-            final Set<String> invalidColumns = new HashSet<>(userPartitionColumns);
-            invalidColumns.removeAll(partitionColumns);
-
-            throw new TableDataException("The following columns are not partitioned in the Iceberg table: " +
-                    invalidColumns);
-        }
-        return tableDef;
-    }
-
-    /**
      * Create a new {@link IcebergTableWriter} for this Iceberg table using the provided {@link TableWriterOptions}.
      * <p>
      * This method will perform schema validation to ensure that the provided
@@ -676,5 +398,110 @@ public class IcebergTableAdapter {
      */
     public URI locationUri() {
         return locationUri;
+    }
+
+    // Visible for DHE
+    @InternalUseOnly
+    public IcebergTable table(
+            @NotNull final TableKey tableKey,
+            @NotNull final IcebergReadInstructions readInstructions) {
+        final IcebergTableLocationProviderBase<TableKey, IcebergTableLocationKey> p =
+                provider(tableKey, readInstructions);
+        if (p instanceof IcebergStaticTableLocationProvider) {
+            return new IcebergTableImpl(
+                    resolver.definition(),
+                    tableIdentifier.toString(),
+                    RegionedTableComponentFactoryImpl.INSTANCE,
+                    p,
+                    null);
+        }
+        if (p instanceof IcebergManualRefreshTableLocationProvider
+                || p instanceof IcebergAutoRefreshTableLocationProvider) {
+            return new IcebergTableImpl(
+                    resolver.definition(),
+                    tableIdentifier.toString(),
+                    RegionedTableComponentFactoryImpl.INSTANCE,
+                    p,
+                    ExecutionContext.getContext().getUpdateGraph());
+        }
+        throw new IllegalStateException("Unexpected TableLocationProvider: " + p.getClass().getName());
+    }
+
+    // Visible for DHE
+    @InternalUseOnly
+    public IcebergTableLocationProviderBase<TableKey, IcebergTableLocationKey> provider(
+            @NotNull final TableKey tableKey,
+            @NotNull final IcebergReadInstructions readInstructions) {
+        // Core+ will use this, as their extended format is based on TLPs hooks instead of Table hooks.
+        final Snapshot snapshot = snapshot(readInstructions);
+        final IcebergBaseLayout keyFinder = keyFinder(
+                snapshot,
+                readInstructions.dataInstructions().orElse(null),
+                readInstructions.ignoreResolvingErrors());
+        if (readInstructions.updateMode().updateType() == IcebergUpdateMode.IcebergUpdateType.STATIC) {
+            return new IcebergStaticTableLocationProvider<>(
+                    tableKey,
+                    keyFinder,
+                    new IcebergTableLocationFactory(),
+                    tableIdentifier);
+        }
+        if (readInstructions.updateMode().updateType() == IcebergUpdateMode.IcebergUpdateType.MANUAL_REFRESHING) {
+            return new IcebergManualRefreshTableLocationProvider<>(
+                    tableKey,
+                    keyFinder,
+                    new IcebergTableLocationFactory(),
+                    this,
+                    tableIdentifier);
+        } else {
+            return new IcebergAutoRefreshTableLocationProvider<>(
+                    tableKey,
+                    keyFinder,
+                    new IcebergTableLocationFactory(),
+                    TableDataRefreshService.getSharedRefreshService(),
+                    readInstructions.updateMode().autoRefreshMs(),
+                    this,
+                    tableIdentifier);
+        }
+    }
+
+    private Snapshot snapshot(@NotNull final IcebergReadInstructions readInstructions) {
+        final Snapshot explicitSnapshot = getSnapshot(readInstructions);
+        return explicitSnapshot == null
+                ? table.currentSnapshot()
+                : explicitSnapshot;
+    }
+
+    private @NotNull IcebergBaseLayout keyFinder(
+            @Nullable final Snapshot snapshot,
+            @Nullable final Object dataInstructions,
+            final boolean ignoreResolvingErrors) {
+        final Object specialInstructions;
+        final SeekableChannelsProvider channelsProvider;
+        {
+            final String uriScheme = locationUri.getScheme();
+            specialInstructions = dataInstructions == null
+                    ? dataInstructionsProviderLoader.load(uriScheme)
+                    : dataInstructions;
+            channelsProvider = seekableChannelsProvider(uriScheme, specialInstructions);
+        }
+        final ParquetInstructions parquetInstructions = ParquetInstructions.builder()
+                .setTableDefinition(resolver.definition())
+                .setColumnResolverFactory(new ResolverFactory(resolver, nameMapping, ignoreResolvingErrors))
+                .setSpecialInstructions(specialInstructions)
+                .build();
+        final Map<String, PartitionField> partitionFields = resolver.partitionFieldMap();
+        if (partitionFields.isEmpty()) {
+            return new IcebergUnpartitionedLayout(this, parquetInstructions, channelsProvider, snapshot);
+        }
+        return new IcebergPartitionedLayout(this, parquetInstructions, channelsProvider, snapshot, resolver);
+    }
+
+    private static SeekableChannelsProvider seekableChannelsProvider(
+            final String uriScheme,
+            final Object specialInstructions) {
+        final SeekableChannelsProviderLoader loader = SeekableChannelsProviderLoader.getInstance();
+        return S3_SCHEMES.contains(uriScheme)
+                ? loader.load(S3_SCHEMES, specialInstructions)
+                : loader.load(uriScheme, specialInstructions);
     }
 }

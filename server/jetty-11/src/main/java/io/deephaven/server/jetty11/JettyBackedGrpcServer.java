@@ -3,7 +3,10 @@
 //
 package io.deephaven.server.jetty11;
 
+import io.deephaven.base.verify.Require;
+import io.deephaven.configuration.Configuration;
 import io.deephaven.server.browserstreaming.BrowserStreamInterceptor;
+import io.deephaven.server.resources.ServerResources;
 import io.deephaven.server.runner.GrpcServer;
 import io.deephaven.ssl.config.CiphersIntermediate;
 import io.deephaven.ssl.config.ProtocolsIntermediate;
@@ -53,6 +56,8 @@ import org.eclipse.jetty.servlets.CrossOriginFilter;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceCollection;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.websocket.jakarta.common.SessionTracker;
 import org.eclipse.jetty.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
@@ -76,6 +81,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import static io.grpc.servlet.web.websocket.MultiplexedWebSocketServerStream.GRPC_WEBSOCKETS_MULTIPLEX_PROTOCOL;
 import static io.grpc.servlet.web.websocket.WebSocketServerStream.GRPC_WEBSOCKETS_PROTOCOL;
@@ -102,12 +108,14 @@ public class JettyBackedGrpcServer implements GrpcServer {
         final ServletContextHandler context =
                 new ServletContextHandler(null, "/", null, null, null, new ErrorPageErrorHandler(), NO_SESSIONS);
         try {
-            // Build a URL to a known file on the classpath, so Jetty can load resources from that jar to serve as
-            // static content
-            String knownFile = "/ide/index.html";
-            URL ide = JettyBackedGrpcServer.class.getResource(knownFile);
-            Resource jarContents = Resource.newResource(ide.toExternalForm().replace("!" + knownFile, "!/"));
-            context.setBaseResource(ControlledCacheResource.wrap(jarContents));
+            List<String> urls = ServerResources.resourcesFromServiceLoader(Configuration.getInstance());
+            List<Resource> resources = new ArrayList<>();
+            for (String s : urls) {
+                Resource resource = Resource.newResource(s);
+                Require.neqNull(resource, "newResource(" + s + ")");
+                resources.add(resource);
+            }
+            context.setBaseResource(ControlledCacheResource.wrap(new ResourceCollection(resources)));
         } catch (IOException ioException) {
             throw new UncheckedIOException(ioException);
         }
@@ -348,6 +356,10 @@ public class JettyBackedGrpcServer implements GrpcServer {
         // https://www.eclipse.org/jetty/documentation/jetty-11/programming-guide/index.html#pg-server-http-connector-protocol-http2-tls
         final HttpConfiguration httpConfig = new HttpConfiguration();
         httpConfig.addCustomizer(new ForwardedRequestCustomizer());
+        httpConfig.addCustomizer(new AllowedHttpMethodsCustomizer(config.allowedHttpMethods()));
+        if (!config.extraHeaders().isEmpty()) {
+            httpConfig.addCustomizer(new ConfiguredHeadersCustomizer(config.extraHeaders()));
+        }
         final HttpConnectionFactory http11 = config.http1OrDefault() ? new HttpConnectionFactory(httpConfig) : null;
         final ServerConnector serverConnector;
         if (config.ssl().isPresent()) {

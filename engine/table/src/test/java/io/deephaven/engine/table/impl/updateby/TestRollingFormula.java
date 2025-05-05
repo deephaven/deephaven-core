@@ -11,6 +11,7 @@ import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.select.FormulaCompilationException;
+import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.EvalNugget;
 import io.deephaven.engine.testutil.GenerateTableUpdates;
@@ -34,6 +35,11 @@ import java.util.Random;
 
 import static io.deephaven.engine.testutil.GenerateTableUpdates.generateAppends;
 import static io.deephaven.engine.testutil.testcase.RefreshingTableTestCase.simulateShiftAwareStep;
+import static io.deephaven.engine.util.TableTools.doubleCol;
+import static io.deephaven.engine.util.TableTools.emptyTable;
+import static io.deephaven.engine.util.TableTools.intCol;
+import static io.deephaven.engine.util.TableTools.newTable;
+import static io.deephaven.engine.util.TableTools.stringCol;
 import static io.deephaven.function.Basic.isNull;
 
 @Category(OutOfBandTest.class)
@@ -1629,6 +1635,34 @@ public class TestRollingFormula extends BaseUpdateByTest {
         expected = t.updateBy(UpdateByOperation.RollingGroup(prevTicks, postTicks, testColumns))
                 .update(Arrays.stream(testColumns).map(c -> c + "=" + c + ".getDirect()").toArray(String[]::new));
 
+        TstUtils.assertTableEquals(expected, actual, TableDiff.DiffItems.DoublesExact);
+    }
+
+    @Test
+    public void testDH19327() {
+        // Test a combination of constant and column-accessing formula
+        final Table t = emptyTable(5)
+                .update("X = i", "Letter = (X % 2 == 0) ? `A` : `B`");
+        final int prevTicks = 10;
+        final int postTicks = 0;
+
+        Table actual = t.updateBy(List.of(
+                UpdateByOperation.RollingFormula(prevTicks, postTicks, "out_a=sqrt(5.0)"),
+                UpdateByOperation.RollingFormula(prevTicks, postTicks, "out_b=min(X)"),
+                UpdateByOperation.RollingFormula(prevTicks, postTicks, "out_c=sqrt(4.0)"),
+                UpdateByOperation.RollingFormula(prevTicks, postTicks, "out_d=max(X)")), "Letter");
+
+        final ColumnHolder<?>[] holders = new ColumnHolder<?>[] {
+                intCol("X", 0, 1, 2, 3, 4),
+                stringCol("Letter", "A", "B", "A", "B", "A"),
+                doubleCol("out_a", 2.23606797749979, 2.23606797749979, 2.23606797749979, 2.23606797749979,
+                        2.23606797749979),
+                intCol("out_b", 0, 1, 0, 1, 0),
+                doubleCol("out_c", 2.0, 2.0, 2.0, 2.0, 2.0),
+                intCol("out_d", 0, 1, 2, 3, 4),
+        };
+
+        final Table expected = newTable(holders);
         TstUtils.assertTableEquals(expected, actual, TableDiff.DiffItems.DoublesExact);
     }
 

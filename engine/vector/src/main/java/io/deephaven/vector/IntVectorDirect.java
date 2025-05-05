@@ -8,7 +8,7 @@
 package io.deephaven.vector;
 
 import io.deephaven.base.verify.Require;
-import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfInt;
+import io.deephaven.engine.primitive.value.iterator.ValueIteratorOfInt;
 import io.deephaven.util.annotations.ArrayType;
 import io.deephaven.util.annotations.ArrayTypeGetter;
 import org.jetbrains.annotations.NotNull;
@@ -62,9 +62,9 @@ public final class IntVectorDirect implements IntVector {
     }
 
     @Override
-    public CloseablePrimitiveIteratorOfInt iterator(final long fromIndexInclusive, final long toIndexExclusive) {
+    public ValueIteratorOfInt iterator(final long fromIndexInclusive, final long toIndexExclusive) {
         if (fromIndexInclusive == 0 && toIndexExclusive == data.length) {
-            return CloseablePrimitiveIteratorOfInt.of(data);
+            return ValueIteratorOfInt.of(data);
         }
         return IntVector.super.iterator(fromIndexInclusive, toIndexExclusive);
     }

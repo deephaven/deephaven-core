@@ -33,6 +33,8 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
                     "empty_table(1000).update(['ID=i', 'Parent=i == 0 ? null : (int)(i/10)']).format_columns(['ID=ID>0 ? GREEN : RED']).tree('ID', 'Parent')")
             .script("ticking_tree",
                     "time_table('PT0.1s').update(['ID=i', 'Parent=i == 0 ? null : (int)(i/10)']).format_columns(['ID=ID>0 ? GREEN : RED']).tree('ID', 'Parent')")
+            .script("static_table_to_rollup",
+                    "empty_table(20).update(['Y=i%5', 'X=i%3'])")
             .script("table_to_rollup",
                     "time_table('PT0.1s').update(['Y=Math.sin(i/3)', 'X=i%3', 'Z=`abc` + i']).format_columns(['Y=Y>0 ? GREEN : RED', 'Timestamp=RED'])")
             .script("ticking_rollup",
@@ -254,6 +256,36 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
                 })
                 .then(this::finish).catch_(this::report);
     }
+
+    public void testTreeCustomColumnException() {
+        connect(tables)
+                .then(treeTable("static_tree"))
+                .then(treeTable -> {
+                    delayTestFinish(1500);
+                    assertFalse(treeTable.isRefreshing());
+                    assertFalse(treeTable.isClosed());
+                    assertFalse(treeTable.isIncludeConstituents());
+
+                    assertEquals(2, treeTable.getColumns().length);
+                    assertEquals("ID", treeTable.getColumns().getAt(0).getName());
+                    assertEquals("Parent", treeTable.getColumns().getAt(1).getName());
+
+                    CustomColumnOptions col0Options = new CustomColumnOptions();
+                    col0Options.rollupNodeType = "aggregated";
+                    CustomColumn col0 = new CustomColumn("ID_new", CustomColumn.TYPE_NEW, "`ID-` + ID", col0Options);
+
+                    JsArray<JsTable.CustomColumnArgUnionType> columns = new JsArray<>(
+                            JsTable.CustomColumnArgUnionType.of(col0));
+
+                    // This call should produce a UOE.
+                    treeTable.applyCustomColumns(columns);
+                    treeTable.setViewport(0, 99, treeTable.getColumns(), null);
+                    return treeTable.getViewportData();
+                })
+                // This should result in an error, report if we do not get one.
+                .then(this::report, this::finish);
+    }
+
 
     public void testTickingRollup() {
         connect(tables)
@@ -505,4 +537,158 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
                 .then(this::finish).catch_(this::report);
     }
 
+    public void testCreateRollupUpdateView() {
+        connect(tables)
+                .then(table("static_table_to_rollup"))
+                .then(table -> {
+                    JsRollupConfig cfg = new JsRollupConfig();
+                    cfg.groupingColumns = Js.uncheckedCast(JsArray.of("X"));
+                    cfg.includeConstituents = true;
+                    cfg.aggregations = JsPropertyMap.of(JsAggregationOperation.SUM, JsArray.of("Y"));
+                    return table.rollup(cfg).then(rollupTable -> {
+
+                        JsPropertyMap<Object> col0 =
+                                JsPropertyMap.of("name", "YPlusAgg", "expression", "Y + 1", "type",
+                                        CustomColumn.TYPE_NEW);
+                        col0.set("options", JsPropertyMap.of("rollupNodeType", "aggregated"));
+
+                        CustomColumnOptions col1Options = new CustomColumnOptions();
+                        col1Options.rollupNodeType = "constituent";
+                        CustomColumn col1 = new CustomColumn("YPlusConst", CustomColumn.TYPE_NEW, "Y + 1", col1Options);
+
+                        JsArray<JsTable.CustomColumnArgUnionType> columns = new JsArray<>(
+                                JsTable.CustomColumnArgUnionType.of(col0),
+                                JsTable.CustomColumnArgUnionType.of(col1));
+
+                        assertEquals(2, rollupTable.getColumns().length);
+
+                        rollupTable.applyCustomColumns(columns);
+
+                        rollupTable.setViewport(0, 99, null, null);
+                        return rollupTable.getViewportData()
+                                .then(data -> {
+                                    // After the refresh, we should have the new columns in the rollup table
+                                    rollupTable.setViewport(0, 99, rollupTable.getColumns(), null);
+                                    return rollupTable.getViewportData();
+                                })
+                                .then(data -> Promise.resolve((TreeViewportData) data))
+                                .then(data -> {
+                                    assertEquals(4, rollupTable.getColumns().length);
+                                    assertEquals("X", rollupTable.getColumns().getAt(0).getName());
+                                    assertEquals("Y", rollupTable.getColumns().getAt(1).getName());
+                                    assertEquals("YPlusAgg", rollupTable.getColumns().getAt(2).getName());
+                                    assertEquals("YPlusConst", rollupTable.getColumns().getAt(3).getName());
+
+                                    assertEquals(4d, data.getTreeSize());
+
+                                    TreeViewportData.TreeRow row0 = (TreeViewportData.TreeRow) data.getRows().getAt(0);
+                                    assertTrue(row0.isExpanded());
+                                    assertTrue(row0.hasChildren());
+                                    assertEquals(1, row0.depth());
+
+                                    TreeViewportData.TreeRow row1 = (TreeViewportData.TreeRow) data.getRows().getAt(1);
+                                    assertFalse(row1.isExpanded());
+                                    assertTrue(row1.hasChildren());
+                                    assertEquals(2, row1.depth());
+
+                                    TreeViewportData.TreeRow row2 = (TreeViewportData.TreeRow) data.getRows().getAt(2);
+                                    assertFalse(row2.isExpanded());
+                                    assertTrue(row2.hasChildren());
+                                    assertEquals(2, row2.depth());
+
+                                    TreeViewportData.TreeRow row3 = (TreeViewportData.TreeRow) data.getRows().getAt(3);
+                                    assertFalse(row3.isExpanded());
+                                    assertTrue(row3.hasChildren());
+                                    assertEquals(2, row3.depth());
+
+                                    Column xCol = rollupTable.findColumn("X");
+                                    Column yCol = rollupTable.findColumn("Y");
+
+                                    assertEquals(40L, ((LongWrapper) yCol.get(row0)).getWrapped());
+
+                                    assertEquals(0, xCol.get(row1).asInt());
+                                    assertEquals(13L, ((LongWrapper) yCol.get(row1)).getWrapped());
+
+                                    assertEquals(1, xCol.get(row2).asInt());
+                                    assertEquals(15L, ((LongWrapper) yCol.get(row2)).getWrapped());
+
+                                    assertEquals(2, xCol.get(row3).asInt());
+                                    assertEquals(12L, ((LongWrapper) yCol.get(row3)).getWrapped());
+
+                                    // Check the update view column for aggregated rows
+
+                                    Column yPlusAgg = rollupTable.findColumn("YPlusAgg");
+
+                                    assertEquals(41L, ((LongWrapper) yPlusAgg.get(row0)).getWrapped());
+                                    assertEquals(14L, ((LongWrapper) yPlusAgg.get(row1)).getWrapped());
+                                    assertEquals(16L, ((LongWrapper) yPlusAgg.get(row2)).getWrapped());
+                                    assertEquals(13L, ((LongWrapper) yPlusAgg.get(row3)).getWrapped());
+
+                                    // Expand row 1, exposing constituent rows
+                                    rollupTable.expand(JsTreeTable.RowReferenceUnion.of(1), null);
+                                    return rollupTable.<TreeViewportData>nextEvent(
+                                            JsTreeTable.EVENT_UPDATED, 2001d);
+                                }).then(event -> {
+                                    TreeViewportData data = event.getDetail();
+
+                                    Column yCol = rollupTable.findColumn("Y");
+                                    Column yPlusConst = rollupTable.findColumn("YPlusConst");
+
+                                    // Row 2 is the first constituent of row 1, with 7 constituent rows
+                                    for (int i = 2; i < 2 + 7; i++) {
+                                        TreeViewportData.TreeRow row =
+                                                (TreeViewportData.TreeRow) data.getRows().getAt(i);
+                                        assertFalse(row.isExpanded());
+                                        assertFalse(row.hasChildren());
+                                        assertEquals(3, row.depth());
+
+                                        // get the raw Y value and test against the plus 1
+                                        int yVal = yCol.get(row).asInt();
+                                        assertEquals(yVal + 1, yPlusConst.get(row).asInt());
+                                    }
+
+                                    rollupTable.close();
+                                    assertTrue(rollupTable.isClosed());
+                                    return null;
+                                });
+                    });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    public void testCreateRollupUpdateViewUnsafe() {
+        connect(tables)
+                .then(table("static_table_to_rollup"))
+                .then(table -> {
+                    JsRollupConfig cfg = new JsRollupConfig();
+                    cfg.groupingColumns = Js.uncheckedCast(JsArray.of("X"));
+                    cfg.includeConstituents = true;
+                    cfg.aggregations = JsPropertyMap.of(JsAggregationOperation.SUM, JsArray.of("Y"));
+                    return table.rollup(cfg).then(rollupTable -> {
+
+                        JsPropertyMap<Object> col0 =
+                                JsPropertyMap.of("name", "UnsafeOp",
+                                        "expression", "Runtime.getRuntime().exec(`ls`)",
+                                        "type", CustomColumn.TYPE_NEW);
+                        col0.set("options", JsPropertyMap.of("rollupNodeType", "aggregated"));
+
+                        JsArray<JsTable.CustomColumnArgUnionType> columns = new JsArray<>(
+                                JsTable.CustomColumnArgUnionType.of(col0));
+
+                        assertEquals(2, rollupTable.getColumns().length);
+
+                        rollupTable.applyCustomColumns(columns);
+
+                        rollupTable.setViewport(0, 99, null, null);
+                        return rollupTable.getViewportData()
+                                .then(data -> {
+                                    // After the refresh, we should have the new columns in the rollup table
+                                    rollupTable.setViewport(0, 99, rollupTable.getColumns(), null);
+                                    return rollupTable.getViewportData();
+                                })
+                                .then(data -> Promise.resolve((TreeViewportData) data));
+                    });
+                })
+                .then(this::report, this::finish);
+    }
 }

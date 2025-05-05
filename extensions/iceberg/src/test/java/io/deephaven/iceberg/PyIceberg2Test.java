@@ -11,28 +11,30 @@ import io.deephaven.engine.util.TableTools;
 import io.deephaven.iceberg.sqlite.DbResource;
 import io.deephaven.iceberg.util.IcebergCatalogAdapter;
 import io.deephaven.iceberg.util.IcebergTableAdapter;
-import org.apache.iceberg.PartitionField;
+import io.deephaven.iceberg.util.InferenceResolver;
+import io.deephaven.iceberg.util.LoadTableOptions;
 import org.apache.iceberg.PartitionSpec;
+import org.apache.iceberg.Schema;
 import org.apache.iceberg.Snapshot;
 import org.apache.iceberg.catalog.Namespace;
 import org.apache.iceberg.catalog.TableIdentifier;
+import org.apache.iceberg.types.Types;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
-import java.net.URISyntaxException;
 import java.util.List;
 import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * This test shows that we can integrate with data written by <a href="https://py.iceberg.apache.org/">pyiceberg</a>.
- * See TESTING.md and generate-pyiceberg-2.py for more details.
+ * This test verifies how DH interacts with an Iceberg table with non-identity partitioning spec. See TESTING.md and
+ * generate-pyiceberg-2.py for generating the corresponding data.
  */
 @Tag("security-manager-allow")
-class Pyiceberg2Test {
+class PyIceberg2Test {
     private static final Namespace NAMESPACE = Namespace.of("trading");
     private static final TableIdentifier TRADING_DATA = TableIdentifier.of(NAMESPACE, "data");
     private static final TableIdentifier EMPTY_DATA = TableIdentifier.of(NAMESPACE, "data_empty");
@@ -45,11 +47,13 @@ class Pyiceberg2Test {
             ColumnDefinition.ofString("symbol").withPartitioning(),
             ColumnDefinition.ofDouble("bid"),
             ColumnDefinition.ofDouble("ask"));
+    private static final InferenceResolver INFER_WITH_PARTITIONS =
+            InferenceResolver.builder().inferPartitioningColumns(true).build();
 
     private IcebergCatalogAdapter catalogAdapter;
 
     @BeforeEach
-    void setUp() throws URISyntaxException {
+    void setUp() {
         catalogAdapter = DbResource.openCatalog("pyiceberg-2");
     }
 
@@ -71,26 +75,45 @@ class Pyiceberg2Test {
     }
 
     @Test
-    void testDefinition() {
+    void testSchema() {
         final IcebergTableAdapter tableAdapter = catalogAdapter.loadTable(TRADING_DATA);
-        final TableDefinition td = tableAdapter.definition();
-        assertThat(td).isEqualTo(TABLE_DEFINITION);
-
-        // Check the partition spec
-        final PartitionSpec partitionSpec = tableAdapter.icebergTable().spec();
-        assertThat(partitionSpec.fields().size()).isEqualTo(2);
-        final PartitionField firstPartitionField = partitionSpec.fields().get(0);
-        assertThat(firstPartitionField.name()).isEqualTo("datetime_day");
-        assertThat(firstPartitionField.transform().toString()).isEqualTo("day");
-
-        final PartitionField secondPartitionField = partitionSpec.fields().get(1);
-        assertThat(secondPartitionField.name()).isEqualTo("symbol");
-        assertThat(secondPartitionField.transform().toString()).isEqualTo("identity");
+        final Schema actualSchema = tableAdapter.icebergTable().schema();
+        final Schema expectedSchema = new Schema(
+                Types.NestedField.optional(1, "datetime", Types.TimestampType.withoutZone()),
+                Types.NestedField.optional(2, "symbol", Types.StringType.get()),
+                Types.NestedField.optional(3, "bid", Types.DoubleType.get()),
+                Types.NestedField.optional(4, "ask", Types.DoubleType.get()));
+        assertThat(actualSchema).usingEquals(Schema::sameSchema).isEqualTo(expectedSchema);
+        // Note that non-identity partition fields are not included in the schema
     }
 
     @Test
-    void testData() {
+    void testPartitionSpec() {
         final IcebergTableAdapter tableAdapter = catalogAdapter.loadTable(TRADING_DATA);
+        final PartitionSpec partitionSpec = tableAdapter.icebergTable().spec();
+        final PartitionSpec expectedPartitionSpec = PartitionSpec.builderFor(tableAdapter.icebergTable().schema())
+                .day("datetime", "datetime_day")
+                .identity("symbol")
+                .build();
+        assertThat(partitionSpec).isEqualTo(expectedPartitionSpec);
+    }
+
+    @Test
+    void testDefinition() {
+        final IcebergTableAdapter tableAdapter = catalogAdapter.loadTable(LoadTableOptions.builder()
+                .id(TRADING_DATA)
+                .resolver(INFER_WITH_PARTITIONS)
+                .build());
+        final TableDefinition td = tableAdapter.definition();
+        assertThat(td).isEqualTo(TABLE_DEFINITION);
+    }
+
+    @Test
+    void testReadData() {
+        final IcebergTableAdapter tableAdapter = catalogAdapter.loadTable(LoadTableOptions.builder()
+                .id(TRADING_DATA)
+                .resolver(INFER_WITH_PARTITIONS)
+                .build());
         final Table fromIceberg = tableAdapter.table();
         assertThat(fromIceberg.size()).isEqualTo(5);
         final Table expectedData = TableTools.newTable(TABLE_DEFINITION,
@@ -108,7 +131,7 @@ class Pyiceberg2Test {
     }
 
     @Test
-    void testEmpty() {
+    void testReadEmptyTable() {
         final IcebergTableAdapter tableAdapter = catalogAdapter.loadTable(EMPTY_DATA);
         final Table fromIceberg = tableAdapter.table();
         assertThat(fromIceberg.size()).isEqualTo(0);

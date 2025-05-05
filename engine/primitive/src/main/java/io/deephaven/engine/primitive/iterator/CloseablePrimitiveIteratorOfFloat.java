@@ -71,7 +71,7 @@ public interface CloseablePrimitiveIteratorOfFloat extends CloseablePrimitiveIte
 
             @Override
             public double nextDouble() {
-                return adapter.applyAsDouble(CloseablePrimitiveIteratorOfFloat.this.next());
+                return adapter.applyAsDouble(CloseablePrimitiveIteratorOfFloat.this.nextFloat());
             }
 
             @Override

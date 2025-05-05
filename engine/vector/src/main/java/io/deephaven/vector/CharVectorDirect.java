@@ -4,7 +4,7 @@
 package io.deephaven.vector;
 
 import io.deephaven.base.verify.Require;
-import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfChar;
+import io.deephaven.engine.primitive.value.iterator.ValueIteratorOfChar;
 import io.deephaven.util.annotations.ArrayType;
 import io.deephaven.util.annotations.ArrayTypeGetter;
 import org.jetbrains.annotations.NotNull;
@@ -58,9 +58,9 @@ public final class CharVectorDirect implements CharVector {
     }
 
     @Override
-    public CloseablePrimitiveIteratorOfChar iterator(final long fromIndexInclusive, final long toIndexExclusive) {
+    public ValueIteratorOfChar iterator(final long fromIndexInclusive, final long toIndexExclusive) {
         if (fromIndexInclusive == 0 && toIndexExclusive == data.length) {
-            return CloseablePrimitiveIteratorOfChar.of(data);
+            return ValueIteratorOfChar.of(data);
         }
         return CharVector.super.iterator(fromIndexInclusive, toIndexExclusive);
     }
