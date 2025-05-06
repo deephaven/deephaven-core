@@ -272,7 +272,7 @@ java.time.LocalDate      pa.date64()
 java.time.LocalTime      pa.time64("ns")
 =======================  =========================
 
-as well as lists of the above.
+as well as single-dimensional lists of the above.
 
 
 Error handling
