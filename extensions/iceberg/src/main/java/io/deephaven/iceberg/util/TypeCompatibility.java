@@ -20,6 +20,7 @@ import io.deephaven.qst.type.ShortType;
 import io.deephaven.qst.type.StringType;
 import io.deephaven.qst.type.Type;
 import org.apache.iceberg.types.Types;
+import org.apache.iceberg.types.Type.TypeID;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -85,13 +86,15 @@ public final class TypeCompatibility {
 
         @Override
         public Boolean visit(InstantType instantType) {
-            // todo: TZ nanos
+            // TODO(DH-18253): Add support to write more types to iceberg tables
             return pt == Types.TimestampType.withZone();
         }
 
         @Override
         public Boolean visit(ArrayType<?, ?> arrayType) {
-            // TODO(DH-18253): Add support to write more types to iceberg tables
+            if (pt.typeId() == TypeID.BINARY || pt.typeId() == TypeID.FIXED) {
+                return byte.class.equals(arrayType.componentType().clazz());
+            }
             return false;
         }
 
@@ -181,7 +184,7 @@ public final class TypeCompatibility {
             return type.walk(new ListCompat(icebergType));
         }
 
-        private ListCompat(Types.ListType lt) {
+        private ListCompat(final Types.ListType lt) {
             Objects.requireNonNull(lt);
             this.elementType = lt.elementType().asPrimitiveType();
         }
@@ -193,12 +196,8 @@ public final class TypeCompatibility {
 
         @Override
         public Boolean visit(ArrayType<?, ?> arrayType) {
-            final Type componentType = arrayType.componentType();
-            if (!(componentType instanceof PrimitiveType<?>)) {
-                return false;
-            }
-            // TODO Talk to Devin why we need to do this cast
-            return (Boolean) componentType.walk(new PrimitiveCompat(elementType));
+            final Type<?> componentType = arrayType.componentType();
+            return componentType.walk(new PrimitiveCompat(elementType));
         }
 
         @Override

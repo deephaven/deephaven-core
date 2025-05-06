@@ -34,11 +34,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class TypeInferenceFromDeephavenTypeTest {
 
-    private TypeUtil.NextID nextId;
+    private Type.Visitor<org.apache.iceberg.types.Type> inferenceVisitor;
 
     @BeforeEach
     void setUp() {
-        nextId = new AtomicInteger(1)::getAndIncrement;
+        inferenceVisitor = new TypeInference.BestIcebergType(new AtomicInteger(1)::getAndIncrement);
     }
 
     @Test
@@ -163,7 +163,7 @@ class TypeInferenceFromDeephavenTypeTest {
     }
 
     private OptionalAssert<org.apache.iceberg.types.Type> assertInference(Type<?> type) {
-        return assertThat(TypeInference.of(type, nextId));
+        return assertThat(TypeInference.of(type, inferenceVisitor));
     }
 
     public static class SomeCustomType {

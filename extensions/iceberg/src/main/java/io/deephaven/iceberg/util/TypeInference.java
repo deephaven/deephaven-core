@@ -19,6 +19,11 @@ import io.deephaven.qst.type.PrimitiveType;
 import io.deephaven.qst.type.ShortType;
 import io.deephaven.qst.type.StringType;
 import io.deephaven.qst.type.Type;
+import io.deephaven.vector.DoubleVector;
+import io.deephaven.vector.FloatVector;
+import io.deephaven.vector.IntVector;
+import io.deephaven.vector.LongVector;
+import io.deephaven.vector.ObjectVector;
 import org.apache.iceberg.Schema;
 import org.apache.iceberg.types.TypeUtil;
 import org.apache.iceberg.types.Types;
@@ -47,11 +52,14 @@ public final class TypeInference {
      * @return the Deephaven type
      */
     public static Optional<Type<?>> of(org.apache.iceberg.types.Type icebergType) {
-        if (!icebergType.isPrimitiveType()) {
-            return Optional.empty();
+        final Type<?> type;
+        if (icebergType.isPrimitiveType()) {
+            type = ofImpl(icebergType.asPrimitiveType());
+        } else if (icebergType.isListType()) {
+            type = ofImpl(icebergType.asListType());
+        } else {
+            type = null;
         }
-        // We may support List here in the future, or other.
-        final Type<?> type = ofImpl(icebergType.asPrimitiveType());
         if (type == null) {
             return Optional.empty();
         }
@@ -73,14 +81,13 @@ public final class TypeInference {
      * possible that a specific {@link Types.DecimalType} is compatible with a {@link BigDecimal} Deephaven type.
      *
      * @param type the Deephaven type
-     * @param nextId the next id to use for created types
+     * @param inferenceVisitor the type inference visitor to use
      * @return the Iceberg type
      */
     public static Optional<org.apache.iceberg.types.Type> of(
             @NotNull final Type<?> type,
-            @NotNull final TypeUtil.NextID nextId) {
-        Objects.requireNonNull(nextId);
-        org.apache.iceberg.types.Type icebergType = type.walk(BestIcebergType.INSTANCE);
+            @NotNull final Type.Visitor<org.apache.iceberg.types.Type> inferenceVisitor) {
+        final org.apache.iceberg.types.Type icebergType = type.walk(inferenceVisitor);
         if (icebergType == null) {
             return Optional.empty();
         }
@@ -114,6 +121,10 @@ public final class TypeInference {
                 return of((Types.StringType) primitiveType);
             case DECIMAL:
                 return of((Types.DecimalType) primitiveType);
+            case BINARY:
+                return of((Types.BinaryType) primitiveType);
+            case FIXED:
+                return of((Types.FixedType) primitiveType);
             case STRUCT:
             case LIST:
             case MAP:
@@ -123,8 +134,35 @@ public final class TypeInference {
             case TIMESTAMP_NANO:
                 // should be able to support UUID, maybe fixed length codec?
             case UUID:
-            case BINARY:
-            case FIXED:
+            default:
+                return null;
+        }
+    }
+
+
+    private static Type<?> ofImpl(final Types.ListType listType) {
+        switch (listType.elementType().typeId()) {
+            case DOUBLE:
+                return DoubleVector.type();
+            case FLOAT:
+                return FloatVector.type();
+            case INTEGER:
+                return IntVector.type();
+            case LONG:
+                return LongVector.type();
+            case BOOLEAN:
+            case STRING:
+            case TIMESTAMP:
+            case DATE:
+            case TIME:
+            case DECIMAL:
+                return ObjectVector.type((GenericType<?>) ofImpl(listType.elementType().asPrimitiveType()));
+            case FIXED: // Fall through
+            case BINARY: // Fall through
+            case LIST: // Fall through
+            case UUID: // Fall through
+            case STRUCT: // Fall through
+            case MAP: // Fall through
             default:
                 return null;
         }
@@ -173,6 +211,14 @@ public final class TypeInference {
         return Type.find(BigDecimal.class);
     }
 
+    static Type<?> of(@SuppressWarnings("unused") Types.BinaryType type) {
+        return Type.find(byte[].class);
+    }
+
+    static Type<?> of(@SuppressWarnings("unused") Types.FixedType type) {
+        return Type.find(byte[].class);
+    }
+
     public static abstract class Exception extends java.lang.Exception {
         public Exception() {}
 
@@ -206,11 +252,16 @@ public final class TypeInference {
         }
     }
 
-    private enum BestIcebergType implements
+    static class BestIcebergType implements
             Type.Visitor<org.apache.iceberg.types.Type>,
             PrimitiveType.Visitor<org.apache.iceberg.types.Type>,
             GenericType.Visitor<org.apache.iceberg.types.Type> {
-        INSTANCE;
+
+        final TypeUtil.NextID nextID;
+
+        BestIcebergType(@NotNull final TypeUtil.NextID nextID) {
+            this.nextID = nextID;
+        }
 
         @Override
         public org.apache.iceberg.types.Type visit(PrimitiveType<?> primitiveType) {
@@ -241,12 +292,7 @@ public final class TypeInference {
 
         @Override
         public org.apache.iceberg.types.Type visit(ArrayType<?, ?> arrayType) {
-            final Type componentType = arrayType.componentType();
-            if (!(componentType instanceof PrimitiveType<?>)) {
-                return null;
-            }
-            return null;
-            // return (Boolean) componentType.walk(new TypeCompatibility.PrimitiveCompat(elementType));
+            return Types.ListType.ofOptional(nextID.get(), arrayType.componentType().walk(this));
         }
 
         @Override

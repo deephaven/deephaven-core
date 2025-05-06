@@ -21,7 +21,6 @@ import org.apache.iceberg.exceptions.AlreadyExistsException;
 import org.apache.iceberg.exceptions.NamespaceNotEmptyException;
 import org.apache.iceberg.io.FileIO;
 import org.apache.iceberg.types.Type;
-import org.apache.iceberg.types.TypeUtil;
 import org.apache.iceberg.types.Types;
 import org.jetbrains.annotations.NotNull;
 
@@ -122,7 +121,7 @@ public final class IcebergUtils {
      *
      * @param columnType The Deephaven type to be converted.
      * @return The converted Iceberg type.
-     * @deprecated prefer {@link TypeInference#of(io.deephaven.qst.type.Type, TypeUtil.NextID)}
+     * @deprecated prefer {@link TypeInference#of(io.deephaven.qst.type.Type, io.deephaven.qst.type.Type.Visitor)} )}
      */
     // TODO(DH-19288): Remove deprecated items after Iceberg update
     @Deprecated(forRemoval = true)

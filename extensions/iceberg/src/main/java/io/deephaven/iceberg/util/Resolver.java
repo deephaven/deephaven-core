@@ -399,10 +399,11 @@ public abstract class Resolver {
         final Collection<String> partitioningColumnNames = new ArrayList<>();
         final List<Types.NestedField> fields = new ArrayList<>();
         final TypeUtil.NextID nextID = new AtomicInteger(INITIAL_FIELD_ID)::getAndIncrement;
+        final Type.Visitor<org.apache.iceberg.types.Type> inferenceVisitor = new TypeInference.BestIcebergType(nextID);
         for (final ColumnDefinition<?> columnDefinition : definition.getColumns()) {
             final String dhColumnName = columnDefinition.getName();
             final Type<?> type = Type.find(columnDefinition.getDataType(), columnDefinition.getComponentType());
-            final org.apache.iceberg.types.Type icebergType = TypeInference.of(type, nextID).orElse(null);
+            final org.apache.iceberg.types.Type icebergType = TypeInference.of(type, inferenceVisitor).orElse(null);
             if (icebergType == null) {
                 throw new MappingException(
                         String.format("Unable to infer the best Iceberg type for Deephaven column type `%s`", type));

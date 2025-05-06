@@ -59,7 +59,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
 
-import static io.deephaven.iceberg.base.IcebergUtils.convertToIcebergType;
 import static io.deephaven.iceberg.base.IcebergUtils.verifyPartitioningColumns;
 import static io.deephaven.iceberg.base.IcebergUtils.verifyRequiredFields;
 
@@ -349,24 +348,30 @@ public class IcebergTableWriter {
             @NotNull final ColumnDefinition<?> columnDefinition) {
         final Type expectedIcebergType = icebergField.type();
         final String dhColumnName = columnDefinition.getName();
-        final Class<?> dhDataType = columnDefinition.getDataType();
-        final Class<?> dhComponentType = columnDefinition.getComponentType();
-        if (dhComponentType == null) {
-            final Type convertedIcebergType = convertToIcebergType(dhDataType);
-            if (!expectedIcebergType.equals(convertedIcebergType)) {
-                throw new IllegalArgumentException("Column " + dhColumnName + " has type " + dhDataType + " in table " +
-                        "definition but type " + expectedIcebergType + " in Iceberg schema");
+        final io.deephaven.qst.type.Type<?> dhType =
+                io.deephaven.qst.type.Type.find(columnDefinition.getDataType(), columnDefinition.getComponentType());
+        // We can use field ID 0 since we are not using it for anything else, just for type inference and verification
+        final io.deephaven.qst.type.Type.Visitor<org.apache.iceberg.types.Type> inferenceVisitor =
+                new TypeInference.BestIcebergType(() -> 0);
+        final org.apache.iceberg.types.Type inferredIcebergType =
+                TypeInference.of(dhType, inferenceVisitor).orElse(null);
+        if (inferredIcebergType == null) {
+            throw new Resolver.MappingException(
+                    String.format("Unable to infer the best Iceberg type for Deephaven column %s of type `%s`",
+                            dhColumnName, dhType));
+        }
+        if (inferredIcebergType.isPrimitiveType()) {
+            if (!expectedIcebergType.equals(inferredIcebergType)) {
+                throw new IllegalArgumentException("Column " + dhColumnName + " has type `" + dhType + "` in table " +
+                        "definition, which is inferred as `" + inferredIcebergType + "` but has type `" +
+                        expectedIcebergType + "` in Iceberg schema");
             }
-        } else {
-            if (!expectedIcebergType.isListType()) {
-                throw new IllegalArgumentException("Column " + dhColumnName + " is not a list type in the schema but " +
-                        "has a component type " + dhComponentType + " in the table definition");
-            }
-            final Type convertedIcebergType = convertToIcebergType(dhComponentType);
-            if (!expectedIcebergType.asListType().elementType().equals(convertedIcebergType)) {
-                throw new IllegalArgumentException("Column " + dhColumnName + " has component type " + dhComponentType +
-                        " in table definition but type " + expectedIcebergType + " in Iceberg schema");
-            }
+        } else if (!expectedIcebergType.isListType() ||
+                !expectedIcebergType.asListType().elementType()
+                        .equals(inferredIcebergType.asListType().elementType())) {
+            throw new IllegalArgumentException("Column " + dhColumnName + " has type `" + dhType + "` in table " +
+                    "definition, which is inferred as `" + inferredIcebergType + "` but has type `" +
+                    expectedIcebergType + "` in Iceberg schema");
         }
     }
 
