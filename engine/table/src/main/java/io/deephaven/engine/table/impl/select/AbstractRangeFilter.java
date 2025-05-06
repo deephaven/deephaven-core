@@ -10,9 +10,13 @@ import io.deephaven.engine.table.impl.SortedColumnsAttribute;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.time.DateTimeUtils;
+import io.deephaven.util.compare.ObjectComparisons;
+import io.deephaven.util.type.NumericTypeUtils;
 import org.jetbrains.annotations.NotNull;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -113,4 +117,114 @@ public abstract class AbstractRangeFilter extends WhereFilterImpl implements Exp
 
     @Override
     public void setRecomputeListener(RecomputeListener listener) {}
+
+    public static int compare(Object a, Object b) {
+        if (a == null || b == null) {
+            throw new IllegalArgumentException("Arguments cannot be null");
+        }
+
+        // Convert Instant to long for comparison.
+        if (a instanceof Instant) {
+            a = DateTimeUtils.epochNanos((Instant) a);
+        }
+
+        if (b instanceof Instant) {
+            b = DateTimeUtils.epochNanos((Instant) b);
+        }
+
+        if (NumericTypeUtils.isNumericOrChar(a.getClass()) && NumericTypeUtils.isNumericOrChar(b.getClass())) {
+            return comparePrimitives(a, b);
+        }
+
+        return ObjectComparisons.compare(a, b);
+    }
+
+    public static int comparePrimitives(Object a, Object b) {
+        if (a == null || b == null) {
+            throw new IllegalArgumentException("Arguments cannot be null");
+        }
+
+        // Special case for two longs to avoid double conversion.
+        if (a instanceof Long && b instanceof Long) {
+            long val1 = (long) a;
+            long val2 = (long) b;
+            return Long.compare(val1, val2);
+        }
+
+        // Convert to double for other comparisons.
+        double val1, val2;
+
+        if (a instanceof Character) {
+            val1 = (double) (char) a;
+        } else if (a instanceof Byte) {
+            val1 = (double) (byte) a;
+        } else if (a instanceof Short) {
+            val1 = (double) (short) a;
+        } else if (a instanceof Integer) {
+            val1 = (double) (int) a;
+        } else if (a instanceof Long) {
+            val1 = (double) (long) a;
+        } else if (a instanceof Float) {
+            val1 = (double) (float) a;
+        } else if (a instanceof Double) {
+            val1 = (double) a;
+        } else {
+            throw new IllegalArgumentException("Unsupported type for first argument: " + a.getClass());
+        }
+
+        if (b instanceof Character) {
+            val2 = (double) (char) b;
+        } else if (b instanceof Byte) {
+            val2 = (double) (byte) b;
+        } else if (b instanceof Short) {
+            val2 = (double) (short) b;
+        } else if (b instanceof Integer) {
+            val2 = (double) (int) b;
+        } else if (b instanceof Long) {
+            val2 = (double) (long) b;
+        } else if (b instanceof Float) {
+            val2 = (double) (float) b;
+        } else if (b instanceof Double) {
+            val2 = (double) b;
+        } else {
+            throw new IllegalArgumentException("Unsupported type for second argument: " + b.getClass());
+        }
+
+        return Double.compare(val1, val2);
+    }
+
+    /**
+     * Returns true if the range filter overlaps with the given range.
+     *
+     * @param lower the lower value bound of the range
+     * @param upper the upper value bound of the range
+     * @param lowerInclusive whether the lower bound is inclusive
+     * @param upperInclusive whether the upper bound is inclusive
+     * @return {@code true} if the range filter overlaps with the given range, {@code false} otherwise
+     */
+    public abstract boolean overlaps(
+            @NotNull final Object lower,
+            @NotNull final Object upper,
+            final boolean lowerInclusive,
+            final boolean upperInclusive);
+
+    /**
+     * Returns true if the range filter overlaps with the given range (assumes the provided min/max values are
+     * inclusive)
+     * .
+     * @param min the minimum value in the given range
+     * @param max the maximum value in the given range
+     * @return {@code true} if the range filter overlaps with the given range, {@code false} otherwise
+     */
+    public boolean overlaps(@NotNull final Object min, @NotNull final Object max) {
+        return overlaps(min, max, true, true);
+    }
+
+    /**
+     * Returns true if the given value is found within the range filter.
+     *
+     * @param value the value to check
+     * @return {@code true} if the range filter matches the given value, {@code false} otherwise
+     */
+    public abstract boolean contains(@NotNull final Object value);
 }

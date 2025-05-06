@@ -164,4 +164,41 @@ public class LongRangeFilter extends AbstractRangeFilter {
         }
         return minPosition;
     }
+
+    @Override
+    public boolean overlaps(
+            @NotNull final Object lower,
+            @NotNull final Object upper,
+            final boolean lowerInclusive,
+            final boolean upperInclusive) {
+
+        final int c1 = comparePrimitives(this.lower, upper);
+        if (c1 > 0) {
+            return false; // this.lower > inputUpper, no overlap possible.
+        }
+        final int c2 = comparePrimitives(lower, this.upper);
+        if (c2 > 0) {
+            return false; // inputLower > this.upper, no overlap possible.
+        }
+        // Test for complete inclusion and test the edges.
+        return (c1 < 0 && c2 < 0)
+                || (c1 == 0 && this.lowerInclusive && upperInclusive)
+                || (c2 == 0 && lowerInclusive && this.upperInclusive);
+    }
+
+    @Override
+    public boolean contains(@NotNull final Object value) {
+        final int c1 = comparePrimitives(this.lower, value);
+        if (c1 > 0) {
+            return false; // this.lower > value, no overlap possible.
+        }
+        final int c2 = comparePrimitives(value, this.upper);
+        if (c2 > 0) {
+            return false; // value > this.upper, no overlap possible.
+        }
+        // Test for complete inclusion and test the edges.
+        return (c1 < 0 && c2 < 0)
+                || (c1 == 0 & this.lowerInclusive)
+                || (c2 == 0 && this.upperInclusive);
+    }
 }

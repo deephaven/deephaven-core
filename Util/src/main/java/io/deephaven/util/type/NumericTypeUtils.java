@@ -32,6 +32,16 @@ public class NumericTypeUtils {
     }
 
     /**
+     * Whether the class is {@link NumericTypeUtils#isPrimitiveNumeric(Class)} or {@link #isBoxedNumeric(Class)}
+     *
+     * @param c class
+     * @return true if {@code c} is numeric, false otherwise
+     */
+    public static boolean isNumericOrChar(@NotNull final Class<?> c) {
+        return isPrimitiveNumeric(c) || isBoxedNumeric(c) || c == char.class || c == Character.class;
+    }
+
+    /**
      * Whether the class is a {@link BigInteger} or {@link BigDecimal}
      *
      * @param type the class

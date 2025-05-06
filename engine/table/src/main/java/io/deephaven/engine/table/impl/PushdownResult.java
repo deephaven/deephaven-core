@@ -11,6 +11,15 @@ import io.deephaven.util.SafeCloseable;
  */
 public class PushdownResult implements SafeCloseable {
     /**
+     * Costs for various types of push-down operations.
+     */
+    public static long METADATA_STATS_COST = 10_000L;
+    public static long BLOOM_FILTER_COST = 20_000L;
+    public static long IN_MEMORY_DATA_INDEX_COST = 30_000L;
+    public static long SORTED_DATA_COST = 40_000L;
+    public static long DEFERRED_DATA_INDEX_COST = 50_000L;
+
+    /**
      * Rows that match the predicate.
      */
     private final WritableRowSet match;

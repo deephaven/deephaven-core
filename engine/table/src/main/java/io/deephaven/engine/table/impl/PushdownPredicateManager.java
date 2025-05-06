@@ -23,10 +23,11 @@ public interface PushdownPredicateManager {
      * @param input The set of rows to test.
      * @param fullSet The full set of rows
      * @param usePrev Whether to use the previous result
+     * @param context The {@link FilterContext} to use for the pushdown operation.
+     * @param costCeiling Execute all possible filters with a cost leq this value.
      * @param jobScheduler The job scheduler to use for scheduling child jobs
      * @param onComplete Consumer of the output rowsets for added and modified rows that pass the filter
      * @param onError Consumer of any exceptions that occur during the pushdown operation
-     * @return The result of the push down operation.
      */
     default void pushdownFilter(
             final Map<String, ColumnSource<?>> columnSourceMap,
@@ -34,6 +35,8 @@ public interface PushdownPredicateManager {
             final RowSet input,
             final RowSet fullSet,
             final boolean usePrev,
+            final FilterContext context,
+            final long costCeiling,
             final JobScheduler jobScheduler,
             final Consumer<PushdownResult> onComplete,
             final Consumer<Exception> onError) {
@@ -49,14 +52,27 @@ public interface PushdownPredicateManager {
      * @param selection The set of rows to tests.
      * @param fullSet The full set of rows
      * @param usePrev Whether to use the previous result
+     * @param context The {@link FilterContext} to use for the pushdown operation.
      * @return The estimated cost of the push down operation.
      */
     default long estimatePushdownFilterCost(
             WhereFilter filter,
             RowSet selection,
             RowSet fullSet,
-            boolean usePrev) {
+            boolean usePrev,
+            FilterContext context) {
         return Long.MAX_VALUE; // No benefit to pushing down.
+    }
+
+    /**
+     * Make a filter context for this pushdown predicate manager. This is used to pass the filter and other information
+     * to the filtering code.
+     *
+     * @param filter the filter that belongs to this context
+     * @return the created filter context
+     */
+    default FilterContext makeFilterContext(final WhereFilter filter) {
+        return FilterContext.of(filter, this);
     }
 
     /**
@@ -75,7 +91,6 @@ public interface PushdownPredicateManager {
                 return manager;
             }
         }
-
         return null;
     }
 }

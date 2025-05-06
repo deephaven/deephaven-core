@@ -27,11 +27,7 @@ import io.deephaven.engine.table.impl.chunkfillers.ChunkFiller;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkMatchFilterFactory;
 import io.deephaven.engine.table.impl.select.WhereFilter;
-import io.deephaven.engine.table.impl.sources.FillUnordered;
-import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
-import io.deephaven.engine.table.impl.sources.SingleValueColumnSource;
 import io.deephaven.engine.table.impl.sources.UnboxedLongBackedColumnSource;
-import io.deephaven.engine.table.impl.sources.regioned.RegionedColumnSource;
 import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.table.iterators.ChunkedColumnIterator;
 import io.deephaven.engine.updategraph.UpdateGraph;
@@ -365,39 +361,6 @@ public abstract class AbstractColumnSource<T> implements
     }
 
     /**
-     * Estimate the cost of executing the provided filter on this column source. This returns a unitless value that can
-     * be used to compare the cost of different filters.
-     *
-     * @param filter The {@link Filter filter} to test.
-     * @param selection The set of rows to test.
-     * @param fullSet The full set of rows in this column source
-     * @param usePrev Whether to use the previous result
-     * @return The estimated cost of the push down operation.
-     */
-    public long estimateFilterCost(
-            WhereFilter filter,
-            RowSet selection,
-            RowSet fullSet,
-            boolean usePrev) {
-        // TODO: this is unsophisticated but has the advantage of having all the comparison logic co-located
-        // for easy comparison and tuning. Alternative is to override this method in the child classes.
-
-        final long selectionSize = selection.size();
-        if (this instanceof SingleValueColumnSource || this instanceof NullValueColumnSource) {
-            // These should be able to be evaluated in a single test.
-            return 100L;
-        } else if (this instanceof FillUnordered) {
-            return 200L * selectionSize;
-        } else if (!(this instanceof RegionedColumnSource)) {
-            // TODO: where does UnionColumnSource fit? Tricky to reason about when composed of potentially
-            // different column sources. Maybe a maximum or average of the individual column sources?
-            return 500L * selectionSize;
-        }
-        // RegionedColumnSource, assuming disk / storage costs very high relative to the other column types.
-        return 1000L * selectionSize;
-    }
-
-    /**
      * Estimate the cost of pushing down a filter. This returns a unitless value that can be used to compare the cost of
      * executing different filters.
      *
@@ -405,13 +368,15 @@ public abstract class AbstractColumnSource<T> implements
      * @param selection The set of rows to tests.
      * @param fullSet The full set of rows
      * @param usePrev Whether to use the previous result
+     * @param context The {@link FilterContext} to use for the pushdown operation.
      * @return The estimated cost of the push down operation.
      */
     public long estimatePushdownFilterCost(
-            WhereFilter filter,
-            RowSet selection,
-            RowSet fullSet,
-            boolean usePrev) {
+            final WhereFilter filter,
+            final RowSet selection,
+            final RowSet fullSet,
+            final boolean usePrev,
+            final FilterContext context) {
         return Long.MAX_VALUE; // No benefit to pushing down.
     }
 
@@ -422,6 +387,8 @@ public abstract class AbstractColumnSource<T> implements
      * @param input The set of rows to test.
      * @param fullSet The full set of rows
      * @param usePrev Whether to use the previous result
+     * @param context The {@link FilterContext} to use for the pushdown operation.
+     * @param costCeiling Execute all possible filters with a cost leq this value.
      * @param jobScheduler The job scheduler to use for scheduling child jobs
      * @param onComplete Consumer of the output rowsets for added and modified rows that pass the filter
      * @param onError Consumer of any exceptions that occur during the pushdown operation
@@ -431,7 +398,9 @@ public abstract class AbstractColumnSource<T> implements
             final WhereFilter filter,
             final RowSet input,
             final RowSet fullSet,
-            boolean usePrev,
+            final boolean usePrev,
+            final FilterContext context,
+            final long costCeiling,
             final JobScheduler jobScheduler,
             final Consumer<PushdownResult> onComplete,
             final Consumer<Exception> onError) {
@@ -444,6 +413,17 @@ public abstract class AbstractColumnSource<T> implements
      */
     public PushdownPredicateManager pushdownManager() {
         return null;
+    }
+
+    /**
+     * Make a filter context for this column source. This is used to pass the filter and other information to the
+     * filtering code.
+     *
+     * @param filter the filter that belongs to this context
+     * @return the created filter context
+     */
+    public FilterContext makeFilterContext(final WhereFilter filter) {
+        return FilterContext.of(filter, this);
     }
 
     /**

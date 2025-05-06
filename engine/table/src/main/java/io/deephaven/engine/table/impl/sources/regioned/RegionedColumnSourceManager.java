@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.table.impl.sources.regioned;
 
+import com.google.common.math.LongMath;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.*;
@@ -13,9 +14,11 @@ import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.locations.*;
 import io.deephaven.engine.table.impl.locations.impl.AbstractTableLocation;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationUpdateSubscriptionBuffer;
+import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.ObjectArraySource;
 import io.deephaven.engine.table.impl.util.DelayedErrorNotifier;
+import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.updategraph.UpdateCommitter;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
@@ -27,19 +30,25 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-import static io.deephaven.engine.table.impl.sources.regioned.RegionedColumnSource.ROW_KEY_TO_SUB_REGION_ROW_INDEX_MASK;
-import static io.deephaven.engine.table.impl.sources.regioned.RegionedColumnSource.getFirstRowKey;
+import static io.deephaven.engine.table.impl.sources.regioned.RegionedColumnSource.*;
 
 /**
  * Manage column sources made up of regions in their own row key address space.
  */
-public class RegionedColumnSourceManager implements ColumnSourceManager, DelegatingLivenessNode {
+public class RegionedColumnSourceManager implements ColumnSourceManager, DelegatingLivenessNode, PushdownPredicateManager {
 
     private static final Logger log = LoggerFactory.getLogger(RegionedColumnSourceManager.class);
+
+    /**
+     * How many locations to test for data index or other location-level metadata before we give up and assume the
+     * location has no useful information for push-down purposes.
+     */
+    private static final long PUSH_DOWN_LOCATIONS_TO_TEST = 5;
 
     /**
      * The liveness node to which this column source manager will delegate.
@@ -749,5 +758,72 @@ public class RegionedColumnSourceManager implements ColumnSourceManager, Delegat
             attributes.put(Table.ADD_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
         }
         return attributes;
+    }
+
+    @Override
+    public long estimatePushdownFilterCost(
+            final WhereFilter filter,
+            final RowSet selection,
+            final RowSet fullSet,
+            final boolean usePrev,
+            final FilterContext context) {
+
+        if (includedLocations().isEmpty()) {
+            return 0; // No locations, no cost
+        }
+
+        // Test a few locations and assume the rest are similar (or no worse)
+        final long costPerLocation = includedLocations().stream().limit(PUSH_DOWN_LOCATIONS_TO_TEST).mapToLong(
+                        location -> location.estimatePushdownFilterCost(filter, selection, fullSet, usePrev, context))
+                .reduce(Long::max).orElse(Long.MAX_VALUE);
+
+        return LongMath.saturatedMultiply(includedLocations().size(), costPerLocation);
+    }
+
+    @Override
+    public void pushdownFilter(
+            final Map<String, ColumnSource<?>> columnSourceMap,
+            final WhereFilter filter,
+            final RowSet input,
+            final RowSet fullSet,
+            final boolean usePrev,
+            final FilterContext context,
+            final long costCeiling,
+            final JobScheduler jobScheduler,
+            final Consumer<PushdownResult> onComplete,
+            final Consumer<Exception> onError) {
+        final WritableRowSet match = RowSetFactory.empty();
+        final WritableRowSet maybeMatch = RowSetFactory.empty();
+
+        // Use the job scheduler to run every location in parallel.
+        jobScheduler.iterateParallel(
+                ExecutionContext.getContext(),
+                logOutput -> logOutput.append("RegionedColumnSourceManager#pushdownFilter"),
+                JobScheduler.DEFAULT_CONTEXT_FACTORY,
+                0, orderedIncludedTableLocations.size(),
+                (ctx, locationIdx, locationNec, locationResume) -> {
+                    final IncludedTableLocationEntry entry = orderedIncludedTableLocations.get(locationIdx);
+
+                    final long locationStartKey = getFirstRowKey(entry.regionIndex);
+                    final long locationEndKey = getLastRowKey(entry.regionIndex);
+
+                    try (final WritableRowSet locationInput = input.subSetByKeyRange(locationStartKey, locationEndKey)) {
+                        locationInput.shiftInPlace(-locationStartKey); // Shift to the region's key space
+                        locationInput.retain(entry.rowSetAtLastUpdate); // intersect in place with  region's row set
+                        try (final PushdownResult result = entry.location.pushdownFilter(columnSourceMap, filter, locationInput, usePrev, context, costCeiling)) {
+                            // Add the results to the global set.
+                            synchronized (match) {
+                                match.insertWithShift(locationStartKey, result.match());
+                            }
+                            synchronized (maybeMatch) {
+                                maybeMatch.insertWithShift(locationStartKey, result.maybeMatch());
+                            }
+                        } catch (final Exception e) {
+                            // If we have an error, we need to notify the user and stop processing.
+                            onError.accept(e);
+                        }
+                    }
+                    locationResume.run();
+                }, () -> onComplete.accept(PushdownResult.of(match, maybeMatch)), onError);
     }
 }

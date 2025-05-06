@@ -235,20 +235,12 @@ abstract class AbstractFilterExecution {
      * continue until the filter occupying the current index is fully complete.
      */
     private void executeStatelessFilter(
-            final FilterResultContext[] filterResultContexts,
+            final FilterContext[] filterContexts,
             final int filterIdx,
             final WhereFilter filter,
             final MutableObject<RowSet> localInput,
             final Runnable filterComplete,
             final Consumer<Exception> filterNec) {
-        // Three initial scenarios are possible:
-        // 1. Push-down filter executed, after re-ordering a new filter is at the current index.
-        // * Combine the push-down results into a new input RowSet and recurse to the new filter.
-        // * This might chain multiple push-down filters together, followed by a single chunk-filter.
-        // 2. Push-down filter executed, after re-ordering the current filter is still at the current index.
-        // * Optimize by executing the chunk filter against only the push-down "maybe" results.
-        // 3. Chunk filter executed.
-        // * Store the results and call the results consumer
 
         // Create the result consumer for chunk filters.
         final Consumer<WritableRowSet> onFilterComplete = (result) -> {
@@ -258,30 +250,33 @@ abstract class AbstractFilterExecution {
                 localInput.setValue(result);
             }
             // This filter is complete, sort the remaining filters and call the consumer.
-            if (filterIdx + 1 < filterResultContexts.length) {
+            if (filterIdx + 1 < filterContexts.length) {
                 // Recompute the remaining costs to ensure the next filter is the lowest cost.
-                FilterResultContext.sortFilterContexts(
-                        filterIdx, filterResultContexts, sourceTable, localInput.getValue(), usePrev);
+                FilterContext.sortFilterContexts(
+                        filterIdx, filterContexts, sourceTable, localInput.getValue(), usePrev);
             }
             filterComplete.run();
         };
 
-        final FilterResultContext frc = filterResultContexts[filterIdx];
-        final WhereFilter currentFilter = frc.filter();
+        final FilterContext fc = filterContexts[filterIdx];
+        final WhereFilter currentFilter = fc.filter();
 
-        if (frc.pushdownNeeded()) {
+        // Our ceiling cost is the cost of the next filter in the list, or Long.MAX_VALUE if this is the last filter.
+        final long costCeiling = filterIdx + 1 < filterContexts.length
+                ? filterContexts[filterIdx + 1].pushdownFilterCost()
+                : Long.MAX_VALUE;
+
+        if (fc.pushdownFilterCost() < Long.MAX_VALUE) {
             // Create the push-down result consumer.
             final Consumer<PushdownResult> onPushdownComplete = (pushdownResult) -> {
-                // Record that we are done with the push-down.
-                frc.markPushdownComplete();
+                fc.updateExecutedFilterCost(costCeiling);
 
                 if (pushdownResult.maybeMatch().isEmpty()) {
-                    // If there are no remaining `maybe` rows, skip the chunk filter.
                     localInput.setValue(pushdownResult.match().copy());
 
-                    // Maybe recompute the remaining costs to ensure the next filter is the lowest cost.
-                    if (filterIdx + 1 < filterResultContexts.length) {
-                        FilterResultContext.sortFilterContexts(filterIdx + 1, filterResultContexts, sourceTable,
+                    // Recompute the remaining costs to ensure the next filter is the lowest cost.
+                    if (filterIdx + 1 < filterContexts.length) {
+                        FilterContext.sortFilterContexts(filterIdx + 1, filterContexts, sourceTable,
                                 localInput.getValue(), usePrev);
                     }
 
@@ -292,23 +287,23 @@ abstract class AbstractFilterExecution {
                     }
                 }
 
-                // Sort the filters again.
-                if (filterIdx + 1 < filterResultContexts.length) {
+                // We still have some maybe rows, sort the filters again.
+                if (filterIdx + 1 < filterContexts.length) {
                     // Recompute the remaining costs to ensure the next filter is the lowest cost.
-                    FilterResultContext.sortFilterContexts(
-                            filterIdx, filterResultContexts, sourceTable, localInput.getValue(), usePrev);
+                    FilterContext.sortFilterContexts(
+                            filterIdx, filterContexts, sourceTable, localInput.getValue(), usePrev);
                 }
 
                 // If there is a new filter at the current index, need to evaluate it.
-                if (!frc.equals(filterResultContexts[filterIdx])) {
+                if (!fc.equals(filterContexts[filterIdx])) {
                     // Use the union of the match and maybe rows as the input for the next filter.
                     localInput.setValue(pushdownResult.match().union(pushdownResult.maybeMatch()));
 
                     // Store the result for later use by the companion chunk filter.
-                    frc.setPushdownResult(pushdownResult);
+                    fc.updatePushdownResult(pushdownResult);
 
                     executeStatelessFilter(
-                            filterResultContexts, filterIdx, filterResultContexts[filterIdx].filter(),
+                            filterContexts, filterIdx, filterContexts[filterIdx].filter(),
                             localInput, filterComplete, filterNec);
                 } else {
                     // Leverage push-down results to reduce the chunk filter input.
@@ -327,28 +322,20 @@ abstract class AbstractFilterExecution {
                 }
             };
 
-            if (frc.ppm() != null) {
-                frc.ppm().pushdownFilter(
-                        sourceTable.getColumnSourceMap(),
-                        currentFilter, localInput.getValue(), sourceTable.getRowSet(), usePrev, jobScheduler(),
-                        onPushdownComplete, filterNec);
+            // Execute the pushdown filter.
+            if (fc.ppm() != null) {
+                fc.ppm().pushdownFilter(sourceTable.getColumnSourceMap(), currentFilter, localInput.getValue(), sourceTable.getRowSet(), usePrev, fc, costCeiling, jobScheduler(), onPushdownComplete, filterNec);
             } else {
-                final AbstractColumnSource<?> acs =
-                        (AbstractColumnSource<?>) sourceTable
-                                .getColumnSource(currentFilter.getColumns().get(0));
-
-                acs.pushdownFilter(
-                        currentFilter, localInput.getValue(), sourceTable.getRowSet(), usePrev, jobScheduler(),
-                        onPushdownComplete, filterNec);
+                fc.columnSource().pushdownFilter(currentFilter, localInput.getValue(), sourceTable.getRowSet(), usePrev, fc, costCeiling, jobScheduler(), onPushdownComplete, filterNec);
             }
             return;
         }
 
         final RowSet input = localInput.getValue();
 
-        if (frc.pushdownResult() != null) {
+        if (fc.pushdownResult() != null) {
             // Leverage push-down results to reduce the chunk filter input.
-            final PushdownResult localPushdownResult = frc.pushdownResult();
+            final PushdownResult localPushdownResult = fc.pushdownResult();
 
             final Consumer<WritableRowSet> localConsumer = (rows) -> {
                 // Do some cleanup on the rowsets and call the consumer.
@@ -394,23 +381,31 @@ abstract class AbstractFilterExecution {
             final Runnable collectionResume,
             final Consumer<Exception> collectionNec) {
 
-        // Create an array of FilterResultContext objects for the filters in this collection.
-        final FilterResultContext[] filterResultContexts = filters.stream().map(filter -> {
+        // Create an array of FilterContext objects for the filters in this collection.
+        final FilterContext[] filterContexts = filters.stream().map(filter -> {
             final PushdownPredicateManager ppm;
             if (filter.getColumns().size() > 1) {
                 final Collection<ColumnSource<?>> columnSources = filter.getColumns().stream()
                         .map(sourceTable::getColumnSource)
                         .collect(Collectors.toList());
                 ppm = PushdownPredicateManager.getPushdownPredicateManager(columnSources);
-            } else {
-                ppm = null;
+                if (ppm != null) {
+                    return ppm.makeFilterContext(filter);
+                }
+            } else if (filter.getColumns().size() == 1) {
+                final ColumnSource<?> columnSource =
+                        sourceTable.getColumnSource(filter.getColumns().get(0));
+                if (columnSource instanceof AbstractColumnSource) {
+                    return ((AbstractColumnSource<?>) columnSource).makeFilterContext(filter);
+                }
             }
-            return new FilterResultContext(filter, ppm);
-        }).toArray(FilterResultContext[]::new);
+            // return generic filter context
+            return FilterContext.of(filter);
+        }).toArray(FilterContext[]::new);
 
         // Sort the filters by cost, with the lowest cost first.
-        FilterResultContext.sortFilterContexts(
-                0, filterResultContexts, sourceTable, localInput.getValue(), usePrev);
+        FilterContext.sortFilterContexts(
+                0, filterContexts, sourceTable, localInput.getValue(), usePrev);
 
         // Iterate serially through the stateless filters in this set. Each filter will successively
         // restrict the input to the next filter, until we reach the end of the filter chain or no rows match.
@@ -418,7 +413,7 @@ abstract class AbstractFilterExecution {
                 ExecutionContext.getContext(),
                 this::append,
                 JobScheduler.DEFAULT_CONTEXT_FACTORY,
-                0, filterResultContexts.length,
+                0, filterContexts.length,
                 (filterContext, filterIdx, filterNec, filterResume) -> {
                     if (localInput.getValue().isEmpty()) {
                         // If there are no rows left to filter, skip this filter.
@@ -426,7 +421,7 @@ abstract class AbstractFilterExecution {
                         return;
                     }
                     executeStatelessFilter(
-                            filterResultContexts, filterIdx, filterResultContexts[filterIdx].filter(),
+                            filterContexts, filterIdx, filterContexts[filterIdx].filter(),
                             localInput, filterResume, filterNec);
                 }, collectionResume, collectionNec);
     }
