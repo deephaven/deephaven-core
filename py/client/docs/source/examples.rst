@@ -255,22 +255,22 @@ Supported Data Types
 For ticking data, we support a subset of the data types supported by the server. The server
 types supported by the ticking library are:
 
-=======================  ====================
-Java type                Python or NumPy type
-=======================  ====================
-byte                     np.int8
-short                    np.int16
-int                      np.int32
-long                     np.int64
-float                    np.float32
-double                   np.float64
-boolean                  np.bool\_
-char                     np.uint16
-java.lang.String         str
-java.time.ZonedDateTime  np.datetime64[ns]
-java.time.LocalDate      np.int64
-java.time.LocalTime      np.int64
-=======================  ====================
+=======================  =========================
+Java type                PyArrow type
+=======================  =========================
+byte                     pa.int8()
+short                    pa.int16()
+int                      pa.int32()
+long                     pa.int64()
+float                    pa.float32()
+double                   pa.float64()
+boolean                  pa.bool\_()
+char                     pa.uint16()
+java.lang.String         pa.string()
+ava.time.ZonedDateTime   pa.timestamp("ns", "UTC")
+java.time.LocalDate      pa.date64()
+java.time.LocalTime      pa.time64("ns")
+=======================  =========================
 
 as well as lists of the above.
 
