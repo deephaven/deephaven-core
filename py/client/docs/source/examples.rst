@@ -267,7 +267,7 @@ double                   pa.float64()
 boolean                  pa.bool\_()
 char                     pa.uint16()
 java.lang.String         pa.string()
-ava.time.ZonedDateTime   pa.timestamp("ns", "UTC")
+java.time.ZonedDateTime  pa.timestamp("ns", "UTC")
 java.time.LocalDate      pa.date64()
 java.time.LocalTime      pa.time64("ns")
 =======================  =========================
