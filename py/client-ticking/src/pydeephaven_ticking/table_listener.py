@@ -213,7 +213,7 @@ class TableListener(ABC):
         pass
 
     def on_error(self, error: Exception) -> None:
-        """This method is invoked when there is an error during tabe listener processing.
+        """This method is invoked when there is an error during table listener processing.
 
         Args:
             error (Exception): the error
@@ -311,18 +311,18 @@ class TableListenerHandle:
             pass
 
 def listen(table: Table, listener: Union[Callable, TableListener],
-           on_error: Union[Callable, None] = None) -> TableListenerHandle:
+           on_error: Callable[[Exception], None] = None) -> TableListenerHandle:
     """A convenience method to create a TableListenerHandle. This method can be called in one of three ways:
 
-    listen(MyTableListener())  # invoke with your own subclass of TableListener
-    listen(on_update_callback)  # invoke with your own on_update Callback
-    listen(on_update_callback, on_error_callback)  # invoke with your own on_update and on_error callbacks
+    listen(table, MyTableListener())  # invoke with your own subclass of TableListener
+    listen(table, on_update_callback)  # invoke with your own on_update Callback
+    listen(table, on_update_callback, on_error_callback)  # invoke with your own on_update and on_error callbacks
 
     Args:
         table (Table) : the Table that is being listened to.
         listener (Union[Callable, TableListener]) : the TableListener callback that will receive TableUpdate messages
             as the table changes.
-        on_error (Callable[Exception], None]): the callback that will be invoked when an error occurs, defaults to None
+        on_error (Callable[[Exception], None]) : the callback that will be invoked when an error occurs, defaults to None
      
      Raises:
          ValueError
