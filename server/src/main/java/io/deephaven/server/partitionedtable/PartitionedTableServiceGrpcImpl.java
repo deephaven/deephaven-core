@@ -6,6 +6,7 @@ package io.deephaven.server.partitionedtable;
 import com.google.rpc.Code;
 import io.deephaven.auth.codegen.impl.PartitionedTableServiceContextualAuthWiring;
 import io.deephaven.engine.table.PartitionedTable;
+import io.deephaven.engine.table.PartitionedTableFactory;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.partitioned.PartitionedTableImpl;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
@@ -227,8 +228,6 @@ public class PartitionedTableServiceGrpcImpl extends PartitionedTableServiceGrpc
         if (uniqueStaticResult) {
             if (requestedRows.isRefreshing()) {
                 requestedRows = requestedRows.snapshot();
-                // TODO: maybe this fix instead
-                // requestedRows.setRefreshing(true);
             }
 
             final long resultPartitionsSize = requestedRows.size();
@@ -237,6 +236,9 @@ public class PartitionedTableServiceGrpcImpl extends PartitionedTableServiceGrpc
                         "Filtered PartitionedTable has more than one constituent, " + resultPartitionsSize
                                 + " constituents found.");
             }
+
+            return requestedRows.getColumnSource(partitionedTable.constituentColumnName(), Table.class)
+                    .get(requestedRows.getRowSet().firstRowKey());
         }
 
         return new PartitionedTableImpl(requestedRows,
