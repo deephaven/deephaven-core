@@ -23,8 +23,11 @@ on all the Deephaven types:
 :cpp:type:`FloatChunk <deephaven::dhcore::chunk::FloatChunk>`,
 :cpp:type:`DoubleChunk <deephaven::dhcore::chunk::DoubleChunk>`,
 :cpp:type:`BooleanChunk <deephaven::dhcore::chunk::BooleanChunk>`,
-:cpp:type:`StringChunk <deephaven::dhcore::chunk::StringChunk>`, and
+:cpp:type:`StringChunk <deephaven::dhcore::chunk::StringChunk>`,
 :cpp:type:`DateTimeChunk <deephaven::dhcore::chunk::DateTimeChunk>`.
+:cpp:type:`DateTimeChunk <deephaven::dhcore::chunk::LocalDateChunk>`.
+:cpp:type:`DateTimeChunk <deephaven::dhcore::chunk::LocalTimeChunk>`. and
+:cpp:type:`DateTimeChunk <deephaven::dhcore::chunk::ContainerBaseChunk>`.
 
 :cpp:class:`GenericChunk <deephaven::dhcore::chunk::GenericChunk>`
 also supports the methods
@@ -83,6 +86,12 @@ Chunk Declarations
 .. doxygentypedef:: deephaven::dhcore::chunk::StringChunk
 
 .. doxygentypedef:: deephaven::dhcore::chunk::DateTimeChunk
+
+.. doxygentypedef:: deephaven::dhcore::chunk::LocalDateChunk
+
+.. doxygentypedef:: deephaven::dhcore::chunk::LocalTimeChunk
+
+.. doxygentypedef:: deephaven::dhcore::chunk::ContainerBaseChunk
 
 Utility Declarations
 --------------------
