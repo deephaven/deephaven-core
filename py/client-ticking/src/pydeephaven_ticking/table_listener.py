@@ -10,7 +10,7 @@ from typing import Callable, Dict, Generator, List, Tuple, TypeVar, Union
 import pyarrow as pa
 import pyarrow.flight as flight
 import pydeephaven_ticking._core as dhc
-import pydeephaven_ticking.util as tick_util
+import pydeephaven_ticking._util as tick_util
 import pydeephaven
 from pydeephaven.table import Table
 import threading
