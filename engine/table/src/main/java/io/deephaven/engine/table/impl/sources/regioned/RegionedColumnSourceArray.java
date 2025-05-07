@@ -67,8 +67,8 @@ abstract class RegionedColumnSourceArray<DATA_TYPE, ATTR extends Values, REGION_
 
     /**
      * Delegate to
-     * {@link #RegionedColumnSourceArray(RegionedColumnSourceManager, ColumnRegion, Class, Class, MakeDeferred)} with null component
-     * type.
+     * {@link #RegionedColumnSourceArray(RegionedColumnSourceManager, ColumnRegion, Class, Class, MakeDeferred)} with
+     * null component type.
      *
      * @param manager The {@link RegionedColumnSourceManager} that manages this column source.
      * @param nullRegion A ColumnRegion to be used when the actual region doesn't exist, which returns the correct null

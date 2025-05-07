@@ -223,27 +223,27 @@ public class ComparableRangeFilter extends AbstractRangeFilter {
             final boolean lowerInclusive,
             final boolean upperInclusive) {
 
-        final int c1 = ObjectComparisons.compare(this.lower, upper);
+        final int c1 = compare(this.lower, upper);
         if (c1 > 0) {
             return false; // this.lower > inputUpper, no overlap possible.
         }
-        final int c2 = ObjectComparisons.compare(lower, this.upper);
+        final int c2 = compare(lower, this.upper);
         if (c2 > 0) {
             return false; // inputLower > this.upper, no overlap possible.
         }
         // There is no overlap inside the ranges, test the edges.
         return (c1 < 0 && c2 < 0)
-            || (c1 == 0 & this.lowerInclusive && upperInclusive)
-            || (c2 == 0 && lowerInclusive && this.upperInclusive);
+                || (c1 == 0 & this.lowerInclusive && upperInclusive)
+                || (c2 == 0 && lowerInclusive && this.upperInclusive);
     }
 
     @Override
     public boolean contains(@NotNull final Object value) {
-        final int c1 = ObjectComparisons.compare(this.lower, value);
+        final int c1 = compare(this.lower, value);
         if (c1 > 0) {
             return false; // this.lower > value, no overlap possible.
         }
-        final int c2 = ObjectComparisons.compare(value, this.upper);
+        final int c2 = compare(value, this.upper);
         if (c2 > 0) {
             return false; // value > this.upper, no overlap possible.
         }

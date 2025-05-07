@@ -153,8 +153,8 @@ public interface TableLocation extends NamedImplementation, LogOutputAppendable,
     ColumnLocation getColumnLocation(@NotNull CharSequence name);
 
     /**
-     * Estimate the cost of pushing down this filter on this location. This returns a unitless value that can be used
-     * to compare the cost of executing different filters.
+     * Estimate the cost of pushing down this filter on this location. This returns a unitless value that can be used to
+     * compare the cost of executing different filters.
      *
      * @param filter The {@link Filter filter} to test.
      * @param selection The set of rows to tests.

@@ -324,9 +324,12 @@ abstract class AbstractFilterExecution {
 
             // Execute the pushdown filter.
             if (fc.ppm() != null) {
-                fc.ppm().pushdownFilter(sourceTable.getColumnSourceMap(), currentFilter, localInput.getValue(), sourceTable.getRowSet(), usePrev, fc, costCeiling, jobScheduler(), onPushdownComplete, filterNec);
+                fc.ppm().pushdownFilter(sourceTable.getColumnSourceMap(), currentFilter, localInput.getValue(),
+                        sourceTable.getRowSet(), usePrev, fc, costCeiling, jobScheduler(), onPushdownComplete,
+                        filterNec);
             } else {
-                fc.columnSource().pushdownFilter(currentFilter, localInput.getValue(), sourceTable.getRowSet(), usePrev, fc, costCeiling, jobScheduler(), onPushdownComplete, filterNec);
+                fc.columnSource().pushdownFilter(currentFilter, localInput.getValue(), sourceTable.getRowSet(), usePrev,
+                        fc, costCeiling, jobScheduler(), onPushdownComplete, filterNec);
             }
             return;
         }

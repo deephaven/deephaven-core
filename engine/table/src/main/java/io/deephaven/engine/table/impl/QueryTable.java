@@ -257,6 +257,12 @@ public class QueryTable extends BaseTable<QueryTable> {
             Configuration.getInstance().getIntegerWithDefault("QueryTable.parallelWhereSegments", -1);
 
     /**
+     * Disable the usage of metadata
+     */
+    public static boolean DISABLE_WHERE_PUSHDOWN_METADATA =
+            Configuration.getInstance().getBooleanWithDefault("QueryTable.disableWherePushdownMetadata", false);
+
+    /**
      * You can choose to enable or disable the column parallel select and update.
      */
     static boolean ENABLE_PARALLEL_SELECT_AND_UPDATE =

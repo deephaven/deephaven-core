@@ -1,8 +1,12 @@
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 
 import java.math.BigDecimal;
+import java.math.BigInteger;
 
 public class TestRangeFilterIntervals extends RefreshingTableTestCase {
 
@@ -605,13 +609,13 @@ public class TestRangeFilterIntervals extends RefreshingTableTestCase {
     public void testMismatchedDataTypes() {
         // CharFilter with int values
         CharRangeFilter f1 = new CharRangeFilter("A", 'a', 'd', true, true);
-        assertTrue(f1.overlaps((int)'a', (int)'f', true, true));
-        assertTrue(f1.contains((int)'c'));
+        assertTrue(f1.overlaps((int) 'a', (int) 'f', true, true));
+        assertTrue(f1.contains((int) 'c'));
 
         // IntFilter with char values
         IntRangeFilter f2 = new IntRangeFilter("A", 'a', 'd', true, true);
-        assertTrue(f2.overlaps((int)'a', (int)'f', true, true));
-        assertTrue(f2.contains((int)'c'));
+        assertTrue(f2.overlaps((int) 'a', (int) 'f', true, true));
+        assertTrue(f2.contains((int) 'c'));
 
         // IntFilter with long values
         IntRangeFilter f3 = new IntRangeFilter("A", 4, 10, true, true);
@@ -632,5 +636,37 @@ public class TestRangeFilterIntervals extends RefreshingTableTestCase {
         DoubleRangeFilter f6 = new DoubleRangeFilter("A", 4.0, 10.0, true, true);
         assertTrue(f6.overlaps(1.0f, 5.0f, true, true));
         assertTrue(f6.contains(5.0f));
+
+        // ComparableFilter with BigDecimal values
+        ComparableRangeFilter f7 =
+                new ComparableRangeFilter("A", BigDecimal.valueOf(4), BigDecimal.valueOf(10), true, true);
+        // vs. doubles
+        assertTrue(f7.overlaps(1.0f, 5.0f, true, true));
+        assertTrue(f7.contains(5.0f));
+        // vs. long
+        assertTrue(f7.overlaps(1L, 5L, true, true));
+        assertTrue(f7.contains(5L));
+        // vs. char
+        assertTrue(f7.overlaps((char) 1, (char) 5, true, true));
+        assertTrue(f7.contains((char) 5));
+        // vs. BigInteger
+        assertTrue(f7.overlaps(BigInteger.valueOf(1), BigInteger.valueOf(5), true, true));
+        assertTrue(f7.contains(BigInteger.valueOf(5)));
+
+        // ComparableFilter with BigInteger values
+        ComparableRangeFilter f8 =
+                new ComparableRangeFilter("A", BigInteger.valueOf(4), BigInteger.valueOf(10), true, true);
+        // vs. doubles
+        assertTrue(f8.overlaps(1.0f, 5.0f, true, true));
+        assertTrue(f8.contains(5.0f));
+        // vs. long
+        assertTrue(f8.overlaps(1L, 5L, true, true));
+        assertTrue(f8.contains(5L));
+        // vs. char
+        assertTrue(f8.overlaps((char) 1, (char) 5, true, true));
+        assertTrue(f8.contains((char) 5));
+        // vs. BigDecimal
+        assertTrue(f8.overlaps(BigDecimal.valueOf(1), BigDecimal.valueOf(5), true, true));
+        assertTrue(f8.contains(BigDecimal.valueOf(5)));
     }
 }

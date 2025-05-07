@@ -16,6 +16,7 @@ import io.deephaven.util.type.NumericTypeUtils;
 import org.jetbrains.annotations.NotNull;
 
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
@@ -118,28 +119,81 @@ public abstract class AbstractRangeFilter extends WhereFilterImpl implements Exp
     @Override
     public void setRecomputeListener(RecomputeListener listener) {}
 
+    /**
+     * Compares two objects, which may be of different types. This is not an optimized function and is not recommended
+     * for performance-critical value comparison. This is flexible, not fast.
+     *
+     * @param a the first object to compare
+     * @param b the second object to compare
+     * @return a < b returns negative value, a > b returns positive value, a == b returns 0
+     */
     public static int compare(Object a, Object b) {
         if (a == null || b == null) {
             throw new IllegalArgumentException("Arguments cannot be null");
         }
 
-        // Convert Instant to long for comparison.
+        if (a.getClass() == b.getClass()) {
+            return ObjectComparisons.compare(a, b);
+        }
+
+        // (Maybe) do some lossless conversions that make comparison easier.
         if (a instanceof Instant) {
             a = DateTimeUtils.epochNanos((Instant) a);
         }
-
         if (b instanceof Instant) {
             b = DateTimeUtils.epochNanos((Instant) b);
         }
+        if (a instanceof BigInteger) {
+            a = new BigDecimal((BigInteger) a);
+        }
+        if (b instanceof BigInteger) {
+            b = new BigDecimal((BigInteger) b);
+        }
 
-        if (NumericTypeUtils.isNumericOrChar(a.getClass()) && NumericTypeUtils.isNumericOrChar(b.getClass())) {
+        final Class<?> aClass = a.getClass();
+        final Class<?> bClass = b.getClass();
+
+        // Test again after conversions.
+        if (aClass == bClass) {
+            return ObjectComparisons.compare(a, b);
+        }
+
+        // Handle comparisons between basic data types.
+        if ((NumericTypeUtils.isIntegralOrChar(aClass) || NumericTypeUtils.isFloat(aClass))
+                && (NumericTypeUtils.isIntegralOrChar(bClass) || NumericTypeUtils.isFloat(bClass))) {
             return comparePrimitives(a, b);
         }
 
-        return ObjectComparisons.compare(a, b);
+        if (aClass == BigDecimal.class) {
+            final BigDecimal abd = (BigDecimal) a;
+
+            if (NumericTypeUtils.isChar(bClass)) {
+                return abd.compareTo(BigDecimal.valueOf((char) b));
+            }
+            if (NumericTypeUtils.isIntegral(bClass)) {
+                return abd.compareTo(BigDecimal.valueOf(((Number) b).longValue()));
+            }
+            if (NumericTypeUtils.isFloat(bClass)) {
+                return abd.compareTo(BigDecimal.valueOf(((Number) b).doubleValue()));
+            }
+        }
+        if (bClass == BigDecimal.class) {
+            final BigDecimal bbd = (BigDecimal) b;
+            if (NumericTypeUtils.isChar(aClass)) {
+                return BigDecimal.valueOf((char) a).compareTo(bbd);
+            }
+            if (NumericTypeUtils.isIntegral(aClass)) {
+                return BigDecimal.valueOf(((Number) a).longValue()).compareTo(bbd);
+            }
+            if (NumericTypeUtils.isFloat(aClass)) {
+                return BigDecimal.valueOf(((Number) a).doubleValue()).compareTo(bbd);
+            }
+        }
+
+        throw new IllegalArgumentException("Unable to compare " + aClass + " and " + bClass);
     }
 
-    public static int comparePrimitives(Object a, Object b) {
+    private static int comparePrimitives(Object a, Object b) {
         if (a == null || b == null) {
             throw new IllegalArgumentException("Arguments cannot be null");
         }
@@ -194,7 +248,8 @@ public abstract class AbstractRangeFilter extends WhereFilterImpl implements Exp
     }
 
     /**
-     * Returns true if the range filter overlaps with the given range.
+     * Returns true if the range filter overlaps with the given range. This function is intended to be accurate rather
+     * than fast and is not recommended for performance-critical value comparison.
      *
      * @param lower the lower value bound of the range
      * @param upper the upper value bound of the range
@@ -210,8 +265,9 @@ public abstract class AbstractRangeFilter extends WhereFilterImpl implements Exp
 
     /**
      * Returns true if the range filter overlaps with the given range (assumes the provided min/max values are
-     * inclusive)
-     * .
+     * inclusive). This function is intended to be accurate rather than fast and is not recommended for
+     * performance-critical value comparison.
+     * 
      * @param min the minimum value in the given range
      * @param max the maximum value in the given range
      * @return {@code true} if the range filter overlaps with the given range, {@code false} otherwise
@@ -221,7 +277,8 @@ public abstract class AbstractRangeFilter extends WhereFilterImpl implements Exp
     }
 
     /**
-     * Returns true if the given value is found within the range filter.
+     * Returns true if the given value is found within the range filter. This function is intended to be accurate rather
+     * than fast and is not recommended for performance-critical value comparison.
      *
      * @param value the value to check
      * @return {@code true} if the range filter matches the given value, {@code false} otherwise

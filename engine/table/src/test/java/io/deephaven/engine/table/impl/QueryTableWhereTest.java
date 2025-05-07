@@ -1802,12 +1802,15 @@ public abstract class QueryTableWhereTest {
         }
 
         @Override
-        public long estimatePushdownFilterCost(WhereFilter filter, RowSet selection, RowSet fullSet, boolean usePrev, final FilterContext context) {
+        public long estimatePushdownFilterCost(WhereFilter filter, RowSet selection, RowSet fullSet, boolean usePrev,
+                final FilterContext context) {
             return pushdownCost;
         }
 
         @Override
-        public void pushdownFilter(final WhereFilter filter, final RowSet input, final RowSet fullSet, final boolean usePrev, final FilterContext context, final long costCeiling, final JobScheduler jobScheduler, final Consumer<PushdownResult> onComplete,
+        public void pushdownFilter(final WhereFilter filter, final RowSet input, final RowSet fullSet,
+                final boolean usePrev, final FilterContext context, final long costCeiling,
+                final JobScheduler jobScheduler, final Consumer<PushdownResult> onComplete,
                 final Consumer<Exception> onError) {
             PushdownColumnSourceHeler.pushdownFilter(filter, input, fullSet, usePrev, this, maybePercentage,
                     onComplete);

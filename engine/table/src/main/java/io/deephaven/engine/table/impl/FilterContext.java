@@ -99,10 +99,12 @@ public class FilterContext implements SafeCloseable {
                 pushdownFilterCost = Long.MAX_VALUE;
                 return;
             }
-            pushdownFilterCost = columnSource.estimatePushdownFilterCost(filter, input, sourceTable.getRowSet(), usePrev, this);
+            pushdownFilterCost =
+                    columnSource.estimatePushdownFilterCost(filter, input, sourceTable.getRowSet(), usePrev, this);
         } else {
             if (ppm != null) {
-                pushdownFilterCost = ppm.estimatePushdownFilterCost(filter, input, sourceTable.getRowSet(), usePrev, this);
+                pushdownFilterCost =
+                        ppm.estimatePushdownFilterCost(filter, input, sourceTable.getRowSet(), usePrev, this);
             } else {
                 pushdownFilterCost = Long.MAX_VALUE;
             }
@@ -110,8 +112,8 @@ public class FilterContext implements SafeCloseable {
     }
 
     /**
-     * Create a list of FilterContext objects for the given filters and the supplied input. This will create at
-     * least one entry for each filter, and may create a second entry if the filter can be efficiently pushed down.
+     * Create a list of FilterContext objects for the given filters and the supplied input. This will create at least
+     * one entry for each filter, and may create a second entry if the filter can be efficiently pushed down.
      */
     public static void sortFilterContexts(
             final int startIndex,

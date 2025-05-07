@@ -152,10 +152,12 @@ abstract class RegionedColumnSourceBase<DATA_TYPE, ATTR extends Values, REGION_T
                 .filter(entry -> entry.getValue() == this)
                 .map(Map.Entry::getKey)
                 .findFirst()
-                .orElseThrow(() -> new IllegalStateException("The column source cannot be found in the RegionedColumnSourceManager."));
+                .orElseThrow(() -> new IllegalStateException(
+                        "The column source cannot be found in the RegionedColumnSourceManager."));
         // Delegate the pushdown operation to the manager.
         Map<String, ColumnSource<?>> columnSourceMap = Map.of(columnName, this);
-        manager.pushdownFilter(columnSourceMap, filter, input, fullSet, usePrev, context, costCeiling, jobScheduler, onComplete, onError);
+        manager.pushdownFilter(columnSourceMap, filter, input, fullSet, usePrev, context, costCeiling, jobScheduler,
+                onComplete, onError);
     }
 
     /**

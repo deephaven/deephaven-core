@@ -40,7 +40,8 @@ import static io.deephaven.engine.table.impl.sources.regioned.RegionedColumnSour
 /**
  * Manage column sources made up of regions in their own row key address space.
  */
-public class RegionedColumnSourceManager implements ColumnSourceManager, DelegatingLivenessNode, PushdownPredicateManager {
+public class RegionedColumnSourceManager
+        implements ColumnSourceManager, DelegatingLivenessNode, PushdownPredicateManager {
 
     private static final Logger log = LoggerFactory.getLogger(RegionedColumnSourceManager.class);
 
@@ -774,7 +775,7 @@ public class RegionedColumnSourceManager implements ColumnSourceManager, Delegat
 
         // Test a few locations and assume the rest are similar (or no worse)
         final long costPerLocation = includedLocations().stream().limit(PUSH_DOWN_LOCATIONS_TO_TEST).mapToLong(
-                        location -> location.estimatePushdownFilterCost(filter, selection, fullSet, usePrev, context))
+                location -> location.estimatePushdownFilterCost(filter, selection, fullSet, usePrev, context))
                 .reduce(Long::max).orElse(Long.MAX_VALUE);
 
         return LongMath.saturatedMultiply(includedLocations().size(), costPerLocation);
@@ -807,10 +808,12 @@ public class RegionedColumnSourceManager implements ColumnSourceManager, Delegat
                     final long locationStartKey = getFirstRowKey(entry.regionIndex);
                     final long locationEndKey = getLastRowKey(entry.regionIndex);
 
-                    try (final WritableRowSet locationInput = input.subSetByKeyRange(locationStartKey, locationEndKey)) {
+                    try (final WritableRowSet locationInput =
+                            input.subSetByKeyRange(locationStartKey, locationEndKey)) {
                         locationInput.shiftInPlace(-locationStartKey); // Shift to the region's key space
-                        locationInput.retain(entry.rowSetAtLastUpdate); // intersect in place with  region's row set
-                        try (final PushdownResult result = entry.location.pushdownFilter(columnSourceMap, filter, locationInput, usePrev, context, costCeiling)) {
+                        locationInput.retain(entry.rowSetAtLastUpdate); // intersect in place with region's row set
+                        try (final PushdownResult result = entry.location.pushdownFilter(columnSourceMap, filter,
+                                locationInput, usePrev, context, costCeiling)) {
                             // Add the results to the global set.
                             synchronized (match) {
                                 match.insertWithShift(locationStartKey, result.match());

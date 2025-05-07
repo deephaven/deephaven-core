@@ -175,11 +175,11 @@ public class DoubleRangeFilter extends AbstractRangeFilter {
             final boolean lowerInclusive,
             final boolean upperInclusive) {
 
-        final int c1 = comparePrimitives(this.lower, upper);
+        final int c1 = compare(this.lower, upper);
         if (c1 > 0) {
             return false; // this.lower > inputUpper, no overlap possible.
         }
-        final int c2 = comparePrimitives(lower, this.upper);
+        final int c2 = compare(lower, this.upper);
         if (c2 > 0) {
             return false; // inputLower > this.upper, no overlap possible.
         }
@@ -191,11 +191,11 @@ public class DoubleRangeFilter extends AbstractRangeFilter {
 
     @Override
     public boolean contains(@NotNull final Object value) {
-        final int c1 = comparePrimitives(this.lower, value);
+        final int c1 = compare(this.lower, value);
         if (c1 > 0) {
             return false; // this.lower > value, no overlap possible.
         }
-        final int c2 = comparePrimitives(value, this.upper);
+        final int c2 = compare(value, this.upper);
         if (c2 > 0) {
             return false; // value > this.upper, no overlap possible.
         }
