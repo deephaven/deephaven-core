@@ -341,7 +341,7 @@ public final class TypeInference {
 
         @Override
         public org.apache.iceberg.types.Type visit(CharType charType) {
-            return Types.IntegerType.get();
+            return null;
         }
 
         @Override

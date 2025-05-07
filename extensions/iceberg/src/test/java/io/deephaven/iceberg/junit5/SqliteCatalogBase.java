@@ -40,7 +40,10 @@ import io.deephaven.parquet.table.CompletedParquetWrite;
 import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.ParquetTools;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
+import io.deephaven.qst.type.GenericType;
 import io.deephaven.qst.type.Type;
+import io.deephaven.vector.ByteVector;
+import io.deephaven.vector.ByteVectorDirect;
 import io.deephaven.vector.DoubleVector;
 import io.deephaven.vector.DoubleVectorDirect;
 import io.deephaven.vector.FloatVector;
@@ -51,6 +54,8 @@ import io.deephaven.vector.LongVector;
 import io.deephaven.vector.LongVectorDirect;
 import io.deephaven.vector.ObjectVector;
 import io.deephaven.vector.ObjectVectorDirect;
+import io.deephaven.vector.ShortVector;
+import io.deephaven.vector.ShortVectorDirect;
 import org.apache.iceberg.AppendFiles;
 import org.apache.iceberg.ContentFile;
 import org.apache.iceberg.DataFile;
@@ -109,6 +114,7 @@ import static io.deephaven.engine.util.TableTools.stringCol;
 import static io.deephaven.iceberg.layout.IcebergBaseLayout.computeSortedColumns;
 import static io.deephaven.iceberg.util.ColumnInstructions.schemaField;
 import static io.deephaven.util.QueryConstants.NULL_BOOLEAN;
+import static io.deephaven.util.QueryConstants.NULL_BYTE;
 import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 import static io.deephaven.util.QueryConstants.NULL_FLOAT;
 import static io.deephaven.util.QueryConstants.NULL_INT;
@@ -486,212 +492,858 @@ public abstract class SqliteCatalogBase {
         }
     }
 
-    /*--- Begin tests for iceberg list types ---*/
+    /*--- Begin tests for primitive types ---*/
+    /**
+     * This method should be called if the inferred type from the schema is same as the types in the source table.
+     *
+     * @param identifier Table identifier
+     * @param source Source table to be written to Iceberg
+     * @param expectedSchema Expected schema of the Iceberg table
+     */
+    private void readWriteTestHelper(
+            final TableIdentifier identifier,
+            final Table source,
+            final Schema expectedSchema) {
+        readWriteTestHelper(identifier, source, expectedSchema, source);
+    }
 
     /**
-     * @param columnName Name of the column to be used in the test
+     * @param identifier Table identifier
      * @param source Source table to be written to Iceberg
-     * @param expectedInferred Expected table after inferring the types
+     * @param expectedSchema Expected schema of the Iceberg table
+     * @param expectedInferredTable Expected table after inferring the types based on schema
      */
-    private void readWriteListTypeTestImpl(
-            final String columnName,
+    private void readWriteTestHelper(
+            final TableIdentifier identifier,
             final Table source,
-            final Table expectedInferred) {
+            final Schema expectedSchema,
+            final Table expectedInferredTable) {
+        final TableDefinition sourceDefinition = source.getDefinition();
 
-        final TableDefinition td = source.getDefinition();
-        final TableIdentifier id = TableIdentifier.of(Namespace.of("MyNamespace"), "Tbl_" + columnName);
-
-        // The following adapter will create a resolver using the passed table definition
-        final IcebergTableAdapter adapter = catalogAdapter.createTable(id, td);
-
-        adapter.tableWriter(writerOptionsBuilder().tableDefinition(td).build())
+        // The following adapter will create a resolver using the definition of the source table
+        final IcebergTableAdapter adapter = catalogAdapter.createTable(identifier, sourceDefinition);
+        adapter.tableWriter(writerOptionsBuilder().tableDefinition(sourceDefinition).build())
                 .append(IcebergWriteInstructions.builder().addTables(source).build());
 
-        // Verify that we can read the table back with the same definition
+        // Verify that we can read the table back with the same adapter definition
         assertTableEquals(source, adapter.table());
 
+        assertThat(adapter.icebergTable().schema()).usingEquals(Schema::sameSchema).isEqualTo(expectedSchema);
+
         // Create a new table adapter which will infer the types using the table's schema
-        final Table inferred = catalogAdapter.loadTable(id).table();
-        assertTableEquals(expectedInferred, inferred);
+        final Table inferred = catalogAdapter.loadTable(identifier).table();
+        assertTableEquals(expectedInferredTable, inferred);
+    }
+
+    private void readWithDefinitionTestHelper(
+            final TableIdentifier identifier,
+            final TableDefinition readDefinition,
+            final Table expectedInferredTable) {
+        final UnboundResolver resolver = UnboundResolver.builder()
+                .definition(readDefinition)
+                .build();
+        final Table inferred = catalogAdapter.loadTable(LoadTableOptions.builder()
+                .id(identifier)
+                .resolver(resolver)
+                .build())
+                .table();
+        assertTableEquals(expectedInferredTable, inferred);
+    }
+
+    private void readWithDefinitionFailureTestImpl(
+            final TableIdentifier identifier,
+            final TableDefinition readDefinition) {
+        final UnboundResolver resolver = UnboundResolver.builder()
+                .definition(readDefinition)
+                .build();
+        try {
+            catalogAdapter.loadTable(LoadTableOptions.builder()
+                    .id(identifier)
+                    .resolver(resolver)
+                    .build())
+                    .table().select();
+            failBecauseExceptionWasNotThrown(TableInitializationException.class);
+        } catch (TableInitializationException e) {
+            assertThat(e).hasCauseInstanceOf(TableDataException.class);
+            assertThat(e.getCause()).hasCauseInstanceOf(IllegalArgumentException.class);
+            assertThat(e.getCause().getCause()).hasMessageContaining("Cannot convert parquet");
+        }
+    }
+
+    @Test
+    void readWriteByteTest() {
+        final TableIdentifier id = TableIdentifier.of(Namespace.of("MyNamespace"), "Tbl_byte");
+        final Table source = TableTools.newTable(
+                TableDefinition.of(ColumnDefinition.ofByte("byteCol")),
+                byteCol("byteCol", (byte) 42, NULL_BYTE, (byte) -1));
+        final Schema expectedSchema = new Schema(
+                Types.NestedField.optional(1, "byteCol", Types.IntegerType.get()));
+
+        // By default, should read back as int
+        readWriteTestHelper(id, source, expectedSchema,
+                TableTools.newTable(intCol("byteCol", 42, NULL_INT, -1)));
+
+        // explicit byte
+        readWithDefinitionTestHelper(id,
+                TableDefinition.of(ColumnDefinition.ofByte("byteCol")),
+                source);
+
+        // byte -> short
+        readWithDefinitionTestHelper(id,
+                TableDefinition.of(ColumnDefinition.ofShort("byteCol")),
+                TableTools.newTable(shortCol("byteCol", (short) 42, NULL_SHORT, (short) -1)));
+
+        // byte -> int
+        readWithDefinitionTestHelper(id,
+                TableDefinition.of(ColumnDefinition.ofInt("byteCol")),
+                TableTools.newTable(intCol("byteCol", 42, NULL_INT, -1)));
+
+        // byte-> long
+        readWithDefinitionTestHelper(id,
+                TableDefinition.of(ColumnDefinition.ofLong("byteCol")),
+                TableTools.newTable(longCol("byteCol", 42L, NULL_LONG, -1L)));
+    }
+
+    @Test
+    void readWriteShortTest() {
+        final TableIdentifier id = TableIdentifier.of(Namespace.of("MyNamespace"), "Tbl_short");
+        final Table source = TableTools.newTable(
+                TableDefinition.of(ColumnDefinition.ofShort("shortCol")),
+                shortCol("shortCol", (short) 42, NULL_SHORT, (short) -1));
+        final Schema expectedSchema = new Schema(
+                Types.NestedField.optional(1, "shortCol", Types.IntegerType.get()));
+
+        // By default, should read back as int
+        readWriteTestHelper(id, source, expectedSchema,
+                TableTools.newTable(intCol("shortCol", 42, NULL_INT, -1)));
+
+        // explicit short
+        readWithDefinitionTestHelper(id,
+                TableDefinition.of(ColumnDefinition.ofShort("shortCol")),
+                source);
+
+        // short -> int
+        readWithDefinitionTestHelper(id,
+                TableDefinition.of(ColumnDefinition.ofInt("shortCol")),
+                TableTools.newTable(intCol("shortCol", 42, NULL_INT, -1)));
+
+        // short -> long
+        readWithDefinitionTestHelper(id,
+                TableDefinition.of(ColumnDefinition.ofLong("shortCol")),
+                TableTools.newTable(longCol("shortCol", 42L, NULL_LONG, -1L)));
+
+        // narrowing (short -> byte) – should fail
+        readWithDefinitionFailureTestImpl(id,
+                TableDefinition.of(ColumnDefinition.ofByte("shortCol")));
+    }
+
+    @Test
+    void readWriteIntTest() {
+        final TableIdentifier id = TableIdentifier.of(Namespace.of("MyNamespace"), "Tbl_int");
+        final Table source = TableTools.newTable(
+                TableDefinition.of(ColumnDefinition.ofInt("intCol")),
+                intCol("intCol", 42, NULL_INT, -1));
+        final Schema expectedSchema = new Schema(
+                Types.NestedField.optional(1, "intCol", Types.IntegerType.get()));
+
+        readWriteTestHelper(id, source, expectedSchema);
+
+        // int -> long
+        readWithDefinitionTestHelper(id,
+                TableDefinition.of(ColumnDefinition.ofLong("intCol")),
+                TableTools.newTable(longCol("intCol", 42L, NULL_LONG, -1L)));
+
+        // narrowing (int -> short) – should fail
+        readWithDefinitionFailureTestImpl(id,
+                TableDefinition.of(ColumnDefinition.ofShort("intCol")));
+    }
+
+    @Test
+    void readWriteLongTest() {
+        final TableIdentifier id = TableIdentifier.of(Namespace.of("MyNamespace"), "Tbl_long");
+        final Table source = TableTools.newTable(
+                TableDefinition.of(ColumnDefinition.ofLong("longCol")),
+                longCol("longCol", 42L, NULL_LONG, -1L));
+        final Schema expectedSchema = new Schema(
+                Types.NestedField.optional(1, "longCol", Types.LongType.get()));
+
+        readWriteTestHelper(id, source, expectedSchema);
+
+        // narrowing (long -> int) – should fail
+        readWithDefinitionFailureTestImpl(id,
+                TableDefinition.of(ColumnDefinition.ofInt("longCol")));
+    }
+
+    @Test
+    void readWriteFloatTest() {
+        final TableIdentifier id = TableIdentifier.of(Namespace.of("MyNamespace"), "Tbl_float");
+        final Table source = TableTools.newTable(
+                TableDefinition.of(ColumnDefinition.ofFloat("floatCol")),
+                floatCol("floatCol", 1.5f, NULL_FLOAT, -2.5f));
+        final Schema expectedSchema = new Schema(
+                Types.NestedField.optional(1, "floatCol", Types.FloatType.get()));
+
+        readWriteTestHelper(id, source, expectedSchema);
+
+        // float -> double
+        readWithDefinitionTestHelper(id,
+                TableDefinition.of(ColumnDefinition.ofDouble("floatCol")),
+                TableTools.newTable(doubleCol("floatCol", 1.5, NULL_DOUBLE, -2.5)));
+    }
+
+    @Test
+    void readWriteDoubleTest() {
+        final TableIdentifier id = TableIdentifier.of(Namespace.of("MyNamespace"), "Tbl_double");
+        final Table source = TableTools.newTable(
+                TableDefinition.of(ColumnDefinition.ofDouble("doubleCol")),
+                doubleCol("doubleCol", 1.5, NULL_DOUBLE, -2.5));
+        final Schema expectedSchema = new Schema(
+                Types.NestedField.optional(1, "doubleCol", Types.DoubleType.get()));
+
+        readWriteTestHelper(id, source, expectedSchema);
+
+        // narrowing (double -> float) – should fail
+        readWithDefinitionFailureTestImpl(id,
+                TableDefinition.of(ColumnDefinition.ofFloat("doubleCol")));
+    }
+
+    @Test
+    void readWriteBooleanTest() {
+        final TableIdentifier id = TableIdentifier.of(Namespace.of("MyNamespace"), "Tbl_boolean");
+        final Table source = TableTools.newTable(
+                TableDefinition.of(ColumnDefinition.of("boolCol", Type.find(Boolean.class))),
+                booleanCol("boolCol", true, null, false));
+        final Schema expectedSchema = new Schema(
+                Types.NestedField.optional(1, "boolCol", Types.BooleanType.get()));
+        readWriteTestHelper(id, source, expectedSchema);
+    }
+
+    @Test
+    void readWriteStringTest() {
+        final TableIdentifier id = TableIdentifier.of(Namespace.of("MyNamespace"), "Tbl_string");
+        final Table source = TableTools.newTable(
+                TableDefinition.of(ColumnDefinition.of("strCol", Type.find(String.class))),
+                stringCol("strCol", "foo", null, "bar"));
+        final Schema expectedSchema = new Schema(
+                Types.NestedField.optional(1, "strCol", Types.StringType.get()));
+        readWriteTestHelper(id, source, expectedSchema);
+    }
+
+    @Test
+    void readWriteInstantTest() {
+        final TableIdentifier id = TableIdentifier.of(Namespace.of("MyNamespace"), "Tbl_instant");
+        final Table source = TableTools.newTable(
+                TableDefinition.of(ColumnDefinition.of("instCol", Type.find(Instant.class))),
+                instantCol("instCol", Instant.parse("2025-01-01T12:00:03Z"), null, Instant.EPOCH));
+        final Schema expectedSchema = new Schema(
+                Types.NestedField.optional(1, "instCol", Types.TimestampType.withZone()));
+        readWriteTestHelper(id, source, expectedSchema);
+    }
+
+    @Test
+    void readWriteLocalDateTimeTest() {
+        final TableIdentifier id = TableIdentifier.of(Namespace.of("MyNamespace"), "Tbl_ldt");
+        final Table source = TableTools.newTable(
+                TableDefinition.of(ColumnDefinition.of("ldtCol", Type.find(LocalDateTime.class))),
+                new ColumnHolder<>("ldtCol", LocalDateTime.class, null, false,
+                        LocalDateTime.of(2025, 1, 1, 12, 0), null,
+                        LocalDateTime.of(2023, 1, 1, 0, 0)));
+        final Schema expectedSchema = new Schema(
+                Types.NestedField.optional(1, "ldtCol", Types.TimestampType.withoutZone()));
+        readWriteTestHelper(id, source, expectedSchema);
+    }
+
+    @Test
+    void readWriteLocalDateTest() {
+        final TableIdentifier id = TableIdentifier.of(Namespace.of("MyNamespace"), "Tbl_ld");
+        final Table source = TableTools.newTable(
+                TableDefinition.of(ColumnDefinition.of("ldCol", Type.find(LocalDate.class))),
+                new ColumnHolder<>("ldCol", LocalDate.class, null, false,
+                        LocalDate.of(2025, 1, 1), null, LocalDate.of(2023, 1, 1)));
+        final Schema expectedSchema = new Schema(
+                Types.NestedField.optional(1, "ldCol", Types.DateType.get()));
+        readWriteTestHelper(id, source, expectedSchema);
+    }
+
+    @Test
+    void readWriteLocalTimeTest() {
+        final TableIdentifier id = TableIdentifier.of(Namespace.of("MyNamespace"), "Tbl_lt");
+        final Table source = TableTools.newTable(
+                TableDefinition.of(ColumnDefinition.of("ltCol", Type.find(LocalTime.class))),
+                new ColumnHolder<>("ltCol", LocalTime.class, null, false,
+                        LocalTime.of(12, 0, 1), null, LocalTime.of(12, 0)));
+        final Schema expectedSchema = new Schema(
+                Types.NestedField.optional(1, "ltCol", Types.TimeType.get()));
+        readWriteTestHelper(id, source, expectedSchema);
+    }
+
+    /*--- End tests for primitive types ---*/
+
+    /*--- Begin tests for list types ---*/
+
+    @Test
+    void readWriteByteListTest() {
+        // Write a table with byte[]
+        final TableIdentifier identifier = TableIdentifier.of(Namespace.of("MyNamespace"), "Tbl_byteList");
+        final Table source = TableTools.newTable(
+                TableDefinition.of(ColumnDefinition.of("byteList", Type.byteType().arrayType())),
+                new ColumnHolder<>("byteList", byte[].class, byte.class, false,
+                        new byte[] {42, NULL_BYTE, -1},
+                        null,
+                        new byte[] {}));
+        final Schema expectedSchema = new Schema(
+                Types.NestedField.optional(1, "byteList",
+                        Types.ListType.ofOptional(2, Types.IntegerType.get())));
+        final Table expectedInferredDefault = TableTools.newTable(
+                TableTools.col("byteList",
+                        new IntVectorDirect(42, NULL_INT, -1),
+                        null,
+                        (IntVector) new IntVectorDirect()));
+
+        // By default, byte list -> IntVector
+        readWriteTestHelper(identifier, source, expectedSchema, expectedInferredDefault);
+
+        // byte list -> ByteVector
+        {
+            final TableDefinition readDefinition = TableDefinition.of(
+                    ColumnDefinition.of("byteList", ByteVector.type()));
+            final Table expectedInferred = TableTools.newTable(
+                    TableTools.col("byteList",
+                            new ByteVectorDirect((byte) 42, NULL_BYTE, (byte) -1),
+                            null,
+                            (ByteVector) new ByteVectorDirect()));
+            readWithDefinitionTestHelper(identifier, readDefinition, expectedInferred);
+        }
+
+        // byte list -> short[]
+        {
+            final TableDefinition readDefinition = TableDefinition.of(
+                    ColumnDefinition.of("byteList", Type.shortType().arrayType()));
+            final Table expectedInferred = TableTools.newTable(
+                    TableTools.col("byteList",
+                            new short[] {42, NULL_SHORT, -1},
+                            null,
+                            new short[] {}));
+            readWithDefinitionTestHelper(identifier, readDefinition, expectedInferred);
+        }
+
+        // byte list -> ShortVector
+        {
+            final TableDefinition readDefinition = TableDefinition.of(
+                    ColumnDefinition.of("byteList", ShortVector.type()));
+            final Table expectedInferred = TableTools.newTable(
+                    TableTools.col("byteList",
+                            new ShortVectorDirect((short) 42, NULL_SHORT, (short) -1),
+                            null,
+                            (ShortVector) new ShortVectorDirect()));
+            readWithDefinitionTestHelper(identifier, readDefinition, expectedInferred);
+        }
+
+        // byte list -> int[]
+        {
+            final TableDefinition readDefinition = TableDefinition.of(
+                    ColumnDefinition.of("byteList", Type.intType().arrayType()));
+            final Table expectedInferred = TableTools.newTable(
+                    TableTools.col("byteList",
+                            new int[] {42, NULL_INT, -1},
+                            null,
+                            new int[] {}));
+            readWithDefinitionTestHelper(identifier, readDefinition, expectedInferred);
+        }
+
+        // byte list -> IntVector (explicit)
+        {
+            final TableDefinition readDefinition = TableDefinition.of(
+                    ColumnDefinition.of("byteList", IntVector.type()));
+            readWithDefinitionTestHelper(identifier, readDefinition, expectedInferredDefault);
+        }
+
+        // byte list -> long[]
+        {
+            final TableDefinition readDefinition = TableDefinition.of(
+                    ColumnDefinition.of("byteList", Type.longType().arrayType()));
+            final Table expectedInferred = TableTools.newTable(
+                    TableTools.col("byteList",
+                            new long[] {42, NULL_LONG, -1},
+                            null,
+                            new long[] {}));
+            readWithDefinitionTestHelper(identifier, readDefinition, expectedInferred);
+        }
+
+        // byte list -> LongVector
+        {
+            final TableDefinition readDefinition = TableDefinition.of(
+                    ColumnDefinition.of("byteList", LongVector.type()));
+            final Table expectedInferred = TableTools.newTable(
+                    TableTools.col("byteList",
+                            new LongVectorDirect(42, NULL_LONG, -1),
+                            null,
+                            (LongVector) new LongVectorDirect()));
+            readWithDefinitionTestHelper(identifier, readDefinition, expectedInferred);
+        }
     }
 
     @Test
     void readWriteShortListTest() {
+        // Write a table with short[]
+        final TableIdentifier identifier = TableIdentifier.of(Namespace.of("MyNamespace"), "Tbl_shortList");
         final Table source = TableTools.newTable(
                 TableDefinition.of(ColumnDefinition.of("shortList", Type.shortType().arrayType())),
                 new ColumnHolder<>("shortList", short[].class, short.class, false,
-                        new short[] {42, NULL_SHORT, -1}, null, new short[] {}));
-        final Table expected = TableTools.newTable(
+                        new short[] {42, NULL_SHORT, -1},
+                        null,
+                        new short[] {}));
+        final Schema expectedSchema = new Schema(
+                Types.NestedField.optional(1, "shortList",
+                        Types.ListType.ofOptional(2, Types.IntegerType.get())));
+        final Table expectedInferredDefault = TableTools.newTable(
                 TableTools.col("shortList",
                         new IntVectorDirect(42, NULL_INT, -1),
                         null,
                         (IntVector) new IntVectorDirect()));
-        readWriteListTypeTestImpl("shortList", source, expected);
+
+        // By default, short list -> IntVector
+        readWriteTestHelper(identifier, source, expectedSchema, expectedInferredDefault);
+
+        // short list -> ShortVector
+        {
+            final TableDefinition readDefinition = TableDefinition.of(
+                    ColumnDefinition.of("shortList", ShortVector.type()));
+            final Table expectedInferred = TableTools.newTable(
+                    TableTools.col("shortList",
+                            new ShortVectorDirect((short) 42, NULL_SHORT, (short) -1),
+                            null,
+                            (ShortVector) new ShortVectorDirect()));
+            readWithDefinitionTestHelper(identifier, readDefinition, expectedInferred);
+        }
+
+        // short list -> int[]
+        {
+            final TableDefinition readDefinition = TableDefinition.of(
+                    ColumnDefinition.of("shortList", Type.intType().arrayType()));
+            final Table expectedInferred = TableTools.newTable(
+                    TableTools.col("shortList",
+                            new int[] {42, NULL_INT, -1},
+                            null,
+                            new int[] {}));
+            readWithDefinitionTestHelper(identifier, readDefinition, expectedInferred);
+        }
+
+        // short list -> IntVector (explicit)
+        {
+            final TableDefinition readDefinition = TableDefinition.of(
+                    ColumnDefinition.of("shortList", IntVector.type()));
+            readWithDefinitionTestHelper(identifier, readDefinition, expectedInferredDefault);
+        }
+
+        // short list -> long[]
+        {
+            final TableDefinition readDefinition = TableDefinition.of(
+                    ColumnDefinition.of("shortList", Type.longType().arrayType()));
+            final Table expectedInferred = TableTools.newTable(
+                    TableTools.col("shortList",
+                            new long[] {42, NULL_LONG, -1},
+                            null,
+                            new long[] {}));
+            readWithDefinitionTestHelper(identifier, readDefinition, expectedInferred);
+        }
+
+        // short list -> LongVector
+        {
+            final TableDefinition readDefinition = TableDefinition.of(
+                    ColumnDefinition.of("shortList", LongVector.type()));
+            final Table expectedInferred = TableTools.newTable(
+                    TableTools.col("shortList",
+                            new LongVectorDirect(42, NULL_LONG, -1),
+                            null,
+                            (LongVector) new LongVectorDirect()));
+            readWithDefinitionTestHelper(identifier, readDefinition, expectedInferred);
+        }
+
+        // short list -> byte[] (should fail)
+        {
+            final TableDefinition readDefinition = TableDefinition.of(
+                    ColumnDefinition.of("shortList", Type.byteType().arrayType()));
+            readWithDefinitionFailureTestImpl(identifier, readDefinition);
+        }
     }
 
     @Test
     void readWriteIntListTest() {
+        // Write a table with int[]
+        final TableIdentifier identifier = TableIdentifier.of(Namespace.of("MyNamespace"), "Tbl_intList");
         final Table source = TableTools.newTable(
                 TableDefinition.of(ColumnDefinition.of("intList", Type.intType().arrayType())),
                 new ColumnHolder<>("intList", int[].class, int.class, false,
                         new int[] {42, NULL_INT, -1},
                         null,
                         new int[] {}));
-        final Table expected = TableTools.newTable(
+        final Schema expectedSchema = new Schema(
+                Types.NestedField.optional(1, "intList",
+                        Types.ListType.ofOptional(2, Types.IntegerType.get())));
+        final Table expectedInferredDefault = TableTools.newTable(
                 TableTools.col("intList",
                         new IntVectorDirect(42, NULL_INT, -1),
                         null,
                         (IntVector) new IntVectorDirect()));
-        readWriteListTypeTestImpl("intList", source, expected);
+
+        // By default, int list -> IntVector
+        readWriteTestHelper(identifier, source, expectedSchema, expectedInferredDefault);
+
+        // int list -> IntVector (explicit)
+        {
+            final TableDefinition readDefinition = TableDefinition.of(
+                    ColumnDefinition.of("intList", IntVector.type()));
+            readWithDefinitionTestHelper(identifier, readDefinition, expectedInferredDefault);
+        }
+
+        // int list -> long[]
+        {
+            final TableDefinition readDefinition = TableDefinition.of(
+                    ColumnDefinition.of("intList", Type.longType().arrayType()));
+            final Table expectedInferred = TableTools.newTable(
+                    TableTools.col("intList",
+                            new long[] {42, NULL_LONG, -1},
+                            null,
+                            new long[] {}));
+            readWithDefinitionTestHelper(identifier, readDefinition, expectedInferred);
+        }
+
+        // int list -> LongVector
+        {
+            final TableDefinition readDefinition = TableDefinition.of(
+                    ColumnDefinition.of("intList", LongVector.type()));
+            final Table expectedInferred = TableTools.newTable(
+                    TableTools.col("intList",
+                            new LongVectorDirect(42, NULL_LONG, -1),
+                            null,
+                            (LongVector) new LongVectorDirect()));
+            readWithDefinitionTestHelper(identifier, readDefinition, expectedInferred);
+        }
+
+        // int list -> short[] (should fail)
+        {
+            final TableDefinition readDefinition = TableDefinition.of(
+                    ColumnDefinition.of("intList", Type.shortType().arrayType()));
+            readWithDefinitionFailureTestImpl(identifier, readDefinition);
+        }
     }
 
     @Test
     void readWriteLongListTest() {
+        // Write a table with long[]
+        final TableIdentifier identifier = TableIdentifier.of(Namespace.of("MyNamespace"), "Tbl_longList");
         final Table source = TableTools.newTable(
                 TableDefinition.of(ColumnDefinition.of("longList", Type.longType().arrayType())),
                 new ColumnHolder<>("longList", long[].class, long.class, false,
                         new long[] {42, NULL_LONG, -1},
                         null,
                         new long[] {}));
-        final Table expected = TableTools.newTable(
+        final Schema expectedSchema = new Schema(
+                Types.NestedField.optional(1, "longList",
+                        Types.ListType.ofOptional(2, Types.LongType.get())));
+        final Table expectedInferredDefault = TableTools.newTable(
                 TableTools.col("longList",
                         new LongVectorDirect(42, NULL_LONG, -1),
                         null,
                         (LongVector) new LongVectorDirect()));
-        readWriteListTypeTestImpl("longList", source, expected);
+
+        // By default, long list -> LongVector
+        readWriteTestHelper(identifier, source, expectedSchema, expectedInferredDefault);
+
+        // long list -> LongVector (explicit)
+        {
+            final TableDefinition readDefinition = TableDefinition.of(
+                    ColumnDefinition.of("longList", LongVector.type()));
+            readWithDefinitionTestHelper(identifier, readDefinition, expectedInferredDefault);
+        }
+
+        // long list -> int[] (should fail)
+        {
+            final TableDefinition readDefinition = TableDefinition.of(
+                    ColumnDefinition.of("longList", Type.intType().arrayType()));
+            readWithDefinitionFailureTestImpl(identifier, readDefinition);
+        }
     }
 
     @Test
     void readWriteFloatListTest() {
+        // Write a table with float[]
+        final TableIdentifier identifier = TableIdentifier.of(Namespace.of("MyNamespace"), "Tbl_floatList");
         final Table source = TableTools.newTable(
                 TableDefinition.of(ColumnDefinition.of("floatList", Type.floatType().arrayType())),
                 new ColumnHolder<>("floatList", float[].class, float.class, false,
-                        new float[] {42.6f, NULL_FLOAT, -1.2f},
+                        new float[] {42.5f, NULL_FLOAT, -1.5f},
                         null,
                         new float[] {}));
-        final Table expected = TableTools.newTable(
+        final Schema expectedSchema = new Schema(
+                Types.NestedField.optional(1, "floatList",
+                        Types.ListType.ofOptional(2, Types.FloatType.get())));
+        final Table expectedInferredDefault = TableTools.newTable(
                 TableTools.col("floatList",
-                        new FloatVectorDirect(42.6f, NULL_FLOAT, -1.2f),
+                        new FloatVectorDirect(42.5f, NULL_FLOAT, -1.5f),
                         null,
                         (FloatVector) new FloatVectorDirect()));
-        readWriteListTypeTestImpl("floatList", source, expected);
+
+        // By default, float list -> FloatVector
+        readWriteTestHelper(identifier, source, expectedSchema, expectedInferredDefault);
+
+        // float list -> FloatVector (explicit)
+        {
+            final TableDefinition readDefinition = TableDefinition.of(
+                    ColumnDefinition.of("floatList", FloatVector.type()));
+            readWithDefinitionTestHelper(identifier, readDefinition, expectedInferredDefault);
+        }
+
+        // float list -> double[]
+        {
+            final TableDefinition readDefinition = TableDefinition.of(
+                    ColumnDefinition.of("floatList", Type.doubleType().arrayType()));
+            final Table expectedInferred = TableTools.newTable(
+                    TableTools.col("floatList",
+                            new double[] {42.5, NULL_DOUBLE, -1.5},
+                            null,
+                            new double[] {}));
+            readWithDefinitionTestHelper(identifier, readDefinition, expectedInferred);
+        }
+
+        // float list -> DoubleVector
+        {
+            final TableDefinition readDefinition = TableDefinition.of(
+                    ColumnDefinition.of("floatList", DoubleVector.type()));
+            final Table expectedInferred = TableTools.newTable(
+                    TableTools.col("floatList",
+                            new DoubleVectorDirect(42.5, NULL_DOUBLE, -1.5),
+                            null,
+                            (DoubleVector) new DoubleVectorDirect()));
+            readWithDefinitionTestHelper(identifier, readDefinition, expectedInferred);
+        }
     }
 
     @Test
     void readWriteDoubleListTest() {
+        // Write a table with double[]
+        final TableIdentifier identifier = TableIdentifier.of(Namespace.of("MyNamespace"), "Tbl_doubleList");
         final Table source = TableTools.newTable(
                 TableDefinition.of(ColumnDefinition.of("doubleList", Type.doubleType().arrayType())),
                 new ColumnHolder<>("doubleList", double[].class, double.class, false,
                         new double[] {42.6, NULL_DOUBLE, -1.2},
                         null,
                         new double[] {}));
-        final Table expected = TableTools.newTable(
+        final Schema expectedSchema = new Schema(
+                Types.NestedField.optional(1, "doubleList",
+                        Types.ListType.ofOptional(2, Types.DoubleType.get())));
+        final Table expectedInferredDefault = TableTools.newTable(
                 TableTools.col("doubleList",
                         new DoubleVectorDirect(42.6, NULL_DOUBLE, -1.2),
                         null,
                         (DoubleVector) new DoubleVectorDirect()));
-        readWriteListTypeTestImpl("doubleList", source, expected);
+
+        // By default, double list -> DoubleVector
+        readWriteTestHelper(identifier, source, expectedSchema, expectedInferredDefault);
+
+        // double list -> DoubleVector (explicit)
+        {
+            final TableDefinition readDefinition = TableDefinition.of(
+                    ColumnDefinition.of("doubleList", DoubleVector.type()));
+            readWithDefinitionTestHelper(identifier, readDefinition, expectedInferredDefault);
+        }
+
+        // double list -> double[]
+        {
+            final TableDefinition readDefinition = TableDefinition.of(
+                    ColumnDefinition.of("doubleList", Type.doubleType().arrayType()));
+            final Table expectedInferred = TableTools.newTable(
+                    TableTools.col("doubleList",
+                            new double[] {42.6, NULL_DOUBLE, -1.2},
+                            null,
+                            new double[] {}));
+            readWithDefinitionTestHelper(identifier, readDefinition, expectedInferred);
+        }
+
+        // double list -> float[] (should fail)
+        {
+            final TableDefinition readDefinition = TableDefinition.of(
+                    ColumnDefinition.of("doubleList", Type.floatType().arrayType()));
+            readWithDefinitionFailureTestImpl(identifier, readDefinition);
+        }
     }
 
     @Test
     void readWriteBooleanListTest() {
+        // Write a table with Boolean[]
+        final TableIdentifier identifier = TableIdentifier.of(Namespace.of("MyNamespace"), "Tbl_booleanList");
         final Table source = TableTools.newTable(
                 TableDefinition.of(ColumnDefinition.of("booleanList", Type.find(Boolean.class).arrayType())),
                 new ColumnHolder<>("booleanList", Boolean[].class, Boolean.class, false,
-                        new Boolean[] {true, NULL_BOOLEAN, false}, null, new Boolean[] {}));
-        final Table expected = TableTools.newTable(
+                        new Boolean[] {true, NULL_BOOLEAN, false},
+                        null,
+                        new Boolean[] {}));
+        final Schema expectedSchema = new Schema(
+                Types.NestedField.optional(1, "booleanList",
+                        Types.ListType.ofOptional(2, Types.BooleanType.get())));
+        final Table expectedInferred = TableTools.newTable(
                 TableTools.col("booleanList",
-                        new ObjectVectorDirect<>(true, NULL_BOOLEAN, false),
+                        new ObjectVectorDirect<Boolean>(true, NULL_BOOLEAN, false),
                         null,
                         (ObjectVector<Boolean>) new ObjectVectorDirect<Boolean>()));
-        readWriteListTypeTestImpl("booleanList", source, expected);
+
+        // By default, Boolean list -> ObjectVector<Boolean>
+        readWriteTestHelper(identifier, source, expectedSchema, expectedInferred);
+
+        // Boolean list -> ObjectVector<Boolean> (explicit)
+        final TableDefinition readDefinition = TableDefinition.of(
+                ColumnDefinition.of("booleanList", ObjectVector.type(Type.booleanType().boxedType())));
+        readWithDefinitionTestHelper(identifier, readDefinition, expectedInferred);
     }
 
     @Test
     void readWriteStringListTest() {
+        // Write a table with String[]
+        final TableIdentifier identifier = TableIdentifier.of(Namespace.of("MyNamespace"), "Tbl_stringList");
         final Table source = TableTools.newTable(
                 TableDefinition.of(ColumnDefinition.of("stringList", Type.find(String.class).arrayType())),
                 new ColumnHolder<>("stringList", String[].class, String.class, false,
                         new String[] {"foo", null, "bar"},
                         null,
                         new String[] {}));
-        final Table expected = TableTools.newTable(
+        final Schema expectedSchema = new Schema(
+                Types.NestedField.optional(1, "stringList",
+                        Types.ListType.ofOptional(2, Types.StringType.get())));
+        final Table expectedInferred = TableTools.newTable(
                 TableTools.col("stringList",
                         new ObjectVectorDirect<>("foo", null, "bar"),
                         null,
                         (ObjectVector<String>) new ObjectVectorDirect<String>()));
-        readWriteListTypeTestImpl("stringList", source, expected);
+
+        // By default, String list -> ObjectVector<String>
+        readWriteTestHelper(identifier, source, expectedSchema, expectedInferred);
+
+        // String list -> ObjectVector<String> (explicit)
+        final TableDefinition readDefinition = TableDefinition.of(
+                ColumnDefinition.of("stringList", ObjectVector.type(Type.stringType())));
+        readWithDefinitionTestHelper(identifier, readDefinition, expectedInferred);
     }
 
     @Test
     void readWriteTimestampTzListTest() {
+        // Write a table with Instant[]
+        final TableIdentifier identifier = TableIdentifier.of(Namespace.of("MyNamespace"), "Tbl_timestampTzList");
         final Table source = TableTools.newTable(
                 TableDefinition.of(ColumnDefinition.of("timestampTzList", Type.find(Instant.class).arrayType())),
                 new ColumnHolder<>("timestampTzList", Instant[].class, Instant.class, false,
                         new Instant[] {Instant.parse("2025-01-01T12:00:03Z"), null, Instant.EPOCH},
                         null,
                         new Instant[] {}));
-        final Table expected = TableTools.newTable(
+        final Schema expectedSchema = new Schema(
+                Types.NestedField.optional(1, "timestampTzList",
+                        Types.ListType.ofOptional(2, Types.TimestampType.withZone())));
+        final Table expectedInferred = TableTools.newTable(
                 TableTools.col("timestampTzList",
                         new ObjectVectorDirect<>(Instant.parse("2025-01-01T12:00:03Z"), null, Instant.EPOCH),
                         null,
                         (ObjectVector<Instant>) new ObjectVectorDirect<Instant>()));
-        readWriteListTypeTestImpl("timestampTzList", source, expected);
+
+        // By default, Instant list -> ObjectVector<Instant>
+        readWriteTestHelper(identifier, source, expectedSchema, expectedInferred);
+
+        // Instant list -> ObjectVector<Instant> (explicit)
+        final TableDefinition readDefinition = TableDefinition.of(
+                ColumnDefinition.of("timestampTzList", ObjectVector.type((GenericType<?>) Type.find(Instant.class))));
+        readWithDefinitionTestHelper(identifier, readDefinition, expectedInferred);
     }
 
     @Test
     void readWriteTimestampNtzListTest() {
+        // Write a table with LocalDateTime[]
+        final TableIdentifier identifier = TableIdentifier.of(Namespace.of("MyNamespace"), "Tbl_timestampNtzList");
         final Table source = TableTools.newTable(
                 TableDefinition.of(ColumnDefinition.of("timestampNtzList", Type.find(LocalDateTime.class).arrayType())),
                 new ColumnHolder<>("timestampNtzList", LocalDateTime[].class, LocalDateTime.class, false,
-                        new LocalDateTime[] {LocalDateTime.of(2025, 1, 1, 12, 0, 1),
+                        new LocalDateTime[] {
+                                LocalDateTime.of(2025, 1, 1, 12, 0, 1),
                                 null,
                                 LocalDateTime.of(2023, 1, 1, 0, 0)},
                         null,
                         new LocalDateTime[] {}));
-        final Table expected = TableTools.newTable(
+        final Schema expectedSchema = new Schema(
+                Types.NestedField.optional(1, "timestampNtzList",
+                        Types.ListType.ofOptional(2, Types.TimestampType.withoutZone())));
+        final Table expectedInferred = TableTools.newTable(
                 TableTools.col("timestampNtzList",
                         new ObjectVectorDirect<>(LocalDateTime.of(2025, 1, 1, 12, 0, 1),
                                 null,
                                 LocalDateTime.of(2023, 1, 1, 0, 0)),
                         null,
                         (ObjectVector<LocalDateTime>) new ObjectVectorDirect<LocalDateTime>()));
-        readWriteListTypeTestImpl("timestampNtzList", source, expected);
+
+        // By default, LocalDateTime list -> ObjectVector<LocalDateTime>
+        readWriteTestHelper(identifier, source, expectedSchema, expectedInferred);
+
+        // LocalDateTime list -> ObjectVector<LocalDateTime> (explicit)
+        final TableDefinition readDefinition = TableDefinition.of(
+                ColumnDefinition.of("timestampNtzList",
+                        ObjectVector.type((GenericType<?>) Type.find(LocalDateTime.class))));
+        readWithDefinitionTestHelper(identifier, readDefinition, expectedInferred);
     }
 
     @Test
     void readWriteDateListTest() {
+        // Write a table with LocalDate[]
+        final TableIdentifier identifier = TableIdentifier.of(Namespace.of("MyNamespace"), "Tbl_dateList");
         final Table source = TableTools.newTable(
                 TableDefinition.of(ColumnDefinition.of("dateList", Type.find(LocalDate.class).arrayType())),
                 new ColumnHolder<>("dateList", LocalDate[].class, LocalDate.class, false,
                         new LocalDate[] {LocalDate.of(2025, 1, 1), null, LocalDate.of(2023, 1, 1)},
                         null,
                         new LocalDate[] {}));
-        final Table expected = TableTools.newTable(
+        final Schema expectedSchema = new Schema(
+                Types.NestedField.optional(1, "dateList",
+                        Types.ListType.ofOptional(2, Types.DateType.get())));
+        final Table expectedInferred = TableTools.newTable(
                 TableTools.col("dateList",
                         new ObjectVectorDirect<>(LocalDate.of(2025, 1, 1), null, LocalDate.of(2023, 1, 1)),
                         null,
                         (ObjectVector<LocalDate>) new ObjectVectorDirect<LocalDate>()));
-        readWriteListTypeTestImpl("dateList", source, expected);
+
+        // By default, LocalDate list -> ObjectVector<LocalDate>
+        readWriteTestHelper(identifier, source, expectedSchema, expectedInferred);
+
+        // LocalDate list -> ObjectVector<LocalDate> (explicit)
+        final TableDefinition readDefinition = TableDefinition.of(
+                ColumnDefinition.of("dateList", ObjectVector.type((GenericType<?>) Type.find(LocalDate.class))));
+        readWithDefinitionTestHelper(identifier, readDefinition, expectedInferred);
     }
 
     @Test
     void readWriteTimeListTest() {
+        // Write a table with LocalTime[]
+        final TableIdentifier identifier = TableIdentifier.of(Namespace.of("MyNamespace"), "Tbl_timeList");
         final Table source = TableTools.newTable(
                 TableDefinition.of(ColumnDefinition.of("timeList", Type.find(LocalTime.class).arrayType())),
                 new ColumnHolder<>("timeList", LocalTime[].class, LocalTime.class, false,
                         new LocalTime[] {LocalTime.of(12, 0, 1), null, LocalTime.of(12, 0)},
                         null,
                         new LocalTime[] {}));
-        final Table expected = TableTools.newTable(
+        final Schema expectedSchema = new Schema(
+                Types.NestedField.optional(1, "timeList",
+                        Types.ListType.ofOptional(2, Types.TimeType.get())));
+        final Table expectedInferred = TableTools.newTable(
                 TableTools.col("timeList",
                         new ObjectVectorDirect<>(LocalTime.of(12, 0, 1), null, LocalTime.of(12, 0)),
                         null,
                         (ObjectVector<LocalTime>) new ObjectVectorDirect<LocalTime>()));
-        readWriteListTypeTestImpl("timeList", source, expected);
+
+        // By default, LocalTime list -> ObjectVector<LocalTime>
+        readWriteTestHelper(identifier, source, expectedSchema, expectedInferred);
+
+        // LocalTime list -> ObjectVector<LocalTime> (explicit)
+        final TableDefinition readDefinition = TableDefinition.of(
+                ColumnDefinition.of("timeList", ObjectVector.type((GenericType<?>) Type.find(LocalTime.class))));
+        readWithDefinitionTestHelper(identifier, readDefinition, expectedInferred);
     }
 
-    /*--- End tests for iceberg list types ---*/
+    /*--- End tests for list types ---*/
 
     @Test
     void testFailureInWrite() {

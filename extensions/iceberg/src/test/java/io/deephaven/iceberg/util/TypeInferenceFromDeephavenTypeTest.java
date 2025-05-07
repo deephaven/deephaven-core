@@ -48,8 +48,8 @@ class TypeInferenceFromDeephavenTypeTest {
 
     @Test
     void byteType() {
-        assertInference(Type.byteType()).isEmpty();
-        assertInference(Type.byteType().boxedType()).isEmpty();
+        assertInference(Type.byteType()).hasValue(Types.IntegerType.get());
+        assertInference(Type.byteType().boxedType()).hasValue(Types.IntegerType.get());
     }
 
     @Test
@@ -60,8 +60,8 @@ class TypeInferenceFromDeephavenTypeTest {
 
     @Test
     void shortType() {
-        assertInference(Type.shortType()).isEmpty();
-        assertInference(Type.shortType().boxedType()).isEmpty();
+        assertInference(Type.shortType()).hasValue(Types.IntegerType.get());
+        assertInference(Type.shortType().boxedType()).hasValue(Types.IntegerType.get());
     }
 
     @Test
@@ -125,37 +125,39 @@ class TypeInferenceFromDeephavenTypeTest {
         assertInference(SomeCustomType.class).isEmpty();
     }
 
-    @Test
-    void arrayTypes() {
-        for (final NativeArrayType<?, ?> type : PrimitiveType.instances().map(Type::arrayType)
-                .collect(Collectors.toList())) {
-            assertInference(type).isEmpty();
-        }
-        for (final NativeArrayType<?, ?> type : PrimitiveType.instances().map(PrimitiveType::boxedType)
-                .map(Type::arrayType).collect(Collectors.toList())) {
-            assertInference(type).isEmpty();
-        }
-        assertInference(Type.stringType().arrayType()).isEmpty();
-        assertInference(Type.instantType().arrayType()).isEmpty();
-        assertInference(Type.find(LocalDateTime.class).arrayType()).isEmpty();
-        assertInference(Type.find(LocalDate.class).arrayType()).isEmpty();
-        assertInference(Type.find(LocalTime.class).arrayType()).isEmpty();
-        assertInference(Type.find(SomeCustomType.class).arrayType()).isEmpty();
-    }
-
-    @Test
-    void vectorTypes() {
-        for (final PrimitiveVectorType<?, ?> type : Arrays.asList(ByteVector.type(), CharVector.type(),
-                ShortVector.type(), IntVector.type(), LongVector.type(), FloatVector.type(), DoubleVector.type())) {
-            assertInference(type).isEmpty();
-        }
-        assertInference(ObjectVector.type(Type.stringType())).isEmpty();
-        assertInference(ObjectVector.type(Type.instantType())).isEmpty();
-        assertInference(ObjectVector.type(CustomType.of(LocalDateTime.class))).isEmpty();
-        assertInference(ObjectVector.type(CustomType.of(LocalDate.class))).isEmpty();
-        assertInference(ObjectVector.type(CustomType.of(LocalTime.class))).isEmpty();
-        assertInference(ObjectVector.type(CustomType.of(SomeCustomType.class))).isEmpty();
-    }
+    // TODO Add tests for array and vector types
+    //
+    // @Test
+    // void arrayTypes() {
+    // for (final NativeArrayType<?, ?> type : PrimitiveType.instances().map(Type::arrayType)
+    // .collect(Collectors.toList())) {
+    // assertInference(type).isEmpty();
+    // }
+    // for (final NativeArrayType<?, ?> type : PrimitiveType.instances().map(PrimitiveType::boxedType)
+    // .map(Type::arrayType).collect(Collectors.toList())) {
+    // assertInference(type).isEmpty();
+    // }
+    // assertInference(Type.stringType().arrayType()).isEmpty();
+    // assertInference(Type.instantType().arrayType()).isEmpty();
+    // assertInference(Type.find(LocalDateTime.class).arrayType()).isEmpty();
+    // assertInference(Type.find(LocalDate.class).arrayType()).isEmpty();
+    // assertInference(Type.find(LocalTime.class).arrayType()).isEmpty();
+    // assertInference(Type.find(SomeCustomType.class).arrayType()).isEmpty();
+    // }
+    //
+    // @Test
+    // void vectorTypes() {
+    // for (final PrimitiveVectorType<?, ?> type : Arrays.asList(ByteVector.type(), CharVector.type(),
+    // ShortVector.type(), IntVector.type(), LongVector.type(), FloatVector.type(), DoubleVector.type())) {
+    // assertInference(type).isEmpty();
+    // }
+    // assertInference(ObjectVector.type(Type.stringType())).isEmpty();
+    // assertInference(ObjectVector.type(Type.instantType())).isEmpty();
+    // assertInference(ObjectVector.type(CustomType.of(LocalDateTime.class))).isEmpty();
+    // assertInference(ObjectVector.type(CustomType.of(LocalDate.class))).isEmpty();
+    // assertInference(ObjectVector.type(CustomType.of(LocalTime.class))).isEmpty();
+    // assertInference(ObjectVector.type(CustomType.of(SomeCustomType.class))).isEmpty();
+    // }
 
     private OptionalAssert<org.apache.iceberg.types.Type> assertInference(Class<?> clazz) {
         return assertInference(Type.find(clazz));

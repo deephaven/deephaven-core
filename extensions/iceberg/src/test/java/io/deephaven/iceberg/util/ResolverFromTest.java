@@ -6,6 +6,7 @@ package io.deephaven.iceberg.util;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.qst.type.Type;
+import io.deephaven.vector.IntVector;
 import org.apache.iceberg.PartitionFieldHack;
 import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.PartitionSpecHack;
@@ -20,7 +21,6 @@ import java.util.List;
 import static io.deephaven.iceberg.util.ColumnInstructions.partitionField;
 import static io.deephaven.iceberg.util.ColumnInstructions.schemaField;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 
 
 /**
@@ -42,17 +42,16 @@ class ResolverFromTest {
         return assertThat(Resolver.from(definition)).usingEquals(ResolverFromTest::equalsModuloSchemaId);
     }
 
-    // todo: fill this out more generally
-
     @Test
     void shortType() {
-        try {
-            Resolver.from(TableDefinition.of(ColumnDefinition.of("Foo", Type.shortType())));
-            failBecauseExceptionWasNotThrown(Resolver.MappingException.class);
-        } catch (Resolver.MappingException e) {
-            assertThat(e).hasMessageContaining(
-                    "Unable to infer the best Iceberg type for Deephaven column type `io.deephaven.qst.type.ShortType`");
-        }
+        Resolver.from(TableDefinition.of(ColumnDefinition.of("Foo", Type.shortType())));
+        final TableDefinition definition = TableDefinition.of(ColumnDefinition.of("Foo", Type.intType()));
+        final Resolver expected = Resolver.builder()
+                .definition(definition)
+                .schema(new Schema(List.of(Types.NestedField.optional(1, "Foo", Types.IntegerType.get()))))
+                .putColumnInstructions("Foo", schemaField(1))
+                .build();
+        assertResolverFrom(definition).isEqualTo(expected);
     }
 
     @Test
@@ -68,35 +67,41 @@ class ResolverFromTest {
 
     @Test
     void byteArrayType() {
-        try {
-            Resolver.from(TableDefinition.of(ColumnDefinition.of("Foo", Type.byteType().arrayType())));
-            failBecauseExceptionWasNotThrown(Resolver.MappingException.class);
-        } catch (Resolver.MappingException e) {
-            assertThat(e).hasMessageContaining(
-                    "Unable to infer the best Iceberg type for Deephaven column type `NativeArrayType{clazz=class [B, componentType=io.deephaven.qst.type.ByteType}`");
-        }
+        Resolver.from(TableDefinition.of(ColumnDefinition.of("Foo", Type.byteType().arrayType())));
+        final TableDefinition definition = TableDefinition.of(ColumnDefinition.of("Foo", IntVector.type()));
+        final Resolver expected = Resolver.builder()
+                .definition(definition)
+                .schema(new Schema(List.of(Types.NestedField.optional(2, "Foo",
+                        Types.ListType.ofOptional(1, Types.IntegerType.get())))))
+                .putColumnInstructions("Foo", schemaField(2))
+                .build();
+        assertResolverFrom(definition).isEqualTo(expected);
     }
 
     @Test
     void shortArrayType() {
-        try {
-            Resolver.from(TableDefinition.of(ColumnDefinition.of("Foo", Type.shortType().arrayType())));
-            failBecauseExceptionWasNotThrown(Resolver.MappingException.class);
-        } catch (Resolver.MappingException e) {
-            assertThat(e).hasMessageContaining(
-                    "Unable to infer the best Iceberg type for Deephaven column type `NativeArrayType{clazz=class [S, componentType=io.deephaven.qst.type.ShortType}`");
-        }
+        Resolver.from(TableDefinition.of(ColumnDefinition.of("Foo", Type.shortType().arrayType())));
+        final TableDefinition definition = TableDefinition.of(ColumnDefinition.of("Foo", IntVector.type()));
+        final Resolver expected = Resolver.builder()
+                .definition(definition)
+                .schema(new Schema(List.of(Types.NestedField.optional(2, "Foo",
+                        Types.ListType.ofOptional(1, Types.IntegerType.get())))))
+                .putColumnInstructions("Foo", schemaField(2))
+                .build();
+        assertResolverFrom(definition).isEqualTo(expected);
     }
 
     @Test
     void intArrayType() {
-        try {
-            Resolver.from(TableDefinition.of(ColumnDefinition.of("Foo", Type.intType().arrayType())));
-            failBecauseExceptionWasNotThrown(Resolver.MappingException.class);
-        } catch (Resolver.MappingException e) {
-            assertThat(e).hasMessageContaining(
-                    "Unable to infer the best Iceberg type for Deephaven column type `NativeArrayType{clazz=class [I, componentType=io.deephaven.qst.type.IntType}`");
-        }
+        Resolver.from(TableDefinition.of(ColumnDefinition.of("Foo", Type.intType().arrayType())));
+        final TableDefinition definition = TableDefinition.of(ColumnDefinition.of("Foo", IntVector.type()));
+        final Resolver expected = Resolver.builder()
+                .definition(definition)
+                .schema(new Schema(List.of(Types.NestedField.optional(2, "Foo",
+                        Types.ListType.ofOptional(1, Types.IntegerType.get())))))
+                .putColumnInstructions("Foo", schemaField(2))
+                .build();
+        assertResolverFrom(definition).isEqualTo(expected);
     }
 
     @Test
