@@ -52,7 +52,7 @@ public final class ExportId implements HasExportId {
         return (type == null ? "?:" : type + ":") + ExportTicketHelper.toReadableString(exportId);
     }
 
-    int id() {
+    public int id() {
         return exportId;
     }
 

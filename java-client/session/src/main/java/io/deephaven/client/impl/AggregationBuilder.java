@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
 
 import static java.util.Collections.singletonList;
 
-class AggregationBuilder implements io.deephaven.api.agg.Aggregation.Visitor {
+public class AggregationBuilder implements io.deephaven.api.agg.Aggregation.Visitor {
 
     public static List<Aggregation> adapt(io.deephaven.api.agg.Aggregation agg) {
         return agg.walk(new AggregationBuilder()).out();
