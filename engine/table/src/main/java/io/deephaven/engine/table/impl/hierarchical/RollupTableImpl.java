@@ -30,6 +30,7 @@ import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
 import io.deephaven.engine.table.impl.util.RowRedirection;
+import io.deephaven.util.annotations.InternalUseOnly;
 import io.deephaven.util.type.TypeUtils;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
@@ -608,6 +609,45 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
                 source, aggregations, includeConstituents, groupByColumns,
                 levelTables, levelRowLookups, levelNodeTableSources, aggregatedNodeDefinition, aggregatedNodeOperations,
                 constituentNodeDefinition, constituentNodeOperations, null, availableColumnDefinitions);
+    }
+
+
+    /**
+     * <p>
+     * Create a RollupTable from internal data structures that have been made outside the rollup code.
+     * </p>
+     *
+     * <p>
+     * Constituents may not be included, and node operations are not provided.
+     * </p>
+     *
+     * <p>
+     * Note: This function is not part of the public Deephaven API, and the semantics are subject to change at any time.
+     * </p>
+     *
+     * @param source the original table being aggregated for this rollup
+     * @param attributes the attributes of the result rollup
+     * @param aggregations the aggregations used to make this rollup
+     * @param groupByColumns the group by columns for this rollup
+     * @param levelTables an array of tables for each level
+     * @param levelRowLookups an array of row lookup structures for each level
+     * @param levelNodeTableSources an array of column sources containing a lower-level table
+     * @return a RollupTable from the provided data structures
+     */
+    @InternalUseOnly
+    public static RollupTable makeFromPartsInternal(
+            @NotNull final QueryTable source,
+            @NotNull final Map<String, Object> attributes,
+            @NotNull final Collection<? extends Aggregation> aggregations,
+            @NotNull final Collection<? extends ColumnName> groupByColumns,
+            @NotNull final QueryTable[] levelTables,
+            @NotNull final AggregationRowLookup[] levelRowLookups,
+            @NotNull final ColumnSource<Table>[] levelNodeTableSources) {
+        return new RollupTableImpl(
+                attributes,
+                source, aggregations, false, groupByColumns,
+                levelTables, levelRowLookups, levelNodeTableSources,
+                null, null, null, null, null, null);
     }
 
     private static QueryTable[] makeLevelTablesArray(
