@@ -16,7 +16,6 @@ import io.deephaven.vector.IntVector;
 import io.deephaven.vector.LongVector;
 import io.deephaven.vector.ObjectVector;
 import io.deephaven.vector.ShortVector;
-import org.apache.iceberg.types.TypeUtil;
 import org.apache.iceberg.types.Types;
 import org.assertj.core.api.OptionalAssert;
 import org.junit.jupiter.api.BeforeEach;

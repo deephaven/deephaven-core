@@ -6,6 +6,7 @@ package io.deephaven.iceberg.util;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.qst.type.Type;
+import io.deephaven.vector.IntVector;
 import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.Schema;
 import org.apache.iceberg.types.Types.BinaryType;
@@ -172,25 +173,17 @@ class ResolverInferTest {
     @Test
     void BinaryType() throws TypeInference.Exception {
         final Schema schema = simpleSchema(BinaryType.get());
-        assertThat(Resolver.infer(schema)).isEqualTo(empty(schema));
-        try {
-            Resolver.infer(ia(schema));
-        } catch (TypeInference.UnsupportedType e) {
-            assertThat(e).hasMessageContaining("Unsupported Iceberg type `binary` at fieldName `F1`");
-            assertThat(e.type()).isEqualTo(BinaryType.get());
-        }
+        final Resolver expected = simpleMapping(schema, Type.find(byte[].class));
+        assertThat(Resolver.infer(schema)).isEqualTo(expected);
+        assertThat(Resolver.infer(ia(schema))).isEqualTo(expected);
     }
 
     @Test
     void FixedType_4() throws TypeInference.Exception {
         final Schema schema = simpleSchema(FixedType.ofLength(4));
-        assertThat(Resolver.infer(schema)).isEqualTo(empty(schema));
-        try {
-            Resolver.infer(ia(schema));
-        } catch (TypeInference.UnsupportedType e) {
-            assertThat(e).hasMessageContaining("Unsupported Iceberg type `fixed[4]` at fieldName `F1`");
-            assertThat(e.type()).isEqualTo(FixedType.ofLength(4));
-        }
+        final Resolver expected = simpleMapping(schema, Type.find(byte[].class));
+        assertThat(Resolver.infer(schema)).isEqualTo(expected);
+        assertThat(Resolver.infer(ia(schema))).isEqualTo(expected);
     }
 
     @Test
@@ -264,14 +257,23 @@ class ResolverInferTest {
                 NestedField.optional(6, "L2", ListType.ofRequired(2, IT)),
                 NestedField.required(7, "L3", ListType.ofOptional(3, IT)),
                 NestedField.required(8, "L4", ListType.ofRequired(4, IT)));
-        assertThat(Resolver.infer(schema)).isEqualTo(empty(schema));
-        try {
-            Resolver.infer(ia(schema));
-            failBecauseExceptionWasNotThrown(TypeInference.Exception.class);
-        } catch (TypeInference.UnsupportedType e) {
-            assertThat(e).hasMessageContaining("Unsupported Iceberg type `list<int>` at fieldName `L1`");
-            assertThat(e.type()).isEqualTo(ListType.ofOptional(1, IT));
-        }
+
+        final TableDefinition expectedDefinition = TableDefinition.of(
+                ColumnDefinition.of("L1", IntVector.type()),
+                ColumnDefinition.of("L2", IntVector.type()),
+                ColumnDefinition.of("L3", IntVector.type()),
+                ColumnDefinition.of("L4", IntVector.type()));
+        final Resolver expectedResolver = Resolver.builder()
+                .schema(schema)
+                .definition(expectedDefinition)
+                .putColumnInstructions("L1", schemaField(5))
+                .putColumnInstructions("L2", schemaField(6))
+                .putColumnInstructions("L3", schemaField(7))
+                .putColumnInstructions("L4", schemaField(8))
+                .build();
+
+        assertThat(Resolver.infer(schema)).isEqualTo(expectedResolver);
+        assertThat(Resolver.infer(ia(schema))).isEqualTo(expectedResolver);
     }
 
     @Test
