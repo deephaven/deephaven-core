@@ -22,6 +22,7 @@ import io.deephaven.proto.backplane.grpc.PartitionByResponse;
 import io.deephaven.proto.backplane.grpc.PartitionedTableServiceGrpc;
 import io.deephaven.proto.util.Exceptions;
 import io.deephaven.server.auth.AuthorizationProvider;
+import io.deephaven.server.grpc.GrpcErrorHelper;
 import io.deephaven.server.session.*;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.TestUseOnly;
@@ -62,6 +63,8 @@ public class PartitionedTableServiceGrpcImpl extends PartitionedTableServiceGrpc
             @NotNull final StreamObserver<PartitionByResponse> responseObserver) {
         final SessionState session = sessionService.getCurrentSession();
 
+        GrpcErrorHelper.checkHasNoUnknownFieldsRecursive(request);
+
         final String description = "PartitionedTableService#partitionBy(table="
                 + ticketRouter.getLogNameFor(request.getTableId(), "tableId") + ")";
         final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.newQuery(
@@ -92,6 +95,8 @@ public class PartitionedTableServiceGrpcImpl extends PartitionedTableServiceGrpc
             @NotNull final MergeRequest request,
             @NotNull final StreamObserver<ExportedTableCreationResponse> responseObserver) {
         final SessionState session = sessionService.getCurrentSession();
+
+        GrpcErrorHelper.checkHasNoUnknownFieldsRecursive(request);
 
         final String description = "PartitionedTableService#merge(table="
                 + ticketRouter.getLogNameFor(request.getPartitionedTable(), "partitionedTable") + ")";
@@ -133,6 +138,8 @@ public class PartitionedTableServiceGrpcImpl extends PartitionedTableServiceGrpc
             @NotNull final GetTableRequest request,
             @NotNull final StreamObserver<ExportedTableCreationResponse> responseObserver) {
         final SessionState session = sessionService.getCurrentSession();
+
+        GrpcErrorHelper.checkHasNoUnknownFieldsRecursive(request);
 
         final String description = "PartitionedTableService#getTable(table="
                 + ticketRouter.getLogNameFor(request.getPartitionedTable(), "partitionedTable") + ", keyTable="
