@@ -415,8 +415,8 @@ public class ParquetTableLocation extends AbstractTableLocation {
     }
 
     /**
-     * Get the min and max values from the statistics. Currently can convert basic numerics, string and
-     * BigDecimal / BigInteger values.
+     * Get the min and max values from the statistics. Currently can convert basic numerics, string and BigDecimal /
+     * BigInteger values.
      *
      * @param statistics The statistics to analyze
      * @return The min and max values from the statistics or null if cannot be converted.
@@ -466,7 +466,8 @@ public class ParquetTableLocation extends AbstractTableLocation {
         final long executedFilterCost = context.executedFilterCost();
 
         // Some range filter host a condition filter as the internal filter and we can't push that down.
-        final boolean isRangeFilter = filter instanceof RangeFilter && ((RangeFilter)filter).getRealFilter() instanceof AbstractRangeFilter;
+        final boolean isRangeFilter =
+                filter instanceof RangeFilter && ((RangeFilter) filter).getRealFilter() instanceof AbstractRangeFilter;
         final boolean isMatchFilter = filter instanceof MatchFilter;
 
         if (!QueryTable.DISABLE_WHERE_PUSHDOWN_METADATA
@@ -538,13 +539,15 @@ public class ParquetTableLocation extends AbstractTableLocation {
         // Should we look at the metadata?
         if (!QueryTable.DISABLE_WHERE_PUSHDOWN_METADATA && executedFilterCost < PushdownResult.METADATA_STATS_COST) {
             // Some range filter host a condition filter as the internal filter and we can't push that down.
-            if (filter instanceof RangeFilter && ((RangeFilter)filter).getRealFilter() instanceof AbstractRangeFilter) {
+            if (filter instanceof RangeFilter
+                    && ((RangeFilter) filter).getRealFilter() instanceof AbstractRangeFilter) {
                 final AbstractRangeFilter rf = (AbstractRangeFilter) ((RangeFilter) filter).getRealFilter();
                 // Only one column in a RangeFilter
                 final Integer parquetIndex = parquetIndices.get(0);
 
                 iterateRowGroupsAndRowSet(input, (rgIdx, rs) -> {
-                    final Pair<Object, Object> p = getMinMax(parquetMetadata.getBlocks().get(rgIdx).getColumns().get(parquetIndex).getStatistics());
+                    final Pair<Object, Object> p = getMinMax(
+                            parquetMetadata.getBlocks().get(rgIdx).getColumns().get(parquetIndex).getStatistics());
 
                     if (p == null || rf.overlaps(p.first, p.second)) {
                         maybeBuilder.appendRowSequence(rs);
@@ -559,7 +562,8 @@ public class ParquetTableLocation extends AbstractTableLocation {
                 final Integer parquetIndex = parquetIndices.get(0);
 
                 iterateRowGroupsAndRowSet(input, (rgIdx, rs) -> {
-                    final Pair<Object, Object> p = getMinMax(parquetMetadata.getBlocks().get(rgIdx).getColumns().get(parquetIndex).getStatistics());
+                    final Pair<Object, Object> p = getMinMax(
+                            parquetMetadata.getBlocks().get(rgIdx).getColumns().get(parquetIndex).getStatistics());
 
                     if (p == null) {
                         maybeBuilder.appendRowSequence(rs);

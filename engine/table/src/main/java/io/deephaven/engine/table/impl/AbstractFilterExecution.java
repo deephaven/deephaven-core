@@ -228,11 +228,10 @@ abstract class AbstractFilterExecution {
     }
 
     /**
-     * Execute the stateless filter at the provided index. This function re-evaluates the remaining filter costs after
-     * the filtering action is complete, then re-sorts the array based on the lowest remaining evaluation cost. A filter
-     * is not considered complete until the pushdown and filter are both complete, so this re-ordering may result in a
-     * different filter occupying the current index. In this case, the new filter will be evaluated and process will
-     * continue until the filter occupying the current index is fully complete.
+     * Execute the stateless filter at the provided index.
+     * <p>
+     *
+     *
      */
     private void executeStatelessFilter(
             final FilterContext[] filterContexts,
@@ -242,7 +241,14 @@ abstract class AbstractFilterExecution {
             final Runnable filterComplete,
             final Consumer<Exception> filterNec) {
 
-        // Create the result consumer for chunk filters.
+        final FilterContext fc = filterContexts[filterIdx];
+        final WhereFilter currentFilter = fc.filter();
+        // Our ceiling cost is the cost of the next filter in the list, or Long.MAX_VALUE if this is the last filter.
+        final long costCeiling = filterIdx + 1 < filterContexts.length
+                ? filterContexts[filterIdx + 1].pushdownFilterCost()
+                : Long.MAX_VALUE;
+
+        // Result consumer for normal filtering.
         final Consumer<WritableRowSet> onFilterComplete = (result) -> {
             // Clean up the row sets created by the filter.
             try (final RowSet ignored = localInput.getValue()) {
@@ -258,83 +264,76 @@ abstract class AbstractFilterExecution {
             filterComplete.run();
         };
 
-        final FilterContext fc = filterContexts[filterIdx];
-        final WhereFilter currentFilter = fc.filter();
+        // Result consumer for push-down filtering.
+        final Consumer<PushdownResult> onPushdownComplete = (pushdownResult) -> {
+            fc.updateExecutedFilterCost(costCeiling);
 
-        // Our ceiling cost is the cost of the next filter in the list, or Long.MAX_VALUE if this is the last filter.
-        final long costCeiling = filterIdx + 1 < filterContexts.length
-                ? filterContexts[filterIdx + 1].pushdownFilterCost()
-                : Long.MAX_VALUE;
+            if (pushdownResult.maybeMatch().isEmpty()) {
+                localInput.setValue(pushdownResult.match().copy());
+
+                // Recompute the remaining costs to ensure the next filter is the lowest cost.
+                if (filterIdx + 1 < filterContexts.length) {
+                    FilterContext.sortFilterContexts(filterIdx + 1, filterContexts, sourceTable,
+                            localInput.getValue(), usePrev);
+                }
+
+                // Cleanup the rowsets and call the consumer.
+                try (final PushdownResult ignored = pushdownResult) {
+                    filterComplete.run();
+                    return;
+                }
+            }
+
+            // We still have some maybe rows, sort the filters again.
+            if (filterIdx + 1 < filterContexts.length) {
+                // Recompute the remaining costs to ensure the next filter is the lowest cost.
+                FilterContext.sortFilterContexts(
+                        filterIdx, filterContexts, sourceTable, localInput.getValue(), usePrev);
+            }
+
+            // If there is a new filter at the current index, need to evaluate it.
+            if (!fc.equals(filterContexts[filterIdx])) {
+                // Use the union of the match and maybe rows as the input for the next filter.
+                localInput.setValue(pushdownResult.match().union(pushdownResult.maybeMatch()));
+
+                // Store the result for later use by the companion chunk filter.
+                fc.updatePushdownResult(pushdownResult);
+
+                //
+                executeStatelessFilter(
+                        filterContexts, filterIdx, filterContexts[filterIdx].filter(),
+                        localInput, filterComplete, filterNec);
+            } else {
+                // Leverage push-down results to reduce the chunk filter input.
+                final Consumer<WritableRowSet> localConsumer = (rows) -> {
+                    try (final RowSet ignored = rows; final PushdownResult ignored2 = pushdownResult) {
+                        onFilterComplete.accept(rows.union(pushdownResult.match()));
+                    }
+                };
+                final long inputSize = pushdownResult.maybeMatch().size();
+
+                if (!shouldParallelizeFilter(filter, inputSize)) {
+                    doFilter(filter, pushdownResult.maybeMatch(), 0, inputSize, localConsumer, filterNec);
+                } else {
+                    doFilterParallel(filter, pushdownResult.maybeMatch(), localConsumer, filterNec);
+                }
+            }
+        };
+
+        final RowSet input = localInput.getValue();
 
         if (fc.pushdownFilterCost() < Long.MAX_VALUE) {
-            // Create the push-down result consumer.
-            final Consumer<PushdownResult> onPushdownComplete = (pushdownResult) -> {
-                fc.updateExecutedFilterCost(costCeiling);
-
-                if (pushdownResult.maybeMatch().isEmpty()) {
-                    localInput.setValue(pushdownResult.match().copy());
-
-                    // Recompute the remaining costs to ensure the next filter is the lowest cost.
-                    if (filterIdx + 1 < filterContexts.length) {
-                        FilterContext.sortFilterContexts(filterIdx + 1, filterContexts, sourceTable,
-                                localInput.getValue(), usePrev);
-                    }
-
-                    // Cleanup the rowsets and call the consumer.
-                    try (final PushdownResult ignored = pushdownResult) {
-                        filterComplete.run();
-                        return;
-                    }
-                }
-
-                // We still have some maybe rows, sort the filters again.
-                if (filterIdx + 1 < filterContexts.length) {
-                    // Recompute the remaining costs to ensure the next filter is the lowest cost.
-                    FilterContext.sortFilterContexts(
-                            filterIdx, filterContexts, sourceTable, localInput.getValue(), usePrev);
-                }
-
-                // If there is a new filter at the current index, need to evaluate it.
-                if (!fc.equals(filterContexts[filterIdx])) {
-                    // Use the union of the match and maybe rows as the input for the next filter.
-                    localInput.setValue(pushdownResult.match().union(pushdownResult.maybeMatch()));
-
-                    // Store the result for later use by the companion chunk filter.
-                    fc.updatePushdownResult(pushdownResult);
-
-                    executeStatelessFilter(
-                            filterContexts, filterIdx, filterContexts[filterIdx].filter(),
-                            localInput, filterComplete, filterNec);
-                } else {
-                    // Leverage push-down results to reduce the chunk filter input.
-                    final Consumer<WritableRowSet> localConsumer = (rows) -> {
-                        try (final RowSet ignored = rows; final PushdownResult ignored2 = pushdownResult) {
-                            onFilterComplete.accept(rows.union(pushdownResult.match()));
-                        }
-                    };
-                    final long inputSize = pushdownResult.maybeMatch().size();
-
-                    if (!shouldParallelizeFilter(filter, inputSize)) {
-                        doFilter(filter, pushdownResult.maybeMatch(), 0, inputSize, localConsumer, filterNec);
-                    } else {
-                        doFilterParallel(filter, pushdownResult.maybeMatch(), localConsumer, filterNec);
-                    }
-                }
-            };
-
-            // Execute the pushdown filter.
+            // Execute the pushdown filter and return.
             if (fc.ppm() != null) {
-                fc.ppm().pushdownFilter(sourceTable.getColumnSourceMap(), currentFilter, localInput.getValue(),
+                fc.ppm().pushdownFilter(sourceTable.getColumnSourceMap(), currentFilter, input,
                         sourceTable.getRowSet(), usePrev, fc, costCeiling, jobScheduler(), onPushdownComplete,
                         filterNec);
             } else {
-                fc.columnSource().pushdownFilter(currentFilter, localInput.getValue(), sourceTable.getRowSet(), usePrev,
+                fc.columnSource().pushdownFilter(currentFilter, input, sourceTable.getRowSet(), usePrev,
                         fc, costCeiling, jobScheduler(), onPushdownComplete, filterNec);
             }
             return;
         }
-
-        final RowSet input = localInput.getValue();
 
         if (fc.pushdownResult() != null) {
             // Leverage push-down results to reduce the chunk filter input.
