@@ -29,9 +29,12 @@ class TypeInferenceFromDeephavenTypeTest {
 
     private Type.Visitor<org.apache.iceberg.types.Type> inferenceVisitor;
 
+    // Dummy value for field ID, used for array types and vectors.
+    private static final int FIELD_ID = 5;
+
     @BeforeEach
     void setUp() {
-        inferenceVisitor = new TypeInference.BestIcebergType(() -> 1);
+        inferenceVisitor = new TypeInference.BestIcebergType(() -> FIELD_ID);
     }
 
     @Test
@@ -122,87 +125,87 @@ class TypeInferenceFromDeephavenTypeTest {
     @Test
     void booleanArrayType() {
         assertInference(Type.booleanType().arrayType())
-                .hasValue(Types.ListType.ofOptional(1, Types.BooleanType.get()));
+                .hasValue(Types.ListType.ofOptional(FIELD_ID, Types.BooleanType.get()));
         assertInference(Type.booleanType().boxedType().arrayType())
-                .hasValue(Types.ListType.ofOptional(1, Types.BooleanType.get()));
+                .hasValue(Types.ListType.ofOptional(FIELD_ID, Types.BooleanType.get()));
     }
 
     @Test
     void byteArrayType() {
         assertInference(Type.byteType().arrayType())
-                .hasValue(Types.ListType.ofOptional(1, Types.IntegerType.get()));
+                .hasValue(Types.ListType.ofOptional(FIELD_ID, Types.IntegerType.get()));
         assertInference(Type.byteType().boxedType().arrayType())
-                .hasValue(Types.ListType.ofOptional(1, Types.IntegerType.get()));
+                .hasValue(Types.ListType.ofOptional(FIELD_ID, Types.IntegerType.get()));
     }
 
     @Test
     void shortArrayType() {
         assertInference(Type.shortType().arrayType())
-                .hasValue(Types.ListType.ofOptional(1, Types.IntegerType.get()));
+                .hasValue(Types.ListType.ofOptional(FIELD_ID, Types.IntegerType.get()));
         assertInference(Type.shortType().boxedType().arrayType())
-                .hasValue(Types.ListType.ofOptional(1, Types.IntegerType.get()));
+                .hasValue(Types.ListType.ofOptional(FIELD_ID, Types.IntegerType.get()));
     }
 
     @Test
     void intArrayType() {
         assertInference(Type.intType().arrayType())
-                .hasValue(Types.ListType.ofOptional(1, Types.IntegerType.get()));
+                .hasValue(Types.ListType.ofOptional(FIELD_ID, Types.IntegerType.get()));
         assertInference(Type.intType().boxedType().arrayType())
-                .hasValue(Types.ListType.ofOptional(1, Types.IntegerType.get()));
+                .hasValue(Types.ListType.ofOptional(FIELD_ID, Types.IntegerType.get()));
     }
 
     @Test
     void longArrayType() {
         assertInference(Type.longType().arrayType())
-                .hasValue(Types.ListType.ofOptional(1, Types.LongType.get()));
+                .hasValue(Types.ListType.ofOptional(FIELD_ID, Types.LongType.get()));
         assertInference(Type.longType().boxedType().arrayType())
-                .hasValue(Types.ListType.ofOptional(1, Types.LongType.get()));
+                .hasValue(Types.ListType.ofOptional(FIELD_ID, Types.LongType.get()));
     }
 
     @Test
     void floatArrayType() {
         assertInference(Type.floatType().arrayType())
-                .hasValue(Types.ListType.ofOptional(1, Types.FloatType.get()));
+                .hasValue(Types.ListType.ofOptional(FIELD_ID, Types.FloatType.get()));
         assertInference(Type.floatType().boxedType().arrayType())
-                .hasValue(Types.ListType.ofOptional(1, Types.FloatType.get()));
+                .hasValue(Types.ListType.ofOptional(FIELD_ID, Types.FloatType.get()));
     }
 
     @Test
     void doubleArrayType() {
         assertInference(Type.doubleType().arrayType())
-                .hasValue(Types.ListType.ofOptional(1, Types.DoubleType.get()));
+                .hasValue(Types.ListType.ofOptional(FIELD_ID, Types.DoubleType.get()));
         assertInference(Type.doubleType().boxedType().arrayType())
-                .hasValue(Types.ListType.ofOptional(1, Types.DoubleType.get()));
+                .hasValue(Types.ListType.ofOptional(FIELD_ID, Types.DoubleType.get()));
     }
 
     @Test
     void stringArrayType() {
         assertInference(Type.stringType().arrayType())
-                .hasValue(Types.ListType.ofOptional(1, Types.StringType.get()));
+                .hasValue(Types.ListType.ofOptional(FIELD_ID, Types.StringType.get()));
     }
 
     @Test
     void instantArrayType() {
         assertInference(Type.instantType().arrayType())
-                .hasValue(Types.ListType.ofOptional(1, Types.TimestampType.withZone()));
+                .hasValue(Types.ListType.ofOptional(FIELD_ID, Types.TimestampType.withZone()));
     }
 
     @Test
     void localDateTimeArrayType() {
         assertInference(Type.find(LocalDateTime.class).arrayType())
-                .hasValue(Types.ListType.ofOptional(1, Types.TimestampType.withoutZone()));
+                .hasValue(Types.ListType.ofOptional(FIELD_ID, Types.TimestampType.withoutZone()));
     }
 
     @Test
     void localDateArrayType() {
         assertInference(Type.find(LocalDate.class).arrayType())
-                .hasValue(Types.ListType.ofOptional(1, Types.DateType.get()));
+                .hasValue(Types.ListType.ofOptional(FIELD_ID, Types.DateType.get()));
     }
 
     @Test
     void localTimeArrayType() {
         assertInference(Type.find(LocalTime.class).arrayType())
-                .hasValue(Types.ListType.ofOptional(1, Types.TimeType.get()));
+                .hasValue(Types.ListType.ofOptional(FIELD_ID, Types.TimeType.get()));
     }
 
     @Test
@@ -218,67 +221,67 @@ class TypeInferenceFromDeephavenTypeTest {
     @Test
     void byteVectorType() {
         assertInference(ByteVector.type())
-                .hasValue(Types.ListType.ofOptional(1, Types.IntegerType.get()));
+                .hasValue(Types.ListType.ofOptional(FIELD_ID, Types.IntegerType.get()));
     }
 
     @Test
     void shortVectorType() {
         assertInference(ShortVector.type())
-                .hasValue(Types.ListType.ofOptional(1, Types.IntegerType.get()));
+                .hasValue(Types.ListType.ofOptional(FIELD_ID, Types.IntegerType.get()));
     }
 
     @Test
     void intVectorType() {
         assertInference(IntVector.type())
-                .hasValue(Types.ListType.ofOptional(1, Types.IntegerType.get()));
+                .hasValue(Types.ListType.ofOptional(FIELD_ID, Types.IntegerType.get()));
     }
 
     @Test
     void longVectorType() {
         assertInference(LongVector.type())
-                .hasValue(Types.ListType.ofOptional(1, Types.LongType.get()));
+                .hasValue(Types.ListType.ofOptional(FIELD_ID, Types.LongType.get()));
     }
 
     @Test
     void floatVectorType() {
         assertInference(FloatVector.type())
-                .hasValue(Types.ListType.ofOptional(1, Types.FloatType.get()));
+                .hasValue(Types.ListType.ofOptional(FIELD_ID, Types.FloatType.get()));
     }
 
     @Test
     void doubleVectorType() {
         assertInference(DoubleVector.type())
-                .hasValue(Types.ListType.ofOptional(1, Types.DoubleType.get()));
+                .hasValue(Types.ListType.ofOptional(FIELD_ID, Types.DoubleType.get()));
     }
 
     @Test
     void stringVectorType() {
         assertInference(ObjectVector.type(Type.stringType()))
-                .hasValue(Types.ListType.ofOptional(1, Types.StringType.get()));
+                .hasValue(Types.ListType.ofOptional(FIELD_ID, Types.StringType.get()));
     }
 
     @Test
     void instantVectorType() {
         assertInference(ObjectVector.type(Type.instantType()))
-                .hasValue(Types.ListType.ofOptional(1, Types.TimestampType.withZone()));
+                .hasValue(Types.ListType.ofOptional(FIELD_ID, Types.TimestampType.withZone()));
     }
 
     @Test
     void localDateTimeVectorType() {
         assertInference(ObjectVector.type((GenericType<?>) Type.find(LocalDateTime.class)))
-                .hasValue(Types.ListType.ofOptional(1, Types.TimestampType.withoutZone()));
+                .hasValue(Types.ListType.ofOptional(FIELD_ID, Types.TimestampType.withoutZone()));
     }
 
     @Test
     void localDateVectorType() {
         assertInference(ObjectVector.type((GenericType<?>) Type.find(LocalDate.class)))
-                .hasValue(Types.ListType.ofOptional(1, Types.DateType.get()));
+                .hasValue(Types.ListType.ofOptional(FIELD_ID, Types.DateType.get()));
     }
 
     @Test
     void localTimeVectorType() {
         assertInference(ObjectVector.type((GenericType<?>) Type.find(LocalTime.class)))
-                .hasValue(Types.ListType.ofOptional(1, Types.TimeType.get()));
+                .hasValue(Types.ListType.ofOptional(FIELD_ID, Types.TimeType.get()));
     }
 
     @Test

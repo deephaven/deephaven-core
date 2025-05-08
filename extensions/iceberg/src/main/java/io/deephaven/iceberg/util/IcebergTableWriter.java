@@ -352,7 +352,7 @@ public class IcebergTableWriter {
                 io.deephaven.qst.type.Type.find(columnDefinition.getDataType(), columnDefinition.getComponentType());
         // We can use field ID 0 since we are not using it for anything else, just for type inference and verification
         final io.deephaven.qst.type.Type.Visitor<org.apache.iceberg.types.Type> inferenceVisitor =
-                new TypeInference.BestIcebergType(() -> 0);
+                new TypeInference.BestIcebergType(() -> 1);
         final org.apache.iceberg.types.Type inferredIcebergType =
                 TypeInference.of(dhType, inferenceVisitor).orElse(null);
         if (inferredIcebergType == null) {

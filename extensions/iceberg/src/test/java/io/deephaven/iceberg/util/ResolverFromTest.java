@@ -5,8 +5,13 @@ package io.deephaven.iceberg.util;
 
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.qst.type.GenericType;
 import io.deephaven.qst.type.Type;
+import io.deephaven.vector.DoubleVector;
+import io.deephaven.vector.FloatVector;
 import io.deephaven.vector.IntVector;
+import io.deephaven.vector.LongVector;
+import io.deephaven.vector.ObjectVector;
 import org.apache.iceberg.PartitionFieldHack;
 import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.PartitionSpecHack;
@@ -16,11 +21,17 @@ import org.apache.iceberg.types.Types;
 import org.assertj.core.api.ObjectAssert;
 import org.junit.jupiter.api.Test;
 
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 
 import static io.deephaven.iceberg.util.ColumnInstructions.partitionField;
 import static io.deephaven.iceberg.util.ColumnInstructions.schemaField;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 
 
 /**
@@ -42,7 +53,32 @@ class ResolverFromTest {
         return assertThat(Resolver.from(definition)).usingEquals(ResolverFromTest::equalsModuloSchemaId);
     }
 
-    // todo: fill this out more generally
+    @Test
+    void booleanType() {
+        Resolver.from(TableDefinition.of(
+                ColumnDefinition.of("Foo", Type.find(Boolean.class))));
+        final TableDefinition definition = TableDefinition.of(
+                ColumnDefinition.of("Foo", Type.find(Boolean.class)));
+        final Resolver expected = Resolver.builder()
+                .definition(definition)
+                .schema(new Schema(List.of(
+                        Types.NestedField.optional(1, "Foo", Types.BooleanType.get()))))
+                .putColumnInstructions("Foo", schemaField(1))
+                .build();
+        assertResolverFrom(definition).isEqualTo(expected);
+    }
+
+    @Test
+    void byteType() {
+        Resolver.from(TableDefinition.of(ColumnDefinition.of("Foo", Type.byteType())));
+        final TableDefinition definition = TableDefinition.of(ColumnDefinition.of("Foo", Type.intType()));
+        final Resolver expected = Resolver.builder()
+                .definition(definition)
+                .schema(new Schema(List.of(Types.NestedField.optional(1, "Foo", Types.IntegerType.get()))))
+                .putColumnInstructions("Foo", schemaField(1))
+                .build();
+        assertResolverFrom(definition).isEqualTo(expected);
+    }
 
     @Test
     void shortType() {
@@ -63,6 +99,157 @@ class ResolverFromTest {
                 .definition(definition)
                 .schema(new Schema(List.of(Types.NestedField.optional(1, "Foo", Types.IntegerType.get()))))
                 .putColumnInstructions("Foo", schemaField(1))
+                .build();
+        assertResolverFrom(definition).isEqualTo(expected);
+    }
+
+    @Test
+    void longType() {
+        Resolver.from(TableDefinition.of(
+                ColumnDefinition.of("Foo", Type.longType())));
+        final TableDefinition definition = TableDefinition.of(
+                ColumnDefinition.of("Foo", Type.longType()));
+        final Resolver expected = Resolver.builder()
+                .definition(definition)
+                .schema(new Schema(List.of(
+                        Types.NestedField.optional(1, "Foo", Types.LongType.get()))))
+                .putColumnInstructions("Foo", schemaField(1))
+                .build();
+        assertResolverFrom(definition).isEqualTo(expected);
+    }
+
+    @Test
+    void floatType() {
+        Resolver.from(TableDefinition.of(
+                ColumnDefinition.of("Foo", Type.floatType())));
+        final TableDefinition definition = TableDefinition.of(
+                ColumnDefinition.of("Foo", Type.floatType()));
+        final Resolver expected = Resolver.builder()
+                .definition(definition)
+                .schema(new Schema(List.of(
+                        Types.NestedField.optional(1, "Foo", Types.FloatType.get()))))
+                .putColumnInstructions("Foo", schemaField(1))
+                .build();
+        assertResolverFrom(definition).isEqualTo(expected);
+    }
+
+    @Test
+    void doubleType() {
+        Resolver.from(TableDefinition.of(
+                ColumnDefinition.of("Foo", Type.doubleType())));
+        final TableDefinition definition = TableDefinition.of(
+                ColumnDefinition.of("Foo", Type.doubleType()));
+        final Resolver expected = Resolver.builder()
+                .definition(definition)
+                .schema(new Schema(List.of(
+                        Types.NestedField.optional(1, "Foo", Types.DoubleType.get()))))
+                .putColumnInstructions("Foo", schemaField(1))
+                .build();
+        assertResolverFrom(definition).isEqualTo(expected);
+    }
+
+    @Test
+    void stringType() {
+        Resolver.from(TableDefinition.of(
+                ColumnDefinition.of("Foo", Type.stringType())));
+        final TableDefinition definition = TableDefinition.of(
+                ColumnDefinition.of("Foo", Type.stringType()));
+        final Resolver expected = Resolver.builder()
+                .definition(definition)
+                .schema(new Schema(List.of(
+                        Types.NestedField.optional(1, "Foo",
+                                Types.StringType.get()))))
+                .putColumnInstructions("Foo", schemaField(1))
+                .build();
+        assertResolverFrom(definition).isEqualTo(expected);
+    }
+
+    @Test
+    void instantType() {
+        Resolver.from(TableDefinition.of(
+                ColumnDefinition.of("Foo", Type.instantType())));
+        final TableDefinition definition = TableDefinition.of(
+                ColumnDefinition.of("Foo", Type.instantType()));
+        final Resolver expected = Resolver.builder()
+                .definition(definition)
+                .schema(new Schema(List.of(
+                        Types.NestedField.optional(1, "Foo",
+                                Types.TimestampType.withZone()))))
+                .putColumnInstructions("Foo", schemaField(1))
+                .build();
+        assertResolverFrom(definition).isEqualTo(expected);
+    }
+
+    @Test
+    void localDateTimeType() {
+        Resolver.from(TableDefinition.of(
+                ColumnDefinition.of("Foo", Type.find(LocalDateTime.class))));
+        final TableDefinition definition = TableDefinition.of(
+                ColumnDefinition.of("Foo", Type.find(LocalDateTime.class)));
+        final Resolver expected = Resolver.builder()
+                .definition(definition)
+                .schema(new Schema(List.of(
+                        Types.NestedField.optional(1, "Foo",
+                                Types.TimestampType.withoutZone()))))
+                .putColumnInstructions("Foo", schemaField(1))
+                .build();
+        assertResolverFrom(definition).isEqualTo(expected);
+    }
+
+    @Test
+    void localDateType() {
+        Resolver.from(TableDefinition.of(
+                ColumnDefinition.of("Foo", Type.find(LocalDate.class))));
+        final TableDefinition definition = TableDefinition.of(
+                ColumnDefinition.of("Foo", Type.find(LocalDate.class)));
+        final Resolver expected = Resolver.builder()
+                .definition(definition)
+                .schema(new Schema(List.of(
+                        Types.NestedField.optional(1, "Foo", Types.DateType.get()))))
+                .putColumnInstructions("Foo", schemaField(1))
+                .build();
+        assertResolverFrom(definition).isEqualTo(expected);
+    }
+
+    @Test
+    void localTimeType() {
+        Resolver.from(TableDefinition.of(
+                ColumnDefinition.of("Foo", Type.find(LocalTime.class))));
+        final TableDefinition definition = TableDefinition.of(
+                ColumnDefinition.of("Foo", Type.find(LocalTime.class)));
+        final Resolver expected = Resolver.builder()
+                .definition(definition)
+                .schema(new Schema(List.of(
+                        Types.NestedField.optional(1, "Foo", Types.TimeType.get()))))
+                .putColumnInstructions("Foo", schemaField(1))
+                .build();
+        assertResolverFrom(definition).isEqualTo(expected);
+    }
+
+    @Test
+    void bigDecimalType() {
+        try {
+            Resolver.from(TableDefinition.of(
+                    ColumnDefinition.of("Foo", Type.find(BigDecimal.class))));
+            failBecauseExceptionWasNotThrown(Resolver.MappingException.class);
+        } catch (Resolver.MappingException e) {
+            assertThat(e.getMessage()).contains("Unable to infer the best Iceberg type for Deephaven column type " +
+                    "`CustomType{clazz=class java.math.BigDecimal}`");
+        }
+    }
+
+    @Test
+    void booleanArrayType() {
+        Resolver.from(TableDefinition.of(
+                ColumnDefinition.of("Foo", Type.find(Boolean.class).arrayType())));
+        final TableDefinition definition = TableDefinition.of(
+                ColumnDefinition.of("Foo", ObjectVector.type(Type.booleanType().boxedType())));
+        final Resolver expected = Resolver.builder()
+                .definition(definition)
+                .schema(new Schema(List.of(
+                        Types.NestedField.optional(2, "Foo",
+                                Types.ListType.ofOptional(1, Types.BooleanType.get())))))
+                .putColumnInstructions("Foo", schemaField(2))
                 .build();
         assertResolverFrom(definition).isEqualTo(expected);
     }
@@ -105,6 +292,150 @@ class ResolverFromTest {
                 .build();
         assertResolverFrom(definition).isEqualTo(expected);
     }
+
+    @Test
+    void longArrayType() {
+        Resolver.from(TableDefinition.of(
+                ColumnDefinition.of("Foo", Type.longType().arrayType())));
+        final TableDefinition definition = TableDefinition.of(
+                ColumnDefinition.of("Foo", LongVector.type()));
+        final Resolver expected = Resolver.builder()
+                .definition(definition)
+                .schema(new Schema(List.of(
+                        Types.NestedField.optional(2, "Foo",
+                                Types.ListType.ofOptional(1, Types.LongType.get())))))
+                .putColumnInstructions("Foo", schemaField(2))
+                .build();
+        assertResolverFrom(definition).isEqualTo(expected);
+    }
+
+    @Test
+    void floatArrayType() {
+        Resolver.from(TableDefinition.of(
+                ColumnDefinition.of("Foo", Type.floatType().arrayType())));
+        final TableDefinition definition = TableDefinition.of(
+                ColumnDefinition.of("Foo", FloatVector.type()));
+        final Resolver expected = Resolver.builder()
+                .definition(definition)
+                .schema(new Schema(List.of(
+                        Types.NestedField.optional(2, "Foo",
+                                Types.ListType.ofOptional(1, Types.FloatType.get())))))
+                .putColumnInstructions("Foo", schemaField(2))
+                .build();
+        assertResolverFrom(definition).isEqualTo(expected);
+    }
+
+    @Test
+    void doubleArrayType() {
+        Resolver.from(TableDefinition.of(
+                ColumnDefinition.of("Foo", Type.doubleType().arrayType())));
+        final TableDefinition definition = TableDefinition.of(
+                ColumnDefinition.of("Foo", DoubleVector.type()));
+        final Resolver expected = Resolver.builder()
+                .definition(definition)
+                .schema(new Schema(List.of(
+                        Types.NestedField.optional(2, "Foo",
+                                Types.ListType.ofOptional(1, Types.DoubleType.get())))))
+                .putColumnInstructions("Foo", schemaField(2))
+                .build();
+        assertResolverFrom(definition).isEqualTo(expected);
+    }
+
+    @Test
+    void stringArrayType() {
+        Resolver.from(TableDefinition.of(
+                ColumnDefinition.of("Foo", Type.stringType().arrayType())));
+        final TableDefinition definition = TableDefinition.of(
+                ColumnDefinition.of("Foo", ObjectVector.type(Type.stringType())));
+        final Resolver expected = Resolver.builder()
+                .definition(definition)
+                .schema(new Schema(List.of(
+                        Types.NestedField.optional(2, "Foo",
+                                Types.ListType.ofOptional(1, Types.StringType.get())))))
+                .putColumnInstructions("Foo", schemaField(2))
+                .build();
+        assertResolverFrom(definition).isEqualTo(expected);
+    }
+
+
+    @Test
+    void instantArrayType() {
+        Resolver.from(TableDefinition.of(
+                ColumnDefinition.of("Foo", Type.instantType().arrayType())));
+        final TableDefinition definition = TableDefinition.of(
+                ColumnDefinition.of("Foo", ObjectVector.type((GenericType<?>) Type.find(Instant.class))));
+        final Resolver expected = Resolver.builder()
+                .definition(definition)
+                .schema(new Schema(List.of(
+                        Types.NestedField.optional(2, "Foo",
+                                Types.ListType.ofOptional(1, Types.TimestampType.withZone())))))
+                .putColumnInstructions("Foo", schemaField(2))
+                .build();
+        assertResolverFrom(definition).isEqualTo(expected);
+    }
+
+
+    @Test
+    void localDateTimeArray() {
+        Resolver.from(TableDefinition.of(
+                ColumnDefinition.of("Foo", Type.find(LocalDateTime.class).arrayType())));
+        final TableDefinition definition = TableDefinition.of(
+                ColumnDefinition.of("Foo", ObjectVector.type((GenericType<?>) Type.find(LocalDateTime.class))));
+        final Resolver expected = Resolver.builder()
+                .definition(definition)
+                .schema(new Schema(List.of(
+                        Types.NestedField.optional(2, "Foo",
+                                Types.ListType.ofOptional(1, Types.TimestampType.withoutZone())))))
+                .putColumnInstructions("Foo", schemaField(2))
+                .build();
+        assertResolverFrom(definition).isEqualTo(expected);
+    }
+
+    @Test
+    void localDateArrayType() {
+        Resolver.from(TableDefinition.of(
+                ColumnDefinition.of("Foo", Type.find(LocalDate.class).arrayType())));
+        final TableDefinition definition = TableDefinition.of(
+                ColumnDefinition.of("Foo", ObjectVector.type((GenericType<?>) Type.find(LocalDate.class))));
+        final Resolver expected = Resolver.builder()
+                .definition(definition)
+                .schema(new Schema(List.of(
+                        Types.NestedField.optional(2, "Foo",
+                                Types.ListType.ofOptional(1, Types.DateType.get())))))
+                .putColumnInstructions("Foo", schemaField(2))
+                .build();
+        assertResolverFrom(definition).isEqualTo(expected);
+    }
+
+    @Test
+    void localTimeArrayType() {
+        Resolver.from(TableDefinition.of(
+                ColumnDefinition.of("Foo", Type.find(LocalTime.class).arrayType())));
+        final TableDefinition definition = TableDefinition.of(
+                ColumnDefinition.of("Foo", ObjectVector.type((GenericType<?>) Type.find(LocalTime.class))));
+        final Resolver expected = Resolver.builder()
+                .definition(definition)
+                .schema(new Schema(List.of(
+                        Types.NestedField.optional(2, "Foo",
+                                Types.ListType.ofOptional(1, Types.TimeType.get())))))
+                .putColumnInstructions("Foo", schemaField(2))
+                .build();
+        assertResolverFrom(definition).isEqualTo(expected);
+    }
+
+    @Test
+    void bigDecimalArrayType() {
+        try {
+            Resolver.from(TableDefinition.of(
+                    ColumnDefinition.of("Foo", Type.find(BigDecimal.class).arrayType())));
+            failBecauseExceptionWasNotThrown(Resolver.MappingException.class);
+        } catch (Resolver.MappingException e) {
+            assertThat(e.getMessage()).contains("Unable to infer the best Iceberg type for Deephaven column type " +
+                    "`NativeArrayType{clazz=class [Ljava.math.BigDecimal;, componentType=CustomType{clazz=class java.math.BigDecimal}}`");
+        }
+    }
+
+    // TODO Add tests for vector types
 
     @Test
     void refreshIds() {
