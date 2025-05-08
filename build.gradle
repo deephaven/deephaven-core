@@ -84,14 +84,6 @@ tasks.register('smoke') {
     it.dependsOn project(':Generators').tasks.findByName(LifecycleBasePlugin.CHECK_TASK_NAME)
 }
 
-tasks.wrapper {
-    Wrapper w ->
-        w.distributionType = 'ALL'
-        w.gradleVersion = '7.5'
-        // if you wish to update the gradleVersion, copy-paste the correct SHA from https://gradle.org/release-checksums
-        w.distributionSha256Sum = '97a52d145762adc241bad7fd18289bf7f6801e08ece6badf80402fe2b9f250b1'
-}
-
 if (findProperty('debugCI') == 'true') {
     gradle.buildFinished {
       BuildResult result ->
