@@ -299,7 +299,7 @@ abstract class AbstractFilterExecution {
                 // Store the result for later use by the companion chunk filter.
                 fc.updatePushdownResult(pushdownResult);
 
-                //
+                // Do the next round of filtering with the new filter that bubbled up to the current index.
                 executeStatelessFilter(
                         filterContexts, filterIdx, filterContexts[filterIdx].filter(),
                         localInput, filterComplete, filterNec);
@@ -310,8 +310,9 @@ abstract class AbstractFilterExecution {
                         onFilterComplete.accept(rows.union(pushdownResult.match()));
                     }
                 };
-                final long inputSize = pushdownResult.maybeMatch().size();
 
+                // Do the final filtering at this position.
+                final long inputSize = pushdownResult.maybeMatch().size();
                 if (!shouldParallelizeFilter(filter, inputSize)) {
                     doFilter(filter, pushdownResult.maybeMatch(), 0, inputSize, localConsumer, filterNec);
                 } else {
