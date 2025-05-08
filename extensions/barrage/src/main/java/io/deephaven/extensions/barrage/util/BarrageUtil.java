@@ -287,7 +287,8 @@ public class BarrageUtil {
             @Nullable final RowSet viewport,
             @Nullable final BitSet columns,
             final boolean reverseViewport) {
-        return createSubscriptionRequestMetadataBytes(ticketId, options, BarrageProtoUtil.toByteBuffer(viewport),
+        return createSubscriptionRequestMetadataBytes(ticketId, options,
+                viewport != null ? BarrageProtoUtil.toByteBuffer(viewport) : null,
                 columns == null ? null : columns.toByteArray(), reverseViewport,
                 BarrageMessageType.BarrageSubscriptionRequest);
     }
