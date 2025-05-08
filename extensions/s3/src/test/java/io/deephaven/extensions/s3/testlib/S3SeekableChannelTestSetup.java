@@ -8,6 +8,7 @@ import io.deephaven.extensions.s3.S3Instructions;
 import io.deephaven.extensions.s3.UniversalS3SeekableChannelProviderPlugin;
 import io.deephaven.util.channel.SeekableChannelsProvider;
 import io.deephaven.util.channel.SeekableChannelsProviderPlugin;
+import org.jetbrains.annotations.NotNull;
 import software.amazon.awssdk.core.async.AsyncRequestBody;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
@@ -21,11 +22,7 @@ import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.UUID;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.*;
 
 import static io.deephaven.extensions.s3.testlib.S3Helper.TIMEOUT_SECONDS;
 
@@ -73,8 +70,15 @@ public abstract class S3SeekableChannelTestSetup {
     }
 
     protected final SeekableChannelsProvider providerImpl() {
+        return providerImpl(S3Instructions.builder());
+    }
+
+    protected final SeekableChannelsProvider providerImpl(
+            @NotNull final S3Instructions.Builder s3InstructionsBuilder) {
         final SeekableChannelsProviderPlugin plugin = new UniversalS3SeekableChannelProviderPlugin();
-        final S3Instructions instructions = s3Instructions(S3Instructions.builder()).build();
+        final S3Instructions instructions =
+                s3Instructions(s3InstructionsBuilder)
+                        .build();
         return plugin.createProvider(SCHEME, instructions);
     }
 
