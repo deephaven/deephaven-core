@@ -42,6 +42,8 @@ class ResolverFromTest {
         return assertThat(Resolver.from(definition)).usingEquals(ResolverFromTest::equalsModuloSchemaId);
     }
 
+    // todo: fill this out more generally
+
     @Test
     void shortType() {
         Resolver.from(TableDefinition.of(ColumnDefinition.of("Foo", Type.shortType())));

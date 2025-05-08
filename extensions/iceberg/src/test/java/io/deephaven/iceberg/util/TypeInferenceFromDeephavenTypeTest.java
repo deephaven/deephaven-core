@@ -4,12 +4,9 @@
 package io.deephaven.iceberg.util;
 
 import io.deephaven.qst.type.CustomType;
-import io.deephaven.qst.type.NativeArrayType;
-import io.deephaven.qst.type.PrimitiveType;
-import io.deephaven.qst.type.PrimitiveVectorType;
+import io.deephaven.qst.type.GenericType;
 import io.deephaven.qst.type.Type;
 import io.deephaven.vector.ByteVector;
-import io.deephaven.vector.CharVector;
 import io.deephaven.vector.DoubleVector;
 import io.deephaven.vector.FloatVector;
 import io.deephaven.vector.IntVector;
@@ -25,9 +22,6 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.Arrays;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -37,7 +31,7 @@ class TypeInferenceFromDeephavenTypeTest {
 
     @BeforeEach
     void setUp() {
-        inferenceVisitor = new TypeInference.BestIcebergType(new AtomicInteger(1)::getAndIncrement);
+        inferenceVisitor = new TypeInference.BestIcebergType(() -> 1);
     }
 
     @Test
@@ -125,39 +119,177 @@ class TypeInferenceFromDeephavenTypeTest {
         assertInference(SomeCustomType.class).isEmpty();
     }
 
-    // TODO Add tests for array and vector types
-    //
-    // @Test
-    // void arrayTypes() {
-    // for (final NativeArrayType<?, ?> type : PrimitiveType.instances().map(Type::arrayType)
-    // .collect(Collectors.toList())) {
-    // assertInference(type).isEmpty();
-    // }
-    // for (final NativeArrayType<?, ?> type : PrimitiveType.instances().map(PrimitiveType::boxedType)
-    // .map(Type::arrayType).collect(Collectors.toList())) {
-    // assertInference(type).isEmpty();
-    // }
-    // assertInference(Type.stringType().arrayType()).isEmpty();
-    // assertInference(Type.instantType().arrayType()).isEmpty();
-    // assertInference(Type.find(LocalDateTime.class).arrayType()).isEmpty();
-    // assertInference(Type.find(LocalDate.class).arrayType()).isEmpty();
-    // assertInference(Type.find(LocalTime.class).arrayType()).isEmpty();
-    // assertInference(Type.find(SomeCustomType.class).arrayType()).isEmpty();
-    // }
-    //
-    // @Test
-    // void vectorTypes() {
-    // for (final PrimitiveVectorType<?, ?> type : Arrays.asList(ByteVector.type(), CharVector.type(),
-    // ShortVector.type(), IntVector.type(), LongVector.type(), FloatVector.type(), DoubleVector.type())) {
-    // assertInference(type).isEmpty();
-    // }
-    // assertInference(ObjectVector.type(Type.stringType())).isEmpty();
-    // assertInference(ObjectVector.type(Type.instantType())).isEmpty();
-    // assertInference(ObjectVector.type(CustomType.of(LocalDateTime.class))).isEmpty();
-    // assertInference(ObjectVector.type(CustomType.of(LocalDate.class))).isEmpty();
-    // assertInference(ObjectVector.type(CustomType.of(LocalTime.class))).isEmpty();
-    // assertInference(ObjectVector.type(CustomType.of(SomeCustomType.class))).isEmpty();
-    // }
+    @Test
+    void booleanArrayType() {
+        assertInference(Type.booleanType().arrayType())
+                .hasValue(Types.ListType.ofOptional(1, Types.BooleanType.get()));
+        assertInference(Type.booleanType().boxedType().arrayType())
+                .hasValue(Types.ListType.ofOptional(1, Types.BooleanType.get()));
+    }
+
+    @Test
+    void byteArrayType() {
+        assertInference(Type.byteType().arrayType())
+                .hasValue(Types.ListType.ofOptional(1, Types.IntegerType.get()));
+        assertInference(Type.byteType().boxedType().arrayType())
+                .hasValue(Types.ListType.ofOptional(1, Types.IntegerType.get()));
+    }
+
+    @Test
+    void shortArrayType() {
+        assertInference(Type.shortType().arrayType())
+                .hasValue(Types.ListType.ofOptional(1, Types.IntegerType.get()));
+        assertInference(Type.shortType().boxedType().arrayType())
+                .hasValue(Types.ListType.ofOptional(1, Types.IntegerType.get()));
+    }
+
+    @Test
+    void intArrayType() {
+        assertInference(Type.intType().arrayType())
+                .hasValue(Types.ListType.ofOptional(1, Types.IntegerType.get()));
+        assertInference(Type.intType().boxedType().arrayType())
+                .hasValue(Types.ListType.ofOptional(1, Types.IntegerType.get()));
+    }
+
+    @Test
+    void longArrayType() {
+        assertInference(Type.longType().arrayType())
+                .hasValue(Types.ListType.ofOptional(1, Types.LongType.get()));
+        assertInference(Type.longType().boxedType().arrayType())
+                .hasValue(Types.ListType.ofOptional(1, Types.LongType.get()));
+    }
+
+    @Test
+    void floatArrayType() {
+        assertInference(Type.floatType().arrayType())
+                .hasValue(Types.ListType.ofOptional(1, Types.FloatType.get()));
+        assertInference(Type.floatType().boxedType().arrayType())
+                .hasValue(Types.ListType.ofOptional(1, Types.FloatType.get()));
+    }
+
+    @Test
+    void doubleArrayType() {
+        assertInference(Type.doubleType().arrayType())
+                .hasValue(Types.ListType.ofOptional(1, Types.DoubleType.get()));
+        assertInference(Type.doubleType().boxedType().arrayType())
+                .hasValue(Types.ListType.ofOptional(1, Types.DoubleType.get()));
+    }
+
+    @Test
+    void stringArrayType() {
+        assertInference(Type.stringType().arrayType())
+                .hasValue(Types.ListType.ofOptional(1, Types.StringType.get()));
+    }
+
+    @Test
+    void instantArrayType() {
+        assertInference(Type.instantType().arrayType())
+                .hasValue(Types.ListType.ofOptional(1, Types.TimestampType.withZone()));
+    }
+
+    @Test
+    void localDateTimeArrayType() {
+        assertInference(Type.find(LocalDateTime.class).arrayType())
+                .hasValue(Types.ListType.ofOptional(1, Types.TimestampType.withoutZone()));
+    }
+
+    @Test
+    void localDateArrayType() {
+        assertInference(Type.find(LocalDate.class).arrayType())
+                .hasValue(Types.ListType.ofOptional(1, Types.DateType.get()));
+    }
+
+    @Test
+    void localTimeArrayType() {
+        assertInference(Type.find(LocalTime.class).arrayType())
+                .hasValue(Types.ListType.ofOptional(1, Types.TimeType.get()));
+    }
+
+    @Test
+    void bigDecimalArrayType() {
+        assertInference(Type.find(BigDecimal.class).arrayType()).isEmpty();
+    }
+
+    @Test
+    void someCustomTypeArrayType() {
+        assertInference(Type.find(SomeCustomType.class).arrayType()).isEmpty();
+    }
+
+    @Test
+    void byteVectorType() {
+        assertInference(ByteVector.type())
+                .hasValue(Types.ListType.ofOptional(1, Types.IntegerType.get()));
+    }
+
+    @Test
+    void shortVectorType() {
+        assertInference(ShortVector.type())
+                .hasValue(Types.ListType.ofOptional(1, Types.IntegerType.get()));
+    }
+
+    @Test
+    void intVectorType() {
+        assertInference(IntVector.type())
+                .hasValue(Types.ListType.ofOptional(1, Types.IntegerType.get()));
+    }
+
+    @Test
+    void longVectorType() {
+        assertInference(LongVector.type())
+                .hasValue(Types.ListType.ofOptional(1, Types.LongType.get()));
+    }
+
+    @Test
+    void floatVectorType() {
+        assertInference(FloatVector.type())
+                .hasValue(Types.ListType.ofOptional(1, Types.FloatType.get()));
+    }
+
+    @Test
+    void doubleVectorType() {
+        assertInference(DoubleVector.type())
+                .hasValue(Types.ListType.ofOptional(1, Types.DoubleType.get()));
+    }
+
+    @Test
+    void stringVectorType() {
+        assertInference(ObjectVector.type(Type.stringType()))
+                .hasValue(Types.ListType.ofOptional(1, Types.StringType.get()));
+    }
+
+    @Test
+    void instantVectorType() {
+        assertInference(ObjectVector.type(Type.instantType()))
+                .hasValue(Types.ListType.ofOptional(1, Types.TimestampType.withZone()));
+    }
+
+    @Test
+    void localDateTimeVectorType() {
+        assertInference(ObjectVector.type((GenericType<?>) Type.find(LocalDateTime.class)))
+                .hasValue(Types.ListType.ofOptional(1, Types.TimestampType.withoutZone()));
+    }
+
+    @Test
+    void localDateVectorType() {
+        assertInference(ObjectVector.type((GenericType<?>) Type.find(LocalDate.class)))
+                .hasValue(Types.ListType.ofOptional(1, Types.DateType.get()));
+    }
+
+    @Test
+    void localTimeVectorType() {
+        assertInference(ObjectVector.type((GenericType<?>) Type.find(LocalTime.class)))
+                .hasValue(Types.ListType.ofOptional(1, Types.TimeType.get()));
+    }
+
+    @Test
+    void bigDecimalVectorType() {
+        assertInference(ObjectVector.type((GenericType<?>) Type.find(BigDecimal.class))).isEmpty();
+    }
+
+    @Test
+    void someCustomTypeVectorType() {
+        assertInference(ObjectVector.type(CustomType.of(SomeCustomType.class))).isEmpty();
+    }
 
     private OptionalAssert<org.apache.iceberg.types.Type> assertInference(Class<?> clazz) {
         return assertInference(Type.find(clazz));

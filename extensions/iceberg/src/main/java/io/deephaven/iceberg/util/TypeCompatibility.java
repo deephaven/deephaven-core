@@ -86,7 +86,6 @@ public final class TypeCompatibility {
 
         @Override
         public Boolean visit(InstantType instantType) {
-            // TODO(DH-18253): Add support to write more types to iceberg tables
             return pt == Types.TimestampType.withZone();
         }
 

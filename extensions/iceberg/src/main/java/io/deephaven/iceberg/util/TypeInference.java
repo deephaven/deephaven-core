@@ -292,7 +292,11 @@ public final class TypeInference {
 
         @Override
         public org.apache.iceberg.types.Type visit(ArrayType<?, ?> arrayType) {
-            return Types.ListType.ofOptional(nextID.get(), arrayType.componentType().walk(this));
+            final org.apache.iceberg.types.Type elementType = arrayType.componentType().walk(this);
+            if (elementType == null) {
+                return null;
+            }
+            return Types.ListType.ofOptional(nextID.get(), elementType);
         }
 
         @Override
@@ -341,6 +345,7 @@ public final class TypeInference {
 
         @Override
         public org.apache.iceberg.types.Type visit(CharType charType) {
+            // TODO(DH-18253): Add support to write more types to iceberg tables
             return null;
         }
 
