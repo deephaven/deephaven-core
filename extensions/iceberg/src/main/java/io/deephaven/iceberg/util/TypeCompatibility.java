@@ -21,6 +21,7 @@ import io.deephaven.qst.type.StringType;
 import io.deephaven.qst.type.Type;
 import org.apache.iceberg.types.Types;
 import org.apache.iceberg.types.Type.TypeID;
+import org.jetbrains.annotations.NotNull;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -172,20 +173,20 @@ public final class TypeCompatibility {
 
         private final org.apache.iceberg.types.Type.PrimitiveType elementType;
 
-        public static boolean of(Type<?> type, Types.ListType icebergType) {
-            if (icebergType.elementType() == null) {
+        public static boolean of(Type<?> type, Types.ListType listType) {
+            final org.apache.iceberg.types.Type elementType = listType.elementType();
+            if (elementType == null) {
                 throw new IllegalArgumentException("ListType must have an element type");
             }
-            if (!icebergType.elementType().isPrimitiveType()) {
-                throw new IllegalArgumentException("ListType must have a primitive element type, found " +
-                        icebergType.elementType());
+            if (!elementType.isPrimitiveType()) {
+                // Not supported
+                return false;
             }
-            return type.walk(new ListCompat(icebergType));
+            return type.walk(new ListCompat(elementType.asPrimitiveType()));
         }
 
-        private ListCompat(final Types.ListType lt) {
-            Objects.requireNonNull(lt);
-            this.elementType = lt.elementType().asPrimitiveType();
+        private ListCompat(@NotNull final org.apache.iceberg.types.Type.PrimitiveType elementType) {
+            this.elementType = elementType;
         }
 
         @Override

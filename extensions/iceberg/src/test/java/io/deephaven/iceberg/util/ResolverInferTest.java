@@ -179,7 +179,7 @@ class ResolverInferTest {
     @Test
     void BinaryType() throws TypeInference.Exception {
         final Schema schema = simpleSchema(BinaryType.get());
-        final Resolver expected = simpleMapping(schema, Type.find(byte[].class));
+        final Resolver expected = simpleMapping(schema, Type.byteType().arrayType());
         assertThat(Resolver.infer(schema)).isEqualTo(expected);
         assertThat(Resolver.infer(ia(schema))).isEqualTo(expected);
     }
@@ -187,7 +187,7 @@ class ResolverInferTest {
     @Test
     void FixedType_4() throws TypeInference.Exception {
         final Schema schema = simpleSchema(FixedType.ofLength(4));
-        final Resolver expected = simpleMapping(schema, Type.find(byte[].class));
+        final Resolver expected = simpleMapping(schema, Type.byteType().arrayType());
         assertThat(Resolver.infer(schema)).isEqualTo(expected);
         assertThat(Resolver.infer(ia(schema))).isEqualTo(expected);
     }

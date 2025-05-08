@@ -212,11 +212,11 @@ public final class TypeInference {
     }
 
     static Type<?> of(@SuppressWarnings("unused") Types.BinaryType type) {
-        return Type.find(byte[].class);
+        return Type.byteType().arrayType();
     }
 
     static Type<?> of(@SuppressWarnings("unused") Types.FixedType type) {
-        return Type.find(byte[].class);
+        return Type.byteType().arrayType();
     }
 
     public static abstract class Exception extends java.lang.Exception {

@@ -83,13 +83,13 @@ class TypeInferenceFromIcebergTypeTest {
 
     @Test
     void fixedType() {
-        assertInference(Types.FixedType.ofLength(1)).hasValue(Type.find(byte[].class));
-        assertInference(Types.FixedType.ofLength(42)).hasValue(Type.find(byte[].class));
+        assertInference(Types.FixedType.ofLength(1)).hasValue(Type.byteType().arrayType());
+        assertInference(Types.FixedType.ofLength(42)).hasValue(Type.byteType().arrayType());
     }
 
     @Test
     void binaryType() {
-        assertInference(Types.BinaryType.get()).hasValue(Type.find(byte[].class));
+        assertInference(Types.BinaryType.get()).hasValue(Type.byteType().arrayType());
     }
 
     @Test

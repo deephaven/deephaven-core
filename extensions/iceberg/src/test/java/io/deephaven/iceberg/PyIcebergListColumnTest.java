@@ -52,7 +52,7 @@ class PyIcebergListColumnTest {
     private static final Namespace NAMESPACE = Namespace.of("list_test");
     private static final TableIdentifier TABLE_IDENTIFIER = TableIdentifier.of(NAMESPACE, "data");
 
-    private static final TableDefinition TABLE_DEFINITION = TableDefinition.of(
+    private static final TableDefinition INFERRED_TD = TableDefinition.of(
             ColumnDefinition.of("bin_col",
                     Type.byteType().arrayType()),
             ColumnDefinition.of("fixed_col",
@@ -93,7 +93,7 @@ class PyIcebergListColumnTest {
     void testDefinition() {
         final IcebergTableAdapter tableAdapter = catalogAdapter.loadTable(TABLE_IDENTIFIER);
         final TableDefinition td = tableAdapter.definition();
-        assertThat(td).isEqualTo(TABLE_DEFINITION);
+        assertThat(td).isEqualTo(INFERRED_TD);
     }
 
     @Test
@@ -102,7 +102,7 @@ class PyIcebergListColumnTest {
         final Table fromIceberg = tableAdapter.table();
         assertThat(fromIceberg.size()).isEqualTo(3);
         final Table expectedData = TableTools.newTable(
-                TABLE_DEFINITION,
+                INFERRED_TD,
                 TableTools.col("bin_col",
                         "variable length data".getBytes(StandardCharsets.UTF_8),
                         EMPTY_BYTES,
