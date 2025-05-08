@@ -112,6 +112,90 @@ public class TestKeyedArrayBackedInputTable {
     }
 
     @Test
+    public void testAppendOnlyAfterJoin() throws Exception {
+        final Table input = TableTools.newTable(stringCol("Name", "Fred", "George", "Earl"),
+                stringCol("Employer", "Slate Rock and Gravel", "Spacely Sprockets", "Wesayso"));
+
+        final AppendOnlyArrayBackedInputTable aoabmt = AppendOnlyArrayBackedInputTable.make(input);
+        final TableUpdateValidator validator = TableUpdateValidator.make("aoabmt", aoabmt);
+        final Table validatorResult = validator.getResultTable();
+        final FailureListener failureListener = new FailureListener();
+        validatorResult.addUpdateListener(failureListener);
+
+        assertTableEquals(input, aoabmt);
+
+        final Table rhs = TableTools.newTable(stringCol("Name", "Fred", "George", "Earl", "Thomas"),
+                stringCol("City", "Bedrock", "Dodge City", "New York", "Dubai"));
+
+        final Table result = aoabmt.naturalJoin(rhs, "Name", "City");
+
+        final InputTableUpdater inputTableUpdater = InputTableUpdater.from(aoabmt);
+        TestCase.assertNotNull(inputTableUpdater);
+
+        // The table we want to insert has extra columns.
+        final Table input2 = TableTools.newTable(stringCol("Name", "Randy", "Thomas"),
+                stringCol("Employer", "USGS", "Cogswell"),
+                stringCol("City", "ignored", "ignored"));
+
+        handleDelayedRefresh(() -> inputTableUpdater.add(input2), aoabmt);
+
+        final Table expected = TableTools.newTable(
+                stringCol("Name", "Fred", "George", "Earl", "Randy", "Thomas"),
+                stringCol("Employer", "Slate Rock and Gravel", "Spacely Sprockets", "Wesayso", "USGS", "Cogswell"),
+                stringCol("City", "Bedrock", "Dodge City", "New York", null, "Dubai"));
+
+        assertTableEquals(result, expected);
+    }
+
+    @Test
+    public void testKeyedAfterJoin() throws Exception {
+        final Table input = TableTools.newTable(stringCol("Name", "Fred", "George", "Earl"),
+                stringCol("Employer", "Slate Rock and Gravel", "Spacely Sprockets", "Wesayso"));
+
+        final KeyedArrayBackedInputTable kabut = KeyedArrayBackedInputTable.make(input, "Name");
+        final TableUpdateValidator validator = TableUpdateValidator.make("kabut", kabut);
+        final Table validatorResult = validator.getResultTable();
+        final FailureListener failureListener = new FailureListener();
+        validatorResult.addUpdateListener(failureListener);
+
+        assertTableEquals(input, kabut);
+
+        final Table rhs = TableTools.newTable(stringCol("Name", "Fred", "George", "Earl", "Thomas"),
+                stringCol("City", "Bedrock", "Dodge City", "New York", "Dubai"));
+
+        final Table result = kabut.naturalJoin(rhs, "Name", "City");
+
+        final InputTableUpdater inputTableUpdater = InputTableUpdater.from(kabut);
+        TestCase.assertNotNull(inputTableUpdater);
+
+        // The table we want to insert has extra columns.
+        final Table input2 = TableTools.newTable(stringCol("Name", "Randy", "Thomas"),
+                stringCol("Employer", "USGS", "Cogswell"),
+                stringCol("City", "ignored", "ignored"));
+
+        handleDelayedRefresh(() -> inputTableUpdater.add(input2), kabut);
+
+        Table expected = TableTools.newTable(
+                stringCol("Name", "Fred", "George", "Earl", "Randy", "Thomas"),
+                stringCol("Employer", "Slate Rock and Gravel", "Spacely Sprockets", "Wesayso", "USGS", "Cogswell"),
+                stringCol("City", "Bedrock", "Dodge City", "New York", null, "Dubai"));
+
+        assertTableEquals(result, expected);
+
+        // Test a delete.
+        final Table delete1 = TableTools.newTable(
+                stringCol("Name", "Earl"));
+        handleDelayedRefresh(() -> inputTableUpdater.delete(delete1), kabut);
+
+        expected = TableTools.newTable(
+                stringCol("Name", "Fred", "George", "Randy", "Thomas"),
+                stringCol("Employer", "Slate Rock and Gravel", "Spacely Sprockets", "USGS", "Cogswell"),
+                stringCol("City", "Bedrock", "Dodge City", null, "Dubai"));
+
+        assertTableEquals(result, expected);
+    }
+
+    @Test
     public void testFilteredAndSorted() throws Exception {
         final Table input = TableTools.newTable(stringCol("Name", "Fred", "George", "Earl"),
                 stringCol("Employer", "Slate Rock and Gravel", "Spacely Sprockets", "Wesayso"));
