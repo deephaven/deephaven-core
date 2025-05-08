@@ -11,6 +11,7 @@ import io.deephaven.api.literal.Literal;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 
 enum ExtractAnds implements Visitor<Collection<Filter>> {
     INSTANCE;
@@ -52,6 +53,11 @@ enum ExtractAnds implements Visitor<Collection<Filter>> {
     @Override
     public Collection<Filter> visit(FilterPattern pattern) {
         return Collections.singleton(pattern);
+    }
+
+    @Override
+    public Collection<Filter> visit(FilterSerial serial) {
+        return Collections.singleton(serial);
     }
 
     @Override

@@ -243,9 +243,7 @@ public interface Filter extends Expression, ConcurrencyControl<Filter> {
 
         T visit(FilterPattern pattern);
 
-        default T visit(FilterSerial serial) {
-            return null;
-        }
+        T visit(FilterSerial serial);
 
         T visit(Function function);
 
