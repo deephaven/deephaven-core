@@ -28,7 +28,6 @@ import static io.deephaven.iceberg.util.ColumnInstructions.schemaField;
 import static io.deephaven.iceberg.util.ColumnInstructions.schemaFieldName;
 import static io.deephaven.iceberg.util.ColumnInstructions.unmapped;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 
 /**
@@ -484,18 +483,11 @@ class ResolverTest {
 
     @Test
     void byteArray() {
-        try {
-            Resolver.builder()
-                    .schema(new Schema(List.of(NestedField.optional(1, "Foo", Types.BinaryType.get()))))
-                    .definition(TableDefinition.of(ColumnDefinition.of("Foo", Type.byteType().arrayType())))
-                    .putColumnInstructions("Foo", schemaField(1))
-                    .build();
-            failBecauseExceptionWasNotThrown(Resolver.MappingException.class);
-        } catch (Resolver.MappingException e) {
-            assertThat(e).hasMessageContaining("Unable to map Deephaven column Foo");
-            assertThat(e).cause().hasMessageContaining(
-                    "Incompatible types @ `Foo`, icebergType=`binary`, type=`NativeArrayType{clazz=class [B, componentType=io.deephaven.qst.type.ByteType}`");
-        }
+        Resolver.builder()
+                .schema(new Schema(List.of(NestedField.optional(1, "Foo", Types.BinaryType.get()))))
+                .definition(TableDefinition.of(ColumnDefinition.of("Foo", Type.byteType().arrayType())))
+                .putColumnInstructions("Foo", schemaField(1))
+                .build();
     }
 
     // TODO: all of the expected types from ResolverFromTest (or, potential types one might assume to construct
@@ -591,36 +583,13 @@ class ResolverTest {
     @Test
     void listType() {
         final Schema schema = new Schema(NestedField.optional(1, "MyListField", Types.ListType.ofOptional(2, IT)));
-        for (final TableDefinition definition : PrimitiveType.instances()
-                .map(Type::arrayType)
-                .map(x -> ColumnDefinition.of("Foo", x))
-                .map(TableDefinition::of)
-                .collect(Collectors.toList())) {
-            try {
-                Resolver.builder()
-                        .definition(definition)
-                        .schema(schema)
-                        .putColumnInstructions("Foo", schemaField(1))
-                        .build();
-                failBecauseExceptionWasNotThrown(Resolver.MappingException.class);
-            } catch (Resolver.MappingException e) {
-                assertThat(e).hasMessageContaining("Unable to map Deephaven column Foo");
-                assertThat(e).cause()
-                        .hasMessageContaining("Incompatible types @ `MyListField`, icebergType=`list<int>`");
-            }
-            try {
-                Resolver.builder()
-                        .definition(definition)
-                        .schema(schema)
-                        .putColumnInstructions("Foo", schemaField(2))
-                        .build();
-                failBecauseExceptionWasNotThrown(Resolver.MappingException.class);
-            } catch (Resolver.MappingException e) {
-                assertThat(e).hasMessageContaining("Unable to map Deephaven column Foo");
-                assertThat(e).cause().hasMessageContaining(
-                        "List subpath @ `MyListField` (in `MyListField.element`) is not supported");
-            }
-        }
+        final TableDefinition definition = TableDefinition.of(
+                ColumnDefinition.of("Foo", Type.intType().arrayType()));
+        Resolver.builder()
+                .definition(definition)
+                .schema(schema)
+                .putColumnInstructions("Foo", schemaField(1))
+                .build();
     }
 
     @Test
