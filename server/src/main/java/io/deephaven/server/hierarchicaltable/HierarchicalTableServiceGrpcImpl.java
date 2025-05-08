@@ -17,7 +17,6 @@ import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.hierarchical.HierarchicalTable;
 import io.deephaven.engine.table.hierarchical.RollupTable;
 import io.deephaven.engine.table.hierarchical.TreeTable;
-import io.deephaven.engine.table.impl.AbsoluteSortColumnConventions;
 import io.deephaven.engine.table.impl.BaseGridAttributes;
 import io.deephaven.engine.table.impl.hierarchical.RollupTableImpl;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
@@ -48,10 +47,7 @@ import java.lang.Object;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
-
-import static io.deephaven.engine.table.impl.AbsoluteSortColumnConventions.baseColumnNameToAbsoluteName;
 
 public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGrpc.HierarchicalTableServiceImplBase {
 
@@ -384,28 +380,8 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
         if (request.getSortsCount() == 0) {
             return null;
         }
-        final Collection<SortColumn> translatedSorts = request.getSortsList().stream()
-                .map(HierarchicalTableServiceGrpcImpl::translateSort)
-                .collect(Collectors.toList());
-        final Set<String> sortableColumnNames = inputHierarchicalTable.getSortableColumns();
-        if (sortableColumnNames != null) {
-            if (sortableColumnNames.isEmpty()) {
-                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
-                        "Sorting is not supported on this hierarchical table");
-            }
-            final Collection<String> unavailableSortColumnNames = translatedSorts.stream()
-                    .map(sc -> AbsoluteSortColumnConventions.stripAbsoluteColumnName(sc.column().name()))
-                    .filter(scn -> !sortableColumnNames.contains(scn))
-                    .collect(Collectors.toList());
-            if (!unavailableSortColumnNames.isEmpty()) {
-                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
-                        "Sorting attempted on restricted column(s): "
-                                + unavailableSortColumnNames.stream().collect(Collectors.joining(", ", "[", "]"))
-                                + ", available column(s) for sorting are: "
-                                + sortableColumnNames.stream().collect(Collectors.joining(", ", "[", "]")));
-            }
-        }
-        return translatedSorts;
+        return HierarchicalTableGrpcHelper.translateAndValidateSorts(request.getSortsList(),
+                inputHierarchicalTable::getSortableColumns);
     }
 
     private static RollupTable.NodeType translateNodeType(final RollupNodeType nodeType) {
@@ -468,24 +444,6 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
                         AggregationAdapter.adapt(uvr.getColumnSpec()),
                         translateNodeType(uvr.getNodeType())))
                 .collect(Collectors.toList());
-    }
-
-    private static SortColumn translateSort(@NotNull final SortDescriptor sortDescriptor) {
-        switch (sortDescriptor.getDirection()) {
-            case DESCENDING:
-                return SortColumn.desc(ColumnName.of(sortDescriptor.getIsAbsolute()
-                        ? baseColumnNameToAbsoluteName(sortDescriptor.getColumnName())
-                        : sortDescriptor.getColumnName()));
-            case ASCENDING:
-                return SortColumn.asc(ColumnName.of(sortDescriptor.getIsAbsolute()
-                        ? baseColumnNameToAbsoluteName(sortDescriptor.getColumnName())
-                        : sortDescriptor.getColumnName()));
-            case UNKNOWN:
-            case REVERSE:
-            default:
-                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
-                        "Unsupported or unknown sort direction: " + sortDescriptor.getDirection());
-        }
     }
 
     @Override
