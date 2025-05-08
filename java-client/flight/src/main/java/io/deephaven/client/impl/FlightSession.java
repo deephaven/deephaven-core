@@ -110,7 +110,7 @@ public class FlightSession implements AutoCloseable {
      * @return the bi-directional ReaderWriter object
      */
     public FlightClient.ExchangeReaderWriter startExchange(final HasPathId hasPathId, final CallOption... options) {
-        return startExchange(FlightClientHelper.descriptor(hasPathId.pathId()), options);
+        return startExchange(FlightClientHelper.descriptor(hasPathId), options);
     }
 
     /**
