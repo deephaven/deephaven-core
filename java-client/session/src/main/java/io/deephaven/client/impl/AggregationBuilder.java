@@ -25,6 +25,10 @@ import java.util.stream.Collectors;
 
 import static java.util.Collections.singletonList;
 
+/**
+ * This class is used to translate Engine API {@link io.deephaven.api.agg.Aggregation} objects into the gRPC {@link Aggregation} objects.
+ */
+@InternalUseOnly
 public class AggregationBuilder implements io.deephaven.api.agg.Aggregation.Visitor {
 
     public static List<Aggregation> adapt(io.deephaven.api.agg.Aggregation agg) {

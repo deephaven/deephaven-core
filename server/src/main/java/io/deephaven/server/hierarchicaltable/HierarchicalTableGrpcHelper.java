@@ -9,6 +9,7 @@ import io.deephaven.api.SortColumn;
 import io.deephaven.engine.table.impl.AbsoluteSortColumnConventions;
 import io.deephaven.proto.backplane.grpc.SortDescriptor;
 import io.deephaven.proto.util.Exceptions;
+import io.deephaven.util.annotations.InternalUseOnly;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -23,6 +24,7 @@ import static io.deephaven.engine.table.impl.AbsoluteSortColumnConventions.baseC
 /**
  * Utility functions for the HierarchicalTableServiceGrpcImpl that are useful for other components.
  */
+@InternalUseOnly
 public class HierarchicalTableGrpcHelper {
     /**
      * For each {@link SortDescriptor} produce a {@link SortColumn}, verifying against the list of sortable columns.

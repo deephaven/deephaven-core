@@ -10,10 +10,14 @@ import io.deephaven.api.expression.Function;
 import io.deephaven.api.expression.Method;
 import io.deephaven.api.filter.*;
 import io.deephaven.proto.backplane.grpc.*;
+import io.deephaven.util.annotations.InternalUseOnly;
 
 /**
  * Converts an Engine API {@link Filter} into a gRPC {@link Condition}.
+ *
+ * <p>Note that you may not be able to round trip a Condition and Filter using this class.</p>
  */
+@InternalUseOnly
 public class FilterAdapter implements Filter.Visitor<Condition> {
 
     /**
