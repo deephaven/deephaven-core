@@ -59,7 +59,7 @@ public class FlightClientHelper {
         return new Ticket(ticket.ticketId().bytes());
     }
 
-    private static FlightDescriptor descriptor(HasPathId pathId) {
+    static FlightDescriptor descriptor(final HasPathId pathId) {
         return FlightDescriptor.path(pathId.pathId().path());
     }
 }
