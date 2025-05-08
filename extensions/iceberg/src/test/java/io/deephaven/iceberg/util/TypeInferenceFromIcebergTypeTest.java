@@ -3,12 +3,19 @@
 //
 package io.deephaven.iceberg.util;
 
+import io.deephaven.qst.type.GenericType;
+import io.deephaven.vector.DoubleVector;
+import io.deephaven.vector.FloatVector;
+import io.deephaven.vector.IntVector;
+import io.deephaven.vector.LongVector;
+import io.deephaven.vector.ObjectVector;
 import io.deephaven.qst.type.Type;
 import org.apache.iceberg.types.Types;
 import org.assertj.core.api.OptionalAssert;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -76,13 +83,13 @@ class TypeInferenceFromIcebergTypeTest {
 
     @Test
     void fixedType() {
-        assertInference(Types.FixedType.ofLength(1)).isEmpty();
-        assertInference(Types.FixedType.ofLength(42)).isEmpty();
+        assertInference(Types.FixedType.ofLength(1)).hasValue(Type.find(byte[].class));
+        assertInference(Types.FixedType.ofLength(42)).hasValue(Type.find(byte[].class));
     }
 
     @Test
     void binaryType() {
-        assertInference(Types.BinaryType.get()).isEmpty();
+        assertInference(Types.BinaryType.get()).hasValue(Type.find(byte[].class));
     }
 
     @Test
@@ -92,13 +99,90 @@ class TypeInferenceFromIcebergTypeTest {
     }
 
     @Test
-    void structType() {
-        assertInference(Types.StructType.of(Types.NestedField.optional(1, "Foo", Types.IntegerType.get()))).isEmpty();
+    void booleanListType() {
+        assertInference(Types.ListType.ofOptional(1, Types.BooleanType.get()))
+                .hasValue(ObjectVector.type(Type.booleanType().boxedType()));
     }
 
     @Test
-    void listType() {
-        assertInference(Types.ListType.ofOptional(1, Types.IntegerType.get())).isEmpty();
+    void integerListType() {
+        assertInference(Types.ListType.ofOptional(1, Types.IntegerType.get())).hasValue(IntVector.type());
+    }
+
+    @Test
+    void longListType() {
+        assertInference(Types.ListType.ofOptional(1, Types.LongType.get())).hasValue(LongVector.type());
+    }
+
+    @Test
+    void floatListType() {
+        assertInference(Types.ListType.ofOptional(1, Types.FloatType.get())).hasValue(FloatVector.type());
+    }
+
+    @Test
+    void doubleListType() {
+        assertInference(Types.ListType.ofOptional(1, Types.DoubleType.get())).hasValue(DoubleVector.type());
+    }
+
+    @Test
+    void dateListType() {
+        assertInference(Types.ListType.ofOptional(1, Types.DateType.get()))
+                .hasValue(ObjectVector.type((GenericType<?>) Type.find(LocalDate.class)));
+    }
+
+    @Test
+    void timeListType() {
+        assertInference(Types.ListType.ofOptional(1, Types.TimeType.get()))
+                .hasValue(ObjectVector.type((GenericType<?>) Type.find(LocalTime.class)));
+    }
+
+    @Test
+    void timestampListType() {
+        assertInference(Types.ListType.ofOptional(1, Types.TimestampType.withZone()))
+                .hasValue(ObjectVector.type((GenericType<?>) Type.find(Instant.class)));
+        assertInference(Types.ListType.ofOptional(1, Types.TimestampType.withoutZone()))
+                .hasValue(ObjectVector.type((GenericType<?>) Type.find(LocalDateTime.class)));
+    }
+
+    @Test
+    void timestampNanoListType() {
+        assertInference(Types.ListType.ofOptional(1, Types.TimestampNanoType.withZone())).isEmpty();
+        assertInference(Types.ListType.ofOptional(1, Types.TimestampNanoType.withoutZone())).isEmpty();
+    }
+
+    @Test
+    void stringListType() {
+        assertInference(Types.ListType.ofOptional(1, Types.StringType.get()))
+                .hasValue(ObjectVector.type((GenericType<?>) Type.find(String.class)));
+    }
+
+    @Test
+    void uuidListType() {
+        assertInference(Types.ListType.ofOptional(1, Types.UUIDType.get())).isEmpty();
+    }
+
+    @Test
+    void fixedListType() {
+        assertInference(Types.ListType.ofOptional(1, Types.FixedType.ofLength(1))).isEmpty();
+        assertInference(Types.ListType.ofOptional(1, Types.FixedType.ofLength(42))).isEmpty();
+    }
+
+    @Test
+    void binaryListType() {
+        assertInference(Types.ListType.ofOptional(1, Types.BinaryType.get())).isEmpty();
+    }
+
+    @Test
+    void decimalListType() {
+        assertInference(Types.ListType.ofOptional(1, Types.DecimalType.of(3, 4)))
+                .hasValue(ObjectVector.type((GenericType<?>) Type.find(BigDecimal.class)));
+        assertInference(Types.ListType.ofOptional(1, Types.DecimalType.of(5, 5)))
+                .hasValue(ObjectVector.type((GenericType<?>) Type.find(BigDecimal.class)));
+    }
+
+    @Test
+    void structType() {
+        assertInference(Types.StructType.of(Types.NestedField.optional(1, "Foo", Types.IntegerType.get()))).isEmpty();
     }
 
     @Test

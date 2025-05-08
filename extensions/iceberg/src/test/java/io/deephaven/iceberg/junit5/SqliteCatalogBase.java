@@ -76,6 +76,7 @@ import org.apache.iceberg.mapping.NameMapping;
 import org.apache.iceberg.mapping.NameMappingParser;
 import org.apache.iceberg.types.Types;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
+import org.apache.parquet.schema.LogicalTypeAnnotation;
 import org.apache.parquet.schema.MessageType;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -120,11 +121,19 @@ import static io.deephaven.util.QueryConstants.NULL_FLOAT;
 import static io.deephaven.util.QueryConstants.NULL_INT;
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 import static io.deephaven.util.QueryConstants.NULL_SHORT;
+import static org.apache.parquet.schema.LogicalTypeAnnotation.dateType;
 import static org.apache.parquet.schema.LogicalTypeAnnotation.intType;
+import static org.apache.parquet.schema.LogicalTypeAnnotation.timeType;
+import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.BOOLEAN;
 import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.DOUBLE;
+import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.FLOAT;
 import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.INT32;
+import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.INT64;
+import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.BINARY;
 import static org.apache.parquet.schema.Types.buildMessage;
 import static org.apache.parquet.schema.Types.optional;
+import static org.apache.parquet.schema.Types.optionalGroup;
+import static org.apache.parquet.schema.Types.repeatedGroup;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 
@@ -435,89 +444,34 @@ public abstract class SqliteCatalogBase {
         }
     }
 
-    @Test
-    void appendToCatalogTableWithAllFlatDataTypesTest() {
-        final TableDefinition td = TableDefinition.of(
-                ColumnDefinition.ofBoolean("booleanCol"),
-                ColumnDefinition.ofByte("byteCol"),
-                ColumnDefinition.ofShort("shortCol"),
-                ColumnDefinition.ofDouble("doubleCol"),
-                ColumnDefinition.ofFloat("floatCol"),
-                ColumnDefinition.ofInt("intCol"),
-                ColumnDefinition.ofLong("longCol"),
-                ColumnDefinition.ofString("stringCol"),
-                ColumnDefinition.ofTime("instantCol"),
-                ColumnDefinition.of("localDateTimeCol", Type.find(LocalDateTime.class)),
-                ColumnDefinition.of("localDateCol", Type.find(LocalDate.class)),
-                ColumnDefinition.of("localTimeCol", Type.find(LocalTime.class)));
-
-        final Table source = TableTools.newTable(td,
-                booleanCol("booleanCol", true, false, null),
-                byteCol("byteCol", (byte) 0, (byte) 1, (byte) 2),
-                shortCol("shortCol", (short) 0, (short) -1, (short) 2),
-                doubleCol("doubleCol", 0.0, 1.1, 2.2),
-                floatCol("floatCol", 0.0f, 1.1f, 2.2f),
-                intCol("intCol", 3, 2, 1),
-                longCol("longCol", 6, 5, 4),
-                stringCol("stringCol", "foo", null, "bar"),
-                instantCol("instantCol", Instant.now(), null, Instant.EPOCH),
-                new ColumnHolder<>("localDateTimeCol", LocalDateTime.class, null, false, LocalDateTime.now(), null,
-                        LocalDateTime.now()),
-                new ColumnHolder<>("localDateCol", LocalDate.class, null, false, LocalDate.now(), null,
-                        LocalDate.now()),
-                new ColumnHolder<>("localTimeCol", LocalTime.class, null, false, LocalTime.now(), null,
-                        LocalTime.now()));
-
-        final Namespace myNamespace = Namespace.of("MyNamespace");
-
-        final TableIdentifier myTableId = TableIdentifier.of(myNamespace, "MyTableWithAllFlatDataTypes");
-        final IcebergTableAdapter tableAdapter = catalogAdapter.createTable(myTableId, td);
-
-        final IcebergTableWriter tableWriter = tableAdapter.tableWriter(writerOptionsBuilder()
-                .tableDefinition(source.getDefinition())
-                .build());
-        tableWriter.append(IcebergWriteInstructions.builder()
-                .addTables(source)
-                .build());
-        assertTableEquals(source, tableAdapter.table());
-
-        // Load the table without the table definition, the types of short and char will be inferred as integers
-        {
-            final IcebergTableAdapter tableAdapter2 = catalogAdapter.loadTable(myTableId);
-            final Table fromIcebergWithoutDef = tableAdapter2.table();
-            final Table expected = source.update(
-                    "byteCol = (int) byteCol",
-                    "shortCol = (int) shortCol");
-            assertTableEquals(expected, fromIcebergWithoutDef);
-        }
-    }
-
     /*--- Begin tests for primitive types ---*/
     /**
-     * This method should be called if the inferred type from the schema is same as the types in the source table.
+     * This method should be called if the inferred type from the schema is the same as the types in the source table.
      *
      * @param identifier Table identifier
      * @param source Source table to be written to Iceberg
-     * @param expectedSchema Expected schema of the Iceberg table
+     * @param expectedIcebergSchema Expected schema of the Iceberg table
      */
     private void readWriteTestHelper(
             final TableIdentifier identifier,
             final Table source,
-            final Schema expectedSchema) {
-        readWriteTestHelper(identifier, source, expectedSchema, source);
+            final Schema expectedIcebergSchema,
+            final MessageType expectedParquetSchema) throws URISyntaxException {
+        readWriteTestHelper(identifier, source, expectedIcebergSchema, expectedParquetSchema, source);
     }
 
     /**
      * @param identifier Table identifier
      * @param source Source table to be written to Iceberg
-     * @param expectedSchema Expected schema of the Iceberg table
-     * @param expectedInferredTable Expected table after inferring the types based on schema
+     * @param expectedIcebergSchema Expected schema of the Iceberg table
+     * @param expectedInferredTable Expected table read from Iceberg with types inferred from the schema
      */
     private void readWriteTestHelper(
             final TableIdentifier identifier,
             final Table source,
-            final Schema expectedSchema,
-            final Table expectedInferredTable) {
+            final Schema expectedIcebergSchema,
+            final MessageType expectedParquetSchema,
+            final Table expectedInferredTable) throws URISyntaxException {
         final TableDefinition sourceDefinition = source.getDefinition();
 
         // The following adapter will create a resolver using the definition of the source table
@@ -525,10 +479,15 @@ public abstract class SqliteCatalogBase {
         adapter.tableWriter(writerOptionsBuilder().tableDefinition(sourceDefinition).build())
                 .append(IcebergWriteInstructions.builder().addTables(source).build());
 
-        // Verify that we can read the table back with the same adapter definition
-        assertTableEquals(source, adapter.table());
+        // Verify that the schema of the Iceberg table is as expected
+        assertThat(adapter.icebergTable().schema()).usingEquals(Schema::sameSchema).isEqualTo(expectedIcebergSchema);
 
-        assertThat(adapter.icebergTable().schema()).usingEquals(Schema::sameSchema).isEqualTo(expectedSchema);
+        // Verify that the schema of the parquet file is as expected
+        final List<String> parquetFiles = getAllParquetFilesFromDataFiles(identifier);
+        verifySchema(parquetFiles.get(0), expectedParquetSchema);
+
+        // Verify that we can read the table back with the same adapter used to create the table
+        assertTableEquals(source, adapter.table());
 
         // Create a new table adapter which will infer the types using the table's schema
         final Table inferred = catalogAdapter.loadTable(identifier).table();
@@ -571,16 +530,20 @@ public abstract class SqliteCatalogBase {
     }
 
     @Test
-    void readWriteByteTest() {
+    void readWriteByteTest() throws URISyntaxException {
         final TableIdentifier id = TableIdentifier.of(Namespace.of("MyNamespace"), "Tbl_byte");
         final Table source = TableTools.newTable(
                 TableDefinition.of(ColumnDefinition.ofByte("byteCol")),
                 byteCol("byteCol", (byte) 42, NULL_BYTE, (byte) -1));
-        final Schema expectedSchema = new Schema(
+        final Schema expectedIcebergSchema = new Schema(
                 Types.NestedField.optional(1, "byteCol", Types.IntegerType.get()));
+        final MessageType expectedParquetSchema =
+                buildMessage()
+                        .addFields(optional(INT32).id(1).as(intType(8, true)).named("byteCol"))
+                        .named("root");
 
         // By default, should read back as int
-        readWriteTestHelper(id, source, expectedSchema,
+        readWriteTestHelper(id, source, expectedIcebergSchema, expectedParquetSchema,
                 TableTools.newTable(intCol("byteCol", 42, NULL_INT, -1)));
 
         // explicit byte
@@ -605,16 +568,20 @@ public abstract class SqliteCatalogBase {
     }
 
     @Test
-    void readWriteShortTest() {
+    void readWriteShortTest() throws URISyntaxException {
         final TableIdentifier id = TableIdentifier.of(Namespace.of("MyNamespace"), "Tbl_short");
         final Table source = TableTools.newTable(
                 TableDefinition.of(ColumnDefinition.ofShort("shortCol")),
                 shortCol("shortCol", (short) 42, NULL_SHORT, (short) -1));
-        final Schema expectedSchema = new Schema(
+        final Schema expectedIcebergSchema = new Schema(
                 Types.NestedField.optional(1, "shortCol", Types.IntegerType.get()));
+        final MessageType expectedParquetSchema =
+                buildMessage()
+                        .addField(optional(INT32).id(1).as(intType(16, true)).named("shortCol"))
+                        .named("root");
 
         // By default, should read back as int
-        readWriteTestHelper(id, source, expectedSchema,
+        readWriteTestHelper(id, source, expectedIcebergSchema, expectedParquetSchema,
                 TableTools.newTable(intCol("shortCol", 42, NULL_INT, -1)));
 
         // explicit short
@@ -638,15 +605,19 @@ public abstract class SqliteCatalogBase {
     }
 
     @Test
-    void readWriteIntTest() {
+    void readWriteIntTest() throws URISyntaxException {
         final TableIdentifier id = TableIdentifier.of(Namespace.of("MyNamespace"), "Tbl_int");
         final Table source = TableTools.newTable(
                 TableDefinition.of(ColumnDefinition.ofInt("intCol")),
                 intCol("intCol", 42, NULL_INT, -1));
-        final Schema expectedSchema = new Schema(
+        final Schema expectedIcebergSchema = new Schema(
                 Types.NestedField.optional(1, "intCol", Types.IntegerType.get()));
+        final MessageType expectedParquetSchema =
+                buildMessage()
+                        .addField(optional(INT32).id(1).as(intType(32, true)).named("intCol"))
+                        .named("root");
 
-        readWriteTestHelper(id, source, expectedSchema);
+        readWriteTestHelper(id, source, expectedIcebergSchema, expectedParquetSchema);
 
         // int -> long
         readWithDefinitionTestHelper(id,
@@ -659,15 +630,19 @@ public abstract class SqliteCatalogBase {
     }
 
     @Test
-    void readWriteLongTest() {
+    void readWriteLongTest() throws URISyntaxException {
         final TableIdentifier id = TableIdentifier.of(Namespace.of("MyNamespace"), "Tbl_long");
         final Table source = TableTools.newTable(
                 TableDefinition.of(ColumnDefinition.ofLong("longCol")),
                 longCol("longCol", 42L, NULL_LONG, -1L));
-        final Schema expectedSchema = new Schema(
+        final Schema expectedIcebergSchema = new Schema(
                 Types.NestedField.optional(1, "longCol", Types.LongType.get()));
+        final MessageType expectedParquetSchema =
+                buildMessage()
+                        .addField(optional(INT64).id(1).named("longCol"))
+                        .named("root");
 
-        readWriteTestHelper(id, source, expectedSchema);
+        readWriteTestHelper(id, source, expectedIcebergSchema, expectedParquetSchema);
 
         // narrowing (long -> int) – should fail
         readWithDefinitionFailureTestImpl(id,
@@ -675,15 +650,19 @@ public abstract class SqliteCatalogBase {
     }
 
     @Test
-    void readWriteFloatTest() {
+    void readWriteFloatTest() throws URISyntaxException {
         final TableIdentifier id = TableIdentifier.of(Namespace.of("MyNamespace"), "Tbl_float");
         final Table source = TableTools.newTable(
                 TableDefinition.of(ColumnDefinition.ofFloat("floatCol")),
                 floatCol("floatCol", 1.5f, NULL_FLOAT, -2.5f));
-        final Schema expectedSchema = new Schema(
+        final Schema expectedIcebergSchema = new Schema(
                 Types.NestedField.optional(1, "floatCol", Types.FloatType.get()));
+        final MessageType expectedParquetSchema =
+                buildMessage()
+                        .addField(optional(FLOAT).id(1).named("floatCol"))
+                        .named("root");
 
-        readWriteTestHelper(id, source, expectedSchema);
+        readWriteTestHelper(id, source, expectedIcebergSchema, expectedParquetSchema);
 
         // float -> double
         readWithDefinitionTestHelper(id,
@@ -692,15 +671,19 @@ public abstract class SqliteCatalogBase {
     }
 
     @Test
-    void readWriteDoubleTest() {
+    void readWriteDoubleTest() throws URISyntaxException {
         final TableIdentifier id = TableIdentifier.of(Namespace.of("MyNamespace"), "Tbl_double");
         final Table source = TableTools.newTable(
                 TableDefinition.of(ColumnDefinition.ofDouble("doubleCol")),
                 doubleCol("doubleCol", 1.5, NULL_DOUBLE, -2.5));
-        final Schema expectedSchema = new Schema(
+        final Schema expectedIcebergSchema = new Schema(
                 Types.NestedField.optional(1, "doubleCol", Types.DoubleType.get()));
+        final MessageType expectedParquetSchema =
+                buildMessage()
+                        .addField(optional(DOUBLE).id(1).named("doubleCol"))
+                        .named("root");
 
-        readWriteTestHelper(id, source, expectedSchema);
+        readWriteTestHelper(id, source, expectedIcebergSchema, expectedParquetSchema);
 
         // narrowing (double -> float) – should fail
         readWithDefinitionFailureTestImpl(id,
@@ -708,73 +691,107 @@ public abstract class SqliteCatalogBase {
     }
 
     @Test
-    void readWriteBooleanTest() {
+    void readWriteBooleanTest() throws URISyntaxException {
         final TableIdentifier id = TableIdentifier.of(Namespace.of("MyNamespace"), "Tbl_boolean");
         final Table source = TableTools.newTable(
                 TableDefinition.of(ColumnDefinition.of("boolCol", Type.find(Boolean.class))),
                 booleanCol("boolCol", true, null, false));
-        final Schema expectedSchema = new Schema(
+        final Schema expectedIcebergSchema = new Schema(
                 Types.NestedField.optional(1, "boolCol", Types.BooleanType.get()));
-        readWriteTestHelper(id, source, expectedSchema);
+        final MessageType expectedParquetSchema =
+                buildMessage()
+                        .addField(optional(BOOLEAN).id(1).named("boolCol"))
+                        .named("root");
+        readWriteTestHelper(id, source, expectedIcebergSchema, expectedParquetSchema);
     }
 
     @Test
-    void readWriteStringTest() {
+    void readWriteStringTest() throws URISyntaxException {
         final TableIdentifier id = TableIdentifier.of(Namespace.of("MyNamespace"), "Tbl_string");
         final Table source = TableTools.newTable(
                 TableDefinition.of(ColumnDefinition.of("strCol", Type.find(String.class))),
                 stringCol("strCol", "foo", null, "bar"));
-        final Schema expectedSchema = new Schema(
+        final Schema expectedIcebergSchema = new Schema(
                 Types.NestedField.optional(1, "strCol", Types.StringType.get()));
-        readWriteTestHelper(id, source, expectedSchema);
+        final MessageType expectedParquetSchema =
+                buildMessage()
+                        .addField(optional(BINARY).id(1).as(LogicalTypeAnnotation.stringType()).named("strCol"))
+                        .named("root");
+
+        readWriteTestHelper(id, source, expectedIcebergSchema, expectedParquetSchema);
     }
 
     @Test
-    void readWriteInstantTest() {
+    void readWriteInstantTest() throws URISyntaxException {
         final TableIdentifier id = TableIdentifier.of(Namespace.of("MyNamespace"), "Tbl_instant");
         final Table source = TableTools.newTable(
                 TableDefinition.of(ColumnDefinition.of("instCol", Type.find(Instant.class))),
                 instantCol("instCol", Instant.parse("2025-01-01T12:00:03Z"), null, Instant.EPOCH));
-        final Schema expectedSchema = new Schema(
+        final Schema expectedIcebergSchema = new Schema(
                 Types.NestedField.optional(1, "instCol", Types.TimestampType.withZone()));
-        readWriteTestHelper(id, source, expectedSchema);
+        final MessageType expectedParquetSchema =
+                buildMessage()
+                        .addField(optional(INT64).id(1)
+                                .as(LogicalTypeAnnotation.timestampType(true, LogicalTypeAnnotation.TimeUnit.NANOS))
+                                .named("instCol"))
+                        .named("root");
+
+        readWriteTestHelper(id, source, expectedIcebergSchema, expectedParquetSchema);
     }
 
     @Test
-    void readWriteLocalDateTimeTest() {
+    void readWriteLocalDateTimeTest() throws URISyntaxException {
         final TableIdentifier id = TableIdentifier.of(Namespace.of("MyNamespace"), "Tbl_ldt");
         final Table source = TableTools.newTable(
                 TableDefinition.of(ColumnDefinition.of("ldtCol", Type.find(LocalDateTime.class))),
                 new ColumnHolder<>("ldtCol", LocalDateTime.class, null, false,
                         LocalDateTime.of(2025, 1, 1, 12, 0), null,
                         LocalDateTime.of(2023, 1, 1, 0, 0)));
-        final Schema expectedSchema = new Schema(
+        final Schema expectedIcebergSchema = new Schema(
                 Types.NestedField.optional(1, "ldtCol", Types.TimestampType.withoutZone()));
-        readWriteTestHelper(id, source, expectedSchema);
+        final MessageType expectedParquetSchema =
+                buildMessage()
+                        .addField(optional(INT64).id(1)
+                                .as(LogicalTypeAnnotation.timestampType(false, LogicalTypeAnnotation.TimeUnit.NANOS))
+                                .named("ldtCol"))
+                        .named("root");
+
+        readWriteTestHelper(id, source, expectedIcebergSchema, expectedParquetSchema);
     }
 
     @Test
-    void readWriteLocalDateTest() {
+    void readWriteLocalDateTest() throws URISyntaxException {
         final TableIdentifier id = TableIdentifier.of(Namespace.of("MyNamespace"), "Tbl_ld");
         final Table source = TableTools.newTable(
                 TableDefinition.of(ColumnDefinition.of("ldCol", Type.find(LocalDate.class))),
                 new ColumnHolder<>("ldCol", LocalDate.class, null, false,
                         LocalDate.of(2025, 1, 1), null, LocalDate.of(2023, 1, 1)));
-        final Schema expectedSchema = new Schema(
+        final Schema expectedIcebergSchema = new Schema(
                 Types.NestedField.optional(1, "ldCol", Types.DateType.get()));
-        readWriteTestHelper(id, source, expectedSchema);
+        final MessageType expectedParquetSchema =
+                buildMessage()
+                        .addField(optional(INT32).id(1).as(dateType()).named("ldCol"))
+                        .named("root");
+
+        readWriteTestHelper(id, source, expectedIcebergSchema, expectedParquetSchema);
     }
 
     @Test
-    void readWriteLocalTimeTest() {
+    void readWriteLocalTimeTest() throws URISyntaxException {
         final TableIdentifier id = TableIdentifier.of(Namespace.of("MyNamespace"), "Tbl_lt");
         final Table source = TableTools.newTable(
                 TableDefinition.of(ColumnDefinition.of("ltCol", Type.find(LocalTime.class))),
                 new ColumnHolder<>("ltCol", LocalTime.class, null, false,
                         LocalTime.of(12, 0, 1), null, LocalTime.of(12, 0)));
-        final Schema expectedSchema = new Schema(
+        final Schema expectedIcebergSchema = new Schema(
                 Types.NestedField.optional(1, "ltCol", Types.TimeType.get()));
-        readWriteTestHelper(id, source, expectedSchema);
+        final MessageType expectedParquetSchema =
+                buildMessage()
+                        .addField(optional(INT64).id(1).as(timeType(true, LogicalTypeAnnotation.TimeUnit.NANOS))
+                                .named("ltCol"))
+                        .named("root");
+
+        readWriteTestHelper(id, source, expectedIcebergSchema, expectedParquetSchema);
     }
 
     /*--- End tests for primitive types ---*/
@@ -782,7 +799,7 @@ public abstract class SqliteCatalogBase {
     /*--- Begin tests for list types ---*/
 
     @Test
-    void readWriteByteListTest() {
+    void readWriteByteListTest() throws URISyntaxException {
         // Write a table with byte[]
         final TableIdentifier identifier = TableIdentifier.of(Namespace.of("MyNamespace"), "Tbl_byteList");
         final Table source = TableTools.newTable(
@@ -791,9 +808,15 @@ public abstract class SqliteCatalogBase {
                         new byte[] {42, NULL_BYTE, -1},
                         null,
                         new byte[] {}));
-        final Schema expectedSchema = new Schema(
+        final Schema expectedIcebergSchema = new Schema(
                 Types.NestedField.optional(1, "byteList",
                         Types.ListType.ofOptional(2, Types.IntegerType.get())));
+        final MessageType expectedParquetSchema =
+                buildMessage().addField(optionalGroup().id(1).as(LogicalTypeAnnotation.listType())
+                        .addField(repeatedGroup()
+                                .addField(optional(INT32).as(LogicalTypeAnnotation.intType(8, true)).named("element"))
+                                .named("list"))
+                        .named("byteList")).named("root");
         final Table expectedInferredDefault = TableTools.newTable(
                 TableTools.col("byteList",
                         new IntVectorDirect(42, NULL_INT, -1),
@@ -801,7 +824,7 @@ public abstract class SqliteCatalogBase {
                         (IntVector) new IntVectorDirect()));
 
         // By default, byte list -> IntVector
-        readWriteTestHelper(identifier, source, expectedSchema, expectedInferredDefault);
+        readWriteTestHelper(identifier, source, expectedIcebergSchema, expectedParquetSchema, expectedInferredDefault);
 
         // byte list -> ByteVector
         {
@@ -884,7 +907,7 @@ public abstract class SqliteCatalogBase {
     }
 
     @Test
-    void readWriteShortListTest() {
+    void readWriteShortListTest() throws URISyntaxException {
         // Write a table with short[]
         final TableIdentifier identifier = TableIdentifier.of(Namespace.of("MyNamespace"), "Tbl_shortList");
         final Table source = TableTools.newTable(
@@ -893,9 +916,15 @@ public abstract class SqliteCatalogBase {
                         new short[] {42, NULL_SHORT, -1},
                         null,
                         new short[] {}));
-        final Schema expectedSchema = new Schema(
+        final Schema expectedIcebergSchema = new Schema(
                 Types.NestedField.optional(1, "shortList",
                         Types.ListType.ofOptional(2, Types.IntegerType.get())));
+        final MessageType expectedParquetSchema =
+                buildMessage().addField(optionalGroup().id(1).as(LogicalTypeAnnotation.listType())
+                        .addField(repeatedGroup()
+                                .addField(optional(INT32).as(LogicalTypeAnnotation.intType(16, true)).named("element"))
+                                .named("list"))
+                        .named("shortList")).named("root");
         final Table expectedInferredDefault = TableTools.newTable(
                 TableTools.col("shortList",
                         new IntVectorDirect(42, NULL_INT, -1),
@@ -903,7 +932,7 @@ public abstract class SqliteCatalogBase {
                         (IntVector) new IntVectorDirect()));
 
         // By default, short list -> IntVector
-        readWriteTestHelper(identifier, source, expectedSchema, expectedInferredDefault);
+        readWriteTestHelper(identifier, source, expectedIcebergSchema, expectedParquetSchema, expectedInferredDefault);
 
         // short list -> ShortVector
         {
@@ -969,7 +998,7 @@ public abstract class SqliteCatalogBase {
     }
 
     @Test
-    void readWriteIntListTest() {
+    void readWriteIntListTest() throws URISyntaxException {
         // Write a table with int[]
         final TableIdentifier identifier = TableIdentifier.of(Namespace.of("MyNamespace"), "Tbl_intList");
         final Table source = TableTools.newTable(
@@ -978,9 +1007,15 @@ public abstract class SqliteCatalogBase {
                         new int[] {42, NULL_INT, -1},
                         null,
                         new int[] {}));
-        final Schema expectedSchema = new Schema(
+        final Schema expectedIcebergSchema = new Schema(
                 Types.NestedField.optional(1, "intList",
                         Types.ListType.ofOptional(2, Types.IntegerType.get())));
+        final MessageType expectedParquetSchema =
+                buildMessage().addField(optionalGroup().id(1).as(LogicalTypeAnnotation.listType())
+                        .addField(repeatedGroup()
+                                .addField(optional(INT32).as(intType(32, true)).named("element"))
+                                .named("list"))
+                        .named("intList")).named("root");
         final Table expectedInferredDefault = TableTools.newTable(
                 TableTools.col("intList",
                         new IntVectorDirect(42, NULL_INT, -1),
@@ -988,7 +1023,7 @@ public abstract class SqliteCatalogBase {
                         (IntVector) new IntVectorDirect()));
 
         // By default, int list -> IntVector
-        readWriteTestHelper(identifier, source, expectedSchema, expectedInferredDefault);
+        readWriteTestHelper(identifier, source, expectedIcebergSchema, expectedParquetSchema, expectedInferredDefault);
 
         // int list -> IntVector (explicit)
         {
@@ -1030,7 +1065,7 @@ public abstract class SqliteCatalogBase {
     }
 
     @Test
-    void readWriteLongListTest() {
+    void readWriteLongListTest() throws URISyntaxException {
         // Write a table with long[]
         final TableIdentifier identifier = TableIdentifier.of(Namespace.of("MyNamespace"), "Tbl_longList");
         final Table source = TableTools.newTable(
@@ -1039,9 +1074,15 @@ public abstract class SqliteCatalogBase {
                         new long[] {42, NULL_LONG, -1},
                         null,
                         new long[] {}));
-        final Schema expectedSchema = new Schema(
+        final Schema expectedIcebergSchema = new Schema(
                 Types.NestedField.optional(1, "longList",
                         Types.ListType.ofOptional(2, Types.LongType.get())));
+        final MessageType expectedParquetSchema =
+                buildMessage().addField(optionalGroup().id(1).as(LogicalTypeAnnotation.listType())
+                        .addField(repeatedGroup()
+                                .addField(optional(INT64).named("element"))
+                                .named("list"))
+                        .named("longList")).named("root");
         final Table expectedInferredDefault = TableTools.newTable(
                 TableTools.col("longList",
                         new LongVectorDirect(42, NULL_LONG, -1),
@@ -1049,7 +1090,7 @@ public abstract class SqliteCatalogBase {
                         (LongVector) new LongVectorDirect()));
 
         // By default, long list -> LongVector
-        readWriteTestHelper(identifier, source, expectedSchema, expectedInferredDefault);
+        readWriteTestHelper(identifier, source, expectedIcebergSchema, expectedParquetSchema, expectedInferredDefault);
 
         // long list -> LongVector (explicit)
         {
@@ -1067,7 +1108,7 @@ public abstract class SqliteCatalogBase {
     }
 
     @Test
-    void readWriteFloatListTest() {
+    void readWriteFloatListTest() throws URISyntaxException {
         // Write a table with float[]
         final TableIdentifier identifier = TableIdentifier.of(Namespace.of("MyNamespace"), "Tbl_floatList");
         final Table source = TableTools.newTable(
@@ -1076,9 +1117,15 @@ public abstract class SqliteCatalogBase {
                         new float[] {42.5f, NULL_FLOAT, -1.5f},
                         null,
                         new float[] {}));
-        final Schema expectedSchema = new Schema(
+        final Schema expectedIcebergSchema = new Schema(
                 Types.NestedField.optional(1, "floatList",
                         Types.ListType.ofOptional(2, Types.FloatType.get())));
+        final MessageType expectedParquetSchema =
+                buildMessage().addField(optionalGroup().id(1).as(LogicalTypeAnnotation.listType())
+                        .addField(repeatedGroup()
+                                .addField(optional(FLOAT).named("element"))
+                                .named("list"))
+                        .named("floatList")).named("root");
         final Table expectedInferredDefault = TableTools.newTable(
                 TableTools.col("floatList",
                         new FloatVectorDirect(42.5f, NULL_FLOAT, -1.5f),
@@ -1086,7 +1133,7 @@ public abstract class SqliteCatalogBase {
                         (FloatVector) new FloatVectorDirect()));
 
         // By default, float list -> FloatVector
-        readWriteTestHelper(identifier, source, expectedSchema, expectedInferredDefault);
+        readWriteTestHelper(identifier, source, expectedIcebergSchema, expectedParquetSchema, expectedInferredDefault);
 
         // float list -> FloatVector (explicit)
         {
@@ -1121,7 +1168,7 @@ public abstract class SqliteCatalogBase {
     }
 
     @Test
-    void readWriteDoubleListTest() {
+    void readWriteDoubleListTest() throws URISyntaxException {
         // Write a table with double[]
         final TableIdentifier identifier = TableIdentifier.of(Namespace.of("MyNamespace"), "Tbl_doubleList");
         final Table source = TableTools.newTable(
@@ -1130,9 +1177,15 @@ public abstract class SqliteCatalogBase {
                         new double[] {42.6, NULL_DOUBLE, -1.2},
                         null,
                         new double[] {}));
-        final Schema expectedSchema = new Schema(
+        final Schema expectedIcebergSchema = new Schema(
                 Types.NestedField.optional(1, "doubleList",
                         Types.ListType.ofOptional(2, Types.DoubleType.get())));
+        final MessageType expectedParquetSchema =
+                buildMessage().addField(optionalGroup().id(1).as(LogicalTypeAnnotation.listType())
+                        .addField(repeatedGroup()
+                                .addField(optional(DOUBLE).named("element"))
+                                .named("list"))
+                        .named("doubleList")).named("root");
         final Table expectedInferredDefault = TableTools.newTable(
                 TableTools.col("doubleList",
                         new DoubleVectorDirect(42.6, NULL_DOUBLE, -1.2),
@@ -1140,7 +1193,7 @@ public abstract class SqliteCatalogBase {
                         (DoubleVector) new DoubleVectorDirect()));
 
         // By default, double list -> DoubleVector
-        readWriteTestHelper(identifier, source, expectedSchema, expectedInferredDefault);
+        readWriteTestHelper(identifier, source, expectedIcebergSchema, expectedParquetSchema, expectedInferredDefault);
 
         // double list -> DoubleVector (explicit)
         {
@@ -1170,7 +1223,7 @@ public abstract class SqliteCatalogBase {
     }
 
     @Test
-    void readWriteBooleanListTest() {
+    void readWriteBooleanListTest() throws URISyntaxException {
         // Write a table with Boolean[]
         final TableIdentifier identifier = TableIdentifier.of(Namespace.of("MyNamespace"), "Tbl_booleanList");
         final Table source = TableTools.newTable(
@@ -1179,9 +1232,15 @@ public abstract class SqliteCatalogBase {
                         new Boolean[] {true, NULL_BOOLEAN, false},
                         null,
                         new Boolean[] {}));
-        final Schema expectedSchema = new Schema(
+        final Schema expectedIcebergSchema = new Schema(
                 Types.NestedField.optional(1, "booleanList",
                         Types.ListType.ofOptional(2, Types.BooleanType.get())));
+        final MessageType expectedParquetSchema =
+                buildMessage().addField(optionalGroup().id(1).as(LogicalTypeAnnotation.listType())
+                        .addField(repeatedGroup()
+                                .addField(optional(BOOLEAN).named("element"))
+                                .named("list"))
+                        .named("booleanList")).named("root");
         final Table expectedInferred = TableTools.newTable(
                 TableTools.col("booleanList",
                         new ObjectVectorDirect<Boolean>(true, NULL_BOOLEAN, false),
@@ -1189,7 +1248,7 @@ public abstract class SqliteCatalogBase {
                         (ObjectVector<Boolean>) new ObjectVectorDirect<Boolean>()));
 
         // By default, Boolean list -> ObjectVector<Boolean>
-        readWriteTestHelper(identifier, source, expectedSchema, expectedInferred);
+        readWriteTestHelper(identifier, source, expectedIcebergSchema, expectedParquetSchema, expectedInferred);
 
         // Boolean list -> ObjectVector<Boolean> (explicit)
         final TableDefinition readDefinition = TableDefinition.of(
@@ -1198,7 +1257,7 @@ public abstract class SqliteCatalogBase {
     }
 
     @Test
-    void readWriteStringListTest() {
+    void readWriteStringListTest() throws URISyntaxException {
         // Write a table with String[]
         final TableIdentifier identifier = TableIdentifier.of(Namespace.of("MyNamespace"), "Tbl_stringList");
         final Table source = TableTools.newTable(
@@ -1207,9 +1266,15 @@ public abstract class SqliteCatalogBase {
                         new String[] {"foo", null, "bar"},
                         null,
                         new String[] {}));
-        final Schema expectedSchema = new Schema(
+        final Schema expectedIcebergSchema = new Schema(
                 Types.NestedField.optional(1, "stringList",
                         Types.ListType.ofOptional(2, Types.StringType.get())));
+        final MessageType expectedParquetSchema =
+                buildMessage().addField(optionalGroup().id(1).as(LogicalTypeAnnotation.listType())
+                        .addField(repeatedGroup()
+                                .addField(optional(BINARY).as(LogicalTypeAnnotation.stringType()).named("element"))
+                                .named("list"))
+                        .named("stringList")).named("root");
         final Table expectedInferred = TableTools.newTable(
                 TableTools.col("stringList",
                         new ObjectVectorDirect<>("foo", null, "bar"),
@@ -1217,7 +1282,7 @@ public abstract class SqliteCatalogBase {
                         (ObjectVector<String>) new ObjectVectorDirect<String>()));
 
         // By default, String list -> ObjectVector<String>
-        readWriteTestHelper(identifier, source, expectedSchema, expectedInferred);
+        readWriteTestHelper(identifier, source, expectedIcebergSchema, expectedParquetSchema, expectedInferred);
 
         // String list -> ObjectVector<String> (explicit)
         final TableDefinition readDefinition = TableDefinition.of(
@@ -1226,7 +1291,7 @@ public abstract class SqliteCatalogBase {
     }
 
     @Test
-    void readWriteTimestampTzListTest() {
+    void readWriteTimestampTzListTest() throws URISyntaxException {
         // Write a table with Instant[]
         final TableIdentifier identifier = TableIdentifier.of(Namespace.of("MyNamespace"), "Tbl_timestampTzList");
         final Table source = TableTools.newTable(
@@ -1235,9 +1300,17 @@ public abstract class SqliteCatalogBase {
                         new Instant[] {Instant.parse("2025-01-01T12:00:03Z"), null, Instant.EPOCH},
                         null,
                         new Instant[] {}));
-        final Schema expectedSchema = new Schema(
+        final Schema expectedIcebergSchema = new Schema(
                 Types.NestedField.optional(1, "timestampTzList",
                         Types.ListType.ofOptional(2, Types.TimestampType.withZone())));
+        final MessageType expectedParquetSchema =
+                buildMessage().addField(optionalGroup().id(1).as(LogicalTypeAnnotation.listType())
+                        .addField(repeatedGroup()
+                                .addField(optional(INT64).as(
+                                        LogicalTypeAnnotation.timestampType(true, LogicalTypeAnnotation.TimeUnit.NANOS))
+                                        .named("element"))
+                                .named("list"))
+                        .named("timestampTzList")).named("root");
         final Table expectedInferred = TableTools.newTable(
                 TableTools.col("timestampTzList",
                         new ObjectVectorDirect<>(Instant.parse("2025-01-01T12:00:03Z"), null, Instant.EPOCH),
@@ -1245,7 +1318,7 @@ public abstract class SqliteCatalogBase {
                         (ObjectVector<Instant>) new ObjectVectorDirect<Instant>()));
 
         // By default, Instant list -> ObjectVector<Instant>
-        readWriteTestHelper(identifier, source, expectedSchema, expectedInferred);
+        readWriteTestHelper(identifier, source, expectedIcebergSchema, expectedParquetSchema, expectedInferred);
 
         // Instant list -> ObjectVector<Instant> (explicit)
         final TableDefinition readDefinition = TableDefinition.of(
@@ -1254,7 +1327,7 @@ public abstract class SqliteCatalogBase {
     }
 
     @Test
-    void readWriteTimestampNtzListTest() {
+    void readWriteTimestampNtzListTest() throws URISyntaxException {
         // Write a table with LocalDateTime[]
         final TableIdentifier identifier = TableIdentifier.of(Namespace.of("MyNamespace"), "Tbl_timestampNtzList");
         final Table source = TableTools.newTable(
@@ -1266,9 +1339,16 @@ public abstract class SqliteCatalogBase {
                                 LocalDateTime.of(2023, 1, 1, 0, 0)},
                         null,
                         new LocalDateTime[] {}));
-        final Schema expectedSchema = new Schema(
+        final Schema expectedIcebergSchema = new Schema(
                 Types.NestedField.optional(1, "timestampNtzList",
                         Types.ListType.ofOptional(2, Types.TimestampType.withoutZone())));
+        final MessageType expectedParquetSchema =
+                buildMessage().addField(optionalGroup().id(1).as(LogicalTypeAnnotation.listType())
+                        .addField(repeatedGroup()
+                                .addField(optional(INT64).as(LogicalTypeAnnotation.timestampType(false,
+                                        LogicalTypeAnnotation.TimeUnit.NANOS)).named("element"))
+                                .named("list"))
+                        .named("timestampNtzList")).named("root");
         final Table expectedInferred = TableTools.newTable(
                 TableTools.col("timestampNtzList",
                         new ObjectVectorDirect<>(LocalDateTime.of(2025, 1, 1, 12, 0, 1),
@@ -1278,7 +1358,7 @@ public abstract class SqliteCatalogBase {
                         (ObjectVector<LocalDateTime>) new ObjectVectorDirect<LocalDateTime>()));
 
         // By default, LocalDateTime list -> ObjectVector<LocalDateTime>
-        readWriteTestHelper(identifier, source, expectedSchema, expectedInferred);
+        readWriteTestHelper(identifier, source, expectedIcebergSchema, expectedParquetSchema, expectedInferred);
 
         // LocalDateTime list -> ObjectVector<LocalDateTime> (explicit)
         final TableDefinition readDefinition = TableDefinition.of(
@@ -1288,7 +1368,7 @@ public abstract class SqliteCatalogBase {
     }
 
     @Test
-    void readWriteDateListTest() {
+    void readWriteDateListTest() throws URISyntaxException {
         // Write a table with LocalDate[]
         final TableIdentifier identifier = TableIdentifier.of(Namespace.of("MyNamespace"), "Tbl_dateList");
         final Table source = TableTools.newTable(
@@ -1297,9 +1377,15 @@ public abstract class SqliteCatalogBase {
                         new LocalDate[] {LocalDate.of(2025, 1, 1), null, LocalDate.of(2023, 1, 1)},
                         null,
                         new LocalDate[] {}));
-        final Schema expectedSchema = new Schema(
+        final Schema expectedIcebergSchema = new Schema(
                 Types.NestedField.optional(1, "dateList",
                         Types.ListType.ofOptional(2, Types.DateType.get())));
+        final MessageType expectedParquetSchema =
+                buildMessage().addField(optionalGroup().id(1).as(LogicalTypeAnnotation.listType())
+                        .addField(repeatedGroup()
+                                .addField(optional(INT32).as(LogicalTypeAnnotation.dateType()).named("element"))
+                                .named("list"))
+                        .named("dateList")).named("root");
         final Table expectedInferred = TableTools.newTable(
                 TableTools.col("dateList",
                         new ObjectVectorDirect<>(LocalDate.of(2025, 1, 1), null, LocalDate.of(2023, 1, 1)),
@@ -1307,7 +1393,7 @@ public abstract class SqliteCatalogBase {
                         (ObjectVector<LocalDate>) new ObjectVectorDirect<LocalDate>()));
 
         // By default, LocalDate list -> ObjectVector<LocalDate>
-        readWriteTestHelper(identifier, source, expectedSchema, expectedInferred);
+        readWriteTestHelper(identifier, source, expectedIcebergSchema, expectedParquetSchema, expectedInferred);
 
         // LocalDate list -> ObjectVector<LocalDate> (explicit)
         final TableDefinition readDefinition = TableDefinition.of(
@@ -1316,7 +1402,7 @@ public abstract class SqliteCatalogBase {
     }
 
     @Test
-    void readWriteTimeListTest() {
+    void readWriteTimeListTest() throws URISyntaxException {
         // Write a table with LocalTime[]
         final TableIdentifier identifier = TableIdentifier.of(Namespace.of("MyNamespace"), "Tbl_timeList");
         final Table source = TableTools.newTable(
@@ -1325,9 +1411,17 @@ public abstract class SqliteCatalogBase {
                         new LocalTime[] {LocalTime.of(12, 0, 1), null, LocalTime.of(12, 0)},
                         null,
                         new LocalTime[] {}));
-        final Schema expectedSchema = new Schema(
+        final Schema expectedIcebergSchema = new Schema(
                 Types.NestedField.optional(1, "timeList",
                         Types.ListType.ofOptional(2, Types.TimeType.get())));
+        final MessageType expectedParquetSchema =
+                buildMessage().addField(optionalGroup().id(1).as(LogicalTypeAnnotation.listType())
+                        .addField(repeatedGroup()
+                                .addField(optional(INT64)
+                                        .as(LogicalTypeAnnotation.timeType(true, LogicalTypeAnnotation.TimeUnit.NANOS))
+                                        .named("element"))
+                                .named("list"))
+                        .named("timeList")).named("root");
         final Table expectedInferred = TableTools.newTable(
                 TableTools.col("timeList",
                         new ObjectVectorDirect<>(LocalTime.of(12, 0, 1), null, LocalTime.of(12, 0)),
@@ -1335,7 +1429,7 @@ public abstract class SqliteCatalogBase {
                         (ObjectVector<LocalTime>) new ObjectVectorDirect<LocalTime>()));
 
         // By default, LocalTime list -> ObjectVector<LocalTime>
-        readWriteTestHelper(identifier, source, expectedSchema, expectedInferred);
+        readWriteTestHelper(identifier, source, expectedIcebergSchema, expectedParquetSchema, expectedInferred);
 
         // LocalTime list -> ObjectVector<LocalTime> (explicit)
         final TableDefinition readDefinition = TableDefinition.of(
