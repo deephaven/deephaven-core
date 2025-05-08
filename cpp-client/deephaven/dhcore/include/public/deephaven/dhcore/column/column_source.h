@@ -198,6 +198,9 @@ class MutableGenericColumnSource : public GenericColumnSource<T>, public Mutable
  */
 class ColumnSourceVisitor {
 public:
+  /**
+   * Destructor.
+   */
   virtual ~ColumnSourceVisitor() = default;
   /**
    * Implements the visitor pattern.
