@@ -272,7 +272,7 @@ final class ResolverFactory implements ParquetColumnResolver.Factory {
 
     }
 
-    private static class MappingException extends Exception {
+    private static abstract class MappingException extends Exception {
 
         public MappingException() {}
 
