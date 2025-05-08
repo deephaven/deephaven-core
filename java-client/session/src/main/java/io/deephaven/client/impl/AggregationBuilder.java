@@ -16,6 +16,7 @@ import io.deephaven.proto.backplane.grpc.Aggregation.AggregationPartition;
 import io.deephaven.proto.backplane.grpc.Aggregation.AggregationRowKey;
 import io.deephaven.proto.backplane.grpc.Aggregation.Builder;
 import io.deephaven.proto.backplane.grpc.Selectable;
+import io.deephaven.util.annotations.InternalUseOnly;
 
 import java.util.Collection;
 import java.util.List;
