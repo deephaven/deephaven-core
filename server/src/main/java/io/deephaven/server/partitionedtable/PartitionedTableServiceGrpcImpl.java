@@ -227,7 +227,7 @@ public class PartitionedTableServiceGrpcImpl extends PartitionedTableServiceGrpc
             }
         }
 
-        Table requestedRows =
+        final Table requestedRows =
                 partitionedTable.table().whereIn(keyTable, partitionedTable.keyColumnNames().toArray(String[]::new));
 
         if (uniqueStaticResult) {
