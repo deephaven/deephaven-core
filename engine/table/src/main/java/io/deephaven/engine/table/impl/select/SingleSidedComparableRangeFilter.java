@@ -68,7 +68,7 @@ public class SingleSidedComparableRangeFilter extends AbstractRangeFilter {
     @Override
     public WhereFilter copy() {
         final SingleSidedComparableRangeFilter copy =
-                new SingleSidedComparableRangeFilter(columnName, pivot, lowerInclusive, upperInclusive);
+                new SingleSidedComparableRangeFilter(columnName, pivot, lowerInclusive, isGreaterThan);
         copy.chunkFilter = chunkFilter;
         copy.longFilter = longFilter;
         return copy;
