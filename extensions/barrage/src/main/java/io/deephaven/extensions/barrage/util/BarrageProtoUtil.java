@@ -50,6 +50,13 @@ public class BarrageProtoUtil {
         }
     }
 
+    public static byte[] toByteArray(final RowSet rowSet) {
+        final ByteBuffer bb = toByteBuffer(rowSet);
+        final byte[] array = new byte[bb.remaining()];
+        bb.get(array);
+        return array;
+    }
+
     public static RowSet toRowSet(final ByteBuffer string) {
         try (final InputStream bais = new ByteBufferInputStream(string);
                 final LittleEndianDataInputStream ois = new LittleEndianDataInputStream(bais)) {
