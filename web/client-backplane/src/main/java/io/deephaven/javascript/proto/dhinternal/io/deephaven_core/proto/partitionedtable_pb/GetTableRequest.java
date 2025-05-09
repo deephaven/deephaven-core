@@ -4,6 +4,7 @@
 package io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.partitionedtable_pb;
 
 import elemental2.core.Uint8Array;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.partitionedtable_pb.gettablerequest.UniqueBehaviorMap;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.ticket_pb.Ticket;
 import jsinterop.annotations.JsOverlay;
 import jsinterop.annotations.JsPackage;
@@ -92,6 +93,9 @@ public class GetTableRequest {
         Object getResultId();
 
         @JsProperty
+        double getUniqueBehavior();
+
+        @JsProperty
         void setKeyTableTicket(Object keyTableTicket);
 
         @JsProperty
@@ -101,12 +105,8 @@ public class GetTableRequest {
         @JsProperty
         void setResultId(Object resultId);
 
-
         @JsProperty
-        void setUniqueBehavior(int behavior);
-
-        @JsProperty
-        int getUniqueBehavior();
+        void setUniqueBehavior(double uniqueBehavior);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -167,12 +167,6 @@ public class GetTableRequest {
                         Js.<GetTableRequest.ToObjectReturnType0.PartitionedTableFieldType.GetTicketUnionType>uncheckedCast(
                                 ticket));
             }
-
-            @JsProperty
-            void setUniqueBehavior(int behavior);
-
-            @JsProperty
-            int getUniqueBehavior();
         }
 
         @JsOverlay
@@ -190,6 +184,9 @@ public class GetTableRequest {
         Object getResultId();
 
         @JsProperty
+        double getUniqueBehavior();
+
+        @JsProperty
         void setKeyTableTicket(Object keyTableTicket);
 
         @JsProperty
@@ -198,7 +195,12 @@ public class GetTableRequest {
 
         @JsProperty
         void setResultId(Object resultId);
+
+        @JsProperty
+        void setUniqueBehavior(double uniqueBehavior);
     }
+
+    public static UniqueBehaviorMap UniqueBehavior;
 
     public static native GetTableRequest deserializeBinary(Uint8Array bytes);
 
