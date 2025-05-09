@@ -231,10 +231,6 @@ public class PartitionedTableServiceGrpcImpl extends PartitionedTableServiceGrpc
                 partitionedTable.table().whereIn(keyTable, partitionedTable.keyColumnNames().toArray(String[]::new));
 
         if (uniqueStaticResult) {
-            if (requestedRows.isRefreshing()) {
-                requestedRows = requestedRows.snapshot();
-            }
-
             final long resultPartitionsSize = requestedRows.size();
             if (resultPartitionsSize != 1) {
                 throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
