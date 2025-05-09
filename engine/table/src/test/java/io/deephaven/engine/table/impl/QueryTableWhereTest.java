@@ -1292,6 +1292,20 @@ public abstract class QueryTableWhereTest {
                 new TableComparator(augmented.where("L1 < 100"), augmented.where("BI2 < 100")),
                 new TableComparator(augmented.where("L1 >= 100"), augmented.where("BI2 >= 100")),
                 new TableComparator(augmented.where("L1 <= 100"), augmented.where("BI2 <= 100")),
+
+                new TableComparator(augmented.where("L1 > 100"),
+                        augmented.where(SingleSidedComparableRangeFilter
+                                .makeForTest("BI2", BigInteger.valueOf(100), false, true))),
+                new TableComparator(augmented.where("L1 < 100"),
+                        augmented.where(SingleSidedComparableRangeFilter
+                                .makeForTest("BI2", BigInteger.valueOf(100), false, false))),
+                new TableComparator(augmented.where("L1 >= 100"),
+                        augmented.where(SingleSidedComparableRangeFilter
+                                .makeForTest("BI2", BigInteger.valueOf(100), true, true))),
+                new TableComparator(augmented.where("L1 <= 100"),
+                        augmented.where(SingleSidedComparableRangeFilter
+                                .makeForTest("BI2", BigInteger.valueOf(100), true, false))),
+
                 new TableComparator(augmented.where("L1 > 95 && L1 <= 100"),
                         augmented.where(ComparableRangeFilter.makeForTest("BI2", BigInteger.valueOf(95),
                                 BigInteger.valueOf(100), false, true))),
@@ -1304,6 +1318,74 @@ public abstract class QueryTableWhereTest {
                 new TableComparator(augmented.where("L1 >= 95 && L1 <= 100"),
                         augmented.where(ComparableRangeFilter.makeForTest("BI2", BigInteger.valueOf(95),
                                 BigInteger.valueOf(100), true, true))),
+        };
+
+        for (int i = 0; i < 500; i++) {
+            simulateShiftAwareStep(size, random, table, columnInfo, en);
+        }
+    }
+
+    @Test
+    public void testComparableRangeFilterCopies() {
+        final Random random = new Random(0);
+
+        final int size = 100;
+
+        final ColumnInfo<?, ?>[] columnInfo;
+        final QueryTable table = getTable(size, random,
+                columnInfo = initColumnInfos(new String[] {"L1"}, new LongGenerator(90, 110, 0.1)));
+
+        final String bigIntConversion = "BI2=" + getClass().getCanonicalName() + ".convertToBigInteger(L1)";
+        final Table augmented = table.update(bigIntConversion);
+
+        final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
+                // Test the SingleSidedComparableRangeFilter against copies
+                new TableComparator(
+                        augmented.where(SingleSidedComparableRangeFilter
+                                .makeForTest("BI2", BigInteger.valueOf(100), false, true)),
+                        augmented.where(SingleSidedComparableRangeFilter
+                                .makeForTest("BI2", BigInteger.valueOf(100), false, true).copy())),
+                new TableComparator(
+                        augmented.where(SingleSidedComparableRangeFilter
+                                .makeForTest("BI2", BigInteger.valueOf(100), false, false)),
+                        augmented.where(SingleSidedComparableRangeFilter
+                                .makeForTest("BI2", BigInteger.valueOf(100), false, false).copy())),
+                new TableComparator(
+                        augmented.where(SingleSidedComparableRangeFilter
+                                .makeForTest("BI2", BigInteger.valueOf(100), true, true)),
+                        augmented.where(SingleSidedComparableRangeFilter
+                                .makeForTest("BI2", BigInteger.valueOf(100), true, true).copy())),
+                new TableComparator(
+                        augmented.where(SingleSidedComparableRangeFilter
+                                .makeForTest("BI2", BigInteger.valueOf(100), true, false)),
+                        augmented.where(SingleSidedComparableRangeFilter
+                                .makeForTest("BI2", BigInteger.valueOf(100), true, false).copy())),
+
+                // Test the ComparableRangeFilter against copies
+                new TableComparator(
+                        augmented.where(ComparableRangeFilter
+                                .makeForTest("BI2", BigInteger.valueOf(95), BigInteger.valueOf(100), false, true)),
+                        augmented.where(ComparableRangeFilter
+                                .makeForTest("BI2", BigInteger.valueOf(95), BigInteger.valueOf(100), false, true)
+                                .copy())),
+                new TableComparator(
+                        augmented.where(ComparableRangeFilter
+                                .makeForTest("BI2", BigInteger.valueOf(95), BigInteger.valueOf(100), false, false)),
+                        augmented.where(ComparableRangeFilter
+                                .makeForTest("BI2", BigInteger.valueOf(95), BigInteger.valueOf(100), false, false)
+                                .copy())),
+                new TableComparator(
+                        augmented.where(ComparableRangeFilter
+                                .makeForTest("BI2", BigInteger.valueOf(95), BigInteger.valueOf(100), true, true)),
+                        augmented.where(ComparableRangeFilter
+                                .makeForTest("BI2", BigInteger.valueOf(95), BigInteger.valueOf(100), true, true)
+                                .copy())),
+                new TableComparator(
+                        augmented.where(ComparableRangeFilter
+                                .makeForTest("BI2", BigInteger.valueOf(95), BigInteger.valueOf(100), true, false)),
+                        augmented.where(ComparableRangeFilter
+                                .makeForTest("BI2", BigInteger.valueOf(95), BigInteger.valueOf(100), true, false)
+                                .copy())),
         };
 
         for (int i = 0; i < 500; i++) {
