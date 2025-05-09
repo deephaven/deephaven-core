@@ -235,7 +235,7 @@ public class PartitionedTableServiceGrpcImpl extends PartitionedTableServiceGrpc
             if (resultPartitionsSize != 1) {
                 throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
                         "Filtered PartitionedTable has more than one constituent, " + resultPartitionsSize
-                                + " constituents found.");
+                                + " constituents found");
             }
 
             return requestedRows.getColumnSource(partitionedTable.constituentColumnName(), Table.class)
