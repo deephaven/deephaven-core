@@ -188,6 +188,7 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
                         getTableRequest.setPartitionedTable(widget.getTicket());
                         getTableRequest.setKeyTableTicket(table.getHandle().makeTicket());
                         getTableRequest.setResultId(cts.getHandle().makeTicket());
+                        getTableRequest.setUniqueBehavior(GetTableRequest.UniqueBehavior.getPERMIT_MULTIPLE_KEYS());
                         connection.partitionedTableServiceClient().getTable(getTableRequest, connection.metadata(),
                                 (error, success) -> {
                                     table.close();
