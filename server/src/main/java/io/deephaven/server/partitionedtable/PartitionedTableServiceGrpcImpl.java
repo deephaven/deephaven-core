@@ -5,12 +5,14 @@ package io.deephaven.server.partitionedtable;
 
 import com.google.rpc.Code;
 import io.deephaven.auth.codegen.impl.PartitionedTableServiceContextualAuthWiring;
+import io.deephaven.engine.exceptions.UpdateGraphConflictException;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.PartitionedTableFactory;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.partitioned.PartitionedTableImpl;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
+import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
@@ -26,6 +28,7 @@ import io.deephaven.server.grpc.GrpcErrorHelper;
 import io.deephaven.server.session.*;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.TestUseOnly;
+import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 import org.jetbrains.annotations.NotNull;
 
@@ -61,9 +64,9 @@ public class PartitionedTableServiceGrpcImpl extends PartitionedTableServiceGrpc
     public void partitionBy(
             @NotNull final PartitionByRequest request,
             @NotNull final StreamObserver<PartitionByResponse> responseObserver) {
-        final SessionState session = sessionService.getCurrentSession();
-
         GrpcErrorHelper.checkHasNoUnknownFieldsRecursive(request);
+
+        final SessionState session = sessionService.getCurrentSession();
 
         final String description = "PartitionedTableService#partitionBy(table="
                 + ticketRouter.getLogNameFor(request.getTableId(), "tableId") + ")";
@@ -94,9 +97,9 @@ public class PartitionedTableServiceGrpcImpl extends PartitionedTableServiceGrpc
     public void merge(
             @NotNull final MergeRequest request,
             @NotNull final StreamObserver<ExportedTableCreationResponse> responseObserver) {
-        final SessionState session = sessionService.getCurrentSession();
-
         GrpcErrorHelper.checkHasNoUnknownFieldsRecursive(request);
+
+        final SessionState session = sessionService.getCurrentSession();
 
         final String description = "PartitionedTableService#merge(table="
                 + ticketRouter.getLogNameFor(request.getPartitionedTable(), "partitionedTable") + ")";
@@ -137,9 +140,9 @@ public class PartitionedTableServiceGrpcImpl extends PartitionedTableServiceGrpc
     public void getTable(
             @NotNull final GetTableRequest request,
             @NotNull final StreamObserver<ExportedTableCreationResponse> responseObserver) {
-        final SessionState session = sessionService.getCurrentSession();
-
         GrpcErrorHelper.checkHasNoUnknownFieldsRecursive(request);
+
+        final SessionState session = sessionService.getCurrentSession();
 
         final String description = "PartitionedTableService#getTable(table="
                 + ticketRouter.getLogNameFor(request.getPartitionedTable(), "partitionedTable") + ", keyTable="
@@ -183,19 +186,14 @@ public class PartitionedTableServiceGrpcImpl extends PartitionedTableServiceGrpc
         final boolean requiresLock = keyTable.isRefreshing() || partitionedTable.table().isRefreshing();
 
         if (requiresLock) {
-            // validate the update graphs are the same
-            final UpdateGraph keyUpdateGraph = keyTable.getUpdateGraph();
-            final UpdateGraph ptUpdateGraph = partitionedTable.table().getUpdateGraph();
-            if (keyUpdateGraph != null && ptUpdateGraph != null && ptUpdateGraph != keyUpdateGraph) {
-                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
+            try {
+                final UpdateGraph updateGraph = keyTable.getUpdateGraph(partitionedTable.table());
+                return updateGraph.sharedLock()
+                        .computeLocked(() -> getConstituents(request, keyTable, partitionedTable));
+            } catch (UpdateGraphConflictException ugce) {
+                throw Exceptions.statusRuntimeException(
+                        Code.INVALID_ARGUMENT,
                         "Provided key table UpdateGraph is inconsistent with PartitionedTable UpdateGraph");
-            }
-            if (keyUpdateGraph != null) {
-                return keyUpdateGraph.sharedLock()
-                        .computeLocked(() -> getConstituents(request, keyTable, partitionedTable));
-            } else {
-                return ptUpdateGraph.sharedLock()
-                        .computeLocked(() -> getConstituents(request, keyTable, partitionedTable));
             }
         } else {
             return getConstituents(request, keyTable, partitionedTable);
@@ -203,7 +201,8 @@ public class PartitionedTableServiceGrpcImpl extends PartitionedTableServiceGrpc
     }
 
     @TestUseOnly
-    Table getConstituents(@NotNull GetTableRequest request, Table keyTable, PartitionedTable partitionedTable) {
+    Table getConstituents(@NotNull GetTableRequest request, final Table keyTable,
+            final PartitionedTable partitionedTable) {
         final boolean uniqueStaticResult;
 
         switch (request.getUniqueBehavior()) {
@@ -221,7 +220,6 @@ public class PartitionedTableServiceGrpcImpl extends PartitionedTableServiceGrpc
         }
 
         if (uniqueStaticResult) {
-            keyTable = keyTable.snapshot();
             final long keyTableSize = keyTable.size();
             if (keyTableSize != 1) {
                 throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
