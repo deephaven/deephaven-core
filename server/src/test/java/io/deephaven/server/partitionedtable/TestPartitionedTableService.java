@@ -72,7 +72,7 @@ public class TestPartitionedTableService extends BaseCachedJMockTestCase {
             final StatusRuntimeException e2 = Assert.assertThrows(StatusRuntimeException.class,
                     () -> service.getConstituents(getTableRequestSingle, keyTable, duplicatedPartitionedTable));
             assertEquals(
-                    "INVALID_ARGUMENT: Filtered PartitionedTable has more than one constituent, 2 constituents found.",
+                    "INVALID_ARGUMENT: Filtered PartitionedTable has more than one constituent, 2 constituents found",
                     e2.getMessage());
 
             // with the merged option, it works
