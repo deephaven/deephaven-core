@@ -16,6 +16,7 @@ import io.deephaven.api.filter.FilterIsNull;
 import io.deephaven.api.filter.FilterNot;
 import io.deephaven.api.filter.FilterOr;
 import io.deephaven.api.filter.FilterPattern;
+import io.deephaven.api.filter.FilterSerial;
 import io.deephaven.api.literal.Literal;
 import org.apache.commons.text.StringEscapeUtils;
 
@@ -235,6 +236,15 @@ public class Strings {
                 + method.arguments().stream().map(Strings::of).collect(Collectors.joining(", ", "(", ")"));
     }
 
+    public static String of(FilterSerial serial) {
+        return of(serial, false);
+    }
+
+    public static String of(FilterSerial serial, boolean invert) {
+        // we don't have a way to represent serial in the query language; so this can't round trip
+        return "invokeSerially(" + of(serial.filter(), invert) + ")";
+    }
+
     public static String of(boolean literal) {
         return Boolean.toString(literal);
     }
@@ -371,6 +381,11 @@ public class Strings {
         @Override
         public String visit(FilterPattern pattern) {
             return of(pattern, invert);
+        }
+
+        @Override
+        public String visit(FilterSerial serial) {
+            return of(serial, invert);
         }
 
         @Override

@@ -124,6 +124,12 @@ public class FilterAdapter implements Filter.Visitor<Condition> {
     }
 
     @Override
+    public Condition visit(FilterSerial serial) {
+        // TODO(DH-19051): integrate serial/barrier filter/selectables w/gRPC
+        throw new UnsupportedOperationException("Can't build Condition with FilterSerial");
+    }
+
+    @Override
     public Condition visit(FilterPattern pattern) {
         // TODO(deephaven-core#3609): Update gRPC expression / filter / literal structures
         throw new UnsupportedOperationException("Can't build Condition with FilterPattern");

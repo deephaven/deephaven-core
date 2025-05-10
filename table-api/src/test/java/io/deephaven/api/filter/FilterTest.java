@@ -154,6 +154,11 @@ public class FilterTest {
     }
 
     @Test
+    void filterSerial() {
+        stringsOf(Function.of("MySerialFunction").withSerial(), "invokeSerially(MySerialFunction())");
+    }
+
+    @Test
     void filterIn() {
         stringsOf(FilterIn.of(FOO, Literal.of(40), Literal.of(42)),
                 "FilterIn{expression=ColumnName(Foo), values=[LiteralInt{value=40}, LiteralInt{value=42}]}");
@@ -206,6 +211,7 @@ public class FilterTest {
         visitor.visit((FilterOr) null);
         visitor.visit((FilterAnd) null);
         visitor.visit((FilterPattern) null);
+        visitor.visit((FilterSerial) null);
         visitor.visit((Function) null);
         visitor.visit((Method) null);
         visitor.visit(false);
@@ -252,6 +258,11 @@ public class FilterTest {
         }
 
         @Override
+        public String visit(FilterSerial serial) {
+            return of(serial);
+        }
+
+        @Override
         public String visit(Function function) {
             return of(function);
         }
@@ -285,6 +296,12 @@ public class FilterTest {
         public CountingVisitor visit(FilterComparison comparison) {
             ++count;
             return this;
+        }
+
+        @Override
+        public CountingVisitor visit(FilterSerial serial) {
+            ++count;
+            return null;
         }
 
         @Override
@@ -421,6 +438,12 @@ public class FilterTest {
         public Void visit(boolean literal) {
             out.add(Filter.ofFalse());
             out.add(Filter.ofTrue());
+            return null;
+        }
+
+        @Override
+        public Void visit(FilterSerial serial) {
+            out.add(Function.of("my_serial_function", FOO).withSerial());
             return null;
         }
 
