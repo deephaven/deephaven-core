@@ -219,6 +219,10 @@ public abstract class AbstractTableLocation
             return columns;
         }
 
+        private boolean cached() {
+            return indexReference != null && indexReference.get() != null;
+        }
+
         private BasicDataIndex getDataIndex() {
             SoftReference<BasicDataIndex> localReference = indexReference;
             BasicDataIndex localIndex;
@@ -241,6 +245,20 @@ public abstract class AbstractTableLocation
                 return localIndex;
             }
         }
+    }
+
+    @Override
+    public boolean hasCachedDataIndex(@NotNull final String... columns) {
+        final List<String> columnNames = new ArrayList<>(columns.length);
+        Collections.addAll(columnNames, columns);
+        columnNames.sort(String::compareTo);
+
+        final KeyedObjectHashMap<List<String>, CachedDataIndex> localCachedDataIndexes =
+                FieldUtils.ensureField(this, CACHED_DATA_INDEXES_UPDATER, null,
+                        () -> new KeyedObjectHashMap<>(CACHED_DATA_INDEX_KEY));
+        final CachedDataIndex cachedDataIndex = localCachedDataIndexes.get(columnNames);
+
+        return cachedDataIndex != null && cachedDataIndex.cached();
     }
 
     @Override

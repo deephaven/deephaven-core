@@ -27,9 +27,11 @@ abstract class RegionedColumnSourceByte<ATTR extends Values>
         extends RegionedColumnSourceArray<Byte, ATTR, ColumnRegionByte<ATTR>>
         implements ColumnSourceGetDefaults.ForByte /* MIXIN_INTERFACES */ {
 
-    RegionedColumnSourceByte(@NotNull final ColumnRegionByte<ATTR> nullRegion,
+    RegionedColumnSourceByte(
+            @NotNull final RegionedColumnSourceManager manager,
+            @NotNull final ColumnRegionByte<ATTR> nullRegion,
             @NotNull final MakeDeferred<ATTR, ColumnRegionByte<ATTR>> makeDeferred) {
-        super(nullRegion, byte.class, makeDeferred);
+        super(manager, nullRegion, byte.class, makeDeferred);
     }
 
     @Override
@@ -58,20 +60,20 @@ abstract class RegionedColumnSourceByte<ATTR extends Values>
     @Override
     protected <ALTERNATE_DATA_TYPE> ColumnSource<ALTERNATE_DATA_TYPE> doReinterpret(@NotNull Class<ALTERNATE_DATA_TYPE> alternateDataType) {
         //noinspection unchecked
-        return (ColumnSource<ALTERNATE_DATA_TYPE>) new RegionedColumnSourceBoolean((RegionedColumnSourceByte<Values>)this);
+        return (ColumnSource<ALTERNATE_DATA_TYPE>) new RegionedColumnSourceBoolean(manager, (RegionedColumnSourceByte<Values>)this);
     }
     // endregion reinterpretation
 
     static final class AsValues extends RegionedColumnSourceByte<Values> implements MakeRegionDefault {
-        AsValues() {
-            super(ColumnRegionByte.createNull(PARAMETERS.regionMask), DeferredColumnRegionByte::new);
+        AsValues(final RegionedColumnSourceManager manager) {
+            super(manager, ColumnRegionByte.createNull(PARAMETERS.regionMask), DeferredColumnRegionByte::new);
         }
     }
 
     static final class Partitioning extends RegionedColumnSourceByte<Values> {
-
-        Partitioning() {
-            super(ColumnRegionByte.createNull(PARAMETERS.regionMask),
+        Partitioning(final RegionedColumnSourceManager manager) {
+            super(manager,
+                    ColumnRegionByte.createNull(PARAMETERS.regionMask),
                     (pm, rs) -> rs.get() // No need to interpose a deferred region in this case
             );
         }

@@ -12,7 +12,13 @@ import io.deephaven.engine.table.impl.SourceTableComponentFactory;
  */
 public interface RegionedTableComponentFactory extends SourceTableComponentFactory {
 
+    @FunctionalInterface
+    interface RegionedColumnSourceFactory {
+        RegionedColumnSource<?> make(RegionedColumnSourceManager manager);
+    }
+
     <DATA_TYPE> RegionedColumnSource<DATA_TYPE> createRegionedColumnSource(
+            RegionedColumnSourceManager manager,
             ColumnDefinition<DATA_TYPE> columnDefinition,
             ColumnToCodecMappings codecMappings);
 }

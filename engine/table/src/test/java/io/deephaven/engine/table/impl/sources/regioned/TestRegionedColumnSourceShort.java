@@ -46,7 +46,7 @@ public class TestRegionedColumnSourceShort extends
     public void setUp() throws Exception {
         super.setUp();
 
-        SUT = new RegionedColumnSourceShort.AsValues();
+        SUT = new RegionedColumnSourceShort.AsValues(manager);
         assertEquals(short.class, SUT.getType());
     }
 
