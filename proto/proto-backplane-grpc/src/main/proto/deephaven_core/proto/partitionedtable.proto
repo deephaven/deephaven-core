@@ -61,6 +61,15 @@ message MergeRequest {
 }
 
 message GetTableRequest {
+  enum UniqueBehavior {
+    // The behavior is unset, in which case we default to requiring unique results.
+    NOT_SET_UNIQUE_BEHAVIOR = 0;
+    // Only one key is permitted, the key table is snapshot if not static, and the resulting partitioned table must have exactly one key.
+    REQUIRE_UNIQUE_RESULTS_STATIC_SINGLE_KEY = 1;
+    // Merge results from multiple (or zero keys).
+    PERMIT_MULTIPLE_KEYS = 2;
+  }
+
   // The ticket for the PartitionedTable object to query.
   Ticket partitioned_table = 1;
 
@@ -69,6 +78,9 @@ message GetTableRequest {
 
   // The ticket to use to hold the newly returned table.
   Ticket result_id = 4;
+
+  // The behavior for handling result Tables that do not have a unique result.
+  UniqueBehavior unique_behavior = 5;
 }
 
 /*

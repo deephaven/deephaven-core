@@ -600,7 +600,8 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
             final ColumnSource<Table> constituentColumnSource = parent.getColumnSource(constituentColumnName);
             try (final RowSequence prevRows = usePrev ? parent.getRowSet().copyPrev() : null) {
                 final RowSequence rowsToCheck = usePrev ? prevRows : parent.getRowSet();
-                validateConstituents(constituentDefinition, constituentColumnSource, rowsToCheck);
+                validateConstituents(constituentDefinition, constituentColumnSource, rowsToCheck,
+                        parent.isRefreshing());
             }
             final QueryTable child = parent.getSubTable(
                     parent.getRowSet(), parent.getModifiedColumnSetForUpdates(), parent.getAttributes());
@@ -608,8 +609,8 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
             return new Result<>(child, new BaseTable.ListenerImpl(getDescription(), parent, child) {
                 @Override
                 public void onUpdate(@NotNull final TableUpdate upstream) {
-                    validateConstituents(constituentDefinition, constituentColumnSource, upstream.modified());
-                    validateConstituents(constituentDefinition, constituentColumnSource, upstream.added());
+                    validateConstituents(constituentDefinition, constituentColumnSource, upstream.modified(), true);
+                    validateConstituents(constituentDefinition, constituentColumnSource, upstream.added(), true);
                     super.onUpdate(upstream);
                 }
             });
@@ -624,7 +625,8 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
     private static void validateConstituents(
             @NotNull final TableDefinition constituentDefinition,
             @NotNull final ColumnSource<Table> constituentSource,
-            @NotNull final RowSequence rowsToValidate) {
+            @NotNull final RowSequence rowsToValidate,
+            final boolean refreshingParent) {
         try (final ChunkSource.GetContext getContext = constituentSource.makeGetContext(DEFAULT_CHUNK_SIZE);
                 final RowSequence.Iterator rowsIterator = rowsToValidate.getRowSequenceIterator()) {
             final RowSequence sliceRows = rowsIterator.getNextRowSequenceWithLength(DEFAULT_CHUNK_SIZE);
@@ -635,6 +637,10 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
                 final Table constituent = sliceConstituents.get(sci);
                 if (constituent == null) {
                     throw new IllegalStateException("Encountered null constituent");
+                }
+                if (!refreshingParent && constituent.isRefreshing()) {
+                    throw new IllegalStateException(
+                            "Constituents may not be refreshing if the underlying table is static");
                 }
                 constituentDefinition.checkMutualCompatibility(constituent.getDefinition(), "expected", "constituent");
             }

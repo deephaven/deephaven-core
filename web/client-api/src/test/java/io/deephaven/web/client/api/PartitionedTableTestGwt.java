@@ -13,11 +13,19 @@ public class PartitionedTableTestGwt extends AbstractAsyncGwtTestCase {
     }
 
     private final TableSourceBuilder tables = new TableSourceBuilder()
-            .script("from deephaven import empty_table")
+            .script("from deephaven import empty_table, merge")
+            .script("from deephaven.table import PartitionedTable")
             .script("source = empty_table(100).update(['MyKey=``+i%5', 'x=i'])")
             .script("partitioned_source = source.partition_by(by=['MyKey'])")
             .script("partitioned_result = partitioned_source.transform(func=lambda t: t.drop_columns('MyKey'))")
-            .script("constituent_result = partitioned_result.get_constituent(['0'])");
+            .script("constituent_result = partitioned_result.get_constituent(['0'])")
+            .script("doubled_partitioned_result = (PartitionedTable.from_partitioned_table(merge([partitioned_result.table, partitioned_result.table]),"
+                    +
+                    "key_cols=partitioned_result.key_columns," +
+                    "unique_keys=False," +
+                    "constituent_column=partitioned_result.constituent_column," +
+                    "constituent_table_columns=partitioned_result.constituent_table_columns," +
+                    "constituent_changes_permitted=False))");
 
     private final TableSourceBuilder tickingTables = new TableSourceBuilder()
             .script("from deephaven import time_table")
@@ -46,6 +54,35 @@ public class PartitionedTableTestGwt extends AbstractAsyncGwtTestCase {
                         return partitionedTable.getTable("2");
                     }).then(constituentTable -> {
                         assertEquals(20d, constituentTable.getSize());
+                        partitionedTable.close();
+
+                        return null;
+                    });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    public void testGetNonUnique() {
+        connect(tables)
+                .then(partitionedTable("doubled_partitioned_result"))
+                .then(partitionedTable -> {
+                    delayTestFinish(1500);
+                    Column[] keyColumns = partitionedTable.getKeyColumns();
+                    assertEquals(1, keyColumns.length);
+                    assertEquals("MyKey", keyColumns[0].getName());
+
+                    Column[] columns = partitionedTable.getColumns();
+                    assertEquals(1, columns.length);
+                    assertEquals("x", columns[0].getName());
+
+                    return partitionedTable.getBaseTable().then(keyTable -> {
+                        // the keys are not uniqued
+                        assertEquals(10d, keyTable.getSize());
+
+                        return partitionedTable.getTable("2");
+                    }).then(constituentTable -> {
+                        // and we have both tables here
+                        assertEquals(40d, constituentTable.getSize());
                         partitionedTable.close();
 
                         return null;
