@@ -7,6 +7,8 @@ import io.deephaven.api.SortColumn;
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
+import io.deephaven.engine.liveness.LivenessScopeStack;
+import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.BasicDataIndex;
 import io.deephaven.engine.table.ColumnSource;
@@ -20,6 +22,7 @@ import io.deephaven.engine.table.impl.locations.impl.AbstractTableLocation;
 import io.deephaven.engine.table.impl.select.*;
 import io.deephaven.engine.table.impl.sources.regioned.RegionedColumnSource;
 import io.deephaven.engine.table.impl.sources.regioned.RegionedPageStore;
+import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.parquet.base.ParquetFileReader;
 import io.deephaven.parquet.base.RowGroupReader;
 import io.deephaven.parquet.impl.ParquetSchemaUtil;
@@ -31,6 +34,7 @@ import io.deephaven.parquet.table.metadata.DataIndexInfo;
 import io.deephaven.parquet.table.metadata.GroupingColumnInfo;
 import io.deephaven.parquet.table.metadata.SortColumnInfo;
 import io.deephaven.parquet.table.metadata.TableInfo;
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.type.NumericTypeUtils;
 import org.apache.parquet.column.statistics.Statistics;
 import org.apache.parquet.format.RowGroup;
@@ -414,47 +418,6 @@ public class ParquetTableLocation extends AbstractTableLocation {
         }
     }
 
-    /**
-     * Get the min and max values from the statistics. Currently can convert basic numerics, string and BigDecimal /
-     * BigInteger values.
-     *
-     * @param statistics The statistics to analyze
-     * @return The min and max values from the statistics or null if cannot be converted.
-     */
-    private Pair<Object, Object> getMinMax(final Statistics<?> statistics) {
-        if (statistics == null) {
-            return null;
-        }
-        final Object min = statistics.genericGetMin();
-        // Min/Max are guaranteed to be the same type, only testing min.
-        final Class<?> clazz = min.getClass();
-
-        // Numeric values need no conversion
-        if (NumericTypeUtils.isIntegralOrChar(clazz) || NumericTypeUtils.isFloat(clazz)) {
-            return new Pair<>(min, statistics.genericGetMax());
-        }
-
-        if (statistics.type().getLogicalTypeAnnotation() == stringType()) {
-            return new Pair<>(statistics.minAsString(), statistics.maxAsString());
-        }
-
-        if (statistics.type()
-                .getLogicalTypeAnnotation() instanceof LogicalTypeAnnotation.DecimalLogicalTypeAnnotation) {
-            final int scale = ((LogicalTypeAnnotation.DecimalLogicalTypeAnnotation) statistics.type()
-                    .getLogicalTypeAnnotation()).getScale();
-
-            if (scale == 0) {
-                // Return the min and max values as BigInteger
-                return new Pair<>(new BigInteger(statistics.getMinBytes()), new BigInteger(statistics.getMaxBytes()));
-            } else {
-                // We need to convert the min and max values to BigDecimal
-                return new Pair<>(new BigDecimal(new BigInteger(statistics.getMinBytes()), scale),
-                        new BigDecimal(new BigInteger(statistics.getMaxBytes()), scale));
-            }
-        }
-        return null;
-    }
-
     @Override
     public long estimatePushdownFilterCost(
             final WhereFilter filter,
@@ -470,51 +433,30 @@ public class ParquetTableLocation extends AbstractTableLocation {
                 filter instanceof RangeFilter && ((RangeFilter) filter).getRealFilter() instanceof AbstractRangeFilter;
         final boolean isMatchFilter = filter instanceof MatchFilter;
 
-        if (!QueryTable.DISABLE_WHERE_PUSHDOWN_METADATA
-                && executedFilterCost < PushdownResult.METADATA_STATS_COST
+        if (shouldExecute(QueryTable.DISABLE_WHERE_PUSHDOWN_PARQUET_ROW_GROUP_METADATA,
+                PushdownResult.METADATA_STATS_COST, executedFilterCost)
                 && (isRangeFilter || isMatchFilter)) {
             return PushdownResult.METADATA_STATS_COST;
         }
 
-        // Do we have a data indexes for the column(s)?
         final String[] parquetColumnNames = filter.getColumns().stream().map(
                 readInstructions::getParquetColumnNameFromColumnNameOrDefault)
                 .toArray(String[]::new);
 
-        if (executedFilterCost < PushdownResult.IN_MEMORY_DATA_INDEX_COST
+        // Do we have a data indexes for the column(s)?
+        if (shouldExecute(QueryTable.DISABLE_WHERE_PUSHDOWN_DATA_INDEX,
+                PushdownResult.IN_MEMORY_DATA_INDEX_COST, executedFilterCost)
                 && hasCachedDataIndex(parquetColumnNames)) {
             return PushdownResult.IN_MEMORY_DATA_INDEX_COST;
         }
-
-        if (executedFilterCost < PushdownResult.DEFERRED_DATA_INDEX_COST
+        if (shouldExecute(QueryTable.DISABLE_WHERE_PUSHDOWN_DATA_INDEX,
+                PushdownResult.DEFERRED_DATA_INDEX_COST, executedFilterCost)
                 && hasDataIndex(parquetColumnNames)) {
             return PushdownResult.DEFERRED_DATA_INDEX_COST;
         }
 
         // TODO: add support for bloom filters, sortedness
         return Long.MAX_VALUE; // No benefit to pushing down.
-    }
-
-    private interface RowGroupAndRowSetConsumer {
-        void accept(int readerIndex, RowSequence rs);
-    }
-
-    private void iterateRowGroupsAndRowSet(final RowSet input, final RowGroupAndRowSetConsumer consumer) {
-        try (final RowSequence.Iterator rsIt = input.getRowSequenceIterator()) {
-            final RowGroupReader[] rgReaders = getRowGroupReaders();
-            for (int rgIdx = 0; rgIdx < rgReaders.length; rgIdx++) {
-                final long subRegionSize = rgReaders[rgIdx].getRowGroup().getNum_rows();
-                final long subRegionFirstKey = (long) rgIdx << regionParameters.regionMaskNumBits;
-                final long subRegionLastKey = subRegionFirstKey + subRegionSize - 1;
-
-                final RowSequence rs = rsIt.getNextRowSequenceThrough(subRegionLastKey);
-                if (rs.isEmpty()) {
-                    continue;
-                }
-
-                consumer.accept(rgIdx, rs);
-            }
-        }
     }
 
     @Override
@@ -533,59 +475,215 @@ public class ParquetTableLocation extends AbstractTableLocation {
         final List<Integer> parquetIndices = parquetNames.stream().map(
                 name -> parquetMetadata.getFileMetaData().getSchema().getFieldIndex(name)).collect(Collectors.toList());
 
-        final RowSetBuilderSequential matchBuilder = RowSetFactory.builderSequential();
-        final RowSetBuilderSequential maybeBuilder = RowSetFactory.builderSequential();
+        PushdownResult result = PushdownResult.of(RowSetFactory.empty(), input.copy());
 
         // Should we look at the metadata?
-        if (!QueryTable.DISABLE_WHERE_PUSHDOWN_METADATA && executedFilterCost < PushdownResult.METADATA_STATS_COST) {
+        if (shouldExecute(QueryTable.DISABLE_WHERE_PUSHDOWN_PARQUET_ROW_GROUP_METADATA,
+                PushdownResult.METADATA_STATS_COST, executedFilterCost, costCeiling)) {
             // Some range filter host a condition filter as the internal filter and we can't push that down.
             if (filter instanceof RangeFilter
                     && ((RangeFilter) filter).getRealFilter() instanceof AbstractRangeFilter) {
-                final AbstractRangeFilter rf = (AbstractRangeFilter) ((RangeFilter) filter).getRealFilter();
-                // Only one column in a RangeFilter
-                final Integer parquetIndex = parquetIndices.get(0);
-
-                iterateRowGroupsAndRowSet(input, (rgIdx, rs) -> {
-                    final Pair<Object, Object> p = getMinMax(
-                            parquetMetadata.getBlocks().get(rgIdx).getColumns().get(parquetIndex).getStatistics());
-
-                    if (p == null || rf.overlaps(p.first, p.second)) {
-                        maybeBuilder.appendRowSequence(rs);
-                    }
-                });
-                return PushdownResult.of(matchBuilder.build(), maybeBuilder.build());
+                try (final PushdownResult ignored = result) {
+                    result = pushdownRangeFilter(parquetIndices, result,
+                            (AbstractRangeFilter) ((RangeFilter) filter).getRealFilter());
+                }
+            } else if (filter instanceof MatchFilter) {
+                try (final PushdownResult ignored = result) {
+                    result = pushdownMatchFilter(parquetIndices, result, (MatchFilter) filter);
+                }
             }
-            if (filter instanceof MatchFilter) {
-                final MatchFilter mf = (MatchFilter) filter;
+        }
+        if (result.maybeMatch().isEmpty()) {
+            // No maybe rows remaining, so no reason to continue filtering.
+            return result;
+        }
 
-                // Only one column in a MatchFilter
-                final Integer parquetIndex = parquetIndices.get(0);
+        if (shouldExecute(QueryTable.DISABLE_WHERE_PUSHDOWN_DATA_INDEX,
+                PushdownResult.IN_MEMORY_DATA_INDEX_COST, executedFilterCost, costCeiling)) {
+            final String[] parquetNameArr = parquetNames.toArray(String[]::new);
 
-                iterateRowGroupsAndRowSet(input, (rgIdx, rs) -> {
-                    final Pair<Object, Object> p = getMinMax(
-                            parquetMetadata.getBlocks().get(rgIdx).getColumns().get(parquetIndex).getStatistics());
-
-                    if (p == null) {
-                        maybeBuilder.appendRowSequence(rs);
-                        return;
-                    }
-
-                    // Test every value in the filter against the min/max values
-                    for (final Object value : mf.getValues()) {
-                        if (AbstractRangeFilter.compare(value, p.first) < 0) {
-                            continue;
-                        }
-                        if (AbstractRangeFilter.compare(value, p.second) > 0) {
-                            continue;
-                        }
-                        maybeBuilder.appendRowSequence(rs);
-                        break;
-                    }
-                });
-                return PushdownResult.of(matchBuilder.build(), maybeBuilder.build());
+            final BasicDataIndex dataIndex = hasCachedDataIndex(parquetNameArr) ? getDataIndex(parquetNameArr) : null;
+            if (dataIndex != null) {
+                // No maybe rows remaining, so no reason to continue filtering.
+                try (final PushdownResult ignored = result) {
+                    return pushdownDataIndex(filter, dataIndex, result);
+                }
             }
         }
 
-        return PushdownResult.of(matchBuilder.build(), input.copy());
+        if (shouldExecute(QueryTable.DISABLE_WHERE_PUSHDOWN_DATA_INDEX,
+                PushdownResult.DEFERRED_DATA_INDEX_COST, executedFilterCost, costCeiling)) {
+            // If we have a data index, apply the filter to the data index table and retain the incoming maybe rows.
+            final String[] parquetNameArr = parquetNames.toArray(String[]::new);
+
+            final BasicDataIndex dataIndex = hasDataIndex(parquetNameArr) ? getDataIndex(parquetNameArr) : null;
+            if (dataIndex != null) {
+                // No maybe rows remaining, so no reason to continue filtering.
+                try (final PushdownResult ignored = result) {
+                    return pushdownDataIndex(filter, dataIndex, result);
+                }
+            }
+        }
+
+        return result;
+    }
+
+    /**
+     * Helper methods to determine if we should execute this push-down technique.
+     */
+    private boolean shouldExecute(final boolean disable, final long filterCost, final long executedFilterCost) {
+        return !disable && executedFilterCost < filterCost;
+    }
+
+    private boolean shouldExecute(final boolean disable, final long filterCost, final long executedFilterCost,
+            final long costCeiling) {
+        return shouldExecute(disable, filterCost, executedFilterCost) && filterCost <= costCeiling;
+    }
+
+    /**
+     * Consumer for row groups and row sets.
+     */
+    private interface RowGroupAndRowSetConsumer {
+        void accept(int rowGroupIndex, RowSequence rs);
+    }
+
+    /**
+     * Iterate over the row groups and the matching row sets, calling the consumer for each row group and row set.
+     */
+    private void iterateRowGroupsAndRowSet(final RowSet input, final RowGroupAndRowSetConsumer consumer) {
+        try (final RowSequence.Iterator rsIt = input.getRowSequenceIterator()) {
+            final RowGroupReader[] rgReaders = getRowGroupReaders();
+            for (int rgIdx = 0; rgIdx < rgReaders.length; rgIdx++) {
+                final long subRegionSize = rgReaders[rgIdx].getRowGroup().getNum_rows();
+                final long subRegionFirstKey = (long) rgIdx << regionParameters.regionMaskNumBits;
+                final long subRegionLastKey = subRegionFirstKey + subRegionSize - 1;
+
+                final RowSequence rs = rsIt.getNextRowSequenceThrough(subRegionLastKey);
+                if (rs.isEmpty()) {
+                    continue;
+                }
+
+                consumer.accept(rgIdx, rs);
+            }
+        }
+    }
+
+    /**
+     * Get the min and max values from the statistics. Currently can convert basic numerics, string and BigDecimal /
+     * BigInteger values.
+     *
+     * @param statistics The statistics to analyze
+     * @return The min and max values from the statistics or null if cannot be converted.
+     */
+    private Pair<Object, Object> getMinMax(final Statistics<?> statistics) {
+        if (statistics == null) {
+            return null;
+        }
+        // Min/Max are guaranteed to be the same type, only testing min.
+        final Class<?> clazz = statistics.genericGetMin().getClass();
+
+        // Numeric values need no conversion
+        if (NumericTypeUtils.isIntegralOrChar(clazz) || NumericTypeUtils.isFloat(clazz)) {
+            return new Pair<>(statistics.genericGetMin(), statistics.genericGetMax());
+        }
+
+        if (statistics.type().getLogicalTypeAnnotation() == stringType()) {
+            return new Pair<>(statistics.minAsString(), statistics.maxAsString());
+        }
+
+        if (statistics.type()
+                .getLogicalTypeAnnotation() instanceof LogicalTypeAnnotation.DecimalLogicalTypeAnnotation) {
+            final int scale = ((LogicalTypeAnnotation.DecimalLogicalTypeAnnotation) statistics.type()
+                    .getLogicalTypeAnnotation()).getScale();
+            if (scale == 0) {
+                // Return the min and max values as BigInteger
+                return new Pair<>(new BigInteger(statistics.getMinBytes()), new BigInteger(statistics.getMaxBytes()));
+            } else {
+                // We need to convert the min and max values to BigDecimal
+                return new Pair<>(new BigDecimal(new BigInteger(statistics.getMinBytes()), scale),
+                        new BigDecimal(new BigInteger(statistics.getMaxBytes()), scale));
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Apply the range filter to the row groups and return the result.
+     */
+    @NotNull
+    private PushdownResult pushdownRangeFilter(List<Integer> parquetIndices, PushdownResult result,
+            AbstractRangeFilter rf) {
+        RowSetBuilderSequential maybeBuilder = RowSetFactory.builderSequential();
+
+        // Only one column in a RangeFilter
+        final Integer parquetIndex = parquetIndices.get(0);
+
+        iterateRowGroupsAndRowSet(result.maybeMatch(), (rgIdx, rs) -> {
+            final Pair<Object, Object> p = getMinMax(
+                    parquetMetadata.getBlocks().get(rgIdx).getColumns().get(parquetIndex).getStatistics());
+
+            if (p == null || rf.overlaps(p.first, p.second)) {
+                maybeBuilder.appendRowSequence(rs);
+            }
+        });
+        return PushdownResult.of(result.match().copy(), maybeBuilder.build());
+    }
+
+    /**
+     * Apply the match filter to the row groups and return the result.
+     */
+    @NotNull
+    private PushdownResult pushdownMatchFilter(List<Integer> parquetIndices, PushdownResult result, MatchFilter mf) {
+        RowSetBuilderSequential maybeBuilder = RowSetFactory.builderSequential();
+
+        // Only one column in a RangeFilter
+        final Integer parquetIndex = parquetIndices.get(0);
+
+        iterateRowGroupsAndRowSet(result.maybeMatch(), (rgIdx, rs) -> {
+            final Pair<Object, Object> p = getMinMax(
+                    parquetMetadata.getBlocks().get(rgIdx).getColumns().get(parquetIndex).getStatistics());
+
+            if (p == null) {
+                maybeBuilder.appendRowSequence(rs);
+                return;
+            }
+
+            // Test every value in the filter against the min/max values
+            for (final Object value : mf.getValues()) {
+                if (AbstractRangeFilter.compare(value, p.first) < 0
+                        || AbstractRangeFilter.compare(value, p.second) > 0) {
+                    continue; // can skip this group.
+                }
+                maybeBuilder.appendRowSequence(rs);
+                break;
+            }
+        });
+        return PushdownResult.of(result.match().copy(), maybeBuilder.build());
+    }
+
+    /**
+     * Apply the filter to the data index table and return the result.
+     */
+    @NotNull
+    private PushdownResult pushdownDataIndex(WhereFilter filter, BasicDataIndex dataIndex, PushdownResult result) {
+        final RowSetBuilderRandom matchingBuilder = RowSetFactory.builderRandom();
+        try (final SafeCloseable scope = LivenessScopeStack.open()) {
+            // Data type changes handled by the filter copy/init
+            final WhereFilter copiedFilter = filter.copy();
+            copiedFilter.init(dataIndex.table().getDefinition());
+
+            // TODO: handle renames
+            final Table filteredTable = dataIndex.table().where(copiedFilter);
+
+            try (final CloseableIterator<RowSet> it =
+                    ColumnVectors.ofObject(filteredTable, dataIndex.rowSetColumnName(), RowSet.class).iterator()) {
+                it.forEachRemaining(matchingBuilder::addRowSet);
+            }
+        }
+        // Retain only the maybe rows and add the previously found matches.
+        final WritableRowSet matching = matchingBuilder.build();
+        matching.retain(result.maybeMatch());
+        matching.insert(result.match());
+        return PushdownResult.of(matching, RowSetFactory.empty());
     }
 }

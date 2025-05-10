@@ -228,10 +228,24 @@ abstract class AbstractFilterExecution {
     }
 
     /**
-     * Execute the stateless filter at the provided index.
-     * <p>
-     *
-     *
+     * Execute the filter and pass the result to the consumer.
+     */
+    private void executeFilter(
+            final WhereFilter filter,
+            final RowSet input,
+            final Consumer<WritableRowSet> resultConsumer,
+            final Consumer<Exception> exceptionConsumer) {
+        // Run serially or parallelized?
+        final long inputSize = input.size();
+        if (!shouldParallelizeFilter(filter, inputSize)) {
+            doFilter(filter, input, 0, inputSize, resultConsumer, exceptionConsumer);
+        } else {
+            doFilterParallel(filter, input, resultConsumer, exceptionConsumer);
+        }
+    }
+
+    /**
+     * Execute the stateless filter at the provided index and pass the result to the consumer.
      */
     private void executeStatelessFilter(
             final FilterContext[] filterContexts,
@@ -312,12 +326,7 @@ abstract class AbstractFilterExecution {
                 };
 
                 // Do the final filtering at this position.
-                final long inputSize = pushdownResult.maybeMatch().size();
-                if (!shouldParallelizeFilter(filter, inputSize)) {
-                    doFilter(filter, pushdownResult.maybeMatch(), 0, inputSize, localConsumer, filterNec);
-                } else {
-                    doFilterParallel(filter, pushdownResult.maybeMatch(), localConsumer, filterNec);
-                }
+                executeFilter(filter, pushdownResult.maybeMatch(), localConsumer, filterNec);
             }
         };
 
@@ -350,23 +359,10 @@ abstract class AbstractFilterExecution {
             localPushdownResult.match().retain(input);
             localPushdownResult.maybeMatch().retain(input);
 
-            final long inputSize = localPushdownResult.maybeMatch().size();
-
-            if (!shouldParallelizeFilter(filter, inputSize)) {
-                doFilter(filter, localPushdownResult.maybeMatch(), 0, inputSize, localConsumer, filterNec);
-            } else {
-                doFilterParallel(filter, localPushdownResult.maybeMatch(), localConsumer, filterNec);
-            }
+            executeFilter(filter, localPushdownResult.maybeMatch(), localConsumer, filterNec);
             return;
         }
-        final long inputSize = input.size();
-
-        // Run serially or parallelized?
-        if (!shouldParallelizeFilter(filter, inputSize)) {
-            doFilter(filter, input, 0, inputSize, onFilterComplete, filterNec);
-        } else {
-            doFilterParallel(filter, input, onFilterComplete, filterNec);
-        }
+        executeFilter(filter, input, onFilterComplete, filterNec);
     }
 
     /**
@@ -465,12 +461,8 @@ abstract class AbstractFilterExecution {
                         filterResume.run();
                     };
 
-                    // Run serially or parallelized?
-                    if (!shouldParallelizeFilter(filter, inputSize)) {
-                        doFilter(filter, input, 0, inputSize, onFilterComplete, filterNec);
-                    } else {
-                        doFilterParallel(filter, input, onFilterComplete, filterNec);
-                    }
+                    // Stateful filters require serial execution.
+                    doFilter(filter, input, 0, inputSize, onFilterComplete, filterNec);
                 }, collectionResume, collectionNec);
     }
 

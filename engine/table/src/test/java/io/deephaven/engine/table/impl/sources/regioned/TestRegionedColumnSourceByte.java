@@ -46,7 +46,7 @@ public class TestRegionedColumnSourceByte extends
     public void setUp() throws Exception {
         super.setUp();
 
-        SUT = new RegionedColumnSourceByte.AsValues();
+        SUT = new RegionedColumnSourceByte.AsValues(manager);
         assertEquals(byte.class, SUT.getType());
     }
 

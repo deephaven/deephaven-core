@@ -60,7 +60,7 @@ public class TestRegionedColumnSourceInstant
     public void setUp() throws Exception {
         super.setUp();
 
-        SUT = new RegionedColumnSourceInstant();
+        SUT = new RegionedColumnSourceInstant(manager);
         assertEquals(Instant.class, SUT.getType());
         SUT_AS_LONG = SUT.reinterpret(long.class);
         assertEquals(long.class, SUT_AS_LONG.getType());
