@@ -22,6 +22,10 @@ public interface ConcurrencyControl<T> {
     /**
      * Applies serial concurrency control to the expression.
      * <p>
+     * The serial filter is guaranteed to filter exactly the set of rows that passed any prior filters, without
+     * evaluating additional rows or skipping rows that future filters may eliminate. Take care when selecting a serial
+     * filter, as subsequent filters cannot apply optimizations like predicate push down.</li>
+     * <p>
      * <ul>
      * <li>Concurrency impact: The expression will never be invoked concurrently with itself.</li>
      * <li>Intra-expression ordering impact: Rows are evaluated sequentially in row set order.</li>

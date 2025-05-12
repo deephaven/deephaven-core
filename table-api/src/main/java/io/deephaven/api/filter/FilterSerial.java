@@ -34,7 +34,10 @@ public abstract class FilterSerial extends FilterBase implements Filter {
      * @return a new instance of FilterSerial
      */
     public static FilterSerial of(Filter filter) {
-        // Optionally, if the filter is already a FilterSerial, it could be returned directly.
+        if (filter instanceof FilterSerial) {
+            return (FilterSerial) filter;
+        }
+
         return ImmutableFilterSerial.of(filter);
     }
 
