@@ -15,6 +15,7 @@ import io.deephaven.api.filter.FilterIsNull;
 import io.deephaven.api.filter.FilterNot;
 import io.deephaven.api.filter.FilterOr;
 import io.deephaven.api.filter.FilterPattern;
+import io.deephaven.api.filter.FilterSerial;
 import io.deephaven.api.filter.FilterTest;
 import io.deephaven.api.literal.Literal;
 import io.deephaven.api.literal.LiteralTest;
@@ -103,6 +104,12 @@ public class StringsTest {
         @Override
         public Void visit(FilterPattern pattern) {
             ensureExplicitStringOf(FilterPattern.class);
+            return null;
+        }
+
+        @Override
+        public Void visit(FilterSerial serial) {
+            ensureExplicitStringOf(FilterSerial.class);
             return null;
         }
 

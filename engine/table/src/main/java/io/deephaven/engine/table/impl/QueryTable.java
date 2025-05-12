@@ -286,6 +286,14 @@ public class QueryTable extends BaseTable<QueryTable> {
     public static long MINIMUM_PARALLEL_SNAPSHOT_ROWS =
             Configuration.getInstance().getLongWithDefault("QueryTable.minimumParallelSnapshotRows", 1L << 20);
 
+    /**
+     * If set to true, then the default behavior of condition filters is to be stateless. Stateless filters are allowed
+     * to be processed in parallel by the engine.
+     */
+    public static boolean STATELESS_FILTERS_BY_DEFAULT =
+            Configuration.getInstance().getBooleanWithDefault("QueryTable.statelessFiltersByDefault", false);
+
+
     @VisibleForTesting
     public static boolean USE_CHUNKED_CROSS_JOIN =
             Configuration.getInstance().getBooleanWithDefault("QueryTable.chunkedJoin", true);
