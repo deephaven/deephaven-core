@@ -712,7 +712,7 @@ public abstract class SqliteCatalogBase {
     void readWriteStringTest() throws URISyntaxException {
         final TableIdentifier id = TableIdentifier.of(Namespace.of("MyNamespace"), "Tbl_string");
         final Table source = TableTools.newTable(
-                TableDefinition.of(ColumnDefinition.of("strCol", Type.find(String.class))),
+                TableDefinition.of(ColumnDefinition.of("strCol", Type.stringType())),
                 stringCol("strCol", "foo", null, "bar"));
         final Schema expectedIcebergSchema = new Schema(
                 Types.NestedField.optional(1, "strCol", Types.StringType.get()));
@@ -728,7 +728,7 @@ public abstract class SqliteCatalogBase {
     void readWriteInstantTest() throws URISyntaxException {
         final TableIdentifier id = TableIdentifier.of(Namespace.of("MyNamespace"), "Tbl_instant");
         final Table source = TableTools.newTable(
-                TableDefinition.of(ColumnDefinition.of("instCol", Type.find(Instant.class))),
+                TableDefinition.of(ColumnDefinition.of("instCol", Type.instantType())),
                 instantCol("instCol", Instant.parse("2025-01-01T12:00:03Z"), null, Instant.EPOCH));
         final Schema expectedIcebergSchema = new Schema(
                 Types.NestedField.optional(1, "instCol", Types.TimestampType.withZone()));
@@ -1348,7 +1348,7 @@ public abstract class SqliteCatalogBase {
         // Write a table with String[]
         final TableIdentifier identifier = TableIdentifier.of(Namespace.of("MyNamespace"), "Tbl_stringList");
         final Table source = TableTools.newTable(
-                TableDefinition.of(ColumnDefinition.of("stringList", Type.find(String.class).arrayType())),
+                TableDefinition.of(ColumnDefinition.of("stringList", Type.stringType().arrayType())),
                 new ColumnHolder<>("stringList", String[].class, String.class, false,
                         new String[] {"foo", null, "bar"},
                         null,
@@ -1382,7 +1382,7 @@ public abstract class SqliteCatalogBase {
         // Write a table with Instant[]
         final TableIdentifier identifier = TableIdentifier.of(Namespace.of("MyNamespace"), "Tbl_timestampTzList");
         final Table source = TableTools.newTable(
-                TableDefinition.of(ColumnDefinition.of("timestampTzList", Type.find(Instant.class).arrayType())),
+                TableDefinition.of(ColumnDefinition.of("timestampTzList", Type.instantType().arrayType())),
                 new ColumnHolder<>("timestampTzList", Instant[].class, Instant.class, false,
                         new Instant[] {Instant.parse("2025-01-01T12:00:03Z"), null, Instant.EPOCH},
                         null,
@@ -1409,7 +1409,7 @@ public abstract class SqliteCatalogBase {
 
         // Instant list -> ObjectVector<Instant> (explicit)
         final TableDefinition readDefinition = TableDefinition.of(
-                ColumnDefinition.of("timestampTzList", ObjectVector.type((GenericType<?>) Type.find(Instant.class))));
+                ColumnDefinition.of("timestampTzList", ObjectVector.type((GenericType<?>) Type.instantType())));
         readWithDefinitionTestHelper(identifier, readDefinition, expectedInferred);
     }
 
@@ -2038,7 +2038,7 @@ public abstract class SqliteCatalogBase {
     @Test
     void testPartitionedAppendWithUnsupportedPartitioningTypes() {
         final TableDefinition definition = TableDefinition.of(
-                ColumnDefinition.of("InstantPC", Type.find(Instant.class)).withPartitioning(), // Unsupported
+                ColumnDefinition.of("InstantPC", Type.instantType()).withPartitioning(), // Unsupported
                 ColumnDefinition.ofInt("data"));
         final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
 

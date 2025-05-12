@@ -5,13 +5,7 @@ package io.deephaven.iceberg.util;
 
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.qst.type.GenericType;
 import io.deephaven.qst.type.Type;
-import io.deephaven.vector.DoubleVector;
-import io.deephaven.vector.FloatVector;
-import io.deephaven.vector.IntVector;
-import io.deephaven.vector.LongVector;
-import io.deephaven.vector.ObjectVector;
 import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.Schema;
 import org.apache.iceberg.types.Types.BinaryType;
@@ -216,7 +210,7 @@ class ResolverInferTest {
     @Test
     void BooleanListType() throws TypeInference.Exception {
         final Schema schema = simpleListSchema(BooleanType.get());
-        final Resolver expected = simpleMapping(schema, ObjectVector.type(Type.booleanType().boxedType()));
+        final Resolver expected = simpleMapping(schema, Type.booleanType().boxedType().arrayType());
         assertThat(Resolver.infer(schema)).isEqualTo(expected);
         assertThat(Resolver.infer(ia(schema))).isEqualTo(expected);
     }
@@ -224,7 +218,7 @@ class ResolverInferTest {
     @Test
     void IntegerListType() throws TypeInference.Exception {
         final Schema schema = simpleListSchema(IT);
-        final Resolver expected = simpleMapping(schema, IntVector.type());
+        final Resolver expected = simpleMapping(schema, Type.intType().arrayType());
         assertThat(Resolver.infer(schema)).isEqualTo(expected);
         assertThat(Resolver.infer(ia(schema))).isEqualTo(expected);
     }
@@ -232,7 +226,7 @@ class ResolverInferTest {
     @Test
     void LongListType() throws TypeInference.Exception {
         final Schema schema = simpleListSchema(LongType.get());
-        final Resolver expected = simpleMapping(schema, LongVector.type());
+        final Resolver expected = simpleMapping(schema, Type.longType().arrayType());
         assertThat(Resolver.infer(schema)).isEqualTo(expected);
         assertThat(Resolver.infer(ia(schema))).isEqualTo(expected);
     }
@@ -240,7 +234,7 @@ class ResolverInferTest {
     @Test
     void FloatListType() throws TypeInference.Exception {
         final Schema schema = simpleListSchema(FloatType.get());
-        final Resolver expected = simpleMapping(schema, FloatVector.type());
+        final Resolver expected = simpleMapping(schema, Type.floatType().arrayType());
         assertThat(Resolver.infer(schema)).isEqualTo(expected);
         assertThat(Resolver.infer(ia(schema))).isEqualTo(expected);
     }
@@ -248,7 +242,7 @@ class ResolverInferTest {
     @Test
     void DoubleListType() throws TypeInference.Exception {
         final Schema schema = simpleListSchema(DoubleType.get());
-        final Resolver expected = simpleMapping(schema, DoubleVector.type());
+        final Resolver expected = simpleMapping(schema, Type.doubleType().arrayType());
         assertThat(Resolver.infer(schema)).isEqualTo(expected);
         assertThat(Resolver.infer(ia(schema))).isEqualTo(expected);
     }
@@ -256,7 +250,7 @@ class ResolverInferTest {
     @Test
     void DateListType() throws TypeInference.Exception {
         final Schema schema = simpleListSchema(DateType.get());
-        final Resolver expected = simpleMapping(schema, ObjectVector.type((GenericType<?>) Type.find(LocalDate.class)));
+        final Resolver expected = simpleMapping(schema, Type.find(LocalDate.class).arrayType());
         assertThat(Resolver.infer(schema)).isEqualTo(expected);
         assertThat(Resolver.infer(ia(schema))).isEqualTo(expected);
     }
@@ -264,7 +258,7 @@ class ResolverInferTest {
     @Test
     void TimeListType() throws TypeInference.Exception {
         final Schema schema = simpleListSchema(TimeType.get());
-        final Resolver expected = simpleMapping(schema, ObjectVector.type((GenericType<?>) Type.find(LocalTime.class)));
+        final Resolver expected = simpleMapping(schema, Type.find(LocalTime.class).arrayType());
         assertThat(Resolver.infer(schema)).isEqualTo(expected);
         assertThat(Resolver.infer(ia(schema))).isEqualTo(expected);
     }
@@ -272,7 +266,7 @@ class ResolverInferTest {
     @Test
     void TimestampTypeWithZoneList() throws TypeInference.Exception {
         final Schema schema = simpleListSchema(TimestampType.withZone());
-        final Resolver expected = simpleMapping(schema, ObjectVector.type((GenericType<?>) Type.find(Instant.class)));
+        final Resolver expected = simpleMapping(schema, Type.instantType().arrayType());
         assertThat(Resolver.infer(schema)).isEqualTo(expected);
         assertThat(Resolver.infer(ia(schema))).isEqualTo(expected);
     }
@@ -281,7 +275,7 @@ class ResolverInferTest {
     void TimestampTypeWithoutZoneList() throws TypeInference.Exception {
         final Schema schema = simpleListSchema(TimestampType.withoutZone());
         final Resolver expected =
-                simpleMapping(schema, ObjectVector.type((GenericType<?>) Type.find(LocalDateTime.class)));
+                simpleMapping(schema, Type.find(LocalDateTime.class).arrayType());
         assertThat(Resolver.infer(schema)).isEqualTo(expected);
         assertThat(Resolver.infer(ia(schema))).isEqualTo(expected);
     }
@@ -313,7 +307,7 @@ class ResolverInferTest {
     @Test
     void StringListType() throws TypeInference.Exception {
         final Schema schema = simpleListSchema(StringType.get());
-        final Resolver expected = simpleMapping(schema, ObjectVector.type((GenericType<?>) Type.find(String.class)));
+        final Resolver expected = simpleMapping(schema, Type.stringType().arrayType());
         assertThat(Resolver.infer(schema)).isEqualTo(expected);
         assertThat(Resolver.infer(ia(schema))).isEqualTo(expected);
     }
@@ -347,8 +341,7 @@ class ResolverInferTest {
     @Test
     void DecimalType_3_4List() throws TypeInference.Exception {
         final Schema schema = simpleListSchema(DecimalType.of(3, 4));
-        final Resolver expected =
-                simpleMapping(schema, ObjectVector.type((GenericType<?>) Type.find(BigDecimal.class)));
+        final Resolver expected = simpleMapping(schema, Type.find(BigDecimal.class).arrayType());
         assertThat(Resolver.infer(schema)).isEqualTo(expected);
         assertThat(Resolver.infer(ia(schema))).isEqualTo(expected);
     }

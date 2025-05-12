@@ -3,19 +3,12 @@
 //
 package io.deephaven.iceberg.util;
 
-import io.deephaven.qst.type.GenericType;
-import io.deephaven.vector.DoubleVector;
-import io.deephaven.vector.FloatVector;
-import io.deephaven.vector.IntVector;
-import io.deephaven.vector.LongVector;
-import io.deephaven.vector.ObjectVector;
 import io.deephaven.qst.type.Type;
 import org.apache.iceberg.types.Types;
 import org.assertj.core.api.OptionalAssert;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -101,47 +94,47 @@ class TypeInferenceFromIcebergTypeTest {
     @Test
     void booleanListType() {
         assertInference(Types.ListType.ofOptional(1, Types.BooleanType.get()))
-                .hasValue(ObjectVector.type(Type.booleanType().boxedType()));
+                .hasValue(Type.booleanType().boxedType().arrayType());
     }
 
     @Test
     void integerListType() {
-        assertInference(Types.ListType.ofOptional(1, Types.IntegerType.get())).hasValue(IntVector.type());
+        assertInference(Types.ListType.ofOptional(1, Types.IntegerType.get())).hasValue(Type.intType().arrayType());
     }
 
     @Test
     void longListType() {
-        assertInference(Types.ListType.ofOptional(1, Types.LongType.get())).hasValue(LongVector.type());
+        assertInference(Types.ListType.ofOptional(1, Types.LongType.get())).hasValue(Type.longType().arrayType());
     }
 
     @Test
     void floatListType() {
-        assertInference(Types.ListType.ofOptional(1, Types.FloatType.get())).hasValue(FloatVector.type());
+        assertInference(Types.ListType.ofOptional(1, Types.FloatType.get())).hasValue(Type.floatType().arrayType());
     }
 
     @Test
     void doubleListType() {
-        assertInference(Types.ListType.ofOptional(1, Types.DoubleType.get())).hasValue(DoubleVector.type());
+        assertInference(Types.ListType.ofOptional(1, Types.DoubleType.get())).hasValue(Type.doubleType().arrayType());
     }
 
     @Test
     void dateListType() {
         assertInference(Types.ListType.ofOptional(1, Types.DateType.get()))
-                .hasValue(ObjectVector.type((GenericType<?>) Type.find(LocalDate.class)));
+                .hasValue(Type.find(LocalDate.class).arrayType());
     }
 
     @Test
     void timeListType() {
         assertInference(Types.ListType.ofOptional(1, Types.TimeType.get()))
-                .hasValue(ObjectVector.type((GenericType<?>) Type.find(LocalTime.class)));
+                .hasValue(Type.find(LocalTime.class).arrayType());
     }
 
     @Test
     void timestampListType() {
         assertInference(Types.ListType.ofOptional(1, Types.TimestampType.withZone()))
-                .hasValue(ObjectVector.type((GenericType<?>) Type.find(Instant.class)));
+                .hasValue(Type.instantType().arrayType());
         assertInference(Types.ListType.ofOptional(1, Types.TimestampType.withoutZone()))
-                .hasValue(ObjectVector.type((GenericType<?>) Type.find(LocalDateTime.class)));
+                .hasValue(Type.find(LocalDateTime.class).arrayType());
     }
 
     @Test
@@ -153,7 +146,7 @@ class TypeInferenceFromIcebergTypeTest {
     @Test
     void stringListType() {
         assertInference(Types.ListType.ofOptional(1, Types.StringType.get()))
-                .hasValue(ObjectVector.type((GenericType<?>) Type.find(String.class)));
+                .hasValue(Type.stringType().arrayType());
     }
 
     @Test
@@ -175,9 +168,9 @@ class TypeInferenceFromIcebergTypeTest {
     @Test
     void decimalListType() {
         assertInference(Types.ListType.ofOptional(1, Types.DecimalType.of(3, 4)))
-                .hasValue(ObjectVector.type((GenericType<?>) Type.find(BigDecimal.class)));
+                .hasValue(Type.find(BigDecimal.class).arrayType());
         assertInference(Types.ListType.ofOptional(1, Types.DecimalType.of(5, 5)))
-                .hasValue(ObjectVector.type((GenericType<?>) Type.find(BigDecimal.class)));
+                .hasValue(Type.find(BigDecimal.class).arrayType());
     }
 
     @Test
