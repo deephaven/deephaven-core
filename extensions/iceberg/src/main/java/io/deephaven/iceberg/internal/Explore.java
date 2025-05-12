@@ -22,17 +22,20 @@ import org.apache.iceberg.ManifestReader;
 import org.apache.iceberg.PartitionStatisticsFile;
 import org.apache.iceberg.PartitionStats;
 import org.apache.iceberg.PartitionStatsUtil;
+import org.apache.iceberg.Partitioning;
 import org.apache.iceberg.Snapshot;
 import org.apache.iceberg.SnapshotRef;
 import org.apache.iceberg.StatisticsFile;
 import org.apache.iceberg.StructLike;
 import org.apache.iceberg.io.FileIO;
+import org.apache.iceberg.types.Types;
 
 import java.io.IOException;
 import java.lang.reflect.Array;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -242,7 +245,23 @@ public final class Explore {
                 .view(properties.entrySet());
     }
 
+    public static Table partitionStats(org.apache.iceberg.Table table) {
+        return partitionStats(table, table.currentSnapshot());
+    }
+
     public static Table partitionStats(org.apache.iceberg.Table table, Snapshot snapshot) {
+        final Collection<PartitionStats> partitionStats;
+        if (snapshot == null) {
+            partitionStats = Collections.emptyList();
+        } else {
+            // Borrowed the same logic from
+            // org.apache.iceberg.data.PartitionStatsHandler.computeAndWriteStatsFile(org.apache.iceberg.Table, long),
+            // which is in the iceberg-data project (we don't depend on that). Moving to iceberg-core as part of
+            // https://github.com/apache/iceberg/pull/12946
+            final Collection<PartitionStats> stats = PartitionStatsUtil.computeStats(table, snapshot);
+            final Types.StructType partitionType = Partitioning.partitionType(table);
+            partitionStats = PartitionStatsUtil.sortStats(stats, partitionType);
+        }
         return new TableBuilder<>("PartitionStats", PartitionStats.class)
                 .add("Partition", StructLike.class, PartitionStats::partition)
                 .add("SpecId", int.class, PartitionStats::specId)
@@ -256,7 +275,7 @@ public final class Explore {
                 .add("TotalRecordCount", long.class, PartitionStats::totalRecordCount)
                 .add("LastUpdatedAt", Instant.class, Explore::lastUpdatedAt)
                 .add("LastUpdatedSnapshotId", long.class, PartitionStats::lastUpdatedSnapshotId)
-                .table(PartitionStatsUtil.computeStats(table, snapshot));
+                .view(partitionStats);
     }
 
     private static Instant lastUpdatedAt(PartitionStats x) {
