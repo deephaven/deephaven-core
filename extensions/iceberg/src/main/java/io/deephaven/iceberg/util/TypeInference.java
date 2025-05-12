@@ -28,6 +28,7 @@ import org.apache.iceberg.Schema;
 import org.apache.iceberg.types.TypeUtil;
 import org.apache.iceberg.types.Types;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -99,6 +100,7 @@ public final class TypeInference {
         return Optional.of(icebergType);
     }
 
+    @Nullable
     private static Type<?> ofImpl(org.apache.iceberg.types.Type.PrimitiveType primitiveType) {
         switch (primitiveType.typeId()) {
             case BOOLEAN:
@@ -139,24 +141,21 @@ public final class TypeInference {
         }
     }
 
-
+    @Nullable
     private static Type<?> ofImpl(final Types.ListType listType) {
         switch (listType.elementType().typeId()) {
             case DOUBLE:
-                return DoubleVector.type();
             case FLOAT:
-                return FloatVector.type();
             case INTEGER:
-                return IntVector.type();
             case LONG:
-                return LongVector.type();
             case BOOLEAN:
             case STRING:
             case TIMESTAMP:
             case DATE:
             case TIME:
             case DECIMAL:
-                return ObjectVector.type((GenericType<?>) ofImpl(listType.elementType().asPrimitiveType()));
+                final Type<?> componentType = ofImpl(listType.elementType().asPrimitiveType());
+                return componentType == null ? null : componentType.arrayType();
             case FIXED: // Fall through
             case BINARY: // Fall through
             case LIST: // Fall through
