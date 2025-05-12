@@ -675,7 +675,7 @@ public class TestParquetTools {
         // to know whenever serialization changes in any way.
         // For example, this test can fail when we upgrade the parquet version simply because the "createdBy" field
         // captures this version.
-        assertEquals("4b2f92b06f1ec99060e3aba841a750818c9e6435959c679212a727881c94a67b", sha256sum(file.toPath()));
+        assertEquals("0a85a4e0959118ad288f8937f240d4776acc54f81ed06ea4c89b6be2ec40545f", sha256sum(file.toPath()));
 
         // This test is a bit circular; but assuming we trust our reading code, we should have relative confidence that
         // we are writing it down correctly if we can read it correctly.
