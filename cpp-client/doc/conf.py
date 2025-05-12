@@ -59,11 +59,13 @@ html_static_path = ['_static']
 # parent in the list.
 
 cpp_index_common_prefix = [
-    'deephaven::client::column::',
     'deephaven::client::utility::',
     'deephaven::client::',
     'deephaven::dhcore::chunk::',
+    'deephaven::dhcore::clienttable::',
+    'deephaven::dhcore::column::',
     'deephaven::dhcore::container::',
     'deephaven::dhcore::table::',
+    'deephaven::dhcore::ticking::',
     'deephaven::dhcore::utility::',
     'deephaven::dhcore::']

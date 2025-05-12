@@ -10,6 +10,8 @@ package io.deephaven.vector;
 // region IteratorTypeImport
 import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfByte;
 // endregion IteratorTypeImport
+import io.deephaven.util.QueryConstants;
+import io.deephaven.util.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
@@ -18,6 +20,7 @@ import java.util.stream.IntStream;
 
 import static io.deephaven.util.QueryConstants.NULL_BYTE;
 // endregion NullConstantImport
+import static io.deephaven.util.QueryConstants.NULL_INT;
 import static junit.framework.TestCase.*;
 
 /**
@@ -194,6 +197,46 @@ public abstract class ByteVectorTest {
         assertEquals(ByteVector.type().clazz(), ByteVector.class);
         // endregion TestType
     }
+
+    @Test
+    public void testForBoxedNulls() {
+        final byte[] data = new byte[10_000];
+        for (int ei = 0; ei < data.length; ++ei) {
+            data[ei] = ei % 4 == 0 ? NULL_BYTE : (byte) ei;
+        }
+        final ByteVector vector = makeTestVector(data);
+        assertEquals(vector, new ByteVectorDirect(vector.toArray()));
+        final MutableInt numNulls = new MutableInt(0);
+        vector.iterator().stream().forEach(c -> {
+            if (c == null) {
+                numNulls.add(1);
+            } else if (c == NULL_BYTE) {
+                throw new IllegalStateException("Expected null, but got boxed NULL_BYTE");
+            }
+        });
+        assertEquals("numNulls.get() == (data.length + 3) / 4", (data.length + 3) / 4, numNulls.get());
+    }
+
+    // region streamAsIntTest
+    @Test
+    public void testForStreamAsIntNulls() {
+        final byte[] data = new byte[10_000];
+        for (int ei = 0; ei < data.length; ++ei) {
+            data[ei] = ei % 4 == 0 ? NULL_BYTE : (byte) ei;
+        }
+        final ByteVector vector = makeTestVector(data);
+        assertEquals(vector, new ByteVectorDirect(vector.toArray()));
+        final MutableInt numNulls = new MutableInt(0);
+        vector.iterator().streamAsInt().forEach(c -> {
+            if (c == NULL_INT) {
+                numNulls.add(1);
+            } else if (c == NULL_BYTE) {
+                throw new IllegalStateException("Expected NULL_INT, but got NULL_BYTE");
+            }
+        });
+        assertEquals("numNulls.get() == (data.length + 3) / 4", (data.length + 3) / 4, numNulls.get());
+    }
+    // endregion streamAsIntTest
 
     private static void checkSubVector(
             final ByteVector vector,

@@ -1,4 +1,5 @@
 '''
+This script uses PyIceberg to create an Iceberg table with a partition spec containing a non-identity transform field.
 See TESTING.md for how to run this script.
 '''
 
@@ -9,6 +10,8 @@ from pyiceberg.schema import Schema
 from pyiceberg.types import TimestampType, FloatType, DoubleType, StringType, NestedField, StructType
 from pyiceberg.partitioning import PartitionSpec, PartitionField
 from pyiceberg.transforms import DayTransform, IdentityTransform
+
+import pyiceberg_test_utils
 
 catalog = SqlCatalog(
     "pyiceberg-2",
@@ -34,33 +37,14 @@ partition_spec = PartitionSpec(
     )
 )
 
-catalog.create_namespace("trading")
+catalog.create_namespace_if_not_exists("trading")
 
-tbl = catalog.create_table(
-    identifier="trading.data",
-    schema=schema,
-    partition_spec=partition_spec,
-)
-
-# Define the data according to your Iceberg schema
-data = [
-    {"datetime": datetime(2024, 11, 27, 10, 0, 0), "symbol": "AAPL", "bid": 150.25, "ask": 151.0},
-    {"datetime": datetime(2024, 11, 27, 10, 0, 0), "symbol": "MSFT", "bid": 150.25, "ask": 151.0},
-    {"datetime": datetime(2024, 11, 26, 10, 1, 0), "symbol": "GOOG", "bid": 2800.75, "ask": 2810.5},
-    {"datetime": datetime(2024, 11, 26, 10, 2, 0), "symbol": "AMZN", "bid": 3400.5, "ask": 3420.0},
-    {"datetime": datetime(2024, 11, 28, 10, 3, 0), "symbol": "MSFT", "bid": None, "ask": 250.0},
-]
-
-# Create a PyArrow Table
-table = pa.Table.from_pylist(data)
+table_identifier = "trading.data"
+tbl = pyiceberg_test_utils.create_table_purging_if_exists(catalog, table_identifier, schema, partition_spec)
 
 # Append the table to the Iceberg table
-tbl.append(table)
+tbl.append(pyiceberg_test_utils.MERGED_DATASET)
 
 ######## Empty table testing ########
-
-tbl_empty = catalog.create_table(
-    identifier="trading.data_empty",
-    schema=schema,
-    partition_spec=partition_spec,
-)
+table_identifier = "trading.data_empty"
+tbl = pyiceberg_test_utils.create_table_purging_if_exists(catalog, table_identifier, schema, partition_spec)

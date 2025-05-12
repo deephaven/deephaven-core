@@ -10,7 +10,7 @@ from typing import Callable, Dict, Generator, List, Tuple, TypeVar, Union
 import pyarrow as pa
 import pyarrow.flight as flight
 import pydeephaven_ticking._core as dhc
-import pydeephaven_ticking.util as tick_util
+import pydeephaven_ticking._util as tick_util
 import pydeephaven
 from pydeephaven.table import Table
 import threading
@@ -32,7 +32,17 @@ def _make_generator(table: dhc.ClientTable,
                     col_names: Union[str, List[str], None],
                     chunk_size: int) -> DictGeneratorType:
     """Repeatedly pulls up to chunk_size elements from the indicated columns of the ClientTable, collects them
-    in a dictionary (whose keys are column name and whose values are PyArrow arrays), and yields that dictionary)"""
+    in a dictionary (whose keys are column name and whose values are PyArrow arrays), and yields that dictionary)
+
+    Args:
+        table (dhc.ClientTable) : the client table
+        rows (dhc.RowSequence) : the desired rows to return
+        col_names (Union[str, List[str], None]) : the desired columns
+        chunk_size (int) : how many rows to return at a time
+
+    Returns:
+        a DictGeneratorType object
+    """
 
     col_names = tick_util.canonicalize_cols_param(table, col_names)
     while not rows.empty:
@@ -50,8 +60,15 @@ def _make_generator(table: dhc.ClientTable,
 
 
 def _first_or_default(generator: Generator[T, S, R]) -> T:
-    """Returns the first (and assumed only) result of the generator, or the empty dictionary if the generator
-    yields no values."""
+    """Takes a generator which is assumed to generate 0 or 1 dictionaries, and returns
+    either the first dictionary or the empty dictionary.
+
+    Args:
+        generator (Generator[T, S, R]): the generator
+
+    Returns:
+        The generator's first entry or the empty dictionary.
+        """
 
     try:
         return next(generator)
@@ -69,80 +86,113 @@ class TableUpdate:
     def __init__(self, update: dhc.TickingUpdate):
         """Constructor.
 
-        :param update: The Cython wrapper of the C++ TickingUpdate class.
+        Args:
+            update (dhc.TickingUpdate): The Cython wrapper of the C++ TickingUpdate class.
         """
 
         self.update = update
 
     def removed(self, cols: Union[str, List[str]] = None) -> ColDictType:
         """Gets all the data that was removed in this TableUpdate.
-        :param cols: A column name or list of column names. None means "all columns in the table".
-        :return: A dictionary mapping column name to an Arrow Array of the removed data.
+
+        Args:
+            cols (Union[str, List[str], None]): the specified columns. None means "all columns in the table".
+
+        Returns:
+            A dictionary mapping column name to an Arrow Array of the removed data.
         """
 
         return _first_or_default(self.removed_chunks(self.update.removed_rows.size, cols))
 
     def removed_chunks(self, chunk_size: int, cols: Union[str, List[str]] = None) -> DictGeneratorType:
         """Creates a generator yielding chunks of the data that was removed in this TableUpdate.
-        :param chunk_size: The maximum number of rows yielded by each iteration of the generator.
-        :param cols: A column name or list of column names. None means "all columns in the table".
-        :return: A Generator yielding dictionaries mapping column name to an Arrow Array of the removed data. The
-          Arrow Arrays will have length less than or equal to chunk_size.
+
+        Args:
+            chunk_size (int) : The maximum number of rows yielded by each iteration of the generator.
+            cols (Union[str, List[str]]): the specified columns, defaults to None, meaning "all columns in the table".
+
+        Returns:
+            A Generator yielding dictionaries mapping column name to an Arrow Array of the removed data. The
+            Arrow Arrays will have length less than or equal to chunk_size.
         """
 
         return _make_generator(self.update.before_removes, self.update.removed_rows, cols, chunk_size)
 
     def added(self, cols: Union[str, List[str]] = None) -> ColDictType:
         """Gets all the data that was added in this TableUpdate.
-        :param cols: A column name or list of column names. None means "all columns in the table".
-        :return: A dictionary mapping column name to an Arrow Array of the added data.
+
+        Args:
+            cols (Union[str, List[str]]) : the specified columns, defaults to None, meaning "all columns in the table".
+
+        Returns:
+            A dictionary mapping column name to an Arrow Array of the added data.
         """
 
         return _first_or_default(self.added_chunks(self.update.added_rows.size, cols))
 
     def added_chunks(self, chunk_size: int, cols: Union[str, List[str]] = None) -> DictGeneratorType:
         """Creates a generator yielding chunks of the data that was added in this TableUpdate.
-        :param chunk_size: The maximum number of rows yielded by each iteration of the generator.
-        :param cols: A column name or list of column names. None means "all columns in the table".
-        :return: A Generator yielding dictionaries mapping column name to an Arrow Array of the added data. The
-          Arrow Arrays will have length less than or equal to chunk_size.
+
+        Args:
+            chunk_size (int) : The maximum number of rows yielded by each iteration of the generator.
+            cols (Union[str, List[str]]): the specified columns, defaults to None, meaning "all columns in the table".
+
+        Returns:
+            A Generator yielding dictionaries mapping column name to an Arrow Array of the added data. The
+            Arrow Arrays will have length less than or equal to chunk_size.
         """
 
         return _make_generator(self.update.after_adds, self.update.added_rows, cols, chunk_size)
 
     def modified_prev(self, cols: Union[str, List[str]] = None) -> ColDictType:
         """Gets all the data as it existed *before* the modify operation in this TableUpdate.
-        :param cols: A column name or list of column names. None means "all columns in the table".
-        :return: A dictionary mapping column name to an Arrow Array of the data as it existed before the modify
-            operation.
+
+        Args:
+            cols (Union[str, List[str]]): the specified columns, defaults to None,  meaning "all columns in the table".
+
+        Returns:
+            A Generator yielding dictionaries mapping column name to an Arrow Array of the modified_prev data. The
+            Arrow Arrays will have length less than or equal to chunk_size.
         """
 
         return _first_or_default(self.modified_prev_chunks(self.update.all_modified_rows.size, cols))
 
     def modified_prev_chunks(self, chunk_size: int, cols: Union[str, List[str]] = None) -> DictGeneratorType:
         """Creates a generator yielding chunks of the data as it existed *before* the modify operation in this TableUpdate.
-        :param chunk_size: The maximum number of rows yielded by each iteration of the generator.
-        :param cols: A column name or list of column names. None means "all columns in the table".
-        :return: A Generator yielding dictionaries mapping column name to an Arrow Array of the data as it existed
-          before the modify operation. The Arrow Arrays will have length less than or equal to chunk_size.
+
+        Args:
+            chunk_size (int) : The maximum number of rows yielded by each iteration of the generator.
+            cols (Union[str, List[str]]): the specified columns, defaults to None,  meaning "all columns in the table".
+
+        Returns:
+            A Generator yielding dictionaries mapping column name to an Arrow Array of the data before
+            the modify operation. The Arrow Arrays will have length less than or equal to chunk_size.
         """
 
         return _make_generator(self.update.before_modifies, self.update.all_modified_rows, cols, chunk_size)
 
     def modified(self, cols: Union[str, List[str]] = None) -> ColDictType:
         """Gets all the modified data *after* the modify operation in this TableUpdate.
-        :param cols: A column name or list of column names. None means "all columns in the table".
-        :return: A dictionary mapping column name to an Arrow Array of the data after the modify operation.
+
+        Args:
+            cols (Union[str, List[str]]): the specified columns, defaults to None,  meaning "all columns in the table".
+
+        Returns:
+            A dictionary mapping column name to an Arrow Array of the data after the modify operation.
         """
 
         return _first_or_default(self.modified_chunks(self.update.all_modified_rows.size, cols))
 
     def modified_chunks(self, chunk_size: int, cols: Union[str, List[str]] = None) -> DictGeneratorType:
         """Creates a generator yielding chunks of the modified data *after* the modify operation in this TableUpdate.
-        :param chunk_size: The maximum number of rows yielded by each iteration of the generator.
-        :param cols: A column name or list of column names. None means "all columns in the table".
-        :return: A Generator yielding dictionaries mapping column name to an Arrow Array of the data after
-          the modify operation. The Arrow Arrays will have length less than or equal to chunk_size.
+
+        Args:
+            chunk_size (int) : The maximum number of rows yielded by each iteration of the generator.
+            cols (Union[str, List[str], None]): the specified columns. None means "all columns in the table".
+
+        Returns:
+            A Generator yielding dictionaries mapping column name to an Arrow Array of the data after
+            the modify operation. The Arrow Arrays will have length less than or equal to chunk_size.
         """
 
         return _make_generator(self.update.after_modifies, self.update.all_modified_rows, cols, chunk_size)
@@ -155,14 +205,18 @@ class TableListener(ABC):
     @abstractmethod
     def on_update(self, update: TableUpdate) -> None:
         """This method is invoked when there is an incoming TableUpdate message.
-        :param update: The table update.
+
+        Args:
+            update (TableUpdate): the update
         """
 
         pass
 
     def on_error(self, error: Exception) -> None:
-        """This method is invoked when there is an error during tabe listener processing.
-        :param error: The Exception that was encountered during processing.
+        """This method is invoked when there is an error during table listener processing.
+
+        Args:
+            error (Exception): the error
         """
 
         print(f"Error happened during ticking processing: {error}")
@@ -191,8 +245,10 @@ class TableListenerHandle:
 
     def __init__(self, table: Table, listener: TableListener):
         """Constructor.
-        :param table: The Table that is being listened to.
-        :listener: The TableListener callback that will receive TableUpdate messages as the table changes.
+
+        Args:
+            table (Table): the Table that is being listened to.
+            listener (TableListener): the TableListener callback that will receive TableUpdate messages as the table changes.
         """
 
         self._table = table
@@ -255,12 +311,21 @@ class TableListenerHandle:
             pass
 
 def listen(table: Table, listener: Union[Callable, TableListener],
-           on_error: Union[Callable, None] = None) -> TableListenerHandle:
+           on_error: Callable[[Exception], None] = None) -> TableListenerHandle:
     """A convenience method to create a TableListenerHandle. This method can be called in one of three ways:
 
-    listen(MyTableListener())  # invoke with your own subclass of TableListener
-    listen(on_update_callback)  # invoke with your own on_update Callback
-    listen(on_update_callback, on_error_callback)  # invoke with your own on_update and on_error callbacks
+    listen(table, MyTableListener())  # invoke with your own subclass of TableListener
+    listen(table, on_update_callback)  # invoke with your own on_update Callback
+    listen(table, on_update_callback, on_error_callback)  # invoke with your own on_update and on_error callbacks
+
+    Args:
+        table (Table) : the Table that is being listened to.
+        listener (Union[Callable, TableListener]) : the TableListener callback that will receive TableUpdate messages
+            as the table changes.
+        on_error (Callable[[Exception], None]) : the callback that will be invoked when an error occurs, defaults to None
+     
+     Raises:
+         ValueError
     """
     
     listener_to_use: TableListener

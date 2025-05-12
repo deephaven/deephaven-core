@@ -19,6 +19,8 @@ import org.apache.iceberg.io.ResolvingFileIO;
 import org.apache.iceberg.relocated.com.google.common.collect.Streams;
 import org.apache.iceberg.util.SerializableSupplier;
 
+import java.net.URI;
+import java.nio.file.Path;
 import java.util.Map;
 import java.util.function.Function;
 
@@ -67,6 +69,18 @@ public final class RelativeFileIO implements HadoopConfigurable, DelegateFileIO 
     }
 
     public String absoluteLocation(String location) {
+        // In case the location is a URI, we need to extract the path from it.
+        final String sanitizedLocation = URI.create(location).getPath();
+        final Path locationPath = Path.of(sanitizedLocation);
+        if (locationPath.isAbsolute()) {
+            if (!locationPath.toString().startsWith(basePath)) {
+                throw new IllegalArgumentException(
+                        "Location is absolute and does not start with base path, " +
+                                "location = " + location + ", base path = " + basePath);
+            }
+            // If the location is already absolute and starts with the base path, we can just return it.
+            return location;
+        }
         return basePath + location;
     }
 

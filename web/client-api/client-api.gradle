@@ -6,57 +6,85 @@ import io.deephaven.tools.docker.WaitForHealthyContainer
 plugins {
     id 'io.deephaven.project.register'
     id 'io.deephaven.deephaven-in-docker'
+    id 'java-library'
 }
 
 evaluationDependsOn(Docker.registryProject('selenium'))
 
 configurations {
+    // output configurations:
     js
     dts
+
+    // classpath for generating typescript via a javadoc doclet
     typescriptDoclet
+
+    // GWT compiles using all source code, from the current project and all dependencies, including
+    // any generated sources. This configuration lets us pick up not just sources, but source jars.
+    gwt {
+        attributes {
+            attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage, Usage.JAVA_RUNTIME))
+            attribute(DocsType.DOCS_TYPE_ATTRIBUTE, objects.named(DocsType, DocsType.SOURCES))
+        }
+    }
+    // Easy way for downstream projects to get this and upstream sources
+    sourcesElements {
+        transitive = true
+        extendsFrom(gwt)
+    }
+
+    testImplementation.extendsFrom(gwt)
+    api.extendsFrom(gwt)
 }
+
 dependencies {
-    implementation platform(libs.grpc.bom)
-    implementation variantOf(libs.grpc.api) { classifier('sources') }
+    gwt libs.gwt.user
+    gwt platform(libs.grpc.bom)
+    gwt libs.grpc.api
 
-    implementation project(':engine-chunk')
-    implementation project(':extensions-barrage')
-    implementation project(':DataStructures')
-    implementation project(':web-shared-beans')
-    implementation project(':web-client-backplane')
-    implementation libs.jetbrains.annotations
-    implementation variantOf(libs.jetbrains.annotations) { classifier("sources") }
-    implementation libs.immutables.value.annotations
-    implementation variantOf(libs.immutables.value.annotations) { classifier("sources") }
+    gwt project(':engine-chunk')
+    gwt project(':extensions-barrage')
+    gwt project(':DataStructures')
+    gwt project(':web-shared-beans')
+    gwt project(':web-client-backplane')
+    gwt project(':engine-query-constants')
+    gwt project(":IO")
 
-    implementation libs.flatbuffers.java
-    implementation variantOf(libs.flatbuffers.java) { classifier("sources") }
-    implementation libs.arrow.format
-    implementation variantOf(libs.arrow.format) { classifier('sources') }
-    implementation libs.deephaven.barrage.format
-    implementation variantOf(libs.deephaven.barrage.format) { classifier('sources') }
+    // Promote this to compile+runtime, so GWT can see it
+    api project(':util-immutables')
 
-    implementation libs.vertispan.ts.defs.annotations
+    gwt libs.flatbuffers.java
+    gwt libs.arrow.format
+    gwt libs.deephaven.barrage.format
+
+    api libs.vertispan.ts.defs.annotations
     typescriptDoclet libs.vertispan.ts.defs.doclet
 
-    implementation libs.vertispan.nio.gwt
-    implementation libs.vertispan.flatbuffers.gwt
+    gwt libs.vertispan.nio.gwt
+    gwt libs.vertispan.flatbuffers.gwt
 
     js project(path: ':proto:raw-js-openapi', configuration: 'js')
 
-    implementation libs.guava
+    gwt libs.guava
+
+    gwt libs.elemental.core
+    gwt libs.elemental.promise
+    gwt libs.elemental.dom
 
     testImplementation libs.junit4
     testImplementation libs.selenium.remote.driver
 
-    implementation libs.elemental.core
-    implementation libs.elemental.promise
-    implementation libs.elemental.dom
-
-    testImplementation libs.gwt.user
+    // These aren't being picked up from the other configurations, need to be added directly
+    testImplementation(libs.jetbrains.annotations)
+    testImplementation(libs.immutables.value.annotations)
 }
 
 GwtTools.gwtCompile project, 'io.deephaven.web.DeephavenApi', 'Create a jar of client JS API'
+// The GWT plugin that we're using today double-includes our resources when producing a jar, causing
+// an error unless we disable the check
+// https://github.com/esoco/gwt-gradle-plugin/issues/33
+jar.duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+
 
 def jsOutput = layout.buildDirectory.dir('js')
 def gwtOutput = tasks.register('gwtOutput', Sync) {
@@ -73,9 +101,11 @@ def dtsOutput = layout.buildDirectory.dir('ts-types');
 def tsDefs = tasks.register('typescriptDefinitions', Javadoc) {
     dependsOn 'compileJava'
     source = sourceSets.main.allJava
-    options.classpath = sourceSets.main.compileClasspath.files as List
+    doFirst {
+        options.classpath = sourceSets.main.compileClasspath.files as List
+        options.docletpath = (configurations.typescriptDoclet.files as List) + (sourceSets.main.compileClasspath.files as List)
+    }
     destinationDir = dtsOutput.get().asFile
-    options.docletpath = (configurations.typescriptDoclet.files as List) + (sourceSets.main.compileClasspath.files as List)
     options.doclet = 'com.vertispan.tsdefs.doclet.TsDoclet'
 }
 

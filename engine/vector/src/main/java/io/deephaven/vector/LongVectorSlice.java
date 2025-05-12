@@ -9,7 +9,7 @@ package io.deephaven.vector;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
-import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfLong;
+import io.deephaven.engine.primitive.value.iterator.ValueIteratorOfLong;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
@@ -95,7 +95,7 @@ public class LongVectorSlice extends LongVector.Indirect {
     }
 
     @Override
-    public CloseablePrimitiveIteratorOfLong iterator(final long fromIndexInclusive, final long toIndexExclusive) {
+    public ValueIteratorOfLong iterator(final long fromIndexInclusive, final long toIndexExclusive) {
         Require.leq(fromIndexInclusive, "fromIndexInclusive", toIndexExclusive, "toIndexExclusive");
         final long totalWanted = toIndexExclusive - fromIndexInclusive;
         long nextIndexWanted = fromIndexInclusive + offsetIndex;
@@ -119,16 +119,10 @@ public class LongVectorSlice extends LongVector.Indirect {
             includedInnerLength = 0;
         }
 
-        final CloseablePrimitiveIteratorOfLong initialNullsIterator = includedInitialNulls > 0
-                ? CloseablePrimitiveIteratorOfLong.repeat(NULL_LONG, includedInitialNulls)
-                : null;
-        final CloseablePrimitiveIteratorOfLong innerIterator = includedInnerLength > 0
+        final ValueIteratorOfLong innerIterator = includedInnerLength > 0
                 ? innerVector.iterator(firstIncludedInnerOffset, firstIncludedInnerOffset + includedInnerLength)
                 : null;
-        final CloseablePrimitiveIteratorOfLong finalNullsIterator = remaining > 0
-                ? CloseablePrimitiveIteratorOfLong.repeat(NULL_LONG, remaining)
-                : null;
-        return CloseablePrimitiveIteratorOfLong.maybeConcat(initialNullsIterator, innerIterator, finalNullsIterator);
+        return ValueIteratorOfLong.wrapWithNulls(innerIterator, includedInitialNulls, remaining);
     }
 
     @Override

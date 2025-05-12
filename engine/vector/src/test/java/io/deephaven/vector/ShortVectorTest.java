@@ -10,6 +10,8 @@ package io.deephaven.vector;
 // region IteratorTypeImport
 import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfShort;
 // endregion IteratorTypeImport
+import io.deephaven.util.QueryConstants;
+import io.deephaven.util.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
@@ -18,6 +20,7 @@ import java.util.stream.IntStream;
 
 import static io.deephaven.util.QueryConstants.NULL_SHORT;
 // endregion NullConstantImport
+import static io.deephaven.util.QueryConstants.NULL_INT;
 import static junit.framework.TestCase.*;
 
 /**
@@ -194,6 +197,46 @@ public abstract class ShortVectorTest {
         assertEquals(ShortVector.type().clazz(), ShortVector.class);
         // endregion TestType
     }
+
+    @Test
+    public void testForBoxedNulls() {
+        final short[] data = new short[10_000];
+        for (int ei = 0; ei < data.length; ++ei) {
+            data[ei] = ei % 4 == 0 ? NULL_SHORT : (short) ei;
+        }
+        final ShortVector vector = makeTestVector(data);
+        assertEquals(vector, new ShortVectorDirect(vector.toArray()));
+        final MutableInt numNulls = new MutableInt(0);
+        vector.iterator().stream().forEach(c -> {
+            if (c == null) {
+                numNulls.add(1);
+            } else if (c == NULL_SHORT) {
+                throw new IllegalStateException("Expected null, but got boxed NULL_SHORT");
+            }
+        });
+        assertEquals("numNulls.get() == (data.length + 3) / 4", (data.length + 3) / 4, numNulls.get());
+    }
+
+    // region streamAsIntTest
+    @Test
+    public void testForStreamAsIntNulls() {
+        final short[] data = new short[10_000];
+        for (int ei = 0; ei < data.length; ++ei) {
+            data[ei] = ei % 4 == 0 ? NULL_SHORT : (short) ei;
+        }
+        final ShortVector vector = makeTestVector(data);
+        assertEquals(vector, new ShortVectorDirect(vector.toArray()));
+        final MutableInt numNulls = new MutableInt(0);
+        vector.iterator().streamAsInt().forEach(c -> {
+            if (c == NULL_INT) {
+                numNulls.add(1);
+            } else if (c == NULL_SHORT) {
+                throw new IllegalStateException("Expected NULL_INT, but got NULL_SHORT");
+            }
+        });
+        assertEquals("numNulls.get() == (data.length + 3) / 4", (data.length + 3) / 4, numNulls.get());
+    }
+    // endregion streamAsIntTest
 
     private static void checkSubVector(
             final ShortVector vector,

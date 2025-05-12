@@ -24,11 +24,9 @@ using deephaven::dhcore::utility::MakeReservedVector;
 namespace deephaven::dhcore::clienttable {
 namespace {
 std::map<std::string_view, size_t, std::less<>> ValidateAndMakeIndex(
-    const std::vector<std::string> &names, const std::vector<ElementType> &types,
-    const std::vector<ElementTypeId::Enum> &type_ids) {
-  if (names.size() != types.size() || names.size() != type_ids.size()) {
-    auto message = fmt::format("Sizes differ: {} vs {} vs {}", names.size(), types.size(),
-        type_ids.size());
+    const std::vector<std::string> &names, const std::vector<ElementType> &types) {
+  if (names.size() != types.size()) {
+    auto message = fmt::format("Sizes differ: {} vs {}", names.size(), types.size());
     throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
   }
 
@@ -51,28 +49,15 @@ std::shared_ptr<Schema> Schema::Create(std::vector<std::string> names,
   for (const auto &type : types) {
     type_ids.push_back(type.Id());
   }
-  auto index = ValidateAndMakeIndex(names, types, type_ids);
+  auto index = ValidateAndMakeIndex(names, types);
 
   return std::make_shared<Schema>(Private(), std::move(names), std::move(types),
-      std::move(type_ids), std::move(index));
-}
-
-std::shared_ptr<Schema> Schema::Create(std::vector<std::string> names,
-    std::vector<ElementTypeId::Enum> type_ids) {
-  auto types = MakeReservedVector<ElementType>(type_ids.size());
-  for (auto type_id : type_ids) {
-    types.push_back(ElementType::Of(type_id));
-  }
-  auto index = ValidateAndMakeIndex(names, types, type_ids);
-
-  return std::make_shared<Schema>(Private(), std::move(names), std::move(types),
-      std::move(type_ids), std::move(index));
+    std::move(index));
 }
 
 Schema::Schema(Private, std::vector<std::string> names, std::vector<ElementType> types,
-     std::vector<ElementTypeId::Enum> type_ids, std::map<std::string_view,
-     size_t, std::less<>> index) : names_(std::move(names)),
-     types_(std::move(types)), type_ids_(std::move(type_ids)), index_(std::move(index)) {
+     std::map<std::string_view, size_t, std::less<>> index) : names_(std::move(names)),
+     types_(std::move(types)), index_(std::move(index)) {
 }
 
 Schema::~Schema() = default;

@@ -49,6 +49,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicIntegerArray;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 /**
@@ -635,23 +636,34 @@ public abstract class UpdateBy {
             // Organize the dirty operators to increase the chance that the input caches can be released early. This
             // currently must produce sets of operators with identical sets of input sources.
             final Integer[] dirtyOperators = ArrayUtils.toObject(dirtyWindowOperators[winIdx].stream().toArray());
-            Arrays.sort(dirtyOperators,
+
+            // Partition dirty operators into those with no input sources and those with input sources.
+            Map<Boolean, List<Integer>> partitionedOperators = Arrays.stream(dirtyOperators)
+                    .collect(Collectors.partitioningBy(opIdx -> win.operatorInputSourceSlots[opIdx].length == 0));
+
+            final Integer[] dirtyConstantOperators = partitionedOperators.get(true).toArray(new Integer[0]);
+            final Integer[] dirtyDynamicOperators = partitionedOperators.get(false).toArray(new Integer[0]);
+
+            Arrays.sort(dirtyDynamicOperators,
                     Comparator.comparingInt(o -> win.operatorInputSourceSlots[(int) o][0])
                             .thenComparingInt(o -> win.operatorInputSourceSlots[(int) o].length < 2 ? -1
                                     : win.operatorInputSourceSlots[(int) o][1]));
 
-            final List<int[]> operatorSets = new ArrayList<>(dirtyOperators.length);
-            final TIntArrayList opList = new TIntArrayList(dirtyOperators.length);
+            // Recombine the dirty operators into a single array.
+            final Integer[] sortedDirtyOperators = ArrayUtils.addAll(dirtyConstantOperators, dirtyDynamicOperators);
 
-            opList.add(dirtyOperators[0]);
-            int lastOpIdx = dirtyOperators[0];
-            for (int ii = 1; ii < dirtyOperators.length; ii++) {
-                final int opIdx = dirtyOperators[ii];
+            final List<int[]> operatorSets = new ArrayList<>(sortedDirtyOperators.length);
+            final TIntArrayList opList = new TIntArrayList(sortedDirtyOperators.length);
+
+            opList.add(sortedDirtyOperators[0]);
+            int lastOpIdx = sortedDirtyOperators[0];
+            for (int ii = 1; ii < sortedDirtyOperators.length; ii++) {
+                final int opIdx = sortedDirtyOperators[ii];
                 if (Arrays.equals(win.operatorInputSourceSlots[opIdx], win.operatorInputSourceSlots[lastOpIdx])) {
                     opList.add(opIdx);
                 } else {
                     operatorSets.add(opList.toArray());
-                    opList.clear(dirtyOperators.length);
+                    opList.clear(sortedDirtyOperators.length);
                     opList.add(opIdx);
                 }
                 lastOpIdx = opIdx;

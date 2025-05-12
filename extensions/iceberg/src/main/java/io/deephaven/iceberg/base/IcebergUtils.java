@@ -34,6 +34,7 @@ import java.time.LocalTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public final class IcebergUtils {
@@ -55,16 +56,16 @@ public final class IcebergUtils {
         // TODO (deephaven-core#6327) Add support for more types like ZonedDateTime, Big Decimals, and Lists
     }
 
-    private static String path(@NotNull final String path, @NotNull final FileIO io) {
+    public static String maybeResolveRelativePath(@NotNull final String path, @NotNull final FileIO io) {
         return io instanceof RelativeFileIO ? ((RelativeFileIO) io).absoluteLocation(path) : path;
     }
 
     public static URI locationUri(@NotNull final Table table) {
-        return FileUtils.convertToURI(path(table.location(), table.io()), true);
+        return FileUtils.convertToURI(maybeResolveRelativePath(table.location(), table.io()), true);
     }
 
     public static URI dataFileUri(@NotNull final Table table, @NotNull final DataFile dataFile) {
-        return FileUtils.convertToURI(path(dataFile.path().toString(), table.io()), false);
+        return FileUtils.convertToURI(maybeResolveRelativePath(dataFile.location(), table.io()), false);
     }
 
     /**
@@ -177,24 +178,42 @@ public final class IcebergUtils {
         }
     }
 
+    private static final Set<Class<?>> SUPPORTED_PARTITIONING_TYPES =
+            Set.of(Boolean.class, double.class, float.class, int.class, long.class, String.class, LocalDate.class);
+
     /**
-     * Check that all the partitioning columns from the partition spec are present in the Table Definition.
+     * Check that all the partitioning columns from the partition spec are of supported types and are present in the
+     * Table Definition.
      */
     public static void verifyPartitioningColumns(
             final PartitionSpec tablePartitionSpec,
             final TableDefinition tableDefinition) {
         final List<String> partitioningColumnNamesFromDefinition = tableDefinition.getColumnStream()
                 .filter(ColumnDefinition::isPartitioning)
+                .peek(columnDefinition -> {
+                    if (!SUPPORTED_PARTITIONING_TYPES.contains(columnDefinition.getDataType())) {
+                        throw new IllegalArgumentException("Unsupported partitioning column type " +
+                                columnDefinition.getDataType() + " for column " + columnDefinition.getName());
+                    }
+                })
                 .map(ColumnDefinition::getName)
                 .collect(Collectors.toList());
-        final List<PartitionField> partitionFieldsFromSchema = tablePartitionSpec.fields();
-        if (partitionFieldsFromSchema.size() != partitioningColumnNamesFromDefinition.size()) {
-            throw new IllegalArgumentException("Partition spec contains " + partitionFieldsFromSchema.size() +
+        final List<PartitionField> partitionFieldsFromSpec = tablePartitionSpec.fields();
+        partitionFieldsFromSpec.forEach(partitionField -> {
+            if (!partitionField.transform().isIdentity()) {
+                // TODO (DH-18160): Improve support for handling non-identity transforms
+                throw new IllegalArgumentException("Partitioning column " + partitionField.name() +
+                        " has non-identity transform of type `" + partitionField.transform() + "`, currently we do" +
+                        " not support writing to iceberg tables with non-identity transforms");
+            }
+        });
+        if (partitionFieldsFromSpec.size() != partitioningColumnNamesFromDefinition.size()) {
+            throw new IllegalArgumentException("Partition spec contains " + partitionFieldsFromSpec.size() +
                     " fields, but the table definition contains " + partitioningColumnNamesFromDefinition.size()
                     + " fields, partition spec " + tablePartitionSpec + ", table definition " + tableDefinition);
         }
-        for (int colIdx = 0; colIdx < partitionFieldsFromSchema.size(); colIdx += 1) {
-            final PartitionField partitionField = partitionFieldsFromSchema.get(colIdx);
+        for (int colIdx = 0; colIdx < partitionFieldsFromSpec.size(); colIdx += 1) {
+            final PartitionField partitionField = partitionFieldsFromSpec.get(colIdx);
             if (!partitioningColumnNamesFromDefinition.get(colIdx).equals(partitionField.name())) {
                 throw new IllegalArgumentException("Partitioning column " + partitionField.name() + " is not present " +
                         "in the table definition at idx " + colIdx + ", table definition " + tableDefinition +

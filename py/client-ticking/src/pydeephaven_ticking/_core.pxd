@@ -4,7 +4,7 @@
 #
 # Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
 #
-from libc.stdint cimport int8_t, uint8_t, int32_t, int64_t, uint32_t
+from libc.stdint cimport int8_t, uint8_t, int32_t, int64_t, uint32_t, uint64_t
 from libcpp cimport bool
 from libcpp.memory cimport shared_ptr, unique_ptr
 from libcpp.string cimport string
@@ -40,6 +40,7 @@ cdef extern from "deephaven/dhcore/chunk/chunk.h" namespace "deephaven::dhcore::
     cdef cppclass CChunk "deephaven::dhcore::chunk::Chunk":
         CChunk()
         CChunk(CChunk other)
+        size_t Size() const
 
     cdef cppclass CGenericChunk "deephaven::dhcore::chunk::GenericChunk" [T] (CChunk):
         @staticmethod
@@ -50,8 +51,18 @@ cdef extern from "deephaven/dhcore/chunk/chunk.h" namespace "deephaven::dhcore::
 
         const T *data()
 
+        const T operator[](size_t index)
+
+
+cdef extern from "deephaven/dhcore/container/container.h" namespace "deephaven::dhcore::container":
+    cdef cppclass CContainerBase "deephaven::dhcore::container::ContainerBase":
+        size_t size() const
+
 cdef extern from "deephaven/dhcore/container/row_sequence.h" namespace "deephaven::dhcore::container":
     cdef cppclass CRowSequence "deephaven::dhcore::container::RowSequence":
+        @staticmethod
+        shared_ptr[CRowSequence] CreateSequential(uint64_t begin, uint64_t end)
+
         CRowSequence()
         CRowSequence(CRowSequence other)
 
@@ -82,10 +93,13 @@ cdef extern from "deephaven/dhcore/clienttable/schema.h" namespace "deephaven::d
         @staticmethod
         shared_ptr[CSchema] Create(const vector[string] &names, const vector[ElementTypeId] &types)
 
+        @staticmethod
+        shared_ptr[CSchema] Create(const vector[string] &names, const vector[CElementType] &types)
+
         CSchema()
 
         const vector[string] &Names()
-        const vector[ElementTypeId] &Types()
+        const vector[CElementType] &ElementTypes()
 
 cdef extern from "deephaven/dhcore/ticking/ticking.h" namespace "deephaven::dhcore::ticking":
     cdef cppclass CTickingUpdate "deephaven::dhcore::ticking::TickingUpdate":
@@ -116,6 +130,7 @@ cdef extern from "deephaven/dhcore/column/column_source.h" namespace "deephaven:
     cdef cppclass CColumnSource "deephaven::dhcore::column::ColumnSource":
         void FillChunk(const CRowSequence &rows, CChunk *destData,
             CGenericChunk[bool] *optionalDestNullFlags) except +
+        CElementType GetElementType() const
 
 cdef extern from "deephaven/dhcore/column/column_source_helpers.h" namespace "deephaven::dhcore::column":
     cdef cppclass CHumanReadableElementTypeName "deephaven::dhcore::column::HumanReadableElementTypeName":
@@ -140,6 +155,18 @@ cdef extern from "deephaven/dhcore/types.h" namespace "deephaven::dhcore":
         kTimestamp "deephaven::dhcore::ElementTypeId::kTimestamp"
         kLocalDate "deephaven::dhcore::ElementTypeId::kLocalDate"
         kLocalTime "deephaven::dhcore::ElementTypeId::kLocalTime"
+
+    cdef cppclass CElementType "deephaven::dhcore::ElementType":
+        @staticmethod
+        CElementType Of(ElementTypeId element_type_id)
+
+        CElementType WrapList() const
+        uint32_t ListDepth() const
+        ElementTypeId Id() const
+
+        string ToString() const
+
+    cdef extern bool operator==(const CElementType &lhs, const CElementType &rhs)
 
     cdef cppclass CDateTime "deephaven::dhcore::DateTime":
         pass
@@ -174,7 +201,15 @@ cdef extern from "deephaven/dhcore/utility/cython_support.h" namespace "deephave
             const uint8_t *validityBegin, const uint8_t *validityEnd, size_t numElements)
 
         @staticmethod
-        ElementTypeId GetElementTypeId(const CColumnSource &columnSource)
+        shared_ptr[CColumnSource] SlicesToColumnSource(
+                const CColumnSource &data, size_t data_size,
+                const CColumnSource &lengths, size_t lengths_size)
+
+        @staticmethod
+        shared_ptr[CColumnSource] ContainerToColumnSource(shared_ptr[CContainerBase] data)
+
+        @staticmethod
+        string WhatADump(const CColumnSource &data, size_t size)
 
 cdef extern from "deephaven/dhcore/ticking/barrage_processor.h" namespace "deephaven::dhcore::ticking":
     cdef cppclass CBarrageProcessor "deephaven::dhcore::ticking::BarrageProcessor":
