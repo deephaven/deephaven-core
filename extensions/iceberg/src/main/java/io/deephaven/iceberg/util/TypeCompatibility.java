@@ -196,6 +196,9 @@ public final class TypeCompatibility {
 
         @Override
         public Boolean visit(ArrayType<?, ?> arrayType) {
+            // This will cover ArrayType (both native and Vector) for all primitive (/boxed primitive) types.
+            // For example, list<int> is compatible with int[], IntVector and ObjectVector<Integer>
+            // Further constraints might be enforced by the actual reading/writing code
             final Type<?> componentType = arrayType.componentType();
             return componentType.walk(new PrimitiveCompat(elementType));
         }

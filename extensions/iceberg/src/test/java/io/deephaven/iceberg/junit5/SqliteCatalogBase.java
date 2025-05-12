@@ -904,6 +904,20 @@ public abstract class SqliteCatalogBase {
                             (LongVector) new LongVectorDirect()));
             readWithDefinitionTestHelper(identifier, readDefinition, expectedInferred);
         }
+
+        // byte list -> Byte[] (should fail)
+        {
+            final TableDefinition readDefinition = TableDefinition.of(
+                    ColumnDefinition.of("byteList", Type.find(Byte.class).arrayType()));
+            readWithDefinitionFailureTestImpl(identifier, readDefinition);
+        }
+
+        // byte list -> ObjectVector<Byte> (should fail)
+        {
+            final TableDefinition readDefinition = TableDefinition.of(
+                    ColumnDefinition.of("byteList", ObjectVector.type((GenericType<?>) Type.find(Byte.class))));
+            readWithDefinitionFailureTestImpl(identifier, readDefinition);
+        }
     }
 
     @Test
@@ -995,6 +1009,20 @@ public abstract class SqliteCatalogBase {
                     ColumnDefinition.of("shortList", Type.byteType().arrayType()));
             readWithDefinitionFailureTestImpl(identifier, readDefinition);
         }
+
+        // short list -> Short[] (should fail)
+        {
+            final TableDefinition readDefinition = TableDefinition.of(
+                    ColumnDefinition.of("shortList", Type.find(Short.class).arrayType()));
+            readWithDefinitionFailureTestImpl(identifier, readDefinition);
+        }
+
+        // short list -> ObjectVector<Short> (should fail)
+        {
+            final TableDefinition readDefinition = TableDefinition.of(
+                    ColumnDefinition.of("shortList", ObjectVector.type((GenericType<?>) Type.find(Short.class))));
+            readWithDefinitionFailureTestImpl(identifier, readDefinition);
+        }
     }
 
     @Test
@@ -1062,6 +1090,20 @@ public abstract class SqliteCatalogBase {
                     ColumnDefinition.of("intList", Type.shortType().arrayType()));
             readWithDefinitionFailureTestImpl(identifier, readDefinition);
         }
+
+        // int list -> Integer[] (should fail)
+        {
+            final TableDefinition readDefinition = TableDefinition.of(
+                    ColumnDefinition.of("intList", Type.find(Integer.class).arrayType()));
+            readWithDefinitionFailureTestImpl(identifier, readDefinition);
+        }
+
+        // int list -> ObjectVector<Integer> (should fail)
+        {
+            final TableDefinition readDefinition = TableDefinition.of(
+                    ColumnDefinition.of("intList", ObjectVector.type((GenericType<?>) Type.find(Integer.class))));
+            readWithDefinitionFailureTestImpl(identifier, readDefinition);
+        }
     }
 
     @Test
@@ -1103,6 +1145,20 @@ public abstract class SqliteCatalogBase {
         {
             final TableDefinition readDefinition = TableDefinition.of(
                     ColumnDefinition.of("longList", Type.intType().arrayType()));
+            readWithDefinitionFailureTestImpl(identifier, readDefinition);
+        }
+
+        // long list -> Long[] (should fail)
+        {
+            final TableDefinition readDefinition = TableDefinition.of(
+                    ColumnDefinition.of("longList", Type.find(Long.class).arrayType()));
+            readWithDefinitionFailureTestImpl(identifier, readDefinition);
+        }
+
+        // long list -> ObjectVector<Long> (should fail)
+        {
+            final TableDefinition readDefinition = TableDefinition.of(
+                    ColumnDefinition.of("longList", ObjectVector.type((GenericType<?>) Type.find(Long.class))));
             readWithDefinitionFailureTestImpl(identifier, readDefinition);
         }
     }
@@ -1165,6 +1221,20 @@ public abstract class SqliteCatalogBase {
                             (DoubleVector) new DoubleVectorDirect()));
             readWithDefinitionTestHelper(identifier, readDefinition, expectedInferred);
         }
+
+        // float list -> Float[] (should fail)
+        {
+            final TableDefinition readDefinition = TableDefinition.of(
+                    ColumnDefinition.of("floatList", Type.find(Float.class).arrayType()));
+            readWithDefinitionFailureTestImpl(identifier, readDefinition);
+        }
+
+        // float list -> ObjectVector<Float> (should fail)
+        {
+            final TableDefinition readDefinition = TableDefinition.of(
+                    ColumnDefinition.of("floatList", ObjectVector.type((GenericType<?>) Type.find(Float.class))));
+            readWithDefinitionFailureTestImpl(identifier, readDefinition);
+        }
     }
 
     @Test
@@ -1218,6 +1288,20 @@ public abstract class SqliteCatalogBase {
         {
             final TableDefinition readDefinition = TableDefinition.of(
                     ColumnDefinition.of("doubleList", Type.floatType().arrayType()));
+            readWithDefinitionFailureTestImpl(identifier, readDefinition);
+        }
+
+        // double list -> Double[] (should fail)
+        {
+            final TableDefinition readDefinition = TableDefinition.of(
+                    ColumnDefinition.of("doubleList", Type.find(Double.class).arrayType()));
+            readWithDefinitionFailureTestImpl(identifier, readDefinition);
+        }
+
+        // double list -> ObjectVector<Double> (should fail)
+        {
+            final TableDefinition readDefinition = TableDefinition.of(
+                    ColumnDefinition.of("doubleList", ObjectVector.type((GenericType<?>) Type.find(Double.class))));
             readWithDefinitionFailureTestImpl(identifier, readDefinition);
         }
     }
