@@ -461,6 +461,9 @@ public abstract class SqliteCatalogBase {
     }
 
     /**
+     * This method should be called if the inferred type from the schema can be different from the types in the source
+     * table. For example, if the source table has a byte column, but the Iceberg schema has an int column.
+     *
      * @param identifier Table identifier
      * @param source Source table to be written to Iceberg
      * @param expectedIcebergSchema Expected schema of the Iceberg table
