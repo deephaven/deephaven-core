@@ -13,6 +13,7 @@ import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.regex.Pattern;
 
@@ -137,7 +138,15 @@ public class FileUtils {
      * @param fileToBeDeleted File or directory at which to begin recursive deletion.
      */
     public static void deleteRecursivelyOnNFS(final File trashFile, final File fileToBeDeleted) {
-        if (fileToBeDeleted.isDirectory()) {
+        final Path pathToBeDeleted = fileToBeDeleted.toPath();
+        final BasicFileAttributes attr;
+        try {
+            attr = Files.readAttributes(pathToBeDeleted, BasicFileAttributes.class, LinkOption.NOFOLLOW_LINKS);
+        } catch (IOException e) {
+            return;
+        }
+
+        if (attr.isDirectory()) {
             final File[] contents = fileToBeDeleted.listFiles();
             if (contents != null) {
                 for (File childFile : contents) {
@@ -145,46 +154,26 @@ public class FileUtils {
                 }
             }
             try {
-                Files.delete(fileToBeDeleted.toPath());
+                Files.delete(pathToBeDeleted);
             } catch (final IOException ioe) {
-                throw new RuntimeException(
+                throw new UncheckedIOException(
                         "Failed to delete expected empty directory " + fileToBeDeleted.getAbsolutePath(), ioe);
             }
-            // @formatter:off
-            /*
-            if (!fileToBeDeleted.delete()) {
-                throw new RuntimeException(
-                        "Failed to delete expected empty directory " + fileToBeDeleted.getAbsolutePath());
-            }
-             */
-            // @formatter:on
-        } else if (fileToBeDeleted.exists()) {
+        } else {
+            // if the file does not exist, we would have gotten IOException, which we caught and returned
             try {
-                Files.move(fileToBeDeleted.toPath(), trashFile.toPath(), StandardCopyOption.ATOMIC_MOVE);
+                Files.move(pathToBeDeleted, trashFile.toPath(), StandardCopyOption.ATOMIC_MOVE);
             } catch (final IOException ioe) {
-                throw new RuntimeException("Failed to move file " + fileToBeDeleted.getAbsolutePath()
+                throw new UncheckedIOException("Failed to move file " + fileToBeDeleted.getAbsolutePath()
                         + " to temporary location " + trashFile.getAbsolutePath(), ioe);
             }
 
             try {
                 Files.delete(trashFile.toPath());
             } catch (final IOException ioe) {
-                throw new RuntimeException("Failed to delete temporary location " + trashFile.getAbsolutePath()
+                throw new UncheckedIOException("Failed to delete temporary location " + trashFile.getAbsolutePath()
                         + " for file " + fileToBeDeleted.getAbsolutePath(), ioe);
             }
-
-            // @formatter:off
-            /*
-            if (!fileToBeDeleted.renameTo(trashFile)) {
-                throw new RuntimeException("Failed to move file " + fileToBeDeleted.getAbsolutePath()
-                        + " to temporary location " + trashFile.getAbsolutePath());
-            }
-            if (!trashFile.delete()) {
-                throw new RuntimeException("Failed to delete temporary location " + trashFile.getAbsolutePath()
-                        + " for file " + fileToBeDeleted.getAbsolutePath());
-            }
-             */
-            // @formatter:on
         }
     }
 
