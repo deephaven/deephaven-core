@@ -822,11 +822,11 @@ public abstract class SqliteCatalogBase {
                         .named("byteList")).named("root");
         final Table expectedInferredDefault = TableTools.newTable(
                 TableTools.col("byteList",
-                        new IntVectorDirect(42, NULL_INT, -1),
+                        new int[] {42, NULL_INT, -1},
                         null,
-                        (IntVector) new IntVectorDirect()));
+                        new int[] {}));
 
-        // By default, byte list -> IntVector
+        // By default, byte list -> int[]
         readWriteTestHelper(identifier, source, expectedIcebergSchema, expectedParquetSchema, expectedInferredDefault);
 
         // byte list -> ByteVector
@@ -869,19 +869,20 @@ public abstract class SqliteCatalogBase {
         {
             final TableDefinition readDefinition = TableDefinition.of(
                     ColumnDefinition.of("byteList", Type.intType().arrayType()));
-            final Table expectedInferred = TableTools.newTable(
-                    TableTools.col("byteList",
-                            new int[] {42, NULL_INT, -1},
-                            null,
-                            new int[] {}));
+            final Table expectedInferred = expectedInferredDefault;
             readWithDefinitionTestHelper(identifier, readDefinition, expectedInferred);
         }
 
-        // byte list -> IntVector (explicit)
+        // byte list -> IntVector
         {
+            final Table expectedInferred = TableTools.newTable(
+                    TableTools.col("byteList",
+                            new IntVectorDirect(42, NULL_INT, -1),
+                            null,
+                            (IntVector) new IntVectorDirect()));
             final TableDefinition readDefinition = TableDefinition.of(
                     ColumnDefinition.of("byteList", IntVector.type()));
-            readWithDefinitionTestHelper(identifier, readDefinition, expectedInferredDefault);
+            readWithDefinitionTestHelper(identifier, readDefinition, expectedInferred);
         }
 
         // byte list -> long[]
@@ -944,11 +945,11 @@ public abstract class SqliteCatalogBase {
                         .named("shortList")).named("root");
         final Table expectedInferredDefault = TableTools.newTable(
                 TableTools.col("shortList",
-                        new IntVectorDirect(42, NULL_INT, -1),
+                        new int[] {42, NULL_INT, -1},
                         null,
-                        (IntVector) new IntVectorDirect()));
+                        new int[] {}));
 
-        // By default, short list -> IntVector
+        // By default, short list -> int[]
         readWriteTestHelper(identifier, source, expectedIcebergSchema, expectedParquetSchema, expectedInferredDefault);
 
         // short list -> ShortVector
@@ -975,11 +976,16 @@ public abstract class SqliteCatalogBase {
             readWithDefinitionTestHelper(identifier, readDefinition, expectedInferred);
         }
 
-        // short list -> IntVector (explicit)
+        // short list -> IntVector
         {
             final TableDefinition readDefinition = TableDefinition.of(
                     ColumnDefinition.of("shortList", IntVector.type()));
-            readWithDefinitionTestHelper(identifier, readDefinition, expectedInferredDefault);
+            final Table expectedInferred = TableTools.newTable(
+                    TableTools.col("shortList",
+                            new IntVectorDirect(42, NULL_INT, -1),
+                            null,
+                            (IntVector) new IntVectorDirect()));
+            readWithDefinitionTestHelper(identifier, readDefinition, expectedInferred);
         }
 
         // short list -> long[]
@@ -1047,20 +1053,21 @@ public abstract class SqliteCatalogBase {
                                 .addField(optional(INT32).as(intType(32, true)).named("element"))
                                 .named("list"))
                         .named("intList")).named("root");
-        final Table expectedInferredDefault = TableTools.newTable(
-                TableTools.col("intList",
-                        new IntVectorDirect(42, NULL_INT, -1),
-                        null,
-                        (IntVector) new IntVectorDirect()));
 
-        // By default, int list -> IntVector
-        readWriteTestHelper(identifier, source, expectedIcebergSchema, expectedParquetSchema, expectedInferredDefault);
+        // By default, int list -> int[]
+        readWriteTestHelper(identifier, source, expectedIcebergSchema, expectedParquetSchema, source);
 
-        // int list -> IntVector (explicit)
+        // int list -> IntVector
         {
+            final Table expectedInferred = TableTools.newTable(
+                    TableTools.col("intList",
+                            new IntVectorDirect(42, NULL_INT, -1),
+                            null,
+                            (IntVector) new IntVectorDirect()));
+
             final TableDefinition readDefinition = TableDefinition.of(
                     ColumnDefinition.of("intList", IntVector.type()));
-            readWithDefinitionTestHelper(identifier, readDefinition, expectedInferredDefault);
+            readWithDefinitionTestHelper(identifier, readDefinition, expectedInferred);
         }
 
         // int list -> long[]
@@ -1128,20 +1135,21 @@ public abstract class SqliteCatalogBase {
                                 .addField(optional(INT64).named("element"))
                                 .named("list"))
                         .named("longList")).named("root");
-        final Table expectedInferredDefault = TableTools.newTable(
-                TableTools.col("longList",
-                        new LongVectorDirect(42, NULL_LONG, -1),
-                        null,
-                        (LongVector) new LongVectorDirect()));
 
-        // By default, long list -> LongVector
-        readWriteTestHelper(identifier, source, expectedIcebergSchema, expectedParquetSchema, expectedInferredDefault);
 
-        // long list -> LongVector (explicit)
+        // By default, long list -> long[]
+        readWriteTestHelper(identifier, source, expectedIcebergSchema, expectedParquetSchema, source);
+
+        // long list -> LongVector
         {
+            final Table expectedInferred = TableTools.newTable(
+                    TableTools.col("longList",
+                            new LongVectorDirect(42, NULL_LONG, -1),
+                            null,
+                            (LongVector) new LongVectorDirect()));
             final TableDefinition readDefinition = TableDefinition.of(
                     ColumnDefinition.of("longList", LongVector.type()));
-            readWithDefinitionTestHelper(identifier, readDefinition, expectedInferredDefault);
+            readWithDefinitionTestHelper(identifier, readDefinition, expectedInferred);
         }
 
         // long list -> int[] (should fail)
@@ -1185,20 +1193,21 @@ public abstract class SqliteCatalogBase {
                                 .addField(optional(FLOAT).named("element"))
                                 .named("list"))
                         .named("floatList")).named("root");
-        final Table expectedInferredDefault = TableTools.newTable(
-                TableTools.col("floatList",
-                        new FloatVectorDirect(42.5f, NULL_FLOAT, -1.5f),
-                        null,
-                        (FloatVector) new FloatVectorDirect()));
 
-        // By default, float list -> FloatVector
-        readWriteTestHelper(identifier, source, expectedIcebergSchema, expectedParquetSchema, expectedInferredDefault);
 
-        // float list -> FloatVector (explicit)
+        // By default, float list -> float[]
+        readWriteTestHelper(identifier, source, expectedIcebergSchema, expectedParquetSchema, source);
+
+        // float list -> FloatVector
         {
             final TableDefinition readDefinition = TableDefinition.of(
                     ColumnDefinition.of("floatList", FloatVector.type()));
-            readWithDefinitionTestHelper(identifier, readDefinition, expectedInferredDefault);
+            final Table expectedInferred = TableTools.newTable(
+                    TableTools.col("floatList",
+                            new FloatVectorDirect(42.5f, NULL_FLOAT, -1.5f),
+                            null,
+                            (FloatVector) new FloatVectorDirect()));
+            readWithDefinitionTestHelper(identifier, readDefinition, expectedInferred);
         }
 
         // float list -> double[]
@@ -1259,31 +1268,20 @@ public abstract class SqliteCatalogBase {
                                 .addField(optional(DOUBLE).named("element"))
                                 .named("list"))
                         .named("doubleList")).named("root");
-        final Table expectedInferredDefault = TableTools.newTable(
-                TableTools.col("doubleList",
-                        new DoubleVectorDirect(42.6, NULL_DOUBLE, -1.2),
-                        null,
-                        (DoubleVector) new DoubleVectorDirect()));
 
-        // By default, double list -> DoubleVector
-        readWriteTestHelper(identifier, source, expectedIcebergSchema, expectedParquetSchema, expectedInferredDefault);
 
-        // double list -> DoubleVector (explicit)
+        // By default, double list -> double[]
+        readWriteTestHelper(identifier, source, expectedIcebergSchema, expectedParquetSchema, source);
+
+        // double list -> DoubleVector
         {
             final TableDefinition readDefinition = TableDefinition.of(
                     ColumnDefinition.of("doubleList", DoubleVector.type()));
-            readWithDefinitionTestHelper(identifier, readDefinition, expectedInferredDefault);
-        }
-
-        // double list -> double[]
-        {
-            final TableDefinition readDefinition = TableDefinition.of(
-                    ColumnDefinition.of("doubleList", Type.doubleType().arrayType()));
             final Table expectedInferred = TableTools.newTable(
                     TableTools.col("doubleList",
-                            new double[] {42.6, NULL_DOUBLE, -1.2},
+                            new DoubleVectorDirect(42.6, NULL_DOUBLE, -1.2),
                             null,
-                            new double[] {}));
+                            (DoubleVector) new DoubleVectorDirect()));
             readWithDefinitionTestHelper(identifier, readDefinition, expectedInferred);
         }
 
@@ -1328,18 +1326,19 @@ public abstract class SqliteCatalogBase {
                                 .addField(optional(BOOLEAN).named("element"))
                                 .named("list"))
                         .named("booleanList")).named("root");
+
+
+        // By default, Boolean list -> Boolean[]
+        readWriteTestHelper(identifier, source, expectedIcebergSchema, expectedParquetSchema, source);
+
+        // Boolean list -> ObjectVector<Boolean>
+        final TableDefinition readDefinition = TableDefinition.of(
+                ColumnDefinition.of("booleanList", ObjectVector.type(Type.booleanType().boxedType())));
         final Table expectedInferred = TableTools.newTable(
                 TableTools.col("booleanList",
                         new ObjectVectorDirect<Boolean>(true, NULL_BOOLEAN, false),
                         null,
                         (ObjectVector<Boolean>) new ObjectVectorDirect<Boolean>()));
-
-        // By default, Boolean list -> ObjectVector<Boolean>
-        readWriteTestHelper(identifier, source, expectedIcebergSchema, expectedParquetSchema, expectedInferred);
-
-        // Boolean list -> ObjectVector<Boolean> (explicit)
-        final TableDefinition readDefinition = TableDefinition.of(
-                ColumnDefinition.of("booleanList", ObjectVector.type(Type.booleanType().boxedType())));
         readWithDefinitionTestHelper(identifier, readDefinition, expectedInferred);
     }
 
@@ -1362,18 +1361,18 @@ public abstract class SqliteCatalogBase {
                                 .addField(optional(BINARY).as(LogicalTypeAnnotation.stringType()).named("element"))
                                 .named("list"))
                         .named("stringList")).named("root");
+
+        // By default, String list -> String[]
+        readWriteTestHelper(identifier, source, expectedIcebergSchema, expectedParquetSchema, source);
+
+        // String list -> ObjectVector<String>
+        final TableDefinition readDefinition = TableDefinition.of(
+                ColumnDefinition.of("stringList", ObjectVector.type(Type.stringType())));
         final Table expectedInferred = TableTools.newTable(
                 TableTools.col("stringList",
                         new ObjectVectorDirect<>("foo", null, "bar"),
                         null,
                         (ObjectVector<String>) new ObjectVectorDirect<String>()));
-
-        // By default, String list -> ObjectVector<String>
-        readWriteTestHelper(identifier, source, expectedIcebergSchema, expectedParquetSchema, expectedInferred);
-
-        // String list -> ObjectVector<String> (explicit)
-        final TableDefinition readDefinition = TableDefinition.of(
-                ColumnDefinition.of("stringList", ObjectVector.type(Type.stringType())));
         readWithDefinitionTestHelper(identifier, readDefinition, expectedInferred);
     }
 
@@ -1398,18 +1397,18 @@ public abstract class SqliteCatalogBase {
                                         .named("element"))
                                 .named("list"))
                         .named("timestampTzList")).named("root");
+
+        // By default, Instant list -> Instant[]
+        readWriteTestHelper(identifier, source, expectedIcebergSchema, expectedParquetSchema, source);
+
+        // Instant list -> ObjectVector<Instant>
+        final TableDefinition readDefinition = TableDefinition.of(
+                ColumnDefinition.of("timestampTzList", ObjectVector.type((GenericType<?>) Type.instantType())));
         final Table expectedInferred = TableTools.newTable(
                 TableTools.col("timestampTzList",
                         new ObjectVectorDirect<>(Instant.parse("2025-01-01T12:00:03Z"), null, Instant.EPOCH),
                         null,
                         (ObjectVector<Instant>) new ObjectVectorDirect<Instant>()));
-
-        // By default, Instant list -> ObjectVector<Instant>
-        readWriteTestHelper(identifier, source, expectedIcebergSchema, expectedParquetSchema, expectedInferred);
-
-        // Instant list -> ObjectVector<Instant> (explicit)
-        final TableDefinition readDefinition = TableDefinition.of(
-                ColumnDefinition.of("timestampTzList", ObjectVector.type((GenericType<?>) Type.instantType())));
         readWithDefinitionTestHelper(identifier, readDefinition, expectedInferred);
     }
 
@@ -1436,6 +1435,14 @@ public abstract class SqliteCatalogBase {
                                         LogicalTypeAnnotation.TimeUnit.NANOS)).named("element"))
                                 .named("list"))
                         .named("timestampNtzList")).named("root");
+
+        // By default, LocalDateTime list -> LocalDateTime[]
+        readWriteTestHelper(identifier, source, expectedIcebergSchema, expectedParquetSchema, source);
+
+        // LocalDateTime list -> ObjectVector<LocalDateTime>
+        final TableDefinition readDefinition = TableDefinition.of(
+                ColumnDefinition.of("timestampNtzList",
+                        ObjectVector.type((GenericType<?>) Type.find(LocalDateTime.class))));
         final Table expectedInferred = TableTools.newTable(
                 TableTools.col("timestampNtzList",
                         new ObjectVectorDirect<>(LocalDateTime.of(2025, 1, 1, 12, 0, 1),
@@ -1443,14 +1450,6 @@ public abstract class SqliteCatalogBase {
                                 LocalDateTime.of(2023, 1, 1, 0, 0)),
                         null,
                         (ObjectVector<LocalDateTime>) new ObjectVectorDirect<LocalDateTime>()));
-
-        // By default, LocalDateTime list -> ObjectVector<LocalDateTime>
-        readWriteTestHelper(identifier, source, expectedIcebergSchema, expectedParquetSchema, expectedInferred);
-
-        // LocalDateTime list -> ObjectVector<LocalDateTime> (explicit)
-        final TableDefinition readDefinition = TableDefinition.of(
-                ColumnDefinition.of("timestampNtzList",
-                        ObjectVector.type((GenericType<?>) Type.find(LocalDateTime.class))));
         readWithDefinitionTestHelper(identifier, readDefinition, expectedInferred);
     }
 
@@ -1473,18 +1472,18 @@ public abstract class SqliteCatalogBase {
                                 .addField(optional(INT32).as(LogicalTypeAnnotation.dateType()).named("element"))
                                 .named("list"))
                         .named("dateList")).named("root");
+
+        // By default, LocalDate list -> LocalDate[]
+        readWriteTestHelper(identifier, source, expectedIcebergSchema, expectedParquetSchema, source);
+
+        // LocalDate list -> ObjectVector<LocalDate>
+        final TableDefinition readDefinition = TableDefinition.of(
+                ColumnDefinition.of("dateList", ObjectVector.type((GenericType<?>) Type.find(LocalDate.class))));
         final Table expectedInferred = TableTools.newTable(
                 TableTools.col("dateList",
                         new ObjectVectorDirect<>(LocalDate.of(2025, 1, 1), null, LocalDate.of(2023, 1, 1)),
                         null,
                         (ObjectVector<LocalDate>) new ObjectVectorDirect<LocalDate>()));
-
-        // By default, LocalDate list -> ObjectVector<LocalDate>
-        readWriteTestHelper(identifier, source, expectedIcebergSchema, expectedParquetSchema, expectedInferred);
-
-        // LocalDate list -> ObjectVector<LocalDate> (explicit)
-        final TableDefinition readDefinition = TableDefinition.of(
-                ColumnDefinition.of("dateList", ObjectVector.type((GenericType<?>) Type.find(LocalDate.class))));
         readWithDefinitionTestHelper(identifier, readDefinition, expectedInferred);
     }
 
@@ -1509,18 +1508,18 @@ public abstract class SqliteCatalogBase {
                                         .named("element"))
                                 .named("list"))
                         .named("timeList")).named("root");
+
+        // By default, LocalTime list -> LocalTime[]
+        readWriteTestHelper(identifier, source, expectedIcebergSchema, expectedParquetSchema, source);
+
+        // LocalTime list -> ObjectVector<LocalTime>
+        final TableDefinition readDefinition = TableDefinition.of(
+                ColumnDefinition.of("timeList", ObjectVector.type((GenericType<?>) Type.find(LocalTime.class))));
         final Table expectedInferred = TableTools.newTable(
                 TableTools.col("timeList",
                         new ObjectVectorDirect<>(LocalTime.of(12, 0, 1), null, LocalTime.of(12, 0)),
                         null,
                         (ObjectVector<LocalTime>) new ObjectVectorDirect<LocalTime>()));
-
-        // By default, LocalTime list -> ObjectVector<LocalTime>
-        readWriteTestHelper(identifier, source, expectedIcebergSchema, expectedParquetSchema, expectedInferred);
-
-        // LocalTime list -> ObjectVector<LocalTime> (explicit)
-        final TableDefinition readDefinition = TableDefinition.of(
-                ColumnDefinition.of("timeList", ObjectVector.type((GenericType<?>) Type.find(LocalTime.class))));
         readWithDefinitionTestHelper(identifier, readDefinition, expectedInferred);
     }
 
