@@ -23,6 +23,7 @@ import org.apache.iceberg.Schema;
 import org.apache.iceberg.types.TypeUtil;
 import org.apache.iceberg.types.Types;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -47,11 +48,14 @@ public final class TypeInference {
      * @return the Deephaven type
      */
     public static Optional<Type<?>> of(org.apache.iceberg.types.Type icebergType) {
-        if (!icebergType.isPrimitiveType()) {
-            return Optional.empty();
+        final Type<?> type;
+        if (icebergType.isPrimitiveType()) {
+            type = ofImpl(icebergType.asPrimitiveType());
+        } else if (icebergType.isListType()) {
+            type = ofImpl(icebergType.asListType());
+        } else {
+            type = null;
         }
-        // We may support List here in the future, or other.
-        final Type<?> type = ofImpl(icebergType.asPrimitiveType());
         if (type == null) {
             return Optional.empty();
         }
@@ -73,14 +77,13 @@ public final class TypeInference {
      * possible that a specific {@link Types.DecimalType} is compatible with a {@link BigDecimal} Deephaven type.
      *
      * @param type the Deephaven type
-     * @param nextId the next id to use for created types
+     * @param inferenceVisitor the type inference visitor to use
      * @return the Iceberg type
      */
     public static Optional<org.apache.iceberg.types.Type> of(
             @NotNull final Type<?> type,
-            @NotNull final TypeUtil.NextID nextId) {
-        Objects.requireNonNull(nextId);
-        org.apache.iceberg.types.Type icebergType = type.walk(BestIcebergType.INSTANCE);
+            @NotNull final Type.Visitor<org.apache.iceberg.types.Type> inferenceVisitor) {
+        final org.apache.iceberg.types.Type icebergType = type.walk(inferenceVisitor);
         if (icebergType == null) {
             return Optional.empty();
         }
@@ -92,6 +95,7 @@ public final class TypeInference {
         return Optional.of(icebergType);
     }
 
+    @Nullable
     private static Type<?> ofImpl(org.apache.iceberg.types.Type.PrimitiveType primitiveType) {
         switch (primitiveType.typeId()) {
             case BOOLEAN:
@@ -114,6 +118,10 @@ public final class TypeInference {
                 return of((Types.StringType) primitiveType);
             case DECIMAL:
                 return of((Types.DecimalType) primitiveType);
+            case BINARY:
+                return of((Types.BinaryType) primitiveType);
+            case FIXED:
+                return of((Types.FixedType) primitiveType);
             case STRUCT:
             case LIST:
             case MAP:
@@ -123,8 +131,32 @@ public final class TypeInference {
             case TIMESTAMP_NANO:
                 // should be able to support UUID, maybe fixed length codec?
             case UUID:
-            case BINARY:
-            case FIXED:
+            default:
+                return null;
+        }
+    }
+
+    @Nullable
+    private static Type<?> ofImpl(final Types.ListType listType) {
+        switch (listType.elementType().typeId()) {
+            case DOUBLE:
+            case FLOAT:
+            case INTEGER:
+            case LONG:
+            case BOOLEAN:
+            case STRING:
+            case TIMESTAMP:
+            case DATE:
+            case TIME:
+            case DECIMAL:
+                final Type<?> componentType = ofImpl(listType.elementType().asPrimitiveType());
+                return componentType == null ? null : componentType.arrayType();
+            case FIXED: // Fall through
+            case BINARY: // Fall through
+            case LIST: // Fall through
+            case UUID: // Fall through
+            case STRUCT: // Fall through
+            case MAP: // Fall through
             default:
                 return null;
         }
@@ -173,6 +205,14 @@ public final class TypeInference {
         return Type.find(BigDecimal.class);
     }
 
+    static Type<?> of(@SuppressWarnings("unused") Types.BinaryType type) {
+        return Type.byteType().arrayType();
+    }
+
+    static Type<?> of(@SuppressWarnings("unused") Types.FixedType type) {
+        return Type.byteType().arrayType();
+    }
+
     public static abstract class Exception extends java.lang.Exception {
         public Exception() {}
 
@@ -206,11 +246,16 @@ public final class TypeInference {
         }
     }
 
-    private enum BestIcebergType implements
+    static class BestIcebergType implements
             Type.Visitor<org.apache.iceberg.types.Type>,
             PrimitiveType.Visitor<org.apache.iceberg.types.Type>,
             GenericType.Visitor<org.apache.iceberg.types.Type> {
-        INSTANCE;
+
+        final TypeUtil.NextID nextID;
+
+        BestIcebergType(@NotNull final TypeUtil.NextID nextID) {
+            this.nextID = nextID;
+        }
 
         @Override
         public org.apache.iceberg.types.Type visit(PrimitiveType<?> primitiveType) {
@@ -241,7 +286,11 @@ public final class TypeInference {
 
         @Override
         public org.apache.iceberg.types.Type visit(ArrayType<?, ?> arrayType) {
-            return null;
+            final org.apache.iceberg.types.Type elementType = arrayType.componentType().walk(this);
+            if (elementType == null) {
+                return null;
+            }
+            return Types.ListType.ofOptional(nextID.get(), elementType);
         }
 
         @Override
@@ -285,8 +334,7 @@ public final class TypeInference {
 
         @Override
         public org.apache.iceberg.types.Type visit(ByteType byteType) {
-            // TODO(DH-18253): Add support to write more types to iceberg tables
-            return null;
+            return Types.IntegerType.get();
         }
 
         @Override
@@ -297,8 +345,7 @@ public final class TypeInference {
 
         @Override
         public org.apache.iceberg.types.Type visit(ShortType shortType) {
-            // TODO(DH-18253): Add support to write more types to iceberg tables
-            return null;
+            return Types.IntegerType.get();
         }
     }
 }

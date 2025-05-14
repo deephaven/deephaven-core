@@ -1,0 +1,172 @@
+{
+  "location": "catalogs/list-columns/list_test.db/data",
+  "table-uuid": "083289c3-68d6-45f2-8cb7-8e31e413a8fe",
+  "last-updated-ms": 1746477075720,
+  "last-column-id": 24,
+  "schemas": [
+    {
+      "type": "struct",
+      "fields": [
+        {
+          "id": 1,
+          "name": "bin_col",
+          "type": "binary",
+          "required": false
+        },
+        {
+          "id": 2,
+          "name": "fixed_col",
+          "type": "fixed[13]",
+          "required": false
+        },
+        {
+          "id": 3,
+          "name": "long_list",
+          "type": {
+            "type": "list",
+            "element-id": 14,
+            "element": "long",
+            "element-required": false
+          },
+          "required": false
+        },
+        {
+          "id": 4,
+          "name": "bool_list",
+          "type": {
+            "type": "list",
+            "element-id": 15,
+            "element": "boolean",
+            "element-required": false
+          },
+          "required": false
+        },
+        {
+          "id": 5,
+          "name": "double_list",
+          "type": {
+            "type": "list",
+            "element-id": 16,
+            "element": "double",
+            "element-required": false
+          },
+          "required": false
+        },
+        {
+          "id": 6,
+          "name": "float_list",
+          "type": {
+            "type": "list",
+            "element-id": 17,
+            "element": "float",
+            "element-required": false
+          },
+          "required": false
+        },
+        {
+          "id": 7,
+          "name": "int_list",
+          "type": {
+            "type": "list",
+            "element-id": 18,
+            "element": "int",
+            "element-required": false
+          },
+          "required": false
+        },
+        {
+          "id": 8,
+          "name": "string_list",
+          "type": {
+            "type": "list",
+            "element-id": 19,
+            "element": "string",
+            "element-required": false
+          },
+          "required": false
+        },
+        {
+          "id": 9,
+          "name": "timestamp_ntz_list",
+          "type": {
+            "type": "list",
+            "element-id": 20,
+            "element": "timestamp",
+            "element-required": false
+          },
+          "required": false
+        },
+        {
+          "id": 10,
+          "name": "timestamp_tz_list",
+          "type": {
+            "type": "list",
+            "element-id": 21,
+            "element": "timestamptz",
+            "element-required": false
+          },
+          "required": false
+        },
+        {
+          "id": 11,
+          "name": "date_list",
+          "type": {
+            "type": "list",
+            "element-id": 22,
+            "element": "date",
+            "element-required": false
+          },
+          "required": false
+        },
+        {
+          "id": 12,
+          "name": "time_list",
+          "type": {
+            "type": "list",
+            "element-id": 23,
+            "element": "time",
+            "element-required": false
+          },
+          "required": false
+        },
+        {
+          "id": 13,
+          "name": "decimal_list",
+          "type": {
+            "type": "list",
+            "element-id": 24,
+            "element": "decimal(10, 2)",
+            "element-required": false
+          },
+          "required": false
+        }
+      ],
+      "schema-id": 0,
+      "identifier-field-ids": []
+    }
+  ],
+  "current-schema-id": 0,
+  "partition-specs": [
+    {
+      "spec-id": 0,
+      "fields": []
+    }
+  ],
+  "default-spec-id": 0,
+  "last-partition-id": 999,
+  "properties": {},
+  "snapshots": [],
+  "snapshot-log": [],
+  "metadata-log": [],
+  "sort-orders": [
+    {
+      "order-id": 0,
+      "fields": []
+    }
+  ],
+  "default-sort-order-id": 0,
+  "refs": {},
+  "statistics": [],
+  "format-version": 2,
+  "last-sequence-number": 0
+}

@@ -168,9 +168,8 @@ public abstract class IcebergToolsTest {
             ColumnDefinition.fromGenericType("timeField", LocalTime.class),
             ColumnDefinition.fromGenericType("timestampField", LocalDateTime.class),
             ColumnDefinition.fromGenericType("decimalField", BigDecimal.class),
-            // TODO(DH-18253): Add support to write more types to iceberg tables
-            // ColumnDefinition.fromGenericType("fixedField", byte[].class),
-            // ColumnDefinition.fromGenericType("binaryField", byte[].class),
+            ColumnDefinition.fromGenericType("fixedField", byte[].class),
+            ColumnDefinition.fromGenericType("binaryField", byte[].class),
             ColumnDefinition.ofTime("instantField"));
 
     private static final TableDefinition META_DEF = TableDefinition.of(
@@ -926,25 +925,6 @@ public abstract class IcebergToolsTest {
         table.update(snapshots.get(5).snapshotId());
         updateGraph.runWithinUnitTestCycle(table::refresh);
         Assert.eq(table.size(), "table.size()", 0, "expected rows in the table");
-    }
-
-    @Test
-    void testConvertToIcebergTypeAndBack() {
-        final Class<?>[] javaTypes = {
-                Boolean.class, double.class, float.class, int.class, long.class, String.class, Instant.class,
-                LocalDateTime.class, LocalDate.class, LocalTime.class, byte[].class
-        };
-
-        for (final Class<?> javaType : javaTypes) {
-            // Java type -> Iceberg type
-            final Type icebergType = IcebergUtils.convertToIcebergType(javaType);
-
-            // Iceberg type -> Deephaven type
-            final io.deephaven.qst.type.Type<?> deephavenType = IcebergUtils.convertToDHType(icebergType);
-
-            // Deephaven type == Java type
-            Assert.eq(javaType, javaType.getName(), deephavenType.clazz(), deephavenType.clazz().getName());
-        }
     }
 
     private static class MyResolver extends ResolverProviderImpl {

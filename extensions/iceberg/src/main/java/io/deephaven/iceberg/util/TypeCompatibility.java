@@ -20,6 +20,8 @@ import io.deephaven.qst.type.ShortType;
 import io.deephaven.qst.type.StringType;
 import io.deephaven.qst.type.Type;
 import org.apache.iceberg.types.Types;
+import org.apache.iceberg.types.Type.TypeID;
+import org.jetbrains.annotations.NotNull;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -39,10 +41,12 @@ public final class TypeCompatibility {
      * @return {@code true} if the types are compatible, {@code false} otherwise
      */
     public static boolean isCompatible(Type<?> type, org.apache.iceberg.types.Type icebergType) {
-        if (!icebergType.isPrimitiveType()) {
-            return false;
+        if (icebergType.isPrimitiveType()) {
+            return PrimitiveCompat.of(type, icebergType.asPrimitiveType());
+        } else if (icebergType.isListType()) {
+            return ListCompat.of(type, icebergType.asListType());
         }
-        return PrimitiveCompat.of(type, icebergType.asPrimitiveType());
+        return false;
     }
 
     private static final class PrimitiveCompat
@@ -83,13 +87,14 @@ public final class TypeCompatibility {
 
         @Override
         public Boolean visit(InstantType instantType) {
-            // todo: TZ nanos
             return pt == Types.TimestampType.withZone();
         }
 
         @Override
         public Boolean visit(ArrayType<?, ?> arrayType) {
-            // TODO(DH-18253): Add support to write more types to iceberg tables
+            if (pt.typeId() == TypeID.BINARY || pt.typeId() == TypeID.FIXED) {
+                return byte.class.equals(arrayType.componentType().clazz());
+            }
             return false;
         }
 
@@ -118,12 +123,12 @@ public final class TypeCompatibility {
 
         @Override
         public Boolean visit(ByteType byteType) {
-            return false;
+            return isIntegral();
         }
 
         @Override
         public Boolean visit(CharType charType) {
-            return false;
+            return isIntegral();
         }
 
         @Override
@@ -161,6 +166,66 @@ public final class TypeCompatibility {
         private boolean isIntegral() {
             return pt == Types.IntegerType.get()
                     || pt == Types.LongType.get();
+        }
+    }
+
+    private static final class ListCompat implements Type.Visitor<Boolean>, GenericType.Visitor<Boolean> {
+
+        private final org.apache.iceberg.types.Type.PrimitiveType elementType;
+
+        public static boolean of(Type<?> type, Types.ListType listType) {
+            final org.apache.iceberg.types.Type elementType = listType.elementType();
+            if (elementType == null) {
+                throw new IllegalArgumentException("ListType must have an element type");
+            }
+            if (!elementType.isPrimitiveType()) {
+                // Not supported
+                return false;
+            }
+            return type.walk(new ListCompat(elementType.asPrimitiveType()));
+        }
+
+        private ListCompat(@NotNull final org.apache.iceberg.types.Type.PrimitiveType elementType) {
+            this.elementType = elementType;
+        }
+
+        @Override
+        public Boolean visit(GenericType<?> genericType) {
+            return genericType.walk((GenericType.Visitor<Boolean>) this);
+        }
+
+        @Override
+        public Boolean visit(ArrayType<?, ?> arrayType) {
+            // This will cover ArrayType (both native and Vector) for all primitive (/boxed primitive) types.
+            // For example, list<int> is compatible with int[], IntVector and ObjectVector<Integer>
+            // Further constraints might be enforced by the actual reading/writing code
+            final Type<?> componentType = arrayType.componentType();
+            return componentType.walk(new PrimitiveCompat(elementType));
+        }
+
+        @Override
+        public Boolean visit(BoxedType<?> boxedType) {
+            return false;
+        }
+
+        @Override
+        public Boolean visit(StringType stringType) {
+            return false;
+        }
+
+        @Override
+        public Boolean visit(InstantType instantType) {
+            return false;
+        }
+
+        @Override
+        public Boolean visit(CustomType<?> customType) {
+            return false;
+        }
+
+        @Override
+        public Boolean visit(PrimitiveType<?> primitiveType) {
+            return false;
         }
     }
 }
