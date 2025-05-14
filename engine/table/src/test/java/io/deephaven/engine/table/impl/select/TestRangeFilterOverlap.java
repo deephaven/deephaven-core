@@ -8,7 +8,7 @@ import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 
-public class TestRangeFilterIntervals extends RefreshingTableTestCase {
+public class TestRangeFilterOverlap extends RefreshingTableTestCase {
 
     public void testCharRangeFilterOverlap() {
         CharRangeFilter f;

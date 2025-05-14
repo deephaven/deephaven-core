@@ -3,7 +3,6 @@
 //
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.api.filter.Filter;
 import io.deephaven.base.stats.Stats;
 import io.deephaven.base.stats.ThreadSafeCounter;
 import io.deephaven.base.stats.Value;
@@ -48,7 +47,8 @@ import java.util.function.Consumer;
 
 public abstract class AbstractColumnSource<T> implements
         ColumnSource<T>,
-        DefaultChunkSource.WithPrev<Values> {
+        DefaultChunkSource.WithPrev<Values>,
+        PushdownFilterMatcher {
 
     /**
      * For a {@link #match(boolean, boolean, boolean, DataIndex, RowSet, Object...)} call that uses a DataIndex, by
@@ -343,6 +343,44 @@ public abstract class AbstractColumnSource<T> implements
         }
     }
 
+    /**
+     * Get the pushdown predicate manager for this column source; returns null if there is no pushdown manager.
+     */
+    public PushdownPredicateManager pushdownManager() {
+        return null;
+    }
+
+    @Override
+    public long estimatePushdownFilterCost(
+            final WhereFilter filter,
+            final RowSet selection,
+            final RowSet fullSet,
+            final boolean usePrev,
+            final PushdownFilterContext context) {
+        // Default to having no benefit by pushing down.
+        return Long.MAX_VALUE;
+    }
+
+    @Override
+    public void pushdownFilter(
+            final WhereFilter filter,
+            final RowSet selection,
+            final RowSet fullSet,
+            final boolean usePrev,
+            final PushdownFilterContext context,
+            final long costCeiling,
+            final JobScheduler jobScheduler,
+            final Consumer<PushdownResult> onComplete,
+            final Consumer<Exception> onError) {
+        // Default to returning all results as "maybe"
+        onComplete.accept(PushdownResult.of(RowSetFactory.empty(), selection.copy()));
+    }
+
+    @Override
+    public PushdownFilterContext makePushdownFilterContext() {
+        return PushdownFilterContext.NO_PUSHDOWN_CONTEXT;
+    }
+
     @Override
     public <ALTERNATE_DATA_TYPE> boolean allowsReinterpret(
             @NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType) {
@@ -358,72 +396,6 @@ public abstract class AbstractColumnSource<T> implements
                     + ", alternateDataType=" + alternateDataType);
         }
         return doReinterpret(alternateDataType);
-    }
-
-    /**
-     * Estimate the cost of pushing down a filter. This returns a unitless value that can be used to compare the cost of
-     * executing different filters.
-     *
-     * @param filter The {@link Filter filter} to test.
-     * @param selection The set of rows to tests.
-     * @param fullSet The full set of rows
-     * @param usePrev Whether to use the previous result
-     * @param context The {@link FilterContext} to use for the pushdown operation.
-     * @return The estimated cost of the push down operation.
-     */
-    public long estimatePushdownFilterCost(
-            final WhereFilter filter,
-            final RowSet selection,
-            final RowSet fullSet,
-            final boolean usePrev,
-            final FilterContext context) {
-        return Long.MAX_VALUE; // No benefit to pushing down.
-    }
-
-    /**
-     * Push down the given filter to the underlying table and return the result.
-     *
-     * @param filter The {@link Filter filter} to apply.
-     * @param input The set of rows to test.
-     * @param fullSet The full set of rows
-     * @param usePrev Whether to use the previous result
-     * @param context The {@link FilterContext} to use for the pushdown operation.
-     * @param costCeiling Execute all possible filters with a cost leq this value.
-     * @param jobScheduler The job scheduler to use for scheduling child jobs
-     * @param onComplete Consumer of the output rowsets for added and modified rows that pass the filter
-     * @param onError Consumer of any exceptions that occur during the pushdown operation
-     * @return The result of the push down operation.
-     */
-    public void pushdownFilter(
-            final WhereFilter filter,
-            final RowSet input,
-            final RowSet fullSet,
-            final boolean usePrev,
-            final FilterContext context,
-            final long costCeiling,
-            final JobScheduler jobScheduler,
-            final Consumer<PushdownResult> onComplete,
-            final Consumer<Exception> onError) {
-        // Default to returning all results as maybe
-        onComplete.accept(PushdownResult.of(RowSetFactory.empty(), input.copy()));
-    }
-
-    /**
-     * Get the pushdown predicate manager for this column source; returns null if there is no pushdown manager.
-     */
-    public PushdownPredicateManager pushdownManager() {
-        return null;
-    }
-
-    /**
-     * Make a filter context for this column source. This is used to pass the filter and other information to the
-     * filtering code.
-     *
-     * @param filter the filter that belongs to this context
-     * @return the created filter context
-     */
-    public FilterContext makeFilterContext(final WhereFilter filter) {
-        return FilterContext.of(filter, this);
     }
 
     /**

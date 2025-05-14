@@ -3,8 +3,8 @@
 //
 package io.deephaven.engine.table.impl.sources.regioned;
 
-import com.google.common.math.LongMath;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.*;
 import io.deephaven.engine.rowset.*;
@@ -32,6 +32,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -49,7 +50,8 @@ public class RegionedColumnSourceManager
      * How many locations to test for data index or other location-level metadata before we give up and assume the
      * location has no useful information for push-down purposes.
      */
-    private static final long PUSH_DOWN_LOCATIONS_TO_TEST = 5;
+    private static final int PUSHDOWN_LOCATION_SAMPLES = Configuration.getInstance()
+            .getIntegerForClassWithDefault(RegionedColumnSourceManager.class, "pushdownLocationSamples", 5);
 
     /**
      * The liveness node to which this column source manager will delegate.
@@ -767,28 +769,44 @@ public class RegionedColumnSourceManager
             final RowSet selection,
             final RowSet fullSet,
             final boolean usePrev,
-            final FilterContext context) {
+            final PushdownFilterContext context) {
 
         if (includedLocations().isEmpty()) {
             return 0; // No locations, no cost
         }
 
         // Test a few locations and assume the rest are similar (or no worse)
-        final long costPerLocation = includedLocations().stream().limit(PUSH_DOWN_LOCATIONS_TO_TEST).mapToLong(
-                location -> location.estimatePushdownFilterCost(filter, selection, fullSet, usePrev, context))
-                .reduce(Long::max).orElse(Long.MAX_VALUE);
+        final Collection<TableLocation> locations = includedLocations();
+        final long locationCost;
 
-        return LongMath.saturatedMultiply(includedLocations().size(), costPerLocation);
+        if (locations instanceof ArrayList) {
+            // We have fast access to the locations, so test a few regularly spaced locations and return the minimum
+            // cost encountered.
+            final ArrayList<TableLocation> locationList = (ArrayList<TableLocation>) locations;
+            final int step = Math.max(1, locationList.size() / PUSHDOWN_LOCATION_SAMPLES);
+            final Collection<TableLocation> candidateLocations =
+                    IntStream.range(0, Math.min(locationList.size(), PUSHDOWN_LOCATION_SAMPLES))
+                            .mapToObj(idx -> locationList.get(idx * step)).collect(Collectors.toList());
+            locationCost = candidateLocations.parallelStream().mapToLong(
+                    location -> location.estimatePushdownFilterCost(filter, selection, fullSet, usePrev, context))
+                    .reduce(Long::min).orElse(Long.MAX_VALUE);
+        } else {
+            // Test the first N locations
+            locationCost = includedLocations().parallelStream().limit(PUSHDOWN_LOCATION_SAMPLES).mapToLong(
+                    location -> location.estimatePushdownFilterCost(filter, selection, fullSet, usePrev, context))
+                    .reduce(Long::min).orElse(Long.MAX_VALUE);
+        }
+
+        return locationCost;
     }
 
     @Override
     public void pushdownFilter(
-            final Map<String, ColumnSource<?>> columnSourceMap,
             final WhereFilter filter,
             final RowSet input,
             final RowSet fullSet,
             final boolean usePrev,
-            final FilterContext context,
+            final PushdownFilterContext context,
             final long costCeiling,
             final JobScheduler jobScheduler,
             final Consumer<PushdownResult> onComplete,
@@ -812,21 +830,34 @@ public class RegionedColumnSourceManager
                             input.subSetByKeyRange(locationStartKey, locationEndKey)) {
                         locationInput.shiftInPlace(-locationStartKey); // Shift to the region's key space
                         locationInput.retain(entry.rowSetAtLastUpdate); // intersect in place with region's row set
-                        try (final PushdownResult result = entry.location.pushdownFilter(columnSourceMap, filter,
-                                locationInput, usePrev, context, costCeiling)) {
-                            // Add the results to the global set.
-                            synchronized (match) {
-                                match.insertWithShift(locationStartKey, result.match());
+
+                        final Consumer<PushdownResult> resultConsumer = result -> {
+                            try (final PushdownResult ignored = result) {
+                                // Add the results to the global set.
+                                synchronized (match) {
+                                    match.insertWithShift(locationStartKey, result.match());
+                                }
+                                synchronized (maybeMatch) {
+                                    maybeMatch.insertWithShift(locationStartKey, result.maybeMatch());
+                                }
                             }
-                            synchronized (maybeMatch) {
-                                maybeMatch.insertWithShift(locationStartKey, result.maybeMatch());
-                            }
-                        } catch (final Exception e) {
-                            // If we have an error, we need to notify the user and stop processing.
-                            onError.accept(e);
-                        }
+                        };
+                        entry.location.pushdownFilter(filter, locationInput, fullSet, usePrev, context, costCeiling,
+                                jobScheduler, resultConsumer, onError);
                     }
                     locationResume.run();
                 }, () -> onComplete.accept(PushdownResult.of(match, maybeMatch)), onError);
+    }
+
+    /**
+     * Simple implementation of the abstract {@link BasePushdownFilterContext}. Can be extended to add additional state
+     * if needed.
+     */
+    public static class RegionedColumnSourcePushdownFilterContext extends BasePushdownFilterContext {
+    }
+
+    @Override
+    public PushdownFilterContext makePushdownFilterContext() {
+        return new RegionedColumnSourcePushdownFilterContext();
     }
 }

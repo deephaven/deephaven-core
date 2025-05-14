@@ -164,17 +164,17 @@ public class SingleSidedComparableRangeFilter extends AbstractRangeFilter {
             final boolean lowerInclusive,
             final boolean upperInclusive) {
         if (isGreaterThan) {
-            final int c = compare(pivot, upper);
+            final int c = CompareUtils.compare(pivot, upper);
             return c < 0 || (c == 0 && this.lowerInclusive);
         } else {
-            final int c = compare(lower, pivot);
+            final int c = CompareUtils.compare(lower, pivot);
             return c < 0 || (c == 0 && this.lowerInclusive);
         }
     }
 
     @Override
     public boolean contains(@NotNull final Object value) {
-        final int c = compare(pivot, value);
+        final int c = CompareUtils.compare(pivot, value);
         if (isGreaterThan) {
             return c < 0 || (c == 0 && this.lowerInclusive);
         } else {

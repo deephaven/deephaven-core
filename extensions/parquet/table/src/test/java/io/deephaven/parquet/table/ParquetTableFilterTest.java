@@ -188,6 +188,71 @@ public final class ParquetTableFilterTest {
         // test integer and double values in the filter strings
         filterAndVerifyResults(diskTable, memTable, "sequential_bd < 500");
         filterAndVerifyResults(diskTable, memTable, "sequential_bd >= 500.0", "sequential_bd < 1000");
+        filterAndVerifyResults(diskTable, memTable, "sequential_bd < 1000", "sequential_bd >= 500.0");
+
+        // BigInteger range and match filters
+        ExecutionContext.getContext().getQueryScope().putParam("bi_500", BigInteger.valueOf(500));
+        ExecutionContext.getContext().getQueryScope().putParam("bi_1000", BigInteger.valueOf(1000));
+
+        filterAndVerifyResults(diskTable, memTable, "sequential_bi < bi_500");
+        filterAndVerifyResults(diskTable, memTable, "sequential_bi >= bi_500", "sequential_bi < bi_1000");
+        filterAndVerifyResults(diskTable, memTable, "sequential_bi = bi_500");
+        // test integer and double values in the filter strings
+        filterAndVerifyResults(diskTable, memTable, "sequential_bi < 500");
+        filterAndVerifyResults(diskTable, memTable, "sequential_bi >= 500.0", "sequential_bi < 1000");
+        filterAndVerifyResults(diskTable, memTable, "sequential_bi = 500");
+
+        // long range and match filters
+        filterAndVerifyResults(diskTable, memTable, "sequential_val <= 500");
+        filterAndVerifyResults(diskTable, memTable, "sequential_val <= 5000", "sequential_val > 3000");
+        filterAndVerifyResults(diskTable, memTable, "sequential_val = 500");
+
+        // mixed type with complex filters
+        final Filter complexFilter =
+                Filter.or(Filter.from("sequential_val <= 500", "sequential_val = 555", "symbol > `1000`"));
+        verifyResults(diskTable.where(complexFilter), memTable.where(complexFilter));
+    }
+
+    @Test
+    public void partitionedNoDataIndexTest() {
+        final String destPath = Path.of(rootFile.getPath(), "ParquetTest_kvPartitionsTest").toString();
+        final int tableSize = 1_000_000;
+
+        final Instant baseTime = parseInstant("2023-01-01T00:00:00 NY");
+        QueryScope.addParam("baseTime", baseTime);
+
+        final Table largeTable = TableTools.emptyTable(tableSize).update(
+                "Timestamp = baseTime + i * 1_000_000_000L",
+                "sequential_val = ii",
+                "symbol = String.format(`s_%04d`, randomInt(0,300))",
+                "sequential_bd = java.math.BigDecimal.valueOf(ii * 0.1)",
+                "sequential_bi = java.math.BigInteger.valueOf(ii)");
+
+        final PartitionedTable partitionedTable = largeTable.partitionBy("symbol");
+        ParquetTools.writeKeyValuePartitionedTable(partitionedTable, destPath, EMPTY);
+
+        final Table diskTable = ParquetTools.readTable(destPath);
+        final Table memTable = diskTable.select();
+
+        assertTableEquals(diskTable, memTable);
+
+        // string range and match filters
+        filterAndVerifyResults(diskTable, memTable, "symbol < `s_0100`");
+        filterAndVerifyResults(diskTable, memTable, "symbol = `s_0050`");
+
+        // Timestamp range and match filters
+        filterAndVerifyResults(diskTable, memTable, "Timestamp < '2023-01-02T00:00:00 NY'");
+        filterAndVerifyResults(diskTable, memTable, "Timestamp = '2023-01-02T00:00:00 NY'");
+
+        // BigDecimal range filters (match is complicated with BD, given
+        ExecutionContext.getContext().getQueryScope().putParam("bd_500", BigDecimal.valueOf(500.0));
+        ExecutionContext.getContext().getQueryScope().putParam("bd_1000", BigDecimal.valueOf(1000.00));
+
+        filterAndVerifyResults(diskTable, memTable, "sequential_bd < bd_500");
+        filterAndVerifyResults(diskTable, memTable, "sequential_bd >= bd_500", "sequential_bd < bd_1000");
+        // test integer and double values in the filter strings
+        filterAndVerifyResults(diskTable, memTable, "sequential_bd < 500");
+        filterAndVerifyResults(diskTable, memTable, "sequential_bd >= 500.0", "sequential_bd < 1000");
 
         // BigInteger range and match filters
         ExecutionContext.getContext().getQueryScope().putParam("bi_500", BigInteger.valueOf(500));

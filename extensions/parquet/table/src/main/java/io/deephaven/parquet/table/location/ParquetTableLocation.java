@@ -13,7 +13,7 @@ import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.BasicDataIndex;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.FilterContext;
+import io.deephaven.engine.table.impl.PushdownFilterContext;
 import io.deephaven.engine.table.impl.PushdownResult;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.dataindex.StandaloneDataIndex;
@@ -21,7 +21,9 @@ import io.deephaven.engine.table.impl.locations.*;
 import io.deephaven.engine.table.impl.locations.impl.AbstractTableLocation;
 import io.deephaven.engine.table.impl.select.*;
 import io.deephaven.engine.table.impl.sources.regioned.RegionedColumnSource;
+import io.deephaven.engine.table.impl.sources.regioned.RegionedColumnSourceManager;
 import io.deephaven.engine.table.impl.sources.regioned.RegionedPageStore;
+import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.parquet.base.ParquetFileReader;
 import io.deephaven.parquet.base.RowGroupReader;
@@ -51,6 +53,7 @@ import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -424,7 +427,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
             final RowSet selection,
             final RowSet fullSet,
             final boolean usePrev,
-            final FilterContext context) {
+            final PushdownFilterContext context) {
 
         final long executedFilterCost = context.executedFilterCost();
 
@@ -460,22 +463,27 @@ public class ParquetTableLocation extends AbstractTableLocation {
     }
 
     @Override
-    public PushdownResult pushdownFilter(
-            final Map<String, ColumnSource<?>> columnSourceMap,
+    public void pushdownFilter(
             final WhereFilter filter,
-            final RowSet input,
+            final RowSet selection,
+            final RowSet fullSet,
             final boolean usePrev,
-            final FilterContext context,
-            final long costCeiling) {
+            final PushdownFilterContext context,
+            final long costCeiling,
+            final JobScheduler jobScheduler,
+            final Consumer<PushdownResult> onComplete,
+            final Consumer<Exception> onError) {
 
         final long executedFilterCost = context.executedFilterCost();
-
+        final RegionedColumnSourceManager.RegionedColumnSourcePushdownFilterContext ctx =
+                (RegionedColumnSourceManager.RegionedColumnSourcePushdownFilterContext) context;
         final List<String> parquetNames = filter.getColumns().stream().map(
                 readInstructions::getParquetColumnNameFromColumnNameOrDefault).collect(Collectors.toList());
         final List<Integer> parquetIndices = parquetNames.stream().map(
                 name -> parquetMetadata.getFileMetaData().getSchema().getFieldIndex(name)).collect(Collectors.toList());
 
-        PushdownResult result = PushdownResult.of(RowSetFactory.empty(), input.copy());
+        // Initialize the pushdown result with the selection rowset as "maybe" rows
+        PushdownResult result = PushdownResult.of(RowSetFactory.empty(), selection.copy());
 
         // Should we look at the metadata?
         if (shouldExecute(QueryTable.DISABLE_WHERE_PUSHDOWN_PARQUET_ROW_GROUP_METADATA,
@@ -495,8 +503,11 @@ public class ParquetTableLocation extends AbstractTableLocation {
         }
         if (result.maybeMatch().isEmpty()) {
             // No maybe rows remaining, so no reason to continue filtering.
-            return result;
+            onComplete.accept(result);
+            return;
         }
+
+        // If not prohibited by the cost ceiling, continue to refine the pushdown results.
 
         if (shouldExecute(QueryTable.DISABLE_WHERE_PUSHDOWN_DATA_INDEX,
                 PushdownResult.IN_MEMORY_DATA_INDEX_COST, executedFilterCost, costCeiling)) {
@@ -506,7 +517,8 @@ public class ParquetTableLocation extends AbstractTableLocation {
             if (dataIndex != null) {
                 // No maybe rows remaining, so no reason to continue filtering.
                 try (final PushdownResult ignored = result) {
-                    return pushdownDataIndex(filter, dataIndex, result);
+                    onComplete.accept(pushdownDataIndex(filter, dataIndex, result));
+                    return;
                 }
             }
         }
@@ -520,12 +532,13 @@ public class ParquetTableLocation extends AbstractTableLocation {
             if (dataIndex != null) {
                 // No maybe rows remaining, so no reason to continue filtering.
                 try (final PushdownResult ignored = result) {
-                    return pushdownDataIndex(filter, dataIndex, result);
+                    onComplete.accept(pushdownDataIndex(filter, dataIndex, result));
+                    return;
                 }
             }
         }
 
-        return result;
+        onComplete.accept(result);
     }
 
     /**
@@ -643,19 +656,8 @@ public class ParquetTableLocation extends AbstractTableLocation {
             final Pair<Object, Object> p = getMinMax(
                     parquetMetadata.getBlocks().get(rgIdx).getColumns().get(parquetIndex).getStatistics());
 
-            if (p == null) {
+            if (p == null || mf.overlaps(p.first, p.second)) {
                 maybeBuilder.appendRowSequence(rs);
-                return;
-            }
-
-            // Test every value in the filter against the min/max values
-            for (final Object value : mf.getValues()) {
-                if (AbstractRangeFilter.compare(value, p.first) < 0
-                        || AbstractRangeFilter.compare(value, p.second) > 0) {
-                    continue; // can skip this group.
-                }
-                maybeBuilder.appendRowSequence(rs);
-                break;
             }
         });
         return PushdownResult.of(result.match().copy(), maybeBuilder.build());

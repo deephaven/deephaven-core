@@ -3,24 +3,18 @@
 //
 package io.deephaven.engine.table.impl.sources.regioned;
 
-import io.deephaven.api.filter.Filter;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.impl.AbstractColumnSource;
+import io.deephaven.engine.table.impl.*;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.table.impl.FilterContext;
-import io.deephaven.engine.table.impl.PushdownPredicateManager;
-import io.deephaven.engine.table.impl.PushdownResult;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.util.annotations.TestUseOnly;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Map;
 import java.util.function.Consumer;
 
 /**
@@ -103,67 +97,41 @@ abstract class RegionedColumnSourceBase<DATA_TYPE, ATTR extends Values, REGION_T
     @NotNull
     abstract REGION_TYPE getNullRegion();
 
-    /**
-     * Estimate the cost of pushing down a filter. This returns a unitless value that can be used to compare the cost of
-     * executing different filters.
-     *
-     * @param filter The {@link Filter filter} to test
-     * @param selection The set of rows to tests
-     * @param fullSet The full set of rows
-     * @param usePrev Whether to use the previous result
-     * @param context The {@link FillContext} to use for the pushdown operation
-     * @return The estimated cost of the push down operation
-     */
+    @Override
+    public PushdownPredicateManager pushdownManager() {
+        return manager;
+    }
+
+    @Override
     public long estimatePushdownFilterCost(
             final WhereFilter filter,
             final RowSet selection,
             final RowSet fullSet,
             final boolean usePrev,
-            final FilterContext context) {
+            final PushdownFilterContext context) {
+        // Delegate to the manager.
         return manager.estimatePushdownFilterCost(filter, selection, fullSet, usePrev, context);
     }
 
-    /**
-     * Push down the given filter to the underlying table and return the result.
-     *
-     * @param filter The {@link Filter filter} to apply
-     * @param input The set of rows to test
-     * @param fullSet The full set of rows
-     * @param usePrev Whether to use the previous result
-     * @param context The {@link FillContext} to use for the pushdown operation
-     * @param costCeiling Execute all possible filters with a cost leq this value.
-     * @param jobScheduler The job scheduler to use for scheduling child jobs
-     * @param onComplete Consumer of the output rowsets for added and modified rows that pass the filter
-     * @param onError Consumer of any exceptions that occur during the pushdown operation
-     */
+    @Override
     public void pushdownFilter(
             final WhereFilter filter,
-            final RowSet input,
+            final RowSet selection,
             final RowSet fullSet,
             final boolean usePrev,
-            final FilterContext context,
+            final PushdownFilterContext context,
             final long costCeiling,
             final JobScheduler jobScheduler,
             final Consumer<PushdownResult> onComplete,
             final Consumer<Exception> onError) {
-        // Get the column name for this column source from the manager.
-        final String columnName = manager.getColumnSources().entrySet()
-                .stream()
-                .filter(entry -> entry.getValue() == this)
-                .map(Map.Entry::getKey)
-                .findFirst()
-                .orElseThrow(() -> new IllegalStateException(
-                        "The column source cannot be found in the RegionedColumnSourceManager."));
-        // Delegate the pushdown operation to the manager.
-        Map<String, ColumnSource<?>> columnSourceMap = Map.of(columnName, this);
-        manager.pushdownFilter(columnSourceMap, filter, input, fullSet, usePrev, context, costCeiling, jobScheduler,
+        // Delegate to the manager.
+        manager.pushdownFilter(filter, selection, fullSet, usePrev, context, costCeiling, jobScheduler,
                 onComplete, onError);
     }
 
-    /**
-     * Get the pushdown predicate manager for this column source; returns null if there is no pushdown manager.
-     */
-    public PushdownPredicateManager pushdownManager() {
-        return manager;
+    @Override
+    public PushdownFilterContext makePushdownFilterContext() {
+        // Delegate to the manager.
+        return manager.makePushdownFilterContext();
     }
 }

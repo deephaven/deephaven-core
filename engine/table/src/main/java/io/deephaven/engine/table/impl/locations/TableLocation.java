@@ -4,18 +4,12 @@
 package io.deephaven.engine.table.impl.locations;
 
 import io.deephaven.api.SortColumn;
-import io.deephaven.api.filter.Filter;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.engine.liveness.LivenessReferent;
-import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.BasicDataIndex;
-import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.FilterContext;
-import io.deephaven.engine.table.impl.PushdownResult;
-import io.deephaven.engine.table.impl.select.WhereFilter;
+import io.deephaven.engine.table.impl.PushdownFilterMatcher;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.util.annotations.FinalDefault;
 import io.deephaven.util.type.NamedImplementation;
@@ -23,14 +17,14 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
-import java.util.Map;
 
 /**
  * Building block for Deephaven "source" tables, with helper methods for discovering locations and their sizes. A
  * location allows access to columns, size, and possibly other metadata for a single partition that may be included in a
  * source table.
  */
-public interface TableLocation extends NamedImplementation, LogOutputAppendable, TableLocationState, LivenessReferent {
+public interface TableLocation
+        extends NamedImplementation, LogOutputAppendable, TableLocationState, LivenessReferent, PushdownFilterMatcher {
 
     /**
      * Listener interface for anything that wants to know about changes to a location.
@@ -124,9 +118,6 @@ public interface TableLocation extends NamedImplementation, LogOutputAppendable,
      *
      * @param columns The set of columns to check for
      * @return Whether the TableLocation has a cached index for the specified columns
-     *
-     * @apiNote Implementations must guarantee that the result of this method remains constant over the life of an
-     *          instance, and is consistent with the result of {@link #getDataIndex(String...)}.
      */
     boolean hasCachedDataIndex(@NotNull String... columns);
 
@@ -151,47 +142,6 @@ public interface TableLocation extends NamedImplementation, LogOutputAppendable,
      */
     @NotNull
     ColumnLocation getColumnLocation(@NotNull CharSequence name);
-
-    /**
-     * Estimate the cost of pushing down this filter on this location. This returns a unitless value that can be used to
-     * compare the cost of executing different filters.
-     *
-     * @param filter The {@link Filter filter} to test.
-     * @param selection The set of rows to tests.
-     * @param fullSet The full set of rows
-     * @param usePrev Whether to use the previous result
-     * @param context The {@link FilterContext} to use for the pushdown operation.
-     * @return The estimated cost of the push down operation.
-     */
-    default long estimatePushdownFilterCost(
-            WhereFilter filter,
-            RowSet selection,
-            RowSet fullSet,
-            boolean usePrev,
-            final FilterContext context) {
-        return Long.MAX_VALUE;
-    }
-
-    /**
-     * Push down the given filter to the underlying table and return the result.
-     *
-     * @param filter The {@link Filter filter} to apply.
-     * @param input The set of rows to test.
-     * @param usePrev Whether to use the previous result, if applicable
-     * @param context The {@link FilterContext} to use for the pushdown operation.
-     * @param costCeiling Execute all possible filters with a cost leq this value.
-     * @return The result of the push down operation.
-     */
-    default PushdownResult pushdownFilter(
-            final Map<String, ColumnSource<?>> columnSourceMap,
-            final WhereFilter filter,
-            final RowSet input,
-            final boolean usePrev,
-            final FilterContext context,
-            final long costCeiling) {
-        // Default to returning all results as "maybe"
-        return PushdownResult.of(RowSetFactory.empty(), input.copy());
-    }
 
     // ------------------------------------------------------------------------------------------------------------------
     // LogOutputAppendable implementation / toString() override helper

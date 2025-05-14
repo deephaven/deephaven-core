@@ -332,6 +332,84 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
         return true;
     }
 
+    /**
+     * Assert some fundamental properties of the java lexicographical ordering: 1) converting a string to upper case
+     * *lowers* (or maintains) the ordering (because of the character set ordering) 2) converting a string to lower case
+     * *raises* (or maintains) the ordering
+     */
+    {
+        final String[] inputString = {
+                "AAAAA",
+                "aaaaa",
+                "aAaAa",
+                "AaAaA",
+                "A1b2C3",
+                "a1B2c3"
+        };
+
+        for (final String s : inputString) {
+            assert s.compareTo(s) == 0;
+
+            // s is <= than lower case s
+            assert s.compareTo(s.toLowerCase()) <= 0;
+
+            // s is >= than upper case s
+            assert s.compareTo(s.toUpperCase()) >= 0;
+        }
+    }
+
+    /**
+     * Returns true if the match filter has a value within the given range. This function is intended to be accurate
+     * rather than fast and is not recommended for performance-critical value comparison.
+     *
+     * @param lower the lower value bound of the range
+     * @param upper the upper value bound of the range
+     * @param lowerInclusive whether the lower bound is inclusive
+     * @param upperInclusive whether the upper bound is inclusive
+     * @return {@code true} if the range filter overlaps with the given range, {@code false} otherwise
+     */
+    public boolean overlaps(
+            @NotNull final Object lower,
+            @NotNull final Object upper,
+            final boolean lowerInclusive,
+            final boolean upperInclusive) {
+
+        // Converting to upper case lowers (or maintains) ordering, lower case raises (or maintains) it.
+        final Object oLower = caseInsensitive ? ((String) lower).toUpperCase() : lower;
+        final Object oUpper = caseInsensitive ? ((String) upper).toLowerCase() : upper;
+
+        // Use the strValues if values is null (for String comparisons, e.g.)
+        final Object[] valuesToTest = values == null ? strValues : values;
+
+        // Test every value in the filter against the min/max values
+        for (final Object value : valuesToTest) {
+            final int compareLower = CompareUtils.compare(value, oLower);
+            if (compareLower < 0 || (compareLower == 0 && !lowerInclusive)) {
+                continue; // this value is too low
+            }
+            final int compareUpper = CompareUtils.compare(value, oUpper);
+            if (compareUpper > 0 || (compareUpper == 0 && !upperInclusive)) {
+                continue; // this value is too high
+            }
+            // this value is within the range
+            return !invertMatch; // if inverted, return false instead of true
+        }
+        return invertMatch; // if inverted, return true instead of false
+    }
+
+    /**
+     * Returns true if the match filter has a value within the given range (assumes the provided min/max values are
+     * inclusive). This function is intended to be accurate rather than fast and is not recommended for
+     * performance-critical value comparison.
+     *
+     * @param min the minimum value in the given range
+     * @param max the maximum value in the given range
+     * @return {@code true} if the range filter overlaps with the given range, {@code false} otherwise
+     */
+    public boolean overlaps(@NotNull final Object min, @NotNull final Object max) {
+        return overlaps(min, max, true, true);
+    }
+
     @Override
     public void setRecomputeListener(RecomputeListener listener) {}
 

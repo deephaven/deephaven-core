@@ -59,6 +59,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.IntUnaryOperator;
@@ -1792,8 +1793,12 @@ public abstract class QueryTableWhereTest {
     }
 
     private static class PushdownIntTestSource extends IntTestSource {
+        private static AtomicInteger counter = new AtomicInteger(0);
+
         private final long pushdownCost;
         private final double maybePercentage;
+
+        private int encounterOrder = -1;
 
         public PushdownIntTestSource(RowSet rowSet, long pushdownCost, double maybePercentage, int... data) {
             super(rowSet, IntChunk.chunkWrap(data));
@@ -1803,17 +1808,26 @@ public abstract class QueryTableWhereTest {
 
         @Override
         public long estimatePushdownFilterCost(WhereFilter filter, RowSet selection, RowSet fullSet, boolean usePrev,
-                final FilterContext context) {
+                final PushdownFilterContext context) {
             return pushdownCost;
         }
 
         @Override
         public void pushdownFilter(final WhereFilter filter, final RowSet input, final RowSet fullSet,
-                final boolean usePrev, final FilterContext context, final long costCeiling,
+                final boolean usePrev, final PushdownFilterContext context, final long costCeiling,
                 final JobScheduler jobScheduler, final Consumer<PushdownResult> onComplete,
                 final Consumer<Exception> onError) {
+            encounterOrder = counter.getAndIncrement();
             PushdownColumnSourceHeler.pushdownFilter(filter, input, fullSet, usePrev, this, maybePercentage,
                     onComplete);
+        }
+
+        public static void resetCounter() {
+            counter.set(0);
+        }
+
+        public int getEncounterOrder() {
+            return encounterOrder;
         }
     }
 
@@ -1865,6 +1879,91 @@ public abstract class QueryTableWhereTest {
         }
     }
 
+    @Test
+    public void testWherePushdownUserOrder() {
+        final WritableRowSet rowSet = RowSetFactory.flat(10);
+
+        // Thse have the same cost, so user order should be followed.
+        final PushdownIntTestSource sourceA =
+                new PushdownIntTestSource(rowSet, 100L, 0.5, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9);
+        final PushdownIntTestSource sourceB =
+                new PushdownIntTestSource(rowSet, 100L, 0.0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9);
+        final PushdownIntTestSource sourceC =
+                new PushdownIntTestSource(rowSet, 100L, 1.0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9);
+
+        final Map<String, ColumnSource<?>> csMap = Map.of("A", sourceA, "B", sourceB, "C", sourceC);
+
+        final Table source = new QueryTable(rowSet.toTracking(), csMap);
+        Table result;
+
+        // Two column test #1
+        PushdownIntTestSource.resetCounter();
+        result = source.where("A <= 4", "B >= 2");
+        try (final RowSet expected = i(2, 3, 4)) {
+            assertTrue("result.getRowSet().equals(expected)", result.getRowSet().equals(expected));
+        }
+        Assert.eqTrue(sourceA.getEncounterOrder() == 0, "sourceA.getEncounterOrder()");
+        Assert.eqTrue(sourceB.getEncounterOrder() == 1, "sourceB.getEncounterOrder()");
+
+        // Two column test #2
+        PushdownIntTestSource.resetCounter();
+        result = source.where("B >= 2", "A <= 4");
+        try (final RowSet expected = i(2, 3, 4)) {
+            assertTrue("result.getRowSet().equals(expected)", result.getRowSet().equals(expected));
+        }
+        Assert.eqTrue(sourceB.getEncounterOrder() == 0, "sourceB.getEncounterOrder()");
+        Assert.eqTrue(sourceA.getEncounterOrder() == 1, "sourceA.getEncounterOrder()");
+
+        // Two column test #3
+        PushdownIntTestSource.resetCounter();
+        result = source.where("C = 3", "A <= 4");
+        try (final RowSet expected = i(3)) {
+            assertTrue("result.getRowSet().equals(expected)", result.getRowSet().equals(expected));
+        }
+        Assert.eqTrue(sourceC.getEncounterOrder() == 0, "sourceC.getEncounterOrder()");
+        Assert.eqTrue(sourceA.getEncounterOrder() == 1, "sourceA.getEncounterOrder()");
+
+        // Three column test #1
+        PushdownIntTestSource.resetCounter();
+        result = source.where("A <= 4", "B >= 2", "C=3");
+        try (final RowSet expected = i(3)) {
+            assertTrue("result.getRowSet().equals(expected)", result.getRowSet().equals(expected));
+        }
+        Assert.eqTrue(sourceA.getEncounterOrder() == 0, "sourceA.getEncounterOrder()");
+        Assert.eqTrue(sourceB.getEncounterOrder() == 1, "sourceB.getEncounterOrder()");
+        Assert.eqTrue(sourceC.getEncounterOrder() == 2, "sourceC.getEncounterOrder()");
+
+        // Three column test #2
+        PushdownIntTestSource.resetCounter();
+        result = source.where("B >= 2", "A <= 4", "C=3");
+        try (final RowSet expected = i(3)) {
+            assertTrue("result.getRowSet().equals(expected)", result.getRowSet().equals(expected));
+        }
+        Assert.eqTrue(sourceB.getEncounterOrder() == 0, "sourceB.getEncounterOrder()");
+        Assert.eqTrue(sourceA.getEncounterOrder() == 1, "sourceA.getEncounterOrder()");
+        Assert.eqTrue(sourceC.getEncounterOrder() == 2, "sourceC.getEncounterOrder()");
+
+        // Three column test #3
+        PushdownIntTestSource.resetCounter();
+        result = source.where("C=3", "A <= 4", "B >= 2");
+        try (final RowSet expected = i(3)) {
+            assertTrue("result.getRowSet().equals(expected)", result.getRowSet().equals(expected));
+        }
+        Assert.eqTrue(sourceC.getEncounterOrder() == 0, "sourceC.getEncounterOrder()");
+        Assert.eqTrue(sourceA.getEncounterOrder() == 1, "sourceA.getEncounterOrder()");
+        Assert.eqTrue(sourceB.getEncounterOrder() == 2, "sourceB.getEncounterOrder()");
+
+        // Three column test #4
+        PushdownIntTestSource.resetCounter();
+        result = source.where("A <= 4", "C=3", "B >= 2");
+        try (final RowSet expected = i(3)) {
+            assertTrue("result.getRowSet().equals(expected)", result.getRowSet().equals(expected));
+        }
+        Assert.eqTrue(sourceA.getEncounterOrder() == 0, "sourceA.getEncounterOrder()");
+        Assert.eqTrue(sourceC.getEncounterOrder() == 1, "sourceC.getEncounterOrder()");
+        Assert.eqTrue(sourceB.getEncounterOrder() == 2, "sourceB.getEncounterOrder()");
+    }
+
     /**
      * Test PPM for simple verification of filter execution code.
      */
@@ -1872,9 +1971,15 @@ public abstract class QueryTableWhereTest {
         private final long pushdownCost;
         private final double maybePercentage;
 
+        private Table table;
+
         public TestPPM(long pushdownCost, double maybePercentage) {
             this.pushdownCost = pushdownCost;
             this.maybePercentage = maybePercentage;
+        }
+
+        public void assignTable(Table table) {
+            this.table = table;
         }
 
         @Override
@@ -1883,35 +1988,39 @@ public abstract class QueryTableWhereTest {
                 final RowSet selection,
                 final RowSet fullSet,
                 final boolean usePrev,
-                final FilterContext context) {
+                final PushdownFilterContext context) {
             return pushdownCost;
         }
 
         @Override
         public void pushdownFilter(
-                final Map<String, ColumnSource<?>> columnSourceMap,
                 final WhereFilter filter,
-                final RowSet input,
+                final RowSet selection,
                 final RowSet fullSet,
                 final boolean usePrev,
-                final FilterContext context,
+                final PushdownFilterContext context,
                 final long costCeiling,
                 final JobScheduler jobScheduler,
                 final Consumer<PushdownResult> onComplete,
                 final Consumer<Exception> onError) {
+            if (table == null) {
+                throw new IllegalStateException("Table not assigned to TestPPM");
+            }
             try (final SafeCloseable scope = LivenessScopeStack.open()) {
-                final Table dummy = new QueryTable(fullSet.copy().toTracking(), columnSourceMap);
-
-                try (final RowSet matches = filter.filter(input, fullSet, dummy, usePrev)) {
+                try (final RowSet matches = filter.filter(selection, fullSet, table, usePrev)) {
                     final long size = matches.size();
                     final long maybeSize = (long) (size * maybePercentage);
                     final WritableRowSet addedRowSet = matches.subSetByPositionRange(0, maybeSize);
                     final WritableRowSet maybeRowSet = matches.subSetByPositionRange(maybeSize, size);
 
-                    // Default to returning all results as maybe
                     onComplete.accept(PushdownResult.of(addedRowSet, maybeRowSet));
                 }
             }
+        }
+
+        @Override
+        public PushdownFilterContext makePushdownFilterContext() {
+            return PushdownFilterContext.NO_PUSHDOWN_CONTEXT;
         }
     }
 
@@ -1940,6 +2049,9 @@ public abstract class QueryTableWhereTest {
                 "C", new PPMIntTestSource(ppm, rowSet, 1, 2, 3, 4, 5));
 
         final Table source = new QueryTable(rowSet.toTracking(), csMap);
+        // This test PPM needs to be aware of the source table to simulate pushdown filtering.
+        ppm.assignTable(source);
+
         Table result;
 
         final WhereFilter f1 = WhereFilterFactory.getExpression("A <= 1");
