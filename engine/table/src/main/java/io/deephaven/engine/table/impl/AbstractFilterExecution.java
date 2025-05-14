@@ -23,6 +23,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -216,9 +217,13 @@ abstract class AbstractFilterExecution {
          */
         public final WhereFilter filter;
         /**
+         * Map of filter column names to underlying column names.
+         */
+        public final Map<String, String> renameMap;
+        /**
          * The executor to use for pushdown filtering, or null if pushdown is not supported.
          */
-        public final PushdownFilterMatcher pushdownExecutor;
+        public final PushdownFilterMatcher pushdownMatcher;
         /**
          * The context to use for pushdown filtering, or null if pushdown is not supported.
          */
@@ -227,7 +232,6 @@ abstract class AbstractFilterExecution {
          * The cost of the pushdown filter operation.
          */
         public long pushdownFilterCost = Long.MAX_VALUE;
-
         /**
          * The result of the pushdown filter operation, or null if pushdown is not supported.
          */
@@ -236,13 +240,15 @@ abstract class AbstractFilterExecution {
         public StatelessFilter(
                 final int filterIdx,
                 final WhereFilter filter,
-                final PushdownFilterMatcher pushdownExecutor,
+                final Map<String, String> renameMap,
+                final PushdownFilterMatcher pushdownMatcher,
                 final PushdownFilterContext context) {
-            Require.eqTrue((pushdownExecutor == null) == (context == null),
+            Require.eqTrue((pushdownMatcher == null) == (context == null),
                     "pushdownExecutor and context must be both null or both non-null");
             this.filterIdx = filterIdx;
             this.filter = filter;
-            this.pushdownExecutor = pushdownExecutor;
+            this.renameMap = renameMap;
+            this.pushdownMatcher = pushdownMatcher;
             this.context = context;
         }
 
@@ -252,9 +258,9 @@ abstract class AbstractFilterExecution {
         public void updatePushdownFilterCost(
                 final RowSet selection,
                 final PushdownFilterContext context) {
-            pushdownFilterCost = pushdownExecutor == null
+            pushdownFilterCost = pushdownMatcher == null
                     ? Long.MAX_VALUE
-                    : pushdownExecutor.estimatePushdownFilterCost(filter, selection, sourceTable.getRowSet(), usePrev,
+                    : pushdownMatcher.estimatePushdownFilterCost(filter, selection, sourceTable.getRowSet(), usePrev,
                             context);
         }
 
@@ -426,10 +432,10 @@ abstract class AbstractFilterExecution {
         };
 
         final RowSet input = localInput.getValue();
-        if (sf.pushdownExecutor != null && sf.pushdownFilterCost < Long.MAX_VALUE) {
+        if (sf.pushdownMatcher != null && sf.pushdownFilterCost < Long.MAX_VALUE) {
             // Execute the pushdown filter and return.
-            sf.pushdownExecutor.pushdownFilter(sf.filter, input, sourceTable.getRowSet(), usePrev, sf.context,
-                    costCeiling, jobScheduler(), onPushdownComplete, filterNec);
+            sf.pushdownMatcher.pushdownFilter(sf.filter, sf.renameMap, input, sourceTable.getRowSet(), usePrev,
+                    sf.context, costCeiling, jobScheduler(), onPushdownComplete, filterNec);
             return;
         }
 
@@ -481,7 +487,14 @@ abstract class AbstractFilterExecution {
             } else {
                 executor = null;
             }
-            statelessFilters[ii] = new StatelessFilter(ii, filter, executor,
+            // Create a rename map.
+            final ColumnSource<?>[] filterSources = filter.getColumns().stream()
+                    .map(sourceTable::getColumnSource)
+                    .toArray(ColumnSource[]::new);
+            final Map<String, String> renameMap =
+                    executor != null ? executor.renameMap(filter, filterSources) : Map.of();
+
+            statelessFilters[ii] = new StatelessFilter(ii, filter, renameMap, executor,
                     executor != null ? executor.makePushdownFilterContext() : null);
         }
 

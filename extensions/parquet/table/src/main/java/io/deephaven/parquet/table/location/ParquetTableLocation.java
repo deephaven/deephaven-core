@@ -3,6 +3,7 @@
 //
 package io.deephaven.parquet.table.location;
 
+import io.deephaven.api.ColumnName;
 import io.deephaven.api.SortColumn;
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
@@ -21,7 +22,6 @@ import io.deephaven.engine.table.impl.locations.*;
 import io.deephaven.engine.table.impl.locations.impl.AbstractTableLocation;
 import io.deephaven.engine.table.impl.select.*;
 import io.deephaven.engine.table.impl.sources.regioned.RegionedColumnSource;
-import io.deephaven.engine.table.impl.sources.regioned.RegionedColumnSourceManager;
 import io.deephaven.engine.table.impl.sources.regioned.RegionedPageStore;
 import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.table.vectors.ColumnVectors;
@@ -465,6 +465,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
     @Override
     public void pushdownFilter(
             final WhereFilter filter,
+            final Map<String, String> renameMap,
             final RowSet selection,
             final RowSet fullSet,
             final boolean usePrev,
@@ -475,10 +476,9 @@ public class ParquetTableLocation extends AbstractTableLocation {
             final Consumer<Exception> onError) {
 
         final long executedFilterCost = context.executedFilterCost();
-        final RegionedColumnSourceManager.RegionedColumnSourcePushdownFilterContext ctx =
-                (RegionedColumnSourceManager.RegionedColumnSourcePushdownFilterContext) context;
-        final List<String> parquetNames = filter.getColumns().stream().map(
-                readInstructions::getParquetColumnNameFromColumnNameOrDefault).collect(Collectors.toList());
+        final List<String> parquetNames = filter.getColumns().stream()
+                .map(name -> renameMap.getOrDefault(name, name))
+                .map(readInstructions::getParquetColumnNameFromColumnNameOrDefault).collect(Collectors.toList());
         final List<Integer> parquetIndices = parquetNames.stream().map(
                 name -> parquetMetadata.getFileMetaData().getSchema().getFieldIndex(name)).collect(Collectors.toList());
 
@@ -492,12 +492,12 @@ public class ParquetTableLocation extends AbstractTableLocation {
             if (filter instanceof RangeFilter
                     && ((RangeFilter) filter).getRealFilter() instanceof AbstractRangeFilter) {
                 try (final PushdownResult ignored = result) {
-                    result = pushdownRangeFilter(parquetIndices, result,
-                            (AbstractRangeFilter) ((RangeFilter) filter).getRealFilter());
+                    result = pushdownRangeFilter((AbstractRangeFilter) ((RangeFilter) filter).getRealFilter(),
+                            parquetIndices, result);
                 }
             } else if (filter instanceof MatchFilter) {
                 try (final PushdownResult ignored = result) {
-                    result = pushdownMatchFilter(parquetIndices, result, (MatchFilter) filter);
+                    result = pushdownMatchFilter((MatchFilter) filter, parquetIndices, result);
                 }
             }
         }
@@ -517,7 +517,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
             if (dataIndex != null) {
                 // No maybe rows remaining, so no reason to continue filtering.
                 try (final PushdownResult ignored = result) {
-                    onComplete.accept(pushdownDataIndex(filter, dataIndex, result));
+                    onComplete.accept(pushdownDataIndex(filter, renameMap, dataIndex, result));
                     return;
                 }
             }
@@ -532,7 +532,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
             if (dataIndex != null) {
                 // No maybe rows remaining, so no reason to continue filtering.
                 try (final PushdownResult ignored = result) {
-                    onComplete.accept(pushdownDataIndex(filter, dataIndex, result));
+                    onComplete.accept(pushdownDataIndex(filter, renameMap, dataIndex, result));
                     return;
                 }
             }
@@ -589,7 +589,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
      * @return The min and max values from the statistics or null if cannot be converted.
      */
     private Pair<Object, Object> getMinMax(final Statistics<?> statistics) {
-        if (statistics == null) {
+        if (statistics == null || statistics.isEmpty()) {
             return null;
         }
         // Min/Max are guaranteed to be the same type, only testing min.
@@ -624,8 +624,10 @@ public class ParquetTableLocation extends AbstractTableLocation {
      * Apply the range filter to the row groups and return the result.
      */
     @NotNull
-    private PushdownResult pushdownRangeFilter(List<Integer> parquetIndices, PushdownResult result,
-            AbstractRangeFilter rf) {
+    private PushdownResult pushdownRangeFilter(
+            final AbstractRangeFilter rf,
+            final List<Integer> parquetIndices,
+            final PushdownResult result) {
         RowSetBuilderSequential maybeBuilder = RowSetFactory.builderSequential();
 
         // Only one column in a RangeFilter
@@ -646,7 +648,10 @@ public class ParquetTableLocation extends AbstractTableLocation {
      * Apply the match filter to the row groups and return the result.
      */
     @NotNull
-    private PushdownResult pushdownMatchFilter(List<Integer> parquetIndices, PushdownResult result, MatchFilter mf) {
+    private PushdownResult pushdownMatchFilter(
+            final MatchFilter mf,
+            final List<Integer> parquetIndices,
+            final PushdownResult result) {
         RowSetBuilderSequential maybeBuilder = RowSetFactory.builderSequential();
 
         // Only one column in a RangeFilter
@@ -667,19 +672,33 @@ public class ParquetTableLocation extends AbstractTableLocation {
      * Apply the filter to the data index table and return the result.
      */
     @NotNull
-    private PushdownResult pushdownDataIndex(WhereFilter filter, BasicDataIndex dataIndex, PushdownResult result) {
+    private PushdownResult pushdownDataIndex(
+            final WhereFilter filter,
+            final Map<String, String> renameMap,
+            final BasicDataIndex dataIndex,
+            final PushdownResult result) {
         final RowSetBuilderRandom matchingBuilder = RowSetFactory.builderRandom();
-        try (final SafeCloseable scope = LivenessScopeStack.open()) {
-            // Data type changes handled by the filter copy/init
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
             final WhereFilter copiedFilter = filter.copy();
             copiedFilter.init(dataIndex.table().getDefinition());
 
-            // TODO: handle renames
-            final Table filteredTable = dataIndex.table().where(copiedFilter);
+            final Collection<io.deephaven.api.Pair> renamePairs = renameMap.entrySet().stream()
+                    .map(entry -> io.deephaven.api.Pair.of(ColumnName.of(entry.getValue()),
+                            ColumnName.of(entry.getKey())))
+                    .collect(Collectors.toList());
+            final Table renamedIndexTable = dataIndex.table().renameColumns(renamePairs);
 
-            try (final CloseableIterator<RowSet> it =
-                    ColumnVectors.ofObject(filteredTable, dataIndex.rowSetColumnName(), RowSet.class).iterator()) {
-                it.forEachRemaining(matchingBuilder::addRowSet);
+            // Apply the filter to the data index table
+            try {
+                final Table filteredTable = renamedIndexTable.where(copiedFilter);
+
+                try (final CloseableIterator<RowSet> it =
+                        ColumnVectors.ofObject(filteredTable, dataIndex.rowSetColumnName(), RowSet.class).iterator()) {
+                    it.forEachRemaining(matchingBuilder::addRowSet);
+                }
+            } catch (final Exception e) {
+                // Swallow the exception, declare all the rows as maybe matches.
+                return PushdownResult.of(RowSetFactory.empty(), result.maybeMatch().copy());
             }
         }
         // Retain only the maybe rows and add the previously found matches.

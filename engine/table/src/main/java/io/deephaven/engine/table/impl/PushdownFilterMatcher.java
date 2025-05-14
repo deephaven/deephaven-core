@@ -5,15 +5,23 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.filter.Filter;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.util.JobScheduler;
 
+import java.util.Map;
 import java.util.function.Consumer;
 
 public interface PushdownFilterMatcher {
     /**
-     * Estimate the cost of pushing down the next pushdownd filter. This returns a unitless value that can be used to
-     * compare the cost of executing different filters.
+     * <p>
+     * Estimate the cost of pushing down the next pushdown filter. This returns a unitless value to compare the cost of
+     * executing different filters.
+     * </p>
+     * <p>
+     * Common costs are listed in {@link PushdownResult} (such as {@link PushdownResult#METADATA_STATS_COST}) and should
+     * be used as a baseline for estimating the cost of newly implemented pushdown operations.
+     * </p>
      *
      * @param filter The {@link Filter filter} to test.
      * @param selection The set of rows to tests.
@@ -31,10 +39,11 @@ public interface PushdownFilterMatcher {
 
     /**
      * Push down the given filter to the underlying table and pass the result to the consumer. This method is expected
-     * to execute all pushdown filters that are <= the cost ceiling and to call
-     * {@link PushdownFilterContext#updateExecutedFilterCost(long)}
+     * to execute all pushdown filter steps that are greater than {@link PushdownFilterContext#executedFilterCost()} and
+     * less than or equal to the cost ceiling.
      *
      * @param filter The {@link Filter filter} to apply.
+     * @param renameMap Map of filter column names to underlying column names.
      * @param selection The set of rows to test.
      * @param fullSet The full set of rows
      * @param usePrev Whether to use the previous result
@@ -46,6 +55,7 @@ public interface PushdownFilterMatcher {
      */
     void pushdownFilter(
             final WhereFilter filter,
+            final Map<String, String> renameMap,
             final RowSet selection,
             final RowSet fullSet,
             final boolean usePrev,
@@ -54,6 +64,15 @@ public interface PushdownFilterMatcher {
             final JobScheduler jobScheduler,
             final Consumer<PushdownResult> onComplete,
             final Consumer<Exception> onError);
+
+    /**
+     * Create a map of filter column names to underlying column names using the provided filter and filter sources.
+     *
+     * @param filter the filter to use for the rename map
+     * @param filterSources the column sources that match the filter column names
+     * @return a map of filter column names to underlying column names
+     */
+    Map<String, String> renameMap(final WhereFilter filter, final ColumnSource<?>[] filterSources);
 
     /**
      * Make a filter context for this column source that does not support pushdown filtering. This should be overriden

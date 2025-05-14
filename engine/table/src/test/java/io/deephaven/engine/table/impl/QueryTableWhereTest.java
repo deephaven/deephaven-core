@@ -1774,7 +1774,7 @@ public abstract class QueryTableWhereTest {
                 final ColumnSource<?> source,
                 final double maybePercentage,
                 final Consumer<PushdownResult> onComplete) {
-            try (final SafeCloseable scope = LivenessScopeStack.open()) {
+            try (final SafeCloseable ignored = LivenessScopeStack.open()) {
                 final String colName = filter.getColumns().get(0);
                 final Map<String, ColumnSource<?>> csMap = Collections.singletonMap(colName, source);
                 final Table dummy = new QueryTable(fullSet.copy().toTracking(), csMap);
@@ -1793,7 +1793,7 @@ public abstract class QueryTableWhereTest {
     }
 
     private static class PushdownIntTestSource extends IntTestSource {
-        private static AtomicInteger counter = new AtomicInteger(0);
+        private static final AtomicInteger counter = new AtomicInteger(0);
 
         private final long pushdownCost;
         private final double maybePercentage;
@@ -1813,9 +1813,9 @@ public abstract class QueryTableWhereTest {
         }
 
         @Override
-        public void pushdownFilter(final WhereFilter filter, final RowSet input, final RowSet fullSet,
-                final boolean usePrev, final PushdownFilterContext context, final long costCeiling,
-                final JobScheduler jobScheduler, final Consumer<PushdownResult> onComplete,
+        public void pushdownFilter(final WhereFilter filter, final Map<String, String> renameMap, final RowSet input,
+                final RowSet fullSet, final boolean usePrev, final PushdownFilterContext context,
+                final long costCeiling, final JobScheduler jobScheduler, final Consumer<PushdownResult> onComplete,
                 final Consumer<Exception> onError) {
             encounterOrder = counter.getAndIncrement();
             PushdownColumnSourceHeler.pushdownFilter(filter, input, fullSet, usePrev, this, maybePercentage,
@@ -1879,6 +1879,9 @@ public abstract class QueryTableWhereTest {
         }
     }
 
+    /**
+     * Validate that user filter order is maintained when pushdown filter costs are equal.
+     */
     @Test
     public void testWherePushdownUserOrder() {
         final WritableRowSet rowSet = RowSetFactory.flat(10);
@@ -1995,6 +1998,7 @@ public abstract class QueryTableWhereTest {
         @Override
         public void pushdownFilter(
                 final WhereFilter filter,
+                final Map<String, String> renameMap,
                 final RowSet selection,
                 final RowSet fullSet,
                 final boolean usePrev,
@@ -2006,7 +2010,7 @@ public abstract class QueryTableWhereTest {
             if (table == null) {
                 throw new IllegalStateException("Table not assigned to TestPPM");
             }
-            try (final SafeCloseable scope = LivenessScopeStack.open()) {
+            try (final SafeCloseable ignored = LivenessScopeStack.open()) {
                 try (final RowSet matches = filter.filter(selection, fullSet, table, usePrev)) {
                     final long size = matches.size();
                     final long maybeSize = (long) (size * maybePercentage);
@@ -2016,6 +2020,11 @@ public abstract class QueryTableWhereTest {
                     onComplete.accept(PushdownResult.of(addedRowSet, maybeRowSet));
                 }
             }
+        }
+
+        @Override
+        public Map<String, String> renameMap(WhereFilter filter, ColumnSource<?>[] filterSources) {
+            return Map.of();
         }
 
         @Override

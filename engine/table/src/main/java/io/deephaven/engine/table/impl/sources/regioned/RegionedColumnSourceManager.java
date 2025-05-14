@@ -803,6 +803,7 @@ public class RegionedColumnSourceManager
     @Override
     public void pushdownFilter(
             final WhereFilter filter,
+            final Map<String, String> renameMap,
             final RowSet input,
             final RowSet fullSet,
             final boolean usePrev,
@@ -811,6 +812,7 @@ public class RegionedColumnSourceManager
             final JobScheduler jobScheduler,
             final Consumer<PushdownResult> onComplete,
             final Consumer<Exception> onError) {
+
         final WritableRowSet match = RowSetFactory.empty();
         final WritableRowSet maybeMatch = RowSetFactory.empty();
 
@@ -842,11 +844,35 @@ public class RegionedColumnSourceManager
                                 }
                             }
                         };
-                        entry.location.pushdownFilter(filter, locationInput, fullSet, usePrev, context, costCeiling,
-                                jobScheduler, resultConsumer, onError);
+                        entry.location.pushdownFilter(filter, renameMap, locationInput, fullSet, usePrev, context,
+                                costCeiling, jobScheduler, resultConsumer, onError);
                     }
                     locationResume.run();
                 }, () -> onComplete.accept(PushdownResult.of(match, maybeMatch)), onError);
+    }
+
+    @Override
+    public Map<String, String> renameMap(final WhereFilter filter, final ColumnSource<?>[] filterSources) {
+        final Map<? extends ColumnSource<?>, String> lookupMap = getColumnSources().entrySet().stream()
+                .collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey));
+
+        final List<String> filterColumns = filter.getColumns();
+
+        final Map<String, String> renameMap = new HashMap<>();
+        for (int ii = 0; ii < filterColumns.size(); ii++) {
+            final String filterColumnName = filterColumns.get(ii);
+            final ColumnSource<?> filterSource = filterSources[ii];
+            final String localColumnName = lookupMap.get(filterSource);
+            if (localColumnName == null) {
+                throw new IllegalArgumentException(
+                        "No associated source for '" + filterColumnName + "' found in column sources");
+            }
+            if (localColumnName.equals(filterColumnName)) {
+                continue;
+            }
+            renameMap.put(filterColumnName, localColumnName);
+        }
+        return renameMap;
     }
 
     /**

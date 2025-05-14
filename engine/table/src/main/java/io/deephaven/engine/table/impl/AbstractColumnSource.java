@@ -43,6 +43,7 @@ import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Map;
 import java.util.function.Consumer;
 
 public abstract class AbstractColumnSource<T> implements
@@ -364,6 +365,7 @@ public abstract class AbstractColumnSource<T> implements
     @Override
     public void pushdownFilter(
             final WhereFilter filter,
+            final Map<String, String> renameMap,
             final RowSet selection,
             final RowSet fullSet,
             final boolean usePrev,
@@ -374,6 +376,12 @@ public abstract class AbstractColumnSource<T> implements
             final Consumer<Exception> onError) {
         // Default to returning all results as "maybe"
         onComplete.accept(PushdownResult.of(RowSetFactory.empty(), selection.copy()));
+    }
+
+    @Override
+    public Map<String, String> renameMap(final WhereFilter filter, final ColumnSource<?>[] filterSources) {
+        // Default to returning an empty map
+        return Map.of();
     }
 
     @Override

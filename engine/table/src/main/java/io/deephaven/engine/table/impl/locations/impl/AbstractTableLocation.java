@@ -7,6 +7,7 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.engine.liveness.*;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.BasicDataIndex;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.PushdownFilterContext;
 import io.deephaven.engine.table.impl.PushdownResult;
 import io.deephaven.engine.table.impl.select.WhereFilter;
@@ -26,6 +27,7 @@ import java.lang.ref.SoftReference;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Consumer;
 
@@ -308,6 +310,7 @@ public abstract class AbstractTableLocation
     @Override
     public void pushdownFilter(
             final WhereFilter filter,
+            final Map<String, String> renameMap,
             final RowSet selection,
             final RowSet fullSet,
             final boolean usePrev,
@@ -318,6 +321,12 @@ public abstract class AbstractTableLocation
             final Consumer<Exception> onError) {
         // Default to returning all results as "maybe"
         onComplete.accept(PushdownResult.of(RowSetFactory.empty(), selection.copy()));
+    }
+
+    @Override
+    public Map<String, String> renameMap(final WhereFilter filter, final ColumnSource<?>[] filterSources) {
+        // Default to returning an empty map
+        return Map.of();
     }
 
     @Override
