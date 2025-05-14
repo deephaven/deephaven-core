@@ -9,8 +9,6 @@ import org.apache.iceberg.mapping.MappingUtil;
 import org.apache.iceberg.mapping.NameMapping;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Objects;
-
 public interface NameMappingProvider {
 
     /**
@@ -21,12 +19,7 @@ public interface NameMappingProvider {
      * @see <a href="https://iceberg.apache.org/spec/#column-projection">schema.name-mapping.default</a>
      */
     static NameMappingProvider fromTable() {
-        return new NameMappingProviderImpl() {
-            @Override
-            NameMapping create(Table table) {
-                return NameMappingUtil.readNameMappingDefault(table).orElse(NameMapping.empty());
-            }
-        };
+        return NameMappingProviderImpl.FromTable.FROM_TABLE;
     }
 
     /**
@@ -37,13 +30,7 @@ public interface NameMappingProvider {
      * @see MappingUtil
      */
     static NameMappingProvider of(@NotNull final NameMapping nameMapping) {
-        Objects.requireNonNull(nameMapping);
-        return new NameMappingProviderImpl() {
-            @Override
-            NameMapping create(Table table) {
-                return nameMapping;
-            }
-        };
+        return new NameMappingProviderImpl.Explicit(nameMapping);
     }
 
     /**
@@ -55,6 +42,6 @@ public interface NameMappingProvider {
      * @return the empty name mapping
      */
     static NameMappingProvider empty() {
-        return of(NameMapping.empty());
+        return NameMappingProviderImpl.Empty.EMPTY;
     }
 }
