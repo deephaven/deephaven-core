@@ -110,6 +110,13 @@ public final class IcebergTableAdapter {
     }
 
     /**
+     * The name mapping.
+     */
+    public NameMapping nameMapping() {
+        return nameMapping;
+    }
+
+    /**
      * Get the current {@link Snapshot snapshot} of a given Iceberg table or {@code null} if there are no snapshots.
      *
      * @return The current snapshot of the table or {@code null} if there are no snapshots.
