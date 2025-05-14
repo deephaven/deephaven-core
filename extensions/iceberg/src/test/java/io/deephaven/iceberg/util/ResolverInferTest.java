@@ -30,6 +30,7 @@ import org.apache.iceberg.types.Types.VariantType;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -172,25 +173,17 @@ class ResolverInferTest {
     @Test
     void BinaryType() throws TypeInference.Exception {
         final Schema schema = simpleSchema(BinaryType.get());
-        assertThat(Resolver.infer(schema)).isEqualTo(empty(schema));
-        try {
-            Resolver.infer(ia(schema));
-        } catch (TypeInference.UnsupportedType e) {
-            assertThat(e).hasMessageContaining("Unsupported Iceberg type `binary` at fieldName `F1`");
-            assertThat(e.type()).isEqualTo(BinaryType.get());
-        }
+        final Resolver expected = simpleMapping(schema, Type.byteType().arrayType());
+        assertThat(Resolver.infer(schema)).isEqualTo(expected);
+        assertThat(Resolver.infer(ia(schema))).isEqualTo(expected);
     }
 
     @Test
     void FixedType_4() throws TypeInference.Exception {
         final Schema schema = simpleSchema(FixedType.ofLength(4));
-        assertThat(Resolver.infer(schema)).isEqualTo(empty(schema));
-        try {
-            Resolver.infer(ia(schema));
-        } catch (TypeInference.UnsupportedType e) {
-            assertThat(e).hasMessageContaining("Unsupported Iceberg type `fixed[4]` at fieldName `F1`");
-            assertThat(e.type()).isEqualTo(FixedType.ofLength(4));
-        }
+        final Resolver expected = simpleMapping(schema, Type.byteType().arrayType());
+        assertThat(Resolver.infer(schema)).isEqualTo(expected);
+        assertThat(Resolver.infer(ia(schema))).isEqualTo(expected);
     }
 
     @Test
@@ -211,6 +204,158 @@ class ResolverInferTest {
         } catch (TypeInference.UnsupportedType e) {
             assertThat(e).hasMessageContaining("Unsupported Iceberg type `uuid` at fieldName `F1`");
             assertThat(e.type()).isEqualTo(UUIDType.get());
+        }
+    }
+
+    @Test
+    void BooleanListType() throws TypeInference.Exception {
+        final Schema schema = simpleListSchema(BooleanType.get());
+        final Resolver expected = simpleMapping(schema, Type.booleanType().boxedType().arrayType());
+        assertThat(Resolver.infer(schema)).isEqualTo(expected);
+        assertThat(Resolver.infer(ia(schema))).isEqualTo(expected);
+    }
+
+    @Test
+    void IntegerListType() throws TypeInference.Exception {
+        final Schema schema = simpleListSchema(IT);
+        final Resolver expected = simpleMapping(schema, Type.intType().arrayType());
+        assertThat(Resolver.infer(schema)).isEqualTo(expected);
+        assertThat(Resolver.infer(ia(schema))).isEqualTo(expected);
+    }
+
+    @Test
+    void LongListType() throws TypeInference.Exception {
+        final Schema schema = simpleListSchema(LongType.get());
+        final Resolver expected = simpleMapping(schema, Type.longType().arrayType());
+        assertThat(Resolver.infer(schema)).isEqualTo(expected);
+        assertThat(Resolver.infer(ia(schema))).isEqualTo(expected);
+    }
+
+    @Test
+    void FloatListType() throws TypeInference.Exception {
+        final Schema schema = simpleListSchema(FloatType.get());
+        final Resolver expected = simpleMapping(schema, Type.floatType().arrayType());
+        assertThat(Resolver.infer(schema)).isEqualTo(expected);
+        assertThat(Resolver.infer(ia(schema))).isEqualTo(expected);
+    }
+
+    @Test
+    void DoubleListType() throws TypeInference.Exception {
+        final Schema schema = simpleListSchema(DoubleType.get());
+        final Resolver expected = simpleMapping(schema, Type.doubleType().arrayType());
+        assertThat(Resolver.infer(schema)).isEqualTo(expected);
+        assertThat(Resolver.infer(ia(schema))).isEqualTo(expected);
+    }
+
+    @Test
+    void DateListType() throws TypeInference.Exception {
+        final Schema schema = simpleListSchema(DateType.get());
+        final Resolver expected = simpleMapping(schema, Type.find(LocalDate.class).arrayType());
+        assertThat(Resolver.infer(schema)).isEqualTo(expected);
+        assertThat(Resolver.infer(ia(schema))).isEqualTo(expected);
+    }
+
+    @Test
+    void TimeListType() throws TypeInference.Exception {
+        final Schema schema = simpleListSchema(TimeType.get());
+        final Resolver expected = simpleMapping(schema, Type.find(LocalTime.class).arrayType());
+        assertThat(Resolver.infer(schema)).isEqualTo(expected);
+        assertThat(Resolver.infer(ia(schema))).isEqualTo(expected);
+    }
+
+    @Test
+    void TimestampTypeWithZoneList() throws TypeInference.Exception {
+        final Schema schema = simpleListSchema(TimestampType.withZone());
+        final Resolver expected = simpleMapping(schema, Type.instantType().arrayType());
+        assertThat(Resolver.infer(schema)).isEqualTo(expected);
+        assertThat(Resolver.infer(ia(schema))).isEqualTo(expected);
+    }
+
+    @Test
+    void TimestampTypeWithoutZoneList() throws TypeInference.Exception {
+        final Schema schema = simpleListSchema(TimestampType.withoutZone());
+        final Resolver expected =
+                simpleMapping(schema, Type.find(LocalDateTime.class).arrayType());
+        assertThat(Resolver.infer(schema)).isEqualTo(expected);
+        assertThat(Resolver.infer(ia(schema))).isEqualTo(expected);
+    }
+
+    @Test
+    void TimestampNanoTypeWithZoneList() throws TypeInference.Exception {
+        final Schema schema = simpleListSchema(TimestampNanoType.withZone());
+        assertThat(Resolver.infer(schema)).isEqualTo(empty(schema));
+        try {
+            Resolver.infer(ia(schema));
+            failBecauseExceptionWasNotThrown(TypeInference.Exception.class);
+        } catch (TypeInference.UnsupportedType e) {
+            assertThat(e).hasMessageContaining("Unsupported Iceberg type `list<timestamptz_ns>` at fieldName `F1`");
+        }
+    }
+
+    @Test
+    void TimestampNanoTypeWithoutZoneList() throws TypeInference.Exception {
+        final Schema schema = simpleListSchema(TimestampNanoType.withoutZone());
+        assertThat(Resolver.infer(schema)).isEqualTo(empty(schema));
+        try {
+            Resolver.infer(ia(schema));
+            failBecauseExceptionWasNotThrown(TypeInference.Exception.class);
+        } catch (TypeInference.UnsupportedType e) {
+            assertThat(e).hasMessageContaining("Unsupported Iceberg type `list<timestamp_ns>` at fieldName `F1`");
+        }
+    }
+
+    @Test
+    void StringListType() throws TypeInference.Exception {
+        final Schema schema = simpleListSchema(StringType.get());
+        final Resolver expected = simpleMapping(schema, Type.stringType().arrayType());
+        assertThat(Resolver.infer(schema)).isEqualTo(expected);
+        assertThat(Resolver.infer(ia(schema))).isEqualTo(expected);
+    }
+
+    @Test
+    void BinaryListType() throws TypeInference.Exception {
+        final Schema schema = simpleListSchema(BinaryType.get());
+        assertThat(Resolver.infer(schema)).isEqualTo(empty(schema));
+        try {
+            Resolver.infer(ia(schema));
+            failBecauseExceptionWasNotThrown(TypeInference.Exception.class);
+        } catch (TypeInference.UnsupportedType e) {
+            assertThat(e).hasMessageContaining("Unsupported Iceberg type `list<binary>` at fieldName `F1`");
+            assertThat(e.type()).isEqualTo(ListType.ofOptional(1, BinaryType.get()));
+        }
+    }
+
+    @Test
+    void FixedType_4List() throws TypeInference.Exception {
+        final Schema schema = simpleListSchema(FixedType.ofLength(4));
+        assertThat(Resolver.infer(schema)).isEqualTo(empty(schema));
+        try {
+            Resolver.infer(ia(schema));
+            failBecauseExceptionWasNotThrown(TypeInference.Exception.class);
+        } catch (TypeInference.UnsupportedType e) {
+            assertThat(e).hasMessageContaining("Unsupported Iceberg type `list<fixed[4]>` at fieldName `F1`");
+            assertThat(e.type()).isEqualTo(ListType.ofOptional(1, FixedType.ofLength(4)));
+        }
+    }
+
+    @Test
+    void DecimalType_3_4List() throws TypeInference.Exception {
+        final Schema schema = simpleListSchema(DecimalType.of(3, 4));
+        final Resolver expected = simpleMapping(schema, Type.find(BigDecimal.class).arrayType());
+        assertThat(Resolver.infer(schema)).isEqualTo(expected);
+        assertThat(Resolver.infer(ia(schema))).isEqualTo(expected);
+    }
+
+    @Test
+    void UuidListType() throws TypeInference.Exception {
+        final Schema schema = simpleListSchema(UUIDType.get());
+        assertThat(Resolver.infer(schema)).isEqualTo(empty(schema));
+        try {
+            Resolver.infer(ia(schema));
+            failBecauseExceptionWasNotThrown(TypeInference.Exception.class);
+        } catch (TypeInference.UnsupportedType e) {
+            assertThat(e).hasMessageContaining("Unsupported Iceberg type `list<uuid>` at fieldName `F1`");
+            assertThat(e.type()).isEqualTo(ListType.ofOptional(1, UUIDType.get()));
         }
     }
 
@@ -255,23 +400,6 @@ class ResolverInferTest {
                 .build();
         assertThat(Resolver.infer(schema)).isEqualTo(expected);
         assertThat(Resolver.infer(ia(schema))).isEqualTo(expected);
-    }
-
-    @Test
-    void ListType() throws TypeInference.Exception {
-        final Schema schema = new Schema(
-                NestedField.optional(5, "L1", ListType.ofOptional(1, IT)),
-                NestedField.optional(6, "L2", ListType.ofRequired(2, IT)),
-                NestedField.required(7, "L3", ListType.ofOptional(3, IT)),
-                NestedField.required(8, "L4", ListType.ofRequired(4, IT)));
-        assertThat(Resolver.infer(schema)).isEqualTo(empty(schema));
-        try {
-            Resolver.infer(ia(schema));
-            failBecauseExceptionWasNotThrown(TypeInference.Exception.class);
-        } catch (TypeInference.UnsupportedType e) {
-            assertThat(e).hasMessageContaining("Unsupported Iceberg type `list<int>` at fieldName `L1`");
-            assertThat(e.type()).isEqualTo(ListType.ofOptional(1, IT));
-        }
     }
 
     @Test
@@ -391,6 +519,12 @@ class ResolverInferTest {
         return new Schema(
                 NestedField.optional(42, "F1", type),
                 NestedField.required(43, "F2", type));
+    }
+
+    private static Schema simpleListSchema(org.apache.iceberg.types.Type type) {
+        return new Schema(
+                NestedField.optional(42, "F1", ListType.ofOptional(1, type)),
+                NestedField.required(43, "F2", ListType.ofOptional(2, type)));
     }
 
     private static TableDefinition simpleDefinition(Type<?> type) {

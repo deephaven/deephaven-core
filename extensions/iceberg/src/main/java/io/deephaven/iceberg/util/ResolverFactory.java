@@ -220,12 +220,36 @@ final class ResolverFactory implements ParquetColumnResolver.Factory {
         throw new MapUnsupported();
     }
 
+    /**
+     * The following method assumes that the field will have a 3-level structure as explained
+     * <a href="https://github.com/apache/parquet-format/blob/master/LogicalTypes.md#lists">here</a>.
+     */
     private static List<Type> findList(
             final int fieldId,
-            final GroupType type,
+            final GroupType groupType,
             final Types.ListType readerListType,
             @Nullable final MappedField fallback) throws MappingException {
-        throw new ListUnsupported();
+        // Locate the outer LIST‑annotated field
+        final Type found = findField(fieldId, groupType, fallback);
+        checkListCompatible(found, readerListType);
+
+        final GroupType listGroupType = found.asGroupType();
+        // Each group must contain exactly one REPEATED child
+        if (listGroupType.getFields().size() != 1) {
+            throw new ListUnsupported("LIST group must have exactly 1 child, found " + listGroupType.getFields());
+        }
+        final Type repeated = listGroupType.getFields().get(0);
+        if (repeated.isPrimitive() || !repeated.isRepetition(Type.Repetition.REPEATED)) {
+            throw new ListUnsupported("LIST group must have exactly 1 REPEATED group child, found " + repeated);
+        }
+        final GroupType repeatedListGroup = repeated.asGroupType();
+
+        // Get the actual element
+        if (repeatedListGroup.getFields().size() != 1) {
+            throw new ListUnsupported("LIST repeated group must have 1 child, found " + repeatedListGroup.getFields());
+        }
+        final Type element = repeatedListGroup.getFields().get(0);
+        return List.of(listGroupType, repeated, element);
     }
 
     private static void checkCompatible(Type ptype, org.apache.iceberg.types.Type.PrimitiveType readerPrimitiveType) {
@@ -237,6 +261,10 @@ final class ResolverFactory implements ParquetColumnResolver.Factory {
     }
 
     private static void checkCompatible(List<Type> ptypes, Types.ListType readerListType) {
+
+    }
+
+    private static void checkListCompatible(final Type ptype, final org.apache.iceberg.types.Type readerListType) {
 
     }
 
@@ -273,5 +301,8 @@ final class ResolverFactory implements ParquetColumnResolver.Factory {
 
     private static class ListUnsupported extends MappingException {
 
+        public ListUnsupported(String message) {
+            super(message);
+        }
     }
 }

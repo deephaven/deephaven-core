@@ -383,7 +383,7 @@ public abstract class Resolver {
      * {@link Table Iceberg Table} does not already exist</b>. In cases where the {@link Table Iceberg Table} already
      * exist, callers must create a resolver in relationship to an existing {@link Schema} (for example, via
      * {@link #infer(Schema)}, or manually via {@link #builder()}). Column type inference is done via
-     * {@link TypeInference#of(Type, TypeUtil.NextID)}.
+     * {@link TypeInference#of(Type, Type.Visitor)}.
      *
      * <p>
      * All {@link ColumnDefinition.ColumnType#Partitioning partitioning columns} will be used to create a partition spec
@@ -399,10 +399,11 @@ public abstract class Resolver {
         final Collection<String> partitioningColumnNames = new ArrayList<>();
         final List<Types.NestedField> fields = new ArrayList<>();
         final TypeUtil.NextID nextID = new AtomicInteger(INITIAL_FIELD_ID)::getAndIncrement;
+        final Type.Visitor<org.apache.iceberg.types.Type> inferenceVisitor = new TypeInference.BestIcebergType(nextID);
         for (final ColumnDefinition<?> columnDefinition : definition.getColumns()) {
             final String dhColumnName = columnDefinition.getName();
             final Type<?> type = Type.find(columnDefinition.getDataType(), columnDefinition.getComponentType());
-            final org.apache.iceberg.types.Type icebergType = TypeInference.of(type, nextID).orElse(null);
+            final org.apache.iceberg.types.Type icebergType = TypeInference.of(type, inferenceVisitor).orElse(null);
             if (icebergType == null) {
                 throw new MappingException(
                         String.format("Unable to infer the best Iceberg type for Deephaven column type `%s`", type));
