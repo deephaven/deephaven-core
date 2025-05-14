@@ -3,8 +3,6 @@
 //
 package io.deephaven.iceberg.util;
 
-import org.apache.iceberg.Table;
-
 public interface ResolverProvider {
     /**
      * An explicit resolver provider.
@@ -13,12 +11,7 @@ public interface ResolverProvider {
      * @return the provider for {@code resolver}
      */
     static ResolverProvider of(Resolver resolver) {
-        return new ResolverProviderImpl() {
-            @Override
-            Resolver resolver(Table table) {
-                return resolver;
-            }
-        };
+        return new ResolverProviderImpl.Explicit(resolver);
     }
 
     /**
