@@ -71,6 +71,7 @@ import org.apache.iceberg.TableProperties;
 import org.apache.iceberg.catalog.Namespace;
 import org.apache.iceberg.catalog.TableIdentifier;
 import org.apache.iceberg.io.OutputFileFactory;
+import org.apache.iceberg.mapping.MappedFields;
 import org.apache.iceberg.mapping.MappingUtil;
 import org.apache.iceberg.mapping.NameMapping;
 import org.apache.iceberg.mapping.NameMappingParser;
@@ -2795,6 +2796,7 @@ public abstract class SqliteCatalogBase {
         final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.NameMappingTest");
 
         final IcebergTableAdapter tableAdapter = catalogAdapter.createTable(tableIdentifier, definition);
+        assertThat(tableAdapter.nameMapping().asMappedFields()).isEqualTo(MappedFields.of());
 
         // This is emulating a write outside of DH where the field ids are _not_ written
         {
@@ -2846,6 +2848,7 @@ public abstract class SqliteCatalogBase {
                     .resolver(tableAdapter.resolver())
                     .nameMapping(nameMapping)
                     .build());
+            assertThat(ta.nameMapping()).isSameAs(nameMapping);
             assertTableEquals(source, ta.table());
         }
 
@@ -2859,6 +2862,7 @@ public abstract class SqliteCatalogBase {
                     .id(tableIdentifier)
                     .resolver(tableAdapter.resolver())
                     .build());
+            assertThat(ta.nameMapping().asMappedFields()).isEqualTo(nameMapping.asMappedFields());
             assertTableEquals(source, ta.table());
         }
 
@@ -2869,6 +2873,7 @@ public abstract class SqliteCatalogBase {
                     .resolver(tableAdapter.resolver())
                     .nameMapping(NameMappingProvider.empty())
                     .build());
+            assertThat(ta.nameMapping().asMappedFields()).isEqualTo(MappedFields.of());
             try {
                 ta.table().select();
                 failBecauseExceptionWasNotThrown(TableInitializationException.class);
@@ -2887,6 +2892,7 @@ public abstract class SqliteCatalogBase {
                     .resolver(tableAdapter.resolver())
                     .nameMapping(NameMappingProvider.empty())
                     .build());
+            assertThat(ta.nameMapping().asMappedFields()).isEqualTo(MappedFields.of());
             assertTableEquals(empty, ta.table(IGNORE_ERRORS));
         }
     }
