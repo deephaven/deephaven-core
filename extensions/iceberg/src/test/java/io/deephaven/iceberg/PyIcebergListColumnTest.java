@@ -34,7 +34,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * This test shows that Deephaven can read binary and list types written by pyiceberg. See TESTING.md and
- * generate-pyiceberg-3.py for more details.
+ * generate-pyiceberg-list-columns.py for more details.
  */
 @Tag("security-manager-allow")
 class PyIcebergListColumnTest {

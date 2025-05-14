@@ -54,7 +54,7 @@ $ python3.10 -m venv /tmp/iceberg
 
 $ source /tmp/iceberg/bin/activate
 
-$ pip install --only-binary=":all:" "pyiceberg[sql-sqlite, pyarrow]" numpy
+$ pip install --only-binary=":all:" "pyiceberg[sql-sqlite, pyarrow]"
 
 $ pip freeze
 annotated-types==0.7.0

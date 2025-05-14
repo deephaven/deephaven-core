@@ -6,7 +6,6 @@ import pyarrow as pa
 from datetime import datetime
 from datetime import datetime, date, time
 from decimal import Decimal
-import numpy as np
 import zoneinfo
 from pyiceberg.catalog.sql import SqlCatalog
 from pyiceberg.schema import Schema
@@ -82,8 +81,8 @@ data = [
         "long_list": [100, 200, 300],
         "bool_list": [True, False],
         "double_list": [10.01, 20.02],
-        "float_list": [np.float32(1.1), np.float32(2.2)],
-        "int_list": [np.int32(10), np.int32(20)],
+        "float_list": [1.1, 2.2],
+        "int_list": [10, 20],
         "string_list": ["hello", "world"],
         "timestamp_ntz_list": [datetime(2025, 1, 1, 12, 0, 1), datetime(2025, 1, 1, 12, 0, 2)],
         "timestamp_tz_list": [
@@ -101,8 +100,8 @@ data = [
         "long_list": [600, None, 700],
         "bool_list": [True, False, None],
         "double_list": [60.06, None, 70.07],
-        "float_list": [None, np.float32(5.5), np.float32(6.6)],
-        "int_list": [np.int32(50), None, np.int32(60)],
+        "float_list": [None, 5.5, 6.6],
+        "int_list": [50, None, 60],
         "string_list": [None, "alpha", "beta"],
         "timestamp_ntz_list": [datetime(2025, 1, 3, 14, 0, 1), None],
         "timestamp_tz_list": [None, datetime(2025, 1, 3, 14, 0, 4, tzinfo=zoneinfo.ZoneInfo("UTC"))],
