@@ -12,16 +12,22 @@ import io.deephaven.engine.table.impl.util.JobScheduler;
 import java.util.Map;
 import java.util.function.Consumer;
 
+/**
+ * Interface for entities that support pushdown filtering. Must implement a filter cost estimation function that allows
+ * comparison of filter pushdown execution costs. These costs determine the order in which filters are executed.
+ * <p/>
+ * NOTE: There may be multiple pushdown filter operations available for a single filter and the pushdown cost is dynamic
+ * based on the input rowset and on previously executed pushdown filter steps. For example, parquet table locations may
+ * leverage low cost metadata operations (row group min/max) as a first step, followed by an index table operation or a
+ * binary search on a sorted column. The {@link PushdownFilterContext} is used to track the state of the pushdown filter
+ * to return accurate cost estimates for the next step.
+ */
 public interface PushdownFilterMatcher {
     /**
-     * <p>
      * Estimate the cost of pushing down the next pushdown filter. This returns a unitless value to compare the cost of
-     * executing different filters.
-     * </p>
-     * <p>
-     * Common costs are listed in {@link PushdownResult} (such as {@link PushdownResult#METADATA_STATS_COST}) and should
-     * be used as a baseline for estimating the cost of newly implemented pushdown operations.
-     * </p>
+     * executing different filters. Common costs are listed in {@link PushdownResult} (such as
+     * {@link PushdownResult#METADATA_STATS_COST}) and should be used as a baseline for estimating the cost of newly
+     * implemented pushdown operations.
      *
      * @param filter The {@link Filter filter} to test.
      * @param selection The set of rows to tests.
@@ -40,7 +46,7 @@ public interface PushdownFilterMatcher {
     /**
      * Push down the given filter to the underlying table and pass the result to the consumer. This method is expected
      * to execute all pushdown filter steps that are greater than {@link PushdownFilterContext#executedFilterCost()} and
-     * less than or equal to the cost ceiling.
+     * less than or equal to {@code costCeiling}.
      *
      * @param filter The {@link Filter filter} to apply.
      * @param renameMap Map of filter column names to underlying column names.
@@ -75,8 +81,7 @@ public interface PushdownFilterMatcher {
     Map<String, String> renameMap(final WhereFilter filter, final ColumnSource<?>[] filterSources);
 
     /**
-     * Make a filter context for this column source that does not support pushdown filtering. This should be overriden
-     * for column sources that do support pushdown filtering.
+     * Create a pushdown filter context for this entity.
      *
      * @return the created filter context
      */

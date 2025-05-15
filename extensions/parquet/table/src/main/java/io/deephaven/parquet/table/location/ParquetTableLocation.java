@@ -682,6 +682,8 @@ public class ParquetTableLocation extends AbstractTableLocation {
             final WhereFilter copiedFilter = filter.copy();
             copiedFilter.init(dataIndex.table().getDefinition());
 
+            // TODO: When https://deephaven.atlassian.net/browse/DH-19443 is implemented, we should be able
+            // to use the filter directly on the index table.
             final Collection<io.deephaven.api.Pair> renamePairs = renameMap.entrySet().stream()
                     .map(entry -> io.deephaven.api.Pair.of(ColumnName.of(entry.getValue()),
                             ColumnName.of(entry.getKey())))
@@ -697,7 +699,8 @@ public class ParquetTableLocation extends AbstractTableLocation {
                     it.forEachRemaining(matchingBuilder::addRowSet);
                 }
             } catch (final Exception e) {
-                // Swallow the exception, declare all the rows as maybe matches.
+                // Exception occurs here if we have a data type mismatch between the index and the filter.
+                // Just swallow the exception and declare all the rows as maybe matches.
                 return PushdownResult.of(RowSetFactory.empty(), result.maybeMatch().copy());
             }
         }

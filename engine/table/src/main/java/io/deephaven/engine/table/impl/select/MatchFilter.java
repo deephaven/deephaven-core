@@ -333,32 +333,6 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
     }
 
     /**
-     * Assert some fundamental properties of the java lexicographical ordering: 1) converting a string to upper case
-     * *lowers* (or maintains) the ordering (because of the character set ordering) 2) converting a string to lower case
-     * *raises* (or maintains) the ordering
-     */
-    {
-        final String[] inputString = {
-                "AAAAA",
-                "aaaaa",
-                "aAaAa",
-                "AaAaA",
-                "A1b2C3",
-                "a1B2c3"
-        };
-
-        for (final String s : inputString) {
-            assert s.compareTo(s) == 0;
-
-            // s is <= than lower case s
-            assert s.compareTo(s.toLowerCase()) <= 0;
-
-            // s is >= than upper case s
-            assert s.compareTo(s.toUpperCase()) >= 0;
-        }
-    }
-
-    /**
      * Returns true if the match filter has a value within the given range. This function is intended to be accurate
      * rather than fast and is not recommended for performance-critical value comparison.
      *

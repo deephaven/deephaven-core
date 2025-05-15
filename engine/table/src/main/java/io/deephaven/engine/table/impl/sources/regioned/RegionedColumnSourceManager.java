@@ -779,23 +779,22 @@ public class RegionedColumnSourceManager
         final Collection<TableLocation> locations = includedLocations();
         final long locationCost;
 
+        final Collection<TableLocation> candidateLocations;
         if (locations instanceof ArrayList) {
-            // We have fast access to the locations, so test a few regularly spaced locations and return the minimum
-            // cost encountered.
+            // Test regularly spaced locations.
             final ArrayList<TableLocation> locationList = (ArrayList<TableLocation>) locations;
             final int step = Math.max(1, locationList.size() / PUSHDOWN_LOCATION_SAMPLES);
-            final Collection<TableLocation> candidateLocations =
+            candidateLocations =
                     IntStream.range(0, Math.min(locationList.size(), PUSHDOWN_LOCATION_SAMPLES))
                             .mapToObj(idx -> locationList.get(idx * step)).collect(Collectors.toList());
-            locationCost = candidateLocations.parallelStream().mapToLong(
-                    location -> location.estimatePushdownFilterCost(filter, selection, fullSet, usePrev, context))
-                    .reduce(Long::min).orElse(Long.MAX_VALUE);
         } else {
-            // Test the first N locations
-            locationCost = includedLocations().parallelStream().limit(PUSHDOWN_LOCATION_SAMPLES).mapToLong(
-                    location -> location.estimatePushdownFilterCost(filter, selection, fullSet, usePrev, context))
-                    .reduce(Long::min).orElse(Long.MAX_VALUE);
+            // Test consecutive locations at the beginning of the collection.
+            candidateLocations = locations.stream().limit(PUSHDOWN_LOCATION_SAMPLES)
+                    .collect(Collectors.toList());
         }
+        locationCost = candidateLocations.parallelStream().mapToLong(
+                location -> location.estimatePushdownFilterCost(filter, selection, fullSet, usePrev, context))
+                .reduce(Long::min).orElse(Long.MAX_VALUE);
 
         return locationCost;
     }
@@ -875,15 +874,8 @@ public class RegionedColumnSourceManager
         return renameMap;
     }
 
-    /**
-     * Simple implementation of the abstract {@link BasePushdownFilterContext}. Can be extended to add additional state
-     * if needed.
-     */
-    public static class RegionedColumnSourcePushdownFilterContext extends BasePushdownFilterContext {
-    }
-
     @Override
     public PushdownFilterContext makePushdownFilterContext() {
-        return new RegionedColumnSourcePushdownFilterContext();
+        return new BasePushdownFilterContext();
     }
 }

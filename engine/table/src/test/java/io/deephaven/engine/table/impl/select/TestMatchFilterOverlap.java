@@ -7,6 +7,40 @@ import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 
 public class TestMatchFilterOverlap extends RefreshingTableTestCase {
 
+    /**
+     * Assert some fundamental properties of the java lexicographical ordering:
+     * <ol>
+     * <li>converting a string to upper case *lowers* (or maintains) the ordering (because of the character set
+     * ordering)</li>
+     * <li>converting a string to lower case *raises* (or maintains) the ordering</li>
+     * </ol>
+     * This test should never fail, but we leverage these axioms in the MatchFilter range overlap functionality and
+     * prefer to be informed if they are violated in the future.
+     */
+    public void testLexigraphicalOrdering() {
+        final String[] inputString = {
+                "AAAAA",
+                "aaaaa",
+                "aAaAa",
+                "AaAaA",
+                "A1b2C3",
+                "a1B2c3",
+                "12345",
+                "#$%&#"
+        };
+
+        for (final String s : inputString) {
+            //noinspection EqualsWithItself
+            assert s.compareTo(s) == 0;
+
+            // s is <= than lower case s
+            assert s.compareTo(s.toLowerCase()) <= 0;
+
+            // s is >= than upper case s
+            assert s.compareTo(s.toUpperCase()) >= 0;
+        }
+    }
+
     public void testMatchFilterCaseSensitiveString() {
         MatchFilter f;
 

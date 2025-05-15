@@ -6,10 +6,10 @@ package io.deephaven.engine.table.impl;
 /**
  * Base class for {@link PushdownFilterContext} to help with execution cost tracking.
  */
-public abstract class BasePushdownFilterContext implements PushdownFilterContext {
+public class BasePushdownFilterContext implements PushdownFilterContext {
     protected long executedFilterCost;
 
-    protected BasePushdownFilterContext() {
+    public BasePushdownFilterContext() {
         executedFilterCost = 0;
     }
 
