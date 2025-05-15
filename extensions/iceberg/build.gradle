@@ -79,8 +79,14 @@ def testSecurityManagerAllow = tasks.register('testSecurityManagerAllow', Test) 
     useJUnitPlatform {
         includeTags("security-manager-allow")
     }
-    if (it.javaLauncher.get().metadata.languageVersion >= JavaLanguageVersion.of(23)) {
+    if (it.javaLauncher.get().metadata.languageVersion == JavaLanguageVersion.of(23)) {
         it.systemProperty("java.security.manager", "allow")
+    }
+    // https://openjdk.org/jeps/486: JEP 486: Permanently Disable the Security Manager
+    // https://docs.oracle.com/en/java/javase/24/security/security-manager-is-permanently-disabled.html
+    if (it.javaLauncher.get().metadata.languageVersion >= JavaLanguageVersion.of(24)) {
+        // The above HADOOP-19212 issue can no longer be worked around on Java 24+, and needs to be fixed by hadoop.
+        it.enabled = false
     }
 }
 
