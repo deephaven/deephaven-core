@@ -30,7 +30,7 @@ public class TestMatchFilterOverlap extends RefreshingTableTestCase {
         };
 
         for (final String s : inputString) {
-            //noinspection EqualsWithItself
+            // noinspection EqualsWithItself
             assert s.compareTo(s) == 0;
 
             // s is <= than lower case s

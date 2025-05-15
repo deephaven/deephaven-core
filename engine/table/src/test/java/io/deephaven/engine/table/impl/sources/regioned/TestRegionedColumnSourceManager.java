@@ -118,18 +118,18 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
 
         checking(new Expectations() {
             {
-                oneOf(componentFactory).createRegionedColumnSource(null, with(same(partitioningColumnDefinition)),
-                        with(ColumnToCodecMappings.EMPTY));
+                oneOf(componentFactory).createRegionedColumnSource(with(any(RegionedColumnSourceManager.class)),
+                        with(same(partitioningColumnDefinition)), with(ColumnToCodecMappings.EMPTY));
                 will(returnValue(partitioningColumnSource));
                 allowing(partitioningColumnSource).getType();
                 will(returnValue(partitioningColumnDefinition.getDataType()));
                 allowing(partitioningColumnSource).getComponentType();
                 will(returnValue(partitioningColumnDefinition.getComponentType()));
-                oneOf(componentFactory).createRegionedColumnSource(null, with(same(groupingColumnDefinition)),
-                        with(ColumnToCodecMappings.EMPTY));
+                oneOf(componentFactory).createRegionedColumnSource(with(any(RegionedColumnSourceManager.class)),
+                        with(same(groupingColumnDefinition)), with(ColumnToCodecMappings.EMPTY));
                 will(returnValue(groupingColumnSource));
-                oneOf(componentFactory).createRegionedColumnSource(null, with(same(normalColumnDefinition)),
-                        with(ColumnToCodecMappings.EMPTY));
+                oneOf(componentFactory).createRegionedColumnSource(with(any(RegionedColumnSourceManager.class)),
+                        with(same(normalColumnDefinition)), with(ColumnToCodecMappings.EMPTY));
                 will(returnValue(normalColumnSource));
             }
         });

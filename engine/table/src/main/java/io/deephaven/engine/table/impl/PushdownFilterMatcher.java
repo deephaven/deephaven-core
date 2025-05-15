@@ -54,7 +54,7 @@ public interface PushdownFilterMatcher {
      * @param fullSet The full set of rows
      * @param usePrev Whether to use the previous result
      * @param context The {@link PushdownFilterContext} to use for the pushdown operation.
-     * @param costCeiling Execute all possible filters with a cost <= this value.
+     * @param costCeiling Execute all possible filters with a cost less than or equal this value.
      * @param jobScheduler The job scheduler to use for scheduling child jobs
      * @param onComplete Consumer of the output rowsets for added and modified rows that pass the filter
      * @param onError Consumer of any exceptions that occur during the pushdown operation
