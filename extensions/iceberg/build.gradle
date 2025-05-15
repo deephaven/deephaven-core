@@ -79,8 +79,11 @@ def testSecurityManagerAllow = tasks.register('testSecurityManagerAllow', Test) 
     useJUnitPlatform {
         includeTags("security-manager-allow")
     }
-    if (it.javaLauncher.get().metadata.languageVersion >= JavaLanguageVersion.of(23)) {
+    if (it.javaLauncher.get().metadata.languageVersion == JavaLanguageVersion.of(23)) {
         it.systemProperty("java.security.manager", "allow")
+    }
+    if (it.javaLauncher.get().metadata.languageVersion >= JavaLanguageVersion.of(24)) {
+        it.enabled = false
     }
 }
 
