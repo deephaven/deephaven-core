@@ -3,6 +3,8 @@
 //
 package io.deephaven.iceberg.util;
 
+import org.apache.iceberg.CatalogProperties;
+import org.apache.iceberg.CatalogUtil;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;
@@ -12,14 +14,14 @@ import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 
 class BuildCatalogOptionsTest {
 
-    public static final Map<String, String> MINIMAL_PROPS = Map.of("type", "minimal");
+    public static final Map<String, String> MINIMAL_PROPS = Map.of(CatalogUtil.ICEBERG_CATALOG_TYPE, "minimal");
 
     @Test
     void minimalOptions() {
         final BuildCatalogOptions options = BuildCatalogOptions.builder()
                 .putAllProperties(MINIMAL_PROPS)
                 .build();
-        assertThat(options.name()).isEmpty();
+        assertThat(options.name()).isEqualTo("IcebergCatalog");
         assertThat(options.properties()).isEqualTo(MINIMAL_PROPS);
         assertThat(options.hadoopConfig()).isEmpty();
     }
@@ -30,7 +32,7 @@ class BuildCatalogOptionsTest {
                 .name("Test")
                 .putAllProperties(MINIMAL_PROPS)
                 .build();
-        assertThat(options.name()).hasValue("Test");
+        assertThat(options.name()).isEqualTo("Test");
         assertThat(options.properties()).isEqualTo(MINIMAL_PROPS);
         assertThat(options.hadoopConfig()).isEmpty();
     }
@@ -41,9 +43,18 @@ class BuildCatalogOptionsTest {
                 .putAllProperties(MINIMAL_PROPS)
                 .putHadoopConfig("Foo", "Bar")
                 .build();
-        assertThat(options.name()).isEmpty();
+        assertThat(options.name()).isEqualTo("IcebergCatalog");
         assertThat(options.properties()).isEqualTo(MINIMAL_PROPS);
         assertThat(options.hadoopConfig()).isEqualTo(Map.of("Foo", "Bar"));
+    }
+
+    @Test
+    void nameWithUri() {
+        final BuildCatalogOptions options = BuildCatalogOptions.builder()
+                .putAllProperties(MINIMAL_PROPS)
+                .putProperties(CatalogProperties.URI, "foo")
+                .build();
+        assertThat(options.name()).isEqualTo("IcebergCatalog-foo");
     }
 
     @Test
@@ -56,4 +67,6 @@ class BuildCatalogOptionsTest {
                     .hasMessageContaining("Catalog type 'type' or implementation class 'catalog-impl' is required");
         }
     }
+
+
 }

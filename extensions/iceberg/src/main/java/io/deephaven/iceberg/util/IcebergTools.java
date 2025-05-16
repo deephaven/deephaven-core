@@ -152,17 +152,12 @@ public final class IcebergTools {
      * @return the Iceberg catalog adapter
      */
     public static IcebergCatalogAdapter createAdapter(@NotNull final BuildCatalogOptions options) {
-        final String catalogUri = options.properties().get(CatalogProperties.URI);
-        final String catalogName = options.name().isPresent()
-                ? options.name().get()
-                : "IcebergCatalog" + (catalogUri == null ? "" : "-" + catalogUri);
-
         // Load the Hadoop configuration with the provided properties
         final Configuration hadoopConf = new Configuration();
         options.hadoopConfig().forEach(hadoopConf::set);
 
         // Create the Iceberg catalog from the properties
-        final Catalog catalog = CatalogUtil.buildIcebergCatalog(catalogName, options.properties(), hadoopConf);
+        final Catalog catalog = CatalogUtil.buildIcebergCatalog(options.name(), options.properties(), hadoopConf);
 
         return IcebergCatalogAdapter.of(catalog, options.properties());
     }

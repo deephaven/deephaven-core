@@ -8,7 +8,6 @@ import org.apache.iceberg.CatalogUtil;
 import org.immutables.value.Value;
 
 import java.util.Map;
-import java.util.Optional;
 
 /**
  * The options to use with {@link IcebergTools#createAdapter(BuildCatalogOptions)}.
@@ -21,12 +20,18 @@ public abstract class BuildCatalogOptions {
     }
 
     /**
-     * The catalog name.
+     * The catalog name. By default, is "IcebergCatalog-{uri}" if {@value CatalogProperties#URI} is set in
+     * {@link #properties()}, otherwise is "IcebergCatalog".
      */
-    public abstract Optional<String> name();
+    @Value.Default
+    public String name() {
+        final String catalogUri = properties().get(CatalogProperties.URI);
+        return "IcebergCatalog" + (catalogUri == null ? "" : "-" + catalogUri);
+    }
 
     /**
-     * The catalog properties.
+     * The catalog properties. Must contain {@value CatalogUtil#ICEBERG_CATALOG_TYPE} or
+     * {@value CatalogProperties#CATALOG_IMPL}.
      */
     public abstract Map<String, String> properties();
 
