@@ -36,9 +36,11 @@ abstract class RegionedColumnSourceLong<ATTR extends Values>
         extends RegionedColumnSourceArray<Long, ATTR, ColumnRegionLong<ATTR>>
         implements ColumnSourceGetDefaults.ForLong , ConvertibleTimeSource {
 
-    RegionedColumnSourceLong(@NotNull final ColumnRegionLong<ATTR> nullRegion,
+    RegionedColumnSourceLong(
+            @NotNull final RegionedColumnSourceManager manager,
+            @NotNull final ColumnRegionLong<ATTR> nullRegion,
             @NotNull final MakeDeferred<ATTR, ColumnRegionLong<ATTR>> makeDeferred) {
-        super(nullRegion, long.class, makeDeferred);
+        super(manager, nullRegion, long.class, makeDeferred);
     }
 
     @Override
@@ -85,13 +87,13 @@ abstract class RegionedColumnSourceLong<ATTR extends Values>
 
     public ColumnSource<Instant> toInstant() {
         //noinspection unchecked
-        return new RegionedColumnSourceInstant((RegionedColumnSourceLong<Values>) this);
+        return new RegionedColumnSourceInstant(manager, (RegionedColumnSourceLong<Values>) this);
     }
 
     @Override
     public ColumnSource<ZonedDateTime> toZonedDateTime(ZoneId zone) {
         //noinspection unchecked
-        return new RegionedColumnSourceZonedDateTime(zone, (RegionedColumnSourceLong<Values>) this);
+        return new RegionedColumnSourceZonedDateTime(manager, zone, (RegionedColumnSourceLong<Values>) this);
     }
 
     @Override
@@ -111,15 +113,15 @@ abstract class RegionedColumnSourceLong<ATTR extends Values>
     // endregion reinterpretation
 
     static final class AsValues extends RegionedColumnSourceLong<Values> implements MakeRegionDefault {
-        AsValues() {
-            super(ColumnRegionLong.createNull(PARAMETERS.regionMask), DeferredColumnRegionLong::new);
+        AsValues(final RegionedColumnSourceManager manager) {
+            super(manager, ColumnRegionLong.createNull(PARAMETERS.regionMask), DeferredColumnRegionLong::new);
         }
     }
 
     static final class Partitioning extends RegionedColumnSourceLong<Values> {
-
-        Partitioning() {
-            super(ColumnRegionLong.createNull(PARAMETERS.regionMask),
+        Partitioning(final RegionedColumnSourceManager manager) {
+            super(manager,
+                    ColumnRegionLong.createNull(PARAMETERS.regionMask),
                     (pm, rs) -> rs.get() // No need to interpose a deferred region in this case
             );
         }

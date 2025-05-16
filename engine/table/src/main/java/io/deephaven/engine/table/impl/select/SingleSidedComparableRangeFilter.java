@@ -156,4 +156,29 @@ public class SingleSidedComparableRangeFilter extends AbstractRangeFilter {
             return selection.subSetByPositionRange(lowerBoundMin, selection.size());
         }
     }
+
+    @Override
+    public boolean overlaps(
+            @NotNull final Object lower,
+            @NotNull final Object upper,
+            final boolean lowerInclusive,
+            final boolean upperInclusive) {
+        if (isGreaterThan) {
+            final int c = CompareUtils.compare(pivot, upper);
+            return c < 0 || (c == 0 && this.lowerInclusive);
+        } else {
+            final int c = CompareUtils.compare(lower, pivot);
+            return c < 0 || (c == 0 && this.lowerInclusive);
+        }
+    }
+
+    @Override
+    public boolean contains(@NotNull final Object value) {
+        final int c = CompareUtils.compare(pivot, value);
+        if (isGreaterThan) {
+            return c < 0 || (c == 0 && this.lowerInclusive);
+        } else {
+            return c > 0 || (c == 0 && this.lowerInclusive);
+        }
+    }
 }

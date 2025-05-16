@@ -257,6 +257,19 @@ public class QueryTable extends BaseTable<QueryTable> {
             Configuration.getInstance().getIntegerWithDefault("QueryTable.parallelWhereSegments", -1);
 
     /**
+     * Disable the usage of parquet row group metadata during push-down filtering.
+     */
+    public static boolean DISABLE_WHERE_PUSHDOWN_PARQUET_ROW_GROUP_METADATA =
+            Configuration.getInstance().getBooleanWithDefault("QueryTable.disableWherePushdownParquetRowGroupMetadata",
+                    false);
+
+    /**
+     * Disable the usage of local data file indexes during push-down filtering.
+     */
+    public static boolean DISABLE_WHERE_PUSHDOWN_DATA_INDEX =
+            Configuration.getInstance().getBooleanWithDefault("QueryTable.disableWherePushdownDataIndex", false);
+
+    /**
      * You can choose to enable or disable the column parallel select and update.
      */
     static boolean ENABLE_PARALLEL_SELECT_AND_UPDATE =

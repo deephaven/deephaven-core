@@ -28,12 +28,14 @@ final class RegionedColumnSourceInstant
         extends RegionedColumnSourceReferencing<Instant, Values, Long, ColumnRegionLong<Values>>
         implements ColumnSourceGetDefaults.ForObject<Instant>, ConvertibleTimeSource {
 
-    public RegionedColumnSourceInstant() {
-        this(new RegionedColumnSourceLong.AsValues());
+    public RegionedColumnSourceInstant(@NotNull final RegionedColumnSourceManager manager) {
+        this(manager, new RegionedColumnSourceLong.AsValues(manager));
     }
 
-    public RegionedColumnSourceInstant(@NotNull final RegionedColumnSourceLong<Values> inner) {
-        super(ColumnRegionLong.createNull(PARAMETERS.regionMask), Instant.class, inner);
+    public RegionedColumnSourceInstant(
+            @NotNull final RegionedColumnSourceManager manager,
+            @NotNull final RegionedColumnSourceLong<Values> inner) {
+        super(manager, ColumnRegionLong.createNull(PARAMETERS.regionMask), Instant.class, inner);
     }
 
     @Override
@@ -71,7 +73,8 @@ final class RegionedColumnSourceInstant
 
     @Override
     public ColumnSource<ZonedDateTime> toZonedDateTime(@NotNull final ZoneId zone) {
-        return new RegionedColumnSourceZonedDateTime(zone, (RegionedColumnSourceLong<Values>) getNativeSource());
+        return new RegionedColumnSourceZonedDateTime(manager, zone,
+                (RegionedColumnSourceLong<Values>) getNativeSource());
     }
 
     @Override

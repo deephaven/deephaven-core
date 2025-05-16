@@ -42,6 +42,7 @@ public abstract class TstRegionedColumnSourcePrimitive<DATA_TYPE, ATTR extends V
             Double.MAX_VALUE, 100.123, 126000, -56869.2, -1.0};
 
     REGION_TYPE[] cr;
+    RegionedColumnSourceManager manager;
     RegionedColumnSourceBase<DATA_TYPE, ATTR, CS_REGION_TYPE> SUT;
 
     private final Class<?> regionTypeClass;
@@ -59,6 +60,8 @@ public abstract class TstRegionedColumnSourcePrimitive<DATA_TYPE, ATTR extends V
     @Before
     public void setUp() throws Exception {
         super.setUp();
+
+        manager = mock(RegionedColumnSourceManager.class, "manager");
 
         // noinspection unchecked
         cr = (REGION_TYPE[]) Array.newInstance(regionTypeClass, 10);

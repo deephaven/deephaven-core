@@ -17,11 +17,13 @@ abstract class RegionedColumnSourceObject<DATA_TYPE, ATTR extends Values>
         extends RegionedColumnSourceArray<DATA_TYPE, ATTR, ColumnRegionObject<DATA_TYPE, ATTR>>
         implements ColumnSourceGetDefaults.ForObject<DATA_TYPE> {
 
-    private RegionedColumnSourceObject(@NotNull final ColumnRegionObject<DATA_TYPE, ATTR> nullRegion,
+    private RegionedColumnSourceObject(
+            @NotNull final RegionedColumnSourceManager manager,
+            @NotNull final ColumnRegionObject<DATA_TYPE, ATTR> nullRegion,
             @NotNull final Class<DATA_TYPE> dataType,
             @Nullable final Class<?> componentType,
             @NotNull final MakeDeferred<ATTR, ColumnRegionObject<DATA_TYPE, ATTR>> makeDeferred) {
-        super(nullRegion, dataType, componentType, makeDeferred);
+        super(manager, nullRegion, dataType, componentType, makeDeferred);
     }
 
     @Override
@@ -31,12 +33,15 @@ abstract class RegionedColumnSourceObject<DATA_TYPE, ATTR extends Values>
 
     public static class AsValues<DATA_TYPE> extends RegionedColumnSourceObject<DATA_TYPE, Values> {
 
-        public AsValues(@NotNull final Class<DATA_TYPE> dataType) {
-            this(dataType, null);
+        public AsValues(@NotNull final RegionedColumnSourceManager manager, @NotNull final Class<DATA_TYPE> dataType) {
+            this(manager, dataType, null);
         }
 
-        public AsValues(@NotNull final Class<DATA_TYPE> dataType, @Nullable final Class<?> componentType) {
-            super(ColumnRegionObject.createNull(PARAMETERS.regionMask), dataType, componentType,
+        public AsValues(
+                @NotNull final RegionedColumnSourceManager manager,
+                @NotNull final Class<DATA_TYPE> dataType,
+                @Nullable final Class<?> componentType) {
+            super(manager, ColumnRegionObject.createNull(PARAMETERS.regionMask), dataType, componentType,
                     DeferredColumnRegionObject::new);
         }
 
@@ -52,9 +57,10 @@ abstract class RegionedColumnSourceObject<DATA_TYPE, ATTR extends Values>
     }
 
     static final class Partitioning<DATA_TYPE> extends RegionedColumnSourceObject<DATA_TYPE, Values> {
-
-        Partitioning(@NotNull final Class<DATA_TYPE> dataType) {
-            super(ColumnRegionObject.createNull(PARAMETERS.regionMask), dataType, null,
+        Partitioning(
+                @NotNull final RegionedColumnSourceManager manager,
+                @NotNull final Class<DATA_TYPE> dataType) {
+            super(manager, ColumnRegionObject.createNull(PARAMETERS.regionMask), dataType, null,
                     (pm, rs) -> rs.get() // No need to interpose a deferred region in this case
             );
         }
