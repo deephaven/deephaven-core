@@ -24,7 +24,7 @@ jobs:
           curl -X POST -H 'X-Automation-Webhook-Token: ${{ secrets.JIRA_WEBHOOK_SECRET_PR_MERGE }}' -H "Content-Type: application/json" --data "$WEBHOOK_DATA" ${{ secrets.JIRA_WEBHOOK_URL_PR_MERGE }}
 
       - name: Slack Failure Message
-        uses: slackapi/slack-github-action@v2.0.0
+        uses: slackapi/slack-github-action@v2.1.0
         id: slack-failure-message
         if: failure() && github.ref == 'refs/heads/main' && github.repository_owner == 'deephaven'
         env:
