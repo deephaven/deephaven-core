@@ -37,6 +37,7 @@ import io.deephaven.parquet.table.metadata.GroupingColumnInfo;
 import io.deephaven.parquet.table.metadata.SortColumnInfo;
 import io.deephaven.parquet.table.metadata.TableInfo;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.mutable.MutableLong;
 import io.deephaven.util.type.NumericTypeUtils;
 import org.apache.parquet.column.statistics.Statistics;
 import org.apache.parquet.format.RowGroup;
@@ -628,7 +629,8 @@ public class ParquetTableLocation extends AbstractTableLocation {
             final AbstractRangeFilter rf,
             final List<Integer> parquetIndices,
             final PushdownResult result) {
-        RowSetBuilderSequential maybeBuilder = RowSetFactory.builderSequential();
+        final RowSetBuilderSequential maybeBuilder = RowSetFactory.builderSequential();
+        final MutableLong maybeCount = new MutableLong(0);
 
         // Only one column in a RangeFilter
         final Integer parquetIndex = parquetIndices.get(0);
@@ -639,9 +641,11 @@ public class ParquetTableLocation extends AbstractTableLocation {
 
             if (p == null || rf.overlaps(p.first, p.second)) {
                 maybeBuilder.appendRowSequence(rs);
+                maybeCount.add(rs.size());
             }
         });
-        return PushdownResult.of(result.match().copy(), maybeBuilder.build());
+        return PushdownResult.of(result.match().copy(),
+                maybeCount.get() == result.maybeMatch().size() ? result.maybeMatch().copy() : maybeBuilder.build());
     }
 
     /**
@@ -652,7 +656,8 @@ public class ParquetTableLocation extends AbstractTableLocation {
             final MatchFilter mf,
             final List<Integer> parquetIndices,
             final PushdownResult result) {
-        RowSetBuilderSequential maybeBuilder = RowSetFactory.builderSequential();
+        final RowSetBuilderSequential maybeBuilder = RowSetFactory.builderSequential();
+        final MutableLong maybeCount = new MutableLong(0);
 
         // Only one column in a RangeFilter
         final Integer parquetIndex = parquetIndices.get(0);
@@ -663,9 +668,11 @@ public class ParquetTableLocation extends AbstractTableLocation {
 
             if (p == null || mf.overlaps(p.first, p.second)) {
                 maybeBuilder.appendRowSequence(rs);
+                maybeCount.add(rs.size());
             }
         });
-        return PushdownResult.of(result.match().copy(), maybeBuilder.build());
+        return PushdownResult.of(result.match().copy(),
+                maybeCount.get() == result.maybeMatch().size() ? result.maybeMatch().copy() : maybeBuilder.build());
     }
 
     /**

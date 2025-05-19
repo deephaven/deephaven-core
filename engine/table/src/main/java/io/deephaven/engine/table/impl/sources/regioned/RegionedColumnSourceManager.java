@@ -26,6 +26,7 @@ import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.ReferentialIntegrity;
+import io.deephaven.util.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -812,8 +813,9 @@ public class RegionedColumnSourceManager
             final Consumer<PushdownResult> onComplete,
             final Consumer<Exception> onError) {
 
-        final WritableRowSet match = RowSetFactory.empty();
-        final WritableRowSet maybeMatch = RowSetFactory.empty();
+        final RowSetBuilderRandom matchBuilder = RowSetFactory.builderRandom();
+        final RowSetBuilderRandom maybeMatchBuilder = RowSetFactory.builderRandom();
+        final MutableLong maybeMatchCount = new MutableLong(0);
 
         // Use the job scheduler to run every location in parallel.
         jobScheduler.iterateParallel(
@@ -835,11 +837,14 @@ public class RegionedColumnSourceManager
                         final Consumer<PushdownResult> resultConsumer = result -> {
                             try (final PushdownResult ignored = result) {
                                 // Add the results to the global set.
-                                synchronized (match) {
-                                    match.insertWithShift(locationStartKey, result.match());
+                                synchronized (matchBuilder) {
+                                    result.match().shiftInPlace(locationStartKey);
+                                    matchBuilder.addRowSet(result.match());
                                 }
-                                synchronized (maybeMatch) {
-                                    maybeMatch.insertWithShift(locationStartKey, result.maybeMatch());
+                                synchronized (maybeMatchBuilder) {
+                                    result.maybeMatch().shiftInPlace(locationStartKey);
+                                    maybeMatchBuilder.addRowSet(result.maybeMatch());
+                                    maybeMatchCount.add(result.maybeMatch().size());
                                 }
                             }
                         };
@@ -847,7 +852,9 @@ public class RegionedColumnSourceManager
                                 costCeiling, jobScheduler, resultConsumer, onError);
                     }
                     locationResume.run();
-                }, () -> onComplete.accept(PushdownResult.of(match, maybeMatch)), onError);
+                }, () -> onComplete.accept(PushdownResult.of(matchBuilder.build(),
+                        maybeMatchCount.get() == input.size() ? input.copy() : maybeMatchBuilder.build())),
+                onError);
     }
 
     @Override
