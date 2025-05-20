@@ -25,7 +25,7 @@ public class FileUtilsTest extends TestCase {
      * @throws IOException
      */
     public void testRecursiveDelete() throws IOException {
-        final Path tmpRoot = Files.createTempDirectory("testRecursuveDelete");
+        final Path tmpRoot = Files.createTempDirectory("testRecursiveDelete");
         makeRandomDirectoryStructure(tmpRoot);
 
         FileUtils.deleteRecursively(tmpRoot.toFile());
@@ -40,7 +40,7 @@ public class FileUtilsTest extends TestCase {
      * @throws IOException
      */
     public void testRecursiveDeleteNFS() throws IOException {
-        final Path tmpRoot = Files.createTempDirectory("testRecursuveDeleteNFS");
+        final Path tmpRoot = Files.createTempDirectory("testRecursiveDeleteNFS");
         makeRandomDirectoryStructure(tmpRoot);
 
         FileUtils.deleteRecursivelyOnNFS(tmpRoot.toFile());
@@ -64,7 +64,8 @@ public class FileUtilsTest extends TestCase {
         final Path hiddenFile = Files.createTempFile(tmpDir, ".hid", ".tmp");
 
         // the following possibly does nothing (like if we're on *nix system)
-        final DosFileAttributeView dosView = Files.getFileAttributeView(hiddenFile, DosFileAttributeView.class, LinkOption.NOFOLLOW_LINKS);
+        final DosFileAttributeView dosView =
+                Files.getFileAttributeView(hiddenFile, DosFileAttributeView.class, LinkOption.NOFOLLOW_LINKS);
         dosView.setHidden(true);
     }
 
