@@ -157,12 +157,6 @@ abstract class AbstractFilterExecution {
             throw new CancellationException("interrupted while filtering");
         }
 
-        if (input.isEmpty()) {
-            // If there are no rows left to filter, skip this filter.
-            onComplete.accept(RowSetFactory.empty());
-            return;
-        }
-
         final long inputSize = input.size();
 
         final int targetSegments = (int) Math.min(getTargetSegments(), (inputSize +
@@ -344,12 +338,6 @@ abstract class AbstractFilterExecution {
             final RowSet input,
             final Consumer<WritableRowSet> resultConsumer,
             final Consumer<Exception> exceptionConsumer) {
-        if (input.isEmpty()) {
-            // If there are no rows left to filter, skip this filter.
-            resultConsumer.accept(RowSetFactory.empty());
-            return;
-        }
-
         // Run serially or parallelized?
         final long inputSize = input.size();
         if (!shouldParallelizeFilter(filter, inputSize)) {

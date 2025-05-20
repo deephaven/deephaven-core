@@ -92,17 +92,6 @@ class CompareUtils {
     }
 
     private static int comparePrimitives(Object a, Object b) {
-        if (a == null || b == null) {
-            throw new IllegalArgumentException("Arguments cannot be null");
-        }
-
-        // Special case for two longs to avoid double conversion.
-        if (a instanceof Long && b instanceof Long) {
-            long val1 = (long) a;
-            long val2 = (long) b;
-            return Long.compare(val1, val2);
-        }
-
         // Convert to double for other comparisons.
         double val1, val2;
 
