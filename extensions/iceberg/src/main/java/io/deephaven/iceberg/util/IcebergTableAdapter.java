@@ -48,7 +48,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 
 /**
  * This class manages an Iceberg {@link org.apache.iceberg.Table table} and provides methods to interact with it.
@@ -62,8 +61,6 @@ public final class IcebergTableAdapter {
             ColumnDefinition.fromGenericType("Summary", Map.class),
             ColumnDefinition.fromGenericType("SnapshotObject", Snapshot.class));
 
-    private static final Set<String> S3_SCHEMES = Set.of("s3", "s3a", "s3n");
-
     private final Catalog catalog;
     private final org.apache.iceberg.Table table;
     private final TableIdentifier tableIdentifier;
@@ -71,6 +68,7 @@ public final class IcebergTableAdapter {
     private final URI locationUri;
     private final Resolver resolver;
     private final NameMapping nameMapping;
+    private final FileIOAdapter fileIOAdapter;
 
     public IcebergTableAdapter(
             final Catalog catalog,
@@ -86,6 +84,7 @@ public final class IcebergTableAdapter {
         this.locationUri = IcebergUtils.locationUri(table);
         this.resolver = Objects.requireNonNull(resolver);
         this.nameMapping = Objects.requireNonNull(nameMapping);
+        this.fileIOAdapter = FileIOAdapter.fromServiceLoader(locationUri.getScheme(), table.io());
     }
 
     /**
@@ -482,19 +481,15 @@ public final class IcebergTableAdapter {
             @Nullable final Snapshot snapshot,
             @Nullable final Object dataInstructions,
             final boolean ignoreResolvingErrors) {
-        final Object specialInstructions;
-        final SeekableChannelsProvider channelsProvider;
-        {
-            final String uriScheme = locationUri.getScheme();
-            specialInstructions = dataInstructions == null
-                    ? dataInstructionsProviderLoader.load(uriScheme)
-                    : dataInstructions;
-            channelsProvider = seekableChannelsProvider(uriScheme, specialInstructions);
-        }
+        final Object specialInstructions = dataInstructions == null
+                ? dataInstructionsProviderLoader.load(locationUri.getScheme())
+                : dataInstructions;
+        final SeekableChannelsProvider channelsProvider = seekableChannelsProvider(specialInstructions);
         final ParquetInstructions parquetInstructions = ParquetInstructions.builder()
                 .setTableDefinition(resolver.definition())
                 .setColumnResolverFactory(new ResolverFactory(resolver, nameMapping, ignoreResolvingErrors))
                 .setSpecialInstructions(specialInstructions)
+                .setSeekableChannelsProvider(channelsProvider)
                 .build();
         final Map<String, PartitionField> partitionFields = resolver.partitionFieldMap();
         if (partitionFields.isEmpty()) {
@@ -503,12 +498,7 @@ public final class IcebergTableAdapter {
         return new IcebergPartitionedLayout(this, parquetInstructions, channelsProvider, snapshot, resolver);
     }
 
-    private static SeekableChannelsProvider seekableChannelsProvider(
-            final String uriScheme,
-            final Object specialInstructions) {
-        final SeekableChannelsProviderLoader loader = SeekableChannelsProviderLoader.getInstance();
-        return S3_SCHEMES.contains(uriScheme)
-                ? loader.load(S3_SCHEMES, specialInstructions)
-                : loader.load(uriScheme, specialInstructions);
+    SeekableChannelsProvider seekableChannelsProvider(final Object specialInstructions) {
+        return fileIOAdapter.createProvider(locationUri.getScheme(), table.io(), specialInstructions);
     }
 }

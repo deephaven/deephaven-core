@@ -21,8 +21,7 @@ public final class UniversalS3SeekableChannelProviderPlugin extends SeekableChan
 
     @Override
     public boolean isCompatible(@NotNull final String uriScheme, @Nullable final Object config) {
-        return S3Constants.S3_URI_SCHEME.equals(uriScheme) || S3Constants.S3A_URI_SCHEME.equals(uriScheme)
-                || S3Constants.S3N_URI_SCHEME.equals(uriScheme);
+        return S3Constants.S3_SCHEMES.contains(uriScheme);
     }
 
     @Override

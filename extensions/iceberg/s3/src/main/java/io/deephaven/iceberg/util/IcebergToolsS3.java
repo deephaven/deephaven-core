@@ -41,7 +41,10 @@ public final class IcebergToolsS3 {
      * @param endpointOverride the S3 endpoint override; this is useful for testing with a S3-compatible local service
      *        such as MinIO or LocalStack
      * @return the Iceberg catalog adapter
+     *
+     * @deprecated Use {@link IcebergTools#createAdapter(String, Map)} instead with appropriate properties.
      */
+    @Deprecated
     public static IcebergCatalogAdapter createS3Rest(
             @Nullable final String name,
             @NotNull final String catalogURI,
@@ -79,7 +82,10 @@ public final class IcebergToolsS3 {
      * @param catalogURI the URI of the AWS Glue catalog
      * @param warehouseLocation the location of the S3 datafiles backing the catalog
      * @return the Iceberg catalog adapter
+     *
+     * @deprecated Use {@link IcebergTools#createAdapter(String, Map)} instead with appropriate properties.
      */
+    @Deprecated
     public static IcebergCatalogAdapter createGlue(
             @Nullable final String name,
             @NotNull final String catalogURI,
@@ -145,7 +151,10 @@ public final class IcebergToolsS3 {
      * @param hadoopConfig a map containing Hadoop configuration properties to use
      * @param instructions the s3 instructions
      * @return the Iceberg catalog adapter
+     *
+     * @deprecated Use {@link IcebergTools#createAdapter(String, Map)} instead with appropriate properties.
      */
+    @Deprecated
     public static IcebergCatalogAdapter createAdapter(
             @Nullable final String name,
             @NotNull final Map<String, String> properties,

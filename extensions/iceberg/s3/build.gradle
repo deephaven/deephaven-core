@@ -19,6 +19,7 @@ dependencies {
     implementation libs.iceberg.bundled.guava
 
     implementation project(':extensions-s3')
+    implementation project(':Configuration')
     implementation libs.iceberg.aws
 
     implementation platform(libs.awssdk.bom)

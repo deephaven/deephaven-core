@@ -3,11 +3,14 @@
 //
 package io.deephaven.iceberg.util;
 
+import io.deephaven.base.FileUtils;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.extensions.s3.S3Instructions;
 import io.deephaven.parquet.table.CompletedParquetWrite;
 import io.deephaven.parquet.table.ParquetInstructions;
+import io.deephaven.util.channel.SeekableChannelsProvider;
+import io.deephaven.util.channel.SeekableChannelsProviderLoader;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;
@@ -150,18 +153,21 @@ class TableParquetWriterOptionsTest {
         final ParquetInstructions.OnWriteCompleted onWriteCompleted =
                 (final CompletedParquetWrite completedParquetWrite) -> {
                     /* Do nothing */ };
-        final ParquetInstructions parquetInstructions = writeInstructions.toParquetInstructions(
-                onWriteCompleted, definition, fieldIdToName, s3Instructions);
-
-        assertThat(parquetInstructions.getCompressionCodecName()).isEqualTo("GZIP");
-        assertThat(parquetInstructions.getMaximumDictionaryKeys()).isEqualTo(100);
-        assertThat(parquetInstructions.getMaximumDictionarySize()).isEqualTo(200);
-        assertThat(parquetInstructions.getTargetPageSize()).isEqualTo(1 << 20);
-        assertThat(parquetInstructions.getFieldId("field1")).isEmpty();
-        assertThat(parquetInstructions.getFieldId("field2")).hasValue(2);
-        assertThat(parquetInstructions.getFieldId("field3")).hasValue(3);
-        assertThat(parquetInstructions.onWriteCompleted()).hasValue(onWriteCompleted);
-        assertThat(parquetInstructions.getTableDefinition()).hasValue(definition);
-        assertThat(parquetInstructions.getSpecialInstructions()).isEqualTo(s3Instructions);
+        try (final SeekableChannelsProvider channelsProvider =
+                SeekableChannelsProviderLoader.getInstance().load(FileUtils.FILE_URI_SCHEME, null)) {
+            final ParquetInstructions parquetInstructions = writeInstructions.toParquetInstructions(
+                    onWriteCompleted, definition, fieldIdToName, s3Instructions, channelsProvider);
+            assertThat(parquetInstructions.getCompressionCodecName()).isEqualTo("GZIP");
+            assertThat(parquetInstructions.getMaximumDictionaryKeys()).isEqualTo(100);
+            assertThat(parquetInstructions.getMaximumDictionarySize()).isEqualTo(200);
+            assertThat(parquetInstructions.getTargetPageSize()).isEqualTo(1 << 20);
+            assertThat(parquetInstructions.getFieldId("field1")).isEmpty();
+            assertThat(parquetInstructions.getFieldId("field2")).hasValue(2);
+            assertThat(parquetInstructions.getFieldId("field3")).hasValue(3);
+            assertThat(parquetInstructions.onWriteCompleted()).hasValue(onWriteCompleted);
+            assertThat(parquetInstructions.getTableDefinition()).hasValue(definition);
+            assertThat(parquetInstructions.getSpecialInstructions()).isEqualTo(s3Instructions);
+            assertThat(parquetInstructions.getSeekableChannelsProvider()).hasValue(channelsProvider);
+        }
     }
 }
