@@ -837,14 +837,18 @@ public class RegionedColumnSourceManager
                         final Consumer<PushdownResult> resultConsumer = result -> {
                             try (final PushdownResult ignored = result) {
                                 // Add the results to the global set.
-                                synchronized (matchBuilder) {
-                                    result.match().shiftInPlace(locationStartKey);
-                                    matchBuilder.addRowSet(result.match());
+                                if (result.match().isNonempty()) {
+                                    synchronized (matchBuilder) {
+                                        result.match().shiftInPlace(locationStartKey);
+                                        matchBuilder.addRowSet(result.match());
+                                    }
                                 }
-                                synchronized (maybeMatchBuilder) {
-                                    result.maybeMatch().shiftInPlace(locationStartKey);
-                                    maybeMatchBuilder.addRowSet(result.maybeMatch());
-                                    maybeMatchCount.add(result.maybeMatch().size());
+                                if (result.maybeMatch().isNonempty()) {
+                                    synchronized (maybeMatchBuilder) {
+                                        result.maybeMatch().shiftInPlace(locationStartKey);
+                                        maybeMatchBuilder.addRowSet(result.maybeMatch());
+                                        maybeMatchCount.add(result.maybeMatch().size());
+                                    }
                                 }
                             }
                         };
