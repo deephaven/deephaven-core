@@ -200,15 +200,63 @@ public interface Filter extends Expression, ConcurrencyControl<Filter> {
     }
 
     /**
-     * Performs a non-recursive "and-extraction" against {@code filter}. If {@code filter} is a {@link FilterAnd},
-     * {@link FilterAnd#filters()} will be returned. If {@code filter} is {@link Filter#ofTrue()}, an empty list will be
-     * returned. Otherwise, a singleton list of {@code filter} will be returned.
+     * <<<<<<< HEAD ======= Wraps the given filter with a FilterBarrier to declare a barrier that other filters can
+     * respect.
+     *
+     * @param filter the filter to wrap
+     * @param barrier the barrier object being declared
+     * @return a FilterBarrier instance wrapping the provided filter
+     */
+    static FilterBarrier barrier(Filter filter, Object barrier) {
+        return FilterBarrier.of(filter, barrier);
+    }
+
+    /**
+     * Wraps the given filter with a FilterBarrier to declare a barrier that other filters can respect.
+     *
+     * @param filter the filter to wrap
+     * @param barriers the barrier objects that need to be respected
+     * @return a FilterBarrier instance wrapping the provided filter
+     */
+    static FilterRespectsBarrier respectsBarrier(Filter filter, Object... barriers) {
+        return FilterRespectsBarrier.of(filter, barriers);
+    }
+
+    /**
+     * >>>>>>> 2db1881aa9 (feat: DH-19045: FilterBarriers and FilterRespectsBarriers) Performs a non-recursive
+     * "and-extraction" against {@code filter}. If {@code filter} is a {@link FilterAnd}, {@link FilterAnd#filters()}
+     * will be returned. If {@code filter} is {@link Filter#ofTrue()}, an empty list will be returned. Otherwise, a
+     * singleton list of {@code filter} will be returned.
      *
      * @param filter the filter
      * @return the and-extracted filter
      */
     static Collection<Filter> extractAnds(Filter filter) {
         return ExtractAnds.of(filter);
+    }
+
+    /**
+     * Performs a recursive "barrier-extraction" against {@code filter}. If {@code filter}, or any sub-filter, is a
+     * {@link FilterBarrier}, {@link FilterBarrier#barrier()} will be included in the returned collection. Otherwise, an
+     * empty collection will be returned.
+     *
+     * @param filter the filter
+     * @return the barriers defined in the filter and sub-filters
+     */
+    static Collection<Object> extractBarriers(Filter filter) {
+        return ExtractBarriers.of(filter);
+    }
+
+    /**
+     * Performs a recursive "respected-barrier-extraction" against {@code filter}. If {@code filter}, or any sub-filter,
+     * is a {@link FilterRespectsBarrier}, {@link FilterRespectsBarrier#respectedBarriers()} will be included in the
+     * returned collection. Otherwise, an empty collection will be returned.
+     *
+     * @param filter the filter
+     * @return the respected barriers defined in the filter and sub-filters
+     */
+    static Collection<Object> extractRespectedBarriers(Filter filter) {
+        return ExtractRespectedBarriers.of(filter);
     }
 
     /**
@@ -223,6 +271,16 @@ public interface Filter extends Expression, ConcurrencyControl<Filter> {
     @Override
     default Filter withSerial() {
         return serial(this);
+    }
+
+    @Override
+    default Filter respectsBarrier(Object... barriers) {
+        return respectsBarrier(this, barriers);
+    }
+
+    @Override
+    default Filter withBarrier(Object barrier) {
+        return barrier(this, barrier);
     }
 
     <T> T walk(Visitor<T> visitor);
@@ -244,6 +302,10 @@ public interface Filter extends Expression, ConcurrencyControl<Filter> {
         T visit(FilterPattern pattern);
 
         T visit(FilterSerial serial);
+
+        T visit(FilterBarrier barrier);
+
+        T visit(FilterRespectsBarrier respectsBarrier);
 
         T visit(Function function);
 

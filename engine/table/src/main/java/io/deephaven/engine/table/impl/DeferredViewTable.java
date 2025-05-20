@@ -192,13 +192,21 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
 
         final QueryCompilerRequestProcessor.BatchProcessor compilationProcessor = QueryCompilerRequestProcessor.batch();
         boolean serialFilterFound = false;
+        final Set<Object> postViewBarriers = new HashSet<>();
         for (final WhereFilter filter : filters) {
             filter.init(definition, compilationProcessor);
 
             final boolean isPostView = Stream.of(filter.getColumns(), filter.getColumnArrays())
                     .flatMap(Collection::stream)
                     .anyMatch(postViewColumns::contains);
-            if (isPostView || serialFilterFound) {
+
+            final boolean hasPostViewBarrier =
+                    Filter.extractRespectedBarriers(filter).stream().anyMatch(postViewBarriers::contains);
+            if (isPostView || serialFilterFound || hasPostViewBarrier) {
+                // if this filter is serial, all subsequent filters must be postViewFilters
+                if (!filter.permitParallelization()) {
+                    serialFilterFound = true;
+                }
                 postViewFilters.add(filter);
                 continue;
             }
@@ -226,6 +234,14 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
                 if (!filter.permitParallelization()) {
                     serialFilterFound = true;
                 }
+
+                final Collection<Object> newBarriers = Filter.extractBarriers(filter);
+                final Optional<Object> dupBarrier = newBarriers.stream().filter(postViewBarriers::contains).findFirst();
+                if (dupBarrier.isPresent()) {
+                    throw new IllegalArgumentException("Filter Barriers must be unique! Found duplicate: " +
+                            dupBarrier.get());
+                }
+                postViewBarriers.addAll(newBarriers);
                 postViewFilters.add(filter);
             }
         }
