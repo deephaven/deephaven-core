@@ -233,7 +233,7 @@ public class ComparableRangeFilter extends AbstractRangeFilter {
         }
         // There is no overlap inside the ranges, test the edges.
         return (c1 < 0 && c2 < 0)
-                || (c1 == 0 & this.lowerInclusive && upperInclusive)
+                || (c1 == 0 && this.lowerInclusive && upperInclusive)
                 || (c2 == 0 && lowerInclusive && this.upperInclusive);
     }
 
@@ -248,6 +248,6 @@ public class ComparableRangeFilter extends AbstractRangeFilter {
             return false; // value > this.upper, no overlap possible.
         }
         // There is no overlap inside the ranges, test the edges.
-        return (c1 < 0 && c2 < 0) || (c1 == 0 & this.lowerInclusive) || (c2 == 0 && this.upperInclusive);
+        return (c1 < 0 && c2 < 0) || (c1 == 0 && this.lowerInclusive) || (c2 == 0 && this.upperInclusive);
     }
 }

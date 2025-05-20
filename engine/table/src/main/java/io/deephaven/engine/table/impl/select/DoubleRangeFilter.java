@@ -201,7 +201,7 @@ public class DoubleRangeFilter extends AbstractRangeFilter {
         }
         // Test for complete inclusion and test the edges.
         return (c1 < 0 && c2 < 0)
-                || (c1 == 0 & this.lowerInclusive)
+                || (c1 == 0 && this.lowerInclusive)
                 || (c2 == 0 && this.upperInclusive);
     }
 }
