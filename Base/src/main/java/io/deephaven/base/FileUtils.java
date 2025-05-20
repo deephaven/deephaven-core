@@ -141,7 +141,7 @@ public class FileUtils {
         final Path pathToBeDeleted = fileToBeDeleted.toPath();
         final BasicFileAttributes attr;
         try {
-            // `NOFOLLOW_LINKS` lets us treat soft-links as basic files. we will delete the link, but not the link's
+            // `NOFOLLOW_LINKS` lets us treat soft-links as basic files. We will delete the link, but not the link's
             // target (unless it also happens to be in the path we are recursively deleting ...)
             attr = Files.readAttributes(pathToBeDeleted, BasicFileAttributes.class, LinkOption.NOFOLLOW_LINKS);
         } catch (IOException e) {
