@@ -39,9 +39,10 @@ final class RegionedColumnSourceZonedDateTime
     }
 
     public RegionedColumnSourceZonedDateTime(
+            @NotNull final RegionedColumnSourceManager manager,
             @NotNull final ZoneId zone,
             @NotNull final RegionedColumnSourceLong<Values> inner) {
-        super(ColumnRegionLong.createNull(PARAMETERS.regionMask), ZonedDateTime.class, inner);
+        super(manager, ColumnRegionLong.createNull(PARAMETERS.regionMask), ZonedDateTime.class, inner);
         this.zone = zone;
     }
 
@@ -71,7 +72,7 @@ final class RegionedColumnSourceZonedDateTime
 
     @Override
     public ColumnSource<Instant> toInstant() {
-        return new RegionedColumnSourceInstant((RegionedColumnSourceLong<Values>) getNativeSource());
+        return new RegionedColumnSourceInstant(manager, (RegionedColumnSourceLong<Values>) getNativeSource());
     }
 
     @Override
@@ -84,7 +85,8 @@ final class RegionedColumnSourceZonedDateTime
         if (this.zone.equals(zone)) {
             return this;
         }
-        return new RegionedColumnSourceZonedDateTime(zone, (RegionedColumnSourceLong<Values>) getNativeSource());
+        return new RegionedColumnSourceZonedDateTime(manager, zone,
+                (RegionedColumnSourceLong<Values>) getNativeSource());
     }
 
     @Override

@@ -45,7 +45,7 @@ public class TestRegionedColumnSourceObjectSimple extends TstRegionedColumnSourc
     public void setUp() throws Exception {
         super.setUp();
         // noinspection unchecked
-        SUT = new RegionedColumnSourceObject.AsValues<>(String.class);
+        SUT = new RegionedColumnSourceObject.AsValues<>(manager, String.class);
         TestCase.assertEquals(String.class, SUT.getType());
     }
 
