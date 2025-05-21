@@ -5,6 +5,7 @@ package io.deephaven.engine.table.impl.hierarchical;
 
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessArtifact;
+import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.NotificationStepSource;
 import io.deephaven.engine.table.impl.QueryTable;
@@ -25,7 +26,7 @@ final class TreeSourceRowLookup extends LivenessArtifact implements Notification
     private final Object source;
     private final NotificationStepSource parent;
     private final AggregationRowLookup rowLookup;
-    private final QueryTable sourceRowLookupTable;
+    private final TrackingRowSet sourceRowLookupRowSet;
     private final ColumnSource<Long> sourceRowKeyColumnSource;
 
     TreeSourceRowLookup(@NotNull final Object source, @NotNull final QueryTable sourceRowLookupTable) {
@@ -37,7 +38,7 @@ final class TreeSourceRowLookup extends LivenessArtifact implements Notification
         } else {
             parent = null;
         }
-        this.sourceRowLookupTable = sourceRowLookupTable;
+        this.sourceRowLookupRowSet = sourceRowLookupTable.getRowSet();
         rowLookup = getRowLookup(sourceRowLookupTable);
         sourceRowKeyColumnSource =
                 sourceRowLookupTable.getColumnSource(SOURCE_ROW_LOOKUP_ROW_KEY_COLUMN.name(), long.class);
@@ -64,10 +65,10 @@ final class TreeSourceRowLookup extends LivenessArtifact implements Notification
         if (idAggregationRow == rowLookup.noEntryValue()) {
             return noEntryValue();
         }
-        if (sourceRowLookupTable.getRowSet().find(idAggregationRow) == NULL_ROW_KEY) {
+        if (sourceRowLookupRowSet.find(idAggregationRow) == NULL_ROW_KEY) {
             return noEntryValue();
         }
-        return sourceRowKeyColumnSource.get(idAggregationRow);
+        return sourceRowKeyColumnSource.getLong(idAggregationRow);
     }
 
     /**
@@ -82,10 +83,10 @@ final class TreeSourceRowLookup extends LivenessArtifact implements Notification
         if (idAggregationRow == rowLookup.noEntryValue()) {
             return noEntryValue();
         }
-        if (sourceRowLookupTable.getRowSet().findPrev(idAggregationRow) == NULL_ROW_KEY) {
+        if (sourceRowLookupRowSet.findPrev(idAggregationRow) == NULL_ROW_KEY) {
             return noEntryValue();
         }
-        return sourceRowKeyColumnSource.getPrev(idAggregationRow);
+        return sourceRowKeyColumnSource.getPrevLong(idAggregationRow);
     }
 
     @Override
