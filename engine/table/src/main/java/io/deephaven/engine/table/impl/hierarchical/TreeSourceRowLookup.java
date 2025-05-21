@@ -38,8 +38,8 @@ final class TreeSourceRowLookup extends LivenessArtifact implements Notification
         } else {
             parent = null;
         }
-        this.sourceRowLookupRowSet = sourceRowLookupTable.getRowSet();
         rowLookup = getRowLookup(sourceRowLookupTable);
+        this.sourceRowLookupRowSet = sourceRowLookupTable.getRowSet();
         sourceRowKeyColumnSource =
                 sourceRowLookupTable.getColumnSource(SOURCE_ROW_LOOKUP_ROW_KEY_COLUMN.name(), long.class);
     }
