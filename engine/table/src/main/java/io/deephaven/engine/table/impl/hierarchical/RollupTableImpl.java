@@ -781,7 +781,7 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
             return NULL_NODE_ID;
         }
 
-        if (!levelTables[nodeDepth - 1].getRowSet().containsRange(nodeSlot, nodeSlot)) {
+        if (levelTables[nodeDepth - 1].getRowSet().find(nodeSlot) == NULL_ROW_KEY) {
             // the aggregation knows about this key, but it does not actually exist in the table
             return NULL_NODE_ID;
         }
