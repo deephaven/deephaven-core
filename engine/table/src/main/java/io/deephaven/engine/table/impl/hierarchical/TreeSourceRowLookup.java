@@ -5,7 +5,6 @@ package io.deephaven.engine.table.impl.hierarchical;
 
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessArtifact;
-import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.NotificationStepSource;
 import io.deephaven.engine.table.impl.QueryTable;
@@ -26,7 +25,6 @@ final class TreeSourceRowLookup extends LivenessArtifact implements Notification
     private final Object source;
     private final NotificationStepSource parent;
     private final AggregationRowLookup rowLookup;
-    private final TrackingRowSet sourceRowLookupRowSet;
     private final ColumnSource<Long> sourceRowKeyColumnSource;
 
     TreeSourceRowLookup(@NotNull final Object source, @NotNull final QueryTable sourceRowLookupTable) {
@@ -39,7 +37,6 @@ final class TreeSourceRowLookup extends LivenessArtifact implements Notification
             parent = null;
         }
         rowLookup = getRowLookup(sourceRowLookupTable);
-        this.sourceRowLookupRowSet = sourceRowLookupTable.getRowSet();
         sourceRowKeyColumnSource =
                 sourceRowLookupTable.getColumnSource(SOURCE_ROW_LOOKUP_ROW_KEY_COLUMN.name(), long.class);
     }
@@ -63,9 +60,6 @@ final class TreeSourceRowLookup extends LivenessArtifact implements Notification
     long get(final Object nodeKey) {
         final int idAggregationRow = rowLookup.get(nodeKey);
         if (idAggregationRow == rowLookup.noEntryValue()) {
-            return noEntryValue();
-        }
-        if (sourceRowLookupRowSet.find(idAggregationRow) == NULL_ROW_KEY) {
             return noEntryValue();
         }
         return sourceRowKeyColumnSource.getLong(idAggregationRow);
