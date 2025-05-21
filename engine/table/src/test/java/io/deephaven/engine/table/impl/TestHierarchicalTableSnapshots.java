@@ -340,7 +340,8 @@ public class TestHierarchicalTableSnapshots {
 
         TableTools.show(source);
         final TreeTable treeTable = source.tree("ID", "Parent");
-        final TreeTable sortedTree = treeTable.withNodeOperations(treeTable.makeNodeOperationsRecorder().sortDescending("SortColumn"));
+        final TreeTable sortedTree =
+                treeTable.withNodeOperations(treeTable.makeNodeOperationsRecorder().sortDescending("SortColumn"));
 
         final Table emptyExpansions = sortedTree.getEmptyExpansionsTable();
         TableTools.show(emptyExpansions);
@@ -387,7 +388,7 @@ public class TestHierarchicalTableSnapshots {
 
         final Table expect3 = TableTools.newTable(
                 intCol("__DEPTH__", 1),
-                booleanCol("__EXPANDED__", new Boolean[]{null}),
+                booleanCol("__EXPANDED__", new Boolean[] {null}),
                 intCol("ID", 4),
                 intCol("Parent", NULL_INT),
                 intCol("SortColumn", 0),
