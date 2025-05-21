@@ -334,6 +334,72 @@ public class TestHierarchicalTableSnapshots {
     }
 
     @Test
+    public void testMissingKeyTree() {
+        final QueryTable source = TstUtils.testRefreshingTable(intCol("ID", 1, 2, 3), intCol("Parent", NULL_INT, 1, 2),
+                intCol("SortColumn", 0, 0, 0), intCol("Sentinel", 100, 200, 300));
+
+        TableTools.show(source);
+        final TreeTable treeTable = source.tree("ID", "Parent");
+        final TreeTable sortedTree = treeTable.withNodeOperations(treeTable.makeNodeOperationsRecorder().sortDescending("SortColumn"));
+
+        final Table emptyExpansions = sortedTree.getEmptyExpansionsTable();
+        TableTools.show(emptyExpansions);
+
+        final SnapshotState ss = sortedTree.makeSnapshotState();
+        final Table snapshot1 =
+                snapshotToTable(sortedTree, ss, emptyExpansions, null, null, RowSetFactory.flat(30));
+        TableTools.showWithRowSet(snapshot1);
+        final Table expect1 = TableTools.newTable(
+                intCol("__DEPTH__", 1),
+                booleanCol("__EXPANDED__", false),
+                intCol("ID", 1),
+                intCol("Parent", NULL_INT),
+                intCol("SortColumn", 0),
+                intCol("Sentinel", 100));
+        assertTableEquals(expect1, snapshot1);
+
+        final Table expand1 = TableTools.newTable(intCol("ID", 1));
+
+        final Table snapshot2 =
+                snapshotToTable(sortedTree, ss, expand1, null, null, RowSetFactory.flat(30));
+        TableTools.showWithRowSet(snapshot2);
+        final Table expect2 = TableTools.newTable(
+                intCol("__DEPTH__", 1, 2),
+                booleanCol("__EXPANDED__", true, false),
+                intCol("ID", 1, 2),
+                intCol("Parent", NULL_INT, 1),
+                intCol("SortColumn", 0, 0),
+                intCol("Sentinel", 100, 200));
+        assertTableEquals(expect2, snapshot2);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            TstUtils.addToTable(source, i(0), intCol("ID", 4), intCol("Parent", NULL_INT), intCol("SortColumn", 0),
+                    intCol("Sentinel", 400));
+            source.notifyListeners(new TableUpdateImpl(i(), i(), i(0), RowSetShiftData.EMPTY, ModifiedColumnSet.ALL));
+        });
+
+        TableTools.show(source);
+
+        final Table snapshot3 =
+                snapshotToTable(sortedTree, ss, expand1, null, null, RowSetFactory.flat(30));
+        TableTools.showWithRowSet(snapshot3);
+
+        final Table expect3 = TableTools.newTable(
+                intCol("__DEPTH__", 1),
+                booleanCol("__EXPANDED__", new Boolean[]{null}),
+                intCol("ID", 4),
+                intCol("Parent", NULL_INT),
+                intCol("SortColumn", 0),
+                intCol("Sentinel", 400));
+        assertTableEquals(expect3, snapshot3);
+
+        freeSnapshotTableChunks(snapshot1);
+        freeSnapshotTableChunks(snapshot2);
+        freeSnapshotTableChunks(snapshot3);
+    }
+
+    @Test
     public void testRollupMultipleOps() throws CsvReaderException {
         final String data = "A,B,C,N\n" +
                 "Apple,One,Alpha,1\n" +

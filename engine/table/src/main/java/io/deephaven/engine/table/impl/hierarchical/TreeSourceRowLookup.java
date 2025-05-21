@@ -25,6 +25,7 @@ final class TreeSourceRowLookup extends LivenessArtifact implements Notification
     private final Object source;
     private final NotificationStepSource parent;
     private final AggregationRowLookup rowLookup;
+    private final QueryTable sourceRowLookupTable;
     private final ColumnSource<Long> sourceRowKeyColumnSource;
 
     TreeSourceRowLookup(@NotNull final Object source, @NotNull final QueryTable sourceRowLookupTable) {
@@ -36,6 +37,7 @@ final class TreeSourceRowLookup extends LivenessArtifact implements Notification
         } else {
             parent = null;
         }
+        this.sourceRowLookupTable = sourceRowLookupTable;
         rowLookup = getRowLookup(sourceRowLookupTable);
         sourceRowKeyColumnSource =
                 sourceRowLookupTable.getColumnSource(SOURCE_ROW_LOOKUP_ROW_KEY_COLUMN.name(), long.class);
@@ -60,6 +62,9 @@ final class TreeSourceRowLookup extends LivenessArtifact implements Notification
     long get(final Object nodeKey) {
         final int idAggregationRow = rowLookup.get(nodeKey);
         if (idAggregationRow == rowLookup.noEntryValue()) {
+            return noEntryValue();
+        }
+        if (sourceRowLookupTable.getRowSet().find(idAggregationRow) == NULL_ROW_KEY) {
             return noEntryValue();
         }
         return sourceRowKeyColumnSource.get(idAggregationRow);
