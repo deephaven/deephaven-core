@@ -83,9 +83,6 @@ final class TreeSourceRowLookup extends LivenessArtifact implements Notification
         if (idAggregationRow == rowLookup.noEntryValue()) {
             return noEntryValue();
         }
-        if (sourceRowLookupRowSet.findPrev(idAggregationRow) == NULL_ROW_KEY) {
-            return noEntryValue();
-        }
         return sourceRowKeyColumnSource.getPrevLong(idAggregationRow);
     }
 
