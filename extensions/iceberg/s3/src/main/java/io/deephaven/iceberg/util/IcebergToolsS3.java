@@ -113,6 +113,10 @@ public final class IcebergToolsS3 {
         // Not setting this will result in using ResolvingFileIO.
         properties.put(CatalogProperties.FILE_IO_IMPL, S3FileIO.class.getName());
 
+        // CRT client is not supported by Deephaven
+        // TODO (DH-19253): Add support for S3CrtAsyncClient
+        properties.put(S3FileIOProperties.S3_CRT_ENABLED, Boolean.toString(false));
+
         final String catalogName = name != null ? name : "IcebergCatalog-" + catalogURI;
         catalog.initialize(catalogName, properties);
 
@@ -151,10 +155,7 @@ public final class IcebergToolsS3 {
      * @param hadoopConfig a map containing Hadoop configuration properties to use
      * @param instructions the s3 instructions
      * @return the Iceberg catalog adapter
-     *
-     * @deprecated Use {@link IcebergTools#createAdapter(String, Map)} instead with appropriate properties.
      */
-    @Deprecated
     public static IcebergCatalogAdapter createAdapter(
             @Nullable final String name,
             @NotNull final Map<String, String> properties,

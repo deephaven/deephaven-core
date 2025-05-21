@@ -55,13 +55,11 @@ final class S3ClientFactory {
     private static volatile ScheduledExecutorService scheduledExecutor;
 
     static S3AsyncClient getAsyncClient(@NotNull final S3Instructions instructions) {
-        return instructions.s3AsyncClient().orElseGet(
-                () -> buildForS3(S3ClientFactory::getAsyncClientBuilder, instructions, S3AsyncClient.class));
+        return buildForS3(S3ClientFactory::getAsyncClientBuilder, instructions, S3AsyncClient.class);
     }
 
     static S3Client getSyncClient(@NotNull final S3Instructions instructions) {
-        return instructions.s3Client().orElseGet(
-                () -> buildForS3(S3ClientFactory::getSyncClientBuilder, instructions, S3Client.class));
+        return buildForS3(S3ClientFactory::getSyncClientBuilder, instructions, S3Client.class);
     }
 
     static <Builder extends AwsAsyncClientBuilder<Builder, Client> & AwsClientBuilder<Builder, Client>, Client> void applyAllSharedAsync(

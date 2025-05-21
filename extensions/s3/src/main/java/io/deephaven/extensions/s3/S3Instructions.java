@@ -14,9 +14,6 @@ import org.immutables.value.Value.Lazy;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.core.client.config.ClientOverrideConfiguration;
 import software.amazon.awssdk.profiles.ProfileFile;
-import software.amazon.awssdk.services.s3.S3AsyncClient;
-import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.internal.crt.S3CrtAsyncClient;
 
 import java.net.URI;
 import java.nio.file.Path;
@@ -199,22 +196,6 @@ public abstract class S3Instructions implements LogOutputAppendable {
     public abstract Optional<Path> credentialsFilePath();
 
     /**
-     * The S3AsyncClient to use when reading or writing to S3. If not provided, a new S3AsyncClient will be created
-     * using the provided instructions, like region name, credentials, and endpoint override, etc..
-     */
-    public abstract Optional<S3AsyncClient> s3AsyncClient();
-
-    /**
-     * The S3Client to use when reading or writing to S3. If not provided, a new S3Client will be created using the
-     * provided instructions, like region name, credentials, and endpoint override, etc..
-     */
-    public abstract Optional<S3Client> s3Client();
-
-    public abstract S3Instructions withS3AsyncClient(S3AsyncClient s3AsyncClient);
-
-    public abstract S3Instructions withS3Client(S3Client s3Client);
-
-    /**
      * The aggregated profile file that combines the configuration and credentials files.
      */
     @Lazy
@@ -268,10 +249,6 @@ public abstract class S3Instructions implements LogOutputAppendable {
         Builder configFilePath(Path configFilePath);
 
         Builder credentialsFilePath(Path credentialsFilePath);
-
-        Builder s3AsyncClient(S3AsyncClient s3AsyncClient);
-
-        Builder s3Client(S3Client s3Client);
 
         default Builder endpointOverride(final String endpointOverride) {
             return endpointOverride(URI.create(endpointOverride));
@@ -370,14 +347,6 @@ public abstract class S3Instructions implements LogOutputAppendable {
             throw new IllegalArgumentException(
                     "numConcurrentWriteParts(=" + numConcurrentWriteParts() + ") must be <= " +
                             "maxConcurrentRequests(=" + maxConcurrentRequests() + ")");
-        }
-    }
-
-    @Check
-    final void checkS3AsyncClient() {
-        if (s3AsyncClient().isPresent() && s3AsyncClient().get() instanceof S3CrtAsyncClient) {
-            // TODO (DH-19253): Experiment with and add support for S3CrtAsyncClient
-            throw new IllegalArgumentException("S3CrtAsyncClient is not supported. Use S3AsyncClient instead.");
         }
     }
 

@@ -70,6 +70,7 @@ public final class IcebergTableAdapter {
     private final NameMapping nameMapping;
     private final FileIOAdapter fileIOAdapter;
 
+    @InternalUseOnly
     public IcebergTableAdapter(
             final Catalog catalog,
             final TableIdentifier tableIdentifier,
@@ -84,7 +85,7 @@ public final class IcebergTableAdapter {
         this.locationUri = IcebergUtils.locationUri(table);
         this.resolver = Objects.requireNonNull(resolver);
         this.nameMapping = Objects.requireNonNull(nameMapping);
-        this.fileIOAdapter = FileIOAdapter.fromServiceLoader(locationUri.getScheme(), table.io());
+        this.fileIOAdapter = FileIOAdapter.fromServiceLoader(locationUri, table.io());
     }
 
     /**

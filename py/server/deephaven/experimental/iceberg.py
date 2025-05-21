@@ -827,6 +827,8 @@ def adapter_s3_rest(
         end_point_override: Optional[str] = None
 ) -> IcebergCatalogAdapter:
     """
+    DEPRECATED: Use `adapter()` instead.
+
     Create a catalog adapter using an S3-compatible provider and a REST catalog.
 
     Args:
@@ -875,6 +877,8 @@ def adapter_aws_glue(
         name: Optional[str] = None
 ) -> IcebergCatalogAdapter:
     """
+    DEPRECATED: Use `adapter()` instead.
+
     Create a catalog adapter using an AWS Glue catalog.
 
     Args:

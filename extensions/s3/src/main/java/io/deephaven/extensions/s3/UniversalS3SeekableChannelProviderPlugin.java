@@ -4,11 +4,13 @@
 package io.deephaven.extensions.s3;
 
 import com.google.auto.service.AutoService;
+import io.deephaven.util.annotations.InternalUseOnly;
 import io.deephaven.util.channel.SeekableChannelsProvider;
 import io.deephaven.util.channel.SeekableChannelsProviderPlugin;
 import io.deephaven.util.channel.SeekableChannelsProviderPluginBase;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import software.amazon.awssdk.services.s3.S3AsyncClient;
 
 import java.util.Set;
 
@@ -21,13 +23,43 @@ public final class UniversalS3SeekableChannelProviderPlugin extends SeekableChan
 
     @Override
     public boolean isCompatible(@NotNull final String uriScheme, @Nullable final Object config) {
+        return isCompatible(uriScheme);
+    }
+
+    private static boolean isCompatible(@NotNull final String uriScheme) {
         return S3Constants.S3_SCHEMES.contains(uriScheme);
     }
 
+    /**
+     * Internal API for creating a {@link SeekableChannelsProvider} for S3 URIs using the provided async client.
+     *
+     * @param uriScheme The URI scheme to create the provider for.
+     * @param s3Instructions The S3 instructions to use for the provider.
+     * @param s3AsyncClient The S3 async client to use for the provider.
+     */
+    @InternalUseOnly
+    public static SeekableChannelsProvider createUniversalS3Provider(
+            @NotNull final String uriScheme,
+            @NotNull final S3Instructions s3Instructions,
+            @NotNull final S3AsyncClient s3AsyncClient) {
+        if (!isCompatible(uriScheme)) {
+            throw new IllegalArgumentException("Arguments not compatible, provided uri scheme " + uriScheme +
+                    " is not compatible, expected one of " + S3Constants.S3_SCHEMES);
+        }
+        final S3SeekableChannelProvider impl = new S3SeekableChannelProvider(s3Instructions, s3AsyncClient);
+        return createdProviderImplHelper(uriScheme, impl);
+    }
+
     @Override
-    protected SeekableChannelsProvider createProviderImpl(@NotNull final String uriScheme,
+    protected SeekableChannelsProvider createProviderImpl(
+            @NotNull final String uriScheme,
             @Nullable final Object config) {
-        final S3SeekableChannelProvider impl = create(config);
+        return createdProviderImplHelper(uriScheme, create(config));
+    }
+
+    private static SeekableChannelsProvider createdProviderImplHelper(
+            @NotNull final String uriScheme,
+            @NotNull final S3SeekableChannelProvider impl) {
         switch (uriScheme) {
             case S3Constants.S3_URI_SCHEME:
                 return impl;

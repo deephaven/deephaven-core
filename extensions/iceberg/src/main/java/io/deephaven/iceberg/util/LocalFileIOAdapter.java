@@ -10,7 +10,6 @@ import io.deephaven.util.channel.SeekableChannelsProvider;
 import io.deephaven.util.channel.SeekableChannelsProviderLoader;
 import org.apache.iceberg.hadoop.HadoopFileIO;
 import org.apache.iceberg.io.FileIO;
-import org.apache.iceberg.io.ResolvingFileIO;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -25,8 +24,17 @@ public final class LocalFileIOAdapter extends FileIOAdapterBase {
             @NotNull final String uriScheme,
             @NotNull final FileIO io) {
         final boolean compatibleScheme = FileUtils.FILE_URI_SCHEME.equals(uriScheme);
-        final boolean compatibleIO =
-                io instanceof HadoopFileIO || io instanceof RelativeFileIO || io instanceof ResolvingFileIO;
+        final boolean compatibleIO = io instanceof HadoopFileIO || io instanceof RelativeFileIO;
+        return compatibleScheme && compatibleIO;
+    }
+
+    @Override
+    public boolean isCompatible(
+            @NotNull final String uriScheme,
+            @NotNull final Class<?> ioClass) {
+        final boolean compatibleScheme = FileUtils.FILE_URI_SCHEME.equals(uriScheme);
+        final boolean compatibleIO = HadoopFileIO.class.isAssignableFrom(ioClass) ||
+                RelativeFileIO.class.isAssignableFrom(ioClass);
         return compatibleScheme && compatibleIO;
     }
 
