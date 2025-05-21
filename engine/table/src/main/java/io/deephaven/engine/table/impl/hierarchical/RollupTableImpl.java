@@ -16,6 +16,7 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.hierarchical.RollupTable;
 import io.deephaven.engine.table.impl.BaseTable.CopyAttributeOperation;
@@ -781,11 +782,6 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
             return NULL_NODE_ID;
         }
 
-        if (levelTables[nodeDepth - 1].getRowSet().find(nodeSlot) == NULL_ROW_KEY) {
-            // the aggregation knows about this key, but it does not actually exist in the table
-            return NULL_NODE_ID;
-        }
-
         return makeNodeId(nodeDepth, nodeSlot);
     }
 
@@ -804,7 +800,20 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
             final long childNodeId,
             @Nullable final Object childNodeKey,
             final boolean usePrev) {
-        return childNodeId == NULL_NODE_ID ? NULL_ROW_KEY : nodeSlot(childNodeId);
+        if (childNodeId == NULL_NODE_ID) {
+            return NULL_ROW_KEY;
+        }
+
+        final int nodeDepth = nodeDepth(childNodeId);
+        final int nodeSlot = nodeSlot(childNodeId);
+
+        final TrackingRowSet rowSet = levelTables[nodeDepth - 1].getRowSet();
+        if ((usePrev ? rowSet.findPrev(nodeSlot) : rowSet.find(nodeSlot)) == NULL_ROW_KEY) {
+            // the aggregation knows about this key, but it does not actually exist in the table
+            return NULL_ROW_KEY;
+        }
+
+        return nodeSlot;
     }
 
     @Override
