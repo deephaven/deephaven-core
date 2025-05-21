@@ -37,7 +37,6 @@ import io.deephaven.parquet.table.metadata.GroupingColumnInfo;
 import io.deephaven.parquet.table.metadata.SortColumnInfo;
 import io.deephaven.parquet.table.metadata.TableInfo;
 import io.deephaven.util.SafeCloseable;
-import io.deephaven.util.mutable.MutableLong;
 import io.deephaven.util.type.NumericTypeUtils;
 import org.apache.parquet.column.statistics.Statistics;
 import org.apache.parquet.format.RowGroup;
@@ -486,26 +485,33 @@ public class ParquetTableLocation extends AbstractTableLocation {
                 name -> parquetMetadata.getFileMetaData().getSchema().getFieldIndex(name)).collect(Collectors.toList());
 
         // Initialize the pushdown result with the selection rowset as "maybe" rows
-        PushdownResult result = PushdownResult.of(RowSetFactory.empty(), selection.copy());
+        PushdownResult result = PushdownResult.maybeMatch(selection);
 
         // Should we look at the metadata?
         if (shouldExecute(QueryTable.DISABLE_WHERE_PUSHDOWN_PARQUET_ROW_GROUP_METADATA,
                 PushdownResult.METADATA_STATS_COST, executedFilterCost, costCeiling)) {
             // Some range filter host a condition filter as the internal filter and we can't push that down.
-            if (filter instanceof RangeFilter
-                    && ((RangeFilter) filter).getRealFilter() instanceof AbstractRangeFilter) {
-                try (final PushdownResult ignored = result) {
-                    result = pushdownRangeFilter((AbstractRangeFilter) ((RangeFilter) filter).getRealFilter(),
-                            parquetIndices, result);
+            if (filter instanceof RangeFilter) {
+                if ((((RangeFilter) filter).getRealFilter() instanceof AbstractRangeFilter)) {
+                    try (
+                            final PushdownResult ignored = result;
+                            final WritableRowSet exclusions =
+                                    exclusions((AbstractRangeFilter) ((RangeFilter) filter).getRealFilter(),
+                                            parquetIndices, result.maybeMatch())) {
+                        result = result.drop(exclusions);
+                    }
                 }
             } else if (filter instanceof MatchFilter) {
-                try (final PushdownResult ignored = result) {
-                    result = pushdownMatchFilter((MatchFilter) filter, parquetIndices, result);
+                try (
+                        final PushdownResult ignored = result;
+                        final WritableRowSet exclusions =
+                                exclusions((MatchFilter) filter, parquetIndices, result.maybeMatch())) {
+                    result = result.drop(exclusions);
                 }
             }
         }
-        if (result.maybeMatch().isEmpty()) {
-            // No maybe rows remaining, so no reason to continue filtering.
+        if (result.isFinished()) {
+            // No maybe rows remaining, so no reason to continue refining the maybe row set.
             onComplete.accept(result);
             return;
         }
@@ -623,58 +629,38 @@ public class ParquetTableLocation extends AbstractTableLocation {
         return null;
     }
 
-    /**
-     * Apply the range filter to the row groups and return the result.
-     */
-    @NotNull
-    private PushdownResult pushdownRangeFilter(
+    private WritableRowSet exclusions(
             final AbstractRangeFilter rf,
             final List<Integer> parquetIndices,
-            final PushdownResult result) {
-        final RowSetBuilderSequential maybeBuilder = RowSetFactory.builderSequential();
-        final MutableLong maybeCount = new MutableLong(0);
-
+            final RowSet rowSet) {
+        final RowSetBuilderSequential exclusions = RowSetFactory.builderSequential();
         // Only one column in a RangeFilter
         final Integer parquetIndex = parquetIndices.get(0);
-
-        iterateRowGroupsAndRowSet(result.maybeMatch(), (rgIdx, rs) -> {
+        iterateRowGroupsAndRowSet(rowSet, (rgIdx, rs) -> {
             final Pair<Object, Object> p = getMinMax(
                     parquetMetadata.getBlocks().get(rgIdx).getColumns().get(parquetIndex).getStatistics());
-
-            if (p == null || rf.overlaps(p.first, p.second)) {
-                maybeBuilder.appendRowSequence(rs);
-                maybeCount.add(rs.size());
+            if (p != null && !rf.overlaps(p.first, p.second)) {
+                exclusions.appendRowSequence(rs);
             }
         });
-        return PushdownResult.of(result.match().copy(),
-                maybeCount.get() == result.maybeMatch().size() ? result.maybeMatch().copy() : maybeBuilder.build());
+        return exclusions.build();
     }
 
-    /**
-     * Apply the match filter to the row groups and return the result.
-     */
-    @NotNull
-    private PushdownResult pushdownMatchFilter(
+    private WritableRowSet exclusions(
             final MatchFilter mf,
             final List<Integer> parquetIndices,
-            final PushdownResult result) {
-        final RowSetBuilderSequential maybeBuilder = RowSetFactory.builderSequential();
-        final MutableLong maybeCount = new MutableLong(0);
-
+            final RowSet rowSet) {
+        final RowSetBuilderSequential exclusions = RowSetFactory.builderSequential();
         // Only one column in a RangeFilter
         final Integer parquetIndex = parquetIndices.get(0);
-
-        iterateRowGroupsAndRowSet(result.maybeMatch(), (rgIdx, rs) -> {
+        iterateRowGroupsAndRowSet(rowSet, (rgIdx, rs) -> {
             final Pair<Object, Object> p = getMinMax(
                     parquetMetadata.getBlocks().get(rgIdx).getColumns().get(parquetIndex).getStatistics());
-
-            if (p == null || mf.overlaps(p.first, p.second)) {
-                maybeBuilder.appendRowSequence(rs);
-                maybeCount.add(rs.size());
+            if (p != null && !mf.overlaps(p.first, p.second)) {
+                exclusions.appendRowSequence(rs);
             }
         });
-        return PushdownResult.of(result.match().copy(),
-                maybeCount.get() == result.maybeMatch().size() ? result.maybeMatch().copy() : maybeBuilder.build());
+        return exclusions.build();
     }
 
     /**
@@ -709,14 +695,15 @@ public class ParquetTableLocation extends AbstractTableLocation {
                 }
             } catch (final Exception e) {
                 // Exception occurs here if we have a data type mismatch between the index and the filter.
-                // Just swallow the exception and declare all the rows as maybe matches.
-                return PushdownResult.of(RowSetFactory.empty(), result.maybeMatch().copy());
+                // Just swallow the exception and return a copy of the original result
+                // TODO: this should be tested
+                return result.copy();
             }
         }
         // Retain only the maybe rows and add the previously found matches.
         final WritableRowSet matching = matchingBuilder.build();
         matching.retain(result.maybeMatch());
         matching.insert(result.match());
-        return PushdownResult.of(matching, RowSetFactory.empty());
+        return PushdownResult.match(matching);
     }
 }

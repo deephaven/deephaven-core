@@ -816,10 +816,7 @@ public class RegionedColumnSourceManager
             final JobScheduler jobScheduler,
             final Consumer<PushdownResult> onComplete,
             final Consumer<Exception> onError) {
-
-        final RowSetBuilderRandom matchBuilder = RowSetFactory.builderRandom();
-        final RowSetBuilderRandom maybeMatchBuilder = RowSetFactory.builderRandom();
-        final MutableLong maybeMatchCount = new MutableLong(0);
+        final PushdownResult.Builder builder = PushdownResult.builder();
 
         // Use the job scheduler to run every location in parallel.
         jobScheduler.iterateParallel(
@@ -840,28 +837,25 @@ public class RegionedColumnSourceManager
 
                         final Consumer<PushdownResult> resultConsumer = result -> {
                             try (final PushdownResult ignored = result) {
+                                final WritableRowSet match = result.match();
+                                final WritableRowSet maybeMatch = result.maybeMatch();
                                 // Add the results to the global set.
-                                if (result.match().isNonempty()) {
-                                    synchronized (matchBuilder) {
-                                        result.match().shiftInPlace(locationStartKey);
-                                        matchBuilder.addRowSet(result.match());
-                                    }
+
+                                // TODO: This is a bit dangerous, but seems "ok" in context?
+                                if (match.isNonempty()) {
+                                    match.shiftInPlace(locationStartKey);
                                 }
-                                if (result.maybeMatch().isNonempty()) {
-                                    synchronized (maybeMatchBuilder) {
-                                        result.maybeMatch().shiftInPlace(locationStartKey);
-                                        maybeMatchBuilder.addRowSet(result.maybeMatch());
-                                        maybeMatchCount.add(result.maybeMatch().size());
-                                    }
+                                if (maybeMatch.isNonempty()) {
+                                    maybeMatch.shiftInPlace(locationStartKey);
                                 }
+                                builder.add(result);
                             }
                         };
                         entry.location.pushdownFilter(filter, renameMap, locationInput, fullSet, usePrev, context,
                                 costCeiling, jobScheduler, resultConsumer, onError);
                     }
                     locationResume.run();
-                }, () -> onComplete.accept(PushdownResult.of(matchBuilder.build(),
-                        maybeMatchCount.get() == input.size() ? input.copy() : maybeMatchBuilder.build())),
+                }, () -> onComplete.accept(builder.build()),
                 onError);
     }
 

@@ -382,7 +382,7 @@ abstract class AbstractFilterExecution {
             // Update the context to reflect the filtering already executed..
             sf.context.updateExecutedFilterCost(costCeiling);
 
-            if (pushdownResult.maybeMatch().isEmpty()) {
+            if (pushdownResult.isFinished()) {
                 localInput.setValue(pushdownResult.match().copy());
                 maybeUpdateAndSortStatelessFilters(statelessFilters, filterIdx + 1, localInput.getValue());
 
@@ -433,6 +433,7 @@ abstract class AbstractFilterExecution {
                 onFilterComplete.accept(rows.union(sf.pushdownResult.match()));
             };
 
+            // TODO: I'm a bit worried about this, not sure why we would drop rows from match?
             sf.pushdownResult.match().retain(input);
             sf.pushdownResult.maybeMatch().retain(input);
 
