@@ -26,7 +26,6 @@ import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.SortOperation;
 import io.deephaven.engine.table.impl.by.AggregationProcessor;
 import io.deephaven.engine.table.impl.by.AggregationRowLookup;
-import io.deephaven.engine.table.impl.by.rollup.RollupAggregationOutputs;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
@@ -43,7 +42,6 @@ import java.util.function.LongUnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static io.deephaven.api.ColumnName.names;
 import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
 import static io.deephaven.engine.table.impl.AbsoluteSortColumnConventions.*;
 import static io.deephaven.engine.table.impl.BaseTable.shouldCopyAttribute;
