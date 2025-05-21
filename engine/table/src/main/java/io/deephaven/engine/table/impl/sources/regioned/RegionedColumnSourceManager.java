@@ -26,10 +26,10 @@ import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.ReferentialIntegrity;
-import io.deephaven.util.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.Closeable;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -808,7 +808,7 @@ public class RegionedColumnSourceManager
     public void pushdownFilter(
             final WhereFilter filter,
             final Map<String, String> renameMap,
-            final RowSet input,
+            final RowSet selection,
             final RowSet fullSet,
             final boolean usePrev,
             final PushdownFilterContext context,
@@ -816,7 +816,9 @@ public class RegionedColumnSourceManager
             final JobScheduler jobScheduler,
             final Consumer<PushdownResult> onComplete,
             final Consumer<Exception> onError) {
-        final PushdownResult.Builder builder = PushdownResult.builder();
+
+        final WritableRowSet selectionCopy = selection.copy();
+        final Builder builder = new Builder(orderedIncludedTableLocations.size());
 
         // Use the job scheduler to run every location in parallel.
         jobScheduler.iterateParallel(
@@ -831,16 +833,16 @@ public class RegionedColumnSourceManager
                     final long locationEndKey = getLastRowKey(entry.regionIndex);
 
                     try (final WritableRowSet locationInput =
-                            input.subSetByKeyRange(locationStartKey, locationEndKey)) {
+                            selectionCopy.subSetByKeyRange(locationStartKey, locationEndKey)) {
                         locationInput.shiftInPlace(-locationStartKey); // Shift to the region's key space
                         locationInput.retain(entry.rowSetAtLastUpdate); // intersect in place with region's row set
+                        final long locationInputSize = locationInput.size();
 
                         final Consumer<PushdownResult> resultConsumer = result -> {
                             try (final PushdownResult ignored = result) {
                                 final WritableRowSet match = result.match();
                                 final WritableRowSet maybeMatch = result.maybeMatch();
                                 // Add the results to the global set.
-
                                 // TODO: This is a bit dangerous, but seems "ok" in context?
                                 if (match.isNonempty()) {
                                     match.shiftInPlace(locationStartKey);
@@ -848,14 +850,29 @@ public class RegionedColumnSourceManager
                                 if (maybeMatch.isNonempty()) {
                                     maybeMatch.shiftInPlace(locationStartKey);
                                 }
-                                builder.add(result);
+                                builder.add(locationIdx, locationInputSize, result);
                             }
                         };
+                        // TODO: fullSet is not shifted here, and is a lie?
+                        // Should it actually be a subset in the parallelized case?
+                        // Or, can we get rid of it?
+                        // fullSet.subSetByKeyRange(locationStartKey, locationEndKey).shiftInPlace(-locationStartKey)?
                         entry.location.pushdownFilter(filter, renameMap, locationInput, fullSet, usePrev, context,
                                 costCeiling, jobScheduler, resultConsumer, onError);
                     }
                     locationResume.run();
-                }, () -> onComplete.accept(builder.build()),
+                }, () -> {
+                    try (
+                            final RowSet ignore = selectionCopy;
+                            final Builder ignore2 = builder) {
+                        onComplete.accept(builder.build(selectionCopy));
+                    }
+                },
+                // Note: we should technically be closing in the error case as well; but in the error case, we may
+                // be less concerned, and happy enough for GC to take care of it. I worry a bit about the contract
+                // around onError, as it looks like we are giving each parallel task a chance to call it, so it
+                // doesn't look like we are guarding it to only call it once (and double-closing a RowSet is much
+                // worse than not closing it).
                 onError);
     }
 
@@ -886,5 +903,60 @@ public class RegionedColumnSourceManager
     @Override
     public PushdownFilterContext makePushdownFilterContext() {
         return new BasePushdownFilterContext();
+    }
+
+    public static final class Builder implements Closeable {
+
+        private final PushdownResult[] results;
+
+        private long matchCount;
+        private long maybeMatchCount;
+        private long notMatchCount;
+
+        private Builder(int numResults) {
+            results = new PushdownResult[numResults];
+            matchCount = 0;
+            maybeMatchCount = 0;
+            notMatchCount = 0;
+        }
+
+        public void add(final int ix, final long selectionSize, final PushdownResult results) {
+            final long matchCount = results.match().isEmpty() ? 0 : results.match().size();
+            final long maybeMatchCount = results.maybeMatch().isEmpty() ? 0 : results.maybeMatch().size();
+            if (matchCount + maybeMatchCount > selectionSize) {
+                throw new IllegalStateException(
+                        String.format("matchCount + maybeMatchCount > selectionSize; %d + %d > %d", matchCount,
+                                maybeMatchCount, selectionSize));
+            }
+            final long notMatchCount = selectionSize - matchCount - maybeMatchCount;
+            final PushdownResult copy = results.copy();
+            synchronized (this) {
+                this.results[ix] = copy;
+                this.matchCount += matchCount;
+                this.maybeMatchCount += maybeMatchCount;
+                this.notMatchCount += notMatchCount;
+            }
+        }
+
+        public synchronized PushdownResult build(final RowSet selection) {
+            final long selectionSize = selection.size();
+            if (matchCount + maybeMatchCount + notMatchCount != selectionSize) {
+                throw new IllegalStateException(String.format(
+                        "matchCount + maybeMatchCount + notMatchCount != selectionSize; %d + %d + %d != %d", matchCount,
+                        maybeMatchCount, notMatchCount, selectionSize));
+            }
+            if (maybeMatchCount == 0 && notMatchCount == 0) {
+                return PushdownResult.match(selection.copy());
+            }
+            if (matchCount == 0 && notMatchCount == 0) {
+                return PushdownResult.maybeMatch(selection.copy());
+            }
+            return PushdownResult.buildSequentialFast(Arrays.asList(results));
+        }
+
+        @Override
+        public void close() {
+            SafeCloseable.closeAll(Arrays.asList(results).iterator());
+        }
     }
 }

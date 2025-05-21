@@ -4,12 +4,14 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetBuilderRandom;
+import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.util.SafeCloseable;
 
+import java.util.Collection;
 import java.util.Objects;
+import java.util.stream.Stream;
 
 /**
  * Records the results of a push-down predicate filter operation.
@@ -35,17 +37,17 @@ public final class PushdownResult implements SafeCloseable {
     private final WritableRowSet maybeMatch;
 
     /**
-     * Constructs a new result with an {@link RowSetFactory#empty() empty} {@link #match() match} and a
-     * {@link RowSet#copy() copy} of {@code selection} for the {@link #maybeMatch() maybe match}.
+     * Constructs a new result with an {@link RowSetFactory#empty() empty} {@link #match() match} and {@code selection}
+     * for the {@link #maybeMatch() maybe match}.
      *
      * <p>
-     * Equivalent to {@code of(RowSetFactory.empty(), selection.copy())}.
+     * Equivalent to {@code ofFast(RowSetFactory.empty(), selection)}.
      *
      * @param selection the selection
      * @return the result
      */
-    public static PushdownResult maybeMatch(final RowSet selection) {
-        return new PushdownResult(RowSetFactory.empty(), selection.copy());
+    public static PushdownResult maybeMatch(final WritableRowSet selection) {
+        return ofFast(RowSetFactory.empty(), selection);
     }
 
     /**
@@ -53,18 +55,19 @@ public final class PushdownResult implements SafeCloseable {
      * {@link RowSetFactory#empty() empty} {@link #maybeMatch() maybe match}.
      *
      * <p>
-     * Equivalent to {@code of(selection, RowSetFactory.empty())}.
+     * Equivalent to {@code ofFast(selection, RowSetFactory.empty())}.
      *
      * @param selection the selection
      * @return the result
      */
     public static PushdownResult match(final WritableRowSet selection) {
-        return new PushdownResult(selection, RowSetFactory.empty());
+        return ofFast(selection, RowSetFactory.empty());
     }
 
     /**
-     * Constructs a new result with {@code match} and {@code maybeMatch}, which must not {@link RowSet#overlaps(RowSet)
-     * overlap}.
+     * Constructs a new result with {@code match} and {@code maybeMatch}, which are checked to not
+     * {@link RowSet#overlaps(RowSet) overlap}. Callers that are careful in their construction may prefer to call
+     * {@link #ofFast(WritableRowSet, WritableRowSet)}.
      *
      * @param match rows that match
      * @param maybeMatch rows that might match
@@ -76,11 +79,37 @@ public final class PushdownResult implements SafeCloseable {
         if (match.overlaps(maybeMatch)) {
             throw new IllegalArgumentException("match and maybeMatch should be non-overlapping row sets");
         }
+        return ofFast(match, maybeMatch);
+    }
+
+    /**
+     * Constructs a new result with {@code match} and {@code maybeMatch}, which must not {@link RowSet#overlaps(RowSet)
+     * overlap}. This does <b>not</b> check if the row sets overlap.
+     *
+     * @param match rows that match
+     * @param maybeMatch rows that might match
+     * @return the result
+     */
+    public static PushdownResult ofFast(WritableRowSet match, WritableRowSet maybeMatch) {
         return new PushdownResult(match, maybeMatch);
     }
 
-    public static Builder builder() {
-        return new Builder();
+    /**
+     * Constructs a new combined {@link PushdownResult} from the sequentially ordered {@code results}. The whole of the
+     * {@link PushdownResult#match() matches} must not {@link RowSet#overlaps(RowSet) overlap} with the whole of the
+     * {@link PushdownResult#maybeMatch() maybe matches}. This does <b>not</b> check if the row sets overlap.
+     *
+     * <p>
+     * This relies on {@link RowSetFactory#buildSequential(Stream)} when considering the stream of
+     * {@link PushdownResult#match() matches} and {@link PushdownResult#maybeMatch() maybe matches}.
+     *
+     * @param results the individual results
+     * @return the new results
+     */
+    public static PushdownResult buildSequentialFast(final Collection<PushdownResult> results) {
+        return PushdownResult.ofFast(
+                RowSetFactory.buildSequential(results.stream().map(PushdownResult::match)),
+                RowSetFactory.buildSequential(results.stream().map(PushdownResult::maybeMatch)));
     }
 
     private PushdownResult(
@@ -90,17 +119,23 @@ public final class PushdownResult implements SafeCloseable {
         this.maybeMatch = Objects.requireNonNull(maybeMatch);
     }
 
+    /**
+     * Rows that are known to match. Does not have any {@link RowSet#overlaps(RowSet) overlap} with {@link #maybeMatch()
+     * maybeMatch rows}.
+     */
     public WritableRowSet match() {
         return match;
     }
 
+    /**
+     * Rows that may match. Does not have any {@link RowSet#overlaps(RowSet) overlap} with {@link #match() match rows}.
+     */
     public WritableRowSet maybeMatch() {
         return maybeMatch;
     }
 
     /**
-     * A finished result is one in which there are no {@link #maybeMatch()} rows. As such, there is no room for it to
-     * {@link #promote(RowSet)} or to {@link #drop(RowSet)}.
+     * A finished result is one in which there are no {@link #maybeMatch() maybeMatch rows}.
      *
      * <p>
      * Equivalent to {@code maybeMatch().isEmpty()}.
@@ -120,82 +155,12 @@ public final class PushdownResult implements SafeCloseable {
      * @return the copy
      */
     public PushdownResult copy() {
-        return new PushdownResult(match.copy(), maybeMatch.copy());
-    }
-
-    /**
-     * Creates a new result with {@code rowSet} {@link RowSet#union(RowSet) union'd} with {@link #match()} and
-     * {@code rowSet} {@link RowSet#minus(RowSet) minus'd} from {@link #maybeMatch()}. {@code rowSet} must be a
-     * {@link RowSet#subsetOf(RowSet) subset of} {@link #maybeMatch()}.
-     *
-     * @param rowSet the row set to promote
-     * @return the new result
-     */
-    public PushdownResult promote(final RowSet rowSet) {
-        // When toDrop is empty, this is equivalent to copy().
-        // We need precision because we should never be promoting rows from maybeMatch to match that don't exist
-        // Execute this first to check for precise.
-        final WritableRowSet newMaybeMatch = minusPrecise(maybeMatch, rowSet);
-        // Given our preconditions (match / maybeMatch are non-overlapping), we know that the union will also be
-        // "precise" (all new rows wrt match).
-        return new PushdownResult(match.union(rowSet), newMaybeMatch);
-    }
-
-    /**
-     * Creates a new result with {@code rowSet} {@link RowSet#minus(RowSet) minus'd} from {@link #maybeMatch()}.
-     * {@code rowSet} must be a {@link RowSet#subsetOf(RowSet) subset of} {@link #maybeMatch()}.
-     *
-     * @param rowSet the row set to drop
-     * @return the new result
-     */
-    public PushdownResult drop(final RowSet rowSet) {
-        // When toDrop is empty, this is equivalent to copy()
-        // We need precision because we should never be removing from match
-        // Execute this first to check for precise.
-        final WritableRowSet newMaybeMatch = minusPrecise(maybeMatch, rowSet);
-        return new PushdownResult(match.copy(), newMaybeMatch);
-    }
-
-    private static WritableRowSet minusPrecise(WritableRowSet rowSet, RowSet toRemove) {
-        if (toRemove.isEmpty()) {
-            return rowSet.copy();
-        }
-        if (!toRemove.subsetOf(rowSet)) {
-            throw new IllegalArgumentException("remove here should be precise, but toRemove is not a subset of rowSet");
-        }
-        // minus optimization we can do only b/c we know toRemove is a subset
-        if (toRemove.size() == rowSet.size()) {
-            return RowSetFactory.empty();
-        }
-        return rowSet.minus(toRemove);
+        return ofFast(match.copy(), maybeMatch.copy());
     }
 
     @Override
     public void close() {
         match.close();
         maybeMatch.close();
-    }
-
-    public static final class Builder {
-        private final RowSetBuilderRandom matchBuilder;
-        private final RowSetBuilderRandom maybeMatchBuilder;
-
-        private Builder() {
-            matchBuilder = RowSetFactory.builderRandom();
-            maybeMatchBuilder = RowSetFactory.builderRandom();
-        }
-
-        public synchronized void add(final PushdownResult results) {
-            if (results.match.isNonempty()) {
-                matchBuilder.addRowSet(results.match);
-            }
-            if (results.maybeMatch.isNonempty()) {
-                maybeMatchBuilder.addRowSet(results.maybeMatch);
-            }
-        }
-
-        public synchronized PushdownResult build() {
-            return of(matchBuilder.build(), maybeMatchBuilder.build());
-        }
     }
 }

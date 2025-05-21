@@ -8,6 +8,10 @@ import io.deephaven.engine.rowset.impl.BasicRowSetBuilderSequential;
 import io.deephaven.engine.rowset.impl.WritableRowSetImpl;
 import io.deephaven.engine.rowset.impl.singlerange.SingleRange;
 
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.stream.Stream;
+
 /**
  * Repository of factory methods for constructing {@link WritableRowSet row sets}.
  */
@@ -89,5 +93,55 @@ public abstract class RowSetFactory {
      */
     public static RowSetBuilderSequential builderSequential() {
         return new BasicRowSetBuilderSequential();
+    }
+
+    /**
+     * Constructs a new combined {@link WritableRowSet} from the sequentially ordered {@code rowSets}.
+     *
+     * <p>
+     * When considering the {@link RowSet#isNonempty()} elements, if none exist, {@link RowSetFactory#empty()} will be
+     * returned; if only one exist, {@link RowSet#copy()} will be returned; otherwise, a {@link RowSetBuilderSequential}
+     * will be used.
+     *
+     * @param rowSets the input row sets, must be a serial stream
+     * @return the new row set
+     */
+    public static WritableRowSet buildSequential(final Collection<RowSet> rowSets) {
+        return buildSequential(rowSets.stream());
+    }
+
+    /**
+     * Constructs a new combined {@link WritableRowSet} from the sequentially ordered {@code rowSets}.
+     *
+     * <p>
+     * When considering the {@link RowSet#isNonempty()} elements, if none exist, {@link RowSetFactory#empty()} will be
+     * returned; if only one exist, {@link RowSet#copy()} will be returned; otherwise, a {@link RowSetBuilderSequential}
+     * will be used.
+     *
+     * @param rowSets the input row sets, must be a serial stream
+     * @return the new row set
+     */
+    public static WritableRowSet buildSequential(final Stream<RowSet> rowSets) {
+        if (rowSets.isParallel()) {
+            throw new IllegalArgumentException("Can't build a sequential row set with a parallel stream");
+        }
+        try (final Stream<RowSet> stream = rowSets.filter(RowSet::isNonempty)) {
+            final Iterator<RowSet> it = stream.iterator();
+            if (!it.hasNext()) {
+                return RowSetFactory.empty();
+            }
+            final RowSet first = it.next();
+            if (!it.hasNext()) {
+                // If we only have one non-empty, we can just copy it :)
+                return first.copy();
+            }
+            // Otherwise, we'll build it sequentially
+            final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
+            builder.appendRowSequence(first);
+            do {
+                builder.appendRowSequence(it.next());
+            } while (it.hasNext());
+            return builder.build();
+        }
     }
 }
