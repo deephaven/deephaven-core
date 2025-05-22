@@ -15,8 +15,11 @@ import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.extensions.s3.Credentials;
 import io.deephaven.extensions.s3.S3Instructions;
+import io.deephaven.extensions.s3.UniversalS3SeekableChannelProviderPlugin;
 import io.deephaven.extensions.s3.testlib.S3SeekableChannelTestSetup;
 import io.deephaven.test.types.OutOfBandTest;
+import io.deephaven.util.channel.CachedChannelProvider;
+import io.deephaven.util.channel.SeekableChannelsProvider;
 import junit.framework.TestCase;
 import org.junit.After;
 import org.junit.Before;
@@ -25,6 +28,7 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.rules.TemporaryFolder;
 import software.amazon.awssdk.core.async.AsyncRequestBody;
+import software.amazon.awssdk.services.s3.S3AsyncClient;
 
 import java.io.File;
 import java.io.IOException;
@@ -38,10 +42,12 @@ import java.util.concurrent.TimeoutException;
 
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
 import static io.deephaven.engine.util.TableTools.merge;
+import static io.deephaven.extensions.s3.testlib.S3Helper.TIMEOUT_SECONDS;
 import static io.deephaven.parquet.table.ParquetTableReadWriteTest.verifyIndexingInfoExists;
 import static io.deephaven.parquet.table.ParquetTools.writeKeyValuePartitionedTable;
 import static io.deephaven.parquet.table.ParquetTools.writeTable;
 import static io.deephaven.parquet.table.ParquetTools.writeTables;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -89,7 +95,7 @@ abstract class S3ParquetTestBase extends S3SeekableChannelTestSetup {
         final ParquetInstructions instructions = ParquetInstructions.builder()
                 .setSpecialInstructions(s3Instructions(
                         S3Instructions.builder()
-                                .readTimeout(Duration.ofSeconds(10)))
+                                .readTimeout(Duration.ofSeconds(TIMEOUT_SECONDS)))
                         .build())
                 .build();
 
@@ -118,7 +124,7 @@ abstract class S3ParquetTestBase extends S3SeekableChannelTestSetup {
                 S3Instructions.builder()
                         .writePartSize(5 << 20)
                         .numConcurrentWriteParts(5)
-                        .readTimeout(Duration.ofSeconds(10)))
+                        .readTimeout(Duration.ofSeconds(TIMEOUT_SECONDS)))
                 .build();
         if (!withRegion) {
             s3Instructions = s3Instructions.withRegionName(Optional.empty());
@@ -155,7 +161,7 @@ abstract class S3ParquetTestBase extends S3SeekableChannelTestSetup {
         final ParquetInstructions instructions = ParquetInstructions.builder()
                 .setSpecialInstructions(s3Instructions(
                         S3Instructions.builder()
-                                .readTimeout(Duration.ofSeconds(10)))
+                                .readTimeout(Duration.ofSeconds(TIMEOUT_SECONDS)))
                         .build())
                 .build();
         ParquetTools.writeTable(tableToSave, fileUri.toString(), instructions);
@@ -191,7 +197,7 @@ abstract class S3ParquetTestBase extends S3SeekableChannelTestSetup {
         final ParquetInstructions instructions = ParquetInstructions.builder()
                 .setSpecialInstructions(s3Instructions(
                         S3Instructions.builder()
-                                .readTimeout(Duration.ofSeconds(10)))
+                                .readTimeout(Duration.ofSeconds(TIMEOUT_SECONDS)))
                         .build())
                 .build();
         ParquetTools.writeTable(initialData, initialDataUri.toString(), instructions);
@@ -238,7 +244,7 @@ abstract class S3ParquetTestBase extends S3SeekableChannelTestSetup {
         final ParquetInstructions readInstructions = ParquetInstructions.builder()
                 .setSpecialInstructions(s3Instructions(
                         S3Instructions.builder()
-                                .readTimeout(Duration.ofSeconds(10)))
+                                .readTimeout(Duration.ofSeconds(TIMEOUT_SECONDS)))
                         .build())
                 .build();
 
@@ -263,7 +269,7 @@ abstract class S3ParquetTestBase extends S3SeekableChannelTestSetup {
         final ParquetInstructions readInstructions = ParquetInstructions.builder()
                 .setSpecialInstructions(s3Instructions(
                         S3Instructions.builder()
-                                .readTimeout(Duration.ofSeconds(10)))
+                                .readTimeout(Duration.ofSeconds(TIMEOUT_SECONDS)))
                         .build())
                 .build();
 
@@ -307,7 +313,7 @@ abstract class S3ParquetTestBase extends S3SeekableChannelTestSetup {
         final ParquetInstructions readInstructions = ParquetInstructions.builder()
                 .setSpecialInstructions(s3Instructions(
                         S3Instructions.builder()
-                                .readTimeout(Duration.ofSeconds(10)))
+                                .readTimeout(Duration.ofSeconds(TIMEOUT_SECONDS)))
                         .build())
                 .setTableDefinition(definition)
                 .build();
@@ -350,7 +356,7 @@ abstract class S3ParquetTestBase extends S3SeekableChannelTestSetup {
         final ParquetInstructions instructions = ParquetInstructions.builder()
                 .setSpecialInstructions(s3Instructions(
                         S3Instructions.builder()
-                                .readTimeout(Duration.ofSeconds(10)))
+                                .readTimeout(Duration.ofSeconds(TIMEOUT_SECONDS)))
                         .build())
                 .setTableDefinition(definition)
                 .setBaseNameForPartitionedParquetData("data")
@@ -387,7 +393,7 @@ abstract class S3ParquetTestBase extends S3SeekableChannelTestSetup {
         final ParquetInstructions readInstructions = ParquetInstructions.builder()
                 .setSpecialInstructions(s3Instructions(
                         S3Instructions.builder()
-                                .readTimeout(Duration.ofSeconds(10)))
+                                .readTimeout(Duration.ofSeconds(TIMEOUT_SECONDS)))
                         .build())
                 .build();
         final URI directoryURI = uri(destDirName);
@@ -447,7 +453,7 @@ abstract class S3ParquetTestBase extends S3SeekableChannelTestSetup {
         final ParquetInstructions readInstructions = ParquetInstructions.builder()
                 .setSpecialInstructions(s3Instructions(
                         S3Instructions.builder()
-                                .readTimeout(Duration.ofSeconds(10)))
+                                .readTimeout(Duration.ofSeconds(TIMEOUT_SECONDS)))
                         .build())
                 .build();
         try {
@@ -476,7 +482,7 @@ abstract class S3ParquetTestBase extends S3SeekableChannelTestSetup {
         final ParquetInstructions instructions = ParquetInstructions.builder()
                 .setSpecialInstructions(s3Instructions(
                         S3Instructions.builder()
-                                .readTimeout(Duration.ofSeconds(10)))
+                                .readTimeout(Duration.ofSeconds(TIMEOUT_SECONDS)))
                         .build())
                 .setTableDefinition(definition)
                 .setBaseNameForPartitionedParquetData("data")
@@ -503,7 +509,7 @@ abstract class S3ParquetTestBase extends S3SeekableChannelTestSetup {
         final ParquetInstructions instructions = ParquetInstructions.builder()
                 .setSpecialInstructions(s3Instructions(
                         S3Instructions.builder()
-                                .readTimeout(Duration.ofSeconds(10)))
+                                .readTimeout(Duration.ofSeconds(TIMEOUT_SECONDS)))
                         .build())
                 .build();
 
@@ -530,7 +536,7 @@ abstract class S3ParquetTestBase extends S3SeekableChannelTestSetup {
                     "\naws_secret_access_key = badsecretkey";
             Files.write(tempCredentialsFile, credentialsData.getBytes());
             final S3Instructions s3Instructions = S3Instructions.builder()
-                    .readTimeout(Duration.ofSeconds(3))
+                    .readTimeout(Duration.ofSeconds(TIMEOUT_SECONDS))
                     .endpointOverride(s3Endpoint())
                     .profileName("test-user")
                     .credentialsFilePath(tempCredentialsFile.toString())
@@ -567,7 +573,7 @@ abstract class S3ParquetTestBase extends S3SeekableChannelTestSetup {
             Files.write(tempCredentialsFile, credentialsData.getBytes());
 
             final S3Instructions s3Instructions = S3Instructions.builder()
-                    .readTimeout(Duration.ofSeconds(3))
+                    .readTimeout(Duration.ofSeconds(TIMEOUT_SECONDS))
                     .endpointOverride(s3Endpoint())
                     .profileName("test-user")
                     .credentialsFilePath(tempCredentialsFile.toString())
@@ -605,7 +611,7 @@ abstract class S3ParquetTestBase extends S3SeekableChannelTestSetup {
         final ParquetInstructions instructions = ParquetInstructions.builder()
                 .setSpecialInstructions(s3Instructions(
                         S3Instructions.builder()
-                                .readTimeout(Duration.ofSeconds(10)))
+                                .readTimeout(Duration.ofSeconds(TIMEOUT_SECONDS)))
                         .build())
                 .setTableDefinition(definition)
                 .setBaseNameForPartitionedParquetData("data")
@@ -628,7 +634,7 @@ abstract class S3ParquetTestBase extends S3SeekableChannelTestSetup {
         final ParquetInstructions instructions = ParquetInstructions.builder()
                 .setSpecialInstructions(s3Instructions(
                         S3Instructions.builder()
-                                .readTimeout(Duration.ofSeconds(10)))
+                                .readTimeout(Duration.ofSeconds(TIMEOUT_SECONDS)))
                         .build())
                 .build();
         for (int i = 0; i < 3; ++i) {
@@ -647,6 +653,43 @@ abstract class S3ParquetTestBase extends S3SeekableChannelTestSetup {
             final Table fromS3AsKV = ParquetTools.readTable(bucketRoot.toString(),
                     instructions.withLayout(ParquetInstructions.ParquetFileLayout.KV_PARTITIONED));
             assertTableEquals(expected, fromS3AsKV);
+        }
+    }
+
+    /**
+     * Test that if we set a seekable channels provider in parquet instructions, it is used for writing the parquet
+     * files and not for reading.
+     */
+    @Test
+    public void testReadWriteWithCustomSeekableChannelsProvider() {
+        final boolean[] usedForWriting = {false};
+        final boolean[] usedForReading = {false};
+
+        final Table table = getTable(5000);
+        final URI uri = uri("table.parquet");
+        final S3Instructions s3Instructions = s3Instructions(S3Instructions.builder()
+                .readTimeout(Duration.ofSeconds(TIMEOUT_SECONDS)))
+                .build();
+        try (
+                final S3AsyncClient s3AsyncClient =
+                        readWriteTrackingS3Client(s3Instructions, usedForWriting, usedForReading);
+                final SeekableChannelsProvider providerImpl =
+                        UniversalS3SeekableChannelProviderPlugin.createUniversalS3Provider(SCHEME, s3Instructions,
+                                s3AsyncClient);
+                final SeekableChannelsProvider provider = CachedChannelProvider.create(providerImpl, 32)) {
+
+            // Set a custom seekable channels provider for writing
+            final ParquetInstructions parquetInstructions = ParquetInstructions.builder()
+                    .setSpecialInstructions(s3Instructions)
+                    .setSeekableChannelsProviderForWriting(provider)
+                    .build();
+            ParquetTools.writeTable(table, uri.toString(), parquetInstructions);
+            final Table fromS3 = ParquetTools.readTable(uri.toString(), parquetInstructions);
+            assertTableEquals(table, fromS3);
+
+            // Check that the custom seekable channels provider was used for writing and not for reading
+            assertThat(usedForWriting[0]).isTrue();
+            assertThat(usedForReading[0]).isFalse();
         }
     }
 }

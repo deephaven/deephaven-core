@@ -188,7 +188,8 @@ public abstract class IcebergToolsTest {
 
     private S3AsyncClient asyncClient;
     private String bucket;
-    private final FileIO fileIO;
+
+    private FileIO fileIO;
 
     private final List<String> keys = new ArrayList<>();
 
@@ -198,13 +199,7 @@ public abstract class IcebergToolsTest {
     private final EngineCleanup framework = new EngineCleanup();
 
     IcebergToolsTest() {
-        fileIO = new S3FileIO();
-        final Map<String, String> newProperties = new HashMap<>(properties());
-        // Enabling analytics accelerator requires an additional runtime dependency at the time of closing the S3FileIO
-        newProperties.put(S3FileIOProperties.S3_ANALYTICS_ACCELERATOR_ENABLED, "false");
-        // TODO (DH-19253): Add support for S3CrtAsyncClient
-        newProperties.put(S3FileIOProperties.S3_CRT_ENABLED, "false");
-        fileIO.initialize(newProperties);
+
     }
 
     @BeforeEach
@@ -215,6 +210,13 @@ public abstract class IcebergToolsTest {
         asyncClient.createBucket(CreateBucketRequest.builder().bucket(bucket).build()).get();
 
         warehousePath = IcebergToolsTest.class.getResource("/warehouse").getPath();
+
+        // Create the FileIO
+        fileIO = new S3FileIO(null, () -> asyncClient);
+        final Map<String, String> newProperties = new HashMap<>(properties());
+        // TODO (DH-19253): Add support for S3CrtAsyncClient
+        newProperties.put(S3FileIOProperties.S3_CRT_ENABLED, "false");
+        fileIO.initialize(newProperties);
 
         // Create the test catalog for the tests
         resourceCatalog = IcebergTestCatalog.create(warehousePath, fileIO);
@@ -228,13 +230,14 @@ public abstract class IcebergToolsTest {
 
     @AfterEach
     void tearDown() throws Exception {
-        resourceCatalog.close();
         for (String key : keys) {
             asyncClient.deleteObject(DeleteObjectRequest.builder().bucket(bucket).key(key).build()).get();
         }
         keys.clear();
         asyncClient.deleteBucket(DeleteBucketRequest.builder().bucket(bucket).build()).get();
         asyncClient.close();
+        fileIO.close();
+        resourceCatalog.close();
         framework.tearDown();
     }
 

@@ -5,6 +5,7 @@ package io.deephaven.extensions.s3;
 
 import com.google.auto.service.AutoService;
 import io.deephaven.util.annotations.InternalUseOnly;
+import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.util.channel.SeekableChannelsProvider;
 import io.deephaven.util.channel.SeekableChannelsProviderPlugin;
 import io.deephaven.util.channel.SeekableChannelsProviderPluginBase;
@@ -39,7 +40,8 @@ public final class UniversalS3SeekableChannelProviderPlugin extends SeekableChan
      * @param s3AsyncClient The S3 async client to use for the provider.
      */
     @InternalUseOnly
-    static SeekableChannelsProvider createUniversalS3Provider(
+    @VisibleForTesting
+    public static SeekableChannelsProvider createUniversalS3Provider(
             @NotNull final String uriScheme,
             @NotNull final S3Instructions s3Instructions,
             @NotNull final S3AsyncClient s3AsyncClient) {

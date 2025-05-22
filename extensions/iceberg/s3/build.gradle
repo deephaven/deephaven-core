@@ -63,6 +63,9 @@ dependencies {
     testImplementation TestTools.projectDependency(project, 'extensions-s3')
     testImplementation TestTools.projectDependency(project, 'extensions-iceberg')
 
+    // TODO (https://github.com/apache/iceberg/issues/13133) : Remove this dependency when issue fixed in Iceberg
+    testRuntimeOnly libs.analyticsaccelerator.s3
+
     testRuntimeOnly project(':test-configs')
     testRuntimeOnly project(':log-to-slf4j')
     testRuntimeOnly libs.slf4j.simple

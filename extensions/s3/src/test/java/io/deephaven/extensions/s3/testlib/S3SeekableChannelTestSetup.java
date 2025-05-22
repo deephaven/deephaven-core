@@ -10,10 +10,17 @@ import io.deephaven.util.channel.SeekableChannelsProvider;
 import io.deephaven.util.channel.SeekableChannelsProviderPlugin;
 import org.jetbrains.annotations.NotNull;
 import software.amazon.awssdk.core.async.AsyncRequestBody;
+import software.amazon.awssdk.core.async.AsyncResponseTransformer;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.s3.DelegatingS3AsyncClient;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
 import software.amazon.awssdk.services.s3.model.DeleteBucketRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.UploadPartRequest;
+import software.amazon.awssdk.services.s3.model.UploadPartResponse;
 
 import java.io.IOException;
 import java.net.URI;
@@ -105,5 +112,39 @@ public abstract class S3SeekableChannelTestSetup {
             throw new RuntimeException(String.format("channel has less than %d bytes", numBytes));
         }
         dst.flip();
+    }
+
+    /**
+     * Build an {@link S3AsyncClient} which records when it was used for writing or reading
+     */
+    protected S3AsyncClient readWriteTrackingS3Client(
+            @NotNull final S3Instructions instructions,
+            final boolean[] usedForWriting,
+            final boolean[] usedForReading) {
+        final S3AsyncClient s3AsyncClient = S3AsyncClient.builder()
+                .endpointOverride(instructions.endpointOverride().orElseThrow(
+                        () -> new IllegalArgumentException("Endpoint override is required for S3AsyncClient")))
+                .region(Region.of(instructions.regionName().orElseThrow(
+                        () -> new IllegalArgumentException("Region name is required for S3AsyncClient"))))
+                .credentialsProvider(instructions.awsV2CredentialsProvider())
+                .build();
+
+        return new DelegatingS3AsyncClient(s3AsyncClient) {
+            @Override
+            public CompletableFuture<UploadPartResponse> uploadPart(
+                    final UploadPartRequest uploadPartRequest,
+                    final AsyncRequestBody requestBody) {
+                usedForWriting[0] = true;
+                return super.uploadPart(uploadPartRequest, requestBody);
+            }
+
+            @Override
+            public <ReturnT> CompletableFuture<ReturnT> getObject(
+                    final GetObjectRequest getObjectRequest,
+                    final AsyncResponseTransformer<GetObjectResponse, ReturnT> asyncResponseTransformer) {
+                usedForReading[0] = true;
+                return super.getObject(getObjectRequest, asyncResponseTransformer);
+            }
+        };
     }
 }

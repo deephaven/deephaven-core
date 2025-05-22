@@ -9,20 +9,12 @@ import io.deephaven.util.channel.CompletableOutputStream;
 import io.deephaven.util.channel.SeekableChannelContext;
 import io.deephaven.util.channel.SeekableChannelsProvider;
 import junit.framework.TestCase;
-import org.jetbrains.annotations.NotNull;
 import org.junit.Assume;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.core.async.AsyncRequestBody;
-import software.amazon.awssdk.core.async.AsyncResponseTransformer;
-import software.amazon.awssdk.regions.Region;
-import software.amazon.awssdk.services.s3.DelegatingS3AsyncClient;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
-import software.amazon.awssdk.services.s3.model.GetObjectRequest;
-import software.amazon.awssdk.services.s3.model.GetObjectResponse;
-import software.amazon.awssdk.services.s3.model.UploadPartRequest;
-import software.amazon.awssdk.services.s3.model.UploadPartResponse;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -33,11 +25,11 @@ import java.nio.channels.SeekableByteChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.time.Duration;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 
+import static io.deephaven.extensions.s3.testlib.S3Helper.TIMEOUT_SECONDS;
 import static org.assertj.core.api.Assertions.*;
 
 abstract class S3SeekableChannelSimpleTestBase extends S3SeekableChannelTestSetup {
@@ -265,7 +257,7 @@ abstract class S3SeekableChannelSimpleTestBase extends S3SeekableChannelTestSetu
         final String content = "Hello, world!";
         final byte[] contentBytes = content.getBytes(StandardCharsets.UTF_8);
         final S3Instructions.Builder s3InstructionsBuilder = S3Instructions.builder()
-                .writeTimeout(Duration.ofSeconds(20));
+                .writeTimeout(Duration.ofSeconds(TIMEOUT_SECONDS));
         try (
                 final SeekableChannelsProvider providerImpl = providerImpl(s3InstructionsBuilder);
                 final SeekableChannelsProvider provider = CachedChannelProvider.create(providerImpl, 32);
@@ -289,7 +281,7 @@ abstract class S3SeekableChannelSimpleTestBase extends S3SeekableChannelTestSetu
         final String content = "Hello, world!";
         final byte[] contentBytes = content.getBytes(StandardCharsets.UTF_8);
         final S3Instructions.Builder s3InstructionsBuilder = S3Instructions.builder()
-                .writeTimeout(Duration.ofSeconds(20));
+                .writeTimeout(Duration.ofSeconds(TIMEOUT_SECONDS));
         try (
                 final SeekableChannelsProvider providerImpl = providerImpl(s3InstructionsBuilder);
                 final SeekableChannelsProvider provider = CachedChannelProvider.create(providerImpl, 32);
@@ -318,14 +310,15 @@ abstract class S3SeekableChannelSimpleTestBase extends S3SeekableChannelTestSetu
         final URI uri = uri("writeReadTest.txt");
         final String content = "Hello, world!";
         final byte[] contentBytes = content.getBytes(StandardCharsets.UTF_8);
-        final S3Instructions instructions = s3Instructions(S3Instructions.builder()).build();
+        final S3Instructions instructions = s3Instructions(S3Instructions.builder()
+                .readTimeout(Duration.ofSeconds(TIMEOUT_SECONDS))).build();
 
         final boolean[] usedForWriting = {false};
         final boolean[] usedForReading = {false};
 
         try (
                 final S3AsyncClient s3AsyncClient =
-                        buildReadWriteCapturingAsyncClient(instructions, usedForWriting, usedForReading);
+                        readWriteTrackingS3Client(instructions, usedForWriting, usedForReading);
                 final SeekableChannelsProvider providerImpl =
                         UniversalS3SeekableChannelProviderPlugin.createUniversalS3Provider(SCHEME, instructions,
                                 s3AsyncClient);
@@ -350,40 +343,5 @@ abstract class S3SeekableChannelSimpleTestBase extends S3SeekableChannelTestSetu
             assertThat(usedForWriting[0]).isFalse();
             assertThat(usedForReading[0]).isTrue();
         }
-    }
-
-    /**
-     * Build an {@link S3AsyncClient} which captures whether it was used for writing or reading
-     */
-    private S3AsyncClient buildReadWriteCapturingAsyncClient(
-            @NotNull final S3Instructions instructions,
-            final boolean[] usedForWriting,
-            final boolean[] usedForReading) {
-        final S3AsyncClient s3AsyncClient = S3AsyncClient
-                .builder()
-                .endpointOverride(instructions.endpointOverride().orElseThrow(
-                        () -> new IllegalArgumentException("Endpoint override is required for S3AsyncClient")))
-                .region(Region.of(instructions.regionName().orElseThrow(
-                        () -> new IllegalArgumentException("Region name is required for S3AsyncClient"))))
-                .credentialsProvider(instructions.awsV2CredentialsProvider())
-                .build();
-
-        return new DelegatingS3AsyncClient(s3AsyncClient) {
-            @Override
-            public CompletableFuture<UploadPartResponse> uploadPart(
-                    UploadPartRequest uploadPartRequest,
-                    AsyncRequestBody requestBody) {
-                usedForWriting[0] = true;
-                return super.uploadPart(uploadPartRequest, requestBody);
-            }
-
-            @Override
-            public <ReturnT> CompletableFuture<ReturnT> getObject(
-                    GetObjectRequest getObjectRequest,
-                    AsyncResponseTransformer<GetObjectResponse, ReturnT> asyncResponseTransformer) {
-                usedForReading[0] = true;
-                return super.getObject(getObjectRequest, asyncResponseTransformer);
-            }
-        };
     }
 }
