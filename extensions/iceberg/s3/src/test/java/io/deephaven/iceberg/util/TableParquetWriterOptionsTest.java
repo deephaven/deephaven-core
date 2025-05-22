@@ -167,7 +167,7 @@ class TableParquetWriterOptionsTest {
             assertThat(parquetInstructions.onWriteCompleted()).hasValue(onWriteCompleted);
             assertThat(parquetInstructions.getTableDefinition()).hasValue(definition);
             assertThat(parquetInstructions.getSpecialInstructions()).isEqualTo(s3Instructions);
-            assertThat(parquetInstructions.getSeekableChannelsProvider()).hasValue(channelsProvider);
+            assertThat(parquetInstructions.getSeekableChannelsProviderForWriting()).hasValue(channelsProvider);
         }
     }
 }

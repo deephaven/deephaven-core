@@ -97,7 +97,7 @@ public abstract class TableParquetWriterOptions extends TableWriterOptions {
         builder.setMaximumDictionarySize(maximumDictionarySize());
         builder.setTargetPageSize(targetPageSize());
         builder.setOnWriteCompleted(onWriteCompleted);
-        builder.setSeekableChannelsProvider(seekableChannelsProvider);
+        builder.setSeekableChannelsProviderForWriting(seekableChannelsProvider);
 
         return builder.build();
     }

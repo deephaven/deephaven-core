@@ -30,7 +30,6 @@ import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.annotations.InternalUseOnly;
 import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.util.channel.SeekableChannelsProvider;
-import io.deephaven.util.channel.SeekableChannelsProviderLoader;
 import org.apache.iceberg.PartitionField;
 import org.apache.iceberg.Schema;
 import org.apache.iceberg.Snapshot;
@@ -490,7 +489,6 @@ public final class IcebergTableAdapter {
                 .setTableDefinition(resolver.definition())
                 .setColumnResolverFactory(new ResolverFactory(resolver, nameMapping, ignoreResolvingErrors))
                 .setSpecialInstructions(specialInstructions)
-                .setSeekableChannelsProvider(channelsProvider)
                 .build();
         final Map<String, PartitionField> partitionFields = resolver.partitionFieldMap();
         if (partitionFields.isEmpty()) {

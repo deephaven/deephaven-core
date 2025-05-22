@@ -211,7 +211,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
      */
     public abstract Optional<OnWriteCompleted> onWriteCompleted();
 
-    public abstract Optional<SeekableChannelsProvider> getSeekableChannelsProvider();
+    public abstract Optional<SeekableChannelsProvider> getSeekableChannelsProviderForWriting();
 
     @VisibleForTesting
     public static boolean sameColumnNamesAndCodecMappings(final ParquetInstructions i1, final ParquetInstructions i2) {
@@ -329,7 +329,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         }
 
         @Override
-        public @NotNull Optional<SeekableChannelsProvider> getSeekableChannelsProvider() {
+        public @NotNull Optional<SeekableChannelsProvider> getSeekableChannelsProviderForWriting() {
             return Optional.empty();
         }
 
@@ -476,7 +476,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         private final Collection<List<String>> indexColumns;
         private final OnWriteCompleted onWriteCompleted;
         private final ParquetColumnResolver.Factory columnResolver;
-        private final SeekableChannelsProvider seekableChannelsProvider;
+        private final SeekableChannelsProvider seekableChannelsProviderForWriting;
 
         private ReadOnly(
                 final KeyedObjectHashMap<String, ColumnInstructions> columnNameToInstructions,
@@ -495,7 +495,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
                 final Collection<List<String>> indexColumns,
                 final OnWriteCompleted onWriteCompleted,
                 final ParquetColumnResolver.Factory columnResolver,
-                final SeekableChannelsProvider seekableChannelsProvider) {
+                final SeekableChannelsProvider seekableChannelsProviderForWriting) {
             this.columnNameToInstructions = columnNameToInstructions;
             this.parquetColumnNameToInstructions = parquetColumnNameToColumnName;
             this.compressionCodecName = compressionCodecName;
@@ -520,7 +520,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
                     throw new IllegalArgumentException("When setting columnResolver, tableDefinition must be provided");
                 }
             }
-            this.seekableChannelsProvider = seekableChannelsProvider;
+            this.seekableChannelsProviderForWriting = seekableChannelsProviderForWriting;
         }
 
         private <T> T getOrDefault(final String columnName, final T defaultValue,
@@ -651,8 +651,8 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         }
 
         @Override
-        public Optional<SeekableChannelsProvider> getSeekableChannelsProvider() {
-            return Optional.ofNullable(seekableChannelsProvider);
+        public Optional<SeekableChannelsProvider> getSeekableChannelsProviderForWriting() {
+            return Optional.ofNullable(seekableChannelsProviderForWriting);
         }
 
         @Override
@@ -673,7 +673,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
                     getCompressionCodecName(), getMaximumDictionaryKeys(), getMaximumDictionarySize(),
                     isLegacyParquet(), getTargetPageSize(), isRefreshing(), getSpecialInstructions(),
                     generateMetadataFiles(), baseNameForPartitionedParquetData(), useLayout, useDefinition,
-                    indexColumns, onWriteCompleted, columnResolver, seekableChannelsProvider);
+                    indexColumns, onWriteCompleted, columnResolver, seekableChannelsProviderForWriting);
         }
 
         @Override
@@ -682,7 +682,8 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
                     getCompressionCodecName(), getMaximumDictionaryKeys(), getMaximumDictionarySize(),
                     isLegacyParquet(), getTargetPageSize(), isRefreshing(), getSpecialInstructions(),
                     generateMetadataFiles(), baseNameForPartitionedParquetData(), fileLayout,
-                    tableDefinition, useIndexColumns, onWriteCompleted, columnResolver, seekableChannelsProvider);
+                    tableDefinition, useIndexColumns, onWriteCompleted, columnResolver,
+                    seekableChannelsProviderForWriting);
         }
 
         @Override
@@ -748,7 +749,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         private Collection<List<String>> indexColumns;
         private OnWriteCompleted onWriteCompleted;
         private ParquetColumnResolver.Factory columnResolverFactory;
-        private SeekableChannelsProvider seekableChannelsProvider;
+        private SeekableChannelsProvider seekableChannelsProviderForWriting;
 
         /**
          * For each additional field added, make sure to update the copy constructor builder
@@ -778,7 +779,8 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
             indexColumns = readOnlyParquetInstructions.getIndexColumns().orElse(null);
             onWriteCompleted = readOnlyParquetInstructions.onWriteCompleted().orElse(null);
             columnResolverFactory = readOnlyParquetInstructions.getColumnResolverFactory().orElse(null);
-            seekableChannelsProvider = readOnlyParquetInstructions.getSeekableChannelsProvider().orElse(null);
+            seekableChannelsProviderForWriting =
+                    readOnlyParquetInstructions.getSeekableChannelsProviderForWriting().orElse(null);
         }
 
         public Builder addColumnNameMapping(final String parquetColumnName, final String columnName) {
@@ -1037,15 +1039,15 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         }
 
         /**
-         * Sets the {@link SeekableChannelsProvider} to use for reading and writing parquet files. This is used
-         * internally by the Iceberg implementation to provide a {@link SeekableChannelsProvider} to be used for all
-         * parquet files corresponding to an iceberg table.
+         * Sets the {@link SeekableChannelsProvider} to use for writing parquet files. This is used internally by the
+         * Iceberg layer to provide a {@link SeekableChannelsProvider} for writing parquet data files.
          *
-         * @param seekableChannelsProvider the {@link SeekableChannelsProvider} to use
+         * @param seekableChannelsProviderForWriting the {@link SeekableChannelsProvider} to use
          */
         @InternalUseOnly
-        public Builder setSeekableChannelsProvider(SeekableChannelsProvider seekableChannelsProvider) {
-            this.seekableChannelsProvider = seekableChannelsProvider;
+        public Builder setSeekableChannelsProviderForWriting(
+                SeekableChannelsProvider seekableChannelsProviderForWriting) {
+            this.seekableChannelsProviderForWriting = seekableChannelsProviderForWriting;
             return this;
         }
 
@@ -1058,7 +1060,8 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
             return new ReadOnly(columnNameToInstructionsOut, parquetColumnNameToColumnNameOut, compressionCodecName,
                     maximumDictionaryKeys, maximumDictionarySize, isLegacyParquet, targetPageSize, isRefreshing,
                     specialInstructions, generateMetadataFiles, baseNameForPartitionedParquetData, fileLayout,
-                    tableDefinition, indexColumns, onWriteCompleted, columnResolverFactory, seekableChannelsProvider);
+                    tableDefinition, indexColumns, onWriteCompleted, columnResolverFactory,
+                    seekableChannelsProviderForWriting);
         }
     }
 

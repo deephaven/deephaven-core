@@ -17,6 +17,7 @@ import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.Schema;
 import org.apache.iceberg.Snapshot;
 import org.apache.iceberg.aws.s3.S3FileIO;
+import org.apache.iceberg.aws.s3.S3FileIOProperties;
 import org.apache.iceberg.catalog.Namespace;
 import org.apache.iceberg.catalog.TableIdentifier;
 import org.apache.iceberg.io.FileIO;
@@ -198,7 +199,12 @@ public abstract class IcebergToolsTest {
 
     IcebergToolsTest() {
         fileIO = new S3FileIO();
-        fileIO.initialize(properties());
+        final Map<String, String> newProperties = new HashMap<>(properties());
+        // Enabling analytics accelerator requires an additional runtime dependency at the time of closing the S3FileIO
+        newProperties.put(S3FileIOProperties.S3_ANALYTICS_ACCELERATOR_ENABLED, "false");
+        // TODO (DH-19253): Add support for S3CrtAsyncClient
+        newProperties.put(S3FileIOProperties.S3_CRT_ENABLED, "false");
+        fileIO.initialize(newProperties);
     }
 
     @BeforeEach

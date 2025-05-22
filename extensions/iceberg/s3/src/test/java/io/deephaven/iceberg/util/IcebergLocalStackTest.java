@@ -43,10 +43,6 @@ public class IcebergLocalStackTest extends IcebergToolsTest {
                 ENDPOINT, LocalStack.s3Endpoint(),
                 CLIENT_REGION, LocalStack.region(),
                 ACCESS_KEY_ID, LocalStack.accessKey(),
-                SECRET_ACCESS_KEY, LocalStack.secretAccessKey(),
-                S3FileIOProperties.S3_ANALYTICS_ACCELERATOR_ENABLED, "false",
-                // ^ Enabling this requires an additional runtime dependency at the time of closing the S3FileIO
-                S3FileIOProperties.S3_CRT_ENABLED, "false");
-        // TODO (DH-19253): Add support for S3CrtAsyncClient
+                SECRET_ACCESS_KEY, LocalStack.secretAccessKey());
     }
 }

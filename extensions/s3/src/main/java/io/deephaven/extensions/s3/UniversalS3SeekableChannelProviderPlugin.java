@@ -38,7 +38,7 @@ public final class UniversalS3SeekableChannelProviderPlugin extends SeekableChan
      * @param s3AsyncClient The S3 async client to use for the provider.
      */
     @InternalUseOnly
-    public static SeekableChannelsProvider createUniversalS3Provider(
+    static SeekableChannelsProvider createUniversalS3Provider(
             @NotNull final String uriScheme,
             @NotNull final S3Instructions s3Instructions,
             @NotNull final S3AsyncClient s3AsyncClient) {
