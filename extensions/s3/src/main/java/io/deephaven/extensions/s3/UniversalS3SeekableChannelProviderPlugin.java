@@ -31,7 +31,8 @@ public final class UniversalS3SeekableChannelProviderPlugin extends SeekableChan
     }
 
     /**
-     * Internal API for creating a {@link SeekableChannelsProvider} for S3 URIs using the provided async client.
+     * Internal API for creating a {@link SeekableChannelsProvider} for S3 URIs directly using the provided async
+     * client.
      *
      * @param uriScheme The URI scheme to create the provider for.
      * @param s3Instructions The S3 instructions to use for the provider.
@@ -47,6 +48,24 @@ public final class UniversalS3SeekableChannelProviderPlugin extends SeekableChan
                     " is not compatible, expected one of " + S3Constants.S3_SCHEMES);
         }
         final S3SeekableChannelProvider impl = new S3SeekableChannelProvider(s3Instructions, s3AsyncClient);
+        return createdProviderImplHelper(uriScheme, impl);
+    }
+
+    /**
+     * Internal API for creating a {@link SeekableChannelsProvider} for S3 URIs directly.
+     *
+     * @param uriScheme The URI scheme to create the provider for.
+     * @param s3Instructions The S3 instructions to use for the provider.
+     */
+    @InternalUseOnly
+    static SeekableChannelsProvider createUniversalS3Provider(
+            @NotNull final String uriScheme,
+            @NotNull final S3Instructions s3Instructions) {
+        if (!isCompatible(uriScheme)) {
+            throw new IllegalArgumentException("Arguments not compatible, provided uri scheme " + uriScheme +
+                    " is not compatible, expected one of " + S3Constants.S3_SCHEMES);
+        }
+        final S3SeekableChannelProvider impl = new S3SeekableChannelProvider(s3Instructions);
         return createdProviderImplHelper(uriScheme, impl);
     }
 
@@ -88,7 +107,7 @@ public final class UniversalS3SeekableChannelProviderPlugin extends SeekableChan
         return new UniversalS3Provider(impl, s3, s3a, s3n);
     }
 
-    private S3SeekableChannelProvider create(@Nullable final Object config) {
+    private static S3SeekableChannelProvider create(@Nullable final Object config) {
         if (config != null && !(config instanceof S3Instructions)) {
             throw new IllegalArgumentException("Only S3Instructions are valid when reading files from S3, provided " +
                     "config instance of class " + config.getClass().getName());

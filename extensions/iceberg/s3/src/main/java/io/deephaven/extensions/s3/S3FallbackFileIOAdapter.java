@@ -42,7 +42,9 @@ public final class S3FallbackFileIOAdapter extends S3FileIOAdapterBase {
             throw new IllegalArgumentException("Arguments not compatible, provided uri scheme " + uriScheme +
                     ", io " + io.getClass().getName() + ", special instructions " + specialInstructions);
         }
-        return SeekableChannelsProviderLoader.getInstance().load(uriScheme, specialInstructions);
+        final S3Instructions s3Instructions =
+                (specialInstructions == null) ? S3Instructions.DEFAULT : (S3Instructions) specialInstructions;
+        return UniversalS3SeekableChannelProviderPlugin.createUniversalS3Provider(uriScheme, s3Instructions);
     }
 
 }

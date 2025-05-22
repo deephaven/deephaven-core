@@ -9,11 +9,21 @@ import io.deephaven.util.channel.CompletableOutputStream;
 import io.deephaven.util.channel.SeekableChannelContext;
 import io.deephaven.util.channel.SeekableChannelsProvider;
 import junit.framework.TestCase;
+import org.jetbrains.annotations.NotNull;
 import org.junit.Assume;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.core.async.AsyncRequestBody;
+import software.amazon.awssdk.core.async.AsyncResponseTransformer;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.s3.DelegatingS3AsyncClient;
+import software.amazon.awssdk.services.s3.S3AsyncClient;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectResponse;
+import software.amazon.awssdk.services.s3.model.UploadPartRequest;
+import software.amazon.awssdk.services.s3.model.UploadPartResponse;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -23,6 +33,7 @@ import java.nio.channels.SeekableByteChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
@@ -297,5 +308,82 @@ abstract class S3SeekableChannelSimpleTestBase extends S3SeekableChannelTestSetu
                 fail("Expected message to contain: " + expectedMessage + " but got: " + s);
             }
         }
+    }
+
+    /**
+     * Verify that if we provide a custom client to the provider, the client is used for writing and reading.
+     */
+    @Test
+    void readWriteTestWithCustomClient() throws IOException {
+        final URI uri = uri("writeReadTest.txt");
+        final String content = "Hello, world!";
+        final byte[] contentBytes = content.getBytes(StandardCharsets.UTF_8);
+        final S3Instructions instructions = s3Instructions(S3Instructions.builder()).build();
+
+        final boolean[] usedForWriting = {false};
+        final boolean[] usedForReading = {false};
+
+        try (
+                final S3AsyncClient s3AsyncClient =
+                        buildReadWriteCapturingAsyncClient(instructions, usedForWriting, usedForReading);
+                final SeekableChannelsProvider providerImpl =
+                        UniversalS3SeekableChannelProviderPlugin.createUniversalS3Provider(SCHEME, instructions,
+                                s3AsyncClient);
+                final SeekableChannelsProvider provider = CachedChannelProvider.create(providerImpl, 32)) {
+            try (
+                    final SeekableChannelsProvider.WriteContext context = provider.makeWriteContext();
+                    final CompletableOutputStream outputStream = provider.getOutputStream(context, uri, 0)) {
+                outputStream.write(contentBytes);
+                outputStream.complete();
+            }
+
+            assertThat(usedForWriting[0]).isTrue();
+            usedForWriting[0] = false;
+            assertThat(usedForReading[0]).isFalse();
+
+            try (final SeekableChannelContext useContext = provider.makeReadContext();
+                    final SeekableByteChannel readChannel = provider.getReadChannel(useContext, uri)) {
+                final ByteBuffer buffer = ByteBuffer.allocate(contentBytes.length);
+                fillBuffer(readChannel, buffer);
+            }
+
+            assertThat(usedForWriting[0]).isFalse();
+            assertThat(usedForReading[0]).isTrue();
+        }
+    }
+
+    /**
+     * Build an {@link S3AsyncClient} which captures whether it was used for writing or reading
+     */
+    private S3AsyncClient buildReadWriteCapturingAsyncClient(
+            @NotNull final S3Instructions instructions,
+            final boolean[] usedForWriting,
+            final boolean[] usedForReading) {
+        final S3AsyncClient s3AsyncClient = S3AsyncClient
+                .builder()
+                .endpointOverride(instructions.endpointOverride().orElseThrow(
+                        () -> new IllegalArgumentException("Endpoint override is required for S3AsyncClient")))
+                .region(Region.of(instructions.regionName().orElseThrow(
+                        () -> new IllegalArgumentException("Region name is required for S3AsyncClient"))))
+                .credentialsProvider(instructions.awsV2CredentialsProvider())
+                .build();
+
+        return new DelegatingS3AsyncClient(s3AsyncClient) {
+            @Override
+            public CompletableFuture<UploadPartResponse> uploadPart(
+                    UploadPartRequest uploadPartRequest,
+                    AsyncRequestBody requestBody) {
+                usedForWriting[0] = true;
+                return super.uploadPart(uploadPartRequest, requestBody);
+            }
+
+            @Override
+            public <ReturnT> CompletableFuture<ReturnT> getObject(
+                    GetObjectRequest getObjectRequest,
+                    AsyncResponseTransformer<GetObjectResponse, ReturnT> asyncResponseTransformer) {
+                usedForReading[0] = true;
+                return super.getObject(getObjectRequest, asyncResponseTransformer);
+            }
+        };
     }
 }
