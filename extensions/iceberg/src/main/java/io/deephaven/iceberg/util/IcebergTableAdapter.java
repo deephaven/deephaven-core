@@ -498,6 +498,7 @@ public final class IcebergTableAdapter {
     }
 
     SeekableChannelsProvider seekableChannelsProvider(final Object specialInstructions) {
+        // TODO (DH-19503): Make sure we close the providers created here when the table is closed.
         return fileIOAdapter.createProvider(locationUri.getScheme(), table.io(), specialInstructions);
     }
 }
