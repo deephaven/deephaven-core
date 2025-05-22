@@ -5,7 +5,6 @@ package io.deephaven.iceberg.util;
 
 import io.deephaven.extensions.s3.S3Instructions.Builder;
 import io.deephaven.extensions.s3.testlib.SingletonContainers.LocalStack;
-import org.apache.iceberg.aws.s3.S3FileIOProperties;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import software.amazon.awssdk.services.s3.S3AsyncClient;

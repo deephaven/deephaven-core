@@ -6,7 +6,6 @@ package io.deephaven.iceberg.util;
 import io.deephaven.extensions.s3.S3Instructions.Builder;
 import io.deephaven.extensions.s3.testlib.SingletonContainers.MinIO;
 import io.deephaven.base.OSUtil;
-import org.apache.iceberg.aws.s3.S3FileIOProperties;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
@@ -41,6 +40,7 @@ public class IcebergMinIOTest extends IcebergToolsTest {
         return MinIO.s3AsyncClient();
     }
 
+    @Override
     public Map<String, String> properties() {
         return Map.of(
                 ENDPOINT, MinIO.s3Endpoint(),

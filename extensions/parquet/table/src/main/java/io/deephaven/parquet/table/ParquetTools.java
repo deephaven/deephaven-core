@@ -1001,8 +1001,9 @@ public class ParquetTools {
             @NotNull final ParquetInstructions readInstructions) {
         // Check if the directory has a metadata file
         final URI metadataFileURI = tableRootDirectory.resolve(METADATA_FILE_NAME);
-        final SeekableChannelsProvider channelsProvider = SeekableChannelsProviderLoader.getInstance().load(
-                tableRootDirectory.getScheme(), readInstructions.getSpecialInstructions());
+        final SeekableChannelsProvider channelsProvider =
+                SeekableChannelsProviderLoader.getInstance().load(tableRootDirectory.getScheme(),
+                        readInstructions.getSpecialInstructions());
         if (channelsProvider.exists(metadataFileURI)) {
             return readPartitionedTableWithMetadata(metadataFileURI, readInstructions, channelsProvider);
         }
