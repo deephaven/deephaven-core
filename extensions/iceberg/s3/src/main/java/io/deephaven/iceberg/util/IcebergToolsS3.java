@@ -115,7 +115,7 @@ public final class IcebergToolsS3 {
 
         // CRT client is not supported by Deephaven
         // TODO (DH-19253): Add support for S3CrtAsyncClient
-        properties.put(S3FileIOProperties.S3_CRT_ENABLED, Boolean.toString(false));
+        properties.put(S3FileIOProperties.S3_CRT_ENABLED, "false");
 
         final String catalogName = name != null ? name : "IcebergCatalog-" + catalogURI;
         catalog.initialize(catalogName, properties);
