@@ -14,7 +14,9 @@ import io.grpc.BindableService;
 import io.grpc.ServerInterceptor;
 
 import java.util.Collections;
+import java.util.ServiceLoader;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Module
 public interface SessionModule {
@@ -38,6 +40,17 @@ public interface SessionModule {
     @Binds
     @IntoSet
     TicketResolver bindSharedTicketResolver(SharedTicketResolver resolver);
+
+    @Binds
+    @IntoSet
+    TicketResolver bindFunctionTicketResolver(FunctionTicketResolver resolver);
+
+    @Provides
+    @ElementsIntoSet
+    static Set<FunctionTicketResolver.FunctionSupplier> getFunctionSuppliers() {
+        return ServiceLoader.load(FunctionTicketResolver.FunctionSupplier.class).stream()
+                .map(ServiceLoader.Provider::get).collect(Collectors.toSet());
+    }
 
     @Provides
     @ElementsIntoSet
