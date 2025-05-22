@@ -1269,13 +1269,43 @@ public class QueryTable extends BaseTable<QueryTable> {
 
         // Initialize our filters immediately so we can examine the columns they use. Note that filter
         // initialization is safe to invoke repeatedly.
+        final Set<Object> knownBarriers = new HashSet<>();
         for (final WhereFilter filter : filters) {
             filter.init(getDefinition(), compilationProcessor);
+
+            // Add barriers declared by this filter; filters may appear to depend on themselves when examined in
+            // aggregate.
+            final Collection<Object> newBarriers = Filter.extractBarriers(filter);
+            final Optional<Object> dupBarrier = newBarriers.stream().filter(knownBarriers::contains).findFirst();
+            if (dupBarrier.isPresent()) {
+                throw new IllegalArgumentException("Filter Barriers must be unique! Found duplicate: " +
+                        dupBarrier.get());
+            }
+            knownBarriers.addAll(newBarriers);
+
+            for (final Object respectedBarrier : Filter.extractRespectedBarriers(filter)) {
+                if (!knownBarriers.contains(respectedBarrier)) {
+                    throw new IllegalArgumentException("Filter " + filter + " respects barrier " + respectedBarrier +
+                            " that is not declared by any filter so far.");
+                }
+            }
         }
         compilationProcessor.compile();
 
+        final Set<Object> priorityBarriers = new HashSet<>();
         for (int fi = 0; fi < numFilters; ++fi) {
             final WhereFilter filter = filters[fi];
+
+            if (!filter.permitParallelization()) {
+                // serial filters are guaranteed to see the expected rowset as if all previous filters were applied
+                // thus, we're not allowed to reorder any remaining filters
+                break;
+            }
+
+            if (!priorityBarriers.containsAll(Filter.extractRespectedBarriers(filter))) {
+                // this filter is not permitted to be reordered as it depends on a filter that has not been prioritized
+                continue;
+            }
 
             // Simple filters against indexed columns get priority
             if (dataIndexer != null
@@ -1283,6 +1313,15 @@ public class QueryTable extends BaseTable<QueryTable> {
                     && filter.isSimpleFilter()
                     && DataIndexer.hasDataIndex(this, filter.getColumns().toArray(String[]::new))) {
                 priorityFilterIndexes.set(fi);
+
+                final Collection<Object> newBarriers = Filter.extractBarriers(filter);
+                final Optional<Object> dupBarrier =
+                        priorityBarriers.stream().filter(newBarriers::contains).findFirst();
+                if (dupBarrier.isPresent()) {
+                    throw new IllegalArgumentException("Filter Barriers must be unique! Found duplicate: " +
+                            dupBarrier.get());
+                }
+                priorityBarriers.addAll(newBarriers);
             }
         }
 

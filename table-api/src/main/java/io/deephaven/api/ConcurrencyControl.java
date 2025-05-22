@@ -36,4 +36,30 @@ public interface ConcurrencyControl<T> {
      * @return a new instance of T with serial concurrency control applied.
      */
     T withSerial();
+
+    /**
+     * Designates the expression as a barrier filter with the specified barrier name.
+     * <p>
+     * A barrier filter does not affect concurrency but imposes an ordering constraint on filters that respect the same
+     * barrier. Filters specified before the barrier will be evaluated before it, and those specified after will be
+     * evaluated after it.
+     * <p>
+     * Each barrier must be unique and declared by at most one filter.
+     *
+     * @param barrier the unique identifier for the barrier
+     * @return a new instance of T with the barrier applied
+     */
+    T withBarrier(Object barrier);
+
+    /**
+     * Specifies that the expression should respect the ordering constraints of a barrier with the given name.
+     * <p>
+     * The expression will be executed in an order consistent with the barrier defined by the specified name. Filters
+     * that define a barrier (using {@link #withBarrier(Object)}) will be executed either entirely before or entirely
+     * after filters that respect that barrier.
+     *
+     * @param barrier the unique identifiers for all barriers to respect.
+     * @return a new instance of T with the barrier ordering applied.
+     */
+    T respectsBarrier(Object... barrier);
 }
