@@ -15,11 +15,11 @@ import io.deephaven.extensions.s3.S3Instructions;
 import io.deephaven.iceberg.TestCatalog.IcebergTestCatalog;
 import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.Schema;
-import io.deephaven.iceberg.base.IcebergUtils;
 import org.apache.iceberg.Snapshot;
+import org.apache.iceberg.aws.s3.S3FileIO;
 import org.apache.iceberg.catalog.Namespace;
 import org.apache.iceberg.catalog.TableIdentifier;
-import org.apache.iceberg.types.Type;
+import org.apache.iceberg.io.FileIO;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -33,7 +33,6 @@ import software.amazon.awssdk.services.s3.model.PutObjectResponse;
 
 import java.io.File;
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -188,6 +187,7 @@ public abstract class IcebergToolsTest {
 
     private S3AsyncClient asyncClient;
     private String bucket;
+    private final FileIO fileIO;
 
     private final List<String> keys = new ArrayList<>();
 
@@ -195,6 +195,11 @@ public abstract class IcebergToolsTest {
     private IcebergTestCatalog resourceCatalog;
 
     private final EngineCleanup framework = new EngineCleanup();
+
+    IcebergToolsTest() {
+        fileIO = new S3FileIO();
+        fileIO.initialize(properties());
+    }
 
     @BeforeEach
     void setUp() throws Exception {
@@ -206,7 +211,7 @@ public abstract class IcebergToolsTest {
         warehousePath = IcebergToolsTest.class.getResource("/warehouse").getPath();
 
         // Create the test catalog for the tests
-        resourceCatalog = IcebergTestCatalog.create(warehousePath, properties());
+        resourceCatalog = IcebergTestCatalog.create(warehousePath, fileIO);
 
         final S3Instructions s3Instructions = s3Instructions(S3Instructions.builder()).build();
 

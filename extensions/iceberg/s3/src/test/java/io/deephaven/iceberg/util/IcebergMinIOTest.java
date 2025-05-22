@@ -6,6 +6,7 @@ package io.deephaven.iceberg.util;
 import io.deephaven.extensions.s3.S3Instructions.Builder;
 import io.deephaven.extensions.s3.testlib.SingletonContainers.MinIO;
 import io.deephaven.base.OSUtil;
+import org.apache.iceberg.aws.s3.S3FileIOProperties;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
@@ -40,12 +41,15 @@ public class IcebergMinIOTest extends IcebergToolsTest {
         return MinIO.s3AsyncClient();
     }
 
-    @Override
     public Map<String, String> properties() {
         return Map.of(
                 ENDPOINT, MinIO.s3Endpoint(),
                 CLIENT_REGION, MinIO.region(),
                 ACCESS_KEY_ID, MinIO.accessKey(),
-                SECRET_ACCESS_KEY, MinIO.secretAccessKey());
+                SECRET_ACCESS_KEY, MinIO.secretAccessKey(),
+                S3FileIOProperties.S3_ANALYTICS_ACCELERATOR_ENABLED, "false",
+                // ^ Enabling this requires an additional runtime dependency at the time of closing the S3FileIO
+                S3FileIOProperties.S3_CRT_ENABLED, "false");
+        // TODO (DH-19253): Add support for S3CrtAsyncClient
     }
 }
