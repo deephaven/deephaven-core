@@ -94,7 +94,7 @@ public final class ParquetTableFilterTest {
     private void verifyResults(Table filteredDiskTable, Table filteredMemTable) {
         Assert.assertFalse("filteredMemTable.isEmpty()", filteredMemTable.isEmpty());
         Assert.assertFalse("filteredDiskTable.isEmpty()", filteredDiskTable.isEmpty());
-        assertTableEquals(filteredDiskTable, filteredMemTable);
+        assertTableEquals(filteredMemTable, filteredDiskTable);
     }
 
     private void filterAndVerifyResults(Table diskTable, Table memTable, String... filters) {
@@ -768,6 +768,9 @@ public final class ParquetTableFilterTest {
 
         // NOTE: first file has 10k rows and `id` column is sequential, so id 0-9999 are in a file without
         // row group stats.
+
+        filterAndVerifyResults(diskTable, memTable, "random_string = `xgsah`");
+        filterAndVerifyResults(diskTable, memTable, "random_string < `zzzzz`", "random_string = `fiaai`");
 
         // int range and match filters
         filterAndVerifyResults(diskTable, memTable, "id <= 3000"); // entirely inside file with no metadata

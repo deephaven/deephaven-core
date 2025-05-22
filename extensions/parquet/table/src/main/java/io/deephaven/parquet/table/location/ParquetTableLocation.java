@@ -8,20 +8,26 @@ import io.deephaven.api.SortColumn;
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.WritableBooleanChunk;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.BasicDataIndex;
+import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.PushdownFilterContext;
 import io.deephaven.engine.table.impl.PushdownResult;
 import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
 import io.deephaven.engine.table.impl.dataindex.StandaloneDataIndex;
 import io.deephaven.engine.table.impl.locations.*;
 import io.deephaven.engine.table.impl.locations.impl.AbstractTableLocation;
 import io.deephaven.engine.table.impl.select.*;
 import io.deephaven.engine.table.impl.sources.regioned.RegionedColumnSource;
+import io.deephaven.engine.table.impl.sources.regioned.RegionedColumnSourceManager;
 import io.deephaven.engine.table.impl.sources.regioned.RegionedPageStore;
 import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.table.vectors.ColumnVectors;
@@ -36,6 +42,7 @@ import io.deephaven.parquet.table.metadata.DataIndexInfo;
 import io.deephaven.parquet.table.metadata.GroupingColumnInfo;
 import io.deephaven.parquet.table.metadata.SortColumnInfo;
 import io.deephaven.parquet.table.metadata.TableInfo;
+import io.deephaven.parquet.table.pagestore.ColumnChunkPageStore;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.mutable.MutableLong;
 import io.deephaven.util.type.NumericTypeUtils;
@@ -55,6 +62,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -424,6 +432,15 @@ public class ParquetTableLocation extends AbstractTableLocation {
         }
     }
 
+    // region Pushdown Filtering
+
+    private boolean hasDictionaryPage(final String parquetColumnName, final ColumnDefinition<?> columnDefinition) {
+        // noinspection unchecked
+        final ParquetColumnLocation<Values> columnLocation =
+                (ParquetColumnLocation<Values>) getColumnLocation(parquetColumnName);
+        return columnLocation.getDictionaryChunkSuppliers(columnDefinition)[0].get() != null;
+    }
+
     @Override
     public long estimatePushdownFilterCost(
             final WhereFilter filter,
@@ -431,6 +448,8 @@ public class ParquetTableLocation extends AbstractTableLocation {
             final RowSet fullSet,
             final boolean usePrev,
             final PushdownFilterContext context) {
+        final RegionedColumnSourceManager.RegionedColumnSourcePushdownFilterContext ctx =
+                (RegionedColumnSourceManager.RegionedColumnSourcePushdownFilterContext) context;
 
         final long executedFilterCost = context.executedFilterCost();
 
@@ -445,9 +464,21 @@ public class ParquetTableLocation extends AbstractTableLocation {
             return PushdownResult.METADATA_STATS_COST;
         }
 
-        final String[] parquetColumnNames = filter.getColumns().stream().map(
-                readInstructions::getParquetColumnNameFromColumnNameOrDefault)
+        final String[] parquetColumnNames = filter.getColumns().stream()
+                .map(name -> ctx.renameMap.getOrDefault(name, name))
+                .map(readInstructions::getParquetColumnNameFromColumnNameOrDefault)
                 .toArray(String[]::new);
+
+        final boolean isSingleColumnFilter = filter.getColumns().size() == 1;
+        final boolean isChunkFilter =
+                (filter instanceof ExposesChunkFilter && ((ExposesChunkFilter) filter).chunkFilter().isPresent())
+                        || (isSingleColumnFilter || filter instanceof ConditionFilter);
+        if (shouldExecute(QueryTable.DISABLE_WHERE_PUSHDOWN_PARQUET_DICTIONARY,
+                PushdownResult.DICTIONARY_DATA_COST, executedFilterCost)
+                && isChunkFilter
+                && hasDictionaryPage(parquetColumnNames[0], ctx.columnDefinitions.get(0))) {
+            return PushdownResult.DICTIONARY_DATA_COST;
+        }
 
         // Do we have a data indexes for the column(s)?
         if (shouldExecute(QueryTable.DISABLE_WHERE_PUSHDOWN_DATA_INDEX,
@@ -468,7 +499,6 @@ public class ParquetTableLocation extends AbstractTableLocation {
     @Override
     public void pushdownFilter(
             final WhereFilter filter,
-            final Map<String, String> renameMap,
             final RowSet selection,
             final RowSet fullSet,
             final boolean usePrev,
@@ -478,49 +508,69 @@ public class ParquetTableLocation extends AbstractTableLocation {
             final Consumer<PushdownResult> onComplete,
             final Consumer<Exception> onError) {
 
+        final RegionedColumnSourceManager.RegionedColumnSourcePushdownFilterContext ctx =
+                (RegionedColumnSourceManager.RegionedColumnSourcePushdownFilterContext) context;
+
         final long executedFilterCost = context.executedFilterCost();
-        final List<String> parquetNames = filter.getColumns().stream()
-                .map(name -> renameMap.getOrDefault(name, name))
-                .map(readInstructions::getParquetColumnNameFromColumnNameOrDefault).collect(Collectors.toList());
-        final List<Integer> parquetIndices = parquetNames.stream().map(
-                name -> parquetMetadata.getFileMetaData().getSchema().getFieldIndex(name)).collect(Collectors.toList());
+
+        // Some range filter host a condition filter as the internal filter and we can't push that down.
+        final boolean isRangeFilter =
+                filter instanceof RangeFilter && ((RangeFilter) filter).getRealFilter() instanceof AbstractRangeFilter;
+        final boolean isMatchFilter = filter instanceof MatchFilter;
+
+        final String[] parquetColumnNames = filter.getColumns().stream()
+                .map(name -> ctx.renameMap.getOrDefault(name, name))
+                .map(readInstructions::getParquetColumnNameFromColumnNameOrDefault)
+                .toArray(String[]::new);
+        final int[] parquetIndices = Arrays.stream(parquetColumnNames)
+                .mapToInt(name -> parquetMetadata.getFileMetaData().getSchema().getFieldIndex(name))
+                .toArray();
 
         // Initialize the pushdown result with the selection rowset as "maybe" rows
         PushdownResult result = PushdownResult.of(RowSetFactory.empty(), selection.copy());
 
         // Should we look at the metadata?
         if (shouldExecute(QueryTable.DISABLE_WHERE_PUSHDOWN_PARQUET_ROW_GROUP_METADATA,
-                PushdownResult.METADATA_STATS_COST, executedFilterCost, costCeiling)) {
-            // Some range filter host a condition filter as the internal filter and we can't push that down.
-            if (filter instanceof RangeFilter
-                    && ((RangeFilter) filter).getRealFilter() instanceof AbstractRangeFilter) {
-                try (final PushdownResult ignored = result) {
-                    result = pushdownRangeFilter((AbstractRangeFilter) ((RangeFilter) filter).getRealFilter(),
-                            parquetIndices, result);
-                }
-            } else if (filter instanceof MatchFilter) {
-                try (final PushdownResult ignored = result) {
-                    result = pushdownMatchFilter((MatchFilter) filter, parquetIndices, result);
-                }
+                PushdownResult.METADATA_STATS_COST, executedFilterCost, costCeiling)
+                && (isMatchFilter || isRangeFilter)) {
+            try (final PushdownResult ignored = result) {
+                result = pushdownRowGroupMetedata(isRangeFilter ? ((RangeFilter) filter).getRealFilter() : filter,
+                        parquetIndices, result);
+            }
+            if (result.maybeMatch().isEmpty()) {
+                // No maybe rows remaining, so no reason to continue filtering.
+                onComplete.accept(result);
+                return;
             }
         }
-        if (result.maybeMatch().isEmpty()) {
-            // No maybe rows remaining, so no reason to continue filtering.
-            onComplete.accept(result);
-            return;
-        }
 
-        // If not prohibited by the cost ceiling, continue to refine the pushdown results.
+        // Should we look at dictionary operations?
+        final boolean isSingleColumnFilter = filter.getColumns().size() == 1;
+        final boolean isChunkFilter =
+                (filter instanceof ExposesChunkFilter && ((ExposesChunkFilter) filter).chunkFilter().isPresent())
+                        || (isSingleColumnFilter || filter instanceof ConditionFilter);
+
+        if (shouldExecute(QueryTable.DISABLE_WHERE_PUSHDOWN_PARQUET_DICTIONARY,
+                PushdownResult.DICTIONARY_DATA_COST, executedFilterCost, costCeiling)
+                && isChunkFilter) {
+            try (final PushdownResult ignored = result) {
+                result = pushdownFilterDictionary(filter, ctx, parquetColumnNames, result);
+            }
+            if (result.maybeMatch().isEmpty()) {
+                // No maybe rows remaining, so no reason to continue filtering.
+                onComplete.accept(result);
+                return;
+            }
+        }
 
         if (shouldExecute(QueryTable.DISABLE_WHERE_PUSHDOWN_DATA_INDEX,
                 PushdownResult.IN_MEMORY_DATA_INDEX_COST, executedFilterCost, costCeiling)) {
-            final String[] parquetNameArr = parquetNames.toArray(String[]::new);
-
-            final BasicDataIndex dataIndex = hasCachedDataIndex(parquetNameArr) ? getDataIndex(parquetNameArr) : null;
+            final BasicDataIndex dataIndex =
+                    hasCachedDataIndex(parquetColumnNames) ? getDataIndex(parquetColumnNames) : null;
             if (dataIndex != null) {
                 // No maybe rows remaining, so no reason to continue filtering.
                 try (final PushdownResult ignored = result) {
-                    onComplete.accept(pushdownDataIndex(filter, renameMap, dataIndex, result));
+                    onComplete.accept(pushdownDataIndex(filter, ctx.renameMap, dataIndex, result));
                     return;
                 }
             }
@@ -529,13 +579,11 @@ public class ParquetTableLocation extends AbstractTableLocation {
         if (shouldExecute(QueryTable.DISABLE_WHERE_PUSHDOWN_DATA_INDEX,
                 PushdownResult.DEFERRED_DATA_INDEX_COST, executedFilterCost, costCeiling)) {
             // If we have a data index, apply the filter to the data index table and retain the incoming maybe rows.
-            final String[] parquetNameArr = parquetNames.toArray(String[]::new);
-
-            final BasicDataIndex dataIndex = hasDataIndex(parquetNameArr) ? getDataIndex(parquetNameArr) : null;
+            final BasicDataIndex dataIndex = hasDataIndex(parquetColumnNames) ? getDataIndex(parquetColumnNames) : null;
             if (dataIndex != null) {
                 // No maybe rows remaining, so no reason to continue filtering.
                 try (final PushdownResult ignored = result) {
-                    onComplete.accept(pushdownDataIndex(filter, renameMap, dataIndex, result));
+                    onComplete.accept(pushdownDataIndex(filter, ctx.renameMap, dataIndex, result));
                     return;
                 }
             }
@@ -624,55 +672,102 @@ public class ParquetTableLocation extends AbstractTableLocation {
     }
 
     /**
-     * Apply the range filter to the row groups and return the result.
+     * Apply the filter to the row group metadata and return the result.
      */
     @NotNull
-    private PushdownResult pushdownRangeFilter(
-            final AbstractRangeFilter rf,
-            final List<Integer> parquetIndices,
+    private PushdownResult pushdownRowGroupMetedata(
+            final WhereFilter filter,
+            final int[] parquetIndices,
             final PushdownResult result) {
         final RowSetBuilderSequential maybeBuilder = RowSetFactory.builderSequential();
         final MutableLong maybeCount = new MutableLong(0);
 
-        // Only one column in a RangeFilter
-        final Integer parquetIndex = parquetIndices.get(0);
+        // Only one column in these filters
+        final int parquetIndex = parquetIndices[0];
 
         iterateRowGroupsAndRowSet(result.maybeMatch(), (rgIdx, rs) -> {
-            final Pair<Object, Object> p = getMinMax(
-                    parquetMetadata.getBlocks().get(rgIdx).getColumns().get(parquetIndex).getStatistics());
+            final Pair<Object, Object> p =
+                    getMinMax(parquetMetadata.getBlocks().get(rgIdx).getColumns().get(parquetIndex).getStatistics());
 
-            if (p == null || rf.overlaps(p.first, p.second)) {
+            if (p == null) {
+                // No statistics, so we can't filter anything.
+                maybeBuilder.appendRowSequence(rs);
+                maybeCount.add(rs.size());
+                return;
+            }
+
+            if (filter instanceof AbstractRangeFilter) {
+                final AbstractRangeFilter rf = (AbstractRangeFilter) filter;
+                if (rf.overlaps(p.first, p.second)) {
+                    maybeBuilder.appendRowSequence(rs);
+                    maybeCount.add(rs.size());
+                }
+                return;
+            }
+
+            final MatchFilter mf = (MatchFilter) filter;
+            if (mf.overlaps(p.first, p.second)) {
                 maybeBuilder.appendRowSequence(rs);
                 maybeCount.add(rs.size());
             }
+
         });
         return PushdownResult.of(result.match().copy(),
                 maybeCount.get() == result.maybeMatch().size() ? result.maybeMatch().copy() : maybeBuilder.build());
     }
 
     /**
-     * Apply the match filter to the row groups and return the result.
+     * Apply the chunk filter to the row group dictionaries and return the result.
      */
     @NotNull
-    private PushdownResult pushdownMatchFilter(
-            final MatchFilter mf,
-            final List<Integer> parquetIndices,
+    private PushdownResult pushdownFilterDictionary(
+            final WhereFilter filter,
+            final RegionedColumnSourceManager.RegionedColumnSourcePushdownFilterContext ctx,
+            final String[] parquetColumnNames,
             final PushdownResult result) {
         final RowSetBuilderSequential maybeBuilder = RowSetFactory.builderSequential();
         final MutableLong maybeCount = new MutableLong(0);
 
-        // Only one column in a RangeFilter
-        final Integer parquetIndex = parquetIndices.get(0);
+        final ColumnDefinition<?> columnDefinition = ctx.columnDefinitions.get(0);
 
-        iterateRowGroupsAndRowSet(result.maybeMatch(), (rgIdx, rs) -> {
-            final Pair<Object, Object> p = getMinMax(
-                    parquetMetadata.getBlocks().get(rgIdx).getColumns().get(parquetIndex).getStatistics());
+        // noinspection unchecked
+        final ParquetColumnLocation<Values> columnLocation =
+                (ParquetColumnLocation<Values>) getColumnLocation(parquetColumnNames[0]);
 
-            if (p == null || mf.overlaps(p.first, p.second)) {
-                maybeBuilder.appendRowSequence(rs);
-                maybeCount.add(rs.size());
-            }
-        });
+        // noinspection unchecked
+        final Chunk<Values>[] dictionaryChunks =
+                Arrays.stream(columnLocation.getDictionaryChunkSuppliers(columnDefinition))
+                        .map(Supplier::get)
+                        .toArray(Chunk[]::new);
+
+        final ColumnChunkPageStore<Values>[] columnChunkPageStores =
+                columnLocation.getPageStores(columnDefinition);
+
+        final int maxSize =
+                Arrays.stream(dictionaryChunks).mapToInt(chunk -> chunk == null ? 0 : chunk.size()).max().orElse(0);
+        if (maxSize == 0) {
+            // No dictionary chunks, so no reason to continue filtering.
+            return PushdownResult.of(result.match().copy(), result.maybeMatch().copy());
+        }
+
+        try (final WritableBooleanChunk<Values> resultChunk = WritableBooleanChunk.makeWritableChunk(maxSize)) {
+            // TODO: add condition filter support
+            final ChunkFilter chunkFilter = ((ExposesChunkFilter) filter).chunkFilter().get();
+
+            iterateRowGroupsAndRowSet(result.maybeMatch(), (rgIdx, rs) -> {
+                final ColumnChunkPageStore<Values> pageStore = columnChunkPageStores[rgIdx];
+                if (!pageStore.usesDictionaryOnEveryPage()) {
+                    maybeBuilder.appendRowSequence(rs);
+                }
+
+                // Run the chunk filter on the dictionary chunk.
+                if (chunkFilter.filter(dictionaryChunks[rgIdx].asObjectChunk(), resultChunk) > 0) {
+                    // We have some matches, we can't eliminate anything.
+                    maybeBuilder.appendRowSequence(rs);
+                }
+                // TODO: go page by page and eliminate page rows that use the dictionary.
+            });
+        }
         return PushdownResult.of(result.match().copy(),
                 maybeCount.get() == result.maybeMatch().size() ? result.maybeMatch().copy() : maybeBuilder.build());
     }
@@ -705,18 +800,23 @@ public class ParquetTableLocation extends AbstractTableLocation {
 
                 try (final CloseableIterator<RowSet> it =
                         ColumnVectors.ofObject(filteredTable, dataIndex.rowSetColumnName(), RowSet.class).iterator()) {
-                    it.forEachRemaining(matchingBuilder::addRowSet);
+                    it.forEachRemaining(rowSet -> {
+                        try (final RowSet matching = rowSet.intersect(result.maybeMatch())) {
+                            matchingBuilder.addRowSet(matching);
+                        }
+                    });
                 }
             } catch (final Exception e) {
                 // Exception occurs here if we have a data type mismatch between the index and the filter.
                 // Just swallow the exception and declare all the rows as maybe matches.
-                return PushdownResult.of(RowSetFactory.empty(), result.maybeMatch().copy());
+                return PushdownResult.of(result.match().copy(), result.maybeMatch().copy());
             }
         }
         // Retain only the maybe rows and add the previously found matches.
         final WritableRowSet matching = matchingBuilder.build();
-        matching.retain(result.maybeMatch());
         matching.insert(result.match());
         return PushdownResult.of(matching, RowSetFactory.empty());
     }
+
+    // endregion Pushdown Filtering
 }

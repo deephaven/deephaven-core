@@ -378,7 +378,7 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
      *
      * @param min the minimum value in the given range
      * @param max the maximum value in the given range
-     * @return {@code true} if the range filter overlaps with the given range, {@code false} otherwise
+     * @return {@code true} if the match filter overlaps with the given range, {@code false} otherwise
      */
     public boolean overlaps(@NotNull final Object min, @NotNull final Object max) {
         return overlaps(min, max, true, true);

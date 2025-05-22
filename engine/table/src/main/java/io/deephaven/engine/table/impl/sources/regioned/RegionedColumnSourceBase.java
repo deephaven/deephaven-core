@@ -16,7 +16,7 @@ import io.deephaven.util.annotations.TestUseOnly;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Map;
+import java.util.List;
 import java.util.function.Consumer;
 
 /**
@@ -118,7 +118,6 @@ abstract class RegionedColumnSourceBase<DATA_TYPE, ATTR extends Values, REGION_T
     @Override
     public void pushdownFilter(
             final WhereFilter filter,
-            final Map<String, String> renameMap,
             final RowSet selection,
             final RowSet fullSet,
             final boolean usePrev,
@@ -128,19 +127,15 @@ abstract class RegionedColumnSourceBase<DATA_TYPE, ATTR extends Values, REGION_T
             final Consumer<PushdownResult> onComplete,
             final Consumer<Exception> onError) {
         // Delegate to the manager.
-        manager.pushdownFilter(filter, renameMap, selection, fullSet, usePrev, context, costCeiling, jobScheduler,
+        manager.pushdownFilter(filter, selection, fullSet, usePrev, context, costCeiling, jobScheduler,
                 onComplete, onError);
     }
 
     @Override
-    public Map<String, String> renameMap(final WhereFilter filter, final ColumnSource<?>[] filterSources) {
+    public PushdownFilterContext makePushdownFilterContext(
+            final WhereFilter filter,
+            final List<ColumnSource<?>> filterSources) {
         // Delegate to the manager.
-        return manager.renameMap(filter, filterSources);
-    }
-
-    @Override
-    public PushdownFilterContext makePushdownFilterContext() {
-        // Delegate to the manager.
-        return manager.makePushdownFilterContext();
+        return manager.makePushdownFilterContext(filter, filterSources);
     }
 }
