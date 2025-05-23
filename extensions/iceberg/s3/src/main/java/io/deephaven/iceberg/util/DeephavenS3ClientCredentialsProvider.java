@@ -18,18 +18,18 @@ import java.util.Map;
  * as a workaround till the issue <a href="https://github.com/apache/iceberg/issues/13131">Iceberg Issue #13131</a> is
  * fixed. So should be removed once the issue is fixed.
  */
-public class DeephavenClientCredentialsProvider implements AwsCredentialsProvider {
+public class DeephavenS3ClientCredentialsProvider implements AwsCredentialsProvider {
 
     private final S3FileIOProperties s3FileIOProperties;
     private final AwsClientProperties awsClientProperties;
 
     private AwsCredentials cachedCredentials;
 
-    public static DeephavenClientCredentialsProvider create(Map<String, String> properties) {
-        return new DeephavenClientCredentialsProvider(properties);
+    public static DeephavenS3ClientCredentialsProvider create(Map<String, String> properties) {
+        return new DeephavenS3ClientCredentialsProvider(properties);
     }
 
-    private DeephavenClientCredentialsProvider(@NotNull final Map<String, String> properties) {
+    private DeephavenS3ClientCredentialsProvider(@NotNull final Map<String, String> properties) {
         this.s3FileIOProperties = new S3FileIOProperties(properties);
         this.awsClientProperties = new AwsClientProperties(properties);
     }

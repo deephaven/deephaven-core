@@ -238,7 +238,7 @@ public abstract class IcebergToolsTest {
 
         // Set the client credentials provider
         newProperties.put(AwsClientProperties.CLIENT_CREDENTIALS_PROVIDER,
-                DeephavenClientCredentialsProvider.class.getName());
+                DeephavenS3ClientCredentialsProvider.class.getName());
         newProperties.put(CLIENT_CREDENTIALS_PROVIDER_ACCESS_KEY_ID, newProperties.get(ACCESS_KEY_ID));
         newProperties.put(CLIENT_CREDENTIALS_PROVIDER_SECRET_ACCESS_KEY, newProperties.get(SECRET_ACCESS_KEY));
 
