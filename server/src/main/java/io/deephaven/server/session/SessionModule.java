@@ -48,6 +48,7 @@ public interface SessionModule {
     @Provides
     @ElementsIntoSet
     static Set<FunctionTicketResolver.FunctionSupplier> getFunctionSuppliers() {
+        // Service loading the function suppliers is experimental, and may be removed in a future Deephaven release.
         return ServiceLoader.load(FunctionTicketResolver.FunctionSupplier.class).stream()
                 .map(ServiceLoader.Provider::get).collect(Collectors.toSet());
     }

@@ -6,9 +6,7 @@ package io.deephaven.server.session;
 import com.google.protobuf.ByteStringAccess;
 import com.google.rpc.Code;
 import io.deephaven.base.string.EncodingInfo;
-import io.deephaven.engine.table.Table;
 import io.deephaven.proto.backplane.grpc.Ticket;
-import io.deephaven.proto.flight.util.FlightExportTicketHelper;
 import io.deephaven.proto.flight.util.TicketRouterHelper;
 import io.deephaven.proto.util.ByteHelper;
 import io.deephaven.proto.util.Exceptions;
@@ -52,6 +50,10 @@ public class FunctionTicketResolver extends TicketResolverBase {
      * <p>
      * If conflicting function names are registered, then an {@link IllegalStateException} is thrown.
      * </p>
+     *
+     * <p>
+     * Note service loading this interface is <b>experimental</b> and subject to change in future versions.
+     * </p>
      */
     public interface FunctionSupplier {
         Map<String, ?> getFunctions();
@@ -92,43 +94,13 @@ public class FunctionTicketResolver extends TicketResolverBase {
     @Override
     public SessionState.ExportObject<Flight.FlightInfo> flightInfoFor(
             @Nullable final SessionState session, final Flight.FlightDescriptor descriptor, final String logId) {
-        if (session == null) {
-            throw Exceptions.statusRuntimeException(Code.UNAUTHENTICATED, String.format(
-                    "Could not resolve '%s': no session to handoff to", logId));
-        }
-
-        final String functionName = nameForDescriptor(descriptor, logId);
-
-        final Object function = functionMap.get(functionName);
-        if (function == null) {
-            throw newNotFoundSRE(logId, functionName);
-        }
-
-        final SessionState.ExportObject<?> export = SessionState.wrapAsExport(function);
-
-        return session.<Flight.FlightInfo>nonExport()
-                .require(export)
-                .submit(() -> {
-                    Object result = export.get();
-                    result = authorization.transform(result);
-                    if (result instanceof Table) {
-                        return TicketRouter.getFlightInfo((Table) result, descriptor,
-                                FlightExportTicketHelper.descriptorToFlightTicket(descriptor, logId));
-                    }
-                    throw Exceptions.statusRuntimeException(Code.NOT_FOUND,
-                            "Could not resolve '" + logId + "': flight '" + descriptor + "' not found");
-                });
+        // These tickets are not intended to point at a table, so they are always not found for flight info.
+        throw newNotFoundSRE(logId, nameForDescriptor(descriptor, logId));
     }
 
     @Override
     public void forAllFlightInfo(@Nullable final SessionState session, final Consumer<Flight.FlightInfo> visitor) {
-        functionMap.forEach((name, t) -> {
-            final Object transformed = authorization.transform(t);
-            if (transformed instanceof Table) {
-                visitor.accept(TicketRouter.getFlightInfo(
-                        (Table) transformed, descriptorForName(name), flightTicketForName(name)));
-            }
-        });
+        // These tickets are not intended to point at a table, therefore we don't need to add anything to flight info
     }
 
     @Override
