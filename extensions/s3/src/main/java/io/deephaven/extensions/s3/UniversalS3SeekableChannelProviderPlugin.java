@@ -24,63 +24,47 @@ public final class UniversalS3SeekableChannelProviderPlugin extends SeekableChan
 
     @Override
     public boolean isCompatible(@NotNull final String uriScheme, @Nullable final Object config) {
-        return isCompatible(uriScheme);
-    }
-
-    private static boolean isCompatible(@NotNull final String uriScheme) {
         return S3Constants.S3_SCHEMES.contains(uriScheme);
     }
 
     /**
-     * Internal API for creating a {@link SeekableChannelsProvider} for S3 URIs directly using the provided async
-     * client.
+     * Internal API for creating a {@link SeekableChannelsProvider} for reading from and writing to URIs with provided
+     * schemes using the provided async client.
      *
-     * @param uriScheme The URI scheme to create the provider for.
+     * @param uriSchemes The URI schemes to create the provider for.
      * @param s3Instructions The S3 instructions to use for the provider.
      * @param s3AsyncClient The S3 async client to use for the provider.
      */
     @InternalUseOnly
     @VisibleForTesting
     public static SeekableChannelsProvider createUniversalS3Provider(
-            @NotNull final String uriScheme,
+            @NotNull final Set<String> uriSchemes,
             @NotNull final S3Instructions s3Instructions,
             @NotNull final S3AsyncClient s3AsyncClient) {
-        if (!isCompatible(uriScheme)) {
-            throw new IllegalArgumentException("Arguments not compatible, provided uri scheme " + uriScheme +
-                    " is not compatible, expected one of " + S3Constants.S3_SCHEMES);
-        }
         final S3SeekableChannelProvider impl = new S3SeekableChannelProvider(s3Instructions, s3AsyncClient);
-        return createdProviderImplHelper(uriScheme, impl);
+        return createdProviderImplHelper(uriSchemes, impl);
     }
 
     /**
-     * Internal API for creating a {@link SeekableChannelsProvider} for S3 URIs directly.
+     * Internal API for creating a {@link SeekableChannelsProvider} for reading from and writing to URIs with provided
+     * schemes.
      *
-     * @param uriScheme The URI scheme to create the provider for.
+     * @param uriSchemes The URI schemes to create the provider for.
      * @param s3Instructions The S3 instructions to use for the provider.
      */
     @InternalUseOnly
     static SeekableChannelsProvider createUniversalS3Provider(
-            @NotNull final String uriScheme,
+            @NotNull final Set<String> uriSchemes,
             @NotNull final S3Instructions s3Instructions) {
-        if (!isCompatible(uriScheme)) {
-            throw new IllegalArgumentException("Arguments not compatible, provided uri scheme " + uriScheme +
-                    " is not compatible, expected one of " + S3Constants.S3_SCHEMES);
-        }
         final S3SeekableChannelProvider impl = new S3SeekableChannelProvider(s3Instructions);
-        return createdProviderImplHelper(uriScheme, impl);
+        return createdProviderImplHelper(uriSchemes, impl);
     }
 
     @Override
     protected SeekableChannelsProvider createProviderImpl(
             @NotNull final String uriScheme,
             @Nullable final Object config) {
-        return createdProviderImplHelper(uriScheme, create(config));
-    }
-
-    private static SeekableChannelsProvider createdProviderImplHelper(
-            @NotNull final String uriScheme,
-            @NotNull final S3SeekableChannelProvider impl) {
+        final @NotNull S3SeekableChannelProvider impl = create(config);
         switch (uriScheme) {
             case S3Constants.S3_URI_SCHEME:
                 return impl;
@@ -94,9 +78,15 @@ public final class UniversalS3SeekableChannelProviderPlugin extends SeekableChan
     }
 
     @Override
-    protected SeekableChannelsProvider createProviderImpl(@NotNull Set<String> uriSchemes,
+    protected SeekableChannelsProvider createProviderImpl(
+            @NotNull final Set<String> uriSchemes,
             @Nullable final Object config) {
-        final S3SeekableChannelProvider impl = create(config);
+        return createdProviderImplHelper(uriSchemes, create(config));
+    }
+
+    private static SeekableChannelsProvider createdProviderImplHelper(
+            @NotNull final Set<String> uriSchemes,
+            @NotNull final S3SeekableChannelProvider impl) {
         final S3SeekableChannelProvider s3 = uriSchemes.contains(S3Constants.S3_URI_SCHEME)
                 ? impl
                 : null;
@@ -107,6 +97,7 @@ public final class UniversalS3SeekableChannelProviderPlugin extends SeekableChan
                 ? new S3DelegateProvider(S3Constants.S3N_URI_SCHEME, impl)
                 : null;
         return new UniversalS3Provider(impl, s3, s3a, s3n);
+
     }
 
     private static S3SeekableChannelProvider create(@Nullable final Object config) {

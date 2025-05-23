@@ -25,6 +25,7 @@ import java.nio.channels.SeekableByteChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.Set;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
@@ -320,8 +321,8 @@ abstract class S3SeekableChannelSimpleTestBase extends S3SeekableChannelTestSetu
                 final S3AsyncClient s3AsyncClient =
                         readWriteTrackingS3Client(instructions, usedForWriting, usedForReading);
                 final SeekableChannelsProvider providerImpl =
-                        UniversalS3SeekableChannelProviderPlugin.createUniversalS3Provider(SCHEME, instructions,
-                                s3AsyncClient);
+                        UniversalS3SeekableChannelProviderPlugin.createUniversalS3Provider(
+                                Set.of(SCHEME), instructions, s3AsyncClient);
                 final SeekableChannelsProvider provider = CachedChannelProvider.create(providerImpl, 32)) {
             try (
                     final SeekableChannelsProvider.WriteContext context = provider.makeWriteContext();

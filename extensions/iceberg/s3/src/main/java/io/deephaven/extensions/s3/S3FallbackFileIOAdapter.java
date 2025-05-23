@@ -6,10 +6,12 @@ package io.deephaven.extensions.s3;
 import com.google.auto.service.AutoService;
 import io.deephaven.iceberg.util.FileIOAdapter;
 import io.deephaven.util.channel.SeekableChannelsProvider;
-import io.deephaven.util.channel.SeekableChannelsProviderLoader;
+
 import org.apache.iceberg.io.FileIO;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import static io.deephaven.extensions.s3.S3Constants.S3_SCHEMES;
 
 /**
  * {@link FileIOAdapter} implementation used for reading/writing files to S3. This adapter is used when
@@ -30,7 +32,7 @@ public final class S3FallbackFileIOAdapter extends S3FileIOAdapterBase {
             @NotNull final String uriScheme,
             @NotNull final Class<?> ioClass) {
         return !USE_S3_CLIENT_FROM_FILE_IO
-                && S3Constants.S3_SCHEMES.contains(uriScheme);
+                && S3_SCHEMES.contains(uriScheme);
     }
 
     @Override
@@ -44,7 +46,10 @@ public final class S3FallbackFileIOAdapter extends S3FileIOAdapterBase {
         }
         final S3Instructions s3Instructions =
                 (specialInstructions == null) ? S3Instructions.DEFAULT : (S3Instructions) specialInstructions;
-        return UniversalS3SeekableChannelProviderPlugin.createUniversalS3Provider(uriScheme, s3Instructions);
+
+        // Create a universal provider which can read/write to all S3 URIs (S3, S3A, S3N), so if different data files
+        // have different S3 URI schemes, we can still read/write them using the same provider.
+        return UniversalS3SeekableChannelProviderPlugin.createUniversalS3Provider(S3_SCHEMES, s3Instructions);
     }
 
 }

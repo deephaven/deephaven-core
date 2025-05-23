@@ -37,6 +37,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 
@@ -674,8 +675,8 @@ abstract class S3ParquetTestBase extends S3SeekableChannelTestSetup {
                 final S3AsyncClient s3AsyncClient =
                         readWriteTrackingS3Client(s3Instructions, usedForWriting, usedForReading);
                 final SeekableChannelsProvider providerImpl =
-                        UniversalS3SeekableChannelProviderPlugin.createUniversalS3Provider(SCHEME, s3Instructions,
-                                s3AsyncClient);
+                        UniversalS3SeekableChannelProviderPlugin.createUniversalS3Provider(
+                                Set.of(SCHEME), s3Instructions, s3AsyncClient);
                 final SeekableChannelsProvider provider = CachedChannelProvider.create(providerImpl, 32)) {
 
             // Set a custom seekable channels provider for writing

@@ -14,6 +14,7 @@ import org.jetbrains.annotations.Nullable;
 
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 
+import static io.deephaven.extensions.s3.S3Constants.S3_SCHEMES;
 import static org.apache.iceberg.aws.s3.S3FileIOProperties.S3_CRT_ENABLED;
 import static org.apache.iceberg.aws.s3.S3FileIOProperties.S3_CRT_ENABLED_DEFAULT;
 
@@ -37,7 +38,7 @@ public final class S3FileIOAdapter extends S3FileIOAdapterBase {
             @NotNull final String uriScheme,
             @NotNull final Class<?> ioClass) {
         return USE_S3_CLIENT_FROM_FILE_IO
-                && S3Constants.S3_SCHEMES.contains(uriScheme)
+                && S3_SCHEMES.contains(uriScheme)
                 && S3FileIO.class.isAssignableFrom(ioClass);
     }
 
@@ -59,7 +60,10 @@ public final class S3FileIOAdapter extends S3FileIOAdapterBase {
         final S3Instructions s3Instructions =
                 (specialInstructions == null) ? S3Instructions.DEFAULT : (S3Instructions) specialInstructions;
         final S3AsyncClient s3AsyncClient = ((S3FileIO) io).asyncClient();
+
+        // Create a universal provider which can read/write to all S3 URIs (S3, S3A, S3N), so if different data files
+        // have different S3 URI schemes, we can still read/write them using the same provider.
         return UniversalS3SeekableChannelProviderPlugin.createUniversalS3Provider(
-                uriScheme, s3Instructions, s3AsyncClient);
+                S3_SCHEMES, s3Instructions, s3AsyncClient);
     }
 }
