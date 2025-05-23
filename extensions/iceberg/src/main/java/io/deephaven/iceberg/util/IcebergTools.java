@@ -157,8 +157,9 @@ public final class IcebergTools {
         options.hadoopConfig().forEach(hadoopConf::set);
 
         // Create the Iceberg catalog from the properties
-        final Catalog catalog = CatalogUtil.buildIcebergCatalog(options.name(), options.properties(), hadoopConf);
+        final Catalog catalog =
+                CatalogUtil.buildIcebergCatalog(options.name(), options.updatedProperties(), hadoopConf);
 
-        return IcebergCatalogAdapter.of(catalog, options.properties());
+        return IcebergCatalogAdapter.of(catalog, options.updatedProperties());
     }
 }

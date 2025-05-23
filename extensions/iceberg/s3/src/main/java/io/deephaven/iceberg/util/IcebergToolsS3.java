@@ -70,7 +70,7 @@ public final class IcebergToolsS3 {
             properties.put(S3FileIOProperties.ACCESS_KEY_ID, accessKeyId);
             properties.put(S3FileIOProperties.SECRET_ACCESS_KEY, secretAccessKey);
 
-            // Set the credentials provider to use the DeephavenClientCredentialsProvider
+            // Use the Deephaven specific S3ClientCredentialsProvider
             properties.put(AwsClientProperties.CLIENT_CREDENTIALS_PROVIDER,
                     DeephavenS3ClientCredentialsProvider.class.getName());
             properties.put(CLIENT_CREDENTIALS_PROVIDER_ACCESS_KEY_ID, accessKeyId);

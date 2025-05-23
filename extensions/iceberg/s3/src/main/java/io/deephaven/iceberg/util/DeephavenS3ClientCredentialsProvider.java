@@ -16,8 +16,9 @@ import java.util.Map;
  * {@link AwsCredentialsProvider} implementation used for configuring credentials for S3 clients when working with
  * Iceberg. This provider emulates the behavior of {@link S3FileIOProperties#applyCredentialConfigurations} and is added
  * as a workaround till the issue <a href="https://github.com/apache/iceberg/issues/13131">Iceberg Issue #13131</a> is
- * fixed. So should be removed once the issue is fixed.
+ * fixed.
  */
+// TODO (DH-19448): Remove this class once Iceberg fix for #13131 is released
 public class DeephavenS3ClientCredentialsProvider implements AwsCredentialsProvider {
 
     private final S3FileIOProperties s3FileIOProperties;

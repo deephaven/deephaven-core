@@ -14,7 +14,6 @@ import org.apache.iceberg.CatalogProperties;
 import org.apache.iceberg.DataFile;
 import org.apache.iceberg.DataFiles;
 import org.apache.iceberg.aws.s3.S3FileIO;
-import org.apache.iceberg.aws.s3.S3FileIOProperties;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.api.Test;
@@ -78,8 +77,6 @@ abstract class S3WarehouseSqliteCatalogBase extends SqliteCatalogBase {
         }
         properties.put(CatalogProperties.WAREHOUSE_LOCATION, scheme + "://" + bucket + "/warehouse");
         properties.put(CatalogProperties.FILE_IO_IMPL, S3FileIO.class.getName());
-        // TODO (DH-19253): Add support for S3CrtAsyncClient
-        properties.put(S3FileIOProperties.S3_CRT_ENABLED, "false");
         return IcebergToolsS3.createAdapter(catalogName, properties, Map.of(), s3Instructions());
     }
 
