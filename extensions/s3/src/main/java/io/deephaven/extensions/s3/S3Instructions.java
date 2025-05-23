@@ -350,7 +350,8 @@ public abstract class S3Instructions implements LogOutputAppendable {
         }
     }
 
-    final AwsCredentialsProvider awsV2CredentialsProvider() {
+    @VisibleForTesting
+    public final AwsCredentialsProvider awsV2CredentialsProvider() {
         return ((AwsSdkV2Credentials) credentials()).awsV2CredentialsProvider(this);
     }
 

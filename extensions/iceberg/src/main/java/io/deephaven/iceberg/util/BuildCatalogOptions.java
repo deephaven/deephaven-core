@@ -7,6 +7,7 @@ import org.apache.iceberg.CatalogProperties;
 import org.apache.iceberg.CatalogUtil;
 import org.immutables.value.Value;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
@@ -30,10 +31,36 @@ public abstract class BuildCatalogOptions {
     }
 
     /**
-     * The catalog properties. Must contain {@value CatalogUtil#ICEBERG_CATALOG_TYPE} or
+     * The catalog properties provided by the user. Must contain {@value CatalogUtil#ICEBERG_CATALOG_TYPE} or
      * {@value CatalogProperties#CATALOG_IMPL}.
+     * <p>
+     * For building the catalog, use {@link #updatedProperties()} instead.
      */
     public abstract Map<String, String> properties();
+
+    /**
+     * Enables Deephaven’s automatic injection of properties that work around upstream issues and supply defaults needed
+     * for Deephaven’s Iceberg usage. Disable to manage all properties yourself.
+     */
+    @Value.Default
+    public boolean enablePropertyInjection() {
+        return true;
+    }
+
+    /**
+     * The properties to use when creating the catalog. If {@link #enablePropertyInjection} is {@code true}, this
+     * creates a copy of the {@link #properties()} map, with any Deephaven-specific properties injected into it. Else,
+     * returns the original {@link #properties()} map.
+     */
+    public final Map<String, String> updatedProperties() {
+        if (!enablePropertyInjection()) {
+            return properties();
+        }
+        final Map<String, String> updatedProperties = new LinkedHashMap<>(properties());
+        // Inject Deephaven-specific AWS/S3 settings into the property map
+        AWSProperties.injectDeephavenProperties(updatedProperties);
+        return updatedProperties;
+    }
 
     /**
      * The Hadoop configuration properties.
@@ -51,6 +78,8 @@ public abstract class BuildCatalogOptions {
         Builder putHadoopConfig(String key, String value);
 
         Builder putAllHadoopConfig(Map<String, ? extends String> entries);
+
+        Builder enablePropertyInjection(boolean enable);
 
         BuildCatalogOptions build();
     }

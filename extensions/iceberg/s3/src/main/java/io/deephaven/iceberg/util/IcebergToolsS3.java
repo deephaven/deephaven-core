@@ -19,6 +19,7 @@ import org.apache.iceberg.catalog.Catalog;
 import org.apache.iceberg.rest.RESTCatalog;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.VisibleForTesting;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -27,6 +28,15 @@ import java.util.Map;
  * Tools for accessing tables in the Iceberg table format from S3.
  */
 public final class IcebergToolsS3 {
+
+    @VisibleForTesting
+    static final String CLIENT_CREDENTIALS_PROVIDER_ACCESS_KEY_ID =
+            String.format("%s.%s", AwsClientProperties.CLIENT_CREDENTIALS_PROVIDER, S3FileIOProperties.ACCESS_KEY_ID);
+
+    @VisibleForTesting
+    static final String CLIENT_CREDENTIALS_PROVIDER_SECRET_ACCESS_KEY =
+            String.format("%s.%s", AwsClientProperties.CLIENT_CREDENTIALS_PROVIDER,
+                    S3FileIOProperties.SECRET_ACCESS_KEY);
 
     /**
      * Create an Iceberg catalog adapter for a REST catalog backed by S3 storage. If {@code null} is provided for a
@@ -41,7 +51,10 @@ public final class IcebergToolsS3 {
      * @param endpointOverride the S3 endpoint override; this is useful for testing with a S3-compatible local service
      *        such as MinIO or LocalStack
      * @return the Iceberg catalog adapter
+     *
+     * @deprecated Use {@link IcebergTools#createAdapter(String, Map)} instead with appropriate properties.
      */
+    @Deprecated
     public static IcebergCatalogAdapter createS3Rest(
             @Nullable final String name,
             @NotNull final String catalogURI,
@@ -56,6 +69,12 @@ public final class IcebergToolsS3 {
         if (!Strings.isNullOrEmpty(accessKeyId) && !Strings.isNullOrEmpty(secretAccessKey)) {
             properties.put(S3FileIOProperties.ACCESS_KEY_ID, accessKeyId);
             properties.put(S3FileIOProperties.SECRET_ACCESS_KEY, secretAccessKey);
+
+            // Use the Deephaven specific S3ClientCredentialsProvider
+            properties.put(AwsClientProperties.CLIENT_CREDENTIALS_PROVIDER,
+                    DeephavenS3ClientCredentialsProvider.class.getName());
+            properties.put(CLIENT_CREDENTIALS_PROVIDER_ACCESS_KEY_ID, accessKeyId);
+            properties.put(CLIENT_CREDENTIALS_PROVIDER_SECRET_ACCESS_KEY, secretAccessKey);
         }
         if (!Strings.isNullOrEmpty(region)) {
             properties.put(AwsClientProperties.CLIENT_REGION, region);
@@ -79,7 +98,10 @@ public final class IcebergToolsS3 {
      * @param catalogURI the URI of the AWS Glue catalog
      * @param warehouseLocation the location of the S3 datafiles backing the catalog
      * @return the Iceberg catalog adapter
+     *
+     * @deprecated Use {@link IcebergTools#createAdapter(String, Map)} instead with appropriate properties.
      */
+    @Deprecated
     public static IcebergCatalogAdapter createGlue(
             @Nullable final String name,
             @NotNull final String catalogURI,
@@ -106,6 +128,10 @@ public final class IcebergToolsS3 {
         // Following is needed to write new manifest files when writing new data.
         // Not setting this will result in using ResolvingFileIO.
         properties.put(CatalogProperties.FILE_IO_IMPL, S3FileIO.class.getName());
+
+        // CRT client is not supported by Deephaven
+        // TODO (DH-19253): Add support for S3CrtAsyncClient
+        properties.put(S3FileIOProperties.S3_CRT_ENABLED, "false");
 
         final String catalogName = name != null ? name : "IcebergCatalog-" + catalogURI;
         catalog.initialize(catalogName, properties);

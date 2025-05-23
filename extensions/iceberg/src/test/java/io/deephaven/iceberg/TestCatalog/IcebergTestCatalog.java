@@ -3,7 +3,6 @@
 //
 package io.deephaven.iceberg.TestCatalog;
 
-import org.apache.hadoop.conf.Configuration;
 import org.apache.iceberg.*;
 import org.apache.iceberg.catalog.Catalog;
 import org.apache.iceberg.catalog.Namespace;
@@ -11,7 +10,7 @@ import org.apache.iceberg.catalog.SupportsNamespaces;
 import org.apache.iceberg.catalog.TableIdentifier;
 import org.apache.iceberg.exceptions.NamespaceNotEmptyException;
 import org.apache.iceberg.exceptions.NoSuchNamespaceException;
-import org.apache.iceberg.io.ResolvingFileIO;
+import org.apache.iceberg.io.FileIO;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
@@ -21,15 +20,9 @@ public class IcebergTestCatalog implements Catalog, SupportsNamespaces, AutoClos
     private final Map<Namespace, Map<TableIdentifier, Table>> namespaceTableMap;
     private final Map<TableIdentifier, Table> tableMap;
 
-    private final ResolvingFileIO fileIO;
-
-    private IcebergTestCatalog(final String path, @NotNull final Map<String, String> properties) {
+    private IcebergTestCatalog(final String path, @NotNull final FileIO fileIO) {
         namespaceTableMap = new HashMap<>();
         tableMap = new HashMap<>();
-        final Configuration hadoopConf = new Configuration();
-        fileIO = new ResolvingFileIO();
-        fileIO.setConf(hadoopConf);
-        fileIO.initialize(properties);
 
         // Assume first level is namespace.
         final File root = new File(path);
@@ -52,8 +45,8 @@ public class IcebergTestCatalog implements Catalog, SupportsNamespaces, AutoClos
         }
     }
 
-    public static IcebergTestCatalog create(final String path, @NotNull final Map<String, String> properties) {
-        return new IcebergTestCatalog(path, properties);
+    public static IcebergTestCatalog create(final String path, @NotNull final FileIO fileIO) {
+        return new IcebergTestCatalog(path, fileIO);
     }
 
     @Override
@@ -113,7 +106,5 @@ public class IcebergTestCatalog implements Catalog, SupportsNamespaces, AutoClos
     }
 
     @Override
-    public void close() {
-        fileIO.close();
-    }
+    public void close() {}
 }

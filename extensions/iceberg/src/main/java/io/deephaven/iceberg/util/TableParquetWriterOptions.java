@@ -6,6 +6,7 @@ package io.deephaven.iceberg.util;
 import io.deephaven.annotations.BuildableStyle;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.parquet.table.ParquetInstructions;
+import io.deephaven.util.channel.SeekableChannelsProvider;
 import org.immutables.value.Value;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -78,7 +79,8 @@ public abstract class TableParquetWriterOptions extends TableWriterOptions {
             @NotNull final ParquetInstructions.OnWriteCompleted onWriteCompleted,
             @NotNull final TableDefinition tableDefinition,
             @NotNull final Map<Integer, String> fieldIdToName,
-            @Nullable final Object specialInstructions) {
+            @Nullable final Object specialInstructions,
+            @NotNull final SeekableChannelsProvider seekableChannelsProvider) {
         final ParquetInstructions.Builder builder = new ParquetInstructions.Builder();
 
         if (specialInstructions != null) {
@@ -95,6 +97,7 @@ public abstract class TableParquetWriterOptions extends TableWriterOptions {
         builder.setMaximumDictionarySize(maximumDictionarySize());
         builder.setTargetPageSize(targetPageSize());
         builder.setOnWriteCompleted(onWriteCompleted);
+        builder.setSeekableChannelsProviderForWriting(seekableChannelsProvider);
 
         return builder.build();
     }
