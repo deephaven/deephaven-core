@@ -38,6 +38,8 @@ public abstract class BuildCatalogOptions {
      */
     public abstract Map<String, String> properties();
 
+    abstract BuildCatalogOptions withProperties(Map<String, ? extends String> entries);
+
     /**
      * Enables Deephaven’s automatic injection of properties that work around upstream issues and supply defaults needed
      * for Deephaven’s Iceberg usage. Disable to manage all properties yourself.
