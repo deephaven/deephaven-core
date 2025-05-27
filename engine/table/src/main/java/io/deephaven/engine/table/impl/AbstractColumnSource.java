@@ -25,7 +25,9 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.chunkfillers.ChunkFiller;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkMatchFilterFactory;
+import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.sources.UnboxedLongBackedColumnSource;
+import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.table.iterators.ChunkedColumnIterator;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.hash.KeyedObjectHashSet;
@@ -41,10 +43,13 @@ import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Map;
+import java.util.function.Consumer;
 
 public abstract class AbstractColumnSource<T> implements
         ColumnSource<T>,
-        DefaultChunkSource.WithPrev<Values> {
+        DefaultChunkSource.WithPrev<Values>,
+        PushdownFilterMatcher {
 
     /**
      * For a {@link #match(boolean, boolean, boolean, DataIndex, RowSet, Object...)} call that uses a DataIndex, by
@@ -337,6 +342,51 @@ public abstract class AbstractColumnSource<T> implements
         } else {
             filler.fillPrevByIndices(this, rowSequence, destination);
         }
+    }
+
+    /**
+     * Get the pushdown predicate manager for this column source; returns null if there is no pushdown manager.
+     */
+    public PushdownPredicateManager pushdownManager() {
+        return null;
+    }
+
+    @Override
+    public long estimatePushdownFilterCost(
+            final WhereFilter filter,
+            final RowSet selection,
+            final RowSet fullSet,
+            final boolean usePrev,
+            final PushdownFilterContext context) {
+        // Default to having no benefit by pushing down.
+        return Long.MAX_VALUE;
+    }
+
+    @Override
+    public void pushdownFilter(
+            final WhereFilter filter,
+            final Map<String, String> renameMap,
+            final RowSet selection,
+            final RowSet fullSet,
+            final boolean usePrev,
+            final PushdownFilterContext context,
+            final long costCeiling,
+            final JobScheduler jobScheduler,
+            final Consumer<PushdownResult> onComplete,
+            final Consumer<Exception> onError) {
+        // Default to returning all results as "maybe"
+        onComplete.accept(PushdownResult.of(RowSetFactory.empty(), selection.copy()));
+    }
+
+    @Override
+    public Map<String, String> renameMap(final WhereFilter filter, final ColumnSource<?>[] filterSources) {
+        // Default to returning an empty map
+        return Map.of();
+    }
+
+    @Override
+    public PushdownFilterContext makePushdownFilterContext() {
+        return PushdownFilterContext.NO_PUSHDOWN_CONTEXT;
     }
 
     @Override

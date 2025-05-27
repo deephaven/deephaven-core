@@ -50,7 +50,8 @@ final class RexNodeExpressionAdapterImpl extends RexVisitorBase<Expression> impl
                     Map.entry(SqlStdOperatorTable.ATAN2, RexNodeExpressionAdapterImpl::atan2),
                     Map.entry(SqlStdOperatorTable.CBRT, RexNodeExpressionAdapterImpl::cbrt),
                     Map.entry(SqlStdOperatorTable.DEGREES, RexNodeExpressionAdapterImpl::degrees),
-                    Map.entry(SqlStdOperatorTable.RADIANS, RexNodeExpressionAdapterImpl::radians));
+                    Map.entry(SqlStdOperatorTable.RADIANS, RexNodeExpressionAdapterImpl::radians),
+                    Map.entry(SqlStdOperatorTable.CAST, RexNodeExpressionAdapterImpl::cast));
 
     private final RelNode node;
     private final FieldAdapter fieldAdapter;
@@ -226,6 +227,37 @@ final class RexNodeExpressionAdapterImpl extends RexVisitorBase<Expression> impl
     private Expression radians(RexCall call) {
         throw new UnsupportedOperationException(
                 "No support for radians, see https://github.com/deephaven/deephaven-core/issues/3520");
+    }
+
+    private Expression cast(RexCall call) {
+        // see io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtils
+        final String functionName;
+        switch (call.getType().getSqlTypeName()) {
+            case TINYINT:
+                functionName = "castByte";
+                break;
+            case SMALLINT:
+                functionName = "castShort";
+                break;
+            case INTEGER:
+                functionName = "castInt";
+                break;
+            case BIGINT:
+                functionName = "castLong";
+                break;
+            case REAL:
+                functionName = "castFloat";
+                break;
+            // fallthrough
+            case DOUBLE:
+            case FLOAT:
+                functionName = "castDouble";
+                break;
+            default:
+                throw new UnsupportedOperationException(
+                        String.format("Cast for type `%s` not supported", call.getType()));
+        }
+        return Function.builder().name(functionName).addArguments(expression(call.operands.get(0))).build();
     }
 
     private Function apply1(String name, RexCall call) {

@@ -6,6 +6,7 @@ package io.deephaven.engine.table.impl;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.TableUpdate;
@@ -142,8 +143,8 @@ class WhereListener extends MergedListener {
             final TableUpdate upstream,
             final ModifiedColumnSet sourceModColumns,
             final boolean modifiesWereFiltered,
-            final WritableRowSet addFilterResult,
-            final WritableRowSet modifiedFilterResult) {
+            final RowSet addFilterResult,
+            final RowSet modifiedFilterResult) {
         final TableUpdateImpl update = new TableUpdateImpl();
         try (final SafeCloseable ignored = modifiedFilterResult) {
             // Intersect removed with pre-shift keyspace
@@ -237,7 +238,7 @@ class WhereListener extends MergedListener {
     }
 
     ListenerFilterExecution makeRefilterExecution(final RowSet refilter) {
-        return new ListenerFilterExecution(refilter, null, false, ModifiedColumnSet.ALL);
+        return new ListenerFilterExecution(refilter, RowSetFactory.empty(), false, ModifiedColumnSet.ALL);
     }
 
     ListenerFilterExecution makeUpdateFilterExecution() {
@@ -252,11 +253,11 @@ class WhereListener extends MergedListener {
         private final JobScheduler jobScheduler;
 
         private ListenerFilterExecution(
-                final RowSet addedInput,
-                final RowSet modifyInput,
+                @NotNull final RowSet addedInput,
+                @NotNull final RowSet modifiedInput,
                 final boolean runModifiedFilters,
                 final ModifiedColumnSet sourceModColumns) {
-            super(WhereListener.this.sourceTable, WhereListener.this.filters, addedInput, modifyInput,
+            super(WhereListener.this.sourceTable, WhereListener.this.filters, addedInput, modifiedInput,
                     false, runModifiedFilters, sourceModColumns);
             // Create the proper JobScheduler for the following parallel tasks
             if (permitParallelization) {

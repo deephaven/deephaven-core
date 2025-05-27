@@ -16,6 +16,7 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.hierarchical.RollupTable;
 import io.deephaven.engine.table.impl.BaseTable.CopyAttributeOperation;
@@ -25,7 +26,6 @@ import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.SortOperation;
 import io.deephaven.engine.table.impl.by.AggregationProcessor;
 import io.deephaven.engine.table.impl.by.AggregationRowLookup;
-import io.deephaven.engine.table.impl.by.rollup.RollupAggregationOutputs;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
@@ -42,7 +42,6 @@ import java.util.function.LongUnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static io.deephaven.api.ColumnName.names;
 import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
 import static io.deephaven.engine.table.impl.AbsoluteSortColumnConventions.*;
 import static io.deephaven.engine.table.impl.BaseTable.shouldCopyAttribute;
@@ -799,7 +798,20 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
             final long childNodeId,
             @Nullable final Object childNodeKey,
             final boolean usePrev) {
-        return childNodeId == NULL_NODE_ID ? NULL_ROW_KEY : nodeSlot(childNodeId);
+        if (childNodeId == NULL_NODE_ID) {
+            return NULL_ROW_KEY;
+        }
+
+        final int nodeDepth = nodeDepth(childNodeId);
+        final int nodeSlot = nodeSlot(childNodeId);
+
+        final TrackingRowSet rowSet = levelTables[nodeDepth - 1].getRowSet();
+        if ((usePrev ? rowSet.findPrev(nodeSlot) : rowSet.find(nodeSlot)) == NULL_ROW_KEY) {
+            // the aggregation knows about this key, but it does not actually exist in the table
+            return NULL_ROW_KEY;
+        }
+
+        return nodeSlot;
     }
 
     @Override
