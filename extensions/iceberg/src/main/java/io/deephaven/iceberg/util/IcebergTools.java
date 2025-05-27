@@ -169,8 +169,8 @@ public final class IcebergTools {
     }
 
     /**
-     * Create a new {@link java.util.Map} containing the caller-supplied properties plus the Deephaven-specific AWS/S3
-     * settings that work around upstream issues and supply defaults needed for Deephaven’s Iceberg usage.
+     * Create a new {@link java.util.Map} containing the caller-supplied properties plus additional properties that work
+     * around upstream issues and supply defaults needed for Deephaven’s Iceberg usage.
      *
      * @param inputProperties the input properties to inject into
      * @return a new map with the injected properties
