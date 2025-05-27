@@ -6,6 +6,7 @@ package io.deephaven.iceberg.util;
 import org.apache.iceberg.CatalogProperties;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -14,7 +15,7 @@ import java.util.Set;
  * {@link BuildCatalogOptions}. The keys are duplicated from Iceberg’s <em>iceberg-aws</em> modules to avoid adding an
  * extra dependency.
  */
-class AWSProperties {
+class InjectAWSProperties {
 
     /** -- Duplicated from AwsClientProperties -- **/
     private static final String CLIENT_CREDENTIALS_PROVIDER = "client.credentials-provider";
@@ -67,18 +68,21 @@ class AWSProperties {
     }
 
     /**
-     * Injects Deephaven-specific properties into the provided properties map.
+     * Creates a new map with Deephaven-specific properties injected. The input map is not modified.
      */
-    static void injectDeephavenProperties(@NotNull final Map<String, String> properties) {
+    static Map<String, String> injectDeephavenProperties(@NotNull final Map<String, String> inputProperties) {
+        final Map<String, String> updatedProperties = new LinkedHashMap<>(inputProperties);
+
         // TODO (DH-19253): Add support for S3CrtAsyncClient
-        properties.putIfAbsent(S3_CRT_ENABLED, S3_CRT_ENABLED_DEFAULT);
+        updatedProperties.putIfAbsent(S3_CRT_ENABLED, S3_CRT_ENABLED_DEFAULT);
 
         // TODO (DH-19508): Remove this once Iceberg fix for #13131 is released
-        if (!properties.containsKey(CLIENT_CREDENTIALS_PROVIDER)) {
-            properties.put(CLIENT_CREDENTIALS_PROVIDER, CLIENT_CREDENTIALS_PROVIDER_DEFAULT);
+        if (!updatedProperties.containsKey(CLIENT_CREDENTIALS_PROVIDER)) {
+            updatedProperties.put(CLIENT_CREDENTIALS_PROVIDER, CLIENT_CREDENTIALS_PROVIDER_DEFAULT);
             for (final String key : CREDENTIALS_PROVIDER_PROPERTIES_TO_FORWARD) {
-                injectCredentialsProperties(properties, key);
+                injectCredentialsProperties(updatedProperties, key);
             }
         }
+        return updatedProperties;
     }
 }

@@ -33,8 +33,6 @@ public abstract class BuildCatalogOptions {
     /**
      * The catalog properties provided by the user. Must contain {@value CatalogUtil#ICEBERG_CATALOG_TYPE} or
      * {@value CatalogProperties#CATALOG_IMPL}.
-     * <p>
-     * For building the catalog, use {@link #updatedProperties()} instead.
      */
     public abstract Map<String, String> properties();
 
@@ -47,21 +45,6 @@ public abstract class BuildCatalogOptions {
     @Value.Default
     public boolean enablePropertyInjection() {
         return true;
-    }
-
-    /**
-     * The properties to use when creating the catalog. If {@link #enablePropertyInjection} is {@code true}, this
-     * creates a copy of the {@link #properties()} map, with any Deephaven-specific properties injected into it. Else,
-     * returns the original {@link #properties()} map.
-     */
-    public final Map<String, String> updatedProperties() {
-        if (!enablePropertyInjection()) {
-            return properties();
-        }
-        final Map<String, String> updatedProperties = new LinkedHashMap<>(properties());
-        // Inject Deephaven-specific AWS/S3 settings into the property map
-        AWSProperties.injectDeephavenProperties(updatedProperties);
-        return updatedProperties;
     }
 
     /**

@@ -156,11 +156,15 @@ public final class IcebergTools {
         final Configuration hadoopConf = new Configuration();
         options.hadoopConfig().forEach(hadoopConf::set);
 
-        // Create the Iceberg catalog from the properties
-        final Map<String, String> properties = options.updatedProperties();
-        final Catalog catalog =
-                CatalogUtil.buildIcebergCatalog(options.name(), properties, hadoopConf);
+        final Map<String, String> properties;
+        if (options.enablePropertyInjection()) {
+            properties = InjectAWSProperties.injectDeephavenProperties(options.properties());
+        } else {
+            properties = options.properties();
+        }
 
+        // Create the Iceberg catalog from the properties
+        final Catalog catalog = CatalogUtil.buildIcebergCatalog(options.name(), properties, hadoopConf);
         return IcebergCatalogAdapter.of(catalog, properties);
     }
 }
