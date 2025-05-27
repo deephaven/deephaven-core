@@ -7,7 +7,6 @@ import org.apache.iceberg.CatalogProperties;
 import org.apache.iceberg.CatalogUtil;
 import org.immutables.value.Value;
 
-import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**

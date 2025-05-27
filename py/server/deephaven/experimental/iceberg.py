@@ -985,10 +985,14 @@ def adapter(
         properties (Optional[Dict[str, str]]): the properties of the catalog to load. By default, no properties are set.
         hadoop_config (Optional[Dict[str, str]]): hadoop configuration properties for the catalog to load. By default,
             no properties are set.
-        s3_instructions (Optional[s3.S3Instructions]): the S3 instructions if applicable
-        enable_property_injection (bool): whether to enable Deephaven’s automatic injection of properties that work
-            around upstream issues and supply defaults needed for Deephaven’s Iceberg usage. Disable to manage all
-            properties yourself (not recommended). Defaults to `True`.
+        s3_instructions (Optional[s3.S3Instructions]): the S3 instructions to use for configuring the Deephaven managed
+            AWS clients. If not provided, the catalog will internally use the Iceberg-managed AWS clients configured
+            using the provided `properties`.
+        enable_property_injection (bool): whether to enable Deephaven’s automatic injection of additional properties
+            that work around upstream issues and supply defaults needed for Deephaven’s Iceberg usage. The injection is
+            strictly additive—any keys already present in `properties` are left unchanged. When set to `False` (not
+            recommended), the property map is forwarded exactly as supplied, with no automatic additions. Defaults to
+            `True`.
 
     Returns:
     `IcebergCatalogAdapter`: the catalog adapter created from the provided properties
@@ -1034,7 +1038,7 @@ def _build_catalog_options(
         properties: Optional[Dict[str, str]] = None,
         hadoop_config: Optional[Dict[str, str]] = None,
         enable_property_injection: bool = True
-):
+) -> jpy.JType:
     try:
         builder = _JBuildCatalogOptions.builder()
 
