@@ -416,6 +416,7 @@ public class JettyBackedGrpcServer implements GrpcServer {
         jsPlugins.setInitParameter("baseResource", filesystemUri.toString());
         jsPlugins.setInitParameter("pathInfoOnly", "true");
         jsPlugins.setInitParameter("dirAllowed", "false");
+        jsPlugins.setInitParameter("etags", "true");
         jsPlugins.setAsyncSupported(true);
         return jsPlugins;
     }
