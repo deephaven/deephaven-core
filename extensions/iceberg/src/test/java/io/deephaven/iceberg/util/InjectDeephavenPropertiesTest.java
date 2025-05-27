@@ -12,9 +12,9 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Tests for {@link IcebergTools#injectDeephavenProperties(Map)} which internally call {@link InjectAWSProperties}.
+ * Tests for {@link IcebergTools#injectDeephavenProperties(Map)}.
  */
-class InjectAWSPropertiesTest {
+class InjectDeephavenPropertiesTest {
 
     private static final String DEFAULT_PROVIDER = "io.deephaven.iceberg.util.DeephavenS3ClientCredentialsProvider";
 
