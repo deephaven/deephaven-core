@@ -19,6 +19,7 @@ import org.apache.iceberg.catalog.Catalog;
 import org.apache.iceberg.rest.RESTCatalog;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.VisibleForTesting;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -27,6 +28,15 @@ import java.util.Map;
  * Tools for accessing tables in the Iceberg table format from S3.
  */
 public final class IcebergToolsS3 {
+
+    @VisibleForTesting
+    static final String CLIENT_CREDENTIALS_PROVIDER_ACCESS_KEY_ID =
+            String.format("%s.%s", AwsClientProperties.CLIENT_CREDENTIALS_PROVIDER, S3FileIOProperties.ACCESS_KEY_ID);
+
+    @VisibleForTesting
+    static final String CLIENT_CREDENTIALS_PROVIDER_SECRET_ACCESS_KEY =
+            String.format("%s.%s", AwsClientProperties.CLIENT_CREDENTIALS_PROVIDER,
+                    S3FileIOProperties.SECRET_ACCESS_KEY);
 
     /**
      * Create an Iceberg catalog adapter for a REST catalog backed by S3 storage. If {@code null} is provided for a
@@ -41,7 +51,11 @@ public final class IcebergToolsS3 {
      * @param endpointOverride the S3 endpoint override; this is useful for testing with a S3-compatible local service
      *        such as MinIO or LocalStack
      * @return the Iceberg catalog adapter
+     *
+     * @deprecated Use {@link IcebergTools#createAdapter(String, Map)} instead with appropriate properties.
      */
+    // TODO (DH-19508): Remove deprecated APIs
+    @Deprecated(forRemoval = true)
     public static IcebergCatalogAdapter createS3Rest(
             @Nullable final String name,
             @NotNull final String catalogURI,
@@ -56,6 +70,12 @@ public final class IcebergToolsS3 {
         if (!Strings.isNullOrEmpty(accessKeyId) && !Strings.isNullOrEmpty(secretAccessKey)) {
             properties.put(S3FileIOProperties.ACCESS_KEY_ID, accessKeyId);
             properties.put(S3FileIOProperties.SECRET_ACCESS_KEY, secretAccessKey);
+
+            // Use the Deephaven specific S3ClientCredentialsProvider
+            properties.put(AwsClientProperties.CLIENT_CREDENTIALS_PROVIDER,
+                    DeephavenS3ClientCredentialsProvider.class.getName());
+            properties.put(CLIENT_CREDENTIALS_PROVIDER_ACCESS_KEY_ID, accessKeyId);
+            properties.put(CLIENT_CREDENTIALS_PROVIDER_SECRET_ACCESS_KEY, secretAccessKey);
         }
         if (!Strings.isNullOrEmpty(region)) {
             properties.put(AwsClientProperties.CLIENT_REGION, region);
@@ -79,7 +99,11 @@ public final class IcebergToolsS3 {
      * @param catalogURI the URI of the AWS Glue catalog
      * @param warehouseLocation the location of the S3 datafiles backing the catalog
      * @return the Iceberg catalog adapter
+     *
+     * @deprecated Use {@link IcebergTools#createAdapter(String, Map)} instead with appropriate properties.
      */
+    // TODO (DH-19508): Remove deprecated APIs
+    @Deprecated(forRemoval = true)
     public static IcebergCatalogAdapter createGlue(
             @Nullable final String name,
             @NotNull final String catalogURI,
@@ -107,10 +131,43 @@ public final class IcebergToolsS3 {
         // Not setting this will result in using ResolvingFileIO.
         properties.put(CatalogProperties.FILE_IO_IMPL, S3FileIO.class.getName());
 
+        // CRT client is not supported by Deephaven
+        // TODO (DH-19253): Add support for S3CrtAsyncClient
+        properties.put(S3FileIOProperties.S3_CRT_ENABLED, "false");
+
         final String catalogName = name != null ? name : "IcebergCatalog-" + catalogURI;
         catalog.initialize(catalogName, properties);
 
         return IcebergCatalogAdapter.of(catalog, properties);
+    }
+
+    /**
+     * Create an Iceberg catalog adapter.
+     *
+     * @param name the name of the catalog; if omitted, the catalog URI will be used to generate a name
+     * @param properties a map containing the Iceberg catalog properties to use
+     * @param hadoopConfig a map containing Hadoop configuration properties to use
+     * @param instructions the s3 instructions
+     * @return the Iceberg catalog adapter
+     *
+     * @deprecated Use {@link #createAdapter(BuildCatalogOptions, S3Instructions)} instead with appropriate options.
+     * @see #createAdapter(BuildCatalogOptions, S3Instructions)
+     */
+    // TODO (DH-19508): Remove deprecated APIs
+    @Deprecated(forRemoval = true)
+    public static IcebergCatalogAdapter createAdapter(
+            @Nullable final String name,
+            @NotNull final Map<String, String> properties,
+            @NotNull final Map<String, String> hadoopConfig,
+            @NotNull final S3Instructions instructions) {
+        final BuildCatalogOptions.Builder optionsBuilder = BuildCatalogOptions.builder()
+                .putAllProperties(properties)
+                .putAllHadoopConfig(hadoopConfig)
+                .enablePropertyInjection(true);
+        if (name != null) {
+            optionsBuilder.name(name);
+        }
+        return createAdapter(optionsBuilder.build(), instructions);
     }
 
     /**
@@ -140,20 +197,20 @@ public final class IcebergToolsS3 {
      * It's possible that a {@link org.apache.iceberg.catalog.Catalog} implementations depends on an AWS client for
      * purposes unrelated to storing the warehouse data via S3.
      *
-     * @param name the name of the catalog; if omitted, the catalog URI will be used to generate a name
-     * @param properties a map containing the Iceberg catalog properties to use
-     * @param hadoopConfig a map containing Hadoop configuration properties to use
+     * @param options the options to build the catalog
      * @param instructions the s3 instructions
      * @return the Iceberg catalog adapter
      */
     public static IcebergCatalogAdapter createAdapter(
-            @Nullable final String name,
-            @NotNull final Map<String, String> properties,
-            @NotNull final Map<String, String> hadoopConfig,
+            @NotNull final BuildCatalogOptions options,
             @NotNull final S3Instructions instructions) {
-        final Map<String, String> newProperties = new HashMap<>(properties);
+        if (!options.enablePropertyInjection()) {
+            throw new IllegalArgumentException("Property injection must be enabled to use S3 instructions, please" +
+                    " enable or use IcebergTools#createAdapter");
+        }
+        final Map<String, String> newProperties = new HashMap<>(options.properties());
         final Runnable cleanup = DeephavenAwsClientFactory.addToProperties(instructions, newProperties);
-        final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(name, newProperties, hadoopConfig);
+        final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(options.withProperties(newProperties));
         // When the Catalog becomes phantom reachable, we can invoke the DeephavenAwsClientFactory cleanup.
         // Note: it would be incorrect to register the cleanup against the adapter since the Catalog can outlive the
         // adapter (and the DeephavenAwsClientFactory properties are needed by the Catalog).

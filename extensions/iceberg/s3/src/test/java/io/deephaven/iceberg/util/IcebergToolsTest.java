@@ -15,11 +15,13 @@ import io.deephaven.extensions.s3.S3Instructions;
 import io.deephaven.iceberg.TestCatalog.IcebergTestCatalog;
 import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.Schema;
-import io.deephaven.iceberg.base.IcebergUtils;
 import org.apache.iceberg.Snapshot;
+import org.apache.iceberg.aws.AwsClientProperties;
+import org.apache.iceberg.aws.s3.S3FileIO;
+import org.apache.iceberg.aws.s3.S3FileIOProperties;
 import org.apache.iceberg.catalog.Namespace;
 import org.apache.iceberg.catalog.TableIdentifier;
-import org.apache.iceberg.types.Type;
+import org.apache.iceberg.io.FileIO;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -33,7 +35,6 @@ import software.amazon.awssdk.services.s3.model.PutObjectResponse;
 
 import java.io.File;
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -49,6 +50,10 @@ import static io.deephaven.iceberg.util.ColumnInstructions.schemaField;
 import static io.deephaven.iceberg.util.IcebergCatalogAdapter.NAMESPACE_DEFINITION;
 import static io.deephaven.iceberg.util.IcebergCatalogAdapter.TABLES_DEFINITION;
 import static io.deephaven.iceberg.util.IcebergTableAdapter.SNAPSHOT_DEFINITION;
+import static io.deephaven.iceberg.util.IcebergToolsS3.CLIENT_CREDENTIALS_PROVIDER_ACCESS_KEY_ID;
+import static io.deephaven.iceberg.util.IcebergToolsS3.CLIENT_CREDENTIALS_PROVIDER_SECRET_ACCESS_KEY;
+import static org.apache.iceberg.aws.s3.S3FileIOProperties.ACCESS_KEY_ID;
+import static org.apache.iceberg.aws.s3.S3FileIOProperties.SECRET_ACCESS_KEY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 
@@ -189,12 +194,18 @@ public abstract class IcebergToolsTest {
     private S3AsyncClient asyncClient;
     private String bucket;
 
+    private FileIO fileIO;
+
     private final List<String> keys = new ArrayList<>();
 
     private String warehousePath;
     private IcebergTestCatalog resourceCatalog;
 
     private final EngineCleanup framework = new EngineCleanup();
+
+    IcebergToolsTest() {
+
+    }
 
     @BeforeEach
     void setUp() throws Exception {
@@ -205,8 +216,11 @@ public abstract class IcebergToolsTest {
 
         warehousePath = IcebergToolsTest.class.getResource("/warehouse").getPath();
 
+        // Create the FileIO
+        fileIO = createS3FileIO(properties());
+
         // Create the test catalog for the tests
-        resourceCatalog = IcebergTestCatalog.create(warehousePath, properties());
+        resourceCatalog = IcebergTestCatalog.create(warehousePath, fileIO);
 
         final S3Instructions s3Instructions = s3Instructions(S3Instructions.builder()).build();
 
@@ -215,15 +229,33 @@ public abstract class IcebergToolsTest {
                 .build();
     }
 
+    private static S3FileIO createS3FileIO(final Map<String, String> properties) {
+        final Map<String, String> newProperties = new HashMap<>(properties);
+        final S3FileIO fileIO = new S3FileIO();
+
+        // TODO (DH-19253): Add support for S3CrtAsyncClient
+        newProperties.put(S3FileIOProperties.S3_CRT_ENABLED, "false");
+
+        // Set the client credentials provider
+        newProperties.put(AwsClientProperties.CLIENT_CREDENTIALS_PROVIDER,
+                DeephavenS3ClientCredentialsProvider.class.getName());
+        newProperties.put(CLIENT_CREDENTIALS_PROVIDER_ACCESS_KEY_ID, newProperties.get(ACCESS_KEY_ID));
+        newProperties.put(CLIENT_CREDENTIALS_PROVIDER_SECRET_ACCESS_KEY, newProperties.get(SECRET_ACCESS_KEY));
+
+        fileIO.initialize(newProperties);
+        return fileIO;
+    }
+
     @AfterEach
     void tearDown() throws Exception {
-        resourceCatalog.close();
         for (String key : keys) {
             asyncClient.deleteObject(DeleteObjectRequest.builder().bucket(bucket).key(key).build()).get();
         }
         keys.clear();
         asyncClient.deleteBucket(DeleteBucketRequest.builder().bucket(bucket).build()).get();
         asyncClient.close();
+        fileIO.close();
+        resourceCatalog.close();
         framework.tearDown();
     }
 
