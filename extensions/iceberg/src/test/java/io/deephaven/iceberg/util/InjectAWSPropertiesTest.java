@@ -11,6 +11,9 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+/**
+ * Tests for {@link IcebergTools#injectDeephavenProperties(Map)} which internally call {@link InjectAWSProperties}.
+ */
 class InjectAWSPropertiesTest {
 
     private static final String DEFAULT_PROVIDER = "io.deephaven.iceberg.util.DeephavenS3ClientCredentialsProvider";
@@ -18,7 +21,7 @@ class InjectAWSPropertiesTest {
     @Test
     void defaultsInjectionTest() {
         final Map<String, String> props = new HashMap<>();
-        final Map<String, String> updated = InjectAWSProperties.injectDeephavenProperties(props);
+        final Map<String, String> updated = IcebergTools.injectDeephavenProperties(props);
 
         // The original map must remain untouched
         assertThat(props).isEmpty();
@@ -42,7 +45,7 @@ class InjectAWSPropertiesTest {
                 "credentials.uri", "http://example.com/role",
                 CatalogProperties.URI, "s3://bucket/catalog"));
 
-        final Map<String, String> updated = InjectAWSProperties.injectDeephavenProperties(props);
+        final Map<String, String> updated = IcebergTools.injectDeephavenProperties(props);
 
         // Deephaven defaults and forwarded counterparts were added
         assertThat(updated).containsAllEntriesOf(props);
@@ -66,7 +69,7 @@ class InjectAWSPropertiesTest {
                 "client.credentials-provider", "com.example.CustomProvider",
                 "s3.access-key-id", "AK"));
 
-        final Map<String, String> updated = InjectAWSProperties.injectDeephavenProperties(props);
+        final Map<String, String> updated = IcebergTools.injectDeephavenProperties(props);
 
         // Provider was not overridden
         assertThat(updated.get("client.credentials-provider")).isEqualTo("com.example.CustomProvider");

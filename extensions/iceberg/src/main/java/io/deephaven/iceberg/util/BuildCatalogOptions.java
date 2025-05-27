@@ -41,6 +41,8 @@ public abstract class BuildCatalogOptions {
     /**
      * Enables Deephaven’s automatic injection of properties that work around upstream issues and supply defaults needed
      * for Deephaven’s Iceberg usage. Disable to manage all properties yourself.
+     *
+     * @see IcebergTools#injectDeephavenProperties(Map)
      */
     @Value.Default
     public boolean enablePropertyInjection() {

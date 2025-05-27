@@ -158,7 +158,7 @@ public final class IcebergTools {
 
         final Map<String, String> properties;
         if (options.enablePropertyInjection()) {
-            properties = InjectAWSProperties.injectDeephavenProperties(options.properties());
+            properties = injectDeephavenProperties(options.properties());
         } else {
             properties = options.properties();
         }
@@ -166,5 +166,16 @@ public final class IcebergTools {
         // Create the Iceberg catalog from the properties
         final Catalog catalog = CatalogUtil.buildIcebergCatalog(options.name(), properties, hadoopConf);
         return IcebergCatalogAdapter.of(catalog, properties);
+    }
+
+    /**
+     * Create a new {@link java.util.Map} containing the caller-supplied properties plus the Deephaven-specific AWS/S3
+     * settings that work around upstream issues and supply defaults needed for Deephaven’s Iceberg usage.
+     *
+     * @param inputProperties the input properties to inject into
+     * @return a new map with the injected properties
+     */
+    public static Map<String, String> injectDeephavenProperties(@NotNull final Map<String, String> inputProperties) {
+        return InjectAWSProperties.injectDeephavenProperties(inputProperties);
     }
 }
