@@ -13,8 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class InjectAWSPropertiesTest {
 
-    private static final String DEFAULT_PROVIDER =
-            "io.deephaven.iceberg.util.DeephavenS3ClientCredentialsProvider";
+    private static final String DEFAULT_PROVIDER = "io.deephaven.iceberg.util.DeephavenS3ClientCredentialsProvider";
 
     @Test
     void defaultsInjectionTest() {
