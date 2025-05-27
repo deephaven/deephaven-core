@@ -14,6 +14,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.core.async.AsyncRequestBody;
+import software.amazon.awssdk.services.s3.S3AsyncClient;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -23,10 +25,12 @@ import java.nio.channels.SeekableByteChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.Set;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 
+import static io.deephaven.extensions.s3.testlib.S3Helper.TIMEOUT_SECONDS;
 import static org.assertj.core.api.Assertions.*;
 
 abstract class S3SeekableChannelSimpleTestBase extends S3SeekableChannelTestSetup {
@@ -254,7 +258,7 @@ abstract class S3SeekableChannelSimpleTestBase extends S3SeekableChannelTestSetu
         final String content = "Hello, world!";
         final byte[] contentBytes = content.getBytes(StandardCharsets.UTF_8);
         final S3Instructions.Builder s3InstructionsBuilder = S3Instructions.builder()
-                .writeTimeout(Duration.ofSeconds(20));
+                .writeTimeout(Duration.ofSeconds(TIMEOUT_SECONDS));
         try (
                 final SeekableChannelsProvider providerImpl = providerImpl(s3InstructionsBuilder);
                 final SeekableChannelsProvider provider = CachedChannelProvider.create(providerImpl, 32);
@@ -278,7 +282,7 @@ abstract class S3SeekableChannelSimpleTestBase extends S3SeekableChannelTestSetu
         final String content = "Hello, world!";
         final byte[] contentBytes = content.getBytes(StandardCharsets.UTF_8);
         final S3Instructions.Builder s3InstructionsBuilder = S3Instructions.builder()
-                .writeTimeout(Duration.ofSeconds(20));
+                .writeTimeout(Duration.ofSeconds(TIMEOUT_SECONDS));
         try (
                 final SeekableChannelsProvider providerImpl = providerImpl(s3InstructionsBuilder);
                 final SeekableChannelsProvider provider = CachedChannelProvider.create(providerImpl, 32);
@@ -296,6 +300,49 @@ abstract class S3SeekableChannelSimpleTestBase extends S3SeekableChannelTestSetu
             if (!s.contains(expectedMessage)) {
                 fail("Expected message to contain: " + expectedMessage + " but got: " + s);
             }
+        }
+    }
+
+    /**
+     * Verify that if we provide a custom client to the provider, the client is used for writing and reading.
+     */
+    @Test
+    void readWriteTestWithCustomClient() throws IOException {
+        final URI uri = uri("writeReadTest.txt");
+        final String content = "Hello, world!";
+        final byte[] contentBytes = content.getBytes(StandardCharsets.UTF_8);
+        final S3Instructions instructions = s3Instructions(S3Instructions.builder()
+                .readTimeout(Duration.ofSeconds(TIMEOUT_SECONDS))).build();
+
+        final boolean[] usedForWriting = {false};
+        final boolean[] usedForReading = {false};
+
+        try (
+                final S3AsyncClient s3AsyncClient =
+                        readWriteTrackingS3Client(instructions, usedForWriting, usedForReading);
+                final SeekableChannelsProvider providerImpl =
+                        UniversalS3SeekableChannelProviderPlugin.createUniversalS3Provider(
+                                Set.of(SCHEME), instructions, s3AsyncClient);
+                final SeekableChannelsProvider provider = CachedChannelProvider.create(providerImpl, 32)) {
+            try (
+                    final SeekableChannelsProvider.WriteContext context = provider.makeWriteContext();
+                    final CompletableOutputStream outputStream = provider.getOutputStream(context, uri, 0)) {
+                outputStream.write(contentBytes);
+                outputStream.complete();
+            }
+
+            assertThat(usedForWriting[0]).isTrue();
+            usedForWriting[0] = false;
+            assertThat(usedForReading[0]).isFalse();
+
+            try (final SeekableChannelContext useContext = provider.makeReadContext();
+                    final SeekableByteChannel readChannel = provider.getReadChannel(useContext, uri)) {
+                final ByteBuffer buffer = ByteBuffer.allocate(contentBytes.length);
+                fillBuffer(readChannel, buffer);
+            }
+
+            assertThat(usedForWriting[0]).isFalse();
+            assertThat(usedForReading[0]).isTrue();
         }
     }
 }

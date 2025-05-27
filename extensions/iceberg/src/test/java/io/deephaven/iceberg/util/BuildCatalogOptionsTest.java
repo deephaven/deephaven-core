@@ -14,7 +14,7 @@ import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 
 class BuildCatalogOptionsTest {
 
-    public static final Map<String, String> MINIMAL_PROPS = Map.of(CatalogUtil.ICEBERG_CATALOG_TYPE, "minimal");
+    private static final Map<String, String> MINIMAL_PROPS = Map.of(CatalogUtil.ICEBERG_CATALOG_TYPE, "minimal");
 
     @Test
     void minimalOptions() {
@@ -24,6 +24,7 @@ class BuildCatalogOptionsTest {
         assertThat(options.name()).isEqualTo("IcebergCatalog");
         assertThat(options.properties()).isEqualTo(MINIMAL_PROPS);
         assertThat(options.hadoopConfig()).isEmpty();
+        assertThat(options.enablePropertyInjection()).isTrue();
     }
 
     @Test
@@ -68,5 +69,12 @@ class BuildCatalogOptionsTest {
         }
     }
 
-
+    @Test
+    void disablePropertyInjection() {
+        final BuildCatalogOptions options = BuildCatalogOptions.builder()
+                .putAllProperties(MINIMAL_PROPS)
+                .enablePropertyInjection(false)
+                .build();
+        assertThat(options.enablePropertyInjection()).isFalse();
+    }
 }
