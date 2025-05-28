@@ -73,7 +73,7 @@ public class RegionedColumnSourceManager
     /**
      * The column definitions of this table as a map from column name.
      */
-    private Map<String, ColumnDefinition<?>> columnNameToDefinition;
+    private volatile Map<String, ColumnDefinition<?>> columnNameToDefinition;
 
     /**
      * The column sources that make up this table.
@@ -83,7 +83,7 @@ public class RegionedColumnSourceManager
     /**
      * The column sources of this table as a map from column source to column name.
      */
-    private Map<ColumnSource<?>, String> columnSourceToName;
+    private volatile Map<ColumnSource<?>, String> columnSourceToName;
 
     /**
      * An unmodifiable view of columnSources.
@@ -875,6 +875,36 @@ public class RegionedColumnSourceManager
                 onError);
     }
 
+    /**
+     * Get (or create) a map from column name to column definition.
+     */
+    private Map<String, ColumnDefinition<?>> columnNameToDefinition() {
+        if (columnNameToDefinition == null) {
+            synchronized (this) {
+                if (columnNameToDefinition == null) {
+                    columnNameToDefinition = columnDefinitions.stream()
+                            .collect(Collectors.toMap(ColumnDefinition::getName, cd -> cd));
+                }
+            }
+        }
+        return columnNameToDefinition;
+    }
+
+    /**
+     * Get (or create) a map from column source to column name.
+     */
+    private Map<ColumnSource<?>, String> columnSourceToName() {
+        if (columnSourceToName == null) {
+            synchronized (this) {
+                if (columnSourceToName == null) {
+                    columnSourceToName = columnSources.entrySet().stream()
+                            .collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey));
+                }
+            }
+        }
+        return columnSourceToName;
+    }
+
     public static class RegionedColumnSourcePushdownFilterContext extends BasePushdownFilterContext {
         public final List<ColumnSource<?>> columnSources;
         public final List<ColumnDefinition<?>> columnDefinitions;
@@ -894,27 +924,20 @@ public class RegionedColumnSourceManager
             // column definitions for the filter sources
             columnDefinitions = new ArrayList<>(columnSources.size());
 
-            // Maybe populate some useful lookup maps
-            if (manager.columnSourceToName == null) {
-                manager.columnSourceToName = manager.columnSources.entrySet().stream()
-                        .collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey));
-            }
-            if (manager.columnNameToDefinition == null) {
-                manager.columnNameToDefinition = manager.columnDefinitions.stream()
-                        .collect(Collectors.toMap(ColumnDefinition::getName, cd -> cd));
-            }
+            final Map<String, ColumnDefinition<?>> columnNameToDefinition = manager.columnNameToDefinition();
+            final Map<ColumnSource<?>, String> columnSourceToName = manager.columnSourceToName();
 
             renameMap = new HashMap<>();
             for (int ii = 0; ii < filterColumns.size(); ii++) {
                 final String filterColumnName = filterColumns.get(ii);
                 final ColumnSource<?> filterSource = columnSources.get(ii);
-                final String localColumnName = manager.columnSourceToName.get(filterSource);
+                final String localColumnName = columnSourceToName.get(filterSource);
                 if (localColumnName == null) {
                     throw new IllegalArgumentException(
                             "No associated source for '" + filterColumnName + "' found in column sources");
                 }
                 // Add the definition.
-                columnDefinitions.add(manager.columnNameToDefinition.get(localColumnName));
+                columnDefinitions.add(columnNameToDefinition.get(localColumnName));
 
                 // Add the rename (if needed)
                 if (localColumnName.equals(filterColumnName)) {
