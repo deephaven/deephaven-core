@@ -277,7 +277,7 @@ public class TestMatchFilterOverlap extends RefreshingTableTestCase {
 
         // Null testing
         f = new MatchFilter(MatchFilter.MatchType.Regular,
-            "A", 1, 4, NULL_INT);
+                "A", 1, 4, NULL_INT);
         assertTrue(f.containsNull());
 
         f = new MatchFilter(MatchFilter.MatchType.Regular,

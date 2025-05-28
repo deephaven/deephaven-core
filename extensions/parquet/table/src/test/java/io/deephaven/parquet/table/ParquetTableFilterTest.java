@@ -631,7 +631,8 @@ public final class ParquetTableFilterTest {
 
         // large consecutive blocks of sequential data
         final Table largeTable = TableTools.emptyTable(tableSize).update(
-                "symbol = ii % 119 == 0 ? null : String.format(`%04d`, (long)(ii / 1000))", // produces 0000 to 0999 given 1M rows
+                "symbol = ii % 119 == 0 ? null : String.format(`%04d`, (long)(ii / 1000))", // produces 0000 to 0999
+                                                                                            // given 1M rows
                 "exchange = (int)(i / 100)", // produces 0 to 9999 given 1M rows
                 "price = randomInt(0,10000) * 0.01");
 
@@ -685,7 +686,8 @@ public final class ParquetTableFilterTest {
         filterAndVerifyResults(renamedDiskTable, renamedMemTable, "symbol_renamed < `0050`",
                 "symbol_renamed >= `0049`");
         filterAndVerifyResults(renamedDiskTable, renamedMemTable, "symbol_renamed = `0050`");
-        filterAndVerifyResults(renamedDiskTable, renamedMemTable, "symbol_renamed != null && symbol_renamed.startsWith(`002`)");
+        filterAndVerifyResults(renamedDiskTable, renamedMemTable,
+                "symbol_renamed != null && symbol_renamed.startsWith(`002`)");
 
         // int range and match filters
         filterAndVerifyResults(renamedDiskTable, renamedMemTable, "exchange_renamed <= 10");
@@ -698,7 +700,8 @@ public final class ParquetTableFilterTest {
         filterAndVerifyResults(renamedDiskTable, renamedMemTable, "symbol_renamed < `0050`", "exchange_renamed <= 10",
                 "exchange_renamed >= 9");
         filterAndVerifyResults(renamedDiskTable, renamedMemTable, "symbol_renamed < `0050`", "exchange_renamed = 10");
-        filterAndVerifyResults(renamedDiskTable, renamedMemTable, "symbol_renamed != null && symbol_renamed.startsWith(`002`)",
+        filterAndVerifyResults(renamedDiskTable, renamedMemTable,
+                "symbol_renamed != null && symbol_renamed.startsWith(`002`)",
                 "exchange_renamed % 10 == 0");
 
     }

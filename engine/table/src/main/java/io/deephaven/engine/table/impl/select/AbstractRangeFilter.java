@@ -153,8 +153,8 @@ public abstract class AbstractRangeFilter extends WhereFilterImpl implements Exp
     public abstract boolean contains(final Object value);
 
     /**
-     * Returns true if {@code null} is within the range filter. This function is intended to be accurate rather
-     * than fast and is not recommended for performance-critical value comparison.
+     * Returns true if {@code null} is within the range filter. This function is intended to be accurate rather than
+     * fast and is not recommended for performance-critical value comparison.
      *
      * @return {@code true} if the range filter includes {@code null}, {@code false} otherwise
      */

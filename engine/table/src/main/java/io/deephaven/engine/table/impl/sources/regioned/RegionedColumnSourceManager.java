@@ -809,7 +809,7 @@ public class RegionedColumnSourceManager
                     .collect(Collectors.toList());
         }
         locationCost = candidateLocations.parallelStream().mapToLong(
-                        location -> location.estimatePushdownFilterCost(filter, selection, fullSet, usePrev, context))
+                location -> location.estimatePushdownFilterCost(filter, selection, fullSet, usePrev, context))
                 .reduce(Long::min).orElse(Long.MAX_VALUE);
 
         return locationCost;
@@ -844,7 +844,7 @@ public class RegionedColumnSourceManager
                     final long locationEndKey = getLastRowKey(entry.regionIndex);
 
                     try (final WritableRowSet locationInput =
-                                 input.subSetByKeyRange(locationStartKey, locationEndKey)) {
+                            input.subSetByKeyRange(locationStartKey, locationEndKey)) {
                         locationInput.shiftInPlace(-locationStartKey); // Shift to the region's key space
                         locationInput.retain(entry.rowSetAtLastUpdate); // intersect in place with region's row set
 

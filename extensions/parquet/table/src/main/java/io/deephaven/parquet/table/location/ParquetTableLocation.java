@@ -90,8 +90,8 @@ public class ParquetTableLocation extends AbstractTableLocation {
     private volatile RowGroupReader[] rowGroupReaders;
 
     public ParquetTableLocation(@NotNull final TableKey tableKey,
-                                @NotNull final ParquetTableLocationKey tableLocationKey,
-                                @NotNull final ParquetInstructions readInstructions) {
+            @NotNull final ParquetTableLocationKey tableLocationKey,
+            @NotNull final ParquetInstructions readInstructions) {
         super(tableKey, tableLocationKey, false);
         this.readInstructions = readInstructions;
         this.isInitialized = false;
@@ -556,7 +556,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
     }
 
     private boolean shouldExecute(final boolean disable, final long filterCost, final long executedFilterCost,
-                                  final long costCeiling) {
+            final long costCeiling) {
         return shouldExecute(disable, filterCost, executedFilterCost) && filterCost <= costCeiling;
     }
 
@@ -629,6 +629,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
 
     /**
      * Get the count of null values from the statistics.
+     * 
      * @param statistics The statistics to analyze
      * @return The number of null values contained in the statistics, or -1 if the statistics do not contain the count
      */
@@ -653,11 +654,13 @@ public class ParquetTableLocation extends AbstractTableLocation {
         // Only one column in these filters
         final int parquetIndex = parquetIndices[0];
 
-        final boolean filterIncludesNulls = (filter instanceof AbstractRangeFilter && ((AbstractRangeFilter) filter).containsNull())
-                || (filter instanceof MatchFilter && ((MatchFilter) filter).containsNull());
+        final boolean filterIncludesNulls =
+                (filter instanceof AbstractRangeFilter && ((AbstractRangeFilter) filter).containsNull())
+                        || (filter instanceof MatchFilter && ((MatchFilter) filter).containsNull());
 
         iterateRowGroupsAndRowSet(result.maybeMatch(), (rgIdx, rs) -> {
-            final Statistics<?> statistics = parquetMetadata.getBlocks().get(rgIdx).getColumns().get(parquetIndex).getStatistics();
+            final Statistics<?> statistics =
+                    parquetMetadata.getBlocks().get(rgIdx).getColumns().get(parquetIndex).getStatistics();
             final Pair<Object, Object> p = getMinMax(statistics);
             final long nullCount = getNullCount(statistics);
 
@@ -670,7 +673,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
 
             if (filter instanceof AbstractRangeFilter) {
                 final AbstractRangeFilter rf = (AbstractRangeFilter) filter;
-                if (rf.overlaps(p.first, p.second) || (filterIncludesNulls && nullCount > 0) ) {
+                if (rf.overlaps(p.first, p.second) || (filterIncludesNulls && nullCount > 0)) {
                     maybeBuilder.appendRowSequence(rs);
                     maybeCount.add(rs.size());
                 }
@@ -715,7 +718,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
                 final Table filteredTable = renamedIndexTable.where(copiedFilter);
 
                 try (final CloseableIterator<RowSet> it =
-                             ColumnVectors.ofObject(filteredTable, dataIndex.rowSetColumnName(), RowSet.class).iterator()) {
+                        ColumnVectors.ofObject(filteredTable, dataIndex.rowSetColumnName(), RowSet.class).iterator()) {
                     it.forEachRemaining(rowSet -> {
                         try (final RowSet matching = rowSet.intersect(result.maybeMatch())) {
                             matchingBuilder.addRowSet(matching);

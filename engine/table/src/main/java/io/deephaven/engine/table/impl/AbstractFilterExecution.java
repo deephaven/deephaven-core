@@ -248,7 +248,7 @@ abstract class AbstractFilterExecution {
             pushdownFilterCost = pushdownMatcher == null
                     ? Long.MAX_VALUE
                     : pushdownMatcher.estimatePushdownFilterCost(filter, selection, sourceTable.getRowSet(), usePrev,
-                    context);
+                            context);
         }
 
         @Override
@@ -276,7 +276,7 @@ abstract class AbstractFilterExecution {
      * Update the cost for each stateless filter and sort by the new cost, starting at the given index.
      */
     private void maybeUpdateAndSortStatelessFilters(final StatelessFilter[] filters, final int startIndex,
-                                                    final RowSet selection) {
+            final RowSet selection) {
         if (startIndex >= filters.length) {
             return;
         }

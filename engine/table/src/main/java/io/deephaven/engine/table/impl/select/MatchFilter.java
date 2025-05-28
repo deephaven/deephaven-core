@@ -389,8 +389,8 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
     }
 
     /**
-     * Returns true if {@code null} is within the match filter. This function is intended to be accurate rather
-     * than fast and is not recommended for performance-critical value comparison.
+     * Returns true if {@code null} is within the match filter. This function is intended to be accurate rather than
+     * fast and is not recommended for performance-critical value comparison.
      *
      * @return {@code true} if the match filter includes {@code null}, {@code false} otherwise
      */
