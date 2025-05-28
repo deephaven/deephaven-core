@@ -5,6 +5,8 @@ package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 
+import static io.deephaven.util.QueryConstants.NULL_INT;
+
 public class TestMatchFilterOverlap extends RefreshingTableTestCase {
 
     /**
@@ -120,6 +122,25 @@ public class TestMatchFilterOverlap extends RefreshingTableTestCase {
                 MatchFilter.MatchType.Inverted,
                 "A", "d", "c");
         assertFalse(f.overlaps("c", "e", false, true));
+
+        // Null testing
+        f = new MatchFilter(
+                MatchFilter.CaseSensitivity.MatchCase,
+                MatchFilter.MatchType.Regular,
+                "A", "d", null, "c");
+        assertTrue(f.containsNull());
+
+        f = new MatchFilter(
+                MatchFilter.CaseSensitivity.MatchCase,
+                MatchFilter.MatchType.Inverted,
+                "A", "d", null, "c");
+        assertFalse(f.containsNull());
+
+        f = new MatchFilter(
+                MatchFilter.CaseSensitivity.MatchCase,
+                MatchFilter.MatchType.Regular,
+                "A", "a", "b");
+        assertFalse(f.containsNull());
     }
 
     public void testMatchFilterCaseInsensitiveString() {
@@ -184,6 +205,25 @@ public class TestMatchFilterOverlap extends RefreshingTableTestCase {
                 "A", "zzzz");
         assertTrue(f.overlaps("aaaa", "zzzz", false, false));
         assertFalse(f.overlaps("aaaa", "zzzz", false, true));
+
+        // Null Testing
+        f = new MatchFilter(
+                MatchFilter.CaseSensitivity.IgnoreCase,
+                MatchFilter.MatchType.Regular,
+                "A", "d", null, "c");
+        assertTrue(f.containsNull());
+
+        f = new MatchFilter(
+                MatchFilter.CaseSensitivity.IgnoreCase,
+                MatchFilter.MatchType.Inverted,
+                "A", "d", null, "c");
+        assertFalse(f.containsNull());
+
+        f = new MatchFilter(
+                MatchFilter.CaseSensitivity.IgnoreCase,
+                MatchFilter.MatchType.Regular,
+                "A", "a", "b");
+        assertFalse(f.containsNull());
     }
 
     public void testMatchFilterInteger() {
@@ -234,5 +274,18 @@ public class TestMatchFilterOverlap extends RefreshingTableTestCase {
                 "A", 1, 4);
         assertFalse(f.overlaps(3, 5, false, false));
         assertFalse(f.overlaps(3, 5, true, true));
+
+        // Null testing
+        f = new MatchFilter(MatchFilter.MatchType.Regular,
+            "A", 1, 4, NULL_INT);
+        assertTrue(f.containsNull());
+
+        f = new MatchFilter(MatchFilter.MatchType.Regular,
+                "A", 1, 4, null);
+        assertTrue(f.containsNull());
+
+        f = new MatchFilter(MatchFilter.MatchType.Regular,
+                "A", 1, 2);
+        assertFalse(f.containsNull());
     }
 }

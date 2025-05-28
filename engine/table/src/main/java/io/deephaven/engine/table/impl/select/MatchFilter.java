@@ -343,14 +343,18 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
      * @return {@code true} if the range filter overlaps with the given range, {@code false} otherwise
      */
     public boolean overlaps(
-            @NotNull final Object lower,
-            @NotNull final Object upper,
+            final Object lower,
+            final Object upper,
             final boolean lowerInclusive,
             final boolean upperInclusive) {
 
         // Converting to upper case lowers (or maintains) ordering, lower case raises (or maintains) it.
-        final Object oLower = caseInsensitive ? ((String) lower).toUpperCase() : lower;
-        final Object oUpper = caseInsensitive ? ((String) upper).toLowerCase() : upper;
+        final Object oLower = caseInsensitive
+                ? lower == null ? null : ((String) lower).toUpperCase()
+                : lower;
+        final Object oUpper = caseInsensitive
+                ? upper == null ? null : ((String) upper).toLowerCase()
+                : upper;
 
         // Use the strValues if values is null (for String comparisons, e.g.)
         final Object[] valuesToTest = values == null ? strValues : values;
@@ -380,8 +384,18 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
      * @param max the maximum value in the given range
      * @return {@code true} if the range filter overlaps with the given range, {@code false} otherwise
      */
-    public boolean overlaps(@NotNull final Object min, @NotNull final Object max) {
+    public boolean overlaps(final Object min, final Object max) {
         return overlaps(min, max, true, true);
+    }
+
+    /**
+     * Returns true if {@code null} is within the match filter. This function is intended to be accurate rather
+     * than fast and is not recommended for performance-critical value comparison.
+     *
+     * @return {@code true} if the match filter includes {@code null}, {@code false} otherwise
+     */
+    public boolean containsNull() {
+        return overlaps(null, null, true, true); // null is always inclusive
     }
 
     @Override

@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.table.impl.select;
 
+import io.deephaven.function.Basic;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.compare.ObjectComparisons;
 import io.deephaven.util.type.NumericTypeUtils;
@@ -10,6 +11,7 @@ import io.deephaven.util.type.NumericTypeUtils;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Instant;
+import java.util.Objects;
 
 class CompareUtils {
     /**
@@ -21,6 +23,14 @@ class CompareUtils {
      * @return a < b returns negative value, a > b returns positive value, a == b returns 0
      */
     static int compare(Object a, Object b) {
+        // Convert deephaven nulls to Java nulls.
+        if (Objects.nonNull(a) && Objects.equals(a, Basic.nullValueFor(a.getClass()))) {
+            a = null;
+        }
+        if (Objects.nonNull(b) && Objects.equals(b, Basic.nullValueFor(b.getClass()))) {
+            b = null;
+        }
+
         // Enforce NULL < non-null (Deephaven convention)
         if (a == null && b == null) {
             return 0;
