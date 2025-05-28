@@ -363,7 +363,7 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
     @Override
     @NotNull
     public Stream<PerformanceEntry> sourceEntries() {
-        if (updateSourceRegistrar != null) {
+        if (updateSourceRegistrar != null && locationChangePoller != null) {
             final PerformanceEntry entry = locationChangePoller.getEntry();
             if (entry != null) {
                 return Stream.of(entry);
