@@ -5,6 +5,7 @@ package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.api.expression.Expression;
 import io.deephaven.api.filter.Filter;
+import io.deephaven.api.filter.FilterIsNull;
 import io.deephaven.engine.context.QueryCompiler;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
@@ -347,4 +348,10 @@ public interface WhereFilter extends Filter {
     }
 
     // endregion Filter impl
+
+    interface Visitor<T> {
+
+        T visit(FilterIsNull isNull);
+
+    }
 }

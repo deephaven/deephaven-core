@@ -314,5 +314,10 @@ public interface Filter extends Expression, ConcurrencyControl<Filter> {
         T visit(boolean literal);
 
         T visit(RawString rawString);
+
+        default T visit(Object object) {
+            throw new UnsupportedOperationException(
+                    "Unsupported filter type: " + object.getClass().getName() + " for value: " + object);
+        }
     }
 }
