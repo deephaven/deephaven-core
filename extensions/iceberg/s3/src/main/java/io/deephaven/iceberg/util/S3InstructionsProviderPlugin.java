@@ -25,7 +25,8 @@ import java.util.Map;
 @SuppressWarnings("unused")
 public final class S3InstructionsProviderPlugin implements DataInstructionsProviderPlugin {
     @Override
-    public S3Instructions createInstructions(@NotNull final String uriScheme,
+    public S3Instructions createInstructions(
+            @NotNull final String uriScheme,
             @NotNull final Map<String, String> properties) {
         final S3Instructions s3Instructions = DeephavenAwsClientFactory.getInstructions(properties).orElse(null);
         if (s3Instructions != null) {
