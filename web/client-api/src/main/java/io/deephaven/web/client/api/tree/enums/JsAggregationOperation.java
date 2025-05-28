@@ -88,7 +88,6 @@ public class JsAggregationOperation {
      */
     public static final String SKIP = "Skip";
 
-    @JsIgnore
     public static boolean canAggregateType(String aggregationType, String columnType) {
         switch (aggregationType) {
             case COUNT:
