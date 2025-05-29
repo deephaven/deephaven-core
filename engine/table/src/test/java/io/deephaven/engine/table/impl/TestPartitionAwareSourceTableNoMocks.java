@@ -40,13 +40,13 @@ public class TestPartitionAwareSourceTableNoMocks {
 
     @Test
     public void testConcurrentInstantiationWithSameCycleNotification() {
-        final TestPartitionAwareSourceTableNoMockUtils.TestTDS tds =
-                new TestPartitionAwareSourceTableNoMockUtils.TestTDS();
-        final TableKey tableKey = new TestPartitionAwareSourceTableNoMockUtils.TableKeyImpl();
-        final TestPartitionAwareSourceTableNoMockUtils.TableLocationProviderImpl tableLocationProvider =
-                (TestPartitionAwareSourceTableNoMockUtils.TableLocationProviderImpl) tds
+        final PartitionAwareSourceTableTestUtils.TestTDS tds =
+                new PartitionAwareSourceTableTestUtils.TestTDS();
+        final TableKey tableKey = new PartitionAwareSourceTableTestUtils.TableKeyImpl();
+        final PartitionAwareSourceTableTestUtils.TableLocationProviderImpl tableLocationProvider =
+                (PartitionAwareSourceTableTestUtils.TableLocationProviderImpl) tds
                         .getTableLocationProvider(tableKey);
-        tableLocationProvider.appendLocation(new TestPartitionAwareSourceTableNoMockUtils.TableLocationKeyImpl("A"));
+        tableLocationProvider.appendLocation(new PartitionAwareSourceTableTestUtils.TableLocationKeyImpl("A"));
 
         final Table source = new PartitionAwareSourceTable(
                 TableDefinition.of(
@@ -59,7 +59,7 @@ public class TestPartitionAwareSourceTableNoMocks {
 
         updateGraph.getDelegate().startCycleForUnitTests(false);
         final Table table = source.coalesce();
-        tableLocationProvider.appendLocation(new TestPartitionAwareSourceTableNoMockUtils.TableLocationKeyImpl("B"));
+        tableLocationProvider.appendLocation(new PartitionAwareSourceTableTestUtils.TableLocationKeyImpl("B"));
         updateGraph.refreshSources();
         updateGraph.markSourcesRefreshedForUnitTests();
         updateGraph.getDelegate().completeCycleForUnitTests();
@@ -71,13 +71,13 @@ public class TestPartitionAwareSourceTableNoMocks {
 
     @Test
     public void testSizeChangeGeneratesModify() {
-        final TestPartitionAwareSourceTableNoMockUtils.TestTDS tds =
-                new TestPartitionAwareSourceTableNoMockUtils.TestTDS();
-        final TableKey tableKey = new TestPartitionAwareSourceTableNoMockUtils.TableKeyImpl();
-        final TestPartitionAwareSourceTableNoMockUtils.TableLocationProviderImpl tableLocationProvider =
-                (TestPartitionAwareSourceTableNoMockUtils.TableLocationProviderImpl) tds
+        final PartitionAwareSourceTableTestUtils.TestTDS tds =
+                new PartitionAwareSourceTableTestUtils.TestTDS();
+        final TableKey tableKey = new PartitionAwareSourceTableTestUtils.TableKeyImpl();
+        final PartitionAwareSourceTableTestUtils.TableLocationProviderImpl tableLocationProvider =
+                (PartitionAwareSourceTableTestUtils.TableLocationProviderImpl) tds
                         .getTableLocationProvider(tableKey);
-        tableLocationProvider.appendLocation(new TestPartitionAwareSourceTableNoMockUtils.TableLocationKeyImpl("A"));
+        tableLocationProvider.appendLocation(new PartitionAwareSourceTableTestUtils.TableLocationKeyImpl("A"));
 
         final Table source = new PartitionAwareSourceTable(
                 TableDefinition.of(

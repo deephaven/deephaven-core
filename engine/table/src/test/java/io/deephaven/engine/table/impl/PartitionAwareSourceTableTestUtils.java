@@ -22,7 +22,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-public class TestPartitionAwareSourceTableNoMockUtils {
+public class PartitionAwareSourceTableTestUtils {
     @FunctionalInterface
     interface RowAppender {
         void appendRow(@NotNull WritableChunk<Values> chunk, long rowKey);

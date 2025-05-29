@@ -5,7 +5,6 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.FileUtils;
 import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.context.QueryCompilerImpl;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.locations.*;
 import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
@@ -33,7 +32,6 @@ public class TestPartitionAwareSourceTableUpdateAncestor {
     private EventDrivenUpdateGraph updateGraph;
 
     File cacheDir;
-    private ExecutionContext executionContext;
 
     @Before
     public void setUp() throws IOException {
@@ -43,12 +41,6 @@ public class TestPartitionAwareSourceTableUpdateAncestor {
         updateGraph = EventDrivenUpdateGraph.newBuilder(PeriodicUpdateGraph.DEFAULT_UPDATE_GRAPH_NAME).build();
         cacheDir = Files.createTempDirectory("TestUpdateAncestorViz").toFile();
         cacheDir.deleteOnExit();
-
-        executionContext = ExecutionContext.newBuilder().newQueryLibrary().newQueryScope()
-                .setQueryCompiler(QueryCompilerImpl.create(
-                        cacheDir, TestPartitionAwareSourceTableUpdateAncestor.class.getClassLoader()))
-                .setOperationInitializer(ForkJoinPoolOperationInitializer.fromCommonPool())
-                .setUpdateGraph(updateGraph).build();
     }
 
     @After
@@ -69,13 +61,9 @@ public class TestPartitionAwareSourceTableUpdateAncestor {
         // noinspection unused
         final Table ua = TableLoggers.updatePerformanceAncestorsLog();
 
-        final TestPartitionAwareSourceTableNoMockUtils.TestTDS tds =
-                new TestPartitionAwareSourceTableNoMockUtils.TestTDS();
-        final TableKey tableKey = new TestPartitionAwareSourceTableNoMockUtils.TableKeyImpl();
-        final TestPartitionAwareSourceTableNoMockUtils.TableLocationProviderImpl tableLocationProvider =
-                (TestPartitionAwareSourceTableNoMockUtils.TableLocationProviderImpl) tds
-                        .getTableLocationProvider(tableKey);
-        tableLocationProvider.appendLocation(new TestPartitionAwareSourceTableNoMockUtils.TableLocationKeyImpl("A"));
+        final PartitionAwareSourceTableTestUtils.TestTDS tds =
+                new PartitionAwareSourceTableTestUtils.TestTDS();
+        final TableKey tableKey = new PartitionAwareSourceTableTestUtils.TableKeyImpl();
 
         final Table source = new PartitionAwareSourceTable(
                 TableDefinition.of(
@@ -83,7 +71,7 @@ public class TestPartitionAwareSourceTableUpdateAncestor {
                         ColumnDefinition.ofLong("II")),
                 tableKey.toString(),
                 RegionedTableComponentFactoryImpl.INSTANCE,
-                tableLocationProvider,
+                tds.getTableLocationProvider(tableKey),
                 ExecutionContext.getContext().getUpdateGraph());
 
         final Table m = updateGraph.sharedLock().computeLocked(() -> TableTools.merge(source));
