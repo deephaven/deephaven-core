@@ -15,16 +15,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 class ResolverProviderTest {
 
     @Test
-    void direct() {
-        final Resolver actualResolver = newResolver();
-        final ResolverProvider.DirectResolver actual = ResolverProvider.of(actualResolver);
-        assertThat(actual.resolver()).isSameAs(actualResolver);
-        assertVisitSelf(actual)
-                .isEqualTo(ResolverProvider.of(actualResolver))
-                .isNotEqualTo(ResolverProvider.infer());
-    }
-
-    @Test
     void unbound() {
         final UnboundResolver actual = newUnboundExample();
         assertVisitSelf(actual)
@@ -68,8 +58,8 @@ class ResolverProviderTest {
         }
 
         @Override
-        public ResolverProvider visit(ResolverProvider.DirectResolver directResolver) {
-            return directResolver;
+        public ResolverProvider visit(Resolver resolver) {
+            return resolver;
         }
 
         @Override

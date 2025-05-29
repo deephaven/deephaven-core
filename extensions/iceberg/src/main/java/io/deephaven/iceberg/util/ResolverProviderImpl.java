@@ -20,8 +20,8 @@ final class ResolverProviderImpl implements ResolverProvider.Visitor<Resolver> {
     }
 
     @Override
-    public Resolver visit(ResolverProvider.DirectResolver directResolver) {
-        return directResolver.resolver();
+    public Resolver visit(Resolver resolver) {
+        return resolver;
     }
 
     @Override
