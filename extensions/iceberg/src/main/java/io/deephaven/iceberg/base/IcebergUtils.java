@@ -6,9 +6,7 @@ package io.deephaven.iceberg.base;
 import io.deephaven.base.FileUtils;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.iceberg.relative.RelativeFileIO;
-import io.deephaven.iceberg.util.TypeInference;
 import org.apache.iceberg.DataFile;
 import org.apache.iceberg.PartitionField;
 import org.apache.iceberg.PartitionSpec;
@@ -20,41 +18,16 @@ import org.apache.iceberg.catalog.SupportsNamespaces;
 import org.apache.iceberg.exceptions.AlreadyExistsException;
 import org.apache.iceberg.exceptions.NamespaceNotEmptyException;
 import org.apache.iceberg.io.FileIO;
-import org.apache.iceberg.types.Type;
-import org.apache.iceberg.types.TypeUtil;
 import org.apache.iceberg.types.Types;
 import org.jetbrains.annotations.NotNull;
 
-import java.math.BigDecimal;
 import java.net.URI;
-import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 public final class IcebergUtils {
-
-    private static final Map<Class<?>, Type> DH_TO_ICEBERG_TYPE_MAP = new HashMap<>();
-
-    static {
-        DH_TO_ICEBERG_TYPE_MAP.put(Boolean.class, Types.BooleanType.get());
-        DH_TO_ICEBERG_TYPE_MAP.put(double.class, Types.DoubleType.get());
-        DH_TO_ICEBERG_TYPE_MAP.put(float.class, Types.FloatType.get());
-        DH_TO_ICEBERG_TYPE_MAP.put(int.class, Types.IntegerType.get());
-        DH_TO_ICEBERG_TYPE_MAP.put(long.class, Types.LongType.get());
-        DH_TO_ICEBERG_TYPE_MAP.put(String.class, Types.StringType.get());
-        DH_TO_ICEBERG_TYPE_MAP.put(Instant.class, Types.TimestampType.withZone());
-        DH_TO_ICEBERG_TYPE_MAP.put(LocalDateTime.class, Types.TimestampType.withoutZone());
-        DH_TO_ICEBERG_TYPE_MAP.put(LocalDate.class, Types.DateType.get());
-        DH_TO_ICEBERG_TYPE_MAP.put(LocalTime.class, Types.TimeType.get());
-        DH_TO_ICEBERG_TYPE_MAP.put(byte[].class, Types.BinaryType.get());
-        // TODO (deephaven-core#6327) Add support for more types like ZonedDateTime, Big Decimals, and Lists
-    }
 
     public static String maybeResolveRelativePath(@NotNull final String path, @NotNull final FileIO io) {
         return io instanceof RelativeFileIO ? ((RelativeFileIO) io).absoluteLocation(path) : path;
@@ -66,72 +39,6 @@ public final class IcebergUtils {
 
     public static URI dataFileUri(@NotNull final Table table, @NotNull final DataFile dataFile) {
         return FileUtils.convertToURI(maybeResolveRelativePath(dataFile.location(), table.io()), false);
-    }
-
-    /**
-     * Convert an Iceberg data type to a Deephaven type.
-     *
-     * @param icebergType The Iceberg data type to be converted.
-     * @return The converted Deephaven type.
-     * @deprecated prefer {@link TypeInference#of(Type)}
-     */
-    // TODO(DH-19288): Remove deprecated items after Iceberg update
-    @Deprecated(forRemoval = true)
-    public static io.deephaven.qst.type.Type<?> convertToDHType(@NotNull final Type icebergType) {
-        final Type.TypeID typeId = icebergType.typeId();
-        switch (typeId) {
-            case BOOLEAN:
-                return io.deephaven.qst.type.Type.booleanType().boxedType();
-            case DOUBLE:
-                return io.deephaven.qst.type.Type.doubleType();
-            case FLOAT:
-                return io.deephaven.qst.type.Type.floatType();
-            case INTEGER:
-                return io.deephaven.qst.type.Type.intType();
-            case LONG:
-                return io.deephaven.qst.type.Type.longType();
-            case STRING:
-                return io.deephaven.qst.type.Type.stringType();
-            case TIMESTAMP:
-                final Types.TimestampType timestampType = (Types.TimestampType) icebergType;
-                if (timestampType == Types.TimestampType.withZone()) {
-                    return io.deephaven.qst.type.Type.find(Instant.class);
-                }
-                return io.deephaven.qst.type.Type.find(LocalDateTime.class);
-            case DATE:
-                return io.deephaven.qst.type.Type.find(LocalDate.class);
-            case TIME:
-                return io.deephaven.qst.type.Type.find(LocalTime.class);
-            case DECIMAL:
-                return io.deephaven.qst.type.Type.find(BigDecimal.class);
-            case FIXED: // Fall through
-            case BINARY:
-                return io.deephaven.qst.type.Type.find(byte[].class);
-            case UUID: // Fall through
-            case STRUCT: // Fall through
-            case LIST: // Fall through
-            case MAP: // Fall through
-            default:
-                throw new TableDataException("Unsupported iceberg column type " + typeId.name());
-        }
-    }
-
-    /**
-     * Convert a Deephaven type to an Iceberg type.
-     *
-     * @param columnType The Deephaven type to be converted.
-     * @return The converted Iceberg type.
-     * @deprecated prefer {@link TypeInference#of(io.deephaven.qst.type.Type, TypeUtil.NextID)}
-     */
-    // TODO(DH-19288): Remove deprecated items after Iceberg update
-    @Deprecated(forRemoval = true)
-    public static Type convertToIcebergType(final Class<?> columnType) {
-        final Type icebergType = DH_TO_ICEBERG_TYPE_MAP.get(columnType);
-        if (icebergType != null) {
-            return icebergType;
-        } else {
-            throw new TableDataException("Unsupported deephaven column type " + columnType.getName());
-        }
     }
 
     public static boolean createNamespaceIfNotExists(

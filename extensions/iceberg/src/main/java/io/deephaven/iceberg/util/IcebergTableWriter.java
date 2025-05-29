@@ -59,7 +59,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
 
-import static io.deephaven.iceberg.base.IcebergUtils.convertToIcebergType;
 import static io.deephaven.iceberg.base.IcebergUtils.verifyPartitioningColumns;
 import static io.deephaven.iceberg.base.IcebergUtils.verifyRequiredFields;
 
@@ -268,14 +267,8 @@ public class IcebergTableWriter {
                 throw new IllegalArgumentException("Column " + columnName + " not found in the schema or " +
                         "the name mapping for the table");
             }
-            final Type expectedIcebergType = nestedField.type();
-            final Class<?> dhType = columnDefinition.getDataType();
-            final Type convertedIcebergType = convertToIcebergType(dhType);
-            if (!expectedIcebergType.equals(convertedIcebergType)) {
-                throw new IllegalArgumentException("Column " + columnName + " has type " + dhType + " in table " +
-                        "definition but type " + expectedIcebergType + " in Iceberg schema");
-            }
 
+            verifyCompatible(nestedField, columnDefinition);
             fieldIdToColumnName.put(fieldId, columnName);
         }
     }
@@ -347,6 +340,42 @@ public class IcebergTableWriter {
     }
 
     /**
+     * Verify that Deephaven column with provided definition is compatible for writing to the Iceberg column with the
+     * provided schema.
+     */
+    private static void verifyCompatible(
+            @NotNull final Types.NestedField icebergField,
+            @NotNull final ColumnDefinition<?> columnDefinition) {
+        final Type expectedIcebergType = icebergField.type();
+        final String dhColumnName = columnDefinition.getName();
+        final io.deephaven.qst.type.Type<?> dhType =
+                io.deephaven.qst.type.Type.find(columnDefinition.getDataType(), columnDefinition.getComponentType());
+        // We can use field ID 0 since we are not using it for anything else, just for type inference and verification
+        final io.deephaven.qst.type.Type.Visitor<org.apache.iceberg.types.Type> inferenceVisitor =
+                new TypeInference.BestIcebergType(() -> 1);
+        final org.apache.iceberg.types.Type inferredIcebergType =
+                TypeInference.of(dhType, inferenceVisitor).orElse(null);
+        if (inferredIcebergType == null) {
+            throw new Resolver.MappingException(
+                    String.format("Unable to infer the best Iceberg type for Deephaven column %s of type `%s`",
+                            dhColumnName, dhType));
+        }
+        if (inferredIcebergType.isPrimitiveType()) {
+            if (!expectedIcebergType.equals(inferredIcebergType)) {
+                throw new IllegalArgumentException("Column " + dhColumnName + " has type `" + dhType + "` in table " +
+                        "definition, which is inferred as `" + inferredIcebergType + "` but has type `" +
+                        expectedIcebergType + "` in Iceberg schema");
+            }
+        } else if (!expectedIcebergType.isListType() ||
+                !expectedIcebergType.asListType().elementType()
+                        .equals(inferredIcebergType.asListType().elementType())) {
+            throw new IllegalArgumentException("Column " + dhColumnName + " has type `" + dhType + "` in table " +
+                    "definition, which is inferred as `" + inferredIcebergType + "` but has type `" +
+                    expectedIcebergType + "` in Iceberg schema");
+        }
+    }
+
+    /**
      * Append the provided Deephaven {@link IcebergWriteInstructions#tables()} as new partitions to the existing Iceberg
      * table in a single snapshot. This method will not perform any compatibility checks between the existing schema and
      * the provided Deephaven tables.
@@ -367,7 +396,7 @@ public class IcebergTableWriter {
      * @param writeInstructions The instructions for customizations while writing.
      */
     public List<DataFile> writeDataFiles(@NotNull final IcebergWriteInstructions writeInstructions) {
-        verifyCompatible(writeInstructions.tables(), nonPartitioningTableDefinition);
+        verifyDefinitionCompatible(writeInstructions.tables(), nonPartitioningTableDefinition);
         final List<String> partitionPaths = writeInstructions.partitionPaths();
         verifyPartitionPaths(tableSpec, partitionPaths);
         final List<PartitionData> partitionData;
@@ -385,9 +414,9 @@ public class IcebergTableWriter {
     }
 
     /**
-     * Verify that all the tables are compatible with the provided table definition.
+     * Verify that all the Deephaven tables are compatible with the provided table definition.
      */
-    private static void verifyCompatible(
+    private static void verifyDefinitionCompatible(
             @NotNull final Iterable<Table> tables,
             @NotNull final TableDefinition expectedDefinition) {
         for (final Table table : tables) {
