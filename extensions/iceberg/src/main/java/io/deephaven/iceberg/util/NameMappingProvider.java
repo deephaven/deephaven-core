@@ -9,6 +9,8 @@ import org.apache.iceberg.mapping.MappingUtil;
 import org.apache.iceberg.mapping.NameMapping;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Objects;
+
 public interface NameMappingProvider {
 
     /**
@@ -18,8 +20,8 @@ public interface NameMappingProvider {
      * @return the "from table" name mapping
      * @see <a href="https://iceberg.apache.org/spec/#column-projection">schema.name-mapping.default</a>
      */
-    static NameMappingProvider fromTable() {
-        return NameMappingProviderImpl.FromTable.FROM_TABLE;
+    static TableNameMapping fromTable() {
+        return TableNameMapping.TABLE_NAME_MAPPING;
     }
 
     /**
@@ -29,8 +31,8 @@ public interface NameMappingProvider {
      * @return the explicit name mapping
      * @see MappingUtil
      */
-    static NameMappingProvider of(@NotNull final NameMapping nameMapping) {
-        return new NameMappingProviderImpl.Explicit(nameMapping);
+    static DirectNameMapping of(@NotNull final NameMapping nameMapping) {
+        return new DirectNameMapping(nameMapping);
     }
 
     /**
@@ -41,7 +43,64 @@ public interface NameMappingProvider {
      *
      * @return the empty name mapping
      */
-    static NameMappingProvider empty() {
-        return NameMappingProviderImpl.Empty.EMPTY;
+    static EmptyNameMapping empty() {
+        return EmptyNameMapping.EMPTY_NAME_MAPPING;
+    }
+
+    <T> T walk(Visitor<T> visitor);
+
+    interface Visitor<T> {
+        T visit(TableNameMapping tableNameMapping);
+
+        T visit(EmptyNameMapping emptyNameMapping);
+
+        T visit(DirectNameMapping directNameMapping);
+    }
+
+    enum TableNameMapping implements NameMappingProvider {
+        TABLE_NAME_MAPPING;
+
+        @Override
+        public <T> T walk(Visitor<T> visitor) {
+            return visitor.visit(this);
+        }
+    }
+
+    enum EmptyNameMapping implements NameMappingProvider {
+        EMPTY_NAME_MAPPING;
+
+        @Override
+        public <T> T walk(Visitor<T> visitor) {
+            return visitor.visit(this);
+        }
+    }
+
+    final class DirectNameMapping implements NameMappingProvider {
+        private final NameMapping nameMapping;
+
+        private DirectNameMapping(NameMapping nameMapping) {
+            this.nameMapping = Objects.requireNonNull(nameMapping);
+        }
+
+        public NameMapping nameMapping() {
+            return nameMapping;
+        }
+
+        @Override
+        public <T> T walk(Visitor<T> visitor) {
+            return visitor.visit(this);
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (!(o instanceof DirectNameMapping)) return false;
+            DirectNameMapping that = (DirectNameMapping) o;
+            return nameMapping.asMappedFields().equals(that.nameMapping.asMappedFields());
+        }
+
+        @Override
+        public int hashCode() {
+            return nameMapping.asMappedFields().hashCode();
+        }
     }
 }
