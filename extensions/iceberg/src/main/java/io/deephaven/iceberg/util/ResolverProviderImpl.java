@@ -7,20 +7,34 @@ import org.apache.iceberg.Table;
 
 import java.util.Objects;
 
-abstract class ResolverProviderImpl implements ResolverProvider {
+final class ResolverProviderImpl implements ResolverProvider.Visitor<Resolver> {
 
-    abstract Resolver resolver(Table table) throws TypeInference.UnsupportedType;
+    public static Resolver of(ResolverProvider provider, Table table) {
+        return provider.walk(new ResolverProviderImpl(table));
+    }
 
-    static final class Explicit extends ResolverProviderImpl {
-        private final Resolver resolver;
+    private final Table table;
 
-        public Explicit(Resolver resolver) {
-            this.resolver = Objects.requireNonNull(resolver);
-        }
+    ResolverProviderImpl(Table table) {
+        this.table = Objects.requireNonNull(table);
+    }
 
-        @Override
-        Resolver resolver(Table table) throws TypeInference.UnsupportedType {
-            return resolver;
+    @Override
+    public Resolver visit(ResolverProvider.DirectResolver directResolver) {
+        return directResolver.resolver();
+    }
+
+    @Override
+    public Resolver visit(UnboundResolver unboundResolver) {
+        return unboundResolver.resolver(table);
+    }
+
+    @Override
+    public Resolver visit(InferenceResolver inferenceResolver) {
+        try {
+            return inferenceResolver.resolver(table);
+        } catch (TypeInference.UnsupportedType e) {
+            throw new RuntimeException(e);
         }
     }
 }

@@ -22,7 +22,7 @@ import java.util.Set;
  */
 @Value.Immutable
 @BuildableStyle
-public abstract class InferenceResolver extends ResolverProviderImpl implements ResolverProvider {
+public abstract class InferenceResolver implements ResolverProvider {
 
     public static Builder builder() {
         return ImmutableInferenceResolver.builder();
@@ -72,6 +72,11 @@ public abstract class InferenceResolver extends ResolverProviderImpl implements 
         return SchemaProvider.fromCurrent();
     }
 
+    @Override
+    public final <T> T walk(Visitor<T> visitor) {
+        return visitor.visit(this);
+    }
+
     public interface Builder {
 
         Builder inferPartitioningColumns(boolean inferPartitioningColumns);
@@ -85,7 +90,6 @@ public abstract class InferenceResolver extends ResolverProviderImpl implements 
         InferenceResolver build();
     }
 
-    @Override
     final Resolver resolver(Table table) throws TypeInference.UnsupportedType {
         final Schema schema = SchemaProviderInternal.of(schema(), table);
         InferenceInstructions.Builder builder = inferenceBuilder().schema(schema);
