@@ -55,7 +55,7 @@ public class TestPartitionAwareSourceTableUpdateAncestor {
     }
 
     @Test
-    public void testUncoalesedMerge() {
+    public void testUncoalescedMerge() {
         // noinspection unused
         final Table upl = TableLoggers.updatePerformanceLog();
         // noinspection unused
