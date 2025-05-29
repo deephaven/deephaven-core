@@ -967,10 +967,9 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
         private final boolean canReuseModifiedColumnSet;
 
         public ListenerImpl(String description, Table parent, BaseTable<?> dependent) {
-            super(description, false, () -> {
-                return (Stream.concat((Stream<Object>) ((BaseTable) parent).parents.stream(), Stream.of(parent)))
-                        .flatMapToLong(BaseTable::getParentPerformanceEntryIds).toArray();
-            });
+            super(description, false,
+                    () -> (Stream.concat((Stream<Object>) ((BaseTable) parent).parents.stream(), Stream.of(parent)))
+                            .flatMapToLong(BaseTable::getParentPerformanceEntryIds).toArray());
             this.parent = parent;
             this.dependent = dependent;
             if (parent.isRefreshing()) {
