@@ -93,7 +93,8 @@ public interface NameMappingProvider {
 
         @Override
         public boolean equals(Object o) {
-            if (!(o instanceof DirectNameMapping)) return false;
+            if (!(o instanceof DirectNameMapping))
+                return false;
             DirectNameMapping that = (DirectNameMapping) o;
             return nameMapping.asMappedFields().equals(that.nameMapping.asMappedFields());
         }
@@ -101,6 +102,13 @@ public interface NameMappingProvider {
         @Override
         public int hashCode() {
             return nameMapping.asMappedFields().hashCode();
+        }
+
+        @Override
+        public String toString() {
+            return "DirectNameMapping{" +
+                    "nameMapping=" + nameMapping +
+                    '}';
         }
     }
 }
