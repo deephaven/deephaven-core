@@ -59,7 +59,7 @@ public abstract class UnboundResolver extends ResolverProviderImpl implements Re
 
     @Override
     final Resolver resolver(Table table) {
-        final Schema schema = ((SchemaProviderInternal.SchemaProviderImpl) schema()).getSchema(table);
+        final Schema schema = SchemaProviderInternal.of(schema(), table);
         final Map<String, ColumnInstructions> columnInstructionsMap = columnInstructions();
         final Resolver.Builder builder = Resolver.builder()
                 .schema(schema)
