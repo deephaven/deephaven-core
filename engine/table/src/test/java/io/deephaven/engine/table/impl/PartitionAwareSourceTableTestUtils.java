@@ -85,7 +85,7 @@ public class PartitionAwareSourceTableTestUtils {
 
         @Override
         public String getImplementationName() {
-            return "PythonTableDataService.TableLocationProvider";
+            return "PartitionAwareSourceTableTestUtils.TableLocationProvider";
         }
     }
 
@@ -102,7 +102,7 @@ public class PartitionAwareSourceTableTestUtils {
 
         @Override
         public String getImplementationName() {
-            return "PythonTableDataService.TableKeyImpl";
+            return "PartitionAwareSourceTableTestUtils.TableKeyImpl";
         }
     }
 
@@ -123,7 +123,7 @@ public class PartitionAwareSourceTableTestUtils {
 
         @Override
         public String getImplementationName() {
-            return "TestPartitionAwareSourceTableNoMocks.TableLocationKeyImpl";
+            return "PartitionAwareSourceTableTestUtils.TableLocationKeyImpl";
         }
     }
 
@@ -189,7 +189,7 @@ public class PartitionAwareSourceTableTestUtils {
 
         @Override
         public String getImplementationName() {
-            return "TestPartitionAwareSourceTableNoMocks.TableLocationImpl";
+            return "PartitionAwareSourceTableTestUtils.TableLocationImpl";
         }
     }
 
