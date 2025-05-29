@@ -599,6 +599,12 @@ public class ParquetTableLocation extends AbstractTableLocation {
         if (statistics == null || statistics.isEmpty()) {
             return null;
         }
+
+        if (!statistics.hasNonNullValue()) {
+            // If all values are null, set the min and max to null.
+            return new Pair<>(null, null);
+        }
+
         // Min/Max are guaranteed to be the same type, only testing min.
         final Class<?> clazz = statistics.genericGetMin().getClass();
 
@@ -663,6 +669,9 @@ public class ParquetTableLocation extends AbstractTableLocation {
                     parquetMetadata.getBlocks().get(rgIdx).getColumns().get(parquetIndex).getStatistics();
             final Pair<Object, Object> p = getMinMax(statistics);
             final long nullCount = getNullCount(statistics);
+
+            // TODO: in a few cases, where all values are null or where min==max (implying a single non-null value) we
+            // could return the row group row set as `match`.
 
             if (p == null || nullCount < 0) {
                 // No statistics, so we can't filter anything.
