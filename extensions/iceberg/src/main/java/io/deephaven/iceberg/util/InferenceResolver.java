@@ -87,8 +87,8 @@ public abstract class InferenceResolver extends ResolverProviderImpl implements 
 
     @Override
     final Resolver resolver(Table table) throws TypeInference.UnsupportedType {
-        InferenceInstructions.Builder builder = inferenceBuilder()
-                .schema(((SchemaProviderInternal.SchemaProviderImpl) schema()).getSchema(table));
+        final Schema schema = SchemaProviderInternal.of(schema(), table);
+        InferenceInstructions.Builder builder = inferenceBuilder().schema(schema);
         if (inferPartitioningColumns()) {
             builder.spec(table.spec());
         }
