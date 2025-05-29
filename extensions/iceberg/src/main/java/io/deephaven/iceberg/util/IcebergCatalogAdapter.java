@@ -287,7 +287,7 @@ public class IcebergCatalogAdapter {
         } catch (TypeInference.UnsupportedType e) {
             throw new RuntimeException(e);
         }
-        final NameMapping nameMapping = ((NameMappingProviderImpl) options.nameMapping()).create(table);
+        final NameMapping nameMapping = NameMappingProviderImpl.of(options.nameMapping(), table);
         return new IcebergTableAdapter(
                 catalog,
                 options.id(),
