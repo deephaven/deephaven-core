@@ -258,8 +258,10 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
             QueryScopeParam<?>... params) {
         final FormulaFactory formulaFactory;
         try {
-            // the future must already be completed or else it is an error
-            formulaFactory = formulaFactoryFuture.get(0, TimeUnit.SECONDS);
+            // The future's root-parent is definitely complete via the QueryCompilerRequestProcessor. However, we
+            // might need to wait for follow on thenApply mappers to complete. We expect this to be very fast, so we
+            // use a 1-minute timeout to avoid blocking indefinitely.
+            formulaFactory = formulaFactoryFuture.get(1, TimeUnit.MINUTES);
         } catch (InterruptedException | TimeoutException e) {
             throw new IllegalStateException("Formula factory not already compiled!", e);
         } catch (ExecutionException e) {
