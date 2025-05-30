@@ -114,6 +114,8 @@ public class JettyBackedGrpcServer implements GrpcServer {
         }).toList());
         context.setBaseResource(ControlledCacheResource.wrap(resources));
         context.setInitParameter(DefaultServlet.CONTEXT_INIT + "dirAllowed", "false");
+        // Always add etags
+        context.setInitParameter("org.eclipse.jetty.servlet.Default.etags", "true");
 
         // Cache all of the appropriate assets folders
         for (String appRoot : List.of("/ide/", "/iframe/table/", "/iframe/chart/", "/iframe/widget/")) {
@@ -414,6 +416,7 @@ public class JettyBackedGrpcServer implements GrpcServer {
         jsPlugins.setInitParameter("baseResource", filesystemUri.toString());
         jsPlugins.setInitParameter("pathInfoOnly", "true");
         jsPlugins.setInitParameter("dirAllowed", "false");
+        jsPlugins.setInitParameter("etags", "true");
         jsPlugins.setAsyncSupported(true);
         return jsPlugins;
     }
