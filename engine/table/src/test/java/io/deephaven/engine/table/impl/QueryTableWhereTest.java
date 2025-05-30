@@ -1866,9 +1866,8 @@ public abstract class QueryTableWhereTest {
                     final long maybeSize = (long) (size * maybePercentage);
                     final WritableRowSet addedRowSet = matches.subSetByPositionRange(0, maybeSize);
                     final WritableRowSet maybeRowSet = matches.subSetByPositionRange(maybeSize, size);
-
-                    // Default to returning all results as maybe
-                    onComplete.accept(PushdownResult.of(addedRowSet, maybeRowSet));
+                    // Obvious these row sets do not overlap
+                    onComplete.accept(PushdownResult.ofFast(addedRowSet, maybeRowSet));
                 }
             }
         }
@@ -2098,8 +2097,8 @@ public abstract class QueryTableWhereTest {
                     final long maybeSize = (long) (size * maybePercentage);
                     final WritableRowSet addedRowSet = matches.subSetByPositionRange(0, maybeSize);
                     final WritableRowSet maybeRowSet = matches.subSetByPositionRange(maybeSize, size);
-
-                    onComplete.accept(PushdownResult.of(addedRowSet, maybeRowSet));
+                    // Obvious these row sets do not overlap
+                    onComplete.accept(PushdownResult.ofFast(addedRowSet, maybeRowSet));
                 }
             }
         }
