@@ -414,6 +414,10 @@ abstract class AbstractFilterExecution {
 
         final RowSet input = localInput.getValue();
         if (sf.pushdownMatcher != null && sf.pushdownFilterCost < Long.MAX_VALUE) {
+            // TODO: we could take advantage of previous pushdown operations on this filter to restrict the input
+            // to the rows that were not matched by the previous pushdown operations. Just like we do with the final
+            // filter. This would allow better chaining of successive pushdown operations on the same filter.
+
             // Execute the pushdown filter and return.
             sf.pushdownMatcher.pushdownFilter(sf.filter, input, sourceTable.getRowSet(), usePrev, sf.context,
                     costCeiling, jobScheduler(), onPushdownComplete, filterNec);
