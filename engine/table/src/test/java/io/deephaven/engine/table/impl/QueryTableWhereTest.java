@@ -55,6 +55,7 @@ import java.math.BigInteger;
 import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
@@ -1895,7 +1896,7 @@ public abstract class QueryTableWhereTest {
         }
 
         @Override
-        public void pushdownFilter(final WhereFilter filter, final Map<String, String> renameMap, final RowSet input,
+        public void pushdownFilter(final WhereFilter filter, final RowSet input,
                 final RowSet fullSet, final boolean usePrev, final PushdownFilterContext context,
                 final long costCeiling, final JobScheduler jobScheduler, final Consumer<PushdownResult> onComplete,
                 final Consumer<Exception> onError) {
@@ -2080,7 +2081,6 @@ public abstract class QueryTableWhereTest {
         @Override
         public void pushdownFilter(
                 final WhereFilter filter,
-                final Map<String, String> renameMap,
                 final RowSet selection,
                 final RowSet fullSet,
                 final boolean usePrev,
@@ -2105,12 +2105,9 @@ public abstract class QueryTableWhereTest {
         }
 
         @Override
-        public Map<String, String> renameMap(WhereFilter filter, ColumnSource<?>[] filterSources) {
-            return Map.of();
-        }
-
-        @Override
-        public PushdownFilterContext makePushdownFilterContext() {
+        public PushdownFilterContext makePushdownFilterContext(
+                final WhereFilter filter,
+                final List<ColumnSource<?>> filterSources) {
             return PushdownFilterContext.NO_PUSHDOWN_CONTEXT;
         }
     }
