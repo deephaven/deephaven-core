@@ -4,6 +4,7 @@
 package io.deephaven.web.client.api.tree.enums;
 
 import com.vertispan.tsdefs.annotations.TsTypeDef;
+import com.vertispan.tsdefs.annotations.TsTypeRef;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsType;
 
