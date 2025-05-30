@@ -631,7 +631,8 @@ public class ParquetTableLocation extends AbstractTableLocation {
     private void iterateRowGroupsAndRowSet(final RowSet input, final RowGroupAndRowSetConsumer consumer) {
         // TODO: should we parallelize this? I think so, is parallelStream good enough or should we re-use the
         // jobscheduler? I think we should change the name to parallelIterateRowGroupsAndRowSet() or something equally
-        // obvious to the user that they need to use RandomBuilder (or even better, the planned PushdownResult
+        // obvious to the user that they need to use RandomBuilder (or even better, the planned
+        // `PushdownResult#buildSequentialFast()` function.
 
         try (final RowSequence.Iterator rsIt = input.getRowSequenceIterator()) {
             final RowGroupReader[] rgReaders = getRowGroupReaders();
