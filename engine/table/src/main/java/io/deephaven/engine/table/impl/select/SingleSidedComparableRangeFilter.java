@@ -173,7 +173,7 @@ public class SingleSidedComparableRangeFilter extends AbstractRangeFilter {
     }
 
     @Override
-    public boolean contains(@NotNull final Object value) {
+    public boolean contains(final Object value) {
         final int c = CompareUtils.compare(pivot, value);
         if (isGreaterThan) {
             return c < 0 || (c == 0 && this.lowerInclusive);
