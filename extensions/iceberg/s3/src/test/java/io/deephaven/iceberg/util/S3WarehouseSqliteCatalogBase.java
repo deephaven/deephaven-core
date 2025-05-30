@@ -77,7 +77,13 @@ abstract class S3WarehouseSqliteCatalogBase extends SqliteCatalogBase {
         }
         properties.put(CatalogProperties.WAREHOUSE_LOCATION, scheme + "://" + bucket + "/warehouse");
         properties.put(CatalogProperties.FILE_IO_IMPL, S3FileIO.class.getName());
-        return IcebergToolsS3.createAdapter(catalogName, properties, Map.of(), s3Instructions());
+        return IcebergToolsS3.createAdapter(
+                BuildCatalogOptions.builder()
+                        .name(catalogName)
+                        .putAllProperties(properties)
+                        .putAllHadoopConfig(Map.of())
+                        .build(),
+                s3Instructions());
     }
 
     private boolean doesBucketExist(final S3AsyncClient client, final String bucketName)

@@ -30,10 +30,23 @@ public abstract class BuildCatalogOptions {
     }
 
     /**
-     * The catalog properties. Must contain {@value CatalogUtil#ICEBERG_CATALOG_TYPE} or
+     * The catalog properties provided by the user. Must contain {@value CatalogUtil#ICEBERG_CATALOG_TYPE} or
      * {@value CatalogProperties#CATALOG_IMPL}.
      */
     public abstract Map<String, String> properties();
+
+    abstract BuildCatalogOptions withProperties(Map<String, ? extends String> entries);
+
+    /**
+     * Enables Deephaven’s automatic injection of properties that work around upstream issues and supply defaults needed
+     * for Deephaven’s Iceberg usage. Disable to manage all properties yourself.
+     *
+     * @see IcebergTools#injectDeephavenProperties(Map)
+     */
+    @Value.Default
+    public boolean enablePropertyInjection() {
+        return true;
+    }
 
     /**
      * The Hadoop configuration properties.
@@ -51,6 +64,8 @@ public abstract class BuildCatalogOptions {
         Builder putHadoopConfig(String key, String value);
 
         Builder putAllHadoopConfig(Map<String, ? extends String> entries);
+
+        Builder enablePropertyInjection(boolean enable);
 
         BuildCatalogOptions build();
     }

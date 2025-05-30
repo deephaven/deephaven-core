@@ -61,6 +61,7 @@ class S3SeekableChannelProvider implements SeekableChannelsProvider {
 
     private static final Logger log = LoggerFactory.getLogger(S3SeekableChannelProvider.class);
 
+    private final boolean ownsClient;
     private final S3AsyncClient s3AsyncClient;
     private final S3Instructions s3Instructions;
 
@@ -76,11 +77,32 @@ class S3SeekableChannelProvider implements SeekableChannelsProvider {
 
     private volatile SoftReference<Map<URI, FileSizeInfo>> fileSizeCacheRef;
 
+    /**
+     * Create a new S3SeekableChannelProvider with the given S3Instructions. A new S3AsyncClient will be created
+     * internally and closed when this provider is closed.
+     */
     S3SeekableChannelProvider(@NotNull final S3Instructions s3Instructions) {
-        this.s3AsyncClient = S3ClientFactory.getAsyncClient(Objects.requireNonNull(s3Instructions));
+        this(s3Instructions, S3ClientFactory.getAsyncClient(Objects.requireNonNull(s3Instructions)), true);
+    }
+
+    /**
+     * Create a new S3SeekableChannelProvider with the given S3AsyncClient and S3Instructions.
+     */
+    S3SeekableChannelProvider(
+            @NotNull final S3Instructions s3Instructions,
+            @NotNull final S3AsyncClient s3AsyncClient) {
+        this(s3Instructions, s3AsyncClient, false);
+    }
+
+    private S3SeekableChannelProvider(
+            @NotNull final S3Instructions s3Instructions,
+            @NotNull final S3AsyncClient s3AsyncClient,
+            final boolean ownsClient) {
         this.s3Instructions = s3Instructions;
         this.sharedReadCache = new S3ReadRequestCache(s3Instructions.fragmentSize());
         this.fileSizeCacheRef = new SoftReference<>(new KeyedObjectHashMap<>(FileSizeInfo.URI_MATCH_KEY));
+        this.s3AsyncClient = s3AsyncClient;
+        this.ownsClient = ownsClient;
     }
 
     @Override
@@ -369,7 +391,9 @@ class S3SeekableChannelProvider implements SeekableChannelsProvider {
 
     @Override
     public void close() {
-        s3AsyncClient.close();
+        if (ownsClient) {
+            s3AsyncClient.close();
+        }
         sharedReadCache.clear();
     }
 }
