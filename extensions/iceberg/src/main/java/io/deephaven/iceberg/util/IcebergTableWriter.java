@@ -20,7 +20,6 @@ import io.deephaven.iceberg.internal.DataInstructionsProviderLoader;
 import io.deephaven.parquet.table.CompletedParquetWrite;
 import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.ParquetTools;
-import io.deephaven.iceberg.util.SchemaProviderInternal.SchemaProviderImpl;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.channel.SeekableChannelsProvider;
 import org.apache.iceberg.AppendFiles;
@@ -164,7 +163,7 @@ public class IcebergTableWriter {
         verifyRequiredFields(table.schema(), tableDefinition);
         verifyPartitioningColumns(tableSpec, tableDefinition);
 
-        this.userSchema = ((SchemaProviderImpl) tableWriterOptions.schemaProvider()).getSchema(table);
+        this.userSchema = SchemaProviderInternal.of(tableWriterOptions.schemaProvider(), table);
         verifyFieldIdsInSchema(tableWriterOptions.fieldIdToColumnName().keySet(), userSchema);
 
         // Create a copy of the fieldIdToColumnName map since we might need to add new entries for columns which are not
