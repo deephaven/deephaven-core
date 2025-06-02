@@ -121,7 +121,7 @@ public interface ReleaseTracker<RESOURCE_TYPE> {
                     lastAcquireMap.clear();
                     throw leakedException;
                 }
-                // An Already released exception can be suppressed when we have an error case that double frees;
+                // An AlreadyReleasedException can be suppressed when we have an error case that double frees;
                 // let's be sure to blow up the tests.
                 final AlreadyReleasedException alreadyReleasedException = firstDoubleFree.getAndSet(null);
                 if (alreadyReleasedException != null) {
