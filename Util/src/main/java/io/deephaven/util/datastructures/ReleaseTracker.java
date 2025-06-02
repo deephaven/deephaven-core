@@ -10,7 +10,6 @@ import org.jetbrains.annotations.NotNull;
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Instrumentation tool for detecting missing resource releases.
@@ -59,7 +58,7 @@ public interface ReleaseTracker<RESOURCE_TYPE> {
         private static final StackTraceElement[] ZERO_ELEMENT_STACK_TRACE_ARRAY = new StackTraceElement[0];
 
         private final Map<RESOURCE_TYPE, StackTraceElement[]> lastAcquireMap = new HashMap<>();
-        private final AtomicReference<AlreadyReleasedException> firstDoubleFree = new AtomicReference<>();
+        private AlreadyReleasedException firstDoubleFree = null;
 
         private static final class LastAcquireAndReleaseInfo {
 
@@ -101,7 +100,9 @@ public interface ReleaseTracker<RESOURCE_TYPE> {
                     final AlreadyReleasedException alreadyReleasedException =
                             new AlreadyReleasedException(stackTrace, lastAcquireAndRelease.lastAcquire,
                                     lastAcquireAndRelease.lastRelease);
-                    firstDoubleFree.compareAndExchange(null, alreadyReleasedException);
+                    if (firstDoubleFree == null) {
+                        firstDoubleFree = alreadyReleasedException;
+                    }
                     throw alreadyReleasedException;
                 }
                 throw new UnmatchedAcquireException(stackTrace);
@@ -123,8 +124,9 @@ public interface ReleaseTracker<RESOURCE_TYPE> {
                 }
                 // An AlreadyReleasedException can be suppressed when we have an error case that double frees;
                 // let's be sure to blow up the tests.
-                final AlreadyReleasedException alreadyReleasedException = firstDoubleFree.getAndSet(null);
+                final AlreadyReleasedException alreadyReleasedException = firstDoubleFree;
                 if (alreadyReleasedException != null) {
+                    firstDoubleFree = null;
                     throw alreadyReleasedException;
                 }
             }
