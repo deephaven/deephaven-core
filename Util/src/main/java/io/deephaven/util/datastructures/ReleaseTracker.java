@@ -58,6 +58,7 @@ public interface ReleaseTracker<RESOURCE_TYPE> {
         private static final StackTraceElement[] ZERO_ELEMENT_STACK_TRACE_ARRAY = new StackTraceElement[0];
 
         private final Map<RESOURCE_TYPE, StackTraceElement[]> lastAcquireMap = new HashMap<>();
+        private AlreadyReleasedException firstDoubleFree = null;
 
         private static final class LastAcquireAndReleaseInfo {
 
@@ -96,8 +97,13 @@ public interface ReleaseTracker<RESOURCE_TYPE> {
                 }
                 final LastAcquireAndReleaseInfo lastAcquireAndRelease = lastAcquireAndReleaseMap.get(resource);
                 if (lastAcquireAndRelease != null) {
-                    throw new AlreadyReleasedException(stackTrace, lastAcquireAndRelease.lastAcquire,
-                            lastAcquireAndRelease.lastRelease);
+                    final AlreadyReleasedException alreadyReleasedException =
+                            new AlreadyReleasedException(stackTrace, lastAcquireAndRelease.lastAcquire,
+                                    lastAcquireAndRelease.lastRelease);
+                    if (firstDoubleFree == null) {
+                        firstDoubleFree = alreadyReleasedException;
+                    }
+                    throw alreadyReleasedException;
                 }
                 throw new UnmatchedAcquireException(stackTrace);
             }
@@ -115,6 +121,13 @@ public interface ReleaseTracker<RESOURCE_TYPE> {
                     }
                     lastAcquireMap.clear();
                     throw leakedException;
+                }
+                // An AlreadyReleasedException can be suppressed when we have an error case that double frees;
+                // let's be sure to blow up the tests.
+                final AlreadyReleasedException alreadyReleasedException = firstDoubleFree;
+                if (alreadyReleasedException != null) {
+                    firstDoubleFree = null;
+                    throw alreadyReleasedException;
                 }
             }
         }
