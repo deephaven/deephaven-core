@@ -10,6 +10,7 @@ import org.jetbrains.annotations.NotNull;
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Instrumentation tool for detecting missing resource releases.
@@ -58,6 +59,7 @@ public interface ReleaseTracker<RESOURCE_TYPE> {
         private static final StackTraceElement[] ZERO_ELEMENT_STACK_TRACE_ARRAY = new StackTraceElement[0];
 
         private final Map<RESOURCE_TYPE, StackTraceElement[]> lastAcquireMap = new HashMap<>();
+        private final AtomicReference<AlreadyReleasedException> firstDoubleFree = new AtomicReference<>();
 
         private static final class LastAcquireAndReleaseInfo {
 
@@ -96,8 +98,11 @@ public interface ReleaseTracker<RESOURCE_TYPE> {
                 }
                 final LastAcquireAndReleaseInfo lastAcquireAndRelease = lastAcquireAndReleaseMap.get(resource);
                 if (lastAcquireAndRelease != null) {
-                    throw new AlreadyReleasedException(stackTrace, lastAcquireAndRelease.lastAcquire,
-                            lastAcquireAndRelease.lastRelease);
+                    final AlreadyReleasedException alreadyReleasedException =
+                            new AlreadyReleasedException(stackTrace, lastAcquireAndRelease.lastAcquire,
+                                    lastAcquireAndRelease.lastRelease);
+                    firstDoubleFree.compareAndExchange(null, alreadyReleasedException);
+                    throw alreadyReleasedException;
                 }
                 throw new UnmatchedAcquireException(stackTrace);
             }
@@ -115,6 +120,12 @@ public interface ReleaseTracker<RESOURCE_TYPE> {
                     }
                     lastAcquireMap.clear();
                     throw leakedException;
+                }
+                // An Already released exception can be suppressed when we have an error case that double frees;
+                // let's be sure to blow up the tests.
+                final AlreadyReleasedException alreadyReleasedException = firstDoubleFree.getAndSet(null);
+                if (alreadyReleasedException != null) {
+                    throw alreadyReleasedException;
                 }
             }
         }

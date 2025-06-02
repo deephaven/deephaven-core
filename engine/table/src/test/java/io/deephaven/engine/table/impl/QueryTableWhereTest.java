@@ -146,6 +146,19 @@ public abstract class QueryTableWhereTest {
     }
 
     @Test
+    public void testFailedFilter() {
+        final Table input = TableTools.newTable(stringCol("Date", "2025-05-14", "2025-05-30", "2025-06-02"));
+        // This failed filter previously would double free a chunk. The double free Exception would have been
+        // suppresssed by the filter exception. The validation here is simply validating that the check() on the
+        // ReleaseTracker did not identify a double-free during execution.
+        final Exception e = assertThrows(Exception.class, () -> input.where("Date>= 2025-05-15"));
+        assertTrue(e.getMessage().contains(
+                "Error while initializing where([Date>= 2025-05-15]): an exception occurred while performing the initial filter"));
+        assertTrue(e.getCause().getMessage()
+                .contains("java.lang.ClassCastException encountered in filter={ Date>= 2025-05-15 }"));
+    }
+
+    @Test
     public void testWhereBiggerTable() {
         final Table table = TableTools.emptyTable(100000).update("Sym=ii%2==0 ? `AAPL` : `BANANA`", "II=ii").select();
         final Table filtered = table.where("Sym = (`AAPL`)");
