@@ -7,74 +7,46 @@ import org.apache.iceberg.Schema;
 import org.apache.iceberg.Snapshot;
 import org.apache.iceberg.Table;
 
+import java.util.Objects;
+
 /**
- * Internal class containing the implementations of {@link SchemaProvider}.
+ * Internal class to extract {@link Schema} from a {@link Table}.
  */
-class SchemaProviderInternal {
+final class SchemaProviderInternal implements SchemaProvider.Visitor<Schema> {
 
-    interface SchemaProviderImpl extends SchemaProvider {
-        /**
-         * Returns the schema for the given table based on this {@link SchemaProvider}.
-         */
-        Schema getSchema(Table table);
+    public static Schema of(SchemaProvider provider, Table table) {
+        return provider.walk(new SchemaProviderInternal(table));
     }
 
-    // Implementations of SchemaProvider
-    enum CurrentSchemaProvider implements SchemaProviderImpl {
-        CURRENT_SCHEMA;
+    private final Table table;
 
-        @Override
-        public Schema getSchema(final Table table) {
-            return getCurrentSchema(table);
-        }
+    SchemaProviderInternal(Table table) {
+        this.table = Objects.requireNonNull(table);
     }
 
-    static class IdSchemaProvider implements SchemaProviderImpl {
-        private final int schemaId;
-
-        IdSchemaProvider(final int schemaId) {
-            this.schemaId = schemaId;
-        }
-
-        @Override
-        public Schema getSchema(final Table table) {
-            return getSchemaForId(table, schemaId);
-        }
+    @Override
+    public Schema visit(SchemaProvider.TableSchema tableSchema) {
+        return getCurrentSchema(table);
     }
 
-    static class DirectSchemaProvider implements SchemaProviderImpl {
-        private final Schema schema;
-
-        DirectSchemaProvider(final Schema schema) {
-            this.schema = schema;
-        }
-
-        @Override
-        public Schema getSchema(final Table table) {
-            return schema;
-        }
+    @Override
+    public Schema visit(SchemaProvider.TableSnapshot tableSnapshot) {
+        return getSchemaForCurrentSnapshot(table);
     }
 
-    static class SnapshotIdSchemaProvider implements SchemaProviderImpl {
-        private final int snapshotId;
-
-        SnapshotIdSchemaProvider(final int snapshotId) {
-            this.snapshotId = snapshotId;
-        }
-
-        @Override
-        public Schema getSchema(final Table table) {
-            return getSchemaForSnapshotId(table, snapshotId);
-        }
+    @Override
+    public Schema visit(SchemaProvider.SchemaId schemaId) {
+        return getSchemaForId(table, schemaId.schemaId());
     }
 
-    enum CurrentSnapshotSchemaProvider implements SchemaProviderImpl {
-        CURRENT_SNAPSHOT;
+    @Override
+    public Schema visit(SchemaProvider.SnapshotId snapshotId) {
+        return getSchemaForSnapshotId(table, snapshotId.snapshotId());
+    }
 
-        @Override
-        public Schema getSchema(final Table table) {
-            return getSchemaForCurrentSnapshot(table);
-        }
+    @Override
+    public Schema visit(SchemaProvider.DirectSchema schema) {
+        return schema.schema();
     }
 
     // --------------------------------------------------------------------------------------------------
@@ -92,7 +64,7 @@ class SchemaProviderInternal {
         return schema;
     }
 
-    private static Schema getSchemaForSnapshotId(final Table table, final int snapshotId) {
+    private static Schema getSchemaForSnapshotId(final Table table, final long snapshotId) {
         final Snapshot snapshot = table.snapshot(snapshotId);
         if (snapshot == null) {
             throw new IllegalArgumentException("Snapshot with ID " + snapshotId + " not found for table " +

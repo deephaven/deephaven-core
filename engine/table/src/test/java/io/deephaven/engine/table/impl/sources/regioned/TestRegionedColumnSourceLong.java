@@ -46,7 +46,7 @@ public class TestRegionedColumnSourceLong extends
     public void setUp() throws Exception {
         super.setUp();
 
-        SUT = new RegionedColumnSourceLong.AsValues();
+        SUT = new RegionedColumnSourceLong.AsValues(manager);
         assertEquals(long.class, SUT.getType());
     }
 

@@ -8,8 +8,6 @@ import io.deephaven.barrage.flatbuf.BarrageMessageType;
 import io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
 import io.deephaven.barrage.flatbuf.BarrageModColumnMetadata;
 import io.deephaven.barrage.flatbuf.BarrageUpdateMetadata;
-import io.deephaven.chunk.ChunkType;
-import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Values;
@@ -213,24 +211,25 @@ public class WebBarrageMessageReader {
 
                 // select the current chunk size and read the size
                 int lastChunkIndex = acd.data.size() - 1;
-                WritableChunk<Values> chunk = (WritableChunk<Values>) acd.data.get(lastChunkIndex);
+                WritableChunk<Values> inChunk = (WritableChunk<Values>) acd.data.get(lastChunkIndex);
 
-                if (batch.length() > chunk.capacity() - chunk.size()) {
+                if (batch.length() > inChunk.capacity() - inChunk.size()) {
                     // reading the rows from this batch will overflow the existing chunk; create a new one
                     final int chunkSize = (int) (Math.min(remaining, MAX_CHUNK_SIZE));
-                    chunk = WritableObjectChunk.makeWritableChunk(chunkSize);
-                    acd.data.add(chunk);
+                    inChunk = WritableObjectChunk.makeWritableChunk(chunkSize);
+                    acd.data.add(inChunk);
 
-                    chunk.setSize(0);
+                    inChunk.setSize(0);
                     ++lastChunkIndex;
                 }
 
                 // fill the chunk with data and assign back into the array
-                final int origSize = chunk.size();
-                chunk = readers.get(ci).readChunk(fieldNodeIter, bufferInfoIter, ois, chunk, chunk.size(),
-                        (int) batch.length());
-                acd.data.set(lastChunkIndex, chunk);
-                chunk.setSize(origSize + (int) batch.length());
+                final WritableChunk<Values> outChunk = readers.get(ci).readChunk(
+                        fieldNodeIter, bufferInfoIter, ois, inChunk, inChunk.size(), (int) batch.length());
+                if (outChunk != inChunk) {
+                    throw new IllegalStateException(
+                            "ChunkReader returned a different chunk than was passed in; this should never happen");
+                }
             }
             numAddRowsRead += batch.length();
         } else {
@@ -242,25 +241,27 @@ public class WebBarrageMessageReader {
 
                 // need to add the batch row data to the column chunks
                 int lastChunkIndex = mcd.data.size() - 1;
-                WritableChunk<Values> chunk = (WritableChunk<Values>) mcd.data.get(lastChunkIndex);
+                WritableChunk<Values> inChunk = (WritableChunk<Values>) mcd.data.get(lastChunkIndex);
 
                 final int numRowsToRead = LongSizedDataStructure.intSize("BarrageStreamReader",
                         Math.min(remaining, batch.length()));
-                if (numRowsToRead > chunk.capacity() - chunk.size()) {
+                if (numRowsToRead > inChunk.capacity() - inChunk.size()) {
                     // reading the rows from this batch will overflow the existing chunk; create a new one
                     final int chunkSize = (int) (Math.min(remaining, MAX_CHUNK_SIZE));
-                    chunk = WritableObjectChunk.makeWritableChunk(chunkSize);
-                    mcd.data.add(chunk);
+                    inChunk = WritableObjectChunk.makeWritableChunk(chunkSize);
+                    mcd.data.add(inChunk);
 
-                    chunk.setSize(0);
+                    inChunk.setSize(0);
                     ++lastChunkIndex;
                 }
 
                 // fill the chunk with data and assign back into the array
-                mcd.data.set(lastChunkIndex,
-                        readers.get(ci).readChunk(fieldNodeIter, bufferInfoIter, ois, chunk, chunk.size(),
-                                numRowsToRead));
-                chunk.setSize(chunk.size() + numRowsToRead);
+                final WritableChunk<Values> outChunk = readers.get(ci).readChunk(
+                        fieldNodeIter, bufferInfoIter, ois, inChunk, inChunk.size(), numRowsToRead);
+                if (outChunk != inChunk) {
+                    throw new IllegalStateException(
+                            "ChunkReader returned a different chunk than was passed in; this should never happen");
+                }
             }
             numModRowsRead += batch.length();
         }

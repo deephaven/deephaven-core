@@ -12,6 +12,9 @@ import io.deephaven.iceberg.sqlite.DbResource;
 import io.deephaven.iceberg.util.IcebergCatalogAdapter;
 import io.deephaven.iceberg.util.IcebergReadInstructions;
 import io.deephaven.iceberg.util.IcebergTableAdapter;
+import io.deephaven.iceberg.util.LoadTableOptions;
+import io.deephaven.iceberg.util.InferenceResolver;
+import io.deephaven.iceberg.util.SchemaProvider;
 import org.apache.iceberg.Snapshot;
 import org.apache.iceberg.catalog.Namespace;
 import org.apache.iceberg.catalog.TableIdentifier;
@@ -19,7 +22,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
-import java.net.URISyntaxException;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -50,7 +52,7 @@ class PyIceberg1Test {
     private IcebergCatalogAdapter catalogAdapter;
 
     @BeforeEach
-    void setUp() throws URISyntaxException {
+    void setUp() {
         catalogAdapter = DbResource.openCatalog("pyiceberg-1");
     }
 
@@ -82,10 +84,13 @@ class PyIceberg1Test {
     void cities1() {
         final Table cities1;
         {
-            final IcebergTableAdapter tableAdapter = catalogAdapter.loadTable(CITIES_ID);
-            final TableDefinition td = tableAdapter.definition(IcebergReadInstructions.builder()
-                    .snapshotId(SNAPSHOT_1_ID)
+            final IcebergTableAdapter tableAdapter = catalogAdapter.loadTable(LoadTableOptions.builder()
+                    .id(CITIES_ID)
+                    .resolver(InferenceResolver.builder()
+                            .schema(SchemaProvider.fromSnapshotId(SNAPSHOT_1_ID))
+                            .build())
                     .build());
+            final TableDefinition td = tableAdapter.definition();
             assertThat(td).isEqualTo(CITIES_1_TD);
 
             cities1 = tableAdapter.table(IcebergReadInstructions.builder()
@@ -104,10 +109,13 @@ class PyIceberg1Test {
     void cities2() {
         final Table cities2;
         {
-            final IcebergTableAdapter tableAdapter = catalogAdapter.loadTable(CITIES_ID);
-            final TableDefinition td = tableAdapter.definition(IcebergReadInstructions.builder()
-                    .snapshotId(SNAPSHOT_2_ID)
+            final IcebergTableAdapter tableAdapter = catalogAdapter.loadTable(LoadTableOptions.builder()
+                    .id(CITIES_ID)
+                    .resolver(InferenceResolver.builder()
+                            .schema(SchemaProvider.fromSnapshotId(SNAPSHOT_2_ID))
+                            .build())
                     .build());
+            final TableDefinition td = tableAdapter.definition();
             assertThat(td).isEqualTo(CITIES_2_TD);
 
             cities2 = tableAdapter.table(IcebergReadInstructions.builder()
@@ -115,12 +123,11 @@ class PyIceberg1Test {
                     .build());
             assertThat(cities2.getDefinition()).isEqualTo(CITIES_2_TD);
         }
-        // TODO(deephaven-core#6118): Iceberg column rename handling
-        // final Table expectedCities2 = TableTools.newTable(CITIES_2_TD,
-        // TableTools.stringCol("city", "Amsterdam", "San Francisco", "Drachten", "Paris", "Minneapolis", "New York"),
-        // TableTools.doubleCol("latitude", 52.371807, 37.773972, 53.11254, 48.864716, 44.977479, 40.730610),
-        // TableTools.doubleCol("longitude", 4.896029, -122.431297, 6.0989, 2.349014, -93.264358, -73.935242)
-        // );
-        // TstUtils.assertTableEquals(expectedCities2, cities2);
+        final Table expectedCities2 = TableTools.newTable(CITIES_2_TD,
+                TableTools.stringCol("city", "Amsterdam", "San Francisco", "Drachten", "Paris", "Minneapolis",
+                        "New York"),
+                TableTools.doubleCol("latitude", 52.371807, 37.773972, 53.11254, 48.864716, 44.977479, 40.730610),
+                TableTools.doubleCol("longitude", 4.896029, -122.431297, 6.0989, 2.349014, -93.264358, -73.935242));
+        TstUtils.assertTableEquals(expectedCities2, cities2);
     }
 }

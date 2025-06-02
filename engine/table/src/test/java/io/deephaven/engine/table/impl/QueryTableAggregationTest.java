@@ -12,6 +12,7 @@ import io.deephaven.base.FileUtils;
 import io.deephaven.chunk.util.pools.ChunkPoolReleaseTracking;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
+import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -19,6 +20,7 @@ import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
+import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.testutil.QueryTableTestBase.TableComparator;
 import io.deephaven.engine.table.impl.by.*;
@@ -86,11 +88,13 @@ public class QueryTableAggregationTest {
 
     @Before
     public void setUp() throws Exception {
+        UpdatePerformanceTracker.resetForUnitTests();
         ChunkPoolReleaseTracking.enableStrict();
     }
 
     @After
     public void tearDown() throws Exception {
+        UpdatePerformanceTracker.resetForUnitTests();
         ChunkPoolReleaseTracking.checkAndDisable();
     }
 
@@ -1671,12 +1675,14 @@ public class QueryTableAggregationTest {
         }
         for (final int size : sizes) {
             for (int seed = 0; seed < 1; ++seed) {
+                UpdatePerformanceTracker.resetForUnitTests();
                 ChunkPoolReleaseTracking.enableStrict();
                 System.out.println("Size = " + size + ", Seed = " + seed);
                 testSumByIncremental(size, seed, true, true);
                 testSumByIncremental(size, seed, true, false);
                 testSumByIncremental(size, seed, false, true);
                 testSumByIncremental(size, seed, false, false);
+                UpdatePerformanceTracker.resetForUnitTests();
                 ChunkPoolReleaseTracking.checkAndDisable();
             }
         }

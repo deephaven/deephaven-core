@@ -150,6 +150,11 @@ public class SwitchColumn implements SelectColumn {
     }
 
     @Override
+    public boolean hasVirtualRowVariables() {
+        return getRealColumn().hasVirtualRowVariables();
+    }
+
+    @Override
     public SwitchColumn copy() {
         final SwitchColumn switchColumn = new SwitchColumn(columnName, expression, parser);
         if (realColumn != null) {

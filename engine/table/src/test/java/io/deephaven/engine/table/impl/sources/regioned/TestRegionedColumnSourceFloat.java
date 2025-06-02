@@ -46,7 +46,7 @@ public class TestRegionedColumnSourceFloat extends
     public void setUp() throws Exception {
         super.setUp();
 
-        SUT = new RegionedColumnSourceFloat.AsValues();
+        SUT = new RegionedColumnSourceFloat.AsValues(manager);
         assertEquals(float.class, SUT.getType());
     }
 

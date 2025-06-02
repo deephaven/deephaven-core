@@ -3,7 +3,9 @@
  */
 #pragma once
 
+#include <cstddef>
 #include <memory>
+#include <utility>
 #include <immer/flex_vector.hpp>
 #include <immer/flex_vector_transient.hpp>
 #include "deephaven/dhcore/chunk/chunk.h"
@@ -24,7 +26,7 @@ public:
       immer::flex_vector<T> *dest_data, immer::flex_vector<bool> *optional_dest_nulls) {
     auto chunk_data = AppendHelper(src, begin, end, optional_dest_nulls);
 
-    typedef typename deephaven::dhcore::chunk::TypeToChunk<T>::type_t chunkType_t;
+    using chunkType_t = typename deephaven::dhcore::chunk::TypeToChunk<T>::type_t;
     auto *typed_chunk_data = deephaven::dhcore::utility::VerboseCast<const chunkType_t *>(
         DEEPHAVEN_LOCATION_EXPR(&chunk_data.Unwrap()));
     auto transient_data = dest_data->transient();
@@ -50,7 +52,8 @@ protected:
   using Chunk = deephaven::dhcore::chunk::Chunk;
   using ColumnSource = deephaven::dhcore::column::ColumnSource;
 public:
-  virtual ~AbstractFlexVectorBase();
+  explicit AbstractFlexVectorBase(const ElementType &element_type) : element_type_(element_type) {}
+  virtual ~AbstractFlexVectorBase() = default;
 
   [[nodiscard]] virtual std::unique_ptr<AbstractFlexVectorBase> Take(size_t n) = 0;
   virtual void InPlaceDrop(size_t n) = 0;
@@ -58,20 +61,24 @@ public:
   virtual void InPlaceAppendSource(const ColumnSource &source, size_t begin, size_t end) = 0;
 
   [[nodiscard]] virtual std::shared_ptr<ColumnSource> MakeColumnSource() const = 0;
+
+protected:
+  ElementType element_type_;
 };
 
 template<typename T>
 class NumericAbstractFlexVector final : public AbstractFlexVectorBase {
 public:
-  NumericAbstractFlexVector() = default;
+  explicit NumericAbstractFlexVector(const ElementType &element_type) : AbstractFlexVectorBase(element_type) {}
 
-  explicit NumericAbstractFlexVector(immer::flex_vector<T> vec) : vec_(std::move(vec)) {}
+  NumericAbstractFlexVector(const ElementType &element_type, immer::flex_vector<T> vec) :
+      AbstractFlexVectorBase(element_type), vec_(std::move(vec)) {}
 
   ~NumericAbstractFlexVector() final = default;
 
   [[nodiscard]]
   std::unique_ptr<AbstractFlexVectorBase> Take(size_t n) final {
-    return std::make_unique<NumericAbstractFlexVector>(vec_.take(n));
+    return std::make_unique<NumericAbstractFlexVector>(element_type_, vec_.take(n));
   }
 
   void InPlaceDrop(size_t n) final {
@@ -92,7 +99,7 @@ public:
 
   [[nodiscard]]
   std::shared_ptr<ColumnSource> MakeColumnSource() const final {
-    return NumericImmerColumnSource<T>::Create(vec_);
+    return NumericImmerColumnSource<T>::Create(element_type_, vec_);
   }
 
 private:
@@ -102,16 +109,17 @@ private:
 template<typename T>
 class GenericAbstractFlexVector final : public AbstractFlexVectorBase {
 public:
-  GenericAbstractFlexVector() = default;
+  explicit GenericAbstractFlexVector(const ElementType &element_type) : AbstractFlexVectorBase(element_type) {}
 
-  GenericAbstractFlexVector(immer::flex_vector<T> data, immer::flex_vector<bool> nulls) :
+  GenericAbstractFlexVector(const ElementType &element_type, immer::flex_vector<T> data,
+      immer::flex_vector<bool> nulls) : AbstractFlexVectorBase(element_type),
       data_(std::move(data)), nulls_(std::move(nulls)) {}
 
   ~GenericAbstractFlexVector() final = default;
 
   [[nodiscard]]
   std::unique_ptr<AbstractFlexVectorBase> Take(size_t n) final {
-    return std::make_unique<GenericAbstractFlexVector>(data_.take(n), nulls_.take(n));
+    return std::make_unique<GenericAbstractFlexVector>(element_type_, data_.take(n), nulls_.take(n));
   }
 
   void InPlaceDrop(size_t n) final {
@@ -138,7 +146,7 @@ public:
 
   [[nodiscard]]
   std::shared_ptr<ColumnSource> MakeColumnSource() const final {
-    return GenericImmerColumnSource<T>::Create(data_, nulls_);
+    return GenericImmerColumnSource<T>::Create(element_type_, data_, nulls_);
   }
 
 private:

@@ -17,11 +17,10 @@ TEST_CASE("Input Table: append", "[input_table]") {
 
   // expect input_table to be {0, 100}, {1, 101}, {2, 102}
   {
-    std::vector<int64_t> a_data = {0, 1, 2};
-    std::vector<int64_t> b_data = {100, 101, 102};
-    CompareTable(input_table,
-        "A", a_data,
-        "B", b_data);
+    TableMaker expected;
+    expected.AddColumn<int64_t>("A", {0, 1, 2});
+    expected.AddColumn<int64_t>("B", {100, 101, 102});
+    TableComparerForTests::Compare(expected, input_table);
   }
 
   auto table_to_add = tm.EmptyTable(2).Update({"A = ii", "B = ii + 200"});
@@ -29,11 +28,10 @@ TEST_CASE("Input Table: append", "[input_table]") {
 
   // Because of append, expect input_table to be {0, 100}, {1, 101}, {2, 102}, {0, 200}, {1, 201}
   {
-    std::vector<int64_t> a_data = {0, 1, 2, 0, 1};
-    std::vector<int64_t> b_data = {100, 101, 102, 200, 201};
-    CompareTable(input_table,
-        "A", a_data,
-        "B", b_data);
+    TableMaker expected;
+    expected.AddColumn<int64_t>("A", {0, 1, 2, 0, 1});
+    expected.AddColumn<int64_t>("B", {100, 101, 102, 200, 201});
+    TableComparerForTests::Compare(expected, input_table);
   }
 }
 
@@ -46,11 +44,10 @@ TEST_CASE("Input Table: keyed", "[input_table]") {
 
   // expect input_table to be {0, 100}, {1, 101}, {2, 102}
   {
-    std::vector<int64_t> a_data = {0, 1, 2};
-    std::vector<int64_t> b_data = {100, 101, 102};
-    CompareTable(input_table,
-        "A", a_data,
-        "B", b_data);
+    TableMaker expected;
+    expected.AddColumn<int64_t>("A", {0, 1, 2});
+    expected.AddColumn<int64_t>("B", {100, 101, 102});
+    TableComparerForTests::Compare(expected, input_table);
   }
 
   auto table_to_add = tm.EmptyTable(2).Update({"A = ii", "B = ii + 200"});
@@ -58,11 +55,10 @@ TEST_CASE("Input Table: keyed", "[input_table]") {
 
   // Because key is "A", expect input_table to be {0, 200}, {1, 201}, {2, 102}
   {
-    std::vector<int64_t> a_data = {0, 1, 2};
-    std::vector<int64_t> b_data = {200, 201, 102};
-    CompareTable(input_table,
-        "A", a_data,
-        "B", b_data);
+    TableMaker expected;
+    expected.AddColumn<int64_t>("A", {0, 1, 2});
+    expected.AddColumn<int64_t>("B", {200, 201, 102});
+    TableComparerForTests::Compare(expected, input_table);
   }
 }
 }  // namespace deephaven::client::tests

@@ -165,7 +165,7 @@ cd deephaven-core
 python3 -m venv ~/my-dh-venv
 source ~/my-dh-venv/bin/activate
 ./gradlew py-server:assemble
-pip install "py/server/build/wheel/deephaven_core-<version>-py3-non-any.whl[autocomplete]
+pip install 'py/server/build/wheel/deephaven_core-<version>-py3-non-any.whl[autocomplete]'
 ./gradlew server-jetty-app:run
 ```
 

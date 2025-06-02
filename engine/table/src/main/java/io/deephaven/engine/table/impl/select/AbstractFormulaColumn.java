@@ -256,15 +256,20 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
     private Formula getFormula(boolean initLazyMap,
             Map<String, ? extends ColumnSource<?>> columnsToData,
             QueryScopeParam<?>... params) {
+        final FormulaFactory formulaFactory;
         try {
-            // the future must already be completed or else it is an error
-            formula = formulaFactoryFuture.get(0, TimeUnit.SECONDS).createFormula(
-                    StringEscapeUtils.escapeJava(columnName), rowSet, initLazyMap, columnsToData, params);
+            // The future's root-parent is definitely complete via the QueryCompilerRequestProcessor. However, we
+            // might need to wait for follow on thenApply mappers to complete. We expect this to be very fast, so we
+            // use a 1-minute timeout to avoid blocking indefinitely.
+            formulaFactory = formulaFactoryFuture.get(1, TimeUnit.MINUTES);
         } catch (InterruptedException | TimeoutException e) {
-            throw new IllegalStateException("Formula factory not already compiled!");
+            throw new IllegalStateException("Formula factory not already compiled!", e);
         } catch (ExecutionException e) {
-            throw new UncheckedDeephavenException("Error creating formula for " + columnName, e.getCause());
+            throw new UncheckedDeephavenException("Error creating formula factory for " + columnName, e.getCause());
         }
+        formula = formulaFactory.createFormula(StringEscapeUtils.escapeJava(columnName), rowSet, initLazyMap,
+                columnsToData, params);
+
         return formula;
     }
 

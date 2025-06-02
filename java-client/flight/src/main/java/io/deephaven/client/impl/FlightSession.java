@@ -103,6 +103,17 @@ public class FlightSession implements AutoCloseable {
     }
 
     /**
+     * Creates a new server side DoExchange session.
+     *
+     * @param hasPathId an object that has a {@link PathId}
+     * @param options the GRPC otions to apply to this call
+     * @return the bi-directional ReaderWriter object
+     */
+    public FlightClient.ExchangeReaderWriter startExchange(final HasPathId hasPathId, final CallOption... options) {
+        return startExchange(FlightClientHelper.descriptor(hasPathId), options);
+    }
+
+    /**
      * Creates a new server side exported table backed by the server semantics of DoPut with a {@link NewTable} payload.
      *
      * <p>

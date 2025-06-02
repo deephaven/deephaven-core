@@ -13,6 +13,7 @@ import io.deephaven.engine.table.impl.util.EngineMetrics;
 import io.deephaven.engine.table.impl.util.ServerStateTracker;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
+import io.deephaven.engine.util.AbstractScriptSession;
 import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
@@ -161,6 +162,10 @@ public class DeephavenApiServer {
         // Now that no new gRPC calls may be made, close outstanding sessions to give any clients closure
         ProcessEnvironment.getGlobalShutdownManager().registerTask(ShutdownManager.OrderingCategory.MIDDLE,
                 sessionService::onShutdown);
+
+        // Let's also clear the class cache directory on a successful shutdown.
+        ProcessEnvironment.getGlobalShutdownManager().registerTask(ShutdownManager.OrderingCategory.MIDDLE,
+                () -> scriptSessionProvider.get().cleanup());
 
         // Finally, wait for the http server to be finished stopping
         ProcessEnvironment.getGlobalShutdownManager().registerTask(ShutdownManager.OrderingCategory.LAST, () -> {

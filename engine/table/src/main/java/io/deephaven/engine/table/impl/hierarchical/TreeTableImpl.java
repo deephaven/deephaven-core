@@ -331,13 +331,11 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
         if (sourceRowKey == sourceRowLookup.noEntryValue()) {
             return NULL_ROW_KEY;
         }
-        if (filtered) {
-            final long sourceRowPosition = usePrev
-                    ? getSource().getRowSet().findPrev(sourceRowKey)
-                    : getSource().getRowSet().find(sourceRowKey);
-            if (sourceRowPosition == NULL_ROW_KEY) {
-                return NULL_ROW_KEY;
-            }
+        final long sourceRowPosition = usePrev
+                ? getSource().getRowSet().findPrev(sourceRowKey)
+                : getSource().getRowSet().find(sourceRowKey);
+        if (sourceRowPosition == NULL_ROW_KEY) {
+            return NULL_ROW_KEY;
         }
         return sourceRowKey;
     }

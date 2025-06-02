@@ -14,6 +14,7 @@ import io.deephaven.api.filter.FilterIsNull;
 import io.deephaven.api.filter.FilterNot;
 import io.deephaven.api.filter.FilterOr;
 import io.deephaven.api.filter.FilterPattern;
+import io.deephaven.api.filter.FilterSerial;
 
 import java.util.List;
 
@@ -66,6 +67,11 @@ enum FilterToListImpl implements Filter.Visitor<List<Filter>> {
     @Override
     public List<Filter> visit(FilterPattern pattern) {
         return List.of(pattern);
+    }
+
+    @Override
+    public List<Filter> visit(FilterSerial serial) {
+        return List.of(serial);
     }
 
     @Override

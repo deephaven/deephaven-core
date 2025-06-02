@@ -191,13 +191,14 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
         }
 
         final QueryCompilerRequestProcessor.BatchProcessor compilationProcessor = QueryCompilerRequestProcessor.batch();
+        boolean serialFilterFound = false;
         for (final WhereFilter filter : filters) {
             filter.init(definition, compilationProcessor);
 
             final boolean isPostView = Stream.of(filter.getColumns(), filter.getColumnArrays())
                     .flatMap(Collection::stream)
                     .anyMatch(postViewColumns::contains);
-            if (isPostView) {
+            if (isPostView || serialFilterFound) {
                 postViewFilters.add(filter);
                 continue;
             }
@@ -221,6 +222,10 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
                 newFilter.init(tableReference.getDefinition(), compilationProcessor);
                 preViewFilters.add(newFilter);
             } else {
+                // if this filter is serial, all subsequent filters must be postViewFilters
+                if (!filter.permitParallelization()) {
+                    serialFilterFound = true;
+                }
                 postViewFilters.add(filter);
             }
         }
@@ -283,7 +288,7 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
 
     @Override
     protected DeferredViewTable copy() {
-        final DeferredViewTable result = new DeferredViewTable(definition, description, new TableReference(this),
+        final DeferredViewTable result = new DeferredViewTable(definition, getDescription(), new TableReference(this),
                 null, null, null);
         LiveAttributeMap.copyAttributes(this, result, ak -> true);
         return result;
@@ -296,14 +301,14 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
         for (int cdi = 0; cdi < newView.length; ++cdi) {
             newView[cdi] = new SourceColumn(cDefs.get(cdi).getName());
         }
-        return new DeferredViewTable(newDefinition, description + "-redefined",
+        return new DeferredViewTable(newDefinition, getDescription() + "-redefined",
                 new TableReference(this), null, newView, null);
     }
 
     @Override
     protected Table redefine(TableDefinition newDefinitionExternal, TableDefinition newDefinitionInternal,
             SelectColumn[] viewColumns) {
-        return new DeferredViewTable(newDefinitionExternal, description + "-redefined",
+        return new DeferredViewTable(newDefinitionExternal, getDescription() + "-redefined",
                 new TableReference(this), null, viewColumns, null);
     }
 

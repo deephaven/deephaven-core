@@ -46,7 +46,7 @@ public class TestRegionedColumnSourceInt extends
     public void setUp() throws Exception {
         super.setUp();
 
-        SUT = new RegionedColumnSourceInt.AsValues();
+        SUT = new RegionedColumnSourceInt.AsValues(manager);
         assertEquals(int.class, SUT.getType());
     }
 

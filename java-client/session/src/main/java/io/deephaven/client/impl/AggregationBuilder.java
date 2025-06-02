@@ -16,6 +16,7 @@ import io.deephaven.proto.backplane.grpc.Aggregation.AggregationPartition;
 import io.deephaven.proto.backplane.grpc.Aggregation.AggregationRowKey;
 import io.deephaven.proto.backplane.grpc.Aggregation.Builder;
 import io.deephaven.proto.backplane.grpc.Selectable;
+import io.deephaven.util.annotations.InternalUseOnly;
 
 import java.util.Collection;
 import java.util.List;
@@ -25,7 +26,12 @@ import java.util.stream.Collectors;
 
 import static java.util.Collections.singletonList;
 
-class AggregationBuilder implements io.deephaven.api.agg.Aggregation.Visitor {
+/**
+ * This class is used to translate Engine API {@link io.deephaven.api.agg.Aggregation} objects into the gRPC
+ * {@link Aggregation} objects.
+ */
+@InternalUseOnly
+public class AggregationBuilder implements io.deephaven.api.agg.Aggregation.Visitor {
 
     public static List<Aggregation> adapt(io.deephaven.api.agg.Aggregation agg) {
         return agg.walk(new AggregationBuilder()).out();

@@ -40,6 +40,7 @@ import io.deephaven.proto.flight.util.FlightExportTicketHelper;
 import io.deephaven.proto.util.ScopeTicketHelper;
 import io.deephaven.qst.table.TicketTable;
 import io.deephaven.server.arrow.ArrowModule;
+import io.deephaven.server.arrow.ExchangeMarshallerModule;
 import io.deephaven.server.auth.AuthorizationProvider;
 import io.deephaven.server.config.ConfigServiceModule;
 import io.deephaven.server.console.ConsoleModule;
@@ -95,6 +96,7 @@ import org.junit.Test;
 import org.junit.rules.ExternalResource;
 
 import javax.inject.Named;
+import javax.inject.Provider;
 import javax.inject.Singleton;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -127,6 +129,7 @@ public abstract class FlightMessageRoundTripTest {
             TestAuthModule.class,
             ObfuscatingErrorTransformerModule.class,
             PluginsModule.class,
+            ExchangeMarshallerModule.class,
     })
     public static class FlightTestModule {
         @IntoSet
@@ -228,6 +231,8 @@ public abstract class FlightMessageRoundTripTest {
         Registration.Callback registration();
 
         Scheduler serverScheduler();
+
+        Provider<ScriptSession> scriptSessionProvider();
     }
 
     private LogBuffer logBuffer;
@@ -317,6 +322,8 @@ public abstract class FlightMessageRoundTripTest {
 
     @After
     public void teardown() throws InterruptedException {
+        component.scriptSessionProvider().get().cleanup();
+
         clientSession.close();
         clientScheduler.shutdownNow();
         clientChannel.shutdownNow();

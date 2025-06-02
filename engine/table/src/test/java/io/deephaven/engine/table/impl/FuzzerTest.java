@@ -11,6 +11,7 @@ import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import io.deephaven.engine.table.impl.util.RuntimeMemory;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.TstUtils;
@@ -23,7 +24,6 @@ import io.deephaven.engine.util.GroovyDeephavenSession;
 import io.deephaven.test.types.SerialTest;
 import io.deephaven.time.calendar.CalendarInit;
 import io.deephaven.util.SafeCloseable;
-import io.deephaven.util.thread.ThreadInitializationFactory;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Assume;
 import org.junit.Before;
@@ -108,38 +108,41 @@ public class FuzzerTest {
         clock = realtime ? null : new TestClock(DateTimeUtils.epochNanos(fakeStart));
 
         final GroovyDeephavenSession session = getGroovySession(clock);
+        try {
+            System.out.println(groovyString);
 
-        System.out.println(groovyString);
+            session.evaluateScript(groovyString).throwIfError();
 
-        session.evaluateScript(groovyString).throwIfError();
+            final Map<String, Object> hardReferences = new ConcurrentHashMap<>();
 
-        final Map<String, Object> hardReferences = new ConcurrentHashMap<>();
+            validateBindingPartitionedTableConstituents(session, hardReferences);
+            validateBindingTables(session, hardReferences);
+            annotateBinding(session);
 
-        validateBindingPartitionedTableConstituents(session, hardReferences);
-        validateBindingTables(session, hardReferences);
-        annotateBinding(session);
-
-        // so the first tick has a duration related to our initialization time
-        if (!realtime) {
-            clock.now += DateTimeUtils.SECOND / 10 * timeRandom.nextInt(20);
-        }
-
-        final TimeTable timeTable = session.getQueryScope().readParamValue("tt");
-
-        final int steps = TstUtils.SHORT_TESTS ? 20 : 100;
-
-        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
-        for (int step = 0; step < steps; ++step) {
-            final int fstep = step;
-            updateGraph.runWithinUnitTestCycle(() -> {
-                System.out.println("Step = " + fstep);
-                timeTable.run();
-            });
-            if (realtime) {
-                Thread.sleep(1000);
-            } else {
+            // so the first tick has a duration related to our initialization time
+            if (!realtime) {
                 clock.now += DateTimeUtils.SECOND / 10 * timeRandom.nextInt(20);
             }
+
+            final TimeTable timeTable = session.getQueryScope().readParamValue("tt");
+
+            final int steps = TstUtils.SHORT_TESTS ? 20 : 100;
+
+            final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+            for (int step = 0; step < steps; ++step) {
+                final int fstep = step;
+                updateGraph.runWithinUnitTestCycle(() -> {
+                    System.out.println("Step = " + fstep);
+                    timeTable.run();
+                });
+                if (realtime) {
+                    Thread.sleep(1000);
+                } else {
+                    clock.now += DateTimeUtils.SECOND / 10 * timeRandom.nextInt(20);
+                }
+            }
+        } finally {
+            session.cleanup();
         }
     }
 
@@ -149,29 +152,33 @@ public class FuzzerTest {
         for (final FuzzDescriptor fuzzDescriptor : INTERESTING_SEEDS) {
             System.gc();
             final GroovyDeephavenSession session = getGroovySession();
-            final StringBuilder query = new StringBuilder();
-            query.append(qf.getTablePreamble(fuzzDescriptor.tableSeed));
-            query.append(qf.generateQuery(fuzzDescriptor.tableSeed));
+            try {
+                final StringBuilder query = new StringBuilder();
+                query.append(qf.getTablePreamble(fuzzDescriptor.tableSeed));
+                query.append(qf.generateQuery(fuzzDescriptor.tableSeed));
 
-            System.out.println("Running test=======================\n TableSeed: " + fuzzDescriptor.tableSeed
-                    + " QuerySeed: " + fuzzDescriptor.tableSeed);
-            System.out.println(query);
+                System.out.println("Running test=======================\n TableSeed: " + fuzzDescriptor.tableSeed
+                        + " QuerySeed: " + fuzzDescriptor.tableSeed);
+                System.out.println(query);
 
-            session.evaluateScript(query.toString()).throwIfError();
+                session.evaluateScript(query.toString()).throwIfError();
 
-            annotateBinding(session);
-            final Map<String, Object> hardReferences = new ConcurrentHashMap<>();
-            validateBindingTables(session, hardReferences);
+                annotateBinding(session);
+                final Map<String, Object> hardReferences = new ConcurrentHashMap<>();
+                validateBindingTables(session, hardReferences);
 
-            final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
-            final TimeTable timeTable = session.getQueryScope().readParamValue("tt");
-            for (int step = 0; step < fuzzDescriptor.steps; ++step) {
-                final int fstep = step;
-                updateGraph.runWithinUnitTestCycle(() -> {
-                    System.out.println("Step = " + fstep);
-                    timeTable.run();
-                });
-                Thread.sleep(fuzzDescriptor.sleepPerStep);
+                final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+                final TimeTable timeTable = session.getQueryScope().readParamValue("tt");
+                for (int step = 0; step < fuzzDescriptor.steps; ++step) {
+                    final int fstep = step;
+                    updateGraph.runWithinUnitTestCycle(() -> {
+                        System.out.println("Step = " + fstep);
+                        timeTable.run();
+                    });
+                    Thread.sleep(fuzzDescriptor.sleepPerStep);
+                }
+            } finally {
+                session.cleanup();
             }
         }
     }
@@ -209,6 +216,7 @@ public class FuzzerTest {
                     final int firstRun = segment * 10;
                     runLargeFuzzerSetWithSeed(seed1 + iteration, firstRun, firstRun + 10, false, 180, 0);
                 }
+                UpdatePerformanceTracker.resetForUnitTests();
                 ChunkPoolReleaseTracking.checkAndDisable();
             }
         }
@@ -232,74 +240,81 @@ public class FuzzerTest {
         final long start = System.currentTimeMillis();
 
         final GroovyDeephavenSession session = getGroovySession(realtime ? null : clock);
+        try {
 
-        System.out.println(tableQuery);
+            System.out.println(tableQuery);
 
-        session.evaluateScript(tableQuery).throwIfError();
+            session.evaluateScript(tableQuery).throwIfError();
 
-        for (int runNum = 0; runNum <= lastRun; ++runNum) {
-            final long currentSeed = sourceRandom.nextLong();
+            for (int runNum = 0; runNum <= lastRun; ++runNum) {
+                final long currentSeed = sourceRandom.nextLong();
 
-            final String query = qf.generateQuery(currentSeed);
+                final String query = qf.generateQuery(currentSeed);
 
-            if (runNum >= firstRun) {
-                final StringBuilder sb = new StringBuilder("//========================================\n");
-                sb.append("// Seed: ").append(currentSeed).append("L\n\n");
-                sb.append(query).append("\n");
-                System.out.println(sb);
-                session.evaluateScript(query).throwIfError();
+                if (runNum >= firstRun) {
+                    final StringBuilder sb = new StringBuilder("//========================================\n");
+                    sb.append("// Seed: ").append(currentSeed).append("L\n\n");
+                    sb.append(query).append("\n");
+                    System.out.println(sb);
+                    session.evaluateScript(query).throwIfError();
+                }
+
             }
+            annotateBinding(session);
 
-        }
-        annotateBinding(session);
-
-        if (!realtime) {
-            clock.now += DateTimeUtils.SECOND / 10 * timeRandom.nextInt(20);
-        }
-
-        final DecimalFormat commaFormat = new DecimalFormat();
-        commaFormat.setGroupingUsed(true);
-        final long startTime = System.currentTimeMillis();
-
-        final long loopStart = System.currentTimeMillis();
-        final TimeTable timeTable = session.getQueryScope().readParamValue("tt");
-        final RuntimeMemory.Sample sample = new RuntimeMemory.Sample();
-        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
-        for (int step = 0; step < stepsToRun; ++step) {
-            final int fstep = step;
-            updateGraph.runWithinUnitTestCycle(timeTable::run);
-
-            RuntimeMemory.getInstance().read(sample);
-            final long totalMemory = sample.totalMemory;
-            final long freeMemory = sample.freeMemory;
-            final long usedMemory = totalMemory - freeMemory;
-
-            // noinspection unchecked,OptionalGetWithoutIsPresent
-            final long maxTableSize = session.getBinding().getVariables().values().stream()
-                    .filter(x -> x instanceof Table).mapToLong(x -> ((Table) x).size()).max().getAsLong();
-            System.out.println((System.currentTimeMillis() - startTime) + "ms: After Step = " + fstep + ", Used = "
-                    + commaFormat.format(usedMemory) + ", Free = " + commaFormat.format(freeMemory)
-                    + " / Total Memory: " + commaFormat.format(totalMemory) + ", TimeTable Size = " + timeTable.size()
-                    + ", Largest Table: " + maxTableSize);
-
-            if (realtime) {
-                Thread.sleep(sleepTime);
-            } else {
+            if (!realtime) {
                 clock.now += DateTimeUtils.SECOND / 10 * timeRandom.nextInt(20);
             }
-            if (maxTableSize > 500_000L) {
-                System.out.println("Tables have grown too large, quitting fuzzer run.");
-                break;
-            }
-        }
 
-        final long loopEnd = System.currentTimeMillis();
-        System.out.println("Elapsed time: " + (loopEnd - start) + "ms, loop: " + (loopEnd - loopStart) + "ms"
-                + (realtime
-                        ? ""
-                        : (", sim: "
-                                + (double) (clock.now - DateTimeUtils.epochNanos(fakeStart)) / DateTimeUtils.SECOND))
-                + ", ttSize: " + timeTable.size());
+            final DecimalFormat commaFormat = new DecimalFormat();
+            commaFormat.setGroupingUsed(true);
+            final long startTime = System.currentTimeMillis();
+
+            final long loopStart = System.currentTimeMillis();
+            final TimeTable timeTable = session.getQueryScope().readParamValue("tt");
+            final RuntimeMemory.Sample sample = new RuntimeMemory.Sample();
+            final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+            for (int step = 0; step < stepsToRun; ++step) {
+                final int fstep = step;
+                updateGraph.runWithinUnitTestCycle(timeTable::run);
+
+                RuntimeMemory.getInstance().read(sample);
+                final long totalMemory = sample.totalMemory;
+
+                final long freeMemory = sample.freeMemory;
+                final long usedMemory = totalMemory - freeMemory;
+
+                // noinspection unchecked,OptionalGetWithoutIsPresent
+                final long maxTableSize = session.getBinding().getVariables().values().stream()
+                        .filter(x -> x instanceof Table).mapToLong(x -> ((Table) x).size()).max().getAsLong();
+                System.out.println((System.currentTimeMillis() - startTime) + "ms: After Step = " + fstep + ", Used = "
+                        + commaFormat.format(usedMemory) + ", Free = " + commaFormat.format(freeMemory)
+                        + " / Total Memory: " + commaFormat.format(totalMemory) + ", TimeTable Size = "
+                        + timeTable.size()
+                        + ", Largest Table: " + maxTableSize);
+
+                if (realtime) {
+                    Thread.sleep(sleepTime);
+                } else {
+                    clock.now += DateTimeUtils.SECOND / 10 * timeRandom.nextInt(20);
+                }
+                if (maxTableSize > 500_000L) {
+                    System.out.println("Tables have grown too large, quitting fuzzer run.");
+                    break;
+                }
+            }
+
+            final long loopEnd = System.currentTimeMillis();
+            System.out.println("Elapsed time: " + (loopEnd - start) + "ms, loop: " + (loopEnd - loopStart) + "ms"
+                    + (realtime
+                            ? ""
+                            : (", sim: "
+                                    + (double) (clock.now - DateTimeUtils.epochNanos(fakeStart))
+                                            / DateTimeUtils.SECOND))
+                    + ", ttSize: " + timeTable.size());
+        } finally {
+            session.cleanup();
+        }
     }
 
     private void annotateBinding(GroovyDeephavenSession session) {

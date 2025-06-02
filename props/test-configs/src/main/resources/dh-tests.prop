@@ -6,6 +6,7 @@ measurement.per_thread_cpu=false
 QueryCompiler.logEnabledDefault=false
 UpdatePerformanceTracker.reportingMode=NONE
 UpdatePerformanceTracker.reportIntervalMillis=60000
+UpdatePerformanceTracker.logAllEntriesOnce=true
 
 #
 # NIO driver thread pool

@@ -19,6 +19,7 @@ from deephaven.experimental.table_data_service import TableDataServiceBackend, T
     TableLocationKey, TableDataService
 import deephaven.arrow as dharrow
 from deephaven.liveness_scope import liveness_scope
+from deephaven.update_graph import exclusive_lock
 
 from tests.testbase import BaseTestCase
 
@@ -63,6 +64,8 @@ class TestBackend(TableDataServiceBackend):
         self.partitions_size_subscriptions: Dict[TableLocationKey, bool] = {}
         self.existing_partitions_called: int = 0
         self.partition_size_called: int = 0
+        self.is_size_sub_failure_cb_called: bool = False
+        self.size_sub_failure_cb_called_cond: threading.Condition = threading.Condition()
         self.num_table_location_subs: int = 0
         self.location_cb: Optional[Callable[[TableLocationKeyImpl, Optional[pa.Table]], None]] = None
 
@@ -174,15 +177,22 @@ class TestBackend(TableDataServiceBackend):
             return
 
         while self.subscriptions_enabled_for_test and self.partitions_size_subscriptions[table_location_key]:
-            pa_table = self.partitions[table_location_key]
-            rbs = pa_table.to_batches()
-            rbs.append(pa_table.to_batches()[0])
-            new_pa_table = pa.Table.from_batches(rbs)
-            self.partitions[table_location_key] = new_pa_table
-            size_cb(new_pa_table.num_rows)
             if self.sub_partition_size_fail_test:
-                failure_cb(Exception("table location size subscription failure"))
+                with self.size_sub_failure_cb_called_cond:
+                    failure_cb(Exception("table location size subscription failure"))
+                    self.is_size_sub_failure_cb_called = True
+                    self.size_sub_failure_cb_called_cond.notify()
+                    self.sub_partition_size_fail_test = False
                 return
+            else:
+                pa_table = self.partitions[table_location_key]
+                rbs = pa_table.to_batches()
+                rbs.append(pa_table.to_batches()[0])
+                new_pa_table = pa.Table.from_batches(rbs)
+                self.partitions[table_location_key] = new_pa_table
+                size_cb(new_pa_table.num_rows)
+
+            # pause to simulate a delay in adding new rows
             time.sleep(0.1)
 
     def subscribe_to_table_location_size(self, table_key: TableKeyImpl,
@@ -403,7 +413,7 @@ class TableDataServiceTestCase(BaseTestCase):
         table = data_service.make_table(TableKeyImpl("test"), refreshing=True)
         with self.assertRaises(Exception) as cm:
             # failure_cb will be called in the background thread after 2 PUG cycles, 3 seconds timeout should be enough
-            self.wait_ticking_table_update(table, 600, 3)
+            self.wait_ticking_table_update(table, 1024, 3)
         self.assertTrue(table.is_failed)
 
     def test_partition_size_sub_failure(self):
@@ -411,11 +421,22 @@ class TableDataServiceTestCase(BaseTestCase):
             [pa.field(name="Ticker", type=pa.string()), pa.field(name="Exchange", type=pa.string())])
         backend = TestBackend(self.gen_pa_table(), pt_schema=self.pa_table.schema, pc_schema=pc_schema)
         data_service = TableDataService(backend)
-        backend.sub_partition_size_fail_test = True
         table = data_service.make_table(TableKeyImpl("test"), refreshing=True)
+
+        # wait for location/size subscription to be established before triggering the failure
+        table = table.coalesce()
+        backend.sub_partition_size_fail_test = True
+
+        # the test backend will trigger a size subscription failure
+        # if not backend.is_size_sub_failure_cb_called:
+        with backend.size_sub_failure_cb_called_cond:
+            if not backend.size_sub_failure_cb_called_cond.wait_for(lambda: backend.is_size_sub_failure_cb_called, timeout=5):
+                self.fail("size subscription failure callback was not called in 5s")
+
         with self.assertRaises(Exception) as cm:
-            # failure_cb will be called in the background thread after 2 PUG cycles, 3 seconds timeout should be enough
-            self.wait_ticking_table_update(table, 600, 3)
+            # for a real PUG with 1s interval, the failure is buffered after the roots are
+            # processed on one cycle, it won't be delivered until the next cycle
+            self.wait_ticking_table_update(table, 1024, 2)
 
         self.assertTrue(table.is_failed)
 

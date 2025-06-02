@@ -7,8 +7,12 @@ import unittest
 from deephaven import empty_table
 from deephaven.perfmon import process_info_log, process_metrics_log, server_state_log, \
     query_operation_performance_log, query_performance_log, update_performance_log, metrics_get_counters, \
-    metrics_reset_counters, query_performance_tree_table, query_operation_performance_tree_table
+    metrics_reset_counters, query_performance_tree_table, query_operation_performance_tree_table, \
+    update_performance_ancestors_log, ancestor_dot, ancestor_svg
 from deephaven.perfmon import query_update_performance, query_performance, query_operation_performance, server_state
+
+import os
+import tempfile
 from tests.testbase import BaseTestCase
 
 
@@ -62,8 +66,32 @@ class PerfmonTestCase(BaseTestCase):
         self.assertTrue(log_table.to_string())
         log_table = update_performance_log()
         self.assertTrue(log_table.to_string())
+        log_table = update_performance_ancestors_log()
+        self.assertTrue(log_table.to_string())
         log_table = query_performance_tree_table()
         self.assertIsNotNone(log_table)
+
+    def test_graphviz(self):
+        upl = update_performance_log()
+        ua = update_performance_ancestors_log()
+        self.assertIsNotNone(ancestor_dot(0, upl, ua))
+        self.assertIsNotNone(ancestor_svg(0, upl, ua, None))
+
+        fp = tempfile.NamedTemporaryFile(suffix=".svg")
+        fname = fp.name
+        fp.close()
+
+        svg_data = ancestor_svg(0, upl, ua, fname)
+        self.assertIsNotNone(svg_data)
+
+        if not os.path.exists(fname):
+            self.fail(f"SVG output '{fname}' not found.")
+        else:
+            with open(fname, 'r') as f:
+                text = f.read()
+            self.assertEqual(text, svg_data)
+
+        os.remove(fname)
 
     def test_performance_queries(self):
         q = query_performance(1)

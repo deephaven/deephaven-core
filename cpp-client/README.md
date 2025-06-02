@@ -52,13 +52,20 @@ connect a server when you want to run them.
    git clone https://github.com/deephaven/deephaven-core.git
    ```
 
-5. Build and install dependencies for Deephaven C++ client.
+5. Build and install dependencies for the Deephaven C++ client.
 
-   The `build-dependencies.sh` script in this directory downloads,
-   builds and installs the dependent libraries
-   (Protobuf, re2, gflags, absl, flatbuffers, c-ares, zlib, gRPC, and Arrow).
+   Inside the $DHSRC/deephaven-core/cpp-client directory there is a script called
+   `build-dependencies.sh`. This script downloads, builds, and installs the dependent
+   libraries (Protobuf, re2, gflags, absl, flatbuffers, c-ares, zlib, gRPC, and Arrow).
    Decide on a directory for the dependencies to live (eg, "$HOME/dhcpp").
-   Create that directory and copy the script there.
+   Create that directory and copy the script there. If the directory already exists
+   from a previous attempt, you should ensure is clean/empty.
+
+   ```
+   export DHCPP=$HOME/dhcpp
+   mkdir -p $DHCPP
+   cp $DHSRC/deephaven-core/cpp-client/build-dependencies.sh $DHCPP
+   ```
 
    The three main build types of a standard cmake build are supported,
    `Release`, `Debug` and `RelWithDebInfo`.  By default. `build-dependencies.sh`
@@ -66,25 +73,17 @@ connect a server when you want to run them.
    environment variable `BUILD_TYPE=Release` (1)
 
    Edit your local copy of the script if necessary to reflect your selection
-   of build tools and build target;
-   defaults point to Ubuntu system's g++, cmake, and a `RelWithDebInfo` build target
-   for cmake.
+   of build tools and build target; Defaults point to Ubuntu system's g++,
+   cmake, and a `RelWithDebInfo` build target for cmake.
    Comments in the script will help you identifying customization points.
    Note however that defaults are tested, variations are not;
    any deviation from defaults may require manual modification of other files later,
    when building the C++ client proper.
 
-   Example:
+   Next, run the script:
+
    ```
-   # This should reflect your selection for where dependencies will live
-   export DHCPP=$HOME/dhcpp
-   # If the directory already exists from a previous attempt, ensure is clean/empty
-   mkdir -p $DHCPP
-   cp $DHSRC/build-dependencies.sh $DHCPP
    cd $DHCPP
-   # Maybe edit build-dependencies.sh to reflect choices of build tools and build target, if you
-   # want anything different than defaults; defaults are tested to work,
-   # any deviation from defaults may require changing other files later.
    # Below we save the output of the script to keep a record of the commands ran during the build.
    ./build-dependencies.sh 2>&1 | tee build-dependencies.log
    ```

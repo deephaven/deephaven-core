@@ -25,9 +25,11 @@ abstract class RegionedColumnSourceFloat<ATTR extends Values>
         extends RegionedColumnSourceArray<Float, ATTR, ColumnRegionFloat<ATTR>>
         implements ColumnSourceGetDefaults.ForFloat /* MIXIN_INTERFACES */ {
 
-    RegionedColumnSourceFloat(@NotNull final ColumnRegionFloat<ATTR> nullRegion,
+    RegionedColumnSourceFloat(
+            @NotNull final RegionedColumnSourceManager manager,
+            @NotNull final ColumnRegionFloat<ATTR> nullRegion,
             @NotNull final MakeDeferred<ATTR, ColumnRegionFloat<ATTR>> makeDeferred) {
-        super(nullRegion, float.class, makeDeferred);
+        super(manager, nullRegion, float.class, makeDeferred);
     }
 
     @Override
@@ -51,15 +53,15 @@ abstract class RegionedColumnSourceFloat<ATTR extends Values>
     // endregion reinterpretation
 
     static final class AsValues extends RegionedColumnSourceFloat<Values> implements MakeRegionDefault {
-        AsValues() {
-            super(ColumnRegionFloat.createNull(PARAMETERS.regionMask), DeferredColumnRegionFloat::new);
+        AsValues(final RegionedColumnSourceManager manager) {
+            super(manager, ColumnRegionFloat.createNull(PARAMETERS.regionMask), DeferredColumnRegionFloat::new);
         }
     }
 
     static final class Partitioning extends RegionedColumnSourceFloat<Values> {
-
-        Partitioning() {
-            super(ColumnRegionFloat.createNull(PARAMETERS.regionMask),
+        Partitioning(final RegionedColumnSourceManager manager) {
+            super(manager,
+                    ColumnRegionFloat.createNull(PARAMETERS.regionMask),
                     (pm, rs) -> rs.get() // No need to interpose a deferred region in this case
             );
         }

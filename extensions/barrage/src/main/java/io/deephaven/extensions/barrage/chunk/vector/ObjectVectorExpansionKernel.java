@@ -13,6 +13,7 @@ import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
+import io.deephaven.extensions.barrage.chunk.BaseChunkReader;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.vector.ObjectVector;
 import io.deephaven.vector.ObjectVectorDirect;
@@ -20,7 +21,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.Array;
-import java.util.stream.Stream;
 
 public class ObjectVectorExpansionKernel<T> implements VectorExpansionKernel<ObjectVector<T>> {
     private static final String DEBUG_NAME = "ObjectVectorExpansionKernel";
@@ -69,15 +69,12 @@ public class ObjectVectorExpansionKernel<T> implements VectorExpansionKernel<Obj
             }
             if (row != null) {
                 try (final CloseableIterator<?> iter = row.iterator()) {
-                    Stream<?> stream = iter.stream();
-                    if (fixedSizeLength > 0) {
-                        // limit length to fixedSizeLength
-                        stream = stream.limit(fixedSizeLength);
+                    final int numToRead = LongSizedDataStructure.intSize(
+                            DEBUG_NAME, fixedSizeLength == 0 ? row.size() : fixedSizeLength);
+                    for (int jj = 0; jj < numToRead; ++jj) {
+                        // noinspection unchecked
+                        result.add((T) iter.next());
                     }
-
-                    // copy the row into the result
-                    // noinspection unchecked
-                    stream.forEach(v -> result.add((T) v));
                 }
             }
             if (fixedSizeLength != 0) {
@@ -100,32 +97,22 @@ public class ObjectVectorExpansionKernel<T> implements VectorExpansionKernel<Obj
     @Override
     public <A extends Any> WritableObjectChunk<ObjectVector<T>, A> contract(
             @NotNull final Chunk<A> source,
-            int sizePerElement,
+            final int sizePerElement,
             @Nullable final IntChunk<ChunkPositions> offsets,
             @Nullable final IntChunk<ChunkLengths> lengths,
             @Nullable final WritableChunk<A> outChunk,
             final int outOffset,
             final int totalRows) {
-        if (source.size() == 0) {
-            if (outChunk != null) {
-                return outChunk.asWritableObjectChunk();
-            }
-            return WritableObjectChunk.makeWritableChunk(totalRows);
-        }
-
-        sizePerElement = Math.abs(sizePerElement);
         final int itemsInBatch = offsets == null
                 ? source.size() / sizePerElement
                 : (offsets.size() - (lengths == null ? 1 : 0));
         final ObjectChunk<T, A> typedSource = source.asObjectChunk();
-        final WritableObjectChunk<ObjectVector<T>, A> result;
-        if (outChunk != null) {
-            result = outChunk.asWritableObjectChunk();
-        } else {
-            final int numRows = Math.max(itemsInBatch, totalRows);
-            result = WritableObjectChunk.makeWritableChunk(numRows);
-            result.setSize(numRows);
-        }
+        final WritableObjectChunk<ObjectVector<T>, A> result = BaseChunkReader.castOrCreateChunk(
+                outChunk,
+                outOffset,
+                Math.max(totalRows, itemsInBatch),
+                WritableObjectChunk::makeWritableChunk,
+                WritableChunk::asWritableObjectChunk);
 
         for (int ii = 0; ii < itemsInBatch; ++ii) {
             final int offset = offsets == null ? ii * sizePerElement : offsets.get(ii);

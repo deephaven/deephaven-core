@@ -17,6 +17,7 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
+import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.lang.QueryLanguageParser;
 import io.deephaven.engine.table.impl.util.codegen.CodeGenerator;
 import io.deephaven.engine.context.QueryScopeParam;
@@ -710,23 +711,24 @@ public class ConditionFilter extends AbstractConditionFilter {
     public Filter getFilter(Table table, RowSet fullSet)
             throws InstantiationException, IllegalAccessException, NoSuchMethodException, InvocationTargetException {
         if (filter == null) {
+            Class<?> filterKernelClass;
             try {
-                final FilterKernel<?> filterKernel = (FilterKernel<?>) filterKernelClassFuture
-                        .get(0, TimeUnit.SECONDS)
-                        .getConstructor(Table.class, RowSet.class, QueryScopeParam[].class)
-                        .newInstance(table, fullSet, (Object) params);
-                final String[] columnNames = usedInputs.stream()
-                        .map(p -> outerToInnerNames.getOrDefault(p.first, p.first))
-                        .toArray(String[]::new);
-                filter = new ChunkFilter(filterKernel, columnNames, CHUNK_SIZE);
-                // note this filter is not valid for use in other contexts, as it captures references from the source
-                // table
-                filterValidForCopy = false;
+                filterKernelClass = filterKernelClassFuture.get(0, TimeUnit.SECONDS);
             } catch (InterruptedException | TimeoutException e) {
-                throw new IllegalStateException("Formula factory not already compiled!");
+                throw new IllegalStateException("Formula factory not already compiled!", e);
             } catch (ExecutionException e) {
                 throw new FormulaCompilationException("Formula compilation error for: " + formula, e.getCause());
             }
+
+            final FilterKernel<?> filterKernel = (FilterKernel<?>) filterKernelClass
+                    .getConstructor(Table.class, RowSet.class, QueryScopeParam[].class)
+                    .newInstance(table, fullSet, (Object) params);
+            final String[] columnNames = usedInputs.stream()
+                    .map(p -> outerToInnerNames.getOrDefault(p.first, p.first))
+                    .toArray(String[]::new);
+            filter = new ChunkFilter(filterKernel, columnNames, CHUNK_SIZE);
+            // note this filter is not valid for use in other contexts, as it captures references from the source table
+            filterValidForCopy = false;
         }
         return filter;
     }
@@ -758,7 +760,6 @@ public class ConditionFilter extends AbstractConditionFilter {
 
     @Override
     public boolean permitParallelization() {
-        // TODO (https://github.com/deephaven/deephaven-core/issues/4896): Assume statelessness by default.
-        return false;
+        return QueryTable.STATELESS_FILTERS_BY_DEFAULT;
     }
 }

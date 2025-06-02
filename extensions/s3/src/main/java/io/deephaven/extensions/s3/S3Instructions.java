@@ -33,8 +33,13 @@ public abstract class S3Instructions implements LogOutputAppendable {
     private static final int DEFAULT_FRAGMENT_SIZE = 1 << 16; // 64 KiB
     private static final int MIN_FRAGMENT_SIZE = 8 << 10; // 8 KiB
     private static final Duration DEFAULT_CONNECTION_TIMEOUT = Duration.ofSeconds(2);
-    private static final Duration DEFAULT_READ_TIMEOUT = Duration.ofSeconds(2);
+    @VisibleForTesting
+    static final Duration DEFAULT_READ_TIMEOUT = Duration.ofSeconds(2);
+    @VisibleForTesting
+    static final Duration DEFAULT_WRITE_TIMEOUT = Duration.ofSeconds(2);
     private static final int DEFAULT_NUM_CONCURRENT_WRITE_PARTS = 64;
+    private static final int MIN_CONCURRENT_WRITE_PARTS = 1;
+    private static final Duration MIN_READ_WRITE_TIMEOUT = Duration.ofMillis(1);
 
     /**
      * We set default part size to 10 MiB. The maximum number of parts allowed is 10,000. This means maximum size of a
@@ -44,6 +49,12 @@ public abstract class S3Instructions implements LogOutputAppendable {
      * @see <a href="https://docs.aws.amazon.com/AmazonS3/latest/userguide/qfacts.html">Amazon S3 User Guide</a>
      */
     private static final int DEFAULT_WRITE_PART_SIZE = 10 << 20; // 10 MiB
+
+    /**
+     * The minimum allowed part size, as per AWS S3 API.
+     *
+     * @see <a href="https://docs.aws.amazon.com/AmazonS3/latest/userguide/qfacts.html">Amazon S3 User Guide</a>
+     */
     static final int MIN_WRITE_PART_SIZE = 5 << 20; // 5 MiB
 
     static final S3Instructions DEFAULT = builder().build();
@@ -106,6 +117,16 @@ public abstract class S3Instructions implements LogOutputAppendable {
     @Default
     public Duration readTimeout() {
         return DEFAULT_READ_TIMEOUT;
+    }
+
+    /**
+     * The amount of time to wait when writing a fragment before giving up and timing out, defaults to 2 seconds. The
+     * implementation may choose to internally retry the request multiple times, so long as the total time does not
+     * exceed this timeout.
+     */
+    @Default
+    public Duration writeTimeout() {
+        return DEFAULT_WRITE_TIMEOUT;
     }
 
     /**
@@ -213,6 +234,8 @@ public abstract class S3Instructions implements LogOutputAppendable {
 
         Builder readTimeout(Duration connectionTimeout);
 
+        Builder writeTimeout(Duration connectionTimeout);
+
         Builder credentials(Credentials credentials);
 
         Builder endpointOverride(URI endpointOverride);
@@ -293,9 +316,28 @@ public abstract class S3Instructions implements LogOutputAppendable {
 
     @Check
     final void boundsCheckMinNumConcurrentWriteParts() {
-        if (numConcurrentWriteParts() < 1) {
+        if (numConcurrentWriteParts() < MIN_CONCURRENT_WRITE_PARTS) {
             throw new IllegalArgumentException(
-                    "numConcurrentWriteParts(=" + numConcurrentWriteParts() + ") must be >= 1");
+                    "numConcurrentWriteParts(=" + numConcurrentWriteParts() + ") must be >= " +
+                            MIN_CONCURRENT_WRITE_PARTS);
+        }
+    }
+
+    @Check
+    final void boundsCheckReadTimeout() {
+        if (MIN_READ_WRITE_TIMEOUT.compareTo(readTimeout()) > 0) {
+            throw new IllegalArgumentException(
+                    "readTimeout(=" + readTimeout() + ") must be >= " +
+                            MIN_READ_WRITE_TIMEOUT);
+        }
+    }
+
+    @Check
+    final void boundsCheckWriteTimeout() {
+        if (MIN_READ_WRITE_TIMEOUT.compareTo(writeTimeout()) > 0) {
+            throw new IllegalArgumentException(
+                    "writeTimeout(=" + writeTimeout() + ") must be >= " +
+                            MIN_READ_WRITE_TIMEOUT);
         }
     }
 
@@ -308,7 +350,8 @@ public abstract class S3Instructions implements LogOutputAppendable {
         }
     }
 
-    final AwsCredentialsProvider awsV2CredentialsProvider() {
+    @VisibleForTesting
+    public final AwsCredentialsProvider awsV2CredentialsProvider() {
         return ((AwsSdkV2Credentials) credentials()).awsV2CredentialsProvider(this);
     }
 

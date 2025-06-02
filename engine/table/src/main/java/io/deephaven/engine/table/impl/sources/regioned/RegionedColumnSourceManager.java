@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl.sources.regioned;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.*;
 import io.deephaven.engine.rowset.*;
@@ -13,9 +14,11 @@ import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.locations.*;
 import io.deephaven.engine.table.impl.locations.impl.AbstractTableLocation;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationUpdateSubscriptionBuffer;
+import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.ObjectArraySource;
 import io.deephaven.engine.table.impl.util.DelayedErrorNotifier;
+import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.updategraph.UpdateCommitter;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
@@ -23,23 +26,33 @@ import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.ReferentialIntegrity;
+import io.deephaven.util.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-import static io.deephaven.engine.table.impl.sources.regioned.RegionedColumnSource.ROW_KEY_TO_SUB_REGION_ROW_INDEX_MASK;
-import static io.deephaven.engine.table.impl.sources.regioned.RegionedColumnSource.getFirstRowKey;
+import static io.deephaven.engine.table.impl.sources.regioned.RegionedColumnSource.*;
 
 /**
  * Manage column sources made up of regions in their own row key address space.
  */
-public class RegionedColumnSourceManager implements ColumnSourceManager, DelegatingLivenessNode {
+public class RegionedColumnSourceManager
+        implements ColumnSourceManager, DelegatingLivenessNode, PushdownPredicateManager {
 
     private static final Logger log = LoggerFactory.getLogger(RegionedColumnSourceManager.class);
+
+    /**
+     * How many locations to test for data index or other location-level metadata before we give up and assume the
+     * location has no useful information for push-down purposes.
+     */
+    private static final int PUSHDOWN_LOCATION_SAMPLES = Configuration.getInstance()
+            .getIntegerForClassWithDefault(RegionedColumnSourceManager.class, "pushdownLocationSamples", 5);
 
     /**
      * The liveness node to which this column source manager will delegate.
@@ -160,7 +173,7 @@ public class RegionedColumnSourceManager implements ColumnSourceManager, Delegat
         for (final ColumnDefinition<?> columnDefinition : columnDefinitions) {
             columnSources.put(
                     columnDefinition.getName(),
-                    componentFactory.createRegionedColumnSource(columnDefinition, codecMappings));
+                    componentFactory.createRegionedColumnSource(this, columnDefinition, codecMappings));
         }
 
         // Create the table that will hold the location data
@@ -329,6 +342,10 @@ public class RegionedColumnSourceManager implements ColumnSourceManager, Delegat
             // locations, this is a valid approach.
             final TableLocation firstLocation = includedTableLocations.iterator().next().location;
             for (final String[] keyColumnNames : firstLocation.getDataIndexColumns()) {
+                // Skip adding additional indexes on partitioning columns
+                if (keyColumnNames.length == 1 && partitioningColumnValueSources.containsKey(keyColumnNames[0])) {
+                    continue;
+                }
                 // Here, we assume the data index is present on all included locations. MergedDataIndex.validate() will
                 // be used to test this before attempting to materialize the data index table later on.
                 final ColumnSource<?>[] keySources = Arrays.stream(keyColumnNames)
@@ -749,5 +766,131 @@ public class RegionedColumnSourceManager implements ColumnSourceManager, Delegat
             attributes.put(Table.ADD_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
         }
         return attributes;
+    }
+
+    @Override
+    public long estimatePushdownFilterCost(
+            final WhereFilter filter,
+            final RowSet selection,
+            final RowSet fullSet,
+            final boolean usePrev,
+            final PushdownFilterContext context) {
+
+        if (includedLocations().isEmpty()) {
+            return 0; // No locations, no cost
+        }
+
+        // Test a few locations and assume the rest are similar (or no worse)
+        final Collection<TableLocation> locations = includedLocations();
+        final long locationCost;
+
+        final Collection<TableLocation> candidateLocations;
+        if (locations instanceof ArrayList) {
+            // Test regularly spaced locations.
+            final ArrayList<TableLocation> locationList = (ArrayList<TableLocation>) locations;
+            final int step = Math.max(1, locationList.size() / PUSHDOWN_LOCATION_SAMPLES);
+            candidateLocations =
+                    IntStream.range(0, Math.min(locationList.size(), PUSHDOWN_LOCATION_SAMPLES))
+                            .mapToObj(idx -> locationList.get(idx * step)).collect(Collectors.toList());
+        } else {
+            // Test consecutive locations at the beginning of the collection.
+            candidateLocations = locations.stream().limit(PUSHDOWN_LOCATION_SAMPLES)
+                    .collect(Collectors.toList());
+        }
+        locationCost = candidateLocations.parallelStream().mapToLong(
+                location -> location.estimatePushdownFilterCost(filter, selection, fullSet, usePrev, context))
+                .reduce(Long::min).orElse(Long.MAX_VALUE);
+
+        return locationCost;
+    }
+
+    @Override
+    public void pushdownFilter(
+            final WhereFilter filter,
+            final Map<String, String> renameMap,
+            final RowSet input,
+            final RowSet fullSet,
+            final boolean usePrev,
+            final PushdownFilterContext context,
+            final long costCeiling,
+            final JobScheduler jobScheduler,
+            final Consumer<PushdownResult> onComplete,
+            final Consumer<Exception> onError) {
+
+        final RowSetBuilderRandom matchBuilder = RowSetFactory.builderRandom();
+        final RowSetBuilderRandom maybeMatchBuilder = RowSetFactory.builderRandom();
+        final MutableLong maybeMatchCount = new MutableLong(0);
+
+        // Use the job scheduler to run every location in parallel.
+        jobScheduler.iterateParallel(
+                ExecutionContext.getContext(),
+                logOutput -> logOutput.append("RegionedColumnSourceManager#pushdownFilter"),
+                JobScheduler.DEFAULT_CONTEXT_FACTORY,
+                0, orderedIncludedTableLocations.size(),
+                (ctx, locationIdx, locationNec, locationResume) -> {
+                    final IncludedTableLocationEntry entry = orderedIncludedTableLocations.get(locationIdx);
+
+                    final long locationStartKey = getFirstRowKey(entry.regionIndex);
+                    final long locationEndKey = getLastRowKey(entry.regionIndex);
+
+                    try (final WritableRowSet locationInput =
+                            input.subSetByKeyRange(locationStartKey, locationEndKey)) {
+                        locationInput.shiftInPlace(-locationStartKey); // Shift to the region's key space
+                        locationInput.retain(entry.rowSetAtLastUpdate); // intersect in place with region's row set
+
+                        final Consumer<PushdownResult> resultConsumer = result -> {
+                            try (final PushdownResult ignored = result) {
+                                // Add the results to the global set.
+                                if (result.match().isNonempty()) {
+                                    synchronized (matchBuilder) {
+                                        result.match().shiftInPlace(locationStartKey);
+                                        matchBuilder.addRowSet(result.match());
+                                    }
+                                }
+                                if (result.maybeMatch().isNonempty()) {
+                                    synchronized (maybeMatchBuilder) {
+                                        result.maybeMatch().shiftInPlace(locationStartKey);
+                                        maybeMatchBuilder.addRowSet(result.maybeMatch());
+                                        maybeMatchCount.add(result.maybeMatch().size());
+                                    }
+                                }
+                            }
+                        };
+                        entry.location.pushdownFilter(filter, renameMap, locationInput, fullSet, usePrev, context,
+                                costCeiling, jobScheduler, resultConsumer, onError);
+                    }
+                    locationResume.run();
+                }, () -> onComplete.accept(PushdownResult.of(matchBuilder.build(),
+                        maybeMatchCount.get() == input.size() ? input.copy() : maybeMatchBuilder.build())),
+                onError);
+    }
+
+    @Override
+    public Map<String, String> renameMap(final WhereFilter filter, final ColumnSource<?>[] filterSources) {
+        final Map<? extends ColumnSource<?>, String> lookupMap = getColumnSources().entrySet().stream()
+                .collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey));
+
+        final List<String> filterColumns = filter.getColumns();
+
+        final Map<String, String> renameMap = new HashMap<>();
+        for (int ii = 0; ii < filterColumns.size(); ii++) {
+            final String filterColumnName = filterColumns.get(ii);
+            final ColumnSource<?> filterSource = filterSources[ii];
+            final String localColumnName = lookupMap.get(filterSource);
+            if (localColumnName == null) {
+                throw new IllegalArgumentException(
+                        "No associated source for '" + filterColumnName + "' found in column sources");
+            }
+            if (localColumnName.equals(filterColumnName)) {
+                continue;
+            }
+            renameMap.put(filterColumnName, localColumnName);
+        }
+        return renameMap;
+    }
+
+    @Override
+    public PushdownFilterContext makePushdownFilterContext() {
+        return new BasePushdownFilterContext();
     }
 }

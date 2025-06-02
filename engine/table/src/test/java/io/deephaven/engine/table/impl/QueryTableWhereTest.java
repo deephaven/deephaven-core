@@ -12,9 +12,12 @@ import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.exceptions.TableInitializationException;
+import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.ShiftObliviousListener;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
@@ -23,12 +26,14 @@ import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.select.*;
 import io.deephaven.engine.table.impl.sources.RowKeyColumnSource;
 import io.deephaven.engine.table.impl.sources.UnionRedirection;
+import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.table.impl.verify.TableAssertions;
 import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.QueryTableTestBase.TableComparator;
 import io.deephaven.engine.testutil.generator.*;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
+import io.deephaven.engine.testutil.sources.IntTestSource;
 import io.deephaven.engine.util.PrintListener;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.gui.table.filters.Condition;
@@ -50,10 +55,13 @@ import java.math.BigInteger;
 import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.Collections;
+import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
 import java.util.function.IntUnaryOperator;
 import java.util.stream.IntStream;
 
@@ -1292,6 +1300,20 @@ public abstract class QueryTableWhereTest {
                 new TableComparator(augmented.where("L1 < 100"), augmented.where("BI2 < 100")),
                 new TableComparator(augmented.where("L1 >= 100"), augmented.where("BI2 >= 100")),
                 new TableComparator(augmented.where("L1 <= 100"), augmented.where("BI2 <= 100")),
+
+                new TableComparator(augmented.where("L1 > 100"),
+                        augmented.where(SingleSidedComparableRangeFilter
+                                .makeForTest("BI2", BigInteger.valueOf(100), false, true))),
+                new TableComparator(augmented.where("L1 < 100"),
+                        augmented.where(SingleSidedComparableRangeFilter
+                                .makeForTest("BI2", BigInteger.valueOf(100), false, false))),
+                new TableComparator(augmented.where("L1 >= 100"),
+                        augmented.where(SingleSidedComparableRangeFilter
+                                .makeForTest("BI2", BigInteger.valueOf(100), true, true))),
+                new TableComparator(augmented.where("L1 <= 100"),
+                        augmented.where(SingleSidedComparableRangeFilter
+                                .makeForTest("BI2", BigInteger.valueOf(100), true, false))),
+
                 new TableComparator(augmented.where("L1 > 95 && L1 <= 100"),
                         augmented.where(ComparableRangeFilter.makeForTest("BI2", BigInteger.valueOf(95),
                                 BigInteger.valueOf(100), false, true))),
@@ -1304,6 +1326,74 @@ public abstract class QueryTableWhereTest {
                 new TableComparator(augmented.where("L1 >= 95 && L1 <= 100"),
                         augmented.where(ComparableRangeFilter.makeForTest("BI2", BigInteger.valueOf(95),
                                 BigInteger.valueOf(100), true, true))),
+        };
+
+        for (int i = 0; i < 500; i++) {
+            simulateShiftAwareStep(size, random, table, columnInfo, en);
+        }
+    }
+
+    @Test
+    public void testComparableRangeFilterCopies() {
+        final Random random = new Random(0);
+
+        final int size = 100;
+
+        final ColumnInfo<?, ?>[] columnInfo;
+        final QueryTable table = getTable(size, random,
+                columnInfo = initColumnInfos(new String[] {"L1"}, new LongGenerator(90, 110, 0.1)));
+
+        final String bigIntConversion = "BI2=" + getClass().getCanonicalName() + ".convertToBigInteger(L1)";
+        final Table augmented = table.update(bigIntConversion);
+
+        final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
+                // Test the SingleSidedComparableRangeFilter against copies
+                new TableComparator(
+                        augmented.where(SingleSidedComparableRangeFilter
+                                .makeForTest("BI2", BigInteger.valueOf(100), false, true)),
+                        augmented.where(SingleSidedComparableRangeFilter
+                                .makeForTest("BI2", BigInteger.valueOf(100), false, true).copy())),
+                new TableComparator(
+                        augmented.where(SingleSidedComparableRangeFilter
+                                .makeForTest("BI2", BigInteger.valueOf(100), false, false)),
+                        augmented.where(SingleSidedComparableRangeFilter
+                                .makeForTest("BI2", BigInteger.valueOf(100), false, false).copy())),
+                new TableComparator(
+                        augmented.where(SingleSidedComparableRangeFilter
+                                .makeForTest("BI2", BigInteger.valueOf(100), true, true)),
+                        augmented.where(SingleSidedComparableRangeFilter
+                                .makeForTest("BI2", BigInteger.valueOf(100), true, true).copy())),
+                new TableComparator(
+                        augmented.where(SingleSidedComparableRangeFilter
+                                .makeForTest("BI2", BigInteger.valueOf(100), true, false)),
+                        augmented.where(SingleSidedComparableRangeFilter
+                                .makeForTest("BI2", BigInteger.valueOf(100), true, false).copy())),
+
+                // Test the ComparableRangeFilter against copies
+                new TableComparator(
+                        augmented.where(ComparableRangeFilter
+                                .makeForTest("BI2", BigInteger.valueOf(95), BigInteger.valueOf(100), false, true)),
+                        augmented.where(ComparableRangeFilter
+                                .makeForTest("BI2", BigInteger.valueOf(95), BigInteger.valueOf(100), false, true)
+                                .copy())),
+                new TableComparator(
+                        augmented.where(ComparableRangeFilter
+                                .makeForTest("BI2", BigInteger.valueOf(95), BigInteger.valueOf(100), false, false)),
+                        augmented.where(ComparableRangeFilter
+                                .makeForTest("BI2", BigInteger.valueOf(95), BigInteger.valueOf(100), false, false)
+                                .copy())),
+                new TableComparator(
+                        augmented.where(ComparableRangeFilter
+                                .makeForTest("BI2", BigInteger.valueOf(95), BigInteger.valueOf(100), true, true)),
+                        augmented.where(ComparableRangeFilter
+                                .makeForTest("BI2", BigInteger.valueOf(95), BigInteger.valueOf(100), true, true)
+                                .copy())),
+                new TableComparator(
+                        augmented.where(ComparableRangeFilter
+                                .makeForTest("BI2", BigInteger.valueOf(95), BigInteger.valueOf(100), true, false)),
+                        augmented.where(ComparableRangeFilter
+                                .makeForTest("BI2", BigInteger.valueOf(95), BigInteger.valueOf(100), true, false)
+                                .copy())),
         };
 
         for (int i = 0; i < 500; i++) {
@@ -1752,5 +1842,321 @@ public abstract class QueryTableWhereTest {
         final Table ignored5 = x.where(fof2);
         // the ConditionFilters do not compare as equal, so this is unfortunate, but expected behavior
         assertNotEquals(fof1, fof2);
+    }
+
+    /**
+     * Test column sources that simulate push-down operations.
+     */
+    private static class PushdownColumnSourceHeler {
+        static void pushdownFilter(
+                final WhereFilter filter,
+                final RowSet selection,
+                final RowSet fullSet,
+                final boolean usePrev,
+                final ColumnSource<?> source,
+                final double maybePercentage,
+                final Consumer<PushdownResult> onComplete) {
+            try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+                final String colName = filter.getColumns().get(0);
+                final Map<String, ColumnSource<?>> csMap = Collections.singletonMap(colName, source);
+                final Table dummy = new QueryTable(fullSet.copy().toTracking(), csMap);
+
+                try (final RowSet matches = filter.filter(selection, fullSet, dummy, usePrev)) {
+                    final long size = matches.size();
+                    final long maybeSize = (long) (size * maybePercentage);
+                    final WritableRowSet addedRowSet = matches.subSetByPositionRange(0, maybeSize);
+                    final WritableRowSet maybeRowSet = matches.subSetByPositionRange(maybeSize, size);
+
+                    // Default to returning all results as maybe
+                    onComplete.accept(PushdownResult.of(addedRowSet, maybeRowSet));
+                }
+            }
+        }
+    }
+
+    private static class PushdownIntTestSource extends IntTestSource {
+        private static final AtomicInteger counter = new AtomicInteger(0);
+
+        private final long pushdownCost;
+        private final double maybePercentage;
+
+        private int encounterOrder = -1;
+
+        public PushdownIntTestSource(RowSet rowSet, long pushdownCost, double maybePercentage, int... data) {
+            super(rowSet, IntChunk.chunkWrap(data));
+            this.pushdownCost = pushdownCost;
+            this.maybePercentage = maybePercentage;
+        }
+
+        @Override
+        public long estimatePushdownFilterCost(WhereFilter filter, RowSet selection, RowSet fullSet, boolean usePrev,
+                final PushdownFilterContext context) {
+            return pushdownCost;
+        }
+
+        @Override
+        public void pushdownFilter(final WhereFilter filter, final Map<String, String> renameMap, final RowSet input,
+                final RowSet fullSet, final boolean usePrev, final PushdownFilterContext context,
+                final long costCeiling, final JobScheduler jobScheduler, final Consumer<PushdownResult> onComplete,
+                final Consumer<Exception> onError) {
+            encounterOrder = counter.getAndIncrement();
+            PushdownColumnSourceHeler.pushdownFilter(filter, input, fullSet, usePrev, this, maybePercentage,
+                    onComplete);
+        }
+
+        public static void resetCounter() {
+            counter.set(0);
+        }
+
+        public int getEncounterOrder() {
+            return encounterOrder;
+        }
+    }
+
+    @Test
+    public void testWherePushdownSingleColumn() {
+        final WritableRowSet rowSet = RowSetFactory.flat(5);
+        final Map<String, ColumnSource<?>> csMap = Map.of(
+                "A", new PushdownIntTestSource(rowSet, 100L, 0.5, 1, 2, 3, 4, 5),
+                "B", new PushdownIntTestSource(rowSet, 90L, 0.0, 1, 2, 3, 4, 5),
+                "C", new PushdownIntTestSource(rowSet, 80L, 1.0, 1, 2, 3, 4, 5));
+
+        final Table source = new QueryTable(rowSet.toTracking(), csMap);
+        Table result;
+
+        final WhereFilter f1 = WhereFilterFactory.getExpression("A <= 4");
+        result = source.where(f1);
+        try (final RowSet expected = i(0, 1, 2, 3)) {
+            assertTrue("result.getRowSet().equals(expected)", result.getRowSet().equals(expected));
+        }
+
+        final WhereFilter f2 = WhereFilterFactory.getExpression("A >= 2");
+        result = source.where(Filter.and(f1, f2));
+        try (final RowSet expected = i(1, 2, 3)) {
+            assertTrue("result.getRowSet().equals(expected)", result.getRowSet().equals(expected));
+        }
+
+        final WhereFilter f3 = WhereFilterFactory.getExpression("B <= 4");
+        result = source.where(f3);
+        try (final RowSet expected = i(0, 1, 2, 3)) {
+            assertTrue("result.getRowSet().equals(expected)", result.getRowSet().equals(expected));
+        }
+
+        final WhereFilter f4 = WhereFilterFactory.getExpression("B >= 2");
+        result = source.where(Filter.and(f3, f4));
+        try (final RowSet expected = i(1, 2, 3)) {
+            assertTrue("result.getRowSet().equals(expected)", result.getRowSet().equals(expected));
+        }
+
+        final WhereFilter f5 = WhereFilterFactory.getExpression("C <= 4");
+        result = source.where(f5);
+        try (final RowSet expected = i(0, 1, 2, 3)) {
+            assertTrue("result.getRowSet().equals(expected)", result.getRowSet().equals(expected));
+        }
+
+        final WhereFilter f6 = WhereFilterFactory.getExpression("C >= 2");
+        result = source.where(Filter.and(f5, f6));
+        try (final RowSet expected = i(1, 2, 3)) {
+            assertTrue("result.getRowSet().equals(expected)", result.getRowSet().equals(expected));
+        }
+    }
+
+    /**
+     * Validate that user filter order is maintained when pushdown filter costs are equal.
+     */
+    @Test
+    public void testWherePushdownUserOrder() {
+        final WritableRowSet rowSet = RowSetFactory.flat(10);
+
+        // Thse have the same cost, so user order should be followed.
+        final PushdownIntTestSource sourceA =
+                new PushdownIntTestSource(rowSet, 100L, 0.5, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9);
+        final PushdownIntTestSource sourceB =
+                new PushdownIntTestSource(rowSet, 100L, 0.0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9);
+        final PushdownIntTestSource sourceC =
+                new PushdownIntTestSource(rowSet, 100L, 1.0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9);
+
+        final Map<String, ColumnSource<?>> csMap = Map.of("A", sourceA, "B", sourceB, "C", sourceC);
+
+        final Table source = new QueryTable(rowSet.toTracking(), csMap);
+        Table result;
+
+        // Two column test #1
+        PushdownIntTestSource.resetCounter();
+        result = source.where("A <= 4", "B >= 2");
+        try (final RowSet expected = i(2, 3, 4)) {
+            assertTrue("result.getRowSet().equals(expected)", result.getRowSet().equals(expected));
+        }
+        Assert.eqTrue(sourceA.getEncounterOrder() == 0, "sourceA.getEncounterOrder()");
+        Assert.eqTrue(sourceB.getEncounterOrder() == 1, "sourceB.getEncounterOrder()");
+
+        // Two column test #2
+        PushdownIntTestSource.resetCounter();
+        result = source.where("B >= 2", "A <= 4");
+        try (final RowSet expected = i(2, 3, 4)) {
+            assertTrue("result.getRowSet().equals(expected)", result.getRowSet().equals(expected));
+        }
+        Assert.eqTrue(sourceB.getEncounterOrder() == 0, "sourceB.getEncounterOrder()");
+        Assert.eqTrue(sourceA.getEncounterOrder() == 1, "sourceA.getEncounterOrder()");
+
+        // Two column test #3
+        PushdownIntTestSource.resetCounter();
+        result = source.where("C = 3", "A <= 4");
+        try (final RowSet expected = i(3)) {
+            assertTrue("result.getRowSet().equals(expected)", result.getRowSet().equals(expected));
+        }
+        Assert.eqTrue(sourceC.getEncounterOrder() == 0, "sourceC.getEncounterOrder()");
+        Assert.eqTrue(sourceA.getEncounterOrder() == 1, "sourceA.getEncounterOrder()");
+
+        // Three column test #1
+        PushdownIntTestSource.resetCounter();
+        result = source.where("A <= 4", "B >= 2", "C=3");
+        try (final RowSet expected = i(3)) {
+            assertTrue("result.getRowSet().equals(expected)", result.getRowSet().equals(expected));
+        }
+        Assert.eqTrue(sourceA.getEncounterOrder() == 0, "sourceA.getEncounterOrder()");
+        Assert.eqTrue(sourceB.getEncounterOrder() == 1, "sourceB.getEncounterOrder()");
+        Assert.eqTrue(sourceC.getEncounterOrder() == 2, "sourceC.getEncounterOrder()");
+
+        // Three column test #2
+        PushdownIntTestSource.resetCounter();
+        result = source.where("B >= 2", "A <= 4", "C=3");
+        try (final RowSet expected = i(3)) {
+            assertTrue("result.getRowSet().equals(expected)", result.getRowSet().equals(expected));
+        }
+        Assert.eqTrue(sourceB.getEncounterOrder() == 0, "sourceB.getEncounterOrder()");
+        Assert.eqTrue(sourceA.getEncounterOrder() == 1, "sourceA.getEncounterOrder()");
+        Assert.eqTrue(sourceC.getEncounterOrder() == 2, "sourceC.getEncounterOrder()");
+
+        // Three column test #3
+        PushdownIntTestSource.resetCounter();
+        result = source.where("C=3", "A <= 4", "B >= 2");
+        try (final RowSet expected = i(3)) {
+            assertTrue("result.getRowSet().equals(expected)", result.getRowSet().equals(expected));
+        }
+        Assert.eqTrue(sourceC.getEncounterOrder() == 0, "sourceC.getEncounterOrder()");
+        Assert.eqTrue(sourceA.getEncounterOrder() == 1, "sourceA.getEncounterOrder()");
+        Assert.eqTrue(sourceB.getEncounterOrder() == 2, "sourceB.getEncounterOrder()");
+
+        // Three column test #4
+        PushdownIntTestSource.resetCounter();
+        result = source.where("A <= 4", "C=3", "B >= 2");
+        try (final RowSet expected = i(3)) {
+            assertTrue("result.getRowSet().equals(expected)", result.getRowSet().equals(expected));
+        }
+        Assert.eqTrue(sourceA.getEncounterOrder() == 0, "sourceA.getEncounterOrder()");
+        Assert.eqTrue(sourceC.getEncounterOrder() == 1, "sourceC.getEncounterOrder()");
+        Assert.eqTrue(sourceB.getEncounterOrder() == 2, "sourceB.getEncounterOrder()");
+    }
+
+    /**
+     * Test PPM for simple verification of filter execution code.
+     */
+    private static class TestPPM implements PushdownPredicateManager {
+        private final long pushdownCost;
+        private final double maybePercentage;
+
+        private Table table;
+
+        public TestPPM(long pushdownCost, double maybePercentage) {
+            this.pushdownCost = pushdownCost;
+            this.maybePercentage = maybePercentage;
+        }
+
+        public void assignTable(Table table) {
+            this.table = table;
+        }
+
+        @Override
+        public long estimatePushdownFilterCost(
+                final WhereFilter filter,
+                final RowSet selection,
+                final RowSet fullSet,
+                final boolean usePrev,
+                final PushdownFilterContext context) {
+            return pushdownCost;
+        }
+
+        @Override
+        public void pushdownFilter(
+                final WhereFilter filter,
+                final Map<String, String> renameMap,
+                final RowSet selection,
+                final RowSet fullSet,
+                final boolean usePrev,
+                final PushdownFilterContext context,
+                final long costCeiling,
+                final JobScheduler jobScheduler,
+                final Consumer<PushdownResult> onComplete,
+                final Consumer<Exception> onError) {
+            if (table == null) {
+                throw new IllegalStateException("Table not assigned to TestPPM");
+            }
+            try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+                try (final RowSet matches = filter.filter(selection, fullSet, table, usePrev)) {
+                    final long size = matches.size();
+                    final long maybeSize = (long) (size * maybePercentage);
+                    final WritableRowSet addedRowSet = matches.subSetByPositionRange(0, maybeSize);
+                    final WritableRowSet maybeRowSet = matches.subSetByPositionRange(maybeSize, size);
+
+                    onComplete.accept(PushdownResult.of(addedRowSet, maybeRowSet));
+                }
+            }
+        }
+
+        @Override
+        public Map<String, String> renameMap(WhereFilter filter, ColumnSource<?>[] filterSources) {
+            return Map.of();
+        }
+
+        @Override
+        public PushdownFilterContext makePushdownFilterContext() {
+            return PushdownFilterContext.NO_PUSHDOWN_CONTEXT;
+        }
+    }
+
+    private static class PPMIntTestSource extends IntTestSource {
+        final PushdownPredicateManager ppm;
+
+        public PPMIntTestSource(PushdownPredicateManager ppm, RowSet rowSet, int... data) {
+            super(rowSet, IntChunk.chunkWrap(data));
+            this.ppm = ppm;
+        }
+
+        @Override
+        public PushdownPredicateManager pushdownManager() {
+            return ppm;
+        }
+    }
+
+    @Test
+    public void testWherePushdownMultiColumn() {
+        final TestPPM ppm = new TestPPM(100L, 0.5);
+
+        final WritableRowSet rowSet = RowSetFactory.flat(5);
+        final Map<String, ColumnSource<?>> csMap = Map.of(
+                "A", new PPMIntTestSource(ppm, rowSet, 1, 2, 3, 4, 5),
+                "B", new PPMIntTestSource(ppm, rowSet, 1, 2, 3, 4, 5),
+                "C", new PPMIntTestSource(ppm, rowSet, 1, 2, 3, 4, 5));
+
+        final Table source = new QueryTable(rowSet.toTracking(), csMap);
+        // This test PPM needs to be aware of the source table to simulate pushdown filtering.
+        ppm.assignTable(source);
+
+        Table result;
+
+        final WhereFilter f1 = WhereFilterFactory.getExpression("A <= 1");
+        final WhereFilter f2 = WhereFilterFactory.getExpression("B >= 5");
+
+        result = source.where(Filter.or(f1, f2));
+        try (final RowSet expected = i(0, 4)) {
+            assertTrue("result.getRowSet().equals(expected)", result.getRowSet().equals(expected));
+        }
+
+        final WhereFilter f3 = WhereFilterFactory.getExpression("C = 3");
+        result = source.where(Filter.or(f1, f2, f3));
+        try (final RowSet expected = i(0, 2, 4)) {
+            assertTrue("result.getRowSet().equals(expected)", result.getRowSet().equals(expected));
+        }
     }
 }

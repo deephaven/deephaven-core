@@ -3,13 +3,16 @@
  */
 #pragma once
 
+#include <cstddef>
+#include <cstdint>
+#include <functional>
 #include <map>
 #include <memory>
 #include <optional>
+#include <string>
+#include <string_view>
 #include <vector>
 #include "deephaven/dhcore/types.h"
-#include "deephaven/dhcore/column/column_source.h"
-#include "deephaven/dhcore/container/row_sequence.h"
 
 namespace deephaven::dhcore::clienttable {
 /**
@@ -18,7 +21,7 @@ namespace deephaven::dhcore::clienttable {
  */
 class Schema {
   struct Private {};
-  using ElementTypeId = deephaven::dhcore::ElementTypeId;
+  using ElementType = deephaven::dhcore::ElementType;
 
 public:
   /**
@@ -26,12 +29,28 @@ public:
    */
   [[nodiscard]]
   static std::shared_ptr<Schema> Create(std::vector<std::string> names,
-      std::vector<ElementTypeId::Enum> types);
+      std::vector<ElementType> types);
   /**
    * Constructor.
    */
-  Schema(Private, std::vector<std::string> names, std::vector<ElementTypeId::Enum> types,
+  Schema(Private, std::vector<std::string> names, std::vector<ElementType> types,
       std::map<std::string_view, size_t, std::less<>> index);
+  /**
+   * Copy constructor (disabled).
+   */
+  Schema(const Schema &other) = delete;
+  /**
+   * Copy assignment operator (disabled).
+   */
+  Schema &operator=(const Schema &other) = delete;
+  /**
+   * Move constructor (disabled).
+   */
+  Schema(Schema &&other) noexcept = delete;
+  /**
+   * Move assignment operator (disabled).
+   */
+  Schema &operator=(Schema &&other) noexcept = delete;
   /**
    * Destructor.
    */
@@ -46,7 +65,7 @@ public:
   }
 
   [[nodiscard]]
-  const std::vector<ElementTypeId::Enum> &Types() const {
+  const std::vector<ElementType> &ElementTypes() const {
     return types_;
   }
 
@@ -57,7 +76,7 @@ public:
 
 private:
   std::vector<std::string> names_;
-  std::vector<ElementTypeId::Enum> types_;
+  std::vector<ElementType> types_;
   std::map<std::string_view, size_t, std::less<>> index_;
 };
 }  // namespace deephaven::dhcore::clienttable

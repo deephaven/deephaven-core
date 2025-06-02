@@ -257,12 +257,14 @@ public class ParquetTools {
      * @param parquetColumnNameArr Names of index columns for the parquet file, stored as String[] for each index
      * @param dest The destination URI for the main table containing these index columns
      * @param channelProvider The channel provider to use for creating channels to the index files
+     * @param writeContext The shared context to be passed to all output streams
      */
     private static List<ParquetTableWriter.IndexWritingInfo> indexInfoBuilderHelper(
             @NotNull final Collection<List<String>> indexColumns,
             @NotNull final String[][] parquetColumnNameArr,
             @NotNull final URI dest,
-            @NotNull final SeekableChannelsProvider channelProvider) throws IOException {
+            @NotNull final SeekableChannelsProvider channelProvider,
+            @NotNull final SeekableChannelsProvider.WriteContext writeContext) throws IOException {
         Require.eq(indexColumns.size(), "indexColumns.size", parquetColumnNameArr.length,
                 "parquetColumnNameArr.length");
         final int numIndexes = indexColumns.size();
@@ -274,7 +276,7 @@ public class ParquetTools {
             final String indexFileRelativePath = getRelativeIndexFilePath(destFileName, parquetColumnNames);
             final URI indexFileURI = resolve(dest, indexFileRelativePath);
             final CompletableOutputStream indexFileOutputStream =
-                    channelProvider.getOutputStream(indexFileURI, PARQUET_OUTPUT_BUFFER_SIZE);
+                    channelProvider.getOutputStream(writeContext, indexFileURI, PARQUET_OUTPUT_BUFFER_SIZE);
             final ParquetTableWriter.IndexWritingInfo info = new ParquetTableWriter.IndexWritingInfo(
                     indexColumnNames,
                     parquetColumnNames,
@@ -304,8 +306,6 @@ public class ParquetTools {
             @NotNull final Table sourceTable,
             @NotNull final String destinationDir,
             @NotNull final ParquetInstructions writeInstructions) {
-        final Collection<List<String>> indexColumns =
-                writeInstructions.getIndexColumns().orElseGet(() -> indexedColumnNames(sourceTable));
         final TableDefinition definition = writeInstructions.getTableDefinition().orElse(sourceTable.getDefinition());
         final List<ColumnDefinition<?>> partitioningColumns = definition.getPartitioningColumns();
         if (partitioningColumns.isEmpty()) {
@@ -318,6 +318,20 @@ public class ParquetTools {
         final TableDefinition keyTableDefinition = TableDefinition.of(partitioningColumns);
         final TableDefinition leafDefinition =
                 getNonKeyTableDefinition(new HashSet<>(Arrays.asList(partitioningColNames)), definition);
+
+        final Collection<List<String>> indexColumns;
+        if (writeInstructions.getIndexColumns().isPresent()) {
+            indexColumns = writeInstructions.getIndexColumns().get();
+            verifyNotAddingIndexOnPartitioningColumn(indexColumns, partitionedTable.keyColumnNames());
+        } else {
+            // Skip writing any existing indexes that are on partitioning columns, but don't fail
+            final Collection<List<String>> existingIndexes = indexedColumnNames(sourceTable);
+            final Set<String> keyColumnNames = partitionedTable.keyColumnNames();
+            indexColumns = existingIndexes.stream()
+                    .filter(index -> !isIndexOnPartitioningColumn(index, keyColumnNames))
+                    .collect(Collectors.toList());
+        }
+
         writeKeyValuePartitionedTableImpl(partitionedTable, keyTableDefinition, leafDefinition, destinationDir,
                 writeInstructions, indexColumns, Optional.of(sourceTable));
     }
@@ -339,7 +353,6 @@ public class ParquetTools {
             @NotNull final PartitionedTable partitionedTable,
             @NotNull final String destinationDir,
             @NotNull final ParquetInstructions writeInstructions) {
-        final Collection<List<String>> indexColumns = writeInstructions.getIndexColumns().orElse(EMPTY_INDEXES);
         final TableDefinition keyTableDefinition, leafDefinition;
         if (writeInstructions.getTableDefinition().isEmpty()) {
             keyTableDefinition = getKeyTableDefinition(partitionedTable.keyColumnNames(),
@@ -351,8 +364,33 @@ public class ParquetTools {
             keyTableDefinition = getKeyTableDefinition(partitionedTable.keyColumnNames(), definition);
             leafDefinition = getNonKeyTableDefinition(partitionedTable.keyColumnNames(), definition);
         }
+
+        final Collection<List<String>> indexColumns;
+        if (writeInstructions.getIndexColumns().isPresent()) {
+            indexColumns = writeInstructions.getIndexColumns().get();
+            verifyNotAddingIndexOnPartitioningColumn(indexColumns, partitionedTable.keyColumnNames());
+        } else {
+            indexColumns = EMPTY_INDEXES;
+        }
+
         writeKeyValuePartitionedTableImpl(partitionedTable, keyTableDefinition, leafDefinition, destinationDir,
                 writeInstructions, indexColumns, Optional.empty());
+    }
+
+    private static void verifyNotAddingIndexOnPartitioningColumn(
+            @NotNull final Collection<List<String>> indexColumnsCollection,
+            @NotNull final Collection<String> partitioningColumnNames) {
+        for (final List<String> indexColumns : indexColumnsCollection) {
+            if (isIndexOnPartitioningColumn(indexColumns, partitioningColumnNames)) {
+                throw new IllegalArgumentException("Cannot add index on partitioning column " + indexColumns.get(0));
+            }
+        }
+    }
+
+    private static boolean isIndexOnPartitioningColumn(
+            @NotNull final List<String> indexColumns,
+            @NotNull final Collection<String> partitioningColumnNames) {
+        return indexColumns.size() == 1 && partitioningColumnNames.contains(indexColumns.get(0));
     }
 
     /**
@@ -574,8 +612,10 @@ public class ParquetTools {
             throw new TableDataException("Cannot write a parquet table with zero columns");
         }
         // Assuming all destination URIs have the same scheme, and will use the same channels provider instance
-        final SeekableChannelsProvider channelsProvider = SeekableChannelsProviderLoader.getInstance()
-                .load(destinations[0].getScheme(), writeInstructions.getSpecialInstructions());
+        final SeekableChannelsProvider channelsProvider =
+                writeInstructions.getSeekableChannelsProviderForWriting()
+                        .orElseGet(() -> SeekableChannelsProviderLoader.getInstance()
+                                .load(destinations[0].getScheme(), writeInstructions.getSpecialInstructions()));
 
         final ParquetMetadataFileWriter metadataFileWriter;
         if (writeInstructions.generateMetadataFiles()) {
@@ -590,7 +630,10 @@ public class ParquetTools {
 
         // List of output streams created, to rollback in case of exceptions
         final List<CompletableOutputStream> outputStreams = new ArrayList<>(destinations.length);
-        try (final SafeCloseable ignored = () -> SafeCloseable.closeAll(outputStreams.stream())) {
+
+        // Create a common shared context for all the output streams
+        try (final SeekableChannelsProvider.WriteContext writeContext = channelsProvider.makeWriteContext();
+                final SafeCloseable ignored = () -> SafeCloseable.closeAll(outputStreams.stream())) {
             try {
                 if (indexColumns.isEmpty()) {
                     // Write the tables without any index info
@@ -598,7 +641,7 @@ public class ParquetTools {
                         final Table source = sources[tableIdx];
                         final URI tableDestination = destinations[tableIdx];
                         final CompletableOutputStream outputStream = channelsProvider.getOutputStream(
-                                tableDestination, PARQUET_OUTPUT_BUFFER_SIZE);
+                                writeContext, tableDestination, PARQUET_OUTPUT_BUFFER_SIZE);
                         outputStreams.add(outputStream);
                         ParquetTableWriter.write(source, definition, writeInstructions, tableDestination, outputStream,
                                 Collections.emptyMap(), (List<ParquetTableWriter.IndexWritingInfo>) null,
@@ -616,9 +659,9 @@ public class ParquetTools {
                         final URI tableDestination = destinations[tableIdx];
                         final List<ParquetTableWriter.IndexWritingInfo> indexInfoList =
                                 indexInfoBuilderHelper(indexColumns, parquetColumnNameArr, tableDestination,
-                                        channelsProvider);
+                                        channelsProvider, writeContext);
                         final CompletableOutputStream outputStream = channelsProvider.getOutputStream(
-                                destinations[tableIdx], PARQUET_OUTPUT_BUFFER_SIZE);
+                                writeContext, destinations[tableIdx], PARQUET_OUTPUT_BUFFER_SIZE);
                         outputStreams.add(outputStream);
                         for (final ParquetTableWriter.IndexWritingInfo info : indexInfoList) {
                             outputStreams.add(info.destOutputStream);
@@ -632,11 +675,11 @@ public class ParquetTools {
                 if (writeInstructions.generateMetadataFiles()) {
                     final URI metadataDest = metadataRootDir.resolve(METADATA_FILE_NAME);
                     final CompletableOutputStream metadataOutputStream = channelsProvider.getOutputStream(
-                            metadataDest, PARQUET_OUTPUT_BUFFER_SIZE);
+                            writeContext, metadataDest, PARQUET_OUTPUT_BUFFER_SIZE);
                     outputStreams.add(metadataOutputStream);
                     final URI commonMetadataDest = metadataRootDir.resolve(COMMON_METADATA_FILE_NAME);
                     final CompletableOutputStream commonMetadataOutputStream = channelsProvider.getOutputStream(
-                            commonMetadataDest, PARQUET_OUTPUT_BUFFER_SIZE);
+                            writeContext, commonMetadataDest, PARQUET_OUTPUT_BUFFER_SIZE);
                     outputStreams.add(commonMetadataOutputStream);
                     metadataFileWriter.writeMetadataFiles(metadataOutputStream, commonMetadataOutputStream);
                 }
@@ -650,7 +693,7 @@ public class ParquetTools {
                 for (int idx = outputStreams.size() - 1; idx >= 0; idx--) {
                     try {
                         outputStreams.get(idx).rollback();
-                    } catch (IOException e1) {
+                    } catch (final IOException | RuntimeException e1) {
                         log.error().append("Error in rolling back output stream ").append(e1).endl();
                     }
                 }

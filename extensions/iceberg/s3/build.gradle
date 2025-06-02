@@ -19,6 +19,7 @@ dependencies {
     implementation libs.iceberg.bundled.guava
 
     implementation project(':extensions-s3')
+    implementation project(':Configuration')
     implementation libs.iceberg.aws
 
     implementation platform(libs.awssdk.bom)
@@ -26,6 +27,18 @@ dependencies {
     implementation libs.awssdk.crt.client
     runtimeOnly libs.awssdk.sts
     implementation libs.awssdk.glue
+
+    // For some reason, this property flag does not seem to be working. But keeping block here, as it is useful to
+    // uncomment when you are working with S3 Tables Catalog.
+//    if (hasProperty('devS3Tables')) {
+//        // Useful for local development when using temporary credentials via `aws sso login`
+//         runtimeOnly libs.awssdk.sso
+//         runtimeOnly libs.awssdk.ssooidc
+//
+//        // Useful for creating an S3 Tables Iceberg Catalog. May want to include this by default in the future.
+//         runtimeOnly libs.awssdk.s3tables
+//         runtimeOnly libs.s3.tables.catalog.for.iceberg
+//    }
 
     // We don't want to explicitly pull in dependencies for dynamodb (org.apache.iceberg.aws.dynamodb.DynamoDbCatalog),
     // but we need to be able to compile against it to implement AwsClientFactory
@@ -49,6 +62,9 @@ dependencies {
 
     testImplementation TestTools.projectDependency(project, 'extensions-s3')
     testImplementation TestTools.projectDependency(project, 'extensions-iceberg')
+
+    // TODO (DH-19508) : Remove this dependency when https://github.com/apache/iceberg/issues/13133 fix is released
+    runtimeOnly libs.analyticsaccelerator.s3
 
     testRuntimeOnly project(':test-configs')
     testRuntimeOnly project(':log-to-slf4j')

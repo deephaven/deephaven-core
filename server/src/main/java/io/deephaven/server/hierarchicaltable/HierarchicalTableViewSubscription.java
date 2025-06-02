@@ -4,9 +4,6 @@
 package io.deephaven.server.hierarchicaltable;
 
 import com.google.rpc.Code;
-import dagger.assisted.Assisted;
-import dagger.assisted.AssistedFactory;
-import dagger.assisted.AssistedInject;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.WritableChunk;
@@ -55,7 +52,6 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
  */
 public class HierarchicalTableViewSubscription extends LivenessArtifact {
 
-    @AssistedFactory
     public interface Factory {
         HierarchicalTableViewSubscription create(
                 HierarchicalTableView view,
@@ -104,15 +100,14 @@ public class HierarchicalTableViewSubscription extends LivenessArtifact {
 
     private volatile State state = State.Active;
 
-    @AssistedInject
     public HierarchicalTableViewSubscription(
             @NotNull final Scheduler scheduler,
             @NotNull final SessionService.ErrorTransformer errorTransformer,
             @NotNull final BarrageMessageWriter.Factory streamGeneratorFactory,
-            @Assisted @NotNull final HierarchicalTableView view,
-            @Assisted @NotNull final StreamObserver<BarrageMessageWriter.MessageView> listener,
-            @Assisted @NotNull final BarrageSubscriptionOptions subscriptionOptions,
-            @Assisted final long intervalDurationMillis) {
+            @NotNull final HierarchicalTableView view,
+            @NotNull final StreamObserver<BarrageMessageWriter.MessageView> listener,
+            @NotNull final BarrageSubscriptionOptions subscriptionOptions,
+            final long intervalDurationMillis) {
         this.scheduler = scheduler;
         this.errorTransformer = errorTransformer;
         this.streamGeneratorFactory = streamGeneratorFactory;
@@ -486,13 +481,12 @@ public class HierarchicalTableViewSubscription extends LivenessArtifact {
 
         @Override
         public synchronized void run() {
-            if (!running) {
-                return;
+            final Instant now = scheduler.instantMillis();
+            if (running) {
+                scheduler.runAfterDelay(BarragePerformanceLog.CYCLE_DURATION_MILLIS, this);
             }
 
-            final Instant now = scheduler.instantMillis();
-            scheduler.runAfterDelay(BarragePerformanceLog.CYCLE_DURATION_MILLIS, this);
-
+            // note: if we were stopped, run one last time to flush any non-zero state
             final BarrageSubscriptionPerformanceLogger logger =
                     BarragePerformanceLog.getInstance().getSubscriptionLogger();
             synchronized (logger) {

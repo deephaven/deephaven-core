@@ -30,9 +30,11 @@ class RegionedColumnSourceWithDictionary<DATA_TYPE>
         extends RegionedColumnSourceObject.AsValues<DATA_TYPE>
         implements SymbolTableSource<DATA_TYPE> {
 
-    RegionedColumnSourceWithDictionary(@NotNull final Class<DATA_TYPE> dataType,
+    RegionedColumnSourceWithDictionary(
+            @NotNull final RegionedColumnSourceManager manager,
+            @NotNull final Class<DATA_TYPE> dataType,
             @Nullable final Class<?> componentType) {
-        super(dataType, componentType);
+        super(manager, dataType, componentType);
     }
 
     @Override
@@ -44,7 +46,7 @@ class RegionedColumnSourceWithDictionary<DATA_TYPE>
     protected <ALTERNATE_DATA_TYPE> ColumnSource<ALTERNATE_DATA_TYPE> doReinterpret(
             @NotNull Class<ALTERNATE_DATA_TYPE> alternateDataType) {
         // noinspection unchecked
-        return alternateDataType == long.class ? (ColumnSource<ALTERNATE_DATA_TYPE>) new AsLong()
+        return alternateDataType == long.class ? (ColumnSource<ALTERNATE_DATA_TYPE>) new AsLong(manager)
                 : super.doReinterpret(alternateDataType);
     }
 
@@ -60,8 +62,8 @@ class RegionedColumnSourceWithDictionary<DATA_TYPE>
         private final ColumnRegionLong<DictionaryKeys> nullRegion;
         private volatile ColumnRegionLong<DictionaryKeys>[] wrapperRegions;
 
-        private AsLong() {
-            super(long.class);
+        private AsLong(@NotNull final RegionedColumnSourceManager manager) {
+            super(manager, long.class);
             nullRegion = ColumnRegionLong.createNull(PARAMETERS.regionMask);
             // noinspection unchecked
             wrapperRegions = new ColumnRegionLong[0];
@@ -152,8 +154,8 @@ class RegionedColumnSourceWithDictionary<DATA_TYPE>
             extends RegionedColumnSourceBase<DATA_TYPE, Values, ColumnRegionObject<DATA_TYPE, Values>>
             implements ColumnSourceGetDefaults.ForObject<DATA_TYPE> {
 
-        private AsDictionary() {
-            super(RegionedColumnSourceWithDictionary.this.getType(),
+        private AsDictionary(@NotNull final RegionedColumnSourceManager manager) {
+            super(manager, RegionedColumnSourceWithDictionary.this.getType(),
                     RegionedColumnSourceWithDictionary.this.getComponentType());
         }
 
@@ -213,7 +215,7 @@ class RegionedColumnSourceWithDictionary<DATA_TYPE>
     public QueryTable getStaticSymbolTable(@NotNull RowSet sourceIndex, boolean useLookupCaching) {
         // NB: We assume that hasSymbolTable has been tested by the caller
         final RegionedColumnSourceBase<DATA_TYPE, Values, ColumnRegionObject<DATA_TYPE, Values>> dictionaryColumn =
-                new AsDictionary();
+                new AsDictionary(manager);
 
         final TrackingRowSet symbolTableRowSet;
         if (sourceIndex.isEmpty()) {

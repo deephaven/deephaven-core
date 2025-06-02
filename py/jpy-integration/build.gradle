@@ -9,9 +9,6 @@ evaluationDependsOn ':docker-runtime-base'
 sourceSets {
   // All sourcesets here are used for testing; we'll inform the idea{} plugin, below
   test {
-    java {
-      srcDirs = ['src/test/java']
-    }
     resources {
       srcDirs = ['src/test/python']
     }

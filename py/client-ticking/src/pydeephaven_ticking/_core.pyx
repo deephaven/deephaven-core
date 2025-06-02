@@ -10,9 +10,9 @@ import pyarrow as pa
 from pydeephaven_ticking._core cimport assign_shared_ptr
 from cython.operator cimport dereference as deref
 from pydeephaven_ticking._core cimport char16_t
-from pydeephaven_ticking._core cimport CColumnSource, CGenericChunk, CRowSequence, CSchema, CClientTable
+from pydeephaven_ticking._core cimport CColumnSource, CContainerBase, CGenericChunk, CRowSequence, CSchema, CClientTable
 from pydeephaven_ticking._core cimport CHumanReadableElementTypeName, CHumanReadableStaticTypeName
-from pydeephaven_ticking._core cimport CCythonSupport, ElementTypeId, CDateTime
+from pydeephaven_ticking._core cimport CCythonSupport, ElementTypeId, CElementType, CDateTime
 from pydeephaven_ticking._core cimport CTickingUpdate, CBarrageProcessor, CNumericBufferColumnSource
 from libc.stdint cimport int8_t, int16_t, int32_t, int64_t, intptr_t, uint8_t, uint16_t, uint32_t, uint64_t
 from libcpp cimport bool
@@ -160,7 +160,7 @@ cdef class Schema:
     @staticmethod
     cdef Schema create_from_c_schema(shared_ptr[CSchema] schema):
         c_names = deref(schema).Names()
-        c_types = deref(schema).Types()
+        c_types = deref(schema).ElementTypes()
         names: [str] = []
         types: [pa.DataType] = []
         cdef size_t i
@@ -247,63 +247,59 @@ cdef class ColumnSource:
         cdef bool[::1] null_flags_view = null_flags
         boolean_chunk = CGenericChunk[bool].CreateView(&null_flags_view[0], size)
         cdef CGenericChunk[bool] *null_flags_ptr = &boolean_chunk
-        arrow_type: pa.DataType
 
-        element_type_id = CCythonSupport.GetElementTypeId(deref(self.column_source))
+        element_type = deref(self.column_source).GetElementType()
+
+        if element_type.ListDepth() > 1:
+            raise RuntimeError(f"Can't handle deeply nested type {element_type.ToString()}")
+
+        if element_type.ListDepth() == 1:
+            return self._process_list(rows, null_flags, null_flags_ptr)
+
+        element_type_id = element_type.Id()
         if element_type_id == ElementTypeId.kChar:
             dest_data = np.zeros(size, np.uint16)
             self._fill_char_chunk(rows, dest_data, null_flags_ptr)
-            arrow_type = pa.uint16()
         elif element_type_id == ElementTypeId.kInt8:
             dest_data = np.zeros(size, np.int8)
             self._fill_primitive_chunk[int8_t](rows, dest_data, null_flags_ptr)
-            arrow_type = pa.int8()
         elif element_type_id == ElementTypeId.kInt16:
             dest_data = np.zeros(size, np.int16)
             self._fill_primitive_chunk[int16_t](rows, dest_data, null_flags_ptr)
-            arrow_type = pa.int16()
         elif element_type_id == ElementTypeId.kInt32:
             dest_data = np.zeros(size, np.int32)
             self._fill_primitive_chunk[int32_t](rows, dest_data, null_flags_ptr)
-            arrow_type = pa.int32()
         elif element_type_id == ElementTypeId.kInt64:
             dest_data = np.zeros(size, np.int64)
             self._fill_primitive_chunk[int64_t](rows, dest_data, null_flags_ptr)
-            arrow_type = pa.int64()
         elif element_type_id == ElementTypeId.kFloat:
             dest_data = np.zeros(size, np.float32)
             self._fill_primitive_chunk[float](rows, dest_data, null_flags_ptr)
-            arrow_type = pa.float32()
         elif element_type_id == ElementTypeId.kDouble:
             dest_data = np.zeros(size, np.float64)
             self._fill_primitive_chunk[double](rows, dest_data, null_flags_ptr)
-            arrow_type = pa.float64()
         elif element_type_id == ElementTypeId.kBool:
             dest_data = np.zeros(size, np.bool_)
             self._fill_primitive_chunk[bool](rows, dest_data, null_flags_ptr)
-            arrow_type = pa.bool_()
         elif element_type_id == ElementTypeId.kString:
             dest_data = np.zeros(size, object)
             self._fill_string_chunk(rows, dest_data, null_flags_ptr)
-            arrow_type = pa.string()
         elif element_type_id == ElementTypeId.kTimestamp:
             dest_data = np.zeros(size, dtype="datetime64[ns]")
             dest_data_as_int64 = dest_data.view(dtype=np.int64)
             self._fill_timestamp_chunk(rows, dest_data_as_int64, null_flags_ptr)
-            arrow_type = pa.timestamp("ns", tz="UTC")
         elif element_type_id == ElementTypeId.kLocalDate:
             dest_data = np.zeros(size, dtype=np.int64)
             dest_data_as_int64 = dest_data.view(dtype=np.int64)
             self._fill_localdate_chunk(rows, dest_data_as_int64, null_flags_ptr)
-            arrow_type = pa.date64()
         elif element_type_id == ElementTypeId.kLocalTime:
             dest_data = np.zeros(size, dtype=np.int64)
             dest_data_as_int64 = dest_data.view(dtype=np.int64)
             self._fill_localtime_chunk(rows, dest_data_as_int64, null_flags_ptr)
-            arrow_type = pa.time64("ns")
         else:
            raise RuntimeError(f"Unexpected ElementTypeId {<int>element_type_id}")
 
+        arrow_type = _dh_type_to_pa_type(element_type)
         return pa.array(dest_data, type=arrow_type, mask=null_flags)
 
     # fill_chunk helper method for any of the primitive data types.
@@ -369,9 +365,48 @@ cdef class ColumnSource:
         dest_chunk = CGenericChunk[CLocalTime].CreateView(<CLocalTime*>&dest_data[0], rsSize)
         deref(self.column_source).FillChunk(deref(rows.row_sequence), &dest_chunk, null_flags_ptr)
 
+    cdef _process_list(self, rows: RowSequence, null_flags, CGenericChunk[bool] *null_flags_ptr):
+        size = rows.size
+        container_chunk = CGenericChunk[shared_ptr[CContainerBase]].Create(size)
+        deref(self.column_source).FillChunk(deref(rows.row_sequence), &container_chunk, null_flags_ptr)
+
+        dest_data = []
+        for i in range(container_chunk.Size()):
+            container_base = container_chunk[i]
+            is_null = deref(null_flags_ptr)[i]
+            slice_size = deref(container_base).size()
+            container_as_ccs = CCythonSupport.ContainerToColumnSource(container_base)
+            slice_cs = ColumnSource.create(container_as_ccs)
+            slice_rows = CRowSequence.CreateSequential(0, slice_size)
+            this_slice = slice_cs.get_chunk(RowSequence.create(slice_rows))
+            dest_data.append(this_slice)
+
+        element_type = deref(self.column_source).GetElementType()
+        arrow_type = _dh_type_to_pa_type(element_type)
+        result = pa.array(dest_data, type=arrow_type, mask=null_flags)
+        return result
+
+
 # Converts an Arrow array to a C++ ColumnSource of the right type. The created column source does not own the
 # memory used, so it is only valid as long as the original Arrow array is valid.
 cdef shared_ptr[CColumnSource] _convert_arrow_array_to_column_source(array: pa.Array) except *:
+    if pa.types.is_list(array.type):
+        # The incoming data is a list<T>. This can be viewed as flattened data structures
+        # for values and lengths. We use recursion to get those values and lengths as
+        # separate column sources, then use a special entry point to combine those two
+        # column sources into a ContainerColumnSource
+        values_cs = _convert_arrow_array_to_column_source(array.values)
+
+        # Important: the column source returned is a NumericBufferColumnSource which is only
+        # valid as long as the underlying storage is valid. So we need to keep the storage
+        # in a separate variable like this. TODO(kosak) make this less fragile.
+        value_lengths = array.value_lengths()
+        lengths_cs = _convert_arrow_array_to_column_source(value_lengths)
+
+        return CCythonSupport.SlicesToColumnSource(
+            deref(values_cs), len(array.values),
+            deref(lengths_cs), len(value_lengths))
+
     if isinstance(array, pa.lib.StringArray):
         return _convert_arrow_string_array_to_column_source(cast(pa.lib.StringArray, array))
     if isinstance(array, pa.lib.BooleanArray):
@@ -392,7 +427,6 @@ cdef shared_ptr[CColumnSource] _convert_arrow_array_to_column_source(array: pa.A
     cdef const void *address = <const void *><intptr_t>databuf.address
     cdef size_t total_size = databuf.size
 
-    # not sure I'm supposed to look inside pa.lib, but that's the only place I can find DoubleArray
     cdef shared_ptr[CColumnSource] result
     if isinstance(array, pa.lib.UInt16Array):
         assign_shared_ptr(result, CNumericBufferColumnSource[char16_t].CreateUntyped(address, total_size // 2))
@@ -509,7 +543,7 @@ cdef shared_ptr[CSchema] _pyarrow_schema_to_deephaven_schema(src: pa.Schema) exc
         raise RuntimeError("Unexpected: schema lengths are inconsistent")
 
     cdef vector[string] names
-    cdef vector[ElementTypeId] types
+    cdef vector[CElementType] types
 
     for i in range(len(src.names)):
         name = src.names[i].encode()
@@ -584,42 +618,61 @@ cdef class BarrageProcessor:
 
 # A class representing the relationship between a Deephaven type and a PyArrow type.
 cdef class _EquivalentTypes:
-    cdef ElementTypeId dh_type
+    dh_type: CElementType
     pa_type: pa.DataType
 
     @staticmethod
-    cdef create(ElementTypeId dh_type, pa_type: pa.DataType):
+    cdef create(dh_type : CElementType, pa_type: pa.DataType):
         result = _EquivalentTypes()
         result.dh_type = dh_type
         result.pa_type = pa_type
         return result
 
-cdef _equivalentTypes = [
-    _EquivalentTypes.create(ElementTypeId.kChar, pa.uint16()),
-    _EquivalentTypes.create(ElementTypeId.kInt8, pa.int8()),
-    _EquivalentTypes.create(ElementTypeId.kInt16, pa.int16()),
-    _EquivalentTypes.create(ElementTypeId.kInt32, pa.int32()),
-    _EquivalentTypes.create(ElementTypeId.kInt64, pa.int64()),
-    _EquivalentTypes.create(ElementTypeId.kFloat, pa.float32()),
-    _EquivalentTypes.create(ElementTypeId.kDouble, pa.float64()),
-    _EquivalentTypes.create(ElementTypeId.kBool, pa.bool_()),
-    _EquivalentTypes.create(ElementTypeId.kString, pa.string()),
-    _EquivalentTypes.create(ElementTypeId.kTimestamp, pa.timestamp("ns", "UTC")),
-    _EquivalentTypes.create(ElementTypeId.kLocalDate, pa.date64()),
-    _EquivalentTypes.create(ElementTypeId.kLocalTime, pa.time64("ns"))
-]
+    def wrap_list(self):
+        wrapped_dh_type = self.dh_type.WrapList()
+        wrapped_pa_type = pa.list_(self.pa_type)
+        return _EquivalentTypes.create(wrapped_dh_type, wrapped_pa_type)
 
-# Converts a Deephaven type (an enum) into the corresponding PyArrow type.
-cdef _dh_type_to_pa_type(dh_type: ElementTypeId):
-    for et_python in _equivalentTypes:
+    def __str__(self):
+        return f"[dh_type_id={self.dh_type.ToString()}, pa_type={self.pa_type}]"
+
+    def __repr__(self):
+        return self.__str__()
+
+cdef _make_equivalent_types():
+    # make the known scalar types
+    cdef scalars = [
+        _EquivalentTypes.create(CElementType.Of(ElementTypeId.kChar), pa.uint16()),
+        _EquivalentTypes.create(CElementType.Of(ElementTypeId.kInt8), pa.int8()),
+        _EquivalentTypes.create(CElementType.Of(ElementTypeId.kInt16), pa.int16()),
+        _EquivalentTypes.create(CElementType.Of(ElementTypeId.kInt32), pa.int32()),
+        _EquivalentTypes.create(CElementType.Of(ElementTypeId.kInt64), pa.int64()),
+        _EquivalentTypes.create(CElementType.Of(ElementTypeId.kFloat), pa.float32()),
+        _EquivalentTypes.create(CElementType.Of(ElementTypeId.kDouble), pa.float64()),
+        _EquivalentTypes.create(CElementType.Of(ElementTypeId.kBool), pa.bool_()),
+        _EquivalentTypes.create(CElementType.Of(ElementTypeId.kString), pa.string()),
+        _EquivalentTypes.create(CElementType.Of(ElementTypeId.kTimestamp), pa.timestamp("ns", "UTC")),
+        _EquivalentTypes.create(CElementType.Of(ElementTypeId.kLocalDate), pa.date64()),
+        _EquivalentTypes.create(CElementType.Of(ElementTypeId.kLocalTime), pa.time64("ns"))
+    ]
+
+    # make the known list types (one level of wrapping around the scalar types)
+    cdef lists = [et.wrap_list() for et in scalars]
+    return scalars + lists
+
+cdef _equivalent_types = _make_equivalent_types()
+
+# Converts a Deephaven type into the corresponding PyArrow type.
+cdef _dh_type_to_pa_type(dh_type: CElementType):
+    for et_python in _equivalent_types:
         et = <_EquivalentTypes>et_python
         if et.dh_type == dh_type:
             return et.pa_type
-    raise RuntimeError(f"Can't convert Deephaven type {<int>dh_type} to pyarrow type type")
+    raise RuntimeError(f"Can't convert Deephaven type {dh_type.ToString()} to pyarrow type")
 
 # Converts a PyArrow type into the corresponding PyArrow type.
-cdef ElementTypeId _pa_type_to_dh_type(pa_type: pa.DataType) except *:
-    for et_python in _equivalentTypes:
+cdef CElementType _pa_type_to_dh_type(pa_type: pa.DataType) except *:
+    for et_python in _equivalent_types:
         et = <_EquivalentTypes>et_python
         if et.pa_type == pa_type:
             return et.dh_type

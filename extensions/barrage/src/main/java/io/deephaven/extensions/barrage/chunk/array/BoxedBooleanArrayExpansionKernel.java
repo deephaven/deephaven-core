@@ -14,6 +14,7 @@ import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
+import io.deephaven.extensions.barrage.chunk.BaseChunkReader;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import org.jetbrains.annotations.NotNull;
@@ -97,32 +98,22 @@ public class BoxedBooleanArrayExpansionKernel implements ArrayExpansionKernel<Bo
     @Override
     public <A extends Any> WritableObjectChunk<Boolean[], A> contract(
             @NotNull final Chunk<A> source,
-            int sizePerElement,
+            final int sizePerElement,
             @Nullable final IntChunk<ChunkPositions> offsets,
             @Nullable final IntChunk<ChunkLengths> lengths,
             @Nullable final WritableChunk<A> outChunk,
             final int outOffset,
             final int totalRows) {
-        if (source.size() == 0) {
-            if (outChunk != null) {
-                return outChunk.asWritableObjectChunk();
-            }
-            return WritableObjectChunk.makeWritableChunk(totalRows);
-        }
-
-        sizePerElement = Math.abs(sizePerElement);
         final int itemsInBatch = offsets == null
                 ? source.size() / sizePerElement
                 : (offsets.size() - (lengths == null ? 1 : 0));
         final ByteChunk<A> typedSource = source.asByteChunk();
-        final WritableObjectChunk<Boolean[], A> result;
-        if (outChunk != null) {
-            result = outChunk.asWritableObjectChunk();
-        } else {
-            final int numRows = Math.max(itemsInBatch, totalRows);
-            result = WritableObjectChunk.makeWritableChunk(numRows);
-            result.setSize(numRows);
-        }
+        final WritableObjectChunk<Boolean[], A> result = BaseChunkReader.castOrCreateChunk(
+                outChunk,
+                outOffset,
+                Math.max(totalRows, itemsInBatch),
+                WritableObjectChunk::makeWritableChunk,
+                WritableChunk::asWritableObjectChunk);
 
         for (int ii = 0; ii < itemsInBatch; ++ii) {
             final int offset = offsets == null ? ii * sizePerElement : offsets.get(ii);

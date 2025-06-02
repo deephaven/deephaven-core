@@ -15,12 +15,13 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.locations.TableDataException;
+import io.deephaven.iceberg.base.IcebergUtils;
 import io.deephaven.iceberg.internal.DataInstructionsProviderLoader;
 import io.deephaven.parquet.table.CompletedParquetWrite;
 import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.ParquetTools;
-import io.deephaven.iceberg.util.SchemaProviderInternal.SchemaProviderImpl;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.channel.SeekableChannelsProvider;
 import org.apache.iceberg.AppendFiles;
 import org.apache.iceberg.DataFile;
 import org.apache.iceberg.DataFiles;
@@ -58,7 +59,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
 
-import static io.deephaven.iceberg.base.IcebergUtils.convertToIcebergType;
 import static io.deephaven.iceberg.base.IcebergUtils.verifyPartitioningColumns;
 import static io.deephaven.iceberg.base.IcebergUtils.verifyRequiredFields;
 
@@ -131,6 +131,11 @@ public class IcebergTableWriter {
     private final Object specialInstructions;
 
     /**
+     * The provider for creating channels to write data.
+     */
+    private final SeekableChannelsProvider channelsProvider;
+
+    /**
      * Characters to be used for generating random variable names of length {@link #VARIABLE_NAME_LENGTH}.
      */
     private static final String CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
@@ -158,7 +163,7 @@ public class IcebergTableWriter {
         verifyRequiredFields(table.schema(), tableDefinition);
         verifyPartitioningColumns(tableSpec, tableDefinition);
 
-        this.userSchema = ((SchemaProviderImpl) tableWriterOptions.schemaProvider()).getSchema(table);
+        this.userSchema = SchemaProviderInternal.of(tableWriterOptions.schemaProvider(), table);
         verifyFieldIdsInSchema(tableWriterOptions.fieldIdToColumnName().keySet(), userSchema);
 
         // Create a copy of the fieldIdToColumnName map since we might need to add new entries for columns which are not
@@ -179,7 +184,7 @@ public class IcebergTableWriter {
         final String uriScheme = tableAdapter.locationUri().getScheme();
         this.specialInstructions = tableWriterOptions.dataInstructions()
                 .orElseGet(() -> dataInstructionsProvider.load(uriScheme));
-
+        this.channelsProvider = tableAdapter.seekableChannelsProvider(specialInstructions);
     }
 
     private static TableParquetWriterOptions verifyWriterOptions(
@@ -267,14 +272,8 @@ public class IcebergTableWriter {
                 throw new IllegalArgumentException("Column " + columnName + " not found in the schema or " +
                         "the name mapping for the table");
             }
-            final Type expectedIcebergType = nestedField.type();
-            final Class<?> dhType = columnDefinition.getDataType();
-            final Type convertedIcebergType = convertToIcebergType(dhType);
-            if (!expectedIcebergType.equals(convertedIcebergType)) {
-                throw new IllegalArgumentException("Column " + columnName + " has type " + dhType + " in table " +
-                        "definition but type " + expectedIcebergType + " in Iceberg schema");
-            }
 
+            verifyCompatible(nestedField, columnDefinition);
             fieldIdToColumnName.put(fieldId, columnName);
         }
     }
@@ -346,6 +345,42 @@ public class IcebergTableWriter {
     }
 
     /**
+     * Verify that Deephaven column with provided definition is compatible for writing to the Iceberg column with the
+     * provided schema.
+     */
+    private static void verifyCompatible(
+            @NotNull final Types.NestedField icebergField,
+            @NotNull final ColumnDefinition<?> columnDefinition) {
+        final Type expectedIcebergType = icebergField.type();
+        final String dhColumnName = columnDefinition.getName();
+        final io.deephaven.qst.type.Type<?> dhType =
+                io.deephaven.qst.type.Type.find(columnDefinition.getDataType(), columnDefinition.getComponentType());
+        // We can use field ID 0 since we are not using it for anything else, just for type inference and verification
+        final io.deephaven.qst.type.Type.Visitor<org.apache.iceberg.types.Type> inferenceVisitor =
+                new TypeInference.BestIcebergType(() -> 1);
+        final org.apache.iceberg.types.Type inferredIcebergType =
+                TypeInference.of(dhType, inferenceVisitor).orElse(null);
+        if (inferredIcebergType == null) {
+            throw new Resolver.MappingException(
+                    String.format("Unable to infer the best Iceberg type for Deephaven column %s of type `%s`",
+                            dhColumnName, dhType));
+        }
+        if (inferredIcebergType.isPrimitiveType()) {
+            if (!expectedIcebergType.equals(inferredIcebergType)) {
+                throw new IllegalArgumentException("Column " + dhColumnName + " has type `" + dhType + "` in table " +
+                        "definition, which is inferred as `" + inferredIcebergType + "` but has type `" +
+                        expectedIcebergType + "` in Iceberg schema");
+            }
+        } else if (!expectedIcebergType.isListType() ||
+                !expectedIcebergType.asListType().elementType()
+                        .equals(inferredIcebergType.asListType().elementType())) {
+            throw new IllegalArgumentException("Column " + dhColumnName + " has type `" + dhType + "` in table " +
+                    "definition, which is inferred as `" + inferredIcebergType + "` but has type `" +
+                    expectedIcebergType + "` in Iceberg schema");
+        }
+    }
+
+    /**
      * Append the provided Deephaven {@link IcebergWriteInstructions#tables()} as new partitions to the existing Iceberg
      * table in a single snapshot. This method will not perform any compatibility checks between the existing schema and
      * the provided Deephaven tables.
@@ -366,7 +401,7 @@ public class IcebergTableWriter {
      * @param writeInstructions The instructions for customizations while writing.
      */
     public List<DataFile> writeDataFiles(@NotNull final IcebergWriteInstructions writeInstructions) {
-        verifyCompatible(writeInstructions.tables(), nonPartitioningTableDefinition);
+        verifyDefinitionCompatible(writeInstructions.tables(), nonPartitioningTableDefinition);
         final List<String> partitionPaths = writeInstructions.partitionPaths();
         verifyPartitionPaths(tableSpec, partitionPaths);
         final List<PartitionData> partitionData;
@@ -384,9 +419,9 @@ public class IcebergTableWriter {
     }
 
     /**
-     * Verify that all the tables are compatible with the provided table definition.
+     * Verify that all the Deephaven tables are compatible with the provided table definition.
      */
-    private static void verifyCompatible(
+    private static void verifyDefinitionCompatible(
             @NotNull final Iterable<Table> tables,
             @NotNull final TableDefinition expectedDefinition) {
         for (final Table table : tables) {
@@ -433,13 +468,14 @@ public class IcebergTableWriter {
         final QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
         for (final String partitionPath : partitionPaths) {
             final String[] dhTableUpdateString = new String[numPartitioningFields];
+            final PartitionData partitionData = new PartitionData(partitionSpec.partitionType());
             try {
                 final String[] partitions = partitionPath.split("/", -1);
                 if (partitions.length != numPartitioningFields) {
                     throw new IllegalArgumentException("Expecting " + numPartitioningFields + " number of fields, " +
                             "found " + partitions.length);
                 }
-                final PartitionData partitionData = new PartitionData(partitionSpec.partitionType());
+
                 for (int colIdx = 0; colIdx < partitions.length; colIdx += 1) {
                     final String[] parts = partitions[colIdx].split("=", 2);
                     if (parts.length != 2) {
@@ -452,14 +488,14 @@ public class IcebergTableWriter {
                     }
                     final Type type = partitionData.getType(colIdx);
                     dhTableUpdateString[colIdx] = getTableUpdateString(field.name(), type, parts[1], queryScope);
-                    partitionData.set(colIdx, Conversions.fromPartitionString(partitionData.getType(colIdx), parts[1]));
+                    partitionData.set(colIdx, Conversions.fromPartitionString(type, parts[1]));
                 }
             } catch (final Exception e) {
                 throw new IllegalArgumentException("Failed to parse partition path: " + partitionPath + " using" +
                         " partition spec " + partitionSpec + ", check cause for more details ", e);
             }
             dhTableUpdateStringList.add(dhTableUpdateString);
-            partitionDataList.add(DataFiles.data(partitionSpec, partitionPath));
+            partitionDataList.add(partitionData);
         }
         return new Pair<>(partitionDataList, dhTableUpdateStringList);
     }
@@ -554,7 +590,7 @@ public class IcebergTableWriter {
         final List<CompletedParquetWrite> parquetFilesWritten = new ArrayList<>(dhTables.size());
         final ParquetInstructions.OnWriteCompleted onWriteCompleted = parquetFilesWritten::add;
         final ParquetInstructions parquetInstructions = tableWriterOptions.toParquetInstructions(
-                onWriteCompleted, tableDefinition, fieldIdToColumnName, specialInstructions);
+                onWriteCompleted, tableDefinition, fieldIdToColumnName, specialInstructions, channelsProvider);
 
         // Write the data to parquet files
         final int numTables = dhTables.size();
@@ -597,7 +633,8 @@ public class IcebergTableWriter {
             final String newDataLocation;
             Table dhTableToWrite = dhTable;
             if (isPartitioned) {
-                newDataLocation = getDataLocation(Objects.requireNonNull(partitionData));
+                newDataLocation = IcebergUtils
+                        .maybeResolveRelativePath(getDataLocation(Objects.requireNonNull(partitionData)), table.io());
                 dhTableToWrite = dhTableToWrite.updateView(Objects.requireNonNull(dhTableUpdateString));
             } else {
                 newDataLocation = getDataLocation();

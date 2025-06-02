@@ -8,7 +8,21 @@ dependencies {
     implementation project(':engine-table')
     implementation project(':Plot')
     implementation libs.guava
+    implementation libs.nidi.graphviz.java
     compileOnly libs.autoservice
     annotationProcessor libs.autoservice.compiler
     implementation libs.groovy
+
+    testImplementation platform(libs.junit.bom)
+    testImplementation libs.junit.jupiter
+    testImplementation libs.junit.platform.launcher
+    testImplementation libs.commons.lang3
+    testRuntimeOnly libs.slf4j.simple
+    testRuntimeOnly project(':log-to-slf4j'),
+            project(path: ':configs'),
+            project(path: ':test-configs')
+}
+
+test {
+    useJUnitPlatform()
 }

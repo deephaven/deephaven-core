@@ -3,12 +3,6 @@ plugins {
 }
 
 sourceSets {
-    main {
-        java {
-            srcDir 'java'
-        }
-    }
-
     test {
         resources {
             srcDir 'test'

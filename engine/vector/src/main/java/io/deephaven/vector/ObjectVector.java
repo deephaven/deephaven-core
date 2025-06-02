@@ -5,10 +5,12 @@ package io.deephaven.vector;
 
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
+import io.deephaven.engine.primitive.value.iterator.ValueIterator;
 import io.deephaven.qst.type.GenericVectorType;
 import io.deephaven.qst.type.GenericType;
 import io.deephaven.util.annotations.FinalDefault;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
+import io.deephaven.util.type.ArrayTypeUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -58,7 +60,7 @@ public interface ObjectVector<COMPONENT_TYPE> extends Vector<ObjectVector<COMPON
 
     @Override
     @FinalDefault
-    default CloseableIterator<COMPONENT_TYPE> iterator() {
+    default ValueIterator<COMPONENT_TYPE> iterator() {
         return iterator(0, size());
     }
 
@@ -70,9 +72,9 @@ public interface ObjectVector<COMPONENT_TYPE> extends Vector<ObjectVector<COMPON
      * @param toIndexExclusive The first position after {@code fromIndexInclusive} to not include
      * @return An iterator over the requested slice
      */
-    default CloseableIterator<COMPONENT_TYPE> iterator(final long fromIndexInclusive, final long toIndexExclusive) {
+    default ValueIterator<COMPONENT_TYPE> iterator(final long fromIndexInclusive, final long toIndexExclusive) {
         Require.leq(fromIndexInclusive, "fromIndexInclusive", toIndexExclusive, "toIndexExclusive");
-        return new CloseableIterator<>() {
+        return new ValueIterator<>() {
 
             long nextIndex = fromIndexInclusive;
 
@@ -84,6 +86,11 @@ public interface ObjectVector<COMPONENT_TYPE> extends Vector<ObjectVector<COMPON
             @Override
             public boolean hasNext() {
                 return nextIndex < toIndexExclusive;
+            }
+
+            @Override
+            public long remaining() {
+                return toIndexExclusive - nextIndex;
             }
         };
     }
@@ -151,7 +158,7 @@ public interface ObjectVector<COMPONENT_TYPE> extends Vector<ObjectVector<COMPON
              final CloseableIterator<?> bIterator = bVector.iterator()) {
             // @formatter:on
             while (aIterator.hasNext()) {
-                if (!Objects.equals(aIterator.next(), bIterator.next())) {
+                if (!Objects.deepEquals(aIterator.next(), bIterator.next())) {
                     return false;
                 }
             }

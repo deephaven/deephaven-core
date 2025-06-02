@@ -3,31 +3,26 @@
 //
 package io.deephaven.extensions.s3;
 
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.channel.CompletableOutputStream;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+import software.amazon.awssdk.awscore.AwsRequest;
 import software.amazon.awssdk.core.async.AsyncRequestBody;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.S3Uri;
 import software.amazon.awssdk.services.s3.internal.multipart.SdkPojoConversionUtils;
-import software.amazon.awssdk.services.s3.model.AbortMultipartUploadRequest;
-import software.amazon.awssdk.services.s3.model.CompleteMultipartUploadRequest;
-import software.amazon.awssdk.services.s3.model.CompletedMultipartUpload;
-import software.amazon.awssdk.services.s3.model.CompletedPart;
-import software.amazon.awssdk.services.s3.model.CreateMultipartUploadRequest;
-import software.amazon.awssdk.services.s3.model.CreateMultipartUploadResponse;
-import software.amazon.awssdk.services.s3.model.UploadPartRequest;
-import software.amazon.awssdk.services.s3.model.UploadPartResponse;
+import software.amazon.awssdk.services.s3.model.*;
 
 import java.io.IOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
+import java.time.Duration;
+import java.util.*;
+import java.util.concurrent.*;
 
-import static io.deephaven.extensions.s3.S3ChannelContext.handleS3Exception;
-import static io.deephaven.extensions.s3.S3Instructions.MIN_WRITE_PART_SIZE;
+import static io.deephaven.extensions.s3.S3ReadContext.handleS3Exception;
+import static io.deephaven.extensions.s3.S3Utils.addTimeout;
 
 class S3CompletableOutputStream extends CompletableOutputStream {
 
@@ -36,45 +31,104 @@ class S3CompletableOutputStream extends CompletableOutputStream {
      */
     private static final int MIN_PART_NUMBER = 1;
     private static final int MAX_PART_NUMBER = 10000;
-    private static final int INVALID_PART_NUMBER = -1;
-
-    private enum State {
-        OPEN, DONE, COMPLETED, ABORTED
-    }
 
     private final S3Uri uri;
     private final S3AsyncClient s3AsyncClient;
     private final S3Instructions s3Instructions;
 
-    private final int writePartSize;
-    private final int numConcurrentWriteParts;
-
-    private final List<CompletedPart> completedParts;
-    private final List<OutgoingRequest> pendingRequests;
-
+    /**
+     * The part number to be used for the next part upload. This is initialized to {@link #MIN_PART_NUMBER} and
+     * incremented for each part The total number of parts uploaded can be calculated as {@code nextPartNumber - 1} and
+     * cannot exceed {@link #MAX_PART_NUMBER}.
+     */
     private int nextPartNumber;
-    private String uploadId; // Initialized on first write, changed back to null when multipart upload completed/aborted
+
+    /**
+     * Track how many parts have completed (success or failure). This is used to wait for all parts to finish before
+     * completing or aborting the upload.
+     */
+    private final Semaphore numPartsCompleted;
+
+    /**
+     * A list of all parts that have been successfully uploaded. This list is used to complete the multipart upload.
+     */
+    private final List<CompletedPart> completedParts;
+
+    /**
+     * The context object used to manage the pool of buffers for write requests.
+     */
+    private final S3WriteContext writeContext;
+
+    /**
+     * The request containing data buffered for the next part to be uploaded. S3 requires that all parts, except the
+     * last one, must be at least {@value S3Instructions#MIN_WRITE_PART_SIZE} in size. Therefore, we buffer the data
+     * until we have enough to send a part request, or until the stream is closed.
+     * <p>
+     * This object can be {@code null} if there is no pending data (e.g., at the beginning of a stream) or if the data
+     * has already been uploaded in a previous part.
+     */
+    @Nullable
+    private S3WriteRequest bufferedPartRequest;
+
+    /**
+     * Represents the handoff of responsibility for returning the buffer for the bufferedPartRequest. If completed
+     * exceptionally, then the buffer will be returned as part of that exception handling. If completed successfully,
+     * the buffer will be released downstream of the successful completion.
+     */
+    @Nullable
+    private CompletableFuture<Void> handoff;
+
+    /**
+     * The upload ID for the multipart upload. This is initialized on the first write operation and is set to
+     * {@code null} when the multipart upload is completed or aborted.
+     */
+    @Nullable
+    private String uploadId;
+
+    private enum State {
+        OPEN, DONE, COMPLETED, ABORTED
+    }
+
+    /**
+     * The current state of the stream.
+     */
     private State state;
+
+    /**
+     * A {@link CompletableFuture} that represents the overall health of this S3 upload stream. This future completes
+     * normally (with {@code null}) when the entire upload succeeds, and completes exceptionally if any part fails or if
+     * the operation is aborted due to an error. Once it fails, all outstanding requests will be cancelled, and
+     * subsequent calls to methods like {@code write()} or {@code flush()} will throw an exception immediately.
+     */
+    private final CompletableFuture<Void> status;
 
     S3CompletableOutputStream(
             @NotNull final URI uri,
             @NotNull final S3AsyncClient s3AsyncClient,
-            @NotNull final S3Instructions s3Instructions) {
+            @NotNull final S3Instructions s3Instructions,
+            @NotNull final SafeCloseable channelContext) {
         this.uri = s3AsyncClient.utilities().parseUri(uri);
         this.s3AsyncClient = s3AsyncClient;
         this.s3Instructions = s3Instructions;
 
-        this.writePartSize = s3Instructions.writePartSize();
-        this.numConcurrentWriteParts = s3Instructions.numConcurrentWriteParts();
-        this.pendingRequests = new ArrayList<>(numConcurrentWriteParts);
-
         this.nextPartNumber = MIN_PART_NUMBER;
-        this.completedParts = new ArrayList<>();
+        this.numPartsCompleted = new Semaphore(0);
+        this.completedParts = Collections.synchronizedList(new ArrayList<>());
+
+        if (!(channelContext instanceof S3WriteContext)) {
+            throw new IllegalArgumentException("Unsupported channel context " + channelContext);
+        }
+        this.writeContext = (S3WriteContext) channelContext;
+        this.bufferedPartRequest = null;
+        this.uploadId = null;
+
         this.state = State.OPEN;
+        this.status = new CompletableFuture<>();
     }
 
     @Override
     public void write(final int b) throws IOException {
+        checkStatus();
         write((dest, destOff, destCount) -> {
             dest.put((byte) b);
             return 1;
@@ -83,11 +137,13 @@ class S3CompletableOutputStream extends CompletableOutputStream {
 
     @Override
     public void write(final byte @NotNull [] b) throws IOException {
+        checkStatus();
         write(b, 0, b.length);
     }
 
     @Override
     public void write(final byte @NotNull [] b, final int off, final int len) throws IOException {
+        checkStatus();
         write((dest, currentOffset, remainingLength) -> {
             final int lengthToWrite = Math.min(remainingLength, dest.remaining());
             dest.put(b, currentOffset, lengthToWrite);
@@ -122,7 +178,7 @@ class S3CompletableOutputStream extends CompletableOutputStream {
      */
     private void write(@NotNull final DataWriter writer, int off, int len) throws IOException {
         if (state != State.OPEN) {
-            throw new IOException("Cannot write to stream for uri " + uri + " because stream in state " + state +
+            throw new IOException("Cannot write to stream for uri " + uri + " because stream is in state " + state +
                     " instead of OPEN");
         }
         while (len != 0) {
@@ -130,55 +186,65 @@ class S3CompletableOutputStream extends CompletableOutputStream {
                 // Initialize the upload ID for the multipart upload
                 uploadId = initiateMultipartUpload();
             }
-
-            // We use request slots in a circular queue fashion
-            final int nextSlotId = (nextPartNumber - 1) % numConcurrentWriteParts;
-            final OutgoingRequest useRequest;
-            if (pendingRequests.size() == nextSlotId) {
-                pendingRequests.add(useRequest = new OutgoingRequest(writePartSize));
-            } else if (pendingRequests.size() < nextSlotId) {
-                throw new IllegalStateException("Unexpected slot ID " + nextSlotId + " for uri " + uri + " with " +
-                        pendingRequests.size() + " pending requests.");
-            } else {
-                useRequest = pendingRequests.get(nextSlotId);
-                // Wait for the oldest upload to complete if no space is available
-                if (useRequest.future != null) {
-                    waitForCompletion(useRequest);
-                }
-            }
-
-            // Write as much as possible to this buffer
-            final ByteBuffer buffer = useRequest.buffer;
-            final int lengthWritten = writer.write(buffer, off, len);
-            if (!buffer.hasRemaining()) {
-                sendPartRequest(useRequest);
-            }
+            final int lengthWritten = writeImpl(writer, off, len);
             off += lengthWritten;
             len -= lengthWritten;
         }
     }
 
+    private int writeImpl(final DataWriter writer, int off, int len) throws IOException {
+        if (bufferedPartRequest == null) {
+            final S3WriteRequest request;
+            try {
+                request = new S3WriteRequest(writeContext, s3Instructions.writePartSize());
+            } catch (final InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new IOException("Thread interrupted while creating a write request for part " +
+                        nextPartNumber, e);
+            }
+            handoff = new CompletableFuture<>();
+            // If the status has an exception, cancel the handoff
+            forwardExceptionAsCancel(status, handoff);
+            // If we can't complete the handoff, release the buffer
+            handoff.whenComplete((unused, throwable) -> {
+                if (throwable != null) {
+                    request.releaseBuffer();
+                }
+            });
+            bufferedPartRequest = request;
+        }
+        final int lengthWritten = writer.write(bufferedPartRequest.buffer, off, len);
+        if (!bufferedPartRequest.buffer.hasRemaining()) {
+            sendPartRequest(false);
+            bufferedPartRequest = null;
+            handoff = null;
+        }
+        return lengthWritten;
+    }
+
     @Override
     public void flush() throws IOException {
-        // Flush the next part if it is larger than the minimum part size
-        flushImpl(false);
+        checkStatus();
+        // Do nothing since we automatically flush parts when they reach the configured part size
     }
 
     @Override
     public void done() throws IOException {
+        checkStatus();
         if (state == State.DONE) {
             return;
         }
         if (state != State.OPEN) {
-            throw new IOException("Cannot mark stream as done for uri " + uri + " because stream in state " + state +
+            throw new IOException("Cannot mark stream as done for uri " + uri + " because stream is in state " + state +
                     " instead of OPEN");
         }
-        flushImpl(true);
+        sendLastRequestIfPresent();
         state = State.DONE;
     }
 
     @Override
     public void complete() throws IOException {
+        checkStatus();
         if (state == State.COMPLETED) {
             return;
         }
@@ -189,6 +255,7 @@ class S3CompletableOutputStream extends CompletableOutputStream {
 
     @Override
     public void rollback() throws IOException {
+        checkStatus();
         if (state == State.COMPLETED || state == State.ABORTED) {
             // Cannot roll back a completed or aborted multipart upload
             return;
@@ -199,6 +266,7 @@ class S3CompletableOutputStream extends CompletableOutputStream {
 
     @Override
     public void close() throws IOException {
+        checkStatus();
         if (state == State.COMPLETED || state == State.ABORTED) {
             return;
         }
@@ -208,42 +276,24 @@ class S3CompletableOutputStream extends CompletableOutputStream {
 
     ////////// Helper methods and classes //////////
 
-    private static class OutgoingRequest {
-        /**
-         * The buffer for this request
-         */
-        private final ByteBuffer buffer;
-
-        /**
-         * The part number for the part to be uploaded
-         */
-        private int partNumber;
-
-        /**
-         * The future for the part upload
-         */
-        private CompletableFuture<UploadPartResponse> future;
-
-        OutgoingRequest(final int writePartSize) {
-            // TODO(deephaven-core#5935): Experiment with buffer pool here
-            buffer = ByteBuffer.allocate(writePartSize);
-            partNumber = INVALID_PART_NUMBER;
-        }
-    }
-
     private String initiateMultipartUpload() throws IOException {
-        final CreateMultipartUploadRequest createMultipartUploadRequest = CreateMultipartUploadRequest.builder()
+        final CreateMultipartUploadRequest.Builder builder = CreateMultipartUploadRequest.builder()
                 .bucket(uri.bucket().orElseThrow())
-                .key(uri.key().orElseThrow())
-                .build();
+                .key(uri.key().orElseThrow());
+        final CreateMultipartUploadRequest createMultipartUploadRequest = applyOverrideConfiguration(builder).build();
         // Note: We can add support for other parameters like tagging, storage class, encryption, permissions, etc. in
         // future
-        final CompletableFuture<CreateMultipartUploadResponse> future =
+        final CompletableFuture<CreateMultipartUploadResponse> initiateUploadFuture =
                 s3AsyncClient.createMultipartUpload(createMultipartUploadRequest);
+        initiateUploadFuture.exceptionally(throwable -> {
+            failAll(new IOException("Failed to initiate multipart upload for uri " + uri, throwable));
+            return null;
+        });
         final CreateMultipartUploadResponse response;
         try {
-            response = future.get();
-        } catch (final InterruptedException | ExecutionException e) {
+            response = initiateUploadFuture.get();
+        } catch (final InterruptedException | ExecutionException | CancellationException e) {
+            initiateUploadFuture.cancel(true);
             throw handleS3Exception(e, String.format("initiating multipart upload for uri %s", uri), s3Instructions);
         }
         return response.uploadId();
@@ -252,111 +302,224 @@ class S3CompletableOutputStream extends CompletableOutputStream {
     /**
      * Send a part request for the given buffer. This method assumes that the buffer is non-empty.
      */
-    private void sendPartRequest(final OutgoingRequest request) throws IOException {
+    private void sendPartRequest(boolean onDone) throws IOException {
         if (nextPartNumber > MAX_PART_NUMBER) {
-            throw new IOException("Cannot upload more than " + MAX_PART_NUMBER + " parts for uri " + uri + ", please" +
-                    " try again with a larger part size");
+            final IOException ex = new IOException("Cannot upload more than " + MAX_PART_NUMBER +
+                    " parts for uri " + uri + ", please try again with a larger part size");
+            failAll(ex);
+            throw ex;
         }
-        if (request.future != null) {
-            throw new IllegalStateException("Request already in progress for uri " + uri + " with part number " +
-                    nextPartNumber);
+        if (!Objects.requireNonNull(handoff).complete(null)) {
+            // handoff only completes exceptionally if status had an error
+            throw statusError();
         }
-        final UploadPartRequest uploadPartRequest = UploadPartRequest.builder()
+        // After handoff, we are responsible for releasing buffer
+        final S3WriteRequest request = Objects.requireNonNull(bufferedPartRequest);
+        request.buffer.flip();
+        if (onDone && !request.buffer.hasRemaining()) {
+            // The only potential for an empty buffer is when onDone; we still need to release it.
+            request.releaseBuffer();
+            return;
+        }
+
+        final UploadPartRequest.Builder builder = UploadPartRequest.builder()
                 .bucket(uri.bucket().orElseThrow())
                 .key(uri.key().orElseThrow())
                 .uploadId(uploadId)
-                .partNumber(nextPartNumber)
-                .build();
-        request.buffer.flip();
-        request.future = s3AsyncClient.uploadPart(uploadPartRequest,
+                .partNumber(nextPartNumber);
+        final UploadPartRequest uploadPartRequest = applyOverrideConfiguration(builder).build();
+
+        final int partNumber = nextPartNumber;
+        final CompletableFuture<UploadPartResponse> uploadPartFuture = s3AsyncClient.uploadPart(uploadPartRequest,
                 AsyncRequestBody.fromByteBufferUnsafe(request.buffer));
-        request.partNumber = nextPartNumber;
+
+        // Release the buffer when the upload is complete, regardless of success or failure. So the future will hold a
+        // reference to the request instance.
+        uploadPartFuture.whenComplete((uploadPartResponse, throwable) -> request.releaseBuffer());
+
+        // Process the upload part response
+        uploadPartFuture.whenComplete((uploadPartResponse, throwable) -> {
+            try {
+                if (throwable == null) {
+                    completedParts.add(
+                            SdkPojoConversionUtils.toCompletedPart(uploadPartResponse, partNumber));
+                } else {
+                    failAll(new IOException("Failed to upload part " + partNumber + " for uri " + uri,
+                            throwable));
+                }
+            } finally {
+                numPartsCompleted.release();
+            }
+        });
+        // Cancel the upload if the status future fails. So status will hold a reference to the upload future.
+        forwardExceptionAsCancel(status, uploadPartFuture);
         nextPartNumber++;
     }
 
-    private void waitForCompletion(final OutgoingRequest request) throws IOException {
-        final UploadPartResponse uploadPartResponse;
-        try {
-            uploadPartResponse = request.future.get();
-        } catch (final InterruptedException | ExecutionException e) {
-            throw handleS3Exception(e, String.format("waiting for part %d for uri %s to complete uploading",
-                    request.partNumber, uri), s3Instructions);
-        }
-        completedParts.add(SdkPojoConversionUtils.toCompletedPart(uploadPartResponse, request.partNumber));
-        request.buffer.clear();
-        request.future = null;
-        request.partNumber = INVALID_PART_NUMBER;
+    private static void forwardExceptionAsCancel(CompletableFuture<?> src, CompletableFuture<?> dst) {
+        src.whenComplete((ignored, ex) -> {
+            if (ex != null) {
+                dst.cancel(true);
+            }
+        });
     }
 
     /**
-     * Flushes the current buffer to S3.
-     *
-     * @param force if true, forces the buffer to be flushed even if it is smaller than the minimum
-     *        {@value S3Instructions#MIN_WRITE_PART_SIZE} MiB threshold, which should only be done for the very last
-     *        part.
-     * @throws IOException if an I/O error occurs during the flush operation
+     * Fail the entire upload. Any subsequent calls to {@link #checkStatus()} will throw.
      */
-    private void flushImpl(final boolean force) throws IOException {
-        final int nextSlotId = (nextPartNumber - 1) % numConcurrentWriteParts;
-        if (pendingRequests.size() == nextSlotId) {
-            // Nothing to flush
+    private void failAll(final Throwable throwable) {
+        status.completeExceptionally(throwable);
+    }
+
+    /**
+     * Check if a failure in upload has been recorded, and if so, throw it.
+     * <p>
+     * All essential operations (write, flush, complete, etc.) should call this method before proceeding. Once a failure
+     * is recorded, the stream is essentially broken, and no further writes should be attempted.
+     *
+     * @throws IOException if an upload failure has been recorded
+     */
+    private void checkStatus() throws IOException {
+        if (status.isCompletedExceptionally()) {
+            throw statusError();
+        }
+    }
+
+    private IOException statusError() {
+        // join() will throw a CompletionException with the cause as the original exception
+        try {
+            status.join();
+        } catch (final CompletionException | CancellationException e) {
+            final Throwable cause = e.getCause();
+            if (cause instanceof IOException) {
+                return (IOException) cause;
+            } else {
+                return new IOException("Failed to upload to S3, check cause for more details", cause);
+            }
+        }
+        throw new IllegalStateException();
+    }
+
+    /**
+     * Send all buffered data to S3. This should only be done for the last part of the upload because we want to enforce
+     * that all parts except the last one are of equal size, given by {@link S3Instructions#writePartSize()}
+     */
+    private void sendLastRequestIfPresent() throws IOException {
+        if (bufferedPartRequest == null) {
+            // Nothing to send
             return;
         }
-        final OutgoingRequest request = pendingRequests.get(nextSlotId);
-        if (request.buffer.position() != 0
-                && request.future == null
-                && (force || request.buffer.position() >= MIN_WRITE_PART_SIZE)) {
-            sendPartRequest(request);
-        }
+        sendPartRequest(true);
+        bufferedPartRequest = null;
+        handoff = null;
     }
 
     private void completeMultipartUpload() throws IOException {
         if (uploadId == null) {
-            throw new IllegalStateException("Cannot complete multipart upload for uri " + uri + " because upload ID " +
-                    "is null");
+            // We didn't start the upload, so nothing to complete
+            return;
         }
-        // Complete all pending requests in the exact order they were sent
-        final int partCount = nextPartNumber - 1;
-        for (int partNumber = completedParts.size() + 1; partNumber <= partCount; partNumber++) {
-            // Part numbers start from 1, therefore, we use (partNumber - 1) for the slot ID
-            final int slotId = (partNumber - 1) % numConcurrentWriteParts;
-            final OutgoingRequest request = pendingRequests.get(slotId);
-            waitForCompletion(request);
+
+        final int totalPartCount = nextPartNumber - 1;
+        try {
+            numPartsCompleted.acquire(totalPartCount);
+        } catch (final InterruptedException e) {
+            Thread.currentThread().interrupt();
+            final IOException ioe = new IOException("Failed to complete the upload since interrupted while waiting " +
+                    "for all parts to finish", e);
+            failAll(ioe);
+            throw ioe;
         }
-        final CompleteMultipartUploadRequest completeRequest = CompleteMultipartUploadRequest.builder()
+
+        // If any part failed to upload, we should fail here
+        checkStatus();
+
+        // Sort the completed parts by part number, as required by S3
+        completedParts.sort(Comparator.comparingInt(CompletedPart::partNumber));
+
+        final CompleteMultipartUploadRequest.Builder builder = CompleteMultipartUploadRequest.builder()
                 .bucket(uri.bucket().orElseThrow())
                 .key(uri.key().orElseThrow())
                 .uploadId(uploadId)
                 .multipartUpload(CompletedMultipartUpload.builder()
                         .parts(completedParts)
-                        .build())
-                .build();
+                        .build());
+        final CompleteMultipartUploadRequest completeRequest = applyOverrideConfiguration(builder).build();
+        final CompletableFuture<CompleteMultipartUploadResponse> uploadFuture =
+                s3AsyncClient.completeMultipartUpload(completeRequest);
         try {
-            s3AsyncClient.completeMultipartUpload(completeRequest).get();
-        } catch (final InterruptedException | ExecutionException e) {
-            throw handleS3Exception(e, String.format("completing multipart upload for uri %s", uri), s3Instructions);
+            uploadFuture.get();
+        } catch (final InterruptedException | ExecutionException | CancellationException e) {
+            uploadFuture.cancel(true);
+            final IOException ex = handleS3Exception(e,
+                    String.format("completing multipart upload for uri %s", uri), s3Instructions);
+            failAll(ex);
+            throw ex;
         }
         uploadId = null;
+
+        // Mark the status as completed successfully if we get here with no errors
+        status.complete(null);
     }
 
     /**
-     * Abort the multipart upload if it is in progress.
+     * Abort the multipart upload if it is in progress. Note that aborting an upload is a best effort operation, since
+     * according to the <a href="https://docs.aws.amazon.com/AmazonS3/latest/API/API_AbortMultipartUpload.html">SDK</a>,
+     * any in flight requests might still succeed. So its recommended to set expiration rules on buckets for incomplete
+     * uploads.
+     *
+     *
+     * @see <a href=
+     *      "https://aws.amazon.com/blogs/aws-cloud-financial-management/discovering-and-deleting-incomplete-multipart-uploads-to-lower-amazon-s3-costs/">
+     *      Discovering and Deleting Incomplete Multipart Uploads to Lower Amazon S3 Costs</a>
      */
     private void abortMultipartUpload() throws IOException {
         if (uploadId == null) {
             // We didn't start the upload, so nothing to abort
             return;
         }
-        final AbortMultipartUploadRequest abortRequest = AbortMultipartUploadRequest.builder()
+
+        // Cancel all pending requests
+        failAll(new IOException("Upload aborted for uri " + uri));
+
+        // Wait for all parts to finish
+        final int totalPartCount = nextPartNumber - 1;
+        try {
+            numPartsCompleted.acquire(totalPartCount);
+        } catch (final InterruptedException e) {
+            Thread.currentThread().interrupt();
+            final IOException ioe = new IOException("Failed to abort the upload since interrupted while waiting " +
+                    "for all parts to finish", e);
+            throw ioe;
+        }
+
+        // Initiate the abort request
+        final AbortMultipartUploadRequest.Builder builder = AbortMultipartUploadRequest.builder()
                 .bucket(uri.bucket().orElseThrow())
                 .key(uri.key().orElseThrow())
-                .uploadId(uploadId)
-                .build();
+                .uploadId(uploadId);
+        final AbortMultipartUploadRequest abortRequest = applyOverrideConfiguration(builder).build();
+        final CompletableFuture<AbortMultipartUploadResponse> future = s3AsyncClient.abortMultipartUpload(abortRequest);
+
+        // Wait for the abort to complete
         try {
-            s3AsyncClient.abortMultipartUpload(abortRequest).get();
-        } catch (final InterruptedException | ExecutionException e) {
-            throw handleS3Exception(e, String.format("aborting multipart upload for uri %s", uri), s3Instructions);
+            future.get();
+        } catch (final InterruptedException | ExecutionException | CancellationException e) {
+            future.cancel(true);
+            throw handleS3Exception(e,
+                    String.format("aborting multipart upload for uri %s", uri), s3Instructions);
         }
-        uploadId = null;
+    }
+
+    /**
+     * Applies the write timeout, then generates a request for the given builder and request class.
+     *
+     * @param builder an instance of a {@link S3Request.Builder} class
+     * @return the builder
+     */
+    private <B extends AwsRequest.Builder> B applyOverrideConfiguration(@NotNull B builder) {
+        final Duration writeTimeout = s3Instructions.writeTimeout();
+        builder.overrideConfiguration(b -> addTimeout(b, writeTimeout));
+        return builder;
     }
 }

@@ -230,7 +230,7 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
 
         final boolean isFullSubscription = viewport == null;
         final BarrageTable localResultTable = BarrageTable.make(
-                executorService, schema, isFullSubscription, new CheckForCompletion());
+                null, executorService, schema, isFullSubscription, new CheckForCompletion());
         resultTable = localResultTable;
         barrageMessageReader.setDeserializeTmConsumer(localResultTable.getDeserializationTmConsumer());
 

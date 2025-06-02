@@ -39,6 +39,8 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.time.Duration;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -46,7 +48,8 @@ import java.util.stream.StreamSupport;
 import static io.deephaven.base.FileUtils.REPEATED_URI_SEPARATOR;
 import static io.deephaven.base.FileUtils.REPEATED_URI_SEPARATOR_PATTERN;
 import static io.deephaven.base.FileUtils.URI_SEPARATOR;
-import static io.deephaven.extensions.s3.S3ChannelContext.handleS3Exception;
+import static io.deephaven.extensions.s3.S3ReadContext.handleS3Exception;
+import static io.deephaven.extensions.s3.S3Utils.addTimeout;
 
 /**
  * {@link SeekableChannelsProvider} implementation that is used to fetch objects from an S3-compatible API.
@@ -58,13 +61,14 @@ class S3SeekableChannelProvider implements SeekableChannelsProvider {
 
     private static final Logger log = LoggerFactory.getLogger(S3SeekableChannelProvider.class);
 
+    private final boolean ownsClient;
     private final S3AsyncClient s3AsyncClient;
     private final S3Instructions s3Instructions;
 
     /**
-     * A shared cache for S3 requests. This cache is shared across all S3 channels created by this provider.
+     * A shared cache for S3 read requests. This cache is shared across all S3 channels created by this provider.
      */
-    private final S3RequestCache sharedCache;
+    private final S3ReadRequestCache sharedReadCache;
 
     @SuppressWarnings("rawtypes")
     private static final AtomicReferenceFieldUpdater<S3SeekableChannelProvider, SoftReference> FILE_SIZE_CACHE_REF_UPDATER =
@@ -73,11 +77,32 @@ class S3SeekableChannelProvider implements SeekableChannelsProvider {
 
     private volatile SoftReference<Map<URI, FileSizeInfo>> fileSizeCacheRef;
 
+    /**
+     * Create a new S3SeekableChannelProvider with the given S3Instructions. A new S3AsyncClient will be created
+     * internally and closed when this provider is closed.
+     */
     S3SeekableChannelProvider(@NotNull final S3Instructions s3Instructions) {
-        this.s3AsyncClient = S3ClientFactory.getAsyncClient(Objects.requireNonNull(s3Instructions));
+        this(s3Instructions, S3ClientFactory.getAsyncClient(Objects.requireNonNull(s3Instructions)), true);
+    }
+
+    /**
+     * Create a new S3SeekableChannelProvider with the given S3AsyncClient and S3Instructions.
+     */
+    S3SeekableChannelProvider(
+            @NotNull final S3Instructions s3Instructions,
+            @NotNull final S3AsyncClient s3AsyncClient) {
+        this(s3Instructions, s3AsyncClient, false);
+    }
+
+    private S3SeekableChannelProvider(
+            @NotNull final S3Instructions s3Instructions,
+            @NotNull final S3AsyncClient s3AsyncClient,
+            final boolean ownsClient) {
         this.s3Instructions = s3Instructions;
-        this.sharedCache = new S3RequestCache(s3Instructions.fragmentSize());
+        this.sharedReadCache = new S3ReadRequestCache(s3Instructions.fragmentSize());
         this.fileSizeCacheRef = new SoftReference<>(new KeyedObjectHashMap<>(FileSizeInfo.URI_MATCH_KEY));
+        this.s3AsyncClient = s3AsyncClient;
+        this.ownsClient = ownsClient;
     }
 
     @Override
@@ -116,24 +141,32 @@ class S3SeekableChannelProvider implements SeekableChannelsProvider {
     }
 
     @Override
-    public SeekableChannelContext makeContext() {
-        return new S3ChannelContext(this, s3AsyncClient, s3Instructions, sharedCache);
+    public SeekableChannelContext makeReadContext() {
+        return new S3ReadContext(this, s3AsyncClient, s3Instructions, sharedReadCache);
     }
 
     @Override
-    public SeekableChannelContext makeSingleUseContext() {
-        return new S3ChannelContext(this, s3AsyncClient, s3Instructions.singleUse(), sharedCache);
+    public SeekableChannelContext makeSingleUseReadContext() {
+        return new S3ReadContext(this, s3AsyncClient, s3Instructions.singleUse(), sharedReadCache);
+    }
+
+    @Override
+    public WriteContext makeWriteContext() {
+        return new S3WriteContext(s3Instructions);
     }
 
     @Override
     public boolean isCompatibleWith(@NotNull final SeekableChannelContext channelContext) {
-        return channelContext instanceof S3ChannelContext;
+        return channelContext instanceof S3ReadContext;
     }
 
     @Override
-    public CompletableOutputStream getOutputStream(@NotNull final URI uri, final int bufferSizeHint) {
+    public CompletableOutputStream getOutputStream(
+            @NotNull final WriteContext channelContext,
+            @NotNull final URI uri,
+            final int bufferSizeHint) {
         // bufferSizeHint is unused because s3 output stream is buffered internally into parts
-        return new S3CompletableOutputStream(uri, s3AsyncClient, s3Instructions);
+        return new S3CompletableOutputStream(uri, s3AsyncClient, s3Instructions, channelContext);
     }
 
     @Override
@@ -217,12 +250,17 @@ class S3SeekableChannelProvider implements SeekableChannelsProvider {
                     // Add a delimiter to the request if we don't want to fetch all files recursively
                     requestBuilder.delimiter("/");
                 }
-                final long readTimeoutNanos = s3Instructions.readTimeout().toNanos();
+                final Duration readTimeout = s3Instructions.readTimeout();
+                final long readTimeoutNanos = readTimeout.toNanos();
+                requestBuilder.overrideConfiguration(b -> addTimeout(b, readTimeout));
+
                 final ListObjectsV2Request request = requestBuilder.continuationToken(continuationToken).build();
+                final CompletableFuture<ListObjectsV2Response> responseFuture = s3AsyncClient.listObjectsV2(request);
                 final ListObjectsV2Response response;
                 try {
-                    response = s3AsyncClient.listObjectsV2(request).get(readTimeoutNanos, TimeUnit.NANOSECONDS);
+                    response = responseFuture.get(readTimeoutNanos, TimeUnit.NANOSECONDS);
                 } catch (final InterruptedException | ExecutionException | TimeoutException | CancellationException e) {
+                    responseFuture.cancel(true);
                     throw handleS3Exception(e, String.format("fetching list of files in directory %s", directory),
                             s3Instructions);
                 }
@@ -284,14 +322,16 @@ class S3SeekableChannelProvider implements SeekableChannelsProvider {
             log.debug().append("Head: ").append(s3Uri.toString()).endl();
         }
         final HeadObjectResponse headObjectResponse;
+        final HeadObjectRequest.Builder requestBuilder = HeadObjectRequest.builder()
+                .bucket(s3Uri.bucket().orElseThrow())
+                .key(s3Uri.key().orElseThrow());
+        final Duration readTimeout = s3Instructions.readTimeout();
+        requestBuilder.overrideConfiguration(b -> addTimeout(b, readTimeout));
+        final CompletableFuture<HeadObjectResponse> responseFuture = s3AsyncClient.headObject(requestBuilder.build());
         try {
-            headObjectResponse = s3AsyncClient
-                    .headObject(HeadObjectRequest.builder()
-                            .bucket(s3Uri.bucket().orElseThrow())
-                            .key(s3Uri.key().orElseThrow())
-                            .build())
-                    .get(s3Instructions.readTimeout().toNanos(), TimeUnit.NANOSECONDS);
+            headObjectResponse = responseFuture.get(readTimeout.toNanos(), TimeUnit.NANOSECONDS);
         } catch (final InterruptedException | ExecutionException | TimeoutException | CancellationException e) {
+            responseFuture.cancel(true);
             throw handleS3Exception(e, String.format("fetching HEAD for file %s", s3Uri), s3Instructions);
         }
         final long fileSize = headObjectResponse.contentLength();
@@ -351,7 +391,9 @@ class S3SeekableChannelProvider implements SeekableChannelsProvider {
 
     @Override
     public void close() {
-        s3AsyncClient.close();
-        sharedCache.clear();
+        if (ownsClient) {
+            s3AsyncClient.close();
+        }
+        sharedReadCache.clear();
     }
 }

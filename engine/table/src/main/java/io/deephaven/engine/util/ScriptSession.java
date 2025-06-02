@@ -6,7 +6,6 @@ package io.deephaven.engine.util;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.liveness.LivenessNode;
-import io.deephaven.engine.liveness.ReleasableLivenessManager;
 import org.jetbrains.annotations.Nullable;
 
 import java.nio.file.Path;
@@ -15,8 +14,24 @@ import java.util.Map;
 
 /**
  * Interface for interactive console script sessions.
+ * <p>
+ * When a script session is no longer needed, it should be cleaned up by calling {@link #cleanup()}. This will release
+ * all resources and persistent external state associated with the script session. See {@link #cleanup()} for more
+ * details.
  */
 public interface ScriptSession extends LivenessNode {
+
+    /**
+     * Releases all resources and persistent external state associated with this script session.
+     * <p>
+     * Implementations of {@code ScriptSession} may create state outside of the JVM (e.g. on-disk caches or temporary
+     * directories) that is not automatically cleaned up. If left unmanaged, this state may persist even after the
+     * session is no longer in use.
+     * <p>
+     * This method should be called when the session is no longer needed to ensure that any external resources are
+     * properly released.
+     */
+    void cleanup();
 
     /**
      * Provides access to the query scope defined by the state in this script session.

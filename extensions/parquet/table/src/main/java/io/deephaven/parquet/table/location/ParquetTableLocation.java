@@ -3,25 +3,28 @@
 //
 package io.deephaven.parquet.table.location;
 
+import io.deephaven.api.ColumnName;
 import io.deephaven.api.SortColumn;
+import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
-import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetBuilderSequential;
-import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.liveness.LivenessScopeStack;
+import io.deephaven.engine.primitive.iterator.CloseableIterator;
+import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.BasicDataIndex;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.PushdownFilterContext;
+import io.deephaven.engine.table.impl.PushdownResult;
+import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.dataindex.StandaloneDataIndex;
-import io.deephaven.engine.table.impl.locations.ColumnLocation;
-import io.deephaven.engine.table.impl.locations.TableDataException;
-import io.deephaven.engine.table.impl.locations.TableKey;
-import io.deephaven.engine.table.impl.locations.TableLocationState;
+import io.deephaven.engine.table.impl.locations.*;
 import io.deephaven.engine.table.impl.locations.impl.AbstractTableLocation;
-import io.deephaven.engine.table.impl.select.MultiSourceFunctionalColumn;
-import io.deephaven.engine.table.impl.select.SourceColumn;
+import io.deephaven.engine.table.impl.select.*;
 import io.deephaven.engine.table.impl.sources.regioned.RegionedColumnSource;
 import io.deephaven.engine.table.impl.sources.regioned.RegionedPageStore;
+import io.deephaven.engine.table.impl.util.JobScheduler;
+import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.parquet.base.ParquetFileReader;
 import io.deephaven.parquet.base.RowGroupReader;
 import io.deephaven.parquet.impl.ParquetSchemaUtil;
@@ -33,22 +36,32 @@ import io.deephaven.parquet.table.metadata.DataIndexInfo;
 import io.deephaven.parquet.table.metadata.GroupingColumnInfo;
 import io.deephaven.parquet.table.metadata.SortColumnInfo;
 import io.deephaven.parquet.table.metadata.TableInfo;
+import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.mutable.MutableLong;
+import io.deephaven.util.type.NumericTypeUtils;
+import org.apache.parquet.column.statistics.Statistics;
 import org.apache.parquet.format.RowGroup;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
+import org.apache.parquet.schema.LogicalTypeAnnotation;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static io.deephaven.parquet.base.ParquetFileReader.FILE_URI_SCHEME;
 import static io.deephaven.parquet.table.ParquetTableWriter.*;
 import static io.deephaven.parquet.table.ParquetTableWriter.GROUPING_END_POS_COLUMN_NAME;
+import static org.apache.parquet.schema.LogicalTypeAnnotation.stringType;
 
 public class ParquetTableLocation extends AbstractTableLocation {
 
@@ -71,6 +84,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
     private List<SortColumn> sortingColumns;
 
     private ParquetFileReader parquetFileReader;
+    private ParquetMetadata parquetMetadata;
     private int[] rowGroupIndices;
     // -----------------------------------------------------------------------
 
@@ -92,7 +106,6 @@ public class ParquetTableLocation extends AbstractTableLocation {
             if (isInitialized) {
                 return;
             }
-            final ParquetMetadata parquetMetadata;
             final ParquetTableLocationKey tableLocationKey = getParquetKey();
             synchronized (tableLocationKey) {
                 // Following methods are internally synchronized, we synchronize them together here to minimize
@@ -210,6 +223,8 @@ public class ParquetTableLocation extends AbstractTableLocation {
 
     List<String> getColumnPath(@NotNull String columnName, String parquetColumnNameOrDefault) {
         initialize();
+        // In the future, we could make this more granular so that the resolver can be constructed without calling
+        // initialize first.
         if (resolver != null) {
             // empty list will result in exists=false
             return resolver.of(columnName).orElse(List.of());
@@ -407,5 +422,301 @@ public class ParquetTableLocation extends AbstractTableLocation {
                             GROUPING_KEY_COLUMN_NAME, GROUPING_BEGIN_POS_COLUMN_NAME, GROUPING_END_POS_COLUMN_NAME),
                     indexTable.getDefinition().getColumnNamesAsString()));
         }
+    }
+
+    @Override
+    public long estimatePushdownFilterCost(
+            final WhereFilter filter,
+            final RowSet selection,
+            final RowSet fullSet,
+            final boolean usePrev,
+            final PushdownFilterContext context) {
+
+        final long executedFilterCost = context.executedFilterCost();
+
+        // Some range filter host a condition filter as the internal filter and we can't push that down.
+        final boolean isRangeFilter =
+                filter instanceof RangeFilter && ((RangeFilter) filter).getRealFilter() instanceof AbstractRangeFilter;
+        final boolean isMatchFilter = filter instanceof MatchFilter;
+
+        if (shouldExecute(QueryTable.DISABLE_WHERE_PUSHDOWN_PARQUET_ROW_GROUP_METADATA,
+                PushdownResult.METADATA_STATS_COST, executedFilterCost)
+                && (isRangeFilter || isMatchFilter)) {
+            return PushdownResult.METADATA_STATS_COST;
+        }
+
+        final String[] parquetColumnNames = filter.getColumns().stream().map(
+                readInstructions::getParquetColumnNameFromColumnNameOrDefault)
+                .toArray(String[]::new);
+
+        // Do we have a data indexes for the column(s)?
+        if (shouldExecute(QueryTable.DISABLE_WHERE_PUSHDOWN_DATA_INDEX,
+                PushdownResult.IN_MEMORY_DATA_INDEX_COST, executedFilterCost)
+                && hasCachedDataIndex(parquetColumnNames)) {
+            return PushdownResult.IN_MEMORY_DATA_INDEX_COST;
+        }
+        if (shouldExecute(QueryTable.DISABLE_WHERE_PUSHDOWN_DATA_INDEX,
+                PushdownResult.DEFERRED_DATA_INDEX_COST, executedFilterCost)
+                && hasDataIndex(parquetColumnNames)) {
+            return PushdownResult.DEFERRED_DATA_INDEX_COST;
+        }
+
+        // TODO: add support for bloom filters, sortedness
+        return Long.MAX_VALUE; // No benefit to pushing down.
+    }
+
+    @Override
+    public void pushdownFilter(
+            final WhereFilter filter,
+            final Map<String, String> renameMap,
+            final RowSet selection,
+            final RowSet fullSet,
+            final boolean usePrev,
+            final PushdownFilterContext context,
+            final long costCeiling,
+            final JobScheduler jobScheduler,
+            final Consumer<PushdownResult> onComplete,
+            final Consumer<Exception> onError) {
+
+        final long executedFilterCost = context.executedFilterCost();
+        final List<String> parquetNames = filter.getColumns().stream()
+                .map(name -> renameMap.getOrDefault(name, name))
+                .map(readInstructions::getParquetColumnNameFromColumnNameOrDefault).collect(Collectors.toList());
+        final List<Integer> parquetIndices = parquetNames.stream().map(
+                name -> parquetMetadata.getFileMetaData().getSchema().getFieldIndex(name)).collect(Collectors.toList());
+
+        // Initialize the pushdown result with the selection rowset as "maybe" rows
+        PushdownResult result = PushdownResult.of(RowSetFactory.empty(), selection.copy());
+
+        // Should we look at the metadata?
+        if (shouldExecute(QueryTable.DISABLE_WHERE_PUSHDOWN_PARQUET_ROW_GROUP_METADATA,
+                PushdownResult.METADATA_STATS_COST, executedFilterCost, costCeiling)) {
+            // Some range filter host a condition filter as the internal filter and we can't push that down.
+            if (filter instanceof RangeFilter
+                    && ((RangeFilter) filter).getRealFilter() instanceof AbstractRangeFilter) {
+                try (final PushdownResult ignored = result) {
+                    result = pushdownRangeFilter((AbstractRangeFilter) ((RangeFilter) filter).getRealFilter(),
+                            parquetIndices, result);
+                }
+            } else if (filter instanceof MatchFilter) {
+                try (final PushdownResult ignored = result) {
+                    result = pushdownMatchFilter((MatchFilter) filter, parquetIndices, result);
+                }
+            }
+        }
+        if (result.maybeMatch().isEmpty()) {
+            // No maybe rows remaining, so no reason to continue filtering.
+            onComplete.accept(result);
+            return;
+        }
+
+        // If not prohibited by the cost ceiling, continue to refine the pushdown results.
+
+        if (shouldExecute(QueryTable.DISABLE_WHERE_PUSHDOWN_DATA_INDEX,
+                PushdownResult.IN_MEMORY_DATA_INDEX_COST, executedFilterCost, costCeiling)) {
+            final String[] parquetNameArr = parquetNames.toArray(String[]::new);
+
+            final BasicDataIndex dataIndex = hasCachedDataIndex(parquetNameArr) ? getDataIndex(parquetNameArr) : null;
+            if (dataIndex != null) {
+                // No maybe rows remaining, so no reason to continue filtering.
+                try (final PushdownResult ignored = result) {
+                    onComplete.accept(pushdownDataIndex(filter, renameMap, dataIndex, result));
+                    return;
+                }
+            }
+        }
+
+        if (shouldExecute(QueryTable.DISABLE_WHERE_PUSHDOWN_DATA_INDEX,
+                PushdownResult.DEFERRED_DATA_INDEX_COST, executedFilterCost, costCeiling)) {
+            // If we have a data index, apply the filter to the data index table and retain the incoming maybe rows.
+            final String[] parquetNameArr = parquetNames.toArray(String[]::new);
+
+            final BasicDataIndex dataIndex = hasDataIndex(parquetNameArr) ? getDataIndex(parquetNameArr) : null;
+            if (dataIndex != null) {
+                // No maybe rows remaining, so no reason to continue filtering.
+                try (final PushdownResult ignored = result) {
+                    onComplete.accept(pushdownDataIndex(filter, renameMap, dataIndex, result));
+                    return;
+                }
+            }
+        }
+
+        onComplete.accept(result);
+    }
+
+    /**
+     * Helper methods to determine if we should execute this push-down technique.
+     */
+    private boolean shouldExecute(final boolean disable, final long filterCost, final long executedFilterCost) {
+        return !disable && executedFilterCost < filterCost;
+    }
+
+    private boolean shouldExecute(final boolean disable, final long filterCost, final long executedFilterCost,
+            final long costCeiling) {
+        return shouldExecute(disable, filterCost, executedFilterCost) && filterCost <= costCeiling;
+    }
+
+    /**
+     * Consumer for row groups and row sets.
+     */
+    private interface RowGroupAndRowSetConsumer {
+        void accept(int rowGroupIndex, RowSequence rs);
+    }
+
+    /**
+     * Iterate over the row groups and the matching row sets, calling the consumer for each row group and row set.
+     */
+    private void iterateRowGroupsAndRowSet(final RowSet input, final RowGroupAndRowSetConsumer consumer) {
+        try (final RowSequence.Iterator rsIt = input.getRowSequenceIterator()) {
+            final RowGroupReader[] rgReaders = getRowGroupReaders();
+            for (int rgIdx = 0; rgIdx < rgReaders.length; rgIdx++) {
+                final long subRegionSize = rgReaders[rgIdx].getRowGroup().getNum_rows();
+                final long subRegionFirstKey = (long) rgIdx << regionParameters.regionMaskNumBits;
+                final long subRegionLastKey = subRegionFirstKey + subRegionSize - 1;
+
+                final RowSequence rs = rsIt.getNextRowSequenceThrough(subRegionLastKey);
+                if (rs.isEmpty()) {
+                    continue;
+                }
+
+                consumer.accept(rgIdx, rs);
+            }
+        }
+    }
+
+    /**
+     * Get the min and max values from the statistics. Currently can convert basic numerics, string and BigDecimal /
+     * BigInteger values.
+     *
+     * @param statistics The statistics to analyze
+     * @return The min and max values from the statistics or null if cannot be converted.
+     */
+    private Pair<Object, Object> getMinMax(final Statistics<?> statistics) {
+        if (statistics == null || statistics.isEmpty()) {
+            return null;
+        }
+        // Min/Max are guaranteed to be the same type, only testing min.
+        final Class<?> clazz = statistics.genericGetMin().getClass();
+
+        // Numeric values need no conversion
+        if (NumericTypeUtils.isIntegralOrChar(clazz) || NumericTypeUtils.isFloat(clazz)) {
+            return new Pair<>(statistics.genericGetMin(), statistics.genericGetMax());
+        }
+
+        if (statistics.type().getLogicalTypeAnnotation() == stringType()) {
+            return new Pair<>(statistics.minAsString(), statistics.maxAsString());
+        }
+
+        if (statistics.type()
+                .getLogicalTypeAnnotation() instanceof LogicalTypeAnnotation.DecimalLogicalTypeAnnotation) {
+            final int scale = ((LogicalTypeAnnotation.DecimalLogicalTypeAnnotation) statistics.type()
+                    .getLogicalTypeAnnotation()).getScale();
+            if (scale == 0) {
+                // Return the min and max values as BigInteger
+                return new Pair<>(new BigInteger(statistics.getMinBytes()), new BigInteger(statistics.getMaxBytes()));
+            } else {
+                // We need to convert the min and max values to BigDecimal
+                return new Pair<>(new BigDecimal(new BigInteger(statistics.getMinBytes()), scale),
+                        new BigDecimal(new BigInteger(statistics.getMaxBytes()), scale));
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Apply the range filter to the row groups and return the result.
+     */
+    @NotNull
+    private PushdownResult pushdownRangeFilter(
+            final AbstractRangeFilter rf,
+            final List<Integer> parquetIndices,
+            final PushdownResult result) {
+        final RowSetBuilderSequential maybeBuilder = RowSetFactory.builderSequential();
+        final MutableLong maybeCount = new MutableLong(0);
+
+        // Only one column in a RangeFilter
+        final Integer parquetIndex = parquetIndices.get(0);
+
+        iterateRowGroupsAndRowSet(result.maybeMatch(), (rgIdx, rs) -> {
+            final Pair<Object, Object> p = getMinMax(
+                    parquetMetadata.getBlocks().get(rgIdx).getColumns().get(parquetIndex).getStatistics());
+
+            if (p == null || rf.overlaps(p.first, p.second)) {
+                maybeBuilder.appendRowSequence(rs);
+                maybeCount.add(rs.size());
+            }
+        });
+        return PushdownResult.of(result.match().copy(),
+                maybeCount.get() == result.maybeMatch().size() ? result.maybeMatch().copy() : maybeBuilder.build());
+    }
+
+    /**
+     * Apply the match filter to the row groups and return the result.
+     */
+    @NotNull
+    private PushdownResult pushdownMatchFilter(
+            final MatchFilter mf,
+            final List<Integer> parquetIndices,
+            final PushdownResult result) {
+        final RowSetBuilderSequential maybeBuilder = RowSetFactory.builderSequential();
+        final MutableLong maybeCount = new MutableLong(0);
+
+        // Only one column in a RangeFilter
+        final Integer parquetIndex = parquetIndices.get(0);
+
+        iterateRowGroupsAndRowSet(result.maybeMatch(), (rgIdx, rs) -> {
+            final Pair<Object, Object> p = getMinMax(
+                    parquetMetadata.getBlocks().get(rgIdx).getColumns().get(parquetIndex).getStatistics());
+
+            if (p == null || mf.overlaps(p.first, p.second)) {
+                maybeBuilder.appendRowSequence(rs);
+                maybeCount.add(rs.size());
+            }
+        });
+        return PushdownResult.of(result.match().copy(),
+                maybeCount.get() == result.maybeMatch().size() ? result.maybeMatch().copy() : maybeBuilder.build());
+    }
+
+    /**
+     * Apply the filter to the data index table and return the result.
+     */
+    @NotNull
+    private PushdownResult pushdownDataIndex(
+            final WhereFilter filter,
+            final Map<String, String> renameMap,
+            final BasicDataIndex dataIndex,
+            final PushdownResult result) {
+        final RowSetBuilderRandom matchingBuilder = RowSetFactory.builderRandom();
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            final WhereFilter copiedFilter = filter.copy();
+            copiedFilter.init(dataIndex.table().getDefinition());
+
+            // TODO: When https://deephaven.atlassian.net/browse/DH-19443 is implemented, we should be able
+            // to use the filter directly on the index table.
+            final Collection<io.deephaven.api.Pair> renamePairs = renameMap.entrySet().stream()
+                    .map(entry -> io.deephaven.api.Pair.of(ColumnName.of(entry.getValue()),
+                            ColumnName.of(entry.getKey())))
+                    .collect(Collectors.toList());
+            final Table renamedIndexTable = dataIndex.table().renameColumns(renamePairs);
+
+            // Apply the filter to the data index table
+            try {
+                final Table filteredTable = renamedIndexTable.where(copiedFilter);
+
+                try (final CloseableIterator<RowSet> it =
+                        ColumnVectors.ofObject(filteredTable, dataIndex.rowSetColumnName(), RowSet.class).iterator()) {
+                    it.forEachRemaining(matchingBuilder::addRowSet);
+                }
+            } catch (final Exception e) {
+                // Exception occurs here if we have a data type mismatch between the index and the filter.
+                // Just swallow the exception and declare all the rows as maybe matches.
+                return PushdownResult.of(RowSetFactory.empty(), result.maybeMatch().copy());
+            }
+        }
+        // Retain only the maybe rows and add the previously found matches.
+        final WritableRowSet matching = matchingBuilder.build();
+        matching.retain(result.maybeMatch());
+        matching.insert(result.match());
+        return PushdownResult.of(matching, RowSetFactory.empty());
     }
 }

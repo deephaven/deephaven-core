@@ -237,6 +237,6 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
         }
         // Create a new channel context object and a wrapper for holding it
         // noinspection unchecked
-        return (T) new ChannelContextWrapper(chunkCapacity, sharedContext, channelsProvider.makeContext());
+        return (T) new ChannelContextWrapper(chunkCapacity, sharedContext, channelsProvider.makeReadContext());
     }
 }

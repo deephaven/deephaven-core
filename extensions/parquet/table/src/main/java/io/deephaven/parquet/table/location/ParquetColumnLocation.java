@@ -117,6 +117,14 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
                 return;
             }
             final List<String> columnPath = tl().getColumnPath(columnName, parquetColumnName);
+            if (columnPath.isEmpty()) {
+                // Short circuit when we know the column won't be found, saves us from needing to prematurely initialize
+                // row group readers.
+                exists = false;
+                columnChunkReaders = null;
+                readersInitialized = true;
+                return;
+            }
             final ColumnChunkReader[] columnChunkReaders = Arrays.stream(tl().getRowGroupReaders())
                     .map(rgr -> rgr.getColumnChunk(columnName, columnPath))
                     .toArray(ColumnChunkReader[]::new);

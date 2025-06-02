@@ -12,6 +12,7 @@ import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.stream.StreamChunkUtils;
 import io.deephaven.stream.StreamConsumer;
 import io.deephaven.stream.StreamPublisher;
+import io.deephaven.util.SafeCloseableArray;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Objects;
@@ -134,5 +135,11 @@ class UpdatePerformanceStreamPublisher implements StreamPublisher {
     }
 
     @Override
-    public void shutdown() {}
+    public void shutdown() {
+        // this is allocating chunks just to free them; but if flush is overridden we would like the override behavior
+        // to occur
+        flush();
+        SafeCloseableArray.close(chunks);
+        chunks = null;
+    }
 }

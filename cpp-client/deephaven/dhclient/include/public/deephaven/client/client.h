@@ -3,8 +3,11 @@
  */
 #pragma once
 
+#include <cstdint>
 #include <memory>
+#include <string>
 #include <string_view>
+#include <vector>
 #include "deephaven/client/client_options.h"
 #include "deephaven/client/utility/misc_types.h"
 #include "deephaven/dhcore/clienttable/client_table.h"

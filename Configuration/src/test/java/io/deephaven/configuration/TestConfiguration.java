@@ -455,13 +455,13 @@ public class TestConfiguration extends TestCase {
                             +
                             "java.base/java.lang.reflect.Method.invoke(Method.java:580)\n",
                     history.get(0).fileName);
-        } else if ("23".equals(javaVersion)) {
+        } else if ("24".equals(javaVersion)) {
             assertEquals(
                     "<not from configuration file>: io.deephaven.configuration.TestConfiguration.testShowHistory(TestConfiguration.java:428)\n"
                             +
-                            "java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)\n"
+                            "java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:104)\n"
                             +
-                            "java.base/java.lang.reflect.Method.invoke(Method.java:580)\n",
+                            "java.base/java.lang.reflect.Method.invoke(Method.java:565)\n",
                     history.get(0).fileName);
         } else {
             fail("Must add specific test for java version " + javaVersion);

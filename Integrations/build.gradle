@@ -35,6 +35,8 @@ dependencies {
     testRuntimeOnly project(':extensions-parquet-table')
     testRuntimeOnly project(':log-to-slf4j')
     testRuntimeOnly project(':engine-time')
+    // needed for graphviz JS engine as dot is not present in the container
+    testRuntimeOnly libs.graal.js
 }
 
 sourceSets {

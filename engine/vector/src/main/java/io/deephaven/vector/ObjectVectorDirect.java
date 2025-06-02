@@ -4,7 +4,7 @@
 package io.deephaven.vector;
 
 import io.deephaven.base.verify.Require;
-import io.deephaven.engine.primitive.iterator.CloseableIterator;
+import io.deephaven.engine.primitive.value.iterator.ValueIterator;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
@@ -61,9 +61,9 @@ public final class ObjectVectorDirect<COMPONENT_TYPE> implements ObjectVector<CO
     }
 
     @Override
-    public CloseableIterator<COMPONENT_TYPE> iterator(final long fromIndexInclusive, final long toIndexExclusive) {
+    public ValueIterator<COMPONENT_TYPE> iterator(final long fromIndexInclusive, final long toIndexExclusive) {
         if (fromIndexInclusive == 0 && toIndexExclusive == data.length) {
-            return CloseableIterator.of(data);
+            return ValueIterator.of(data);
         }
         return ObjectVector.super.iterator(fromIndexInclusive, toIndexExclusive);
     }
@@ -91,7 +91,7 @@ public final class ObjectVectorDirect<COMPONENT_TYPE> implements ObjectVector<CO
     @Override
     public boolean equals(final Object obj) {
         if (obj instanceof ObjectVectorDirect) {
-            return Arrays.equals(data, ((ObjectVectorDirect<?>) obj).data);
+            return Arrays.deepEquals(data, ((ObjectVectorDirect<?>) obj).data);
         }
         return ObjectVector.equals(this, obj);
     }

@@ -8,7 +8,7 @@ A
 :cpp:class:`ColumnSource <deephaven::dhcore::column::ColumnSource>` 
 is an abstract class representing a Deephaven column. It represents a read-only view on that
 column. There is a derived class,
-:cpp:class:`MutableColumnSource <deephaven::dhcore::column::MutableColumnSource>`
+:cpp:class:`MutableColumnSource <deephaven::dhcore::column::MutableColumnSource>`,
 which provides a writable interface.
 
 You can access the data in a
@@ -31,23 +31,39 @@ because we want to encourage callers to use the more efficient bulk transfer met
 
 The
 :cpp:class:`ColumnSource <deephaven::dhcore::column::ColumnSource>`
-hierarchy is further divided into two parts:
-:cpp:class:`NumericColumnSource <deephaven::dhcore::column::NumericColumnSource>`
-and
+hierarchy is further divided into the generic type
 :cpp:class:`GenericColumnSource <deephaven::dhcore::column::GenericColumnSource>`
-(and their mutable counterparts
-:cpp:class:`MutableNumericColumnSource <deephaven::dhcore::column::MutableNumericColumnSource>`
-and
-:cpp:class:`MutableGenericColumnSource <deephaven::dhcore::column::MutableGenericColumnSource>`).
+and its mutable counterpart
+:cpp:class:`MutableGenericColumnSource <deephaven::dhcore::column::MutableGenericColumnSource>`.
+These types are generic on the element type they contain.
 
-:cpp:class:`ColumnSource <deephaven::dhcore::column::NumericColumnSource>`
-is for representing
-columns containing the numeric Deephaven types (``int8_t``, ``int16_t``, ``int32_t``,
-``int64_t``, ``float``, ``double``), whereas
-:cpp:class:`ColumnSource <deephaven::dhcore::column::GenericColumnSource>`
-is for representing
-the remaining Deephaven types (``bool``, ``std::string``, and
-:cpp:class:`DateTime <deephaven::dhcore::DateTime>`).
+Supported types
+---------------
+
+The following types are supported
+
+=======================  =========================
+Java type                C++ type
+=======================  =========================
+byte                     int8_t
+short                    int16_t
+int                      int32_t
+long                     int64_t
+float                    float
+double                   double
+boolean                  bool
+char                     char16_t
+java.lang.String         std::string
+java.time.ZonedDateTime  :cpp:class:`DateTime <deephaven::dhcore::DateTime>`
+java.time.LocalDate      :cpp:class:`LocalDate <deephaven::dhcore::LocalDate>`
+java.time.LocalTime      :cpp:class:`LocalTime <deephaven::dhcore::LocalTime>`
+=======================  =========================
+
+as well as lists of the above. Lists are stored in a custom container; the element type is
+std::shared_ptr<:cpp:type:`ContainerBase <deephaven::dhcore::container::ContainerBase>`>
+
+:cpp:type:`ContainerBase <deephaven::dhcore::container::ContainerBase>`
+is described :doc:`in the section on Containers <containers>`.
 
 For these types we have a set of convenience typedefs:
 
@@ -60,6 +76,9 @@ For these types we have a set of convenience typedefs:
 * :cpp:type:`BooleanColumnSource <deephaven::dhcore::column::BooleanColumnSource>`
 * :cpp:type:`StringColumnSource <deephaven::dhcore::column::StringColumnSource>`
 * :cpp:type:`DateTimeColumnSource <deephaven::dhcore::column::DateTimeColumnSource>`
+* :cpp:type:`LocalDateColumnSource <deephaven::dhcore::column::LocalDateColumnSource>`
+* :cpp:type:`LocalTimeColumnSource <deephaven::dhcore::column::LocalTimeColumnSource>`
+* :cpp:type:`ContainerBaseColumnSource <deephaven::dhcore::column::ContainerBaseColumnSource>`
 
 Declarations
 ------------
@@ -70,13 +89,7 @@ Declarations
 .. doxygenclass:: deephaven::dhcore::column::MutableColumnSource
    :members:
 
-.. doxygenclass:: deephaven::dhcore::column::NumericColumnSource
-   :members:
-
 .. doxygenclass:: deephaven::dhcore::column::GenericColumnSource
-   :members:
-
-.. doxygenclass:: deephaven::dhcore::column::MutableNumericColumnSource
    :members:
 
 .. doxygenclass:: deephaven::dhcore::column::MutableGenericColumnSource
@@ -99,6 +112,12 @@ Declarations
 .. doxygentypedef:: deephaven::dhcore::column::StringColumnSource
 
 .. doxygentypedef:: deephaven::dhcore::column::DateTimeColumnSource
+
+.. doxygentypedef:: deephaven::dhcore::column::LocalDateColumnSource
+
+.. doxygentypedef:: deephaven::dhcore::column::LocalTimeColumnSource
+
+.. doxygentypedef:: deephaven::dhcore::column::ContainerBaseColumnSource
 
 Utility Declarations
 --------------------
