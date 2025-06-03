@@ -139,7 +139,7 @@ def testCPythonClientTicking = { String pythonVersion, String image -> Docker.re
     network = deephavenDocker.networkName.get()
     parentContainers = [ cpythonWheelTask, Docker.registryTask(project, image.toString()) ]
     copyOut {
-        into layout.buildDirectory.dir("testCPythonClientTicking/${image}/${pythonVersion}")
+        into layout.buildDirectory.dir("test-results/testCPythonClientTicking/${image}/${pythonVersion}")
     }
     entrypoint = ['/entrypoint.sh']
 }}
