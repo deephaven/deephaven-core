@@ -38,7 +38,6 @@ public final class GCSSeekableChannelProviderPlugin extends SeekableChannelsProv
      * @param config The configuration object for the provider.
      * @param s3AsyncClient The S3 async client to use for the provider.
      */
-    @InternalUseOnly
     static SeekableChannelsProvider createGCSSeekableChannelProvider(
             @Nullable final Object config,
             @NotNull final S3AsyncClient s3AsyncClient) {
@@ -52,7 +51,6 @@ public final class GCSSeekableChannelProviderPlugin extends SeekableChannelsProv
      *
      * @param config The configuration object for the provider.
      */
-    @InternalUseOnly
     static SeekableChannelsProvider createGCSSeekableChannelProvider(
             @Nullable final Object config) {
         final S3SeekableChannelProvider impl = new S3SeekableChannelProvider(normalizeS3Instructions(config));
