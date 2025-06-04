@@ -139,7 +139,7 @@ def testCPythonClientTicking = { String pythonVersion, String image -> Docker.re
     network = deephavenDocker.networkName.get()
     parentContainers = [ cpythonWheelTask, Docker.registryTask(project, image.toString()) ]
     copyOut {
-        into layout.buildDirectory.dir("testCPythonClientTicking/${image}/${pythonVersion}")
+        into layout.buildDirectory.dir("test-results/testCPythonClientTicking/${image}/${pythonVersion}")
     }
     entrypoint = ['/entrypoint.sh']
 }}
@@ -176,5 +176,6 @@ def syncWheels = tasks.register('syncWheels', Sync) {
 assemble.dependsOn syncWheels
 
 // check.dependsOn testPyClientTicking
+check.dependsOn fedoraCPythonTests.get('3.12')
 
 deephavenDocker.shouldLogIfTaskFails testPyClientTicking

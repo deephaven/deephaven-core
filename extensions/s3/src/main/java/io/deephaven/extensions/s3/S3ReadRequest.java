@@ -31,6 +31,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
 
+import static io.deephaven.extensions.s3.S3Utils.addTimeout;
+
 /**
  * A request for a single fragment of an S3 object, which can be used concurrently.
  *
@@ -312,11 +314,13 @@ final class S3ReadRequest extends SoftReference<ByteBuffer>
     }
 
     private GetObjectRequest getObjectRequest() {
-        return GetObjectRequest.builder()
+        final GetObjectRequest.Builder requestBuilder = GetObjectRequest.builder()
                 .bucket(s3Uri.bucket().orElseThrow())
                 .key(s3Uri.key().orElseThrow())
-                .range("bytes=" + from + "-" + to)
-                .build();
+                .range("bytes=" + from + "-" + to);
+        final Duration readTimeout = instructions.readTimeout();
+        requestBuilder.overrideConfiguration(b -> addTimeout(b, readTimeout));
+        return requestBuilder.build();
     }
 
     String requestStr() {

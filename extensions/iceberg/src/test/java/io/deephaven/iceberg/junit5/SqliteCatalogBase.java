@@ -40,7 +40,22 @@ import io.deephaven.parquet.table.CompletedParquetWrite;
 import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.ParquetTools;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
+import io.deephaven.qst.type.GenericType;
 import io.deephaven.qst.type.Type;
+import io.deephaven.vector.ByteVector;
+import io.deephaven.vector.ByteVectorDirect;
+import io.deephaven.vector.DoubleVector;
+import io.deephaven.vector.DoubleVectorDirect;
+import io.deephaven.vector.FloatVector;
+import io.deephaven.vector.FloatVectorDirect;
+import io.deephaven.vector.IntVector;
+import io.deephaven.vector.IntVectorDirect;
+import io.deephaven.vector.LongVector;
+import io.deephaven.vector.LongVectorDirect;
+import io.deephaven.vector.ObjectVector;
+import io.deephaven.vector.ObjectVectorDirect;
+import io.deephaven.vector.ShortVector;
+import io.deephaven.vector.ShortVectorDirect;
 import org.apache.iceberg.AppendFiles;
 import org.apache.iceberg.ContentFile;
 import org.apache.iceberg.DataFile;
@@ -56,11 +71,13 @@ import org.apache.iceberg.TableProperties;
 import org.apache.iceberg.catalog.Namespace;
 import org.apache.iceberg.catalog.TableIdentifier;
 import org.apache.iceberg.io.OutputFileFactory;
+import org.apache.iceberg.mapping.MappedFields;
 import org.apache.iceberg.mapping.MappingUtil;
 import org.apache.iceberg.mapping.NameMapping;
 import org.apache.iceberg.mapping.NameMappingParser;
 import org.apache.iceberg.types.Types;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
+import org.apache.parquet.schema.LogicalTypeAnnotation;
 import org.apache.parquet.schema.MessageType;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -87,23 +104,37 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
 import static io.deephaven.engine.util.TableTools.booleanCol;
+import static io.deephaven.engine.util.TableTools.byteCol;
 import static io.deephaven.engine.util.TableTools.col;
 import static io.deephaven.engine.util.TableTools.doubleCol;
 import static io.deephaven.engine.util.TableTools.floatCol;
 import static io.deephaven.engine.util.TableTools.instantCol;
 import static io.deephaven.engine.util.TableTools.intCol;
 import static io.deephaven.engine.util.TableTools.longCol;
+import static io.deephaven.engine.util.TableTools.shortCol;
 import static io.deephaven.engine.util.TableTools.stringCol;
 import static io.deephaven.iceberg.layout.IcebergBaseLayout.computeSortedColumns;
 import static io.deephaven.iceberg.util.ColumnInstructions.schemaField;
+import static io.deephaven.util.QueryConstants.NULL_BOOLEAN;
+import static io.deephaven.util.QueryConstants.NULL_BYTE;
 import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
+import static io.deephaven.util.QueryConstants.NULL_FLOAT;
 import static io.deephaven.util.QueryConstants.NULL_INT;
 import static io.deephaven.util.QueryConstants.NULL_LONG;
+import static io.deephaven.util.QueryConstants.NULL_SHORT;
+import static org.apache.parquet.schema.LogicalTypeAnnotation.dateType;
 import static org.apache.parquet.schema.LogicalTypeAnnotation.intType;
+import static org.apache.parquet.schema.LogicalTypeAnnotation.timeType;
+import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.BOOLEAN;
 import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.DOUBLE;
+import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.FLOAT;
 import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.INT32;
+import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.INT64;
+import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.BINARY;
 import static org.apache.parquet.schema.Types.buildMessage;
 import static org.apache.parquet.schema.Types.optional;
+import static org.apache.parquet.schema.Types.optionalGroup;
+import static org.apache.parquet.schema.Types.repeatedGroup;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 
@@ -378,8 +409,8 @@ public abstract class SqliteCatalogBase {
                     .build());
             failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
         } catch (IllegalArgumentException e) {
-            assertThat(e).hasMessageContaining("Column dateCol has type class java.time.Instant in table " +
-                    "definition but type date in Iceberg schema");
+            assertThat(e).hasMessageContaining("Column dateCol has type `io.deephaven.qst.type.InstantType`" +
+                    " in table definition, which is inferred as `timestamptz` but has type `date` in Iceberg schema");
         }
 
         // Try to write a table with the incorrect type using a correct writer
@@ -414,47 +445,1086 @@ public abstract class SqliteCatalogBase {
         }
     }
 
-    @Test
-    void appendToCatalogTableWithAllDataTypesTest() {
-        final TableDefinition td = TableDefinition.of(
-                ColumnDefinition.ofBoolean("booleanCol"),
-                ColumnDefinition.ofDouble("doubleCol"),
-                ColumnDefinition.ofFloat("floatCol"),
-                ColumnDefinition.ofInt("intCol"),
-                ColumnDefinition.ofLong("longCol"),
-                ColumnDefinition.ofString("stringCol"),
-                ColumnDefinition.ofTime("instantCol"),
-                ColumnDefinition.of("localDateTimeCol", Type.find(LocalDateTime.class)),
-                ColumnDefinition.of("localDateCol", Type.find(LocalDate.class)),
-                ColumnDefinition.of("localTimeCol", Type.find(LocalTime.class)));
-
-        final Table source = TableTools.newTable(td,
-                booleanCol("booleanCol", true, false, null),
-                doubleCol("doubleCol", 0.0, 1.1, 2.2),
-                floatCol("floatCol", 0.0f, 1.1f, 2.2f),
-                intCol("intCol", 3, 2, 1),
-                longCol("longCol", 6, 5, 4),
-                stringCol("stringCol", "foo", null, "bar"),
-                instantCol("instantCol", Instant.now(), null, Instant.EPOCH),
-                new ColumnHolder<>("localDateTimeCol", LocalDateTime.class, null, false, LocalDateTime.now(), null,
-                        LocalDateTime.now()),
-                new ColumnHolder<>("localDateCol", LocalDate.class, null, false, LocalDate.now(), null,
-                        LocalDate.now()),
-                new ColumnHolder<>("localTimeCol", LocalTime.class, null, false, LocalTime.now(), null,
-                        LocalTime.now()));
-
-        final Namespace myNamespace = Namespace.of("MyNamespace");
-        final TableIdentifier myTableId = TableIdentifier.of(myNamespace, "MyTableWithAllDataTypes");
-        final IcebergTableAdapter tableAdapter = catalogAdapter.createTable(myTableId, td);
-
-        final IcebergTableWriter tableWriter = tableAdapter.tableWriter(writerOptionsBuilder()
-                .tableDefinition(source.getDefinition())
-                .build());
-        tableWriter.append(IcebergWriteInstructions.builder()
-                .addTables(source)
-                .build());
-        assertTableEquals(source, tableAdapter.table());
+    /*--- Begin tests for primitive types ---*/
+    /**
+     * This method should be called if the inferred type from the schema is the same as the types in the source table.
+     *
+     * @param identifier Table identifier
+     * @param source Source table to be written to Iceberg
+     * @param expectedIcebergSchema Expected schema of the Iceberg table
+     */
+    private void readWriteTestHelper(
+            final TableIdentifier identifier,
+            final Table source,
+            final Schema expectedIcebergSchema,
+            final MessageType expectedParquetSchema) throws URISyntaxException {
+        readWriteTestHelper(identifier, source, expectedIcebergSchema, expectedParquetSchema, source);
     }
+
+    /**
+     * This method should be called if the inferred type from the schema can be different from the types in the source
+     * table. For example, if the source table has a byte column, but the Iceberg schema has an int column.
+     *
+     * @param identifier Table identifier
+     * @param source Source table to be written to Iceberg
+     * @param expectedIcebergSchema Expected schema of the Iceberg table
+     * @param expectedInferredTable Expected table read from Iceberg with types inferred from the schema
+     */
+    private void readWriteTestHelper(
+            final TableIdentifier identifier,
+            final Table source,
+            final Schema expectedIcebergSchema,
+            final MessageType expectedParquetSchema,
+            final Table expectedInferredTable) throws URISyntaxException {
+        final TableDefinition sourceDefinition = source.getDefinition();
+
+        // The following adapter will create a resolver using the definition of the source table
+        final IcebergTableAdapter adapter = catalogAdapter.createTable(identifier, sourceDefinition);
+        adapter.tableWriter(writerOptionsBuilder().tableDefinition(sourceDefinition).build())
+                .append(IcebergWriteInstructions.builder().addTables(source).build());
+
+        // Verify that the schema of the Iceberg table is as expected
+        assertThat(adapter.icebergTable().schema()).usingEquals(Schema::sameSchema).isEqualTo(expectedIcebergSchema);
+
+        // Verify that the schema of the parquet file is as expected
+        final List<String> parquetFiles = getAllParquetFilesFromDataFiles(identifier);
+        verifySchema(parquetFiles.get(0), expectedParquetSchema);
+
+        // Verify that we can read the table back with the same adapter used to create the table
+        assertTableEquals(source, adapter.table());
+
+        // Create a new table adapter which will infer the types using the table's schema
+        final Table inferred = catalogAdapter.loadTable(identifier).table();
+        assertTableEquals(expectedInferredTable, inferred);
+    }
+
+    private void readWithDefinitionTestHelper(
+            final TableIdentifier identifier,
+            final TableDefinition readDefinition,
+            final Table expectedInferredTable) {
+        final UnboundResolver resolver = UnboundResolver.builder()
+                .definition(readDefinition)
+                .build();
+        final Table inferred = catalogAdapter.loadTable(LoadTableOptions.builder()
+                .id(identifier)
+                .resolver(resolver)
+                .build())
+                .table();
+        assertTableEquals(expectedInferredTable, inferred);
+    }
+
+    private void readWithDefinitionFailureTestImpl(
+            final TableIdentifier identifier,
+            final TableDefinition readDefinition) {
+        final UnboundResolver resolver = UnboundResolver.builder()
+                .definition(readDefinition)
+                .build();
+        try {
+            catalogAdapter.loadTable(LoadTableOptions.builder()
+                    .id(identifier)
+                    .resolver(resolver)
+                    .build())
+                    .table().select();
+            failBecauseExceptionWasNotThrown(TableInitializationException.class);
+        } catch (TableInitializationException e) {
+            assertThat(e).hasCauseInstanceOf(TableDataException.class);
+            assertThat(e.getCause()).hasCauseInstanceOf(IllegalArgumentException.class);
+            assertThat(e.getCause().getCause()).hasMessageContaining("Cannot convert parquet");
+        }
+    }
+
+    @Test
+    void readWriteByteTest() throws URISyntaxException {
+        final TableIdentifier id = TableIdentifier.of(Namespace.of("MyNamespace"), "Tbl_byte");
+        final Table source = TableTools.newTable(
+                TableDefinition.of(ColumnDefinition.ofByte("byteCol")),
+                byteCol("byteCol", (byte) 42, NULL_BYTE, (byte) -1));
+        final Schema expectedIcebergSchema = new Schema(
+                Types.NestedField.optional(1, "byteCol", Types.IntegerType.get()));
+        final MessageType expectedParquetSchema =
+                buildMessage()
+                        .addFields(optional(INT32).id(1).as(intType(8, true)).named("byteCol"))
+                        .named("root");
+
+        // By default, should read back as int
+        readWriteTestHelper(id, source, expectedIcebergSchema, expectedParquetSchema,
+                TableTools.newTable(intCol("byteCol", 42, NULL_INT, -1)));
+
+        // explicit byte
+        readWithDefinitionTestHelper(id,
+                TableDefinition.of(ColumnDefinition.ofByte("byteCol")),
+                source);
+
+        // byte -> short
+        readWithDefinitionTestHelper(id,
+                TableDefinition.of(ColumnDefinition.ofShort("byteCol")),
+                TableTools.newTable(shortCol("byteCol", (short) 42, NULL_SHORT, (short) -1)));
+
+        // byte -> int
+        readWithDefinitionTestHelper(id,
+                TableDefinition.of(ColumnDefinition.ofInt("byteCol")),
+                TableTools.newTable(intCol("byteCol", 42, NULL_INT, -1)));
+
+        // byte-> long
+        readWithDefinitionTestHelper(id,
+                TableDefinition.of(ColumnDefinition.ofLong("byteCol")),
+                TableTools.newTable(longCol("byteCol", 42L, NULL_LONG, -1L)));
+    }
+
+    @Test
+    void readWriteShortTest() throws URISyntaxException {
+        final TableIdentifier id = TableIdentifier.of(Namespace.of("MyNamespace"), "Tbl_short");
+        final Table source = TableTools.newTable(
+                TableDefinition.of(ColumnDefinition.ofShort("shortCol")),
+                shortCol("shortCol", (short) 42, NULL_SHORT, (short) -1));
+        final Schema expectedIcebergSchema = new Schema(
+                Types.NestedField.optional(1, "shortCol", Types.IntegerType.get()));
+        final MessageType expectedParquetSchema =
+                buildMessage()
+                        .addField(optional(INT32).id(1).as(intType(16, true)).named("shortCol"))
+                        .named("root");
+
+        // By default, should read back as int
+        readWriteTestHelper(id, source, expectedIcebergSchema, expectedParquetSchema,
+                TableTools.newTable(intCol("shortCol", 42, NULL_INT, -1)));
+
+        // explicit short
+        readWithDefinitionTestHelper(id,
+                TableDefinition.of(ColumnDefinition.ofShort("shortCol")),
+                source);
+
+        // short -> int
+        readWithDefinitionTestHelper(id,
+                TableDefinition.of(ColumnDefinition.ofInt("shortCol")),
+                TableTools.newTable(intCol("shortCol", 42, NULL_INT, -1)));
+
+        // short -> long
+        readWithDefinitionTestHelper(id,
+                TableDefinition.of(ColumnDefinition.ofLong("shortCol")),
+                TableTools.newTable(longCol("shortCol", 42L, NULL_LONG, -1L)));
+
+        // narrowing (short -> byte) – should fail
+        readWithDefinitionFailureTestImpl(id,
+                TableDefinition.of(ColumnDefinition.ofByte("shortCol")));
+    }
+
+    @Test
+    void readWriteIntTest() throws URISyntaxException {
+        final TableIdentifier id = TableIdentifier.of(Namespace.of("MyNamespace"), "Tbl_int");
+        final Table source = TableTools.newTable(
+                TableDefinition.of(ColumnDefinition.ofInt("intCol")),
+                intCol("intCol", 42, NULL_INT, -1));
+        final Schema expectedIcebergSchema = new Schema(
+                Types.NestedField.optional(1, "intCol", Types.IntegerType.get()));
+        final MessageType expectedParquetSchema =
+                buildMessage()
+                        .addField(optional(INT32).id(1).as(intType(32, true)).named("intCol"))
+                        .named("root");
+
+        readWriteTestHelper(id, source, expectedIcebergSchema, expectedParquetSchema);
+
+        // int -> long
+        readWithDefinitionTestHelper(id,
+                TableDefinition.of(ColumnDefinition.ofLong("intCol")),
+                TableTools.newTable(longCol("intCol", 42L, NULL_LONG, -1L)));
+
+        // narrowing (int -> short) – should fail
+        readWithDefinitionFailureTestImpl(id,
+                TableDefinition.of(ColumnDefinition.ofShort("intCol")));
+    }
+
+    @Test
+    void readWriteLongTest() throws URISyntaxException {
+        final TableIdentifier id = TableIdentifier.of(Namespace.of("MyNamespace"), "Tbl_long");
+        final Table source = TableTools.newTable(
+                TableDefinition.of(ColumnDefinition.ofLong("longCol")),
+                longCol("longCol", 42L, NULL_LONG, -1L));
+        final Schema expectedIcebergSchema = new Schema(
+                Types.NestedField.optional(1, "longCol", Types.LongType.get()));
+        final MessageType expectedParquetSchema =
+                buildMessage()
+                        .addField(optional(INT64).id(1).named("longCol"))
+                        .named("root");
+
+        readWriteTestHelper(id, source, expectedIcebergSchema, expectedParquetSchema);
+
+        // narrowing (long -> int) – should fail
+        readWithDefinitionFailureTestImpl(id,
+                TableDefinition.of(ColumnDefinition.ofInt("longCol")));
+    }
+
+    @Test
+    void readWriteFloatTest() throws URISyntaxException {
+        final TableIdentifier id = TableIdentifier.of(Namespace.of("MyNamespace"), "Tbl_float");
+        final Table source = TableTools.newTable(
+                TableDefinition.of(ColumnDefinition.ofFloat("floatCol")),
+                floatCol("floatCol", 1.5f, NULL_FLOAT, -2.5f));
+        final Schema expectedIcebergSchema = new Schema(
+                Types.NestedField.optional(1, "floatCol", Types.FloatType.get()));
+        final MessageType expectedParquetSchema =
+                buildMessage()
+                        .addField(optional(FLOAT).id(1).named("floatCol"))
+                        .named("root");
+
+        readWriteTestHelper(id, source, expectedIcebergSchema, expectedParquetSchema);
+
+        // float -> double
+        readWithDefinitionTestHelper(id,
+                TableDefinition.of(ColumnDefinition.ofDouble("floatCol")),
+                TableTools.newTable(doubleCol("floatCol", 1.5, NULL_DOUBLE, -2.5)));
+    }
+
+    @Test
+    void readWriteDoubleTest() throws URISyntaxException {
+        final TableIdentifier id = TableIdentifier.of(Namespace.of("MyNamespace"), "Tbl_double");
+        final Table source = TableTools.newTable(
+                TableDefinition.of(ColumnDefinition.ofDouble("doubleCol")),
+                doubleCol("doubleCol", 1.5, NULL_DOUBLE, -2.5));
+        final Schema expectedIcebergSchema = new Schema(
+                Types.NestedField.optional(1, "doubleCol", Types.DoubleType.get()));
+        final MessageType expectedParquetSchema =
+                buildMessage()
+                        .addField(optional(DOUBLE).id(1).named("doubleCol"))
+                        .named("root");
+
+        readWriteTestHelper(id, source, expectedIcebergSchema, expectedParquetSchema);
+
+        // narrowing (double -> float) – should fail
+        readWithDefinitionFailureTestImpl(id,
+                TableDefinition.of(ColumnDefinition.ofFloat("doubleCol")));
+    }
+
+    @Test
+    void readWriteBooleanTest() throws URISyntaxException {
+        final TableIdentifier id = TableIdentifier.of(Namespace.of("MyNamespace"), "Tbl_boolean");
+        final Table source = TableTools.newTable(
+                TableDefinition.of(ColumnDefinition.of("boolCol", Type.find(Boolean.class))),
+                booleanCol("boolCol", true, null, false));
+        final Schema expectedIcebergSchema = new Schema(
+                Types.NestedField.optional(1, "boolCol", Types.BooleanType.get()));
+        final MessageType expectedParquetSchema =
+                buildMessage()
+                        .addField(optional(BOOLEAN).id(1).named("boolCol"))
+                        .named("root");
+        readWriteTestHelper(id, source, expectedIcebergSchema, expectedParquetSchema);
+    }
+
+    @Test
+    void readWriteStringTest() throws URISyntaxException {
+        final TableIdentifier id = TableIdentifier.of(Namespace.of("MyNamespace"), "Tbl_string");
+        final Table source = TableTools.newTable(
+                TableDefinition.of(ColumnDefinition.of("strCol", Type.stringType())),
+                stringCol("strCol", "foo", null, "bar"));
+        final Schema expectedIcebergSchema = new Schema(
+                Types.NestedField.optional(1, "strCol", Types.StringType.get()));
+        final MessageType expectedParquetSchema =
+                buildMessage()
+                        .addField(optional(BINARY).id(1).as(LogicalTypeAnnotation.stringType()).named("strCol"))
+                        .named("root");
+
+        readWriteTestHelper(id, source, expectedIcebergSchema, expectedParquetSchema);
+    }
+
+    @Test
+    void readWriteInstantTest() throws URISyntaxException {
+        final TableIdentifier id = TableIdentifier.of(Namespace.of("MyNamespace"), "Tbl_instant");
+        final Table source = TableTools.newTable(
+                TableDefinition.of(ColumnDefinition.of("instCol", Type.instantType())),
+                instantCol("instCol", Instant.parse("2025-01-01T12:00:03Z"), null, Instant.EPOCH));
+        final Schema expectedIcebergSchema = new Schema(
+                Types.NestedField.optional(1, "instCol", Types.TimestampType.withZone()));
+        final MessageType expectedParquetSchema =
+                buildMessage()
+                        .addField(optional(INT64).id(1)
+                                .as(LogicalTypeAnnotation.timestampType(true, LogicalTypeAnnotation.TimeUnit.NANOS))
+                                .named("instCol"))
+                        .named("root");
+
+        readWriteTestHelper(id, source, expectedIcebergSchema, expectedParquetSchema);
+    }
+
+    @Test
+    void readWriteLocalDateTimeTest() throws URISyntaxException {
+        final TableIdentifier id = TableIdentifier.of(Namespace.of("MyNamespace"), "Tbl_ldt");
+        final Table source = TableTools.newTable(
+                TableDefinition.of(ColumnDefinition.of("ldtCol", Type.find(LocalDateTime.class))),
+                new ColumnHolder<>("ldtCol", LocalDateTime.class, null, false,
+                        LocalDateTime.of(2025, 1, 1, 12, 0), null,
+                        LocalDateTime.of(2023, 1, 1, 0, 0)));
+        final Schema expectedIcebergSchema = new Schema(
+                Types.NestedField.optional(1, "ldtCol", Types.TimestampType.withoutZone()));
+        final MessageType expectedParquetSchema =
+                buildMessage()
+                        .addField(optional(INT64).id(1)
+                                .as(LogicalTypeAnnotation.timestampType(false, LogicalTypeAnnotation.TimeUnit.NANOS))
+                                .named("ldtCol"))
+                        .named("root");
+
+        readWriteTestHelper(id, source, expectedIcebergSchema, expectedParquetSchema);
+    }
+
+    @Test
+    void readWriteLocalDateTest() throws URISyntaxException {
+        final TableIdentifier id = TableIdentifier.of(Namespace.of("MyNamespace"), "Tbl_ld");
+        final Table source = TableTools.newTable(
+                TableDefinition.of(ColumnDefinition.of("ldCol", Type.find(LocalDate.class))),
+                new ColumnHolder<>("ldCol", LocalDate.class, null, false,
+                        LocalDate.of(2025, 1, 1), null, LocalDate.of(2023, 1, 1)));
+        final Schema expectedIcebergSchema = new Schema(
+                Types.NestedField.optional(1, "ldCol", Types.DateType.get()));
+        final MessageType expectedParquetSchema =
+                buildMessage()
+                        .addField(optional(INT32).id(1).as(dateType()).named("ldCol"))
+                        .named("root");
+
+        readWriteTestHelper(id, source, expectedIcebergSchema, expectedParquetSchema);
+    }
+
+    @Test
+    void readWriteLocalTimeTest() throws URISyntaxException {
+        final TableIdentifier id = TableIdentifier.of(Namespace.of("MyNamespace"), "Tbl_lt");
+        final Table source = TableTools.newTable(
+                TableDefinition.of(ColumnDefinition.of("ltCol", Type.find(LocalTime.class))),
+                new ColumnHolder<>("ltCol", LocalTime.class, null, false,
+                        LocalTime.of(12, 0, 1), null, LocalTime.of(12, 0)));
+        final Schema expectedIcebergSchema = new Schema(
+                Types.NestedField.optional(1, "ltCol", Types.TimeType.get()));
+        final MessageType expectedParquetSchema =
+                buildMessage()
+                        .addField(optional(INT64).id(1).as(timeType(true, LogicalTypeAnnotation.TimeUnit.NANOS))
+                                .named("ltCol"))
+                        .named("root");
+
+        readWriteTestHelper(id, source, expectedIcebergSchema, expectedParquetSchema);
+    }
+
+    /*--- End tests for primitive types ---*/
+
+    /*--- Begin tests for list types ---*/
+
+    @Test
+    void readWriteByteListTest() throws URISyntaxException {
+        // Write a table with byte[]
+        final TableIdentifier identifier = TableIdentifier.of(Namespace.of("MyNamespace"), "Tbl_byteList");
+        final Table source = TableTools.newTable(
+                TableDefinition.of(ColumnDefinition.of("byteList", Type.byteType().arrayType())),
+                new ColumnHolder<>("byteList", byte[].class, byte.class, false,
+                        new byte[] {42, NULL_BYTE, -1},
+                        null,
+                        new byte[] {}));
+        final Schema expectedIcebergSchema = new Schema(
+                Types.NestedField.optional(1, "byteList",
+                        Types.ListType.ofOptional(2, Types.IntegerType.get())));
+        final MessageType expectedParquetSchema =
+                buildMessage().addField(optionalGroup().id(1).as(LogicalTypeAnnotation.listType())
+                        .addField(repeatedGroup()
+                                .addField(optional(INT32).as(LogicalTypeAnnotation.intType(8, true)).named("element"))
+                                .named("list"))
+                        .named("byteList")).named("root");
+        final Table expectedInferredDefault = TableTools.newTable(
+                TableTools.col("byteList",
+                        new int[] {42, NULL_INT, -1},
+                        null,
+                        new int[] {}));
+
+        // By default, byte list -> int[]
+        readWriteTestHelper(identifier, source, expectedIcebergSchema, expectedParquetSchema, expectedInferredDefault);
+
+        // byte list -> ByteVector
+        {
+            final TableDefinition readDefinition = TableDefinition.of(
+                    ColumnDefinition.of("byteList", ByteVector.type()));
+            final Table expectedInferred = TableTools.newTable(
+                    TableTools.col("byteList",
+                            new ByteVectorDirect((byte) 42, NULL_BYTE, (byte) -1),
+                            null,
+                            (ByteVector) new ByteVectorDirect()));
+            readWithDefinitionTestHelper(identifier, readDefinition, expectedInferred);
+        }
+
+        // byte list -> short[]
+        {
+            final TableDefinition readDefinition = TableDefinition.of(
+                    ColumnDefinition.of("byteList", Type.shortType().arrayType()));
+            final Table expectedInferred = TableTools.newTable(
+                    TableTools.col("byteList",
+                            new short[] {42, NULL_SHORT, -1},
+                            null,
+                            new short[] {}));
+            readWithDefinitionTestHelper(identifier, readDefinition, expectedInferred);
+        }
+
+        // byte list -> ShortVector
+        {
+            final TableDefinition readDefinition = TableDefinition.of(
+                    ColumnDefinition.of("byteList", ShortVector.type()));
+            final Table expectedInferred = TableTools.newTable(
+                    TableTools.col("byteList",
+                            new ShortVectorDirect((short) 42, NULL_SHORT, (short) -1),
+                            null,
+                            (ShortVector) new ShortVectorDirect()));
+            readWithDefinitionTestHelper(identifier, readDefinition, expectedInferred);
+        }
+
+        // byte list -> int[]
+        {
+            final TableDefinition readDefinition = TableDefinition.of(
+                    ColumnDefinition.of("byteList", Type.intType().arrayType()));
+            final Table expectedInferred = expectedInferredDefault;
+            readWithDefinitionTestHelper(identifier, readDefinition, expectedInferred);
+        }
+
+        // byte list -> IntVector
+        {
+            final Table expectedInferred = TableTools.newTable(
+                    TableTools.col("byteList",
+                            new IntVectorDirect(42, NULL_INT, -1),
+                            null,
+                            (IntVector) new IntVectorDirect()));
+            final TableDefinition readDefinition = TableDefinition.of(
+                    ColumnDefinition.of("byteList", IntVector.type()));
+            readWithDefinitionTestHelper(identifier, readDefinition, expectedInferred);
+        }
+
+        // byte list -> long[]
+        {
+            final TableDefinition readDefinition = TableDefinition.of(
+                    ColumnDefinition.of("byteList", Type.longType().arrayType()));
+            final Table expectedInferred = TableTools.newTable(
+                    TableTools.col("byteList",
+                            new long[] {42, NULL_LONG, -1},
+                            null,
+                            new long[] {}));
+            readWithDefinitionTestHelper(identifier, readDefinition, expectedInferred);
+        }
+
+        // byte list -> LongVector
+        {
+            final TableDefinition readDefinition = TableDefinition.of(
+                    ColumnDefinition.of("byteList", LongVector.type()));
+            final Table expectedInferred = TableTools.newTable(
+                    TableTools.col("byteList",
+                            new LongVectorDirect(42, NULL_LONG, -1),
+                            null,
+                            (LongVector) new LongVectorDirect()));
+            readWithDefinitionTestHelper(identifier, readDefinition, expectedInferred);
+        }
+
+        // byte list -> Byte[] (should fail)
+        {
+            final TableDefinition readDefinition = TableDefinition.of(
+                    ColumnDefinition.of("byteList", Type.find(Byte.class).arrayType()));
+            readWithDefinitionFailureTestImpl(identifier, readDefinition);
+        }
+
+        // byte list -> ObjectVector<Byte> (should fail)
+        {
+            final TableDefinition readDefinition = TableDefinition.of(
+                    ColumnDefinition.of("byteList", ObjectVector.type((GenericType<?>) Type.find(Byte.class))));
+            readWithDefinitionFailureTestImpl(identifier, readDefinition);
+        }
+    }
+
+    @Test
+    void readWriteShortListTest() throws URISyntaxException {
+        // Write a table with short[]
+        final TableIdentifier identifier = TableIdentifier.of(Namespace.of("MyNamespace"), "Tbl_shortList");
+        final Table source = TableTools.newTable(
+                TableDefinition.of(ColumnDefinition.of("shortList", Type.shortType().arrayType())),
+                new ColumnHolder<>("shortList", short[].class, short.class, false,
+                        new short[] {42, NULL_SHORT, -1},
+                        null,
+                        new short[] {}));
+        final Schema expectedIcebergSchema = new Schema(
+                Types.NestedField.optional(1, "shortList",
+                        Types.ListType.ofOptional(2, Types.IntegerType.get())));
+        final MessageType expectedParquetSchema =
+                buildMessage().addField(optionalGroup().id(1).as(LogicalTypeAnnotation.listType())
+                        .addField(repeatedGroup()
+                                .addField(optional(INT32).as(LogicalTypeAnnotation.intType(16, true)).named("element"))
+                                .named("list"))
+                        .named("shortList")).named("root");
+        final Table expectedInferredDefault = TableTools.newTable(
+                TableTools.col("shortList",
+                        new int[] {42, NULL_INT, -1},
+                        null,
+                        new int[] {}));
+
+        // By default, short list -> int[]
+        readWriteTestHelper(identifier, source, expectedIcebergSchema, expectedParquetSchema, expectedInferredDefault);
+
+        // short list -> ShortVector
+        {
+            final TableDefinition readDefinition = TableDefinition.of(
+                    ColumnDefinition.of("shortList", ShortVector.type()));
+            final Table expectedInferred = TableTools.newTable(
+                    TableTools.col("shortList",
+                            new ShortVectorDirect((short) 42, NULL_SHORT, (short) -1),
+                            null,
+                            (ShortVector) new ShortVectorDirect()));
+            readWithDefinitionTestHelper(identifier, readDefinition, expectedInferred);
+        }
+
+        // short list -> int[]
+        {
+            final TableDefinition readDefinition = TableDefinition.of(
+                    ColumnDefinition.of("shortList", Type.intType().arrayType()));
+            final Table expectedInferred = TableTools.newTable(
+                    TableTools.col("shortList",
+                            new int[] {42, NULL_INT, -1},
+                            null,
+                            new int[] {}));
+            readWithDefinitionTestHelper(identifier, readDefinition, expectedInferred);
+        }
+
+        // short list -> IntVector
+        {
+            final TableDefinition readDefinition = TableDefinition.of(
+                    ColumnDefinition.of("shortList", IntVector.type()));
+            final Table expectedInferred = TableTools.newTable(
+                    TableTools.col("shortList",
+                            new IntVectorDirect(42, NULL_INT, -1),
+                            null,
+                            (IntVector) new IntVectorDirect()));
+            readWithDefinitionTestHelper(identifier, readDefinition, expectedInferred);
+        }
+
+        // short list -> long[]
+        {
+            final TableDefinition readDefinition = TableDefinition.of(
+                    ColumnDefinition.of("shortList", Type.longType().arrayType()));
+            final Table expectedInferred = TableTools.newTable(
+                    TableTools.col("shortList",
+                            new long[] {42, NULL_LONG, -1},
+                            null,
+                            new long[] {}));
+            readWithDefinitionTestHelper(identifier, readDefinition, expectedInferred);
+        }
+
+        // short list -> LongVector
+        {
+            final TableDefinition readDefinition = TableDefinition.of(
+                    ColumnDefinition.of("shortList", LongVector.type()));
+            final Table expectedInferred = TableTools.newTable(
+                    TableTools.col("shortList",
+                            new LongVectorDirect(42, NULL_LONG, -1),
+                            null,
+                            (LongVector) new LongVectorDirect()));
+            readWithDefinitionTestHelper(identifier, readDefinition, expectedInferred);
+        }
+
+        // short list -> byte[] (should fail)
+        {
+            final TableDefinition readDefinition = TableDefinition.of(
+                    ColumnDefinition.of("shortList", Type.byteType().arrayType()));
+            readWithDefinitionFailureTestImpl(identifier, readDefinition);
+        }
+
+        // short list -> Short[] (should fail)
+        {
+            final TableDefinition readDefinition = TableDefinition.of(
+                    ColumnDefinition.of("shortList", Type.find(Short.class).arrayType()));
+            readWithDefinitionFailureTestImpl(identifier, readDefinition);
+        }
+
+        // short list -> ObjectVector<Short> (should fail)
+        {
+            final TableDefinition readDefinition = TableDefinition.of(
+                    ColumnDefinition.of("shortList", ObjectVector.type((GenericType<?>) Type.find(Short.class))));
+            readWithDefinitionFailureTestImpl(identifier, readDefinition);
+        }
+    }
+
+    @Test
+    void readWriteIntListTest() throws URISyntaxException {
+        // Write a table with int[]
+        final TableIdentifier identifier = TableIdentifier.of(Namespace.of("MyNamespace"), "Tbl_intList");
+        final Table source = TableTools.newTable(
+                TableDefinition.of(ColumnDefinition.of("intList", Type.intType().arrayType())),
+                new ColumnHolder<>("intList", int[].class, int.class, false,
+                        new int[] {42, NULL_INT, -1},
+                        null,
+                        new int[] {}));
+        final Schema expectedIcebergSchema = new Schema(
+                Types.NestedField.optional(1, "intList",
+                        Types.ListType.ofOptional(2, Types.IntegerType.get())));
+        final MessageType expectedParquetSchema =
+                buildMessage().addField(optionalGroup().id(1).as(LogicalTypeAnnotation.listType())
+                        .addField(repeatedGroup()
+                                .addField(optional(INT32).as(intType(32, true)).named("element"))
+                                .named("list"))
+                        .named("intList")).named("root");
+
+        // By default, int list -> int[]
+        readWriteTestHelper(identifier, source, expectedIcebergSchema, expectedParquetSchema, source);
+
+        // int list -> IntVector
+        {
+            final Table expectedInferred = TableTools.newTable(
+                    TableTools.col("intList",
+                            new IntVectorDirect(42, NULL_INT, -1),
+                            null,
+                            (IntVector) new IntVectorDirect()));
+
+            final TableDefinition readDefinition = TableDefinition.of(
+                    ColumnDefinition.of("intList", IntVector.type()));
+            readWithDefinitionTestHelper(identifier, readDefinition, expectedInferred);
+        }
+
+        // int list -> long[]
+        {
+            final TableDefinition readDefinition = TableDefinition.of(
+                    ColumnDefinition.of("intList", Type.longType().arrayType()));
+            final Table expectedInferred = TableTools.newTable(
+                    TableTools.col("intList",
+                            new long[] {42, NULL_LONG, -1},
+                            null,
+                            new long[] {}));
+            readWithDefinitionTestHelper(identifier, readDefinition, expectedInferred);
+        }
+
+        // int list -> LongVector
+        {
+            final TableDefinition readDefinition = TableDefinition.of(
+                    ColumnDefinition.of("intList", LongVector.type()));
+            final Table expectedInferred = TableTools.newTable(
+                    TableTools.col("intList",
+                            new LongVectorDirect(42, NULL_LONG, -1),
+                            null,
+                            (LongVector) new LongVectorDirect()));
+            readWithDefinitionTestHelper(identifier, readDefinition, expectedInferred);
+        }
+
+        // int list -> short[] (should fail)
+        {
+            final TableDefinition readDefinition = TableDefinition.of(
+                    ColumnDefinition.of("intList", Type.shortType().arrayType()));
+            readWithDefinitionFailureTestImpl(identifier, readDefinition);
+        }
+
+        // int list -> Integer[] (should fail)
+        {
+            final TableDefinition readDefinition = TableDefinition.of(
+                    ColumnDefinition.of("intList", Type.find(Integer.class).arrayType()));
+            readWithDefinitionFailureTestImpl(identifier, readDefinition);
+        }
+
+        // int list -> ObjectVector<Integer> (should fail)
+        {
+            final TableDefinition readDefinition = TableDefinition.of(
+                    ColumnDefinition.of("intList", ObjectVector.type((GenericType<?>) Type.find(Integer.class))));
+            readWithDefinitionFailureTestImpl(identifier, readDefinition);
+        }
+    }
+
+    @Test
+    void readWriteLongListTest() throws URISyntaxException {
+        // Write a table with long[]
+        final TableIdentifier identifier = TableIdentifier.of(Namespace.of("MyNamespace"), "Tbl_longList");
+        final Table source = TableTools.newTable(
+                TableDefinition.of(ColumnDefinition.of("longList", Type.longType().arrayType())),
+                new ColumnHolder<>("longList", long[].class, long.class, false,
+                        new long[] {42, NULL_LONG, -1},
+                        null,
+                        new long[] {}));
+        final Schema expectedIcebergSchema = new Schema(
+                Types.NestedField.optional(1, "longList",
+                        Types.ListType.ofOptional(2, Types.LongType.get())));
+        final MessageType expectedParquetSchema =
+                buildMessage().addField(optionalGroup().id(1).as(LogicalTypeAnnotation.listType())
+                        .addField(repeatedGroup()
+                                .addField(optional(INT64).named("element"))
+                                .named("list"))
+                        .named("longList")).named("root");
+
+
+        // By default, long list -> long[]
+        readWriteTestHelper(identifier, source, expectedIcebergSchema, expectedParquetSchema, source);
+
+        // long list -> LongVector
+        {
+            final Table expectedInferred = TableTools.newTable(
+                    TableTools.col("longList",
+                            new LongVectorDirect(42, NULL_LONG, -1),
+                            null,
+                            (LongVector) new LongVectorDirect()));
+            final TableDefinition readDefinition = TableDefinition.of(
+                    ColumnDefinition.of("longList", LongVector.type()));
+            readWithDefinitionTestHelper(identifier, readDefinition, expectedInferred);
+        }
+
+        // long list -> int[] (should fail)
+        {
+            final TableDefinition readDefinition = TableDefinition.of(
+                    ColumnDefinition.of("longList", Type.intType().arrayType()));
+            readWithDefinitionFailureTestImpl(identifier, readDefinition);
+        }
+
+        // long list -> Long[] (should fail)
+        {
+            final TableDefinition readDefinition = TableDefinition.of(
+                    ColumnDefinition.of("longList", Type.find(Long.class).arrayType()));
+            readWithDefinitionFailureTestImpl(identifier, readDefinition);
+        }
+
+        // long list -> ObjectVector<Long> (should fail)
+        {
+            final TableDefinition readDefinition = TableDefinition.of(
+                    ColumnDefinition.of("longList", ObjectVector.type((GenericType<?>) Type.find(Long.class))));
+            readWithDefinitionFailureTestImpl(identifier, readDefinition);
+        }
+    }
+
+    @Test
+    void readWriteFloatListTest() throws URISyntaxException {
+        // Write a table with float[]
+        final TableIdentifier identifier = TableIdentifier.of(Namespace.of("MyNamespace"), "Tbl_floatList");
+        final Table source = TableTools.newTable(
+                TableDefinition.of(ColumnDefinition.of("floatList", Type.floatType().arrayType())),
+                new ColumnHolder<>("floatList", float[].class, float.class, false,
+                        new float[] {42.5f, NULL_FLOAT, -1.5f},
+                        null,
+                        new float[] {}));
+        final Schema expectedIcebergSchema = new Schema(
+                Types.NestedField.optional(1, "floatList",
+                        Types.ListType.ofOptional(2, Types.FloatType.get())));
+        final MessageType expectedParquetSchema =
+                buildMessage().addField(optionalGroup().id(1).as(LogicalTypeAnnotation.listType())
+                        .addField(repeatedGroup()
+                                .addField(optional(FLOAT).named("element"))
+                                .named("list"))
+                        .named("floatList")).named("root");
+
+
+        // By default, float list -> float[]
+        readWriteTestHelper(identifier, source, expectedIcebergSchema, expectedParquetSchema, source);
+
+        // float list -> FloatVector
+        {
+            final TableDefinition readDefinition = TableDefinition.of(
+                    ColumnDefinition.of("floatList", FloatVector.type()));
+            final Table expectedInferred = TableTools.newTable(
+                    TableTools.col("floatList",
+                            new FloatVectorDirect(42.5f, NULL_FLOAT, -1.5f),
+                            null,
+                            (FloatVector) new FloatVectorDirect()));
+            readWithDefinitionTestHelper(identifier, readDefinition, expectedInferred);
+        }
+
+        // float list -> double[]
+        {
+            final TableDefinition readDefinition = TableDefinition.of(
+                    ColumnDefinition.of("floatList", Type.doubleType().arrayType()));
+            final Table expectedInferred = TableTools.newTable(
+                    TableTools.col("floatList",
+                            new double[] {42.5, NULL_DOUBLE, -1.5},
+                            null,
+                            new double[] {}));
+            readWithDefinitionTestHelper(identifier, readDefinition, expectedInferred);
+        }
+
+        // float list -> DoubleVector
+        {
+            final TableDefinition readDefinition = TableDefinition.of(
+                    ColumnDefinition.of("floatList", DoubleVector.type()));
+            final Table expectedInferred = TableTools.newTable(
+                    TableTools.col("floatList",
+                            new DoubleVectorDirect(42.5, NULL_DOUBLE, -1.5),
+                            null,
+                            (DoubleVector) new DoubleVectorDirect()));
+            readWithDefinitionTestHelper(identifier, readDefinition, expectedInferred);
+        }
+
+        // float list -> Float[] (should fail)
+        {
+            final TableDefinition readDefinition = TableDefinition.of(
+                    ColumnDefinition.of("floatList", Type.find(Float.class).arrayType()));
+            readWithDefinitionFailureTestImpl(identifier, readDefinition);
+        }
+
+        // float list -> ObjectVector<Float> (should fail)
+        {
+            final TableDefinition readDefinition = TableDefinition.of(
+                    ColumnDefinition.of("floatList", ObjectVector.type((GenericType<?>) Type.find(Float.class))));
+            readWithDefinitionFailureTestImpl(identifier, readDefinition);
+        }
+    }
+
+    @Test
+    void readWriteDoubleListTest() throws URISyntaxException {
+        // Write a table with double[]
+        final TableIdentifier identifier = TableIdentifier.of(Namespace.of("MyNamespace"), "Tbl_doubleList");
+        final Table source = TableTools.newTable(
+                TableDefinition.of(ColumnDefinition.of("doubleList", Type.doubleType().arrayType())),
+                new ColumnHolder<>("doubleList", double[].class, double.class, false,
+                        new double[] {42.6, NULL_DOUBLE, -1.2},
+                        null,
+                        new double[] {}));
+        final Schema expectedIcebergSchema = new Schema(
+                Types.NestedField.optional(1, "doubleList",
+                        Types.ListType.ofOptional(2, Types.DoubleType.get())));
+        final MessageType expectedParquetSchema =
+                buildMessage().addField(optionalGroup().id(1).as(LogicalTypeAnnotation.listType())
+                        .addField(repeatedGroup()
+                                .addField(optional(DOUBLE).named("element"))
+                                .named("list"))
+                        .named("doubleList")).named("root");
+
+
+        // By default, double list -> double[]
+        readWriteTestHelper(identifier, source, expectedIcebergSchema, expectedParquetSchema, source);
+
+        // double list -> DoubleVector
+        {
+            final TableDefinition readDefinition = TableDefinition.of(
+                    ColumnDefinition.of("doubleList", DoubleVector.type()));
+            final Table expectedInferred = TableTools.newTable(
+                    TableTools.col("doubleList",
+                            new DoubleVectorDirect(42.6, NULL_DOUBLE, -1.2),
+                            null,
+                            (DoubleVector) new DoubleVectorDirect()));
+            readWithDefinitionTestHelper(identifier, readDefinition, expectedInferred);
+        }
+
+        // double list -> float[] (should fail)
+        {
+            final TableDefinition readDefinition = TableDefinition.of(
+                    ColumnDefinition.of("doubleList", Type.floatType().arrayType()));
+            readWithDefinitionFailureTestImpl(identifier, readDefinition);
+        }
+
+        // double list -> Double[] (should fail)
+        {
+            final TableDefinition readDefinition = TableDefinition.of(
+                    ColumnDefinition.of("doubleList", Type.find(Double.class).arrayType()));
+            readWithDefinitionFailureTestImpl(identifier, readDefinition);
+        }
+
+        // double list -> ObjectVector<Double> (should fail)
+        {
+            final TableDefinition readDefinition = TableDefinition.of(
+                    ColumnDefinition.of("doubleList", ObjectVector.type((GenericType<?>) Type.find(Double.class))));
+            readWithDefinitionFailureTestImpl(identifier, readDefinition);
+        }
+    }
+
+    @Test
+    void readWriteBooleanListTest() throws URISyntaxException {
+        // Write a table with Boolean[]
+        final TableIdentifier identifier = TableIdentifier.of(Namespace.of("MyNamespace"), "Tbl_booleanList");
+        final Table source = TableTools.newTable(
+                TableDefinition.of(ColumnDefinition.of("booleanList", Type.find(Boolean.class).arrayType())),
+                new ColumnHolder<>("booleanList", Boolean[].class, Boolean.class, false,
+                        new Boolean[] {true, NULL_BOOLEAN, false},
+                        null,
+                        new Boolean[] {}));
+        final Schema expectedIcebergSchema = new Schema(
+                Types.NestedField.optional(1, "booleanList",
+                        Types.ListType.ofOptional(2, Types.BooleanType.get())));
+        final MessageType expectedParquetSchema =
+                buildMessage().addField(optionalGroup().id(1).as(LogicalTypeAnnotation.listType())
+                        .addField(repeatedGroup()
+                                .addField(optional(BOOLEAN).named("element"))
+                                .named("list"))
+                        .named("booleanList")).named("root");
+
+
+        // By default, Boolean list -> Boolean[]
+        readWriteTestHelper(identifier, source, expectedIcebergSchema, expectedParquetSchema, source);
+
+        // Boolean list -> ObjectVector<Boolean>
+        final TableDefinition readDefinition = TableDefinition.of(
+                ColumnDefinition.of("booleanList", ObjectVector.type(Type.booleanType().boxedType())));
+        final Table expectedInferred = TableTools.newTable(
+                TableTools.col("booleanList",
+                        new ObjectVectorDirect<Boolean>(true, NULL_BOOLEAN, false),
+                        null,
+                        (ObjectVector<Boolean>) new ObjectVectorDirect<Boolean>()));
+        readWithDefinitionTestHelper(identifier, readDefinition, expectedInferred);
+    }
+
+    @Test
+    void readWriteStringListTest() throws URISyntaxException {
+        // Write a table with String[]
+        final TableIdentifier identifier = TableIdentifier.of(Namespace.of("MyNamespace"), "Tbl_stringList");
+        final Table source = TableTools.newTable(
+                TableDefinition.of(ColumnDefinition.of("stringList", Type.stringType().arrayType())),
+                new ColumnHolder<>("stringList", String[].class, String.class, false,
+                        new String[] {"foo", null, "bar"},
+                        null,
+                        new String[] {}));
+        final Schema expectedIcebergSchema = new Schema(
+                Types.NestedField.optional(1, "stringList",
+                        Types.ListType.ofOptional(2, Types.StringType.get())));
+        final MessageType expectedParquetSchema =
+                buildMessage().addField(optionalGroup().id(1).as(LogicalTypeAnnotation.listType())
+                        .addField(repeatedGroup()
+                                .addField(optional(BINARY).as(LogicalTypeAnnotation.stringType()).named("element"))
+                                .named("list"))
+                        .named("stringList")).named("root");
+
+        // By default, String list -> String[]
+        readWriteTestHelper(identifier, source, expectedIcebergSchema, expectedParquetSchema, source);
+
+        // String list -> ObjectVector<String>
+        final TableDefinition readDefinition = TableDefinition.of(
+                ColumnDefinition.of("stringList", ObjectVector.type(Type.stringType())));
+        final Table expectedInferred = TableTools.newTable(
+                TableTools.col("stringList",
+                        new ObjectVectorDirect<>("foo", null, "bar"),
+                        null,
+                        (ObjectVector<String>) new ObjectVectorDirect<String>()));
+        readWithDefinitionTestHelper(identifier, readDefinition, expectedInferred);
+    }
+
+    @Test
+    void readWriteTimestampTzListTest() throws URISyntaxException {
+        // Write a table with Instant[]
+        final TableIdentifier identifier = TableIdentifier.of(Namespace.of("MyNamespace"), "Tbl_timestampTzList");
+        final Table source = TableTools.newTable(
+                TableDefinition.of(ColumnDefinition.of("timestampTzList", Type.instantType().arrayType())),
+                new ColumnHolder<>("timestampTzList", Instant[].class, Instant.class, false,
+                        new Instant[] {Instant.parse("2025-01-01T12:00:03Z"), null, Instant.EPOCH},
+                        null,
+                        new Instant[] {}));
+        final Schema expectedIcebergSchema = new Schema(
+                Types.NestedField.optional(1, "timestampTzList",
+                        Types.ListType.ofOptional(2, Types.TimestampType.withZone())));
+        final MessageType expectedParquetSchema =
+                buildMessage().addField(optionalGroup().id(1).as(LogicalTypeAnnotation.listType())
+                        .addField(repeatedGroup()
+                                .addField(optional(INT64).as(
+                                        LogicalTypeAnnotation.timestampType(true, LogicalTypeAnnotation.TimeUnit.NANOS))
+                                        .named("element"))
+                                .named("list"))
+                        .named("timestampTzList")).named("root");
+
+        // By default, Instant list -> Instant[]
+        readWriteTestHelper(identifier, source, expectedIcebergSchema, expectedParquetSchema, source);
+
+        // Instant list -> ObjectVector<Instant>
+        final TableDefinition readDefinition = TableDefinition.of(
+                ColumnDefinition.of("timestampTzList", ObjectVector.type((GenericType<?>) Type.instantType())));
+        final Table expectedInferred = TableTools.newTable(
+                TableTools.col("timestampTzList",
+                        new ObjectVectorDirect<>(Instant.parse("2025-01-01T12:00:03Z"), null, Instant.EPOCH),
+                        null,
+                        (ObjectVector<Instant>) new ObjectVectorDirect<Instant>()));
+        readWithDefinitionTestHelper(identifier, readDefinition, expectedInferred);
+    }
+
+    @Test
+    void readWriteTimestampNtzListTest() throws URISyntaxException {
+        // Write a table with LocalDateTime[]
+        final TableIdentifier identifier = TableIdentifier.of(Namespace.of("MyNamespace"), "Tbl_timestampNtzList");
+        final Table source = TableTools.newTable(
+                TableDefinition.of(ColumnDefinition.of("timestampNtzList", Type.find(LocalDateTime.class).arrayType())),
+                new ColumnHolder<>("timestampNtzList", LocalDateTime[].class, LocalDateTime.class, false,
+                        new LocalDateTime[] {
+                                LocalDateTime.of(2025, 1, 1, 12, 0, 1),
+                                null,
+                                LocalDateTime.of(2023, 1, 1, 0, 0)},
+                        null,
+                        new LocalDateTime[] {}));
+        final Schema expectedIcebergSchema = new Schema(
+                Types.NestedField.optional(1, "timestampNtzList",
+                        Types.ListType.ofOptional(2, Types.TimestampType.withoutZone())));
+        final MessageType expectedParquetSchema =
+                buildMessage().addField(optionalGroup().id(1).as(LogicalTypeAnnotation.listType())
+                        .addField(repeatedGroup()
+                                .addField(optional(INT64).as(LogicalTypeAnnotation.timestampType(false,
+                                        LogicalTypeAnnotation.TimeUnit.NANOS)).named("element"))
+                                .named("list"))
+                        .named("timestampNtzList")).named("root");
+
+        // By default, LocalDateTime list -> LocalDateTime[]
+        readWriteTestHelper(identifier, source, expectedIcebergSchema, expectedParquetSchema, source);
+
+        // LocalDateTime list -> ObjectVector<LocalDateTime>
+        final TableDefinition readDefinition = TableDefinition.of(
+                ColumnDefinition.of("timestampNtzList",
+                        ObjectVector.type((GenericType<?>) Type.find(LocalDateTime.class))));
+        final Table expectedInferred = TableTools.newTable(
+                TableTools.col("timestampNtzList",
+                        new ObjectVectorDirect<>(LocalDateTime.of(2025, 1, 1, 12, 0, 1),
+                                null,
+                                LocalDateTime.of(2023, 1, 1, 0, 0)),
+                        null,
+                        (ObjectVector<LocalDateTime>) new ObjectVectorDirect<LocalDateTime>()));
+        readWithDefinitionTestHelper(identifier, readDefinition, expectedInferred);
+    }
+
+    @Test
+    void readWriteDateListTest() throws URISyntaxException {
+        // Write a table with LocalDate[]
+        final TableIdentifier identifier = TableIdentifier.of(Namespace.of("MyNamespace"), "Tbl_dateList");
+        final Table source = TableTools.newTable(
+                TableDefinition.of(ColumnDefinition.of("dateList", Type.find(LocalDate.class).arrayType())),
+                new ColumnHolder<>("dateList", LocalDate[].class, LocalDate.class, false,
+                        new LocalDate[] {LocalDate.of(2025, 1, 1), null, LocalDate.of(2023, 1, 1)},
+                        null,
+                        new LocalDate[] {}));
+        final Schema expectedIcebergSchema = new Schema(
+                Types.NestedField.optional(1, "dateList",
+                        Types.ListType.ofOptional(2, Types.DateType.get())));
+        final MessageType expectedParquetSchema =
+                buildMessage().addField(optionalGroup().id(1).as(LogicalTypeAnnotation.listType())
+                        .addField(repeatedGroup()
+                                .addField(optional(INT32).as(LogicalTypeAnnotation.dateType()).named("element"))
+                                .named("list"))
+                        .named("dateList")).named("root");
+
+        // By default, LocalDate list -> LocalDate[]
+        readWriteTestHelper(identifier, source, expectedIcebergSchema, expectedParquetSchema, source);
+
+        // LocalDate list -> ObjectVector<LocalDate>
+        final TableDefinition readDefinition = TableDefinition.of(
+                ColumnDefinition.of("dateList", ObjectVector.type((GenericType<?>) Type.find(LocalDate.class))));
+        final Table expectedInferred = TableTools.newTable(
+                TableTools.col("dateList",
+                        new ObjectVectorDirect<>(LocalDate.of(2025, 1, 1), null, LocalDate.of(2023, 1, 1)),
+                        null,
+                        (ObjectVector<LocalDate>) new ObjectVectorDirect<LocalDate>()));
+        readWithDefinitionTestHelper(identifier, readDefinition, expectedInferred);
+    }
+
+    @Test
+    void readWriteTimeListTest() throws URISyntaxException {
+        // Write a table with LocalTime[]
+        final TableIdentifier identifier = TableIdentifier.of(Namespace.of("MyNamespace"), "Tbl_timeList");
+        final Table source = TableTools.newTable(
+                TableDefinition.of(ColumnDefinition.of("timeList", Type.find(LocalTime.class).arrayType())),
+                new ColumnHolder<>("timeList", LocalTime[].class, LocalTime.class, false,
+                        new LocalTime[] {LocalTime.of(12, 0, 1), null, LocalTime.of(12, 0)},
+                        null,
+                        new LocalTime[] {}));
+        final Schema expectedIcebergSchema = new Schema(
+                Types.NestedField.optional(1, "timeList",
+                        Types.ListType.ofOptional(2, Types.TimeType.get())));
+        final MessageType expectedParquetSchema =
+                buildMessage().addField(optionalGroup().id(1).as(LogicalTypeAnnotation.listType())
+                        .addField(repeatedGroup()
+                                .addField(optional(INT64)
+                                        .as(LogicalTypeAnnotation.timeType(true, LogicalTypeAnnotation.TimeUnit.NANOS))
+                                        .named("element"))
+                                .named("list"))
+                        .named("timeList")).named("root");
+
+        // By default, LocalTime list -> LocalTime[]
+        readWriteTestHelper(identifier, source, expectedIcebergSchema, expectedParquetSchema, source);
+
+        // LocalTime list -> ObjectVector<LocalTime>
+        final TableDefinition readDefinition = TableDefinition.of(
+                ColumnDefinition.of("timeList", ObjectVector.type((GenericType<?>) Type.find(LocalTime.class))));
+        final Table expectedInferred = TableTools.newTable(
+                TableTools.col("timeList",
+                        new ObjectVectorDirect<>(LocalTime.of(12, 0, 1), null, LocalTime.of(12, 0)),
+                        null,
+                        (ObjectVector<LocalTime>) new ObjectVectorDirect<LocalTime>()));
+        readWithDefinitionTestHelper(identifier, readDefinition, expectedInferred);
+    }
+
+    /*--- End tests for list types ---*/
 
     @Test
     void testFailureInWrite() {
@@ -968,7 +2038,7 @@ public abstract class SqliteCatalogBase {
     @Test
     void testPartitionedAppendWithUnsupportedPartitioningTypes() {
         final TableDefinition definition = TableDefinition.of(
-                ColumnDefinition.of("InstantPC", Type.find(Instant.class)).withPartitioning(), // Unsupported
+                ColumnDefinition.of("InstantPC", Type.instantType()).withPartitioning(), // Unsupported
                 ColumnDefinition.ofInt("data"));
         final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
 
@@ -1726,6 +2796,7 @@ public abstract class SqliteCatalogBase {
         final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.NameMappingTest");
 
         final IcebergTableAdapter tableAdapter = catalogAdapter.createTable(tableIdentifier, definition);
+        assertThat(tableAdapter.nameMapping().asMappedFields()).isEqualTo(MappedFields.of());
 
         // This is emulating a write outside of DH where the field ids are _not_ written
         {
@@ -1777,6 +2848,7 @@ public abstract class SqliteCatalogBase {
                     .resolver(tableAdapter.resolver())
                     .nameMapping(nameMapping)
                     .build());
+            assertThat(ta.nameMapping()).isSameAs(nameMapping);
             assertTableEquals(source, ta.table());
         }
 
@@ -1790,6 +2862,7 @@ public abstract class SqliteCatalogBase {
                     .id(tableIdentifier)
                     .resolver(tableAdapter.resolver())
                     .build());
+            assertThat(ta.nameMapping().asMappedFields()).isEqualTo(nameMapping.asMappedFields());
             assertTableEquals(source, ta.table());
         }
 
@@ -1800,6 +2873,7 @@ public abstract class SqliteCatalogBase {
                     .resolver(tableAdapter.resolver())
                     .nameMapping(NameMappingProvider.empty())
                     .build());
+            assertThat(ta.nameMapping().asMappedFields()).isEqualTo(MappedFields.of());
             try {
                 ta.table().select();
                 failBecauseExceptionWasNotThrown(TableInitializationException.class);
@@ -1818,6 +2892,7 @@ public abstract class SqliteCatalogBase {
                     .resolver(tableAdapter.resolver())
                     .nameMapping(NameMappingProvider.empty())
                     .build());
+            assertThat(ta.nameMapping().asMappedFields()).isEqualTo(MappedFields.of());
             assertTableEquals(empty, ta.table(IGNORE_ERRORS));
         }
     }

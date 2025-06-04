@@ -151,6 +151,19 @@ public abstract class InferenceInstructions {
             return new FieldNameNamer();
         }
 
+        @Override
+        public boolean equals(Object o) {
+            if (!(o instanceof FieldNameNamerFactory))
+                return false;
+            FieldNameNamerFactory that = (FieldNameNamerFactory) o;
+            return delimiter.equals(that.delimiter);
+        }
+
+        @Override
+        public int hashCode() {
+            return delimiter.hashCode();
+        }
+
         private final class FieldNameNamer implements Namer {
 
             private final Set<String> usedNames = new HashSet<>();

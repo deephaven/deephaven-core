@@ -14,8 +14,8 @@ class is your connection to Deephaven. This is what allows your Python code to i
     from pydeephaven import Session
     session = Session()
 
-Binding to a table
-##################
+Bind to a table
+###############
 
 The
 :py:class:`Session <pydeephaven.Session>`
@@ -134,7 +134,7 @@ is one of many operations that can join two tables, as shown below::
     session.bind_table(name="my_table", table=table)
 
 Perform aggregations on a table
-##################################
+###############################
 
 Aggregations can be applied on tables in the Python client. This example creates a aggregation that
 averages the `Count` column of a table, and aggregates it by the `Group` column::
@@ -182,15 +182,17 @@ Execute a script server side
 Subscribe to a ticking table
 ############################
 
-The `pydeephaven-ticking` package can be used to subscribe to ticking tables. This is useful for getting asynchronous callbacks when
-they change. The package maintains a complete local copy of the table and notifies callers when the table changes.
+The `pydeephaven-ticking` package can be used to subscribe to ticking tables. This is useful for
+getting asynchronous callbacks when they change. The package maintains a complete local copy of
+the table and notifies callers when the table changes.
 
-Note that `pydeephaven-ticking` must be built before running this example. Build instructions are available `here <https://github.com/deephaven/deephaven-core/tree/main/py/client-ticking#readme>`__.
+Note that `pydeephaven-ticking` must be built before running this example. Build instructions are
+available `here <https://github.com/deephaven/deephaven-core/tree/main/py/client-ticking#readme>`__.
 
-The listener can be specified either as a python function or as an implementation of the TableListener abstract base class. In the
-case of implementing
-:py:class:`TableListener <pydeephaven.ticking.TableListener>`
-TableListener, the caller needs to implement
+The listener can be specified either as a python function or as an implementation of the
+TableListener abstract base class. In the case of implementing
+:py:class:`TableListener <pydeephaven.ticking.TableListener>`,
+the caller needs to implement
 :py:func:`on_update <pydeephaven.ticking.TableListener.on_update>`
 and optionally
 :py:func:`on_error <pydeephaven.ticking.TableListener.on_error>`
@@ -231,7 +233,6 @@ The
 :py:func:`on_update <pydeephaven.ticking.table_listener.TableListener.on_update>`
 callback method is invoked with a
 :py:class:`TableUpdate <pydeephaven.ticking.table_listener.TableUpdate>` argument.
-:py:class:`TableUpdate <pydeephaven_ticking.table_listener.TableUpdate>` argument.
 :py:class:`TableUpdate <pydeephaven.ticking.table_listener.TableUpdate>`
 has methods
 `added()`,
@@ -240,12 +241,39 @@ has methods
 `modified()`.
 These methods return the data that was added, removed, or modified in this update.
 `modified_prev()` returns the data as it was before the modify operation happened, whereas
-`modified()` returns the modified data. This can be useful e.g. for calculations like keeping a running sum, where it is useful to know
-the "old" value and the new value.
+`modified()` returns the modified data. This can be useful e.g. for calculations like keeping a
+running sum, where it is useful to know the "old" value and the new value.
 
-Each of the above methods has a "chunked" variant that returns a generator. This may be useful if the client is processing so much data
-that it would like to handle it a chunk at a time. The chunked variants are `added_chunks()`, `removed_chunks()`, `modified_prev_chunks()`,
+Each of the above methods has a "chunked" variant that returns a generator. This may be useful if
+the client is processing so much data that it would like to handle it a chunk at a time.
+The chunked variants are `added_chunks()`, `removed_chunks()`, `modified_prev_chunks()`,
 and `modified_chunks()`.
+
+Supported Data Types
+====================
+
+For ticking data, we support a subset of the data types supported by the server. The server
+types supported by the ticking library are:
+
+=======================  =========================
+Java type                PyArrow type
+=======================  =========================
+byte                     pa.int8()
+short                    pa.int16()
+int                      pa.int32()
+long                     pa.int64()
+float                    pa.float32()
+double                   pa.float64()
+boolean                  pa.bool\_()
+char                     pa.uint16()
+java.lang.String         pa.string()
+java.time.ZonedDateTime  pa.timestamp("ns", "UTC")
+java.time.LocalDate      pa.date64()
+java.time.LocalTime      pa.time64("ns")
+=======================  =========================
+
+as well as single-dimensional lists of the above.
+
 
 Error handling
 ##############

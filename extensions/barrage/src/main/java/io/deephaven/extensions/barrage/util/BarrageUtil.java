@@ -287,17 +287,41 @@ public class BarrageUtil {
             @Nullable final RowSet viewport,
             @Nullable final BitSet columns,
             final boolean reverseViewport) {
+        return createSubscriptionRequestMetadataBytes(ticketId, options,
+                viewport != null ? BarrageProtoUtil.toByteBuffer(viewport) : null,
+                columns == null ? null : columns.toByteArray(), reverseViewport,
+                BarrageMessageType.BarrageSubscriptionRequest);
+    }
+
+    /**
+     * Create a subscription request payload to be sent via DoExchange.
+     *
+     * @param ticketId the ticket id of the table to subscribe to
+     * @param options the barrage options
+     * @param viewportBuffer the viewport to subscribe to, already converted to a ByteBuffer
+     * @param columns the columns to subscribe to
+     * @param reverseViewport whether to reverse the viewport
+     * @param requestType the type of the request
+     * @return the subscription request payload
+     */
+    public static byte[] createSubscriptionRequestMetadataBytes(
+            @NotNull final byte[] ticketId,
+            @Nullable final BarrageSubscriptionOptions options,
+            final @Nullable ByteBuffer viewportBuffer,
+            @Nullable final byte[] columns,
+            final boolean reverseViewport,
+            final byte requestType) {
 
         final FlatBufferBuilder metadata = new FlatBufferBuilder();
 
         int colOffset = 0;
         if (columns != null) {
-            colOffset = BarrageSubscriptionRequest.createColumnsVector(metadata, columns.toByteArray());
+            colOffset = BarrageSubscriptionRequest.createColumnsVector(metadata, columns);
         }
         int vpOffset = 0;
-        if (viewport != null) {
+        if (viewportBuffer != null) {
             vpOffset = BarrageSubscriptionRequest.createViewportVector(
-                    metadata, BarrageProtoUtil.toByteBuffer(viewport));
+                    metadata, viewportBuffer);
         }
         int optOffset = 0;
         if (options != null) {
@@ -318,7 +342,7 @@ public class BarrageUtil {
         wrapper.finish(BarrageMessageWrapper.createBarrageMessageWrapper(
                 wrapper,
                 BarrageUtil.FLATBUFFER_MAGIC,
-                BarrageMessageType.BarrageSubscriptionRequest,
+                requestType,
                 innerOffset));
         return wrapper.sizedByteArray();
     }

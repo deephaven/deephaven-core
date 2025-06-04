@@ -45,6 +45,7 @@ abstract class RegionedColumnSourceArray<DATA_TYPE, ATTR extends Values, REGION_
     /**
      * Construct a {@code RegionedColumnSource} which is an array of references to {@code ColumnRegion}s.
      *
+     * @param manager The {@link RegionedColumnSourceManager} that manages this column source.
      * @param nullRegion A ColumnRegion to be used when the actual region doesn't exist, which returns the correct null
      *        values for that region.
      * @param type The type of the column.
@@ -52,30 +53,36 @@ abstract class RegionedColumnSourceArray<DATA_TYPE, ATTR extends Values, REGION_
      * @param makeDeferred A function which creates the correct deferred region for this ColumnSource. If you don't want
      *        any deferred regions then use Supplier::get.
      */
-    RegionedColumnSourceArray(@NotNull final REGION_TYPE nullRegion,
+    RegionedColumnSourceArray(
+            @NotNull final RegionedColumnSourceManager manager,
+            @NotNull final REGION_TYPE nullRegion,
             @NotNull final Class<DATA_TYPE> type,
-            @Nullable final Class componentType,
+            @Nullable final Class<?> componentType,
             @NotNull final MakeDeferred<ATTR, REGION_TYPE> makeDeferred) {
-        super(type, componentType);
+        super(manager, type, componentType);
         this.nullRegion = nullRegion;
         this.makeDeferred = makeDeferred;
         regions = allocateRegionArray(0);
     }
 
     /**
-     * Delegate to {@link #RegionedColumnSourceArray(ColumnRegion, Class, Class, MakeDeferred)} with null component
-     * type.
+     * Delegate to
+     * {@link #RegionedColumnSourceArray(RegionedColumnSourceManager, ColumnRegion, Class, Class, MakeDeferred)} with
+     * null component type.
      *
+     * @param manager The {@link RegionedColumnSourceManager} that manages this column source.
      * @param nullRegion A ColumnRegion to be used when the actual region doesn't exist, which returns the correct null
      *        values for that region.
      * @param type The type of the column.
      * @param makeDeferred A function which creates the correct deferred region for this ColumnSource. If you don't want
      *        any deferred regions then use Supplier::get.
      */
-    RegionedColumnSourceArray(@NotNull final REGION_TYPE nullRegion,
+    RegionedColumnSourceArray(
+            @NotNull final RegionedColumnSourceManager manager,
+            @NotNull final REGION_TYPE nullRegion,
             @NotNull final Class<DATA_TYPE> type,
             @NotNull final MakeDeferred<ATTR, REGION_TYPE> makeDeferred) {
-        this(nullRegion, type, null, makeDeferred);
+        this(manager, nullRegion, type, null, makeDeferred);
     }
 
     @Override

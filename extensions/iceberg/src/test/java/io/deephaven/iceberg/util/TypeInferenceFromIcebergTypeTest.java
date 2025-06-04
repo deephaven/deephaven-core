@@ -76,13 +76,13 @@ class TypeInferenceFromIcebergTypeTest {
 
     @Test
     void fixedType() {
-        assertInference(Types.FixedType.ofLength(1)).isEmpty();
-        assertInference(Types.FixedType.ofLength(42)).isEmpty();
+        assertInference(Types.FixedType.ofLength(1)).hasValue(Type.byteType().arrayType());
+        assertInference(Types.FixedType.ofLength(42)).hasValue(Type.byteType().arrayType());
     }
 
     @Test
     void binaryType() {
-        assertInference(Types.BinaryType.get()).isEmpty();
+        assertInference(Types.BinaryType.get()).hasValue(Type.byteType().arrayType());
     }
 
     @Test
@@ -92,13 +92,90 @@ class TypeInferenceFromIcebergTypeTest {
     }
 
     @Test
-    void structType() {
-        assertInference(Types.StructType.of(Types.NestedField.optional(1, "Foo", Types.IntegerType.get()))).isEmpty();
+    void booleanListType() {
+        assertInference(Types.ListType.ofOptional(1, Types.BooleanType.get()))
+                .hasValue(Type.booleanType().boxedType().arrayType());
     }
 
     @Test
-    void listType() {
-        assertInference(Types.ListType.ofOptional(1, Types.IntegerType.get())).isEmpty();
+    void integerListType() {
+        assertInference(Types.ListType.ofOptional(1, Types.IntegerType.get())).hasValue(Type.intType().arrayType());
+    }
+
+    @Test
+    void longListType() {
+        assertInference(Types.ListType.ofOptional(1, Types.LongType.get())).hasValue(Type.longType().arrayType());
+    }
+
+    @Test
+    void floatListType() {
+        assertInference(Types.ListType.ofOptional(1, Types.FloatType.get())).hasValue(Type.floatType().arrayType());
+    }
+
+    @Test
+    void doubleListType() {
+        assertInference(Types.ListType.ofOptional(1, Types.DoubleType.get())).hasValue(Type.doubleType().arrayType());
+    }
+
+    @Test
+    void dateListType() {
+        assertInference(Types.ListType.ofOptional(1, Types.DateType.get()))
+                .hasValue(Type.find(LocalDate.class).arrayType());
+    }
+
+    @Test
+    void timeListType() {
+        assertInference(Types.ListType.ofOptional(1, Types.TimeType.get()))
+                .hasValue(Type.find(LocalTime.class).arrayType());
+    }
+
+    @Test
+    void timestampListType() {
+        assertInference(Types.ListType.ofOptional(1, Types.TimestampType.withZone()))
+                .hasValue(Type.instantType().arrayType());
+        assertInference(Types.ListType.ofOptional(1, Types.TimestampType.withoutZone()))
+                .hasValue(Type.find(LocalDateTime.class).arrayType());
+    }
+
+    @Test
+    void timestampNanoListType() {
+        assertInference(Types.ListType.ofOptional(1, Types.TimestampNanoType.withZone())).isEmpty();
+        assertInference(Types.ListType.ofOptional(1, Types.TimestampNanoType.withoutZone())).isEmpty();
+    }
+
+    @Test
+    void stringListType() {
+        assertInference(Types.ListType.ofOptional(1, Types.StringType.get()))
+                .hasValue(Type.stringType().arrayType());
+    }
+
+    @Test
+    void uuidListType() {
+        assertInference(Types.ListType.ofOptional(1, Types.UUIDType.get())).isEmpty();
+    }
+
+    @Test
+    void fixedListType() {
+        assertInference(Types.ListType.ofOptional(1, Types.FixedType.ofLength(1))).isEmpty();
+        assertInference(Types.ListType.ofOptional(1, Types.FixedType.ofLength(42))).isEmpty();
+    }
+
+    @Test
+    void binaryListType() {
+        assertInference(Types.ListType.ofOptional(1, Types.BinaryType.get())).isEmpty();
+    }
+
+    @Test
+    void decimalListType() {
+        assertInference(Types.ListType.ofOptional(1, Types.DecimalType.of(3, 4)))
+                .hasValue(Type.find(BigDecimal.class).arrayType());
+        assertInference(Types.ListType.ofOptional(1, Types.DecimalType.of(5, 5)))
+                .hasValue(Type.find(BigDecimal.class).arrayType());
+    }
+
+    @Test
+    void structType() {
+        assertInference(Types.StructType.of(Types.NestedField.optional(1, "Foo", Types.IntegerType.get()))).isEmpty();
     }
 
     @Test

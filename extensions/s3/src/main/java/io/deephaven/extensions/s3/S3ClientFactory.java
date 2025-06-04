@@ -17,17 +17,13 @@ import software.amazon.awssdk.core.client.config.ClientAsyncConfiguration;
 import software.amazon.awssdk.core.client.config.ClientOverrideConfiguration;
 import software.amazon.awssdk.core.client.config.SdkAdvancedAsyncClientOption;
 import software.amazon.awssdk.core.exception.SdkClientException;
-import software.amazon.awssdk.core.retry.RetryMode;
 import software.amazon.awssdk.http.SdkHttpClient;
 import software.amazon.awssdk.http.async.SdkAsyncHttpClient;
 import software.amazon.awssdk.http.crt.AwsCrtAsyncHttpClient;
 import software.amazon.awssdk.http.crt.AwsCrtHttpClient;
 import software.amazon.awssdk.regions.Region;
-import software.amazon.awssdk.services.s3.S3AsyncClient;
-import software.amazon.awssdk.services.s3.S3AsyncClientBuilder;
-import software.amazon.awssdk.services.s3.S3BaseClientBuilder;
-import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.S3ClientBuilder;
+import software.amazon.awssdk.retries.StandardRetryStrategy;
+import software.amazon.awssdk.services.s3.*;
 import software.amazon.awssdk.utils.ThreadFactoryBuilder;
 
 import java.time.Duration;
@@ -46,6 +42,10 @@ final class S3ClientFactory {
             getOrComputeThreadCountProperty("S3.numFutureCompletionThreads", -1);
     private static final int NUM_SCHEDULED_EXECUTOR_THREADS =
             getOrComputeThreadCountProperty("S3.numScheduledExecutorThreads", 5);
+    // The default retries value of 3 matches the value from the deprecated
+    // software.amazon.awssdk.core.retry.RetryMode#STANDARD
+    // which allowed 2 retries (3 attempts).
+    static final int RETRY_STRATEGY_MAX_ATTEMPTS = 3;
 
     private static final Logger log = LoggerFactory.getLogger(S3ClientFactory.class);
     private static final Map<HttpClientConfig, SdkAsyncHttpClient> httpAsyncClientCache = new ConcurrentHashMap<>();
@@ -150,9 +150,9 @@ final class S3ClientFactory {
                 // If we find that the STANDARD retry policy does not work well in all situations, we might
                 // try experimenting with ADAPTIVE retry policy, potentially with fast fail.
                 // .retryPolicy(RetryPolicy.builder(RetryMode.ADAPTIVE).fastFailRateLimiting(true).build())
-                .retryPolicy(RetryMode.STANDARD)
-                .apiCallAttemptTimeout(instructions.readTimeout().dividedBy(3))
-                .apiCallTimeout(instructions.readTimeout())
+                .retryStrategy(StandardRetryStrategy.builder()
+                        .maxAttempts(RETRY_STRATEGY_MAX_ATTEMPTS)
+                        .build())
                 // Adding a metrics publisher may be useful for debugging, but it's very verbose.
                 // .addMetricPublisher(LoggingMetricPublisher.create(Level.INFO, Format.PRETTY))
                 .scheduledExecutorService(ensureScheduledExecutor());

@@ -5,12 +5,19 @@ package io.deephaven.engine.table.impl.sources.regioned;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.table.impl.AbstractColumnSource;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.impl.*;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.table.impl.select.WhereFilter;
+import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.util.annotations.TestUseOnly;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.Map;
+import java.util.function.Consumer;
 
 /**
  * Partial implementation of {@link RegionedColumnSource} for array-backed and delegating implementations to extend.
@@ -18,6 +25,8 @@ import org.jetbrains.annotations.Nullable;
 abstract class RegionedColumnSourceBase<DATA_TYPE, ATTR extends Values, REGION_TYPE extends ColumnRegion<ATTR>>
         extends AbstractColumnSource<DATA_TYPE>
         implements RegionedPageStore<Values, ATTR, REGION_TYPE>, RegionedColumnSource<DATA_TYPE> {
+
+    protected final RegionedColumnSourceManager manager;
 
     static final Parameters PARAMETERS;
     static {
@@ -29,12 +38,18 @@ abstract class RegionedColumnSourceBase<DATA_TYPE, ATTR extends Values, REGION_T
                 "SUB_REGION_ELEMENT_INDEX_ADDRESS_BITS");
     }
 
-    RegionedColumnSourceBase(@NotNull final Class<DATA_TYPE> type, @Nullable final Class<?> componentType) {
+    RegionedColumnSourceBase(
+            @NotNull final RegionedColumnSourceManager manager,
+            @NotNull final Class<DATA_TYPE> type,
+            @Nullable final Class<?> componentType) {
         super(type, componentType);
+        this.manager = manager;
     }
 
-    RegionedColumnSourceBase(@NotNull final Class<DATA_TYPE> type) {
-        this(type, null);
+    RegionedColumnSourceBase(
+            @NotNull final RegionedColumnSourceManager manager,
+            @NotNull final Class<DATA_TYPE> type) {
+        this(manager, type, null);
     }
 
     @Override
@@ -83,4 +98,49 @@ abstract class RegionedColumnSourceBase<DATA_TYPE, ATTR extends Values, REGION_T
      */
     @NotNull
     abstract REGION_TYPE getNullRegion();
+
+    @Override
+    public PushdownPredicateManager pushdownManager() {
+        return manager;
+    }
+
+    @Override
+    public long estimatePushdownFilterCost(
+            final WhereFilter filter,
+            final RowSet selection,
+            final RowSet fullSet,
+            final boolean usePrev,
+            final PushdownFilterContext context) {
+        // Delegate to the manager.
+        return manager.estimatePushdownFilterCost(filter, selection, fullSet, usePrev, context);
+    }
+
+    @Override
+    public void pushdownFilter(
+            final WhereFilter filter,
+            final Map<String, String> renameMap,
+            final RowSet selection,
+            final RowSet fullSet,
+            final boolean usePrev,
+            final PushdownFilterContext context,
+            final long costCeiling,
+            final JobScheduler jobScheduler,
+            final Consumer<PushdownResult> onComplete,
+            final Consumer<Exception> onError) {
+        // Delegate to the manager.
+        manager.pushdownFilter(filter, renameMap, selection, fullSet, usePrev, context, costCeiling, jobScheduler,
+                onComplete, onError);
+    }
+
+    @Override
+    public Map<String, String> renameMap(final WhereFilter filter, final ColumnSource<?>[] filterSources) {
+        // Delegate to the manager.
+        return manager.renameMap(filter, filterSources);
+    }
+
+    @Override
+    public PushdownFilterContext makePushdownFilterContext() {
+        // Delegate to the manager.
+        return manager.makePushdownFilterContext();
+    }
 }

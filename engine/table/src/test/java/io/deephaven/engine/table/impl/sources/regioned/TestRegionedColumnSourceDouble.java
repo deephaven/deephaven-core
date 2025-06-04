@@ -46,7 +46,7 @@ public class TestRegionedColumnSourceDouble extends
     public void setUp() throws Exception {
         super.setUp();
 
-        SUT = new RegionedColumnSourceDouble.AsValues();
+        SUT = new RegionedColumnSourceDouble.AsValues(manager);
         assertEquals(double.class, SUT.getType());
     }
 

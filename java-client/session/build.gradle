@@ -8,6 +8,9 @@ description = 'The Deephaven client session library'
 dependencies {
   api project(':qst')
   api project(':uri')
+  api (project(':Util')) {
+    because "We need the @InternalUseOnly annnotation."
+  }
 
   api platform(libs.grpc.bom)
   api libs.grpc.api

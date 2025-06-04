@@ -16,6 +16,7 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.hierarchical.RollupTable;
 import io.deephaven.engine.table.impl.BaseTable.CopyAttributeOperation;
@@ -25,11 +26,11 @@ import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.SortOperation;
 import io.deephaven.engine.table.impl.by.AggregationProcessor;
 import io.deephaven.engine.table.impl.by.AggregationRowLookup;
-import io.deephaven.engine.table.impl.by.rollup.RollupAggregationOutputs;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
 import io.deephaven.engine.table.impl.util.RowRedirection;
+import io.deephaven.util.annotations.InternalUseOnly;
 import io.deephaven.util.type.TypeUtils;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
@@ -41,7 +42,6 @@ import java.util.function.LongUnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static io.deephaven.api.ColumnName.names;
 import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
 import static io.deephaven.engine.table.impl.AbsoluteSortColumnConventions.*;
 import static io.deephaven.engine.table.impl.BaseTable.shouldCopyAttribute;
@@ -610,6 +610,45 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
                 constituentNodeDefinition, constituentNodeOperations, null, availableColumnDefinitions);
     }
 
+
+    /**
+     * <p>
+     * Create a RollupTable from internal data structures that have been made outside the rollup code.
+     * </p>
+     *
+     * <p>
+     * Constituents may not be included, and node operations are not provided.
+     * </p>
+     *
+     * <p>
+     * Note: This function is not part of the public Deephaven API, and the semantics are subject to change at any time.
+     * </p>
+     *
+     * @param source the original table being aggregated for this rollup
+     * @param attributes the attributes of the result rollup
+     * @param aggregations the aggregations used to make this rollup
+     * @param groupByColumns the group by columns for this rollup
+     * @param levelTables an array of tables for each level
+     * @param levelRowLookups an array of row lookup structures for each level
+     * @param levelNodeTableSources an array of column sources containing a lower-level table
+     * @return a RollupTable from the provided data structures
+     */
+    @InternalUseOnly
+    public static RollupTable makeFromPartsInternal(
+            @NotNull final QueryTable source,
+            @NotNull final Map<String, Object> attributes,
+            @NotNull final Collection<? extends Aggregation> aggregations,
+            @NotNull final Collection<? extends ColumnName> groupByColumns,
+            @NotNull final QueryTable[] levelTables,
+            @NotNull final AggregationRowLookup[] levelRowLookups,
+            @NotNull final ColumnSource<Table>[] levelNodeTableSources) {
+        return new RollupTableImpl(
+                attributes,
+                source, aggregations, false, groupByColumns,
+                levelTables, levelRowLookups, levelNodeTableSources,
+                null, null, null, null, null, null);
+    }
+
     private static QueryTable[] makeLevelTablesArray(
             final int numLevels, @NotNull final QueryTable baseLevelTable) {
         final QueryTable[] levelTables = new QueryTable[numLevels];
@@ -759,7 +798,20 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
             final long childNodeId,
             @Nullable final Object childNodeKey,
             final boolean usePrev) {
-        return childNodeId == NULL_NODE_ID ? NULL_ROW_KEY : nodeSlot(childNodeId);
+        if (childNodeId == NULL_NODE_ID) {
+            return NULL_ROW_KEY;
+        }
+
+        final int nodeDepth = nodeDepth(childNodeId);
+        final int nodeSlot = nodeSlot(childNodeId);
+
+        final TrackingRowSet rowSet = levelTables[nodeDepth - 1].getRowSet();
+        if ((usePrev ? rowSet.findPrev(nodeSlot) : rowSet.find(nodeSlot)) == NULL_ROW_KEY) {
+            // the aggregation knows about this key, but it does not actually exist in the table
+            return NULL_ROW_KEY;
+        }
+
+        return nodeSlot;
     }
 
     @Override

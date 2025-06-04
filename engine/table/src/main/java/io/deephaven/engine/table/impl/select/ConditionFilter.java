@@ -17,6 +17,7 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
+import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.lang.QueryLanguageParser;
 import io.deephaven.engine.table.impl.util.ChunkUtils;
 import io.deephaven.engine.table.impl.util.codegen.CodeGenerator;
@@ -375,11 +376,6 @@ public class ConditionFilter extends AbstractConditionFilter {
                                 filterKernel.filter(context, currentChunkRowSequence.asRowKeyChunk(), inputChunks);
                         resultBuilder.appendOrderedRowKeysChunk(matchedIndices);
                     } catch (Exception e) {
-                        // Clean up the contexts before throwing the exception.
-                        SafeCloseable.closeAll(sourceContexts);
-                        if (sharedContext != null) {
-                            sharedContext.close();
-                        }
                         throw new FormulaEvaluationException(e.getClass().getName() + " encountered in filter={ "
                                 + StringEscapeUtils.escapeJava(truncateLongFormula(formula)) + " }", e);
                     }
@@ -760,7 +756,6 @@ public class ConditionFilter extends AbstractConditionFilter {
 
     @Override
     public boolean permitParallelization() {
-        // TODO (https://github.com/deephaven/deephaven-core/issues/4896): Assume statelessness by default.
-        return false;
+        return QueryTable.STATELESS_FILTERS_BY_DEFAULT;
     }
 }

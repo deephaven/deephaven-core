@@ -21,11 +21,18 @@ class ContainerBase;
 }  // namespace deephaven::dhcore::container
 
 namespace deephaven::dhcore {
+/**
+ * A static class (not instantiable) used to create a scope for
+ * the ElementTypeId::Enum
+ */
 class ElementTypeId {
 public:
   ElementTypeId() = delete;
 
-  // We don't use "enum class" here because we can't figure out how to get it to work right with Cython.
+  // TODO(kosak): switch to "enum class" if you can get it to work with Cython
+  /**
+   * The Deephaven server types that are known to the C++ client.
+   */
   enum Enum {
     kChar,
     kInt8, kInt16, kInt32, kInt64,
@@ -42,30 +49,82 @@ private:
   static const char *kHumanReadableConstants[kEnumSize];
 };
 
+
+/**
+ * Represents the element type of the column source. This data structure
+ * is able to represent any of the simple types, as well as lists and nested
+ * lists of the simple types. If 'list_depth_' == 0, this object represents
+ * a scalar element of type 'element_type_id_'.  If 'list_depth_' == 1, then
+ * this object represents a list of elements of type 'element_type_id_'.
+ * If 'list_depth_' == 2, then this object represents a list of lists
+ * of elements of type 'element_type_id_', and so on. Note that even though
+ * this object can represent multidimensional lists, the rest of the system
+ * currently only supports scalars and one-dimensional lists.
+ */
 class ElementType {
 public:
+  /**
+   * Create an ElementType representing the specified scalar type.
+   */
   static ElementType Of(ElementTypeId::Enum element_type_id) {
     return {0, element_type_id};
   }
 
+  /**
+   * Default Constructor.
+   */
   ElementType() = default;
 
+  /**
+   * Constructs an ElementType with the given list_depth and scalar type.
+   * See class documentation for the interpretation of list_depth.
+   */
   ElementType(uint32_t list_depth, ElementTypeId::Enum element_type_id) :
     list_depth_(list_depth), element_type_id_(element_type_id) {}
 
+  /**
+   * The list depth of this ElementType. Scalar types have a list depth of 0.
+   * One-dimensional list types (e.g. list<int>) have a list depth of 1.
+   * Higher-dimensional list types (e.g. list<list<int>>) have a list depth
+   * greater than 1.
+   * @return The list depth.
+   */
   [[nodiscard]]
   uint32_t ListDepth() const { return list_depth_; }
+  /**
+   * If this object represents a scalar, returns the scalar's type.
+   * Otherwise, if this object represents a list (of any dimension),
+   * returns the element type of the innermost list.
+   * @return The enumeration representing this scalar or the elemenet
+   * type of the innermost list.
+   */
   [[nodiscard]]
   ElementTypeId::Enum Id() const { return element_type_id_; }
 
+  /**
+   * Assuming this object represents the type T, returns a new object
+   * representing the type list<T>
+   * @return The wrapped type.
+   */
   [[nodiscard]]
   ElementType WrapList() const {
     return {list_depth_ + 1, element_type_id_};
   }
 
+  /**
+   * If this object represents the type list<T>, returns a new object
+   * representing the type T. If this object is not a list type, throws
+   * an exception.
+   * @return The unwrapped type.
+   */
   [[nodiscard]]
   ElementType UnwrapList() const;
 
+  /**
+   * Makes a string representation of this type object. For example
+   * "list<int32_t>"
+   * @return This object's string representation.
+   */
   [[nodiscard]]
   std::string ToString() const {
     return fmt::to_string(*this);
@@ -80,6 +139,10 @@ private:
         lhs.element_type_id_ == rhs.element_type_id_;
   }
 
+
+  /**
+   * Ostream operator.
+   */
   friend std::ostream &operator<<(std::ostream &s, const ElementType &o);
 };
 
@@ -346,6 +409,9 @@ struct DeephavenTraits<std::shared_ptr<deephaven::dhcore::container::ContainerBa
  */
 class DateTime {
 public:
+  /**
+   * Convenience using.
+   */
   using rep_t = int64_t;
 
   /**
@@ -431,12 +497,21 @@ public:
 private:
   int64_t nanos_ = 0;
 
+  /**
+   * Ostream operator.
+   */
   friend std::ostream &operator<<(std::ostream &s, const DateTime &o);
 
+  /**
+   * Equality operator.
+   */
   friend bool operator==(const DateTime &lhs, const DateTime &rhs) {
     return lhs.nanos_ == rhs.nanos_;
   }
 
+  /**
+   * Inequality operator.
+   */
   friend bool operator!=(const DateTime &lhs, const DateTime &rhs) {
     return !(lhs == rhs);
   }
@@ -450,6 +525,9 @@ private:
  */
 class LocalDate {
 public:
+  /**
+   * Convenience using.
+   */
   using rep_t = int64_t;
 
   /**
@@ -505,12 +583,21 @@ public:
 private:
   int64_t millis_ = 0;
 
+  /**
+   * Ostream operator.
+   */
   friend std::ostream &operator<<(std::ostream &s, const LocalDate &o);
 
+  /**
+   * Equality operator.
+   */
   friend bool operator==(const LocalDate &lhs, const LocalDate &rhs) {
     return lhs.millis_ == rhs.millis_;
   }
 
+  /**
+   * Inequality operator.
+   */
   friend bool operator!=(const LocalDate &lhs, const LocalDate &rhs) {
     return !(lhs == rhs);
   }
@@ -522,6 +609,9 @@ private:
  */
 class LocalTime {
 public:
+  /**
+   * Convenience using.
+   */
   using rep_t = int64_t;
 
   /**

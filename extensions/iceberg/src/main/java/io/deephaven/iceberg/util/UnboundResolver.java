@@ -21,7 +21,7 @@ import java.util.Map;
  */
 @Value.Immutable
 @BuildableStyle
-public abstract class UnboundResolver extends ResolverProviderImpl implements ResolverProvider {
+public abstract class UnboundResolver implements ResolverProvider {
 
     public static Builder builder() {
         return ImmutableUnboundResolver.builder();
@@ -58,8 +58,12 @@ public abstract class UnboundResolver extends ResolverProviderImpl implements Re
     }
 
     @Override
+    public final <T> T walk(Visitor<T> visitor) {
+        return visitor.visit(this);
+    }
+
     final Resolver resolver(Table table) {
-        final Schema schema = ((SchemaProviderInternal.SchemaProviderImpl) schema()).getSchema(table);
+        final Schema schema = SchemaProviderInternal.of(schema(), table);
         final Map<String, ColumnInstructions> columnInstructionsMap = columnInstructions();
         final Resolver.Builder builder = Resolver.builder()
                 .schema(schema)

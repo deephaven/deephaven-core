@@ -42,7 +42,7 @@ public class TestRegionedColumnSourceChar extends
     public void setUp() throws Exception {
         super.setUp();
 
-        SUT = new RegionedColumnSourceChar.AsValues();
+        SUT = new RegionedColumnSourceChar.AsValues(manager);
         assertEquals(char.class, SUT.getType());
     }
 

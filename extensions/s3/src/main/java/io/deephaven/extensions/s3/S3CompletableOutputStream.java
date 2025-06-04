@@ -7,35 +7,22 @@ import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.channel.CompletableOutputStream;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import software.amazon.awssdk.awscore.AwsRequest;
 import software.amazon.awssdk.core.async.AsyncRequestBody;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.S3Uri;
 import software.amazon.awssdk.services.s3.internal.multipart.SdkPojoConversionUtils;
-import software.amazon.awssdk.services.s3.model.AbortMultipartUploadRequest;
-import software.amazon.awssdk.services.s3.model.AbortMultipartUploadResponse;
-import software.amazon.awssdk.services.s3.model.CompleteMultipartUploadRequest;
-import software.amazon.awssdk.services.s3.model.CompletedMultipartUpload;
-import software.amazon.awssdk.services.s3.model.CompletedPart;
-import software.amazon.awssdk.services.s3.model.CreateMultipartUploadRequest;
-import software.amazon.awssdk.services.s3.model.CreateMultipartUploadResponse;
-import software.amazon.awssdk.services.s3.model.UploadPartRequest;
-import software.amazon.awssdk.services.s3.model.UploadPartResponse;
+import software.amazon.awssdk.services.s3.model.*;
 
 import java.io.IOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Objects;
-import java.util.concurrent.CancellationException;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Semaphore;
+import java.time.Duration;
+import java.util.*;
+import java.util.concurrent.*;
 
 import static io.deephaven.extensions.s3.S3ReadContext.handleS3Exception;
+import static io.deephaven.extensions.s3.S3Utils.addTimeout;
 
 class S3CompletableOutputStream extends CompletableOutputStream {
 
@@ -290,10 +277,10 @@ class S3CompletableOutputStream extends CompletableOutputStream {
     ////////// Helper methods and classes //////////
 
     private String initiateMultipartUpload() throws IOException {
-        final CreateMultipartUploadRequest createMultipartUploadRequest = CreateMultipartUploadRequest.builder()
+        final CreateMultipartUploadRequest.Builder builder = CreateMultipartUploadRequest.builder()
                 .bucket(uri.bucket().orElseThrow())
-                .key(uri.key().orElseThrow())
-                .build();
+                .key(uri.key().orElseThrow());
+        final CreateMultipartUploadRequest createMultipartUploadRequest = applyOverrideConfiguration(builder).build();
         // Note: We can add support for other parameters like tagging, storage class, encryption, permissions, etc. in
         // future
         final CompletableFuture<CreateMultipartUploadResponse> initiateUploadFuture =
@@ -306,6 +293,7 @@ class S3CompletableOutputStream extends CompletableOutputStream {
         try {
             response = initiateUploadFuture.get();
         } catch (final InterruptedException | ExecutionException | CancellationException e) {
+            initiateUploadFuture.cancel(true);
             throw handleS3Exception(e, String.format("initiating multipart upload for uri %s", uri), s3Instructions);
         }
         return response.uploadId();
@@ -334,12 +322,12 @@ class S3CompletableOutputStream extends CompletableOutputStream {
             return;
         }
 
-        final UploadPartRequest uploadPartRequest = UploadPartRequest.builder()
+        final UploadPartRequest.Builder builder = UploadPartRequest.builder()
                 .bucket(uri.bucket().orElseThrow())
                 .key(uri.key().orElseThrow())
                 .uploadId(uploadId)
-                .partNumber(nextPartNumber)
-                .build();
+                .partNumber(nextPartNumber);
+        final UploadPartRequest uploadPartRequest = applyOverrideConfiguration(builder).build();
 
         final int partNumber = nextPartNumber;
         final CompletableFuture<UploadPartResponse> uploadPartFuture = s3AsyncClient.uploadPart(uploadPartRequest,
@@ -449,17 +437,20 @@ class S3CompletableOutputStream extends CompletableOutputStream {
         // Sort the completed parts by part number, as required by S3
         completedParts.sort(Comparator.comparingInt(CompletedPart::partNumber));
 
-        final CompleteMultipartUploadRequest completeRequest = CompleteMultipartUploadRequest.builder()
+        final CompleteMultipartUploadRequest.Builder builder = CompleteMultipartUploadRequest.builder()
                 .bucket(uri.bucket().orElseThrow())
                 .key(uri.key().orElseThrow())
                 .uploadId(uploadId)
                 .multipartUpload(CompletedMultipartUpload.builder()
                         .parts(completedParts)
-                        .build())
-                .build();
+                        .build());
+        final CompleteMultipartUploadRequest completeRequest = applyOverrideConfiguration(builder).build();
+        final CompletableFuture<CompleteMultipartUploadResponse> uploadFuture =
+                s3AsyncClient.completeMultipartUpload(completeRequest);
         try {
-            s3AsyncClient.completeMultipartUpload(completeRequest).get();
+            uploadFuture.get();
         } catch (final InterruptedException | ExecutionException | CancellationException e) {
+            uploadFuture.cancel(true);
             final IOException ex = handleS3Exception(e,
                     String.format("completing multipart upload for uri %s", uri), s3Instructions);
             failAll(ex);
@@ -503,19 +494,32 @@ class S3CompletableOutputStream extends CompletableOutputStream {
         }
 
         // Initiate the abort request
-        final AbortMultipartUploadRequest abortRequest = AbortMultipartUploadRequest.builder()
+        final AbortMultipartUploadRequest.Builder builder = AbortMultipartUploadRequest.builder()
                 .bucket(uri.bucket().orElseThrow())
                 .key(uri.key().orElseThrow())
-                .uploadId(uploadId)
-                .build();
+                .uploadId(uploadId);
+        final AbortMultipartUploadRequest abortRequest = applyOverrideConfiguration(builder).build();
         final CompletableFuture<AbortMultipartUploadResponse> future = s3AsyncClient.abortMultipartUpload(abortRequest);
 
         // Wait for the abort to complete
         try {
             future.get();
         } catch (final InterruptedException | ExecutionException | CancellationException e) {
+            future.cancel(true);
             throw handleS3Exception(e,
                     String.format("aborting multipart upload for uri %s", uri), s3Instructions);
         }
+    }
+
+    /**
+     * Applies the write timeout, then generates a request for the given builder and request class.
+     *
+     * @param builder an instance of a {@link S3Request.Builder} class
+     * @return the builder
+     */
+    private <B extends AwsRequest.Builder> B applyOverrideConfiguration(@NotNull B builder) {
+        final Duration writeTimeout = s3Instructions.writeTimeout();
+        builder.overrideConfiguration(b -> addTimeout(b, writeTimeout));
+        return builder;
     }
 }

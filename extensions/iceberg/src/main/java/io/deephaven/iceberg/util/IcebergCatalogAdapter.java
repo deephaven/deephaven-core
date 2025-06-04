@@ -281,13 +281,8 @@ public class IcebergCatalogAdapter {
             // TODO(DH-19314): Add support for reading Iceberg metadata tables
             throw new IllegalArgumentException("Metadata tables are not currently supported");
         }
-        final Resolver resolver;
-        try {
-            resolver = ((ResolverProviderImpl) options.resolver()).resolver(table);
-        } catch (TypeInference.UnsupportedType e) {
-            throw new RuntimeException(e);
-        }
-        final NameMapping nameMapping = ((NameMappingProviderImpl) options.nameMapping()).create(table);
+        final Resolver resolver = ResolverProviderImpl.of(options.resolver(), table);
+        final NameMapping nameMapping = NameMappingProviderImpl.of(options.nameMapping(), table);
         return new IcebergTableAdapter(
                 catalog,
                 options.id(),
@@ -307,7 +302,7 @@ public class IcebergCatalogAdapter {
     /**
      * Create a new Iceberg table in this catalog with the given {@code tableIdentifier} and {@code definition}. The
      * resulting table's {@link Schema} will have {@link Types.NestedField fields} with the same name and order as
-     * {@code definition}. Their types will be inferred via {@link TypeInference#of(Type, TypeUtil.NextID)} . The
+     * {@code definition}. Their types will be inferred via {@link TypeInference#of(Type, Type.Visitor)} . The
      * {@link ColumnDefinition.ColumnType#Partitioning partitioning columns} will be used as
      * {@link Transforms#identity() identity transforms} for the {@link PartitionSpec}. Callers should take note of the
      * documentation on {@link Resolver#definition()} when deciding to create an Iceberg Table with partitioning
@@ -328,7 +323,7 @@ public class IcebergCatalogAdapter {
     /**
      * Create a new Iceberg table in this catalog with the given {@code tableIdentifier} and {@code definition}. The
      * resulting table's {@link Schema} will have {@link Types.NestedField fields} with the same name and order as
-     * {@code definition}. Their types will be inferred via {@link TypeInference#of(Type, TypeUtil.NextID)} . The
+     * {@code definition}. Their types will be inferred via {@link TypeInference#of(Type, Type.Visitor)} . The
      * {@link ColumnDefinition.ColumnType#Partitioning partitioning columns} will be used as
      * {@link Transforms#identity() identity transforms} for the {@link PartitionSpec}. Callers should take note of the
      * documentation on {@link Resolver#definition()} when deciding to create an Iceberg Table with partitioning

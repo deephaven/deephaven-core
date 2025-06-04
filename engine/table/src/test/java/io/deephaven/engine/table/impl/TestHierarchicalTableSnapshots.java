@@ -23,6 +23,7 @@ import io.deephaven.engine.table.impl.sources.ByteAsBooleanColumnSource;
 import io.deephaven.engine.table.impl.sources.LongAsInstantColumnSource;
 import io.deephaven.engine.table.impl.sources.chunkcolumnsource.ChunkColumnSource;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
+import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.test.types.OutOfBandTest;
@@ -259,6 +260,143 @@ public class TestHierarchicalTableSnapshots {
 
         freeSnapshotTableChunks(snapshot);
         freeSnapshotTableChunks(snapshotSort);
+    }
+
+    @Test
+    public void testMissingKey() {
+        final QueryTable source = TstUtils.testRefreshingTable(intCol("Key1", 1), intCol("Key2", 10),
+                intCol("SortColumn", 0), intCol("Sentinel", 100));
+
+        final Table expect1 = TableTools.newTable(
+                intCol("__DEPTH__", 1, 2),
+                booleanCol("__EXPANDED__", true, false),
+                intCol("Key1", NULL_INT, 1),
+                intCol("Key2", NULL_INT, NULL_INT),
+                intCol("Sentinel", 100, 100),
+                intCol("SortColumn", 0, 0));
+
+        TableTools.show(source);
+        final RollupTable rollupTable =
+                source.rollup(List.of(Aggregation.of(AggSpec.last(), "Sentinel", "SortColumn")), "Key1", "Key2");
+        final RollupTable sortedRollup = rollupTable.withNodeOperations(
+                rollupTable.makeNodeOperationsRecorder(RollupTable.NodeType.Aggregated).sortDescending("SortColumn"));
+
+        final Table emptyExpansions = sortedRollup.getEmptyExpansionsTable();
+        TableTools.show(emptyExpansions);
+
+        final SnapshotState ss = sortedRollup.makeSnapshotState();
+        final Table snapshot1 =
+                snapshotToTable(sortedRollup, ss, emptyExpansions, null, null, RowSetFactory.flat(30));
+        TableTools.showWithRowSet(snapshot1);
+        assertTableEquals(expect1, snapshot1);
+
+        final Table expand1 = TableTools.merge(emptyExpansions, TableTools.newTable(
+                intCol(sortedRollup.getRowDepthColumn().name(), 2), intCol("Key1", 1), intCol("Key2", NULL_INT)));
+
+        final Table snapshot2 =
+                snapshotToTable(sortedRollup, ss, expand1, null, null, RowSetFactory.flat(30));
+        TableTools.showWithRowSet(snapshot2);
+
+        final Table expect2 = TableTools.newTable(
+                intCol("__DEPTH__", 1, 2, 3),
+                booleanCol("__EXPANDED__", true, true, null),
+                intCol("Key1", NULL_INT, 1, 1),
+                intCol("Key2", NULL_INT, NULL_INT, 10),
+                intCol("Sentinel", 100, 100, 100),
+                intCol("SortColumn", 0, 0, 0));
+        assertTableEquals(expect2, snapshot2);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            TstUtils.addToTable(source, i(0), intCol("Key1", 2), intCol("Key2", 10), intCol("SortColumn", 0),
+                    intCol("Sentinel", 100));
+            source.notifyListeners(new TableUpdateImpl(i(), i(), i(0), RowSetShiftData.EMPTY, ModifiedColumnSet.ALL));
+        });
+
+        TableTools.show(source);
+
+        final Table snapshot3 =
+                snapshotToTable(sortedRollup, ss, expand1, null, null, RowSetFactory.flat(30));
+        TableTools.showWithRowSet(snapshot3);
+        final Table expect3 = TableTools.newTable(
+                intCol("__DEPTH__", 1, 2),
+                booleanCol("__EXPANDED__", true, false),
+                intCol("Key1", NULL_INT, 2),
+                intCol("Key2", NULL_INT, NULL_INT),
+                intCol("Sentinel", 100, 100),
+                intCol("SortColumn", 0, 0));
+        assertTableEquals(expect3, snapshot3);
+
+        freeSnapshotTableChunks(snapshot1);
+        freeSnapshotTableChunks(snapshot2);
+        freeSnapshotTableChunks(snapshot3);
+    }
+
+    @Test
+    public void testMissingKeyTree() {
+        final QueryTable source = TstUtils.testRefreshingTable(intCol("ID", 1, 2, 3), intCol("Parent", NULL_INT, 1, 2),
+                intCol("SortColumn", 0, 0, 0), intCol("Sentinel", 100, 200, 300));
+
+        TableTools.show(source);
+        final TreeTable treeTable = source.tree("ID", "Parent");
+        final TreeTable sortedTree =
+                treeTable.withNodeOperations(treeTable.makeNodeOperationsRecorder().sortDescending("SortColumn"));
+
+        final Table emptyExpansions = sortedTree.getEmptyExpansionsTable();
+        TableTools.show(emptyExpansions);
+
+        final SnapshotState ss = sortedTree.makeSnapshotState();
+        final Table snapshot1 =
+                snapshotToTable(sortedTree, ss, emptyExpansions, null, null, RowSetFactory.flat(30));
+        TableTools.showWithRowSet(snapshot1);
+        final Table expect1 = TableTools.newTable(
+                intCol("__DEPTH__", 1),
+                booleanCol("__EXPANDED__", false),
+                intCol("ID", 1),
+                intCol("Parent", NULL_INT),
+                intCol("SortColumn", 0),
+                intCol("Sentinel", 100));
+        assertTableEquals(expect1, snapshot1);
+
+        final Table expand1 = TableTools.newTable(intCol("ID", 1));
+
+        final Table snapshot2 =
+                snapshotToTable(sortedTree, ss, expand1, null, null, RowSetFactory.flat(30));
+        TableTools.showWithRowSet(snapshot2);
+        final Table expect2 = TableTools.newTable(
+                intCol("__DEPTH__", 1, 2),
+                booleanCol("__EXPANDED__", true, false),
+                intCol("ID", 1, 2),
+                intCol("Parent", NULL_INT, 1),
+                intCol("SortColumn", 0, 0),
+                intCol("Sentinel", 100, 200));
+        assertTableEquals(expect2, snapshot2);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            TstUtils.addToTable(source, i(0), intCol("ID", 4), intCol("Parent", NULL_INT), intCol("SortColumn", 0),
+                    intCol("Sentinel", 400));
+            source.notifyListeners(new TableUpdateImpl(i(), i(), i(0), RowSetShiftData.EMPTY, ModifiedColumnSet.ALL));
+        });
+
+        TableTools.show(source);
+
+        final Table snapshot3 =
+                snapshotToTable(sortedTree, ss, expand1, null, null, RowSetFactory.flat(30));
+        TableTools.showWithRowSet(snapshot3);
+
+        final Table expect3 = TableTools.newTable(
+                intCol("__DEPTH__", 1),
+                booleanCol("__EXPANDED__", new Boolean[] {null}),
+                intCol("ID", 4),
+                intCol("Parent", NULL_INT),
+                intCol("SortColumn", 0),
+                intCol("Sentinel", 400));
+        assertTableEquals(expect3, snapshot3);
+
+        freeSnapshotTableChunks(snapshot1);
+        freeSnapshotTableChunks(snapshot2);
+        freeSnapshotTableChunks(snapshot3);
     }
 
     @Test
