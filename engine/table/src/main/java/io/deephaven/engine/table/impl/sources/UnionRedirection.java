@@ -197,7 +197,7 @@ public class UnionRedirection {
 
     private static int slotForRowKey(final long rowKey, int firstSlot,
             @NotNull final long[] firstRowKeyForSlot, final int numSlots) {
-        if (rowKey >= firstRowKeyForSlot[firstSlot]) {
+        if (firstSlot < numSlots && rowKey >= firstRowKeyForSlot[firstSlot]) {
             if (rowKey < firstRowKeyForSlot[firstSlot + 1]) {
                 return firstSlot;
             }
