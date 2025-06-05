@@ -112,10 +112,11 @@ public class JettyBackedGrpcServer implements GrpcServer {
             Require.neqNull(resource, "newResource(" + url + ")");
             return resource;
         }).toList());
+
         context.setBaseResource(ControlledCacheResource.wrap(resources));
         context.setInitParameter(DefaultServlet.CONTEXT_INIT + "dirAllowed", "false");
-        // Always add etags
-        context.setInitParameter("org.eclipse.jetty.servlet.Default.etags", "true");
+
+        ETagResourceHandler eTagResourceHandler = new ETagResourceHandler(context.getBaseResource(), context);
 
         // Cache all of the appropriate assets folders
         for (String appRoot : List.of("/ide/", "/iframe/table/", "/iframe/chart/", "/iframe/widget/")) {
@@ -222,7 +223,7 @@ public class JettyBackedGrpcServer implements GrpcServer {
                 InternalStatus.MESSAGE_KEY.name(),
                 // Not used (yet?), see io.grpc.protobuf.StatusProto
                 "grpc-status-details-bin"));
-        corsHandler.setHandler(context);
+        corsHandler.setHandler(eTagResourceHandler);
 
         // Optionally wrap the webapp in a gzip handler
         final Handler handler;
