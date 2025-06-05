@@ -20,8 +20,8 @@ import io.deephaven.iceberg.internal.DataInstructionsProviderLoader;
 import io.deephaven.parquet.table.CompletedParquetWrite;
 import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.ParquetTools;
-import io.deephaven.iceberg.util.SchemaProviderInternal.SchemaProviderImpl;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.channel.SeekableChannelsProvider;
 import org.apache.iceberg.AppendFiles;
 import org.apache.iceberg.DataFile;
 import org.apache.iceberg.DataFiles;
@@ -131,6 +131,11 @@ public class IcebergTableWriter {
     private final Object specialInstructions;
 
     /**
+     * The provider for creating channels to write data.
+     */
+    private final SeekableChannelsProvider channelsProvider;
+
+    /**
      * Characters to be used for generating random variable names of length {@link #VARIABLE_NAME_LENGTH}.
      */
     private static final String CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
@@ -158,7 +163,7 @@ public class IcebergTableWriter {
         verifyRequiredFields(table.schema(), tableDefinition);
         verifyPartitioningColumns(tableSpec, tableDefinition);
 
-        this.userSchema = ((SchemaProviderImpl) tableWriterOptions.schemaProvider()).getSchema(table);
+        this.userSchema = SchemaProviderInternal.of(tableWriterOptions.schemaProvider(), table);
         verifyFieldIdsInSchema(tableWriterOptions.fieldIdToColumnName().keySet(), userSchema);
 
         // Create a copy of the fieldIdToColumnName map since we might need to add new entries for columns which are not
@@ -179,7 +184,7 @@ public class IcebergTableWriter {
         final String uriScheme = tableAdapter.locationUri().getScheme();
         this.specialInstructions = tableWriterOptions.dataInstructions()
                 .orElseGet(() -> dataInstructionsProvider.load(uriScheme));
-
+        this.channelsProvider = tableAdapter.seekableChannelsProvider(specialInstructions);
     }
 
     private static TableParquetWriterOptions verifyWriterOptions(
@@ -585,7 +590,7 @@ public class IcebergTableWriter {
         final List<CompletedParquetWrite> parquetFilesWritten = new ArrayList<>(dhTables.size());
         final ParquetInstructions.OnWriteCompleted onWriteCompleted = parquetFilesWritten::add;
         final ParquetInstructions parquetInstructions = tableWriterOptions.toParquetInstructions(
-                onWriteCompleted, tableDefinition, fieldIdToColumnName, specialInstructions);
+                onWriteCompleted, tableDefinition, fieldIdToColumnName, specialInstructions, channelsProvider);
 
         // Write the data to parquet files
         final int numTables = dhTables.size();

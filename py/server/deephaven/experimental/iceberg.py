@@ -15,6 +15,7 @@ from deephaven.table import Table, TableDefinition, TableDefinitionLike
 
 from deephaven.jcompat import j_hashmap
 
+_JBuildCatalogOptions = jpy.get_type("io.deephaven.iceberg.util.BuildCatalogOptions")
 _JIcebergUpdateMode = jpy.get_type("io.deephaven.iceberg.util.IcebergUpdateMode")
 _JIcebergReadInstructions = jpy.get_type("io.deephaven.iceberg.util.IcebergReadInstructions")
 _JIcebergWriteInstructions = jpy.get_type("io.deephaven.iceberg.util.IcebergWriteInstructions")
@@ -827,6 +828,8 @@ def adapter_s3_rest(
         end_point_override: Optional[str] = None
 ) -> IcebergCatalogAdapter:
     """
+    DEPRECATED: Use `adapter()` instead.
+
     Create a catalog adapter using an S3-compatible provider and a REST catalog.
 
     Args:
@@ -875,6 +878,8 @@ def adapter_aws_glue(
         name: Optional[str] = None
 ) -> IcebergCatalogAdapter:
     """
+    DEPRECATED: Use `adapter()` instead.
+
     Create a catalog adapter using an AWS Glue catalog.
 
     Args:
@@ -907,7 +912,8 @@ def adapter(
         name: Optional[str] = None,
         properties: Optional[Dict[str, str]] = None,
         hadoop_config: Optional[Dict[str, str]] = None,
-        s3_instructions: Optional[s3.S3Instructions] = None
+        s3_instructions: Optional[s3.S3Instructions] = None,
+        enable_property_injection: Optional[bool] = True,
 ) -> IcebergCatalogAdapter:
     """
     Create an Iceberg catalog adapter from configuration properties. These properties map to the Iceberg catalog Java
@@ -976,15 +982,32 @@ def adapter(
     Args:
         name (Optional[str]): a descriptive name of the catalog; if omitted the catalog name is inferred from the
             catalog URI property.
-        properties (Optional[Dict[str, str]]): the properties of the catalog to load
-        hadoop_config (Optional[Dict[str, str]]): hadoop configuration properties for the catalog to load
-        s3_instructions (Optional[s3.S3Instructions]): the S3 instructions if applicable
+        properties (Optional[Dict[str, str]]): the properties of the catalog to load. By default, no properties are set.
+        hadoop_config (Optional[Dict[str, str]]): hadoop configuration properties for the catalog to load. By default,
+            no properties are set.
+        s3_instructions (Optional[s3.S3Instructions]): the S3 instructions to use for configuring the Deephaven managed
+            AWS clients. If not provided, the catalog will internally use the Iceberg-managed AWS clients configured
+            using the provided `properties`.
+        enable_property_injection (bool): whether to enable Deephaven’s automatic injection of additional properties
+            that work around upstream issues and supply defaults needed for Deephaven’s Iceberg usage. The injection is
+            strictly additive—any keys already present in `properties` are left unchanged. When set to `False` (not
+            recommended), the property map is forwarded exactly as supplied, with no automatic additions. Defaults to
+            `True`.
+
     Returns:
     `IcebergCatalogAdapter`: the catalog adapter created from the provided properties
 
     Raises:
         DHError: If unable to build the catalog adapter
     """
+
+    catalog_options = _build_catalog_options(
+        name=name,
+        properties=properties,
+        hadoop_config=hadoop_config,
+        enable_property_injection=enable_property_injection,
+    )
+
     if s3_instructions:
         if not _JIcebergToolsS3:
             raise DHError(
@@ -993,9 +1016,7 @@ def adapter(
         try:
             return IcebergCatalogAdapter(
                 _JIcebergToolsS3.createAdapter(
-                    name,
-                    j_hashmap(properties if properties else {}),
-                    j_hashmap(hadoop_config if hadoop_config else {}),
+                    catalog_options,
                     s3_instructions.j_object,
                 )
             )
@@ -1005,10 +1026,30 @@ def adapter(
     try:
         return IcebergCatalogAdapter(
             _JIcebergTools.createAdapter(
-                name,
-                j_hashmap(properties if properties else {}),
-                j_hashmap(hadoop_config if hadoop_config else {}),
+                catalog_options
             )
         )
     except Exception as e:
         raise DHError(e, "Failed to build Iceberg Catalog Adapter") from e
+
+
+def _build_catalog_options(
+        name: Optional[str] = None,
+        properties: Optional[Dict[str, str]] = None,
+        hadoop_config: Optional[Dict[str, str]] = None,
+        enable_property_injection: bool = True
+) -> jpy.JType:
+    try:
+        builder = _JBuildCatalogOptions.builder()
+
+        if name:
+            builder.name(name)
+
+        builder.putAllProperties(j_hashmap(properties if properties else {}))
+        builder.putAllHadoopConfig(j_hashmap(hadoop_config  if hadoop_config else {}))
+        builder.enablePropertyInjection(enable_property_injection)
+
+        return builder.build()
+
+    except Exception as e:
+        raise DHError(e, "Failed to build catalog options") from e

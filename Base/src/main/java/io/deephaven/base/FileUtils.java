@@ -12,6 +12,8 @@ import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.regex.Pattern;
 
@@ -122,9 +124,9 @@ public class FileUtils {
     /**
      * Recursive delete method that copes with .nfs files. Uses the file's parent as the trash directory.
      *
-     * @param file
+     * @param file File or directory at which to begin recursive deletion.
      */
-    public static void deleteRecursivelyOnNFS(File file) {
+    public static void deleteRecursivelyOnNFS(final File file) {
         deleteRecursivelyOnNFS(new File(file.getParentFile(), '.' + file.getName() + ".trash"), file);
     }
 
@@ -136,25 +138,43 @@ public class FileUtils {
      * @param fileToBeDeleted File or directory at which to begin recursive deletion.
      */
     public static void deleteRecursivelyOnNFS(final File trashFile, final File fileToBeDeleted) {
-        if (fileToBeDeleted.isDirectory()) {
-            File contents[] = fileToBeDeleted.listFiles();
+        final Path pathToBeDeleted = fileToBeDeleted.toPath();
+        final BasicFileAttributes attr;
+        try {
+            // `NOFOLLOW_LINKS` lets us treat soft-links as basic files. We will delete the link, but not the link's
+            // target (unless it also happens to be in the path we are recursively deleting ...)
+            attr = Files.readAttributes(pathToBeDeleted, BasicFileAttributes.class, LinkOption.NOFOLLOW_LINKS);
+        } catch (IOException e) {
+            return;
+        }
+
+        if (attr.isDirectory()) {
+            final File[] contents = fileToBeDeleted.listFiles();
             if (contents != null) {
                 for (File childFile : contents) {
                     deleteRecursivelyOnNFS(trashFile, childFile);
                 }
             }
-            if (!fileToBeDeleted.delete()) {
-                throw new RuntimeException(
-                        "Failed to delete expected empty directory " + fileToBeDeleted.getAbsolutePath());
+            try {
+                Files.delete(pathToBeDeleted);
+            } catch (final IOException ioe) {
+                throw new UncheckedIOException(
+                        "Failed to delete expected empty directory " + fileToBeDeleted.getAbsolutePath(), ioe);
             }
-        } else if (fileToBeDeleted.exists()) {
-            if (!fileToBeDeleted.renameTo(trashFile)) {
-                throw new RuntimeException("Failed to move file " + fileToBeDeleted.getAbsolutePath()
-                        + " to temporary location " + trashFile.getAbsolutePath());
+        } else {
+            // if the file does not exist, we would have gotten IOException, which we caught and returned
+            try {
+                Files.move(pathToBeDeleted, trashFile.toPath(), StandardCopyOption.ATOMIC_MOVE);
+            } catch (final IOException ioe) {
+                throw new UncheckedIOException("Failed to move file " + fileToBeDeleted.getAbsolutePath()
+                        + " to temporary location " + trashFile.getAbsolutePath(), ioe);
             }
-            if (!trashFile.delete()) {
-                throw new RuntimeException("Failed to delete temporary location " + trashFile.getAbsolutePath()
-                        + " for file " + fileToBeDeleted.getAbsolutePath());
+
+            try {
+                Files.delete(trashFile.toPath());
+            } catch (final IOException ioe) {
+                throw new UncheckedIOException("Failed to delete temporary location " + trashFile.getAbsolutePath()
+                        + " for file " + fileToBeDeleted.getAbsolutePath(), ioe);
             }
         }
     }

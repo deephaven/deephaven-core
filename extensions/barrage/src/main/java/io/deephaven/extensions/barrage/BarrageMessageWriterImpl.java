@@ -234,7 +234,7 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
         return getSubView(options, isInitialSnapshot, true, null, false, null, null, null);
     }
 
-    private final class SubView implements RecordBatchMessageView {
+    protected class SubView implements RecordBatchMessageView {
         private final BarrageSubscriptionOptions options;
         private final boolean isInitialSnapshot;
         private final boolean isFullSubscription;
@@ -251,7 +251,7 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
         private final WritableRowSet[] clientModdedRowOffsets;
         private final WritableRowSet clientRemovedRows;
 
-        public SubView(final BarrageSubscriptionOptions options,
+        protected SubView(final BarrageSubscriptionOptions options,
                 final boolean isInitialSnapshot,
                 final boolean isFullSubscription,
                 @Nullable final RowSet viewport,
@@ -422,7 +422,14 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
             return clientModdedRowOffsets[col];
         }
 
-        private ByteBuffer getSubscriptionMetadata() throws IOException {
+        /**
+         * Generate the metadata for this subscription. For a standard subscription, this is a flatbuffer representing a
+         * {@link BarrageMessageWrapper} containing a payload of {@link BarrageUpdateMetadata}.
+         *
+         * @return a ByteBuffer representing the metadata for this subscription
+         * @throws IOException if the metadata could not be serialized
+         */
+        protected ByteBuffer getSubscriptionMetadata() throws IOException {
             final FlatBufferBuilder metadata = new FlatBufferBuilder();
 
             int effectiveViewportOffset = 0;
@@ -1166,6 +1173,11 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
         @Override
         public void close() {
             original.close();
+        }
+
+        @Override
+        public int addToFlatBuffer(final FlatBufferBuilder builder) throws IOException {
+            return super.addToFlatBuffer(builder);
         }
 
         protected void ensureComputed() throws IOException {

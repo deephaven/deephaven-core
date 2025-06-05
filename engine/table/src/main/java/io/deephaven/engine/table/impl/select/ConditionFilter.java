@@ -375,11 +375,6 @@ public class ConditionFilter extends AbstractConditionFilter {
                                 filterKernel.filter(context, currentChunkRowSequence.asRowKeyChunk(), inputChunks);
                         resultBuilder.appendOrderedRowKeysChunk(matchedIndices);
                     } catch (Exception e) {
-                        // Clean up the contexts before throwing the exception.
-                        SafeCloseable.closeAll(sourceContexts);
-                        if (sharedContext != null) {
-                            sharedContext.close();
-                        }
                         throw new FormulaEvaluationException(e.getClass().getName() + " encountered in filter={ "
                                 + StringEscapeUtils.escapeJava(truncateLongFormula(formula)) + " }", e);
                     }
