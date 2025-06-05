@@ -17,6 +17,7 @@ import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseableArray;
+import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 
@@ -452,33 +453,47 @@ abstract class AbstractFilterExecution {
 
         // Create stateless filter objects for the filters in this collection.
         final StatelessFilter[] statelessFilters = new StatelessFilter[filters.size()];
-        for (int ii = 0; ii < filters.size(); ii++) {
-            final WhereFilter filter = filters.get(ii);
-            final PushdownFilterMatcher executor;
-            if (filter.getColumns().size() > 1) {
-                executor = PushdownPredicateManager.getSharedPPM(filter.getColumns().stream()
-                        .map(sourceTable::getColumnSource)
-                        .collect(Collectors.toList()));
-            } else if (filter.getColumns().size() == 1) {
-                final ColumnSource<?> columnSource =
-                        sourceTable.getColumnSource(filter.getColumns().get(0));
-                executor = (columnSource instanceof AbstractColumnSource)
-                        ? (AbstractColumnSource<?>) columnSource
-                        : null;
-            } else {
-                executor = null;
+        final MutableBoolean filtersReady = new MutableBoolean(false);
+        try (final SafeCloseable ignored = () -> {
+            if (!filtersReady.booleanValue()) {
+                SafeCloseableArray.close(statelessFilters);
             }
-            final List<ColumnSource<?>> filterSources = filter.getColumns().stream()
-                    .map(sourceTable::getColumnSource)
-                    .collect(Collectors.toList());
-            final PushdownFilterContext context = executor != null
-                    ? executor.makePushdownFilterContext(filter, filterSources)
-                    : null;
-            statelessFilters[ii] = new StatelessFilter(ii, filter, executor, context);
-        }
+        }) {
+            for (int ii = 0; ii < filters.size(); ii++) {
+                final WhereFilter filter = filters.get(ii);
 
-        // Sort the filters by cost, with the lowest cost first.
-        maybeUpdateAndSortStatelessFilters(statelessFilters, 0, localInput.getValue());
+                final PushdownFilterMatcher executor;
+                if (filter.getColumns().size() > 1) {
+                    executor = PushdownPredicateManager.getSharedPPM(filter.getColumns().stream()
+                            .map(sourceTable::getColumnSource)
+                            .collect(Collectors.toList()));
+                } else if (filter.getColumns().size() == 1) {
+                    final ColumnSource<?> columnSource =
+                            sourceTable.getColumnSource(filter.getColumns().get(0));
+                    executor = (columnSource instanceof AbstractColumnSource)
+                            ? (AbstractColumnSource<?>) columnSource
+                            : null;
+                } else {
+                    executor = null;
+                }
+                final List<ColumnSource<?>> filterSources = filter.getColumns().stream()
+                        .map(sourceTable::getColumnSource)
+                        .collect(Collectors.toList());
+                final PushdownFilterContext context = executor != null
+                        ? executor.makePushdownFilterContext(filter, filterSources)
+                        : null;
+                statelessFilters[ii] = new StatelessFilter(ii, filter, executor, context);
+            }
+
+            // Sort the filters by cost, with the lowest cost first.
+            maybeUpdateAndSortStatelessFilters(statelessFilters, 0, localInput.getValue());
+
+            // The job scheduler will close the stateless filters when it is done.
+            filtersReady.setTrue();
+        } catch (final Exception ex) {
+            collectionNec.accept(ex);
+            return;
+        }
 
         // Iterate serially through the stateless filters in this set. Each filter will successively
         // restrict the input to the next filter, until we reach the end of the filter chain or no rows match.
@@ -498,7 +513,10 @@ abstract class AbstractFilterExecution {
                     // Clean up the stateless filter objects.
                     SafeCloseableArray.close(statelessFilters);
                     collectionResume.run();
-                }, collectionNec);
+                }, ex -> {
+                    SafeCloseableArray.close(statelessFilters);
+                    collectionNec.accept(ex);
+                });
     }
 
     /**

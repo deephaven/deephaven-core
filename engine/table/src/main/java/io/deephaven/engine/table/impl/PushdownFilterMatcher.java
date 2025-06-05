@@ -15,7 +15,7 @@ import java.util.function.Consumer;
 /**
  * Interface for entities that support pushdown filtering. Must implement a filter cost estimation function that allows
  * comparison of filter pushdown execution costs. These costs determine the order in which filters are executed.
- * <p/>
+ * <p>
  * NOTE: There may be multiple pushdown filter operations available for a single filter and the pushdown cost is dynamic
  * based on the input rowset and on previously executed pushdown filter steps. For example, parquet table locations may
  * leverage low cost metadata operations (row group min/max) as a first step, followed by an index table operation or a

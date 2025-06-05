@@ -434,9 +434,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
             final RowSet fullSet,
             final boolean usePrev,
             final PushdownFilterContext context) {
-        final RegionedColumnSourceManager.RegionedColumnSourcePushdownFilterContext ctx =
-                (RegionedColumnSourceManager.RegionedColumnSourcePushdownFilterContext) context;
-
+        initialize();
         final long executedFilterCost = context.executedFilterCost();
 
         // Some range filter host a condition filter as the internal filter and we can't push that down.
@@ -450,10 +448,16 @@ public class ParquetTableLocation extends AbstractTableLocation {
             return PushdownResult.METADATA_STATS_COST;
         }
 
-        final String[] parquetColumnNames = filter.getColumns().stream()
-                .map(name -> ctx.renameMap.getOrDefault(name, name))
-                .map(readInstructions::getParquetColumnNameFromColumnNameOrDefault)
-                .toArray(String[]::new);
+        final List<String> columnNames = filter.getColumns();
+        final String[] parquetColumnNames = new String[columnNames.size()];
+        int idx = 0;
+        for (final String columnName : columnNames) {
+            final String parquetColumnNameOrDefault =
+                    readInstructions.getParquetColumnNameFromColumnNameOrDefault(columnName);
+            final List<String> pathInSchema = getColumnPath(columnName, parquetColumnNameOrDefault);
+            parquetColumnNames[idx] = pathInSchema.get(0);
+            idx++;
+        }
 
         // Do we have a data indexes for the column(s)?
         if (shouldExecute(QueryTable.DISABLE_WHERE_PUSHDOWN_DATA_INDEX,
@@ -482,7 +486,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
             final JobScheduler jobScheduler,
             final Consumer<PushdownResult> onComplete,
             final Consumer<Exception> onError) {
-
+        initialize();
         final RegionedColumnSourceManager.RegionedColumnSourcePushdownFilterContext ctx =
                 (RegionedColumnSourceManager.RegionedColumnSourcePushdownFilterContext) context;
 
@@ -493,13 +497,27 @@ public class ParquetTableLocation extends AbstractTableLocation {
                 filter instanceof RangeFilter && ((RangeFilter) filter).getRealFilter() instanceof AbstractRangeFilter;
         final boolean isMatchFilter = filter instanceof MatchFilter;
 
-        final String[] parquetColumnNames = filter.getColumns().stream()
-                .map(name -> ctx.renameMap.getOrDefault(name, name))
-                .map(readInstructions::getParquetColumnNameFromColumnNameOrDefault)
-                .toArray(String[]::new);
-        final int[] parquetIndices = Arrays.stream(parquetColumnNames)
-                .mapToInt(name -> parquetMetadata.getFileMetaData().getSchema().getFieldIndex(name))
-                .toArray();
+        final List<String> columnNames = filter.getColumns();
+        final String[] parquetColumnNames = new String[columnNames.size()];
+        final int[] parquetIndices = new int[columnNames.size()];
+        int idx = 0;
+        for (final String columnName : columnNames) {
+            final String parquetColumnNameOrDefault =
+                    readInstructions.getParquetColumnNameFromColumnNameOrDefault(columnName);
+            final List<String> pathInSchema = getColumnPath(columnName, parquetColumnNameOrDefault);
+            final String parquetColumnName = pathInSchema.get(0);
+            final int parquetIndex;
+            try {
+                parquetIndex = parquetMetadata.getFileMetaData().getSchema().getFieldIndex(parquetColumnName);
+            } catch (final Exception e) {
+                onError.accept(new TableDataException(String.format("Failed to find field index for column '%s' in " +
+                        "Parquet schema for table %s", columnName, getParquetKey().getURI()), e));
+                return;
+            }
+            parquetColumnNames[idx] = pathInSchema.get(0);
+            parquetIndices[idx] = parquetIndex;
+            idx++;
+        }
 
         // Initialize the pushdown result with the selection rowset as "maybe" rows
         PushdownResult result = PushdownResult.of(RowSetFactory.empty(), selection.copy());
@@ -519,6 +537,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
             }
         }
 
+        // If not prohibited by the cost ceiling, continue to refine the pushdown results.
         if (shouldExecute(QueryTable.DISABLE_WHERE_PUSHDOWN_DATA_INDEX,
                 PushdownResult.IN_MEMORY_DATA_INDEX_COST, executedFilterCost, costCeiling)) {
             final BasicDataIndex dataIndex =

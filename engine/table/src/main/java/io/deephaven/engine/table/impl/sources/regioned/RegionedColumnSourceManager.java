@@ -786,13 +786,12 @@ public class RegionedColumnSourceManager
             final RowSet fullSet,
             final boolean usePrev,
             final PushdownFilterContext context) {
-
-        if (includedLocations().isEmpty()) {
+        final Collection<TableLocation> locations = includedLocations();
+        if (locations.isEmpty()) {
             return 0; // No locations, no cost
         }
 
         // Test a few locations and assume the rest are similar (or no worse)
-        final Collection<TableLocation> locations = includedLocations();
         final long locationCost;
 
         final Collection<TableLocation> candidateLocations;
@@ -914,7 +913,7 @@ public class RegionedColumnSourceManager
                 final RegionedColumnSourceManager manager,
                 final WhereFilter filter,
                 final List<ColumnSource<?>> columnSources) {
-            this.columnSources = columnSources;
+            this.columnSources = List.copyOf(columnSources);
 
             final List<String> filterColumns = filter.getColumns();
             Require.eq(filterColumns.size(), "filterColumns.size()",
@@ -949,7 +948,6 @@ public class RegionedColumnSourceManager
 
         @Override
         public void close() {
-            columnSources.clear();
             columnDefinitions.clear();
             renameMap.clear();
             super.close();
