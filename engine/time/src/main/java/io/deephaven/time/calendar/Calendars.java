@@ -9,6 +9,7 @@ import io.deephaven.base.verify.RequirementFailure;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
+import io.deephaven.util.annotations.UserInvocationPermitted;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.*;
@@ -21,6 +22,7 @@ import java.util.TreeMap;
 /**
  * A collection of business calendars.
  */
+@UserInvocationPermitted(sets = "function_library")
 public class Calendars {
 
     private static final Logger logger = LoggerFactory.getLogger(Calendars.class);

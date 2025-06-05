@@ -150,6 +150,11 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
 
     private final HashSet<String> variablesUsed = new HashSet<>();
 
+    /**
+     * The set of methods called by this formula, to be used for validation.
+     */
+    private final FormulaMethodInvocations formulaMethodInvocations = new FormulaMethodInvocations();
+
     private final Map<String, Class<?>> nameLookupCache = new HashMap<>();
 
     private final Map<String, Class<?>> staticImportLookupCache = new HashMap<>();
@@ -366,7 +371,8 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             }
 
             result = new Result(type, printer.builder.toString(), variablesUsed, this.queryScopeVariables,
-                    isConstantValueExpression, formulaShiftColPair, timeConversionResult);
+                    isConstantValueExpression, formulaShiftColPair, timeConversionResult,
+                    formulaMethodInvocations);
         } catch (Throwable e) {
             // need to catch it and make a new one because it contains unserializable variables...
             final StringBuilder exceptionMessageBuilder = new StringBuilder(1024)
@@ -2369,6 +2375,8 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         n.setArguments(NodeList.nodeList(convertedArgExpressions));
 
         if (isPotentialImplicitCall(methodName, method.getDeclaringClass())) {
+            // TODO: figure out how to handle this better
+            formulaMethodInvocations.setUsedImplicitCall();
             if (scopeType == null) { // python func call or Groovy closure call
                 /*
                  * @formatter:off
@@ -2476,6 +2484,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             }
         } else { // Groovy or Java method call (or explicit python call)
             printer.append(scopePrinter);
+            formulaMethodInvocations.add(method);
 
             // Print method type arguments, if specified.
             // (The parser ignores these, but they must be printed so that the printer output matches the printed AST.)
@@ -2849,6 +2858,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         final Class<?>[][] typeArguments = getTypeArguments(expressions);
 
         final Constructor<?> constructor = getConstructor(ret, expressionTypes, typeArguments);
+        formulaMethodInvocations.add(constructor);
 
         final Class<?>[] argumentTypes = constructor.getParameterTypes();
 
@@ -3247,15 +3257,17 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         private final boolean isConstantValueExpression;
         private final Pair<String, Map<Long, List<MatchPair>>> formulaShiftColPair;
         private final TimeLiteralReplacedExpression timeConversionResult;
+        private final FormulaMethodInvocations formulaMethodInvocations;
 
         Result(
-                Class<?> type,
-                String source,
-                HashSet<String> variablesUsed,
-                Map<String, Object> possibleParams,
-                boolean isConstantValueExpression,
-                Pair<String, Map<Long, List<MatchPair>>> formulaShiftColPair,
-                TimeLiteralReplacedExpression timeConversionResult) {
+                final Class<?> type,
+                final String source,
+                final HashSet<String> variablesUsed,
+                final Map<String, Object> possibleParams,
+                final boolean isConstantValueExpression,
+                final Pair<String, Map<Long, List<MatchPair>>> formulaShiftColPair,
+                final TimeLiteralReplacedExpression timeConversionResult,
+                final FormulaMethodInvocations formulaMethodInvocations) {
             this.type = Objects.requireNonNull(type, "type");
             this.source = source;
             this.variablesUsed = variablesUsed;
@@ -3263,6 +3275,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             this.isConstantValueExpression = isConstantValueExpression;
             this.formulaShiftColPair = formulaShiftColPair;
             this.timeConversionResult = timeConversionResult;
+            this.formulaMethodInvocations = formulaMethodInvocations;
         }
 
         public Class<?> getType() {
@@ -3291,6 +3304,10 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
 
         public TimeLiteralReplacedExpression getTimeConversionResult() {
             return timeConversionResult;
+        }
+
+        public FormulaMethodInvocations formulaMethodInvocations() {
+            return formulaMethodInvocations;
         }
     }
 

@@ -63,6 +63,7 @@ import io.deephaven.server.session.SessionServiceGrpcImpl;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.server.session.TicketResolver;
 import io.deephaven.server.table.TableModule;
+import io.deephaven.server.table.validation.ExpressionValidatorModule;
 import io.deephaven.server.test.TestAuthModule;
 import io.deephaven.server.test.TestAuthorizationProvider;
 import io.deephaven.server.util.Scheduler;
@@ -205,6 +206,7 @@ public class BarrageChunkFactoryTest {
             JettyServerModule.class,
             JettyTestConfig.class,
             ExchangeMarshallerModule.class,
+            ExpressionValidatorModule.class,
     })
     public interface JettyTestComponent extends TestComponent {
     }

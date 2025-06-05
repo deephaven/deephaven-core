@@ -3,6 +3,8 @@
 //
 package io.deephaven.function;
 
+import io.deephaven.util.annotations.UserInvocationPermitted;
+
 import static io.deephaven.util.QueryConstants.*;
 import static io.deephaven.function.Basic.isNull;
 
@@ -10,6 +12,7 @@ import static io.deephaven.function.Basic.isNull;
  * Functions for parsing strings to primitive values.
  */
 @SuppressWarnings("WeakerAccess")
+@UserInvocationPermitted(sets = "function_library")
 public class Parse {
 
     // byte

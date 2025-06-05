@@ -16,6 +16,7 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
+import io.deephaven.engine.table.impl.lang.FormulaMethodInvocations;
 import io.deephaven.engine.table.impl.lang.QueryLanguageParser;
 import io.deephaven.engine.table.impl.select.codegen.FormulaAnalyzer;
 import io.deephaven.engine.table.impl.select.codegen.JavaKernelBuilder;
@@ -69,6 +70,11 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
     }
 
     private FormulaColumnPython formulaColumnPython;
+
+    /**
+     * For validation, we need to hold onto the methods and constructors that were used.
+     */
+    private FormulaMethodInvocations formulaMethodInvocations;
 
     /**
      * Create a formula column for the given formula string.
@@ -184,6 +190,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
             analyzedFormula = FormulaAnalyzer.analyze(formulaString, columnDefinitionMap, result);
             hasConstantValue = result.isConstantValueExpression();
             formulaShiftColPair = result.getFormulaShiftColPair();
+            formulaMethodInvocations = result.formulaMethodInvocations();
 
             log.debug().append("Expression (after language conversion) : ").append(analyzedFormula.cookedFormulaString)
                     .endl();
@@ -873,4 +880,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
                 && usedColumnArrays.stream().allMatch(this::isUsedColumnStateless);
     }
 
+    public FormulaMethodInvocations getFormulaMethodInvocations() {
+        return formulaMethodInvocations;
+    }
 }

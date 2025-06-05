@@ -36,12 +36,14 @@ import java.lang.Long;
 import java.lang.Short;
 import java.lang.String;
 import java.util.Comparator;
+import io.deephaven.util.annotations.UserInvocationPermitted;
 
 /**
  * Functions statically imported into Groovy.
  *
  * @see io.deephaven.function
  */
+@UserInvocationPermitted(sets = "function_library")
 public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#IEEEremainder(double,double) */
     public static  double IEEEremainder( double x, double y ) {return Numeric.IEEEremainder( x, y );}
