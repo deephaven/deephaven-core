@@ -5,7 +5,6 @@ package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.api.expression.Expression;
 import io.deephaven.api.filter.Filter;
-import io.deephaven.api.filter.FilterIsNull;
 import io.deephaven.engine.context.QueryCompiler;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
@@ -347,11 +346,42 @@ public interface WhereFilter extends Filter {
         throw new UnsupportedOperationException("WhereFilters do not implement walk");
     }
 
+    @FinalDefault
+    default <T> T walk(Visitor<T> visitor) {
+        return visitor.visit(this);
+    }
+
     // endregion Filter impl
 
+    // rather than allowing for customization on every type of filter, we focus on structured and attribute filters
     interface Visitor<T> {
+        default T visit(WhereFilter filter) {
+            if (filter instanceof WhereFilterInvertedImpl) {
+                return visit((WhereFilterInvertedImpl) filter);
+            } else if (filter instanceof WhereFilterSerialImpl) {
+                return visit((WhereFilterSerialImpl) filter);
+            } else if (filter instanceof WhereFilterBarrierImpl) {
+                return visit((WhereFilterBarrierImpl) filter);
+            } else if (filter instanceof WhereFilterRespectsBarrierImpl) {
+                return visit((WhereFilterRespectsBarrierImpl) filter);
+            } else if (filter instanceof DisjunctiveFilter) {
+                return visit((DisjunctiveFilter) filter);
+            } else if (filter instanceof ConjunctiveFilter) {
+                return visit((ConjunctiveFilter) filter);
+            }
+            return null;
+        }
 
-        T visit(FilterIsNull isNull);
+        T visit(WhereFilterInvertedImpl filter);
 
+        T visit(WhereFilterSerialImpl filter);
+
+        T visit(WhereFilterBarrierImpl filter);
+
+        T visit(WhereFilterRespectsBarrierImpl filter);
+
+        T visit(DisjunctiveFilter filter);
+
+        T visit(ConjunctiveFilter filter);
     }
 }

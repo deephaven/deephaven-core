@@ -28,6 +28,10 @@ public class WhereFilterBarrierImpl extends WhereFilterDelegatingBase {
         this.barrier = barrier;
     }
 
+    public Object barrier() {
+        return barrier;
+    }
+
     public WhereFilter copy() {
         return new WhereFilterBarrierImpl(filter.copy(), barrier);
     }

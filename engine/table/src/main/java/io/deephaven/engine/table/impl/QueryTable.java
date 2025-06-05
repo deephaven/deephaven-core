@@ -31,6 +31,8 @@ import io.deephaven.engine.table.hierarchical.RollupTable;
 import io.deephaven.engine.table.hierarchical.TreeTable;
 import io.deephaven.engine.table.impl.MemoizedOperationKey.SelectUpdateViewOrUpdateView.Flavor;
 import io.deephaven.engine.table.impl.by.*;
+import io.deephaven.engine.table.impl.filter.ExtractBarriers;
+import io.deephaven.engine.table.impl.filter.ExtractRespectedBarriers;
 import io.deephaven.engine.table.impl.hierarchical.RollupTableImpl;
 import io.deephaven.engine.table.impl.hierarchical.TreeTableImpl;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
@@ -1275,7 +1277,7 @@ public class QueryTable extends BaseTable<QueryTable> {
 
             // Add barriers declared by this filter; filters may appear to depend on themselves when examined in
             // aggregate.
-            final Collection<Object> newBarriers = Filter.extractBarriers(filter);
+            final Collection<Object> newBarriers = ExtractBarriers.of(filter);
             final Optional<Object> dupBarrier = newBarriers.stream().filter(knownBarriers::contains).findFirst();
             if (dupBarrier.isPresent()) {
                 throw new IllegalArgumentException("Filter Barriers must be unique! Found duplicate: " +
@@ -1283,7 +1285,7 @@ public class QueryTable extends BaseTable<QueryTable> {
             }
             knownBarriers.addAll(newBarriers);
 
-            for (final Object respectedBarrier : Filter.extractRespectedBarriers(filter)) {
+            for (final Object respectedBarrier : ExtractRespectedBarriers.of(filter)) {
                 if (!knownBarriers.contains(respectedBarrier)) {
                     throw new IllegalArgumentException("Filter " + filter + " respects barrier " + respectedBarrier +
                             " that is not declared by any filter so far.");
@@ -1302,7 +1304,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                 break;
             }
 
-            if (!priorityBarriers.containsAll(Filter.extractRespectedBarriers(filter))) {
+            if (!priorityBarriers.containsAll(ExtractRespectedBarriers.of(filter))) {
                 // this filter is not permitted to be reordered as it depends on a filter that has not been prioritized
                 continue;
             }
@@ -1314,7 +1316,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                     && DataIndexer.hasDataIndex(this, filter.getColumns().toArray(String[]::new))) {
                 priorityFilterIndexes.set(fi);
 
-                final Collection<Object> newBarriers = Filter.extractBarriers(filter);
+                final Collection<Object> newBarriers = ExtractBarriers.of(filter);
                 final Optional<Object> dupBarrier =
                         priorityBarriers.stream().filter(newBarriers::contains).findFirst();
                 if (dupBarrier.isPresent()) {

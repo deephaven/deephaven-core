@@ -22,15 +22,17 @@ public interface ConcurrencyControl<T> {
     /**
      * Applies serial concurrency control to the expression.
      * <p>
-     * The serial filter is guaranteed to filter exactly the set of rows that passed any prior filters, without
-     * evaluating additional rows or skipping rows that future filters may eliminate. Take care when selecting a serial
-     * filter, as subsequent filters cannot apply optimizations like predicate push down.</li>
+     * The serial wrapped filter/selectable is guaranteed to process exactly the set of rows as if any prior
+     * filters/selectables were applied, but it will do so in a serial manner. If this is a filter, then the expression
+     * will not evaluate additional rows or skip rows that future filters may eliminate. Take care when selecting
+     * marking filters/selectables as serial, as the operation will not be able to take advantage of powerful
+     * optimizations.
      * <p>
      * <ul>
      * <li>Concurrency impact: The expression will never be invoked concurrently with itself.</li>
      * <li>Intra-expression ordering impact: Rows are evaluated sequentially in row set order.</li>
-     * <li>Inter-expression ordering impact: Acts as an absolute reordering barrier, ensuring that no parts of a where
-     * clause are executed out of order relative to this serial filter.</li>
+     * <li>Inter-expression ordering impact: Acts as an absolute reordering barrier, ensuring that no parts of a
+     * where/selectable clause are executed out of order relative to this serial wrapper.</li>
      * </ul>
      *
      * @return a new instance of T with serial concurrency control applied.
@@ -38,13 +40,14 @@ public interface ConcurrencyControl<T> {
     T withSerial();
 
     /**
-     * Designates the expression as a barrier filter with the specified barrier name.
+     * Designates the filter/selectable as a barrier with the specified barrier object.
      * <p>
-     * A barrier filter does not affect concurrency but imposes an ordering constraint on filters that respect the same
-     * barrier. Filters specified before the barrier will be evaluated before it, and those specified after will be
-     * evaluated after it.
+     * A barrier does not affect concurrency but imposes an ordering constraint for the filter/selectable that respect
+     * the same barrier. When a filter/selectable is marked as respecting this barrier, it indicates that the respecting
+     * filter/selectable will be executed entirely after this barrier wrapped filter/selectable.
      * <p>
-     * Each barrier must be unique and declared by at most one filter.
+     * Each barrier must be unique and declared by at most one filter. Object {@link Object#equals(Object) equals} and
+     * {@link Object#hashCode()} hashCode will be used to determine uniqueness and identification of barriers.
      *
      * @param barrier the unique identifier for the barrier
      * @return a new instance of T with the barrier applied
@@ -52,11 +55,17 @@ public interface ConcurrencyControl<T> {
     T withBarrier(Object barrier);
 
     /**
-     * Specifies that the expression should respect the ordering constraints of a barrier with the given name.
+     * Specifies that the filter/selectable should respect the ordering constraints of the given barriers.
      * <p>
-     * The expression will be executed in an order consistent with the barrier defined by the specified name. Filters
-     * that define a barrier (using {@link #withBarrier(Object)}) will be executed either entirely before or entirely
-     * after filters that respect that barrier.
+     * Filters that define a barrier (using {@link #withBarrier(Object)}) will be executed entirely before
+     * filters/selectables that respect that barrier.
+     * <p>
+     * It is an error to respect a barrier that has not already been defined per the natural left to right ordering of
+     * filters/selectables at the operation level. This is to minimize the risk of user error as the API is loosely
+     * typed.
+     * <p>
+     * Object {@link Object#equals(Object) equals} and {@link Object#hashCode()} hashCode will be used to identify which
+     * barriers are respected.
      *
      * @param barrier the unique identifiers for all barriers to respect.
      * @return a new instance of T with the barrier ordering applied.

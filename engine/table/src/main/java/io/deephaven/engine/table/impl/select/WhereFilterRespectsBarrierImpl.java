@@ -30,6 +30,10 @@ public class WhereFilterRespectsBarrierImpl extends WhereFilterDelegatingBase {
         this.respectedBarriers = respectedBarriers;
     }
 
+    public Object[] respectedBarriers() {
+        return respectedBarriers;
+    }
+
     public WhereFilter copy() {
         return new WhereFilterRespectsBarrierImpl(filter.copy(), respectedBarriers);
     }

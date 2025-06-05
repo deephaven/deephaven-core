@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Stream;
 
-abstract class WhereFilterDelegatingBase
+public abstract class WhereFilterDelegatingBase
         extends WhereFilterLivenessArtifactImpl
         implements DependencyStreamProvider {
 
@@ -41,6 +41,10 @@ abstract class WhereFilterDelegatingBase
             return ((DependencyStreamProvider) filter).getDependencyStream();
         }
         return Stream.empty();
+    }
+
+    public WhereFilter getWrappedFilter() {
+        return filter;
     }
 
     @Override

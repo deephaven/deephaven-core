@@ -14,6 +14,8 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.ModifiedColumnSet;
+import io.deephaven.engine.table.impl.filter.ExtractBarriers;
+import io.deephaven.engine.table.impl.filter.ExtractRespectedBarriers;
 import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.util.JobScheduler;
@@ -258,8 +260,8 @@ abstract class AbstractFilterExecution {
             this.renameMap = renameMap;
             this.pushdownMatcher = pushdownMatcher;
             this.context = context;
-            this.declaredBarriers = Filter.extractBarriers(filter);
-            this.respectedBarriers = Filter.extractRespectedBarriers(filter).stream()
+            this.declaredBarriers = ExtractBarriers.of(filter);
+            this.respectedBarriers = ExtractRespectedBarriers.of(filter).stream()
                     .map(barrier -> {
                         final Collection<Object> dependencies = barrierDependencies.get(barrier);
                         if (dependencies == null) {
@@ -284,11 +286,11 @@ abstract class AbstractFilterExecution {
 
         @Override
         public int compareTo(@NotNull StatelessFilter o) {
-            // Does other filter depends on this filter?
+            // Does other filter respect a barrier that exists on this filter?
             if (declaredBarriers.stream().anyMatch(o.respectedBarriers::contains)) {
                 return -1;
             }
-            // Does this filter depends on other filter?
+            // Does this filter respect a barrier that exists on the other filter?
             if (o.declaredBarriers.stream().anyMatch(respectedBarriers::contains)) {
                 return 1;
             }

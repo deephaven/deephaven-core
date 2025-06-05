@@ -8,6 +8,8 @@ import io.deephaven.api.filter.Filter;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.liveness.Liveness;
 import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.filter.ExtractBarriers;
+import io.deephaven.engine.table.impl.filter.ExtractRespectedBarriers;
 import io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer;
 import io.deephaven.engine.table.impl.select.MatchFilter;
 import io.deephaven.engine.liveness.LivenessArtifact;
@@ -201,7 +203,7 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
                     .anyMatch(postViewColumns::contains);
 
             final boolean hasPostViewBarrier =
-                    Filter.extractRespectedBarriers(filter).stream().anyMatch(postViewBarriers::contains);
+                    ExtractRespectedBarriers.of(filter).stream().anyMatch(postViewBarriers::contains);
             if (isPostView || serialFilterFound || hasPostViewBarrier) {
                 // if this filter is serial, all subsequent filters must be postViewFilters
                 if (!filter.permitParallelization()) {
@@ -218,31 +220,77 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
 
             if (myRenames.isEmpty()) {
                 preViewFilters.add(filter);
-            } else if (filter instanceof MatchFilter) {
-                final MatchFilter matchFilter = (MatchFilter) filter;
-                Assert.assertion(myRenames.size() == 1, "Match Filters should only use one column!");
-                final WhereFilter newFilter = matchFilter.renameFilter(myRenames);
-                newFilter.init(tableReference.getDefinition(), compilationProcessor);
-                preViewFilters.add(newFilter);
-            } else if (filter instanceof ConditionFilter) {
-                final ConditionFilter conditionFilter = (ConditionFilter) filter;
-                final ConditionFilter newFilter = conditionFilter.renameFilter(myRenames);
-                newFilter.init(tableReference.getDefinition(), compilationProcessor);
-                preViewFilters.add(newFilter);
             } else {
-                // if this filter is serial, all subsequent filters must be postViewFilters
-                if (!filter.permitParallelization()) {
-                    serialFilterFound = true;
-                }
+                final WhereFilter preFilter = filter.walk(new WhereFilter.Visitor<WhereFilter>() {
+                    @Override
+                    public WhereFilter visit(WhereFilter filter) {
+                        if (filter instanceof MatchFilter) {
+                            final MatchFilter matchFilter = (MatchFilter) filter;
+                            Assert.assertion(myRenames.size() == 1, "Match Filters should only use one column!");
+                            return matchFilter.renameFilter(myRenames);
+                        } else if (filter instanceof ConditionFilter) {
+                            return ((ConditionFilter) filter).renameFilter(myRenames);
+                        }
+                        return WhereFilter.Visitor.super.visit(filter);
+                    }
 
-                final Collection<Object> newBarriers = Filter.extractBarriers(filter);
-                final Optional<Object> dupBarrier = newBarriers.stream().filter(postViewBarriers::contains).findFirst();
-                if (dupBarrier.isPresent()) {
-                    throw new IllegalArgumentException("Filter Barriers must be unique! Found duplicate: " +
-                            dupBarrier.get());
+                    @Override
+                    public WhereFilter visit(WhereFilterInvertedImpl filter) {
+                        return null;
+                    }
+
+                    @Override
+                    public WhereFilter visit(WhereFilterSerialImpl filter) {
+                        return null;
+                    }
+
+                    @Override
+                    public WhereFilter visit(WhereFilterBarrierImpl filter) {
+                        final WhereFilter innerPreFilter = visit(filter.getWrappedFilter());
+                        return innerPreFilter == null
+                                ? null
+                                : WhereFilterBarrierImpl.of(innerPreFilter, filter.barrier());
+                    }
+
+                    @Override
+                    public WhereFilter visit(WhereFilterRespectsBarrierImpl filter) {
+                        final WhereFilter innerPreFilter = visit(filter.getWrappedFilter());
+                        return innerPreFilter == null
+                                ? null
+                                : WhereFilterRespectsBarrierImpl.of(innerPreFilter, filter.respectedBarriers());
+                    }
+
+                    @Override
+                    public WhereFilter visit(DisjunctiveFilter filter) {
+                        return null;
+                    }
+
+                    @Override
+                    public WhereFilter visit(ConjunctiveFilter filter) {
+                        return null;
+                    }
+                });
+
+                if (preFilter != null) {
+                    preFilter.init(tableReference.getDefinition(), compilationProcessor);
+                    preViewFilters.add(preFilter);
+                } else {
+                    // if this filter is serial, all subsequent filters must be postViewFilters
+                    if (!filter.permitParallelization()) {
+                        serialFilterFound = true;
+                    }
+
+                    final Collection<Object> newBarriers = ExtractBarriers.of(filter);
+                    final Optional<Object> dupBarrier = newBarriers.stream()
+                            .filter(postViewBarriers::contains)
+                            .findFirst();
+                    if (dupBarrier.isPresent()) {
+                        throw new IllegalArgumentException("Filter Barriers must be unique! Found duplicate: " +
+                                dupBarrier.get());
+                    }
+                    postViewBarriers.addAll(newBarriers);
+                    postViewFilters.add(filter);
                 }
-                postViewBarriers.addAll(newBarriers);
-                postViewFilters.add(filter);
             }
         }
         compilationProcessor.compile();

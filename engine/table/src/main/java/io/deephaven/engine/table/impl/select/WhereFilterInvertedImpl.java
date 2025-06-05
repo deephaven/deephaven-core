@@ -9,7 +9,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.util.annotations.VisibleForTesting;
 import org.jetbrains.annotations.NotNull;
 
-class WhereFilterInvertedImpl extends WhereFilterDelegatingBase {
+public class WhereFilterInvertedImpl extends WhereFilterDelegatingBase {
 
     static WhereFilter of(WhereFilter filter) {
         return new WhereFilterInvertedImpl(filter);
