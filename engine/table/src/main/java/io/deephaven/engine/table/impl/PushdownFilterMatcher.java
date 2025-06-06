@@ -48,6 +48,16 @@ public interface PushdownFilterMatcher {
      * to execute all pushdown filter steps that are greater than {@link PushdownFilterContext#executedFilterCost()} and
      * less than or equal to {@code costCeiling}.
      *
+     * <p>
+     * The resulting {@link PushdownResult} (from {@code onComplete}) must only contain rows from {@code selection}. The
+     * {@link PushdownResult#match() match row set} are rows that are guaranteed to match. The implicitly "missing" rows
+     * {@code selection - match - maybeMatch} are rows that are guaranteed to <b>not</b> match. The remaining
+     * {@link PushdownResult#maybeMatch() maybe match row set} are rows that may, or may not, match.
+     *
+     * <p>
+     * A no-op implementation should simply return {@code PushdownResult.maybeMatch(selection.copy())}. Note that any
+     * references to {@code selection} should be {@link RowSet#copy() copied}.
+     *
      * @param filter The {@link Filter filter} to apply.
      * @param renameMap Map of filter column names to underlying column names.
      * @param selection The set of rows to test.

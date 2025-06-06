@@ -3,13 +3,20 @@
 //
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetBuilderSequential;
+import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.util.SafeCloseable;
+
+import java.util.Collection;
+import java.util.Objects;
+import java.util.stream.Stream;
 
 /**
  * Records the results of a push-down predicate filter operation.
  */
-public class PushdownResult implements SafeCloseable {
+public final class PushdownResult implements SafeCloseable {
     /**
      * Costs for various types of push-down operations.
      */
@@ -29,25 +36,126 @@ public class PushdownResult implements SafeCloseable {
      */
     private final WritableRowSet maybeMatch;
 
-    private PushdownResult(
-            final WritableRowSet match,
-            final WritableRowSet maybeMatch) {
-        this.match = match;
-        this.maybeMatch = maybeMatch;
+    /**
+     * Constructs a new result with an {@link RowSetFactory#empty() empty} {@link #match() match} and {@code selection}
+     * for the {@link #maybeMatch() maybe match}.
+     *
+     * <p>
+     * Equivalent to {@code ofFast(RowSetFactory.empty(), selection)}.
+     *
+     * @param selection the selection
+     * @return the result
+     */
+    public static PushdownResult maybeMatch(final WritableRowSet selection) {
+        return ofFast(RowSetFactory.empty(), selection);
     }
 
+    /**
+     * Constructs a new result with the exact the {@code selection} as {@link #match() match} and an
+     * {@link RowSetFactory#empty() empty} {@link #maybeMatch() maybe match}.
+     *
+     * <p>
+     * Equivalent to {@code ofFast(selection, RowSetFactory.empty())}.
+     *
+     * @param selection the selection
+     * @return the result
+     */
+    public static PushdownResult match(final WritableRowSet selection) {
+        return ofFast(selection, RowSetFactory.empty());
+    }
+
+    /**
+     * Constructs a new result with {@code match} and {@code maybeMatch}, which are checked to not
+     * {@link RowSet#overlaps(RowSet) overlap}. Callers that are careful in their construction may prefer to call
+     * {@link #ofFast(WritableRowSet, WritableRowSet)}.
+     *
+     * @param match rows that match
+     * @param maybeMatch rows that might match
+     * @return the result
+     */
     public static PushdownResult of(
             final WritableRowSet match,
             final WritableRowSet maybeMatch) {
+        if (match.overlaps(maybeMatch)) {
+            throw new IllegalArgumentException("match and maybeMatch should be non-overlapping row sets");
+        }
+        return ofFast(match, maybeMatch);
+    }
+
+    /**
+     * Constructs a new result with {@code match} and {@code maybeMatch}, which must not {@link RowSet#overlaps(RowSet)
+     * overlap}. This does <b>not</b> check if the row sets overlap.
+     *
+     * @param match rows that match
+     * @param maybeMatch rows that might match
+     * @return the result
+     */
+    public static PushdownResult ofFast(WritableRowSet match, WritableRowSet maybeMatch) {
         return new PushdownResult(match, maybeMatch);
     }
 
+    /**
+     * Constructs a new combined {@link PushdownResult} from the sequentially ordered {@code results}. The whole of the
+     * {@link PushdownResult#match() matches} must not {@link RowSet#overlaps(RowSet) overlap} with the whole of the
+     * {@link PushdownResult#maybeMatch() maybe matches}. This does <b>not</b> check if the row sets overlap.
+     *
+     * <p>
+     * This relies on {@link RowSetFactory#buildSequential(Stream)} when considering the stream of
+     * {@link PushdownResult#match() matches} and {@link PushdownResult#maybeMatch() maybe matches}.
+     *
+     * @param results the individual results
+     * @return the new results
+     */
+    public static PushdownResult buildSequentialFast(final Collection<PushdownResult> results) {
+        return PushdownResult.ofFast(
+                RowSetFactory.buildSequential(results.stream().map(PushdownResult::match)),
+                RowSetFactory.buildSequential(results.stream().map(PushdownResult::maybeMatch)));
+    }
+
+    private PushdownResult(
+            final WritableRowSet match,
+            final WritableRowSet maybeMatch) {
+        this.match = Objects.requireNonNull(match);
+        this.maybeMatch = Objects.requireNonNull(maybeMatch);
+    }
+
+    /**
+     * Rows that are known to match. Does not have any {@link RowSet#overlaps(RowSet) overlap} with {@link #maybeMatch()
+     * maybeMatch rows}.
+     */
     public WritableRowSet match() {
         return match;
     }
 
+    /**
+     * Rows that may match. Does not have any {@link RowSet#overlaps(RowSet) overlap} with {@link #match() match rows}.
+     */
     public WritableRowSet maybeMatch() {
         return maybeMatch;
+    }
+
+    /**
+     * A finished result is one in which there are no {@link #maybeMatch() maybeMatch rows}.
+     *
+     * <p>
+     * Equivalent to {@code maybeMatch().isEmpty()}.
+     *
+     * @return if the result is finished
+     */
+    public boolean isFinished() {
+        return maybeMatch.isEmpty();
+    }
+
+    /**
+     * Creates a copy of {@code this}.
+     *
+     * <p>
+     * Equivalent to {@code of(match().copy(), maybeMatch().copy())}.
+     *
+     * @return the copy
+     */
+    public PushdownResult copy() {
+        return ofFast(match.copy(), maybeMatch.copy());
     }
 
     @Override
