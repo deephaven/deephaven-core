@@ -92,20 +92,34 @@ public interface WritableChunk<ATTR extends Any> extends Chunk<ATTR>, PoolableCh
     int internalCapacity(long password);
 
     /**
-     * Sort this chunk in-place using Java's primitive defined ordering.
-     * <p>
-     * Of note is that nulls or NaNs are not sorted according to Deephaven ordering rules.
+     * Sort this chunk using Deephaven-defined ordering; that is, nulls first (and NaNs last for floating-point types).
+     * The one exception is -0.0 and 0.0 for floating-point types; where the Deephaven-defined ordering treats these as
+     * equal, this sort will treat {@code -0.0 < 0.0}.
      */
     void sort();
 
     /**
-     * Sort this chunk in-place using Java's primitive defined ordering.
-     * <p>
-     * Of note is that nulls or NaNs are not sorted according to Deephaven ordering rules.
+     * Sort this chunk's subset using Deephaven-defined ordering; that is, nulls first (and NaNs last for floating-point
+     * types). The one exception is -0.0 and 0.0 for floating-point types; where the Deephaven-defined ordering treats
+     * these as equal, this sort will treat {@code -0.0 < 0.0}.
      */
-    default void sort(int start, int length) {
-        throw new UnsupportedOperationException();
-    }
+    void sort(int start, int length);
+
+    /**
+     * Sort this chunk using Arrays-defined ordering. This is equivalent to Deephaven-defined ordering (with a
+     * floating-point exception for {@code -0.0 < 0.0}) when ignoring nulls. Callers should only use this when they know
+     * the array does not contain nulls, or when the caller plans to explicitly exclude nulls after sorting, or when the
+     * caller does not actually care about the sorting order (for example, is using sort as a means of grouping data).
+     */
+    void sortUnsafe();
+
+    /**
+     * Sort this chunk's subset using Arrays-defined ordering. This is equivalent to Deephaven-defined ordering (with a
+     * floating-point exception for {@code -0.0 < 0.0}) when ignoring nulls. Callers should only use this when they know
+     * the array does not contain nulls, or when the caller plans to explicitly exclude nulls after sorting, or when the
+     * caller does not actually care about the sorting order (for example, is using sort as a means of grouping data).
+     */
+    void sortUnsafe(int start, int length);
 
     default WritableByteChunk<ATTR> asWritableByteChunk() {
         return (WritableByteChunk<ATTR>) this;
