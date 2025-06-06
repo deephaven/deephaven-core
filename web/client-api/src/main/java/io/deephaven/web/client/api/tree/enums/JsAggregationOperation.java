@@ -4,6 +4,7 @@
 package io.deephaven.web.client.api.tree.enums;
 
 import com.vertispan.tsdefs.annotations.TsTypeDef;
+import com.vertispan.tsdefs.annotations.TsTypeRef;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsType;
 
@@ -93,8 +94,8 @@ public class JsAggregationOperation {
      */
     public static final String SKIP = "Skip";
 
-    @JsIgnore
-    public static boolean canAggregateType(String aggregationType, String columnType) {
+    public static boolean canAggregateType(@TsTypeRef(JsAggregationOperation.class) String aggregationType,
+            String columnType) {
         switch (aggregationType) {
             case COUNT:
             case COUNT_DISTINCT:
