@@ -27,6 +27,7 @@ import io.deephaven.engine.table.impl.select.WhereFilterSerialImpl;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -151,14 +152,18 @@ public enum ExtractRespectedBarriers
     @Override
     public Collection<Object> visit(DisjunctiveFilter filter) {
         return filter.getFilters().stream()
-                .flatMap(innerFilter -> visit(innerFilter).stream())
+                .map(this::visit)
+                .filter(Objects::nonNull)
+                .flatMap(Collection::stream)
                 .collect(Collectors.toSet());
     }
 
     @Override
     public Collection<Object> visit(ConjunctiveFilter filter) {
         return filter.getFilters().stream()
-                .flatMap(innerFilter -> visit(innerFilter).stream())
+                .map(this::visit)
+                .filter(Objects::nonNull)
+                .flatMap(Collection::stream)
                 .collect(Collectors.toSet());
     }
 }
