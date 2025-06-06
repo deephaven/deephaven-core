@@ -140,12 +140,16 @@ public class JettyBackedGrpcServer implements GrpcServer {
 
         // Create a custom HttpContent.Factory that can generate strong ETags for js-plugins resource
         Resource jsPluginsResource = context.getResourceFactory().newResource(jsPlugins.filesystem());
-        ETagResourceHandler jsPluginsETagResourceHandler = new ETagResourceHandler(jsPluginsResource, context);
-        jsPluginsETagResourceHandler.setStyleSheet(jetty.getDefaultStyleSheet());
-        jsPluginsETagResourceHandler.setMimeTypes(context.getMimeTypes());
-        HttpContent.Factory jsPluginsETagContentFactory = jsPluginsETagResourceHandler.newHttpContentFactory();
+        HttpContent.Factory jsPluginsETagContentFactory = ETagResourceHttpContentFactory.create(
+                jsPluginsResource,
+                jetty.getByteBufferPool(),
+                jetty.getMimeTypes(),
+                jetty.getDefaultStyleSheet(),
+                new ArrayList<>(),
+                true
+        );
 
-        // The DefaultServlet and ResourceServlet both check for this attribute before internally creating a
+        // The DefaultServlet and ResourceServlet both check for this attribute. If found, this gets used as the
         // HttpContent.Factory.
         context.setAttribute(HttpContent.Factory.class.getName(), jsPluginsETagContentFactory);
 

@@ -3,8 +3,15 @@
 //
 package io.deephaven.server.jetty;
 
+import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.http.content.*;
+import org.eclipse.jetty.http.content.HttpContent;
+import org.eclipse.jetty.http.content.FileMappingHttpContentFactory;
+import org.eclipse.jetty.http.content.PreCompressedHttpContentFactory;
+import org.eclipse.jetty.http.content.ResourceHttpContentFactory;
+import org.eclipse.jetty.http.content.VirtualHttpContentFactory;
+import org.eclipse.jetty.http.content.ValidatingCachingHttpContentFactory;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.resource.MountedPathResource;
 import org.eclipse.jetty.util.resource.Resource;
 
@@ -13,6 +20,7 @@ import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
+import java.util.List;
 
 public class ETagResourceHttpContentFactory extends ResourceHttpContentFactory {
     private final Resource baseResource;
@@ -24,8 +32,6 @@ public class ETagResourceHttpContentFactory extends ResourceHttpContentFactory {
 
     @Override
     public HttpContent getContent(String pathInContext) throws IOException {
-//        System.out.println("[TESTING] baseResource: " + baseResource.getPath());
-//        pathInContext = pathInContext.replace("/js-plugins", "");
         String containerPath = "";
 
         if (baseResource instanceof MountedPathResource) {
@@ -55,7 +61,6 @@ public class ETagResourceHttpContentFactory extends ResourceHttpContentFactory {
         return new HttpContent.Wrapper(content) {
             @Override
             public String getETagValue() {
-                System.out.println("[TESTING] Returning ETag: " + fullPath + ": " + etag);
                 return etag;
             }
         };
@@ -75,5 +80,37 @@ public class ETagResourceHttpContentFactory extends ResourceHttpContentFactory {
         } catch (NoSuchAlgorithmException e) {
             throw new IOException("SHA-256 not supported", e);
         }
+    }
+
+    /**
+     * Creates a `HttpContent.Factory` using the same methodology used in `ResourceHandler.newHttpContentFactory()`
+     * except that we use `ETagResourceHttpContentFactory` instead of `ResourceHttpContentFactory` as the innermost
+     * factory.
+     * @param baseResource the base Resource
+     * @param byteBufferPool the ByteBufferPool for ValidatingCachingHttpContentFactory
+     * @param mimeTypes the MimeTypes
+     * @param styleSheet the stylesheet Resource for VirtualHttpContentFactory
+     * @param preCompressedFormats formats for PreCompressedHttpContentFactory
+     * @param useFileMapping whether to use FileMappingHttpContentFactory
+     * @return the wrapped HttpContent.Factory
+     */
+    public static HttpContent.Factory create(
+            Resource baseResource,
+            ByteBufferPool byteBufferPool,
+            MimeTypes mimeTypes,
+            Resource styleSheet,
+            List<CompressedContentFormat> preCompressedFormats,
+            boolean useFileMapping
+    ) {
+        // Use ETagResourceHttpContentFactory instead of ResourceHttpContentFactory
+        HttpContent.Factory contentFactory = new ETagResourceHttpContentFactory(baseResource, mimeTypes);
+
+        if (useFileMapping) {
+            contentFactory = new FileMappingHttpContentFactory(contentFactory);
+        }
+        contentFactory = new VirtualHttpContentFactory(contentFactory, styleSheet, "text/css");
+        contentFactory = new PreCompressedHttpContentFactory(contentFactory, preCompressedFormats);
+        contentFactory = new ValidatingCachingHttpContentFactory(contentFactory, java.time.Duration.ofSeconds(1).toMillis(), byteBufferPool);
+        return contentFactory;
     }
 }
