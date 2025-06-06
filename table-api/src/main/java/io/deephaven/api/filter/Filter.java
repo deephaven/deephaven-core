@@ -200,6 +200,28 @@ public interface Filter extends Expression, ConcurrencyControl<Filter> {
     }
 
     /**
+     * Wraps the given filter with a FilterBarrier to declare a barrier that other filters can respect.
+     *
+     * @param filter the filter to wrap
+     * @param barrier the barrier object being declared
+     * @return a FilterBarrier instance wrapping the provided filter
+     */
+    static FilterBarrier barrier(Filter filter, Object barrier) {
+        return FilterBarrier.of(filter, barrier);
+    }
+
+    /**
+     * Wraps the given filter with a FilterBarrier to declare a barrier that other filters can respect.
+     *
+     * @param filter the filter to wrap
+     * @param barriers the barrier objects that need to be respected
+     * @return a FilterBarrier instance wrapping the provided filter
+     */
+    static FilterRespectsBarrier respectsBarrier(Filter filter, Object... barriers) {
+        return FilterRespectsBarrier.of(filter, barriers);
+    }
+
+    /**
      * Performs a non-recursive "and-extraction" against {@code filter}. If {@code filter} is a {@link FilterAnd},
      * {@link FilterAnd#filters()} will be returned. If {@code filter} is {@link Filter#ofTrue()}, an empty list will be
      * returned. Otherwise, a singleton list of {@code filter} will be returned.
@@ -225,6 +247,16 @@ public interface Filter extends Expression, ConcurrencyControl<Filter> {
         return serial(this);
     }
 
+    @Override
+    default Filter respectsBarrier(Object... barriers) {
+        return respectsBarrier(this, barriers);
+    }
+
+    @Override
+    default Filter withBarrier(Object barrier) {
+        return barrier(this, barrier);
+    }
+
     <T> T walk(Visitor<T> visitor);
 
     interface Visitor<T> {
@@ -245,6 +277,10 @@ public interface Filter extends Expression, ConcurrencyControl<Filter> {
 
         T visit(FilterSerial serial);
 
+        T visit(FilterBarrier barrier);
+
+        T visit(FilterRespectsBarrier respectsBarrier);
+
         T visit(Function function);
 
         T visit(Method method);
@@ -252,5 +288,10 @@ public interface Filter extends Expression, ConcurrencyControl<Filter> {
         T visit(boolean literal);
 
         T visit(RawString rawString);
+
+        default T visit(Object object) {
+            throw new UnsupportedOperationException(
+                    "Unsupported filter type: " + object.getClass().getName() + " for value: " + object);
+        }
     }
 }
