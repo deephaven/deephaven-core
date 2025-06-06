@@ -3,27 +3,24 @@
 //
 package io.deephaven.server.jetty;
 
-import io.deephaven.base.verify.Require;
-import io.deephaven.configuration.Configuration;
-import io.deephaven.server.browserstreaming.BrowserStreamInterceptor;
-import io.deephaven.server.resources.ServerResources;
-import io.deephaven.server.runner.GrpcServer;
-import io.deephaven.ssl.config.CiphersIntermediate;
-import io.deephaven.ssl.config.ProtocolsIntermediate;
-import io.deephaven.ssl.config.SSLConfig;
-import io.deephaven.ssl.config.TrustJdk;
-import io.deephaven.ssl.config.impl.KickstartUtils;
-import io.grpc.InternalStatus;
-import io.grpc.internal.GrpcUtil;
-import io.grpc.servlet.jakarta.web.GrpcWebFilter;
-import io.grpc.servlet.web.websocket.GrpcWebsocket;
-import io.grpc.servlet.web.websocket.MultiplexedWebSocketServerStream;
-import io.grpc.servlet.web.websocket.WebSocketServerStream;
-import jakarta.servlet.DispatcherType;
-import jakarta.websocket.Endpoint;
-import jakarta.websocket.server.ServerEndpointConfig;
-import nl.altindag.ssl.SSLFactory;
-import nl.altindag.ssl.jetty.util.JettySslUtils;
+import java.io.IOException;
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
+
+import javax.inject.Inject;
+import javax.inject.Named;
+import javax.inject.Singleton;
+
 import org.apache.arrow.flight.auth.AuthConstants;
 import org.apache.arrow.flight.auth2.Auth2Constants;
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
@@ -31,6 +28,7 @@ import org.eclipse.jetty.ee10.servlet.DefaultServlet;
 import org.eclipse.jetty.ee10.servlet.ErrorPageErrorHandler;
 import org.eclipse.jetty.ee10.servlet.FilterHolder;
 import org.eclipse.jetty.ee10.servlet.ResourceServlet;
+import static org.eclipse.jetty.ee10.servlet.ServletContextHandler.NO_SESSIONS;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.ee10.servlet.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
@@ -39,6 +37,7 @@ import org.eclipse.jetty.ee10.websocket.jakarta.server.JakartaWebSocketServerCon
 import org.eclipse.jetty.ee10.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.content.HttpContent;
 import org.eclipse.jetty.http2.HTTP2Connection;
 import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.RateControl;
@@ -58,32 +57,33 @@ import org.eclipse.jetty.server.handler.CrossOriginHandler;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.component.Graceful;
-import org.eclipse.jetty.util.resource.CombinedResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
-import javax.inject.Inject;
-import javax.inject.Named;
-import javax.inject.Singleton;
-import java.io.IOException;
-import java.net.URI;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
-
+import io.deephaven.base.verify.Require;
+import io.deephaven.configuration.Configuration;
+import io.deephaven.server.browserstreaming.BrowserStreamInterceptor;
+import io.deephaven.server.resources.ServerResources;
+import io.deephaven.server.runner.GrpcServer;
+import io.deephaven.ssl.config.CiphersIntermediate;
+import io.deephaven.ssl.config.ProtocolsIntermediate;
+import io.deephaven.ssl.config.SSLConfig;
+import io.deephaven.ssl.config.TrustJdk;
+import io.deephaven.ssl.config.impl.KickstartUtils;
+import io.grpc.InternalStatus;
+import io.grpc.internal.GrpcUtil;
+import io.grpc.servlet.jakarta.web.GrpcWebFilter;
+import io.grpc.servlet.web.websocket.GrpcWebsocket;
+import io.grpc.servlet.web.websocket.MultiplexedWebSocketServerStream;
 import static io.grpc.servlet.web.websocket.MultiplexedWebSocketServerStream.GRPC_WEBSOCKETS_MULTIPLEX_PROTOCOL;
+import io.grpc.servlet.web.websocket.WebSocketServerStream;
 import static io.grpc.servlet.web.websocket.WebSocketServerStream.GRPC_WEBSOCKETS_PROTOCOL;
-import static org.eclipse.jetty.ee10.servlet.ServletContextHandler.NO_SESSIONS;
+import jakarta.servlet.DispatcherType;
+import jakarta.websocket.Endpoint;
+import jakarta.websocket.server.ServerEndpointConfig;
+import nl.altindag.ssl.SSLFactory;
+import nl.altindag.ssl.jetty.util.JettySslUtils;
 
 @Singleton
 public class JettyBackedGrpcServer implements GrpcServer {
@@ -109,14 +109,13 @@ public class JettyBackedGrpcServer implements GrpcServer {
         List<String> urls = ServerResources.resourcesFromServiceLoader(Configuration.getInstance());
         Resource resources = ResourceFactory.combine(urls.stream().map(url -> {
             Resource resource = context.getResourceFactory().newResource(url);
+            System.out.println("[TESTING] url: " + url);
             Require.neqNull(resource, "newResource(" + url + ")");
             return resource;
         }).toList());
 
         context.setBaseResource(ControlledCacheResource.wrap(resources));
         context.setInitParameter(DefaultServlet.CONTEXT_INIT + "dirAllowed", "false");
-
-        ETagResourceHandler eTagResourceHandler = new ETagResourceHandler(context.getBaseResource(), context);
 
         // Cache all of the appropriate assets folders
         for (String appRoot : List.of("/ide/", "/iframe/table/", "/iframe/chart/", "/iframe/widget/")) {
@@ -138,6 +137,18 @@ public class JettyBackedGrpcServer implements GrpcServer {
         context.addFilter(new FilterHolder(filter), "/*", EnumSet.noneOf(DispatcherType.class));
 
         // Wire up /js-plugins/*
+
+        // Create a custom HttpContent.Factory that can generate strong ETags for js-plugins resource
+        Resource jsPluginsResource = context.getResourceFactory().newResource(jsPlugins.filesystem());
+        ETagResourceHandler jsPluginsETagResourceHandler = new ETagResourceHandler(jsPluginsResource, context);
+        jsPluginsETagResourceHandler.setStyleSheet(jetty.getDefaultStyleSheet());
+        jsPluginsETagResourceHandler.setMimeTypes(context.getMimeTypes());
+        HttpContent.Factory jsPluginsETagContentFactory = jsPluginsETagResourceHandler.newHttpContentFactory();
+
+        // The DefaultServlet and ResourceServlet both check for this attribute before internally creating a
+        // HttpContent.Factory.
+        context.setAttribute(HttpContent.Factory.class.getName(), jsPluginsETagContentFactory);
+
         // TODO(deephaven-core#4620): Add js-plugins version-aware caching
         context.addFilter(NoCacheFilter.class, JS_PLUGINS_PATH_SPEC, EnumSet.noneOf(DispatcherType.class));
         context.addServlet(servletHolder("js-plugins", jsPlugins.filesystem()), JS_PLUGINS_PATH_SPEC);
@@ -176,6 +187,8 @@ public class JettyBackedGrpcServer implements GrpcServer {
         } else {
             this.websocketsEnabled = false;
         }
+
+        ETagResourceHandler eTagResourceHandler = new ETagResourceHandler(context.getBaseResource(), context);
 
         // If requested, permit CORS requests
         CrossOriginHandler corsHandler = new CrossOriginHandler();
@@ -241,6 +254,7 @@ public class JettyBackedGrpcServer implements GrpcServer {
         } else {
             handler = corsHandler;
         }
+
         jetty.setHandler(handler);
     }
 
@@ -410,6 +424,7 @@ public class JettyBackedGrpcServer implements GrpcServer {
     }
 
     private static ServletHolder servletHolder(String name, URI filesystemUri) {
+        System.out.println("[TESTING] js-plugins: " + filesystemUri);
         final ServletHolder jsPlugins = new ServletHolder(name, ResourceServlet.class);
         // Note, the URI needs explicitly be parseable as a directory URL ending in "!/", a requirement of the jetty
         // resource creation implementation, see
