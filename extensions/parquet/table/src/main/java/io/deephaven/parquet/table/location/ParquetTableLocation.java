@@ -435,6 +435,8 @@ public class ParquetTableLocation extends AbstractTableLocation {
             final boolean usePrev,
             final PushdownFilterContext context) {
         initialize();
+        final RegionedColumnSourceManager.RegionedColumnSourcePushdownFilterContext ctx =
+                (RegionedColumnSourceManager.RegionedColumnSourcePushdownFilterContext) context;
         final long executedFilterCost = context.executedFilterCost();
 
         // Some range filter host a condition filter as the internal filter and we can't push that down.
@@ -448,16 +450,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
             return PushdownResult.METADATA_STATS_COST;
         }
 
-        final List<String> columnNames = filter.getColumns();
-        final String[] parquetColumnNames = new String[columnNames.size()];
-        int idx = 0;
-        for (final String columnName : columnNames) {
-            final String parquetColumnNameOrDefault =
-                    readInstructions.getParquetColumnNameFromColumnNameOrDefault(columnName);
-            final List<String> pathInSchema = getColumnPath(columnName, parquetColumnNameOrDefault);
-            parquetColumnNames[idx] = pathInSchema.get(0);
-            idx++;
-        }
+        final String[] parquetColumnNames = getParquetColumnNames(filter.getColumns(), ctx.renameMap);
 
         // Do we have a data indexes for the column(s)?
         if (shouldExecute(QueryTable.DISABLE_WHERE_PUSHDOWN_DATA_INDEX,
@@ -473,6 +466,19 @@ public class ParquetTableLocation extends AbstractTableLocation {
 
         // TODO: add support for bloom filters, sortedness
         return Long.MAX_VALUE; // No benefit to pushing down.
+    }
+
+    private String[] getParquetColumnNames(
+            final Collection<String> dhColumnNames,
+            final Map<String, String> renameMap) {
+        return dhColumnNames.stream()
+                .map(col -> {
+                    final String original = renameMap.getOrDefault(col, col);
+                    final String parquetCol = readInstructions.getParquetColumnNameFromColumnNameOrDefault(original);
+                    final List<String> path = getColumnPath(col, parquetCol);
+                    return path.get(path.size() - 1); // The last element in the path is the actual name from schema
+                })
+                .toArray(String[]::new);
     }
 
     @Override
@@ -492,31 +498,21 @@ public class ParquetTableLocation extends AbstractTableLocation {
 
         final long executedFilterCost = context.executedFilterCost();
 
-        // Some range filter host a condition filter as the internal filter and we can't push that down.
+        // Some range filters host a condition filter as the internal filter, and we can't push that down.
         final boolean isRangeFilter =
                 filter instanceof RangeFilter && ((RangeFilter) filter).getRealFilter() instanceof AbstractRangeFilter;
         final boolean isMatchFilter = filter instanceof MatchFilter;
 
-        final List<String> columnNames = filter.getColumns();
-        final String[] parquetColumnNames = new String[columnNames.size()];
-        final int[] parquetIndices = new int[columnNames.size()];
-        int idx = 0;
-        for (final String columnName : columnNames) {
-            final String parquetColumnNameOrDefault =
-                    readInstructions.getParquetColumnNameFromColumnNameOrDefault(columnName);
-            final List<String> pathInSchema = getColumnPath(columnName, parquetColumnNameOrDefault);
-            final String parquetColumnName = pathInSchema.get(0);
-            final int parquetIndex;
-            try {
-                parquetIndex = parquetMetadata.getFileMetaData().getSchema().getFieldIndex(parquetColumnName);
-            } catch (final Exception e) {
-                onError.accept(new TableDataException(String.format("Failed to find field index for column '%s' in " +
-                        "Parquet schema for table %s", columnName, getParquetKey().getURI()), e));
-                return;
-            }
-            parquetColumnNames[idx] = pathInSchema.get(0);
-            parquetIndices[idx] = parquetIndex;
-            idx++;
+        final String[] parquetColumnNames = getParquetColumnNames(filter.getColumns(), ctx.renameMap);
+        final int[] parquetIndices;
+        try {
+            parquetIndices = Arrays.stream(parquetColumnNames)
+                    .mapToInt(name -> parquetMetadata.getFileMetaData().getSchema().getFieldIndex(name))
+                    .toArray();
+        } catch (final Exception e) {
+            onError.accept(new TableDataException(String.format("Failed to find field index for columns '%s' in " +
+                    "Parquet schema for table %s", Arrays.toString(parquetColumnNames), getParquetKey().getURI()), e));
+            return;
         }
 
         // Initialize the pushdown result with the selection rowset as "maybe" rows
