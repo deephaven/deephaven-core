@@ -160,6 +160,7 @@ public class ReplicatePageMaterializers {
         // We change from Micros to Millis and not the other way since converting from Long to Integer has fewer
         // exceptions than the other way around.
         pairs = new String[][] {
+                {"long microsOfDay", "int millisOfDay"},
                 {"Micros", "Millis"},
                 {"micros", "millis"},
                 {"readLong", "readInteger"},
@@ -175,13 +176,15 @@ public class ReplicatePageMaterializers {
 
         // LocalDateTimeFromMillis -> LocalDateTimeFromMicros
         pairs = new String[][] {
-                {"Millis", "Micros"}
+                {"Millis", "Micros"},
+                {"millis", "micros"},
         };
         replaceAll(TASK, LOCAL_DATE_TIME_FROM_MILLIS_MATERIALIZER_PATH, null, NO_EXCEPTIONS, pairs);
 
         // LocalDateTimeFromMillis -> LocalDateTimeFromNanos
         pairs = new String[][] {
-                {"Millis", "Nanos"}
+                {"Millis", "Nanos"},
+                {"millis", "nanos"},
         };
         replaceAll(TASK, LOCAL_DATE_TIME_FROM_MILLIS_MATERIALIZER_PATH, null, NO_EXCEPTIONS, pairs);
 

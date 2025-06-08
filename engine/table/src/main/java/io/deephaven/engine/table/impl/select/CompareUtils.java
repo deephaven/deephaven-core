@@ -5,6 +5,7 @@ package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.function.Basic;
 import io.deephaven.time.DateTimeUtils;
+import io.deephaven.util.BooleanUtils;
 import io.deephaven.util.compare.ObjectComparisons;
 import io.deephaven.util.type.NumericTypeUtils;
 
@@ -56,6 +57,12 @@ class CompareUtils {
         }
         if (b instanceof BigInteger) {
             b = new BigDecimal((BigInteger) b);
+        }
+        if (a instanceof Boolean) {
+            a = BooleanUtils.booleanAsByte((Boolean) a);
+        }
+        if (b instanceof Boolean) {
+            b = BooleanUtils.booleanAsByte((Boolean) b);
         }
 
         final Class<?> aClass = a.getClass();

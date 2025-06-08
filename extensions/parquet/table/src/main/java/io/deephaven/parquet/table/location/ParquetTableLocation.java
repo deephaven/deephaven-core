@@ -5,7 +5,6 @@ package io.deephaven.parquet.table.location;
 
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.SortColumn;
-import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.liveness.LivenessScopeStack;
@@ -37,17 +36,13 @@ import io.deephaven.parquet.table.metadata.SortColumnInfo;
 import io.deephaven.parquet.table.metadata.TableInfo;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.mutable.MutableLong;
-import io.deephaven.util.type.NumericTypeUtils;
 import org.apache.parquet.column.statistics.Statistics;
 import org.apache.parquet.format.RowGroup;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
-import org.apache.parquet.schema.LogicalTypeAnnotation;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
-import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
@@ -60,7 +55,6 @@ import java.util.stream.IntStream;
 import static io.deephaven.parquet.base.ParquetFileReader.FILE_URI_SCHEME;
 import static io.deephaven.parquet.table.ParquetTableWriter.*;
 import static io.deephaven.parquet.table.ParquetTableWriter.GROUPING_END_POS_COLUMN_NAME;
-import static org.apache.parquet.schema.LogicalTypeAnnotation.stringType;
 
 public class ParquetTableLocation extends AbstractTableLocation {
 
@@ -604,57 +598,12 @@ public class ParquetTableLocation extends AbstractTableLocation {
     }
 
     /**
-     * Get the min and max values from the statistics. Currently can convert basic numerics, string and BigDecimal /
-     * BigInteger values.
-     *
-     * @param statistics The statistics to analyze
-     * @return The min and max values from the statistics or null if cannot be converted.
-     */
-    private Pair<Object, Object> getMinMax(final Statistics<?> statistics) {
-        if (statistics == null || statistics.isEmpty()) {
-            return null;
-        }
-
-        if (!statistics.hasNonNullValue()) {
-            // If all values are null, set the min and max to null.
-            return new Pair<>(null, null);
-        }
-
-        // Min/Max are guaranteed to be the same type, only testing min.
-        final Class<?> clazz = statistics.genericGetMin().getClass();
-
-        // Numeric values need no conversion
-        if (NumericTypeUtils.isIntegralOrChar(clazz) || NumericTypeUtils.isFloat(clazz)) {
-            return new Pair<>(statistics.genericGetMin(), statistics.genericGetMax());
-        }
-
-        if (statistics.type().getLogicalTypeAnnotation() == stringType()) {
-            return new Pair<>(statistics.minAsString(), statistics.maxAsString());
-        }
-
-        if (statistics.type()
-                .getLogicalTypeAnnotation() instanceof LogicalTypeAnnotation.DecimalLogicalTypeAnnotation) {
-            final int scale = ((LogicalTypeAnnotation.DecimalLogicalTypeAnnotation) statistics.type()
-                    .getLogicalTypeAnnotation()).getScale();
-            if (scale == 0) {
-                // Return the min and max values as BigInteger
-                return new Pair<>(new BigInteger(statistics.getMinBytes()), new BigInteger(statistics.getMaxBytes()));
-            } else {
-                // We need to convert the min and max values to BigDecimal
-                return new Pair<>(new BigDecimal(new BigInteger(statistics.getMinBytes()), scale),
-                        new BigDecimal(new BigInteger(statistics.getMaxBytes()), scale));
-            }
-        }
-        return null;
-    }
-
-    /**
      * Get the count of null values from the statistics.
      * 
      * @param statistics The statistics to analyze
      * @return The number of null values contained in the statistics, or -1 if the statistics do not contain the count
      */
-    private long getNullCount(final Statistics<?> statistics) {
+    private static long getNullCount(final Statistics<?> statistics) {
         if (statistics == null || statistics.isEmpty() || !statistics.isNumNullsSet()) {
             return -1L;
         }
@@ -682,30 +631,33 @@ public class ParquetTableLocation extends AbstractTableLocation {
         iterateRowGroupsAndRowSet(result.maybeMatch(), (rgIdx, rs) -> {
             final Statistics<?> statistics =
                     parquetMetadata.getBlocks().get(rgIdx).getColumns().get(parquetIndex).getStatistics();
-            final Pair<Object, Object> p = getMinMax(statistics);
+
+            final Optional<MinMax> minMaxFromStatistics = MinMaxFromStatistics.get(statistics);
             final long nullCount = getNullCount(statistics);
 
             // TODO: in a few cases, where all values are null or where min==max (implying a single non-null value) we
             // could return the row group row set as `match`.
 
-            if (p == null || nullCount < 0) {
+            if (minMaxFromStatistics.isEmpty() || nullCount < 0) {
                 // No statistics, so we can't filter anything.
                 maybeBuilder.appendRowSequence(rs);
                 maybeCount.add(rs.size());
                 return;
             }
 
+            final MinMax minMax = minMaxFromStatistics.get();
             if (filter instanceof AbstractRangeFilter) {
                 final AbstractRangeFilter rf = (AbstractRangeFilter) filter;
-                if (rf.overlaps(p.first, p.second) || (filterIncludesNulls && nullCount > 0)) {
+                if (rf.overlaps(minMax.min(), minMax.max()) || (filterIncludesNulls && nullCount > 0)) {
                     maybeBuilder.appendRowSequence(rs);
                     maybeCount.add(rs.size());
                 }
                 return;
             }
 
+            // Assuming the filter is a MatchFilter
             final MatchFilter mf = (MatchFilter) filter;
-            if (mf.overlaps(p.first, p.second) || (filterIncludesNulls && nullCount > 0)) {
+            if (mf.overlaps(minMax.min(), minMax.max()) || (filterIncludesNulls && nullCount > 0)) {
                 maybeBuilder.appendRowSequence(rs);
                 maybeCount.add(rs.size());
             }
