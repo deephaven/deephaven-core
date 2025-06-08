@@ -919,7 +919,7 @@ public class RegionedColumnSourceManager
             Require.eq(filterColumns.size(), "filterColumns.size()",
                     columnSources.size(), "columnSources.size()");
 
-            // We knw the column sources are in the same order as the filter columns, build a rename map and collect
+            // We know the column sources are in the same order as the filter columns, build a rename map and collect
             // column definitions for the filter sources
             columnDefinitions = new ArrayList<>(columnSources.size());
 
