@@ -143,6 +143,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
 
     private Column rowDepthCol;
     private Column rowExpandedCol;
+    private JsArray<Column> aggregatedColumns;
     private JsArray<Column> groupedColumns;
     private JsLayoutHints layoutHints;
 
@@ -232,6 +233,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
         boolean hasConstituentColumns = !columnDefsByName.get(true).isEmpty();
 
         Map<String, Column> constituentColumns = new HashMap<>();
+        JsArray<Column> aggregatedColumns = new JsArray<>();
         JsArray<Column> groupedColumns = new JsArray<>();
         for (ColumnDefinition definition : tableDefinition.getColumns()) {
             Column column = definition.makeJsColumn(columns.length, columnDefsByName);
@@ -260,6 +262,9 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
                         if (hasConstituentColumns) {
                             column.setConstituentType(columnDefsByName.get(true).get(definition.getName()).getType());
                         }
+                    } else {
+                        // If it's not a constituent column or group by column, it's an aggregated column
+                        aggregatedColumns.push(column);
                     }
                     String aggInputCol = definition.getRollupAggregationInputColumn();
                     if (hasConstituentColumns && aggInputCol != null && !aggInputCol.isEmpty()) {
@@ -269,6 +274,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
                 }
             }
         }
+        this.aggregatedColumns = JsObject.freeze(aggregatedColumns);
         this.groupedColumns = JsObject.freeze(groupedColumns);
 
         sourceColumns = columnDefsByName.get(false).values().stream()
@@ -1265,6 +1271,16 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
     @JsProperty
     public boolean isIncludeConstituents() {
         return Arrays.stream(tableDefinition.getColumns()).anyMatch(ColumnDefinition::isRollupConstituentNodeColumn);
+    }
+
+    /**
+     * Returns the columns that are aggregated.
+     * 
+     * @return array of aggregated columns
+     */
+    @JsProperty
+    public JsArray<Column> getAggregatedColumns() {
+        return aggregatedColumns;
     }
 
     @JsProperty
