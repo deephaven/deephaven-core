@@ -92,6 +92,22 @@ class Credentials(JObjectWrapper):
         return cls(_JCredentials.basic(access_key_id, secret_access_key))
 
     @classmethod
+    def session(cls, access_key_id: str, secret_access_key: str, session_token: str) -> 'Credentials':
+        """
+        Session credentials provider with the specified access key id, secret access key, and session token.
+        This is useful when using temporary credentials from AWS STS or similar services.
+
+        Args:
+            access_key_id (str): the access key id, used to identify the user.
+            secret_access_key (str): the secret access key, used to authenticate the user.
+            session_token (str): the session token, used for temporary credentials.
+
+        Returns:
+            Credentials: the credentials object.
+        """
+        return cls(_JCredentials.session(access_key_id, secret_access_key, session_token))
+
+    @classmethod
     def anonymous(cls) -> 'Credentials':
         """
        Anonymous credentials provider, which can only be used to read data with S3 policy set to allow anonymous access.
