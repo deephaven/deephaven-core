@@ -242,6 +242,63 @@ public class TestCompareUtils extends RefreshingTableTestCase {
         assertEquals(0, CompareUtils.compare(1.0, 1.0f));
     }
 
+    public void testBoolean() {
+        // boolean vs boolean
+        assertTrue(CompareUtils.compare(true, false) > 0);
+        assertTrue(CompareUtils.compare(false, true) < 0);
+        assertEquals(0, CompareUtils.compare(true, true));
+        assertEquals(0, CompareUtils.compare(false, false));
+
+        // boolean boxed Boolean
+        assertTrue(CompareUtils.compare(true, Boolean.FALSE) > 0);
+        assertTrue(CompareUtils.compare(Boolean.FALSE, true) < 0);
+        assertEquals(0, CompareUtils.compare(true, Boolean.TRUE));
+        assertEquals(0, CompareUtils.compare(Boolean.TRUE, true));
+
+        // boolean vs char
+        assertTrue(CompareUtils.compare(false, (char) 1) < 0);
+        assertTrue(CompareUtils.compare((char) 1, false) > 0);
+        assertEquals(0, CompareUtils.compare(true, (char) 1));
+        assertEquals(0, CompareUtils.compare((char) 1, true));
+
+        // boolean vs byte
+        assertTrue(CompareUtils.compare(false, (byte) 1) < 0);
+        assertTrue(CompareUtils.compare((byte) 1, false) > 0);
+        assertEquals(0, CompareUtils.compare(true, (byte) 1));
+        assertEquals(0, CompareUtils.compare((byte) 1, true));
+
+        // boolean vs short
+        assertTrue(CompareUtils.compare(false, (short) 1) < 0);
+        assertTrue(CompareUtils.compare((short) 1, false) > 0);
+        assertEquals(0, CompareUtils.compare(true, (short) 1));
+        assertEquals(0, CompareUtils.compare((short) 1, true));
+
+        // boolean vs int
+        assertTrue(CompareUtils.compare(false, 1) < 0);
+        assertTrue(CompareUtils.compare(1, false) > 0);
+        assertEquals(0, CompareUtils.compare(true, 1));
+        assertEquals(0, CompareUtils.compare(1, true));
+
+        // boolean vs long
+        assertTrue(CompareUtils.compare(false, 1L) < 0);
+        assertTrue(CompareUtils.compare(1L, false) > 0);
+        assertEquals(0, CompareUtils.compare(true, 1L));
+        assertEquals(0, CompareUtils.compare(1L, true));
+
+        // boolean vs float
+        assertTrue(CompareUtils.compare(false, 1.0f) < 0);
+        assertTrue(CompareUtils.compare(1.0f, false) > 0);
+        assertEquals(0, CompareUtils.compare(true, 1.0f));
+        assertEquals(0, CompareUtils.compare(1.0f, true));
+
+        // boolean vs double
+        assertTrue(CompareUtils.compare(false, 1.0) < 0);
+        assertTrue(CompareUtils.compare(1.0, false) > 0);
+        assertEquals(0, CompareUtils.compare(true, 1.0));
+        assertEquals(0, CompareUtils.compare(1.0, true));
+
+    }
+
     public void testErrorHandling() {
         try {
             CompareUtils.compare(new Object(), "A");
