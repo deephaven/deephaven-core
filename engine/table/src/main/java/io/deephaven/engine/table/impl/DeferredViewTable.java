@@ -221,9 +221,9 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
             if (myRenames.isEmpty()) {
                 preViewFilters.add(filter);
             } else {
-                final WhereFilter preFilter = filter.walk(new WhereFilter.Visitor<WhereFilter>() {
+                final WhereFilter preFilter = filter.walkWhereFilter(new WhereFilter.Visitor<>() {
                     @Override
-                    public WhereFilter visit(WhereFilter filter) {
+                    public WhereFilter visitWhereFilter(WhereFilter filter) {
                         if (filter instanceof MatchFilter) {
                             final MatchFilter matchFilter = (MatchFilter) filter;
                             Assert.assertion(myRenames.size() == 1, "Match Filters should only use one column!");
@@ -231,42 +231,42 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
                         } else if (filter instanceof ConditionFilter) {
                             return ((ConditionFilter) filter).renameFilter(myRenames);
                         }
-                        return WhereFilter.Visitor.super.visit(filter);
+                        return WhereFilter.Visitor.super.visitWhereFilter(filter);
                     }
 
                     @Override
-                    public WhereFilter visit(WhereFilterInvertedImpl filter) {
+                    public WhereFilter visitWhereFilter(WhereFilterInvertedImpl filter) {
                         return null;
                     }
 
                     @Override
-                    public WhereFilter visit(WhereFilterSerialImpl filter) {
+                    public WhereFilter visitWhereFilter(WhereFilterSerialImpl filter) {
                         return null;
                     }
 
                     @Override
-                    public WhereFilter visit(WhereFilterBarrierImpl filter) {
-                        final WhereFilter innerPreFilter = visit(filter.getWrappedFilter());
+                    public WhereFilter visitWhereFilter(WhereFilterBarrierImpl filter) {
+                        final WhereFilter innerPreFilter = filter.getWrappedFilter().walkWhereFilter(this);
                         return innerPreFilter == null
                                 ? null
                                 : WhereFilterBarrierImpl.of(innerPreFilter, filter.barrier());
                     }
 
                     @Override
-                    public WhereFilter visit(WhereFilterRespectsBarrierImpl filter) {
-                        final WhereFilter innerPreFilter = visit(filter.getWrappedFilter());
+                    public WhereFilter visitWhereFilter(WhereFilterRespectsBarrierImpl filter) {
+                        final WhereFilter innerPreFilter = filter.getWrappedFilter().walkWhereFilter(this);
                         return innerPreFilter == null
                                 ? null
                                 : WhereFilterRespectsBarrierImpl.of(innerPreFilter, filter.respectedBarriers());
                     }
 
                     @Override
-                    public WhereFilter visit(DisjunctiveFilter filter) {
+                    public WhereFilter visitWhereFilter(DisjunctiveFilter filter) {
                         return null;
                     }
 
                     @Override
-                    public WhereFilter visit(ConjunctiveFilter filter) {
+                    public WhereFilter visitWhereFilter(ConjunctiveFilter filter) {
                         return null;
                     }
                 });

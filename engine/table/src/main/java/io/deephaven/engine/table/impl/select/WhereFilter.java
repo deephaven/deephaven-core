@@ -347,41 +347,41 @@ public interface WhereFilter extends Filter {
     }
 
     @FinalDefault
-    default <T> T walk(Visitor<T> visitor) {
-        return visitor.visit(this);
+    default <T> T walkWhereFilter(Visitor<T> visitor) {
+        return visitor.visitWhereFilter(this);
     }
 
     // endregion Filter impl
 
     // rather than allowing for customization on every type of filter, we focus on structured and attribute filters
     interface Visitor<T> {
-        default T visit(WhereFilter filter) {
+        default T visitWhereFilter(WhereFilter filter) {
             if (filter instanceof WhereFilterInvertedImpl) {
-                return visit((WhereFilterInvertedImpl) filter);
+                return visitWhereFilter((WhereFilterInvertedImpl) filter);
             } else if (filter instanceof WhereFilterSerialImpl) {
-                return visit((WhereFilterSerialImpl) filter);
+                return visitWhereFilter((WhereFilterSerialImpl) filter);
             } else if (filter instanceof WhereFilterBarrierImpl) {
-                return visit((WhereFilterBarrierImpl) filter);
+                return visitWhereFilter((WhereFilterBarrierImpl) filter);
             } else if (filter instanceof WhereFilterRespectsBarrierImpl) {
-                return visit((WhereFilterRespectsBarrierImpl) filter);
+                return visitWhereFilter((WhereFilterRespectsBarrierImpl) filter);
             } else if (filter instanceof DisjunctiveFilter) {
-                return visit((DisjunctiveFilter) filter);
+                return visitWhereFilter((DisjunctiveFilter) filter);
             } else if (filter instanceof ConjunctiveFilter) {
-                return visit((ConjunctiveFilter) filter);
+                return visitWhereFilter((ConjunctiveFilter) filter);
             }
             return null;
         }
 
-        T visit(WhereFilterInvertedImpl filter);
+        T visitWhereFilter(WhereFilterInvertedImpl filter);
 
-        T visit(WhereFilterSerialImpl filter);
+        T visitWhereFilter(WhereFilterSerialImpl filter);
 
-        T visit(WhereFilterBarrierImpl filter);
+        T visitWhereFilter(WhereFilterBarrierImpl filter);
 
-        T visit(WhereFilterRespectsBarrierImpl filter);
+        T visitWhereFilter(WhereFilterRespectsBarrierImpl filter);
 
-        T visit(DisjunctiveFilter filter);
+        T visitWhereFilter(DisjunctiveFilter filter);
 
-        T visit(ConjunctiveFilter filter);
+        T visitWhereFilter(ConjunctiveFilter filter);
     }
 }

@@ -187,6 +187,10 @@ public class FilterTest {
                 assertThat(results).isEqualTo(((FilterAnd) filter).filters());
             } else if (Filter.ofTrue().equals(filter)) {
                 assertThat(results).isEmpty();
+            } else if (filter instanceof FilterBarrier) {
+                assertThat(results).containsExactly(((FilterBarrier) filter).filter());
+            } else if (filter instanceof FilterRespectsBarrier) {
+                assertThat(results).containsExactly(((FilterRespectsBarrier) filter).filter());
             } else {
                 assertThat(results).containsExactly(filter);
             }
@@ -212,6 +216,8 @@ public class FilterTest {
         visitor.visit((FilterAnd) null);
         visitor.visit((FilterPattern) null);
         visitor.visit((FilterSerial) null);
+        visitor.visit((FilterBarrier) null);
+        visitor.visit((FilterRespectsBarrier) null);
         visitor.visit((Function) null);
         visitor.visit((Method) null);
         visitor.visit(false);

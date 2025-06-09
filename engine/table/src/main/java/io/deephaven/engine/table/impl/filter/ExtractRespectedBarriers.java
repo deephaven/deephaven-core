@@ -25,11 +25,11 @@ import io.deephaven.engine.table.impl.select.WhereFilterInvertedImpl;
 import io.deephaven.engine.table.impl.select.WhereFilterRespectsBarrierImpl;
 import io.deephaven.engine.table.impl.select.WhereFilterSerialImpl;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Objects;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Performs a recursive "respected-barrier-extraction" against {@code filter}. If {@code filter}, or any sub-filter, is
@@ -43,7 +43,7 @@ public enum ExtractRespectedBarriers
     public static Collection<Object> of(Filter filter) {
         if (filter instanceof WhereFilter) {
             final Collection<Object> retVal =
-                    ((WhereFilter) filter).walk((WhereFilter.Visitor<Collection<Object>>) INSTANCE);
+                    ((WhereFilter) filter).walkWhereFilter(INSTANCE);
             return retVal == null ? Collections.emptyList() : retVal;
         }
         return filter.walk(INSTANCE);
@@ -66,21 +66,25 @@ public enum ExtractRespectedBarriers
 
     @Override
     public Collection<Object> visit(FilterNot<?> not) {
-        return not.filter().walk(this);
+        return of(not.filter());
     }
 
     @Override
     public Collection<Object> visit(FilterOr ors) {
-        return ors.filters().stream()
-                .flatMap(filter -> visit(filter).stream())
-                .collect(Collectors.toSet());
+        final Set<Object> barriers = new HashSet<>();
+        for (final Filter subFilter : ors.filters()) {
+            barriers.addAll(of(subFilter));
+        }
+        return barriers;
     }
 
     @Override
     public Collection<Object> visit(FilterAnd ands) {
-        return ands.filters().stream()
-                .flatMap(filter -> visit(filter).stream())
-                .collect(Collectors.toSet());
+        final Set<Object> barriers = new HashSet<>();
+        for (final Filter subFilter : ands.filters()) {
+            barriers.addAll(of(subFilter));
+        }
+        return barriers;
     }
 
     @Override
@@ -90,20 +94,19 @@ public enum ExtractRespectedBarriers
 
     @Override
     public Collection<Object> visit(FilterSerial serial) {
-        return serial.filter().walk(this);
+        return of(serial.filter());
     }
 
     @Override
     public Collection<Object> visit(FilterBarrier barrier) {
-        return barrier.filter().walk(this);
+        return of(barrier.filter());
     }
 
     @Override
     public Collection<Object> visit(FilterRespectsBarrier respectsBarrier) {
-        return Stream.concat(
-                Stream.of(respectsBarrier.respectedBarriers()),
-                visit(respectsBarrier.filter()).stream())
-                .collect(Collectors.toSet());
+        final Set<Object> barriers = new HashSet<>(Arrays.asList(respectsBarrier.respectedBarriers()));
+        barriers.addAll(of(respectsBarrier.filter()));
+        return barriers;
     }
 
     @Override
@@ -127,43 +130,42 @@ public enum ExtractRespectedBarriers
     }
 
     @Override
-    public Collection<Object> visit(WhereFilterInvertedImpl filter) {
-        return visit(filter.getWrappedFilter());
+    public Collection<Object> visitWhereFilter(WhereFilterInvertedImpl filter) {
+        return of(filter.getWrappedFilter());
     }
 
     @Override
-    public Collection<Object> visit(WhereFilterSerialImpl filter) {
-        return visit(filter.getWrappedFilter());
+    public Collection<Object> visitWhereFilter(WhereFilterSerialImpl filter) {
+        return of(filter.getWrappedFilter());
     }
 
     @Override
-    public Collection<Object> visit(WhereFilterBarrierImpl filter) {
-        return visit(filter.getWrappedFilter());
+    public Collection<Object> visitWhereFilter(WhereFilterBarrierImpl filter) {
+        return of(filter.getWrappedFilter());
     }
 
     @Override
-    public Collection<Object> visit(WhereFilterRespectsBarrierImpl filter) {
-        return Stream.concat(
-                Stream.of(filter.respectedBarriers()),
-                visit(filter.getWrappedFilter()).stream())
-                .collect(Collectors.toSet());
+    public Collection<Object> visitWhereFilter(WhereFilterRespectsBarrierImpl filter) {
+        final Set<Object> barriers = new HashSet<>(Arrays.asList(filter.respectedBarriers()));
+        barriers.addAll(of(filter.getWrappedFilter()));
+        return barriers;
     }
 
     @Override
-    public Collection<Object> visit(DisjunctiveFilter filter) {
-        return filter.getFilters().stream()
-                .map(this::visit)
-                .filter(Objects::nonNull)
-                .flatMap(Collection::stream)
-                .collect(Collectors.toSet());
+    public Collection<Object> visitWhereFilter(DisjunctiveFilter filter) {
+        final Set<Object> barriers = new HashSet<>();
+        for (final Filter subFilter : filter.getFilters()) {
+            barriers.addAll(of(subFilter));
+        }
+        return barriers;
     }
 
     @Override
-    public Collection<Object> visit(ConjunctiveFilter filter) {
-        return filter.getFilters().stream()
-                .map(this::visit)
-                .filter(Objects::nonNull)
-                .flatMap(Collection::stream)
-                .collect(Collectors.toSet());
+    public Collection<Object> visitWhereFilter(ConjunctiveFilter filter) {
+        final Set<Object> barriers = new HashSet<>();
+        for (final Filter subFilter : filter.getFilters()) {
+            barriers.addAll(of(subFilter));
+        }
+        return barriers;
     }
 }
