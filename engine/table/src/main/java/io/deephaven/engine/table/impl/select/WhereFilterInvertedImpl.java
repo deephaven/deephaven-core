@@ -11,7 +11,7 @@ import org.jetbrains.annotations.NotNull;
 
 public class WhereFilterInvertedImpl extends WhereFilterDelegatingBase {
 
-    static WhereFilter of(WhereFilter filter) {
+    public static WhereFilter of(WhereFilter filter) {
         return new WhereFilterInvertedImpl(filter);
     }
 

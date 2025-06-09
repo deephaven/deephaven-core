@@ -492,10 +492,17 @@ abstract class AbstractFilterExecution {
             final MutableObject<WritableRowSet> localInput,
             final Runnable collectionResume,
             final Consumer<Exception> collectionNec) {
-
         // Create stateless filter objects for the filters in this collection.
         final StatelessFilter[] statelessFilters = new StatelessFilter[filters.size()];
+
+        // To properly respect barriers, we need each StatelessFilter to be aware of any respected barrier including
+        // transitive implicit dependencies. For example filter A may respect barrier B, defined in filter B, which
+        // respects barrier C, defined in filter C. In this case, filter A should also respect barrier C even though
+        // it was not explicitly declared in filter A. We build up the set of implicit and explicit inter-barrier
+        // dependencies in a dynamic-programming fashion; by adding all dependent respected barriers by the filter that
+        // declares the barrier to any filter that respects it.
         final Map<Object, Collection<Object>> barrierDependencies = new HashMap<>();
+
         for (int ii = 0; ii < filters.size(); ii++) {
             final WhereFilter filter = filters.get(ii);
             final PushdownFilterMatcher executor;
