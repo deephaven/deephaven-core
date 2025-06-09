@@ -290,7 +290,8 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
                             }
                             wrappedFilters[ii] = subWrap;
                         }
-                        return ConjunctiveFilter.makeConjunctiveFilter(wrappedFilters);                    }
+                        return ConjunctiveFilter.makeConjunctiveFilter(wrappedFilters);
+                    }
                 });
 
                 if (preFilter != null) {
