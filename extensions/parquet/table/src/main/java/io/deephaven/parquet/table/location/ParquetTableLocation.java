@@ -635,9 +635,6 @@ public class ParquetTableLocation extends AbstractTableLocation {
             final Optional<MinMax> minMaxFromStatistics = MinMaxFromStatistics.get(statistics);
             final long nullCount = getNullCount(statistics);
 
-            // TODO: in a few cases, where all values are null or where min==max (implying a single non-null value) we
-            // could return the row group row set as `match`.
-
             if (minMaxFromStatistics.isEmpty() || nullCount < 0) {
                 // No statistics, so we can't filter anything.
                 maybeBuilder.appendRowSequence(rs);

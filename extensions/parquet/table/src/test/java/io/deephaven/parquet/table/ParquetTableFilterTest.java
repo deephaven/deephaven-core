@@ -23,6 +23,7 @@ import java.time.Instant;
 import java.util.*;
 
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
+import static io.deephaven.parquet.table.ParquetTools.readTable;
 import static io.deephaven.time.DateTimeUtils.parseInstant;
 
 @Category(OutOfBandTest.class)
@@ -868,5 +869,38 @@ public final class ParquetTableFilterTest {
         filterAndVerifyResults(diskTable, memTable, "random_int < 50", "id <= 100000", "id >= 1900");
         filterAndVerifyResults(diskTable, memTable, "random_int < 900", "id = 3000");
         filterAndVerifyResults(diskTable, memTable, "random_int < 900", "id = 50000");
+    }
+
+    /**
+     * @see ParquetTableReadWriteTest#testReadingParquetDataWithEmptyRowGroups()
+     */
+    @Test
+    public void parquetFilesWithEmptyRowGroup() {
+        {
+            // Single parquet file with empty row group
+            final String path =
+                    ParquetTableFilterTest.class.getResource("/ReferenceParquetWithEmptyRowGroup1.parquet")
+                            .getFile();
+            final Table diskTable = readTable(path);
+            final Table memTable = diskTable.select();
+
+            filterAndVerifyResultsAllowEmpty(diskTable, memTable, "Foo <= 3000");
+            filterAndVerifyResultsAllowEmpty(diskTable, memTable, "Foo == null");
+        }
+
+        {
+            // Single parquet file with three row groups, first and third row group are non-empty, and second row group
+            // is empty.
+            final String path =
+                    ParquetTableFilterTest.class.getResource("/ReferenceParquetWithEmptyRowGroup2.parquet")
+                            .getFile();
+            final Table diskTable = readTable(path);
+            final Table memTable = diskTable.select();
+
+            filterAndVerifyResultsAllowEmpty(diskTable, memTable, "integers <= -1");
+            filterAndVerifyResultsAllowEmpty(diskTable, memTable, "integers == null");
+            filterAndVerifyResultsAllowEmpty(diskTable, memTable, "integers <= 1");
+            filterAndVerifyResultsAllowEmpty(diskTable, memTable, "integers <= 3");
+        }
     }
 }
