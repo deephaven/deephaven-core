@@ -281,13 +281,8 @@ public class IcebergCatalogAdapter {
             // TODO(DH-19314): Add support for reading Iceberg metadata tables
             throw new IllegalArgumentException("Metadata tables are not currently supported");
         }
-        final Resolver resolver;
-        try {
-            resolver = ((ResolverProviderImpl) options.resolver()).resolver(table);
-        } catch (TypeInference.UnsupportedType e) {
-            throw new RuntimeException(e);
-        }
-        final NameMapping nameMapping = ((NameMappingProviderImpl) options.nameMapping()).create(table);
+        final Resolver resolver = ResolverProviderImpl.of(options.resolver(), table);
+        final NameMapping nameMapping = NameMappingProviderImpl.of(options.nameMapping(), table);
         return new IcebergTableAdapter(
                 catalog,
                 options.id(),

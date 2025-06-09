@@ -32,16 +32,16 @@ public final class UniversalS3SeekableChannelProviderPlugin extends SeekableChan
      * schemes using the provided async client.
      *
      * @param uriSchemes The URI schemes to create the provider for.
-     * @param s3Instructions The S3 instructions to use for the provider.
+     * @param config The configuration object for the provider.
      * @param s3AsyncClient The S3 async client to use for the provider.
      */
-    @InternalUseOnly
     @VisibleForTesting
     public static SeekableChannelsProvider createUniversalS3Provider(
             @NotNull final Set<String> uriSchemes,
-            @NotNull final S3Instructions s3Instructions,
+            @Nullable final Object config,
             @NotNull final S3AsyncClient s3AsyncClient) {
-        final S3SeekableChannelProvider impl = new S3SeekableChannelProvider(s3Instructions, s3AsyncClient);
+        final S3SeekableChannelProvider impl =
+                new S3SeekableChannelProvider(normalizeS3Instructions(config), s3AsyncClient);
         return createdProviderImplHelper(uriSchemes, impl);
     }
 
@@ -50,13 +50,12 @@ public final class UniversalS3SeekableChannelProviderPlugin extends SeekableChan
      * schemes.
      *
      * @param uriSchemes The URI schemes to create the provider for.
-     * @param s3Instructions The S3 instructions to use for the provider.
+     * @param config The configuration object for the provider.
      */
-    @InternalUseOnly
     static SeekableChannelsProvider createUniversalS3Provider(
             @NotNull final Set<String> uriSchemes,
-            @NotNull final S3Instructions s3Instructions) {
-        final S3SeekableChannelProvider impl = new S3SeekableChannelProvider(s3Instructions);
+            @Nullable final Object config) {
+        final S3SeekableChannelProvider impl = new S3SeekableChannelProvider(normalizeS3Instructions(config));
         return createdProviderImplHelper(uriSchemes, impl);
     }
 
@@ -64,7 +63,7 @@ public final class UniversalS3SeekableChannelProviderPlugin extends SeekableChan
     protected SeekableChannelsProvider createProviderImpl(
             @NotNull final String uriScheme,
             @Nullable final Object config) {
-        final @NotNull S3SeekableChannelProvider impl = create(config);
+        final @NotNull S3SeekableChannelProvider impl = new S3SeekableChannelProvider(normalizeS3Instructions(config));
         switch (uriScheme) {
             case S3Constants.S3_URI_SCHEME:
                 return impl;
@@ -81,7 +80,7 @@ public final class UniversalS3SeekableChannelProviderPlugin extends SeekableChan
     protected SeekableChannelsProvider createProviderImpl(
             @NotNull final Set<String> uriSchemes,
             @Nullable final Object config) {
-        return createdProviderImplHelper(uriSchemes, create(config));
+        return createdProviderImplHelper(uriSchemes, new S3SeekableChannelProvider(normalizeS3Instructions(config)));
     }
 
     private static SeekableChannelsProvider createdProviderImplHelper(
@@ -100,11 +99,14 @@ public final class UniversalS3SeekableChannelProviderPlugin extends SeekableChan
 
     }
 
-    private static S3SeekableChannelProvider create(@Nullable final Object config) {
+    /**
+     * Get the S3Instructions from the config object, or use the default if the config is null.
+     */
+    private static S3Instructions normalizeS3Instructions(@Nullable final Object config) {
         if (config != null && !(config instanceof S3Instructions)) {
             throw new IllegalArgumentException("Only S3Instructions are valid when reading files from S3, provided " +
                     "config instance of class " + config.getClass().getName());
         }
-        return new S3SeekableChannelProvider(config == null ? S3Instructions.DEFAULT : (S3Instructions) config);
+        return config == null ? S3Instructions.DEFAULT : (S3Instructions) config;
     }
 }

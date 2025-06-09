@@ -8,38 +8,30 @@ import org.apache.iceberg.mapping.NameMapping;
 
 import java.util.Objects;
 
-interface NameMappingProviderImpl extends NameMappingProvider {
+final class NameMappingProviderImpl implements NameMappingProvider.Visitor<NameMapping> {
 
-    NameMapping create(Table table);
-
-    enum Empty implements NameMappingProviderImpl {
-        EMPTY;
-
-        @Override
-        public NameMapping create(Table table) {
-            return NameMapping.empty();
-        }
+    public static NameMapping of(NameMappingProvider provider, Table table) {
+        return provider.walk(new NameMappingProviderImpl(table));
     }
 
-    enum FromTable implements NameMappingProviderImpl {
-        FROM_TABLE;
+    private final Table table;
 
-        @Override
-        public NameMapping create(Table table) {
-            return NameMappingUtil.readNameMappingDefault(table).orElse(NameMapping.empty());
-        }
+    NameMappingProviderImpl(Table table) {
+        this.table = Objects.requireNonNull(table);
     }
 
-    final class Explicit implements NameMappingProviderImpl {
-        private final NameMapping impl;
+    @Override
+    public NameMapping visit(NameMappingProvider.TableNameMapping tableNameMapping) {
+        return NameMappingUtil.readNameMappingDefault(table).orElse(NameMapping.empty());
+    }
 
-        public Explicit(NameMapping impl) {
-            this.impl = Objects.requireNonNull(impl);
-        }
+    @Override
+    public NameMapping visit(NameMappingProvider.EmptyNameMapping emptyNameMapping) {
+        return NameMapping.empty();
+    }
 
-        @Override
-        public NameMapping create(Table table) {
-            return impl;
-        }
+    @Override
+    public NameMapping visit(NameMappingProvider.DirectNameMapping directNameMapping) {
+        return directNameMapping.nameMapping();
     }
 }

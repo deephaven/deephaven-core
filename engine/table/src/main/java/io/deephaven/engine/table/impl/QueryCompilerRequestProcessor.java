@@ -19,8 +19,6 @@ import org.jetbrains.annotations.VisibleForTesting;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 public abstract class QueryCompilerRequestProcessor {
 
@@ -82,11 +80,13 @@ public abstract class QueryCompilerRequestProcessor {
             // The earlier we validate the future, the better.
             final CompletionStageFuture<Class<?>> future = resolver.getFuture();
             try {
-                future.get(0, TimeUnit.SECONDS);
+                if (!future.isDone()) {
+                    throw new IllegalStateException("Resolver future is not done, but it should be.");
+                }
+                future.get();
             } catch (ExecutionException err) {
                 throw new UncheckedDeephavenException("Compilation failed", err.getCause());
-            } catch (InterruptedException | TimeoutException err) {
-                // This should never happen since the future is already completed.
+            } catch (InterruptedException err) {
                 throw new UncheckedDeephavenException("Caught unexpected exception", err);
             }
 
@@ -144,8 +144,12 @@ public abstract class QueryCompilerRequestProcessor {
 
                 final List<Throwable> exceptions = new ArrayList<>();
                 for (CompletionStageFuture.Resolver<Class<?>> resolver : resolvers) {
+                    final CompletionStageFuture<Class<?>> future = resolver.getFuture();
                     try {
-                        Object ignored2 = resolver.getFuture().get();
+                        if (!future.isDone()) {
+                            throw new IllegalStateException("Resolver future is not done, but it should be.");
+                        }
+                        Object ignored2 = future.get();
                     } catch (ExecutionException err) {
                         exceptions.add(err.getCause());
                     } catch (InterruptedException err) {

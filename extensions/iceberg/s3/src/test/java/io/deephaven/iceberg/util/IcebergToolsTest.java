@@ -43,7 +43,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static io.deephaven.iceberg.util.ColumnInstructions.schemaField;
@@ -95,26 +94,31 @@ public abstract class IcebergToolsTest {
             .build();
 
     private static IcebergTableAdapter load(IcebergCatalogAdapter adapter, String id, TableDefinition definition) {
+        final org.apache.iceberg.Table table = adapter.catalog().loadTable(TableIdentifier.parse(id));
+        final Resolver resolver = resolver(definition, table.schema());
         return adapter.loadTable(LoadTableOptions.builder()
                 .id(id)
-                .resolver(new MyResolver(table -> resolver(definition, table.schema())))
+                .resolver(resolver)
                 .build());
     }
 
     private static IcebergTableAdapter load(IcebergCatalogAdapter adapter, String id, TableDefinition definition,
             ColumnInstructions... columnInstructions) {
+        final org.apache.iceberg.Table table = adapter.catalog().loadTable(TableIdentifier.parse(id));
+        final Resolver resolver = resolver(definition, table.schema(), columnInstructions);
         return adapter.loadTable(LoadTableOptions.builder()
                 .id(id)
-                .resolver(new MyResolver(table -> resolver(definition, table.schema(), columnInstructions)))
+                .resolver(resolver)
                 .build());
     }
 
     private static IcebergTableAdapter loadPartitions(IcebergCatalogAdapter adapter, String id,
             TableDefinition definition, ColumnInstructions... columnInstructions) {
+        final org.apache.iceberg.Table table = adapter.catalog().loadTable(TableIdentifier.parse(id));
+        final Resolver resolver = resolver(definition, table.schema(), table.spec(), columnInstructions);
         return adapter.loadTable(LoadTableOptions.builder()
                 .id(id)
-                .resolver(
-                        new MyResolver(table -> resolver(definition, table.schema(), table.spec(), columnInstructions)))
+                .resolver(resolver)
                 .build());
     }
 
@@ -957,18 +961,5 @@ public abstract class IcebergToolsTest {
         table.update(snapshots.get(5).snapshotId());
         updateGraph.runWithinUnitTestCycle(table::refresh);
         Assert.eq(table.size(), "table.size()", 0, "expected rows in the table");
-    }
-
-    private static class MyResolver extends ResolverProviderImpl {
-        private final Function<org.apache.iceberg.Table, Resolver> f;
-
-        public MyResolver(Function<org.apache.iceberg.Table, Resolver> f) {
-            this.f = Objects.requireNonNull(f);
-        }
-
-        @Override
-        Resolver resolver(org.apache.iceberg.Table table) {
-            return f.apply(table);
-        }
     }
 }
