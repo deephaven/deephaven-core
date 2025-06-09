@@ -47,8 +47,8 @@ public interface Credentials {
     }
 
     /**
-     * Session credentials with the specified access key id, secret access key, and session token.
-     * This is useful when using temporary credentials from AWS STS or similar services.
+     * Session credentials with the specified access key id, secret access key, and session token. This is useful when
+     * using temporary credentials from AWS STS or similar services.
      *
      * @param accessKeyId the access key id, used to identify the user
      * @param secretAccessKey the secret access key, used to authenticate the user

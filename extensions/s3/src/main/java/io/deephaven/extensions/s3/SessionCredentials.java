@@ -19,8 +19,7 @@ import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 abstract class SessionCredentials implements AwsSdkV2Credentials {
 
     static SessionCredentials of(
-        final String accessKeyId, final String secretAccessKey, final String sessionToken
-    ) {
+            final String accessKeyId, final String secretAccessKey, final String sessionToken) {
         return ImmutableSessionCredentials.of(accessKeyId, secretAccessKey, sessionToken);
     }
 
@@ -38,7 +37,6 @@ abstract class SessionCredentials implements AwsSdkV2Credentials {
     @Override
     public final AwsCredentialsProvider awsV2CredentialsProvider(@NotNull final S3Instructions instructions) {
         return StaticCredentialsProvider.create(AwsSessionCredentials.create(
-            accessKeyId(), secretAccessKey(), sessionToken()
-        ));
+                accessKeyId(), secretAccessKey(), sessionToken()));
     }
 }
