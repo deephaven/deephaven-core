@@ -20,6 +20,11 @@ class CredentialsTest {
     }
 
     @Test
+    void session() {
+        isCredentials(Credentials.session("accessKeyId", "secretAccessKey", "sessionToken"));
+    }
+
+    @Test
     void anonymous() {
         isCredentials(Credentials.anonymous());
     }
