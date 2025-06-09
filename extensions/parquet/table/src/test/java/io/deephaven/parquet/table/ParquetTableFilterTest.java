@@ -86,7 +86,7 @@ public final class ParquetTableFilterTest {
         for (int i = 0; i < tables.length; i++) {
             final Table table = tables[i];
             final String tableName = "table_" + String.format("%05d", i) + ".parquet";
-            System.out.println("Writing table " + tableName + " to " + destPath);
+            // System.out.println("Writing table " + tableName + " to " + destPath);
             ParquetTools.writeTable(table, Path.of(destPath, tableName).toString(), instructions);
         }
     }
@@ -367,7 +367,7 @@ public final class ParquetTableFilterTest {
         final Table largeTable = TableTools.emptyTable(tableSize).update(
                 "Timestamp = baseTime + i * 1_000_000_000L",
                 "sequential_val = ii % 117 == 0 ? null : ii", // with nulls
-                "symbol = ii % 119 == 0 ? null : String.format(`s%04d`, randomInt(0,10_000))",
+                "symbol = ii % 119 == 0 ? null : String.format(`s%03d`, randomInt(0,1_000))",
                 "sequential_bd = java.math.BigDecimal.valueOf(ii * 0.1)",
                 "sequential_bi = java.math.BigInteger.valueOf(ii)");
 
@@ -382,9 +382,9 @@ public final class ParquetTableFilterTest {
         // string range and match filters
         filterAndVerifyResults(diskTable, memTable, "symbol = null");
         filterAndVerifyResults(diskTable, memTable, "symbol != null");
-        filterAndVerifyResults(diskTable, memTable, "symbol = `s1000`");
-        filterAndVerifyResults(diskTable, memTable, "symbol < `s1000`");
-        filterAndVerifyResults(diskTable, memTable, "symbol = `s5000`");
+        filterAndVerifyResultsAllowEmpty(diskTable, memTable, "symbol = `s100`");
+        filterAndVerifyResults(diskTable, memTable, "symbol < `s100`");
+        filterAndVerifyResults(diskTable, memTable, "symbol = `s500`");
 
         // Timestamp range and match filters
         filterAndVerifyResults(diskTable, memTable, "Timestamp < '2023-01-02T00:00:00 NY'");
@@ -421,7 +421,7 @@ public final class ParquetTableFilterTest {
 
         // mixed type with complex filters
         final Filter complexFilter =
-                Filter.or(Filter.from("sequential_val <= 500", "sequential_val = 555", "symbol > `1000`"));
+                Filter.or(Filter.from("sequential_val <= 500", "sequential_val = 555", "symbol > `100`"));
         verifyResults(diskTable.where(complexFilter), memTable.where(complexFilter));
     }
 

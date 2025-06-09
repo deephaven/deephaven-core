@@ -19,6 +19,7 @@ import org.apache.parquet.schema.PrimitiveType;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.math.BigDecimal;
 import java.util.Optional;
 
 abstract class MinMaxFromStatistics {
@@ -89,8 +90,7 @@ abstract class MinMaxFromStatistics {
         @Override
         public Optional<MinMax> visit(
                 final LogicalTypeAnnotation.StringLogicalTypeAnnotation stringLogicalType) {
-            // TODO Handle string types
-            return Optional.empty();
+            return wrapMinMax(statistics.minAsString(), statistics.maxAsString());
         }
 
         @Override
@@ -172,8 +172,21 @@ abstract class MinMaxFromStatistics {
         @Override
         public Optional<MinMax> visit(
                 final LogicalTypeAnnotation.DecimalLogicalTypeAnnotation decimalLogicalType) {
-            // TODO: Handle decimal types
-            return Optional.empty();
+            // Read the min and max as string and convert them to BigDecimal
+            // This is helpful because big decimals can be stored in various formats, so it's easier to let the
+            // materializer handle the conversion
+            final String minAsString = statistics.minAsString();
+            final String maxAsString = statistics.maxAsString();
+            final BigDecimal minValue;
+            final BigDecimal maxValue;
+            try {
+                minValue = new BigDecimal(minAsString);
+                maxValue = new BigDecimal(maxAsString);
+            } catch (final NumberFormatException exception) {
+                // If the min or max cannot be parsed as a BigDecimal, we return empty
+                return Optional.empty();
+            }
+            return wrapMinMax(minValue, maxValue);
         }
     }
 }

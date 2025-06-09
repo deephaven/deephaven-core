@@ -81,7 +81,6 @@ class CompareUtils {
 
         if (aClass == BigDecimal.class) {
             final BigDecimal abd = (BigDecimal) a;
-
             if (NumericTypeUtils.isChar(bClass)) {
                 return abd.compareTo(BigDecimal.valueOf((char) b));
             }
