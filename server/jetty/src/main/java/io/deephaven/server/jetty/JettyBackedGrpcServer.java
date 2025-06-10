@@ -57,6 +57,7 @@ import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.jetbrains.annotations.NotNull;
 
 import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
@@ -81,7 +82,6 @@ import jakarta.websocket.Endpoint;
 import jakarta.websocket.server.ServerEndpointConfig;
 import nl.altindag.ssl.SSLFactory;
 import nl.altindag.ssl.jetty.util.JettySslUtils;
-import org.jetbrains.annotations.NotNull;
 
 @Singleton
 public class JettyBackedGrpcServer implements GrpcServer {
@@ -108,13 +108,12 @@ public class JettyBackedGrpcServer implements GrpcServer {
         Resource jsPluginsResource = context.getResourceFactory().newResource(jsPlugins.filesystem());
 
         // Build resources List
-        ArrayList<Resource> resources = new ArrayList<>();
-        resources.add(PathPrefixResource.wrap("/js-plugins", jsPluginsResource));
-        resources.addAll(urls.stream().map(url -> {
+        ArrayList<Resource> resources = new ArrayList<>(urls.stream().map(url -> {
             Resource resource = context.getResourceFactory().newResource(url);
             Require.neqNull(resource, "newResource(" + url + ")");
             return resource;
         }).toList());
+        resources.add(new PathPrefixResource("/js-plugins/", jsPluginsResource));
 
         Resource combinedResource = ResourceFactory.combine(resources);
         context.setBaseResource(combinedResource);
