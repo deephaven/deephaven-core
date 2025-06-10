@@ -80,6 +80,7 @@ import jakarta.websocket.Endpoint;
 import jakarta.websocket.server.ServerEndpointConfig;
 import nl.altindag.ssl.SSLFactory;
 import nl.altindag.ssl.jetty.util.JettySslUtils;
+import org.jetbrains.annotations.NotNull;
 
 @Singleton
 public class JettyBackedGrpcServer implements GrpcServer {
@@ -174,23 +175,13 @@ public class JettyBackedGrpcServer implements GrpcServer {
             this.websocketsEnabled = false;
         }
 
-        ControlledCacheResourceHandler controlledCacheResourceHandler = new ControlledCacheResourceHandler(context.getBaseResource(), context);
-
-        CrossOriginHandler corsHandler = createCrossOriginHandler(controlledCacheResourceHandler);
+        final ControlledCacheResourceHandler controlledCacheResourceHandler = new ControlledCacheResourceHandler(context.getBaseResource(), context);
+        final CrossOriginHandler corsHandler = createCrossOriginHandler(controlledCacheResourceHandler);
 
         // Optionally wrap the webapp in a gzip handler
         final Handler handler;
         if (config.httpCompressionOrDefault()) {
-            final GzipHandler gzipHandler = new GzipHandler();
-            // The default of 32 bytes seems a bit small.
-            gzipHandler.setMinGzipSize(1024);
-            // The GzipHandler documentation says GET is the default, but the constructor shows both GET and POST.
-            // This should ensure our gRPC messages don't get compressed for now, but we may need to be more explicit in
-            // the future as gRPC can technically operate over GET.
-            gzipHandler.setIncludedMethods(HttpMethod.GET.asString());
-            // Otherwise, the other defaults seem reasonable.
-            gzipHandler.setHandler(corsHandler);
-            handler = gzipHandler;
+            handler = createGzipHandler(corsHandler);
         } else {
             handler = corsHandler;
         }
@@ -294,59 +285,6 @@ public class JettyBackedGrpcServer implements GrpcServer {
         return ((ServerConnector) jetty.getConnectors()[0]).getLocalPort();
     }
 
-    private static CrossOriginHandler createCrossOriginHandler(Handler handler) {
-        // If requested, permit CORS requests
-        CrossOriginHandler corsHandler = new CrossOriginHandler();
-        // Permit all origins
-        corsHandler.setAllowedOriginPatterns(Set.of("*"));
-
-        // Only support POST - technically gRPC can use GET, but we don't use any of those methods
-        corsHandler.setAllowedMethods(Set.of("POST"));
-
-        // Required request headers for gRPC, gRPC-web, flight, and deephaven
-        corsHandler.setAllowedHeaders(Set.of(
-                // Required for CORS itself to work
-                HttpHeader.ORIGIN.asString(),
-                HttpHeader.ACCESS_CONTROL_ALLOW_ORIGIN.asString(),
-
-                // Required for gRPC
-                GrpcUtil.CONTENT_TYPE_KEY.name(),
-                GrpcUtil.TIMEOUT_KEY.name(),
-
-                // Optional for gRPC
-                GrpcUtil.MESSAGE_ENCODING_KEY.name(),
-                GrpcUtil.MESSAGE_ACCEPT_ENCODING_KEY.name(),
-                GrpcUtil.CONTENT_ENCODING_KEY.name(),
-                GrpcUtil.CONTENT_ACCEPT_ENCODING_KEY.name(),
-
-                // Required for gRPC-web
-                "x-grpc-web",
-                // Optional for gRPC-web
-                "x-user-agent",
-
-                // Required for Flight auth 1/2
-                AuthConstants.TOKEN_NAME,
-                Auth2Constants.AUTHORIZATION_HEADER,
-
-                // Required for DH gRPC browser bidi stream support
-                BrowserStreamInterceptor.TICKET_HEADER_NAME,
-                BrowserStreamInterceptor.SEQUENCE_HEADER_NAME,
-                BrowserStreamInterceptor.HALF_CLOSE_HEADER_NAME));
-
-        // Response headers that the browser will need to be able to decode
-        corsHandler.setExposedHeaders(Set.of(
-                Auth2Constants.AUTHORIZATION_HEADER,
-                GrpcUtil.CONTENT_TYPE_KEY.name(),
-                InternalStatus.CODE_KEY.name(),
-                InternalStatus.MESSAGE_KEY.name(),
-                // Not used (yet?), see io.grpc.protobuf.StatusProto
-                "grpc-status-details-bin"));
-
-        corsHandler.setHandler(handler);
-
-        return corsHandler;
-    }
-
     private static ServerConnector createConnector(Server server, JettyConfig config) {
         // https://www.eclipse.org/jetty/documentation/jetty-11/programming-guide/index.html#pg-server-http-connector-protocol-http2-tls
         final HttpConfiguration httpConfig = new HttpConfiguration();
@@ -415,4 +353,71 @@ public class JettyBackedGrpcServer implements GrpcServer {
 
         return serverConnector;
     }
+    
+    private static CrossOriginHandler createCrossOriginHandler(Handler handler) {
+        // If requested, permit CORS requests
+        CrossOriginHandler corsHandler = new CrossOriginHandler();
+        // Permit all origins
+        corsHandler.setAllowedOriginPatterns(Set.of("*"));
+
+        // Only support POST - technically gRPC can use GET, but we don't use any of those methods
+        corsHandler.setAllowedMethods(Set.of("POST"));
+
+        // Required request headers for gRPC, gRPC-web, flight, and deephaven
+        corsHandler.setAllowedHeaders(Set.of(
+                // Required for CORS itself to work
+                HttpHeader.ORIGIN.asString(),
+                HttpHeader.ACCESS_CONTROL_ALLOW_ORIGIN.asString(),
+
+                // Required for gRPC
+                GrpcUtil.CONTENT_TYPE_KEY.name(),
+                GrpcUtil.TIMEOUT_KEY.name(),
+
+                // Optional for gRPC
+                GrpcUtil.MESSAGE_ENCODING_KEY.name(),
+                GrpcUtil.MESSAGE_ACCEPT_ENCODING_KEY.name(),
+                GrpcUtil.CONTENT_ENCODING_KEY.name(),
+                GrpcUtil.CONTENT_ACCEPT_ENCODING_KEY.name(),
+
+                // Required for gRPC-web
+                "x-grpc-web",
+                // Optional for gRPC-web
+                "x-user-agent",
+
+                // Required for Flight auth 1/2
+                AuthConstants.TOKEN_NAME,
+                Auth2Constants.AUTHORIZATION_HEADER,
+
+                // Required for DH gRPC browser bidi stream support
+                BrowserStreamInterceptor.TICKET_HEADER_NAME,
+                BrowserStreamInterceptor.SEQUENCE_HEADER_NAME,
+                BrowserStreamInterceptor.HALF_CLOSE_HEADER_NAME));
+
+        // Response headers that the browser will need to be able to decode
+        corsHandler.setExposedHeaders(Set.of(
+                Auth2Constants.AUTHORIZATION_HEADER,
+                GrpcUtil.CONTENT_TYPE_KEY.name(),
+                InternalStatus.CODE_KEY.name(),
+                InternalStatus.MESSAGE_KEY.name(),
+                // Not used (yet?), see io.grpc.protobuf.StatusProto
+                "grpc-status-details-bin"));
+
+        corsHandler.setHandler(handler);
+
+        return corsHandler;
+    }
+
+    private static @NotNull GzipHandler createGzipHandler(Handler handler) {
+        final GzipHandler gzipHandler = new GzipHandler();
+        // The default of 32 bytes seems a bit small.
+        gzipHandler.setMinGzipSize(1024);
+        // The GzipHandler documentation says GET is the default, but the constructor shows both GET and POST.
+        // This should ensure our gRPC messages don't get compressed for now, but we may need to be more explicit in
+        // the future as gRPC can technically operate over GET.
+        gzipHandler.setIncludedMethods(HttpMethod.GET.asString());
+        // Otherwise, the other defaults seem reasonable.
+        gzipHandler.setHandler(handler);
+        return gzipHandler;
+    }
+
 }
