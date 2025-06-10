@@ -8,8 +8,8 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.util.resource.Resource;
 
-public class ETagResourceHandler extends ResourceHandler {
-    public ETagResourceHandler(Resource baseResource, Handler handler)
+public class ControlledCacheResourceHandler extends ResourceHandler {
+    public ControlledCacheResourceHandler(Resource baseResource, Handler handler)
     {
         super(handler);
         setBaseResource(baseResource);
@@ -19,7 +19,7 @@ public class ETagResourceHandler extends ResourceHandler {
     @Override
     protected HttpContent.Factory newHttpContentFactory()
     {
-        return ETagResourceHttpContentFactory.create(
+        return ControlledCacheHttpContentFactory.create(
                 getBaseResource(),
                 getByteBufferPool(),
                 getMimeTypes(),

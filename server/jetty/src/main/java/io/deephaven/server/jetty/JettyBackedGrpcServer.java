@@ -4,7 +4,6 @@
 package io.deephaven.server.jetty;
 
 import java.io.IOException;
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumSet;
@@ -27,9 +26,9 @@ import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.ee10.servlet.DefaultServlet;
 import org.eclipse.jetty.ee10.servlet.ErrorPageErrorHandler;
 import org.eclipse.jetty.ee10.servlet.FilterHolder;
-import org.eclipse.jetty.ee10.servlet.ResourceServlet;
+
 import static org.eclipse.jetty.ee10.servlet.ServletContextHandler.NO_SESSIONS;
-import org.eclipse.jetty.ee10.servlet.ServletHolder;
+
 import org.eclipse.jetty.ee10.servlet.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.ee10.websocket.jakarta.common.SessionTracker;
@@ -37,7 +36,6 @@ import org.eclipse.jetty.ee10.websocket.jakarta.server.JakartaWebSocketServerCon
 import org.eclipse.jetty.ee10.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
-import org.eclipse.jetty.http.content.HttpContent;
 import org.eclipse.jetty.http2.HTTP2Connection;
 import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.RateControl;
@@ -107,14 +105,19 @@ public class JettyBackedGrpcServer implements GrpcServer {
                 new WebAppContext("/", null, null, null, new ErrorPageErrorHandler(), NO_SESSIONS);
 
         List<String> urls = ServerResources.resourcesFromServiceLoader(Configuration.getInstance());
-        Resource resources = ResourceFactory.combine(urls.stream().map(url -> {
+        Resource jsPluginsResource = context.getResourceFactory().newResource(jsPlugins.filesystem());
+
+        // Build resources List
+        ArrayList<Resource> resources = new ArrayList<>();
+        resources.add(PathPrefixResource.wrap("/js-plugins", jsPluginsResource));
+        resources.addAll(urls.stream().map(url -> {
             Resource resource = context.getResourceFactory().newResource(url);
-            System.out.println("[TESTING] url: " + url);
             Require.neqNull(resource, "newResource(" + url + ")");
             return resource;
         }).toList());
 
-        context.setBaseResource(ControlledCacheResource.wrap(resources));
+        Resource combinedResource = ResourceFactory.combine(resources);
+        context.setBaseResource(combinedResource);
         context.setInitParameter(DefaultServlet.CONTEXT_INIT + "dirAllowed", "false");
 
         // Cache all of the appropriate assets folders
@@ -124,6 +127,8 @@ public class JettyBackedGrpcServer implements GrpcServer {
         }
         context.addFilter(NoCacheFilter.class, "/jsapi/*", EnumSet.noneOf(DispatcherType.class));
         context.addFilter(DropIfModifiedSinceHeader.class, "/*", EnumSet.noneOf(DispatcherType.class));
+        // TODO(deephaven-core#4620): Add js-plugins version-aware caching
+        context.addFilter(NoCacheFilter.class, JS_PLUGINS_PATH_SPEC, EnumSet.noneOf(DispatcherType.class));
 
         context.setSecurityHandler(new ConstraintSecurityHandler());
 
@@ -135,27 +140,6 @@ public class JettyBackedGrpcServer implements GrpcServer {
 
         // Wire up the provided grpc filter
         context.addFilter(new FilterHolder(filter), "/*", EnumSet.noneOf(DispatcherType.class));
-
-        // Wire up /js-plugins/*
-
-        // Create a custom HttpContent.Factory that can generate strong ETags for js-plugins resource
-        Resource jsPluginsResource = context.getResourceFactory().newResource(jsPlugins.filesystem());
-        HttpContent.Factory jsPluginsETagContentFactory = ETagResourceHttpContentFactory.create(
-                jsPluginsResource,
-                jetty.getByteBufferPool(),
-                jetty.getMimeTypes(),
-                jetty.getDefaultStyleSheet(),
-                new ArrayList<>(),
-                true
-        );
-
-        // The DefaultServlet and ResourceServlet both check for this attribute. If found, this gets used as the
-        // HttpContent.Factory.
-        context.setAttribute(HttpContent.Factory.class.getName(), jsPluginsETagContentFactory);
-
-        // TODO(deephaven-core#4620): Add js-plugins version-aware caching
-        context.addFilter(NoCacheFilter.class, JS_PLUGINS_PATH_SPEC, EnumSet.noneOf(DispatcherType.class));
-        context.addServlet(servletHolder("js-plugins", jsPlugins.filesystem()), JS_PLUGINS_PATH_SPEC);
 
         // Set up websockets for grpc-web - depending on configuration, we can register both in case we encounter a
         // client using "vanilla"
@@ -192,7 +176,7 @@ public class JettyBackedGrpcServer implements GrpcServer {
             this.websocketsEnabled = false;
         }
 
-        ETagResourceHandler eTagResourceHandler = new ETagResourceHandler(context.getBaseResource(), context);
+        ControlledCacheResourceHandler controlledCacheResourceHandler = new ControlledCacheResourceHandler(context.getBaseResource(), context);
 
         // If requested, permit CORS requests
         CrossOriginHandler corsHandler = new CrossOriginHandler();
@@ -240,7 +224,7 @@ public class JettyBackedGrpcServer implements GrpcServer {
                 InternalStatus.MESSAGE_KEY.name(),
                 // Not used (yet?), see io.grpc.protobuf.StatusProto
                 "grpc-status-details-bin"));
-        corsHandler.setHandler(eTagResourceHandler);
+        corsHandler.setHandler(controlledCacheResourceHandler);
 
         // Optionally wrap the webapp in a gzip handler
         final Handler handler;
@@ -425,19 +409,5 @@ public class JettyBackedGrpcServer implements GrpcServer {
         });
 
         return serverConnector;
-    }
-
-    private static ServletHolder servletHolder(String name, URI filesystemUri) {
-        System.out.println("[TESTING] js-plugins: " + filesystemUri);
-        final ServletHolder jsPlugins = new ServletHolder(name, ResourceServlet.class);
-        // Note, the URI needs explicitly be parseable as a directory URL ending in "!/", a requirement of the jetty
-        // resource creation implementation, see
-        // org.eclipse.jetty.util.resource.Resource.newResource(java.lang.String, boolean)
-        jsPlugins.setInitParameter("baseResource", filesystemUri.toString());
-        jsPlugins.setInitParameter("pathInfoOnly", "true");
-        jsPlugins.setInitParameter("dirAllowed", "false");
-        jsPlugins.setInitParameter("etags", "true");
-        jsPlugins.setAsyncSupported(true);
-        return jsPlugins;
     }
 }
