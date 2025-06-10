@@ -3,14 +3,14 @@
 //
 package io.deephaven.server.jetty;
 
-import org.eclipse.jetty.util.resource.Resource;
-
 import java.net.URI;
 import java.nio.file.Path;
 
+import org.eclipse.jetty.util.resource.Resource;
+
 /**
- * An empty resource that always indicates non-existence.
- * This is mostly needed to get around a bug in CombinedResource where it does not handle null resources correctly.
+ * An empty resource that always indicates non-existence. This is mostly needed to get around a bug in CombinedResource
+ * where it does not handle null resources correctly.
  */
 public class EmptyResource extends Resource {
     @Override

@@ -3,17 +3,18 @@
 //
 package io.deephaven.server.jetty;
 
-import org.eclipse.jetty.http.*;
-import org.eclipse.jetty.http.content.HttpContent;
+import java.io.IOException;
+import java.util.List;
+
+import org.eclipse.jetty.http.CompressedContentFormat;
+import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.content.FileMappingHttpContentFactory;
+import org.eclipse.jetty.http.content.HttpContent;
 import org.eclipse.jetty.http.content.PreCompressedHttpContentFactory;
 import org.eclipse.jetty.http.content.ResourceHttpContentFactory;
 import org.eclipse.jetty.http.content.ValidatingCachingHttpContentFactory;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.resource.Resource;
-
-import java.io.IOException;
-import java.util.List;
 
 /**
  * A custom `HttpContent.Factory` that creates `ControlledCacheHttpContent` instances.
@@ -23,6 +24,7 @@ public class ControlledCacheHttpContentFactory extends ResourceHttpContentFactor
      * Creates a `HttpContent.Factory` using a similar methodology used in `ResourceHandler.newHttpContentFactory()`
      * except that we use `ControlledCacheHttpContentFactory` instead of `ResourceHttpContentFactory` as the innermost
      * factory, and we don't include the `VirtualHttpContentFactory`.
+     * 
      * @param baseResource the base Resource
      * @param byteBufferPool the ByteBufferPool for ValidatingCachingHttpContentFactory
      * @param mimeTypes the MimeTypes
@@ -35,8 +37,7 @@ public class ControlledCacheHttpContentFactory extends ResourceHttpContentFactor
             ByteBufferPool byteBufferPool,
             MimeTypes mimeTypes,
             List<CompressedContentFormat> preCompressedFormats,
-            boolean useFileMapping
-    ) {
+            boolean useFileMapping) {
         // Use `ControlledCacheHttpContentFactory` instead of `ResourceHttpContentFactory`
         HttpContent.Factory contentFactory = new ControlledCacheHttpContentFactory(baseResource, mimeTypes);
 
@@ -44,7 +45,9 @@ public class ControlledCacheHttpContentFactory extends ResourceHttpContentFactor
             contentFactory = new FileMappingHttpContentFactory(contentFactory);
         }
         contentFactory = new PreCompressedHttpContentFactory(contentFactory, preCompressedFormats);
-        contentFactory = new ValidatingCachingHttpContentFactory(contentFactory, java.time.Duration.ofSeconds(1).toMillis(), byteBufferPool);
+        contentFactory = new ValidatingCachingHttpContentFactory(contentFactory,
+                java.time.Duration.ofSeconds(1).toMillis(), byteBufferPool);
+
         return contentFactory;
     }
 

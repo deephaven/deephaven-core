@@ -3,21 +3,23 @@
 //
 package io.deephaven.server.jetty;
 
-import org.eclipse.jetty.http.DateGenerator;
-import org.eclipse.jetty.http.HttpField;
-import org.eclipse.jetty.http.content.HttpContent;
-
 import java.io.IOException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.Base64;
 
+import org.eclipse.jetty.http.DateGenerator;
+import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.content.HttpContent;
+
 /**
  * A custom `HttpContent` implementation for finer control over caching behavior.
+ * 
  * - Calculates a strong ETag based on the content's SHA-256 hash.
+ * 
  * - Overrides all last modified related methods to signal that the content does not have a last modified time. This is
- *   needed since we don't use last modified timestamps inside of our .jar files.
+ * needed since we don't use last modified timestamps inside of our .jar files.
  */
 public class ControlledCacheHttpContent extends HttpContent.Wrapper {
 

@@ -8,9 +8,8 @@ import org.eclipse.jetty.util.resource.Resource;
 import java.util.Objects;
 
 /**
- * A `Resource` wrapper that only resolves URIs that start with a specific path prefix.
- * This is useful for creating resources that are only valid for a specific sub-path of the server without requiring
- * servlet apis.
+ * A `Resource` wrapper that only resolves URIs that start with a specific path prefix. This is useful for creating
+ * resources that are only valid for a specific sub-path of the server without requiring servlet apis.
  */
 public class PathPrefixResource extends WrappedResource {
     public PathPrefixResource(String pathPrefix, Resource wrapped) {

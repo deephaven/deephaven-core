@@ -146,8 +146,8 @@ public class JettyBackedGrpcServer implements GrpcServer {
                 jetty.getByteBufferPool(),
                 jetty.getMimeTypes(),
                 new ArrayList<>(),
-                true
-        );
+                true);
+
         context.setAttribute(HttpContent.Factory.class.getName(), controlledCacheHttpContentFactory);
 
         // Set up websockets for grpc-web - depending on configuration, we can register both in case we encounter a
