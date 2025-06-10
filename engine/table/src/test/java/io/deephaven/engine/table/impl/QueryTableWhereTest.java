@@ -2367,6 +2367,31 @@ public abstract class QueryTableWhereTest {
     }
 
     @Test
+    public void testDuplicateBarrierDeclarationThrows() {
+        QueryTable.PARALLEL_WHERE_SEGMENTS = 10;
+        QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT = 10_000;
+        final QueryTable source = testRefreshingTable(RowSetFactory.flat(100_000).toTracking());
+        final QueryTable sourceWithData = (QueryTable) source.update("A = ii");
+        DataIndexer.getOrCreateDataIndex(sourceWithData, "A");
+
+        final Object barrier = new Object(); // dummy barrier object for testing
+        final SplitRecorderFilter preFilter = new SplitRecorderFilter();
+        final SplitRecorderFilter postFilter = new SplitRecorderFilter();
+
+        final IllegalArgumentException err = assertThrows(IllegalArgumentException.class, () -> {
+            sourceWithData.where(Filter.and(
+                    preFilter.withBarrier(barrier),
+                    RawString.of("A < 50000").withBarrier(barrier),
+                    postFilter));
+        });
+        assertTrue(err.getMessage().contains("Filter Barriers must be unique!"));
+
+        // filters should not have run at all
+        assertEquals(0, preFilter.getAndSortSizes().size());
+        assertEquals(0, postFilter.getAndSortSizes().size());
+    }
+
+    @Test
     public void testDataIndexPrioritizesBarriersAndDependees() {
         QueryTable.PARALLEL_WHERE_SEGMENTS = 10;
         QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT = 10_000;
