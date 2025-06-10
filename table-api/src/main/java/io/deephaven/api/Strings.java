@@ -248,10 +248,18 @@ public class Strings {
         return "invokeSerially(" + of(serial.filter(), invert) + ")";
     }
 
+    public static String of(FilterBarrier barrier) {
+        return of(barrier, false);
+    }
+
     public static String of(FilterBarrier barrier, boolean invert) {
         // we don't have a way to represent barrier in the query language; so this can't round trip
         final String barrierId = barrier.barrier().toString();
         return "withBarrier(" + barrierId + ", " + of(barrier.filter(), invert) + ")";
+    }
+
+    public static String of(FilterRespectsBarrier respectsBarrier) {
+        return of(respectsBarrier, false);
     }
 
     public static String of(FilterRespectsBarrier respectsBarrier, boolean invert) {
