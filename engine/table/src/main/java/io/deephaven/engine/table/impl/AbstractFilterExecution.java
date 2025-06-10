@@ -4,7 +4,6 @@
 package io.deephaven.engine.table.impl;
 
 import com.google.common.collect.Streams;
-import io.deephaven.api.filter.Filter;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.context.ExecutionContext;
@@ -262,7 +261,7 @@ abstract class AbstractFilterExecution {
             this.context = context;
             this.declaredBarriers = ExtractBarriers.of(filter);
             this.respectedBarriers = ExtractRespectedBarriers.of(filter).stream()
-                    .map(barrier -> {
+                    .flatMap(barrier -> {
                         final Collection<Object> dependencies = barrierDependencies.get(barrier);
                         if (dependencies == null) {
                             return Stream.of(barrier);

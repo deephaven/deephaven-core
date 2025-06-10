@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.table.impl;
 
+import com.google.common.collect.Lists;
 import gnu.trove.list.TLongList;
 import gnu.trove.list.array.TLongArrayList;
 import io.deephaven.api.RawString;
@@ -61,6 +62,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Instant;
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -2204,6 +2206,7 @@ public abstract class QueryTableWhereTest {
 
     @Test
     public void testDataIndexNoBarrierPrioritizes() {
+        // this is a baseline test for the barrier related tests that follow
         QueryTable.PARALLEL_WHERE_SEGMENTS = 10;
         QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT = 10_000;
         final QueryTable source = testRefreshingTable(RowSetFactory.flat(100_000).toTracking());
@@ -2266,6 +2269,7 @@ public abstract class QueryTableWhereTest {
 
     @Test
     @Ignore
+    // TODO: do we topological sort in QueryTable#initializeAndPrioritizeFilters or add DataIndex prioritizing to AFE?
     public void testDataIndexRespectBarrierPartialPrioritization() {
         QueryTable.PARALLEL_WHERE_SEGMENTS = 10;
         QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT = 10_000;
@@ -2421,6 +2425,138 @@ public abstract class QueryTableWhereTest {
         assertEquals(25_000, postFilter.numRowsFiltered());
     }
 
+    @Test
+    public void testPushdownBarriersAndSerial() {
+        QueryTable.PARALLEL_WHERE_SEGMENTS = 10;
+        QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT = 10_000;
+
+        final int[] columnData = new int[100_000];
+        for (int ii = 0; ii < columnData.length; ++ii) {
+            columnData[ii] = ii;
+        }
+
+        final WritableRowSet rowSet = RowSetFactory.flat(columnData.length);
+        final Map<String, ColumnSource<?>> csMap = Map.of(
+                "A", new PushdownIntTestSource(rowSet, 100L, 1.0, columnData),
+                "B", new PushdownIntTestSource(rowSet, 90L, 1.0, columnData),
+                "C", new PushdownIntTestSource(rowSet, 80L, 1.0, columnData));
+
+        final Table source = new QueryTable(rowSet.toTracking(), csMap);
+        final QueryTable sourceWithData = (QueryTable) source.update("I = ii");
+        DataIndexer.getOrCreateDataIndex(sourceWithData, "I");
+
+        final Object barrier = new Object();
+        final SplitRecorderFilter preFilter = new SplitRecorderFilter();
+        final SplitRecorderFilter midFilter = new SplitRecorderFilter();
+        final SplitRecorderFilter postFilter = new SplitRecorderFilter();
+
+        final SplitRecorderFilter filter1 = new SplitRecorderFilter(RawString.of("A >= 20000"));
+        final SplitRecorderFilter filter2 = new SplitRecorderFilter(RawString.of("C < 25000"));
+
+        final ArrayList<SplitRecorderFilter> allFilters =
+                Lists.newArrayList(preFilter, midFilter, postFilter, filter1, filter2);
+
+        // total reorder filter2 in front of filter1
+        sourceWithData.where(Filter.and(
+                preFilter,
+                filter1,
+                midFilter,
+                filter2,
+                postFilter));
+        // should bubble up filter2, then filter1, finally remaining three filters
+        assertEquals(5_000, preFilter.numRowsFiltered());
+        assertEquals(25_000, filter1.numRowsFiltered());
+        assertEquals(5_000, midFilter.numRowsFiltered());
+        assertEquals(100_000, filter2.numRowsFiltered());
+        assertEquals(5_000, postFilter.numRowsFiltered());
+
+        // partial reorder filter2 right behind filter1
+        allFilters.forEach(SplitRecorderFilter::reset);
+        sourceWithData.where(Filter.and(
+                preFilter,
+                filter1.withBarrier(barrier),
+                midFilter,
+                filter2.respectsBarrier(barrier),
+                postFilter));
+        // should bubble up filter1, then filter2, finally remaining three filters
+        assertEquals(5_000, preFilter.numRowsFiltered());
+        assertEquals(100_000, filter1.numRowsFiltered());
+        assertEquals(5_000, midFilter.numRowsFiltered());
+        assertEquals(80_000, filter2.numRowsFiltered());
+        assertEquals(5_000, postFilter.numRowsFiltered());
+
+        // partial reorder where filter2 bumps up to the serial filter, but not up to the respected barrier
+        allFilters.forEach(SplitRecorderFilter::reset);
+        sourceWithData.where(Filter.and(
+                preFilter,
+                filter1.withBarrier(barrier),
+                midFilter.withSerial(),
+                postFilter,
+                filter2.respectsBarrier(barrier)));
+        // should bubble up filter 1, preFilter, midFilter, then filter2 and postFilter
+        assertEquals(80_000, preFilter.numRowsFiltered());
+        assertEquals(100_000, filter1.numRowsFiltered());
+        assertEquals(80_000, midFilter.numRowsFiltered());
+        assertEquals(80_000, filter2.numRowsFiltered());
+        assertEquals(5_000, postFilter.numRowsFiltered());
+
+        // partial reorder where filter 1 cannot move, and filter 2 bumps up to the serial filter
+        allFilters.forEach(SplitRecorderFilter::reset);
+        sourceWithData.where(Filter.and(
+                preFilter.withBarrier(preFilter),
+                filter1.respectsBarrier(preFilter).withBarrier(barrier),
+                midFilter.withSerial(),
+                postFilter,
+                filter2.respectsBarrier(barrier)));
+        // should bubble up preFilter, filter 1, midFilter, then filter2 and postFilter
+        assertEquals(100_000, preFilter.numRowsFiltered());
+        assertEquals(100_000, filter1.numRowsFiltered());
+        assertEquals(80_000, midFilter.numRowsFiltered());
+        assertEquals(80_000, filter2.numRowsFiltered());
+        assertEquals(5_000, postFilter.numRowsFiltered());
+    }
+
+    @Test
+    public void testPushdownTransitiveBarriers() {
+        QueryTable.PARALLEL_WHERE_SEGMENTS = 10;
+        QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT = 10_000;
+
+        final int[] columnData = new int[100_000];
+        for (int ii = 0; ii < columnData.length; ++ii) {
+            columnData[ii] = ii;
+        }
+
+        final WritableRowSet rowSet = RowSetFactory.flat(columnData.length);
+        final Map<String, ColumnSource<?>> csMap = Map.of(
+                "A", new PushdownIntTestSource(rowSet, 100L, 1.0, columnData),
+                "B", new PushdownIntTestSource(rowSet, 90L, 1.0, columnData),
+                "C", new PushdownIntTestSource(rowSet, 80L, 1.0, columnData));
+
+        final Table source = new QueryTable(rowSet.toTracking(), csMap);
+        final QueryTable sourceWithData = (QueryTable) source.update("I = ii");
+        DataIndexer.getOrCreateDataIndex(sourceWithData, "I");
+
+        final SplitRecorderFilter preFilter = new SplitRecorderFilter();
+        final SplitRecorderFilter postFilter = new SplitRecorderFilter();
+
+        final SplitRecorderFilter filter1 = new SplitRecorderFilter(RawString.of("A >= 20000"));
+        final SplitRecorderFilter filter2 = new SplitRecorderFilter(RawString.of("B < 50000"));
+        final SplitRecorderFilter filter3 = new SplitRecorderFilter(RawString.of("C < 25000"));
+
+        sourceWithData.where(Filter.and(
+                preFilter,
+                filter1.withBarrier("1"),
+                filter2.respectsBarrier("1").withBarrier("2"),
+                filter3.respectsBarrier("2"),
+                postFilter));
+        // should be f1, f2, f3, pre, then post
+        assertEquals(5_000, preFilter.numRowsFiltered());
+        assertEquals(100_000, filter1.numRowsFiltered());
+        assertEquals(80_000, filter2.numRowsFiltered());
+        assertEquals(30_000, filter3.numRowsFiltered());
+        assertEquals(5_000, postFilter.numRowsFiltered());
+    }
+
     protected static class SplitRecorderFilter extends WhereFilterImpl {
         private final TLongList sizes = new TLongArrayList();
         private final WhereFilter innerFilter;
@@ -2473,7 +2609,12 @@ public abstract class QueryTableWhereTest {
 
         @Override
         public boolean isSimpleFilter() {
-            return innerFilter == null ? true : innerFilter.isSimpleFilter();
+            return innerFilter == null || innerFilter.isSimpleFilter();
+        }
+
+        @Override
+        public boolean permitParallelization() {
+            return innerFilter == null || innerFilter.permitParallelization();
         }
 
         @Override

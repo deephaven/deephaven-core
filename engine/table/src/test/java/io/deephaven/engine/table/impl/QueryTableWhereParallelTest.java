@@ -100,4 +100,8 @@ public class QueryTableWhereParallelTest extends QueryTableWhereTest {
         // Ensure the table is as expected.
         TstUtils.validate(en);
     }
+
+    public void testPushdownTransitiveBarriers() {
+        super.testPushdownTransitiveBarriers();
+    }
 }
