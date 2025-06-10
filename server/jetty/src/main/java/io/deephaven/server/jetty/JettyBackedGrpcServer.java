@@ -145,7 +145,6 @@ public class JettyBackedGrpcServer implements GrpcServer {
                 context.getBaseResource(),
                 jetty.getByteBufferPool(),
                 jetty.getMimeTypes(),
-                jetty.getDefaultStyleSheet(),
                 new ArrayList<>(),
                 true
         );

@@ -8,7 +8,6 @@ import org.eclipse.jetty.http.content.HttpContent;
 import org.eclipse.jetty.http.content.FileMappingHttpContentFactory;
 import org.eclipse.jetty.http.content.PreCompressedHttpContentFactory;
 import org.eclipse.jetty.http.content.ResourceHttpContentFactory;
-import org.eclipse.jetty.http.content.VirtualHttpContentFactory;
 import org.eclipse.jetty.http.content.ValidatingCachingHttpContentFactory;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.resource.Resource;
@@ -21,13 +20,12 @@ import java.util.List;
  */
 public class ControlledCacheHttpContentFactory extends ResourceHttpContentFactory {
     /**
-     * Creates a `HttpContent.Factory` using the same methodology used in `ResourceHandler.newHttpContentFactory()`
+     * Creates a `HttpContent.Factory` using a similar methodology used in `ResourceHandler.newHttpContentFactory()`
      * except that we use `ControlledCacheHttpContentFactory` instead of `ResourceHttpContentFactory` as the innermost
-     * factory.
+     * factory, and we don't include the `VirtualHttpContentFactory`.
      * @param baseResource the base Resource
      * @param byteBufferPool the ByteBufferPool for ValidatingCachingHttpContentFactory
      * @param mimeTypes the MimeTypes
-     * @param styleSheet the stylesheet Resource for VirtualHttpContentFactory
      * @param preCompressedFormats formats for PreCompressedHttpContentFactory
      * @param useFileMapping whether to use FileMappingHttpContentFactory
      * @return the wrapped HttpContent.Factory
@@ -36,7 +34,6 @@ public class ControlledCacheHttpContentFactory extends ResourceHttpContentFactor
             Resource baseResource,
             ByteBufferPool byteBufferPool,
             MimeTypes mimeTypes,
-            Resource styleSheet,
             List<CompressedContentFormat> preCompressedFormats,
             boolean useFileMapping
     ) {
@@ -46,7 +43,6 @@ public class ControlledCacheHttpContentFactory extends ResourceHttpContentFactor
         if (useFileMapping) {
             contentFactory = new FileMappingHttpContentFactory(contentFactory);
         }
-        contentFactory = new VirtualHttpContentFactory(contentFactory, styleSheet, "text/css");
         contentFactory = new PreCompressedHttpContentFactory(contentFactory, preCompressedFormats);
         contentFactory = new ValidatingCachingHttpContentFactory(contentFactory, java.time.Duration.ofSeconds(1).toMillis(), byteBufferPool);
         return contentFactory;
