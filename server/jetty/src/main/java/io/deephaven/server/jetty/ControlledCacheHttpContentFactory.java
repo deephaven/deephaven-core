@@ -59,7 +59,7 @@ public class ControlledCacheHttpContentFactory extends ResourceHttpContentFactor
     @Override
     public HttpContent getContent(String pathInContext) throws IOException {
         HttpContent content = super.getContent(pathInContext);
-        
+
         if (content == null) {
             return null;
         }

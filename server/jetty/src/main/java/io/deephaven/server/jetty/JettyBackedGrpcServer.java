@@ -34,6 +34,7 @@ import org.eclipse.jetty.ee10.websocket.jakarta.server.JakartaWebSocketServerCon
 import org.eclipse.jetty.ee10.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.content.HttpContent;
 import org.eclipse.jetty.http2.HTTP2Connection;
 import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.RateControl;
@@ -118,6 +119,7 @@ public class JettyBackedGrpcServer implements GrpcServer {
         Resource combinedResource = ResourceFactory.combine(resources);
         context.setBaseResource(combinedResource);
         context.setInitParameter(DefaultServlet.CONTEXT_INIT + "dirAllowed", "false");
+        context.setInitParameter(DefaultServlet.CONTEXT_INIT + "etags", "true");
 
         // Cache all of the appropriate assets folders
         for (String appRoot : List.of("/ide/", "/iframe/table/", "/iframe/chart/", "/iframe/widget/")) {
@@ -139,6 +141,16 @@ public class JettyBackedGrpcServer implements GrpcServer {
 
         // Wire up the provided grpc filter
         context.addFilter(new FilterHolder(filter), "/*", EnumSet.noneOf(DispatcherType.class));
+
+        HttpContent.Factory controlledCacheHttpContentFactory = ControlledCacheHttpContentFactory.create(
+                context.getBaseResource(),
+                jetty.getByteBufferPool(),
+                jetty.getMimeTypes(),
+                jetty.getDefaultStyleSheet(),
+                new ArrayList<>(),
+                true
+        );
+        context.setAttribute(HttpContent.Factory.class.getName(), controlledCacheHttpContentFactory);
 
         // Set up websockets for grpc-web - depending on configuration, we can register both in case we encounter a
         // client using "vanilla"
@@ -175,8 +187,7 @@ public class JettyBackedGrpcServer implements GrpcServer {
             this.websocketsEnabled = false;
         }
 
-        final ControlledCacheResourceHandler controlledCacheResourceHandler = new ControlledCacheResourceHandler(context.getBaseResource(), context);
-        final CrossOriginHandler corsHandler = createCrossOriginHandler(controlledCacheResourceHandler);
+        final CrossOriginHandler corsHandler = createCrossOriginHandler(context);
 
         // Optionally wrap the webapp in a gzip handler
         final Handler handler;
@@ -353,7 +364,7 @@ public class JettyBackedGrpcServer implements GrpcServer {
 
         return serverConnector;
     }
-    
+
     private static CrossOriginHandler createCrossOriginHandler(Handler handler) {
         // If requested, permit CORS requests
         CrossOriginHandler corsHandler = new CrossOriginHandler();
