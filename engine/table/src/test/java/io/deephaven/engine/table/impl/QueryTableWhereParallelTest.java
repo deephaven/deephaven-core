@@ -31,6 +31,8 @@ public class QueryTableWhereParallelTest extends QueryTableWhereTest {
 
     @Before
     public void setUp() throws Exception {
+        super.setUp();
+
         // these are reset in parent class
         QueryTable.FORCE_PARALLEL_WHERE = true;
         QueryTable.DISABLE_PARALLEL_WHERE = false;

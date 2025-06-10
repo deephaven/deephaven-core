@@ -1315,15 +1315,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                     && filter.isSimpleFilter()
                     && DataIndexer.hasDataIndex(this, filter.getColumns().toArray(String[]::new))) {
                 priorityFilterIndexes.set(fi);
-
-                final Collection<Object> newBarriers = ExtractBarriers.of(filter);
-                final Optional<Object> dupBarrier =
-                        priorityBarriers.stream().filter(newBarriers::contains).findFirst();
-                if (dupBarrier.isPresent()) {
-                    throw new IllegalArgumentException("Filter Barriers must be unique! Found duplicate: " +
-                            dupBarrier.get());
-                }
-                priorityBarriers.addAll(newBarriers);
+                priorityBarriers.addAll(ExtractBarriers.of(filter));
             }
         }
 
