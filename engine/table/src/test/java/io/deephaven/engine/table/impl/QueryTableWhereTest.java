@@ -2451,7 +2451,8 @@ public abstract class QueryTableWhereTest {
         }
 
         @Override
-        public void init(@NotNull TableDefinition tableDefinition, @NotNull QueryCompilerRequestProcessor compilationProcessor) {
+        public void init(@NotNull TableDefinition tableDefinition,
+                @NotNull QueryCompilerRequestProcessor compilationProcessor) {
             if (innerFilter != null) {
                 innerFilter.init(tableDefinition, compilationProcessor);
             }
