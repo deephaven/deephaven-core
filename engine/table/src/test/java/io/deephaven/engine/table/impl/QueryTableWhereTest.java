@@ -3,6 +3,8 @@
 //
 package io.deephaven.engine.table.impl;
 
+import gnu.trove.list.TLongList;
+import gnu.trove.list.array.TLongArrayList;
 import io.deephaven.api.RawString;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.base.verify.Assert;
@@ -20,6 +22,7 @@ import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.ShiftObliviousListener;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
 import io.deephaven.engine.table.impl.chunkfilter.IntRangeComparator;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
@@ -47,6 +50,9 @@ import io.deephaven.util.datastructures.CachingSupplier;
 import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.mutable.MutableObject;
+import org.jetbrains.annotations.NotNull;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -55,6 +61,7 @@ import java.math.BigInteger;
 import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
@@ -76,6 +83,27 @@ public abstract class QueryTableWhereTest {
 
     @Rule
     public final EngineCleanup base = new EngineCleanup();
+
+    private boolean oldParallel;
+    private boolean oldDisable;
+    private int oldSegments;
+    private long oldSize;
+
+    @Before
+    public void setUp() throws Exception {
+        oldParallel = QueryTable.FORCE_PARALLEL_WHERE;
+        oldDisable = QueryTable.DISABLE_PARALLEL_WHERE;
+        oldSegments = QueryTable.PARALLEL_WHERE_SEGMENTS;
+        oldSize = QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT;
+    }
+
+    @After
+    public void tearDown() throws Exception {
+        QueryTable.FORCE_PARALLEL_WHERE = oldParallel;
+        QueryTable.DISABLE_PARALLEL_WHERE = oldDisable;
+        QueryTable.PARALLEL_WHERE_SEGMENTS = oldSegments;
+        QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT = oldSize;
+    }
 
     @Test
     public void testWhere() {
@@ -2170,6 +2198,259 @@ public abstract class QueryTableWhereTest {
         result = source.where(Filter.or(f1, f2, f3));
         try (final RowSet expected = i(0, 2, 4)) {
             assertTrue("result.getRowSet().equals(expected)", result.getRowSet().equals(expected));
+        }
+    }
+
+
+    @Test
+    public void testDataIndexNoBarrierPrioritizes() {
+        QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT = 10_000;
+        final QueryTable source = testRefreshingTable(RowSetFactory.flat(100_000).toTracking());
+        final QueryTable sourceWithData = (QueryTable) source.update("A = ii");
+        DataIndexer.getOrCreateDataIndex(sourceWithData, "A");
+
+        final SplitRecorderFilter preFilter = new SplitRecorderFilter();
+        final SplitRecorderFilter postFilter = new SplitRecorderFilter();
+
+        final Table result = sourceWithData.where(
+                Filter.and(preFilter, RawString.of("A < 50000"), postFilter));
+
+        // we expect the pre-filter to see after the raw-string filter
+        assertEquals(SplitRecorderFilter.getPredictedSplits(50_000), preFilter.getAndSortSizes());
+        assertEquals(SplitRecorderFilter.getPredictedSplits(50_000), postFilter.getAndSortSizes());
+        assertEquals(50_000, result.size());
+    }
+
+    @Test
+    public void testDataIndexSerialDoesNotPrioritize() {
+        QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT = 10_000;
+        final QueryTable source = testRefreshingTable(RowSetFactory.flat(100_000).toTracking());
+        final QueryTable sourceWithData = (QueryTable) source.update("A = ii");
+        DataIndexer.getOrCreateDataIndex(sourceWithData, "A");
+
+        final SplitRecorderFilter preFilter = new SplitRecorderFilter();
+        final SplitRecorderFilter postFilter = new SplitRecorderFilter();
+
+        final Table result = sourceWithData.where(
+                Filter.and(preFilter, RawString.of("A < 50000").withSerial(), postFilter));
+
+        assertEquals(SplitRecorderFilter.getPredictedSplits(100_000), preFilter.getAndSortSizes());
+        assertEquals(SplitRecorderFilter.getPredictedSplits(50_000), postFilter.getAndSortSizes());
+        assertEquals(50_000, result.size());
+    }
+
+    @Test
+    public void testDataIndexRespectBarrierDoesNotPrioritize() {
+        QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT = 10_000;
+        final QueryTable source = testRefreshingTable(RowSetFactory.flat(100_000).toTracking());
+        final QueryTable sourceWithData = (QueryTable) source.update("A = ii");
+        DataIndexer.getOrCreateDataIndex(sourceWithData, "A");
+
+        final SplitRecorderFilter preFilter = new SplitRecorderFilter();
+        final SplitRecorderFilter postFilter = new SplitRecorderFilter();
+
+        final Object barrier = new Object(); // dummy barrier object for testing
+        final Table result = sourceWithData.where(
+                Filter.and(
+                        preFilter.withBarrier(barrier),
+                        RawString.of("A < 50000").respectsBarrier(barrier),
+                        postFilter));
+
+        assertEquals(SplitRecorderFilter.getPredictedSplits(100_000), preFilter.getAndSortSizes());
+        assertEquals(SplitRecorderFilter.getPredictedSplits(50_000), postFilter.getAndSortSizes());
+        assertEquals(50_000, result.size());
+    }
+
+    @Test
+    public void testDataIndexRespectBarrierDeepEqValidates() {
+        QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT = 10_000;
+        final QueryTable source = testRefreshingTable(RowSetFactory.flat(100_000).toTracking());
+        final QueryTable sourceWithData = (QueryTable) source.update("A = ii");
+        DataIndexer.getOrCreateDataIndex(sourceWithData, "A");
+
+        final SplitRecorderFilter preFilter = new SplitRecorderFilter();
+        final SplitRecorderFilter postFilter = new SplitRecorderFilter();
+
+        final class DeepEqBarrier {
+            final String name;
+
+            DeepEqBarrier(String name) {
+                this.name = name;
+            }
+
+            @Override
+            public boolean equals(Object obj) {
+                if (this == obj)
+                    return true;
+                if (!(obj instanceof DeepEqBarrier))
+                    return false;
+                final DeepEqBarrier other = (DeepEqBarrier) obj;
+                return name.equals(other.name);
+            }
+
+            @Override
+            public int hashCode() {
+                return name.hashCode();
+            }
+        }
+
+        final Table result = sourceWithData.where(
+                Filter.and(
+                        preFilter.withBarrier(new DeepEqBarrier("my_test_barrier")),
+                        RawString.of("A < 50000").respectsBarrier(new DeepEqBarrier("my_test_barrier")),
+                        postFilter));
+
+        assertEquals(SplitRecorderFilter.getPredictedSplits(100_000), preFilter.getAndSortSizes());
+        assertEquals(SplitRecorderFilter.getPredictedSplits(50_000), postFilter.getAndSortSizes());
+        assertEquals(50_000, result.size());
+    }
+
+    @Test
+    public void testDataIndexRespectBarrierThrowsIfNotFound() {
+        QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT = 10_000;
+        final QueryTable source = testRefreshingTable(RowSetFactory.flat(100_000).toTracking());
+        final QueryTable sourceWithData = (QueryTable) source.update("A = ii");
+        DataIndexer.getOrCreateDataIndex(sourceWithData, "A");
+
+        final SplitRecorderFilter preFilter = new SplitRecorderFilter();
+        final SplitRecorderFilter postFilter = new SplitRecorderFilter();
+
+        try {
+            sourceWithData.where(
+                    Filter.and(
+                            preFilter.withBarrier(new Object()),
+                            RawString.of("A < 50000").respectsBarrier(new Object()),
+                            postFilter));
+            org.junit.Assert.fail("Expected an exception due to a missing barrier.");
+        } catch (IllegalArgumentException err) {
+            org.junit.Assert.assertTrue(err.getMessage().contains("respects barrier"));
+            org.junit.Assert.assertTrue(err.getMessage().contains("that is not declared by any filter"));
+        }
+
+        // filters should not have run at all
+        assertEquals(0, preFilter.getAndSortSizes().size());
+        assertEquals(0, postFilter.getAndSortSizes().size());
+    }
+
+    @Test
+    public void testDataIndexPrioritizesBarriersAndDependees() {
+        QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT = 10_000;
+        final QueryTable source = testRefreshingTable(RowSetFactory.flat(100_000).toTracking());
+        final QueryTable sourceWithData = (QueryTable) source.update("A = ii");
+        DataIndexer.getOrCreateDataIndex(sourceWithData, "A");
+
+        final Object barrier = new Object();
+        final SplitRecorderFilter preFilter = new SplitRecorderFilter();
+        final SplitRecorderFilter midFilter = new SplitRecorderFilter();
+        final SplitRecorderFilter postFilter = new SplitRecorderFilter();
+
+        final Table result = sourceWithData.where(
+                Filter.and(
+                        preFilter,
+                        RawString.of("A < 50000").withBarrier(barrier),
+                        midFilter.respectsBarrier(barrier),
+                        RawString.of("A < 25000").respectsBarrier(barrier),
+                        postFilter));
+
+        // note that while the mid-filter respects the barrier, but will not be prioritized
+        assertEquals(SplitRecorderFilter.getPredictedSplits(25_000), preFilter.getAndSortSizes());
+        assertEquals(SplitRecorderFilter.getPredictedSplits(25_000), midFilter.getAndSortSizes());
+        assertEquals(SplitRecorderFilter.getPredictedSplits(25_000), postFilter.getAndSortSizes());
+    }
+
+    @Test
+    public void testDataIndexBarriersRespectTransitiveDependencies() {
+        QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT = 10_000;
+        final QueryTable source = testRefreshingTable(RowSetFactory.flat(100_000).toTracking());
+        final QueryTable sourceWithData = (QueryTable) source.update("A = ii");
+        DataIndexer.getOrCreateDataIndex(sourceWithData, "A");
+
+        final Object barrier = new Object();
+        final SplitRecorderFilter preFilter = new SplitRecorderFilter();
+        final SplitRecorderFilter midFilter = new SplitRecorderFilter();
+        final SplitRecorderFilter postFilter = new SplitRecorderFilter();
+
+        final Table result = sourceWithData.where(
+                Filter.and(
+                        preFilter,
+                        RawString.of("A < 50000").withSerial().withBarrier(barrier),
+                        midFilter.withBarrier("mid_barrier").respectsBarrier(barrier),
+                        RawString.of("A < 25000").respectsBarrier("mid_barrier"),
+                        postFilter));
+
+        // note that while the mid-filter respects the barrier, but will not be prioritized
+        assertEquals(SplitRecorderFilter.getPredictedSplits(100_000), preFilter.getAndSortSizes());
+        assertEquals(SplitRecorderFilter.getPredictedSplits(50_000), midFilter.getAndSortSizes());
+        assertEquals(SplitRecorderFilter.getPredictedSplits(25_000), postFilter.getAndSortSizes());
+    }
+
+    protected static class SplitRecorderFilter extends WhereFilterImpl {
+        private final TLongList sizes = new TLongArrayList();
+
+        @Override
+        public List<String> getColumns() {
+            return Collections.emptyList();
+        }
+
+        @Override
+        public List<String> getColumnArrays() {
+            return Collections.emptyList();
+        }
+
+        @Override
+        public void init(@NotNull final TableDefinition tableDefinition) {}
+
+        @NotNull
+        @Override
+        public WritableRowSet filter(
+                @NotNull RowSet selection, @NotNull RowSet fullSet, @NotNull Table table, boolean usePrev) {
+            synchronized (sizes) {
+                sizes.add(selection.size());
+            }
+            return selection.copy();
+        }
+
+        @Override
+        public boolean isSimpleFilter() {
+            return true;
+        }
+
+        @Override
+        public void setRecomputeListener(RecomputeListener result) {}
+
+        @Override
+        public WhereFilter copy() {
+            return this;
+        }
+
+        protected void reset() {
+            sizes.clear();
+        }
+
+        protected TLongList getAndSortSizes() {
+            synchronized (sizes) {
+                sizes.sort();
+                return sizes;
+            }
+        }
+
+        protected static TLongList getPredictedSplits(long totalSize) {
+            final TLongList predictedSplits = new TLongArrayList();
+
+            if (QueryTable.DISABLE_PARALLEL_WHERE) {
+                predictedSplits.add(totalSize);
+                return predictedSplits;
+            }
+
+            final long segmentSize = QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT;
+            while (totalSize > 0) {
+                final long splitSize = Math.min(segmentSize, totalSize);
+                predictedSplits.add(splitSize);
+                totalSize -= splitSize;
+            }
+
+            predictedSplits.sort();
+            return predictedSplits;
         }
     }
 }

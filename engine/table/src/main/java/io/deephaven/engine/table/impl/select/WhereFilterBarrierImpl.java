@@ -38,6 +38,6 @@ public class WhereFilterBarrierImpl extends WhereFilterDelegatingBase {
 
     @Override
     public String toString() {
-        return "barrier(" + barrier + ", " + filter + ")";
+        return "barrier{" + barrier + ", filter=" + filter + "}";
     }
 }
