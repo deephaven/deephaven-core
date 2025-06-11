@@ -87,7 +87,9 @@ import nl.altindag.ssl.jetty.util.JettySslUtils;
 public class JettyBackedGrpcServer implements GrpcServer {
     private static final String JS_PLUGINS_PATH_SPEC = "/" + JsPlugins.JS_PLUGINS + "/*";
 
+    private final WebAppContext context;
     private final Server jetty;
+    private final JsPlugins jsPlugins;
     private final ScheduledExecutorService executorService;
     private final boolean websocketsEnabled;
 
@@ -97,26 +99,12 @@ public class JettyBackedGrpcServer implements GrpcServer {
             final GrpcFilter filter,
             final JsPlugins jsPlugins,
             @Named("grpc.server") final ScheduledExecutorService executorService) {
+        this.jsPlugins = jsPlugins;
         jetty = new Server();
         jetty.addConnector(createConnector(jetty, config));
         this.executorService = executorService;
 
-        final WebAppContext context =
-                new WebAppContext("/", null, null, null, new ErrorPageErrorHandler(), NO_SESSIONS);
-
-        List<String> urls = ServerResources.resourcesFromServiceLoader(Configuration.getInstance());
-        Resource jsPluginsResource = context.getResourceFactory().newResource(jsPlugins.filesystem());
-
-        // Build resources List
-        ArrayList<Resource> resources = new ArrayList<>(urls.stream().map(url -> {
-            Resource resource = context.getResourceFactory().newResource(url);
-            Require.neqNull(resource, "newResource(" + url + ")");
-            return resource;
-        }).toList());
-        resources.add(new PathPrefixResource("/js-plugins/", jsPluginsResource));
-
-        Resource combinedResource = ResourceFactory.combine(resources);
-        context.setBaseResource(combinedResource);
+        context = new WebAppContext("/", null, null, null, new ErrorPageErrorHandler(), NO_SESSIONS);
         context.setInitParameter(DefaultServlet.CONTEXT_INIT + "dirAllowed", "false");
         context.setInitParameter(DefaultServlet.CONTEXT_INIT + "etags", "true");
 
@@ -140,15 +128,6 @@ public class JettyBackedGrpcServer implements GrpcServer {
 
         // Wire up the provided grpc filter
         context.addFilter(new FilterHolder(filter), "/*", EnumSet.noneOf(DispatcherType.class));
-
-        HttpContent.Factory controlledCacheHttpContentFactory = ControlledCacheHttpContentFactory.create(
-                context.getBaseResource(),
-                jetty.getByteBufferPool(),
-                jetty.getMimeTypes(),
-                new ArrayList<>(),
-                true);
-
-        context.setAttribute(HttpContent.Factory.class.getName(), controlledCacheHttpContentFactory);
 
         // Set up websockets for grpc-web - depending on configuration, we can register both in case we encounter a
         // client using "vanilla"
@@ -198,9 +177,42 @@ public class JettyBackedGrpcServer implements GrpcServer {
         jetty.setHandler(handler);
     }
 
+    /**
+     * Initialize the resources for the server, including the js-plugins filesystem. We don't do this in the constructor
+     * so that we can defer resources being opened until after the js plugins have been registered.
+     */
+    private void initResources() {
+        List<String> urls = ServerResources.resourcesFromServiceLoader(Configuration.getInstance());
+
+        // Build resources List
+        ArrayList<Resource> resources = new ArrayList<>(urls.stream().map(url -> {
+            Resource resource = context.getResourceFactory().newResource(url);
+            Require.neqNull(resource, "newResource(" + url + ")");
+            return resource;
+        }).toList());
+
+        // Creating the jsPlugins resource needs to happen after js plugins have been registered, since plugin 
+        // registration will fail if the .zip backing the jsPlugins file system is already open
+        Resource jsPluginsResource = context.getResourceFactory().newResource(jsPlugins.filesystem());
+        resources.add(new PathPrefixResource("/js-plugins/", jsPluginsResource));
+
+        Resource combinedResource = ResourceFactory.combine(resources);
+        context.setBaseResource(combinedResource);
+
+        HttpContent.Factory controlledCacheHttpContentFactory = ControlledCacheHttpContentFactory.create(
+                combinedResource,
+                jetty.getByteBufferPool(),
+                jetty.getMimeTypes(),
+                new ArrayList<>(),
+                true);
+
+        context.setAttribute(HttpContent.Factory.class.getName(), controlledCacheHttpContentFactory);
+    }
+
     @Override
     public void start() throws IOException {
         try {
+            initResources();
             jetty.start();
         } catch (RuntimeException exception) {
             throw exception;
