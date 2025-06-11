@@ -514,19 +514,21 @@ public class ParquetTableLocation extends AbstractTableLocation {
         final boolean isMatchFilter = filter instanceof MatchFilter;
 
         final String[] parquetColumnNames = getParquetColumnNames(filter.getColumns(), ctx.renameMap);
+
+        // Initialize the pushdown result with the selection rowset as "maybe" rows
+        PushdownResult result = PushdownResult.of(RowSetFactory.empty(), selection.copy());
         final int[] parquetIndices;
         try {
             parquetIndices = Arrays.stream(parquetColumnNames)
                     .mapToInt(name -> parquetMetadata.getFileMetaData().getSchema().getFieldIndex(name))
                     .toArray();
-        } catch (final Exception e) {
-            onError.accept(new TableDataException(String.format("Failed to find field index for columns '%s' in " +
-                    "Parquet schema for table %s", Arrays.toString(parquetColumnNames), getParquetKey().getURI()), e));
+        } catch (final RuntimeException e) {
+            // Failed to find the field index for the columns in the Parquet schema.
+            // This can happen if the columns are not present in the schema, so we return all rows as "maybe" rows, and
+            // let the filter be applied later.
+            onComplete.accept(result);
             return;
         }
-
-        // Initialize the pushdown result with the selection rowset as "maybe" rows
-        PushdownResult result = PushdownResult.of(RowSetFactory.empty(), selection.copy());
 
         // Should we look at the metadata?
         if (shouldExecute(QueryTable.DISABLE_WHERE_PUSHDOWN_PARQUET_ROW_GROUP_METADATA,
