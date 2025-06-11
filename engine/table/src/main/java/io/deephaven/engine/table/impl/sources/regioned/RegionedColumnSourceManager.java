@@ -27,6 +27,7 @@ import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.ReferentialIntegrity;
+import io.deephaven.util.mutable.MutableInt;
 import io.deephaven.util.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -542,6 +543,31 @@ public class RegionedColumnSourceManager
                 .collect(Collectors.toCollection(ArrayList::new));
     }
 
+    /**
+     * Returns a list of {@link IncludedTableLocationEntry} for the specified input row sequence, ordered by region
+     * index. The returned list will contain no duplicates.
+     *
+     * @param rowSequence The input row sequence
+     * @return A list of included table location entries for the specified input row sequence
+     */
+    private synchronized ArrayList<IncludedTableLocationEntry> includedLocationEntries(final RowSequence rowSequence) {
+        final ArrayList<IncludedTableLocationEntry> includedTableLocationEntries = new ArrayList<>();
+        final MutableInt lastRegion = new MutableInt(-1);
+        rowSequence.forAllRowKeyRanges((start, end) -> {
+            final int startRegionIndex = RegionedColumnSource.getRegionIndex(start);
+            final int endRegionIndex = RegionedColumnSource.getRegionIndex(end);
+            for (int regionIndex = startRegionIndex; regionIndex <= endRegionIndex; ++regionIndex) {
+                if (regionIndex == lastRegion.get()) {
+                    // Already processed this region
+                    continue;
+                }
+                includedTableLocationEntries.add(orderedIncludedTableLocations.get(regionIndex));
+                lastRegion.set(regionIndex);
+            }
+        });
+        return includedTableLocationEntries;
+    }
+
     @Override
     public Table locationTable() {
         return includedLocationsTable;
@@ -786,27 +812,23 @@ public class RegionedColumnSourceManager
             final RowSet fullSet,
             final boolean usePrev,
             final PushdownFilterContext context) {
-        final Collection<TableLocation> locations = includedLocations();
-        if (locations.isEmpty()) {
+        // Array list so that we can access locations by index.
+        final ArrayList<IncludedTableLocationEntry> includedLocationEntries = includedLocationEntries(selection);
+        if (includedLocationEntries.isEmpty()) {
             return 0; // No locations, no cost
         }
 
         // Test a few locations and assume the rest are similar (or no worse)
         final long locationCost;
 
-        final Collection<TableLocation> candidateLocations;
-        if (locations instanceof ArrayList) {
-            // Test regularly spaced locations.
-            final ArrayList<TableLocation> locationList = (ArrayList<TableLocation>) locations;
-            final int step = Math.max(1, locationList.size() / PUSHDOWN_LOCATION_SAMPLES);
-            candidateLocations =
-                    IntStream.range(0, Math.min(locationList.size(), PUSHDOWN_LOCATION_SAMPLES))
-                            .mapToObj(idx -> locationList.get(idx * step)).collect(Collectors.toList());
-        } else {
-            // Test consecutive locations at the beginning of the collection.
-            candidateLocations = locations.stream().limit(PUSHDOWN_LOCATION_SAMPLES)
-                    .collect(Collectors.toList());
-        }
+        // Test regularly spaced locations.
+        final int numIncludedLocations = includedLocationEntries.size();
+        final int step = Math.max(1, numIncludedLocations / PUSHDOWN_LOCATION_SAMPLES);
+        final Collection<TableLocation> candidateLocations =
+                IntStream.range(0, Math.min(numIncludedLocations, PUSHDOWN_LOCATION_SAMPLES))
+                        .mapToObj(idx -> includedLocationEntries.get(idx * step))
+                        .map(entry -> entry.location)
+                        .collect(Collectors.toList());
         locationCost = candidateLocations.parallelStream().mapToLong(
                 location -> location.estimatePushdownFilterCost(filter, selection, fullSet, usePrev, context))
                 .reduce(Long::min).orElse(Long.MAX_VALUE);
@@ -826,6 +848,11 @@ public class RegionedColumnSourceManager
             final Consumer<PushdownResult> onComplete,
             final Consumer<Exception> onError) {
 
+        final ArrayList<IncludedTableLocationEntry> includedLocationEntries = includedLocationEntries(input);
+        if (includedLocationEntries.isEmpty()) {
+            // No locations, nothing to do.
+            return;
+        }
         final RowSetBuilderRandom matchBuilder = RowSetFactory.builderRandom();
         final RowSetBuilderRandom maybeMatchBuilder = RowSetFactory.builderRandom();
         final MutableLong maybeMatchCount = new MutableLong(0);
@@ -835,9 +862,9 @@ public class RegionedColumnSourceManager
                 ExecutionContext.getContext(),
                 logOutput -> logOutput.append("RegionedColumnSourceManager#pushdownFilter"),
                 JobScheduler.DEFAULT_CONTEXT_FACTORY,
-                0, orderedIncludedTableLocations.size(),
+                0, includedLocationEntries.size(),
                 (ctx, locationIdx, locationNec, locationResume) -> {
-                    final IncludedTableLocationEntry entry = orderedIncludedTableLocations.get(locationIdx);
+                    final IncludedTableLocationEntry entry = includedLocationEntries.get(locationIdx);
 
                     final long locationStartKey = getFirstRowKey(entry.regionIndex);
                     final long locationEndKey = getLastRowKey(entry.regionIndex);

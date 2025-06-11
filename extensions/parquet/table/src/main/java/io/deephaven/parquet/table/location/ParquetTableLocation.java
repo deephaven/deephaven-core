@@ -23,6 +23,8 @@ import io.deephaven.engine.table.impl.sources.regioned.RegionedColumnSourceManag
 import io.deephaven.engine.table.impl.sources.regioned.RegionedPageStore;
 import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.table.vectors.ColumnVectors;
+import io.deephaven.internal.log.LoggerFactory;
+import io.deephaven.io.logger.Logger;
 import io.deephaven.parquet.base.ParquetFileReader;
 import io.deephaven.parquet.base.RowGroupReader;
 import io.deephaven.parquet.impl.ParquetSchemaUtil;
@@ -59,6 +61,8 @@ import static io.deephaven.parquet.table.ParquetTableWriter.GROUPING_END_POS_COL
 public class ParquetTableLocation extends AbstractTableLocation {
 
     private static final String IMPLEMENTATION_NAME = ParquetColumnLocation.class.getSimpleName();
+
+    private static final Logger log = LoggerFactory.getLogger(ParquetTableLocation.class);
 
     private final ParquetInstructions readInstructions;
 
@@ -428,12 +432,18 @@ public class ParquetTableLocation extends AbstractTableLocation {
             final RowSet fullSet,
             final boolean usePrev,
             final PushdownFilterContext context) {
+        if (selection.isEmpty()) {
+            // If the selection is empty, we can skip all pushdown filtering.
+            log.error().append("Estimate pushdown filter cost called with empty selection for table ")
+                    .append(getTableKey()).endl();
+            return 0L;
+        }
         initialize();
         final RegionedColumnSourceManager.RegionedColumnSourcePushdownFilterContext ctx =
                 (RegionedColumnSourceManager.RegionedColumnSourcePushdownFilterContext) context;
         final long executedFilterCost = context.executedFilterCost();
 
-        // Some range filter host a condition filter as the internal filter and we can't push that down.
+        // Some range filters host a condition filter as the internal filter and we can't push that down.
         final boolean isRangeFilter =
                 filter instanceof RangeFilter && ((RangeFilter) filter).getRealFilter() instanceof AbstractRangeFilter;
         final boolean isMatchFilter = filter instanceof MatchFilter;
@@ -486,6 +496,12 @@ public class ParquetTableLocation extends AbstractTableLocation {
             final JobScheduler jobScheduler,
             final Consumer<PushdownResult> onComplete,
             final Consumer<Exception> onError) {
+        if (selection.isEmpty()) {
+            log.error().append("Pushdown filter called with empty selection for table ")
+                    .append(getTableKey()).endl();
+            onComplete.accept(PushdownResult.of(RowSetFactory.empty(), RowSetFactory.empty()));
+            return;
+        }
         initialize();
         final RegionedColumnSourceManager.RegionedColumnSourcePushdownFilterContext ctx =
                 (RegionedColumnSourceManager.RegionedColumnSourcePushdownFilterContext) context;
