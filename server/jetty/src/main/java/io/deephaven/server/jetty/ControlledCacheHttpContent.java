@@ -4,11 +4,13 @@
 package io.deephaven.server.jetty;
 
 import java.io.IOException;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
+import java.io.InputStream;
 import java.time.Instant;
-import java.util.Base64;
 
+import com.google.common.hash.Funnels;
+import com.google.common.hash.Hasher;
+import com.google.common.hash.Hashing;
+import com.google.common.io.ByteStreams;
 import org.eclipse.jetty.http.DateGenerator;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.content.HttpContent;
@@ -31,18 +33,10 @@ public class ControlledCacheHttpContent extends HttpContent.Wrapper {
     private final String eTag;
 
     private String computeStrongETag(HttpContent content) throws IOException {
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] buffer = new byte[8192];
-            try (var input = content.getResource().newInputStream()) {
-                int read;
-                while ((read = input.read(buffer)) != -1) {
-                    digest.update(buffer, 0, read);
-                }
-            }
-            return "\"" + Base64.getEncoder().encodeToString(digest.digest()) + "\"";
-        } catch (NoSuchAlgorithmException e) {
-            throw new IOException("SHA-256 not supported", e);
+        try (InputStream input = content.getResource().newInputStream()) {
+            Hasher hasher = Hashing.sha256().newHasher();
+            ByteStreams.copy(input, Funnels.asOutputStream(hasher));
+            return "\"" + hasher.hash() + "\"";
         }
     }
 
