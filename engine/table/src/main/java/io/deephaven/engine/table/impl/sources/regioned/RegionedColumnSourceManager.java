@@ -795,8 +795,8 @@ public class RegionedColumnSourceManager
     }
 
     /**
-     * A simple holder for information about a region and its row set. Closing this object will close the row set. This
-     * is used to manage row sets for regions that overlap with a given input row set during filter pushdown.
+     * Lightweight wrapper that couples an {@link IncludedTableLocationEntry} with the {@link WritableRowSet}
+     * representing the subset of rows from that region that participate in a filter-pushdown operation.
      */
     private static class RegionInfoHolder implements AutoCloseable {
         private final IncludedTableLocationEntry tle;
