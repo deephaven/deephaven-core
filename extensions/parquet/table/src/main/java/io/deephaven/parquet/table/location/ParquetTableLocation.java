@@ -453,8 +453,8 @@ public class ParquetTableLocation extends AbstractTableLocation {
         final String[] parquetColumnNames;
         try {
             final List<List<String>> parquetColumnPaths = getParquetColumnPaths(filter.getColumns(), renameMap);
-            final List<Integer> parquetIndices = getParquetIndices(parquetColumnPaths);
             final MessageType schema = parquetMetadata.getFileMetaData().getSchema();
+            final List<Integer> parquetIndices = getParquetIndices(schema, parquetColumnPaths);
             parquetColumnNames = parquetIndices.stream().map(schema::getFieldName).toArray(String[]::new);
         } catch (final RuntimeException e) {
             // Failed to find the columns in the Parquet schema, so no benefit to pushing down.
@@ -496,22 +496,29 @@ public class ParquetTableLocation extends AbstractTableLocation {
                 .collect(Collectors.toList());
     }
 
-    private List<Integer> getParquetIndices(final Collection<List<String>> parquetColumnPaths) {
-        final MessageType schema = parquetMetadata.getFileMetaData().getSchema();
-        final Map<String, Integer> pathToFieldId = ParquetSchemaUtil.getPathToFieldId(schema);
-        final List<Integer> indices = new ArrayList<>(parquetColumnPaths.size());
-        for (final List<String> path : parquetColumnPaths) {
-            if (path.isEmpty()) {
-                throw new IllegalArgumentException("Parquet paths must contain at least one column, found " +
-                        parquetColumnPaths);
+    private List<Integer> getParquetIndices(
+            final MessageType schema,
+            final Collection<List<String>> parquetColumnPaths) {
+        // Get the list of paths from the schema, and then find the indices of the column's path in that list.
+        final int numColumns = parquetColumnPaths.size();
+        final Map<List<String>, Integer> indexByPath = new HashMap<>(numColumns);
+        final List<String[]> pathsFromSchema = ParquetSchemaUtil.paths(schema);
+        for (int fieldId = 0; fieldId < pathsFromSchema.size(); fieldId++) {
+            indexByPath.put(Arrays.asList(pathsFromSchema.get(fieldId)), fieldId);
+        }
+        final List<Integer> indices = new ArrayList<>(numColumns);
+        for (final List<String> columnPath : parquetColumnPaths) {
+            if (columnPath.isEmpty()) {
+                throw new IllegalArgumentException(
+                        "Parquet paths must contain at least one element, found " + columnPath);
             }
-            final String joinedPath = String.join(".", path);
-            if (!pathToFieldId.containsKey(joinedPath)) {
+            final Integer idx = indexByPath.get(columnPath);
+            if (idx == null) {
                 throw new IllegalArgumentException(String.format(
-                        "Parquet schema does not contain column '%s' for table %s", joinedPath, getTableKey()));
+                        "Parquet schema does not contain column '%s' for table %s",
+                        columnPath, getTableKey()));
             }
-            final Integer fieldIndex = pathToFieldId.get(joinedPath);
-            indices.add(fieldIndex);
+            indices.add(idx);
         }
         return indices;
     }
@@ -542,8 +549,8 @@ public class ParquetTableLocation extends AbstractTableLocation {
         final String[] parquetColumnNames;
         try {
             final List<List<String>> parquetColumnPaths = getParquetColumnPaths(filter.getColumns(), renameMap);
-            parquetIndices = getParquetIndices(parquetColumnPaths);
             final MessageType schema = parquetMetadata.getFileMetaData().getSchema();
+            parquetIndices = getParquetIndices(schema, parquetColumnPaths);
             parquetColumnNames = parquetIndices.stream().map(schema::getFieldName).toArray(String[]::new);
         } catch (final RuntimeException e) {
             // Failed to find the columns in the Parquet schema. So we return all rows as "maybe" rows.

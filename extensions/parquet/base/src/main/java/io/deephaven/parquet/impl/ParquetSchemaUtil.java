@@ -68,21 +68,6 @@ public final class ParquetSchemaUtil {
 
 
     /**
-     * This method returns a map from the path to the field ID, where the path is represented as a dot-separated string.
-     * For example, if the schema has a field at path ["foo", "bar"] with field ID 42, the map will contain an entry
-     * "foo.bar" -> 42.
-     */
-    public static Map<String, Integer> getPathToFieldId(final MessageType schema) {
-        final Map<String, Integer> out = new HashMap<>();
-        final MutableInt fieldId = new MutableInt(0);
-        walk(schema, (typePath, primitiveType) -> {
-            final String path = makePathString(typePath);
-            out.put(path, fieldId.getAndIncrement());
-        });
-        return out;
-    }
-
-    /**
      * An alternative interface for traversing the column descriptors of a Parquet {@code schema}.
      */
     public static void walkColumnDescriptors(MessageType schema, Consumer<ColumnDescriptor> consumer) {
