@@ -847,23 +847,23 @@ public class RegionedColumnSourceManager
             final RowSet fullSet,
             final boolean usePrev,
             final PushdownFilterContext context) {
-        final ArrayList<OverlappingRegionInfo> includedRegions = getOverlappingRegions(selection);
-        if (includedRegions.isEmpty()) {
+        final ArrayList<OverlappingRegionInfo> overlappingRegions = getOverlappingRegions(selection);
+        if (overlappingRegions.isEmpty()) {
             return Long.MAX_VALUE;
         }
-        try (final SafeCloseable ignored = () -> SafeCloseable.closeAll(includedRegions.stream())) {
+        try (final SafeCloseable ignored = () -> SafeCloseable.closeAll(overlappingRegions.stream())) {
             // We want to test a few regularly spaced locations and assume the rest are similar (or no worse).
             // We compute the minimum cost across these locations because we want to execute the lowest cost filter
             // first. Any locations that have a cost greater than the cost ceiling are expected to return all rows as
             // maybe-matching.
-            final int numIncludedLocations = includedRegions.size();
+            final int numIncludedLocations = overlappingRegions.size();
             final int numSamples = Math.min(numIncludedLocations, PUSHDOWN_LOCATION_SAMPLES);
             final int step = Math.max(1, numIncludedLocations / numSamples);
             return IntStream.range(0, numSamples)
                     .parallel()
                     .map(i -> i * step)
                     .mapToLong(idx -> {
-                        final OverlappingRegionInfo regionInfo = includedRegions.get(idx);
+                        final OverlappingRegionInfo regionInfo = overlappingRegions.get(idx);
                         return regionInfo.tle.location.estimatePushdownFilterCost(
                                 filter, renameMap, regionInfo.rowSetSlice, fullSet, usePrev, context);
                     })
