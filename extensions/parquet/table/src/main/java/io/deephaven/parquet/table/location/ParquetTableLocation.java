@@ -25,6 +25,8 @@ import io.deephaven.engine.table.impl.sources.regioned.RegionedColumnSource;
 import io.deephaven.engine.table.impl.sources.regioned.RegionedPageStore;
 import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.table.vectors.ColumnVectors;
+import io.deephaven.internal.log.LoggerFactory;
+import io.deephaven.io.logger.Logger;
 import io.deephaven.parquet.base.ParquetFileReader;
 import io.deephaven.parquet.base.RowGroupReader;
 import io.deephaven.parquet.impl.ParquetSchemaUtil;
@@ -67,6 +69,8 @@ import static org.apache.parquet.schema.LogicalTypeAnnotation.stringType;
 public class ParquetTableLocation extends AbstractTableLocation {
 
     private static final String IMPLEMENTATION_NAME = ParquetColumnLocation.class.getSimpleName();
+
+    private static final Logger log = LoggerFactory.getLogger(ParquetTableLocation.class);
 
     private final ParquetInstructions readInstructions;
 
@@ -433,7 +437,12 @@ public class ParquetTableLocation extends AbstractTableLocation {
             final RowSet fullSet,
             final boolean usePrev,
             final PushdownFilterContext context) {
-
+        if (selection.isEmpty()) {
+            // If the selection is empty, we can skip all pushdown filtering.
+            log.error().append("Estimate pushdown filter cost called with empty selection for table ")
+                    .append(getTableKey()).endl();
+            return Long.MAX_VALUE;
+        }
         final long executedFilterCost = context.executedFilterCost();
 
         // Some range filter host a condition filter as the internal filter and we can't push that down.
@@ -519,6 +528,11 @@ public class ParquetTableLocation extends AbstractTableLocation {
             final JobScheduler jobScheduler,
             final Consumer<PushdownResult> onComplete,
             final Consumer<Exception> onError) {
+        if (selection.isEmpty()) {
+            log.error().append("Pushdown filter called with empty selection for table ").append(getTableKey()).endl();
+            onComplete.accept(PushdownResult.of(RowSetFactory.empty(), RowSetFactory.empty()));
+            return;
+        }
 
         // Initialize the pushdown result with the selection rowset as "maybe" rows
         PushdownResult result = PushdownResult.of(RowSetFactory.empty(), selection.copy());
