@@ -88,17 +88,20 @@ import org.apache.arrow.vector.types.pojo.FieldType;
 import org.apache.arrow.vector.types.pojo.Schema;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.jetbrains.annotations.Nullable;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.rules.ExternalResource;
+import org.junit.rules.TestRule;
+import org.junit.runner.Description;
+import org.junit.runners.model.Statement;
 
 import javax.inject.Named;
 import javax.inject.Provider;
 import javax.inject.Singleton;
 import java.io.IOException;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
@@ -258,16 +261,31 @@ public abstract class FlightMessageRoundTripTest {
         MainHelper.bootstrapProjectDirectories();
     }
 
-    @Before
-    public void setup() throws IOException, InterruptedException {
+    /**
+     * Setup run before each test. Note that this method is not annotated with {@link Before} because we want to control
+     * when the server starts using the {@link SetupServerRule}.
+     */
+    public void setupBefore() throws IOException, InterruptedException {
         logBuffer = new LogBuffer(128);
         LogBufferGlobal.setInstance(logBuffer);
 
         component = component();
+
+        // JS plugins must be registered after the server is created but before it is started (this pattern is used in
+        // DeephavenApiServer). The default test configuration will create the server here and then start the server in
+        // in the `SetupServerRule`. For tests that need to register JS plugins, they can defer the server start using
+        // the `@DeferServerStart` annotation. Tests can then register plugins and manually start the server.
+        server = component.server();
+    }
+
+    /**
+     * Starts the server. Gets automatically called by the {@link SetupServerRule} unless the test is annotated with a
+     * {@link DeferServerStart} annotation.
+     */
+    public void startServer() throws IOException, InterruptedException {
         // open execution context immediately so it can be used when resolving `scriptSession`
         executionContext = component.executionContext().open();
 
-        server = component.server();
         server.start();
         localPort = server.getPort();
         serverScheduler = (Scheduler.DelegatingImpl) component.serverScheduler();
@@ -357,6 +375,36 @@ public abstract class FlightMessageRoundTripTest {
         }
     }
 
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target(ElementType.METHOD)
+    public @interface DeferServerStart {
+    }
+
+    /**
+     * A JUnit rule that sets up a server before a test runs. The server will also be started unless the test is annotated
+     * with a {@link DeferServerStart} annotation.
+     */
+    public class SetupServerRule implements TestRule {
+        @Override
+        public Statement apply(Statement statement, Description description) {
+            return new Statement() {
+                @Override
+                public void evaluate() throws Throwable {
+                    setupBefore();
+
+                    boolean autoStart = description.getAnnotation(DeferServerStart.class) == null;
+                    if (autoStart) {
+                        startServer();
+                    }
+                    statement.evaluate();
+                }
+            };
+        }
+    }
+
+    @Rule
+    public final SetupServerRule startServerRule = new SetupServerRule();
+
     @Rule
     public final ExternalResource livenessRule = new ExternalResource() {
         SafeCloseable scope;
@@ -387,7 +435,7 @@ public abstract class FlightMessageRoundTripTest {
     }
 
     @Test
-    public void testLoginHandshakeBasicAuth() {
+    public void testLoginHandshakeBasicAuth() throws IOException, InterruptedException {
         closeClient();
         flightClient = FlightClient.builder().location(serverLocation)
                 .allocator(allocator)
