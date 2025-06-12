@@ -384,8 +384,8 @@ public abstract class FlightMessageRoundTripTest {
     }
 
     /**
-     * A JUnit rule that sets up a server before a test runs. The server will also be started unless the test is annotated
-     * with a {@link DeferServerStart} annotation.
+     * A JUnit rule that sets up a server before a test runs. The server will also be started unless the test is
+     * annotated with a {@link DeferServerStart} annotation.
      */
     public class SetupServerRule implements TestRule {
         @Override

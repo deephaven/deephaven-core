@@ -191,7 +191,7 @@ public class JettyBackedGrpcServer implements GrpcServer {
             return resource;
         }).toList());
 
-        // Creating the jsPlugins resource needs to happen after js plugins have been registered, since plugin 
+        // Creating the jsPlugins resource needs to happen after js plugins have been registered, since plugin
         // registration will fail if the .zip backing the jsPlugins file system is already open
         Resource jsPluginsResource = context.getResourceFactory().newResource(jsPlugins.filesystem());
         resources.add(new PathPrefixResource("/js-plugins/", jsPluginsResource));
