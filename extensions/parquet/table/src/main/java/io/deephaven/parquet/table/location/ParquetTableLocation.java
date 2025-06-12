@@ -439,13 +439,13 @@ public class ParquetTableLocation extends AbstractTableLocation {
             final PushdownFilterContext context) {
         if (selection.isEmpty()) {
             // If the selection is empty, we can skip all pushdown filtering.
-            log.error().append("Estimate pushdown filter cost called with empty selection for table ")
+            log.warn().append("Estimate pushdown filter cost called with empty selection for table ")
                     .append(getTableKey()).endl();
             return Long.MAX_VALUE;
         }
         final long executedFilterCost = context.executedFilterCost();
 
-        // Some range filter host a condition filter as the internal filter and we can't push that down.
+        // Some range filters host a condition filter as the internal filter, and we can't push that down.
         final boolean isRangeFilter =
                 filter instanceof RangeFilter && ((RangeFilter) filter).getRealFilter() instanceof AbstractRangeFilter;
         final boolean isMatchFilter = filter instanceof MatchFilter;
@@ -529,7 +529,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
             final Consumer<PushdownResult> onComplete,
             final Consumer<Exception> onError) {
         if (selection.isEmpty()) {
-            log.error().append("Pushdown filter called with empty selection for table ").append(getTableKey()).endl();
+            log.warn().append("Pushdown filter called with empty selection for table ").append(getTableKey()).endl();
             onComplete.accept(PushdownResult.of(RowSetFactory.empty(), RowSetFactory.empty()));
             return;
         }
