@@ -43,6 +43,7 @@ import org.apache.parquet.column.statistics.Statistics;
 import org.apache.parquet.format.RowGroup;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
 import org.apache.parquet.schema.LogicalTypeAnnotation;
+import org.apache.parquet.schema.MessageType;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -427,6 +428,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
     @Override
     public long estimatePushdownFilterCost(
             final WhereFilter filter,
+            final Map<String, String> renameMap,
             final RowSet selection,
             final RowSet fullSet,
             final boolean usePrev,
@@ -439,15 +441,22 @@ public class ParquetTableLocation extends AbstractTableLocation {
                 filter instanceof RangeFilter && ((RangeFilter) filter).getRealFilter() instanceof AbstractRangeFilter;
         final boolean isMatchFilter = filter instanceof MatchFilter;
 
+        final String[] parquetColumnNames;
+        try {
+            final List<List<String>> parquetColumnPaths = getParquetColumnPaths(filter.getColumns(), renameMap);
+            final List<Integer> parquetIndices = getParquetIndices(parquetColumnPaths);
+            final MessageType schema = parquetMetadata.getFileMetaData().getSchema();
+            parquetColumnNames = parquetIndices.stream().map(schema::getFieldName).toArray(String[]::new);
+        } catch (final RuntimeException e) {
+            // Failed to find the columns in the Parquet schema, so no benefit to pushing down.
+            return Long.MAX_VALUE;
+        }
+
         if (shouldExecute(QueryTable.DISABLE_WHERE_PUSHDOWN_PARQUET_ROW_GROUP_METADATA,
                 PushdownResult.METADATA_STATS_COST, executedFilterCost)
                 && (isRangeFilter || isMatchFilter)) {
             return PushdownResult.METADATA_STATS_COST;
         }
-
-        final String[] parquetColumnNames = filter.getColumns().stream().map(
-                readInstructions::getParquetColumnNameFromColumnNameOrDefault)
-                .toArray(String[]::new);
 
         // Do we have a data indexes for the column(s)?
         if (shouldExecute(QueryTable.DISABLE_WHERE_PUSHDOWN_DATA_INDEX,
@@ -465,6 +474,39 @@ public class ParquetTableLocation extends AbstractTableLocation {
         return Long.MAX_VALUE; // No benefit to pushing down.
     }
 
+    private List<List<String>> getParquetColumnPaths(
+            final Collection<String> colNamesFromFilter,
+            final Map<String, String> renameMap) {
+        return colNamesFromFilter.stream()
+                .map(colNameFromFilter -> {
+                    final String colNameFromDef = renameMap.getOrDefault(colNameFromFilter, colNameFromFilter);
+                    final String parquetColName =
+                            readInstructions.getParquetColumnNameFromColumnNameOrDefault(colNameFromDef);
+                    return getColumnPath(colNameFromDef, parquetColName);
+                })
+                .collect(Collectors.toList());
+    }
+
+    private List<Integer> getParquetIndices(final Collection<List<String>> parquetColumnPaths) {
+        final MessageType schema = parquetMetadata.getFileMetaData().getSchema();
+        final Map<String, Integer> pathToFieldId = ParquetSchemaUtil.getPathToFieldId(schema);
+        final List<Integer> indices = new ArrayList<>(parquetColumnPaths.size());
+        for (final List<String> path : parquetColumnPaths) {
+            if (path.isEmpty()) {
+                throw new IllegalArgumentException("Parquet paths must contain at least one column, found " +
+                        parquetColumnPaths);
+            }
+            final String joinedPath = String.join(".", path);
+            if (!pathToFieldId.containsKey(joinedPath)) {
+                throw new IllegalArgumentException(String.format(
+                        "Parquet schema does not contain column '%s' for table %s", joinedPath, getTableKey()));
+            }
+            final Integer fieldIndex = pathToFieldId.get(joinedPath);
+            indices.add(fieldIndex);
+        }
+        return indices;
+    }
+
     @Override
     public void pushdownFilter(
             final WhereFilter filter,
@@ -478,20 +520,27 @@ public class ParquetTableLocation extends AbstractTableLocation {
             final Consumer<PushdownResult> onComplete,
             final Consumer<Exception> onError) {
 
-        final long executedFilterCost = context.executedFilterCost();
-        final List<String> parquetNames = filter.getColumns().stream()
-                .map(name -> renameMap.getOrDefault(name, name))
-                .map(readInstructions::getParquetColumnNameFromColumnNameOrDefault).collect(Collectors.toList());
-        final List<Integer> parquetIndices = parquetNames.stream().map(
-                name -> parquetMetadata.getFileMetaData().getSchema().getFieldIndex(name)).collect(Collectors.toList());
-
         // Initialize the pushdown result with the selection rowset as "maybe" rows
         PushdownResult result = PushdownResult.of(RowSetFactory.empty(), selection.copy());
+
+        final long executedFilterCost = context.executedFilterCost();
+        final List<Integer> parquetIndices;
+        final String[] parquetColumnNames;
+        try {
+            final List<List<String>> parquetColumnPaths = getParquetColumnPaths(filter.getColumns(), renameMap);
+            parquetIndices = getParquetIndices(parquetColumnPaths);
+            final MessageType schema = parquetMetadata.getFileMetaData().getSchema();
+            parquetColumnNames = parquetIndices.stream().map(schema::getFieldName).toArray(String[]::new);
+        } catch (final RuntimeException e) {
+            // Failed to find the columns in the Parquet schema. So we return all rows as "maybe" rows.
+            onComplete.accept(result);
+            return;
+        }
 
         // Should we look at the metadata?
         if (shouldExecute(QueryTable.DISABLE_WHERE_PUSHDOWN_PARQUET_ROW_GROUP_METADATA,
                 PushdownResult.METADATA_STATS_COST, executedFilterCost, costCeiling)) {
-            // Some range filter host a condition filter as the internal filter and we can't push that down.
+            // Some range filters host a condition filter as the internal filter and we can't push that down.
             if (filter instanceof RangeFilter
                     && ((RangeFilter) filter).getRealFilter() instanceof AbstractRangeFilter) {
                 try (final PushdownResult ignored = result) {
@@ -514,9 +563,8 @@ public class ParquetTableLocation extends AbstractTableLocation {
 
         if (shouldExecute(QueryTable.DISABLE_WHERE_PUSHDOWN_DATA_INDEX,
                 PushdownResult.IN_MEMORY_DATA_INDEX_COST, executedFilterCost, costCeiling)) {
-            final String[] parquetNameArr = parquetNames.toArray(String[]::new);
-
-            final BasicDataIndex dataIndex = hasCachedDataIndex(parquetNameArr) ? getDataIndex(parquetNameArr) : null;
+            final BasicDataIndex dataIndex =
+                    hasCachedDataIndex(parquetColumnNames) ? getDataIndex(parquetColumnNames) : null;
             if (dataIndex != null) {
                 // No maybe rows remaining, so no reason to continue filtering.
                 try (final PushdownResult ignored = result) {
@@ -529,9 +577,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
         if (shouldExecute(QueryTable.DISABLE_WHERE_PUSHDOWN_DATA_INDEX,
                 PushdownResult.DEFERRED_DATA_INDEX_COST, executedFilterCost, costCeiling)) {
             // If we have a data index, apply the filter to the data index table and retain the incoming maybe rows.
-            final String[] parquetNameArr = parquetNames.toArray(String[]::new);
-
-            final BasicDataIndex dataIndex = hasDataIndex(parquetNameArr) ? getDataIndex(parquetNameArr) : null;
+            final BasicDataIndex dataIndex = hasDataIndex(parquetColumnNames) ? getDataIndex(parquetColumnNames) : null;
             if (dataIndex != null) {
                 // No maybe rows remaining, so no reason to continue filtering.
                 try (final PushdownResult ignored = result) {

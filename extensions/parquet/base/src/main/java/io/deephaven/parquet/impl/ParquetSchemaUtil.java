@@ -4,6 +4,7 @@
 package io.deephaven.parquet.impl;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.util.mutable.MutableInt;
 import org.apache.parquet.column.ColumnDescriptor;
 import org.apache.parquet.schema.GroupType;
 import org.apache.parquet.schema.MessageType;
@@ -15,11 +16,14 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Deque;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 /**
  * Various improved ways of traversing {@link MessageType}.
@@ -59,6 +63,22 @@ public final class ParquetSchemaUtil {
     public static List<String[]> paths(MessageType schema) {
         final List<String[]> out = new ArrayList<>();
         walk(schema, (typePath, primitiveType) -> out.add(makePath(typePath)));
+        return out;
+    }
+
+
+    /**
+     * This method returns a map from the path to the field ID, where the path is represented as a dot-separated string.
+     * For example, if the schema has a field at path ["foo", "bar"] with field ID 42, the map will contain an entry
+     * "foo.bar" -> 42.
+     */
+    public static Map<String, Integer> getPathToFieldId(final MessageType schema) {
+        final Map<String, Integer> out = new HashMap<>();
+        final MutableInt fieldId = new MutableInt(0);
+        walk(schema, (typePath, primitiveType) -> {
+            final String path = makePathString(typePath);
+            out.put(path, fieldId.getAndIncrement());
+        });
         return out;
     }
 
@@ -148,6 +168,10 @@ public final class ParquetSchemaUtil {
 
     private static String[] makePath(Collection<Type> typePath) {
         return typePath.stream().map(Type::getName).toArray(String[]::new);
+    }
+
+    private static String makePathString(Collection<Type> typePath) {
+        return typePath.stream().map(Type::getName).collect(Collectors.joining("."));
     }
 
     private static void walk(Type type, Visitor visitor, Deque<Type> stack) {
