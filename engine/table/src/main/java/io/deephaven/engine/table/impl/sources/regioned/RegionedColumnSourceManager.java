@@ -816,16 +816,17 @@ public class RegionedColumnSourceManager
     }
 
     /**
-     * Return the first {@code numRegions} regions that overlap with the input row set, and their corresponding
-     * overlapping row sets. The user is responsible for closing the returned objects.
+     * Return the first {@code numRegions} regions and their corresponding row sets that overlap with the input row set.
+     * The user is responsible for closing the returned objects.
      */
     private ArrayList<RegionInfoHolder> getOverlappingRegions(final RowSet inputRowSet, final int numRegions) {
         final List<IncludedTableLocationEntry> tableLocationEntries = includedLocationEntries();
-        final ArrayList<RegionInfoHolder> includedRegions = new ArrayList<>(numRegions);
-        try (final RowSet.SearchIterator it = inputRowSet.searchIterator()) {
-            while (includedRegions.size() < numRegions && it.hasNext()) {
-                final long startKey = it.nextLong();
-                final int regionIndex = RegionedColumnSource.getRegionIndex(startKey);
+        final ArrayList<RegionInfoHolder> includedRegions = new ArrayList<>();
+        try (final RowSet.SearchIterator sit = inputRowSet.searchIterator()) {
+            long startSearchFrom = inputRowSet.firstRowKey();
+            while (includedRegions.size() < numRegions && sit.advance(startSearchFrom)) {
+                final long regionStartKey = sit.currentValue();
+                final int regionIndex = RegionedColumnSource.getRegionIndex(regionStartKey);
                 if (regionIndex >= tableLocationEntries.size()) {
                     throw new IllegalStateException("Region index " + regionIndex + " exceeds the number of included " +
                             "locations: " + tableLocationEntries.size() + " for input row set: " + inputRowSet);
@@ -838,8 +839,9 @@ public class RegionedColumnSourceManager
                                         + inputRowSet);
                     }
                     includedRegions.add(new RegionInfoHolder(entry, overlappingRowSet.copy()));
-                    final long endKey = overlappingRowSet.lastRowKey();
-                    it.advance(endKey); // Move to the next region, skipping the current one
+                    // Move to the next region, skipping the current one
+                    final long regionEndKey = getLastRowKey(regionIndex);
+                    startSearchFrom = regionEndKey + 1;
                 }
             }
         }
@@ -847,23 +849,14 @@ public class RegionedColumnSourceManager
     }
 
     /**
-     * Get all included regions and corresponding row set that overlap with the input row set. The user is responsible
-     * for closing the returned row sets.
+     * Get all regions and corresponding row set that overlap with the input row set. The user is responsible for
+     * closing the returned row sets.
      *
      * @param inputRowSet The input row set
      * @return A list of included region information
      */
     private ArrayList<RegionInfoHolder> getOverlappingRegions(final RowSet inputRowSet) {
-        final ArrayList<RegionInfoHolder> includedRegions = new ArrayList<>();
-        final List<IncludedTableLocationEntry> tableLocationEntries = includedLocationEntries();
-        for (final IncludedTableLocationEntry entry : tableLocationEntries) {
-            try (final WritableRowSet overlappingRowSet = entry.getOverlappingRowSet(inputRowSet)) {
-                if (!overlappingRowSet.isEmpty()) {
-                    includedRegions.add(new RegionInfoHolder(entry, overlappingRowSet.copy()));
-                }
-            }
-        }
-        return includedRegions;
+        return getOverlappingRegions(inputRowSet, Integer.MAX_VALUE);
     }
 
     @Override
