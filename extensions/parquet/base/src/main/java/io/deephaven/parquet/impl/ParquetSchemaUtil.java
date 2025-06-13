@@ -4,7 +4,6 @@
 package io.deephaven.parquet.impl;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.util.mutable.MutableInt;
 import org.apache.parquet.column.ColumnDescriptor;
 import org.apache.parquet.schema.GroupType;
 import org.apache.parquet.schema.MessageType;
@@ -14,6 +13,7 @@ import org.apache.parquet.schema.Type.Repetition;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Deque;
 import java.util.HashMap;
@@ -66,6 +66,18 @@ public final class ParquetSchemaUtil {
         return out;
     }
 
+    /**
+     * This method returns a map from the path to the field ID, where the path is represented as a dot-separated string.
+     */
+    public static Map<List<String>, Integer> getPathToFieldId(final MessageType schema) {
+        final List<String[]> paths = ParquetSchemaUtil.paths(schema);
+        final int size = paths.size();
+        final Map<List<String>, Integer> pathToFieldId = new HashMap<>(size);
+        for (int fieldId = 0; fieldId < size; fieldId++) {
+            pathToFieldId.put(Arrays.asList(paths.get(fieldId)), fieldId);
+        }
+        return pathToFieldId;
+    }
 
     /**
      * An alternative interface for traversing the column descriptors of a Parquet {@code schema}.

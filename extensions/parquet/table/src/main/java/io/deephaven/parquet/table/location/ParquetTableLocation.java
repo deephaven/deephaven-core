@@ -500,19 +500,14 @@ public class ParquetTableLocation extends AbstractTableLocation {
             final MessageType schema,
             final Collection<List<String>> parquetColumnPaths) {
         // Get the list of paths from the schema, and then find the indices of the column's path in that list.
-        final int numColumns = parquetColumnPaths.size();
-        final Map<List<String>, Integer> indexByPath = new HashMap<>(numColumns);
-        final List<String[]> pathsFromSchema = ParquetSchemaUtil.paths(schema);
-        for (int fieldId = 0; fieldId < pathsFromSchema.size(); fieldId++) {
-            indexByPath.put(Arrays.asList(pathsFromSchema.get(fieldId)), fieldId);
-        }
-        final List<Integer> indices = new ArrayList<>(numColumns);
+        final Map<List<String>, Integer> pathToFieldId = ParquetSchemaUtil.getPathToFieldId(schema);
+        final List<Integer> indices = new ArrayList<>(parquetColumnPaths.size());
         for (final List<String> columnPath : parquetColumnPaths) {
             if (columnPath.isEmpty()) {
                 throw new IllegalArgumentException(
                         "Parquet paths must contain at least one element, found " + columnPath);
             }
-            final Integer idx = indexByPath.get(columnPath);
+            final Integer idx = pathToFieldId.get(columnPath);
             if (idx == null) {
                 throw new IllegalArgumentException(String.format(
                         "Parquet schema does not contain column '%s' for table %s",

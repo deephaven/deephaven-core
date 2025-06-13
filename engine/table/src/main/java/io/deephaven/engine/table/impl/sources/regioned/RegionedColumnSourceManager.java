@@ -858,10 +858,9 @@ public class RegionedColumnSourceManager
         final List<IncludedTableLocationEntry> tableLocationEntries = includedLocationEntries();
         for (final IncludedTableLocationEntry entry : tableLocationEntries) {
             try (final WritableRowSet overlappingRowSet = entry.getOverlappingRowSet(inputRowSet)) {
-                if (overlappingRowSet.isEmpty()) {
-                    continue; // No overlap, skip this entry
+                if (!overlappingRowSet.isEmpty()) {
+                    includedRegions.add(new RegionInfoHolder(entry, overlappingRowSet.copy()));
                 }
-                includedRegions.add(new RegionInfoHolder(entry, overlappingRowSet.copy()));
             }
         }
         return includedRegions;
