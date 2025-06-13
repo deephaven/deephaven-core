@@ -815,15 +815,15 @@ public class RegionedColumnSourceManager
     }
 
     /**
-     * Return the first {@code numRegions} regions and their corresponding row sets that overlap with the input row set.
-     * The user is responsible for closing the returned objects.
+     * Return up to {@code maxRegions} regions and their corresponding row sets that overlap with the input row set. The
+     * user is responsible for closing the returned objects.
      */
-    private ArrayList<RegionInfoHolder> getOverlappingRegions(final RowSet inputRowSet, final int numRegions) {
+    private ArrayList<RegionInfoHolder> getOverlappingRegions(final RowSet inputRowSet, final int maxRegions) {
         final List<IncludedTableLocationEntry> tableLocationEntries = includedLocationEntries();
         final ArrayList<RegionInfoHolder> includedRegions = new ArrayList<>();
         try (final RowSet.SearchIterator sit = inputRowSet.searchIterator()) {
-            long startSearchFrom = inputRowSet.firstRowKey();
-            while (includedRegions.size() < numRegions && sit.advance(startSearchFrom)) {
+            long startSearchFrom = 0;
+            while (includedRegions.size() < maxRegions && sit.advance(startSearchFrom)) {
                 final long regionStartKey = sit.currentValue();
                 final int regionIndex = RegionedColumnSource.getRegionIndex(regionStartKey);
                 if (regionIndex >= tableLocationEntries.size()) {
@@ -831,6 +831,8 @@ public class RegionedColumnSourceManager
                             "locations: " + tableLocationEntries.size() + " for input row set: " + inputRowSet);
                 }
                 final IncludedTableLocationEntry entry = tableLocationEntries.get(regionIndex);
+                // Based on the cost of computing overlapping row sets, we can push overlap computation into the
+                // parallel region-processing jobs.
                 try (final WritableRowSet overlappingShiftedRowSet = entry.getOverlappingShiftedRowSet(inputRowSet)) {
                     if (overlappingShiftedRowSet.isEmpty()) {
                         throw new IllegalStateException(
@@ -874,7 +876,8 @@ public class RegionedColumnSourceManager
             return Long.MAX_VALUE;
         }
         try (final SafeCloseable ignored = () -> SafeCloseable.closeAll(overlappingRegionsSample.stream())) {
-            return overlappingRegionsSample.stream()
+            return overlappingRegionsSample
+                    .parallelStream()
                     .mapToLong(overlappingRegion -> overlappingRegion.tle.location.estimatePushdownFilterCost(
                             filter, renameMap, overlappingRegion.rowSet, fullSet, usePrev, context))
                     .min()
