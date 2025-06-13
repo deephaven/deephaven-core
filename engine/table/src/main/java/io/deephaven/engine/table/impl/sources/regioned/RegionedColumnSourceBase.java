@@ -107,12 +107,13 @@ abstract class RegionedColumnSourceBase<DATA_TYPE, ATTR extends Values, REGION_T
     @Override
     public long estimatePushdownFilterCost(
             final WhereFilter filter,
+            final Map<String, String> renameMap,
             final RowSet selection,
             final RowSet fullSet,
             final boolean usePrev,
             final PushdownFilterContext context) {
         // Delegate to the manager.
-        return manager.estimatePushdownFilterCost(filter, selection, fullSet, usePrev, context);
+        return manager.estimatePushdownFilterCost(filter, renameMap, selection, fullSet, usePrev, context);
     }
 
     @Override

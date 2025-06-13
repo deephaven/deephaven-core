@@ -25,6 +25,8 @@ import io.deephaven.engine.table.impl.sources.regioned.RegionedColumnSource;
 import io.deephaven.engine.table.impl.sources.regioned.RegionedPageStore;
 import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.table.vectors.ColumnVectors;
+import io.deephaven.internal.log.LoggerFactory;
+import io.deephaven.io.logger.Logger;
 import io.deephaven.parquet.base.ParquetFileReader;
 import io.deephaven.parquet.base.RowGroupReader;
 import io.deephaven.parquet.impl.ParquetSchemaUtil;
@@ -43,6 +45,7 @@ import org.apache.parquet.column.statistics.Statistics;
 import org.apache.parquet.format.RowGroup;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
 import org.apache.parquet.schema.LogicalTypeAnnotation;
+import org.apache.parquet.schema.MessageType;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -66,6 +69,8 @@ import static org.apache.parquet.schema.LogicalTypeAnnotation.stringType;
 public class ParquetTableLocation extends AbstractTableLocation {
 
     private static final String IMPLEMENTATION_NAME = ParquetColumnLocation.class.getSimpleName();
+
+    private static final Logger log = LoggerFactory.getLogger(ParquetTableLocation.class);
 
     private final ParquetInstructions readInstructions;
 
@@ -427,27 +432,40 @@ public class ParquetTableLocation extends AbstractTableLocation {
     @Override
     public long estimatePushdownFilterCost(
             final WhereFilter filter,
+            final Map<String, String> renameMap,
             final RowSet selection,
             final RowSet fullSet,
             final boolean usePrev,
             final PushdownFilterContext context) {
-
+        if (selection.isEmpty()) {
+            // If the selection is empty, we can skip all pushdown filtering.
+            log.warn().append("Estimate pushdown filter cost called with empty selection for table ")
+                    .append(getTableKey()).endl();
+            return Long.MAX_VALUE;
+        }
         final long executedFilterCost = context.executedFilterCost();
 
-        // Some range filter host a condition filter as the internal filter and we can't push that down.
+        // Some range filters host a condition filter as the internal filter, and we can't push that down.
         final boolean isRangeFilter =
                 filter instanceof RangeFilter && ((RangeFilter) filter).getRealFilter() instanceof AbstractRangeFilter;
         final boolean isMatchFilter = filter instanceof MatchFilter;
+
+        final String[] parquetColumnNames;
+        try {
+            final List<List<String>> parquetColumnPaths = getParquetColumnPaths(filter.getColumns(), renameMap);
+            final MessageType schema = parquetMetadata.getFileMetaData().getSchema();
+            final List<Integer> parquetIndices = getParquetIndices(schema, parquetColumnPaths);
+            parquetColumnNames = parquetIndices.stream().map(schema::getFieldName).toArray(String[]::new);
+        } catch (final RuntimeException e) {
+            // Failed to find the columns in the Parquet schema, so no benefit to pushing down.
+            return Long.MAX_VALUE;
+        }
 
         if (shouldExecute(QueryTable.DISABLE_WHERE_PUSHDOWN_PARQUET_ROW_GROUP_METADATA,
                 PushdownResult.METADATA_STATS_COST, executedFilterCost)
                 && (isRangeFilter || isMatchFilter)) {
             return PushdownResult.METADATA_STATS_COST;
         }
-
-        final String[] parquetColumnNames = filter.getColumns().stream().map(
-                readInstructions::getParquetColumnNameFromColumnNameOrDefault)
-                .toArray(String[]::new);
 
         // Do we have a data indexes for the column(s)?
         if (shouldExecute(QueryTable.DISABLE_WHERE_PUSHDOWN_DATA_INDEX,
@@ -465,6 +483,41 @@ public class ParquetTableLocation extends AbstractTableLocation {
         return Long.MAX_VALUE; // No benefit to pushing down.
     }
 
+    private List<List<String>> getParquetColumnPaths(
+            final Collection<String> colNamesFromFilter,
+            final Map<String, String> renameMap) {
+        return colNamesFromFilter.stream()
+                .map(colNameFromFilter -> {
+                    final String colNameFromDef = renameMap.getOrDefault(colNameFromFilter, colNameFromFilter);
+                    final String parquetColName =
+                            readInstructions.getParquetColumnNameFromColumnNameOrDefault(colNameFromDef);
+                    return getColumnPath(colNameFromDef, parquetColName);
+                })
+                .collect(Collectors.toList());
+    }
+
+    private List<Integer> getParquetIndices(
+            final MessageType schema,
+            final Collection<List<String>> parquetColumnPaths) {
+        // Get the list of paths from the schema, and then find the indices of the column's path in that list.
+        final Map<List<String>, Integer> pathToFieldId = ParquetSchemaUtil.getPathToFieldId(schema);
+        final List<Integer> indices = new ArrayList<>(parquetColumnPaths.size());
+        for (final List<String> columnPath : parquetColumnPaths) {
+            if (columnPath.isEmpty()) {
+                throw new IllegalArgumentException(
+                        "Parquet paths must contain at least one element, found " + columnPath);
+            }
+            final Integer idx = pathToFieldId.get(columnPath);
+            if (idx == null) {
+                throw new IllegalArgumentException(String.format(
+                        "Parquet schema does not contain column '%s' for table %s",
+                        columnPath, getTableKey()));
+            }
+            indices.add(idx);
+        }
+        return indices;
+    }
+
     @Override
     public void pushdownFilter(
             final WhereFilter filter,
@@ -477,21 +530,33 @@ public class ParquetTableLocation extends AbstractTableLocation {
             final JobScheduler jobScheduler,
             final Consumer<PushdownResult> onComplete,
             final Consumer<Exception> onError) {
-
-        final long executedFilterCost = context.executedFilterCost();
-        final List<String> parquetNames = filter.getColumns().stream()
-                .map(name -> renameMap.getOrDefault(name, name))
-                .map(readInstructions::getParquetColumnNameFromColumnNameOrDefault).collect(Collectors.toList());
-        final List<Integer> parquetIndices = parquetNames.stream().map(
-                name -> parquetMetadata.getFileMetaData().getSchema().getFieldIndex(name)).collect(Collectors.toList());
+        if (selection.isEmpty()) {
+            log.warn().append("Pushdown filter called with empty selection for table ").append(getTableKey()).endl();
+            onComplete.accept(PushdownResult.of(RowSetFactory.empty(), RowSetFactory.empty()));
+            return;
+        }
 
         // Initialize the pushdown result with the selection rowset as "maybe" rows
         PushdownResult result = PushdownResult.of(RowSetFactory.empty(), selection.copy());
 
+        final long executedFilterCost = context.executedFilterCost();
+        final List<Integer> parquetIndices;
+        final String[] parquetColumnNames;
+        try {
+            final List<List<String>> parquetColumnPaths = getParquetColumnPaths(filter.getColumns(), renameMap);
+            final MessageType schema = parquetMetadata.getFileMetaData().getSchema();
+            parquetIndices = getParquetIndices(schema, parquetColumnPaths);
+            parquetColumnNames = parquetIndices.stream().map(schema::getFieldName).toArray(String[]::new);
+        } catch (final RuntimeException e) {
+            // Failed to find the columns in the Parquet schema. So we return all rows as "maybe" rows.
+            onComplete.accept(result);
+            return;
+        }
+
         // Should we look at the metadata?
         if (shouldExecute(QueryTable.DISABLE_WHERE_PUSHDOWN_PARQUET_ROW_GROUP_METADATA,
                 PushdownResult.METADATA_STATS_COST, executedFilterCost, costCeiling)) {
-            // Some range filter host a condition filter as the internal filter and we can't push that down.
+            // Some range filters host a condition filter as the internal filter and we can't push that down.
             if (filter instanceof RangeFilter
                     && ((RangeFilter) filter).getRealFilter() instanceof AbstractRangeFilter) {
                 try (final PushdownResult ignored = result) {
@@ -514,9 +579,8 @@ public class ParquetTableLocation extends AbstractTableLocation {
 
         if (shouldExecute(QueryTable.DISABLE_WHERE_PUSHDOWN_DATA_INDEX,
                 PushdownResult.IN_MEMORY_DATA_INDEX_COST, executedFilterCost, costCeiling)) {
-            final String[] parquetNameArr = parquetNames.toArray(String[]::new);
-
-            final BasicDataIndex dataIndex = hasCachedDataIndex(parquetNameArr) ? getDataIndex(parquetNameArr) : null;
+            final BasicDataIndex dataIndex =
+                    hasCachedDataIndex(parquetColumnNames) ? getDataIndex(parquetColumnNames) : null;
             if (dataIndex != null) {
                 // No maybe rows remaining, so no reason to continue filtering.
                 try (final PushdownResult ignored = result) {
@@ -529,9 +593,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
         if (shouldExecute(QueryTable.DISABLE_WHERE_PUSHDOWN_DATA_INDEX,
                 PushdownResult.DEFERRED_DATA_INDEX_COST, executedFilterCost, costCeiling)) {
             // If we have a data index, apply the filter to the data index table and retain the incoming maybe rows.
-            final String[] parquetNameArr = parquetNames.toArray(String[]::new);
-
-            final BasicDataIndex dataIndex = hasDataIndex(parquetNameArr) ? getDataIndex(parquetNameArr) : null;
+            final BasicDataIndex dataIndex = hasDataIndex(parquetColumnNames) ? getDataIndex(parquetColumnNames) : null;
             if (dataIndex != null) {
                 // No maybe rows remaining, so no reason to continue filtering.
                 try (final PushdownResult ignored = result) {

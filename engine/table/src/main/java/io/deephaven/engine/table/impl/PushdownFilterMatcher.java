@@ -30,6 +30,7 @@ public interface PushdownFilterMatcher {
      * implemented pushdown operations.
      *
      * @param filter The {@link Filter filter} to test.
+     * @param renameMap Map of filter column names to underlying column names.
      * @param selection The set of rows to tests.
      * @param fullSet The full set of rows
      * @param usePrev Whether to use the previous result
@@ -38,6 +39,7 @@ public interface PushdownFilterMatcher {
      */
     long estimatePushdownFilterCost(
             final WhereFilter filter,
+            final Map<String, String> renameMap,
             final RowSet selection,
             final RowSet fullSet,
             final boolean usePrev,
