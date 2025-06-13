@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl.sources.regioned;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.*;
@@ -70,9 +71,19 @@ public class RegionedColumnSourceManager
     private final List<ColumnDefinition<?>> columnDefinitions;
 
     /**
+     * The column definitions of this table as a map from column name.
+     */
+    private Map<String, ColumnDefinition<?>> columnNameToDefinition;
+
+    /**
      * The column sources that make up this table.
      */
     private final Map<String, RegionedColumnSource<?>> columnSources = new LinkedHashMap<>();
+
+    /**
+     * The column sources of this table as a map from column source to column name.
+     */
+    private Map<ColumnSource<?>, String> columnSourceToName;
 
     /**
      * An unmodifiable view of columnSources.
@@ -807,7 +818,6 @@ public class RegionedColumnSourceManager
     @Override
     public void pushdownFilter(
             final WhereFilter filter,
-            final Map<String, String> renameMap,
             final RowSet input,
             final RowSet fullSet,
             final boolean usePrev,
@@ -856,8 +866,8 @@ public class RegionedColumnSourceManager
                                 }
                             }
                         };
-                        entry.location.pushdownFilter(filter, renameMap, locationInput, fullSet, usePrev, context,
-                                costCeiling, jobScheduler, resultConsumer, onError);
+                        entry.location.pushdownFilter(filter, locationInput, fullSet, usePrev, context, costCeiling,
+                                jobScheduler, resultConsumer, onError);
                     }
                     locationResume.run();
                 }, () -> onComplete.accept(PushdownResult.of(matchBuilder.build(),
@@ -865,32 +875,68 @@ public class RegionedColumnSourceManager
                 onError);
     }
 
-    @Override
-    public Map<String, String> renameMap(final WhereFilter filter, final ColumnSource<?>[] filterSources) {
-        final Map<? extends ColumnSource<?>, String> lookupMap = getColumnSources().entrySet().stream()
-                .collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey));
+    public static class RegionedColumnSourcePushdownFilterContext extends BasePushdownFilterContext {
+        public final List<ColumnSource<?>> columnSources;
+        public final List<ColumnDefinition<?>> columnDefinitions;
+        public final Map<String, String> renameMap;
 
-        final List<String> filterColumns = filter.getColumns();
+        public RegionedColumnSourcePushdownFilterContext(
+                final RegionedColumnSourceManager manager,
+                final WhereFilter filter,
+                final List<ColumnSource<?>> columnSources) {
+            this.columnSources = columnSources;
 
-        final Map<String, String> renameMap = new HashMap<>();
-        for (int ii = 0; ii < filterColumns.size(); ii++) {
-            final String filterColumnName = filterColumns.get(ii);
-            final ColumnSource<?> filterSource = filterSources[ii];
-            final String localColumnName = lookupMap.get(filterSource);
-            if (localColumnName == null) {
-                throw new IllegalArgumentException(
-                        "No associated source for '" + filterColumnName + "' found in column sources");
+            final List<String> filterColumns = filter.getColumns();
+            Require.eq(filterColumns.size(), "filterColumns.size()",
+                    columnSources.size(), "columnSources.size()");
+
+            // We knw the column sources are in the same order as the filter columns, build a rename map and collect
+            // column definitions for the filter sources
+            columnDefinitions = new ArrayList<>(columnSources.size());
+
+            // Maybe populate some useful lookup maps
+            if (manager.columnSourceToName == null) {
+                manager.columnSourceToName = manager.columnSources.entrySet().stream()
+                        .collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey));
             }
-            if (localColumnName.equals(filterColumnName)) {
-                continue;
+            if (manager.columnNameToDefinition == null) {
+                manager.columnNameToDefinition = manager.columnDefinitions.stream()
+                        .collect(Collectors.toMap(ColumnDefinition::getName, cd -> cd));
             }
-            renameMap.put(filterColumnName, localColumnName);
+
+            renameMap = new HashMap<>();
+            for (int ii = 0; ii < filterColumns.size(); ii++) {
+                final String filterColumnName = filterColumns.get(ii);
+                final ColumnSource<?> filterSource = columnSources.get(ii);
+                final String localColumnName = manager.columnSourceToName.get(filterSource);
+                if (localColumnName == null) {
+                    throw new IllegalArgumentException(
+                            "No associated source for '" + filterColumnName + "' found in column sources");
+                }
+                // Add the definition.
+                columnDefinitions.add(manager.columnNameToDefinition.get(localColumnName));
+
+                // Add the rename (if needed)
+                if (localColumnName.equals(filterColumnName)) {
+                    continue;
+                }
+                renameMap.put(filterColumnName, localColumnName);
+            }
         }
-        return renameMap;
+
+        @Override
+        public void close() {
+            columnSources.clear();
+            columnDefinitions.clear();
+            renameMap.clear();
+            super.close();
+        }
     }
 
     @Override
-    public PushdownFilterContext makePushdownFilterContext() {
-        return new BasePushdownFilterContext();
+    public PushdownFilterContext makePushdownFilterContext(
+            final WhereFilter filter,
+            final List<ColumnSource<?>> filterSources) {
+        return new RegionedColumnSourcePushdownFilterContext(this, filter, filterSources);
     }
 }
