@@ -33,7 +33,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -747,7 +746,7 @@ public class RegionedColumnSourceManager
          * @param inputRows The input row set
          * @return A writable row set for the location
          */
-        private WritableRowSet getOverlappingRowSet(final RowSet inputRows) {
+        private WritableRowSet getOverlappingShiftedRowSet(final RowSet inputRows) {
             final long locationStartKey = getFirstRowKey(regionIndex);
             final long locationEndKey = getLastRowKey(regionIndex);
 
@@ -832,13 +831,13 @@ public class RegionedColumnSourceManager
                             "locations: " + tableLocationEntries.size() + " for input row set: " + inputRowSet);
                 }
                 final IncludedTableLocationEntry entry = tableLocationEntries.get(regionIndex);
-                try (final WritableRowSet overlappingRowSet = entry.getOverlappingRowSet(inputRowSet)) {
-                    if (overlappingRowSet.isEmpty()) {
+                try (final WritableRowSet overlappingShiftedRowSet = entry.getOverlappingShiftedRowSet(inputRowSet)) {
+                    if (overlappingShiftedRowSet.isEmpty()) {
                         throw new IllegalStateException(
                                 "Overlapping row set is empty for region index " + regionIndex + " and input row set: "
                                         + inputRowSet);
                     }
-                    includedRegions.add(new RegionInfoHolder(entry, overlappingRowSet.copy()));
+                    includedRegions.add(new RegionInfoHolder(entry, overlappingShiftedRowSet.copy()));
                     // Move to the next region, skipping the current one
                     final long regionEndKey = getLastRowKey(regionIndex);
                     startSearchFrom = regionEndKey + 1;
