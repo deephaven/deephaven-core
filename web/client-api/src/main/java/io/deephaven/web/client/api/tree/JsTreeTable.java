@@ -262,8 +262,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
                         if (hasConstituentColumns) {
                             column.setConstituentType(columnDefsByName.get(true).get(definition.getName()).getType());
                         }
-                    } else {
-                        // If it's not a constituent column or group by column, it's an aggregated column
+                    } else if (definition.isRollupAggregatedNodeColumn()) {
                         aggregatedColumns.push(column);
                     }
                     String aggInputCol = definition.getRollupAggregationInputColumn();
