@@ -67,7 +67,7 @@ public final class ParquetSchemaUtil {
     }
 
     /**
-     * This method returns a map from the path to the field ID, where the path is represented as a dot-separated string.
+     * This method returns a map from the path to the field ID, where the path is represented as a list of string.
      */
     public static Map<List<String>, Integer> getPathToFieldId(final MessageType schema) {
         final List<String[]> paths = ParquetSchemaUtil.paths(schema);
