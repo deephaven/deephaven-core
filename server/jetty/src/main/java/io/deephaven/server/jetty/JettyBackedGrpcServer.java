@@ -179,7 +179,7 @@ public class JettyBackedGrpcServer implements GrpcServer {
 
     /**
      * Initialize the resources for the server, including the js-plugins filesystem. We don't do this in the constructor
-     * so that we can defer resources being opened until after the js plugins have been registered.
+     * so that we can defer resources being opened until after JS plugins have had a chance to be registered.
      */
     private void initResources() {
         List<String> urls = ServerResources.resourcesFromServiceLoader(Configuration.getInstance());
@@ -191,14 +191,18 @@ public class JettyBackedGrpcServer implements GrpcServer {
             return resource;
         }).toList());
 
-        // Creating the jsPlugins resource needs to happen after js plugins have been registered, since plugin
-        // registration will fail if the .zip backing the jsPlugins file system is already open
+        // Note that creating the jsPlugins resource will open the backing .zip file. Attempting to register any JS
+        // plugins after this point will fail since they need to write to the filesystem. The general order of setup
+        // should be 1) Construct the server. 2) Register JS plugins. 3) Create the JS plugins resource. 4) Start the
+        // server. This is managed by `DeephavenApiServer`.
         Resource jsPluginsResource = context.getResourceFactory().newResource(jsPlugins.filesystem());
         resources.add(new PathPrefixResource("/js-plugins/", jsPluginsResource));
 
         Resource combinedResource = ResourceFactory.combine(resources);
         context.setBaseResource(combinedResource);
 
+        // Create a HttpContent.Factory that can control caching (e.g. generating strong ETag headers) for static
+        // resources.
         HttpContent.Factory controlledCacheHttpContentFactory = ControlledCacheHttpContentFactory.create(
                 combinedResource,
                 jetty.getByteBufferPool(),
@@ -206,6 +210,7 @@ public class JettyBackedGrpcServer implements GrpcServer {
                 new ArrayList<>(),
                 true);
 
+        // Setting this attribute will override the default HttpContent.Factory created by the `ResourceServlet`.
         context.setAttribute(HttpContent.Factory.class.getName(), controlledCacheHttpContentFactory);
     }
 
