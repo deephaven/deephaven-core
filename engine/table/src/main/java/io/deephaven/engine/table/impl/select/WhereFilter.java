@@ -91,6 +91,21 @@ public interface WhereFilter extends Filter {
 
     WhereFilter[] ZERO_LENGTH_WHERE_FILTER_ARRAY = new WhereFilter[0];
 
+    @Override
+    default WhereFilter withBarrier(Object barrier) {
+        return WhereFilterBarrierImpl.of(this, barrier);
+    }
+
+    @Override
+    default WhereFilter respectsBarrier(Object... barriers) {
+        return WhereFilterRespectsBarrierImpl.of(this, barriers);
+    }
+
+    @Override
+    default WhereFilter withSerial() {
+        return WhereFilterSerialImpl.of(this);
+    }
+
     /**
      * Get the columns required by this select filter.
      * <p>
