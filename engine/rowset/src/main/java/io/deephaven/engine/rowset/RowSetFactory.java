@@ -96,52 +96,39 @@ public abstract class RowSetFactory {
     }
 
     /**
-     * Constructs a new combined {@link WritableRowSet} from the sequentially ordered {@code rowSets}.
+     * Constructs a new combined {@link WritableRowSet} from the union of {@code rowSets}.
      *
      * <p>
      * When considering the {@link RowSet#isNonempty()} elements, if none exist, {@link RowSetFactory#empty()} will be
-     * returned; if only one exist, {@link RowSet#copy()} will be returned; otherwise, a {@link RowSetBuilderSequential}
-     * will be used.
-     *
-     * @param rowSets the input row sets, must be a serial stream
-     * @return the new row set
-     */
-    public static WritableRowSet buildSequential(final Collection<RowSet> rowSets) {
-        return buildSequential(rowSets.stream());
-    }
-
-    /**
-     * Constructs a new combined {@link WritableRowSet} from the sequentially ordered {@code rowSets}.
+     * returned; if only one exist, {@link RowSet#copy()} will be returned; otherwise, a new row set will be returned
+     * based on the {@link WritableRowSet#insert(RowSet) insertion} of all the row sets.
      *
      * <p>
-     * When considering the {@link RowSet#isNonempty()} elements, if none exist, {@link RowSetFactory#empty()} will be
-     * returned; if only one exist, {@link RowSet#copy()} will be returned; otherwise, a {@link RowSetBuilderSequential}
-     * will be used.
+     * This method may perform best when the {@code rowSets} are ordered and non-overlapping.
      *
-     * @param rowSets the input row sets, must be a serial stream
+     * @param rowSets the input row sets
      * @return the new row set
      */
-    public static WritableRowSet buildSequential(final Stream<RowSet> rowSets) {
-        if (rowSets.isParallel()) {
-            throw new IllegalArgumentException("Can't build a sequential row set with a parallel stream");
-        }
-        try (final Stream<RowSet> stream = rowSets.filter(RowSet::isNonempty)) {
+    public static WritableRowSet union(final Collection<RowSet> rowSets) {
+        try (final Stream<RowSet> stream = rowSets.stream().filter(RowSet::isNonempty)) {
             final Iterator<RowSet> it = stream.iterator();
             if (!it.hasNext()) {
                 return RowSetFactory.empty();
             }
-            final RowSet first = it.next();
-            if (!it.hasNext()) {
-                // If we only have one non-empty, we can just copy it :)
-                return first.copy();
+            final WritableRowSet union = it.next().copy();
+            try {
+                while (it.hasNext()) {
+                    union.insert(it.next());
+                }
+            } catch (final RuntimeException e) {
+                try {
+                    union.close();
+                } catch (final RuntimeException e2) {
+                    e.addSuppressed(e2);
+                }
+                throw e;
             }
-            // Otherwise, we'll build it sequentially
-            final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
-            builder.appendRowSequence(first);
-            do {
-                builder.appendRowSequence(it.next());
-            } while (it.hasNext());
-            return builder.build();
+            return union;
         }
     }
 }

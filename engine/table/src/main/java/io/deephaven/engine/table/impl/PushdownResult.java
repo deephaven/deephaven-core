@@ -4,14 +4,13 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.util.SafeCloseable;
 
 import java.util.Collection;
 import java.util.Objects;
-import java.util.stream.Stream;
+import java.util.stream.Collectors;
 
 /**
  * Records the results of a push-down predicate filter operation.
@@ -100,7 +99,7 @@ public final class PushdownResult implements SafeCloseable {
      * {@link PushdownResult#maybeMatch() maybe matches}. This does <b>not</b> check if the row sets overlap.
      *
      * <p>
-     * This relies on {@link RowSetFactory#buildSequential(Stream)} when considering the stream of
+     * This relies on {@link RowSetFactory#union(Collection)} when considering the stream of
      * {@link PushdownResult#match() matches} and {@link PushdownResult#maybeMatch() maybe matches}.
      *
      * @param results the individual results
@@ -108,8 +107,8 @@ public final class PushdownResult implements SafeCloseable {
      */
     public static PushdownResult buildSequentialFast(final Collection<PushdownResult> results) {
         return PushdownResult.ofFast(
-                RowSetFactory.buildSequential(results.stream().map(PushdownResult::match)),
-                RowSetFactory.buildSequential(results.stream().map(PushdownResult::maybeMatch)));
+                RowSetFactory.union(results.stream().map(PushdownResult::match).collect(Collectors.toList())),
+                RowSetFactory.union(results.stream().map(PushdownResult::maybeMatch).collect(Collectors.toList())));
     }
 
     private PushdownResult(
