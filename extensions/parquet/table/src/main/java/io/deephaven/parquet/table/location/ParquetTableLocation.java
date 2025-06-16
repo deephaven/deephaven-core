@@ -458,7 +458,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
                 filter instanceof RangeFilter && ((RangeFilter) filter).getRealFilter() instanceof AbstractRangeFilter;
         final boolean isMatchFilter = filter instanceof MatchFilter;
 
-        final ResolvedColumnsInfo resolvedColumnsInfo;
+        final List<ResolvedColumnInfo> resolvedColumnsInfo;
         try {
             resolvedColumnsInfo = resolveColumns(filter, renameMap);
         } catch (final RuntimeException e) {
@@ -472,7 +472,10 @@ public class ParquetTableLocation extends AbstractTableLocation {
             return PushdownResult.METADATA_STATS_COST;
         }
 
-        final String[] parquetColumnNames = resolvedColumnsInfo.columnNames;
+        // We have verified these columns are not nested.
+        final String[] parquetColumnNames = resolvedColumnsInfo.stream()
+                .map(resolvedColumn -> resolvedColumn.columnPath.get(0))
+                .toArray(String[]::new);
 
         // Do we have a data indexes for the column(s)?
         if (shouldExecute(QueryTable.DISABLE_WHERE_PUSHDOWN_DATA_INDEX,
@@ -491,69 +494,37 @@ public class ParquetTableLocation extends AbstractTableLocation {
     }
 
     /**
-     * A helper class to hold the resolved column names and their corresponding field IDs.
+     * A helper class to hold the resolved column paths and their corresponding column indices.
      */
-    private static class ResolvedColumnsInfo {
-        final String[] columnNames;
-        final List<Integer> fieldIds;
+    private static class ResolvedColumnInfo {
+        final List<String> columnPath;
+        final int columnIndex;
 
-        ResolvedColumnsInfo(
-                @NotNull final String[] columnNames,
-                @NotNull final List<Integer> fieldIds) {
-            this.columnNames = columnNames;
-            this.fieldIds = fieldIds;
-            Require.requirement(columnNames.length == fieldIds.size(),
-                    "columnNames and fieldIds must have the same length");
+        ResolvedColumnInfo(
+                @NotNull final List<String> columnPath,
+                final int columnIndex) {
+            this.columnPath = columnPath;
+            this.columnIndex = columnIndex;
         }
-    }
-
-    private List<List<String>> getParquetColumnPaths(
-            final Collection<String> colNamesFromFilter,
-            final Map<String, String> renameMap) {
-        return colNamesFromFilter.stream()
-                .map(colNameFromFilter -> {
-                    final String colNameFromDef = renameMap.getOrDefault(colNameFromFilter, colNameFromFilter);
-                    final String parquetColName =
-                            readInstructions.getParquetColumnNameFromColumnNameOrDefault(colNameFromDef);
-                    return getColumnPath(colNameFromDef, parquetColName);
-                })
-                .collect(Collectors.toList());
-    }
-
-    private List<Integer> getParquetIndices(final Collection<List<String>> parquetColumnPaths) {
-        // Get the list of paths from the schema, and then find the indices of the column's path in that list.
-        final Map<List<String>, Integer> pathToFieldId = ParquetSchemaUtil.getPathToFieldId(parquetSchema);
-        final List<Integer> indices = new ArrayList<>(parquetColumnPaths.size());
-        for (final List<String> columnPath : parquetColumnPaths) {
-            if (columnPath.isEmpty()) {
-                throw new IllegalArgumentException(
-                        "Parquet paths must contain at least one element, found " + columnPath);
-            }
-            final Integer idx = pathToFieldId.get(columnPath);
-            if (idx == null) {
-                throw new IllegalArgumentException(String.format(
-                        "Parquet schema does not contain column '%s' for table %s",
-                        columnPath, getTableKey()));
-            }
-            indices.add(idx);
-        }
-        return indices;
     }
 
     /**
-     * Verify that the provided Parquet column paths do not contain nested types, like lists or structs.
+     * Find the index of the column in the Parquet schema paths. Used to find the statistics for a column when pushing
+     * down filters.
      *
-     * @throws IllegalStateException if any of the paths contain nested types
+     * @throws IllegalArgumentException if the column is not found in the Parquet schema paths
      */
-    private static void ensureFlatColumns(
-            final List<List<String>> parquetColumnPaths,
-            final MessageType schema) {
-        for (final List<String> path : parquetColumnPaths) {
-            if (schema.getMaxRepetitionLevel(path.toArray(new String[0])) > 0) {
-                throw new IllegalArgumentException("Pushdown filtering is not supported for nested types, found " +
-                        "nested type at path: " + String.join(".", path));
+    private static int findColumnIndex(
+            final String columnName,
+            final List<String[]> parquetColumnPaths) {
+        for (int i = 0; i < parquetColumnPaths.size(); ++i) {
+            final String[] path = parquetColumnPaths.get(i);
+            if (path.length == 1 && path[0].equals(columnName)) {
+                return i;
             }
         }
+        throw new IllegalArgumentException("Column '" + columnName + "' not found in the set of paths " +
+                parquetColumnPaths.stream().map(Arrays::toString).collect(Collectors.joining(", ")));
     }
 
     /**
@@ -561,23 +532,28 @@ public class ParquetTableLocation extends AbstractTableLocation {
      *
      * @param filter The filter containing the columns to resolve
      * @param renameMap A map of column names to their renamed versions
-     * @return A {@link ResolvedColumnsInfo} containing the resolved column names and their field IDs
+     * @return A {@link ResolvedColumnInfo} containing the resolved column names and their indices
      * @throws IllegalArgumentException if any of the columns in the filter cannot be resolved using the Parquet schema
      */
-    private ResolvedColumnsInfo resolveColumns(
+    private List<ResolvedColumnInfo> resolveColumns(
             @NotNull final WhereFilter filter,
             @NotNull final Map<String, String> renameMap) {
-
-        final List<List<String>> parquetColPaths = getParquetColumnPaths(filter.getColumns(), renameMap);
-
-        ensureFlatColumns(parquetColPaths, parquetSchema);
-
-        final List<Integer> fieldIds = getParquetIndices(parquetColPaths);
-        final String[] names = fieldIds.stream()
-                .map(parquetSchema::getFieldName)
-                .toArray(String[]::new);
-
-        return new ResolvedColumnsInfo(names, fieldIds);
+        final Collection<String> colNamesFromFilter = filter.getColumns();
+        final List<ResolvedColumnInfo> resolvedColumns = new ArrayList<>(colNamesFromFilter.size());
+        final List<String[]> pathsFromSchema = ParquetSchemaUtil.paths(parquetSchema);
+        for (final String colNameFromFilter : colNamesFromFilter) {
+            final String colNameFromDef = renameMap.getOrDefault(colNameFromFilter, colNameFromFilter);
+            final String parquetColName = readInstructions.getParquetColumnNameFromColumnNameOrDefault(colNameFromDef);
+            final List<String> columnPath = getColumnPath(colNameFromDef, parquetColName);
+            if (columnPath.size() != 1) {
+                throw new IllegalArgumentException("Pushdown filter is only supported for non-nested types, found "
+                        + "nested type at path: " + String.join(".", columnPath));
+            }
+            final String colNameFromSchema = columnPath.get(0);
+            final int columnIndex = findColumnIndex(colNameFromSchema, pathsFromSchema);
+            resolvedColumns.add(new ResolvedColumnInfo(columnPath, columnIndex));
+        }
+        return resolvedColumns;
     }
 
     @Override
@@ -604,7 +580,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
         PushdownResult result = PushdownResult.of(RowSetFactory.empty(), selection.copy());
 
         final long executedFilterCost = context.executedFilterCost();
-        final ResolvedColumnsInfo resolvedColumnsInfo;
+        final List<ResolvedColumnInfo> resolvedColumnsInfo;
         try {
             resolvedColumnsInfo = resolveColumns(filter, renameMap);
         } catch (final RuntimeException e) {
@@ -613,22 +589,30 @@ public class ParquetTableLocation extends AbstractTableLocation {
             return;
         }
 
-        final List<Integer> fieldIds = resolvedColumnsInfo.fieldIds;
-        final String[] parquetColumnNames = resolvedColumnsInfo.columnNames;
+        // We have verified these columns are not nested.
+        final int numColumns = resolvedColumnsInfo.size();
+        final String[] parquetColumnNames = new String[numColumns];
+        final List<Integer> columnIndices = new ArrayList<>(numColumns);
+
+        for (int i = 0; i < numColumns; i++) {
+            final ResolvedColumnInfo resolvedColumn = resolvedColumnsInfo.get(i);
+            parquetColumnNames[i] = resolvedColumn.columnPath.get(0);
+            columnIndices.add(resolvedColumn.columnIndex);
+        }
 
         // Should we look at the metadata?
         if (shouldExecute(QueryTable.DISABLE_WHERE_PUSHDOWN_PARQUET_ROW_GROUP_METADATA,
                 PushdownResult.METADATA_STATS_COST, executedFilterCost, costCeiling)) {
-            // Some range filters host a condition filter as the internal filter and we can't push that down.
+            // Some range filters host a condition filter as the internal filter, and we can't push that down.
             if (filter instanceof RangeFilter
                     && ((RangeFilter) filter).getRealFilter() instanceof AbstractRangeFilter) {
                 try (final PushdownResult ignored = result) {
                     result = pushdownRangeFilter((AbstractRangeFilter) ((RangeFilter) filter).getRealFilter(),
-                            fieldIds, result);
+                            columnIndices, result);
                 }
             } else if (filter instanceof MatchFilter) {
                 try (final PushdownResult ignored = result) {
-                    result = pushdownMatchFilter((MatchFilter) filter, fieldIds, result);
+                    result = pushdownMatchFilter((MatchFilter) filter, columnIndices, result);
                 }
             }
         }
@@ -754,17 +738,17 @@ public class ParquetTableLocation extends AbstractTableLocation {
     @NotNull
     private PushdownResult pushdownRangeFilter(
             final AbstractRangeFilter rf,
-            final List<Integer> fieldIds,
+            final List<Integer> columnIndices,
             final PushdownResult result) {
         final RowSetBuilderSequential maybeBuilder = RowSetFactory.builderSequential();
         final MutableLong maybeCount = new MutableLong(0);
 
         // Only one column in a RangeFilter
-        final Integer fieldId = fieldIds.get(0);
+        final Integer columnIndex = columnIndices.get(0);
         final List<BlockMetaData> blocks = parquetMetadata.getBlocks();
         iterateRowGroupsAndRowSet(result.maybeMatch(), (rgIdx, rs) -> {
             final Pair<Object, Object> p = getMinMax(
-                    blocks.get(rgIdx).getColumns().get(fieldId).getStatistics());
+                    blocks.get(rgIdx).getColumns().get(columnIndex).getStatistics());
 
             if (p == null || rf.overlaps(p.first, p.second)) {
                 maybeBuilder.appendRowSequence(rs);
@@ -781,17 +765,17 @@ public class ParquetTableLocation extends AbstractTableLocation {
     @NotNull
     private PushdownResult pushdownMatchFilter(
             final MatchFilter mf,
-            final List<Integer> parquetIndices,
+            final List<Integer> columnIndices,
             final PushdownResult result) {
         final RowSetBuilderSequential maybeBuilder = RowSetFactory.builderSequential();
         final MutableLong maybeCount = new MutableLong(0);
 
         // Only one column in a RangeFilter
-        final Integer parquetIndex = parquetIndices.get(0);
+        final Integer columnIndex = columnIndices.get(0);
 
         iterateRowGroupsAndRowSet(result.maybeMatch(), (rgIdx, rs) -> {
             final Pair<Object, Object> p = getMinMax(
-                    parquetMetadata.getBlocks().get(rgIdx).getColumns().get(parquetIndex).getStatistics());
+                    parquetMetadata.getBlocks().get(rgIdx).getColumns().get(columnIndex).getStatistics());
 
             if (p == null || mf.overlaps(p.first, p.second)) {
                 maybeBuilder.appendRowSequence(rs);

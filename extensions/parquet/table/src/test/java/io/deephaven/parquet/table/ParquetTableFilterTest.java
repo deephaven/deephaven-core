@@ -11,6 +11,7 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.TableTools;
+import io.deephaven.parquet.table.location.ParquetColumnResolverMap;
 import io.deephaven.test.types.OutOfBandTest;
 import org.junit.*;
 import org.junit.experimental.categories.Category;
@@ -852,7 +853,15 @@ public final class ParquetTableFilterTest {
                 ColumnDefinition.fromGenericType("Longs", long[].class, long.class));
 
         // If we use an explicit definition, we can skip over struct columns and just read the Baz column.
-        final Table diskTable = ParquetTools.readTable(path, ParquetInstructions.EMPTY.withTableDefinition(definition));
+        final Table diskTable = ParquetTools.readTable(path,
+                ParquetInstructions.builder()
+                        .setTableDefinition(definition)
+                        .setColumnResolverFactory(
+                                (tableKey, tableLocationKey) -> ParquetColumnResolverMap.builder()
+                                        .putMap("Baz", List.of("Baz"))
+                                        .putMap("Longs", List.of("Longs", "list", "element"))
+                                        .build())
+                        .build());
         final Table memTable = diskTable.select();
 
         assertTableEquals(diskTable, memTable);
