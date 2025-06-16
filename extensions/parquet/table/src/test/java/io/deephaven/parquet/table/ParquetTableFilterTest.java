@@ -13,6 +13,7 @@ import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.parquet.table.location.ParquetColumnResolverMap;
 import io.deephaven.test.types.OutOfBandTest;
+import org.jetbrains.annotations.NotNull;
 import org.junit.*;
 import org.junit.experimental.categories.Category;
 
@@ -93,21 +94,21 @@ public final class ParquetTableFilterTest {
         }
     }
 
-    private void verifyResults(Table filteredDiskTable, Table filteredMemTable) {
+    private static void verifyResults(Table filteredDiskTable, Table filteredMemTable) {
         Assert.assertFalse("filteredMemTable.isEmpty()", filteredMemTable.isEmpty());
         Assert.assertFalse("filteredDiskTable.isEmpty()", filteredDiskTable.isEmpty());
         verifyResultsAllowEmpty(filteredDiskTable, filteredMemTable);
     }
 
-    private void filterAndVerifyResults(Table diskTable, Table memTable, String... filters) {
+    private static void filterAndVerifyResults(Table diskTable, Table memTable, String... filters) {
         verifyResults(diskTable.where(filters).coalesce(), memTable.where(filters).coalesce());
     }
 
-    private void filterAndVerifyResultsAllowEmpty(Table diskTable, Table memTable, String... filters) {
+    private static void filterAndVerifyResultsAllowEmpty(Table diskTable, Table memTable, String... filters) {
         verifyResultsAllowEmpty(diskTable.where(filters).coalesce(), memTable.where(filters).coalesce());
     }
 
-    private void verifyResultsAllowEmpty(Table filteredDiskTable, Table filteredMemTable) {
+    private static void verifyResultsAllowEmpty(Table filteredDiskTable, Table filteredMemTable) {
         assertTableEquals(filteredDiskTable, filteredMemTable);
     }
 
@@ -847,23 +848,36 @@ public final class ParquetTableFilterTest {
      */
     @Test
     public void nestedStructsFilterTest() {
-        final String path = ParquetTableFilterTest.class.getResource("/NestedStruct3.parquet").getFile();
-        final TableDefinition definition = TableDefinition.of(
-                ColumnDefinition.ofInt("Baz"),
-                ColumnDefinition.fromGenericType("Longs", long[].class, long.class));
-
         // If we use an explicit definition, we can skip over struct columns and just read the Baz column.
-        final Table diskTable = ParquetTools.readTable(path,
-                ParquetInstructions.builder()
-                        .setTableDefinition(definition)
-                        .setColumnResolverFactory(
-                                (tableKey, tableLocationKey) -> ParquetColumnResolverMap.builder()
-                                        .putMap("Baz", List.of("Baz"))
-                                        .putMap("Longs", List.of("Longs", "list", "element"))
-                                        .build())
-                        .build());
-        final Table memTable = diskTable.select();
+        final ParquetInstructions instructions = ParquetInstructions.builder()
+                .setTableDefinition(TableDefinition.of(
+                        ColumnDefinition.ofInt("Baz"),
+                        ColumnDefinition.fromGenericType("Longs", long[].class, long.class)))
+                .build();
+        nestedStructsFilterImpl(instructions);
+    }
 
+    /**
+     * @see #nestedStructsFilterTest
+     */
+    @Test
+    public void nestedStructsFilterWithResolverTest() {
+        final ParquetInstructions instructions = ParquetInstructions.builder()
+                .setTableDefinition(TableDefinition.of(
+                        ColumnDefinition.ofInt("Baz"),
+                        ColumnDefinition.fromGenericType("Longs", long[].class, long.class)))
+                .setColumnResolverFactory((tk, tlk) -> ParquetColumnResolverMap.builder()
+                        .putMap("Baz", List.of("Baz"))
+                        .putMap("Longs", List.of("Longs", "list", "element"))
+                        .build())
+                .build();
+        nestedStructsFilterImpl(instructions);
+    }
+
+    private static void nestedStructsFilterImpl(@NotNull final ParquetInstructions readInstructions) {
+        final String path = ParquetTableFilterTest.class.getResource("/NestedStruct3.parquet").getFile();
+        final Table diskTable = ParquetTools.readTable(path, readInstructions);
+        final Table memTable = diskTable.select();
         assertTableEquals(diskTable, memTable);
 
         filterAndVerifyResults(diskTable, memTable, "Baz != null");
