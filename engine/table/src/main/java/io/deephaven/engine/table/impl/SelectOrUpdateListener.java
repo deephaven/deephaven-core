@@ -3,19 +3,21 @@
 //
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.engine.rowset.TrackingRowSet;
-import io.deephaven.engine.rowset.WritableRowSet;
+import io.deephaven.engine.rowset.*;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
 import io.deephaven.engine.table.impl.perf.PerformanceEntry;
 import io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer;
+import io.deephaven.engine.table.impl.sources.SparseArrayColumnSource;
+import io.deephaven.engine.table.impl.sources.sparse.SparseConstants;
 import io.deephaven.engine.updategraph.TerminalNotification;
 import io.deephaven.engine.table.impl.util.ImmediateJobScheduler;
 import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.table.impl.util.UpdateGraphJobScheduler;
 
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -27,6 +29,7 @@ class SelectOrUpdateListener extends BaseTable.ListenerImpl {
     private final TrackingRowSet resultRowSet;
     private final ModifiedColumnSet.Transformer transformer;
     private final SelectAndViewAnalyzer analyzer;
+    private final SparseArrayColumnSource[] sparseArraysToFree;
 
     private volatile boolean updateInProgress = false;
     private final boolean enableParallelUpdate;
@@ -52,6 +55,13 @@ class SelectOrUpdateListener extends BaseTable.ListenerImpl {
             mcss[nextIndex] = dependent.newModifiedColumnSet(entry.getValue());
             ++nextIndex;
         }
+        final Set<SparseArrayColumnSource<?>> columnsToFree = Collections.newSetFromMap(new IdentityHashMap<>());
+        for (final ColumnSource<?> resultSource : dependent.getColumnSources()) {
+            if (resultSource instanceof SparseArrayColumnSource && !parent.getColumnSources().contains(resultSource)) {
+                columnsToFree.add((SparseArrayColumnSource<?>) resultSource);
+            }
+        }
+        sparseArraysToFree = columnsToFree.toArray(SparseArrayColumnSource[]::new);
         transformer = parent.newModifiedColumnSetTransformer(parentNames, mcss);
         this.analyzer = analyzer;
         this.enableParallelUpdate =
@@ -79,6 +89,7 @@ class SelectOrUpdateListener extends BaseTable.ListenerImpl {
         final SelectAndViewAnalyzer.UpdateHelper updateHelper =
                 new SelectAndViewAnalyzer.UpdateHelper(resultRowSet, acquiredUpdate);
         toClear.remove(resultRowSet);
+
         JobScheduler jobScheduler;
 
         if (enableParallelUpdate) {
@@ -117,6 +128,8 @@ class SelectOrUpdateListener extends BaseTable.ListenerImpl {
     private void completionRoutine(TableUpdate upstream, JobScheduler jobScheduler,
             WritableRowSet toClear, SelectAndViewAnalyzer.UpdateHelper updateHelper) {
         try {
+            clearUnusedCurrentBlocks(toClear);
+
             final TableUpdateImpl downstream = new TableUpdateImpl(upstream.added().copy(), upstream.removed().copy(),
                     upstream.modified().copy(), upstream.shifted(), dependent.getModifiedColumnSetForUpdates());
             transformer.clearAndTransform(upstream.modifiedColumnSet(), downstream.modifiedColumnSet);
@@ -141,6 +154,39 @@ class SelectOrUpdateListener extends BaseTable.ListenerImpl {
         } finally {
             updateInProgress = false;
             decrementReferenceCount();
+        }
+    }
+
+    private void clearUnusedCurrentBlocks(final WritableRowSet toClear) {
+        if (sparseArraysToFree.length == 0) {
+            return;
+        }
+
+        // if we have anything in our rowset that is clearing out an entire block; it is worth noting those blocks
+        final RowSet.SearchIterator remainingInterator = resultRowSet.searchIterator();
+        final RowSet.SearchIterator clearIterator = toClear.searchIterator();
+
+        final RowSetBuilderSequential removeBlockBuilder = RowSetFactory.builderSequential();
+        long startOfNextBlock = 0;
+        while (clearIterator.advance(startOfNextBlock)) {
+            final long clearValue = clearIterator.currentValue();
+            startOfNextBlock = (clearValue | (SparseConstants.BLOCK_SIZE - 1)) + 1;
+
+            final long startOfClearingBlock = clearValue & -(SparseConstants.BLOCK_SIZE);
+            if (!remainingInterator.advance(startOfClearingBlock)
+                    || remainingInterator.currentValue() >= startOfNextBlock) {
+                // we need to remove this block,
+                removeBlockBuilder.appendKey(clearValue >> SparseConstants.LOG_BLOCK_SIZE);
+                // also need to check block1, block2 for higher-level clearing
+            }
+        }
+        try (final WritableRowSet removeBlocks = removeBlockBuilder.build()) {
+            if (!removeBlocks.isNonempty()) {
+                return;
+            }
+            for (final SparseArrayColumnSource<?> cs : sparseArraysToFree) {
+                cs.clearBlocks(removeBlocks);
+            }
         }
     }
 

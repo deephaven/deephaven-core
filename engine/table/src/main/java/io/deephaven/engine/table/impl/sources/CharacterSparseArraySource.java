@@ -3,7 +3,7 @@
 //
 package io.deephaven.engine.table.impl.sources;
 
-import io.deephaven.engine.context.ExecutionContext;
+// ColumnSource is used in the long class when replicated
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.DefaultGetContext;
 import io.deephaven.chunk.*;
@@ -19,6 +19,7 @@ import io.deephaven.engine.table.impl.sources.sparse.LongOneOrN;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.util.SoftRecycler;
 import gnu.trove.list.array.TLongArrayList;
+import io.deephaven.util.annotations.TestUseOnly;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 
@@ -280,6 +281,7 @@ public class CharacterSparseArraySource extends SparseArrayColumnSource<Characte
     }
 
     private void commitUpdates() {
+        maybeClearBlocks();
         blocksToFlush.sort();
 
         int destinationOffset = 0;
@@ -378,6 +380,15 @@ public class CharacterSparseArraySource extends SparseArrayColumnSource<Characte
         // and finally recycle the top level block of blocks of blocks of blocks
         localPrevBlocks.maybeRecycle(recycler0);
         localPrevInUse.maybeRecycle(inUse0Recycler);
+    }
+
+    private void maybeClearBlocks() {
+        if (blocksToClear == null) {
+            return;
+        }
+        blocksToClear.forAllRowKeys(block -> blocks.clearBlock(block));
+        blocksToClear.close();
+        blocksToClear = null;
     }
 
     /**
@@ -1029,4 +1040,20 @@ public class CharacterSparseArraySource extends SparseArrayColumnSource<Characte
 
     // region reinterpretation
     // endregion reinterpretation
+
+
+    @Override
+    public void clearBlocks(final RowSet blocksToClear) {
+        if (prevFlusher == null) {
+            return;
+        }
+        super.clearBlocks(blocksToClear);
+        prevFlusher.maybeActivate();
+    }
+
+    @TestUseOnly
+    @Override
+    public long estimateSize() {
+        return blocks.estimateSize();
+    }
 }

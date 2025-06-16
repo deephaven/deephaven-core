@@ -13,7 +13,7 @@ import io.deephaven.util.BooleanUtils;
 import static io.deephaven.util.BooleanUtils.NULL_BOOLEAN_AS_BYTE;
 import io.deephaven.engine.table.WritableSourceWithPrepareForParallelPopulation;
 
-import io.deephaven.engine.context.ExecutionContext;
+// ColumnSource is used in the long class when replicated
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.DefaultGetContext;
 import io.deephaven.chunk.*;
@@ -29,6 +29,7 @@ import io.deephaven.engine.table.impl.sources.sparse.LongOneOrN;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.util.SoftRecycler;
 import gnu.trove.list.array.TLongArrayList;
+import io.deephaven.util.annotations.TestUseOnly;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 
@@ -290,6 +291,7 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean>
     }
 
     private void commitUpdates() {
+        maybeClearBlocks();
         blocksToFlush.sort();
 
         int destinationOffset = 0;
@@ -388,6 +390,15 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean>
         // and finally recycle the top level block of blocks of blocks of blocks
         localPrevBlocks.maybeRecycle(recycler0);
         localPrevInUse.maybeRecycle(inUse0Recycler);
+    }
+
+    private void maybeClearBlocks() {
+        if (blocksToClear == null) {
+            return;
+        }
+        blocksToClear.forAllRowKeys(block -> blocks.clearBlock(block));
+        blocksToClear.close();
+        blocksToClear = null;
     }
 
     /**
@@ -1298,4 +1309,20 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean>
         }
     }
     // endregion reinterpretation
+
+
+    @Override
+    public void clearBlocks(final RowSet blocksToClear) {
+        if (prevFlusher == null) {
+            return;
+        }
+        super.clearBlocks(blocksToClear);
+        prevFlusher.maybeActivate();
+    }
+
+    @TestUseOnly
+    @Override
+    public long estimateSize() {
+        return blocks.estimateSize();
+    }
 }

@@ -9,6 +9,7 @@ import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.WritableSourceWithPrepareForParallelPopulation;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.rowset.RowSetShiftCallback;
+import io.deephaven.util.annotations.TestUseOnly;
 import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.attributes.Values;
@@ -147,6 +148,11 @@ public abstract class SparseArrayColumnSource<T>
      */
     boolean immutable = false;
 
+    /**
+     * The blocks to clear on the next terminal notification
+     */
+    RowSet blocksToClear;
+
     SparseArrayColumnSource(Class<T> type, Class<?> componentType) {
         super(type, componentType);
     }
@@ -192,6 +198,14 @@ public abstract class SparseArrayColumnSource<T>
 
     public void remove(RowSet toRemove) {
         setNull(toRemove);
+    }
+
+    public void clearBlocks(final RowSet blocksToClear) {
+        if (this.blocksToClear != null) {
+            throw new IllegalStateException("Cannot call blocksToClear multiple times on the same cycle!");
+        }
+        // this is a list of blocks we have cleared;
+        this.blocksToClear = blocksToClear.copy();
     }
 
     public static <T> WritableColumnSource<T> getSparseMemoryColumnSource(Collection<T> data, Class<T> type) {
@@ -477,4 +491,17 @@ public abstract class SparseArrayColumnSource<T>
     public boolean providesFillUnordered() {
         return true;
     }
+
+    /**
+     * Return an estimate of the heap size taken by the current values within this sparse array source.
+     *
+     * <p>
+     * Only leaf nodes and the size arrays of references are included in this estimate. Intermediate objects are
+     * ignored, and an array of references is assumed to take 8 bytes per element with no overhead.
+     * </p>
+     *
+     * @return an estimate of the size of this column source's current data
+     */
+    @TestUseOnly
+    abstract public long estimateSize();
 }
