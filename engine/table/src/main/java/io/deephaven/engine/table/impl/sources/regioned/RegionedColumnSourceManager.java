@@ -832,7 +832,7 @@ public class RegionedColumnSourceManager
                     final long locationEndKey = getLastRowKey(entry.regionIndex);
 
                     try (final WritableRowSet locationInput =
-                                 builder.selection().subSetByKeyRange(locationStartKey, locationEndKey)) {
+                            builder.selection().subSetByKeyRange(locationStartKey, locationEndKey)) {
                         locationInput.shiftInPlace(-locationStartKey); // Shift to the region's key space
                         locationInput.retain(entry.rowSetAtLastUpdate); // intersect in place with region's row set
                         // TODO: fullSet is not shifted here, and is a lie?
@@ -985,7 +985,8 @@ public class RegionedColumnSourceManager
             return PushdownResult.ofUnsafe(
                     selection.copy(),
                     RowSetFactory.union(Stream.of(results).map(PushdownResult::match).collect(Collectors.toList())),
-                    RowSetFactory.union(Stream.of(results).map(PushdownResult::maybeMatch).collect(Collectors.toList())));
+                    RowSetFactory
+                            .union(Stream.of(results).map(PushdownResult::maybeMatch).collect(Collectors.toList())));
         }
 
         @Override
