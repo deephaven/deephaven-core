@@ -1166,6 +1166,7 @@ public class TestTableTools {
 
         Assert.assertTrue(res.isFailed());
         Assert.assertTrue(errRef.get() instanceof ConstituentTableException);
+        Assert.assertEquals(err, errRef.get().getCause());
     }
 
     @Test
@@ -1197,5 +1198,6 @@ public class TestTableTools {
 
         Assert.assertTrue(res.isFailed());
         Assert.assertTrue(errRef.get() instanceof ConstituentTableException);
+        Assert.assertEquals(err, errRef.get().getCause());
     }
 }
