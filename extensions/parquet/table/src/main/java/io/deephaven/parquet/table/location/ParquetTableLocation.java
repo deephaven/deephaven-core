@@ -458,13 +458,12 @@ public class ParquetTableLocation extends AbstractTableLocation {
                 filter instanceof RangeFilter && ((RangeFilter) filter).getRealFilter() instanceof AbstractRangeFilter;
         final boolean isMatchFilter = filter instanceof MatchFilter;
 
-        final List<ResolvedColumnInfo> resolvedColumnsInfo;
-        try {
-            resolvedColumnsInfo = resolveColumns(filter, renameMap);
-        } catch (final RuntimeException e) {
-            // Failed to find the columns in the Parquet schema, so no benefit to pushing down.
+        final Optional<List<ResolvedColumnInfo>> maybeResolvedColumns = resolveColumns(filter, renameMap);
+        if (maybeResolvedColumns.isEmpty()) {
+            // One or more columns could not be resolved, so no benefit to pushing down.
             return Long.MAX_VALUE;
         }
+        final List<ResolvedColumnInfo> resolvedColumnsInfo = maybeResolvedColumns.get();
 
         if (shouldExecute(QueryTable.DISABLE_WHERE_PUSHDOWN_PARQUET_ROW_GROUP_METADATA,
                 PushdownResult.METADATA_STATS_COST, executedFilterCost)
@@ -509,33 +508,30 @@ public class ParquetTableLocation extends AbstractTableLocation {
     }
 
     /**
-     * Find the index of the column in the Parquet schema paths. Used to find the statistics for a column when pushing
-     * down filters.
-     *
-     * @throws IllegalArgumentException if the column is not found in the Parquet schema paths
+     * Returns the index of {@code columnName} in {@code parquetColumnPaths}, or {@link OptionalInt#empty()} if the
+     * column is absent. This index is used to find the statistics for a column when pushing down filters.
      */
-    private static int findColumnIndex(
-            final String columnName,
-            final List<String[]> parquetColumnPaths) {
+    private static OptionalInt findColumnIndex(
+            @NotNull final String columnName,
+            @NotNull final List<String[]> parquetColumnPaths) {
         for (int i = 0; i < parquetColumnPaths.size(); ++i) {
             final String[] path = parquetColumnPaths.get(i);
             if (path.length == 1 && path[0].equals(columnName)) {
-                return i;
+                return OptionalInt.of(i);
             }
         }
-        throw new IllegalArgumentException("Column '" + columnName + "' not found in the set of paths " +
-                parquetColumnPaths.stream().map(Arrays::toString).collect(Collectors.joining(", ")));
+        return OptionalInt.empty();
     }
 
     /**
-     * Resolve the columns from the filter against the Parquet schema.
+     * Attempts to resolve all columns referenced by {@code filter} against the Parquet schema.
      *
      * @param filter The filter containing the columns to resolve
      * @param renameMap A map of column names to their renamed versions
-     * @return A {@link ResolvedColumnInfo} containing the resolved column names and their indices
-     * @throws IllegalArgumentException if any of the columns in the filter cannot be resolved using the Parquet schema
+     * @return {@code Optional.empty()} if <b>any</b> column cannot be resolved, otherwise an {@code Optional}
+     *         containing the fully resolved list.
      */
-    private List<ResolvedColumnInfo> resolveColumns(
+    private Optional<List<ResolvedColumnInfo>> resolveColumns(
             @NotNull final WhereFilter filter,
             @NotNull final Map<String, String> renameMap) {
         final Collection<String> colNamesFromFilter = filter.getColumns();
@@ -545,15 +541,18 @@ public class ParquetTableLocation extends AbstractTableLocation {
             final String colNameFromDef = renameMap.getOrDefault(colNameFromFilter, colNameFromFilter);
             final String parquetColName = readInstructions.getParquetColumnNameFromColumnNameOrDefault(colNameFromDef);
             final List<String> columnPath = getColumnPath(colNameFromDef, parquetColName);
+            // Only flat columns are supported for push-down
             if (columnPath.size() != 1) {
-                throw new IllegalArgumentException("Pushdown filter is only supported for non-nested types, found "
-                        + "nested type at path: " + String.join(".", columnPath));
+                return Optional.empty();
             }
-            final String colNameFromSchema = columnPath.get(0);
-            final int columnIndex = findColumnIndex(colNameFromSchema, pathsFromSchema);
-            resolvedColumns.add(new ResolvedColumnInfo(columnPath, columnIndex));
+            final OptionalInt columnIndex = findColumnIndex(columnPath.get(0), pathsFromSchema);
+            if (columnIndex.isEmpty()) {
+                // Column not found in the schema
+                return Optional.empty();
+            }
+            resolvedColumns.add(new ResolvedColumnInfo(columnPath, columnIndex.getAsInt()));
         }
-        return resolvedColumns;
+        return Optional.of(resolvedColumns);
     }
 
     @Override
@@ -580,14 +579,13 @@ public class ParquetTableLocation extends AbstractTableLocation {
         PushdownResult result = PushdownResult.of(RowSetFactory.empty(), selection.copy());
 
         final long executedFilterCost = context.executedFilterCost();
-        final List<ResolvedColumnInfo> resolvedColumnsInfo;
-        try {
-            resolvedColumnsInfo = resolveColumns(filter, renameMap);
-        } catch (final RuntimeException e) {
-            // Failed to find the columns in the Parquet schema. So we return all rows as "maybe" rows.
+        final Optional<List<ResolvedColumnInfo>> maybeResolvedColumns = resolveColumns(filter, renameMap);
+        if (maybeResolvedColumns.isEmpty()) {
+            // One or more columns could not be resolved, so we return all rows as "maybe" rows.
             onComplete.accept(result);
             return;
         }
+        final List<ResolvedColumnInfo> resolvedColumnsInfo = maybeResolvedColumns.get();
 
         // We have verified these columns are not nested.
         final int numColumns = resolvedColumnsInfo.size();
