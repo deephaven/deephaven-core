@@ -941,10 +941,10 @@ public class RegionedColumnSourceManager
             @Override
             public void run() {
                 final PushdownResult result;
-                try (
-                        final RowSet ignore = selection;
-                        final Builder ignore2 = Builder.this) {
+                try {
                     result = build();
+                } finally {
+                    close();
                 }
                 delegate.accept(result);
             }
