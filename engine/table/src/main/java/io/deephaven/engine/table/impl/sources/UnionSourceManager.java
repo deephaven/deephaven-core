@@ -584,10 +584,11 @@ public class UnionSourceManager {
 
                 // Make sure we propagate any actual error on to the listeners, and advance the listener so we can
                 // continue to process the rest of the tables
-                if (nextListener.error != null) {
+                final Throwable listenerError = nextListener.error;
+                if (listenerError != null) {
                     final String referentDescription = nextListener.getParent().getDescription();
                     advanceListener();
-                    throw new ConstituentTableException(referentDescription, nextListener.error);
+                    throw new ConstituentTableException(referentDescription, listenerError);
                 }
 
                 changes = nextListener.getUpdate();
