@@ -831,8 +831,8 @@ public class RegionedColumnSourceManager
                             "locations: " + tableLocationEntries.size() + " for input row set: " + inputRowSet);
                 }
                 final IncludedTableLocationEntry entry = tableLocationEntries.get(regionIndex);
-                // Based on the cost of computing overlapping row sets, we can push overlap computation into the
-                // parallel region-processing jobs.
+                // Note: Based on the cost of computing overlapping row sets, we can push overlap computation into the
+                // parallel region-processing jobs in the future. For now, we can compute it serially here.
                 try (final WritableRowSet overlappingShiftedRowSet = entry.getOverlappingShiftedRowSet(inputRowSet)) {
                     if (overlappingShiftedRowSet.isEmpty()) {
                         throw new IllegalStateException(

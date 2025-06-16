@@ -448,6 +448,9 @@ public class ParquetTableLocation extends AbstractTableLocation {
                     .append(getTableKey()).endl();
             return Long.MAX_VALUE;
         }
+
+        initialize();
+
         final long executedFilterCost = context.executedFilterCost();
 
         // Some range filters host a condition filter as the internal filter, and we can't push that down.
@@ -594,6 +597,8 @@ public class ParquetTableLocation extends AbstractTableLocation {
             onComplete.accept(PushdownResult.of(RowSetFactory.empty(), RowSetFactory.empty()));
             return;
         }
+
+        initialize();
 
         // Initialize the pushdown result with the selection rowset as "maybe" rows
         PushdownResult result = PushdownResult.of(RowSetFactory.empty(), selection.copy());
