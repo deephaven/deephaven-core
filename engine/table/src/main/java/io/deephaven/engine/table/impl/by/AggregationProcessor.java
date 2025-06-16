@@ -533,9 +533,14 @@ public class AggregationProcessor implements AggregationContextFactory {
                 }
                 final IterativeChunkedAggregationOperator operator = operators.get(ii);
                 if (operator instanceof SsmChunkedMinMaxOperator) {
-                    final SsmChunkedMinMaxOperator minMaxOperator = (SsmChunkedMinMaxOperator) operator;
-                    addOperator(minMaxOperator.makeSecondaryOperator(isMin, resultName), null, inputName);
-                    return;
+                    final Collection<? extends ColumnSource<?>> resultColumns = operator.getResultColumns().values();
+                    Assert.eq(1, "1", resultColumns.size(), "SsmChunkedMinMaxOperator.resultColumns.size()");
+                    final Class<?> existingOperatorType = resultColumns.iterator().next().getType();
+                    if (existingOperatorType == type) {
+                        final SsmChunkedMinMaxOperator minMaxOperator = (SsmChunkedMinMaxOperator) operator;
+                        addOperator(minMaxOperator.makeSecondaryOperator(isMin, resultName), null, inputName);
+                        return;
+                    }
                 }
             }
             addOperator(makeMinOrMaxOperator(type, resultName, isMin, isAddOnly || isBlink), inputSource, inputName);

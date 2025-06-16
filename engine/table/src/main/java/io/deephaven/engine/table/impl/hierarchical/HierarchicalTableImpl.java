@@ -55,7 +55,7 @@ import static io.deephaven.util.QueryConstants.*;
  * Base result class for operations that produce hierarchical tables, for example {@link Table#rollup rollup} and
  * {@link Table#tree(String, String) tree}.
  */
-abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_TYPE>, IMPL_TYPE extends HierarchicalTableImpl<IFACE_TYPE, IMPL_TYPE>>
+public abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_TYPE>, IMPL_TYPE extends HierarchicalTableImpl<IFACE_TYPE, IMPL_TYPE>>
         extends BaseGridAttributes<IFACE_TYPE, IMPL_TYPE>
         implements HierarchicalTable<IFACE_TYPE> {
 
@@ -96,6 +96,29 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
         super(initialAttributes);
         this.source = source;
         this.root = root;
+    }
+
+    /**
+     * Check that the table we are rebasing to has the same definition as the current table, producing a helpful error
+     * message.
+     *
+     * @param type the type of engine object that is being rebased
+     * @param existingTable the existing source table
+     * @param newSource the new source table
+     */
+    public static void checkRebaseDefinition(final String type, @NotNull final Table existingTable,
+            @NotNull final Table newSource) {
+        if (newSource.getDefinition().equals(existingTable.getDefinition())) {
+            return;
+        }
+        if (newSource.getDefinition().equalsIgnoreOrder(existingTable.getDefinition())) {
+            throw new IllegalArgumentException(
+                    "Cannot rebase a " + type + " with a new source definition, column order is not identical");
+        }
+        final String differenceDescription = newSource.getDefinition()
+                .getDifferenceDescription(existingTable.getDefinition(), "new source", "existing source", ",");
+        throw new IllegalArgumentException(
+                "Cannot rebase a " + type + " with a new source definition: " + differenceDescription);
     }
 
     @Override
