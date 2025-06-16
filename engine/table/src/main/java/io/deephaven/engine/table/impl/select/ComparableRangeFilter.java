@@ -218,8 +218,8 @@ public class ComparableRangeFilter extends AbstractRangeFilter {
 
     @Override
     public boolean overlaps(
-            @NotNull final Object lower,
-            @NotNull final Object upper,
+            final Object lower,
+            final Object upper,
             final boolean lowerInclusive,
             final boolean upperInclusive) {
 
@@ -238,7 +238,7 @@ public class ComparableRangeFilter extends AbstractRangeFilter {
     }
 
     @Override
-    public boolean contains(@NotNull final Object value) {
+    public boolean contains(final Object value) {
         final int c1 = CompareUtils.compare(this.lower, value);
         if (c1 > 0) {
             return false; // this.lower > value, no overlap possible.
