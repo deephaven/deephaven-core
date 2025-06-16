@@ -13,17 +13,13 @@ import org.apache.parquet.schema.Type.Repetition;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Deque;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 /**
  * Various improved ways of traversing {@link MessageType}.
@@ -64,19 +60,6 @@ public final class ParquetSchemaUtil {
         final List<String[]> out = new ArrayList<>();
         walk(schema, (typePath, primitiveType) -> out.add(makePath(typePath)));
         return out;
-    }
-
-    /**
-     * This method returns a map from the path to the field ID, where the path is represented as a list of string.
-     */
-    public static Map<List<String>, Integer> getPathToFieldId(final MessageType schema) {
-        final List<String[]> paths = ParquetSchemaUtil.paths(schema);
-        final int size = paths.size();
-        final Map<List<String>, Integer> pathToFieldId = new HashMap<>(size);
-        for (int fieldId = 0; fieldId < size; fieldId++) {
-            pathToFieldId.put(Arrays.asList(paths.get(fieldId)), fieldId);
-        }
-        return pathToFieldId;
     }
 
     /**
@@ -165,10 +148,6 @@ public final class ParquetSchemaUtil {
 
     private static String[] makePath(Collection<Type> typePath) {
         return typePath.stream().map(Type::getName).toArray(String[]::new);
-    }
-
-    private static String makePathString(Collection<Type> typePath) {
-        return typePath.stream().map(Type::getName).collect(Collectors.joining("."));
     }
 
     private static void walk(Type type, Visitor visitor, Deque<Type> stack) {
