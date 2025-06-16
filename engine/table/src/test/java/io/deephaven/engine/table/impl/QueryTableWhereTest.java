@@ -1874,13 +1874,13 @@ public abstract class QueryTableWhereTest {
                 final Map<String, ColumnSource<?>> csMap = Collections.singletonMap(colName, source);
                 final Table dummy = new QueryTable(fullSet.copy().toTracking(), csMap);
 
-                try (final RowSet matches = filter.filter(selection, fullSet, dummy, usePrev)) {
+                try (final WritableRowSet matches = filter.filter(selection, fullSet, dummy, usePrev)) {
                     final long size = matches.size();
                     final long maybeSize = (long) (size * maybePercentage);
                     final WritableRowSet addedRowSet = matches.subSetByPositionRange(0, maybeSize);
                     final WritableRowSet maybeRowSet = matches.subSetByPositionRange(maybeSize, size);
                     // Obvious these row sets do not overlap
-                    onComplete.accept(PushdownResult.ofFast(addedRowSet, maybeRowSet));
+                    onComplete.accept(PushdownResult.ofUnsafe(matches.copy(), addedRowSet, maybeRowSet));
                 }
             }
         }
@@ -2105,13 +2105,13 @@ public abstract class QueryTableWhereTest {
                 throw new IllegalStateException("Table not assigned to TestPPM");
             }
             try (final SafeCloseable ignored = LivenessScopeStack.open()) {
-                try (final RowSet matches = filter.filter(selection, fullSet, table, usePrev)) {
+                try (final WritableRowSet matches = filter.filter(selection, fullSet, table, usePrev)) {
                     final long size = matches.size();
                     final long maybeSize = (long) (size * maybePercentage);
                     final WritableRowSet addedRowSet = matches.subSetByPositionRange(0, maybeSize);
                     final WritableRowSet maybeRowSet = matches.subSetByPositionRange(maybeSize, size);
                     // Obvious these row sets do not overlap
-                    onComplete.accept(PushdownResult.ofFast(addedRowSet, maybeRowSet));
+                    onComplete.accept(PushdownResult.ofUnsafe(matches.copy(), addedRowSet, maybeRowSet));
                 }
             }
         }

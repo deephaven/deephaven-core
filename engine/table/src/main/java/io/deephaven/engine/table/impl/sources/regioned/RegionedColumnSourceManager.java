@@ -817,8 +817,7 @@ public class RegionedColumnSourceManager
             final Consumer<PushdownResult> onComplete,
             final Consumer<Exception> onError) {
 
-        final WritableRowSet selectionCopy = selection.copy();
-        final Builder builder = new Builder(orderedIncludedTableLocations.size());
+        final Builder builder = new Builder(orderedIncludedTableLocations.size(), selection.copy());
 
         // Use the job scheduler to run every location in parallel.
         jobScheduler.iterateParallel(
@@ -833,41 +832,19 @@ public class RegionedColumnSourceManager
                     final long locationEndKey = getLastRowKey(entry.regionIndex);
 
                     try (final WritableRowSet locationInput =
-                            selectionCopy.subSetByKeyRange(locationStartKey, locationEndKey)) {
+                                 builder.selection().subSetByKeyRange(locationStartKey, locationEndKey)) {
                         locationInput.shiftInPlace(-locationStartKey); // Shift to the region's key space
                         locationInput.retain(entry.rowSetAtLastUpdate); // intersect in place with region's row set
-                        final long locationInputSize = locationInput.size();
-
-                        final Consumer<PushdownResult> resultConsumer = result -> {
-                            try (final PushdownResult ignored = result) {
-                                final WritableRowSet match = result.match();
-                                final WritableRowSet maybeMatch = result.maybeMatch();
-                                // Add the results to the global set.
-                                // TODO: This is a bit dangerous, but seems "ok" in context?
-                                if (match.isNonempty()) {
-                                    match.shiftInPlace(locationStartKey);
-                                }
-                                if (maybeMatch.isNonempty()) {
-                                    maybeMatch.shiftInPlace(locationStartKey);
-                                }
-                                builder.add(locationIdx, locationInputSize, result);
-                            }
-                        };
                         // TODO: fullSet is not shifted here, and is a lie?
                         // Should it actually be a subset in the parallelized case?
                         // Or, can we get rid of it?
                         // fullSet.subSetByKeyRange(locationStartKey, locationEndKey).shiftInPlace(-locationStartKey)?
                         entry.location.pushdownFilter(filter, renameMap, locationInput, fullSet, usePrev, context,
-                                costCeiling, jobScheduler, resultConsumer, onError);
+                                costCeiling, jobScheduler, builder.unshiftAndAdd(locationIdx, locationStartKey),
+                                onError);
                     }
                     locationResume.run();
-                }, () -> {
-                    try (
-                            final RowSet ignore = selectionCopy;
-                            final Builder ignore2 = builder) {
-                        onComplete.accept(builder.build(selectionCopy));
-                    }
-                },
+                }, builder.onComplete(onComplete),
                 // Note: we should technically be closing in the error case as well; but in the error case, we may
                 // be less concerned, and happy enough for GC to take care of it. I worry a bit about the contract
                 // around onError, as it looks like we are giving each parallel task a chance to call it, so it
@@ -907,56 +884,113 @@ public class RegionedColumnSourceManager
 
     public static final class Builder implements Closeable {
 
+        private final WritableRowSet selection;
         private final PushdownResult[] results;
 
-        private long matchCount;
-        private long maybeMatchCount;
-        private long notMatchCount;
-
-        private Builder(int numResults) {
+        private Builder(int numResults, final WritableRowSet selection) {
+            this.selection = Objects.requireNonNull(selection);
             results = new PushdownResult[numResults];
-            matchCount = 0;
-            maybeMatchCount = 0;
-            notMatchCount = 0;
         }
 
-        public void add(final int ix, final long selectionSize, final PushdownResult results) {
-            final long matchCount = results.match().isEmpty() ? 0 : results.match().size();
-            final long maybeMatchCount = results.maybeMatch().isEmpty() ? 0 : results.maybeMatch().size();
-            if (matchCount + maybeMatchCount > selectionSize) {
-                throw new IllegalStateException(
-                        String.format("matchCount + maybeMatchCount > selectionSize; %d + %d > %d", matchCount,
-                                maybeMatchCount, selectionSize));
+        public WritableRowSet selection() {
+            return selection;
+        }
+
+        public Consumer<PushdownResult> unshiftAndAdd(final int ix, final long shiftAmount) {
+            return new UnshiftAndAdd(ix, shiftAmount);
+        }
+
+        public Runnable onComplete(final Consumer<PushdownResult> delegate) {
+            return new OnComplete(delegate);
+        }
+
+        final class UnshiftAndAdd implements Consumer<PushdownResult> {
+            private final int ix;
+            private final long shiftAmount;
+
+            public UnshiftAndAdd(int ix, long shiftAmount) {
+                this.ix = ix;
+                this.shiftAmount = shiftAmount;
             }
-            final long notMatchCount = selectionSize - matchCount - maybeMatchCount;
-            final PushdownResult copy = results.copy();
-            synchronized (this) {
-                this.results[ix] = copy;
-                this.matchCount += matchCount;
-                this.maybeMatchCount += maybeMatchCount;
-                this.notMatchCount += notMatchCount;
+
+            @Override
+            public void accept(final PushdownResult results) {
+                // Add the results to the global set.
+                // TODO: This is a bit dangerous, but seems "ok" in context?
+                if (results.selection().isNonempty()) {
+                    results.selection().shiftInPlace(shiftAmount);
+                }
+                if (results.match().isNonempty()) {
+                    results.match().shiftInPlace(shiftAmount);
+                }
+                if (results.maybeMatch().isNonempty()) {
+                    results.maybeMatch().shiftInPlace(shiftAmount);
+                }
+                add(ix, results.copy());
             }
         }
 
-        public synchronized PushdownResult build(final RowSet selection) {
-            final long selectionSize = selection.size();
-            if (matchCount + maybeMatchCount + notMatchCount != selectionSize) {
-                throw new IllegalStateException(String.format(
-                        "matchCount + maybeMatchCount + notMatchCount != selectionSize; %d + %d + %d != %d", matchCount,
-                        maybeMatchCount, notMatchCount, selectionSize));
+        final class OnComplete implements Runnable {
+
+            private final Consumer<PushdownResult> delegate;
+
+            OnComplete(final Consumer<PushdownResult> delegate) {
+                this.delegate = Objects.requireNonNull(delegate);
             }
-            if (maybeMatchCount == 0 && notMatchCount == 0) {
+
+            @Override
+            public void run() {
+                final PushdownResult result;
+                try (
+                        final RowSet ignore = selection;
+                        final Builder ignore2 = Builder.this) {
+                    result = build();
+                }
+                delegate.accept(result);
+            }
+        }
+
+        private synchronized void add(final int ix, final PushdownResult results) {
+            this.results[ix] = results;
+        }
+
+        public synchronized PushdownResult build() {
+            final long selectionSize = Stream.of(results)
+                    .map(PushdownResult::selection)
+                    .filter(RowSet::isNonempty)
+                    .mapToLong(RowSet::size)
+                    .sum();
+            Assert.eq(selection.size(), "selection.size()", selectionSize, "selectionSize");
+            final long matchSize = Stream.of(results)
+                    .map(PushdownResult::match)
+                    .filter(RowSet::isNonempty)
+                    .mapToLong(RowSet::size)
+                    .sum();
+            final long maybeMatchSize = Stream.of(results)
+                    .map(PushdownResult::maybeMatch)
+                    .filter(RowSet::isNonempty)
+                    .mapToLong(RowSet::size)
+                    .sum();
+            if (matchSize == selectionSize) {
+                Assert.eqZero(maybeMatchSize, "maybeMatchSize");
                 return PushdownResult.match(selection.copy());
             }
-            if (matchCount == 0 && notMatchCount == 0) {
+            if (maybeMatchSize == selectionSize) {
+                Assert.eqZero(matchSize, "matchSize");
                 return PushdownResult.maybeMatch(selection.copy());
             }
-            return PushdownResult.buildSequentialFast(Arrays.asList(results));
+            if (matchSize == 0 && maybeMatchSize == 0) {
+                return PushdownResult.noMatch(selection.copy());
+            }
+            return PushdownResult.ofUnsafe(
+                    selection.copy(),
+                    RowSetFactory.union(Stream.of(results).map(PushdownResult::match).collect(Collectors.toList())),
+                    RowSetFactory.union(Stream.of(results).map(PushdownResult::maybeMatch).collect(Collectors.toList())));
         }
 
         @Override
         public void close() {
-            SafeCloseable.closeAll(Arrays.asList(results).iterator());
+            SafeCloseable.closeAll(Stream.concat(Stream.of(selection), Stream.of(results)));
         }
     }
 }
