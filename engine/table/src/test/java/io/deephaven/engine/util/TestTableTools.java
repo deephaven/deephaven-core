@@ -8,7 +8,6 @@ import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.context.*;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.WritableRowSet;
@@ -17,6 +16,7 @@ import io.deephaven.engine.table.impl.InstrumentedTableUpdateListener;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.partitioned.PartitionedTableCreatorImpl;
+import io.deephaven.engine.table.impl.sources.ConstituentTableException;
 import io.deephaven.engine.table.impl.sources.UnionRedirection;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.table.vectors.ColumnVectors;
@@ -31,6 +31,7 @@ import io.deephaven.engine.updategraph.LogicalClockImpl;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.vector.IntVector;
 import junit.framework.TestCase;
@@ -40,7 +41,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
-import javax.management.Query;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -48,6 +48,7 @@ import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 import static io.deephaven.engine.testutil.TstUtils.*;
@@ -1134,5 +1135,67 @@ public class TestTableTools {
                 }
             }
         }, false);
+    }
+
+    @Test
+    public void testMergeWithFirstConstituentFailure() {
+        final QueryTable t1 = testRefreshingTable(RowSetFactory.empty().toTracking());
+        final QueryTable t2 = testRefreshingTable(RowSetFactory.empty().toTracking());
+        final Table res = TableTools.merge(t1, t2);
+
+        final RuntimeException err = new RuntimeException("Test failure for merge with constituent failure");
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+
+        final AtomicReference<Throwable> errRef = new AtomicReference<>();
+        res.addUpdateListener(new InstrumentedTableUpdateListener("") {
+            @Override
+            public void onUpdate(final TableUpdate upstream) {}
+
+            @Override
+            protected void onFailureInternal(Throwable originalException, Entry sourceEntry) {
+                errRef.set(originalException);
+            }
+        });
+
+        framework.setExpectError(true);
+        try (final SafeCloseable ignoredCompleter = updateGraph::completeCycleForUnitTests) {
+            updateGraph.startCycleForUnitTests(false);
+            t1.notifyListenersOnError(err, null);
+            updateGraph.markSourcesRefreshedForUnitTests();
+        }
+
+        Assert.assertTrue(res.isFailed());
+        Assert.assertTrue(errRef.get() instanceof ConstituentTableException);
+    }
+
+    @Test
+    public void testMergeWithLastConstituentFailure() {
+        final QueryTable t1 = testRefreshingTable(RowSetFactory.empty().toTracking());
+        final QueryTable t2 = testRefreshingTable(RowSetFactory.empty().toTracking());
+        final Table res = TableTools.merge(t1, t2);
+
+        final RuntimeException err = new RuntimeException("Test failure for merge with constituent failure");
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+
+        final AtomicReference<Throwable> errRef = new AtomicReference<>();
+        res.addUpdateListener(new InstrumentedTableUpdateListener("") {
+            @Override
+            public void onUpdate(final TableUpdate upstream) {}
+
+            @Override
+            protected void onFailureInternal(Throwable originalException, Entry sourceEntry) {
+                errRef.set(originalException);
+            }
+        });
+
+        framework.setExpectError(true);
+        try (final SafeCloseable ignoredCompleter = updateGraph::completeCycleForUnitTests) {
+            updateGraph.startCycleForUnitTests(false);
+            t2.notifyListenersOnError(err, null);
+            updateGraph.markSourcesRefreshedForUnitTests();
+        }
+
+        Assert.assertTrue(res.isFailed());
+        Assert.assertTrue(errRef.get() instanceof ConstituentTableException);
     }
 }
