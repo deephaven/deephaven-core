@@ -697,13 +697,13 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
                 .then(table("table_to_rollup"))
                 .then(table -> {
                     List<Supplier<Promise<JsTreeTable>>> tests = new ArrayList<>();
-                    JsRollupConfig cfg = new JsRollupConfig();
-                    cfg.groupingColumns = Js.uncheckedCast(JsArray.of("X"));
-                    cfg.aggregations = JsPropertyMap.of(JsAggregationOperation.SUM, JsArray.of("Y"));
-                    // Rollup with or without constituents should populate aggregated columns
                     Stream.of(true, false).forEach(includeConstituents -> {
+                        JsRollupConfig cfg = new JsRollupConfig();
+                        cfg.groupingColumns = Js.uncheckedCast(JsArray.of("X"));
+                        cfg.aggregations = JsPropertyMap.of(JsAggregationOperation.SUM, JsArray.of("Y"));
                         cfg.includeConstituents = includeConstituents;
                         tests.add(() -> table.rollup(new JsRollupConfig((JsPropertyMap<Object>) cfg)).then(r -> {
+                            // Rollup with or without constituents should populate aggregated columns
                             assertEquals(1, r.getAggregatedColumns().length);
                             assertEquals("Y", r.getAggregatedColumns().getAt(0).getName());
                             return Promise.resolve(r);
@@ -720,16 +720,16 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
                 .then(table("table_to_rollup"))
                 .then(table -> {
                     List<Supplier<Promise<JsTreeTable>>> tests = new ArrayList<>();
-                    JsRollupConfig cfg = new JsRollupConfig();
-                    cfg.groupingColumns = Js.uncheckedCast(JsArray.of("X"));
-                    cfg.aggregations = JsPropertyMap.of(JsAggregationOperation.SKIP, JsArray.of("Y"));
-                    // Rollup should not include Skip aggregation in aggregated columns
                     Stream.of(true, false).forEach(includeConstituents -> {
+                        JsRollupConfig cfg = new JsRollupConfig();
+                        cfg.groupingColumns = Js.uncheckedCast(JsArray.of("X"));
+                        cfg.aggregations = JsPropertyMap.of(JsAggregationOperation.SKIP, JsArray.of("Y"));
                         cfg.includeConstituents = includeConstituents;
-                        tests.add(() -> table.rollup(new JsRollupConfig((JsPropertyMap<Object>) cfg)).then(r -> {
+                        tests.add(() -> table.rollup((JsPropertyMap<Object>) cfg).then(r -> {
+                            // Rollup should not include Skip aggregation in aggregated columns
                             assertEquals(0, r.getAggregatedColumns().length);
                             assertEquals("X", r.getColumns().getAt(0).getName());
-                            if (r.isIncludeConstituents()) {
+                            if (includeConstituents) {
                                 assertEquals(4, r.getColumns().length);
                                 assertEquals("Y", r.getColumns().getAt(2).getName());
                             } else {
