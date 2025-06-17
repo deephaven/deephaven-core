@@ -298,6 +298,7 @@ public abstract class AbstractTableLocation
     @Override
     public long estimatePushdownFilterCost(
             final WhereFilter filter,
+            final Map<String, String> renameMap,
             final RowSet selection,
             final RowSet fullSet,
             final boolean usePrev,

@@ -254,8 +254,8 @@ abstract class AbstractFilterExecution {
                 final PushdownFilterContext context) {
             pushdownFilterCost = pushdownMatcher == null
                     ? Long.MAX_VALUE
-                    : pushdownMatcher.estimatePushdownFilterCost(filter, selection, sourceTable.getRowSet(), usePrev,
-                            context);
+                    : pushdownMatcher.estimatePushdownFilterCost(filter, renameMap, selection, sourceTable.getRowSet(),
+                            usePrev, context);
         }
 
         @Override
