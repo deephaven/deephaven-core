@@ -34,7 +34,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -542,6 +541,10 @@ public class RegionedColumnSourceManager
                 .collect(Collectors.toCollection(ArrayList::new));
     }
 
+    private synchronized ArrayList<IncludedTableLocationEntry> includedLocationEntries() {
+        return new ArrayList<>(orderedIncludedTableLocations);
+    }
+
     @Override
     public Table locationTable() {
         return includedLocationsTable;
@@ -746,6 +749,28 @@ public class RegionedColumnSourceManager
             }
             return Integer.compare(regionIndex, other.regionIndex);
         }
+
+        /**
+         * Get the row set for this region that intersects with the input row set, shifted to the region's key space.
+         * The user is responsible for closing the returned row set.
+         *
+         * @param inputRows The input row set
+         * @return A writable row set for the location
+         */
+        private WritableRowSet getOverlappingShiftedRowSet(final RowSet inputRows) {
+            final long locationStartKey = getFirstRowKey(regionIndex);
+            final long locationEndKey = getLastRowKey(regionIndex);
+
+            // Extract the portion of inputRows that overlaps this region.
+            final WritableRowSet overlappingRows = inputRows.subSetByKeyRange(locationStartKey, locationEndKey);
+
+            // Shift to the region's key space
+            overlappingRows.shiftInPlace(-locationStartKey);
+
+            // Retain only rows that still exist in the region.
+            overlappingRows.retain(rowSetAtLastUpdate);
+            return overlappingRows;
+        }
     }
 
     private static final KeyedObjectKey<ImmutableTableLocationKey, IncludedTableLocationEntry> INCLUDED_TABLE_LOCATION_ENTRY_KEY =
@@ -779,6 +804,73 @@ public class RegionedColumnSourceManager
         return attributes;
     }
 
+    /**
+     * Lightweight wrapper that couples an {@link IncludedTableLocationEntry} with the {@link WritableRowSet}
+     * representing the subset of rows from that region that participate in a filter-pushdown operation.
+     */
+    private static class RegionInfoHolder implements AutoCloseable {
+        private final IncludedTableLocationEntry tle;
+        private final WritableRowSet rowSet;
+
+        private RegionInfoHolder(
+                @NotNull final IncludedTableLocationEntry tle,
+                @NotNull final WritableRowSet rowSet) {
+            this.tle = tle;
+            this.rowSet = rowSet;
+        }
+
+        @Override
+        public void close() {
+            rowSet.close();
+        }
+    }
+
+    /**
+     * Return up to {@code maxRegions} regions and their corresponding row sets that overlap with the input row set. The
+     * user is responsible for closing the returned objects.
+     */
+    private ArrayList<RegionInfoHolder> getOverlappingRegions(final RowSet inputRowSet, final int maxRegions) {
+        final List<IncludedTableLocationEntry> tableLocationEntries = includedLocationEntries();
+        final ArrayList<RegionInfoHolder> includedRegions = new ArrayList<>();
+        try (final RowSet.SearchIterator sit = inputRowSet.searchIterator()) {
+            long startSearchFrom = 0;
+            while (includedRegions.size() < maxRegions && sit.advance(startSearchFrom)) {
+                final long regionStartKey = sit.currentValue();
+                final int regionIndex = RegionedColumnSource.getRegionIndex(regionStartKey);
+                if (regionIndex >= tableLocationEntries.size()) {
+                    throw new IllegalStateException("Region index " + regionIndex + " exceeds the number of included " +
+                            "locations: " + tableLocationEntries.size() + " for input row set: " + inputRowSet);
+                }
+                final IncludedTableLocationEntry entry = tableLocationEntries.get(regionIndex);
+                // Note: Based on the cost of computing overlapping row sets, we can push overlap computation into the
+                // parallel region-processing jobs in the future. For now, we can compute it serially here.
+                try (final WritableRowSet overlappingShiftedRowSet = entry.getOverlappingShiftedRowSet(inputRowSet)) {
+                    if (overlappingShiftedRowSet.isEmpty()) {
+                        throw new IllegalStateException(
+                                "Overlapping row set is empty for region index " + regionIndex + " and input row set: "
+                                        + inputRowSet);
+                    }
+                    includedRegions.add(new RegionInfoHolder(entry, overlappingShiftedRowSet.copy()));
+                    // Move to the next region, skipping the current one
+                    final long regionEndKey = getLastRowKey(regionIndex);
+                    startSearchFrom = regionEndKey + 1;
+                }
+            }
+        }
+        return includedRegions;
+    }
+
+    /**
+     * Get all regions and corresponding row set that overlap with the input row set. The user is responsible for
+     * closing the returned row sets.
+     *
+     * @param inputRowSet The input row set
+     * @return A list of included region information
+     */
+    private ArrayList<RegionInfoHolder> getOverlappingRegions(final RowSet inputRowSet) {
+        return getOverlappingRegions(inputRowSet, Integer.MAX_VALUE);
+    }
+
     @Override
     public long estimatePushdownFilterCost(
             final WhereFilter filter,
@@ -786,33 +878,21 @@ public class RegionedColumnSourceManager
             final RowSet fullSet,
             final boolean usePrev,
             final PushdownFilterContext context) {
-
-        if (includedLocations().isEmpty()) {
-            return 0; // No locations, no cost
+        // We want to test out a small sample of locations to estimate the cost of the filter pushdown, and assume the
+        // rest of the locations are similar.
+        final List<RegionInfoHolder> overlappingRegionsSample =
+                getOverlappingRegions(selection, PUSHDOWN_LOCATION_SAMPLES);
+        if (overlappingRegionsSample.isEmpty()) {
+            return Long.MAX_VALUE;
         }
-
-        // Test a few locations and assume the rest are similar (or no worse)
-        final Collection<TableLocation> locations = includedLocations();
-        final long locationCost;
-
-        final Collection<TableLocation> candidateLocations;
-        if (locations instanceof ArrayList) {
-            // Test regularly spaced locations.
-            final ArrayList<TableLocation> locationList = (ArrayList<TableLocation>) locations;
-            final int step = Math.max(1, locationList.size() / PUSHDOWN_LOCATION_SAMPLES);
-            candidateLocations =
-                    IntStream.range(0, Math.min(locationList.size(), PUSHDOWN_LOCATION_SAMPLES))
-                            .mapToObj(idx -> locationList.get(idx * step)).collect(Collectors.toList());
-        } else {
-            // Test consecutive locations at the beginning of the collection.
-            candidateLocations = locations.stream().limit(PUSHDOWN_LOCATION_SAMPLES)
-                    .collect(Collectors.toList());
+        try (final SafeCloseable ignored = () -> SafeCloseable.closeAll(overlappingRegionsSample.stream())) {
+            return overlappingRegionsSample
+                    .parallelStream()
+                    .mapToLong(overlappingRegion -> overlappingRegion.tle.location.estimatePushdownFilterCost(
+                            filter, overlappingRegion.rowSet, fullSet, usePrev, context))
+                    .min()
+                    .orElse(Long.MAX_VALUE);
         }
-        locationCost = candidateLocations.parallelStream().mapToLong(
-                location -> location.estimatePushdownFilterCost(filter, selection, fullSet, usePrev, context))
-                .reduce(Long::min).orElse(Long.MAX_VALUE);
-
-        return locationCost;
     }
 
     @Override
@@ -826,6 +906,11 @@ public class RegionedColumnSourceManager
             final JobScheduler jobScheduler,
             final Consumer<PushdownResult> onComplete,
             final Consumer<Exception> onError) {
+        final ArrayList<RegionInfoHolder> overlappingRegions = getOverlappingRegions(input);
+        if (overlappingRegions.isEmpty()) {
+            onComplete.accept(PushdownResult.of(RowSetFactory.empty(), RowSetFactory.empty()));
+            return;
+        }
 
         final RowSetBuilderRandom matchBuilder = RowSetFactory.builderRandom();
         final RowSetBuilderRandom maybeMatchBuilder = RowSetFactory.builderRandom();
@@ -836,18 +921,14 @@ public class RegionedColumnSourceManager
                 ExecutionContext.getContext(),
                 logOutput -> logOutput.append("RegionedColumnSourceManager#pushdownFilter"),
                 JobScheduler.DEFAULT_CONTEXT_FACTORY,
-                0, orderedIncludedTableLocations.size(),
-                (ctx, locationIdx, locationNec, locationResume) -> {
-                    final IncludedTableLocationEntry entry = orderedIncludedTableLocations.get(locationIdx);
+                0, overlappingRegions.size(),
+                (ctx, idx, locationNec, locationResume) -> {
+                    try (final RegionInfoHolder regionInfo = overlappingRegions.get(idx)) {
+                        final int regionIndex = regionInfo.tle.regionIndex;
+                        final TableLocation location = regionInfo.tle.location;
+                        final WritableRowSet overlappingRowSet = regionInfo.rowSet;
 
-                    final long locationStartKey = getFirstRowKey(entry.regionIndex);
-                    final long locationEndKey = getLastRowKey(entry.regionIndex);
-
-                    try (final WritableRowSet locationInput =
-                            input.subSetByKeyRange(locationStartKey, locationEndKey)) {
-                        locationInput.shiftInPlace(-locationStartKey); // Shift to the region's key space
-                        locationInput.retain(entry.rowSetAtLastUpdate); // intersect in place with region's row set
-
+                        final long locationStartKey = getFirstRowKey(regionIndex);
                         final Consumer<PushdownResult> resultConsumer = result -> {
                             try (final PushdownResult ignored = result) {
                                 // Add the results to the global set.
@@ -866,7 +947,7 @@ public class RegionedColumnSourceManager
                                 }
                             }
                         };
-                        entry.location.pushdownFilter(filter, locationInput, fullSet, usePrev, context, costCeiling,
+                        location.pushdownFilter(filter, overlappingRowSet, fullSet, usePrev, context, costCeiling,
                                 jobScheduler, resultConsumer, onError);
                     }
                     locationResume.run();
