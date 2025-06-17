@@ -46,10 +46,13 @@ class Aggregation:
 
     @property
     def is_formula(self):
-        if self._j_agg_spec:
+        if self._j_agg_spec is not None:
             return isinstance(self._j_agg_spec, jpy.get_type("io.deephaven.api.agg.spec.AggSpecFormula"))
-        else:
+        elif self._j_aggregation is not None:
             return isinstance(self._j_aggregation, jpy.get_type("io.deephaven.api.agg.Formula"))
+        else:
+            raise DHError(message="Aggregation object is not initialized with a valid aggregation specification or "
+                                  "aggregation object.")
 
 
 def sum_(cols: Union[str, List[str]] = None) -> Aggregation:
