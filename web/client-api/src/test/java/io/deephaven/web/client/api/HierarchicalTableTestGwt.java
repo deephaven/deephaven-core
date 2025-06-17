@@ -729,7 +729,7 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
                         tests.add(() -> table.rollup(new JsRollupConfig((JsPropertyMap<Object>) cfg)).then(r -> {
                             assertEquals(0, r.getAggregatedColumns().length);
                             assertEquals("X", r.getColumns().getAt(0).getName());
-                            if (includeConstituents) {
+                            if (r.isIncludeConstituents()) {
                                 assertEquals(4, r.getColumns().length);
                                 assertEquals("Y", r.getColumns().getAt(2).getName());
                             } else {
