@@ -575,13 +575,13 @@ public class ParquetTableLocation extends AbstractTableLocation {
         initialize();
 
         // Initialize the maybe match rows.
-        WritableRowSet maybeMatch = selection.copy();
+//        WritableRowSet maybeMatch = selection.copy();
 
         final long executedFilterCost = context.executedFilterCost();
         final Optional<List<ResolvedColumnInfo>> maybeResolvedColumns = resolveColumns(filter, renameMap);
         if (maybeResolvedColumns.isEmpty()) {
             // One or more columns could not be resolved, so we return all rows as "maybe" rows.
-            onComplete.accept(PushdownResult.of(selection.copy(), RowSetFactory.empty(), maybeMatch));
+            onComplete.accept(PushdownResult.maybeMatch(selection.copy()));
             return;
         }
         final List<ResolvedColumnInfo> resolvedColumnsInfo = maybeResolvedColumns.get();
@@ -597,6 +597,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
             columnIndices.add(resolvedColumn.columnIndex);
         }
 
+        WritableRowSet maybeMatch = selection.copy();
         // Should we look at the metadata?
         if (shouldExecute(QueryTable.DISABLE_WHERE_PUSHDOWN_PARQUET_ROW_GROUP_METADATA,
                 PushdownResult.METADATA_STATS_COST, executedFilterCost, costCeiling)) {
