@@ -14,6 +14,7 @@ import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.util.annotations.TestUseOnly;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 public class SingleSidedComparableRangeFilter extends AbstractRangeFilter {
     private final Comparable<?> pivot;
@@ -173,7 +174,7 @@ public class SingleSidedComparableRangeFilter extends AbstractRangeFilter {
     }
 
     @Override
-    public boolean contains(@NotNull final Object value) {
+    public boolean contains(@Nullable final Object value) {
         final int c = CompareUtils.compare(pivot, value);
         if (isGreaterThan) {
             return c < 0 || (c == 0 && this.lowerInclusive);

@@ -751,7 +751,6 @@ public class ParquetTableLocation extends AbstractTableLocation {
                 maybeBuilder.appendRowSequence(rs);
                 maybeCount.add(rs.size());
             }
-
         });
         return PushdownResult.of(result.match().copy(),
                 maybeCount.get() == result.maybeMatch().size() ? result.maybeMatch().copy() : maybeBuilder.build());

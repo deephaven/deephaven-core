@@ -19,6 +19,7 @@ import io.deephaven.util.QueryConstants;
 import io.deephaven.util.compare.ByteComparisons;
 import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 public class ByteRangeFilter extends AbstractRangeFilter {
     public static ByteRangeFilter lt(String columnName, byte x) {
@@ -187,7 +188,7 @@ public class ByteRangeFilter extends AbstractRangeFilter {
     }
 
     @Override
-    public boolean contains(@NotNull final Object value) {
+    public boolean contains(@Nullable final Object value) {
         final int c1 = CompareUtils.compare(this.lower, value);
         if (c1 > 0) {
             return false; // this.lower > value, no overlap possible.

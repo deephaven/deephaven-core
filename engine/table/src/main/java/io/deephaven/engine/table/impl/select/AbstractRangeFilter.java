@@ -11,6 +11,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.rowset.RowSet;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.math.BigDecimal;
 import java.util.Collections;
@@ -150,7 +151,7 @@ public abstract class AbstractRangeFilter extends WhereFilterImpl implements Exp
      * @param value the value to check
      * @return {@code true} if the range filter matches the given value, {@code false} otherwise
      */
-    public abstract boolean contains(final Object value);
+    public abstract boolean contains(@Nullable final Object value);
 
     /**
      * Returns true if {@code null} is within the range filter. This function is intended to be accurate rather than

@@ -8,6 +8,7 @@ import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.util.compare.ObjectComparisons;
 import io.deephaven.util.type.NumericTypeUtils;
+import org.jetbrains.annotations.Nullable;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -23,7 +24,7 @@ class CompareUtils {
      * @param b the second object to compare
      * @return a < b returns negative value, a > b returns positive value, a == b returns 0
      */
-    static int compare(Object a, Object b) {
+    static int compare(@Nullable Object a, @Nullable Object b) {
         // Convert deephaven nulls to Java nulls.
         if (Objects.nonNull(a) && Objects.equals(a, Basic.nullValueFor(a.getClass()))) {
             a = null;
