@@ -716,28 +716,6 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
                 .catch_(this::report);
     }
 
-    public void testRollupSkipAggAggregatedColumns() {
-        connect(tables)
-                .then(table("table_to_rollup"))
-                .then(table -> {
-                    List<Supplier<Promise<JsTreeTable>>> tests = new ArrayList<>();
-                    JsRollupConfig cfg = new JsRollupConfig();
-                    cfg.groupingColumns = Js.uncheckedCast(JsArray.of("X"));
-                    cfg.aggregations = JsPropertyMap.of(JsAggregationOperation.SKIP, JsArray.of("Y"));
-                    // Rollup should not include Skip aggregation in aggregated columns
-                    Stream.of(true, false).forEach(includeConstituents -> {
-                        cfg.includeConstituents = includeConstituents;
-                        tests.add(() -> table.rollup(new JsRollupConfig((JsPropertyMap<Object>) cfg)).then(r -> {
-                            assertEquals(0, r.getAggregatedColumns().length);
-                            return Promise.resolve(r);
-                        }));
-                    });
-                    return tests.stream().reduce((p1, p2) -> () -> p1.get().then(result -> p2.get())).get().get();
-                })
-                .then(this::finish)
-                .catch_(this::report);
-    }
-
     public void testRollupSkipAggWithConstituentColumns() {
         connect(tables)
                 .then(table("table_to_rollup"))
@@ -769,10 +747,12 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
                     cfg.groupingColumns = Js.uncheckedCast(JsArray.of("X"));
                     cfg.aggregations = JsPropertyMap.of(JsAggregationOperation.SKIP, JsArray.of("Y"));
                     cfg.includeConstituents = false;
-                    // Rollup without constituents shouldn't have the column with a SKIP aggregation
                     return table.rollup(cfg).then(rollupTable -> {
+                        // Rollup without constituents shouldn't have the column with a SKIP aggregation
                         assertEquals(1, rollupTable.getColumns().length);
                         assertEquals("X", rollupTable.getColumns().getAt(0).getName());
+                        // SKIP aggregation should not be included in aggregated columns
+                        assertEquals(0, rollupTable.getAggregatedColumns().length);
                         return null;
                     });
                 })
