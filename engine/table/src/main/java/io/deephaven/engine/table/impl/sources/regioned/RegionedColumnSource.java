@@ -97,7 +97,6 @@ public interface RegionedColumnSource<DATA_TYPE>
         return (long) regionIndex << SUB_REGION_ROW_INDEX_ADDRESS_BITS | regionOffset;
     }
 
-
     /**
      * Get the region index for a row key.
      *

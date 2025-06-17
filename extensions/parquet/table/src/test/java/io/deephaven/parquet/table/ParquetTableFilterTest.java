@@ -95,14 +95,14 @@ public final class ParquetTableFilterTest {
         }
     }
 
-    private static void filterAndVerifyResults(Table diskTable, Table memTable, String... filters) {
-        verifyResults(diskTable.where(filters).coalesce(), memTable.where(filters).coalesce());
-    }
-
     private static void verifyResults(Table filteredDiskTable, Table filteredMemTable) {
         Assert.assertFalse("filteredMemTable.isEmpty()", filteredMemTable.isEmpty());
         Assert.assertFalse("filteredDiskTable.isEmpty()", filteredDiskTable.isEmpty());
         verifyResultsAllowEmpty(filteredDiskTable, filteredMemTable);
+    }
+
+    private static void filterAndVerifyResults(Table diskTable, Table memTable, String... filters) {
+        verifyResults(diskTable.where(filters).coalesce(), memTable.where(filters).coalesce());
     }
 
     private static void filterAndVerifyResultsAllowEmpty(Table diskTable, Table memTable, String... filters) {
