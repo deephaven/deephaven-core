@@ -39,7 +39,6 @@ import io.deephaven.parquet.table.metadata.GroupingColumnInfo;
 import io.deephaven.parquet.table.metadata.SortColumnInfo;
 import io.deephaven.parquet.table.metadata.TableInfo;
 import io.deephaven.util.SafeCloseable;
-import io.deephaven.util.mutable.MutableLong;
 import io.deephaven.util.type.NumericTypeUtils;
 import org.apache.parquet.column.statistics.Statistics;
 import org.apache.parquet.format.RowGroup;
@@ -64,7 +63,6 @@ import java.util.stream.IntStream;
 
 import static io.deephaven.parquet.base.ParquetFileReader.FILE_URI_SCHEME;
 import static io.deephaven.parquet.table.ParquetTableWriter.*;
-import static io.deephaven.parquet.table.ParquetTableWriter.GROUPING_END_POS_COLUMN_NAME;
 import static org.apache.parquet.schema.LogicalTypeAnnotation.stringType;
 
 public class ParquetTableLocation extends AbstractTableLocation {
@@ -439,7 +437,6 @@ public class ParquetTableLocation extends AbstractTableLocation {
             final WhereFilter filter,
             final Map<String, String> renameMap,
             final RowSet selection,
-            final RowSet fullSet,
             final boolean usePrev,
             final PushdownFilterContext context) {
         if (selection.isEmpty()) {
@@ -560,7 +557,6 @@ public class ParquetTableLocation extends AbstractTableLocation {
             final WhereFilter filter,
             final Map<String, String> renameMap,
             final RowSet selection,
-            final RowSet fullSet,
             final boolean usePrev,
             final PushdownFilterContext context,
             final long costCeiling,
@@ -569,20 +565,17 @@ public class ParquetTableLocation extends AbstractTableLocation {
             final Consumer<Exception> onError) {
         if (selection.isEmpty()) {
             log.warn().append("Pushdown filter called with empty selection for table ").append(getTableKey()).endl();
-            onComplete.accept(PushdownResult.of(RowSetFactory.empty(), RowSetFactory.empty()));
+            onComplete.accept(PushdownResult.noMatch(selection.copy()));
             return;
         }
 
         initialize();
 
-        // Initialize the pushdown result with the selection rowset as "maybe" rows
-        PushdownResult result = PushdownResult.of(RowSetFactory.empty(), selection.copy());
-
         final long executedFilterCost = context.executedFilterCost();
         final Optional<List<ResolvedColumnInfo>> maybeResolvedColumns = resolveColumns(filter, renameMap);
         if (maybeResolvedColumns.isEmpty()) {
             // One or more columns could not be resolved, so we return all rows as "maybe" rows.
-            onComplete.accept(result);
+            onComplete.accept(PushdownResult.maybeMatch(selection.copy()));
             return;
         }
         final List<ResolvedColumnInfo> resolvedColumnsInfo = maybeResolvedColumns.get();
@@ -598,67 +591,62 @@ public class ParquetTableLocation extends AbstractTableLocation {
             columnIndices.add(resolvedColumn.columnIndex);
         }
 
+        final WritableRowSet mm;
         // Should we look at the metadata?
         if (shouldExecute(QueryTable.DISABLE_WHERE_PUSHDOWN_PARQUET_ROW_GROUP_METADATA,
                 PushdownResult.METADATA_STATS_COST, executedFilterCost, costCeiling)) {
-            // Some range filters host a condition filter as the internal filter, and we can't push that down.
-            if (filter instanceof RangeFilter
-                    && ((RangeFilter) filter).getRealFilter() instanceof AbstractRangeFilter) {
-                try (final PushdownResult ignored = result) {
-                    result = pushdownRangeFilter((AbstractRangeFilter) ((RangeFilter) filter).getRealFilter(),
-                            columnIndices, result);
+            // Some range filter host a condition filter as the internal filter and we can't push that down.
+            if (filter instanceof RangeFilter) {
+                if ((((RangeFilter) filter).getRealFilter() instanceof AbstractRangeFilter)) {
+                    mm = refineViaParquetStats((AbstractRangeFilter) ((RangeFilter) filter).getRealFilter(),
+                            columnIndices, selection);
+                } else {
+                    mm = selection.copy();
                 }
             } else if (filter instanceof MatchFilter) {
-                try (final PushdownResult ignored = result) {
-                    result = pushdownMatchFilter((MatchFilter) filter, columnIndices, result);
+                mm = refineViaParquetStats((MatchFilter) filter, columnIndices, selection);
+            } else {
+                mm = selection.copy();
+            }
+        } else {
+            mm = selection.copy();
+        }
+
+        if (mm.isNonempty()) {
+            // If not prohibited by the cost ceiling, continue to refine the pushdown results.
+            if (shouldExecute(QueryTable.DISABLE_WHERE_PUSHDOWN_DATA_INDEX,
+                    PushdownResult.IN_MEMORY_DATA_INDEX_COST, executedFilterCost, costCeiling)) {
+                final BasicDataIndex dataIndex =
+                        hasCachedDataIndex(parquetColumnNames) ? getDataIndex(parquetColumnNames) : null;
+                if (dataIndex != null) {
+                    finishWithDataIndex(selection, filter, renameMap, dataIndex, mm, onComplete);
+                    return;
                 }
             }
-        }
-        if (result.maybeMatch().isEmpty()) {
-            // No maybe rows remaining, so no reason to continue filtering.
-            onComplete.accept(result);
-            return;
-        }
 
-        // If not prohibited by the cost ceiling, continue to refine the pushdown results.
-
-        if (shouldExecute(QueryTable.DISABLE_WHERE_PUSHDOWN_DATA_INDEX,
-                PushdownResult.IN_MEMORY_DATA_INDEX_COST, executedFilterCost, costCeiling)) {
-            final BasicDataIndex dataIndex =
-                    hasCachedDataIndex(parquetColumnNames) ? getDataIndex(parquetColumnNames) : null;
-            if (dataIndex != null) {
-                // No maybe rows remaining, so no reason to continue filtering.
-                try (final PushdownResult ignored = result) {
-                    onComplete.accept(pushdownDataIndex(filter, renameMap, dataIndex, result));
+            if (shouldExecute(QueryTable.DISABLE_WHERE_PUSHDOWN_DATA_INDEX,
+                    PushdownResult.DEFERRED_DATA_INDEX_COST, executedFilterCost, costCeiling)) {
+                // If we have a data index, apply the filter to the data index table and retain the incoming maybe rows.
+                final BasicDataIndex dataIndex =
+                        hasDataIndex(parquetColumnNames) ? getDataIndex(parquetColumnNames) : null;
+                if (dataIndex != null) {
+                    finishWithDataIndex(selection, filter, renameMap, dataIndex, mm, onComplete);
                     return;
                 }
             }
         }
 
-        if (shouldExecute(QueryTable.DISABLE_WHERE_PUSHDOWN_DATA_INDEX,
-                PushdownResult.DEFERRED_DATA_INDEX_COST, executedFilterCost, costCeiling)) {
-            // If we have a data index, apply the filter to the data index table and retain the incoming maybe rows.
-            final BasicDataIndex dataIndex = hasDataIndex(parquetColumnNames) ? getDataIndex(parquetColumnNames) : null;
-            if (dataIndex != null) {
-                // No maybe rows remaining, so no reason to continue filtering.
-                try (final PushdownResult ignored = result) {
-                    onComplete.accept(pushdownDataIndex(filter, renameMap, dataIndex, result));
-                    return;
-                }
-            }
-        }
-
-        onComplete.accept(result);
+        onComplete.accept(PushdownResult.ofUnsafe(selection.copy(), RowSetFactory.empty(), mm));
     }
 
     /**
      * Helper methods to determine if we should execute this push-down technique.
      */
-    private boolean shouldExecute(final boolean disable, final long filterCost, final long executedFilterCost) {
+    private static boolean shouldExecute(final boolean disable, final long filterCost, final long executedFilterCost) {
         return !disable && executedFilterCost < filterCost;
     }
 
-    private boolean shouldExecute(final boolean disable, final long filterCost, final long executedFilterCost,
+    private static boolean shouldExecute(final boolean disable, final long filterCost, final long executedFilterCost,
             final long costCeiling) {
         return shouldExecute(disable, filterCost, executedFilterCost) && filterCost <= costCeiling;
     }
@@ -674,6 +662,8 @@ public class ParquetTableLocation extends AbstractTableLocation {
      * Iterate over the row groups and the matching row sets, calling the consumer for each row group and row set.
      */
     private void iterateRowGroupsAndRowSet(final RowSet input, final RowGroupAndRowSetConsumer consumer) {
+        // todo: worth using search it? probably not, since we expect there to be relatively small number of row
+        // groups in most cases?
         try (final RowSequence.Iterator rsIt = input.getRowSequenceIterator()) {
             final RowGroupReader[] rgReaders = getRowGroupReaders();
             for (int rgIdx = 0; rgIdx < rgReaders.length; rgIdx++) {
@@ -730,69 +720,78 @@ public class ParquetTableLocation extends AbstractTableLocation {
         return null;
     }
 
-    /**
-     * Apply the range filter to the row groups and return the result.
-     */
-    @NotNull
-    private PushdownResult pushdownRangeFilter(
+    private WritableRowSet refineViaParquetStats(
             final AbstractRangeFilter rf,
             final List<Integer> columnIndices,
-            final PushdownResult result) {
-        final RowSetBuilderSequential maybeBuilder = RowSetFactory.builderSequential();
-        final MutableLong maybeCount = new MutableLong(0);
-
+            final RowSet maybeMatch) {
+        final RowSetBuilderSequential newMaybeMatch = RowSetFactory.builderSequential();
         // Only one column in a RangeFilter
         final Integer columnIndex = columnIndices.get(0);
         final List<BlockMetaData> blocks = parquetMetadata.getBlocks();
-        iterateRowGroupsAndRowSet(result.maybeMatch(), (rgIdx, rs) -> {
+        final boolean[] isIdentical = {true};
+        iterateRowGroupsAndRowSet(maybeMatch, (rgIdx, rs) -> {
             final Pair<Object, Object> p = getMinMax(
                     blocks.get(rgIdx).getColumns().get(columnIndex).getStatistics());
-
             if (p == null || rf.overlaps(p.first, p.second)) {
-                maybeBuilder.appendRowSequence(rs);
-                maybeCount.add(rs.size());
+                // rs must stay as maybeMatch (we either don't have statistics to say otherwise, or know there is some
+                // amount overlap)
+                newMaybeMatch.appendRowSequence(rs);
+            } else {
+                // rs can be dropped from maybeMatch, we know it doesn't match
+                isIdentical[0] = false;
             }
         });
-        return PushdownResult.of(result.match().copy(),
-                maybeCount.get() == result.maybeMatch().size() ? result.maybeMatch().copy() : maybeBuilder.build());
+        return isIdentical[0] ? maybeMatch.copy() : newMaybeMatch.build();
     }
 
-    /**
-     * Apply the match filter to the row groups and return the result.
-     */
-    @NotNull
-    private PushdownResult pushdownMatchFilter(
+    private WritableRowSet refineViaParquetStats(
             final MatchFilter mf,
             final List<Integer> columnIndices,
-            final PushdownResult result) {
-        final RowSetBuilderSequential maybeBuilder = RowSetFactory.builderSequential();
-        final MutableLong maybeCount = new MutableLong(0);
-
+            final RowSet maybeMatch) {
+        final RowSetBuilderSequential newMaybeMatch = RowSetFactory.builderSequential();
         // Only one column in a RangeFilter
         final Integer columnIndex = columnIndices.get(0);
-
-        iterateRowGroupsAndRowSet(result.maybeMatch(), (rgIdx, rs) -> {
+        final List<BlockMetaData> blocks = parquetMetadata.getBlocks();
+        final boolean[] isIdentical = {true};
+        iterateRowGroupsAndRowSet(maybeMatch, (rgIdx, rs) -> {
             final Pair<Object, Object> p = getMinMax(
-                    parquetMetadata.getBlocks().get(rgIdx).getColumns().get(columnIndex).getStatistics());
-
+                    blocks.get(rgIdx).getColumns().get(columnIndex).getStatistics());
             if (p == null || mf.overlaps(p.first, p.second)) {
-                maybeBuilder.appendRowSequence(rs);
-                maybeCount.add(rs.size());
+                // rs must stay as maybeMatch (we either don't have statistics to say otherwise, or know there is some
+                // amount overlap)
+                newMaybeMatch.appendRowSequence(rs);
+            } else {
+                // rs can be dropped from maybeMatch, we know it doesn't match
+                isIdentical[0] = false;
             }
         });
-        return PushdownResult.of(result.match().copy(),
-                maybeCount.get() == result.maybeMatch().size() ? result.maybeMatch().copy() : maybeBuilder.build());
+        return isIdentical[0] ? maybeMatch.copy() : newMaybeMatch.build();
     }
 
     /**
-     * Apply the filter to the data index table and return the result.
+     * Apply the filter to the data index table and return the result. Ownership of {@code maybeMatch} transfers to this
+     * method.
      */
-    @NotNull
-    private PushdownResult pushdownDataIndex(
+    private void finishWithDataIndex(
+            final RowSet selection,
             final WhereFilter filter,
             final Map<String, String> renameMap,
             final BasicDataIndex dataIndex,
-            final PushdownResult result) {
+            final WritableRowSet maybeMatch,
+            final Consumer<PushdownResult> onComplete) {
+        final PushdownResult results;
+        try (maybeMatch) {
+            results = pushdownDataIndex(selection, filter, renameMap, dataIndex, maybeMatch);
+        }
+        onComplete.accept(results);
+    }
+
+    private static @NotNull PushdownResult pushdownDataIndex(
+            final RowSet selection,
+            final WhereFilter filter,
+            final Map<String, String> renameMap,
+            final BasicDataIndex dataIndex,
+            final RowSet maybeMatch) {
         final RowSetBuilderRandom matchingBuilder = RowSetFactory.builderRandom();
         try (final SafeCloseable ignored = LivenessScopeStack.open()) {
             final WhereFilter copiedFilter = filter.copy();
@@ -816,14 +815,13 @@ public class ParquetTableLocation extends AbstractTableLocation {
                 }
             } catch (final Exception e) {
                 // Exception occurs here if we have a data type mismatch between the index and the filter.
-                // Just swallow the exception and declare all the rows as maybe matches.
-                return PushdownResult.of(RowSetFactory.empty(), result.maybeMatch().copy());
+                // Just swallow the exception and return a copy of the original result
+                return PushdownResult.ofUnsafe(selection.copy(), RowSetFactory.empty(), maybeMatch.copy());
             }
         }
-        // Retain only the maybe rows and add the previously found matches.
+        // Retain only the maybe rows
         final WritableRowSet matching = matchingBuilder.build();
-        matching.retain(result.maybeMatch());
-        matching.insert(result.match());
-        return PushdownResult.of(matching, RowSetFactory.empty());
+        matching.retain(maybeMatch);
+        return PushdownResult.ofUnsafe(selection.copy(), matching, RowSetFactory.empty());
     }
 }
