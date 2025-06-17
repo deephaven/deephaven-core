@@ -82,10 +82,12 @@ public class TestRangeFilterOverlap extends RefreshingTableTestCase {
         // Containing null
         f = new CharRangeFilter("A", NULL_CHAR, 'd', true, true);
         assertTrue(f.containsNull());
+        assertTrue(f.overlaps(null, null, true, true));
 
         // Not containing null
         f = new CharRangeFilter("A", NULL_CHAR, 'd', false, true);
         assertFalse(f.containsNull());
+        assertFalse(f.overlaps(null, null, true, true));
 
         // Not containing null, normal
         f = new CharRangeFilter("A", 'b', 'd', true, false);
@@ -168,10 +170,12 @@ public class TestRangeFilterOverlap extends RefreshingTableTestCase {
         // Containing null
         f = new ByteRangeFilter("A", NULL_BYTE, (byte) 4, true, true);
         assertTrue(f.containsNull());
+        assertTrue(f.overlaps(null, null, true, true));
 
         // Not containing null
         f = new ByteRangeFilter("A", NULL_BYTE, (byte) 4, false, true);
         assertFalse(f.containsNull());
+        assertFalse(f.overlaps(null, null, true, true));
 
         // Not containing null, normal
         f = new ByteRangeFilter("A", (byte) 2, (byte) 4, true, false);
@@ -254,10 +258,12 @@ public class TestRangeFilterOverlap extends RefreshingTableTestCase {
         // Containing null
         f = new ShortRangeFilter("A", NULL_SHORT, (short) 4, true, true);
         assertTrue(f.containsNull());
+        assertTrue(f.overlaps(null, null, true, true));
 
         // Not containing null
         f = new ShortRangeFilter("A", NULL_SHORT, (short) 4, false, true);
         assertFalse(f.containsNull());
+        assertFalse(f.overlaps(null, null, true, true));
 
         // Not containing null, normal
         f = new ShortRangeFilter("A", (short) 2, (short) 4, true, false);
@@ -340,10 +346,12 @@ public class TestRangeFilterOverlap extends RefreshingTableTestCase {
         // Containing null
         f = new IntRangeFilter("A", NULL_INT, 4, true, true);
         assertTrue(f.containsNull());
+        assertTrue(f.overlaps(null, null, true, true));
 
         // Not containing null
         f = new IntRangeFilter("A", NULL_INT, 4, false, true);
         assertFalse(f.containsNull());
+        assertFalse(f.overlaps(null, null, true, true));
 
         // Not containing null, normal
         f = new IntRangeFilter("A", 2, 4, true, false);
@@ -426,10 +434,12 @@ public class TestRangeFilterOverlap extends RefreshingTableTestCase {
         // Containing null
         f = new LongRangeFilter("A", NULL_LONG, 4L, true, true);
         assertTrue(f.containsNull());
+        assertTrue(f.overlaps(null, null, true, true));
 
         // Not containing null
         f = new LongRangeFilter("A", NULL_LONG, 4L, false, true);
         assertFalse(f.containsNull());
+        assertFalse(f.overlaps(null, null, true, true));
 
         // Not containing null, normal
         f = new LongRangeFilter("A", 2L, 4L, true, false);
@@ -512,10 +522,12 @@ public class TestRangeFilterOverlap extends RefreshingTableTestCase {
         // Containing null
         f = new FloatRangeFilter("A", NULL_FLOAT, 4.0f, true, true);
         assertTrue(f.containsNull());
+        assertTrue(f.overlaps(null, null, true, true));
 
         // Not containing null
         f = new FloatRangeFilter("A", NULL_FLOAT, 4.0f, false, true);
         assertFalse(f.containsNull());
+        assertFalse(f.overlaps(null, null, true, true));
 
         // Not containing null, normal
         f = new FloatRangeFilter("A", 2.0f, 4.0f, true, false);
@@ -598,10 +610,12 @@ public class TestRangeFilterOverlap extends RefreshingTableTestCase {
         // Containing null
         f = new DoubleRangeFilter("A", NULL_DOUBLE, 4.0, true, true);
         assertTrue(f.containsNull());
+        assertTrue(f.overlaps(null, null, true, true));
 
         // Not containing null
         f = new DoubleRangeFilter("A", NULL_DOUBLE, 4.0, false, true);
         assertFalse(f.containsNull());
+        assertFalse(f.overlaps(null, null, true, true));
 
         // Not containing null, normal
         f = new DoubleRangeFilter("A", 2.0, 4.0, true, false);
@@ -684,10 +698,12 @@ public class TestRangeFilterOverlap extends RefreshingTableTestCase {
         // Containing null
         f = new ComparableRangeFilter("A", null, BigDecimal.valueOf(4), true, true);
         assertTrue(f.containsNull());
+        assertTrue(f.overlaps(null, null, true, true));
 
         // Not containing null
         f = new ComparableRangeFilter("A", null, BigDecimal.valueOf(4), false, true);
         assertFalse(f.containsNull());
+        assertFalse(f.overlaps(null, null, true, true));
 
         // Not containing null, normal
         f = new ComparableRangeFilter("A", BigDecimal.valueOf(2), BigDecimal.valueOf(4), true, false);
@@ -748,10 +764,12 @@ public class TestRangeFilterOverlap extends RefreshingTableTestCase {
         // Containing null
         f = new SingleSidedComparableRangeFilter("A", null, true, true);
         assertTrue(f.containsNull());
+        assertTrue(f.overlaps(null, null, true, true));
 
         // Containing null
         f = new SingleSidedComparableRangeFilter("A", null, true, false);
         assertTrue(f.containsNull());
+        assertTrue(f.overlaps(null, null, true, true));
 
         // Not containing null (since null < BD(2)
         f = new SingleSidedComparableRangeFilter("A", BigDecimal.valueOf(2), false, true);
