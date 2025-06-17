@@ -46,7 +46,10 @@ class Aggregation:
 
     @property
     def is_formula(self):
-        return isinstance(self._j_agg_spec, jpy.get_type("io.deephaven.api.agg.spec.AggSpecFormula"))
+        if self._j_agg_spec:
+            return isinstance(self._j_agg_spec, jpy.get_type("io.deephaven.api.agg.spec.AggSpecFormula"))
+        else:
+            return isinstance(self._j_aggregation, jpy.get_type("io.deephaven.api.agg.Formula"))
 
 
 def sum_(cols: Union[str, List[str]] = None) -> Aggregation:

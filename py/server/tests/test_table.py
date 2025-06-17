@@ -1265,6 +1265,22 @@ class TableTestCase(BaseTestCase):
             d = table_diff(t1, t2, max_diffs=10, floating_comparison='relative')
             self.assertFalse(d)
 
+    def test_new_agg_formula_scope(self):
+        with self.subTest("agg_all_by_formula"):
+            def agg_by_formula():
+                def my_fn(vals):
+                    import deephaven.dtypes as dht
+                    return dht.array(dht.double, [i + 2 for i in vals])
+
+                t = empty_table(1000).update_view(["A=i%2", "B=A+3"])
+                t = t.agg_by(formula("D=(double[])my_fn(B)"))
+                return t
+
+            t = agg_by_formula()
+            self.assertIsNotNone(t)
+            self.assertIn("D", t.column_names)
+            self.assertEqual(t.columns[0].data_type, dtypes.double_array)
+
 
 if __name__ == "__main__":
     unittest.main()
