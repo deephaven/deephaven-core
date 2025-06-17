@@ -175,9 +175,9 @@ class SelectOrUpdateListener extends BaseTable.ListenerImpl {
             final long startOfClearingBlock = clearValue & -(SparseConstants.BLOCK_SIZE);
             if (!remainingInterator.advance(startOfClearingBlock)
                     || remainingInterator.currentValue() >= startOfNextBlock) {
-                // we need to remove this block,
+                // we need to remove this block, internally the SparseArrayColumnSource also removes any parents that
+                // have no children
                 removeBlockBuilder.appendKey(clearValue >> SparseConstants.LOG_BLOCK_SIZE);
-                // also need to check block1, block2 for higher-level clearing
             }
         }
         try (final WritableRowSet removeBlocks = removeBlockBuilder.build()) {
