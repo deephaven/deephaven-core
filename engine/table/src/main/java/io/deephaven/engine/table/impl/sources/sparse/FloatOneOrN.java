@@ -59,8 +59,16 @@ public final class FloatOneOrN {
          * space, but rather an index for the block to clear (i.e. row key >> {@link SparseConstants#BLOCK2_SHIFT}).
          *
          * @param block2Idx the block index to clear
+         * @param recycler recycler for lowest level blocks
+         * @param recycler2 recycler for float[][] from Block2
+         * @param recycler1 recycler for block2 structures from Block1
+         * @param recycler0 recycler for Block1 structures from Block0
          */
-        public void clearBlock(final long block2Idx) {
+        public void clearBlock(final long block2Idx,
+                               final SoftRecycler<float[]> recycler,
+                               final SoftRecycler<float[][]> recycler2,
+                               final SoftRecycler<Block2[]> recycler1,
+                               final SoftRecycler<Block1[]> recycler0) {
             final int block0 = (int) (block2Idx >> (BLOCK0_SHIFT - BLOCK2_SHIFT)) & BLOCK0_MASK;
             final int block1 = (int) (block2Idx >> (BLOCK1_SHIFT - BLOCK2_SHIFT)) & BLOCK1_MASK;
             final int block2 = (int) (block2Idx) & BLOCK2_MASK;
@@ -77,14 +85,14 @@ public final class FloatOneOrN {
                 throw new IllegalStateException();
             }
 
-            final boolean noneLeft1 = blocks1.clearByIndex(block2);
+            final boolean noneLeft1 = blocks1.clearByIndex(block2, recycler, recycler2);
             if (!noneLeft1) {
                 return;
             }
 
-            final boolean noneLeft0 = blocks0.clearByIndex(block1);
+            final boolean noneLeft0 = blocks0.clearByIndex(block1, recycler1);
             if (noneLeft0) {
-                clearByIndex(block0);
+                clearByIndex(block0, recycler0);
             }
         }
 
@@ -118,11 +126,12 @@ public final class FloatOneOrN {
         /**
          * Clears the given block index, which must exist
          *
-         * @param idx the index to clear
+         * @param idx       the index to clear
+         * @param recycler0 the recycler for our array of Block1 structures if we are empty
          * @return true if there are no more elements in this block
          */
         @SuppressWarnings("UnusedReturnValue")
-        private boolean clearByIndex(final int idx) {
+        private boolean clearByIndex(final int idx, final SoftRecycler<Block1[]> recycler0) {
             Assert.neq(idx, "idx", HAVE_MORE_THAN_ONE, "HAVE_MORE_THAN_ONE");
             if (oneIndex == idx) {
                 oneIndex = ONE_UNINITIALIZED;
@@ -138,6 +147,9 @@ public final class FloatOneOrN {
                     return false;
                 }
             }
+            recycler0.returnItem(array);
+            array = null;
+            oneIndex = ONE_UNINITIALIZED;
             return true;
         }
 
@@ -253,10 +265,11 @@ public final class FloatOneOrN {
         /**
          * Clears the given block index, which must exist
          *
-         * @param idx the index to clear
+         * @param idx       the index to clear
+         * @param recycler1 the recycler for this array of Blocks2 structures if we are empty
          * @return true if there are no more elements in this block
          */
-        private boolean clearByIndex(final int idx) {
+        private boolean clearByIndex(final int idx, final SoftRecycler<Block2[]> recycler1) {
             Assert.neq(idx, "idx", HAVE_MORE_THAN_ONE, "HAVE_MORE_THAN_ONE");
             if (oneIndex == idx) {
                 oneValue = null;
@@ -272,6 +285,9 @@ public final class FloatOneOrN {
                     return false;
                 }
             }
+            recycler1.returnItem(array);
+            array = null;
+            oneIndex = ONE_UNINITIALIZED;
             return true;
         }
 
@@ -364,12 +380,17 @@ public final class FloatOneOrN {
         /**
          * Clears the given block index, which must exist
          *
-         * @param idx the index to clear
+         * @param idx       the index to clear
+         * @param recycler  the recycler for the block we are clearing
+         * @param recycler2 the recycler for the block of blocks
          * @return true if there are no more elements in this block
          */
-        private boolean clearByIndex(final int idx) {
+        private boolean clearByIndex(final int idx,
+                                     final SoftRecycler<float[]> recycler,
+                                     final SoftRecycler<float[][]> recycler2) {
             Assert.neq(idx, "idx", HAVE_MORE_THAN_ONE, "HAVE_MORE_THAN_ONE");
             if (oneIndex == idx) {
+                recycler.returnItem(oneValue);
                 oneValue = null;
                 oneIndex = ONE_UNINITIALIZED;
                 return true;
@@ -378,6 +399,7 @@ public final class FloatOneOrN {
                 // we should not be asking to clear a block that does not actually exist
                 throw new IllegalStateException();
             }
+            recycler.returnItem(array[idx]);
             array[idx] = null;
 
             for (int ii = 0; ii < BLOCK2_SIZE; ++ii) {
@@ -385,6 +407,7 @@ public final class FloatOneOrN {
                     return false;
                 }
             }
+            recycler2.returnItem(array);
             return true;
         }
 

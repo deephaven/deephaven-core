@@ -390,7 +390,7 @@ public class IntegerSparseArraySource extends SparseArrayColumnSource<Integer>
         if (blocksToClear == null) {
             return;
         }
-        blocksToClear.forAllRowKeys(block -> blocks.clearBlock(block));
+        blocksToClear.forAllRowKeys(block -> blocks.clearBlock(block, recycler, recycler2, recycler1, recycler0));
         blocksToClear.close();
         blocksToClear = null;
     }
