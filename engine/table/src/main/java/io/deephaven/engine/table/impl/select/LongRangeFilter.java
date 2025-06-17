@@ -168,8 +168,8 @@ public class LongRangeFilter extends AbstractRangeFilter {
 
     @Override
     public boolean overlaps(
-            @NotNull final Object lower,
-            @NotNull final Object upper,
+            @Nullable final Object lower,
+            @Nullable final Object upper,
             final boolean lowerInclusive,
             final boolean upperInclusive) {
 

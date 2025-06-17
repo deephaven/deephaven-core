@@ -90,6 +90,12 @@ public class TestRangeFilterOverlap extends RefreshingTableTestCase {
         // Not containing null, normal
         f = new CharRangeFilter("A", 'b', 'd', true, false);
         assertFalse(f.containsNull());
+
+        f = new CharRangeFilter("A", 'b', 'd', true, true);
+        // (-INF,'a'] before filter
+        assertFalse(f.overlaps(null, 'a', true, true));
+        // Overlaps at 'b'
+        assertTrue(f.overlaps(null, 'b', true, true));
     }
 
     public void testByteRangeFilterOverlap() {
@@ -170,6 +176,12 @@ public class TestRangeFilterOverlap extends RefreshingTableTestCase {
         // Not containing null, normal
         f = new ByteRangeFilter("A", (byte) 2, (byte) 4, true, false);
         assertFalse(f.containsNull());
+
+        f = new ByteRangeFilter("A", (byte) 2, (byte) 4, true, true);
+        // (-INF,1] before filter
+        assertFalse(f.overlaps(null, (byte) 1, true, true));
+        // Overlaps at 2
+        assertTrue(f.overlaps(null, (byte) 2, true, true));
     }
 
     public void testShortRangeFilterOverlap() {
@@ -250,6 +262,12 @@ public class TestRangeFilterOverlap extends RefreshingTableTestCase {
         // Not containing null, normal
         f = new ShortRangeFilter("A", (short) 2, (short) 4, true, false);
         assertFalse(f.containsNull());
+
+        f = new ShortRangeFilter("A", (short) 2, (short) 4, true, true);
+        // (-INF,1] before filter
+        assertFalse(f.overlaps(null, (short) 1, true, true));
+        // Overlaps at 2
+        assertTrue(f.overlaps(null, (short) 2, true, true));
     }
 
     public void testIntRangeFilterOverlap() {
@@ -330,6 +348,12 @@ public class TestRangeFilterOverlap extends RefreshingTableTestCase {
         // Not containing null, normal
         f = new IntRangeFilter("A", 2, 4, true, false);
         assertFalse(f.containsNull());
+
+        f = new IntRangeFilter("A", 2, 4, true, true);
+        // (-INF,1] before filter
+        assertFalse(f.overlaps(null, 1, true, true));
+        // Overlaps at 2
+        assertTrue(f.overlaps(null, 2, true, true));
     }
 
     public void testLongRangeFilterOverlap() {
@@ -410,6 +434,12 @@ public class TestRangeFilterOverlap extends RefreshingTableTestCase {
         // Not containing null, normal
         f = new LongRangeFilter("A", 2L, 4L, true, false);
         assertFalse(f.containsNull());
+
+        f = new LongRangeFilter("A", 2L, 4L, true, true);
+        // (-INF,1] before filter
+        assertFalse(f.overlaps(null, 1L, true, true));
+        // Overlaps at 2
+        assertTrue(f.overlaps(null, 2L, true, true));
     }
 
     public void testFloatRangeFilterOverlap() {
@@ -490,6 +520,12 @@ public class TestRangeFilterOverlap extends RefreshingTableTestCase {
         // Not containing null, normal
         f = new FloatRangeFilter("A", 2.0f, 4.0f, true, false);
         assertFalse(f.containsNull());
+
+        f = new FloatRangeFilter("A", 2.0f, 4.0f, true, true);
+        // (-INF,1] before filter
+        assertFalse(f.overlaps(null, 1.0f, true, true));
+        // Overlaps at 2
+        assertTrue(f.overlaps(null, 2.0f, true, true));
     }
 
     public void testDoubleRangeFilterOverlap() {
@@ -570,6 +606,12 @@ public class TestRangeFilterOverlap extends RefreshingTableTestCase {
         // Not containing null, normal
         f = new DoubleRangeFilter("A", 2.0, 4.0, true, false);
         assertFalse(f.containsNull());
+
+        f = new DoubleRangeFilter("A", 2.0, 4.0, true, true);
+        // (-INF,1] before filter
+        assertFalse(f.overlaps(null, 1.0, true, true));
+        // Overlaps at 2
+        assertTrue(f.overlaps(null, 2.0, true, true));
     }
 
     public void testComparableRangeFilterOverlap() {
@@ -718,6 +760,12 @@ public class TestRangeFilterOverlap extends RefreshingTableTestCase {
         // Containing null (since null < BD(2) )
         f = new SingleSidedComparableRangeFilter("A", BigDecimal.valueOf(2), false, false);
         assertTrue(f.containsNull());
+
+        f = new SingleSidedComparableRangeFilter("A", BigDecimal.valueOf(2), true, true);
+        // (-INF,1] before filter
+        assertFalse(f.overlaps(null, BigDecimal.valueOf(1), true, true));
+        // Overlaps at 2
+        assertTrue(f.overlaps(null, BigDecimal.valueOf(2), true, true));
     }
 
     public void testMismatchedDataTypes() {

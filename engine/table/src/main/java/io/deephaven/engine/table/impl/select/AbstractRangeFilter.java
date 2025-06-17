@@ -126,8 +126,8 @@ public abstract class AbstractRangeFilter extends WhereFilterImpl implements Exp
      * @return {@code true} if the range filter overlaps with the given range, {@code false} otherwise
      */
     public abstract boolean overlaps(
-            @NotNull final Object lower,
-            @NotNull final Object upper,
+            @Nullable final Object lower,
+            @Nullable final Object upper,
             final boolean lowerInclusive,
             final boolean upperInclusive);
 
@@ -140,7 +140,7 @@ public abstract class AbstractRangeFilter extends WhereFilterImpl implements Exp
      * @param max the maximum value in the given range
      * @return {@code true} if the range filter overlaps with the given range, {@code false} otherwise
      */
-    public boolean overlaps(final Object min, final Object max) {
+    public boolean overlaps(@Nullable final Object min, @Nullable final Object max) {
         return overlaps(min, max, true, true);
     }
 

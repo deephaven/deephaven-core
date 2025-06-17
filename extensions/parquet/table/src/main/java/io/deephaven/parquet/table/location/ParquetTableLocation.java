@@ -383,7 +383,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
 
     // region Indexing
     /**
-     * Read a Data Index table from disk.
+     * Read a Data Index table from the disk.
      *
      * @param parentFileURI The path to the base table
      * @param indexFileMetaData Index file metadata
@@ -526,7 +526,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
      * Attempts to resolve all columns referenced by {@code filter} against the Parquet schema.
      *
      * @param filter The filter containing the columns to resolve
-     * @param renameMap A map of column names to their renamed versions
+     * @param renameMap A map of column names to their renamed versions (if applicable)
      * @return {@code Optional.empty()} if <b>any</b> column cannot be resolved, otherwise an {@code Optional}
      *         containing the fully resolved list.
      */
@@ -578,7 +578,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
 
         final long executedFilterCost = context.executedFilterCost();
 
-        // Some range filters host a condition filter as the internal filter and we can't push that down.
+        // Some range filters host a condition filter as the internal filter, and we can't push that down.
         final boolean isRangeFilter =
                 filter instanceof RangeFilter && ((RangeFilter) filter).getRealFilter() instanceof AbstractRangeFilter;
         final boolean isMatchFilter = filter instanceof MatchFilter;
