@@ -694,14 +694,14 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
 
     public void testRollupAggregatedColumns() {
         connect(tables)
-            .then(table("table_to_rollup"))
-            .then(table -> {
-                List<Supplier<Promise<JsTreeTable>>> tests = new ArrayList<>();
-                JsRollupConfig cfg = new JsRollupConfig();
-                cfg.groupingColumns = Js.uncheckedCast(JsArray.of("X"));
-                cfg.aggregations = JsPropertyMap.of(JsAggregationOperation.SUM, JsArray.of("Y"));
-                // Rollup with or without constituents should populate aggregated columns
-                Stream.of(true, false).forEach(includeConstituents -> {
+                .then(table("table_to_rollup"))
+                .then(table -> {
+                    List<Supplier<Promise<JsTreeTable>>> tests = new ArrayList<>();
+                    JsRollupConfig cfg = new JsRollupConfig();
+                    cfg.groupingColumns = Js.uncheckedCast(JsArray.of("X"));
+                    cfg.aggregations = JsPropertyMap.of(JsAggregationOperation.SUM, JsArray.of("Y"));
+                    // Rollup with or without constituents should populate aggregated columns
+                    Stream.of(true, false).forEach(includeConstituents -> {
                         cfg.includeConstituents = includeConstituents;
                         JsRollupConfig copy = new JsRollupConfig((JsPropertyMap<Object>) cfg);
                         tests.add(() -> table.rollup(copy).then(r -> {
@@ -709,86 +709,86 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
                             assertEquals("Y", r.getAggregatedColumns().getAt(0).getName());
                             return Promise.resolve(r);
                         }));
-                });
-                return tests.stream().reduce((p1, p2) -> () -> p1.get().then(result -> p2.get())).get().get();
-            })
-            .then(this::finish)
-            .catch_(this::report);
+                    });
+                    return tests.stream().reduce((p1, p2) -> () -> p1.get().then(result -> p2.get())).get().get();
+                })
+                .then(this::finish)
+                .catch_(this::report);
     }
 
     public void testRollupSkipAggAggregatedColumns() {
         connect(tables)
-            .then(table("table_to_rollup"))
-            .then(table -> {
-               List<Supplier<Promise<JsTreeTable>>> tests = new ArrayList<>();
-                JsRollupConfig cfg = new JsRollupConfig();
-                cfg.groupingColumns = Js.uncheckedCast(JsArray.of("X"));
-                cfg.aggregations = JsPropertyMap.of(JsAggregationOperation.SKIP, JsArray.of("Y"));
-                // Rollup should not include Skip aggregation in aggregated columns
-                Stream.of(true, false).forEach(includeConstituents -> {
+                .then(table("table_to_rollup"))
+                .then(table -> {
+                    List<Supplier<Promise<JsTreeTable>>> tests = new ArrayList<>();
+                    JsRollupConfig cfg = new JsRollupConfig();
+                    cfg.groupingColumns = Js.uncheckedCast(JsArray.of("X"));
+                    cfg.aggregations = JsPropertyMap.of(JsAggregationOperation.SKIP, JsArray.of("Y"));
+                    // Rollup should not include Skip aggregation in aggregated columns
+                    Stream.of(true, false).forEach(includeConstituents -> {
                         cfg.includeConstituents = includeConstituents;
                         JsRollupConfig copy = new JsRollupConfig((JsPropertyMap<Object>) cfg);
                         tests.add(() -> table.rollup(copy).then(r -> {
                             assertEquals(0, r.getAggregatedColumns().length);
                             return Promise.resolve(r);
                         }));
-                });
-                return tests.stream().reduce((p1, p2) -> () -> p1.get().then(result -> p2.get())).get().get();
-            })
-            .then(this::finish)
-            .catch_(this::report);
+                    });
+                    return tests.stream().reduce((p1, p2) -> () -> p1.get().then(result -> p2.get())).get().get();
+                })
+                .then(this::finish)
+                .catch_(this::report);
     }
 
     public void testRollupSkipAggWithConstituentColumns() {
         connect(tables)
-            .then(table("table_to_rollup"))
-            .then(table -> {
-               List<Supplier<Promise<JsTreeTable>>> tests = new ArrayList<>();
-                JsRollupConfig cfg = new JsRollupConfig();
-                cfg.groupingColumns = Js.uncheckedCast(JsArray.of("X"));
-                cfg.aggregations = JsPropertyMap.of(JsAggregationOperation.SKIP, JsArray.of("Y"));
-                cfg.includeConstituents = true;
-                // Rollup with constituents should have the column with a SKIP aggregation
-                return table.rollup(cfg).then(rollupTable -> {
-                    assertEquals(4, rollupTable.getColumns().length);
-                    assertEquals("Y", rollupTable.getColumns().getAt(2).getName());
-                    return null;
-                });
-            })
-            .then(this::finish)
-            .catch_(this::report);
+                .then(table("table_to_rollup"))
+                .then(table -> {
+                    List<Supplier<Promise<JsTreeTable>>> tests = new ArrayList<>();
+                    JsRollupConfig cfg = new JsRollupConfig();
+                    cfg.groupingColumns = Js.uncheckedCast(JsArray.of("X"));
+                    cfg.aggregations = JsPropertyMap.of(JsAggregationOperation.SKIP, JsArray.of("Y"));
+                    cfg.includeConstituents = true;
+                    // Rollup with constituents should have the column with a SKIP aggregation
+                    return table.rollup(cfg).then(rollupTable -> {
+                        assertEquals(4, rollupTable.getColumns().length);
+                        assertEquals("Y", rollupTable.getColumns().getAt(2).getName());
+                        return null;
+                    });
+                })
+                .then(this::finish)
+                .catch_(this::report);
     }
 
-        public void testRollupSkipAggNoConstituentsColumns() {
+    public void testRollupSkipAggNoConstituentsColumns() {
         connect(tables)
-            .then(table("table_to_rollup"))
-            .then(table -> {
-               List<Supplier<Promise<JsTreeTable>>> tests = new ArrayList<>();
-                JsRollupConfig cfg = new JsRollupConfig();
-                cfg.groupingColumns = Js.uncheckedCast(JsArray.of("X"));
-                cfg.aggregations = JsPropertyMap.of(JsAggregationOperation.SKIP, JsArray.of("Y"));
-                cfg.includeConstituents = false;
-                // Rollup without constituents shouldn't have the column with a SKIP aggregation
-                return table.rollup(cfg).then(rollupTable -> {
-                    assertEquals(1, rollupTable.getColumns().length);
-                    assertEquals("X", rollupTable.getColumns().getAt(0).getName());
-                    return null;
-                });
-            })
-            .then(this::finish)
-            .catch_(this::report);
+                .then(table("table_to_rollup"))
+                .then(table -> {
+                    List<Supplier<Promise<JsTreeTable>>> tests = new ArrayList<>();
+                    JsRollupConfig cfg = new JsRollupConfig();
+                    cfg.groupingColumns = Js.uncheckedCast(JsArray.of("X"));
+                    cfg.aggregations = JsPropertyMap.of(JsAggregationOperation.SKIP, JsArray.of("Y"));
+                    cfg.includeConstituents = false;
+                    // Rollup without constituents shouldn't have the column with a SKIP aggregation
+                    return table.rollup(cfg).then(rollupTable -> {
+                        assertEquals(1, rollupTable.getColumns().length);
+                        assertEquals("X", rollupTable.getColumns().getAt(0).getName());
+                        return null;
+                    });
+                })
+                .then(this::finish)
+                .catch_(this::report);
     }
 
-     public void testTreeTableAggregatedColumns() {
+    public void testTreeTableAggregatedColumns() {
         connect(tables)
-            .then(treeTable("static_tree"))
-            .then(treeTable -> {
-                // Tree tables should have no aggregated columns
-                JsArray<Column> aggColumns = treeTable.getAggregatedColumns();
-                assertEquals(0, aggColumns.length);
-                return null;
-            })
-            .then(this::finish)
-            .catch_(this::report);
+                .then(treeTable("static_tree"))
+                .then(treeTable -> {
+                    // Tree tables should have no aggregated columns
+                    JsArray<Column> aggColumns = treeTable.getAggregatedColumns();
+                    assertEquals(0, aggColumns.length);
+                    return null;
+                })
+                .then(this::finish)
+                .catch_(this::report);
     }
 }
