@@ -354,6 +354,7 @@ public abstract class AbstractColumnSource<T> implements
     @Override
     public long estimatePushdownFilterCost(
             final WhereFilter filter,
+            final Map<String, String> renameMap,
             final RowSet selection,
             final RowSet fullSet,
             final boolean usePrev,

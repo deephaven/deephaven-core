@@ -1902,8 +1902,8 @@ public abstract class QueryTableWhereTest {
         }
 
         @Override
-        public long estimatePushdownFilterCost(WhereFilter filter, RowSet selection, RowSet fullSet, boolean usePrev,
-                final PushdownFilterContext context) {
+        public long estimatePushdownFilterCost(WhereFilter filter, Map<String, String> renameMap, RowSet selection,
+                RowSet fullSet, boolean usePrev, final PushdownFilterContext context) {
             return pushdownCost;
         }
 
@@ -2083,6 +2083,7 @@ public abstract class QueryTableWhereTest {
         @Override
         public long estimatePushdownFilterCost(
                 final WhereFilter filter,
+                final Map<String, String> renameMap,
                 final RowSet selection,
                 final RowSet fullSet,
                 final boolean usePrev,
