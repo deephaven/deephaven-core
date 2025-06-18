@@ -173,8 +173,8 @@ abstract class MinMaxFromStatistics {
         public Optional<MinMax> visit(
                 final LogicalTypeAnnotation.DecimalLogicalTypeAnnotation decimalLogicalType) {
             // Read the min and max as string and convert them to BigDecimal
-            // This is helpful because big decimals can be stored in various formats, so it's easier to let the
-            // materializer handle the conversion
+            // This is helpful because big decimals can be stored in various formats (int64, binary, etc.), so it's
+            // easier to let the internal `Statistics.stringify` handle the conversion
             final String minAsString = statistics.minAsString();
             final String maxAsString = statistics.maxAsString();
             final BigDecimal minValue;
