@@ -16,6 +16,7 @@ import io.deephaven.engine.updategraph.TerminalNotification;
 import io.deephaven.engine.table.impl.util.ImmediateJobScheduler;
 import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.table.impl.util.UpdateGraphJobScheduler;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -162,6 +163,39 @@ class SelectOrUpdateListener extends BaseTable.ListenerImpl {
             return;
         }
 
+        try (final RowSet removeBlocks = getLowestLevelRemovedBlocks(toClear);
+                final RowSet removeBlocks2 =
+                        removeBlocks.isNonempty() ? getBlock2RemovedBlock(toClear) : RowSetFactory.empty();
+                final RowSet removeBlocks1 =
+                        removeBlocks2.isNonempty() ? getBlock1RemovedBlock(toClear) : RowSetFactory.empty()) {
+            if (removeBlocks.isEmpty()) {
+                return;
+            }
+            for (final SparseArrayColumnSource<?> cs : sparseArraysToFree) {
+                cs.clearBlocks(removeBlocks, removeBlocks2, removeBlocks1, resultRowSet.isEmpty());
+            }
+        }
+    }
+
+    @NotNull
+    private RowSet getLowestLevelRemovedBlocks(final WritableRowSet toClear) {
+        return getRemovedBlocks(toClear, SparseConstants.LOG_BLOCK_SIZE);
+    }
+
+    @NotNull
+    private RowSet getBlock2RemovedBlock(final WritableRowSet toClear) {
+        return getRemovedBlocks(toClear, SparseConstants.LOG_BLOCK_SIZE + SparseConstants.LOG_BLOCK2_SIZE);
+    }
+
+    @NotNull
+    private RowSet getBlock1RemovedBlock(final WritableRowSet toClear) {
+        return getRemovedBlocks(toClear,
+                SparseConstants.LOG_BLOCK_SIZE + SparseConstants.LOG_BLOCK2_SIZE + SparseConstants.LOG_BLOCK1_SIZE);
+    }
+
+    @NotNull
+    private RowSet getRemovedBlocks(final WritableRowSet toClear, final int logBlockSize) {
+        final long blockSize = 1L << logBlockSize;
         // if we have anything in our rowset that is clearing out an entire block; it is worth noting those blocks
         final RowSet.SearchIterator remainingInterator = resultRowSet.searchIterator();
         final RowSet.SearchIterator clearIterator = toClear.searchIterator();
@@ -170,28 +204,21 @@ class SelectOrUpdateListener extends BaseTable.ListenerImpl {
         long startOfNextBlock = 0;
         while (clearIterator.advance(startOfNextBlock)) {
             final long clearValue = clearIterator.currentValue();
-            startOfNextBlock = (clearValue | (SparseConstants.BLOCK_SIZE - 1)) + 1;
+            startOfNextBlock = (clearValue | (blockSize - 1)) + 1;
 
-            final long startOfClearingBlock = clearValue & -(SparseConstants.BLOCK_SIZE);
+            // noinspection PointlessBitwiseExpression (Charles understands this version better than -blockSize which
+            // IntelliJ suggests)
+            final long startOfClearingBlock = clearValue & ~(blockSize - 1);
             if (!remainingInterator.advance(startOfClearingBlock)
                     || remainingInterator.currentValue() >= startOfNextBlock) {
-                // we need to remove this block, internally the SparseArrayColumnSource also removes any parents that
-                // have no children
-                removeBlockBuilder.appendKey(clearValue >> SparseConstants.LOG_BLOCK_SIZE);
+                removeBlockBuilder.appendKey(clearValue >> logBlockSize);
             }
         }
-        try (final WritableRowSet removeBlocks = removeBlockBuilder.build()) {
-            if (!removeBlocks.isNonempty()) {
-                return;
-            }
-            for (final SparseArrayColumnSource<?> cs : sparseArraysToFree) {
-                cs.clearBlocks(removeBlocks);
-            }
-        }
+        return removeBlockBuilder.build();
     }
 
     @Override
-    public boolean satisfied(long step) {
+    public boolean satisfied(final long step) {
         return super.satisfied(step) && !updateInProgress;
     }
 }

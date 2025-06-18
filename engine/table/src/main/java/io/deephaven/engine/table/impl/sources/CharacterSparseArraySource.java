@@ -386,9 +386,21 @@ public class CharacterSparseArraySource extends SparseArrayColumnSource<Characte
         if (blocksToClear == null) {
             return;
         }
-        blocksToClear.forAllRowKeys(block -> blocks.clearBlock(block, recycler, recycler2, recycler1, recycler0));
+        blocks.clearLowestLevelBlocks(blocksToClear, recycler);
+        blocks.clearBlocks2(blocks2ToClear, recycler2);
+        blocks.clearBlocks1(blocks1ToClear, recycler1);
+        if (emptyResult) {
+            blocks.onEmptyResult(recycler0);
+        }
+
+        // blocksToClear.forAllRowKeys(block -> blocks.clearBlock(block, recycler, recycler2, recycler1, recycler0));
         blocksToClear.close();
+        blocks2ToClear.close();
+        blocks1ToClear.close();
         blocksToClear = null;
+        blocks2ToClear = null;
+        blocks1ToClear = null;
+        emptyResult = null;
     }
 
     /**
@@ -1043,11 +1055,12 @@ public class CharacterSparseArraySource extends SparseArrayColumnSource<Characte
 
 
     @Override
-    public void clearBlocks(final RowSet blocksToClear) {
+    public void clearBlocks(final RowSet blocksToClear, final RowSet removeBlocks2, final RowSet removeBlocks1,
+            final boolean empty) {
         if (prevFlusher == null) {
             return;
         }
-        super.clearBlocks(blocksToClear);
+        super.clearBlocks(blocksToClear, removeBlocks2, removeBlocks1, empty);
         prevFlusher.maybeActivate();
     }
 

@@ -5,6 +5,7 @@
 package io.deephaven.engine.table.impl.sources.sparse;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.util.SoftRecycler;
 import io.deephaven.util.annotations.TestUseOnly;
 
@@ -54,18 +55,39 @@ public final class CharOneOrN {
          * Called by the {@link io.deephaven.engine.table.impl.sources.CharacterSparseArraySource} at the end of a cycle
          * when blocks have been completely eliminated from the output rowset.  The input is not a row key in our address
          * space, but rather an index for the block to clear (i.e. row key >> {@link SparseConstants#BLOCK2_SHIFT}).
+         */
+         public void clearLowestLevelBlocks(final RowSet blocksToClear,
+                                           final SoftRecycler<char[]> recycler) {
+            blocksToClear.forAllRowKeys(idx -> clearOneLowestLevelBlock(idx, recycler));
+        }
+
+        /**
+         * Called by the {@link io.deephaven.engine.table.impl.sources.CharacterSparseArraySource} at the end of a cycle
+         * when blocks have been completely eliminated from the output rowset.  The input is not a row key in our address
+         * space, but rather an index for the block2 to clear (i.e. row key >> {@link SparseConstants#BLOCK2_SHIFT} + {@link SparseConstants#BLOCK1_SHIFT}).
+         */
+         public void clearBlocks2(final RowSet blocks2ToClear,
+                                           final SoftRecycler<char[][]> recycler2) {
+            blocks2ToClear.forAllRowKeys(idx -> clearOneBlock_2(idx, recycler2));
+        }
+
+        /**
+         * Called by the {@link io.deephaven.engine.table.impl.sources.CharacterSparseArraySource} at the end of a cycle
+         * when blocks have been completely eliminated from the output rowset.  The input is not a row key in our address
+         * space, but rather an index for the block2 to clear (i.e. row key >> {@link SparseConstants#BLOCK2_SHIFT} + {@link SparseConstants#BLOCK1_SHIFT}).
+         */
+         public void clearBlocks1(final RowSet blocks1ToClear,
+                                           final SoftRecycler<Block2[]> recycler1) {
+            blocks1ToClear.forAllRowKeys(idx -> clearOneBlock_1(idx, recycler1));
+        }
+
+        /**
+         * Clear one block.
          *
          * @param block2Idx the block index to clear
          * @param recycler recycler for lowest level blocks
-         * @param recycler2 recycler for char[][] from Block2
-         * @param recycler1 recycler for block2 structures from Block1
-         * @param recycler0 recycler for Block1 structures from Block0
          */
-        public void clearBlock(final long block2Idx,
-                               final SoftRecycler<char[]> recycler,
-                               final SoftRecycler<char[][]> recycler2,
-                               final SoftRecycler<Block2[]> recycler1,
-                               final SoftRecycler<Block1[]> recycler0) {
+        private void clearOneLowestLevelBlock(final long block2Idx, final SoftRecycler<char[]> recycler) {
             final int block0 = (int) (block2Idx >> (BLOCK0_SHIFT - BLOCK2_SHIFT)) & BLOCK0_MASK;
             final int block1 = (int) (block2Idx >> (BLOCK1_SHIFT - BLOCK2_SHIFT)) & BLOCK1_MASK;
             final int block2 = (int) (block2Idx) & BLOCK2_MASK;
@@ -82,15 +104,39 @@ public final class CharOneOrN {
                 throw new IllegalStateException();
             }
 
-            final boolean noneLeft1 = blocks1.clearByIndex(block2, recycler, recycler2);
-            if (!noneLeft1) {
-                return;
+            blocks1.clearByIndex(block2, recycler);
+        }
+
+        /**
+         * Clear one block2 structure from a block1 structure.
+         *
+         * @param block1Idx the block index to clear
+         * @param recycler recycler for lowest level blocks
+         */
+        private void clearOneBlock_2(final long block1Idx, final SoftRecycler<char[][]> recycler) {
+            final int block0 = (int) (block1Idx >> (BLOCK0_SHIFT - BLOCK1_SHIFT)) & BLOCK0_MASK;
+            final int block1 = (int) (block1Idx) & BLOCK1_MASK;
+
+            final Block1 blocks0 = get(block0);
+            if (blocks0 == null) {
+                // we should not be asking to clear a block that does not actually exist
+                throw new IllegalStateException();
             }
 
-            final boolean noneLeft0 = blocks0.clearByIndex(block1, recycler1);
-            if (noneLeft0) {
-                clearByIndex(block0, recycler0);
-            }
+            blocks0.clearByIndex(block1, recycler);
+        }
+
+        /**
+         * Clear one block1 structure from a block0 structure.
+         *
+         * <p>The silly underscore in the name is to make replication not append a &lt;T&gt; type in the object case.</p>
+         *
+         * @param block0Idx the block index to clear
+         * @param recycler1 recycler for Block2[] arrays within the Block1 structure
+         */
+        private void clearOneBlock_1(final long block0Idx, final SoftRecycler<Block2[]> recycler1) {
+            final int block0 = (int) (block0Idx) & BLOCK0_MASK;
+            clearByIndex(block0, recycler1);
         }
 
         public char [] getInnermostBlockByKeyOrNull(long key) {
@@ -124,30 +170,28 @@ public final class CharOneOrN {
          * Clears the given block index, which must exist
          *
          * @param idx       the index to clear
-         * @param recycler0 the recycler for our array of Block1 structures if we are empty
-         * @return true if there are no more elements in this block
+         * @param recycler1 the recycler for the array of Block2 inside the Block1 structure we are clearing
          */
         @SuppressWarnings("UnusedReturnValue")
-        private boolean clearByIndex(final int idx, final SoftRecycler<Block1[]> recycler0) {
+        private void clearByIndex(final int idx, final SoftRecycler<Block2[]> recycler1) {
             Assert.neq(idx, "idx", HAVE_MORE_THAN_ONE, "HAVE_MORE_THAN_ONE");
             if (oneIndex == idx) {
+                oneValue.maybeRecycle(recycler1);
                 oneIndex = ONE_UNINITIALIZED;
                 oneValue = null;
-                return true;
+                return;
             }
             if (array == null || array[idx] == null) {
                 throw new IllegalStateException();
             }
+            array[idx].maybeRecycle(recycler1);
             array[idx] = null;
-            for (int ii = 0; ii < BLOCK0_SIZE; ++ii) {
-                if (array[ii] != null) {
-                    return false;
-                }
-            }
-            recycler0.returnItem(array);
+        }
+
+        public void onEmptyResult(final SoftRecycler<Block1[]> recycler0) {
+            maybeRecycle(recycler0);
             array = null;
             oneIndex = ONE_UNINITIALIZED;
-            return true;
         }
 
         public void set(int idx, Block1 value) {
@@ -263,29 +307,21 @@ public final class CharOneOrN {
          * Clears the given block index, which must exist
          *
          * @param idx       the index to clear
-         * @param recycler1 the recycler for this array of Blocks2 structures if we are empty
-         * @return true if there are no more elements in this block
+         * @param recycler2 the recycler for this array within a Block2 structure
          */
-        private boolean clearByIndex(final int idx, final SoftRecycler<Block2[]> recycler1) {
+        private void clearByIndex(final int idx, final SoftRecycler<char[][]> recycler2) {
             Assert.neq(idx, "idx", HAVE_MORE_THAN_ONE, "HAVE_MORE_THAN_ONE");
             if (oneIndex == idx) {
+                oneValue.maybeRecycle(recycler2);
                 oneValue = null;
                 oneIndex = ONE_UNINITIALIZED;
-                return true;
+                return;
             }
             if (array == null || array[idx] == null) {
                 throw new IllegalStateException();
             }
+            array[idx].maybeRecycle(recycler2);
             array[idx] = null;
-            for (int ii = 0; ii < BLOCK1_SIZE; ++ii) {
-                if (array[ii] != null) {
-                    return false;
-                }
-            }
-            recycler1.returnItem(array);
-            array = null;
-            oneIndex = ONE_UNINITIALIZED;
-            return true;
         }
 
         @TestUseOnly
@@ -379,18 +415,15 @@ public final class CharOneOrN {
          *
          * @param idx       the index to clear
          * @param recycler  the recycler for the block we are clearing
-         * @param recycler2 the recycler for the block of blocks
-         * @return true if there are no more elements in this block
          */
-        private boolean clearByIndex(final int idx,
-                                     final SoftRecycler<char[]> recycler,
-                                     final SoftRecycler<char[][]> recycler2) {
+        private void clearByIndex(final int idx,
+                                     final SoftRecycler<char[]> recycler) {
             Assert.neq(idx, "idx", HAVE_MORE_THAN_ONE, "HAVE_MORE_THAN_ONE");
             if (oneIndex == idx) {
                 recycler.returnItem(oneValue);
                 oneValue = null;
                 oneIndex = ONE_UNINITIALIZED;
-                return true;
+                return;
             }
             if (array == null || array[idx] == null){
                 // we should not be asking to clear a block that does not actually exist
@@ -398,14 +431,6 @@ public final class CharOneOrN {
             }
             recycler.returnItem(array[idx]);
             array[idx] = null;
-
-            for (int ii = 0; ii < BLOCK2_SIZE; ++ii) {
-                if (array[ii] != null) {
-                    return false;
-                }
-            }
-            recycler2.returnItem(array);
-            return true;
         }
 
         @TestUseOnly

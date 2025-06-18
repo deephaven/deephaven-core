@@ -152,6 +152,12 @@ public abstract class SparseArrayColumnSource<T>
      * The blocks to clear on the next terminal notification
      */
     RowSet blocksToClear;
+    RowSet blocks2ToClear;
+    RowSet blocks1ToClear;
+    /**
+     * If the overall result is empty, we can clear block0 in addition to the intermediate blocks.
+     */
+    Boolean emptyResult;
 
     SparseArrayColumnSource(Class<T> type, Class<?> componentType) {
         super(type, componentType);
@@ -200,12 +206,29 @@ public abstract class SparseArrayColumnSource<T>
         setNull(toRemove);
     }
 
-    public void clearBlocks(final RowSet blocksToClear) {
+    /**
+     * At the end of this cycle, clear the provided rowsets of blocks by releasing the blocks back to the recyclers.
+     *
+     * @param blocksToClear the lowest level blocks to clear
+     * @param removeBlocks2 Block2 structures to clear from the Block1 structures
+     * @param removeBlocks1 Block1 structures to clear from the Block0 structure
+     * @param empty if the resulting table is empty
+     */
+    public void clearBlocks(final RowSet blocksToClear,
+            final RowSet removeBlocks2,
+            final RowSet removeBlocks1,
+            final boolean empty) {
         if (this.blocksToClear != null) {
             throw new IllegalStateException("Cannot call blocksToClear multiple times on the same cycle!");
         }
-        // this is a list of blocks we have cleared;
+        Assert.eqNull(blocks2ToClear, "blocks2ToClear");
+        Assert.eqNull(blocks1ToClear, "blocks1ToClear");
+        Assert.eqNull(emptyResult, "emptyResult");
+
         this.blocksToClear = blocksToClear.copy();
+        this.blocks2ToClear = removeBlocks2.copy();
+        this.blocks1ToClear = removeBlocks1.copy();
+        this.emptyResult = empty;
     }
 
     public static <T> WritableColumnSource<T> getSparseMemoryColumnSource(Collection<T> data, Class<T> type) {

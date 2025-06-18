@@ -1687,13 +1687,14 @@ public class QueryTableSelectUpdateTest {
     @Test
     public void testReleaseBlocks() throws InterruptedException {
         final int blockSize = 2048;
+        final long stride = 1 << 20;
         final int totalCycles = 25000;
         // noinspection resource
         final TrackingWritableRowSet rowset = RowSetFactory.flat(blockSize).toTracking();
         final QueryTable source = TstUtils.testRefreshingTable(rowset);
 
         QueryScope.addParam("random", new Random(0));
-        final Table selected = source.select("A=random.nextInt()");
+        final Table selected = source.select("A=(char)(random.nextInt(65535))");
 
         final ControlledUpdateGraph cug = ExecutionContext.getContext().getUpdateGraph().cast();
 
@@ -1707,9 +1708,9 @@ public class QueryTableSelectUpdateTest {
             final int cycle = ii;
             cug.runWithinUnitTestCycle(() -> {
                 final WritableRowSet toAdd =
-                        RowSetFactory.fromRange((cycle + 1) * blockSize, (cycle + 2) * blockSize - 1);
+                        RowSetFactory.fromRange((cycle + 1) * stride, (cycle + 1) * stride + blockSize - 1);
                 final WritableRowSet toRemove =
-                        RowSetFactory.fromRange((cycle) * blockSize, (cycle + 1) * blockSize - 1);
+                        RowSetFactory.fromRange((cycle) * stride, (cycle * stride) + blockSize - 1);
                 rowset.update(toAdd, toRemove);
                 source.notifyListeners(toAdd, toRemove, RowSetFactory.empty());
             });
@@ -1739,7 +1740,7 @@ public class QueryTableSelectUpdateTest {
 
         cug.runWithinUnitTestCycle(() -> {
             final WritableRowSet toRemove =
-                    RowSetFactory.fromRange((totalCycles) * blockSize, (totalCycles + 1) * blockSize - 1);
+                    RowSetFactory.fromRange(totalCycles * stride, totalCycles * stride + blockSize - 1);
             rowset.remove(toRemove);
             source.notifyListeners(RowSetFactory.empty(), toRemove, RowSetFactory.empty());
         });
@@ -1758,10 +1759,12 @@ public class QueryTableSelectUpdateTest {
                 + "%), end=" + endHeap + "(" + endGrowth + "%)";
         System.out.println(msg);
 
-        // if we grew more than 10%, we've done something wrong
-        if (endHeap > middleHeap * 1.1) {
-            throw new RuntimeException("Unexpected Heap Growth: " + msg);
-        }
+        selected.getColumnSources().forEach(cs -> {
+            if (cs instanceof SparseArrayColumnSource) {
+                // we've deleted everything, so things should be zero
+                assertEquals(0, ((SparseArrayColumnSource<?>) cs).estimateSize());
+            }
+        });
     }
 
     @Test
