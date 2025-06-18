@@ -1077,22 +1077,15 @@ public class RegionedColumnSourceManager
         }
 
         public synchronized PushdownResult build() {
-            final long selectionSize = Stream.of(results)
-                    .map(PushdownResult::selection)
-                    .filter(RowSet::isNonempty)
-                    .mapToLong(RowSet::size)
-                    .sum();
+            long selectionSize = 0;
+            long matchSize = 0;
+            long maybeMatchSize = 0;
+            for (final PushdownResult result : results) {
+                selectionSize += result.selection().size();
+                matchSize += result.match().size();
+                maybeMatchSize += result.maybeMatch().size();
+            }
             Assert.eq(selection.size(), "selection.size()", selectionSize, "selectionSize");
-            final long matchSize = Stream.of(results)
-                    .map(PushdownResult::match)
-                    .filter(RowSet::isNonempty)
-                    .mapToLong(RowSet::size)
-                    .sum();
-            final long maybeMatchSize = Stream.of(results)
-                    .map(PushdownResult::maybeMatch)
-                    .filter(RowSet::isNonempty)
-                    .mapToLong(RowSet::size)
-                    .sum();
             if (matchSize == selectionSize) {
                 Assert.eqZero(maybeMatchSize, "maybeMatchSize");
                 return PushdownResult.match(selection.copy());

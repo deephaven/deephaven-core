@@ -185,6 +185,7 @@ abstract class AbstractFilterExecution {
                         resume.run();
                     };
 
+                    // TODO: iterateParallel needs to keep a copy of input if it wants to reference it.
                     // Filter this segment of the input rows.
                     doFilter(filter,
                             input, startOffSet, endOffset,
@@ -428,19 +429,28 @@ abstract class AbstractFilterExecution {
         }
 
         if (sf.pushdownResult != null) {
-            // Leverage push-down results to reduce the chunk filter input before the final filter.
-            final Consumer<WritableRowSet> localConsumer = (rows) -> {
-                onFilterComplete.accept(rows.union(sf.pushdownResult.match()));
-            };
-
-            // TODO: I'm a bit worried about this, not sure why we would drop rows from match?
-            sf.pushdownResult.match().retain(input);
-            sf.pushdownResult.maybeMatch().retain(input);
-
-            executeFinalFilter(sf.filter, sf.pushdownResult.maybeMatch(), localConsumer, filterNec);
+            try (final WritableRowSet maybeMatch = sf.pushdownResult.maybeMatch().copy()) {
+                maybeMatch.retain(input);
+                // Leverage push-down results to reduce the chunk filter input before the final filter.
+                executeFinalFilter(
+                        sf.filter,
+                        maybeMatch,
+                        (filteredMaybeMatch) -> {
+                            // union of match + filteredMaybeMatch
+                            final WritableRowSet union;
+                            try (filteredMaybeMatch) {
+                                union = sf.pushdownResult.match().copy();
+                                union.retain(input);
+                                union.insert(filteredMaybeMatch);
+                            }
+                            onFilterComplete.accept(union);
+                        },
+                        filterNec);
+            }
             return;
         }
         executeFinalFilter(sf.filter, input, onFilterComplete, filterNec);
+        // TODO: it looks like we are leaking sf / sf.pushdownResult?
     }
 
     /**

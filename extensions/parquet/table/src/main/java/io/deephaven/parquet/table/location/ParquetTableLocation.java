@@ -591,35 +591,35 @@ public class ParquetTableLocation extends AbstractTableLocation {
             columnIndices.add(resolvedColumn.columnIndex);
         }
 
-        final WritableRowSet mm;
+        final WritableRowSet maybeMatch;
         // Should we look at the metadata?
         if (shouldExecute(QueryTable.DISABLE_WHERE_PUSHDOWN_PARQUET_ROW_GROUP_METADATA,
                 PushdownResult.METADATA_STATS_COST, executedFilterCost, costCeiling)) {
             // Some range filter host a condition filter as the internal filter and we can't push that down.
             if (filter instanceof RangeFilter) {
                 if ((((RangeFilter) filter).getRealFilter() instanceof AbstractRangeFilter)) {
-                    mm = refineViaParquetStats((AbstractRangeFilter) ((RangeFilter) filter).getRealFilter(),
+                    maybeMatch = refineViaParquetStats((AbstractRangeFilter) ((RangeFilter) filter).getRealFilter(),
                             columnIndices, selection);
                 } else {
-                    mm = selection.copy();
+                    maybeMatch = selection.copy();
                 }
             } else if (filter instanceof MatchFilter) {
-                mm = refineViaParquetStats((MatchFilter) filter, columnIndices, selection);
+                maybeMatch = refineViaParquetStats((MatchFilter) filter, columnIndices, selection);
             } else {
-                mm = selection.copy();
+                maybeMatch = selection.copy();
             }
         } else {
-            mm = selection.copy();
+            maybeMatch = selection.copy();
         }
 
-        if (mm.isNonempty()) {
+        if (maybeMatch.isNonempty()) {
             // If not prohibited by the cost ceiling, continue to refine the pushdown results.
             if (shouldExecute(QueryTable.DISABLE_WHERE_PUSHDOWN_DATA_INDEX,
                     PushdownResult.IN_MEMORY_DATA_INDEX_COST, executedFilterCost, costCeiling)) {
                 final BasicDataIndex dataIndex =
                         hasCachedDataIndex(parquetColumnNames) ? getDataIndex(parquetColumnNames) : null;
                 if (dataIndex != null) {
-                    finishWithDataIndex(selection, filter, renameMap, dataIndex, mm, onComplete);
+                    finishWithDataIndex(selection, filter, renameMap, dataIndex, maybeMatch, onComplete);
                     return;
                 }
             }
@@ -630,13 +630,13 @@ public class ParquetTableLocation extends AbstractTableLocation {
                 final BasicDataIndex dataIndex =
                         hasDataIndex(parquetColumnNames) ? getDataIndex(parquetColumnNames) : null;
                 if (dataIndex != null) {
-                    finishWithDataIndex(selection, filter, renameMap, dataIndex, mm, onComplete);
+                    finishWithDataIndex(selection, filter, renameMap, dataIndex, maybeMatch, onComplete);
                     return;
                 }
             }
         }
 
-        onComplete.accept(PushdownResult.ofUnsafe(selection.copy(), RowSetFactory.empty(), mm));
+        onComplete.accept(PushdownResult.ofUnsafe(selection.copy(), RowSetFactory.empty(), maybeMatch));
     }
 
     /**
@@ -720,8 +720,12 @@ public class ParquetTableLocation extends AbstractTableLocation {
         return null;
     }
 
+    private interface OverlapsPredicate {
+        boolean overlaps(@NotNull final Object min, @NotNull final Object max);
+    }
+
     private WritableRowSet refineViaParquetStats(
-            final AbstractRangeFilter rf,
+            final OverlapsPredicate rf,
             final List<Integer> columnIndices,
             final RowSet maybeMatch) {
         final RowSetBuilderSequential newMaybeMatch = RowSetFactory.builderSequential();
@@ -745,27 +749,17 @@ public class ParquetTableLocation extends AbstractTableLocation {
     }
 
     private WritableRowSet refineViaParquetStats(
+            final AbstractRangeFilter rf,
+            final List<Integer> columnIndices,
+            final RowSet maybeMatch) {
+        return refineViaParquetStats(rf::overlaps, columnIndices, maybeMatch);
+    }
+
+    private WritableRowSet refineViaParquetStats(
             final MatchFilter mf,
             final List<Integer> columnIndices,
             final RowSet maybeMatch) {
-        final RowSetBuilderSequential newMaybeMatch = RowSetFactory.builderSequential();
-        // Only one column in a RangeFilter
-        final Integer columnIndex = columnIndices.get(0);
-        final List<BlockMetaData> blocks = parquetMetadata.getBlocks();
-        final boolean[] isIdentical = {true};
-        iterateRowGroupsAndRowSet(maybeMatch, (rgIdx, rs) -> {
-            final Pair<Object, Object> p = getMinMax(
-                    blocks.get(rgIdx).getColumns().get(columnIndex).getStatistics());
-            if (p == null || mf.overlaps(p.first, p.second)) {
-                // rs must stay as maybeMatch (we either don't have statistics to say otherwise, or know there is some
-                // amount overlap)
-                newMaybeMatch.appendRowSequence(rs);
-            } else {
-                // rs can be dropped from maybeMatch, we know it doesn't match
-                isIdentical[0] = false;
-            }
-        });
-        return isIdentical[0] ? maybeMatch.copy() : newMaybeMatch.build();
+        return refineViaParquetStats(mf::overlaps, columnIndices, maybeMatch);
     }
 
     /**
