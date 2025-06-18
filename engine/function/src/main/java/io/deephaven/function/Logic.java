@@ -3,12 +3,14 @@
 //
 package io.deephaven.function;
 
+import io.deephaven.util.annotations.UserInvocationPermitted;
 import io.deephaven.vector.ObjectVector;
 import io.deephaven.engine.primitive.iterator.*;
 
 /**
  * Logic functions.
  */
+@UserInvocationPermitted(sets = "function_library")
 public class Logic {
 
     /**

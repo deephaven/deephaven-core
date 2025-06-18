@@ -8,6 +8,7 @@
 package io.deephaven.vector;
 
 import io.deephaven.base.verify.Require;
+import io.deephaven.util.annotations.UserInvocationPermitted;
 import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfDouble;
 import io.deephaven.engine.primitive.value.iterator.ValueIteratorOfDouble;
 import io.deephaven.qst.type.DoubleType;
@@ -37,6 +38,7 @@ public interface DoubleVector extends Vector<DoubleVector>, Iterable<Double> {
      * @param index An offset into this DoubleVector
      * @return The element at the specified offset, or the {@link QueryConstants#NULL_DOUBLE null double}
      */
+    @UserInvocationPermitted(sets = {"vector"})
     double get(long index);
 
     @Override
@@ -54,6 +56,7 @@ public interface DoubleVector extends Vector<DoubleVector>, Iterable<Double> {
     @Override
     DoubleVector getDirect();
 
+    @UserInvocationPermitted(sets = {"vector"})
     @Override
     @FinalDefault
     default ValueIteratorOfDouble iterator() {
@@ -196,6 +199,7 @@ public interface DoubleVector extends Vector<DoubleVector>, Iterable<Double> {
      */
     abstract class Indirect implements DoubleVector {
 
+        @UserInvocationPermitted(sets = {"vector"})
         @Override
         public double[] toArray() {
             final int size = intSize("DoubleVector.toArray");
