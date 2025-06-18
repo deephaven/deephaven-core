@@ -405,7 +405,6 @@ public class LongSparseArraySource extends SparseArrayColumnSource<Long>
             blocks.onEmptyResult(recycler0);
         }
 
-        // blocksToClear.forAllRowKeys(block -> blocks.clearBlock(block, recycler, recycler2, recycler1, recycler0));
         blocksToClear.close();
         blocks2ToClear.close();
         blocks1ToClear.close();

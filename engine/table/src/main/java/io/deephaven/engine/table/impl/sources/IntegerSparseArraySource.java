@@ -397,7 +397,6 @@ public class IntegerSparseArraySource extends SparseArrayColumnSource<Integer>
             blocks.onEmptyResult(recycler0);
         }
 
-        // blocksToClear.forAllRowKeys(block -> blocks.clearBlock(block, recycler, recycler2, recycler1, recycler0));
         blocksToClear.close();
         blocks2ToClear.close();
         blocks1ToClear.close();
