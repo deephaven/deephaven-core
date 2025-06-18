@@ -12,6 +12,8 @@ dependencies {
     // For CountingInputStream
     implementation libs.guava
 
+    compileOnly libs.google.findbugs.jsr305
+
     compileOnly libs.jetbrains.annotations
 
     testImplementation libs.assertj
