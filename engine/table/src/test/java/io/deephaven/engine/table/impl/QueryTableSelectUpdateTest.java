@@ -1688,9 +1688,11 @@ public class QueryTableSelectUpdateTest {
     public void testReleaseBlocks() throws InterruptedException {
         final int blockSize = 2048;
         final long stride = 1 << 20;
+        final long secondSegment = 1L << 50;
         final int totalCycles = 25000;
         // noinspection resource
-        final TrackingWritableRowSet rowset = RowSetFactory.flat(blockSize).toTracking();
+        final TrackingWritableRowSet rowset = RowSetFactory.fromRange(0, blockSize - 1).union(
+                RowSetFactory.fromRange(secondSegment, secondSegment + blockSize - 1)).toTracking();
         final QueryTable source = TstUtils.testRefreshingTable(rowset);
 
         QueryScope.addParam("random", new Random(0));
@@ -1708,9 +1710,13 @@ public class QueryTableSelectUpdateTest {
             final int cycle = ii;
             cug.runWithinUnitTestCycle(() -> {
                 final WritableRowSet toAdd =
-                        RowSetFactory.fromRange((cycle + 1) * stride, (cycle + 1) * stride + blockSize - 1);
+                        RowSetFactory.fromRange((cycle + 1) * stride, (cycle + 1) * stride + blockSize - 1).union(
+                                RowSetFactory.fromRange(secondSegment + (cycle + 1) * stride,
+                                        secondSegment + (cycle + 1) * stride + blockSize - 1));
                 final WritableRowSet toRemove =
-                        RowSetFactory.fromRange((cycle) * stride, (cycle * stride) + blockSize - 1);
+                        RowSetFactory.fromRange(cycle * stride, (cycle * stride) + blockSize - 1).union(
+                                RowSetFactory.fromRange(secondSegment + cycle * stride,
+                                        secondSegment + cycle * stride + blockSize - 1));
                 rowset.update(toAdd, toRemove);
                 source.notifyListeners(toAdd, toRemove, RowSetFactory.empty());
             });
@@ -1740,7 +1746,9 @@ public class QueryTableSelectUpdateTest {
 
         cug.runWithinUnitTestCycle(() -> {
             final WritableRowSet toRemove =
-                    RowSetFactory.fromRange(totalCycles * stride, totalCycles * stride + blockSize - 1);
+                    RowSetFactory.fromRange(totalCycles * stride, totalCycles * stride + blockSize - 1).union(
+                            RowSetFactory.fromRange(secondSegment + totalCycles * stride,
+                                    secondSegment + totalCycles * stride + blockSize - 1));
             rowset.remove(toRemove);
             source.notifyListeners(RowSetFactory.empty(), toRemove, RowSetFactory.empty());
         });
@@ -1759,6 +1767,7 @@ public class QueryTableSelectUpdateTest {
                 + "%), end=" + endHeap + "(" + endGrowth + "%)";
         System.out.println(msg);
 
+        Assert.assertEquals(0, selected.size());
         selected.getColumnSources().forEach(cs -> {
             if (cs instanceof SparseArrayColumnSource) {
                 // we've deleted everything, so things should be zero
