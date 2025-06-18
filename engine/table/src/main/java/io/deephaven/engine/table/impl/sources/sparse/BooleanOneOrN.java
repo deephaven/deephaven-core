@@ -67,7 +67,7 @@ public final class BooleanOneOrN {
         /**
          * Called by the {@link io.deephaven.engine.table.impl.sources.BooleanSparseArraySource} at the end of a cycle
          * when blocks have been completely eliminated from the output rowset.  The input is not a row key in our address
-         * space, but rather an index for the block2 to clear (i.e. row key >> {@link SparseConstants#BLOCK2_SHIFT} + {@link SparseConstants#BLOCK1_SHIFT}).
+         * space, but rather an index for the block2 to clear (i.e. row key >> {@link SparseConstants#BLOCK1_SHIFT}).
          */
          public void clearBlocks2(final RowSet blocks2ToClear,
                                            final SoftRecycler<boolean[][]> recycler2) {
@@ -77,7 +77,7 @@ public final class BooleanOneOrN {
         /**
          * Called by the {@link io.deephaven.engine.table.impl.sources.BooleanSparseArraySource} at the end of a cycle
          * when blocks have been completely eliminated from the output rowset.  The input is not a row key in our address
-         * space, but rather an index for the block2 to clear (i.e. row key >> {@link SparseConstants#BLOCK2_SHIFT} + {@link SparseConstants#BLOCK1_SHIFT}).
+         * space, but rather an index for the block2 to clear (i.e. row key >> {@link SparseConstants#BLOCK0_SHIFT}).
          */
          public void clearBlocks1(final RowSet blocks1ToClear,
                                            final SoftRecycler<Block2[]> recycler1) {

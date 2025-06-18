@@ -1059,7 +1059,8 @@ public class DoubleSparseArraySource extends SparseArrayColumnSource<Double>
 
 
     @Override
-    public void clearBlocks(final RowSet blocksToClear, RowSet removeBlocks2, RowSet removeBlocks1, boolean empty) {
+    public void clearBlocks(final RowSet blocksToClear, final RowSet removeBlocks2, final RowSet removeBlocks1,
+            final boolean empty) {
         if (prevFlusher == null) {
             return;
         }
