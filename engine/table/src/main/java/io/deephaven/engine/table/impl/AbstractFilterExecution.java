@@ -158,6 +158,7 @@ abstract class AbstractFilterExecution {
         }
 
         final long inputSize = input.size();
+        final WritableRowSet inputCopy = input.copy();
 
         final int targetSegments = (int) Math.min(getTargetSegments(), (inputSize +
                 QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT - 1) / QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT);
@@ -177,7 +178,7 @@ abstract class AbstractFilterExecution {
 
                     final Consumer<WritableRowSet> onFilterComplete = (result) -> {
                         // Clean up the row sets created by the filter.
-                        try (final RowSet ignored = result) {
+                        try (result) {
                             synchronized (filterResult) {
                                 filterResult.insert(result);
                             }
@@ -186,11 +187,14 @@ abstract class AbstractFilterExecution {
                     };
 
                     // Filter this segment of the input rows.
-                    doFilter(filter,
-                            input, startOffSet, endOffset,
-                            onFilterComplete, nec);
-
-                }, () -> onComplete.accept(filterResult), onError);
+                    doFilter(filter, inputCopy, startOffSet, endOffset, onFilterComplete, nec);
+                },
+                () -> {
+                    try (inputCopy) {
+                        onComplete.accept(filterResult);
+                    }
+                },
+                onError);
     }
 
     public LogOutput append(LogOutput output) {
