@@ -7,7 +7,7 @@
 // @formatter:off
 package io.deephaven.engine.table.impl.sources;
 
-import io.deephaven.engine.context.ExecutionContext;
+// ColumnSource is used in the long class when replicated
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.DefaultGetContext;
 import io.deephaven.chunk.*;
@@ -23,6 +23,7 @@ import io.deephaven.engine.table.impl.sources.sparse.LongOneOrN;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.util.SoftRecycler;
 import gnu.trove.list.array.TLongArrayList;
+import io.deephaven.util.annotations.TestUseOnly;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 
@@ -284,6 +285,7 @@ public class DoubleSparseArraySource extends SparseArrayColumnSource<Double>
     }
 
     private void commitUpdates() {
+        maybeClearBlocks();
         blocksToFlush.sort();
 
         int destinationOffset = 0;
@@ -382,6 +384,26 @@ public class DoubleSparseArraySource extends SparseArrayColumnSource<Double>
         // and finally recycle the top level block of blocks of blocks of blocks
         localPrevBlocks.maybeRecycle(recycler0);
         localPrevInUse.maybeRecycle(inUse0Recycler);
+    }
+
+    private void maybeClearBlocks() {
+        if (blocksToClear == null) {
+            return;
+        }
+        blocks.clearLowestLevelBlocks(blocksToClear, recycler);
+        blocks.clearBlocks2(blocks2ToClear, recycler2);
+        blocks.clearBlocks1(blocks1ToClear, recycler1);
+        if (emptyResult) {
+            blocks.onEmptyResult(recycler0);
+        }
+
+        blocksToClear.close();
+        blocks2ToClear.close();
+        blocks1ToClear.close();
+        blocksToClear = null;
+        blocks2ToClear = null;
+        blocks1ToClear = null;
+        emptyResult = null;
     }
 
     /**
@@ -1033,4 +1055,21 @@ public class DoubleSparseArraySource extends SparseArrayColumnSource<Double>
 
     // region reinterpretation
     // endregion reinterpretation
+
+
+    @Override
+    public void clearBlocks(final RowSet blocksToClear, final RowSet removeBlocks2, final RowSet removeBlocks1,
+            final boolean empty) {
+        if (prevFlusher == null) {
+            return;
+        }
+        super.clearBlocks(blocksToClear, removeBlocks2, removeBlocks1, empty);
+        prevFlusher.maybeActivate();
+    }
+
+    @TestUseOnly
+    @Override
+    public long estimateSize() {
+        return blocks.estimateSize();
+    }
 }
