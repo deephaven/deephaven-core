@@ -11,16 +11,16 @@ import javax.annotation.Nullable;
 
 @Immutable
 @CopyableStyle
-abstract class MinMax {
+abstract class MinMax<T extends Comparable<T>> {
 
     @Nullable
-    abstract Object min();
+    abstract T min();
 
     @Nullable
-    abstract Object max();
+    abstract T max();
 
-    static ImmutableMinMax of(@Nullable Object min, @Nullable Object max) {
-        return ImmutableMinMax.builder()
+    static <T extends Comparable<T>> MinMax<T> of(@Nullable T min, @Nullable T max) {
+        return ImmutableMinMax.<T>builder()
                 .min(min)
                 .max(max)
                 .build();

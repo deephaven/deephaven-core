@@ -164,22 +164,22 @@ public class SingleSidedComparableRangeFilter extends AbstractRangeFilter {
             @Nullable final Object upper,
             final boolean lowerInclusive,
             final boolean upperInclusive) {
+        // Validate the input bounds.
+        final int c0 = CompareUtils.compare(lower, upper);
+        if (c0 > 0) {
+            throw new IllegalArgumentException("Lower bound must not be greater than upper bound, found: "
+                    + lower + " > " + upper);
+        } else if (c0 == 0 && (!lowerInclusive || !upperInclusive)) {
+            throw new IllegalArgumentException("Lower and upper bounds must be inclusive when equal, found: "
+                    + lower + " == " + upper);
+        }
+
         if (isGreaterThan) {
             final int c = CompareUtils.compare(pivot, upper);
             return c < 0 || (c == 0 && this.lowerInclusive);
         } else {
             final int c = CompareUtils.compare(lower, pivot);
             return c < 0 || (c == 0 && this.lowerInclusive);
-        }
-    }
-
-    @Override
-    public boolean contains(@Nullable final Object value) {
-        final int c = CompareUtils.compare(pivot, value);
-        if (isGreaterThan) {
-            return c < 0 || (c == 0 && this.lowerInclusive);
-        } else {
-            return c > 0 || (c == 0 && this.lowerInclusive);
         }
     }
 }

@@ -9,6 +9,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 
 import static io.deephaven.util.QueryConstants.*;
+import static org.junit.Assert.assertThrows;
 
 public class TestRangeFilterOverlap extends RefreshingTableTestCase {
 
@@ -93,11 +94,27 @@ public class TestRangeFilterOverlap extends RefreshingTableTestCase {
         f = new CharRangeFilter("A", 'b', 'd', true, false);
         assertFalse(f.containsNull());
 
+        f = new CharRangeFilter("A", NULL_CHAR, NULL_CHAR, true, true);
+        assertTrue(f.containsNull());
+        assertTrue(f.overlaps(null, null, true, true));
+
         f = new CharRangeFilter("A", 'b', 'd', true, true);
-        // (-INF,'a'] before filter
-        assertFalse(f.overlaps(null, 'a', true, true));
-        // Overlaps at 'b'
-        assertTrue(f.overlaps(null, 'b', true, true));
+        assertFalse(f.overlaps(null, 'a', true, true)); // before filter
+        assertTrue(f.overlaps(null, 'b', true, true)); // touches at lower bound
+
+        final CharRangeFilter finalF = f;
+        assertThrows(
+                "Expected IllegalArgumentException for upper bound less than lower bound",
+                IllegalArgumentException.class,
+                () -> finalF.overlaps('a', null, false, false));
+        assertThrows(
+                "Expected IllegalArgumentException for lower bound equal to upper bound with non-inclusive lower",
+                IllegalArgumentException.class,
+                () -> finalF.overlaps('a', 'a', false, true));
+        assertThrows(
+                "Expected IllegalArgumentException for lower bound equal to upper bound with non-inclusive upper",
+                IllegalArgumentException.class,
+                () -> finalF.overlaps('a', 'a', true, false));
     }
 
     public void testByteRangeFilterOverlap() {
@@ -181,11 +198,27 @@ public class TestRangeFilterOverlap extends RefreshingTableTestCase {
         f = new ByteRangeFilter("A", (byte) 2, (byte) 4, true, false);
         assertFalse(f.containsNull());
 
+        f = new ByteRangeFilter("A", NULL_BYTE, NULL_BYTE, true, true);
+        assertTrue(f.containsNull());
+        assertTrue(f.overlaps(null, null, true, true));
+
         f = new ByteRangeFilter("A", (byte) 2, (byte) 4, true, true);
-        // (-INF,1] before filter
-        assertFalse(f.overlaps(null, (byte) 1, true, true));
-        // Overlaps at 2
-        assertTrue(f.overlaps(null, (byte) 2, true, true));
+        assertFalse(f.overlaps(null, (byte) 1, true, true)); // before
+        assertTrue(f.overlaps(null, (byte) 2, true, true)); // touches lower bound
+
+        final ByteRangeFilter finalF = f;
+        assertThrows(
+                "Expected IllegalArgumentException for upper bound less than lower bound",
+                IllegalArgumentException.class,
+                () -> finalF.overlaps((byte) 2, null, false, false));
+        assertThrows(
+                "Expected IllegalArgumentException for lower bound equal to upper bound with non-inclusive lower",
+                IllegalArgumentException.class,
+                () -> finalF.overlaps((byte) 2, (byte) 2, false, true));
+        assertThrows(
+                "Expected IllegalArgumentException for lower bound equal to upper bound with non-inclusive upper",
+                IllegalArgumentException.class,
+                () -> finalF.overlaps((byte) 2, (byte) 2, true, false));
     }
 
     public void testShortRangeFilterOverlap() {
@@ -269,11 +302,27 @@ public class TestRangeFilterOverlap extends RefreshingTableTestCase {
         f = new ShortRangeFilter("A", (short) 2, (short) 4, true, false);
         assertFalse(f.containsNull());
 
+        f = new ShortRangeFilter("A", NULL_SHORT, NULL_SHORT, true, true);
+        assertTrue(f.containsNull());
+        assertTrue(f.overlaps(null, null, true, true));
+
         f = new ShortRangeFilter("A", (short) 2, (short) 4, true, true);
-        // (-INF,1] before filter
-        assertFalse(f.overlaps(null, (short) 1, true, true));
-        // Overlaps at 2
-        assertTrue(f.overlaps(null, (short) 2, true, true));
+        assertFalse(f.overlaps(null, (short) 1, true, true)); // before
+        assertTrue(f.overlaps(null, (short) 2, true, true)); // touches lower bound
+
+        final ShortRangeFilter finalF = f;
+        assertThrows(
+                "Expected IllegalArgumentException for upper bound less than lower bound",
+                IllegalArgumentException.class,
+                () -> finalF.overlaps((short) 2, null, false, false));
+        assertThrows(
+                "Expected IllegalArgumentException for lower bound equal to upper bound with non-inclusive lower",
+                IllegalArgumentException.class,
+                () -> finalF.overlaps((short) 2, (short) 2, false, true));
+        assertThrows(
+                "Expected IllegalArgumentException for lower bound equal to upper bound with non-inclusive upper",
+                IllegalArgumentException.class,
+                () -> finalF.overlaps((short) 2, (short) 2, true, false));
     }
 
     public void testIntRangeFilterOverlap() {
@@ -357,11 +406,27 @@ public class TestRangeFilterOverlap extends RefreshingTableTestCase {
         f = new IntRangeFilter("A", 2, 4, true, false);
         assertFalse(f.containsNull());
 
+        f = new IntRangeFilter("A", NULL_INT, NULL_INT, true, true);
+        assertTrue(f.containsNull());
+        assertTrue(f.overlaps(null, null, true, true));
+
         f = new IntRangeFilter("A", 2, 4, true, true);
-        // (-INF,1] before filter
-        assertFalse(f.overlaps(null, 1, true, true));
-        // Overlaps at 2
-        assertTrue(f.overlaps(null, 2, true, true));
+        assertFalse(f.overlaps(null, 1, true, true)); // before
+        assertTrue(f.overlaps(null, 2, true, true)); // touches lower bound
+
+        final IntRangeFilter finalF = f;
+        assertThrows(
+                "Expected IllegalArgumentException for upper bound less than lower bound",
+                IllegalArgumentException.class,
+                () -> finalF.overlaps(2, null, false, false));
+        assertThrows(
+                "Expected IllegalArgumentException for lower bound equal to upper bound with non-inclusive lower",
+                IllegalArgumentException.class,
+                () -> finalF.overlaps(2, 2, false, true));
+        assertThrows(
+                "Expected IllegalArgumentException for lower bound equal to upper bound with non-inclusive upper",
+                IllegalArgumentException.class,
+                () -> finalF.overlaps(2, 2, true, false));
     }
 
     public void testLongRangeFilterOverlap() {
@@ -445,11 +510,27 @@ public class TestRangeFilterOverlap extends RefreshingTableTestCase {
         f = new LongRangeFilter("A", 2L, 4L, true, false);
         assertFalse(f.containsNull());
 
+        f = new LongRangeFilter("A", NULL_LONG, NULL_LONG, true, true);
+        assertTrue(f.containsNull());
+        assertTrue(f.overlaps(null, null, true, true));
+
         f = new LongRangeFilter("A", 2L, 4L, true, true);
-        // (-INF,1] before filter
-        assertFalse(f.overlaps(null, 1L, true, true));
-        // Overlaps at 2
-        assertTrue(f.overlaps(null, 2L, true, true));
+        assertFalse(f.overlaps(null, 1L, true, true)); // before
+        assertTrue(f.overlaps(null, 2L, true, true)); // touches lower bound
+
+        final LongRangeFilter finalF = f;
+        assertThrows(
+                "Expected IllegalArgumentException for upper bound less than lower bound",
+                IllegalArgumentException.class,
+                () -> finalF.overlaps(2L, null, false, false));
+        assertThrows(
+                "Expected IllegalArgumentException for lower bound equal to upper bound with non-inclusive lower",
+                IllegalArgumentException.class,
+                () -> finalF.overlaps(2L, 2L, false, true));
+        assertThrows(
+                "Expected IllegalArgumentException for lower bound equal to upper bound with non-inclusive upper",
+                IllegalArgumentException.class,
+                () -> finalF.overlaps(2L, 2L, true, false));
     }
 
     public void testFloatRangeFilterOverlap() {
@@ -533,11 +614,27 @@ public class TestRangeFilterOverlap extends RefreshingTableTestCase {
         f = new FloatRangeFilter("A", 2.0f, 4.0f, true, false);
         assertFalse(f.containsNull());
 
+        f = new FloatRangeFilter("A", NULL_FLOAT, NULL_FLOAT, true, true);
+        assertTrue(f.containsNull());
+        assertTrue(f.overlaps(null, null, true, true));
+
         f = new FloatRangeFilter("A", 2.0f, 4.0f, true, true);
-        // (-INF,1] before filter
-        assertFalse(f.overlaps(null, 1.0f, true, true));
-        // Overlaps at 2
-        assertTrue(f.overlaps(null, 2.0f, true, true));
+        assertFalse(f.overlaps(null, 1.0f, true, true)); // before
+        assertTrue(f.overlaps(null, 2.0f, true, true)); // touches lower bound
+
+        final FloatRangeFilter finalF = f;
+        assertThrows(
+                "Expected IllegalArgumentException for upper bound less than lower bound",
+                IllegalArgumentException.class,
+                () -> finalF.overlaps(2.0f, null, false, false));
+        assertThrows(
+                "Expected IllegalArgumentException for lower bound equal to upper bound with non-inclusive lower",
+                IllegalArgumentException.class,
+                () -> finalF.overlaps(2.0f, 2.0f, false, true));
+        assertThrows(
+                "Expected IllegalArgumentException for lower bound equal to upper bound with non-inclusive upper",
+                IllegalArgumentException.class,
+                () -> finalF.overlaps(2.0f, 2.0f, true, false));
     }
 
     public void testDoubleRangeFilterOverlap() {
@@ -621,11 +718,27 @@ public class TestRangeFilterOverlap extends RefreshingTableTestCase {
         f = new DoubleRangeFilter("A", 2.0, 4.0, true, false);
         assertFalse(f.containsNull());
 
+        f = new DoubleRangeFilter("A", NULL_DOUBLE, NULL_DOUBLE, true, true);
+        assertTrue(f.containsNull());
+        assertTrue(f.overlaps(null, null, true, true));
+
         f = new DoubleRangeFilter("A", 2.0, 4.0, true, true);
-        // (-INF,1] before filter
-        assertFalse(f.overlaps(null, 1.0, true, true));
-        // Overlaps at 2
-        assertTrue(f.overlaps(null, 2.0, true, true));
+        assertFalse(f.overlaps(null, 1.0, true, true)); // before
+        assertTrue(f.overlaps(null, 2.0, true, true)); // touches lower bound
+
+        final DoubleRangeFilter finalF = f;
+        assertThrows(
+                "Expected IllegalArgumentException for upper bound less than lower bound",
+                IllegalArgumentException.class,
+                () -> finalF.overlaps(2.0, null, false, false));
+        assertThrows(
+                "Expected IllegalArgumentException for lower bound equal to upper bound with non-inclusive lower",
+                IllegalArgumentException.class,
+                () -> finalF.overlaps(2.0, 2.0, false, true));
+        assertThrows(
+                "Expected IllegalArgumentException for lower bound equal to upper bound with non-inclusive upper",
+                IllegalArgumentException.class,
+                () -> finalF.overlaps(2.0, 2.0, true, false));
     }
 
     public void testComparableRangeFilterOverlap() {
@@ -708,6 +821,28 @@ public class TestRangeFilterOverlap extends RefreshingTableTestCase {
         // Not containing null, normal
         f = new ComparableRangeFilter("A", BigDecimal.valueOf(2), BigDecimal.valueOf(4), true, false);
         assertFalse(f.containsNull());
+
+        f = new ComparableRangeFilter("A", null, null, true, true);
+        assertTrue(f.containsNull());
+        assertTrue(f.overlaps(null, null, true, true));
+
+        f = new ComparableRangeFilter("A", BigDecimal.valueOf(2), BigDecimal.valueOf(4), true, true);
+        assertFalse(f.overlaps(null, BigDecimal.valueOf(1), true, true)); // before
+        assertTrue(f.overlaps(null, BigDecimal.valueOf(2), true, true)); // touches lower bound
+
+        final ComparableRangeFilter finalF = f;
+        assertThrows(
+                "Expected IllegalArgumentException for upper bound less than lower bound",
+                IllegalArgumentException.class,
+                () -> finalF.overlaps(BigDecimal.valueOf(2), null, false, false));
+        assertThrows(
+                "Expected IllegalArgumentException for lower bound equal to upper bound with non-inclusive lower",
+                IllegalArgumentException.class,
+                () -> finalF.overlaps(BigDecimal.valueOf(2), BigDecimal.valueOf(2), false, true));
+        assertThrows(
+                "Expected IllegalArgumentException for lower bound equal to upper bound with non-inclusive upper",
+                IllegalArgumentException.class,
+                () -> finalF.overlaps(BigDecimal.valueOf(2), BigDecimal.valueOf(2), true, false));
     }
 
     public void testSingleSidedComparableRangeFilterOverlap() {
@@ -779,11 +914,27 @@ public class TestRangeFilterOverlap extends RefreshingTableTestCase {
         f = new SingleSidedComparableRangeFilter("A", BigDecimal.valueOf(2), false, false);
         assertTrue(f.containsNull());
 
+        f = new SingleSidedComparableRangeFilter("A", null, true, true);
+        assertTrue(f.containsNull());
+        assertTrue(f.overlaps(null, null, true, true));
+
         f = new SingleSidedComparableRangeFilter("A", BigDecimal.valueOf(2), true, true);
-        // (-INF,1] before filter
-        assertFalse(f.overlaps(null, BigDecimal.valueOf(1), true, true));
-        // Overlaps at 2
-        assertTrue(f.overlaps(null, BigDecimal.valueOf(2), true, true));
+        assertFalse(f.overlaps(null, BigDecimal.valueOf(1), true, true)); // before
+        assertTrue(f.overlaps(null, BigDecimal.valueOf(2), true, true)); // touches lower bound
+
+        final SingleSidedComparableRangeFilter finalF = f;
+        assertThrows(
+                "Expected IllegalArgumentException for upper bound less than lower bound",
+                IllegalArgumentException.class,
+                () -> finalF.overlaps(BigDecimal.valueOf(2), null, false, false));
+        assertThrows(
+                "Expected IllegalArgumentException for lower bound equal to upper bound with non-inclusive lower",
+                IllegalArgumentException.class,
+                () -> finalF.overlaps(BigDecimal.valueOf(2), BigDecimal.valueOf(2), false, true));
+        assertThrows(
+                "Expected IllegalArgumentException for lower bound equal to upper bound with non-inclusive upper",
+                IllegalArgumentException.class,
+                () -> finalF.overlaps(BigDecimal.valueOf(2), BigDecimal.valueOf(2), true, false));
     }
 
     public void testMismatchedDataTypes() {

@@ -725,7 +725,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
         iterateRowGroupsAndRowSet(result.maybeMatch(), (rgIdx, rs) -> {
             final Statistics<?> statistics = blocks.get(rgIdx).getColumns().get(columnIndex).getStatistics();
 
-            final Optional<MinMax> minMaxFromStatistics = MinMaxFromStatistics.get(statistics);
+            final Optional<MinMax<?>> minMaxFromStatistics = MinMaxFromStatistics.get(statistics);
             final long nullCount = getNullCount(statistics);
 
             if (minMaxFromStatistics.isEmpty() || nullCount < 0) {
@@ -735,7 +735,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
                 return;
             }
 
-            final MinMax minMax = minMaxFromStatistics.get();
+            final MinMax<?> minMax = minMaxFromStatistics.get();
             if (filter instanceof AbstractRangeFilter) {
                 final AbstractRangeFilter rf = (AbstractRangeFilter) filter;
                 if (rf.overlaps(minMax.min(), minMax.max()) || (filterIncludesNulls && nullCount > 0)) {

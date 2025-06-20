@@ -32,7 +32,13 @@ public class InstantNanosFromInt96Materializer extends LongMaterializerBase impl
         }
     };
 
+    private static final int BYTES_PER_VALUE = Long.BYTES + Integer.BYTES;
+
     public static long convertValue(final byte[] data) {
+        if (data.length != BYTES_PER_VALUE) {
+            throw new IllegalArgumentException("Invalid Int96 data length: " + data.length + ", expected: "
+                    + BYTES_PER_VALUE);
+        }
         final ByteBuffer resultBuffer = ByteBuffer.wrap(data);
         resultBuffer.order(java.nio.ByteOrder.LITTLE_ENDIAN);
         final long nanos = resultBuffer.getLong();

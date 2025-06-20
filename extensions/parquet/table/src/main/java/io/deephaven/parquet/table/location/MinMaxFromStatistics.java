@@ -31,12 +31,12 @@ abstract class MinMaxFromStatistics {
      * @return An {@link Optional} the min and max values from the statistics, or empty if statistics are missing or
      *         unsupported.
      */
-    static Optional<MinMax> get(@Nullable final Statistics<?> statistics) {
+    static Optional<MinMax<?>> get(@Nullable final Statistics<?> statistics) {
         if (statistics == null || statistics.isEmpty()) {
             return Optional.empty();
         }
         if (!statistics.hasNonNullValue()) {
-            return wrapMinMax(null, null);
+            return wrapMinMax((Integer) null, (Integer) null);
         }
         // First try from logical type, then from primitive type
         final LogicalTypeAnnotation logicalType = statistics.type().getLogicalTypeAnnotation();
@@ -45,11 +45,11 @@ abstract class MinMaxFromStatistics {
                 .or(() -> fromPrimitiveType(primitiveTypeName, statistics));
     }
 
-    private static Optional<MinMax> wrapMinMax(final Object min, final Object max) {
+    private static <T extends Comparable<T>> Optional<MinMax<?>> wrapMinMax(final T min, final T max) {
         return Optional.of(MinMax.of(min, max));
     }
 
-    private static Optional<MinMax> fromLogicalType(
+    private static Optional<MinMax<?>> fromLogicalType(
             @Nullable final LogicalTypeAnnotation logicalType,
             @NotNull final Statistics<?> statistics) {
         if (logicalType != null) {
@@ -58,17 +58,20 @@ abstract class MinMaxFromStatistics {
         return Optional.empty();
     }
 
-    private static Optional<MinMax> fromPrimitiveType(
+    private static Optional<MinMax<?>> fromPrimitiveType(
             @NotNull final PrimitiveType.PrimitiveTypeName typeName,
             @NotNull final Statistics<?> statistics) {
         switch (typeName) {
             case BOOLEAN:
+                return wrapMinMax((Boolean) statistics.genericGetMin(), (Boolean) statistics.genericGetMax());
             case INT32:
+                return wrapMinMax((Integer) statistics.genericGetMin(), (Integer) statistics.genericGetMax());
             case INT64:
+                return wrapMinMax((Long) statistics.genericGetMin(), (Long) statistics.genericGetMax());
             case DOUBLE:
+                return wrapMinMax((Double) statistics.genericGetMin(), (Double) statistics.genericGetMax());
             case FLOAT:
-                // For primitive types, we can use the generic min and max values directly
-                return wrapMinMax(statistics.genericGetMin(), statistics.genericGetMax());
+                return wrapMinMax((Float) statistics.genericGetMin(), (Float) statistics.genericGetMax());
             case INT96:
                 return wrapMinMax(
                         InstantNanosFromInt96Materializer.convertValue(statistics.getMinBytes()),
@@ -80,7 +83,7 @@ abstract class MinMaxFromStatistics {
         }
     }
 
-    private static class LogicalTypeVisitor implements LogicalTypeAnnotation.LogicalTypeAnnotationVisitor<MinMax> {
+    private static class LogicalTypeVisitor implements LogicalTypeAnnotation.LogicalTypeAnnotationVisitor<MinMax<?>> {
         final Statistics<?> statistics;
 
         LogicalTypeVisitor(@NotNull final Statistics<?> statistics) {
@@ -88,13 +91,13 @@ abstract class MinMaxFromStatistics {
         }
 
         @Override
-        public Optional<MinMax> visit(
+        public Optional<MinMax<?>> visit(
                 final LogicalTypeAnnotation.StringLogicalTypeAnnotation stringLogicalType) {
             return wrapMinMax(statistics.minAsString(), statistics.maxAsString());
         }
 
         @Override
-        public Optional<MinMax> visit(
+        public Optional<MinMax<?>> visit(
                 final LogicalTypeAnnotation.TimestampLogicalTypeAnnotation timestampLogicalType) {
             final long minFromStatistics = (Long) statistics.genericGetMin();
             final long maxFromStatistics = (Long) statistics.genericGetMax();
@@ -133,7 +136,7 @@ abstract class MinMaxFromStatistics {
         }
 
         @Override
-        public Optional<MinMax> visit(final LogicalTypeAnnotation.IntLogicalTypeAnnotation intLogicalType) {
+        public Optional<MinMax<?>> visit(final LogicalTypeAnnotation.IntLogicalTypeAnnotation intLogicalType) {
             final int minFromStatistics = (Integer) statistics.genericGetMin();
             final int maxFromStatistics = (Integer) statistics.genericGetMax();
             if (intLogicalType.isSigned()) {
@@ -143,14 +146,14 @@ abstract class MinMaxFromStatistics {
         }
 
         @Override
-        public Optional<MinMax> visit(final LogicalTypeAnnotation.DateLogicalTypeAnnotation dateLogicalType) {
+        public Optional<MinMax<?>> visit(final LogicalTypeAnnotation.DateLogicalTypeAnnotation dateLogicalType) {
             return wrapMinMax(
                     LocalDateMaterializer.convertValue((Integer) statistics.genericGetMin()),
                     LocalDateMaterializer.convertValue((Integer) statistics.genericGetMax()));
         }
 
         @Override
-        public Optional<MinMax> visit(final LogicalTypeAnnotation.TimeLogicalTypeAnnotation timeLogicalType) {
+        public Optional<MinMax<?>> visit(final LogicalTypeAnnotation.TimeLogicalTypeAnnotation timeLogicalType) {
             switch (timeLogicalType.getUnit()) {
                 case MILLIS:
                     return wrapMinMax(
@@ -170,7 +173,7 @@ abstract class MinMaxFromStatistics {
         }
 
         @Override
-        public Optional<MinMax> visit(
+        public Optional<MinMax<?>> visit(
                 final LogicalTypeAnnotation.DecimalLogicalTypeAnnotation decimalLogicalType) {
             // Read the min and max as string and convert them to BigDecimal
             // This is helpful because big decimals can be stored in various formats (int64, binary, etc.), so it's

@@ -13,7 +13,6 @@ import org.jetbrains.annotations.Nullable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Instant;
-import java.util.Objects;
 
 class CompareUtils {
     /**
@@ -26,10 +25,10 @@ class CompareUtils {
      */
     static int compare(@Nullable Object a, @Nullable Object b) {
         // Convert deephaven nulls to Java nulls.
-        if (Objects.nonNull(a) && Objects.equals(a, Basic.nullValueFor(a.getClass()))) {
+        if (Basic.isNull(a)) {
             a = null;
         }
-        if (Objects.nonNull(b) && Objects.equals(b, Basic.nullValueFor(b.getClass()))) {
+        if (Basic.isNull(b)) {
             b = null;
         }
 
