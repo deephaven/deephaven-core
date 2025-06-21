@@ -5,15 +5,13 @@ package io.deephaven.parquet.table.location;
 
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.SortColumn;
-import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.rowset.*;
-import io.deephaven.engine.table.BasicDataIndex;
-import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.BasePushdownFilterContext;
 import io.deephaven.engine.table.impl.PushdownFilterContext;
 import io.deephaven.engine.table.impl.PushdownResult;
 import io.deephaven.engine.table.impl.QueryTable;
@@ -40,19 +38,15 @@ import io.deephaven.parquet.table.metadata.SortColumnInfo;
 import io.deephaven.parquet.table.metadata.TableInfo;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.mutable.MutableLong;
-import io.deephaven.util.type.NumericTypeUtils;
 import org.apache.parquet.column.statistics.Statistics;
 import org.apache.parquet.format.RowGroup;
 import org.apache.parquet.hadoop.metadata.BlockMetaData;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
-import org.apache.parquet.schema.LogicalTypeAnnotation;
 import org.apache.parquet.schema.MessageType;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
-import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
@@ -65,7 +59,6 @@ import java.util.stream.IntStream;
 import static io.deephaven.parquet.base.ParquetFileReader.FILE_URI_SCHEME;
 import static io.deephaven.parquet.table.ParquetTableWriter.*;
 import static io.deephaven.parquet.table.ParquetTableWriter.GROUPING_END_POS_COLUMN_NAME;
-import static org.apache.parquet.schema.LogicalTypeAnnotation.stringType;
 
 public class ParquetTableLocation extends AbstractTableLocation {
 
@@ -390,7 +383,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
 
     // region Indexing
     /**
-     * Read a Data Index table from disk.
+     * Read a Data Index table from the disk.
      *
      * @param parentFileURI The path to the base table
      * @param indexFileMetaData Index file metadata
@@ -434,10 +427,13 @@ public class ParquetTableLocation extends AbstractTableLocation {
         }
     }
 
+    // endregion Indexing
+
+    // region Pushdown Filtering
+
     @Override
     public long estimatePushdownFilterCost(
             final WhereFilter filter,
-            final Map<String, String> renameMap,
             final RowSet selection,
             final RowSet fullSet,
             final boolean usePrev,
@@ -451,6 +447,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
 
         initialize();
 
+        final BasePushdownFilterContext ctx = (BasePushdownFilterContext) context;
         final long executedFilterCost = context.executedFilterCost();
 
         // Some range filters host a condition filter as the internal filter, and we can't push that down.
@@ -458,7 +455,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
                 filter instanceof RangeFilter && ((RangeFilter) filter).getRealFilter() instanceof AbstractRangeFilter;
         final boolean isMatchFilter = filter instanceof MatchFilter;
 
-        final Optional<List<ResolvedColumnInfo>> maybeResolvedColumns = resolveColumns(filter, renameMap);
+        final Optional<List<ResolvedColumnInfo>> maybeResolvedColumns = resolveColumns(filter, ctx.renameMap());
         if (maybeResolvedColumns.isEmpty()) {
             // One or more columns could not be resolved, so no benefit to pushing down.
             return Long.MAX_VALUE;
@@ -508,6 +505,33 @@ public class ParquetTableLocation extends AbstractTableLocation {
     }
 
     /**
+     * Checks if the column is supported for pushdown filtering.
+     */
+    private boolean isSupportedForPushdown(
+            @NotNull final String colNameFromDef,
+            @NotNull final List<String> columnPath) {
+        // Only flat columns are supported for push-down
+        if (columnPath.size() != 1) {
+            return false;
+        }
+
+        // Should not have a codec defined in the instructions or footer metadata
+        final String columnNameInSchema = columnPath.get(0);
+        final String codecFromInstructions = readInstructions.getCodecName(colNameFromDef);
+        final ColumnTypeInfo columnTypeInfo = getColumnTypes().get(columnNameInSchema);
+        final Object codec = codecFromInstructions != null ? codecFromInstructions
+                : columnTypeInfo == null ? null : columnTypeInfo.codec().orElse(null);
+        if (codec != null) {
+            return false;
+        }
+
+        // Should not have a special type defined in the instructions or footer metadata
+        final ColumnTypeInfo.SpecialType specialType =
+                columnTypeInfo == null ? null : columnTypeInfo.specialType().orElse(null);
+        return specialType == null;
+    }
+
+    /**
      * Returns the index of {@code columnName} in {@code parquetColumnPaths}, or {@link OptionalInt#empty()} if the
      * column is absent. This index is used to find the statistics for a column when pushing down filters.
      */
@@ -527,7 +551,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
      * Attempts to resolve all columns referenced by {@code filter} against the Parquet schema.
      *
      * @param filter The filter containing the columns to resolve
-     * @param renameMap A map of column names to their renamed versions
+     * @param renameMap A map of column names to their renamed versions (if applicable)
      * @return {@code Optional.empty()} if <b>any</b> column cannot be resolved, otherwise an {@code Optional}
      *         containing the fully resolved list.
      */
@@ -541,11 +565,13 @@ public class ParquetTableLocation extends AbstractTableLocation {
             final String colNameFromDef = renameMap.getOrDefault(colNameFromFilter, colNameFromFilter);
             final String parquetColName = readInstructions.getParquetColumnNameFromColumnNameOrDefault(colNameFromDef);
             final List<String> columnPath = getColumnPath(colNameFromDef, parquetColName);
-            // Only flat columns are supported for push-down
-            if (columnPath.size() != 1) {
+            if (!isSupportedForPushdown(colNameFromDef, columnPath)) {
                 return Optional.empty();
             }
-            final OptionalInt columnIndex = findColumnIndex(columnPath.get(0), pathsFromSchema);
+
+            // Assuming a non-nested column, the first element of the column path is the column name
+            final String columnNameFromSchema = columnPath.get(0);
+            final OptionalInt columnIndex = findColumnIndex(columnNameFromSchema, pathsFromSchema);
             if (columnIndex.isEmpty()) {
                 // Column not found in the schema
                 return Optional.empty();
@@ -558,7 +584,6 @@ public class ParquetTableLocation extends AbstractTableLocation {
     @Override
     public void pushdownFilter(
             final WhereFilter filter,
-            final Map<String, String> renameMap,
             final RowSet selection,
             final RowSet fullSet,
             final boolean usePrev,
@@ -575,10 +600,18 @@ public class ParquetTableLocation extends AbstractTableLocation {
 
         initialize();
 
+        final BasePushdownFilterContext ctx = (BasePushdownFilterContext) context;
+        final long executedFilterCost = context.executedFilterCost();
+
+        // Some range filters host a condition filter as the internal filter, and we can't push that down.
+        final boolean isRangeFilter =
+                filter instanceof RangeFilter && ((RangeFilter) filter).getRealFilter() instanceof AbstractRangeFilter;
+        final boolean isMatchFilter = filter instanceof MatchFilter;
+
         // Initialize the pushdown result with the selection rowset as "maybe" rows
         PushdownResult result = PushdownResult.of(RowSetFactory.empty(), selection.copy());
 
-        final long executedFilterCost = context.executedFilterCost();
+        final Map<String, String> renameMap = ctx.renameMap();
         final Optional<List<ResolvedColumnInfo>> maybeResolvedColumns = resolveColumns(filter, renameMap);
         if (maybeResolvedColumns.isEmpty()) {
             // One or more columns could not be resolved, so we return all rows as "maybe" rows.
@@ -600,28 +633,20 @@ public class ParquetTableLocation extends AbstractTableLocation {
 
         // Should we look at the metadata?
         if (shouldExecute(QueryTable.DISABLE_WHERE_PUSHDOWN_PARQUET_ROW_GROUP_METADATA,
-                PushdownResult.METADATA_STATS_COST, executedFilterCost, costCeiling)) {
-            // Some range filters host a condition filter as the internal filter, and we can't push that down.
-            if (filter instanceof RangeFilter
-                    && ((RangeFilter) filter).getRealFilter() instanceof AbstractRangeFilter) {
-                try (final PushdownResult ignored = result) {
-                    result = pushdownRangeFilter((AbstractRangeFilter) ((RangeFilter) filter).getRealFilter(),
-                            columnIndices, result);
-                }
-            } else if (filter instanceof MatchFilter) {
-                try (final PushdownResult ignored = result) {
-                    result = pushdownMatchFilter((MatchFilter) filter, columnIndices, result);
-                }
+                PushdownResult.METADATA_STATS_COST, executedFilterCost, costCeiling)
+                && (isMatchFilter || isRangeFilter)) {
+            try (final PushdownResult ignored = result) {
+                result = pushdownRowGroupMetadata(isRangeFilter ? ((RangeFilter) filter).getRealFilter() : filter,
+                        columnIndices, result);
             }
-        }
-        if (result.maybeMatch().isEmpty()) {
-            // No maybe rows remaining, so no reason to continue filtering.
-            onComplete.accept(result);
-            return;
+            if (result.maybeMatch().isEmpty()) {
+                // No maybe rows remaining, so no reason to continue filtering.
+                onComplete.accept(result);
+                return;
+            }
         }
 
         // If not prohibited by the cost ceiling, continue to refine the pushdown results.
-
         if (shouldExecute(QueryTable.DISABLE_WHERE_PUSHDOWN_DATA_INDEX,
                 PushdownResult.IN_MEMORY_DATA_INDEX_COST, executedFilterCost, costCeiling)) {
             final BasicDataIndex dataIndex =
@@ -692,90 +717,63 @@ public class ParquetTableLocation extends AbstractTableLocation {
     }
 
     /**
-     * Get the min and max values from the statistics. Currently can convert basic numerics, string and BigDecimal /
-     * BigInteger values.
+     * Get the count of null values from the statistics.
      *
      * @param statistics The statistics to analyze
-     * @return The min and max values from the statistics or null if cannot be converted.
+     * @return The number of null values contained in the statistics, or -1 if the statistics do not contain the count
      */
-    private Pair<Object, Object> getMinMax(final Statistics<?> statistics) {
-        if (statistics == null || statistics.isEmpty()) {
-            return null;
+    private static long getNullCount(final Statistics<?> statistics) {
+        if (statistics == null || statistics.isEmpty() || !statistics.isNumNullsSet()) {
+            return -1L;
         }
-        // Min/Max are guaranteed to be the same type, only testing min.
-        final Class<?> clazz = statistics.genericGetMin().getClass();
-
-        // Numeric values need no conversion
-        if (NumericTypeUtils.isIntegralOrChar(clazz) || NumericTypeUtils.isFloat(clazz)) {
-            return new Pair<>(statistics.genericGetMin(), statistics.genericGetMax());
-        }
-
-        if (statistics.type().getLogicalTypeAnnotation() == stringType()) {
-            return new Pair<>(statistics.minAsString(), statistics.maxAsString());
-        }
-
-        if (statistics.type()
-                .getLogicalTypeAnnotation() instanceof LogicalTypeAnnotation.DecimalLogicalTypeAnnotation) {
-            final int scale = ((LogicalTypeAnnotation.DecimalLogicalTypeAnnotation) statistics.type()
-                    .getLogicalTypeAnnotation()).getScale();
-            if (scale == 0) {
-                // Return the min and max values as BigInteger
-                return new Pair<>(new BigInteger(statistics.getMinBytes()), new BigInteger(statistics.getMaxBytes()));
-            } else {
-                // We need to convert the min and max values to BigDecimal
-                return new Pair<>(new BigDecimal(new BigInteger(statistics.getMinBytes()), scale),
-                        new BigDecimal(new BigInteger(statistics.getMaxBytes()), scale));
-            }
-        }
-        return null;
+        return statistics.getNumNulls();
     }
 
     /**
-     * Apply the range filter to the row groups and return the result.
+     * Apply the filter to the row group metadata and return the result.
      */
     @NotNull
-    private PushdownResult pushdownRangeFilter(
-            final AbstractRangeFilter rf,
+    private PushdownResult pushdownRowGroupMetadata(
+            final WhereFilter filter,
             final List<Integer> columnIndices,
             final PushdownResult result) {
         final RowSetBuilderSequential maybeBuilder = RowSetFactory.builderSequential();
         final MutableLong maybeCount = new MutableLong(0);
 
-        // Only one column in a RangeFilter
+        // Only one column in these filters
         final Integer columnIndex = columnIndices.get(0);
+
+        final boolean filterIncludesNulls =
+                (filter instanceof AbstractRangeFilter && ((AbstractRangeFilter) filter).containsNull())
+                        || (filter instanceof MatchFilter && ((MatchFilter) filter).containsNull());
+
         final List<BlockMetaData> blocks = parquetMetadata.getBlocks();
         iterateRowGroupsAndRowSet(result.maybeMatch(), (rgIdx, rs) -> {
-            final Pair<Object, Object> p = getMinMax(
-                    blocks.get(rgIdx).getColumns().get(columnIndex).getStatistics());
+            final Statistics<?> statistics = blocks.get(rgIdx).getColumns().get(columnIndex).getStatistics();
 
-            if (p == null || rf.overlaps(p.first, p.second)) {
+            final Optional<MinMax<?>> minMaxFromStatistics = MinMaxFromStatistics.get(statistics);
+            final long nullCount = getNullCount(statistics);
+
+            if (minMaxFromStatistics.isEmpty() || nullCount < 0) {
+                // No statistics, so we can't filter anything.
                 maybeBuilder.appendRowSequence(rs);
                 maybeCount.add(rs.size());
+                return;
             }
-        });
-        return PushdownResult.of(result.match().copy(),
-                maybeCount.get() == result.maybeMatch().size() ? result.maybeMatch().copy() : maybeBuilder.build());
-    }
 
-    /**
-     * Apply the match filter to the row groups and return the result.
-     */
-    @NotNull
-    private PushdownResult pushdownMatchFilter(
-            final MatchFilter mf,
-            final List<Integer> columnIndices,
-            final PushdownResult result) {
-        final RowSetBuilderSequential maybeBuilder = RowSetFactory.builderSequential();
-        final MutableLong maybeCount = new MutableLong(0);
+            final MinMax<?> minMax = minMaxFromStatistics.get();
+            if (filter instanceof AbstractRangeFilter) {
+                final AbstractRangeFilter rf = (AbstractRangeFilter) filter;
+                if (rf.overlaps(minMax.min(), minMax.max()) || (filterIncludesNulls && nullCount > 0)) {
+                    maybeBuilder.appendRowSequence(rs);
+                    maybeCount.add(rs.size());
+                }
+                return;
+            }
 
-        // Only one column in a RangeFilter
-        final Integer columnIndex = columnIndices.get(0);
-
-        iterateRowGroupsAndRowSet(result.maybeMatch(), (rgIdx, rs) -> {
-            final Pair<Object, Object> p = getMinMax(
-                    parquetMetadata.getBlocks().get(rgIdx).getColumns().get(columnIndex).getStatistics());
-
-            if (p == null || mf.overlaps(p.first, p.second)) {
+            // Assuming the filter is a MatchFilter
+            final MatchFilter mf = (MatchFilter) filter;
+            if (mf.overlaps(minMax.min(), minMax.max()) || (filterIncludesNulls && nullCount > 0)) {
                 maybeBuilder.appendRowSequence(rs);
                 maybeCount.add(rs.size());
             }
@@ -812,18 +810,23 @@ public class ParquetTableLocation extends AbstractTableLocation {
 
                 try (final CloseableIterator<RowSet> it =
                         ColumnVectors.ofObject(filteredTable, dataIndex.rowSetColumnName(), RowSet.class).iterator()) {
-                    it.forEachRemaining(matchingBuilder::addRowSet);
+                    it.forEachRemaining(rowSet -> {
+                        try (final RowSet matching = rowSet.intersect(result.maybeMatch())) {
+                            matchingBuilder.addRowSet(matching);
+                        }
+                    });
                 }
             } catch (final Exception e) {
                 // Exception occurs here if we have a data type mismatch between the index and the filter.
                 // Just swallow the exception and declare all the rows as maybe matches.
-                return PushdownResult.of(RowSetFactory.empty(), result.maybeMatch().copy());
+                return PushdownResult.of(result.match().copy(), result.maybeMatch().copy());
             }
         }
         // Retain only the maybe rows and add the previously found matches.
         final WritableRowSet matching = matchingBuilder.build();
-        matching.retain(result.maybeMatch());
         matching.insert(result.match());
         return PushdownResult.of(matching, RowSetFactory.empty());
     }
+
+    // endregion Pushdown Filtering
 }

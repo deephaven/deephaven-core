@@ -14,6 +14,7 @@ import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.util.annotations.TestUseOnly;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 public class ComparableRangeFilter extends AbstractRangeFilter {
     private final Comparable<?> upper;
@@ -218,10 +219,19 @@ public class ComparableRangeFilter extends AbstractRangeFilter {
 
     @Override
     public boolean overlaps(
-            @NotNull final Object lower,
-            @NotNull final Object upper,
+            @Nullable final Object lower,
+            @Nullable final Object upper,
             final boolean lowerInclusive,
             final boolean upperInclusive) {
+        // Validate the input bounds.
+        final int c0 = CompareUtils.compare(lower, upper);
+        if (c0 > 0) {
+            throw new IllegalArgumentException("Lower bound must not be greater than upper bound, found: "
+                    + lower + " > " + upper);
+        } else if (c0 == 0 && (!lowerInclusive || !upperInclusive)) {
+            throw new IllegalArgumentException("Lower and upper bounds must be inclusive when equal, found: "
+                    + lower + " == " + upper);
+        }
 
         final int c1 = CompareUtils.compare(this.lower, upper);
         if (c1 > 0) {
@@ -235,19 +245,5 @@ public class ComparableRangeFilter extends AbstractRangeFilter {
         return (c1 < 0 && c2 < 0)
                 || (c1 == 0 && this.lowerInclusive && upperInclusive)
                 || (c2 == 0 && lowerInclusive && this.upperInclusive);
-    }
-
-    @Override
-    public boolean contains(@NotNull final Object value) {
-        final int c1 = CompareUtils.compare(this.lower, value);
-        if (c1 > 0) {
-            return false; // this.lower > value, no overlap possible.
-        }
-        final int c2 = CompareUtils.compare(value, this.upper);
-        if (c2 > 0) {
-            return false; // value > this.upper, no overlap possible.
-        }
-        // There is no overlap inside the ranges, test the edges.
-        return (c1 < 0 && c2 < 0) || (c1 == 0 && this.lowerInclusive) || (c2 == 0 && this.upperInclusive);
     }
 }

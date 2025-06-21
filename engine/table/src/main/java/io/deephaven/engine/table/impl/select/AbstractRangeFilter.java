@@ -11,6 +11,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.rowset.RowSet;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.math.BigDecimal;
 import java.util.Collections;
@@ -117,16 +118,20 @@ public abstract class AbstractRangeFilter extends WhereFilterImpl implements Exp
     /**
      * Returns true if the range filter overlaps with the given range. This function is intended to be accurate rather
      * than fast and is not recommended for performance-critical value comparison.
+     * <p>
+     * Note that {@code null} is considered as the smallest value, smaller than all non-null values.
      *
      * @param lower the lower value bound of the range
      * @param upper the upper value bound of the range
      * @param lowerInclusive whether the lower bound is inclusive
      * @param upperInclusive whether the upper bound is inclusive
      * @return {@code true} if the range filter overlaps with the given range, {@code false} otherwise
+     * @throws IllegalArgumentException if the lower bound is greater than the upper bound, or if the bounds are equal
+     *         and not both inclusive
      */
     public abstract boolean overlaps(
-            @NotNull final Object lower,
-            @NotNull final Object upper,
+            @Nullable final Object lower,
+            @Nullable final Object upper,
             final boolean lowerInclusive,
             final boolean upperInclusive);
 
@@ -134,21 +139,38 @@ public abstract class AbstractRangeFilter extends WhereFilterImpl implements Exp
      * Returns true if the range filter overlaps with the given range (assumes the provided min/max values are
      * inclusive). This function is intended to be accurate rather than fast and is not recommended for
      * performance-critical value comparison.
-     * 
+     * <p>
+     * Note that {@code null} is considered as the smallest value, smaller than all non-null values.
+     *
      * @param min the minimum value in the given range
      * @param max the maximum value in the given range
      * @return {@code true} if the range filter overlaps with the given range, {@code false} otherwise
+     * @throws IllegalArgumentException if the lower bound is greater than the upper bound
      */
-    public boolean overlaps(@NotNull final Object min, @NotNull final Object max) {
+    public boolean overlaps(@Nullable final Object min, @Nullable final Object max) {
         return overlaps(min, max, true, true);
     }
 
     /**
      * Returns true if the given value is found within the range filter. This function is intended to be accurate rather
      * than fast and is not recommended for performance-critical value comparison.
+     * <p>
+     * Note that {@code null} is considered as the smallest value, smaller than all non-null values.
      *
      * @param value the value to check
      * @return {@code true} if the range filter matches the given value, {@code false} otherwise
      */
-    public abstract boolean contains(@NotNull final Object value);
+    public boolean contains(@Nullable final Object value) {
+        return overlaps(value, value, true, true);
+    }
+
+    /**
+     * Returns true if {@code null} is within the range filter. This function is intended to be accurate rather than
+     * fast and is not recommended for performance-critical value comparison.
+     *
+     * @return {@code true} if the range filter includes {@code null}, {@code false} otherwise
+     */
+    public boolean containsNull() {
+        return contains(null);
+    }
 }
