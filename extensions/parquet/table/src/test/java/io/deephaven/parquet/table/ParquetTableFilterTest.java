@@ -8,10 +8,19 @@ import io.deephaven.base.FileUtils;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.BasePushdownFilterContext;
+import io.deephaven.engine.table.impl.PushdownFilterContext;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
+import io.deephaven.engine.table.impl.locations.impl.StandaloneTableKey;
+import io.deephaven.engine.table.impl.select.WhereFilter;
+import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.parquet.table.location.ParquetColumnResolverMap;
+import io.deephaven.parquet.table.location.ParquetTableLocation;
+import io.deephaven.parquet.table.location.ParquetTableLocationKey;
+import io.deephaven.stringset.ArrayStringSet;
+import io.deephaven.stringset.StringSet;
 import io.deephaven.test.types.OutOfBandTest;
 import org.jetbrains.annotations.NotNull;
 import org.junit.*;
@@ -24,6 +33,8 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.util.*;
 
+import static io.deephaven.base.FileUtils.convertToURI;
+import static io.deephaven.engine.table.impl.select.WhereFilterFactory.getExpression;
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
 import static io.deephaven.parquet.table.ParquetTools.readTable;
 import static io.deephaven.parquet.table.ParquetTools.writeTable;
@@ -998,5 +1009,71 @@ public final class ParquetTableFilterTest {
 
         filterAndVerifyResults(diskTable, memTable, "Longs != null");
         filterAndVerifyResultsAllowEmpty(diskTable, memTable, "Longs == null");
+    }
+
+    private static final PushdownFilterContext TEST_PUSHDOWN_FILTER_CONTEXT = new BasePushdownFilterContext() {
+        @Override
+        public Map<String, String> renameMap() {
+            return Map.of();
+        }
+    };
+
+    @Test
+    public void unsupportedColumnTypesPushdownTest() {
+        final String dest = Path.of(rootFile.getPath(), "unsupportedColumnTypesPushdown.parquet").toString();
+
+        // Array column
+        {
+            final Table source = TableTools.emptyTable(1_000).update(
+                    "ArrayCol = ii % 2 == 0 ? null : new long[] {ii + 1}");
+            assertUnsupportedPushdown(source, "ArrayCol != null", dest, EMPTY);
+        }
+
+        // StringSet column
+        {
+            ExecutionContext.getContext().getQueryLibrary().importClass(ArrayStringSet.class);
+            ExecutionContext.getContext().getQueryLibrary().importClass(StringSet.class);
+            final Table source = TableTools.emptyTable(1_000).update(
+                    "StringSetCol = (StringSet) new ArrayStringSet(\"Hello\")");
+            assertUnsupportedPushdown(source, "StringSetCol != null", dest, EMPTY);
+        }
+
+        // Custom codec
+        {
+            final Table source = TableTools.newTable(
+                    new ColumnHolder<>("Decimals", BigDecimal.class, null, false,
+                            BigDecimal.valueOf(123_423_367_532L), null, BigDecimal.valueOf(422_123_132_234L)));
+            final ParquetInstructions writeInstructions = ParquetInstructions.builder()
+                    .addColumnCodec("Decimals",
+                            "io.deephaven.util.codec.BigDecimalCodec",
+                            "20,1,allowrounding")
+                    .build();
+            assertUnsupportedPushdown(source, "Decimals != null", dest, writeInstructions);
+        }
+    }
+
+    private static void assertUnsupportedPushdown(
+            final Table source,
+            final String filterExpr,
+            final String destPath,
+            final ParquetInstructions writeInstructions) {
+        writeTable(source, destPath, writeInstructions);
+
+        final ParquetTableLocation location = new ParquetTableLocation(
+                StandaloneTableKey.getInstance(),
+                new ParquetTableLocationKey(
+                        convertToURI(destPath, false),
+                        0, Map.of(), EMPTY),
+                EMPTY);
+        final WhereFilter filter = getExpression(filterExpr);
+        filter.init(source.getDefinition());
+
+        Assert.assertEquals(Long.MAX_VALUE,
+                location.estimatePushdownFilterCost(
+                        filter,
+                        source.getRowSet(),
+                        source.getRowSet(),
+                        false,
+                        TEST_PUSHDOWN_FILTER_CONTEXT));
     }
 }

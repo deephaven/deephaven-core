@@ -18,11 +18,13 @@ import org.apache.parquet.schema.LogicalTypeAnnotation;
 import org.apache.parquet.schema.PrimitiveType;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.VisibleForTesting;
 
 import java.math.BigDecimal;
 import java.util.Optional;
 
-abstract class MinMaxFromStatistics {
+@VisibleForTesting
+public abstract class MinMaxFromStatistics {
 
     /**
      * Get the min and max values from the statistics.
@@ -31,8 +33,10 @@ abstract class MinMaxFromStatistics {
      * @return An {@link Optional} the min and max values from the statistics, or empty if statistics are missing or
      *         unsupported.
      */
-    static Optional<MinMax<?>> get(@Nullable final Statistics<?> statistics) {
-        if (statistics == null || statistics.isEmpty()) {
+    public static Optional<MinMax<?>> get(@Nullable final Statistics<?> statistics) {
+        if (statistics == null ||
+                (!statistics.hasNonNullValue() &&
+                        (!statistics.isNumNullsSet() || statistics.getNumNulls() == 0))) {
             return Optional.empty();
         }
         if (!statistics.hasNonNullValue()) {

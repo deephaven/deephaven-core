@@ -957,21 +957,6 @@ public class RegionedColumnSourceManager
     }
 
     /**
-     * Get (or create) a map from column name to column definition.
-     */
-    private Map<String, ColumnDefinition<?>> columnNameToDefinition() {
-        if (columnNameToDefinition == null) {
-            synchronized (this) {
-                if (columnNameToDefinition == null) {
-                    columnNameToDefinition = columnDefinitions.stream()
-                            .collect(Collectors.toMap(ColumnDefinition::getName, cd -> cd));
-                }
-            }
-        }
-        return columnNameToDefinition;
-    }
-
-    /**
      * Get (or create) a map from column source to column name.
      */
     private Map<ColumnSource<?>, String> columnSourceToName() {
@@ -987,27 +972,17 @@ public class RegionedColumnSourceManager
     }
 
     public static class RegionedColumnSourcePushdownFilterContext extends BasePushdownFilterContext {
-        public final List<ColumnSource<?>> columnSources;
-        public final List<ColumnDefinition<?>> columnDefinitions;
-        public final Map<String, String> renameMap;
+        private final Map<String, String> renameMap;
 
         public RegionedColumnSourcePushdownFilterContext(
                 final RegionedColumnSourceManager manager,
                 final WhereFilter filter,
                 final List<ColumnSource<?>> columnSources) {
-            this.columnSources = List.copyOf(columnSources);
-
             final List<String> filterColumns = filter.getColumns();
             Require.eq(filterColumns.size(), "filterColumns.size()",
                     columnSources.size(), "columnSources.size()");
 
-            // We know the column sources are in the same order as the filter columns, build a rename map and collect
-            // column definitions for the filter sources
-            columnDefinitions = new ArrayList<>(columnSources.size());
-
-            final Map<String, ColumnDefinition<?>> columnNameToDefinition = manager.columnNameToDefinition();
             final Map<ColumnSource<?>, String> columnSourceToName = manager.columnSourceToName();
-
             renameMap = new HashMap<>();
             for (int ii = 0; ii < filterColumns.size(); ii++) {
                 final String filterColumnName = filterColumns.get(ii);
@@ -1017,8 +992,6 @@ public class RegionedColumnSourceManager
                     throw new IllegalArgumentException(
                             "No associated source for '" + filterColumnName + "' found in column sources");
                 }
-                // Add the definition.
-                columnDefinitions.add(columnNameToDefinition.get(localColumnName));
 
                 // Add the rename (if needed)
                 if (localColumnName.equals(filterColumnName)) {
@@ -1029,8 +1002,12 @@ public class RegionedColumnSourceManager
         }
 
         @Override
+        public Map<String, String> renameMap() {
+            return renameMap;
+        }
+
+        @Override
         public void close() {
-            columnDefinitions.clear();
             renameMap.clear();
             super.close();
         }

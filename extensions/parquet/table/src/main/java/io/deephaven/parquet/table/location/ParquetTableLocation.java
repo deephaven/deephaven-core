@@ -11,6 +11,7 @@ import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.BasePushdownFilterContext;
 import io.deephaven.engine.table.impl.PushdownFilterContext;
 import io.deephaven.engine.table.impl.PushdownResult;
 import io.deephaven.engine.table.impl.QueryTable;
@@ -19,7 +20,6 @@ import io.deephaven.engine.table.impl.locations.*;
 import io.deephaven.engine.table.impl.locations.impl.AbstractTableLocation;
 import io.deephaven.engine.table.impl.select.*;
 import io.deephaven.engine.table.impl.sources.regioned.RegionedColumnSource;
-import io.deephaven.engine.table.impl.sources.regioned.RegionedColumnSourceManager;
 import io.deephaven.engine.table.impl.sources.regioned.RegionedPageStore;
 import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.table.vectors.ColumnVectors;
@@ -447,9 +447,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
 
         initialize();
 
-        final RegionedColumnSourceManager.RegionedColumnSourcePushdownFilterContext ctx =
-                (RegionedColumnSourceManager.RegionedColumnSourcePushdownFilterContext) context;
-
+        final BasePushdownFilterContext ctx = (BasePushdownFilterContext) context;
         final long executedFilterCost = context.executedFilterCost();
 
         // Some range filters host a condition filter as the internal filter, and we can't push that down.
@@ -457,7 +455,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
                 filter instanceof RangeFilter && ((RangeFilter) filter).getRealFilter() instanceof AbstractRangeFilter;
         final boolean isMatchFilter = filter instanceof MatchFilter;
 
-        final Optional<List<ResolvedColumnInfo>> maybeResolvedColumns = resolveColumns(filter, ctx.renameMap);
+        final Optional<List<ResolvedColumnInfo>> maybeResolvedColumns = resolveColumns(filter, ctx.renameMap());
         if (maybeResolvedColumns.isEmpty()) {
             // One or more columns could not be resolved, so no benefit to pushing down.
             return Long.MAX_VALUE;
@@ -507,6 +505,33 @@ public class ParquetTableLocation extends AbstractTableLocation {
     }
 
     /**
+     * Checks if the column is supported for pushdown filtering.
+     */
+    private boolean isSupportedForPushdown(
+            @NotNull final String colNameFromDef,
+            @NotNull final List<String> columnPath) {
+        // Only flat columns are supported for push-down
+        if (columnPath.size() != 1) {
+            return false;
+        }
+
+        // Should not have a codec defined in the instructions or footer metadata
+        final String columnNameInSchema = columnPath.get(0);
+        final String codecFromInstructions = readInstructions.getCodecName(colNameFromDef);
+        final ColumnTypeInfo columnTypeInfo = getColumnTypes().get(columnNameInSchema);
+        final Object codec = codecFromInstructions != null ? codecFromInstructions
+                : columnTypeInfo == null ? null : columnTypeInfo.codec().orElse(null);
+        if (codec != null) {
+            return false;
+        }
+
+        // Should not have a special type defined in the instructions or footer metadata
+        final ColumnTypeInfo.SpecialType specialType =
+                columnTypeInfo == null ? null : columnTypeInfo.specialType().orElse(null);
+        return specialType == null;
+    }
+
+    /**
      * Returns the index of {@code columnName} in {@code parquetColumnPaths}, or {@link OptionalInt#empty()} if the
      * column is absent. This index is used to find the statistics for a column when pushing down filters.
      */
@@ -540,11 +565,13 @@ public class ParquetTableLocation extends AbstractTableLocation {
             final String colNameFromDef = renameMap.getOrDefault(colNameFromFilter, colNameFromFilter);
             final String parquetColName = readInstructions.getParquetColumnNameFromColumnNameOrDefault(colNameFromDef);
             final List<String> columnPath = getColumnPath(colNameFromDef, parquetColName);
-            // Only flat columns are supported for push-down
-            if (columnPath.size() != 1) {
+            if (!isSupportedForPushdown(colNameFromDef, columnPath)) {
                 return Optional.empty();
             }
-            final OptionalInt columnIndex = findColumnIndex(columnPath.get(0), pathsFromSchema);
+
+            // Assuming a non-nested column, the first element of the column path is the column name
+            final String columnNameFromSchema = columnPath.get(0);
+            final OptionalInt columnIndex = findColumnIndex(columnNameFromSchema, pathsFromSchema);
             if (columnIndex.isEmpty()) {
                 // Column not found in the schema
                 return Optional.empty();
@@ -573,9 +600,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
 
         initialize();
 
-        final RegionedColumnSourceManager.RegionedColumnSourcePushdownFilterContext ctx =
-                (RegionedColumnSourceManager.RegionedColumnSourcePushdownFilterContext) context;
-
+        final BasePushdownFilterContext ctx = (BasePushdownFilterContext) context;
         final long executedFilterCost = context.executedFilterCost();
 
         // Some range filters host a condition filter as the internal filter, and we can't push that down.
@@ -586,7 +611,8 @@ public class ParquetTableLocation extends AbstractTableLocation {
         // Initialize the pushdown result with the selection rowset as "maybe" rows
         PushdownResult result = PushdownResult.of(RowSetFactory.empty(), selection.copy());
 
-        final Optional<List<ResolvedColumnInfo>> maybeResolvedColumns = resolveColumns(filter, ctx.renameMap);
+        final Map<String, String> renameMap = ctx.renameMap();
+        final Optional<List<ResolvedColumnInfo>> maybeResolvedColumns = resolveColumns(filter, renameMap);
         if (maybeResolvedColumns.isEmpty()) {
             // One or more columns could not be resolved, so we return all rows as "maybe" rows.
             onComplete.accept(result);
@@ -628,7 +654,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
             if (dataIndex != null) {
                 // No maybe rows remaining, so no reason to continue filtering.
                 try (final PushdownResult ignored = result) {
-                    onComplete.accept(pushdownDataIndex(filter, ctx.renameMap, dataIndex, result));
+                    onComplete.accept(pushdownDataIndex(filter, renameMap, dataIndex, result));
                     return;
                 }
             }
@@ -641,7 +667,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
             if (dataIndex != null) {
                 // No maybe rows remaining, so no reason to continue filtering.
                 try (final PushdownResult ignored = result) {
-                    onComplete.accept(pushdownDataIndex(filter, ctx.renameMap, dataIndex, result));
+                    onComplete.accept(pushdownDataIndex(filter, renameMap, dataIndex, result));
                     return;
                 }
             }

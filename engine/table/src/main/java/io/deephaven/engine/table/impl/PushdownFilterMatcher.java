@@ -34,7 +34,8 @@ public interface PushdownFilterMatcher {
      * @param fullSet The full set of rows
      * @param usePrev Whether to use the previous result
      * @param context The {@link PushdownFilterContext} to use for the pushdown operation.
-     * @return The estimated cost of the push down operation.
+     * @return The estimated cost of the push down operation. {@value Long#MAX_VALUE} indicates that the filter cannot
+     *         be pushed down.
      */
     long estimatePushdownFilterCost(
             final WhereFilter filter,
