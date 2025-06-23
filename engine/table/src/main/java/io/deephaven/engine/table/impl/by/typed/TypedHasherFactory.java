@@ -51,8 +51,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static java.lang.Math.min;
-
 /**
  * Produces typed hashers (e.g. byte * object * float * double * int) on-demand or using a set of pregenerated and
  * precompiled hashers for singleton and pairs of types.
