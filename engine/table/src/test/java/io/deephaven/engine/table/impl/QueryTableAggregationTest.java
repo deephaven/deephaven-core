@@ -12,7 +12,6 @@ import io.deephaven.base.FileUtils;
 import io.deephaven.chunk.util.pools.ChunkPoolReleaseTracking;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
-import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -4027,6 +4026,33 @@ public class QueryTableAggregationTest {
             });
             assertArrayEquals(new long[] {0, 5, 17, 23}, values);
         });
+    }
+
+    @Test
+    public void testLotsOfKeyColumns() {
+        multipleKeyColumnTest(3);
+        multipleKeyColumnTest(9);
+        multipleKeyColumnTest(10);
+        multipleKeyColumnTest(25);
+        // This is where Object would have failed with a file name too long
+        multipleKeyColumnTest(39);
+        multipleKeyColumnTest(127);
+        // Note anything beyond 127 fails with too many parameters; larger values fail with "code too large"
+    }
+
+    private static void multipleKeyColumnTest(final int keyColumnCount) {
+        final Table t = emptyTable(2).update("Val = random()");
+
+        final List<String> colNames = new ArrayList<>();
+        final List<String> updates = new ArrayList<>();
+
+        for (int ii = 0; ii < keyColumnCount; ii++) {
+            final String colName = "Col" + ii;
+            updates.add(colName + "= Long.toString(ii)");
+            colNames.add(colName);
+        }
+        final Table t2 = t.update(updates.toArray(new String[updates.size()]));
+        final Table aggregated = t2.minBy(colNames);
     }
 
     private void diskBackedTestHarness(Consumer<Table> testFunction) throws IOException {
