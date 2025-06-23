@@ -4046,7 +4046,7 @@ public class QueryTableAggregationTest {
         final List<String> colNames = new ArrayList<>();
         final List<String> updates = new ArrayList<>();
 
-        for(int ii = 0; ii < keyColumnCount; ii++) {
+        for (int ii = 0; ii < keyColumnCount; ii++) {
             final String colName = "Col" + ii;
             updates.add(colName + "= Long.toString(ii)");
             colNames.add(colName);

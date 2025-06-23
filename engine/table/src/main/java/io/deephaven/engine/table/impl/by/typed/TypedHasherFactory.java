@@ -642,7 +642,8 @@ public class TypedHasherFactory {
                 throw new UncheckedDeephavenException("Could not retrieve SHA-256 digest", e);
             }
 
-            final byte[] digest = messageDigest.digest(Arrays.stream(chunkTypes).map(Objects::toString).collect(Collectors.joining("")).getBytes(StandardCharsets.UTF_8));
+            final byte[] digest = messageDigest.digest(Arrays.stream(chunkTypes).map(Objects::toString)
+                    .collect(Collectors.joining("")).getBytes(StandardCharsets.UTF_8));
             final String hex = BaseEncoding.base16().encode(digest, 0, digest.length);
             return hasherConfig.classPrefix + hex;
         }
