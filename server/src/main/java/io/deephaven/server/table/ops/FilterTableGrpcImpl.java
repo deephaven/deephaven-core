@@ -7,6 +7,8 @@ import io.deephaven.api.filter.Filter;
 import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.select.ComposedFilter;
+import io.deephaven.engine.table.impl.select.ConditionFilter;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.proto.backplane.grpc.AndCondition;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
@@ -19,10 +21,13 @@ import io.deephaven.server.table.ops.filter.FlipNonReferenceMatchExpression;
 import io.deephaven.server.table.ops.filter.MakeExpressionsNullSafe;
 import io.deephaven.server.table.ops.filter.MergeNestedBinaryOperations;
 import io.deephaven.server.table.ops.filter.NormalizeNots;
+import io.deephaven.server.table.validation.ColumnExpressionValidator;
 import org.jetbrains.annotations.NotNull;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -30,10 +35,15 @@ import java.util.stream.Collectors;
 @Singleton
 public class FilterTableGrpcImpl extends GrpcTableOperation<FilterTableRequest> {
 
+    @NotNull
+    private final ColumnExpressionValidator validator;
+
     @Inject
-    public FilterTableGrpcImpl(final TableServiceContextualAuthWiring authWiring) {
+    public FilterTableGrpcImpl(final TableServiceContextualAuthWiring authWiring,
+            @NotNull final ColumnExpressionValidator validator) {
         super(authWiring::checkPermissionFilter, BatchTableRequest.Operation::getFilter,
                 FilterTableRequest::getResultId, FilterTableRequest::getSourceId);
+        this.validator = validator;
     }
 
     @Override
@@ -53,8 +63,29 @@ public class FilterTableGrpcImpl extends GrpcTableOperation<FilterTableRequest> 
                 .map(f -> FilterFactory.makeFilter(sourceTable.getDefinition(), f))
                 .collect(Collectors.toList());
 
+        // This would be a good case for the WhereFilter vistor that Nate is building.
+        final List<ConditionFilter> conditionFilters = extractConditionFilters(whereFilters);
+        validator.validateConditionFilters(conditionFilters, sourceTable);
+
         // execute the filters
         return sourceTable.where(Filter.and(whereFilters));
+    }
+
+    private static List<ConditionFilter> extractConditionFilters(List<WhereFilter> whereFilters) {
+        final List<ConditionFilter> conditionFilters = new ArrayList<>();
+
+        final ArrayDeque<WhereFilter> filterQueue = new ArrayDeque<>(whereFilters);
+
+        while (!filterQueue.isEmpty()) {
+            final WhereFilter whereFilter = filterQueue.removeFirst();
+            if (whereFilter instanceof ConditionFilter) {
+                conditionFilters.add((ConditionFilter) whereFilter);
+            } else if (whereFilter instanceof ComposedFilter) {
+                filterQueue.addAll(((ComposedFilter) whereFilter).getFilters());
+            }
+        }
+
+        return conditionFilters;
     }
 
     @NotNull
