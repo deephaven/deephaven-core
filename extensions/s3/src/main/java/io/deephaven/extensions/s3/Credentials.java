@@ -47,6 +47,18 @@ public interface Credentials {
     }
 
     /**
+     * Session credentials with the specified access key id, secret access key, and session token. This is useful when
+     * using temporary credentials from AWS STS or similar services.
+     *
+     * @param accessKeyId the access key id, used to identify the user
+     * @param secretAccessKey the secret access key, used to authenticate the user
+     * @param sessionToken the session token, used for temporary credentials
+     */
+    static Credentials session(final String accessKeyId, final String secretAccessKey, final String sessionToken) {
+        return SessionCredentials.of(accessKeyId, secretAccessKey, sessionToken);
+    }
+
+    /**
      * Anonymous credentials. This is useful when the S3 policy has been set to allow anonymous access.
      */
     static Credentials anonymous() {

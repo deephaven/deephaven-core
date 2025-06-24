@@ -1149,8 +1149,7 @@ public class TestTableTools {
         final AtomicReference<Throwable> errRef = new AtomicReference<>();
         res.addUpdateListener(new InstrumentedTableUpdateListener("") {
             @Override
-            public void onUpdate(final TableUpdate upstream) {
-            }
+            public void onUpdate(final TableUpdate upstream) {}
 
             @Override
             protected void onFailureInternal(Throwable originalException, Entry sourceEntry) {
@@ -1182,8 +1181,7 @@ public class TestTableTools {
         final AtomicReference<Throwable> errRef = new AtomicReference<>();
         res.addUpdateListener(new InstrumentedTableUpdateListener("") {
             @Override
-            public void onUpdate(final TableUpdate upstream) {
-            }
+            public void onUpdate(final TableUpdate upstream) {}
 
             @Override
             protected void onFailureInternal(Throwable originalException, Entry sourceEntry) {
@@ -1200,5 +1198,6 @@ public class TestTableTools {
 
         Assert.assertTrue(res.isFailed());
         Assert.assertTrue(errRef.get() instanceof ConstituentTableException);
+        Assert.assertEquals(err, errRef.get().getCause());
     }
 }

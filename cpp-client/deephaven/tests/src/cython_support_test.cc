@@ -156,18 +156,6 @@ ContainerColumnSourceToVector(const ColumnSource &cs, size_t num_slices) {
   }
   return result;
 }
-
-template<typename T>
-void zambonidump(const std::vector<std::optional<T>> &vec) {
-  std::cout << "HATE\n";
-  for (const auto &elt : vec) {
-    if (elt.has_value()) {
-      std::cout << *elt << '\n';
-    } else {
-      std::cout << "NONE\n";
-    }
-  }
-}
 }  // namespace
 
 // Testing the entry point CythonSupport::SlicesToColumnSource
@@ -227,8 +215,6 @@ TEST_CASE("ContainerToColumnSource", "[cython]") {
   auto actual_vector = ColumnSourceToVector<std::string>(*cs, expected_vector.size());
 
   CHECK(expected_vector == actual_vector);
-  zambonidump(expected_vector);
-  zambonidump(actual_vector);
 }
 
 // Testing the entry point CythonSupport::ColumnSourceToString
