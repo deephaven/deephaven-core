@@ -4,16 +4,22 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.Selectable;
+import io.deephaven.api.filter.Filter;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.select.ConditionFilter;
 import io.deephaven.engine.table.impl.select.ConjunctiveFilter;
+import io.deephaven.engine.table.impl.select.DisjunctiveFilter;
+import io.deephaven.engine.table.impl.select.MatchFilter;
 import io.deephaven.engine.table.impl.select.RangeFilter;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.TimeSeriesFilter;
 import io.deephaven.engine.table.impl.select.WhereFilter;
+import io.deephaven.engine.table.impl.select.WhereFilterInvertedImpl;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.filters.RowSetCapturingFilter;
 import io.deephaven.engine.util.TableTools;
@@ -171,9 +177,6 @@ public class DeferredViewTableTest {
         Assert.eq(numRowsFiltered(freeFilter), "numRowsFiltered(freeFilter)", 100_000);
     }
 
-    // TODO NOCOMMIT NATE filters should validate renaming behavior
-    // TODO NOCOMMIT NATE test rename inside of a barrier / respectsBarrier / serial wrapper
-
     @Test
     public void testBarrierWithNewlyDefinedColumn() {
         // assert that filters with barriers can jump over other filters
@@ -212,7 +215,7 @@ public class DeferredViewTableTest {
 
     @Test
     public void testRespectsBarrierNoJump() {
-        // assert respectsBarrier that cant jump still works
+        // assert barrier + respectsBarrier that cant jump still works
         final TableDefinition resultDef = TableDefinition.of(
                 ColumnDefinition.ofLong("X"));
         final Table sourceTable = TableTools.emptyTable(100_000).update("X = ii");
@@ -248,7 +251,7 @@ public class DeferredViewTableTest {
 
     @Test
     public void testBarrierSplitByView() {
-        // assert respectsBarrier that cant jump still works
+        // assert respectsBarrier that cant jump with the barrier still works
         final TableDefinition resultDef = TableDefinition.of(
                 ColumnDefinition.ofLong("X"));
         final Table sourceTable = TableTools.emptyTable(100_000).update("X = ii");
@@ -276,6 +279,106 @@ public class DeferredViewTableTest {
         Assert.eq(deferredTable.size(), "deferredTable.size()", 25_000);
         Assert.eq(numRowsFiltered(filter0), "numRowsFiltered(filter0)", 100_000);
         Assert.eq(numRowsFiltered(filter1), "numRowsFiltered(filter1)", 50_000);
+    }
+
+    @Test
+    public void testMatchFilterRename() {
+        testHelpFilterIsPrioritized(new MatchFilter(MatchFilter.MatchType.Regular, "Y", "A"));
+    }
+
+    @Test
+    public void testConditionFilterRename() {
+        testHelpFilterIsPrioritized(ConditionFilter.createConditionFilter("Y = `A`"));
+    }
+
+    @Test
+    public void testInvertedWrappedRenames() {
+        final WhereFilter filter = new MatchFilter(MatchFilter.MatchType.Regular, "Y", "B", "C", "D");
+        testHelpFilterIsPrioritized(WhereFilterInvertedImpl.of(filter));
+    }
+
+    @Test
+    public void testSerialWrappedRenames() {
+        // note serial filters require incoming rowsets to match as if all previous filters were applied
+        final Filter filter = new MatchFilter(MatchFilter.MatchType.Regular, "Y", "A");
+        testHelpFilterIsPrioritized(filter.withSerial(), false);
+    }
+
+    @Test
+    public void testBarrierWrappedRenames() {
+        final Filter filter = new MatchFilter(MatchFilter.MatchType.Regular, "Y", "A");
+        testHelpFilterIsPrioritized(filter.withBarrier(new Object()));
+    }
+
+    @Test
+    public void testRespectsBarrierWrappedRenames() {
+        final Object barrier = new Object();
+        final WhereFilter filter = new MatchFilter(MatchFilter.MatchType.Regular, "Y", "A");
+        testHelpFilterIsPrioritized(ConjunctiveFilter.of(
+                ConditionFilter.createConditionFilter("true").withBarrier(barrier),
+                filter.respectsBarrier(barrier)));
+    }
+
+    @Test
+    public void testConjunctiveFilterRename() {
+        // get crafty nesting a conjunctive filter inside of a disjunctive filter
+        final WhereFilter filter = new MatchFilter(MatchFilter.MatchType.Regular, "Y", "A");
+        testHelpFilterIsPrioritized(DisjunctiveFilter.of(
+                ConditionFilter.createConditionFilter("false"),
+                ConjunctiveFilter.of(
+                        ConditionFilter.createConditionFilter("true"),
+                        filter.withBarrier(new Object()))));
+    }
+
+
+    @Test
+    public void testNestedConjunctiveFilterRename() {
+        // get crafty with some nesting
+        final WhereFilter filter = new MatchFilter(MatchFilter.MatchType.Regular, "Y", "A");
+        testHelpFilterIsPrioritized(ConjunctiveFilter.of(
+                ConditionFilter.createConditionFilter("true"),
+                ConjunctiveFilter.of(
+                        ConditionFilter.createConditionFilter("true"),
+                        filter.withBarrier(new Object()))));
+    }
+
+    private void testHelpFilterIsPrioritized(final Filter filterToTest) {
+        testHelpFilterIsPrioritized(filterToTest, true);
+    }
+
+    private void testHelpFilterIsPrioritized(final Filter filterToTest, final boolean expectsJump) {
+        final String[] values = new String[] {"A", "B", "C", "D"};
+        ExecutionContext.getContext().getQueryScope().putParam("values", values);
+
+        final TableDefinition resultDef = TableDefinition.of(
+                ColumnDefinition.ofString("X"),
+                ColumnDefinition.ofLong("I"));
+        final Table sourceTable = TableTools.emptyTable(100_000)
+                .update("X = values[i % 4]", "I = ii");
+
+        final RowSetCapturingFilter filter1 =
+                new RowSetCapturingFilter(new RangeFilter("I", Condition.LESS_THAN, "25000"));
+
+        // here we expect that filter0 can jump over filter1 w/a rename
+        Table deferredTable = new DeferredViewTable(
+                resultDef,
+                "test",
+                new DeferredViewTable.TableReference(sourceTable),
+                ArrayTypeUtils.EMPTY_STRING_ARRAY,
+                SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY,
+                WhereFilter.ZERO_LENGTH_WHERE_FILTER_ARRAY)
+                .updateView("Y = X", "I = I + 0")
+                .where(ConjunctiveFilter.of(
+                        filter1,
+                        WhereFilter.of(filterToTest)))
+                .coalesce();
+
+        Assert.eq(deferredTable.size(), "deferredTable.size()", 6250);
+        if (expectsJump) {
+            Assert.eq(numRowsFiltered(filter1), "numRowsFiltered(filter1)", 25_000);
+        } else {
+            Assert.eq(numRowsFiltered(filter1), "numRowsFiltered(filter1)", 100_000);
+        }
     }
 
     private static long numRowsFiltered(final RowSetCapturingFilter filter) {
