@@ -3,9 +3,12 @@
 //
 package io.deephaven.engine.table.impl.select;
 
+import io.deephaven.function.Basic;
 import io.deephaven.time.DateTimeUtils;
+import io.deephaven.util.BooleanUtils;
 import io.deephaven.util.compare.ObjectComparisons;
 import io.deephaven.util.type.NumericTypeUtils;
+import org.jetbrains.annotations.Nullable;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -20,7 +23,15 @@ class CompareUtils {
      * @param b the second object to compare
      * @return a < b returns negative value, a > b returns positive value, a == b returns 0
      */
-    static int compare(Object a, Object b) {
+    static int compare(@Nullable Object a, @Nullable Object b) {
+        // Convert deephaven nulls to Java nulls.
+        if (Basic.isNull(a)) {
+            a = null;
+        }
+        if (Basic.isNull(b)) {
+            b = null;
+        }
+
         // Enforce NULL < non-null (Deephaven convention)
         if (a == null && b == null) {
             return 0;
@@ -47,6 +58,12 @@ class CompareUtils {
         if (b instanceof BigInteger) {
             b = new BigDecimal((BigInteger) b);
         }
+        if (a instanceof Boolean) {
+            a = BooleanUtils.booleanAsByte((Boolean) a);
+        }
+        if (b instanceof Boolean) {
+            b = BooleanUtils.booleanAsByte((Boolean) b);
+        }
 
         final Class<?> aClass = a.getClass();
         final Class<?> bClass = b.getClass();
@@ -64,7 +81,6 @@ class CompareUtils {
 
         if (aClass == BigDecimal.class) {
             final BigDecimal abd = (BigDecimal) a;
-
             if (NumericTypeUtils.isChar(bClass)) {
                 return abd.compareTo(BigDecimal.valueOf((char) b));
             }

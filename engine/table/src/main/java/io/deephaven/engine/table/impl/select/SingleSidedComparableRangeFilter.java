@@ -14,6 +14,7 @@ import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.util.annotations.TestUseOnly;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 public class SingleSidedComparableRangeFilter extends AbstractRangeFilter {
     private final Comparable<?> pivot;
@@ -159,26 +160,26 @@ public class SingleSidedComparableRangeFilter extends AbstractRangeFilter {
 
     @Override
     public boolean overlaps(
-            @NotNull final Object lower,
-            @NotNull final Object upper,
+            @Nullable final Object lower,
+            @Nullable final Object upper,
             final boolean lowerInclusive,
             final boolean upperInclusive) {
+        // Validate the input bounds.
+        final int c0 = CompareUtils.compare(lower, upper);
+        if (c0 > 0) {
+            throw new IllegalArgumentException("Lower bound must not be greater than upper bound, found: "
+                    + lower + " > " + upper);
+        } else if (c0 == 0 && (!lowerInclusive || !upperInclusive)) {
+            throw new IllegalArgumentException("Lower and upper bounds must be inclusive when equal, found: "
+                    + lower + " == " + upper);
+        }
+
         if (isGreaterThan) {
             final int c = CompareUtils.compare(pivot, upper);
             return c < 0 || (c == 0 && this.lowerInclusive);
         } else {
             final int c = CompareUtils.compare(lower, pivot);
             return c < 0 || (c == 0 && this.lowerInclusive);
-        }
-    }
-
-    @Override
-    public boolean contains(@NotNull final Object value) {
-        final int c = CompareUtils.compare(pivot, value);
-        if (isGreaterThan) {
-            return c < 0 || (c == 0 && this.lowerInclusive);
-        } else {
-            return c > 0 || (c == 0 && this.lowerInclusive);
         }
     }
 }

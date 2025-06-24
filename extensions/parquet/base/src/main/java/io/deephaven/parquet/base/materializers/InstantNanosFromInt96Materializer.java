@@ -32,6 +32,20 @@ public class InstantNanosFromInt96Materializer extends LongMaterializerBase impl
         }
     };
 
+    private static final int BYTES_PER_VALUE = Long.BYTES + Integer.BYTES;
+
+    public static long convertValue(final byte[] data) {
+        if (data.length != BYTES_PER_VALUE) {
+            throw new IllegalArgumentException("Invalid Int96 data length: " + data.length + ", expected: "
+                    + BYTES_PER_VALUE);
+        }
+        final ByteBuffer resultBuffer = ByteBuffer.wrap(data);
+        resultBuffer.order(java.nio.ByteOrder.LITTLE_ENDIAN);
+        final long nanos = resultBuffer.getLong();
+        final int julianDate = resultBuffer.getInt();
+        return (julianDate - JULIAN_OFFSET_TO_UNIX_EPOCH_DAYS) * (NANOS_PER_DAY) + nanos + offset;
+    }
+
     /*
      * Potential references/points of comparison for this algorithm: https://github.com/apache/iceberg/pull/1184/files
      * https://github.com/apache/arrow/blob/master/cpp/src/parquet/types.h (last retrieved as
@@ -70,15 +84,7 @@ public class InstantNanosFromInt96Materializer extends LongMaterializerBase impl
     @Override
     public void fillValues(int startIndex, int endIndex) {
         for (int ii = startIndex; ii < endIndex; ii++) {
-            data[ii] = readInstantNanos();
+            data[ii] = convertValue(dataReader.readBytes().getBytesUnsafe());
         }
-    }
-
-    long readInstantNanos() {
-        final ByteBuffer resultBuffer = ByteBuffer.wrap(dataReader.readBytes().getBytesUnsafe());
-        resultBuffer.order(java.nio.ByteOrder.LITTLE_ENDIAN);
-        final long nanos = resultBuffer.getLong();
-        final int julianDate = resultBuffer.getInt();
-        return (julianDate - JULIAN_OFFSET_TO_UNIX_EPOCH_DAYS) * (NANOS_PER_DAY) + nanos + offset;
     }
 }

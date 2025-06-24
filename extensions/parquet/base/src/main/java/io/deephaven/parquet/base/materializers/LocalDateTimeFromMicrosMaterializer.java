@@ -17,6 +17,10 @@ import java.time.LocalDateTime;
 public class LocalDateTimeFromMicrosMaterializer extends ObjectMaterializerBase<LocalDateTime>
         implements PageMaterializer {
 
+    public static LocalDateTime convertValue(final long micros) {
+        return ParquetTimeUtils.epochMicrosToLocalDateTimeUTC(micros);
+    }
+
     public static final PageMaterializerFactory FACTORY = new PageMaterializerFactory() {
         @Override
         public PageMaterializer makeMaterializerWithNulls(ValuesReader dataReader, Object nullValue, int numValues) {
@@ -44,7 +48,7 @@ public class LocalDateTimeFromMicrosMaterializer extends ObjectMaterializerBase<
     @Override
     public void fillValues(int startIndex, int endIndex) {
         for (int ii = startIndex; ii < endIndex; ii++) {
-            data[ii] = ParquetTimeUtils.epochMicrosToLocalDateTimeUTC(dataReader.readLong());
+            data[ii] = convertValue(dataReader.readLong());
         }
     }
 }

@@ -16,6 +16,10 @@ import java.time.LocalTime;
 
 public class LocalTimeFromMillisMaterializer extends ObjectMaterializerBase<LocalTime> implements PageMaterializer {
 
+    public static LocalTime convertValue(final int millisOfDay) {
+        return DateTimeUtils.millisOfDayToLocalTime(millisOfDay);
+    }
+
     public static final PageMaterializerFactory FACTORY = new PageMaterializerFactory() {
         @Override
         public PageMaterializer makeMaterializerWithNulls(ValuesReader dataReader, Object nullValue, int numValues) {
@@ -42,7 +46,7 @@ public class LocalTimeFromMillisMaterializer extends ObjectMaterializerBase<Loca
     @Override
     public void fillValues(int startIndex, int endIndex) {
         for (int ii = startIndex; ii < endIndex; ii++) {
-            data[ii] = DateTimeUtils.millisOfDayToLocalTime(dataReader.readInteger());
+            data[ii] = convertValue(dataReader.readInteger());
         }
     }
 }
