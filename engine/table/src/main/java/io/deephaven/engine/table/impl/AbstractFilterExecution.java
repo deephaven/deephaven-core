@@ -186,6 +186,7 @@ abstract class AbstractFilterExecution {
                         resume.run();
                     };
 
+                    // TODO: iterateParallel needs to keep a copy of input if it wants to reference it.
                     // Filter this segment of the input rows.
                     doFilter(filter, inputCopy, startOffSet, endOffset, onFilterComplete, nec);
                 },
@@ -258,7 +259,7 @@ abstract class AbstractFilterExecution {
                 final PushdownFilterContext context) {
             pushdownFilterCost = pushdownMatcher == null
                     ? Long.MAX_VALUE
-                    : pushdownMatcher.estimatePushdownFilterCost(filter, renameMap, selection, sourceTable.getRowSet(),
+                    : pushdownMatcher.estimatePushdownFilterCost(filter, renameMap, selection,
                             usePrev, context);
         }
 
@@ -386,7 +387,7 @@ abstract class AbstractFilterExecution {
             // Update the context to reflect the filtering already executed..
             sf.context.updateExecutedFilterCost(costCeiling);
 
-            if (pushdownResult.maybeMatch().isEmpty()) {
+            if (pushdownResult.isFinished()) {
                 localInput.setValue(pushdownResult.match().copy());
                 maybeUpdateAndSortStatelessFilters(statelessFilters, filterIdx + 1, localInput.getValue());
 
@@ -426,24 +427,34 @@ abstract class AbstractFilterExecution {
         final RowSet input = localInput.getValue();
         if (sf.pushdownMatcher != null && sf.pushdownFilterCost < Long.MAX_VALUE) {
             // Execute the pushdown filter and return.
-            sf.pushdownMatcher.pushdownFilter(sf.filter, sf.renameMap, input, sourceTable.getRowSet(), usePrev,
+            sf.pushdownMatcher.pushdownFilter(sf.filter, sf.renameMap, input, usePrev,
                     sf.context, costCeiling, jobScheduler(), onPushdownComplete, filterNec);
             return;
         }
 
         if (sf.pushdownResult != null) {
-            // Leverage push-down results to reduce the chunk filter input before the final filter.
-            final Consumer<WritableRowSet> localConsumer = (rows) -> {
-                onFilterComplete.accept(rows.union(sf.pushdownResult.match()));
-            };
-
-            sf.pushdownResult.match().retain(input);
-            sf.pushdownResult.maybeMatch().retain(input);
-
-            executeFinalFilter(sf.filter, sf.pushdownResult.maybeMatch(), localConsumer, filterNec);
+            try (final WritableRowSet maybeMatch = sf.pushdownResult.maybeMatch().copy()) {
+                maybeMatch.retain(input);
+                // Leverage push-down results to reduce the chunk filter input before the final filter.
+                executeFinalFilter(
+                        sf.filter,
+                        maybeMatch,
+                        (filteredMaybeMatch) -> {
+                            // union of match + filteredMaybeMatch
+                            final WritableRowSet union;
+                            try (filteredMaybeMatch) {
+                                union = sf.pushdownResult.match().copy();
+                                union.retain(input);
+                                union.insert(filteredMaybeMatch);
+                            }
+                            onFilterComplete.accept(union);
+                        },
+                        filterNec);
+            }
             return;
         }
         executeFinalFilter(sf.filter, input, onFilterComplete, filterNec);
+        // TODO: it looks like we are leaking sf / sf.pushdownResult?
     }
 
     /**
