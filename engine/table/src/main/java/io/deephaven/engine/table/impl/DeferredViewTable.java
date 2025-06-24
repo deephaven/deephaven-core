@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.api.RawString;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.base.verify.Assert;
@@ -100,6 +101,7 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
         final WhereFilter[] allFilters = Stream.concat(
                 Arrays.stream(deferredFilters).map(WhereFilter::copy),
                 Arrays.stream(whereFilters))
+                .flatMap(wf -> ExtractAnds.of(wf).stream())
                 .toArray(WhereFilter[]::new);
 
         if (allFilters.length == 0) {
@@ -210,6 +212,7 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
                     serialFilterFound = true;
                 }
                 postViewFilters.add(filter);
+                postViewBarriers.addAll(ExtractBarriers.of(filter));
                 continue;
             }
 
@@ -311,10 +314,20 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
                         throw new IllegalArgumentException("Filter Barriers must be unique! Found duplicate: " +
                                 dupBarrier.get());
                     }
-                    postViewBarriers.addAll(newBarriers);
                     postViewFilters.add(filter);
+                    postViewBarriers.addAll(newBarriers);
                 }
             }
+        }
+
+        // we must declare any preFilter barriers in the postFilter at the front of the list
+        final Set<Object> preViewBarriers = preViewFilters.stream()
+                .flatMap(wf -> ExtractBarriers.of(wf).stream())
+                .collect(Collectors.toSet());
+        if (!preViewBarriers.isEmpty() && !postViewFilters.isEmpty()) {
+            postViewFilters.addAll(0, preViewBarriers.stream()
+                    .map(barrier -> WhereFilter.of(RawString.of("true").withBarrier(barrier)))
+                    .collect(Collectors.toList()));
         }
         compilationProcessor.compile();
 
@@ -478,6 +491,57 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
          */
         public Table selectDistinctInternal(Collection<? extends Selectable> columns) {
             return null;
+        }
+    }
+
+    private static class ExtractAnds implements WhereFilter.Visitor<List<WhereFilter>> {
+        public static final ExtractAnds INSTANCE = new ExtractAnds();
+
+        public static List<WhereFilter> of(final WhereFilter filter) {
+            return filter.walkWhereFilter(INSTANCE);
+        }
+
+        @Override
+        public List<WhereFilter> visitWhereFilter(final WhereFilter filter) {
+            final List<WhereFilter> retValue = WhereFilter.Visitor.super.visitWhereFilter(filter);
+            if (retValue == null) {
+                return List.of(filter);
+            }
+            return retValue;
+        }
+
+        @Override
+        public List<WhereFilter> visitWhereFilter(final WhereFilterInvertedImpl filter) {
+            return List.of(filter);
+        }
+
+        @Override
+        public List<WhereFilter> visitWhereFilter(final WhereFilterSerialImpl filter) {
+            return List.of(filter);
+        }
+
+        @Override
+        public List<WhereFilter> visitWhereFilter(final WhereFilterBarrierImpl filter) {
+            return List.of(filter);
+        }
+
+        @Override
+        public List<WhereFilter> visitWhereFilter(final WhereFilterRespectsBarrierImpl filter) {
+            return visitWhereFilter(filter.getWrappedFilter()).stream()
+                    .map(wf -> WhereFilterRespectsBarrierImpl.of(wf, filter.respectedBarriers()))
+                    .collect(Collectors.toList());
+        }
+
+        @Override
+        public List<WhereFilter> visitWhereFilter(final DisjunctiveFilter filter) {
+            return List.of(filter);
+        }
+
+        @Override
+        public List<WhereFilter> visitWhereFilter(final ConjunctiveFilter filter) {
+            return filter.getFilters().stream()
+                    .flatMap(f -> visitWhereFilter(f).stream())
+                    .collect(Collectors.toList());
         }
     }
 }
