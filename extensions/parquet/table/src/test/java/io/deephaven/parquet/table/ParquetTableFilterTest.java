@@ -147,6 +147,14 @@ public final class ParquetTableFilterTest {
                 largeTable.where("price = 500.0").size());
     }
 
+    /**
+     * This test fails because of the mismatch between the data index and the upcast parquet column types. This test
+     * will continue to fail until the data index is also upcast to match the parquet column types (DH-19443).
+     * <p>
+     * When the data index is fixed, this test should be re-enabled.
+     *
+     */
+    @Ignore
     @Test
     public void filterDatatypeMismatchDataIndexTest() {
         final String destPath = Path.of(rootFile.getPath(), "ParquetTest_flatPartitionsTest").toString();

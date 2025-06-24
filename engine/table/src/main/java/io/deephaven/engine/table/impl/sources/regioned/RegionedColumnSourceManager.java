@@ -876,7 +876,6 @@ public class RegionedColumnSourceManager
     }
 
     public static class RegionedColumnSourcePushdownFilterContext extends BasePushdownFilterContext {
-        public final List<ColumnSource<?>> columnSources;
         public final List<ColumnDefinition<?>> columnDefinitions;
         public final Map<String, String> renameMap;
 
@@ -884,7 +883,7 @@ public class RegionedColumnSourceManager
                 final RegionedColumnSourceManager manager,
                 final WhereFilter filter,
                 final List<ColumnSource<?>> columnSources) {
-            this.columnSources = columnSources;
+            super(filter, columnSources);
 
             final List<String> filterColumns = filter.getColumns();
             Require.eq(filterColumns.size(), "filterColumns.size()",
@@ -926,9 +925,9 @@ public class RegionedColumnSourceManager
 
         @Override
         public void close() {
-            columnSources.clear();
             columnDefinitions.clear();
             renameMap.clear();
+            closeList.close();
             super.close();
         }
     }

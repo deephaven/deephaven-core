@@ -1001,6 +1001,7 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
         if (initialized) {
             copy.initialized = true;
             copy.values = values;
+            copy.columnType = columnType;
         }
         return copy;
     }

@@ -34,6 +34,12 @@ public class ShortChunkFactory implements ChunkFactory {
 
     @NotNull
     @Override
+    public final <ATTR extends Any> ShortChunk<ATTR> getNullChunk() {
+        return ShortChunk.getNullChunk();
+    }
+
+    @NotNull
+    @Override
     public final <ATTR extends Any> ShortChunkChunk<ATTR> getEmptyChunkChunk() {
         return ShortChunkChunk.getEmptyChunk();
     }
