@@ -612,8 +612,10 @@ public class ParquetTools {
             throw new TableDataException("Cannot write a parquet table with zero columns");
         }
         // Assuming all destination URIs have the same scheme, and will use the same channels provider instance
-        final SeekableChannelsProvider channelsProvider = SeekableChannelsProviderLoader.getInstance()
-                .load(destinations[0].getScheme(), writeInstructions.getSpecialInstructions());
+        final SeekableChannelsProvider channelsProvider =
+                writeInstructions.getSeekableChannelsProviderForWriting()
+                        .orElseGet(() -> SeekableChannelsProviderLoader.getInstance()
+                                .load(destinations[0].getScheme(), writeInstructions.getSpecialInstructions()));
 
         final ParquetMetadataFileWriter metadataFileWriter;
         if (writeInstructions.generateMetadataFiles()) {
@@ -691,7 +693,7 @@ public class ParquetTools {
                 for (int idx = outputStreams.size() - 1; idx >= 0; idx--) {
                     try {
                         outputStreams.get(idx).rollback();
-                    } catch (IOException e1) {
+                    } catch (final IOException | RuntimeException e1) {
                         log.error().append("Error in rolling back output stream ").append(e1).endl();
                     }
                 }
