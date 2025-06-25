@@ -34,6 +34,12 @@ public class ByteChunkFactory implements ChunkFactory {
 
     @NotNull
     @Override
+    public final <ATTR extends Any> ByteChunk<ATTR> getNullChunk() {
+        return ByteChunk.getNullChunk();
+    }
+
+    @NotNull
+    @Override
     public final <ATTR extends Any> ByteChunkChunk<ATTR> getEmptyChunkChunk() {
         return ByteChunkChunk.getEmptyChunk();
     }

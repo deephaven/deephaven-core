@@ -34,6 +34,12 @@ public class DoubleChunkFactory implements ChunkFactory {
 
     @NotNull
     @Override
+    public final <ATTR extends Any> DoubleChunk<ATTR> getNullChunk() {
+        return DoubleChunk.getNullChunk();
+    }
+
+    @NotNull
+    @Override
     public final <ATTR extends Any> DoubleChunkChunk<ATTR> getEmptyChunkChunk() {
         return DoubleChunkChunk.getEmptyChunk();
     }

@@ -30,6 +30,12 @@ public class CharChunkFactory implements ChunkFactory {
 
     @NotNull
     @Override
+    public final <ATTR extends Any> CharChunk<ATTR> getNullChunk() {
+        return CharChunk.getNullChunk();
+    }
+
+    @NotNull
+    @Override
     public final <ATTR extends Any> CharChunkChunk<ATTR> getEmptyChunkChunk() {
         return CharChunkChunk.getEmptyChunk();
     }
