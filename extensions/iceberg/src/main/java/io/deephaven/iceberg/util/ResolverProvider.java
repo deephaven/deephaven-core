@@ -9,9 +9,11 @@ public interface ResolverProvider {
      *
      * @param resolver the resolver
      * @return the provider for {@code resolver}
+     * @deprecated callers can simple use {@code resolver}
      */
-    static ResolverProvider of(Resolver resolver) {
-        return new ResolverProviderImpl.Explicit(resolver);
+    @Deprecated
+    static Resolver of(Resolver resolver) {
+        return resolver;
     }
 
     /**
@@ -25,5 +27,15 @@ public interface ResolverProvider {
      */
     static InferenceResolver infer() {
         return InferenceResolver.builder().build();
+    }
+
+    <T> T walk(Visitor<T> visitor);
+
+    interface Visitor<T> {
+        T visit(Resolver resolver);
+
+        T visit(UnboundResolver unboundResolver);
+
+        T visit(InferenceResolver inferenceResolver);
     }
 }

@@ -1568,18 +1568,29 @@ public class ReplicateSourcesAndChunks {
     }
 
     private static void replicateOneOrN() throws IOException {
-        charToAll(TASK, "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/sparse/CharOneOrN.java");
+        charToAllButBoolean(TASK,
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/sparse/CharOneOrN.java");
+        final String booleanOneOrN = charToBoolean(TASK,
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/sparse/CharOneOrN.java");
+
+        final File booleanFile = new File(booleanOneOrN);
+        List<String> lines = FileUtils.readLines(booleanFile, Charset.defaultCharset());
+        lines = globalReplacements(lines, "Boolean.BYTES", "REFERENCE_SIZE");
+        FileUtils.writeLines(booleanFile, lines);
+
+
         final String objectOneOrNPath = charToObject(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/sparse/CharOneOrN.java");
         final File oneOrNFile = new File(objectOneOrNPath);
-        List<String> lines = FileUtils.readLines(oneOrNFile, Charset.defaultCharset());
+        lines = FileUtils.readLines(oneOrNFile, Charset.defaultCharset());
 
         lines = globalReplacements(lines,
                 "class Block([0-2])", "class Block$1<T>",
                 "Object \\[\\]", "T []", "SoftRecycler<Object", "SoftRecycler<T",
                 "QueryConstants.NULL_OBJECT", "null",
                 "new Object\\[BLOCK2_SIZE\\]\\[\\];",
-                "(T[][])new Object[BLOCK2_SIZE][];");
+                "(T[][])new Object[BLOCK2_SIZE][];",
+                "Object.BYTES", "REFERENCE_SIZE");
 
         lines = simpleFixup(lines, "Block0", "Block1", "Block1<T>", "Block2", "Block2<T>");
         lines = simpleFixup(lines, "Block1", "Block2", "Block2<T>");

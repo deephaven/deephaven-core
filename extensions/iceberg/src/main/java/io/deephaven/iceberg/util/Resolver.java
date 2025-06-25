@@ -39,7 +39,7 @@ import java.util.stream.Collectors;
  */
 @Value.Immutable
 @BuildableStyle
-public abstract class Resolver {
+public abstract class Resolver implements ResolverProvider {
 
     // org.apache.iceberg.TableMetadata.INITIAL_SPEC_ID
     private static final int INITIAL_SPEC_ID = 0;
@@ -146,6 +146,11 @@ public abstract class Resolver {
             return Optional.empty();
         }
         return Optional.of(out[0]);
+    }
+
+    @Override
+    public final <T> T walk(Visitor<T> visitor) {
+        return visitor.visit(this);
     }
 
     public interface Builder {

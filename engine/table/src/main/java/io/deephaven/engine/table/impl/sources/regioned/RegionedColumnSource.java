@@ -98,6 +98,16 @@ public interface RegionedColumnSource<DATA_TYPE>
     }
 
     /**
+     * Get the region index for a row key.
+     *
+     * @param rowKey The row key to get the region index for
+     * @return The region index for the row key
+     */
+    static int getRegionIndex(final long rowKey) {
+        return Math.toIntExact(rowKey >> SUB_REGION_ROW_INDEX_ADDRESS_BITS);
+    }
+
+    /**
      * <p>
      * Add a region to this regioned column source.
      *

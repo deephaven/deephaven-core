@@ -7,8 +7,11 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.NoSuchColumnException;
 import io.deephaven.qst.type.Type;
+import org.apache.iceberg.BaseTable;
 import org.apache.iceberg.Schema;
+import org.apache.iceberg.Table;
 import org.apache.iceberg.types.Types;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 
 import static io.deephaven.iceberg.util.ColumnInstructions.partitionField;
@@ -35,6 +38,10 @@ class UnboundResolverTest {
                 ColumnDefinition.of("F2", type));
     }
 
+    private static Table fakeTable() {
+        return new BaseTable(null, null);
+    }
+
     @Test
     void unboundResolverPrimitiveMapping() {
         final Schema schema = simpleSchema(IT);
@@ -43,7 +50,7 @@ class UnboundResolverTest {
                 .schema(SchemaProvider.fromSchema(schema))
                 .definition(td)
                 .build()
-                .resolver(null);
+                .resolver(fakeTable());
         final Resolver expected = Resolver.builder()
                 .schema(schema)
                 .definition(td)
@@ -62,7 +69,7 @@ class UnboundResolverTest {
                 .schema(SchemaProvider.fromSchema(schema))
                 .definition(td)
                 .build()
-                .resolver(null);
+                .resolver(fakeTable());
         final Resolver expected = Resolver.builder()
                 .schema(schema)
                 .definition(td)
@@ -84,7 +91,7 @@ class UnboundResolverTest {
                 .definition(td)
                 .putColumnInstructions("S1", schemaField(f1FieldId))
                 .build()
-                .resolver(null);
+                .resolver(fakeTable());
 
         final Resolver expected = Resolver.builder()
                 .schema(schema)
@@ -106,7 +113,7 @@ class UnboundResolverTest {
                     .definition(td)
                     .putColumnInstructions("F1", partitionField(99))
                     .build()
-                    .resolver(null);
+                    .resolver(fakeTable());
             failBecauseExceptionWasNotThrown(Resolver.MappingException.class);
         } catch (Resolver.MappingException e) {
             assertThat(e).hasMessageContaining("Unable to map Deephaven column F1");
@@ -125,7 +132,7 @@ class UnboundResolverTest {
                     .schema(SchemaProvider.fromSchema(schema))
                     .definition(td)
                     .build()
-                    .resolver(null);
+                    .resolver(fakeTable());
             failBecauseExceptionWasNotThrown(Resolver.MappingException.class);
         } catch (Resolver.MappingException e) {
             assertThat(e).hasMessageContaining("Unable to map Deephaven column NotInSchema");
@@ -144,7 +151,7 @@ class UnboundResolverTest {
                     .definition(td)
                     .putColumnInstructions("F1", schemaField(9999)) // schema field with ID=9999 not present
                     .build()
-                    .resolver(null);
+                    .resolver(fakeTable());
             failBecauseExceptionWasNotThrown(Resolver.MappingException.class);
         } catch (Resolver.MappingException e) {
             assertThat(e).hasMessageContaining("Unable to map Deephaven column F1");

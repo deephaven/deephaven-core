@@ -2,9 +2,7 @@
 
 This folder contains Deephaven Community Core's Python source code, tests, and more. Source code can be found in `server/deephaven` and unit tests can be found in `server/tests`. Other content includes `jpy`, the Python client, wheels, and more.
 
-## Requirements
-
-Development and contribution requires Python 3.8+. We recommend always staying up-to-date on the latest Python version.
+Our documentation on building and running the Python server, which include software and version requirements, is available [here](https://deephaven.io/core/docs/getting-started/launch-build/).
 
 ## Virtual environments
 

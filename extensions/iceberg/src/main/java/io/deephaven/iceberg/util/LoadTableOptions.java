@@ -29,8 +29,8 @@ public abstract class LoadTableOptions {
 
     /**
      * The resolver provider. By default, is {@link ResolverProvider#infer()}. Callers are encouraged to set this to an
-     * {@link ResolverProvider#of(Resolver) explicit resolver} to precisely control the relation between the desired
-     * Deephaven {@link TableDefinition} and the existing Iceberg {@link Schema}.
+     * explicit {@link Resolver} to precisely control the relation between the desired Deephaven {@link TableDefinition}
+     * and the existing Iceberg {@link Schema}.
      */
     @Value.Default
     public ResolverProvider resolver() {
@@ -56,16 +56,6 @@ public abstract class LoadTableOptions {
          */
         default Builder id(String id) {
             return id(TableIdentifier.parse(id));
-        }
-
-        /**
-         * A helper to set an explicit {@link #resolver()}. Equivalent to
-         * {@code resolver(ResolverProvider.of(resolver))}.
-         *
-         * @see ResolverProvider#of(Resolver)
-         */
-        default Builder resolver(Resolver resolver) {
-            return resolver(ResolverProvider.of(resolver));
         }
 
         /**
