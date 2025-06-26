@@ -9,7 +9,7 @@ import java.nio.file.Path;
 import org.eclipse.jetty.util.resource.Resource;
 
 /**
- * Simple wrapper around the Jetty Resource type. Can be extended to target specific method overrides.
+ * Simple wrapper around the Jetty {@link Resource} type. Can be extended to target specific method overrides.
  */
 public abstract class WrappedResource extends Resource {
     protected final Resource wrapped;

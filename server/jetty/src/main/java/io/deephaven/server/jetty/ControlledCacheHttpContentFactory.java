@@ -24,8 +24,8 @@ public class ControlledCacheHttpContentFactory extends ResourceHttpContentFactor
     /**
      * Creates a {@link HttpContent.Factory} using a similar methodology used in {@link org.eclipse.jetty.server.ResourceHandler#newHttpContentFactory()}
      * except that we use {@link ControlledCacheHttpContentFactory} instead of {@link ResourceHttpContentFactory} as the innermost
-     * factory, and we don't include the {@code VirtualHttpContentFactory}.
-     * 
+     * factory, and we don't include the {@link VirtualHttpContentFactory}.
+     *
      * @param baseResource the base Resource
      * @param byteBufferPool the ByteBufferPool for {@link ValidatingCachingHttpContentFactory}
      * @param mimeTypes the MimeTypes
@@ -35,7 +35,7 @@ public class ControlledCacheHttpContentFactory extends ResourceHttpContentFactor
             Resource baseResource,
             ByteBufferPool byteBufferPool,
             MimeTypes mimeTypes) {
-        // Use `ControlledCacheHttpContentFactory` instead of `ResourceHttpContentFactory`
+        // Use ControlledCacheHttpContentFactory instead of ResourceHttpContentFactory
         HttpContent.Factory contentFactory = new ControlledCacheHttpContentFactory(baseResource, mimeTypes);
         contentFactory = new FileMappingHttpContentFactory(contentFactory);
         contentFactory = new PreCompressedHttpContentFactory(contentFactory, new ArrayList<>());

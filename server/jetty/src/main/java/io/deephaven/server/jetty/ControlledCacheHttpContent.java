@@ -16,7 +16,7 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.content.HttpContent;
 
 /**
- * A custom {@code HttpContent} implementation for finer control over caching behavior.
+ * A custom {@link HttpContent} implementation for finer control over caching behavior.
  * <p>
  * <ul>
  *   <li>Calculates a strong ETag based on the content's SHA-256 hash.</li>

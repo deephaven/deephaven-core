@@ -180,7 +180,7 @@ public class JettyBackedGrpcServer implements GrpcServer {
         // Note that creating the jsPlugins resource will open the backing .zip file. Attempting to register any JS
         // plugins after this point will fail since they need to write to the filesystem. The general order of setup
         // should be 1) Construct the server. 2) Register JS plugins. 3) Create the JS plugins resource. 4) Start the
-        // server. This is managed by `DeephavenApiServer`.
+        // server. This is managed by DeephavenApiServer.
         Resource jsPluginsResource = context.getResourceFactory().newResource(jsPlugins.filesystem());
         resources.add(new PathPrefixResource("/js-plugins/", jsPluginsResource));
 
@@ -194,7 +194,7 @@ public class JettyBackedGrpcServer implements GrpcServer {
                 jetty.getByteBufferPool(),
                 jetty.getMimeTypes());
 
-        // Setting this attribute will override the default HttpContent.Factory created by the `ResourceServlet`.
+        // Setting this attribute will override the default HttpContent.Factory created by the ResourceServlet.
         context.setAttribute(HttpContent.Factory.class.getName(), controlledCacheHttpContentFactory);
     }
 

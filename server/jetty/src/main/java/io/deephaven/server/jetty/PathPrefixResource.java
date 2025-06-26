@@ -3,18 +3,17 @@
 //
 package io.deephaven.server.jetty;
 
+import io.deephaven.base.verify.Assert;
 import org.eclipse.jetty.util.resource.Resource;
 
-import java.util.Objects;
-
 /**
- * A `Resource` wrapper that only resolves URIs that start with a specific path prefix. This is useful for creating
- * resources that are only valid for a specific sub-path of the server without requiring servlet apis.
+ * A {@link Resource} wrapper that only resolves URIs that start with a specific path prefix. This is useful for
+ * creating resources that are only valid for a specific sub-path of the server without requiring servlet apis.
  */
 public class PathPrefixResource extends WrappedResource {
     public PathPrefixResource(String pathPrefix, Resource wrapped) {
         super(wrapped);
-        Objects.requireNonNull(wrapped, "wrapped Resource cannot be null");
+        Assert.neqNull(wrapped, "wrapped");
         this.pathPrefix = pathPrefix;
     }
 

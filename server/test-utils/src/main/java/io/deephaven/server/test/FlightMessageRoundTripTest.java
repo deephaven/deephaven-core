@@ -273,8 +273,8 @@ public abstract class FlightMessageRoundTripTest {
 
         // JS plugins must be registered after the server is created but before it is started (this pattern is used in
         // DeephavenApiServer). The default test configuration will create the server here and then start the server in
-        // in the `SetupServerRule`. For tests that need to register JS plugins, they can defer the server start using
-        // the `@DeferServerStart` annotation. Tests can then register plugins and manually start the server.
+        // in the SetupServerRule. For tests that need to register JS plugins, they can defer the server start using
+        // the @DeferServerStart annotation. Tests can then register plugins and manually start the server.
         server = component.server();
     }
 
