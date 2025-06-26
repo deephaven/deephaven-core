@@ -379,7 +379,6 @@ public abstract class FlightMessageRoundTripTest {
      * Annotation to defer auto server start. See {@link SetupServerRule}.
      */
     @Retention(RetentionPolicy.RUNTIME)
-    @Target(ElementType.METHOD)
     public @interface DeferServerStart {
     }
 
