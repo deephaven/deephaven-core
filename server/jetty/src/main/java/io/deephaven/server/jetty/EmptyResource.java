@@ -9,8 +9,8 @@ import java.nio.file.Path;
 import org.eclipse.jetty.util.resource.Resource;
 
 /**
- * An empty {@link Resource} that always indicates non-existence. This is mostly needed to get around a bug in {@link org.eclipse.jetty.util.resource.CombinedResource}
- * where it does not handle null resources correctly.
+ * An empty {@link Resource} that always indicates non-existence. This is mostly needed to get around a bug in
+ * {@link org.eclipse.jetty.util.resource.CombinedResource} where it does not handle null resources correctly.
  */
 public class EmptyResource extends Resource {
     @Override

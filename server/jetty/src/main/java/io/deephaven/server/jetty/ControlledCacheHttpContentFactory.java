@@ -22,9 +22,10 @@ import org.eclipse.jetty.util.resource.Resource;
  */
 public class ControlledCacheHttpContentFactory extends ResourceHttpContentFactory {
     /**
-     * Creates a {@link HttpContent.Factory} using a similar methodology used in {@link org.eclipse.jetty.server.ResourceHandler#newHttpContentFactory()}
-     * except that we use {@link ControlledCacheHttpContentFactory} instead of {@link ResourceHttpContentFactory} as the innermost
-     * factory, and we don't include the {@link VirtualHttpContentFactory}.
+     * Creates a {@link HttpContent.Factory} using a similar methodology used in
+     * {@link org.eclipse.jetty.server.ResourceHandler#newHttpContentFactory()} except that we use
+     * {@link ControlledCacheHttpContentFactory} instead of {@link ResourceHttpContentFactory} as the innermost factory,
+     * and we don't include the {@link VirtualHttpContentFactory}.
      *
      * @param baseResource the base Resource
      * @param byteBufferPool the ByteBufferPool for {@link ValidatingCachingHttpContentFactory}

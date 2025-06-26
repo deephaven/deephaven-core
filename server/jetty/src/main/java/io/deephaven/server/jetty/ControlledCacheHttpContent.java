@@ -19,9 +19,9 @@ import org.eclipse.jetty.http.content.HttpContent;
  * A custom {@link HttpContent} implementation for finer control over caching behavior.
  * <p>
  * <ul>
- *   <li>Calculates a strong ETag based on the content's SHA-256 hash.</li>
- *   <li>Overrides all last modified related methods to signal that the content does not have a last modified time. This is
- *   needed since we don't use last modified timestamps inside of our .jar files.</li>
+ * <li>Calculates a strong ETag based on the content's SHA-256 hash.</li>
+ * <li>Overrides all last modified related methods to signal that the content does not have a last modified time. This
+ * is needed since we don't use last modified timestamps inside of our .jar files.</li>
  * </ul>
  */
 public class ControlledCacheHttpContent extends HttpContent.Wrapper {
