@@ -206,9 +206,7 @@ public class JettyBackedGrpcServer implements GrpcServer {
         HttpContent.Factory controlledCacheHttpContentFactory = ControlledCacheHttpContentFactory.create(
                 combinedResource,
                 jetty.getByteBufferPool(),
-                jetty.getMimeTypes(),
-                new ArrayList<>(),
-                true);
+                jetty.getMimeTypes());
 
         // Setting this attribute will override the default HttpContent.Factory created by the `ResourceServlet`.
         context.setAttribute(HttpContent.Factory.class.getName(), controlledCacheHttpContentFactory);

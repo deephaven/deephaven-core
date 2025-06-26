@@ -4,6 +4,7 @@
 package io.deephaven.server.jetty;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.jetty.http.CompressedContentFormat;
@@ -17,34 +18,27 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.resource.Resource;
 
 /**
- * A custom `HttpContent.Factory` that creates `ControlledCacheHttpContent` instances.
+ * A custom {@link HttpContent.Factory} that creates {@link ControlledCacheHttpContent} instances.
  */
 public class ControlledCacheHttpContentFactory extends ResourceHttpContentFactory {
     /**
-     * Creates a `HttpContent.Factory` using a similar methodology used in `ResourceHandler.newHttpContentFactory()`
-     * except that we use `ControlledCacheHttpContentFactory` instead of `ResourceHttpContentFactory` as the innermost
-     * factory, and we don't include the `VirtualHttpContentFactory`.
+     * Creates a {@link HttpContent.Factory} using a similar methodology used in {@link org.eclipse.jetty.server.ResourceHandler#newHttpContentFactory()}
+     * except that we use {@link ControlledCacheHttpContentFactory} instead of {@link ResourceHttpContentFactory} as the innermost
+     * factory, and we don't include the {@code VirtualHttpContentFactory}.
      * 
      * @param baseResource the base Resource
-     * @param byteBufferPool the ByteBufferPool for ValidatingCachingHttpContentFactory
+     * @param byteBufferPool the ByteBufferPool for {@link ValidatingCachingHttpContentFactory}
      * @param mimeTypes the MimeTypes
-     * @param preCompressedFormats formats for PreCompressedHttpContentFactory
-     * @param useFileMapping whether to use FileMappingHttpContentFactory
-     * @return the wrapped HttpContent.Factory
+     * @return the wrapped {@link HttpContent.Factory}
      */
     public static HttpContent.Factory create(
             Resource baseResource,
             ByteBufferPool byteBufferPool,
-            MimeTypes mimeTypes,
-            List<CompressedContentFormat> preCompressedFormats,
-            boolean useFileMapping) {
+            MimeTypes mimeTypes) {
         // Use `ControlledCacheHttpContentFactory` instead of `ResourceHttpContentFactory`
         HttpContent.Factory contentFactory = new ControlledCacheHttpContentFactory(baseResource, mimeTypes);
-
-        if (useFileMapping) {
-            contentFactory = new FileMappingHttpContentFactory(contentFactory);
-        }
-        contentFactory = new PreCompressedHttpContentFactory(contentFactory, preCompressedFormats);
+        contentFactory = new FileMappingHttpContentFactory(contentFactory);
+        contentFactory = new PreCompressedHttpContentFactory(contentFactory, new ArrayList<>());
         contentFactory = new ValidatingCachingHttpContentFactory(contentFactory,
                 java.time.Duration.ofSeconds(1).toMillis(), byteBufferPool);
 
