@@ -4,6 +4,7 @@
 package io.deephaven.engine.util.file;
 
 import junit.framework.TestCase;
+import org.jetbrains.annotations.NotNull;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -13,7 +14,11 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.FileChannel;
+import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 
 /**
  * Test case for {@link TestTrackedSeekableByteChannel}.
@@ -27,12 +32,12 @@ public class TestTrackedSeekableByteChannel {
     @Before
     public void setup() throws IOException {
         file = File.createTempFile("TestTrackedSeekableByteChannel-", ".dat");
-        channel = new TrackedSeekableByteChannel(
-                f -> handle = new FileHandle(FileChannel.open(f.toPath(),
-                        StandardOpenOption.READ, StandardOpenOption.WRITE, StandardOpenOption.CREATE),
-                        () -> {
-                        }),
-                file);
+        channel = new TrackedSeekableByteChannel(this::makeAndSet, file);
+    }
+
+    private FileHandle makeAndSet(@NotNull final File file) throws IOException {
+        handle = FileHandle.open(file.toPath(), () -> {}, StandardOpenOption.READ, StandardOpenOption.WRITE, StandardOpenOption.CREATE);
+        return handle;
     }
 
     @After
@@ -110,5 +115,37 @@ public class TestTrackedSeekableByteChannel {
             TestCase.fail("Expected exception");
         } catch (ClosedChannelException expected) {
         }
+    }
+
+    @Test
+    public void fileHandleSafetyCheck() throws IOException {
+        handle.close();
+        Files.delete(file.toPath());
+        Files.createFile(file.toPath());
+        try {
+            channel.size();
+            failBecauseExceptionWasNotThrown(IllegalStateException.class);
+        } catch (IllegalStateException e) {
+            assertThat(e).hasMessageContaining("The file key has changed during a refresh");
+        }
+        try {
+            channel.read(ByteBuffer.allocate(1));
+            failBecauseExceptionWasNotThrown(IllegalStateException.class);
+        } catch (IllegalStateException e) {
+            assertThat(e).hasMessageContaining("The file key has changed during a refresh");
+        }
+        try {
+            channel.write(ByteBuffer.allocate(1));
+            failBecauseExceptionWasNotThrown(IllegalStateException.class);
+        } catch (IllegalStateException e) {
+            assertThat(e).hasMessageContaining("The file key has changed during a refresh");
+        }
+        try {
+            channel.truncate(0);
+            failBecauseExceptionWasNotThrown(IllegalStateException.class);
+        } catch (IllegalStateException e) {
+            assertThat(e).hasMessageContaining("The file key has changed during a refresh");
+        }
+        channel.close();
     }
 }
