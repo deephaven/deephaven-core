@@ -6,10 +6,12 @@ package io.deephaven.engine.table.impl;
 import io.deephaven.api.RawString;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.filter.Filter;
+import io.deephaven.api.literal.Literal;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.liveness.Liveness;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.filter.ExtractBarriers;
+import io.deephaven.engine.table.impl.filter.ExtractInnerConjunctiveFilters;
 import io.deephaven.engine.table.impl.filter.ExtractRespectedBarriers;
 import io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer;
 import io.deephaven.engine.table.impl.select.MatchFilter;
@@ -101,7 +103,7 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
         final WhereFilter[] allFilters = Stream.concat(
                 Arrays.stream(deferredFilters).map(WhereFilter::copy),
                 Arrays.stream(whereFilters))
-                .flatMap(wf -> ExtractAnds.of(wf).stream())
+                .flatMap(wf -> ExtractInnerConjunctiveFilters.of(wf).stream())
                 .toArray(WhereFilter[]::new);
 
         if (allFilters.length == 0) {
@@ -325,8 +327,9 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
                 .flatMap(wf -> ExtractBarriers.of(wf).stream())
                 .collect(Collectors.toSet());
         if (!preViewBarriers.isEmpty() && !postViewFilters.isEmpty()) {
+            final WhereFilter trueFilter = WhereFilter.of(RawString.of("true"));
             postViewFilters.addAll(0, preViewBarriers.stream()
-                    .map(barrier -> WhereFilter.of(RawString.of("true").withBarrier(barrier)))
+                    .map(barrier -> trueFilter.copy().withBarrier(barrier))
                     .collect(Collectors.toList()));
         }
         compilationProcessor.compile();
@@ -491,57 +494,6 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
          */
         public Table selectDistinctInternal(Collection<? extends Selectable> columns) {
             return null;
-        }
-    }
-
-    private static class ExtractAnds implements WhereFilter.Visitor<List<WhereFilter>> {
-        public static final ExtractAnds INSTANCE = new ExtractAnds();
-
-        public static List<WhereFilter> of(final WhereFilter filter) {
-            return filter.walkWhereFilter(INSTANCE);
-        }
-
-        @Override
-        public List<WhereFilter> visitWhereFilter(final WhereFilter filter) {
-            final List<WhereFilter> retValue = WhereFilter.Visitor.super.visitWhereFilter(filter);
-            if (retValue == null) {
-                return List.of(filter);
-            }
-            return retValue;
-        }
-
-        @Override
-        public List<WhereFilter> visitWhereFilter(final WhereFilterInvertedImpl filter) {
-            return List.of(filter);
-        }
-
-        @Override
-        public List<WhereFilter> visitWhereFilter(final WhereFilterSerialImpl filter) {
-            return List.of(filter);
-        }
-
-        @Override
-        public List<WhereFilter> visitWhereFilter(final WhereFilterBarrierImpl filter) {
-            return List.of(filter);
-        }
-
-        @Override
-        public List<WhereFilter> visitWhereFilter(final WhereFilterRespectsBarrierImpl filter) {
-            return visitWhereFilter(filter.getWrappedFilter()).stream()
-                    .map(wf -> WhereFilterRespectsBarrierImpl.of(wf, filter.respectedBarriers()))
-                    .collect(Collectors.toList());
-        }
-
-        @Override
-        public List<WhereFilter> visitWhereFilter(final DisjunctiveFilter filter) {
-            return List.of(filter);
-        }
-
-        @Override
-        public List<WhereFilter> visitWhereFilter(final ConjunctiveFilter filter) {
-            return filter.getFilters().stream()
-                    .flatMap(f -> visitWhereFilter(f).stream())
-                    .collect(Collectors.toList());
         }
     }
 }

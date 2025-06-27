@@ -107,4 +107,10 @@ public class RowSetCapturingFilter extends WhereFilterImpl implements SafeClosea
             return new ArrayList<>(rowSets);
         }
     }
+
+    public long numRowsProcessed() {
+        synchronized (rowSets) {
+            return rowSets.stream().mapToLong(RowSet::size).sum();
+        }
+    }
 }
