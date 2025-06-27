@@ -8,7 +8,7 @@ endif()
 
 project(deephaven)
 
-set(deephaven_VERSION 0.39.4)
+set(deephaven_VERSION 0.39.5)
 set(CMAKE_CXX_STANDARD 17)
 
 # for CMAKE_INSTALL_{dir}
