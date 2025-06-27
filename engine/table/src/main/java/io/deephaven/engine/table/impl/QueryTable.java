@@ -32,6 +32,7 @@ import io.deephaven.engine.table.hierarchical.TreeTable;
 import io.deephaven.engine.table.impl.MemoizedOperationKey.SelectUpdateViewOrUpdateView.Flavor;
 import io.deephaven.engine.table.impl.by.*;
 import io.deephaven.engine.table.impl.filter.ExtractBarriers;
+import io.deephaven.engine.table.impl.filter.ExtractFormulaConstantArrayAccess;
 import io.deephaven.engine.table.impl.filter.ExtractRespectedBarriers;
 import io.deephaven.engine.table.impl.hierarchical.RollupTableImpl;
 import io.deephaven.engine.table.impl.hierarchical.TreeTableImpl;
@@ -1386,9 +1387,11 @@ public class QueryTable extends BaseTable<QueryTable> {
                     final List<io.deephaven.base.Pair<String, Map<Long, List<MatchPair>>>> shiftColPairs =
                             new LinkedList<>();
                     for (final WhereFilter filter : filters) {
-                        if (filter instanceof AbstractConditionFilter
-                                && ((AbstractConditionFilter) filter).hasConstantArrayAccess()) {
-                            shiftColPairs.add(((AbstractConditionFilter) filter).getFormulaShiftColPair());
+                        // TODO NATE NOCOMMIT: a MatchPair is insufficient to capture wrapping of serial/barrier/etc
+                        io.deephaven.base.Pair<String, Map<Long, List<MatchPair>>> shiftPair =
+                                ExtractFormulaConstantArrayAccess.of(filter);
+                        if (shiftPair != null) {
+                            shiftColPairs.add(shiftPair);
                         } else {
                             whereFilters.add(filter);
                         }

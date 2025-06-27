@@ -2582,6 +2582,42 @@ public abstract class QueryTableWhereTest {
         assertEquals(5_000, numRowsFiltered(postFilter));
     }
 
+    @Test
+    public void testWhereBarrierOnConstantArrayAccess() {
+        QueryTable.PARALLEL_WHERE_SEGMENTS = 10;
+        QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT = 10_000;
+        final QueryTable source = testRefreshingTable(RowSetFactory.flat(100_000).toTracking());
+        final QueryTable sourceWithData = (QueryTable) source.update("A = ii");
+
+        final Object barrier = new Object();
+        final RowSetCapturingFilter filter0 = new RowSetCapturingFilter(RawString.of("A < 50000"));
+        // note that we can't fetch the inner filter from RowSetCapturingFilter
+        final RowSetCapturingFilter preFilter = new RowSetCapturingFilter();
+
+        // ensure that we get what we expect without the respectsBarrier first
+        final Table res0 = sourceWithData.where(Filter.and(
+                filter0.withBarrier(barrier),
+                preFilter,
+                RawString.of("A_[ii - 1] < 25000")));
+        assertEquals(filter0.numRowsProcessed(), 100000);
+        assertEquals(preFilter.numRowsProcessed(), 50000);
+        // TODO: is this a bug? should the first row be included given that A_[-1] is null/undefined?
+        assertEquals(25_001, res0.size());
+
+        filter0.reset();
+        preFilter.reset();
+
+        final Table res1 = sourceWithData.where(Filter.and(
+                filter0.withBarrier(barrier),
+                preFilter,
+                RawString.of("A_[ii - 1] < 25000").respectsBarrier(barrier)));
+        assertEquals(filter0.numRowsProcessed(), 100000);
+        assertEquals(preFilter.numRowsProcessed(), 50000);
+        assertEquals(25_001, res1.size());
+
+        TstUtils.assertTableEquals(res0, res1);
+    }
+
     protected static TLongList getAndSortSizes(final RowSetCapturingFilter filter) {
         final List<RowSet> rowSets = filter.rowSets();
         TLongList sizes = new TLongArrayList(rowSets.size());

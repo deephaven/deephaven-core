@@ -19,4 +19,8 @@ public class QueryTableWhereSingleTest extends QueryTableWhereTest {
         QueryTable.DISABLE_PARALLEL_WHERE = true;
     }
 
+    @Override
+    public void testWhereBarrierOnConstantArrayAccess() {
+        super.testWhereBarrierOnConstantArrayAccess();
+    }
 }
