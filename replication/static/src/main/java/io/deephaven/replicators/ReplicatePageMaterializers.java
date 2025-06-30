@@ -175,12 +175,14 @@ public class ReplicatePageMaterializers {
 
         // LocalDateTimeFromMillis -> LocalDateTimeFromMicros
         pairs = new String[][] {
-                {"Millis", "Micros"}};
+                {"Millis", "Micros"}
+        };
         replaceAll(TASK, LOCAL_DATE_TIME_FROM_MILLIS_MATERIALIZER_PATH, null, NO_EXCEPTIONS, pairs);
 
         // LocalDateTimeFromMillis -> LocalDateTimeFromNanos
         pairs = new String[][] {
-                {"Millis", "Nanos"}};
+                {"Millis", "Nanos"}
+        };
         replaceAll(TASK, LOCAL_DATE_TIME_FROM_MILLIS_MATERIALIZER_PATH, null, NO_EXCEPTIONS, pairs);
 
         // InstantNanosFromMicros -> InstantNanosFromMillis
