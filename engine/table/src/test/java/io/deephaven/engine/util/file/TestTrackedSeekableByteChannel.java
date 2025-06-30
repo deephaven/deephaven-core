@@ -39,7 +39,7 @@ public class TestTrackedSeekableByteChannel {
     }
 
     private FileHandle makeAndSet(@NotNull final File file) throws IOException {
-        handle = FileHandle.open(file.toPath(), () -> {
+        handle = FileHandle.open(file.toPath(), () -> () -> {
         }, StandardOpenOption.READ, StandardOpenOption.WRITE, StandardOpenOption.CREATE);
         return handle;
     }

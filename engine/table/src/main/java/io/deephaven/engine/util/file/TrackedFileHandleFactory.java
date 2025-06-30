@@ -142,7 +142,7 @@ public class TrackedFileHandleFactory implements FileHandleFactory {
             // Synchronous cleanup at full capacity.
             cleanup();
         }
-        final FileHandle handle = FileHandle.open(file.toPath(), new CloseRecorder(), openOptions);
+        final FileHandle handle = FileHandle.open(file.toPath(), CloseRecorder::new, openOptions);
         handleReferences.add(new HandleReference(handle));
         return handle;
     }

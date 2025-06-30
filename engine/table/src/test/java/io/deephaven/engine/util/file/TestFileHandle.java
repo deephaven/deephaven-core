@@ -26,7 +26,7 @@ public class TestFileHandle {
     @Before
     public void setup() throws IOException {
         file = File.createTempFile("TestFileHandle-", ".dat");
-        FHUT = FileHandle.open(file.toPath(), () -> {
+        FHUT = FileHandle.open(file.toPath(), () -> () -> {
         }, StandardOpenOption.READ, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING,
                 StandardOpenOption.CREATE);
     }

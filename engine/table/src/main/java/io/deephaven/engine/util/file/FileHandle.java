@@ -21,6 +21,7 @@ import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Objects;
+import java.util.function.Supplier;
 
 /**
  * <p>
@@ -77,8 +78,8 @@ public final class FileHandle implements SeekableByteChannel {
      * Creates a new file handle by wrapping up the results of an {@link FileChannel#open(Path, OpenOption...)}.
      *
      * <p>
-     * If the {@code postCloseProcedure} throws an exception, that exception may suppress
-     * {@link ClosedChannelException}s that trigger {@code postCloseProcedure} invocation.
+     * If the {@link Runnable} created from {@code postCloseProcedureSupplier} throws an exception, that exception may
+     * suppress {@link ClosedChannelException}s that trigger {@code postCloseProcedure} invocation.
      *
      * <p>
      * By default, the returned file handle will contain its {@link BasicFileAttributes#fileKey() file key} to act as a
@@ -86,28 +87,18 @@ public final class FileHandle implements SeekableByteChannel {
      * check, the configuration property {@value SAFETY_CHECK_PROPERTY} can be set to {@code false}.
      *
      * @param path The path to the file
-     * @param postCloseProcedure A procedure to invoke if its detected that the {@link FileChannel} is closed - must be
-     *        idempotent
+     * @param postCloseProcedureSupplier A supplier for a procedure to invoke if it's detected that the
+     *        {@link FileChannel} is closed - the procedure must be idempotent
      * @param options the open options
      * @return the file handle
      * @throws IOException if an IO exception occurs
      */
     public static FileHandle open(
             @NotNull final Path path,
-            @NotNull final Runnable postCloseProcedure,
+            @NotNull final Supplier<Runnable> postCloseProcedureSupplier,
             @NotNull final OpenOption... options)
             throws IOException {
-        final FileChannel fileChannel;
-        try {
-            fileChannel = FileChannel.open(path, options);
-        } catch (final RuntimeException e) {
-            try {
-                postCloseProcedure.run();
-            } catch (final RuntimeException e2) {
-                e.addSuppressed(e2);
-            }
-            throw e;
-        }
+        final FileChannel fileChannel = FileChannel.open(path, options);
         final Object fileKey;
         if (!SAFETY_CHECK_ENABLED) {
             fileKey = null;
@@ -128,17 +119,12 @@ public final class FileHandle implements SeekableByteChannel {
                 } catch (final RuntimeException e2) {
                     e.addSuppressed(e2);
                 }
-                try {
-                    postCloseProcedure.run();
-                } catch (final RuntimeException e2) {
-                    e.addSuppressed(e2);
-                }
                 throw e;
             }
             // May be null here still
             fileKey = attributes.fileKey();
         }
-        return new FileHandle(fileChannel, postCloseProcedure, fileKey);
+        return new FileHandle(fileChannel, postCloseProcedureSupplier.get(), fileKey);
     }
 
     /**
@@ -151,7 +137,7 @@ public final class FileHandle implements SeekableByteChannel {
      * @param fileChannel The {@link FileChannel}
      * @param postCloseProcedure A procedure to invoke if its detected that the {@link FileChannel} is closed - must be
      *        idempotent
-     * @deprecated prefer {@link #open(Path, Runnable, OpenOption...)}
+     * @deprecated prefer {@link #open(Path, Supplier, OpenOption...)}
      */
     @Deprecated
     public FileHandle(@NotNull final FileChannel fileChannel, @NotNull final Runnable postCloseProcedure) {
