@@ -1,5 +1,6 @@
 package io.deephaven.project.util
 
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import groovy.transform.CompileStatic
 import io.deephaven.tools.License
 import org.gradle.api.Action
@@ -45,19 +46,22 @@ class PublishingTools {
     }
 
     static void setupPublications(Project project, Action<MavenPublication> action) {
+        project.extensions
+                .getByType(PublishingExtension)
+                .publications
+                .create('mavenJava', MavenPublication) { publication ->
+                    action.execute(publication)
+                    setupLicense(project, publication)
+                }
+    }
+
+    static void setupLicense(Project project, MavenPublication publication) {
         def projectLicense = project.extensions.extraProperties.get('license') as License
-
-        project.extensions.findByType(PublishingExtension).publications { container ->
-            container.create('mavenJava', MavenPublication) { publication ->
-                action.execute(publication)
-                publication.pom {pom ->
-                    pom.licenses { licenses ->
-                        licenses.license { license ->
-                            license.name.set projectLicense.name
-                            license.url.set projectLicense.url
-                        }
-                    }
-
+        publication.pom {pom ->
+            pom.licenses { licenses ->
+                licenses.license { license ->
+                    license.name.set projectLicense.name
+                    license.url.set projectLicense.url
                 }
             }
         }
@@ -157,5 +161,15 @@ class PublishingTools {
                 }
             }
         }
+    }
+
+    static void setupShadowName(Project project, String name) {
+        project.tasks.named('shadowJar', ShadowJar) {
+            it.archiveBaseName.set(name)
+        }
+        project.extensions.getByType(PublishingExtension).publications.named('shadow', MavenPublication) {
+            it.artifactId = name
+        }
+        project.extensions.getByType(BasePluginExtension).archivesName.set(name)
     }
 }
