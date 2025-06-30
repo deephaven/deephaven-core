@@ -10,6 +10,7 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.VisibleForTesting;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -20,6 +21,7 @@ import java.nio.file.Files;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -167,6 +169,28 @@ public final class FileHandle implements SeekableByteChannel {
         this.fileKey = fileKey;
     }
 
+    /**
+     * Checks if two file handles are equal based on their {@link BasicFileAttributes#fileKey()} on a best-effort basis.
+     * This method should only return {@code false} when it is known that the file handles refer to different files -
+     * that is, the bias is for this method to return {@code true}. The exact semantics of "file key equivalence" is
+     * filesystem-dependant, but the general expectation is that UNIX filesystems will use <em>device ID</em> and
+     * <em>inode</em> to accomplish this. (A UNIX filesystem may choose to re-use <em>device ID</em> and <em>inode</em>
+     * after a file has been deleted. In this case, it is possible for two file handles that referenced two separate
+     * files to have "file key equivalence", and is one of the reason why this method must be biased in the {@code true}
+     * direction.)
+     *
+     * <p>
+     * If the configuration property {@value #SAFETY_CHECK_PROPERTY} is {@code false}, this method will always return
+     * {@code true}.
+     *
+     * @param other the other file handle
+     * @return true if the file keys are equal
+     */
+    public boolean equalsFileKey(@NotNull final FileHandle other) {
+        return Objects.equals(fileKey, other.fileKey);
+    }
+
+    @VisibleForTesting
     Optional<Object> fileKey() {
         return Optional.ofNullable(fileKey);
     }

@@ -8,7 +8,6 @@ import org.jetbrains.annotations.NotNull;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.util.Objects;
 
 /**
  * Base class for accessors that wrap a {@link FileHandle} with support for interruption and asynchronous close.
@@ -54,11 +53,9 @@ public abstract class FileHandleAccessor {
             synchronized (this) {
                 if (previousLocalHandle == (localFileHandle = fileHandle)) {
                     final FileHandle newFileHandle = makeHandle();
-                    final Object previousFileKey = previousLocalHandle.fileKey().orElse(null);
-                    final Object newFileKey = newFileHandle.fileKey().orElse(null);
-                    if (!Objects.equals(previousFileKey, newFileKey)) {
+                    if (!fileHandle.equalsFileKey(newFileHandle)) {
                         final IllegalStateException e = new IllegalStateException(String.format(
-                                "The file key has changed during a refresh for '%s'! This can lead to very hard to debug issues downstream since Deephaven assumes that file contents will be consistent. If you are sure that the file in question has not been recreated, this could be an indication of a filesystem or Java bug. To disable this safety check (not advised), you can set the configuration property '%s = false'. Before doing so, please share this stacktrace with Deephaven support staff.",
+                                "The file key has changed during a refresh for '%s'! This can lead to very hard to debug issues downstream since Deephaven assumes that file paths will always refer to the same physical file. If you are sure that the file in question has not been recreated, this could be an indication of a filesystem or Java bug. To disable this safety check (not advised), you can set the configuration property '%s = false'. Before doing so, please share this stacktrace with Deephaven support staff.",
                                 file, FileHandle.SAFETY_CHECK_PROPERTY));
                         try {
                             newFileHandle.close();
