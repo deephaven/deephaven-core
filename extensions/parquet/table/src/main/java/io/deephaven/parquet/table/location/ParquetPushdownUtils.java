@@ -80,8 +80,6 @@ abstract class ParquetPushdownUtils {
         return Instant.ofEpochMilli(millis);
     }
 
-
-
     /**
      * Converts nanoseconds from the Epoch to a {@link LocalDateTime} in UTC timezone.
      */
@@ -106,7 +104,6 @@ abstract class ParquetPushdownUtils {
                 (int) ((millis % MILLIS_PER_SECOND) * NANOS_PER_MILLI),
                 ZoneOffset.UTC);
     }
-
 
     /**
      * Converts the number of milliseconds from midnight to a {@link LocalTime}
