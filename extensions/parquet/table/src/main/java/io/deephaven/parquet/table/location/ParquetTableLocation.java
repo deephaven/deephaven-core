@@ -779,6 +779,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
             final MinMax<?> minMax = minMaxFromStatistics.get();
             boolean maybeMatches;
             try {
+                // TODO Reduce the duplication here
                 if (filter instanceof ByteRangeFilter) {
                     final ByteRangeFilter byteRangeFilter = (ByteRangeFilter) filter;
                     final byte min = TypeUtils.getUnboxedByte(minMax.min());
