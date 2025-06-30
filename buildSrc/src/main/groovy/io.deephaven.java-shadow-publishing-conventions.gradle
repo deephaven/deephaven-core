@@ -25,6 +25,8 @@ def shadowPublication = project
         .publications
         .create('shadow', MavenPublication) {
           from(project.components.named('shadow').get())
+          artifact(project.tasks.named('sourcesJar'))
+          artifact(project.tasks.named('javadocJar'))
         }
 
 def shadowJar = project.tasks.named('shadowJar', ShadowJar) {
