@@ -1,5 +1,6 @@
 import io.deephaven.project.util.PublishingTools
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+import org.gradle.jvm.tasks.Jar
 
 plugins {
   id 'java'
@@ -31,6 +32,13 @@ def shadowPublication = project
 
 def shadowJar = project.tasks.named('shadowJar', ShadowJar) {
   archiveClassifier = ''
+}
+
+project.tasks.named('jar', Jar) {
+  // Note: this is forcing the output name of the plain jar task to be _different_ than the shadow jar, otherwise you
+  // can end up with gradle thinking that the jar output is an implicit, unstated dependency of some shadow tasks, and
+  // causes failures. (In addition to potential issues w/ tasks stomping on other tasks.)
+  archiveClassifier = 'orig'
 }
 
 project.tasks.named('assemble') {
