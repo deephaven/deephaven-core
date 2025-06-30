@@ -7,7 +7,9 @@
 // @formatter:off
 package io.deephaven.engine.table.impl.chunkfilter;
 
+import gnu.trove.iterator.TShortIterator;
 import gnu.trove.set.hash.TShortHashSet;
+import io.deephaven.util.compare.ShortComparisons;
 
 /**
  * Creates chunk filters for short values.
@@ -55,7 +57,12 @@ public class ShortChunkMatchFilterFactory {
 
         @Override
         public boolean matches(short value) {
-            return value == this.value;
+            return ShortComparisons.eq(value, this.value);
+        }
+
+        @Override
+        public boolean overlaps(short inputLower, short inputUpper) {
+            return ShortComparisons.geq(value, inputLower) && ShortComparisons.leq(value, inputUpper);
         }
     }
 
@@ -68,7 +75,13 @@ public class ShortChunkMatchFilterFactory {
 
         @Override
         public boolean matches(short value) {
-            return value != this.value;
+            return !ShortComparisons.eq(value, this.value);
+        }
+
+        @Override
+        public boolean overlaps(short inputLower, short inputUpper) {
+            // true if the range contains ANY short other than the excluded one
+            return !(ShortComparisons.eq(value, inputLower) && ShortComparisons.eq(value, inputUpper));
         }
     }
 
@@ -83,7 +96,13 @@ public class ShortChunkMatchFilterFactory {
 
         @Override
         public boolean matches(short value) {
-            return value == value1 || value == value2;
+            return ShortComparisons.eq(value, value1) || ShortComparisons.eq(value, value2);
+        }
+
+        @Override
+        public boolean overlaps(short inputLower, short inputUpper) {
+            return (ShortComparisons.geq(value1, inputLower) && ShortComparisons.leq(value1, inputUpper)) ||
+                    (ShortComparisons.geq(value2, inputLower) && ShortComparisons.leq(value2, inputUpper));
         }
     }
 
@@ -98,7 +117,18 @@ public class ShortChunkMatchFilterFactory {
 
         @Override
         public boolean matches(short value) {
-            return value != value1 && value != value2;
+            return !ShortComparisons.eq(value, value1) && !ShortComparisons.eq(value, value2);
+        }
+
+        @Override
+        public boolean overlaps(short inputLower, short inputUpper) {
+            for (long v = inputLower; v <= inputUpper; v++) { // long to avoid overflow issues
+                final short value = (short) v;
+                if (!ShortComparisons.eq(value, value1) && !ShortComparisons.eq(value, value2)) {
+                    return true;
+                }
+            }
+            return false;
         }
     }
 
@@ -115,7 +145,16 @@ public class ShortChunkMatchFilterFactory {
 
         @Override
         public boolean matches(short value) {
-            return value == value1 || value == value2 || value == value3;
+            return ShortComparisons.eq(value, value1) ||
+                    ShortComparisons.eq(value, value2) ||
+                    ShortComparisons.eq(value, value3);
+        }
+
+        @Override
+        public boolean overlaps(short inputLower, short inputUpper) {
+            return (ShortComparisons.geq(value1, inputLower) && ShortComparisons.leq(value1, inputUpper)) ||
+                    (ShortComparisons.geq(value2, inputLower) && ShortComparisons.leq(value2, inputUpper)) ||
+                    (ShortComparisons.geq(value3, inputLower) && ShortComparisons.leq(value3, inputUpper));
         }
     }
 
@@ -132,7 +171,21 @@ public class ShortChunkMatchFilterFactory {
 
         @Override
         public boolean matches(short value) {
-            return value != value1 && value != value2 && value != value3;
+            return !ShortComparisons.eq(value, value1) &&
+                    !ShortComparisons.eq(value, value2) &&
+                    !ShortComparisons.eq(value, value3);
+        }
+
+        @Override
+        public boolean overlaps(short inputLower, short inputUpper) {
+            for (long v = inputLower; v <= inputUpper; v++) {
+                final short value = (short) v;
+                if (!ShortComparisons.eq(value, value1) && !ShortComparisons.eq(value, value2)
+                        && !ShortComparisons.eq(value, value3)) {
+                    return true;
+                }
+            }
+            return false;
         }
     }
 
@@ -147,6 +200,18 @@ public class ShortChunkMatchFilterFactory {
         public boolean matches(short value) {
             return this.values.contains(value);
         }
+
+        @Override
+        public boolean overlaps(short inputLower, short inputUpper) {
+            final TShortIterator iterator = values.iterator();
+            while (iterator.hasNext()) {
+                final short value = iterator.next();
+                if (ShortComparisons.geq(value, inputLower) && ShortComparisons.leq(value, inputUpper)) {
+                    return true;
+                }
+            }
+            return false;
+        }
     }
 
     private final static class InverseMultiValueShortChunkFilter extends ShortChunkFilter {
@@ -159,6 +224,16 @@ public class ShortChunkMatchFilterFactory {
         @Override
         public boolean matches(short value) {
             return !this.values.contains(value);
+        }
+
+        @Override
+        public boolean overlaps(short inputLower, short inputUpper) {
+            for (long ci = inputLower; ci <= inputUpper; ci++) {
+                if (!values.contains((short) ci)) {
+                    return true;
+                }
+            }
+            return false;
         }
     }
 }

@@ -16,10 +16,6 @@ import java.time.LocalTime;
 
 public class LocalTimeFromNanosMaterializer extends ObjectMaterializerBase<LocalTime> implements PageMaterializer {
 
-    public static LocalTime convertValue(final long nanosOfDay) {
-        return DateTimeUtils.nanosOfDayToLocalTime(nanosOfDay);
-    }
-
     public static final PageMaterializerFactory FACTORY = new PageMaterializerFactory() {
         @Override
         public PageMaterializer makeMaterializerWithNulls(ValuesReader dataReader, Object nullValue, int numValues) {
@@ -46,7 +42,7 @@ public class LocalTimeFromNanosMaterializer extends ObjectMaterializerBase<Local
     @Override
     public void fillValues(int startIndex, int endIndex) {
         for (int ii = startIndex; ii < endIndex; ii++) {
-            data[ii] = convertValue(dataReader.readLong());
+            data[ii] = DateTimeUtils.nanosOfDayToLocalTime(dataReader.readLong());
         }
     }
 }

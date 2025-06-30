@@ -3,7 +3,9 @@
 //
 package io.deephaven.engine.table.impl.chunkfilter;
 
+import gnu.trove.iterator.TCharIterator;
 import gnu.trove.set.hash.TCharHashSet;
+import io.deephaven.util.compare.CharComparisons;
 
 /**
  * Creates chunk filters for char values.
@@ -51,7 +53,12 @@ public class CharChunkMatchFilterFactory {
 
         @Override
         public boolean matches(char value) {
-            return value == this.value;
+            return CharComparisons.eq(value, this.value);
+        }
+
+        @Override
+        public boolean overlaps(char inputLower, char inputUpper) {
+            return CharComparisons.geq(value, inputLower) && CharComparisons.leq(value, inputUpper);
         }
     }
 
@@ -64,7 +71,13 @@ public class CharChunkMatchFilterFactory {
 
         @Override
         public boolean matches(char value) {
-            return value != this.value;
+            return !CharComparisons.eq(value, this.value);
+        }
+
+        @Override
+        public boolean overlaps(char inputLower, char inputUpper) {
+            // true if the range contains ANY char other than the excluded one
+            return !(CharComparisons.eq(value, inputLower) && CharComparisons.eq(value, inputUpper));
         }
     }
 
@@ -79,7 +92,13 @@ public class CharChunkMatchFilterFactory {
 
         @Override
         public boolean matches(char value) {
-            return value == value1 || value == value2;
+            return CharComparisons.eq(value, value1) || CharComparisons.eq(value, value2);
+        }
+
+        @Override
+        public boolean overlaps(char inputLower, char inputUpper) {
+            return (CharComparisons.geq(value1, inputLower) && CharComparisons.leq(value1, inputUpper)) ||
+                    (CharComparisons.geq(value2, inputLower) && CharComparisons.leq(value2, inputUpper));
         }
     }
 
@@ -94,7 +113,18 @@ public class CharChunkMatchFilterFactory {
 
         @Override
         public boolean matches(char value) {
-            return value != value1 && value != value2;
+            return !CharComparisons.eq(value, value1) && !CharComparisons.eq(value, value2);
+        }
+
+        @Override
+        public boolean overlaps(char inputLower, char inputUpper) {
+            for (long v = inputLower; v <= inputUpper; v++) { // long to avoid overflow issues
+                final char value = (char) v;
+                if (!CharComparisons.eq(value, value1) && !CharComparisons.eq(value, value2)) {
+                    return true;
+                }
+            }
+            return false;
         }
     }
 
@@ -111,7 +141,16 @@ public class CharChunkMatchFilterFactory {
 
         @Override
         public boolean matches(char value) {
-            return value == value1 || value == value2 || value == value3;
+            return CharComparisons.eq(value, value1) ||
+                    CharComparisons.eq(value, value2) ||
+                    CharComparisons.eq(value, value3);
+        }
+
+        @Override
+        public boolean overlaps(char inputLower, char inputUpper) {
+            return (CharComparisons.geq(value1, inputLower) && CharComparisons.leq(value1, inputUpper)) ||
+                    (CharComparisons.geq(value2, inputLower) && CharComparisons.leq(value2, inputUpper)) ||
+                    (CharComparisons.geq(value3, inputLower) && CharComparisons.leq(value3, inputUpper));
         }
     }
 
@@ -128,7 +167,21 @@ public class CharChunkMatchFilterFactory {
 
         @Override
         public boolean matches(char value) {
-            return value != value1 && value != value2 && value != value3;
+            return !CharComparisons.eq(value, value1) &&
+                    !CharComparisons.eq(value, value2) &&
+                    !CharComparisons.eq(value, value3);
+        }
+
+        @Override
+        public boolean overlaps(char inputLower, char inputUpper) {
+            for (long v = inputLower; v <= inputUpper; v++) {
+                final char value = (char) v;
+                if (!CharComparisons.eq(value, value1) && !CharComparisons.eq(value, value2)
+                        && !CharComparisons.eq(value, value3)) {
+                    return true;
+                }
+            }
+            return false;
         }
     }
 
@@ -143,6 +196,18 @@ public class CharChunkMatchFilterFactory {
         public boolean matches(char value) {
             return this.values.contains(value);
         }
+
+        @Override
+        public boolean overlaps(char inputLower, char inputUpper) {
+            final TCharIterator iterator = values.iterator();
+            while (iterator.hasNext()) {
+                final char value = iterator.next();
+                if (CharComparisons.geq(value, inputLower) && CharComparisons.leq(value, inputUpper)) {
+                    return true;
+                }
+            }
+            return false;
+        }
     }
 
     private final static class InverseMultiValueCharChunkFilter extends CharChunkFilter {
@@ -155,6 +220,16 @@ public class CharChunkMatchFilterFactory {
         @Override
         public boolean matches(char value) {
             return !this.values.contains(value);
+        }
+
+        @Override
+        public boolean overlaps(char inputLower, char inputUpper) {
+            for (long ci = inputLower; ci <= inputUpper; ci++) {
+                if (!values.contains((char) ci)) {
+                    return true;
+                }
+            }
+            return false;
         }
     }
 }

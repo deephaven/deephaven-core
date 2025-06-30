@@ -36,6 +36,9 @@ import java.util.*;
 import static io.deephaven.base.FileUtils.convertToURI;
 import static io.deephaven.engine.table.impl.select.WhereFilterFactory.getExpression;
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
+import static io.deephaven.engine.util.TableTools.doubleCol;
+import static io.deephaven.engine.util.TableTools.floatCol;
+import static io.deephaven.engine.util.TableTools.newTable;
 import static io.deephaven.parquet.table.ParquetTools.readTable;
 import static io.deephaven.parquet.table.ParquetTools.writeTable;
 import static io.deephaven.time.DateTimeUtils.parseInstant;
@@ -1075,5 +1078,108 @@ public final class ParquetTableFilterTest {
                         source.getRowSet(),
                         false,
                         TEST_PUSHDOWN_FILTER_CONTEXT));
+    }
+
+    /**
+     * <pre>
+     * import pandas as pd
+     * import numpy as np
+     * import pyarrow as pa
+     * import pyarrow.parquet as pq
+     *
+     * # Representative values spanning each type's range from minimum to maximum.
+     * byte_vals  = np.array([-128, -42,   -1, 0, 1,   42,  127],  dtype=np.int8)     # int8
+     * short_vals = np.array([-32768, -12345, -1, 0, 1, 12345, 32767], dtype=np.int16) # int16
+     * char_vals  = np.array([0, 10000, 30000, 40000, 50000, 60000, 65535], dtype=np.uint16)  # uint16 (char)
+     * int_vals   = np.array([-2147483648, -123456, -1, 0, 1, 123456, 2147483647], dtype=np.int32)  # int32
+     * long_vals  = np.array([
+     *     -9223372036854775808,  # int64 lower bound
+     *     -1234567890123456789,
+     *     -1,
+     *      0,
+     *      1,
+     *      1234567890123456789,
+     *      9223372036854775807   # int64 upper bound
+     * ], dtype=np.int64)  # int64
+     *
+     * df = pd.DataFrame({
+     *     "Bytes":  byte_vals,
+     *     "Shorts": short_vals,
+     *     "Chars":  char_vals,
+     *     "Ints":   int_vals,
+     *     "Longs":  long_vals
+     * })
+     *
+     * table = pa.Table.from_pandas(df)
+     * pq.write_table(table, "ReferenceExtremeValues.parquet")
+     * </pre>
+     */
+    @Test
+    public void testForExtremes() {
+        final String path = ParquetTableFilterTest.class.getResource("/ReferenceExtremeValues.parquet").getFile();
+        final Table diskTable = readTable(path);
+        final Table memTable = diskTable.select();
+
+        assertTableEquals(diskTable, memTable);
+
+        filterAndVerifyResultsAllowEmpty(diskTable, memTable, "Bytes == null");
+        filterAndVerifyResultsAllowEmpty(diskTable, memTable, "Bytes != null");
+
+        filterAndVerifyResultsAllowEmpty(diskTable, memTable, "Shorts == null");
+        filterAndVerifyResultsAllowEmpty(diskTable, memTable, "Shorts != null");
+
+        filterAndVerifyResultsAllowEmpty(diskTable, memTable, "Chars == null");
+        filterAndVerifyResultsAllowEmpty(diskTable, memTable, "Chars != null");
+
+        filterAndVerifyResultsAllowEmpty(diskTable, memTable, "Ints == null");
+        filterAndVerifyResultsAllowEmpty(diskTable, memTable, "Ints != null");
+
+        filterAndVerifyResultsAllowEmpty(diskTable, memTable, "Longs == null");
+        filterAndVerifyResultsAllowEmpty(diskTable, memTable, "Longs != null");
+    }
+
+    /**
+     * <pre>
+     * import pyarrow as pa
+     * import pyarrow.parquet as pq
+     * import numpy as np
+     *
+     * floats   = pa.array([1.23, np.nan, -4.56],  type=pa.float32())
+     * doubles  = pa.array([1.23, np.nan, -4.56],  type=pa.float64())
+     * table = pa.Table.from_arrays(
+     *     [floats, doubles],
+     *     names=["Floats", "Doubles"]
+     * )
+     * pq.write_table(table, "example.parquet")
+     * </pre>
+     */
+    @Test
+    public void testFilteringNaN() {
+        // Read the reference parquet file with NaN values generated using PyArrow.
+        final String path = ParquetTableFilterTest.class.getResource("/ReferenceFloatingPointNan.parquet").getFile();
+        testFilteringNanImpl(ParquetTools.readTable(path));
+
+        // Write a new parquet file with NaN values using DH and test the filtering.
+        final String dest = Path.of(rootFile.getPath(), "filteringNan.parquet").toString();
+        final Table source = newTable(
+                floatCol("Floats", 1.23f, Float.NaN, -4.56f),
+                doubleCol("Doubles", 1.23, Double.NaN, -4.56));
+        writeTable(source, dest);
+        testFilteringNanImpl(readTable(dest));
+    }
+
+    private static void testFilteringNanImpl(final Table diskTable) {
+        final Table memTable = diskTable.select();
+        assertTableEquals(diskTable, memTable);
+
+        filterAndVerifyResultsAllowEmpty(diskTable, memTable, "Floats != null");
+        filterAndVerifyResultsAllowEmpty(diskTable, memTable, "Floats == null");
+        filterAndVerifyResultsAllowEmpty(diskTable, memTable, "Floats > 1");
+        filterAndVerifyResultsAllowEmpty(diskTable, memTable, "Floats <= 1");
+
+        filterAndVerifyResultsAllowEmpty(diskTable, memTable, "Doubles != null");
+        filterAndVerifyResultsAllowEmpty(diskTable, memTable, "Doubles == null");
+        filterAndVerifyResultsAllowEmpty(diskTable, memTable, "Doubles > 1");
+        filterAndVerifyResultsAllowEmpty(diskTable, memTable, "Doubles <= 1");
     }
 }

@@ -8,14 +8,15 @@ import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.chunkfilter.CharChunkFilter;
 import io.deephaven.engine.table.impl.chunkfilter.CharRangeComparator;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
 import io.deephaven.gui.table.filters.Condition;
 import io.deephaven.util.QueryConstants;
+import io.deephaven.util.annotations.InternalUseOnly;
 import io.deephaven.util.compare.CharComparisons;
 import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 public class CharRangeFilter extends AbstractRangeFilter {
     public static CharRangeFilter lt(String columnName, char x) {
@@ -162,33 +163,34 @@ public class CharRangeFilter extends AbstractRangeFilter {
         return minPosition;
     }
 
-    @Override
-    public boolean overlaps(
-            @Nullable final Object lower,
-            @Nullable final Object upper,
-            final boolean lowerInclusive,
-            final boolean upperInclusive) {
-        // Validate the input bounds.
-        final int c0 = CompareUtils.compare(lower, upper);
-        if (c0 > 0) {
-            throw new IllegalArgumentException("Lower bound must not be greater than upper bound, found: "
-                    + lower + " > " + upper);
-        } else if (c0 == 0 && (!lowerInclusive || !upperInclusive)) {
-            throw new IllegalArgumentException("Lower and upper bounds must be inclusive when equal, found: "
-                    + lower + " == " + upper);
+    /**
+     * Returns {@code true} if the range filter overlaps with the input range, else {@code false}
+     *
+     * @param inputLower the lower bound of the input range (inclusive)
+     * @param inputUpper the upper bound of the input range (inclusive)
+     *
+     * @throws IllegalStateException if the chunk filter is not initialized
+     */
+    @InternalUseOnly
+    public boolean overlaps(final char inputLower, final char inputUpper) {
+        if (chunkFilter().isEmpty()) {
+            throw new IllegalStateException("Chunk filter not initialized for: " + this);
         }
+        return ((CharChunkFilter) chunkFilter().get()).overlaps(inputLower, inputUpper);
+    }
 
-        final int c1 = CompareUtils.compare(this.lower, upper);
-        if (c1 > 0) {
-            return false; // this.lower > inputUpper, no overlap possible.
+    /**
+     * Returns {@code true} if the given value is found within the range filter, else {@code false}.
+     *
+     * @param value the value to check
+     *
+     * @throws IllegalStateException if the chunk filter is not initialized
+     */
+    @InternalUseOnly
+    public boolean matches(final char value) {
+        if (chunkFilter().isEmpty()) {
+            throw new IllegalStateException("Chunk filter not initialized for: " + this);
         }
-        final int c2 = CompareUtils.compare(lower, this.upper);
-        if (c2 > 0) {
-            return false; // inputLower > this.upper, no overlap possible.
-        }
-        // Test for complete inclusion and test the edges.
-        return (c1 < 0 && c2 < 0)
-                || (c1 == 0 && this.lowerInclusive && upperInclusive)
-                || (c2 == 0 && lowerInclusive && this.upperInclusive);
+        return ((CharChunkFilter) chunkFilter().get()).matches(value);
     }
 }

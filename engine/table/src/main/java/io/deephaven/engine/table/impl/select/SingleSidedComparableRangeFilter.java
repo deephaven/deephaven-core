@@ -8,6 +8,7 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
 import io.deephaven.engine.table.impl.chunkfilter.ObjectChunkFilter;
+import io.deephaven.util.annotations.InternalUseOnly;
 import io.deephaven.util.compare.ObjectComparisons;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.rowset.WritableRowSet;
@@ -92,6 +93,11 @@ public class SingleSidedComparableRangeFilter extends AbstractRangeFilter {
         public boolean matches(Comparable<?> value) {
             return ObjectComparisons.geq(value, pivot);
         }
+
+        @Override
+        public boolean overlaps(Comparable<?> inputLower, Comparable<?> inputUpper) {
+            return ObjectComparisons.leq(pivot, inputUpper);
+        }
     }
 
     private static class LeqComparableChunkFilter extends ObjectChunkFilter<Comparable<?>> {
@@ -104,6 +110,11 @@ public class SingleSidedComparableRangeFilter extends AbstractRangeFilter {
         @Override
         public boolean matches(Comparable<?> value) {
             return ObjectComparisons.leq(value, pivot);
+        }
+
+        @Override
+        public boolean overlaps(Comparable<?> inputLower, Comparable<?> inputUpper) {
+            return ObjectComparisons.leq(inputLower, pivot);
         }
     }
 
@@ -118,6 +129,11 @@ public class SingleSidedComparableRangeFilter extends AbstractRangeFilter {
         public boolean matches(Comparable<?> value) {
             return ObjectComparisons.gt(value, pivot);
         }
+
+        @Override
+        public boolean overlaps(Comparable<?> inputLower, Comparable<?> inputUpper) {
+            return ObjectComparisons.lt(pivot, inputUpper);
+        }
     }
 
     private static class LtComparableChunkFilter extends ObjectChunkFilter<Comparable<?>> {
@@ -130,6 +146,11 @@ public class SingleSidedComparableRangeFilter extends AbstractRangeFilter {
         @Override
         public boolean matches(Comparable<?> value) {
             return ObjectComparisons.lt(value, pivot);
+        }
+
+        @Override
+        public boolean overlaps(Comparable<?> inputLower, Comparable<?> inputUpper) {
+            return ObjectComparisons.lt(inputLower, pivot);
         }
     }
 
@@ -158,28 +179,32 @@ public class SingleSidedComparableRangeFilter extends AbstractRangeFilter {
         }
     }
 
-    @Override
-    public boolean overlaps(
-            @Nullable final Object lower,
-            @Nullable final Object upper,
-            final boolean lowerInclusive,
-            final boolean upperInclusive) {
-        // Validate the input bounds.
-        final int c0 = CompareUtils.compare(lower, upper);
-        if (c0 > 0) {
-            throw new IllegalArgumentException("Lower bound must not be greater than upper bound, found: "
-                    + lower + " > " + upper);
-        } else if (c0 == 0 && (!lowerInclusive || !upperInclusive)) {
-            throw new IllegalArgumentException("Lower and upper bounds must be inclusive when equal, found: "
-                    + lower + " == " + upper);
+    /**
+     * Returns {@code true} if the range filter overlaps with the input range, else {@code false}.
+     *
+     * @param inputLower the lower bound of the input range (inclusive)
+     * @param inputUpper the upper bound of the input range (inclusive)
+     */
+    @InternalUseOnly
+    public boolean overlaps(@NotNull final Comparable<?> inputLower, @NotNull final Comparable<?> inputUpper) {
+        if (chunkFilter().isEmpty()) {
+            throw new IllegalStateException("Chunk filter not initialized for: " + this);
         }
+        // noinspection unchecked
+        return ((ObjectChunkFilter<Comparable<?>>) chunkFilter().get()).overlaps(inputLower, inputUpper);
+    }
 
-        if (isGreaterThan) {
-            final int c = CompareUtils.compare(pivot, upper);
-            return c < 0 || (c == 0 && this.lowerInclusive);
-        } else {
-            final int c = CompareUtils.compare(lower, pivot);
-            return c < 0 || (c == 0 && this.lowerInclusive);
+    /**
+     * Returns {@code true} if the given value is found within the range filter, else {@code false}.
+     *
+     * @param value the value to check
+     */
+    @InternalUseOnly
+    public boolean matches(@Nullable final Comparable<?> value) {
+        if (chunkFilter().isEmpty()) {
+            throw new IllegalStateException("Chunk filter not initialized for: " + this);
         }
+        // noinspection unchecked
+        return ((ObjectChunkFilter<Comparable<?>>) chunkFilter().get()).matches(value);
     }
 }

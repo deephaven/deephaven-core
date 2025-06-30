@@ -6,9 +6,19 @@ package io.deephaven.engine.table.impl.chunkfilter;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
+import io.deephaven.UncheckedDeephavenException;
+
 
 public abstract class ObjectChunkFilter<T> implements ChunkFilter {
     public abstract boolean matches(T value);
+
+    /**
+     * Returns {@code true} if the range filter overlaps with the input range, else {@code false}. This function is
+     * intended to be accurate rather than fast and is not recommended for performance-critical value comparison.
+     *
+     * @throws UncheckedDeephavenException if unable to compute the overlap
+     */
+    public abstract boolean overlaps(T inputLower, T inputUpper);
 
     @Override
     public final void filter(

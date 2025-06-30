@@ -12,10 +12,6 @@ import java.time.LocalDate;
 
 public class LocalDateMaterializer extends ObjectMaterializerBase<LocalDate> implements PageMaterializer {
 
-    public static LocalDate convertValue(final int epochDays) {
-        return DateTimeUtils.epochDaysAsIntToLocalDate(epochDays);
-    }
-
     public static final PageMaterializerFactory FACTORY = new PageMaterializerFactory() {
         @Override
         public PageMaterializer makeMaterializerWithNulls(ValuesReader dataReader, Object nullValue, int numValues) {
@@ -42,7 +38,7 @@ public class LocalDateMaterializer extends ObjectMaterializerBase<LocalDate> imp
     @Override
     public void fillValues(int startIndex, int endIndex) {
         for (int ii = startIndex; ii < endIndex; ii++) {
-            data[ii] = convertValue(dataReader.readInteger());
+            data[ii] = DateTimeUtils.epochDaysAsIntToLocalDate(dataReader.readInteger());
         }
     }
 }

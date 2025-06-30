@@ -7,7 +7,9 @@
 // @formatter:off
 package io.deephaven.engine.table.impl.chunkfilter;
 
+import gnu.trove.iterator.TIntIterator;
 import gnu.trove.set.hash.TIntHashSet;
+import io.deephaven.util.compare.IntComparisons;
 
 /**
  * Creates chunk filters for int values.
@@ -55,7 +57,12 @@ public class IntChunkMatchFilterFactory {
 
         @Override
         public boolean matches(int value) {
-            return value == this.value;
+            return IntComparisons.eq(value, this.value);
+        }
+
+        @Override
+        public boolean overlaps(int inputLower, int inputUpper) {
+            return IntComparisons.geq(value, inputLower) && IntComparisons.leq(value, inputUpper);
         }
     }
 
@@ -68,7 +75,13 @@ public class IntChunkMatchFilterFactory {
 
         @Override
         public boolean matches(int value) {
-            return value != this.value;
+            return !IntComparisons.eq(value, this.value);
+        }
+
+        @Override
+        public boolean overlaps(int inputLower, int inputUpper) {
+            // true if the range contains ANY int other than the excluded one
+            return !(IntComparisons.eq(value, inputLower) && IntComparisons.eq(value, inputUpper));
         }
     }
 
@@ -83,7 +96,13 @@ public class IntChunkMatchFilterFactory {
 
         @Override
         public boolean matches(int value) {
-            return value == value1 || value == value2;
+            return IntComparisons.eq(value, value1) || IntComparisons.eq(value, value2);
+        }
+
+        @Override
+        public boolean overlaps(int inputLower, int inputUpper) {
+            return (IntComparisons.geq(value1, inputLower) && IntComparisons.leq(value1, inputUpper)) ||
+                    (IntComparisons.geq(value2, inputLower) && IntComparisons.leq(value2, inputUpper));
         }
     }
 
@@ -98,7 +117,18 @@ public class IntChunkMatchFilterFactory {
 
         @Override
         public boolean matches(int value) {
-            return value != value1 && value != value2;
+            return !IntComparisons.eq(value, value1) && !IntComparisons.eq(value, value2);
+        }
+
+        @Override
+        public boolean overlaps(int inputLower, int inputUpper) {
+            for (long v = inputLower; v <= inputUpper; v++) { // long to avoid overflow issues
+                final int value = (int) v;
+                if (!IntComparisons.eq(value, value1) && !IntComparisons.eq(value, value2)) {
+                    return true;
+                }
+            }
+            return false;
         }
     }
 
@@ -115,7 +145,16 @@ public class IntChunkMatchFilterFactory {
 
         @Override
         public boolean matches(int value) {
-            return value == value1 || value == value2 || value == value3;
+            return IntComparisons.eq(value, value1) ||
+                    IntComparisons.eq(value, value2) ||
+                    IntComparisons.eq(value, value3);
+        }
+
+        @Override
+        public boolean overlaps(int inputLower, int inputUpper) {
+            return (IntComparisons.geq(value1, inputLower) && IntComparisons.leq(value1, inputUpper)) ||
+                    (IntComparisons.geq(value2, inputLower) && IntComparisons.leq(value2, inputUpper)) ||
+                    (IntComparisons.geq(value3, inputLower) && IntComparisons.leq(value3, inputUpper));
         }
     }
 
@@ -132,7 +171,21 @@ public class IntChunkMatchFilterFactory {
 
         @Override
         public boolean matches(int value) {
-            return value != value1 && value != value2 && value != value3;
+            return !IntComparisons.eq(value, value1) &&
+                    !IntComparisons.eq(value, value2) &&
+                    !IntComparisons.eq(value, value3);
+        }
+
+        @Override
+        public boolean overlaps(int inputLower, int inputUpper) {
+            for (long v = inputLower; v <= inputUpper; v++) {
+                final int value = (int) v;
+                if (!IntComparisons.eq(value, value1) && !IntComparisons.eq(value, value2)
+                        && !IntComparisons.eq(value, value3)) {
+                    return true;
+                }
+            }
+            return false;
         }
     }
 
@@ -147,6 +200,18 @@ public class IntChunkMatchFilterFactory {
         public boolean matches(int value) {
             return this.values.contains(value);
         }
+
+        @Override
+        public boolean overlaps(int inputLower, int inputUpper) {
+            final TIntIterator iterator = values.iterator();
+            while (iterator.hasNext()) {
+                final int value = iterator.next();
+                if (IntComparisons.geq(value, inputLower) && IntComparisons.leq(value, inputUpper)) {
+                    return true;
+                }
+            }
+            return false;
+        }
     }
 
     private final static class InverseMultiValueIntChunkFilter extends IntChunkFilter {
@@ -159,6 +224,16 @@ public class IntChunkMatchFilterFactory {
         @Override
         public boolean matches(int value) {
             return !this.values.contains(value);
+        }
+
+        @Override
+        public boolean overlaps(int inputLower, int inputUpper) {
+            for (long ci = inputLower; ci <= inputUpper; ci++) {
+                if (!values.contains((int) ci)) {
+                    return true;
+                }
+            }
+            return false;
         }
     }
 }

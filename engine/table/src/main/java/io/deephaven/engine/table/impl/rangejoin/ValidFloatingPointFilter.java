@@ -92,6 +92,11 @@ class ValidFloatingPointFilter extends WhereFilterImpl {
         public boolean matches(final double value) {
             return !Double.isNaN(value) && value != NULL_DOUBLE;
         }
+
+        @Override
+        public boolean overlaps(final double inputLower, final double inputUpper) {
+            throw new UnsupportedOperationException("ValidFloatingPointFilter does not support overlaps");
+        }
     }
 
     private static final class FloatFilter extends FloatChunkFilter {
@@ -103,6 +108,11 @@ class ValidFloatingPointFilter extends WhereFilterImpl {
         @Override
         public boolean matches(final float value) {
             return !Float.isNaN(value) && value != NULL_FLOAT;
+        }
+
+        @Override
+        public boolean overlaps(final float inputLower, final float inputUpper) {
+            throw new UnsupportedOperationException("ValidFloatingPointFilter does not support overlaps");
         }
     }
 

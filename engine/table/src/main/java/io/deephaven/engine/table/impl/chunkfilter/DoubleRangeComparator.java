@@ -2,7 +2,7 @@
 // Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
-// ****** Edit FloatRangeComparator and run "./gradlew replicateChunkFilters" to regenerate
+// ****** Edit CharRangeComparator and run "./gradlew replicateChunkFilters" to regenerate
 //
 // @formatter:off
 package io.deephaven.engine.table.impl.chunkfilter;
@@ -31,6 +31,11 @@ public class DoubleRangeComparator {
         public boolean matches(double value) {
             return DoubleComparisons.geq(value, lower) && DoubleComparisons.leq(value, upper);
         }
+
+        @Override
+        public boolean overlaps(double inputLower, double inputUpper) {
+            return DoubleComparisons.geq(inputUpper, lower) && DoubleComparisons.geq(upper, inputLower);
+        }
     }
 
     private final static class DoubleDoubleInclusiveExclusiveFilter extends DoubleDoubleFilter {
@@ -41,6 +46,11 @@ public class DoubleRangeComparator {
         @Override
         public boolean matches(double value) {
             return DoubleComparisons.geq(value, lower) && DoubleComparisons.lt(value, upper);
+        }
+
+        @Override
+        public boolean overlaps(double inputLower, double inputUpper) {
+            return DoubleComparisons.geq(inputUpper, lower) && DoubleComparisons.gt(upper, inputLower);
         }
     }
 
@@ -53,6 +63,11 @@ public class DoubleRangeComparator {
         public boolean matches(double value) {
             return DoubleComparisons.gt(value, lower) && DoubleComparisons.leq(value, upper);
         }
+
+        @Override
+        public boolean overlaps(double inputLower, double inputUpper) {
+            return DoubleComparisons.gt(inputUpper, lower) && DoubleComparisons.geq(upper, inputLower);
+        }
     }
 
     private final static class DoubleDoubleExclusiveExclusiveFilter extends DoubleDoubleFilter {
@@ -63,6 +78,11 @@ public class DoubleRangeComparator {
         @Override
         public boolean matches(double value) {
             return DoubleComparisons.gt(value, lower) && DoubleComparisons.lt(value, upper);
+        }
+
+        @Override
+        public boolean overlaps(double inputLower, double inputUpper) {
+            return DoubleComparisons.gt(inputUpper, lower) && DoubleComparisons.gt(upper, inputLower);
         }
     }
 

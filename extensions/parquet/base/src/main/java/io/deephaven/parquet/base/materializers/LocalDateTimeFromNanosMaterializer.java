@@ -17,10 +17,6 @@ import java.time.LocalDateTime;
 public class LocalDateTimeFromNanosMaterializer extends ObjectMaterializerBase<LocalDateTime>
         implements PageMaterializer {
 
-    public static LocalDateTime convertValue(final long nanos) {
-        return ParquetTimeUtils.epochNanosToLocalDateTimeUTC(nanos);
-    }
-
     public static final PageMaterializerFactory FACTORY = new PageMaterializerFactory() {
         @Override
         public PageMaterializer makeMaterializerWithNulls(ValuesReader dataReader, Object nullValue, int numValues) {
@@ -48,7 +44,7 @@ public class LocalDateTimeFromNanosMaterializer extends ObjectMaterializerBase<L
     @Override
     public void fillValues(int startIndex, int endIndex) {
         for (int ii = startIndex; ii < endIndex; ii++) {
-            data[ii] = convertValue(dataReader.readLong());
+            data[ii] = ParquetTimeUtils.epochNanosToLocalDateTimeUTC(dataReader.readLong());
         }
     }
 }

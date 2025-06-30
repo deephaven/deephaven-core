@@ -22,7 +22,7 @@ public class ByteRangeComparator {
         }
     }
 
-    final static class ByteByteInclusiveInclusiveFilter extends ByteByteFilter {
+    private final static class ByteByteInclusiveInclusiveFilter extends ByteByteFilter {
         private ByteByteInclusiveInclusiveFilter(byte lower, byte upper) {
             super(lower, upper);
         }
@@ -31,9 +31,14 @@ public class ByteRangeComparator {
         public boolean matches(byte value) {
             return ByteComparisons.geq(value, lower) && ByteComparisons.leq(value, upper);
         }
+
+        @Override
+        public boolean overlaps(byte inputLower, byte inputUpper) {
+            return ByteComparisons.geq(inputUpper, lower) && ByteComparisons.geq(upper, inputLower);
+        }
     }
 
-    final static class ByteByteInclusiveExclusiveFilter extends ByteByteFilter {
+    private final static class ByteByteInclusiveExclusiveFilter extends ByteByteFilter {
         private ByteByteInclusiveExclusiveFilter(byte lower, byte upper) {
             super(lower, upper);
         }
@@ -42,9 +47,14 @@ public class ByteRangeComparator {
         public boolean matches(byte value) {
             return ByteComparisons.geq(value, lower) && ByteComparisons.lt(value, upper);
         }
+
+        @Override
+        public boolean overlaps(byte inputLower, byte inputUpper) {
+            return ByteComparisons.geq(inputUpper, lower) && ByteComparisons.gt(upper, inputLower);
+        }
     }
 
-    final static class ByteByteExclusiveInclusiveFilter extends ByteByteFilter {
+    private final static class ByteByteExclusiveInclusiveFilter extends ByteByteFilter {
         private ByteByteExclusiveInclusiveFilter(byte lower, byte upper) {
             super(lower, upper);
         }
@@ -53,9 +63,14 @@ public class ByteRangeComparator {
         public boolean matches(byte value) {
             return ByteComparisons.gt(value, lower) && ByteComparisons.leq(value, upper);
         }
+
+        @Override
+        public boolean overlaps(byte inputLower, byte inputUpper) {
+            return ByteComparisons.gt(inputUpper, lower) && ByteComparisons.geq(upper, inputLower);
+        }
     }
 
-    final static class ByteByteExclusiveExclusiveFilter extends ByteByteFilter {
+    private final static class ByteByteExclusiveExclusiveFilter extends ByteByteFilter {
         private ByteByteExclusiveExclusiveFilter(byte lower, byte upper) {
             super(lower, upper);
         }
@@ -63,6 +78,11 @@ public class ByteRangeComparator {
         @Override
         public boolean matches(byte value) {
             return ByteComparisons.gt(value, lower) && ByteComparisons.lt(value, upper);
+        }
+
+        @Override
+        public boolean overlaps(byte inputLower, byte inputUpper) {
+            return ByteComparisons.gt(inputUpper, lower) && ByteComparisons.gt(upper, inputLower);
         }
     }
 

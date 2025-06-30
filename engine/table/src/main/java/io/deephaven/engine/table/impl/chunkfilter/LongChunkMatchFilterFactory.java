@@ -7,7 +7,9 @@
 // @formatter:off
 package io.deephaven.engine.table.impl.chunkfilter;
 
+import gnu.trove.iterator.TLongIterator;
 import gnu.trove.set.hash.TLongHashSet;
+import io.deephaven.util.compare.LongComparisons;
 
 /**
  * Creates chunk filters for long values.
@@ -55,7 +57,12 @@ public class LongChunkMatchFilterFactory {
 
         @Override
         public boolean matches(long value) {
-            return value == this.value;
+            return LongComparisons.eq(value, this.value);
+        }
+
+        @Override
+        public boolean overlaps(long inputLower, long inputUpper) {
+            return LongComparisons.geq(value, inputLower) && LongComparisons.leq(value, inputUpper);
         }
     }
 
@@ -68,7 +75,13 @@ public class LongChunkMatchFilterFactory {
 
         @Override
         public boolean matches(long value) {
-            return value != this.value;
+            return !LongComparisons.eq(value, this.value);
+        }
+
+        @Override
+        public boolean overlaps(long inputLower, long inputUpper) {
+            // true if the range contains ANY long other than the excluded one
+            return !(LongComparisons.eq(value, inputLower) && LongComparisons.eq(value, inputUpper));
         }
     }
 
@@ -83,7 +96,13 @@ public class LongChunkMatchFilterFactory {
 
         @Override
         public boolean matches(long value) {
-            return value == value1 || value == value2;
+            return LongComparisons.eq(value, value1) || LongComparisons.eq(value, value2);
+        }
+
+        @Override
+        public boolean overlaps(long inputLower, long inputUpper) {
+            return (LongComparisons.geq(value1, inputLower) && LongComparisons.leq(value1, inputUpper)) ||
+                    (LongComparisons.geq(value2, inputLower) && LongComparisons.leq(value2, inputUpper));
         }
     }
 
@@ -98,7 +117,18 @@ public class LongChunkMatchFilterFactory {
 
         @Override
         public boolean matches(long value) {
-            return value != value1 && value != value2;
+            return !LongComparisons.eq(value, value1) && !LongComparisons.eq(value, value2);
+        }
+
+        @Override
+        public boolean overlaps(long inputLower, long inputUpper) {
+            for (long v = inputLower; v <= inputUpper; v++) { // long to avoid overflow issues
+                final long value = (long) v;
+                if (!LongComparisons.eq(value, value1) && !LongComparisons.eq(value, value2)) {
+                    return true;
+                }
+            }
+            return false;
         }
     }
 
@@ -115,7 +145,16 @@ public class LongChunkMatchFilterFactory {
 
         @Override
         public boolean matches(long value) {
-            return value == value1 || value == value2 || value == value3;
+            return LongComparisons.eq(value, value1) ||
+                    LongComparisons.eq(value, value2) ||
+                    LongComparisons.eq(value, value3);
+        }
+
+        @Override
+        public boolean overlaps(long inputLower, long inputUpper) {
+            return (LongComparisons.geq(value1, inputLower) && LongComparisons.leq(value1, inputUpper)) ||
+                    (LongComparisons.geq(value2, inputLower) && LongComparisons.leq(value2, inputUpper)) ||
+                    (LongComparisons.geq(value3, inputLower) && LongComparisons.leq(value3, inputUpper));
         }
     }
 
@@ -132,7 +171,21 @@ public class LongChunkMatchFilterFactory {
 
         @Override
         public boolean matches(long value) {
-            return value != value1 && value != value2 && value != value3;
+            return !LongComparisons.eq(value, value1) &&
+                    !LongComparisons.eq(value, value2) &&
+                    !LongComparisons.eq(value, value3);
+        }
+
+        @Override
+        public boolean overlaps(long inputLower, long inputUpper) {
+            for (long v = inputLower; v <= inputUpper; v++) {
+                final long value = (long) v;
+                if (!LongComparisons.eq(value, value1) && !LongComparisons.eq(value, value2)
+                        && !LongComparisons.eq(value, value3)) {
+                    return true;
+                }
+            }
+            return false;
         }
     }
 
@@ -147,6 +200,18 @@ public class LongChunkMatchFilterFactory {
         public boolean matches(long value) {
             return this.values.contains(value);
         }
+
+        @Override
+        public boolean overlaps(long inputLower, long inputUpper) {
+            final TLongIterator iterator = values.iterator();
+            while (iterator.hasNext()) {
+                final long value = iterator.next();
+                if (LongComparisons.geq(value, inputLower) && LongComparisons.leq(value, inputUpper)) {
+                    return true;
+                }
+            }
+            return false;
+        }
     }
 
     private final static class InverseMultiValueLongChunkFilter extends LongChunkFilter {
@@ -159,6 +224,16 @@ public class LongChunkMatchFilterFactory {
         @Override
         public boolean matches(long value) {
             return !this.values.contains(value);
+        }
+
+        @Override
+        public boolean overlaps(long inputLower, long inputUpper) {
+            for (long ci = inputLower; ci <= inputUpper; ci++) {
+                if (!values.contains((long) ci)) {
+                    return true;
+                }
+            }
+            return false;
         }
     }
 }

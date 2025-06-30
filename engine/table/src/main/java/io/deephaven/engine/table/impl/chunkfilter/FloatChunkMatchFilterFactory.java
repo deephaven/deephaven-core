@@ -1,13 +1,11 @@
 //
 // Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
-// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
-// ****** Edit CharChunkMatchFilterFactory and run "./gradlew replicateChunkFilters" to regenerate
-//
-// @formatter:off
 package io.deephaven.engine.table.impl.chunkfilter;
 
+import gnu.trove.iterator.TFloatIterator;
 import gnu.trove.set.hash.TFloatHashSet;
+import io.deephaven.util.compare.FloatComparisons;
 
 /**
  * Creates chunk filters for float values.
@@ -55,7 +53,12 @@ public class FloatChunkMatchFilterFactory {
 
         @Override
         public boolean matches(float value) {
-            return value == this.value;
+            return FloatComparisons.eq(value, this.value);
+        }
+
+        @Override
+        public boolean overlaps(float inputLower, float inputUpper) {
+            return FloatComparisons.geq(value, inputLower) && FloatComparisons.leq(value, inputUpper);
         }
     }
 
@@ -68,7 +71,13 @@ public class FloatChunkMatchFilterFactory {
 
         @Override
         public boolean matches(float value) {
-            return value != this.value;
+            return !FloatComparisons.eq(value, this.value);
+        }
+
+        @Override
+        public boolean overlaps(float inputLower, float inputUpper) {
+            // true if the range contains ANY float other than the excluded one
+            return !(FloatComparisons.eq(value, inputLower) && FloatComparisons.eq(value, inputUpper));
         }
     }
 
@@ -83,7 +92,13 @@ public class FloatChunkMatchFilterFactory {
 
         @Override
         public boolean matches(float value) {
-            return value == value1 || value == value2;
+            return FloatComparisons.eq(value, value1) || FloatComparisons.eq(value, value2);
+        }
+
+        @Override
+        public boolean overlaps(float inputLower, float inputUpper) {
+            return (FloatComparisons.geq(value1, inputLower) && FloatComparisons.leq(value1, inputUpper)) ||
+                    (FloatComparisons.geq(value2, inputLower) && FloatComparisons.leq(value2, inputUpper));
         }
     }
 
@@ -98,7 +113,19 @@ public class FloatChunkMatchFilterFactory {
 
         @Override
         public boolean matches(float value) {
-            return value != value1 && value != value2;
+            return !FloatComparisons.eq(value, value1) && !FloatComparisons.eq(value, value2);
+        }
+
+        @Override
+        public boolean overlaps(float inputLower, float inputUpper) {
+            final int maxSteps = 3; // two excluded values
+            for (float value = inputLower, steps = 0; FloatComparisons.leq(value, inputUpper)
+                    && steps < maxSteps; value = Math.nextAfter(value, Float.POSITIVE_INFINITY), ++steps) {
+                if (!FloatComparisons.eq(value, value1) && !FloatComparisons.eq(value, value2)) {
+                    return true;
+                }
+            }
+            return false;
         }
     }
 
@@ -115,7 +142,16 @@ public class FloatChunkMatchFilterFactory {
 
         @Override
         public boolean matches(float value) {
-            return value == value1 || value == value2 || value == value3;
+            return FloatComparisons.eq(value, value1) ||
+                    FloatComparisons.eq(value, value2) ||
+                    FloatComparisons.eq(value, value3);
+        }
+
+        @Override
+        public boolean overlaps(float inputLower, float inputUpper) {
+            return (FloatComparisons.geq(value1, inputLower) && FloatComparisons.leq(value1, inputUpper)) ||
+                    (FloatComparisons.geq(value2, inputLower) && FloatComparisons.leq(value2, inputUpper)) ||
+                    (FloatComparisons.geq(value3, inputLower) && FloatComparisons.leq(value3, inputUpper));
         }
     }
 
@@ -132,7 +168,23 @@ public class FloatChunkMatchFilterFactory {
 
         @Override
         public boolean matches(float value) {
-            return value != value1 && value != value2 && value != value3;
+            return !FloatComparisons.eq(value, value1) &&
+                    !FloatComparisons.eq(value, value2) &&
+                    !FloatComparisons.eq(value, value3);
+        }
+
+        @Override
+        public boolean overlaps(float inputLower, float inputUpper) {
+            final int maxSteps = 4; // three excluded values
+            for (float value = inputLower, steps = 0; FloatComparisons.leq(value, inputUpper)
+                    && steps < maxSteps; value = Math.nextAfter(value, Float.POSITIVE_INFINITY), ++steps) {
+                if (!FloatComparisons.eq(value, value1) &&
+                        !FloatComparisons.eq(value, value2) &&
+                        !FloatComparisons.eq(value, value3)) {
+                    return true;
+                }
+            }
+            return false;
         }
     }
 
@@ -147,6 +199,18 @@ public class FloatChunkMatchFilterFactory {
         public boolean matches(float value) {
             return this.values.contains(value);
         }
+
+        @Override
+        public boolean overlaps(float inputLower, float inputUpper) {
+            final TFloatIterator iterator = values.iterator();
+            while (iterator.hasNext()) {
+                final float value = iterator.next();
+                if (FloatComparisons.geq(value, inputLower) && FloatComparisons.leq(value, inputUpper)) {
+                    return true;
+                }
+            }
+            return false;
+        }
     }
 
     private final static class InverseMultiValueFloatChunkFilter extends FloatChunkFilter {
@@ -159,6 +223,18 @@ public class FloatChunkMatchFilterFactory {
         @Override
         public boolean matches(float value) {
             return !this.values.contains(value);
+        }
+
+        @Override
+        public boolean overlaps(float inputLower, float inputUpper) {
+            final int maxSteps = values.size() + 1;
+            for (float value = inputLower, steps = 0; FloatComparisons.leq(value, inputUpper)
+                    && steps < maxSteps; value = Math.nextAfter(value, Float.POSITIVE_INFINITY), ++steps) {
+                if (!values.contains(value)) {
+                    return true;
+                }
+            }
+            return false;
         }
     }
 }

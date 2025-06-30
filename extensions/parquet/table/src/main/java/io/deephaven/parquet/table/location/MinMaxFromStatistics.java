@@ -4,15 +4,7 @@
 package io.deephaven.parquet.table.location;
 
 import io.deephaven.parquet.base.materializers.InstantNanosFromInt96Materializer;
-import io.deephaven.parquet.base.materializers.InstantNanosFromMicrosMaterializer;
-import io.deephaven.parquet.base.materializers.InstantNanosFromMillisMaterializer;
-import io.deephaven.parquet.base.materializers.LocalDateMaterializer;
-import io.deephaven.parquet.base.materializers.LocalDateTimeFromMillisMaterializer;
-import io.deephaven.parquet.base.materializers.LocalDateTimeFromMicrosMaterializer;
-import io.deephaven.parquet.base.materializers.LocalDateTimeFromNanosMaterializer;
-import io.deephaven.parquet.base.materializers.LocalTimeFromMicrosMaterializer;
-import io.deephaven.parquet.base.materializers.LocalTimeFromMillisMaterializer;
-import io.deephaven.parquet.base.materializers.LocalTimeFromNanosMaterializer;
+import io.deephaven.util.BooleanUtils;
 import org.apache.parquet.column.statistics.Statistics;
 import org.apache.parquet.schema.LogicalTypeAnnotation;
 import org.apache.parquet.schema.PrimitiveType;
@@ -20,7 +12,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
 
-import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.Optional;
 
 @VisibleForTesting
@@ -28,19 +20,22 @@ public abstract class MinMaxFromStatistics {
 
     /**
      * Get the min and max values from the statistics.
+     * <p>
+     * This class assumes that the statistics do not have any {@code NaN} values because {@code NaN} values are
+     * automatically handled by {@link Statistics.Builder}.
      *
      * @param statistics The statistics to analyze
      * @return An {@link Optional} the min and max values from the statistics, or empty if statistics are missing or
      *         unsupported.
      */
     public static Optional<MinMax<?>> get(@Nullable final Statistics<?> statistics) {
-        if (statistics == null ||
-                (!statistics.hasNonNullValue() &&
-                        (!statistics.isNumNullsSet() || statistics.getNumNulls() == 0))) {
+        if (statistics == null || !statistics.hasNonNullValue()) {
+            // Cannot determine min/max
             return Optional.empty();
         }
-        if (!statistics.hasNonNullValue()) {
-            return wrapMinMax((Integer) null, (Integer) null);
+        if (statistics.genericGetMin() == null || statistics.genericGetMax() == null) {
+            // Not expected to have null min/max values, but if they are null, we cannot determine min/max
+            return Optional.empty();
         }
         // First try from logical type, then from primitive type
         final LogicalTypeAnnotation logicalType = statistics.type().getLogicalTypeAnnotation();
@@ -49,7 +44,9 @@ public abstract class MinMaxFromStatistics {
                 .or(() -> fromPrimitiveType(primitiveTypeName, statistics));
     }
 
-    private static <T extends Comparable<T>> Optional<MinMax<?>> wrapMinMax(final T min, final T max) {
+    private static <T extends Comparable<T>> Optional<MinMax<?>> wrapMinMax(
+            @NotNull final T min,
+            @NotNull final T max) {
         return Optional.of(MinMax.of(min, max));
     }
 
@@ -67,7 +64,9 @@ public abstract class MinMaxFromStatistics {
             @NotNull final Statistics<?> statistics) {
         switch (typeName) {
             case BOOLEAN:
-                return wrapMinMax((Boolean) statistics.genericGetMin(), (Boolean) statistics.genericGetMax());
+                return wrapMinMax(
+                        BooleanUtils.booleanAsByte((Boolean) statistics.genericGetMin()),
+                        BooleanUtils.booleanAsByte((Boolean) statistics.genericGetMax()));
             case INT32:
                 return wrapMinMax((Integer) statistics.genericGetMin(), (Integer) statistics.genericGetMax());
             case INT64:
@@ -77,9 +76,11 @@ public abstract class MinMaxFromStatistics {
             case FLOAT:
                 return wrapMinMax((Float) statistics.genericGetMin(), (Float) statistics.genericGetMax());
             case INT96:
+                final long minInstantNanos = InstantNanosFromInt96Materializer.convertValue(statistics.getMinBytes());
+                final long maxInstantNanos = InstantNanosFromInt96Materializer.convertValue(statistics.getMaxBytes());
                 return wrapMinMax(
-                        InstantNanosFromInt96Materializer.convertValue(statistics.getMinBytes()),
-                        InstantNanosFromInt96Materializer.convertValue(statistics.getMaxBytes()));
+                        ParquetPushdownUtils.epochNanosToInstant(minInstantNanos),
+                        ParquetPushdownUtils.epochNanosToInstant(maxInstantNanos));
             case BINARY:
             case FIXED_LEN_BYTE_ARRAY:
             default:
@@ -109,14 +110,16 @@ public abstract class MinMaxFromStatistics {
                 switch (timestampLogicalType.getUnit()) {
                     case MILLIS:
                         return wrapMinMax(
-                                InstantNanosFromMillisMaterializer.convertValue(minFromStatistics),
-                                InstantNanosFromMillisMaterializer.convertValue(maxFromStatistics));
+                                ParquetPushdownUtils.epochMillisToInstant(minFromStatistics),
+                                ParquetPushdownUtils.epochMillisToInstant(maxFromStatistics));
                     case MICROS:
                         return wrapMinMax(
-                                InstantNanosFromMicrosMaterializer.convertValue(minFromStatistics),
-                                InstantNanosFromMicrosMaterializer.convertValue(maxFromStatistics));
+                                ParquetPushdownUtils.epochNanosToInstant(minFromStatistics),
+                                ParquetPushdownUtils.epochMicrosToInstant(maxFromStatistics));
                     case NANOS:
-                        return wrapMinMax(minFromStatistics, maxFromStatistics);
+                        return wrapMinMax(
+                                ParquetPushdownUtils.epochNanosToInstant(minFromStatistics),
+                                ParquetPushdownUtils.epochNanosToInstant(maxFromStatistics));
                     default:
                         throw new IllegalArgumentException("Unsupported unit=" + timestampLogicalType.getUnit());
                 }
@@ -124,16 +127,16 @@ public abstract class MinMaxFromStatistics {
             switch (timestampLogicalType.getUnit()) {
                 case MILLIS:
                     return wrapMinMax(
-                            LocalDateTimeFromMillisMaterializer.convertValue(minFromStatistics),
-                            LocalDateTimeFromMillisMaterializer.convertValue(maxFromStatistics));
+                            ParquetPushdownUtils.epochMillisToLocalDateTimeUTC(minFromStatistics),
+                            ParquetPushdownUtils.epochMillisToLocalDateTimeUTC(maxFromStatistics));
                 case MICROS:
                     return wrapMinMax(
-                            LocalDateTimeFromMicrosMaterializer.convertValue(minFromStatistics),
-                            LocalDateTimeFromMicrosMaterializer.convertValue(maxFromStatistics));
+                            ParquetPushdownUtils.epochMicrosToLocalDateTimeUTC(minFromStatistics),
+                            ParquetPushdownUtils.epochMicrosToLocalDateTimeUTC(maxFromStatistics));
                 case NANOS:
                     return wrapMinMax(
-                            LocalDateTimeFromNanosMaterializer.convertValue(minFromStatistics),
-                            LocalDateTimeFromNanosMaterializer.convertValue(maxFromStatistics));
+                            ParquetPushdownUtils.epochNanosToLocalDateTimeUTC(minFromStatistics),
+                            ParquetPushdownUtils.epochNanosToLocalDateTimeUTC(maxFromStatistics));
                 default:
                     throw new IllegalArgumentException("Unsupported unit=" + timestampLogicalType.getUnit());
             }
@@ -152,8 +155,8 @@ public abstract class MinMaxFromStatistics {
         @Override
         public Optional<MinMax<?>> visit(final LogicalTypeAnnotation.DateLogicalTypeAnnotation dateLogicalType) {
             return wrapMinMax(
-                    LocalDateMaterializer.convertValue((Integer) statistics.genericGetMin()),
-                    LocalDateMaterializer.convertValue((Integer) statistics.genericGetMax()));
+                    LocalDate.ofEpochDay((Integer) statistics.genericGetMin()),
+                    LocalDate.ofEpochDay((Integer) statistics.genericGetMax()));
         }
 
         @Override
@@ -161,16 +164,16 @@ public abstract class MinMaxFromStatistics {
             switch (timeLogicalType.getUnit()) {
                 case MILLIS:
                     return wrapMinMax(
-                            LocalTimeFromMillisMaterializer.convertValue((Integer) statistics.genericGetMin()),
-                            LocalTimeFromMillisMaterializer.convertValue((Integer) statistics.genericGetMax()));
+                            ParquetPushdownUtils.millisOfDayToLocalTime((Integer) statistics.genericGetMin()),
+                            ParquetPushdownUtils.millisOfDayToLocalTime((Integer) statistics.genericGetMax()));
                 case MICROS:
                     return wrapMinMax(
-                            LocalTimeFromMicrosMaterializer.convertValue((Long) statistics.genericGetMin()),
-                            LocalTimeFromMicrosMaterializer.convertValue((Long) statistics.genericGetMax()));
+                            ParquetPushdownUtils.microsOfDayToLocalTime((Long) statistics.genericGetMin()),
+                            ParquetPushdownUtils.microsOfDayToLocalTime((Long) statistics.genericGetMax()));
                 case NANOS:
                     return wrapMinMax(
-                            LocalTimeFromNanosMaterializer.convertValue((Long) statistics.genericGetMin()),
-                            LocalTimeFromNanosMaterializer.convertValue((Long) statistics.genericGetMax()));
+                            ParquetPushdownUtils.nanosOfDayToLocalTime((Long) statistics.genericGetMin()),
+                            ParquetPushdownUtils.nanosOfDayToLocalTime((Long) statistics.genericGetMax()));
                 default:
                     throw new IllegalArgumentException("Unsupported unit=" + timeLogicalType.getUnit());
             }
@@ -179,21 +182,11 @@ public abstract class MinMaxFromStatistics {
         @Override
         public Optional<MinMax<?>> visit(
                 final LogicalTypeAnnotation.DecimalLogicalTypeAnnotation decimalLogicalType) {
-            // Read the min and max as string and convert them to BigDecimal
-            // This is helpful because big decimals can be stored in various formats (int64, binary, etc.), so it's
-            // easier to let the internal `Statistics.stringify` handle the conversion
-            final String minAsString = statistics.minAsString();
-            final String maxAsString = statistics.maxAsString();
-            final BigDecimal minValue;
-            final BigDecimal maxValue;
-            try {
-                minValue = new BigDecimal(minAsString);
-                maxValue = new BigDecimal(maxAsString);
-            } catch (final NumberFormatException exception) {
-                // If the min or max cannot be parsed as a BigDecimal, we return empty
-                return Optional.empty();
-            }
-            return wrapMinMax(minValue, maxValue);
+            // TODO (DH-19666): Decimal logical type vales can be stored in various formats (int64, binary, etc.) and
+            // can be read as both BigDecimal and BigInteger. So the right way to handle them is to get the column type
+            // from the table definition, read the min and max from the statistics as strings, and then convert these
+            // strings to the type specified in the table definition.
+            return Optional.empty();
         }
     }
 }

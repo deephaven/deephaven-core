@@ -7,7 +7,9 @@
 // @formatter:off
 package io.deephaven.engine.table.impl.chunkfilter;
 
+import gnu.trove.iterator.TByteIterator;
 import gnu.trove.set.hash.TByteHashSet;
+import io.deephaven.util.compare.ByteComparisons;
 
 /**
  * Creates chunk filters for byte values.
@@ -55,7 +57,12 @@ public class ByteChunkMatchFilterFactory {
 
         @Override
         public boolean matches(byte value) {
-            return value == this.value;
+            return ByteComparisons.eq(value, this.value);
+        }
+
+        @Override
+        public boolean overlaps(byte inputLower, byte inputUpper) {
+            return ByteComparisons.geq(value, inputLower) && ByteComparisons.leq(value, inputUpper);
         }
     }
 
@@ -68,7 +75,13 @@ public class ByteChunkMatchFilterFactory {
 
         @Override
         public boolean matches(byte value) {
-            return value != this.value;
+            return !ByteComparisons.eq(value, this.value);
+        }
+
+        @Override
+        public boolean overlaps(byte inputLower, byte inputUpper) {
+            // true if the range contains ANY byte other than the excluded one
+            return !(ByteComparisons.eq(value, inputLower) && ByteComparisons.eq(value, inputUpper));
         }
     }
 
@@ -83,7 +96,13 @@ public class ByteChunkMatchFilterFactory {
 
         @Override
         public boolean matches(byte value) {
-            return value == value1 || value == value2;
+            return ByteComparisons.eq(value, value1) || ByteComparisons.eq(value, value2);
+        }
+
+        @Override
+        public boolean overlaps(byte inputLower, byte inputUpper) {
+            return (ByteComparisons.geq(value1, inputLower) && ByteComparisons.leq(value1, inputUpper)) ||
+                    (ByteComparisons.geq(value2, inputLower) && ByteComparisons.leq(value2, inputUpper));
         }
     }
 
@@ -98,7 +117,18 @@ public class ByteChunkMatchFilterFactory {
 
         @Override
         public boolean matches(byte value) {
-            return value != value1 && value != value2;
+            return !ByteComparisons.eq(value, value1) && !ByteComparisons.eq(value, value2);
+        }
+
+        @Override
+        public boolean overlaps(byte inputLower, byte inputUpper) {
+            for (long v = inputLower; v <= inputUpper; v++) { // long to avoid overflow issues
+                final byte value = (byte) v;
+                if (!ByteComparisons.eq(value, value1) && !ByteComparisons.eq(value, value2)) {
+                    return true;
+                }
+            }
+            return false;
         }
     }
 
@@ -115,7 +145,16 @@ public class ByteChunkMatchFilterFactory {
 
         @Override
         public boolean matches(byte value) {
-            return value == value1 || value == value2 || value == value3;
+            return ByteComparisons.eq(value, value1) ||
+                    ByteComparisons.eq(value, value2) ||
+                    ByteComparisons.eq(value, value3);
+        }
+
+        @Override
+        public boolean overlaps(byte inputLower, byte inputUpper) {
+            return (ByteComparisons.geq(value1, inputLower) && ByteComparisons.leq(value1, inputUpper)) ||
+                    (ByteComparisons.geq(value2, inputLower) && ByteComparisons.leq(value2, inputUpper)) ||
+                    (ByteComparisons.geq(value3, inputLower) && ByteComparisons.leq(value3, inputUpper));
         }
     }
 
@@ -132,7 +171,21 @@ public class ByteChunkMatchFilterFactory {
 
         @Override
         public boolean matches(byte value) {
-            return value != value1 && value != value2 && value != value3;
+            return !ByteComparisons.eq(value, value1) &&
+                    !ByteComparisons.eq(value, value2) &&
+                    !ByteComparisons.eq(value, value3);
+        }
+
+        @Override
+        public boolean overlaps(byte inputLower, byte inputUpper) {
+            for (long v = inputLower; v <= inputUpper; v++) {
+                final byte value = (byte) v;
+                if (!ByteComparisons.eq(value, value1) && !ByteComparisons.eq(value, value2)
+                        && !ByteComparisons.eq(value, value3)) {
+                    return true;
+                }
+            }
+            return false;
         }
     }
 
@@ -147,6 +200,18 @@ public class ByteChunkMatchFilterFactory {
         public boolean matches(byte value) {
             return this.values.contains(value);
         }
+
+        @Override
+        public boolean overlaps(byte inputLower, byte inputUpper) {
+            final TByteIterator iterator = values.iterator();
+            while (iterator.hasNext()) {
+                final byte value = iterator.next();
+                if (ByteComparisons.geq(value, inputLower) && ByteComparisons.leq(value, inputUpper)) {
+                    return true;
+                }
+            }
+            return false;
+        }
     }
 
     private final static class InverseMultiValueByteChunkFilter extends ByteChunkFilter {
@@ -159,6 +224,16 @@ public class ByteChunkMatchFilterFactory {
         @Override
         public boolean matches(byte value) {
             return !this.values.contains(value);
+        }
+
+        @Override
+        public boolean overlaps(byte inputLower, byte inputUpper) {
+            for (long ci = inputLower; ci <= inputUpper; ci++) {
+                if (!values.contains((byte) ci)) {
+                    return true;
+                }
+            }
+            return false;
         }
     }
 }

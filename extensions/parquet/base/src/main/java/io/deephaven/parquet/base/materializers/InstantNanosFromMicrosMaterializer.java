@@ -10,10 +10,6 @@ import org.apache.parquet.column.values.ValuesReader;
 
 public class InstantNanosFromMicrosMaterializer extends LongMaterializerBase implements PageMaterializer {
 
-    public static long convertValue(final long micros) {
-        return DateTimeUtils.microsToNanos(micros);
-    }
-
     public static final PageMaterializerFactory FACTORY = new PageMaterializerFactory() {
         @Override
         public PageMaterializer makeMaterializerWithNulls(ValuesReader dataReader, Object nullValue, int numValues) {
@@ -40,7 +36,7 @@ public class InstantNanosFromMicrosMaterializer extends LongMaterializerBase imp
     @Override
     public void fillValues(int startIndex, int endIndex) {
         for (int ii = startIndex; ii < endIndex; ii++) {
-            data[ii] = convertValue(dataReader.readLong());
+            data[ii] = DateTimeUtils.microsToNanos(dataReader.readLong());
         }
     }
 }

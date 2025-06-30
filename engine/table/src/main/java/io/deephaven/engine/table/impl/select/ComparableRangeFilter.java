@@ -8,13 +8,13 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
 import io.deephaven.engine.table.impl.chunkfilter.ObjectChunkFilter;
+import io.deephaven.util.annotations.InternalUseOnly;
 import io.deephaven.util.compare.ObjectComparisons;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.util.annotations.TestUseOnly;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 public class ComparableRangeFilter extends AbstractRangeFilter {
     private final Comparable<?> upper;
@@ -90,67 +90,82 @@ public class ComparableRangeFilter extends AbstractRangeFilter {
                 (upperInclusive ? "]" : ")") + ")";
     }
 
-    private final static class InclusiveInclusiveComparableChunkFilter
-            extends ObjectChunkFilter<Comparable<?>> {
-        private final Comparable<?> lower;
-        private final Comparable<?> upper;
+
+    private static abstract class ComparableObjectChunkFilter extends ObjectChunkFilter<Comparable<?>> {
+        final Comparable<?> lower;
+        final Comparable<?> upper;
+
+        private ComparableObjectChunkFilter(Comparable<?> lower, Comparable<?> upper) {
+            this.lower = lower;
+            this.upper = upper;
+        }
+    }
+
+    private final static class InclusiveInclusiveComparableChunkFilter extends ComparableObjectChunkFilter {
 
         private InclusiveInclusiveComparableChunkFilter(Comparable<?> lower, Comparable<?> upper) {
-            this.lower = lower;
-            this.upper = upper;
+            super(lower, upper);
         }
 
         @Override
         public boolean matches(Comparable<?> value) {
-            return ObjectComparisons.compare(lower, value) <= 0 && ObjectComparisons.compare(upper, value) >= 0;
+            return ObjectComparisons.leq(lower, value) && ObjectComparisons.geq(upper, value);
+        }
+
+        @Override
+        public boolean overlaps(Comparable<?> inputLower, Comparable<?> inputUpper) {
+            return ObjectComparisons.geq(inputUpper, lower) && ObjectComparisons.geq(upper, inputLower);
         }
     }
 
-    private final static class InclusiveExclusiveComparableChunkFilter
-            extends ObjectChunkFilter<Comparable<?>> {
-        private final Comparable<?> lower;
-        private final Comparable<?> upper;
+    private final static class InclusiveExclusiveComparableChunkFilter extends ComparableObjectChunkFilter {
 
         private InclusiveExclusiveComparableChunkFilter(Comparable<?> lower, Comparable<?> upper) {
-            this.lower = lower;
-            this.upper = upper;
+            super(lower, upper);
         }
 
         @Override
         public boolean matches(Comparable<?> value) {
-            return ObjectComparisons.compare(lower, value) <= 0 && ObjectComparisons.compare(upper, value) > 0;
+            return ObjectComparisons.leq(lower, value) && ObjectComparisons.gt(upper, value);
+        }
+
+        @Override
+        public boolean overlaps(Comparable<?> inputLower, Comparable<?> inputUpper) {
+            return ObjectComparisons.geq(inputUpper, lower) && ObjectComparisons.gt(upper, inputLower);
         }
     }
 
-    private final static class ExclusiveInclusiveComparableChunkFilter
-            extends ObjectChunkFilter<Comparable<?>> {
-        private final Comparable<?> lower;
-        private final Comparable<?> upper;
+    private final static class ExclusiveInclusiveComparableChunkFilter extends ComparableObjectChunkFilter {
 
         private ExclusiveInclusiveComparableChunkFilter(Comparable<?> lower, Comparable<?> upper) {
-            this.lower = lower;
-            this.upper = upper;
+            super(lower, upper);
         }
 
         @Override
         public boolean matches(Comparable<?> value) {
-            return ObjectComparisons.compare(lower, value) < 0 && ObjectComparisons.compare(upper, value) >= 0;
+            return ObjectComparisons.lt(lower, value) && ObjectComparisons.geq(upper, value);
+        }
+
+        @Override
+        public boolean overlaps(Comparable<?> inputLower, Comparable<?> inputUpper) {
+            return ObjectComparisons.gt(inputUpper, lower) && ObjectComparisons.geq(upper, inputLower);
         }
     }
 
-    private final static class ExclusiveExclusiveComparableChunkFilter
-            extends ObjectChunkFilter<Comparable<?>> {
-        private final Comparable<?> lower;
-        private final Comparable<?> upper;
+    private final static class ExclusiveExclusiveComparableChunkFilter extends ComparableObjectChunkFilter {
 
         private ExclusiveExclusiveComparableChunkFilter(Comparable<?> lower, Comparable<?> upper) {
-            this.lower = lower;
-            this.upper = upper;
+            super(lower, upper);
         }
 
         @Override
         public boolean matches(Comparable<?> value) {
-            return ObjectComparisons.compare(lower, value) < 0 && ObjectComparisons.compare(upper, value) > 0;
+            return ObjectComparisons.lt(lower, value) && ObjectComparisons.gt(upper, value);
+        }
+
+        @Override
+        public boolean overlaps(Comparable<?> inputLower, Comparable<?> inputUpper) {
+            return ObjectComparisons.gt(inputUpper, lower) && ObjectComparisons.gt(upper, inputLower);
         }
     }
 
@@ -217,33 +232,36 @@ public class ComparableRangeFilter extends AbstractRangeFilter {
         return minPosition;
     }
 
-    @Override
-    public boolean overlaps(
-            @Nullable final Object lower,
-            @Nullable final Object upper,
-            final boolean lowerInclusive,
-            final boolean upperInclusive) {
-        // Validate the input bounds.
-        final int c0 = CompareUtils.compare(lower, upper);
-        if (c0 > 0) {
-            throw new IllegalArgumentException("Lower bound must not be greater than upper bound, found: "
-                    + lower + " > " + upper);
-        } else if (c0 == 0 && (!lowerInclusive || !upperInclusive)) {
-            throw new IllegalArgumentException("Lower and upper bounds must be inclusive when equal, found: "
-                    + lower + " == " + upper);
+    /**
+     * Returns {@code true} if the range filter overlaps with the input range, else {@code false}
+     *
+     * @param inputLower the lower bound of the input range (inclusive)
+     * @param inputUpper the upper bound of the input range (inclusive)
+     *
+     * @throws IllegalStateException if the chunk filter is not initialized
+     */
+    @InternalUseOnly
+    public boolean overlaps(final Comparable<?> inputLower, final Comparable<?> inputUpper) {
+        if (chunkFilter().isEmpty()) {
+            throw new IllegalStateException("Chunk filter not initialized for: " + this);
         }
+        // noinspection unchecked
+        return ((ObjectChunkFilter<Comparable<?>>) chunkFilter().get()).overlaps(inputLower, inputUpper);
+    }
 
-        final int c1 = CompareUtils.compare(this.lower, upper);
-        if (c1 > 0) {
-            return false; // this.lower > inputUpper, no overlap possible.
+    /**
+     * Returns {@code true} if the given value is found within the range filter, else {@code false}.
+     *
+     * @param value the value to check
+     *
+     * @throws IllegalStateException if the chunk filter is not initialized
+     */
+    @InternalUseOnly
+    public boolean matches(final Comparable<?> value) {
+        if (chunkFilter().isEmpty()) {
+            throw new IllegalStateException("Chunk filter not initialized for: " + this);
         }
-        final int c2 = CompareUtils.compare(lower, this.upper);
-        if (c2 > 0) {
-            return false; // inputLower > this.upper, no overlap possible.
-        }
-        // There is no overlap inside the ranges, test the edges.
-        return (c1 < 0 && c2 < 0)
-                || (c1 == 0 && this.lowerInclusive && upperInclusive)
-                || (c2 == 0 && lowerInclusive && this.upperInclusive);
+        // noinspection unchecked
+        return ((ObjectChunkFilter<Comparable<?>>) chunkFilter().get()).matches(value);
     }
 }

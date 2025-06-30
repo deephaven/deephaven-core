@@ -628,4 +628,32 @@ public class TypeUtils {
     public static short unbox(Short value) {
         return (value == null ? NULL_SHORT : value);
     }
+
+    public static byte getUnboxedByte(Object boxed) {
+        return boxed != null ? (((Number) boxed).byteValue()) : NULL_BYTE;
+    }
+
+    public static char getUnboxedChar(Object boxed) {
+        return boxed != null ? ((char) boxed) : NULL_CHAR;
+    }
+
+    public static short getUnboxedShort(Object boxed) {
+        return boxed != null ? (((Number) boxed).shortValue()) : NULL_SHORT;
+    }
+
+    public static int getUnboxedInt(Object boxed) {
+        return boxed != null ? (((Number) boxed).intValue()) : NULL_INT;
+    }
+
+    public static long getUnboxedLong(Object boxed) {
+        return boxed != null ? ((Number) boxed).longValue() : NULL_LONG;
+    }
+
+    public static float getUnboxedFloat(Object boxed) {
+        return boxed != null ? ((Number) boxed).floatValue() : NULL_FLOAT;
+    }
+
+    public static double getUnboxedDouble(Object boxed) {
+        return boxed != null ? ((Number) boxed).doubleValue() : NULL_DOUBLE;
+    }
 }

@@ -2,12 +2,14 @@
 // Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
-// ****** Edit CharChunkMatchFilterFactory and run "./gradlew replicateChunkFilters" to regenerate
+// ****** Edit FloatChunkMatchFilterFactory and run "./gradlew replicateChunkFilters" to regenerate
 //
 // @formatter:off
 package io.deephaven.engine.table.impl.chunkfilter;
 
+import gnu.trove.iterator.TDoubleIterator;
 import gnu.trove.set.hash.TDoubleHashSet;
+import io.deephaven.util.compare.DoubleComparisons;
 
 /**
  * Creates chunk filters for double values.
@@ -55,7 +57,12 @@ public class DoubleChunkMatchFilterFactory {
 
         @Override
         public boolean matches(double value) {
-            return value == this.value;
+            return DoubleComparisons.eq(value, this.value);
+        }
+
+        @Override
+        public boolean overlaps(double inputLower, double inputUpper) {
+            return DoubleComparisons.geq(value, inputLower) && DoubleComparisons.leq(value, inputUpper);
         }
     }
 
@@ -68,7 +75,13 @@ public class DoubleChunkMatchFilterFactory {
 
         @Override
         public boolean matches(double value) {
-            return value != this.value;
+            return !DoubleComparisons.eq(value, this.value);
+        }
+
+        @Override
+        public boolean overlaps(double inputLower, double inputUpper) {
+            // true if the range contains ANY double other than the excluded one
+            return !(DoubleComparisons.eq(value, inputLower) && DoubleComparisons.eq(value, inputUpper));
         }
     }
 
@@ -83,7 +96,13 @@ public class DoubleChunkMatchFilterFactory {
 
         @Override
         public boolean matches(double value) {
-            return value == value1 || value == value2;
+            return DoubleComparisons.eq(value, value1) || DoubleComparisons.eq(value, value2);
+        }
+
+        @Override
+        public boolean overlaps(double inputLower, double inputUpper) {
+            return (DoubleComparisons.geq(value1, inputLower) && DoubleComparisons.leq(value1, inputUpper)) ||
+                    (DoubleComparisons.geq(value2, inputLower) && DoubleComparisons.leq(value2, inputUpper));
         }
     }
 
@@ -98,7 +117,19 @@ public class DoubleChunkMatchFilterFactory {
 
         @Override
         public boolean matches(double value) {
-            return value != value1 && value != value2;
+            return !DoubleComparisons.eq(value, value1) && !DoubleComparisons.eq(value, value2);
+        }
+
+        @Override
+        public boolean overlaps(double inputLower, double inputUpper) {
+            final int maxSteps = 3; // two excluded values
+            for (double value = inputLower, steps = 0; DoubleComparisons.leq(value, inputUpper)
+                    && steps < maxSteps; value = Math.nextAfter(value, Double.POSITIVE_INFINITY), ++steps) {
+                if (!DoubleComparisons.eq(value, value1) && !DoubleComparisons.eq(value, value2)) {
+                    return true;
+                }
+            }
+            return false;
         }
     }
 
@@ -115,7 +146,16 @@ public class DoubleChunkMatchFilterFactory {
 
         @Override
         public boolean matches(double value) {
-            return value == value1 || value == value2 || value == value3;
+            return DoubleComparisons.eq(value, value1) ||
+                    DoubleComparisons.eq(value, value2) ||
+                    DoubleComparisons.eq(value, value3);
+        }
+
+        @Override
+        public boolean overlaps(double inputLower, double inputUpper) {
+            return (DoubleComparisons.geq(value1, inputLower) && DoubleComparisons.leq(value1, inputUpper)) ||
+                    (DoubleComparisons.geq(value2, inputLower) && DoubleComparisons.leq(value2, inputUpper)) ||
+                    (DoubleComparisons.geq(value3, inputLower) && DoubleComparisons.leq(value3, inputUpper));
         }
     }
 
@@ -132,7 +172,23 @@ public class DoubleChunkMatchFilterFactory {
 
         @Override
         public boolean matches(double value) {
-            return value != value1 && value != value2 && value != value3;
+            return !DoubleComparisons.eq(value, value1) &&
+                    !DoubleComparisons.eq(value, value2) &&
+                    !DoubleComparisons.eq(value, value3);
+        }
+
+        @Override
+        public boolean overlaps(double inputLower, double inputUpper) {
+            final int maxSteps = 4; // three excluded values
+            for (double value = inputLower, steps = 0; DoubleComparisons.leq(value, inputUpper)
+                    && steps < maxSteps; value = Math.nextAfter(value, Double.POSITIVE_INFINITY), ++steps) {
+                if (!DoubleComparisons.eq(value, value1) &&
+                        !DoubleComparisons.eq(value, value2) &&
+                        !DoubleComparisons.eq(value, value3)) {
+                    return true;
+                }
+            }
+            return false;
         }
     }
 
@@ -147,6 +203,18 @@ public class DoubleChunkMatchFilterFactory {
         public boolean matches(double value) {
             return this.values.contains(value);
         }
+
+        @Override
+        public boolean overlaps(double inputLower, double inputUpper) {
+            final TDoubleIterator iterator = values.iterator();
+            while (iterator.hasNext()) {
+                final double value = iterator.next();
+                if (DoubleComparisons.geq(value, inputLower) && DoubleComparisons.leq(value, inputUpper)) {
+                    return true;
+                }
+            }
+            return false;
+        }
     }
 
     private final static class InverseMultiValueDoubleChunkFilter extends DoubleChunkFilter {
@@ -159,6 +227,18 @@ public class DoubleChunkMatchFilterFactory {
         @Override
         public boolean matches(double value) {
             return !this.values.contains(value);
+        }
+
+        @Override
+        public boolean overlaps(double inputLower, double inputUpper) {
+            final int maxSteps = values.size() + 1;
+            for (double value = inputLower, steps = 0; DoubleComparisons.leq(value, inputUpper)
+                    && steps < maxSteps; value = Math.nextAfter(value, Double.POSITIVE_INFINITY), ++steps) {
+                if (!values.contains(value)) {
+                    return true;
+                }
+            }
+            return false;
         }
     }
 }

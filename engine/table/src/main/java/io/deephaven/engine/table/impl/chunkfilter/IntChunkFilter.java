@@ -14,6 +14,14 @@ import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 public abstract class IntChunkFilter implements ChunkFilter {
     public abstract boolean matches(int value);
 
+    /**
+     * Returns {@code true} if the range filter overlaps with the input range, else {@code false}. This function is
+     * intended to be accurate rather than fast and is not recommended for performance-critical value comparison.
+     *
+     * @throws UnsupportedOperationException not supported for this filter type
+     */
+    public abstract boolean overlaps(int inputLower, int inputUpper);
+
     @Override
     public final void filter(
             final Chunk<? extends Values> values,
