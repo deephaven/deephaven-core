@@ -10,6 +10,7 @@ package io.deephaven.engine.table.impl.select;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
 import io.deephaven.engine.table.impl.chunkfilter.DoubleChunkFilter;
 import io.deephaven.util.annotations.InternalUseOnly;
 import io.deephaven.util.compare.DoubleComparisons;
@@ -91,7 +92,11 @@ public class DoubleRangeFilter extends AbstractRangeFilter {
             throw new RuntimeException("Column \"" + columnName + "\" doesn't exist in this table, available columns: "
                     + tableDefinition.getColumnNames());
         }
-        chunkFilter = DoubleRangeComparator.makeDoubleFilter(lower, upper, lowerInclusive, upperInclusive);
+        initChunkFilter();
+    }
+
+    ChunkFilter initChunkFilter() {
+        return chunkFilter = DoubleRangeComparator.makeDoubleFilter(lower, upper, lowerInclusive, upperInclusive);
     }
 
     @Override

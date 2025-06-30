@@ -48,10 +48,15 @@ public class SingleSidedComparableRangeFilter extends AbstractRangeFilter {
         Assert.assertion(Comparable.class.isAssignableFrom(def.getDataType()),
                 "Comparable.class.isAssignableFrom(def.getDataType())", def.getDataType(), "def.getDataType()");
 
-        chunkFilter = makeComparableChunkFilter(pivot, lowerInclusive, isGreaterThan);
+        initChunkFilter();
     }
 
-    public static ChunkFilter makeComparableChunkFilter(Comparable<?> pivot, boolean inclusive, boolean isGreaterThan) {
+    ChunkFilter initChunkFilter() {
+        return chunkFilter = makeComparableChunkFilter(pivot, lowerInclusive, isGreaterThan);
+    }
+
+    private static ChunkFilter makeComparableChunkFilter(Comparable<?> pivot, boolean inclusive,
+            boolean isGreaterThan) {
         if (inclusive) {
             if (isGreaterThan) {
                 return new GeqComparableChunkFilter(pivot);

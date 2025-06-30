@@ -54,7 +54,11 @@ public class ComparableRangeFilter extends AbstractRangeFilter {
         Assert.assertion(Comparable.class.isAssignableFrom(def.getDataType()),
                 "Comparable.class.isAssignableFrom(def.getDataType())", def.getDataType(), "def.getDataType()");
 
-        chunkFilter = makeComparableChunkFilter(lower, upper, lowerInclusive, upperInclusive);
+        initChunkFilter();
+    }
+
+    ChunkFilter initChunkFilter() {
+        return chunkFilter = makeComparableChunkFilter(lower, upper, lowerInclusive, upperInclusive);
     }
 
     public static ChunkFilter makeComparableChunkFilter(
