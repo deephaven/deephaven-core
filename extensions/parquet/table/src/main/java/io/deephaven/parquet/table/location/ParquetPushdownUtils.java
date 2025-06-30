@@ -59,6 +59,8 @@ abstract class ParquetPushdownUtils {
                 LongComparisons.leq(QueryConstants.NULL_SHORT, max);
     }
 
+    // TODO There is some duplication here with DateTimeUtils, need to fix that.
+
     /**
      * Converts nanoseconds from the Epoch to an {@link Instant}.
      */

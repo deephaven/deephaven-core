@@ -22,12 +22,13 @@ public abstract class MinMaxFromStatistics {
      * Get the min and max values from the statistics.
      * <p>
      * This class assumes that the statistics do not have any {@code NaN} values because {@code NaN} values are
-     * automatically handled by {@link Statistics.Builder}.
+     * automatically handled for floats and doubles by {@link Statistics.Builder}.
      *
      * @param statistics The statistics to analyze
      * @return An {@link Optional} the min and max values from the statistics, or empty if statistics are missing or
      *         unsupported.
      */
+    // TODO Add unit tests for sanitization of statistics done by Statistics.Builder
     public static Optional<MinMax<?>> get(@Nullable final Statistics<?> statistics) {
         if (statistics == null || !statistics.hasNonNullValue()) {
             // Cannot determine min/max
