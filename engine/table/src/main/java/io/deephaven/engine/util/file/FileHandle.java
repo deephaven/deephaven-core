@@ -10,7 +10,6 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.jetbrains.annotations.VisibleForTesting;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -22,7 +21,6 @@ import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Objects;
-import java.util.Optional;
 
 /**
  * <p>
@@ -188,11 +186,6 @@ public final class FileHandle implements SeekableByteChannel {
      */
     public boolean equalsFileKey(@NotNull final FileHandle other) {
         return Objects.equals(fileKey, other.fileKey);
-    }
-
-    @VisibleForTesting
-    Optional<Object> fileKey() {
-        return Optional.ofNullable(fileKey);
     }
 
     FileChannel fileChannel() {
