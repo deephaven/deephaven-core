@@ -4,6 +4,7 @@
 package io.deephaven.engine.rowset.impl;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
@@ -79,6 +80,9 @@ public class ShiftedRowSequence extends RowSequenceAsChunkImpl implements RowSeq
 
         @Override
         public long peekNextKey() {
+            if (!hasMore()) {
+                return RowSet.NULL_ROW_KEY;
+            }
             return wrappedIt.peekNextKey() + shiftAmount;
         }
 
@@ -149,11 +153,17 @@ public class ShiftedRowSequence extends RowSequenceAsChunkImpl implements RowSeq
 
     @Override
     public long firstRowKey() {
+        if (wrappedOK.isEmpty()) {
+            return RowSet.NULL_ROW_KEY;
+        }
         return wrappedOK.firstRowKey() + shiftAmount;
     }
 
     @Override
     public long lastRowKey() {
+        if (wrappedOK.isEmpty()) {
+            return RowSet.NULL_ROW_KEY;
+        }
         return wrappedOK.lastRowKey() + shiftAmount;
     }
 

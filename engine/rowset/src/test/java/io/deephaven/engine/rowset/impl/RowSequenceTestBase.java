@@ -347,6 +347,19 @@ public abstract class RowSequenceTestBase {
     }
 
     @Test
+    public void testIteratorPeekEmpty() {
+        final long[] indices = indicesFromRanges(new long[0]);
+        try (final RowSequence OK = create(indices)) {
+            assertEquals(RowSet.NULL_ROW_KEY, OK.firstRowKey());
+
+            try (final RowSequence.Iterator it = OK.getRowSequenceIterator()) {
+                assertFalse(it.hasMore());
+                assertEquals(RowSet.NULL_ROW_KEY, it.peekNextKey());
+            }
+        }
+    }
+
+    @Test
     public void testIteratorAdvanceAndPeekOnlyCertainElements() {
         final long[] indices = indicesFromRanges(ranges1);
         try (final RowSequence OK = create(indices)) {
