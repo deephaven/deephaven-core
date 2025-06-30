@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.ColumnName;
+import io.deephaven.api.SortColumn;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -269,5 +270,44 @@ public class TestRollupTable extends RefreshingTableTestCase {
         assertEquals(
                 "Cannot rebase a RollupTable with a new source definition: new source column 'Extra' is missing in existing source",
                 iae2.getMessage());
+    }
+
+    @Test
+    public void testInvalidSort() {
+        final Table source1 = TableTools.newTable(stringCol("A", "Alpha", "Bravo", "Charlie", "Delta", "Charlie"),
+                intCol("Sentinel", 1, 2, 3, 4, 5)).update("ObjCol=new Object()");
+
+        final RollupTable rollup1a = source1.rollup(List.of(AggLast("Sentinel", "ObjCol")), "A");
+        final RollupTable.NodeOperationsRecorder recorder =
+                rollup1a.makeNodeOperationsRecorder(RollupTable.NodeType.Aggregated).sortDescending("A");
+        final RollupTable rollup1 = rollup1a.withNodeOperations(recorder);
+
+        final String[] arrayWithNull = new String[1];
+        final Table keyTable = newTable(
+                intCol(rollup1.getRowDepthColumn().name(), 0),
+                stringCol("A", arrayWithNull),
+                byteCol("Action", HierarchicalTable.KEY_TABLE_ACTION_EXPAND_ALL));
+
+        final HierarchicalTable.SnapshotState ss1 = rollup1.makeSnapshotState();
+        final Table snapshot =
+                snapshotToTable(rollup1, ss1, keyTable, ColumnName.of("Action"), null, RowSetFactory.flat(30));
+        TableTools.showWithRowSet(snapshot);
+        assertTableEquals(
+                TableTools.newTable(stringCol("A", null, "Delta", "Charlie", "Bravo", "Alpha"),
+                        intCol("Sentinel", 5, 4, 5, 2, 1)),
+                snapshot.view("A", "Sentinel"));
+        freeSnapshotTableChunks(snapshot);
+
+
+        final NotSortableColumnException nse = Assert.assertThrows(NotSortableColumnException.class,
+                () -> rollup1.makeNodeOperationsRecorder(RollupTable.NodeType.Aggregated).sortDescending("ObjCol"));
+        assertEquals("ObjCol is not a sortable type: class java.lang.Object", nse.getMessage());
+        final NotSortableColumnException nse2 = Assert.assertThrows(NotSortableColumnException.class,
+                () -> rollup1.makeNodeOperationsRecorder(RollupTable.NodeType.Aggregated).sort("ObjCol"));
+        assertEquals("ObjCol is not a sortable type: class java.lang.Object", nse2.getMessage());
+        final NotSortableColumnException nse3 = Assert.assertThrows(NotSortableColumnException.class,
+                () -> rollup1.makeNodeOperationsRecorder(RollupTable.NodeType.Aggregated)
+                        .sort(List.of(SortColumn.asc(ColumnName.of("ObjCol")))));
+        assertEquals("ObjCol is not a sortable type: class java.lang.Object", nse3.getMessage());
     }
 }

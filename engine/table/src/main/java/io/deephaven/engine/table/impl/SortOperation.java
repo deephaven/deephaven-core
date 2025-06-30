@@ -73,11 +73,11 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
             sortColumns[ii] =
                     (ColumnSource<Comparable<?>>) ReinterpretUtils.maybeConvertToPrimitive(originalSortColumns[ii]);
 
-            Require.requirement(
-                    Comparable.class.isAssignableFrom(sortColumns[ii].getType())
-                            || sortColumns[ii].getType().isPrimitive(),
-                    "Comparable.class.isAssignableFrom(sortColumns[ii].getType()) || sortColumns[ii].getType().isPrimitive()",
-                    sortColumnNames[ii], "sortColumnNames[ii]", sortColumns[ii].getType(), "sortColumns[ii].getType()");
+            final Class<?> columnType = sortColumns[ii].getType();
+            final boolean isSortable = Comparable.class.isAssignableFrom(columnType) || columnType.isPrimitive();
+            if (!isSortable) {
+                throw new NotSortableColumnException(sortColumnNames[ii] + " is not a sortable type: " + columnType);
+            }
         }
 
         parent.assertSortable(sortColumnNames);
