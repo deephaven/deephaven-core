@@ -789,7 +789,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
                 } else if (filter instanceof CharRangeFilter) {
                     final CharRangeFilter charRangeFilter = (CharRangeFilter) filter;
                     final char min = (char) (((Number) minMax.min()).intValue());
-                    final char max = (char) (((Number) minMax.min()).intValue());
+                    final char max = (char) (((Number) minMax.max()).intValue());
                     final boolean doStatsContainNull = nullCount > 0 || containsDeephavenNullChar(min, max);
                     maybeMatches = (doStatsContainNull && charRangeFilter.matches(QueryConstants.NULL_CHAR))
                             || charRangeFilter.overlaps(min, max);
@@ -810,7 +810,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
                 } else if (filter instanceof InstantRangeFilter) {
                     final InstantRangeFilter instantRangeFilter = (InstantRangeFilter) filter;
                     final Instant min = (Instant) minMax.min();
-                    final Instant max = (Instant) minMax.min();
+                    final Instant max = (Instant) minMax.max();
                     maybeMatches = (nullCount > 0 && instantRangeFilter.matches(null))
                             || instantRangeFilter.overlaps(min, max);
                 } else if (filter instanceof LongRangeFilter) {
