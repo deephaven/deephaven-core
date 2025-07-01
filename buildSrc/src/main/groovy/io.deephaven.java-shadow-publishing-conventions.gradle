@@ -15,7 +15,7 @@ java {
   withSourcesJar()
 }
 
-tasks.withType(Javadoc) {
+tasks.withType(Javadoc).configureEach {
   // https://github.com/gradle/gradle/issues/19869
   options.addStringOption('sourcepath', sourceSets.main.allJava.getSourceDirectories().getAsPath())
 }
@@ -24,7 +24,7 @@ def shadowPublication = project
         .extensions
         .getByType(PublishingExtension)
         .publications
-        .create('shadow', MavenPublication) {
+        .create(PublishingTools.SHADOW_PUBLICATION_NAME, MavenPublication) {
           from(project.components.named('shadow').get())
           artifact(project.tasks.named('sourcesJar'))
           artifact(project.tasks.named('javadocJar'))

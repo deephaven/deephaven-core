@@ -36,6 +36,8 @@ class PublishingTools {
     static final String SNAPSHOT_REPO = 'https://s01.oss.sonatype.org/content/repositories/snapshots/'
     static final String RELEASE_REPO = 'https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/'
 
+    static final String SHADOW_PUBLICATION_NAME = 'shadow'
+
     static void setupPublications(Project project, Closure closure) {
         setupPublications(project, new Action<MavenPublication>() {
             @Override
@@ -167,7 +169,7 @@ class PublishingTools {
         project.tasks.named('shadowJar', ShadowJar) {
             it.archiveBaseName.set(name)
         }
-        project.extensions.getByType(PublishingExtension).publications.named('shadow', MavenPublication) {
+        project.extensions.getByType(PublishingExtension).publications.named(SHADOW_PUBLICATION_NAME, MavenPublication) {
             it.artifactId = name
         }
         project.extensions.getByType(BasePluginExtension).archivesName.set(name)
