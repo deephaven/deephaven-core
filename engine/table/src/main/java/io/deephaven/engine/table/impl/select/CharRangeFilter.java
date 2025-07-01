@@ -173,10 +173,10 @@ public class CharRangeFilter extends AbstractRangeFilter {
      */
     @InternalUseOnly
     public boolean overlaps(final char inputLower, final char inputUpper) {
-        if (chunkFilter().isEmpty()) {
+        if (chunkFilter == null) {
             throw new IllegalStateException("Chunk filter not initialized for: " + this);
         }
-        return ((CharChunkFilter) chunkFilter().get()).overlaps(inputLower, inputUpper);
+        return ((CharChunkFilter) chunkFilter).overlaps(inputLower, inputUpper);
     }
 
     /**
@@ -188,9 +188,9 @@ public class CharRangeFilter extends AbstractRangeFilter {
      */
     @InternalUseOnly
     public boolean matches(final char value) {
-        if (chunkFilter().isEmpty()) {
+        if (chunkFilter == null) {
             throw new IllegalStateException("Chunk filter not initialized for: " + this);
         }
-        return ((CharChunkFilter) chunkFilter().get()).matches(value);
+        return ((CharChunkFilter) chunkFilter).matches(value);
     }
 }

@@ -177,10 +177,10 @@ public class ShortRangeFilter extends AbstractRangeFilter {
      */
     @InternalUseOnly
     public boolean overlaps(final short inputLower, final short inputUpper) {
-        if (chunkFilter().isEmpty()) {
+        if (chunkFilter == null) {
             throw new IllegalStateException("Chunk filter not initialized for: " + this);
         }
-        return ((ShortChunkFilter) chunkFilter().get()).overlaps(inputLower, inputUpper);
+        return ((ShortChunkFilter) chunkFilter).overlaps(inputLower, inputUpper);
     }
 
     /**
@@ -192,9 +192,9 @@ public class ShortRangeFilter extends AbstractRangeFilter {
      */
     @InternalUseOnly
     public boolean matches(final short value) {
-        if (chunkFilter().isEmpty()) {
+        if (chunkFilter == null) {
             throw new IllegalStateException("Chunk filter not initialized for: " + this);
         }
-        return ((ShortChunkFilter) chunkFilter().get()).matches(value);
+        return ((ShortChunkFilter) chunkFilter).matches(value);
     }
 }

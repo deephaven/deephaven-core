@@ -246,11 +246,11 @@ public class ComparableRangeFilter extends AbstractRangeFilter {
      */
     @InternalUseOnly
     public boolean overlaps(final Comparable<?> inputLower, final Comparable<?> inputUpper) {
-        if (chunkFilter().isEmpty()) {
+        if (chunkFilter == null) {
             throw new IllegalStateException("Chunk filter not initialized for: " + this);
         }
         // noinspection unchecked
-        return ((ObjectChunkFilter<Comparable<?>>) chunkFilter().get()).overlaps(inputLower, inputUpper);
+        return ((ObjectChunkFilter<Comparable<?>>) chunkFilter).overlaps(inputLower, inputUpper);
     }
 
     /**
@@ -262,10 +262,10 @@ public class ComparableRangeFilter extends AbstractRangeFilter {
      */
     @InternalUseOnly
     public boolean matches(final Comparable<?> value) {
-        if (chunkFilter().isEmpty()) {
+        if (chunkFilter == null) {
             throw new IllegalStateException("Chunk filter not initialized for: " + this);
         }
         // noinspection unchecked
-        return ((ObjectChunkFilter<Comparable<?>>) chunkFilter().get()).matches(value);
+        return ((ObjectChunkFilter<Comparable<?>>) chunkFilter).matches(value);
     }
 }

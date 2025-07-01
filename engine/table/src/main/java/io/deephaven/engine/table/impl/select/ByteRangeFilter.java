@@ -177,10 +177,10 @@ public class ByteRangeFilter extends AbstractRangeFilter {
      */
     @InternalUseOnly
     public boolean overlaps(final byte inputLower, final byte inputUpper) {
-        if (chunkFilter().isEmpty()) {
+        if (chunkFilter == null) {
             throw new IllegalStateException("Chunk filter not initialized for: " + this);
         }
-        return ((ByteChunkFilter) chunkFilter().get()).overlaps(inputLower, inputUpper);
+        return ((ByteChunkFilter) chunkFilter).overlaps(inputLower, inputUpper);
     }
 
     /**
@@ -192,9 +192,9 @@ public class ByteRangeFilter extends AbstractRangeFilter {
      */
     @InternalUseOnly
     public boolean matches(final byte value) {
-        if (chunkFilter().isEmpty()) {
+        if (chunkFilter == null) {
             throw new IllegalStateException("Chunk filter not initialized for: " + this);
         }
-        return ((ByteChunkFilter) chunkFilter().get()).matches(value);
+        return ((ByteChunkFilter) chunkFilter).matches(value);
     }
 }

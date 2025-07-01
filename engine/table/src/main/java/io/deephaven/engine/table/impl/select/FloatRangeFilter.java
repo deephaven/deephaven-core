@@ -181,10 +181,10 @@ public class FloatRangeFilter extends AbstractRangeFilter {
      */
     @InternalUseOnly
     public boolean overlaps(final float inputLower, final float inputUpper) {
-        if (chunkFilter().isEmpty()) {
+        if (chunkFilter == null) {
             throw new IllegalStateException("Chunk filter not initialized for: " + this);
         }
-        return ((FloatChunkFilter) chunkFilter().get()).overlaps(inputLower, inputUpper);
+        return ((FloatChunkFilter) chunkFilter).overlaps(inputLower, inputUpper);
     }
 
     /**
@@ -196,9 +196,9 @@ public class FloatRangeFilter extends AbstractRangeFilter {
      */
     @InternalUseOnly
     public boolean matches(final float value) {
-        if (chunkFilter().isEmpty()) {
+        if (chunkFilter == null) {
             throw new IllegalStateException("Chunk filter not initialized for: " + this);
         }
-        return ((FloatChunkFilter) chunkFilter().get()).matches(value);
+        return ((FloatChunkFilter) chunkFilter).matches(value);
     }
 }

@@ -152,10 +152,10 @@ public class InstantRangeFilter extends LongRangeFilter {
      */
     @InternalUseOnly
     public boolean overlaps(@NotNull final Instant inputLower, @NotNull final Instant inputUpper) {
-        if (chunkFilter().isEmpty()) {
+        if (chunkFilter == null) {
             throw new IllegalStateException("Chunk filter not initialized for: " + this);
         }
-        return ((InstantLongChunkFilterAdapter) chunkFilter().get()).overlaps(inputLower, inputUpper);
+        return ((InstantLongChunkFilterAdapter) chunkFilter).overlaps(inputLower, inputUpper);
     }
 
     /**
@@ -165,9 +165,9 @@ public class InstantRangeFilter extends LongRangeFilter {
      */
     @InternalUseOnly
     public boolean matches(@Nullable final Instant value) {
-        if (chunkFilter().isEmpty()) {
+        if (chunkFilter == null) {
             throw new IllegalStateException("Chunk filter not initialized for: " + this);
         }
-        return ((InstantLongChunkFilterAdapter) chunkFilter().get()).matches(value);
+        return ((InstantLongChunkFilterAdapter) chunkFilter).matches(value);
     }
 }
