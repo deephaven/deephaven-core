@@ -56,6 +56,9 @@ public class FlightSession implements AutoCloseable {
         return session;
     }
 
+    /**
+     * @return the session's FlightClient instance
+     */
     public FlightClient getClient() {
         return client;
     }
