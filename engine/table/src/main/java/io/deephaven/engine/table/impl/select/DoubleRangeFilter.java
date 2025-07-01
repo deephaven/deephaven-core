@@ -174,35 +174,4 @@ public class DoubleRangeFilter extends AbstractRangeFilter {
         }
         return minPosition;
     }
-
-    /**
-     * Returns {@code true} if the range filter overlaps with the input range, else {@code false}
-     *
-     * @param inputLower the lower bound of the input range (inclusive)
-     * @param inputUpper the upper bound of the input range (inclusive)
-     *
-     * @throws IllegalStateException if the chunk filter is not initialized
-     */
-    @InternalUseOnly
-    public boolean overlaps(final double inputLower, final double inputUpper) {
-        if (chunkFilter == null) {
-            throw new IllegalStateException("Chunk filter not initialized for: " + this);
-        }
-        return ((DoubleChunkFilter) chunkFilter).overlaps(inputLower, inputUpper);
-    }
-
-    /**
-     * Returns {@code true} if the given value is found within the range filter, else {@code false}.
-     *
-     * @param value the value to check
-     *
-     * @throws IllegalStateException if the chunk filter is not initialized
-     */
-    @InternalUseOnly
-    public boolean matches(final double value) {
-        if (chunkFilter == null) {
-            throw new IllegalStateException("Chunk filter not initialized for: " + this);
-        }
-        return ((DoubleChunkFilter) chunkFilter).matches(value);
-    }
 }

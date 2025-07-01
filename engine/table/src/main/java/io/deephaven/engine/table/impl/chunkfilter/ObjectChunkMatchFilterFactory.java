@@ -3,7 +3,6 @@
 //
 package io.deephaven.engine.table.impl.chunkfilter;
 
-import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.util.compare.ObjectComparisons;
 
 import java.util.Arrays;
@@ -130,7 +129,7 @@ public class ObjectChunkMatchFilterFactory {
             if (!boundIsExcluded(inputLower, value1, value2) || !boundIsExcluded(inputUpper, value1, value2)) {
                 return true;
             }
-            throw new UncheckedDeephavenException("Failed to determine overlap for bounds: " +
+            throw new CannotComputeOverlapsException("Failed to determine overlap for bounds: " +
                     inputLower + " and " + inputUpper + " with excluded values: " + value1 + ", " + value2);
         }
     }
@@ -182,7 +181,7 @@ public class ObjectChunkMatchFilterFactory {
                     !boundIsExcluded(inputUpper, value1, value2, value3)) {
                 return true;
             }
-            throw new UncheckedDeephavenException("Failed to determine overlap for bounds: " + inputLower + " and "
+            throw new CannotComputeOverlapsException("Failed to determine overlap for bounds: " + inputLower + " and "
                     + inputUpper + " with excluded values: " + value1 + ", " + value2 + ", " + value3);
         }
     }
@@ -230,7 +229,7 @@ public class ObjectChunkMatchFilterFactory {
             if (!values.contains(inputLower) || !values.contains(inputUpper)) {
                 return true;
             }
-            throw new UncheckedDeephavenException("Failed to determine overlap for bounds: " + inputLower + " and "
+            throw new CannotComputeOverlapsException("Failed to determine overlap for bounds: " + inputLower + " and "
                     + inputUpper + " with excluded values: " + values);
         }
     }

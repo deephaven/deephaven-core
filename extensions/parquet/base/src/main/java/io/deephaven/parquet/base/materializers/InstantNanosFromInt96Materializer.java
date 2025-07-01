@@ -51,13 +51,13 @@ public class InstantNanosFromInt96Materializer extends LongMaterializerBase impl
      * https://github.com/apache/arrow/blob/master/cpp/src/parquet/types.h (last retrieved as
      * https://github.com/apache/arrow/blob/d5a2aa2ffb1c2fc4f3ca48c829fcdba80ec67916/cpp/src/parquet/types.h)
      */
-    private static final long NANOS_PER_DAY = 86400L * 1000 * 1000 * 1000;
-    private static final int JULIAN_OFFSET_TO_UNIX_EPOCH_DAYS = 2_440_588;
-    private static long offset;
+    static final long NANOS_PER_DAY = 86400L * 1000 * 1000 * 1000;
+    static final int JULIAN_OFFSET_TO_UNIX_EPOCH_DAYS = 2_440_588;
+    static long offset;
     static {
         final String referenceTimeZone =
                 Configuration.getInstance().getStringWithDefault("deephaven.parquet.referenceTimeZone", "UTC");
-        setReferenceTimeZone(referenceTimeZone);
+        offset = getReferenceTimeZone(referenceTimeZone);
     }
 
     private final ValuesReader dataReader;
@@ -76,8 +76,8 @@ public class InstantNanosFromInt96Materializer extends LongMaterializerBase impl
      * globally with the parameter deephaven.parquet.referenceTimeZone. Valid values are time zone strings that would be
      * used in {@link DateTimeUtils#parseInstant(String) parseInstant}, such as NY.
      */
-    private static void setReferenceTimeZone(@NotNull final String timeZone) {
-        offset = DateTimeUtils.nanosOfDay(DateTimeUtils.parseInstant("1970-01-01T00:00:00 " + timeZone),
+    static long getReferenceTimeZone(@NotNull final String timeZone) {
+        return DateTimeUtils.nanosOfDay(DateTimeUtils.parseInstant("1970-01-01T00:00:00 " + timeZone),
                 ZoneId.of("UTC"), false);
     }
 

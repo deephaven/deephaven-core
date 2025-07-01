@@ -18,7 +18,6 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.annotations.InternalUseOnly;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.time.Instant;
 
@@ -92,7 +91,8 @@ public class InstantRangeFilter extends LongRangeFilter {
         return super.binarySearch(selection, instantColumnSource, usePrev, reverse);
     }
 
-    private class InstantLongChunkFilterAdapter implements ChunkFilter {
+    @InternalUseOnly
+    public class InstantLongChunkFilterAdapter implements ChunkFilter {
         /**
          * Convert an Instant chunk to a Long chunk.
          */
@@ -133,41 +133,14 @@ public class InstantRangeFilter extends LongRangeFilter {
             }
         }
 
-        private boolean overlaps(Instant inputLower, Instant inputUpper) {
-            return ((LongChunkFilter) longFilter).overlaps(
-                    DateTimeUtils.epochNanos(inputLower),
-                    DateTimeUtils.epochNanos(inputUpper));
+        @InternalUseOnly
+        public boolean overlaps(long inputLower, long inputUpper) {
+            return ((LongChunkFilter) longFilter).overlaps(inputLower, inputUpper);
         }
 
-        private boolean matches(Instant value) {
-            return ((LongChunkFilter) longFilter).matches(DateTimeUtils.epochNanos(value));
+        @InternalUseOnly
+        public boolean matches(long value) {
+            return ((LongChunkFilter) longFilter).matches(value);
         }
-    }
-
-    /**
-     * Returns {@code true} if the range filter overlaps with the input range, else {@code false}
-     *
-     * @param inputLower the lower bound of the input range (inclusive)
-     * @param inputUpper the upper bound of the input range (inclusive)
-     */
-    @InternalUseOnly
-    public boolean overlaps(@NotNull final Instant inputLower, @NotNull final Instant inputUpper) {
-        if (chunkFilter == null) {
-            throw new IllegalStateException("Chunk filter not initialized for: " + this);
-        }
-        return ((InstantLongChunkFilterAdapter) chunkFilter).overlaps(inputLower, inputUpper);
-    }
-
-    /**
-     * Returns {@code true} if the given value is found within the range filter, else {@code false}.
-     *
-     * @param value the value to check
-     */
-    @InternalUseOnly
-    public boolean matches(@Nullable final Instant value) {
-        if (chunkFilter == null) {
-            throw new IllegalStateException("Chunk filter not initialized for: " + this);
-        }
-        return ((InstantLongChunkFilterAdapter) chunkFilter).matches(value);
     }
 }

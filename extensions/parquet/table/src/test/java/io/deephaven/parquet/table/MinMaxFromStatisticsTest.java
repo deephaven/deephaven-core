@@ -11,7 +11,9 @@ import io.deephaven.parquet.base.NullStatistics;
 import io.deephaven.parquet.table.location.MinMax;
 import io.deephaven.parquet.table.location.MinMaxFromStatistics;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
+import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.time.DateTimeUtils;
+import org.apache.parquet.bytes.BytesUtils;
 import org.apache.parquet.column.statistics.BinaryStatistics;
 import org.apache.parquet.column.statistics.BooleanStatistics;
 import org.apache.parquet.column.statistics.DoubleStatistics;
@@ -22,10 +24,13 @@ import org.apache.parquet.column.statistics.Statistics;
 import org.apache.parquet.hadoop.metadata.ColumnChunkMetaData;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
 import org.apache.parquet.schema.MessageType;
+import org.apache.parquet.schema.PrimitiveType;
+import org.apache.parquet.schema.Type;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
 import java.io.File;
 import java.math.BigDecimal;
@@ -55,9 +60,12 @@ import static io.deephaven.util.QueryConstants.NULL_FLOAT;
 import static io.deephaven.util.QueryConstants.NULL_INT;
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 import static io.deephaven.util.QueryConstants.NULL_SHORT;
+import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.FLOAT;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertFalse;
 
+@Category(OutOfBandTest.class)
 public class MinMaxFromStatisticsTest {
 
     private static final String ROOT_FILENAME = MinMaxFromStatisticsTest.class.getName() + "_root";
@@ -102,7 +110,7 @@ public class MinMaxFromStatisticsTest {
         final String columnName = "Booleans";
 
         writeTable(newTable(booleanCol(columnName, null, false, true, false, null, true)), dest.toString());
-        assertMinMax(dest, columnName, BooleanStatistics.class, 2, (byte) 0, (byte) 1);
+        assertMinMax(dest, columnName, BooleanStatistics.class, 2, false, true);
 
         writeTable(newTable(booleanCol(columnName, null, null, null)), dest.toString());
         assertEmptyStatistics(dest, columnName, BooleanStatistics.class, 3);
@@ -537,5 +545,21 @@ public class MinMaxFromStatisticsTest {
         assertTrue(statsClass.getSimpleName(), statsClass.isInstance(statistics));
         assertEquals(expectedNulls, statistics.getNumNulls());
         return MinMaxFromStatistics.get(statistics);
+    }
+
+    /**
+     * This test verifies that the statistics builder logic for NaN values automatically handles NaN values. This
+     * behavior is important because DH currently writes NaN values to statistics.
+     */
+    // TODO (DH-10771): DH should not write NaN values to statistics.
+    @Test
+    public void testStatisticsWithNaN() {
+        final Statistics.Builder builder = Statistics.getBuilderForReading(
+                new PrimitiveType(Type.Repetition.REQUIRED, FLOAT, "floatColumn"));
+        builder.withMin(BytesUtils.intToBytes(Float.floatToIntBits(Float.NaN)));
+        builder.withMax(BytesUtils.intToBytes(Float.floatToIntBits(1.2f)));
+        builder.withNumNulls(0);
+        final Statistics<?> statistics = builder.build();
+        assertFalse(statistics.hasNonNullValue());
     }
 }

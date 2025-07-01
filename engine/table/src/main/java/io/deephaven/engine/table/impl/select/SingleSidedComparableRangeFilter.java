@@ -183,37 +183,4 @@ public class SingleSidedComparableRangeFilter extends AbstractRangeFilter {
             return selection.subSetByPositionRange(lowerBoundMin, selection.size());
         }
     }
-
-    /**
-     * Returns {@code true} if the range filter overlaps with the input range, else {@code false}.
-     *
-     * @param inputLower the lower bound of the input range (inclusive)
-     * @param inputUpper the upper bound of the input range (inclusive)
-     *
-     * @throws IllegalStateException if the chunk filter is not initialized
-     */
-    @InternalUseOnly
-    public boolean overlaps(@NotNull final Comparable<?> inputLower, @NotNull final Comparable<?> inputUpper) {
-        if (chunkFilter == null) {
-            throw new IllegalStateException("Chunk filter not initialized for: " + this);
-        }
-        // noinspection unchecked
-        return ((ObjectChunkFilter<Comparable<?>>) chunkFilter).overlaps(inputLower, inputUpper);
-    }
-
-    /**
-     * Returns {@code true} if the given value is found within the range filter, else {@code false}.
-     *
-     * @param value the value to check
-     *
-     * @throws IllegalStateException if the chunk filter is not initialized
-     */
-    @InternalUseOnly
-    public boolean matches(@Nullable final Comparable<?> value) {
-        if (chunkFilter == null) {
-            throw new IllegalStateException("Chunk filter not initialized for: " + this);
-        }
-        // noinspection unchecked
-        return ((ObjectChunkFilter<Comparable<?>>) chunkFilter).matches(value);
-    }
 }

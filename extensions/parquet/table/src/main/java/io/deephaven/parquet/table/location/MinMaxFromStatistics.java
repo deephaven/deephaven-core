@@ -4,7 +4,6 @@
 package io.deephaven.parquet.table.location;
 
 import io.deephaven.parquet.base.materializers.InstantNanosFromInt96Materializer;
-import io.deephaven.util.BooleanUtils;
 import org.apache.parquet.column.statistics.Statistics;
 import org.apache.parquet.schema.LogicalTypeAnnotation;
 import org.apache.parquet.schema.PrimitiveType;
@@ -65,9 +64,7 @@ public abstract class MinMaxFromStatistics {
             @NotNull final Statistics<?> statistics) {
         switch (typeName) {
             case BOOLEAN:
-                return wrapMinMax(
-                        BooleanUtils.booleanAsByte((Boolean) statistics.genericGetMin()),
-                        BooleanUtils.booleanAsByte((Boolean) statistics.genericGetMax()));
+                return wrapMinMax((Boolean) statistics.genericGetMin(), (Boolean) statistics.genericGetMax());
             case INT32:
                 return wrapMinMax((Integer) statistics.genericGetMin(), (Integer) statistics.genericGetMax());
             case INT64:

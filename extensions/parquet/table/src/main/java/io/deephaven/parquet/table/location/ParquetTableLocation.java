@@ -16,6 +16,7 @@ import io.deephaven.engine.table.impl.PushdownFilterContext;
 import io.deephaven.engine.table.impl.PushdownResult;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.chunkfilter.ByteChunkFilter;
+import io.deephaven.engine.table.impl.chunkfilter.CannotComputeOverlapsException;
 import io.deephaven.engine.table.impl.chunkfilter.CharChunkFilter;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
 import io.deephaven.engine.table.impl.chunkfilter.DoubleChunkFilter;
@@ -45,6 +46,7 @@ import io.deephaven.parquet.table.metadata.DataIndexInfo;
 import io.deephaven.parquet.table.metadata.GroupingColumnInfo;
 import io.deephaven.parquet.table.metadata.SortColumnInfo;
 import io.deephaven.parquet.table.metadata.TableInfo;
+import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.mutable.MutableLong;
@@ -777,145 +779,96 @@ public class ParquetTableLocation extends AbstractTableLocation {
             }
 
             final MinMax<?> minMax = minMaxFromStatistics.get();
+
             boolean maybeMatches;
+            final Optional<ChunkFilter> optionalChunkFilter;
+            if (filter instanceof AbstractRangeFilter || filter instanceof MatchFilter) {
+                optionalChunkFilter = ((ExposesChunkFilter) filter).chunkFilter();
+            } else {
+                // Unsupported filter type, we can't push it down.
+                maybeBuilder.appendRowSequence(rs);
+                maybeCount.add(rs.size());
+                return;
+            }
+            if (optionalChunkFilter.isEmpty()) {
+                throw new IllegalStateException("Chunk filter not initialized for: " + filter);
+            }
+            final ChunkFilter chunkFilter = optionalChunkFilter.get();
+
             try {
-                // TODO Reduce the duplication here
-                if (filter instanceof ByteRangeFilter) {
-                    final ByteRangeFilter byteRangeFilter = (ByteRangeFilter) filter;
+                if (chunkFilter instanceof ByteChunkFilter) {
+                    final ByteChunkFilter byteChunkFilter = (ByteChunkFilter) chunkFilter;
                     final byte min = TypeUtils.getUnboxedByte(minMax.min());
                     final byte max = TypeUtils.getUnboxedByte(minMax.max());
                     final boolean doStatsContainNull = nullCount > 0 || containsDeephavenNullByte(min, max);
-                    maybeMatches = (doStatsContainNull && byteRangeFilter.matches(QueryConstants.NULL_BYTE))
-                            || byteRangeFilter.overlaps(min, max);
-                } else if (filter instanceof CharRangeFilter) {
-                    final CharRangeFilter charRangeFilter = (CharRangeFilter) filter;
+                    maybeMatches = (doStatsContainNull && byteChunkFilter.matches(QueryConstants.NULL_BYTE))
+                            || byteChunkFilter.overlaps(min, max);
+                } else if (chunkFilter instanceof CharChunkFilter) {
+                    final CharChunkFilter charChunkFilter = (CharChunkFilter) chunkFilter;
                     final char min = (char) (((Number) minMax.min()).intValue());
                     final char max = (char) (((Number) minMax.max()).intValue());
                     final boolean doStatsContainNull = nullCount > 0 || containsDeephavenNullChar(min, max);
-                    maybeMatches = (doStatsContainNull && charRangeFilter.matches(QueryConstants.NULL_CHAR))
-                            || charRangeFilter.overlaps(min, max);
-                } else if (filter instanceof ShortRangeFilter) {
-                    final ShortRangeFilter shortRangeFilter = (ShortRangeFilter) filter;
+                    maybeMatches = (doStatsContainNull && charChunkFilter.matches(QueryConstants.NULL_CHAR))
+                            || charChunkFilter.overlaps(min, max);
+                } else if (chunkFilter instanceof ShortChunkFilter) {
+                    final ShortChunkFilter shortChunkFilter = (ShortChunkFilter) chunkFilter;
                     final short min = TypeUtils.getUnboxedShort(minMax.min());
                     final short max = TypeUtils.getUnboxedShort(minMax.max());
                     final boolean doStatsContainNull = nullCount > 0 || containsDeephavenNullShort(min, max);
-                    maybeMatches = (doStatsContainNull && shortRangeFilter.matches(QueryConstants.NULL_SHORT))
-                            || shortRangeFilter.overlaps(min, max);
-                } else if (filter instanceof IntRangeFilter) {
-                    final IntRangeFilter intRangeFilter = (IntRangeFilter) filter;
+                    maybeMatches = (doStatsContainNull && shortChunkFilter.matches(QueryConstants.NULL_SHORT))
+                            || shortChunkFilter.overlaps(min, max);
+                } else if (chunkFilter instanceof IntChunkFilter) {
+                    final IntChunkFilter intChunkFilter = (IntChunkFilter) chunkFilter;
                     final int min = TypeUtils.getUnboxedInt(minMax.min());
                     final int max = TypeUtils.getUnboxedInt(minMax.max());
                     final boolean doStatsContainNull = nullCount > 0 || containsDeephavenNullInt(min, max);
-                    maybeMatches = (doStatsContainNull && intRangeFilter.matches(QueryConstants.NULL_INT))
-                            || intRangeFilter.overlaps(min, max);
-                } else if (filter instanceof InstantRangeFilter) {
-                    final InstantRangeFilter instantRangeFilter = (InstantRangeFilter) filter;
-                    final Instant min = (Instant) minMax.min();
-                    final Instant max = (Instant) minMax.max();
-                    maybeMatches = (nullCount > 0 && instantRangeFilter.matches(null))
-                            || instantRangeFilter.overlaps(min, max);
-                } else if (filter instanceof LongRangeFilter) {
-                    final LongRangeFilter longRangeFilter = (LongRangeFilter) filter;
+                    maybeMatches = (doStatsContainNull && intChunkFilter.matches(QueryConstants.NULL_INT))
+                            || intChunkFilter.overlaps(min, max);
+                } else if (filter instanceof InstantRangeFilter.InstantLongChunkFilterAdapter) {
+                    final InstantRangeFilter.InstantLongChunkFilterAdapter instantChunkFilter =
+                            (InstantRangeFilter.InstantLongChunkFilterAdapter) filter;
+                    final long min = DateTimeUtils.epochNanos((Instant) minMax.min());
+                    final long max = DateTimeUtils.epochNanos((Instant) minMax.max());
+                    final boolean doStatsContainNull = nullCount > 0 || containsDeephavenNullLong(min, max);
+                    maybeMatches = (doStatsContainNull && instantChunkFilter.matches(QueryConstants.NULL_LONG))
+                            || instantChunkFilter.overlaps(min, max);
+                } else if (chunkFilter instanceof LongChunkFilter) {
+                    final LongChunkFilter longChunkFilter = (LongChunkFilter) chunkFilter;
                     final long min = TypeUtils.getUnboxedLong(minMax.min());
                     final long max = TypeUtils.getUnboxedLong(minMax.max());
                     final boolean doStatsContainNull = nullCount > 0 || containsDeephavenNullLong(min, max);
-                    maybeMatches = (doStatsContainNull && longRangeFilter.matches(QueryConstants.NULL_LONG))
-                            || longRangeFilter.overlaps(min, max);
-                } else if (filter instanceof FloatRangeFilter) {
-                    final FloatRangeFilter floatRangeFilter = (FloatRangeFilter) filter;
+                    maybeMatches = (doStatsContainNull && longChunkFilter.matches(QueryConstants.NULL_LONG))
+                            || longChunkFilter.overlaps(min, max);
+                } else if (chunkFilter instanceof FloatChunkFilter) {
+                    final FloatChunkFilter floatChunkFilter = (FloatChunkFilter) chunkFilter;
                     final float min = TypeUtils.getUnboxedFloat(minMax.min());
                     final float max = TypeUtils.getUnboxedFloat(minMax.max());
                     final boolean doStatsContainNull = nullCount > 0 || containsDeephavenNullFloat(min, max);
-                    maybeMatches = (doStatsContainNull && floatRangeFilter.matches(QueryConstants.NULL_FLOAT))
-                            || floatRangeFilter.overlaps(min, max);
-                } else if (filter instanceof DoubleRangeFilter) {
-                    final DoubleRangeFilter doubleRangeFilter = (DoubleRangeFilter) filter;
+                    maybeMatches = (doStatsContainNull && floatChunkFilter.matches(QueryConstants.NULL_FLOAT))
+                            || floatChunkFilter.overlaps(min, max);
+                } else if (chunkFilter instanceof DoubleChunkFilter) {
+                    final DoubleChunkFilter doubleChunkFilter = (DoubleChunkFilter) chunkFilter;
                     final double min = TypeUtils.getUnboxedDouble(minMax.min());
                     final double max = TypeUtils.getUnboxedDouble(minMax.max());
                     final boolean doStatsContainNull = nullCount > 0 || containsDeephavenNullDouble(min, max);
-                    maybeMatches = (doStatsContainNull && doubleRangeFilter.matches(QueryConstants.NULL_DOUBLE))
-                            || doubleRangeFilter.overlaps(min, max);
-                } else if (filter instanceof SingleSidedComparableRangeFilter) {
-                    final SingleSidedComparableRangeFilter sscrf = (SingleSidedComparableRangeFilter) filter;
-                    final Comparable<?> min = minMax.min();
-                    final Comparable<?> max = minMax.max();
-                    maybeMatches = (nullCount > 0 && sscrf.matches(null)) || sscrf.overlaps(min, max);
-                } else if (filter instanceof MatchFilter) {
-                    final MatchFilter matchFilter = (MatchFilter) filter;
-                    if (matchFilter.chunkFilter().isEmpty()) {
-                        throw new IllegalStateException("Chunk filter not initialized for: " + matchFilter);
-                    }
-                    // We use the type of the chunk filter to determine the type of the min/max values.
-                    final ChunkFilter chunkFilter = matchFilter.chunkFilter().get();
-                    if (chunkFilter instanceof ByteChunkFilter) {
-                        final ByteChunkFilter byteChunkFilter = (ByteChunkFilter) chunkFilter;
-                        final byte min = TypeUtils.getUnboxedByte(minMax.min());
-                        final byte max = TypeUtils.getUnboxedByte(minMax.max());
-                        final boolean doStatsContainNull = nullCount > 0 || containsDeephavenNullByte(min, max);
-                        maybeMatches = (doStatsContainNull && byteChunkFilter.matches(QueryConstants.NULL_BYTE))
-                                || byteChunkFilter.overlaps(min, max);
-                    } else if (chunkFilter instanceof CharChunkFilter) {
-                        final CharChunkFilter charChunkFilter = (CharChunkFilter) chunkFilter;
-                        final char min = (char) (((Number) minMax.min()).intValue());
-                        final char max = (char) (((Number) minMax.max()).intValue());
-                        final boolean doStatsContainNull = nullCount > 0 || containsDeephavenNullChar(min, max);
-                        maybeMatches = (doStatsContainNull && charChunkFilter.matches(QueryConstants.NULL_CHAR))
-                                || charChunkFilter.overlaps(min, max);
-                    } else if (chunkFilter instanceof ShortChunkFilter) {
-                        final ShortChunkFilter shortChunkFilter = (ShortChunkFilter) chunkFilter;
-                        final short min = TypeUtils.getUnboxedShort(minMax.min());
-                        final short max = TypeUtils.getUnboxedShort(minMax.max());
-                        final boolean doStatsContainNull = nullCount > 0 || containsDeephavenNullShort(min, max);
-                        maybeMatches = (doStatsContainNull && shortChunkFilter.matches(QueryConstants.NULL_SHORT))
-                                || shortChunkFilter.overlaps(min, max);
-                    } else if (chunkFilter instanceof IntChunkFilter) {
-                        final IntChunkFilter intChunkFilter = (IntChunkFilter) chunkFilter;
-                        final int min = TypeUtils.getUnboxedInt(minMax.min());
-                        final int max = TypeUtils.getUnboxedInt(minMax.max());
-                        final boolean doStatsContainNull = nullCount > 0 || containsDeephavenNullInt(min, max);
-                        maybeMatches = (doStatsContainNull && intChunkFilter.matches(QueryConstants.NULL_INT))
-                                || intChunkFilter.overlaps(min, max);
-                    } else if (chunkFilter instanceof LongChunkFilter) {
-                        final LongChunkFilter longChunkFilter = (LongChunkFilter) chunkFilter;
-                        final long min = TypeUtils.getUnboxedLong(minMax.min());
-                        final long max = TypeUtils.getUnboxedLong(minMax.max());
-                        final boolean doStatsContainNull = nullCount > 0 || containsDeephavenNullLong(min, max);
-                        maybeMatches = (doStatsContainNull && longChunkFilter.matches(QueryConstants.NULL_LONG))
-                                || longChunkFilter.overlaps(min, max);
-                    } else if (chunkFilter instanceof FloatChunkFilter) {
-                        final FloatChunkFilter floatChunkFilter = (FloatChunkFilter) chunkFilter;
-                        final float min = TypeUtils.getUnboxedFloat(minMax.min());
-                        final float max = TypeUtils.getUnboxedFloat(minMax.max());
-                        final boolean doStatsContainNull = nullCount > 0 || containsDeephavenNullFloat(min, max);
-                        maybeMatches = (doStatsContainNull && floatChunkFilter.matches(QueryConstants.NULL_FLOAT))
-                                || floatChunkFilter.overlaps(min, max);
-                    } else if (chunkFilter instanceof DoubleChunkFilter) {
-                        final DoubleChunkFilter doubleChunkFilter = (DoubleChunkFilter) chunkFilter;
-                        final double min = TypeUtils.getUnboxedDouble(minMax.min());
-                        final double max = TypeUtils.getUnboxedDouble(minMax.max());
-                        final boolean doStatsContainNull = nullCount > 0 || containsDeephavenNullDouble(min, max);
-                        maybeMatches = (doStatsContainNull && doubleChunkFilter.matches(QueryConstants.NULL_DOUBLE))
-                                || doubleChunkFilter.overlaps(min, max);
-                    } else if (chunkFilter instanceof ChunkFilter.ConstantChunkFilter) {
-                        maybeMatches =
-                                ((ChunkFilter.ConstantChunkFilter) chunkFilter).overlaps(minMax.min(), minMax.max());
-                    } else if (chunkFilter instanceof ObjectChunkFilter) {
-                        // noinspection unchecked,rawtypes
-                        final ObjectChunkFilter objectChunkFilter = (ObjectChunkFilter) chunkFilter;
-                        // noinspection unchecked,rawtypes
-                        try {
-                            maybeMatches = (nullCount > 0 && objectChunkFilter.matches(null)) ||
-                                    objectChunkFilter.overlaps(minMax.min(), minMax.max());
-                        } catch (final RuntimeException e) {
-                            // If the objectChunkFilter cannot handle the min/max values, we assume everything matches.
-                            maybeMatches = true;
-                        }
-                    } else {
-                        // Unsupported chunk filter type for push down, so we can't filter anything.
+                    maybeMatches = (doStatsContainNull && doubleChunkFilter.matches(QueryConstants.NULL_DOUBLE))
+                            || doubleChunkFilter.overlaps(min, max);
+                } else if (chunkFilter instanceof ChunkFilter.ConstantChunkFilter) {
+                    maybeMatches =
+                            ((ChunkFilter.ConstantChunkFilter) chunkFilter).overlaps(minMax.min(), minMax.max());
+                } else if (chunkFilter instanceof ObjectChunkFilter) {
+                    // noinspection unchecked,rawtypes
+                    final ObjectChunkFilter objectChunkFilter = (ObjectChunkFilter) chunkFilter;
+                    // noinspection unchecked,rawtypes
+                    try {
+                        maybeMatches = (nullCount > 0 && objectChunkFilter.matches(null)) ||
+                                objectChunkFilter.overlaps(minMax.min(), minMax.max());
+                    } catch (final CannotComputeOverlapsException e) {
+                        // If the objectChunkFilter cannot handle the min/max values, we assume everything matches.
                         maybeMatches = true;
                     }
                 } else {
-                    // Unsupported filter type for push down, so we can't filter anything.
+                    // Unsupported chunk filter type for push down, so we can't filter anything.
                     maybeMatches = true;
                 }
             } catch (final UnsupportedOperationException e) {

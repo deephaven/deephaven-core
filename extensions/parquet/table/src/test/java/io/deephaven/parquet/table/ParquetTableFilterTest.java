@@ -22,6 +22,10 @@ import io.deephaven.parquet.table.location.ParquetTableLocationKey;
 import io.deephaven.stringset.ArrayStringSet;
 import io.deephaven.stringset.StringSet;
 import io.deephaven.test.types.OutOfBandTest;
+import org.apache.parquet.column.statistics.Statistics;
+import org.apache.parquet.hadoop.metadata.ColumnChunkMetaData;
+import org.apache.parquet.hadoop.metadata.ParquetMetadata;
+import org.apache.parquet.schema.MessageType;
 import org.jetbrains.annotations.NotNull;
 import org.junit.*;
 import org.junit.experimental.categories.Category;
@@ -42,6 +46,9 @@ import static io.deephaven.engine.util.TableTools.newTable;
 import static io.deephaven.parquet.table.ParquetTools.readTable;
 import static io.deephaven.parquet.table.ParquetTools.writeTable;
 import static io.deephaven.time.DateTimeUtils.parseInstant;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertFalse;
 
 @Category(OutOfBandTest.class)
 public final class ParquetTableFilterTest {
@@ -270,6 +277,7 @@ public final class ParquetTableFilterTest {
 
         final Table largeTable = TableTools.emptyTable(tableSize).update(
                 "Timestamp = baseTime + i * 1_000_000_000L",
+                "boolean_col = ii % 3 == 0 ? null : ii % 2 == 0? true : false", // with nulls
                 "sequential_val = ii % 117 == 0 ? null : ii", // with nulls
                 "symbol = ii % 119 == 0 ? null : String.format(`%04d`, randomInt(0,10_000))",
                 "sequential_bd = java.math.BigDecimal.valueOf(ii * 0.1)",
@@ -294,6 +302,12 @@ public final class ParquetTableFilterTest {
         // Timestamp range and match filters
         filterAndVerifyResults(diskTable, memTable, "Timestamp < '2023-01-02T00:00:00 NY'");
         filterAndVerifyResults(diskTable, memTable, "Timestamp = '2023-01-02T00:00:00 NY'");
+
+        // Boolean column filters
+        filterAndVerifyResults(diskTable, memTable, "boolean_col = null");
+        filterAndVerifyResults(diskTable, memTable, "boolean_col != null");
+        filterAndVerifyResults(diskTable, memTable, "boolean_col = true");
+        filterAndVerifyResultsAllowEmpty(diskTable, memTable, "boolean_col = false");
 
         // BigDecimal range filters (match is complicated with BD, given
         ExecutionContext.getContext().getQueryScope().putParam("bd_500", BigDecimal.valueOf(500.0));
@@ -341,6 +355,7 @@ public final class ParquetTableFilterTest {
 
         final Table largeTable = TableTools.emptyTable(tableSize).update(
                 "Timestamp = baseTime + i * 1_000_000_000L",
+                "boolean_col = (Boolean)null", // all nulls
                 "sequential_val = (Long)null", // all nulls
                 "symbol = (String)null"); // all nulls
         final int partitionCount = 11;
@@ -372,6 +387,11 @@ public final class ParquetTableFilterTest {
         final Filter complexFilter =
                 Filter.or(Filter.from("sequential_val = null", "symbol = null"));
         verifyResults(diskTable.where(complexFilter), memTable.where(complexFilter));
+
+        // boolean column filters
+        filterAndVerifyResultsAllowEmpty(diskTable, memTable, "boolean_col = null");
+        filterAndVerifyResultsAllowEmpty(diskTable, memTable, "boolean_col != null");
+        filterAndVerifyResultsAllowEmpty(diskTable, memTable, "boolean_col = true");
     }
 
     @Test
@@ -1087,27 +1107,25 @@ public final class ParquetTableFilterTest {
      * import pyarrow as pa
      * import pyarrow.parquet as pq
      *
-     * # Representative values spanning each type's range from minimum to maximum.
-     * byte_vals  = np.array([-128, -42,   -1, 0, 1,   42,  127],  dtype=np.int8)     # int8
-     * short_vals = np.array([-32768, -12345, -1, 0, 1, 12345, 32767], dtype=np.int16) # int16
-     * char_vals  = np.array([0, 10000, 30000, 40000, 50000, 60000, 65535], dtype=np.uint16)  # uint16 (char)
-     * int_vals   = np.array([-2147483648, -123456, -1, 0, 1, 123456, 2147483647], dtype=np.int32)  # int32
-     * long_vals  = np.array([
-     *     -9223372036854775808,  # int64 lower bound
-     *     -1234567890123456789,
-     *     -1,
-     *      0,
-     *      1,
-     *      1234567890123456789,
-     *      9223372036854775807   # int64 upper bound
-     * ], dtype=np.int64)  # int64
+     * float_max = np.float32(float.fromhex('0x1.fffffep+127'))  # DH NULL_FLOAT
+     * double_max = float.fromhex('0x1.fffffffffffffp+1023') # DH NULL_DOUBLE
+     *
+     * byte_vals  = np.array([-128, -42, -1, 0, 1, 42, 127],  dtype=np.int8)
+     * short_vals = np.array([-32768, -12345, -1, 0, 1, 12345, 32767], dtype=np.int16)
+     * char_vals  = np.array([0, 10000, 30000, 40000, 50000, 60000, 65535], dtype=np.uint16)
+     * int_vals   = np.array([-2147483648, -123456, -1, 0, 1, 123456, 2147483647], dtype=np.int32)
+     * long_vals  = np.array([-9223372036854775808, -1234567890123456789, -1, 0, 1, 1234567890123456789,  9223372036854775807], dtype=np.int64)
+     * float_vals  = np.array([-float_max, -1.2345e5, -1.0, 0.0, 1.0, 1.2345e5, float_max], dtype=np.float32)
+     * double_vals = np.array([-double_max, -1.23456789012345e12, -1.0, 0.0, 1.0, 1.23456789012345e12, double_max], dtype=np.float64)
      *
      * df = pd.DataFrame({
-     *     "Bytes":  byte_vals,
-     *     "Shorts": short_vals,
-     *     "Chars":  char_vals,
-     *     "Ints":   int_vals,
-     *     "Longs":  long_vals
+     *     "Bytes"  : byte_vals,
+     *     "Shorts" : short_vals,
+     *     "Chars"  : char_vals,
+     *     "Ints"   : int_vals,
+     *     "Longs"  : long_vals,
+     *     "Floats" : float_vals,
+     *     "Doubles": double_vals
      * })
      *
      * table = pa.Table.from_pandas(df)
@@ -1136,6 +1154,12 @@ public final class ParquetTableFilterTest {
 
         filterAndVerifyResultsAllowEmpty(diskTable, memTable, "Longs == null");
         filterAndVerifyResultsAllowEmpty(diskTable, memTable, "Longs != null");
+
+        filterAndVerifyResultsAllowEmpty(diskTable, memTable, "Floats == null");
+        filterAndVerifyResultsAllowEmpty(diskTable, memTable, "Floats != null");
+
+        filterAndVerifyResultsAllowEmpty(diskTable, memTable, "Doubles == null");
+        filterAndVerifyResultsAllowEmpty(diskTable, memTable, "Doubles != null");
     }
 
     /**
@@ -1157,6 +1181,19 @@ public final class ParquetTableFilterTest {
     public void testFilteringNaN() {
         // Read the reference parquet file with NaN values generated using PyArrow.
         final String path = ParquetTableFilterTest.class.getResource("/ReferenceFloatingPointNan.parquet").getFile();
+
+        {
+            // Pyarrow's parquet writing code does not write NaN values to statistics
+            final Statistics<?> floatStats = getColumnStatistics(new File(path), "Floats");
+            assertTrue(floatStats.hasNonNullValue());
+            assertEquals(-4.56f, floatStats.genericGetMin());
+            assertEquals(1.23f, floatStats.genericGetMax());
+            final Statistics<?> doubleStats = getColumnStatistics(new File(path), "Doubles");
+            assertTrue(doubleStats.hasNonNullValue());
+            assertEquals(-4.56, doubleStats.genericGetMin());
+            assertEquals(1.23, doubleStats.genericGetMax());
+        }
+
         testFilteringNanImpl(ParquetTools.readTable(path));
 
         // Write a new parquet file with NaN values using DH and test the filtering.
@@ -1165,7 +1202,30 @@ public final class ParquetTableFilterTest {
                 floatCol("Floats", 1.23f, Float.NaN, -4.56f),
                 doubleCol("Doubles", 1.23, Double.NaN, -4.56));
         writeTable(source, dest);
+
+        {
+            // Deephaven's parquet writing code writes NaN values to statistics, which are then corrected by Parquet
+            // reading code.
+            // TODO (DH-10771): Fix this so DH does not write NaN values to statistics.
+            final Statistics<?> floatStats = getColumnStatistics(new File(dest), "Floats");
+            assertFalse(floatStats.hasNonNullValue());
+            final Statistics<?> doubleStats = getColumnStatistics(new File(dest), "Doubles");
+            assertFalse(doubleStats.hasNonNullValue());
+        }
+
         testFilteringNanImpl(readTable(dest));
+    }
+
+    /**
+     * Helper method to get the column statistics for the specified column name.
+     */
+    private static Statistics<?> getColumnStatistics(final File dest, final String columnName) {
+        final ParquetMetadata metadata = new ParquetTableLocationKey(
+                dest.toURI(), 0, null, ParquetInstructions.EMPTY).getMetadata();
+        final MessageType schema = metadata.getFileMetaData().getSchema();
+        final int colIdx = schema.getFieldIndex(columnName);
+        final ColumnChunkMetaData columnChunkMetaData = metadata.getBlocks().get(0).getColumns().get(colIdx);
+        return columnChunkMetaData.getStatistics();
     }
 
     private static void testFilteringNanImpl(final Table diskTable) {
