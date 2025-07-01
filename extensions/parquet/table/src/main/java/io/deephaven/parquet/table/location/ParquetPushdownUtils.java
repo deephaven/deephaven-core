@@ -6,12 +6,6 @@ package io.deephaven.parquet.table.location;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.compare.ByteComparisons;
-import io.deephaven.util.compare.CharComparisons;
-import io.deephaven.util.compare.DoubleComparisons;
-import io.deephaven.util.compare.FloatComparisons;
-import io.deephaven.util.compare.IntComparisons;
-import io.deephaven.util.compare.LongComparisons;
-import io.deephaven.util.compare.ShortComparisons;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -28,39 +22,38 @@ abstract class ParquetPushdownUtils {
     private static final long MICROS_PER_SECOND = 1_000_000L;
     private static final long MILLIS_PER_SECOND = 1_000L;
 
+    /**
+     * Check if the range derived from the parquet statistics contains deephaven's null byte value. Note that we don't
+     * use {@link ByteComparisons} here because that has special handling for the {@link QueryConstants#NULL_BYTE}
+     * whereas here we are just checking if the range contains the null byte value.
+     */
     static boolean containsDeephavenNullByte(final byte min, final byte max) {
-        return ByteComparisons.geq(QueryConstants.NULL_BYTE, min) &&
-                ByteComparisons.leq(QueryConstants.NULL_BYTE, max);
+        return min <= QueryConstants.NULL_BYTE && QueryConstants.NULL_BYTE <= max;
     }
 
     static boolean containsDeephavenNullChar(final char min, final char max) {
-        return CharComparisons.geq(QueryConstants.NULL_CHAR, min) &&
-                CharComparisons.leq(QueryConstants.NULL_CHAR, max);
+        return min <= QueryConstants.NULL_CHAR && QueryConstants.NULL_CHAR <= max;
     }
 
     static boolean containsDeephavenNullDouble(final double min, final double max) {
-        return DoubleComparisons.geq(QueryConstants.NULL_DOUBLE, min) &&
-                DoubleComparisons.leq(QueryConstants.NULL_DOUBLE, max);
+        // Assuming no NaN values in the range, we can use a simple comparison.
+        return min <= QueryConstants.NULL_DOUBLE && QueryConstants.NULL_DOUBLE <= max;
     }
 
     static boolean containsDeephavenNullFloat(final float min, final float max) {
-        return FloatComparisons.geq(QueryConstants.NULL_FLOAT, min) &&
-                FloatComparisons.leq(QueryConstants.NULL_FLOAT, max);
+        return min <= QueryConstants.NULL_FLOAT && QueryConstants.NULL_FLOAT <= max;
     }
 
     static boolean containsDeephavenNullInt(final int min, final int max) {
-        return IntComparisons.geq(QueryConstants.NULL_INT, min) &&
-                IntComparisons.leq(QueryConstants.NULL_INT, max);
+        return min <= QueryConstants.NULL_INT && QueryConstants.NULL_INT <= max;
     }
 
     static boolean containsDeephavenNullLong(final long min, final long max) {
-        return LongComparisons.geq(QueryConstants.NULL_LONG, min) &&
-                LongComparisons.leq(QueryConstants.NULL_LONG, max);
+        return min <= QueryConstants.NULL_LONG && QueryConstants.NULL_LONG <= max;
     }
 
     static boolean containsDeephavenNullShort(final short min, final short max) {
-        return ShortComparisons.geq(QueryConstants.NULL_SHORT, min) &&
-                ShortComparisons.leq(QueryConstants.NULL_SHORT, max);
+        return min <= QueryConstants.NULL_SHORT && QueryConstants.NULL_SHORT <= max;
     }
 
     // TODO There is some duplication here with DateTimeUtils, need to fix that.
