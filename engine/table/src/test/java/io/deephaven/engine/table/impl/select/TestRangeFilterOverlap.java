@@ -17,12 +17,10 @@ public class TestRangeFilterOverlap extends RefreshingTableTestCase {
         // No overlap, f < range
         f = new CharRangeFilter("A", 'a', 'b', true, true);
         f.initChunkFilter();
-        f.initChunkFilter();
         assertFalse(f.overlaps('c', 'd'));
 
         // No overlap, f > range
         f = new CharRangeFilter("A", 'c', 'd', true, true);
-        f.initChunkFilter();
         f.initChunkFilter();
         assertFalse(f.overlaps('a', 'b'));
 
