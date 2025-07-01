@@ -62,7 +62,7 @@ public class DoubleChunkMatchFilterFactory {
 
         @Override
         public boolean overlaps(double inputLower, double inputUpper) {
-            return DoubleComparisons.geq(value, inputLower) && DoubleComparisons.leq(value, inputUpper);
+            return DoubleComparisons.leq(inputLower, value) && DoubleComparisons.leq(value, inputUpper);
         }
     }
 
@@ -101,8 +101,8 @@ public class DoubleChunkMatchFilterFactory {
 
         @Override
         public boolean overlaps(double inputLower, double inputUpper) {
-            return (DoubleComparisons.geq(value1, inputLower) && DoubleComparisons.leq(value1, inputUpper)) ||
-                    (DoubleComparisons.geq(value2, inputLower) && DoubleComparisons.leq(value2, inputUpper));
+            return (DoubleComparisons.leq(inputLower, value1) && DoubleComparisons.leq(value1, inputUpper)) ||
+                    (DoubleComparisons.leq(inputLower, value2) && DoubleComparisons.leq(value2, inputUpper));
         }
     }
 
@@ -153,9 +153,9 @@ public class DoubleChunkMatchFilterFactory {
 
         @Override
         public boolean overlaps(double inputLower, double inputUpper) {
-            return (DoubleComparisons.geq(value1, inputLower) && DoubleComparisons.leq(value1, inputUpper)) ||
-                    (DoubleComparisons.geq(value2, inputLower) && DoubleComparisons.leq(value2, inputUpper)) ||
-                    (DoubleComparisons.geq(value3, inputLower) && DoubleComparisons.leq(value3, inputUpper));
+            return (DoubleComparisons.leq(inputLower, value1) && DoubleComparisons.leq(value1, inputUpper)) ||
+                    (DoubleComparisons.leq(inputLower, value2) && DoubleComparisons.leq(value2, inputUpper)) ||
+                    (DoubleComparisons.leq(inputLower, value3) && DoubleComparisons.leq(value3, inputUpper));
         }
     }
 
@@ -209,7 +209,7 @@ public class DoubleChunkMatchFilterFactory {
             final TDoubleIterator iterator = values.iterator();
             while (iterator.hasNext()) {
                 final double value = iterator.next();
-                if (DoubleComparisons.geq(value, inputLower) && DoubleComparisons.leq(value, inputUpper)) {
+                if (DoubleComparisons.leq(inputLower, value) && DoubleComparisons.leq(value, inputUpper)) {
                     return true;
                 }
             }

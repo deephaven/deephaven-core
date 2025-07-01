@@ -62,7 +62,7 @@ public class ByteChunkMatchFilterFactory {
 
         @Override
         public boolean overlaps(byte inputLower, byte inputUpper) {
-            return ByteComparisons.geq(value, inputLower) && ByteComparisons.leq(value, inputUpper);
+            return ByteComparisons.leq(inputLower, value) && ByteComparisons.leq(value, inputUpper);
         }
     }
 
@@ -101,8 +101,8 @@ public class ByteChunkMatchFilterFactory {
 
         @Override
         public boolean overlaps(byte inputLower, byte inputUpper) {
-            return (ByteComparisons.geq(value1, inputLower) && ByteComparisons.leq(value1, inputUpper)) ||
-                    (ByteComparisons.geq(value2, inputLower) && ByteComparisons.leq(value2, inputUpper));
+            return (ByteComparisons.leq(inputLower, value1) && ByteComparisons.leq(value1, inputUpper)) ||
+                    (ByteComparisons.leq(inputLower, value2) && ByteComparisons.leq(value2, inputUpper));
         }
     }
 
@@ -152,9 +152,9 @@ public class ByteChunkMatchFilterFactory {
 
         @Override
         public boolean overlaps(byte inputLower, byte inputUpper) {
-            return (ByteComparisons.geq(value1, inputLower) && ByteComparisons.leq(value1, inputUpper)) ||
-                    (ByteComparisons.geq(value2, inputLower) && ByteComparisons.leq(value2, inputUpper)) ||
-                    (ByteComparisons.geq(value3, inputLower) && ByteComparisons.leq(value3, inputUpper));
+            return (ByteComparisons.leq(inputLower, value1) && ByteComparisons.leq(value1, inputUpper)) ||
+                    (ByteComparisons.leq(inputLower, value2) && ByteComparisons.leq(value2, inputUpper)) ||
+                    (ByteComparisons.leq(inputLower, value3) && ByteComparisons.leq(value3, inputUpper));
         }
     }
 
@@ -206,7 +206,7 @@ public class ByteChunkMatchFilterFactory {
             final TByteIterator iterator = values.iterator();
             while (iterator.hasNext()) {
                 final byte value = iterator.next();
-                if (ByteComparisons.geq(value, inputLower) && ByteComparisons.leq(value, inputUpper)) {
+                if (ByteComparisons.leq(inputLower, value) && ByteComparisons.leq(value, inputUpper)) {
                     return true;
                 }
             }

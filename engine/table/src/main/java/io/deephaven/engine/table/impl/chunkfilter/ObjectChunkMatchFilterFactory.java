@@ -55,7 +55,7 @@ public class ObjectChunkMatchFilterFactory {
 
         @Override
         public boolean overlaps(Object inputLower, Object inputUpper) {
-            return ObjectComparisons.geq(value, inputLower) && ObjectComparisons.leq(value, inputUpper);
+            return ObjectComparisons.leq(inputLower, value) && ObjectComparisons.leq(value, inputUpper);
         }
     }
 
@@ -105,8 +105,8 @@ public class ObjectChunkMatchFilterFactory {
 
         @Override
         public boolean overlaps(Object inputLower, Object inputUpper) {
-            return (ObjectComparisons.geq(value1, inputLower) && ObjectComparisons.leq(value1, inputUpper)) ||
-                    (ObjectComparisons.geq(value2, inputLower) && ObjectComparisons.leq(value2, inputUpper));
+            return (ObjectComparisons.leq(inputLower, value1) && ObjectComparisons.leq(value1, inputUpper)) ||
+                    (ObjectComparisons.leq(inputLower, value2) && ObjectComparisons.leq(value2, inputUpper));
         }
     }
 
@@ -153,9 +153,9 @@ public class ObjectChunkMatchFilterFactory {
 
         @Override
         public boolean overlaps(Object inputLower, Object inputUpper) {
-            return (ObjectComparisons.geq(value1, inputLower) && ObjectComparisons.leq(value1, inputUpper)) ||
-                    (ObjectComparisons.geq(value2, inputLower) && ObjectComparisons.leq(value2, inputUpper)) ||
-                    (ObjectComparisons.geq(value3, inputLower) && ObjectComparisons.leq(value3, inputUpper));
+            return (ObjectComparisons.leq(inputLower, value1) && ObjectComparisons.leq(value1, inputUpper)) ||
+                    (ObjectComparisons.leq(inputLower, value2) && ObjectComparisons.leq(value2, inputUpper)) ||
+                    (ObjectComparisons.leq(inputLower, value3) && ObjectComparisons.leq(value3, inputUpper));
         }
     }
 
@@ -204,7 +204,7 @@ public class ObjectChunkMatchFilterFactory {
             final Iterator<?> iterator = values.iterator();
             while (iterator.hasNext()) {
                 final Object value = iterator.next();
-                if (ObjectComparisons.geq(value, inputLower) && ObjectComparisons.leq(value, inputUpper)) {
+                if (ObjectComparisons.leq(inputLower, value) && ObjectComparisons.leq(value, inputUpper)) {
                     return true;
                 }
             }

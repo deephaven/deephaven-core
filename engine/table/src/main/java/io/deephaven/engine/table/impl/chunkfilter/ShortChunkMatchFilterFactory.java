@@ -62,7 +62,7 @@ public class ShortChunkMatchFilterFactory {
 
         @Override
         public boolean overlaps(short inputLower, short inputUpper) {
-            return ShortComparisons.geq(value, inputLower) && ShortComparisons.leq(value, inputUpper);
+            return ShortComparisons.leq(inputLower, value) && ShortComparisons.leq(value, inputUpper);
         }
     }
 
@@ -101,8 +101,8 @@ public class ShortChunkMatchFilterFactory {
 
         @Override
         public boolean overlaps(short inputLower, short inputUpper) {
-            return (ShortComparisons.geq(value1, inputLower) && ShortComparisons.leq(value1, inputUpper)) ||
-                    (ShortComparisons.geq(value2, inputLower) && ShortComparisons.leq(value2, inputUpper));
+            return (ShortComparisons.leq(inputLower, value1) && ShortComparisons.leq(value1, inputUpper)) ||
+                    (ShortComparisons.leq(inputLower, value2) && ShortComparisons.leq(value2, inputUpper));
         }
     }
 
@@ -152,9 +152,9 @@ public class ShortChunkMatchFilterFactory {
 
         @Override
         public boolean overlaps(short inputLower, short inputUpper) {
-            return (ShortComparisons.geq(value1, inputLower) && ShortComparisons.leq(value1, inputUpper)) ||
-                    (ShortComparisons.geq(value2, inputLower) && ShortComparisons.leq(value2, inputUpper)) ||
-                    (ShortComparisons.geq(value3, inputLower) && ShortComparisons.leq(value3, inputUpper));
+            return (ShortComparisons.leq(inputLower, value1) && ShortComparisons.leq(value1, inputUpper)) ||
+                    (ShortComparisons.leq(inputLower, value2) && ShortComparisons.leq(value2, inputUpper)) ||
+                    (ShortComparisons.leq(inputLower, value3) && ShortComparisons.leq(value3, inputUpper));
         }
     }
 
@@ -206,7 +206,7 @@ public class ShortChunkMatchFilterFactory {
             final TShortIterator iterator = values.iterator();
             while (iterator.hasNext()) {
                 final short value = iterator.next();
-                if (ShortComparisons.geq(value, inputLower) && ShortComparisons.leq(value, inputUpper)) {
+                if (ShortComparisons.leq(inputLower, value) && ShortComparisons.leq(value, inputUpper)) {
                     return true;
                 }
             }

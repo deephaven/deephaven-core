@@ -62,7 +62,7 @@ public class IntChunkMatchFilterFactory {
 
         @Override
         public boolean overlaps(int inputLower, int inputUpper) {
-            return IntComparisons.geq(value, inputLower) && IntComparisons.leq(value, inputUpper);
+            return IntComparisons.leq(inputLower, value) && IntComparisons.leq(value, inputUpper);
         }
     }
 
@@ -101,8 +101,8 @@ public class IntChunkMatchFilterFactory {
 
         @Override
         public boolean overlaps(int inputLower, int inputUpper) {
-            return (IntComparisons.geq(value1, inputLower) && IntComparisons.leq(value1, inputUpper)) ||
-                    (IntComparisons.geq(value2, inputLower) && IntComparisons.leq(value2, inputUpper));
+            return (IntComparisons.leq(inputLower, value1) && IntComparisons.leq(value1, inputUpper)) ||
+                    (IntComparisons.leq(inputLower, value2) && IntComparisons.leq(value2, inputUpper));
         }
     }
 
@@ -152,9 +152,9 @@ public class IntChunkMatchFilterFactory {
 
         @Override
         public boolean overlaps(int inputLower, int inputUpper) {
-            return (IntComparisons.geq(value1, inputLower) && IntComparisons.leq(value1, inputUpper)) ||
-                    (IntComparisons.geq(value2, inputLower) && IntComparisons.leq(value2, inputUpper)) ||
-                    (IntComparisons.geq(value3, inputLower) && IntComparisons.leq(value3, inputUpper));
+            return (IntComparisons.leq(inputLower, value1) && IntComparisons.leq(value1, inputUpper)) ||
+                    (IntComparisons.leq(inputLower, value2) && IntComparisons.leq(value2, inputUpper)) ||
+                    (IntComparisons.leq(inputLower, value3) && IntComparisons.leq(value3, inputUpper));
         }
     }
 
@@ -206,7 +206,7 @@ public class IntChunkMatchFilterFactory {
             final TIntIterator iterator = values.iterator();
             while (iterator.hasNext()) {
                 final int value = iterator.next();
-                if (IntComparisons.geq(value, inputLower) && IntComparisons.leq(value, inputUpper)) {
+                if (IntComparisons.leq(inputLower, value) && IntComparisons.leq(value, inputUpper)) {
                     return true;
                 }
             }

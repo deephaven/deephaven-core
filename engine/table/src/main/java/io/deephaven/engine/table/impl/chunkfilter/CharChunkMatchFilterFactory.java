@@ -58,7 +58,7 @@ public class CharChunkMatchFilterFactory {
 
         @Override
         public boolean overlaps(char inputLower, char inputUpper) {
-            return CharComparisons.geq(value, inputLower) && CharComparisons.leq(value, inputUpper);
+            return CharComparisons.leq(inputLower, value) && CharComparisons.leq(value, inputUpper);
         }
     }
 
@@ -97,8 +97,8 @@ public class CharChunkMatchFilterFactory {
 
         @Override
         public boolean overlaps(char inputLower, char inputUpper) {
-            return (CharComparisons.geq(value1, inputLower) && CharComparisons.leq(value1, inputUpper)) ||
-                    (CharComparisons.geq(value2, inputLower) && CharComparisons.leq(value2, inputUpper));
+            return (CharComparisons.leq(inputLower, value1) && CharComparisons.leq(value1, inputUpper)) ||
+                    (CharComparisons.leq(inputLower, value2) && CharComparisons.leq(value2, inputUpper));
         }
     }
 
@@ -148,9 +148,9 @@ public class CharChunkMatchFilterFactory {
 
         @Override
         public boolean overlaps(char inputLower, char inputUpper) {
-            return (CharComparisons.geq(value1, inputLower) && CharComparisons.leq(value1, inputUpper)) ||
-                    (CharComparisons.geq(value2, inputLower) && CharComparisons.leq(value2, inputUpper)) ||
-                    (CharComparisons.geq(value3, inputLower) && CharComparisons.leq(value3, inputUpper));
+            return (CharComparisons.leq(inputLower, value1) && CharComparisons.leq(value1, inputUpper)) ||
+                    (CharComparisons.leq(inputLower, value2) && CharComparisons.leq(value2, inputUpper)) ||
+                    (CharComparisons.leq(inputLower, value3) && CharComparisons.leq(value3, inputUpper));
         }
     }
 
@@ -202,7 +202,7 @@ public class CharChunkMatchFilterFactory {
             final TCharIterator iterator = values.iterator();
             while (iterator.hasNext()) {
                 final char value = iterator.next();
-                if (CharComparisons.geq(value, inputLower) && CharComparisons.leq(value, inputUpper)) {
+                if (CharComparisons.leq(inputLower, value) && CharComparisons.leq(value, inputUpper)) {
                     return true;
                 }
             }

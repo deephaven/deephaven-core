@@ -115,7 +115,7 @@ public abstract class MinMaxFromStatistics {
                                 ParquetPushdownUtils.epochMillisToInstant(maxFromStatistics));
                     case MICROS:
                         return wrapMinMax(
-                                ParquetPushdownUtils.epochNanosToInstant(minFromStatistics),
+                                ParquetPushdownUtils.epochMicrosToInstant(minFromStatistics),
                                 ParquetPushdownUtils.epochMicrosToInstant(maxFromStatistics));
                     case NANOS:
                         return wrapMinMax(

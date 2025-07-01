@@ -62,7 +62,7 @@ public class LongChunkMatchFilterFactory {
 
         @Override
         public boolean overlaps(long inputLower, long inputUpper) {
-            return LongComparisons.geq(value, inputLower) && LongComparisons.leq(value, inputUpper);
+            return LongComparisons.leq(inputLower, value) && LongComparisons.leq(value, inputUpper);
         }
     }
 
@@ -101,8 +101,8 @@ public class LongChunkMatchFilterFactory {
 
         @Override
         public boolean overlaps(long inputLower, long inputUpper) {
-            return (LongComparisons.geq(value1, inputLower) && LongComparisons.leq(value1, inputUpper)) ||
-                    (LongComparisons.geq(value2, inputLower) && LongComparisons.leq(value2, inputUpper));
+            return (LongComparisons.leq(inputLower, value1) && LongComparisons.leq(value1, inputUpper)) ||
+                    (LongComparisons.leq(inputLower, value2) && LongComparisons.leq(value2, inputUpper));
         }
     }
 
@@ -152,9 +152,9 @@ public class LongChunkMatchFilterFactory {
 
         @Override
         public boolean overlaps(long inputLower, long inputUpper) {
-            return (LongComparisons.geq(value1, inputLower) && LongComparisons.leq(value1, inputUpper)) ||
-                    (LongComparisons.geq(value2, inputLower) && LongComparisons.leq(value2, inputUpper)) ||
-                    (LongComparisons.geq(value3, inputLower) && LongComparisons.leq(value3, inputUpper));
+            return (LongComparisons.leq(inputLower, value1) && LongComparisons.leq(value1, inputUpper)) ||
+                    (LongComparisons.leq(inputLower, value2) && LongComparisons.leq(value2, inputUpper)) ||
+                    (LongComparisons.leq(inputLower, value3) && LongComparisons.leq(value3, inputUpper));
         }
     }
 
@@ -206,7 +206,7 @@ public class LongChunkMatchFilterFactory {
             final TLongIterator iterator = values.iterator();
             while (iterator.hasNext()) {
                 final long value = iterator.next();
-                if (LongComparisons.geq(value, inputLower) && LongComparisons.leq(value, inputUpper)) {
+                if (LongComparisons.leq(inputLower, value) && LongComparisons.leq(value, inputUpper)) {
                     return true;
                 }
             }

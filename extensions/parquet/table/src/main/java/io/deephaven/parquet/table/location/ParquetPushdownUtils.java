@@ -5,9 +5,13 @@ package io.deephaven.parquet.table.location;
 
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
+import io.deephaven.util.compare.ByteComparisons;
+import io.deephaven.util.compare.CharComparisons;
 import io.deephaven.util.compare.DoubleComparisons;
 import io.deephaven.util.compare.FloatComparisons;
+import io.deephaven.util.compare.IntComparisons;
 import io.deephaven.util.compare.LongComparisons;
+import io.deephaven.util.compare.ShortComparisons;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -25,13 +29,13 @@ abstract class ParquetPushdownUtils {
     private static final long MILLIS_PER_SECOND = 1_000L;
 
     static boolean containsDeephavenNullByte(final byte min, final byte max) {
-        return LongComparisons.geq(QueryConstants.NULL_BYTE, min) &&
-                LongComparisons.leq(QueryConstants.NULL_BYTE, max);
+        return ByteComparisons.geq(QueryConstants.NULL_BYTE, min) &&
+                ByteComparisons.leq(QueryConstants.NULL_BYTE, max);
     }
 
     static boolean containsDeephavenNullChar(final char min, final char max) {
-        return LongComparisons.geq(QueryConstants.NULL_CHAR, min) &&
-                LongComparisons.leq(QueryConstants.NULL_CHAR, max);
+        return CharComparisons.geq(QueryConstants.NULL_CHAR, min) &&
+                CharComparisons.leq(QueryConstants.NULL_CHAR, max);
     }
 
     static boolean containsDeephavenNullDouble(final double min, final double max) {
@@ -45,8 +49,8 @@ abstract class ParquetPushdownUtils {
     }
 
     static boolean containsDeephavenNullInt(final int min, final int max) {
-        return LongComparisons.geq(QueryConstants.NULL_INT, min) &&
-                LongComparisons.leq(QueryConstants.NULL_INT, max);
+        return IntComparisons.geq(QueryConstants.NULL_INT, min) &&
+                IntComparisons.leq(QueryConstants.NULL_INT, max);
     }
 
     static boolean containsDeephavenNullLong(final long min, final long max) {
@@ -55,8 +59,8 @@ abstract class ParquetPushdownUtils {
     }
 
     static boolean containsDeephavenNullShort(final short min, final short max) {
-        return LongComparisons.geq(QueryConstants.NULL_SHORT, min) &&
-                LongComparisons.leq(QueryConstants.NULL_SHORT, max);
+        return ShortComparisons.geq(QueryConstants.NULL_SHORT, min) &&
+                ShortComparisons.leq(QueryConstants.NULL_SHORT, max);
     }
 
     // TODO There is some duplication here with DateTimeUtils, need to fix that.

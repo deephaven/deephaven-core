@@ -58,7 +58,7 @@ public class FloatChunkMatchFilterFactory {
 
         @Override
         public boolean overlaps(float inputLower, float inputUpper) {
-            return FloatComparisons.geq(value, inputLower) && FloatComparisons.leq(value, inputUpper);
+            return FloatComparisons.leq(inputLower, value) && FloatComparisons.leq(value, inputUpper);
         }
     }
 
@@ -97,8 +97,8 @@ public class FloatChunkMatchFilterFactory {
 
         @Override
         public boolean overlaps(float inputLower, float inputUpper) {
-            return (FloatComparisons.geq(value1, inputLower) && FloatComparisons.leq(value1, inputUpper)) ||
-                    (FloatComparisons.geq(value2, inputLower) && FloatComparisons.leq(value2, inputUpper));
+            return (FloatComparisons.leq(inputLower, value1) && FloatComparisons.leq(value1, inputUpper)) ||
+                    (FloatComparisons.leq(inputLower, value2) && FloatComparisons.leq(value2, inputUpper));
         }
     }
 
@@ -149,9 +149,9 @@ public class FloatChunkMatchFilterFactory {
 
         @Override
         public boolean overlaps(float inputLower, float inputUpper) {
-            return (FloatComparisons.geq(value1, inputLower) && FloatComparisons.leq(value1, inputUpper)) ||
-                    (FloatComparisons.geq(value2, inputLower) && FloatComparisons.leq(value2, inputUpper)) ||
-                    (FloatComparisons.geq(value3, inputLower) && FloatComparisons.leq(value3, inputUpper));
+            return (FloatComparisons.leq(inputLower, value1) && FloatComparisons.leq(value1, inputUpper)) ||
+                    (FloatComparisons.leq(inputLower, value2) && FloatComparisons.leq(value2, inputUpper)) ||
+                    (FloatComparisons.leq(inputLower, value3) && FloatComparisons.leq(value3, inputUpper));
         }
     }
 
@@ -205,7 +205,7 @@ public class FloatChunkMatchFilterFactory {
             final TFloatIterator iterator = values.iterator();
             while (iterator.hasNext()) {
                 final float value = iterator.next();
-                if (FloatComparisons.geq(value, inputLower) && FloatComparisons.leq(value, inputUpper)) {
+                if (FloatComparisons.leq(inputLower, value) && FloatComparisons.leq(value, inputUpper)) {
                     return true;
                 }
             }

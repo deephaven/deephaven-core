@@ -102,10 +102,10 @@ public class MinMaxFromStatisticsTest {
         final String columnName = "Booleans";
 
         writeTable(newTable(booleanCol(columnName, null, false, true, false, null, true)), dest.toString());
-        assertMinMax(dest, columnName, BooleanStatistics.class, 2, false, true);
+        assertMinMax(dest, columnName, BooleanStatistics.class, 2, (byte) 0, (byte) 1);
 
         writeTable(newTable(booleanCol(columnName, null, null, null)), dest.toString());
-        assertMinMax(dest, columnName, BooleanStatistics.class, 3, null, null);
+        assertEmptyStatistics(dest, columnName, BooleanStatistics.class, 3);
     }
 
     @Test
@@ -117,7 +117,7 @@ public class MinMaxFromStatisticsTest {
         assertMinMax(dest, columnName, IntStatistics.class, 2, (long) 'A', (long) 'z');
 
         writeTable(newTable(charCol(columnName, NULL_CHAR, NULL_CHAR, NULL_CHAR)), dest.toString());
-        assertMinMax(dest, columnName, IntStatistics.class, 3, null, null);
+        assertEmptyStatistics(dest, columnName, IntStatistics.class, 3);
     }
 
     @Test
@@ -129,7 +129,7 @@ public class MinMaxFromStatisticsTest {
         assertMinMax(dest, columnName, IntStatistics.class, 1, -10, 100);
 
         writeTable(newTable(byteCol(columnName, NULL_BYTE, NULL_BYTE, NULL_BYTE)), dest.toString());
-        assertMinMax(dest, columnName, IntStatistics.class, 3, null, null);
+        assertEmptyStatistics(dest, columnName, IntStatistics.class, 3);
     }
 
     @Test
@@ -141,7 +141,7 @@ public class MinMaxFromStatisticsTest {
         assertMinMax(dest, columnName, IntStatistics.class, 1, -1024, 2048);
 
         writeTable(newTable(shortCol(columnName, NULL_SHORT, NULL_SHORT)), dest.toString());
-        assertMinMax(dest, columnName, IntStatistics.class, 2, null, null);
+        assertEmptyStatistics(dest, columnName, IntStatistics.class, 2);
     }
 
     @Test
@@ -154,7 +154,7 @@ public class MinMaxFromStatisticsTest {
         assertMinMax(dest, columnName, IntStatistics.class, 3, -1, 500);
 
         writeTable(newTable(intCol(columnName, NULL_INT, NULL_INT, NULL_INT)), dest.toString());
-        assertMinMax(dest, columnName, IntStatistics.class, 3, null, null);
+        assertEmptyStatistics(dest, columnName, IntStatistics.class, 3);
     }
 
     @Test
@@ -167,7 +167,7 @@ public class MinMaxFromStatisticsTest {
         assertMinMax(dest, columnName, LongStatistics.class, 1, -10_000_000_000L, 10_000_000_000L);
 
         writeTable(newTable(longCol(columnName, NULL_LONG, NULL_LONG)), dest.toString());
-        assertMinMax(dest, columnName, LongStatistics.class, 2, null, null);
+        assertEmptyStatistics(dest, columnName, LongStatistics.class, 2);
     }
 
     @Test
@@ -179,7 +179,7 @@ public class MinMaxFromStatisticsTest {
         assertMinMax(dest, columnName, FloatStatistics.class, 1, -1.5f, 3.14f);
 
         writeTable(newTable(floatCol(columnName, NULL_FLOAT, NULL_FLOAT, NULL_FLOAT)), dest.toString());
-        assertMinMax(dest, columnName, FloatStatistics.class, 3, null, null);
+        assertEmptyStatistics(dest, columnName, FloatStatistics.class, 3);
     }
 
     @Test
@@ -191,7 +191,7 @@ public class MinMaxFromStatisticsTest {
         assertMinMax(dest, columnName, DoubleStatistics.class, 1, -1.5, 3.14);
 
         writeTable(newTable(doubleCol(columnName, NULL_DOUBLE, NULL_DOUBLE)), dest.toString());
-        assertMinMax(dest, columnName, DoubleStatistics.class, 2, null, null);
+        assertEmptyStatistics(dest, columnName, DoubleStatistics.class, 2);
     }
 
     @Test
@@ -203,7 +203,7 @@ public class MinMaxFromStatisticsTest {
         assertMinMax(dest, columnName, BinaryStatistics.class, 2, "aaa", "zzz");
 
         writeTable(newTable(stringCol(columnName, null, null, null)), dest.toString());
-        assertMinMax(dest, columnName, BinaryStatistics.class, 3, null, null);
+        assertEmptyStatistics(dest, columnName, BinaryStatistics.class, 3);
     }
 
     @Test
@@ -212,14 +212,13 @@ public class MinMaxFromStatisticsTest {
         final String columnName = "Instants";
 
         final Instant instant1 = Instant.ofEpochMilli(1_234L);
-        final Instant instant2 = Instant.ofEpochMilli(5_532L);
-        writeTable(newTable(instantCol(columnName, null, instant1, instant2)), dest.toString());
-        final long minNanos = DateTimeUtils.epochNanos(instant1);
-        final long maxNanos = DateTimeUtils.epochNanos(instant2);
-        assertMinMax(dest, columnName, LongStatistics.class, 1, minNanos, maxNanos);
+        final Instant instant2 = Instant.ofEpochMilli(10_000L);
+        final Instant instant3 = Instant.ofEpochMilli(5_532L);
+        writeTable(newTable(instantCol(columnName, null, instant1, instant2, instant3)), dest.toString());
+        assertMinMax(dest, columnName, LongStatistics.class, 1, instant1, instant2);
 
         writeTable(newTable(instantCol(columnName, null, null, null)), dest.toString());
-        assertMinMax(dest, columnName, LongStatistics.class, 3, null, null);
+        assertEmptyStatistics(dest, columnName, LongStatistics.class, 3);
     }
 
     @Test
@@ -236,7 +235,7 @@ public class MinMaxFromStatisticsTest {
 
         writeTable(newTable(new ColumnHolder<>(columnName, LocalDate.class, null, false, null, null)),
                 dest.toString());
-        assertMinMax(dest, columnName, IntStatistics.class, 2, null, null);
+        assertEmptyStatistics(dest, columnName, IntStatistics.class, 2);
     }
 
     @Test
@@ -253,7 +252,7 @@ public class MinMaxFromStatisticsTest {
 
         writeTable(newTable(new ColumnHolder<>(columnName, LocalTime.class, null, false, null, null)),
                 dest.toString());
-        assertMinMax(dest, columnName, LongStatistics.class, 2, null, null);
+        assertEmptyStatistics(dest, columnName, LongStatistics.class, 2);
     }
 
     @Test
@@ -270,7 +269,7 @@ public class MinMaxFromStatisticsTest {
 
         writeTable(newTable(new ColumnHolder<>("LocalDateTimes", LocalDateTime.class, null, false, null, null)),
                 dest.toString());
-        assertMinMax(dest, columnName, LongStatistics.class, 2, null, null);
+        assertEmptyStatistics(dest, columnName, LongStatistics.class, 2);
     }
 
     @Test
@@ -282,11 +281,12 @@ public class MinMaxFromStatisticsTest {
         final BigDecimal decimal2 = BigDecimal.valueOf(422_123_132_234L);
         writeTable(newTable(new ColumnHolder<>(columnName, BigDecimal.class, null, false,
                 decimal1, null, decimal2)), dest.toString());
-        assertMinMax(dest, columnName, BinaryStatistics.class, 1, decimal1, decimal2);
+        // TODO (DH-19666) Add tests for decimal statistics
+        assertEmptyStatistics(dest, columnName, BinaryStatistics.class, 1);
 
         writeTable(newTable(new ColumnHolder<>(columnName, BigDecimal.class, null, false, null, null)),
                 dest.toString());
-        assertMinMax(dest, columnName, BinaryStatistics.class, 2, null, null);
+        assertEmptyStatistics(dest, columnName, BinaryStatistics.class, 2);
     }
 
     /**
@@ -334,7 +334,7 @@ public class MinMaxFromStatisticsTest {
                 1,
                 LocalTime.ofNanoOfDay(1_000 * DateTimeUtils.MILLI),
                 LocalTime.ofNanoOfDay(50_000 * DateTimeUtils.MILLI));
-        assertMinMax(dest, "time_ms_null", IntStatistics.class, 3, null, null);
+        assertEmptyStatistics(dest, "time_ms_null", IntStatistics.class, 3);
 
         // TIME micros
         assertMinMax(dest,
@@ -343,7 +343,7 @@ public class MinMaxFromStatisticsTest {
                 1,
                 LocalTime.ofNanoOfDay(1_000_000 * DateTimeUtils.MICRO),
                 LocalTime.ofNanoOfDay(5_000_000 * DateTimeUtils.MICRO));
-        assertMinMax(dest, "time_us_null", LongStatistics.class, 3, null, null);
+        assertEmptyStatistics(dest, "time_us_null", LongStatistics.class, 3);
 
         // TIME nanos
         assertMinMax(dest,
@@ -352,7 +352,7 @@ public class MinMaxFromStatisticsTest {
                 1,
                 LocalTime.ofNanoOfDay(100_000_000),
                 LocalTime.ofNanoOfDay(500_000_000));
-        assertMinMax(dest, "time_ns_null", LongStatistics.class, 3, null, null);
+        assertEmptyStatistics(dest, "time_ns_null", LongStatistics.class, 3);
     }
 
     /**
@@ -399,7 +399,7 @@ public class MinMaxFromStatisticsTest {
                 1,
                 LocalDateTime.ofInstant(Instant.ofEpochMilli(1_000L), ZoneOffset.UTC),
                 LocalDateTime.ofInstant(Instant.ofEpochMilli(50_000L), ZoneOffset.UTC));
-        assertMinMax(dest, "ts_ms_null", LongStatistics.class, 3, null, null);
+        assertEmptyStatistics(dest, "ts_ms_null", LongStatistics.class, 3);
 
         // TIMESTAMP micros
         assertMinMax(dest,
@@ -408,7 +408,7 @@ public class MinMaxFromStatisticsTest {
                 1,
                 LocalDateTime.ofEpochSecond(1, 0, ZoneOffset.UTC),
                 LocalDateTime.ofEpochSecond(5, 0, ZoneOffset.UTC));
-        assertMinMax(dest, "ts_us_null", LongStatistics.class, 3, null, null);
+        assertEmptyStatistics(dest, "ts_us_null", LongStatistics.class, 3);
 
         // TIMESTAMP nanos
         assertMinMax(dest,
@@ -417,7 +417,7 @@ public class MinMaxFromStatisticsTest {
                 1,
                 LocalDateTime.ofEpochSecond(0, 100_000_000, ZoneOffset.UTC),
                 LocalDateTime.ofEpochSecond(0, 500_000_000, ZoneOffset.UTC));
-        assertMinMax(dest, "ts_ns_null", LongStatistics.class, 3, null, null);
+        assertEmptyStatistics(dest, "ts_ns_null", LongStatistics.class, 3);
     }
 
     /**
@@ -463,9 +463,9 @@ public class MinMaxFromStatisticsTest {
                 "ts_ms_mix",
                 LongStatistics.class,
                 1,
-                0L,
-                50_000L * DateTimeUtils.MILLI);
-        assertMinMax(dest, "ts_ms_null", LongStatistics.class, 3, null, null);
+                Instant.ofEpochMilli(0L),
+                Instant.ofEpochMilli(50_000L));
+        assertEmptyStatistics(dest, "ts_ms_null", LongStatistics.class, 3);
 
         // TIMESTAMP micros
         assertMinMax(
@@ -473,9 +473,9 @@ public class MinMaxFromStatisticsTest {
                 "ts_us_mix",
                 LongStatistics.class,
                 1,
-                1_000_000L * DateTimeUtils.MICRO,
-                5_000_000L * DateTimeUtils.MICRO);
-        assertMinMax(dest, "ts_us_null", LongStatistics.class, 3, null, null);
+                Instant.ofEpochMilli(1_000L),
+                Instant.ofEpochMilli(5_000L));
+        assertEmptyStatistics(dest, "ts_us_null", LongStatistics.class, 3);
 
         // TIMESTAMP nanos
         assertMinMax(
@@ -483,9 +483,9 @@ public class MinMaxFromStatisticsTest {
                 "ts_ns_mix",
                 LongStatistics.class,
                 1,
-                100_000_000L,
-                500_000_000L);
-        assertMinMax(dest, "ts_ns_null", LongStatistics.class, 3, null, null);
+                Instant.ofEpochMilli(100L),
+                Instant.ofEpochMilli(500L));
+        assertEmptyStatistics(dest, "ts_ns_null", LongStatistics.class, 3);
     }
 
     /**
@@ -510,13 +510,32 @@ public class MinMaxFromStatisticsTest {
             final int expectedNulls,
             final Object expectedMin,
             final Object expectedMax) {
-        final Statistics<?> statistics = getColumnStatistics(dest, columnName);
-        assertTrue(statsClass.getSimpleName(), statsClass.isInstance(statistics));
-        assertEquals(expectedNulls, statistics.getNumNulls());
-
-        final Optional<MinMax<?>> minMax = MinMaxFromStatistics.get(statistics);
+        final Optional<MinMax<?>> minMax = getMinMaxFromStatisticsHelper(dest, columnName, statsClass, expectedNulls);
         assertTrue(minMax.isPresent());
         assertEquals(expectedMin, minMax.get().min());
         assertEquals(expectedMax, minMax.get().max());
+    }
+
+    /**
+     * Helper method to assert that statistics is empty (which means unusable by DH).
+     */
+    private static void assertEmptyStatistics(
+            final File dest,
+            final String columnName,
+            final Class<? extends Statistics<?>> statsClass,
+            final int expectedNulls) {
+        final Optional<MinMax<?>> minMax = getMinMaxFromStatisticsHelper(dest, columnName, statsClass, expectedNulls);
+        assertTrue(minMax.isEmpty());
+    }
+
+    private static Optional<MinMax<?>> getMinMaxFromStatisticsHelper(
+            final File dest,
+            final String columnName,
+            final Class<? extends Statistics<?>> statsClass,
+            final int expectedNulls) {
+        final Statistics<?> statistics = getColumnStatistics(dest, columnName);
+        assertTrue(statsClass.getSimpleName(), statsClass.isInstance(statistics));
+        assertEquals(expectedNulls, statistics.getNumNulls());
+        return MinMaxFromStatistics.get(statistics);
     }
 }
