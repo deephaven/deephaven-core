@@ -1,4 +1,6 @@
 import io.deephaven.project.util.PublishingTools
+import com.github.jengelman.gradle.plugins.shadow.ShadowBasePlugin
+import com.github.jengelman.gradle.plugins.shadow.ShadowJavaPlugin
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import org.gradle.jvm.tasks.Jar
 
@@ -25,12 +27,13 @@ def shadowPublication = project
         .getByType(PublishingExtension)
         .publications
         .create(PublishingTools.SHADOW_PUBLICATION_NAME, MavenPublication) {
-          from(project.components.named('shadow').get())
+          from(project.components.named(ShadowBasePlugin.COMPONENT_NAME).get())
           artifact(project.tasks.named('sourcesJar'))
           artifact(project.tasks.named('javadocJar'))
         }
 
-def shadowJar = project.tasks.named('shadowJar', ShadowJar) {
+def shadowJar = project.tasks.named(ShadowJavaPlugin.SHADOW_JAR_TASK_NAME, ShadowJar) {
+  // We want the shadow jar to be the "default" jar, so we don't want it to have a classifier
   archiveClassifier = ''
 }
 

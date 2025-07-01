@@ -15,5 +15,6 @@ project.subprojects { Project p ->
         shadow project(':log-factory')
     }
 
+    // We know all of the subprojects have io.deephaven.project.ProjectType=JAVA_PUBLIC_SHADOW
     PublishingTools.setupShadowName(p, "deephaven-${p.name}-authentication-provider")
 }
