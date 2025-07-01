@@ -4,7 +4,6 @@
 package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.UncheckedDeephavenException;
-import io.deephaven.base.Pair;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
@@ -13,7 +12,6 @@ import io.deephaven.engine.context.QueryCompilerRequest;
 import io.deephaven.engine.context.QueryScopeParam;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
 import io.deephaven.engine.table.impl.lang.QueryLanguageParser;
@@ -62,7 +60,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
 
     private FormulaAnalyzer.Result analyzedFormula;
     private boolean hasConstantValue;
-    private Pair<String, Map<Long, List<MatchPair>>> formulaShiftColPair;
+    private Map<String, ShiftedColumnDefinition> formulaShiftedColumnDefinitions;
 
     public FormulaColumnPython getFormulaColumnPython() {
         return formulaColumnPython;
@@ -183,7 +181,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
                     compilationRequestProcessor.getFormulaImports());
             analyzedFormula = FormulaAnalyzer.analyze(formulaString, columnDefinitionMap, result);
             hasConstantValue = result.isConstantValueExpression();
-            formulaShiftColPair = result.getFormulaShiftColPair();
+            formulaShiftedColumnDefinitions = result.getShiftedColumnDefinitions();
 
             log.debug().append("Expression (after language conversion) : ").append(analyzedFormula.cookedFormulaString)
                     .endl();
@@ -749,7 +747,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
             copy.hasConstantValue = hasConstantValue;
             copy.returnedType = returnedType;
             copy.formulaColumnPython = formulaColumnPython;
-            copy.formulaShiftColPair = formulaShiftColPair;
+            copy.formulaShiftedColumnDefinitions = formulaShiftedColumnDefinitions;
             onCopy(copy);
         }
         return copy;
@@ -761,8 +759,21 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
     }
 
     @Override
-    public Pair<String, Map<Long, List<MatchPair>>> getFormulaShiftColPair() {
-        return formulaShiftColPair;
+    public Set<ShiftedColumnDefinition> getFormulaShiftedColumnDefinitions() {
+        return new HashSet<>(formulaShiftedColumnDefinitions.values());
+    }
+
+    @Override
+    public String getShiftedFormulaString() {
+        if (formulaShiftedColumnDefinitions == null) {
+            return formulaString;
+        }
+
+        String retFormulaString = formulaString;
+        for (final Map.Entry<String, ShiftedColumnDefinition> entry : formulaShiftedColumnDefinitions.entrySet()) {
+            retFormulaString = retFormulaString.replace(entry.getKey(), entry.getValue().getResultColumnName());
+        }
+        return retFormulaString;
     }
 
     private void compileFormula(@NotNull final QueryCompilerRequestProcessor compilationRequestProcessor) {

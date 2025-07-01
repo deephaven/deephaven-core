@@ -24,6 +24,7 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.select.ShiftedColumnDefinition;
 import io.deephaven.engine.table.impl.util.ChunkUtils;
 import io.deephaven.engine.testutil.ColumnInfo;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
@@ -73,9 +74,13 @@ public class ShiftedColumnOperationTest {
                 intCol("Value2", 202, 222, 242, 262, 282, 302));
 
         final Table shiftMinusConst =
-                ShiftedColumnOperation.addShiftedColumns(table, (-1 * shiftConst), "CV3=Value", "CV32=Value2");
+                ShiftedColumnOperation.addShiftedColumns(table,
+                        new ShiftedColumnDefinition("Value", -1 * shiftConst),
+                        new ShiftedColumnDefinition("Value2", -1 * shiftConst));
         final Table shiftPlusConst =
-                ShiftedColumnOperation.addShiftedColumns(table, shiftConst, "CV2=Value", "CV22=Value2");
+                ShiftedColumnOperation.addShiftedColumns(table,
+                        new ShiftedColumnDefinition("Value", shiftConst),
+                        new ShiftedColumnDefinition("Value2", shiftConst));
 
         printTableUpdates(table, shiftMinusConst, shiftPlusConst, "pre-update", shiftConst);
 
@@ -147,8 +152,10 @@ public class ShiftedColumnOperationTest {
                 intCol("Sentinel", 1, 2, 3, 4, 5),
                 intCol("Value", 10, 12, 14, 16, 18));
 
-        final Table shiftMinusConst = ShiftedColumnOperation.addShiftedColumns(table, (-1 * shiftConst), "CV3=Value");
-        final Table shiftPlusConst = ShiftedColumnOperation.addShiftedColumns(table, shiftConst, "CV2=Value");
+        final Table shiftMinusConst = ShiftedColumnOperation.addShiftedColumns(table,
+                new ShiftedColumnDefinition("Value", -1 * shiftConst));
+        final Table shiftPlusConst = ShiftedColumnOperation.addShiftedColumns(table,
+                new ShiftedColumnDefinition("Value", shiftConst));
 
         printTableUpdates(table, shiftMinusConst, shiftPlusConst, "pre-update", shiftConst);
 
@@ -180,9 +187,13 @@ public class ShiftedColumnOperationTest {
         printTableUpdates(table, shiftMinusConst, shiftPlusConst, "post-update", shiftConst);
 
         assertTableEquals(updateGraph.sharedLock().computeLocked(
-                () -> table.update("CV3 = Value_[i - " + shiftConst + "]")), shiftMinusConst);
+                () -> table.update("Value_Shifted_" + (shiftConst < 0 ? "Minus" : "Plus") + "_" + Math.abs(shiftConst)
+                        + " = Value_[i - " + shiftConst + "]")),
+                shiftMinusConst);
         assertTableEquals(updateGraph.sharedLock().computeLocked(
-                () -> table.update("CV2 = Value_[i + " + shiftConst + "]")), shiftPlusConst);
+                () -> table.update("Value2_Shifted_" + (shiftConst < 0 ? "Minus" : "Plus") + "_" + Math.abs(shiftConst)
+                        + " = Value_[i + " + shiftConst + "]")),
+                shiftPlusConst);
 
         plTable.stop();
         plMinusConst.stop();
@@ -204,10 +215,15 @@ public class ShiftedColumnOperationTest {
                 intCol("Value2", 202, 222, 242, 262, 282, 302),
                 intCol("Value3", 2020, 2220, 2420, 2620, 2820, 3020));
 
-        final Table shiftMinusConst = ShiftedColumnOperation.addShiftedColumns(table, (-1 * shiftConst), "CV3=Value",
-                "CV32=Value2", "CV33=Value3");
+        final Table shiftMinusConst = ShiftedColumnOperation.addShiftedColumns(table,
+                new ShiftedColumnDefinition("Value", -1 * shiftConst),
+                new ShiftedColumnDefinition("Value2", -1 * shiftConst),
+                new ShiftedColumnDefinition("Value3", -1 * shiftConst));
         final Table shiftPlusConst =
-                ShiftedColumnOperation.addShiftedColumns(table, shiftConst, "CV2=Value", "CV22=Value2", "CV23=Value3");
+                ShiftedColumnOperation.addShiftedColumns(table,
+                        new ShiftedColumnDefinition("Value", shiftConst),
+                        new ShiftedColumnDefinition("Value2", shiftConst),
+                        new ShiftedColumnDefinition("Value3", shiftConst));
 
         printTableUpdates(table, shiftMinusConst, shiftPlusConst, "pre-update", shiftConst);
 
@@ -297,10 +313,14 @@ public class ShiftedColumnOperationTest {
                 intCol("Value3", 2020, 2220, 2420, 2620, 2820, 3020));
 
 
-        final Table shiftMinusConst = ShiftedColumnOperation.addShiftedColumns(table, (-1 * shiftConst),
-                "CV3=Value", "C2V3=Value", "CV32=Value2", "C2V32=Value2", "CV33=Value3", "C2V33=Value3");
-        final Table shiftPlusConst = ShiftedColumnOperation.addShiftedColumns(table, shiftConst,
-                "CV2=Value", "C2V2=Value", "CV22=Value2", "C2V22=Value2", "CV23=Value3", "C2V23=Value3");
+        final Table shiftMinusConst = ShiftedColumnOperation.addShiftedColumns(table,
+                new ShiftedColumnDefinition("Value", -1 * shiftConst),
+                new ShiftedColumnDefinition("Value2", -1 * shiftConst),
+                new ShiftedColumnDefinition("Value3", -1 * shiftConst));
+        final Table shiftPlusConst = ShiftedColumnOperation.addShiftedColumns(table,
+                new ShiftedColumnDefinition("Value", shiftConst),
+                new ShiftedColumnDefinition("Value2", shiftConst),
+                new ShiftedColumnDefinition("Value3", shiftConst));
 
         printTableUpdates(table, shiftMinusConst, shiftPlusConst, "pre-update", shiftConst);
 
@@ -391,8 +411,10 @@ public class ShiftedColumnOperationTest {
                 intCol("Sentinel", 6, 7, 8, 9, 10, 11),
                 intCol("Value", 20, 22, 24, 26, 28, 30));
 
-        final Table shiftMinusConst = ShiftedColumnOperation.addShiftedColumns(table, (-1 * shiftConst), "CV3=Value");
-        final Table shiftPlusConst = ShiftedColumnOperation.addShiftedColumns(table, shiftConst, "CV2=Value");
+        final Table shiftMinusConst = ShiftedColumnOperation.addShiftedColumns(table,
+                new ShiftedColumnDefinition("Value", -1 * shiftConst));
+        final Table shiftPlusConst = ShiftedColumnOperation.addShiftedColumns(table,
+                new ShiftedColumnDefinition("Value", shiftConst));
 
         printTableUpdates(table, shiftMinusConst, shiftPlusConst, "pre-update", shiftConst);
 
@@ -459,8 +481,10 @@ public class ShiftedColumnOperationTest {
                 intCol("Sentinel", 6, 7, 8, 9, 10, 11),
                 intCol("Value", 20, 22, 24, 26, 28, 30));
 
-        final Table shiftMinusConst = ShiftedColumnOperation.addShiftedColumns(table, (-1 * shiftConst), "CV3=Value");
-        final Table shiftPlusConst = ShiftedColumnOperation.addShiftedColumns(table, shiftConst, "CV2=Value");
+        final Table shiftMinusConst = ShiftedColumnOperation.addShiftedColumns(table,
+                new ShiftedColumnDefinition("Value", -1 * shiftConst));
+        final Table shiftPlusConst = ShiftedColumnOperation.addShiftedColumns(table,
+                new ShiftedColumnDefinition("Value", shiftConst));
 
         printTableUpdates(table, shiftMinusConst, shiftPlusConst, "pre-update", shiftConst);
 
@@ -528,8 +552,10 @@ public class ShiftedColumnOperationTest {
                 intCol("Sentinel", 6, 7, 8, 9, 10, 11),
                 intCol("Value", 20, 22, 24, 26, 28, 30));
 
-        final Table shiftMinusConst = ShiftedColumnOperation.addShiftedColumns(table, (-1 * shiftConst), "CV3=Value");
-        final Table shiftPlusConst = ShiftedColumnOperation.addShiftedColumns(table, shiftConst, "CV2=Value");
+        final Table shiftMinusConst = ShiftedColumnOperation.addShiftedColumns(table,
+                new ShiftedColumnDefinition("Value", -1 * shiftConst));
+        final Table shiftPlusConst = ShiftedColumnOperation.addShiftedColumns(table,
+                new ShiftedColumnDefinition("Value", shiftConst));
 
         printTableUpdates(table, shiftMinusConst, shiftPlusConst, "pre-update", shiftConst);
 
@@ -584,7 +610,8 @@ public class ShiftedColumnOperationTest {
         FailureListener tuvFailureListener = new FailureListener();
         tuv.getResultTable().addUpdateListener(tuvFailureListener);
 
-        final Table shiftMinusOne = ShiftedColumnOperation.addShiftedColumns(table, -1, "V3=Value");
+        final Table shiftMinusOne = ShiftedColumnOperation.addShiftedColumns(table,
+                new ShiftedColumnDefinition("Value", -1));
         System.out.println("---shiftMinusOne---");
         TableTools.showWithRowSet(shiftMinusOne);
 
@@ -592,7 +619,8 @@ public class ShiftedColumnOperationTest {
         FailureListener tuvMinusOneFailureListener = new FailureListener();
         tuvMinusOne.getResultTable().addUpdateListener(tuvMinusOneFailureListener);
 
-        final Table shiftPlusOne = ShiftedColumnOperation.addShiftedColumns(table, 1, "V2=Value");
+        final Table shiftPlusOne = ShiftedColumnOperation.addShiftedColumns(table,
+                new ShiftedColumnDefinition("Value", 1));
         System.out.println("---shiftPlusOne---");
         TableTools.showWithRowSet(shiftPlusOne);
 
@@ -601,7 +629,8 @@ public class ShiftedColumnOperationTest {
         tuvPlusOne.getResultTable().addUpdateListener(tuvPlusOneFailureListener);
 
         final int shiftConst = 2;
-        final Table shiftMinusConst = ShiftedColumnOperation.addShiftedColumns(table, (-1 * shiftConst), "CV3=Value");
+        final Table shiftMinusConst = ShiftedColumnOperation.addShiftedColumns(table,
+                new ShiftedColumnDefinition("Value", -1 * shiftConst));
         System.out.println("---shiftMinusConst---");
         TableTools.showWithRowSet(shiftMinusConst);
 
@@ -610,7 +639,8 @@ public class ShiftedColumnOperationTest {
         FailureListener tuvMinusConstFailureListener = new FailureListener();
         tuvMinusConst.getResultTable().addUpdateListener(tuvMinusConstFailureListener);
 
-        final Table shiftPlusConst = ShiftedColumnOperation.addShiftedColumns(table, shiftConst, "CV2=Value");
+        final Table shiftPlusConst = ShiftedColumnOperation.addShiftedColumns(table,
+                new ShiftedColumnDefinition("Value", shiftConst));
         System.out.println("---shiftPlusConst---");
         TableTools.showWithRowSet(shiftPlusConst);
 
@@ -684,7 +714,8 @@ public class ShiftedColumnOperationTest {
         FailureListener tuvFailureListener = new FailureListener();
         tuv.getResultTable().addUpdateListener(tuvFailureListener);
 
-        final Table shiftMinusOne = ShiftedColumnOperation.addShiftedColumns(table, -1, "V3=Value");
+        final Table shiftMinusOne = ShiftedColumnOperation.addShiftedColumns(table,
+                new ShiftedColumnDefinition("Value", -1));
         System.out.println("---shiftMinusOne---");
         TableTools.showWithRowSet(shiftMinusOne);
 
@@ -692,7 +723,8 @@ public class ShiftedColumnOperationTest {
         FailureListener tuvMinusOneFailureListener = new FailureListener();
         tuvMinusOne.getResultTable().addUpdateListener(tuvMinusOneFailureListener);
 
-        final Table shiftPlusOne = ShiftedColumnOperation.addShiftedColumns(table, 1, "V2=Value");
+        final Table shiftPlusOne = ShiftedColumnOperation.addShiftedColumns(table,
+                new ShiftedColumnDefinition("Value", 1));
         System.out.println("---shiftPlusOne---");
         TableTools.showWithRowSet(shiftPlusOne);
 
@@ -701,7 +733,8 @@ public class ShiftedColumnOperationTest {
         tuvPlusOne.getResultTable().addUpdateListener(tuvPlusOneFailureListener);
 
         final int shiftConst = 2;
-        final Table shiftMinusConst = ShiftedColumnOperation.addShiftedColumns(table, (-1 * shiftConst), "CV3=Value");
+        final Table shiftMinusConst = ShiftedColumnOperation.addShiftedColumns(table,
+                new ShiftedColumnDefinition("Value", -1 * shiftConst));
         System.out.println("---shiftMinusConst---");
         TableTools.showWithRowSet(shiftMinusConst);
 
@@ -710,7 +743,8 @@ public class ShiftedColumnOperationTest {
         FailureListener tuvMinusConstFailureListener = new FailureListener();
         tuvMinusConst.getResultTable().addUpdateListener(tuvMinusConstFailureListener);
 
-        final Table shiftPlusConst = ShiftedColumnOperation.addShiftedColumns(table, shiftConst, "CV2=Value");
+        final Table shiftPlusConst = ShiftedColumnOperation.addShiftedColumns(table,
+                new ShiftedColumnDefinition("Value", shiftConst));
         System.out.println("---shiftPlusConst---");
         TableTools.showWithRowSet(shiftPlusConst);
 
@@ -812,8 +846,10 @@ public class ShiftedColumnOperationTest {
                 intCol("Sentinel", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10),
                 intCol("Value", 8, 10, 12, 14, 16, 18, 20, 22, 24, 26));
 
-        final Table shiftMinusConst = ShiftedColumnOperation.addShiftedColumns(table, (-1 * shiftConst), "CV3=Value");
-        final Table shiftPlusConst = ShiftedColumnOperation.addShiftedColumns(table, shiftConst, "CV2=Value");
+        final Table shiftMinusConst = ShiftedColumnOperation.addShiftedColumns(table,
+                new ShiftedColumnDefinition("Value", -1 * shiftConst));
+        final Table shiftPlusConst = ShiftedColumnOperation.addShiftedColumns(table,
+                new ShiftedColumnDefinition("Value", shiftConst));
 
         printTableUpdates(table, shiftMinusConst, shiftPlusConst, "pre-update", shiftConst);
 
@@ -865,8 +901,11 @@ public class ShiftedColumnOperationTest {
                 i(2, 4, 6, 8, 10).toTracking(),
                 intCol("Sentinel", 1, 2, 3, 4, 5),
                 intCol("Value", 10, 12, 14, 16, 18));
-        final Table shiftMinusConst = ShiftedColumnOperation.addShiftedColumns(table, (-1 * shiftConst), "CV3=Value");
-        final Table shiftPlusConst = ShiftedColumnOperation.addShiftedColumns(table, shiftConst, "CV2=Value");
+
+        final Table shiftMinusConst = ShiftedColumnOperation.addShiftedColumns(table,
+                new ShiftedColumnDefinition("Value", -1 * shiftConst));
+        final Table shiftPlusConst = ShiftedColumnOperation.addShiftedColumns(table,
+                new ShiftedColumnDefinition("Value", shiftConst));
 
         printTableUpdates(table, shiftMinusConst, shiftPlusConst, "pre-update", shiftConst);
 
@@ -918,8 +957,10 @@ public class ShiftedColumnOperationTest {
                 intCol("Sentinel", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10),
                 intCol("Value", 8, 10, 12, 14, 16, 18, 20, 22, 24, 26));
 
-        final Table shiftMinusConst = ShiftedColumnOperation.addShiftedColumns(table, (-1 * shiftConst), "CV3=Value");
-        final Table shiftPlusConst = ShiftedColumnOperation.addShiftedColumns(table, shiftConst, "CV2=Value");
+        final Table shiftMinusConst = ShiftedColumnOperation.addShiftedColumns(table,
+                new ShiftedColumnDefinition("Value", -1 * shiftConst));
+        final Table shiftPlusConst = ShiftedColumnOperation.addShiftedColumns(table,
+                new ShiftedColumnDefinition("Value", shiftConst));
 
         printTableUpdates(table, shiftMinusConst, shiftPlusConst, "pre-update", shiftConst);
 
@@ -990,7 +1031,8 @@ public class ShiftedColumnOperationTest {
         FailureListener tuvFailureListener = new FailureListener();
         tuv.getResultTable().addUpdateListener(tuvFailureListener);
 
-        final Table shiftMinusOne = ShiftedColumnOperation.addShiftedColumns(table, -1, "V3=Value");
+        final Table shiftMinusOne = ShiftedColumnOperation.addShiftedColumns(table,
+                new ShiftedColumnDefinition("Value", -1));
         System.out.println("---shiftMinusOne---");
         TableTools.showWithRowSet(shiftMinusOne);
 
@@ -998,7 +1040,8 @@ public class ShiftedColumnOperationTest {
         FailureListener tuvMinusOneFailureListener = new FailureListener();
         tuvMinusOne.getResultTable().addUpdateListener(tuvMinusOneFailureListener);
 
-        final Table shiftPlusOne = ShiftedColumnOperation.addShiftedColumns(table, 1, "V2=Value");
+        final Table shiftPlusOne = ShiftedColumnOperation.addShiftedColumns(table,
+                new ShiftedColumnDefinition("Value", 1));
         System.out.println("---shiftPlusOne---");
         TableTools.showWithRowSet(shiftPlusOne);
 
@@ -1007,7 +1050,8 @@ public class ShiftedColumnOperationTest {
         tuvPlusOne.getResultTable().addUpdateListener(tuvPlusOneFailureListener);
 
         final int shiftConst = 4;
-        final Table shiftMinusConst = ShiftedColumnOperation.addShiftedColumns(table, (-1 * shiftConst), "CV3=Value");
+        final Table shiftMinusConst = ShiftedColumnOperation.addShiftedColumns(table,
+                new ShiftedColumnDefinition("Value", -1 * shiftConst));
         System.out.println("---shiftMinusConst---");
         TableTools.showWithRowSet(shiftMinusConst);
 
@@ -1025,7 +1069,8 @@ public class ShiftedColumnOperationTest {
         FailureListener tuvMinusConstFailureListener = new FailureListener();
         tuvMinusConst.getResultTable().addUpdateListener(tuvMinusConstFailureListener);
 
-        final Table shiftPlusConst = ShiftedColumnOperation.addShiftedColumns(table, shiftConst, "CV2=Value");
+        final Table shiftPlusConst = ShiftedColumnOperation.addShiftedColumns(table,
+                new ShiftedColumnDefinition("Value", shiftConst));
         System.out.println("---shiftPlusConst---");
         TableTools.showWithRowSet(shiftPlusConst);
 
@@ -1093,7 +1138,10 @@ public class ShiftedColumnOperationTest {
         tuv.getResultTable().addUpdateListener(tuvFailureListener);
 
         final Table shiftMinusOne =
-                ShiftedColumnOperation.addShiftedColumns(table, -1, "V3=Value", "V32=Value2", "V33=Value3");
+                ShiftedColumnOperation.addShiftedColumns(table,
+                        new ShiftedColumnDefinition("Value", -1),
+                        new ShiftedColumnDefinition("Value2", -1),
+                        new ShiftedColumnDefinition("Value3", -1));
         System.out.println("---shiftMinusOne---");
         TableTools.showWithRowSet(shiftMinusOne);
 
@@ -1102,7 +1150,10 @@ public class ShiftedColumnOperationTest {
         tuvMinusOne.getResultTable().addUpdateListener(tuvMinusOneFailureListener);
 
         final Table shiftPlusOne =
-                ShiftedColumnOperation.addShiftedColumns(table, 1, "V2=Value", "V22=Value2", "V23=Value3");
+                ShiftedColumnOperation.addShiftedColumns(table,
+                        new ShiftedColumnDefinition("Value", 1),
+                        new ShiftedColumnDefinition("Value2", 1),
+                        new ShiftedColumnDefinition("Value3", 1));
         System.out.println("---shiftPlusOne---");
         TableTools.showWithRowSet(shiftPlusOne);
 
@@ -1111,8 +1162,10 @@ public class ShiftedColumnOperationTest {
         tuvPlusOne.getResultTable().addUpdateListener(tuvPlusOneFailureListener);
 
         final int shiftConst = 4;
-        final Table shiftMinusConst = ShiftedColumnOperation.addShiftedColumns(table, (-1 * shiftConst), "CV3=Value",
-                "CV32=Value2", "CV33=Value3");
+        final Table shiftMinusConst = ShiftedColumnOperation.addShiftedColumns(table,
+                new ShiftedColumnDefinition("Value", -1 * shiftConst),
+                new ShiftedColumnDefinition("Value2", -1 * shiftConst),
+                new ShiftedColumnDefinition("Value3", -1 * shiftConst));
         System.out.println("---shiftMinusConst---");
         TableTools.showWithRowSet(shiftMinusConst);
 
@@ -1131,7 +1184,10 @@ public class ShiftedColumnOperationTest {
         tuvMinusConst.getResultTable().addUpdateListener(tuvMinusConstFailureListener);
 
         final Table shiftPlusConst =
-                ShiftedColumnOperation.addShiftedColumns(table, shiftConst, "CV2=Value", "CV22=Value2", "CV23=Value3");
+                ShiftedColumnOperation.addShiftedColumns(table,
+                        new ShiftedColumnDefinition("Value", shiftConst),
+                        new ShiftedColumnDefinition("Value2", shiftConst),
+                        new ShiftedColumnDefinition("Value3", shiftConst));
         System.out.println("---shiftPlusConst---");
         TableTools.showWithRowSet(shiftPlusConst);
 
@@ -1207,8 +1263,10 @@ public class ShiftedColumnOperationTest {
                 intCol("Sentinel", 1, 2, 3, 4, 5, 6, 7, 8, 9),
                 intCol("Value", 10, 12, 14, 16, 18, 20, 22, 24, 26));
 
-        final Table shiftMinusConst = ShiftedColumnOperation.addShiftedColumns(table, (-1 * shiftConst), "CV3=Value");
-        final Table shiftPlusConst = ShiftedColumnOperation.addShiftedColumns(table, shiftConst, "CV2=Value");
+        final Table shiftMinusConst = ShiftedColumnOperation.addShiftedColumns(table,
+                new ShiftedColumnDefinition("Value", -1 * shiftConst));
+        final Table shiftPlusConst = ShiftedColumnOperation.addShiftedColumns(table,
+                new ShiftedColumnDefinition("Value", shiftConst));
 
         printTableUpdates(table, shiftMinusConst, shiftPlusConst, "pre-update", shiftConst);
 
@@ -1260,8 +1318,10 @@ public class ShiftedColumnOperationTest {
                 intCol("Sentinel", 2, 3, 4, 5),
                 intCol("Value", 12, 14, 16, 18));
 
-        final Table shiftMinusConst = ShiftedColumnOperation.addShiftedColumns(table, (-1 * shiftConst), "CV3=Value");
-        final Table shiftPlusConst = ShiftedColumnOperation.addShiftedColumns(table, shiftConst, "CV2=Value");
+        final Table shiftMinusConst = ShiftedColumnOperation.addShiftedColumns(table,
+                new ShiftedColumnDefinition("Value", -1 * shiftConst));
+        final Table shiftPlusConst = ShiftedColumnOperation.addShiftedColumns(table,
+                new ShiftedColumnDefinition("Value", shiftConst));
 
         printTableUpdates(table, shiftMinusConst, shiftPlusConst, "pre-update", shiftConst);
 
@@ -1314,8 +1374,10 @@ public class ShiftedColumnOperationTest {
                 intCol("Sentinel", 3, 4, 5),
                 intCol("Value", 14, 16, 18));
 
-        final Table shiftMinusConst = ShiftedColumnOperation.addShiftedColumns(table, (-1 * shiftConst), "CV3=Value");
-        final Table shiftPlusConst = ShiftedColumnOperation.addShiftedColumns(table, shiftConst, "CV2=Value");
+        final Table shiftMinusConst = ShiftedColumnOperation.addShiftedColumns(table,
+                new ShiftedColumnDefinition("Value", -1 * shiftConst));
+        final Table shiftPlusConst = ShiftedColumnOperation.addShiftedColumns(table,
+                new ShiftedColumnDefinition("Value", shiftConst));
 
         printTableUpdates(table, shiftMinusConst, shiftPlusConst, "pre-update", shiftConst);
 
@@ -1368,8 +1430,10 @@ public class ShiftedColumnOperationTest {
                 intCol("Sentinel", 1, 2, 3, 4, 5),
                 intCol("Value", 10, 12, 14, 16, 18));
 
-        final Table shiftMinusConst = ShiftedColumnOperation.addShiftedColumns(table, (-1 * shiftConst), "CV3=Value");
-        final Table shiftPlusConst = ShiftedColumnOperation.addShiftedColumns(table, shiftConst, "CV2=Value");
+        final Table shiftMinusConst = ShiftedColumnOperation.addShiftedColumns(table,
+                new ShiftedColumnDefinition("Value", -1 * shiftConst));
+        final Table shiftPlusConst = ShiftedColumnOperation.addShiftedColumns(table,
+                new ShiftedColumnDefinition("Value", shiftConst));
 
         printTableUpdates(table, shiftMinusConst, shiftPlusConst, "pre-update", shiftConst);
 
@@ -1422,8 +1486,10 @@ public class ShiftedColumnOperationTest {
                 intCol("Sentinel", 1, 2, 3, 4, 5),
                 intCol("Value", 10, 12, 14, 16, 18));
 
-        final Table shiftMinusConst = ShiftedColumnOperation.addShiftedColumns(table, (-1 * shiftConst), "CV3=Value");
-        final Table shiftPlusConst = ShiftedColumnOperation.addShiftedColumns(table, shiftConst, "CV2=Value");
+        final Table shiftMinusConst = ShiftedColumnOperation.addShiftedColumns(table,
+                new ShiftedColumnDefinition("Value", -1 * shiftConst));
+        final Table shiftPlusConst = ShiftedColumnOperation.addShiftedColumns(table,
+                new ShiftedColumnDefinition("Value", shiftConst));
 
         printTableUpdates(table, shiftMinusConst, shiftPlusConst, "pre-update", shiftConst);
 
@@ -1476,8 +1542,10 @@ public class ShiftedColumnOperationTest {
                 intCol("Sentinel", 1, 3, 5, 7, 9),
                 intCol("Value", 10, 12, 14, 16, 18));
 
-        final Table shiftMinusConst = ShiftedColumnOperation.addShiftedColumns(table, (-1 * shiftConst), "CV3=Value");
-        final Table shiftPlusConst = ShiftedColumnOperation.addShiftedColumns(table, shiftConst, "CV2=Value");
+        final Table shiftMinusConst = ShiftedColumnOperation.addShiftedColumns(table,
+                new ShiftedColumnDefinition("Value", -1 * shiftConst));
+        final Table shiftPlusConst = ShiftedColumnOperation.addShiftedColumns(table,
+                new ShiftedColumnDefinition("Value", shiftConst));
 
         printTableUpdates(table, shiftMinusConst, shiftPlusConst, "pre-update", shiftConst);
 
@@ -1530,8 +1598,10 @@ public class ShiftedColumnOperationTest {
                 intCol("Sentinel", 1, 7, 13, 19),
                 intCol("Value", 10, 16, 22, 28));
 
-        final Table shiftMinusConst = ShiftedColumnOperation.addShiftedColumns(table, (-1 * shiftConst), "CV3=Value");
-        final Table shiftPlusConst = ShiftedColumnOperation.addShiftedColumns(table, shiftConst, "CV2=Value");
+        final Table shiftMinusConst = ShiftedColumnOperation.addShiftedColumns(table,
+                new ShiftedColumnDefinition("Value", -1 * shiftConst));
+        final Table shiftPlusConst = ShiftedColumnOperation.addShiftedColumns(table,
+                new ShiftedColumnDefinition("Value", shiftConst));
 
         printTableUpdates(table, shiftMinusConst, shiftPlusConst, "pre-update", shiftConst);
 
@@ -1585,8 +1655,10 @@ public class ShiftedColumnOperationTest {
                 intCol("Sentinel", 3, 6, 7),
                 intCol("Value", 14, 20, 22));
 
-        final Table shiftMinusConst = ShiftedColumnOperation.addShiftedColumns(table, (-1 * shiftConst), "CV3=Value");
-        final Table shiftPlusConst = ShiftedColumnOperation.addShiftedColumns(table, shiftConst, "CV2=Value");
+        final Table shiftMinusConst = ShiftedColumnOperation.addShiftedColumns(table,
+                new ShiftedColumnDefinition("Value", -1 * shiftConst));
+        final Table shiftPlusConst = ShiftedColumnOperation.addShiftedColumns(table,
+                new ShiftedColumnDefinition("Value", shiftConst));
 
         printTableUpdates(table, shiftMinusConst, shiftPlusConst, "pre-update", shiftConst);
 
@@ -1639,8 +1711,10 @@ public class ShiftedColumnOperationTest {
                 intCol("Sentinel", 3, 6, 7),
                 intCol("Value", 14, 20, 22));
 
-        final Table shiftMinusConst = ShiftedColumnOperation.addShiftedColumns(table, (-1 * shiftConst), "CV3=Value");
-        final Table shiftPlusConst = ShiftedColumnOperation.addShiftedColumns(table, shiftConst, "CV2=Value");
+        final Table shiftMinusConst = ShiftedColumnOperation.addShiftedColumns(table,
+                new ShiftedColumnDefinition("Value", -1 * shiftConst));
+        final Table shiftPlusConst = ShiftedColumnOperation.addShiftedColumns(table,
+                new ShiftedColumnDefinition("Value", shiftConst));
 
         printTableUpdates(table, shiftMinusConst, shiftPlusConst, "pre-update", shiftConst);
         final TableUpdateValidator tuv = TableUpdateValidator.make("table", table);
@@ -1685,8 +1759,11 @@ public class ShiftedColumnOperationTest {
                 i(2, 4, 6, 8, 10).toTracking(),
                 intCol("Sentinel", 1, 2, 3, 4, 5),
                 intCol("Value", 10, 12, 14, 16, 18));
-        final Table shiftMinusOne = ShiftedColumnOperation.addShiftedColumns(table, -1, "V3=Value");
-        final Table shiftPlusOne = ShiftedColumnOperation.addShiftedColumns(table, 1, "V2=Value");
+
+        final Table shiftMinusOne = ShiftedColumnOperation.addShiftedColumns(table,
+                new ShiftedColumnDefinition("Value", -1));
+        final Table shiftPlusOne = ShiftedColumnOperation.addShiftedColumns(table,
+                new ShiftedColumnDefinition("Value", 1));
 
         printTableUpdates(table, shiftMinusOne, shiftPlusOne, "pre-update", 1);
 
@@ -1731,8 +1808,11 @@ public class ShiftedColumnOperationTest {
                 intCol("Sentinel", 1, 2, 3, 4, 5),
                 intCol("Value", 10, 12, 14, 16, 18));
 
-        final Table shiftMinusOne = ShiftedColumnOperation.addShiftedColumns(table, -1, "V3=Value");
-        final Table shiftPlusOne = ShiftedColumnOperation.addShiftedColumns(table, 1, "V2=Value");
+
+        final Table shiftMinusOne = ShiftedColumnOperation.addShiftedColumns(table,
+                new ShiftedColumnDefinition("Value", -1));
+        final Table shiftPlusOne = ShiftedColumnOperation.addShiftedColumns(table,
+                new ShiftedColumnDefinition("Value", 1));
 
         printTableUpdates(table, shiftMinusOne, shiftPlusOne, "pre-update", 1);
 
@@ -1783,8 +1863,10 @@ public class ShiftedColumnOperationTest {
                 intCol("Sentinel", 1, 2, 3, 4, 5, 6),
                 intCol("Value", 10, 12, 14, 16, 18, 20));
 
-        final Table shiftMinusOne = ShiftedColumnOperation.addShiftedColumns(table, -1, "V3=Value");
-        final Table shiftPlusOne = ShiftedColumnOperation.addShiftedColumns(table, 1, "V2=Value");
+        final Table shiftMinusOne = ShiftedColumnOperation.addShiftedColumns(table,
+                new ShiftedColumnDefinition("Value", -1));
+        final Table shiftPlusOne = ShiftedColumnOperation.addShiftedColumns(table,
+                new ShiftedColumnDefinition("Value", 1));
 
         printTableUpdates(table, shiftMinusOne, shiftPlusOne, "pre-update", 1);
 
@@ -1837,8 +1919,11 @@ public class ShiftedColumnOperationTest {
                 intCol("Sentinel", 1, 5, 9),
                 intCol("Value", 10, 14, 18));
 
-        final Table shiftMinusOne = ShiftedColumnOperation.addShiftedColumns(table, -1, "V3=Value");
-        final Table shiftPlusOne = ShiftedColumnOperation.addShiftedColumns(table, 1, "V2=Value");
+
+        final Table shiftMinusOne = ShiftedColumnOperation.addShiftedColumns(table,
+                new ShiftedColumnDefinition("Value", -1));
+        final Table shiftPlusOne = ShiftedColumnOperation.addShiftedColumns(table,
+                new ShiftedColumnDefinition("Value", 1));
 
         printTableUpdates(table, shiftMinusOne, shiftPlusOne, "pre-update", 1);
 
@@ -1897,8 +1982,10 @@ public class ShiftedColumnOperationTest {
                 intCol("Sentinel", 1, 3, 5, 7, 9, 11, 13, 15),
                 intCol("Value", 10, 14, 18, 22, 26, 30, 34, 38));
 
-        final Table shiftMinusConst = ShiftedColumnOperation.addShiftedColumns(table, (-1 * shiftConst), "CV3=Value");
-        final Table shiftPlusConst = ShiftedColumnOperation.addShiftedColumns(table, shiftConst, "CV2=Value");
+        final Table shiftMinusConst = ShiftedColumnOperation.addShiftedColumns(table,
+                new ShiftedColumnDefinition("Value", -1 * shiftConst));
+        final Table shiftPlusConst = ShiftedColumnOperation.addShiftedColumns(table,
+                new ShiftedColumnDefinition("Value", shiftConst));
 
         printTableUpdates(table, shiftMinusConst, shiftPlusConst, "pre-update", shiftConst);
 
@@ -1961,8 +2048,10 @@ public class ShiftedColumnOperationTest {
                 intCol("Sentinel", 1, 3, 5, 7, 9, 11, 13, 15),
                 intCol("Value", 10, 14, 18, 22, 26, 30, 34, 38));
 
-        final Table shiftMinusConst = ShiftedColumnOperation.addShiftedColumns(table, (-1 * shiftConst), "CV3=Value");
-        final Table shiftPlusConst = ShiftedColumnOperation.addShiftedColumns(table, shiftConst, "CV2=Value");
+        final Table shiftMinusConst = ShiftedColumnOperation.addShiftedColumns(table,
+                new ShiftedColumnDefinition("Value", -1 * shiftConst));
+        final Table shiftPlusConst = ShiftedColumnOperation.addShiftedColumns(table,
+                new ShiftedColumnDefinition("Value", shiftConst));
 
         printTableUpdates(table, shiftMinusConst, shiftPlusConst, "pre-update", shiftConst);
 
@@ -2018,8 +2107,10 @@ public class ShiftedColumnOperationTest {
                 intCol("Sentinel", 1, 2, 3, 4, 5, 6, 7),
                 intCol("Value", 10, 12, 14, 16, 18, 20, 22));
 
-        final Table shiftMinusConst = ShiftedColumnOperation.addShiftedColumns(table, (-1 * shiftConst), "CV3=Value");
-        final Table shiftPlusConst = ShiftedColumnOperation.addShiftedColumns(table, shiftConst, "CV2=Value");
+        final Table shiftMinusConst = ShiftedColumnOperation.addShiftedColumns(table,
+                new ShiftedColumnDefinition("Value", -1 * shiftConst));
+        final Table shiftPlusConst = ShiftedColumnOperation.addShiftedColumns(table,
+                new ShiftedColumnDefinition("Value", shiftConst));
 
         printTableUpdates(table, shiftMinusConst, shiftPlusConst, "pre-update", shiftConst);
 
@@ -2072,8 +2163,10 @@ public class ShiftedColumnOperationTest {
                 intCol("Sentinel", 1, 2, 3, 4, 5, 6, 7),
                 intCol("Value", 10, 12, 14, 16, 18, 20, 22));
 
-        final Table shiftMinusConst = ShiftedColumnOperation.addShiftedColumns(table, (-1 * shiftConst), "CV3=Value");
-        final Table shiftPlusConst = ShiftedColumnOperation.addShiftedColumns(table, shiftConst, "CV2=Value");
+        final Table shiftMinusConst = ShiftedColumnOperation.addShiftedColumns(table,
+                new ShiftedColumnDefinition("Value", -1 * shiftConst));
+        final Table shiftPlusConst = ShiftedColumnOperation.addShiftedColumns(table,
+                new ShiftedColumnDefinition("Value", shiftConst));
 
         printTableUpdates(table, shiftMinusConst, shiftPlusConst, "pre-update", shiftConst);
 
@@ -2125,8 +2218,10 @@ public class ShiftedColumnOperationTest {
                 intCol("Sentinel", 1, 2, 3, 4, 5, 6, 7),
                 intCol("Value", 10, 12, 14, 16, 18, 20, 22));
 
-        final Table shiftMinusConst = ShiftedColumnOperation.addShiftedColumns(table, (-1 * shiftConst), "CV3=Value");
-        final Table shiftPlusConst = ShiftedColumnOperation.addShiftedColumns(table, shiftConst, "CV2=Value");
+        final Table shiftMinusConst = ShiftedColumnOperation.addShiftedColumns(table,
+                new ShiftedColumnDefinition("Value", -1 * shiftConst));
+        final Table shiftPlusConst = ShiftedColumnOperation.addShiftedColumns(table,
+                new ShiftedColumnDefinition("Value", shiftConst));
 
         printTableUpdates(table, shiftMinusConst, shiftPlusConst, "pre-update", shiftConst);
 
@@ -2178,8 +2273,10 @@ public class ShiftedColumnOperationTest {
                 intCol("Sentinel", 1, 2, 3, 4, 5, 6, 7),
                 intCol("Value", 10, 12, 14, 16, 18, 20, 22));
 
-        final Table shiftMinusConst = ShiftedColumnOperation.addShiftedColumns(table, (-1 * shiftConst), "CV3=Value");
-        final Table shiftPlusConst = ShiftedColumnOperation.addShiftedColumns(table, shiftConst, "CV2=Value");
+        final Table shiftMinusConst = ShiftedColumnOperation.addShiftedColumns(table,
+                new ShiftedColumnDefinition("Value", -1 * shiftConst));
+        final Table shiftPlusConst = ShiftedColumnOperation.addShiftedColumns(table,
+                new ShiftedColumnDefinition("Value", shiftConst));
 
         printTableUpdates(table, shiftMinusConst, shiftPlusConst, "pre-update", shiftConst);
 
@@ -2232,8 +2329,10 @@ public class ShiftedColumnOperationTest {
                 intCol("Sentinel", 1, 2, 3, 4, 5, 6, 7),
                 intCol("Value", 10, 12, 14, 16, 18, 20, 22));
 
-        final Table shiftMinusConst = ShiftedColumnOperation.addShiftedColumns(table, (-1 * shiftConst), "CV3=Value");
-        final Table shiftPlusConst = ShiftedColumnOperation.addShiftedColumns(table, shiftConst, "CV2=Value");
+        final Table shiftMinusConst = ShiftedColumnOperation.addShiftedColumns(table,
+                new ShiftedColumnDefinition("Value", -1 * shiftConst));
+        final Table shiftPlusConst = ShiftedColumnOperation.addShiftedColumns(table,
+                new ShiftedColumnDefinition("Value", shiftConst));
 
         printTableUpdates(table, shiftMinusConst, shiftPlusConst, "pre-update", shiftConst);
 
@@ -2285,8 +2384,10 @@ public class ShiftedColumnOperationTest {
                 intCol("Sentinel", 1, 2, 3, 4, 5, 6, 7),
                 intCol("Value", 10, 12, 14, 16, 18, 20, 22));
 
-        final Table shiftMinusConst = ShiftedColumnOperation.addShiftedColumns(table, (-1 * shiftConst), "CV3=Value");
-        final Table shiftPlusConst = ShiftedColumnOperation.addShiftedColumns(table, shiftConst, "CV2=Value");
+        final Table shiftMinusConst = ShiftedColumnOperation.addShiftedColumns(table,
+                new ShiftedColumnDefinition("Value", -1 * shiftConst));
+        final Table shiftPlusConst = ShiftedColumnOperation.addShiftedColumns(table,
+                new ShiftedColumnDefinition("Value", shiftConst));
 
         printTableUpdates(table, shiftMinusConst, shiftPlusConst, "pre-update", shiftConst);
 
@@ -2339,8 +2440,10 @@ public class ShiftedColumnOperationTest {
                 intCol("Sentinel", 1, 2, 3, 4, 5, 6, 7),
                 intCol("Value", 10, 12, 14, 16, 18, 20, 22));
 
-        final Table shiftMinusConst = ShiftedColumnOperation.addShiftedColumns(table, (-1 * shiftConst), "CV3=Value");
-        final Table shiftPlusConst = ShiftedColumnOperation.addShiftedColumns(table, shiftConst, "CV2=Value");
+        final Table shiftMinusConst = ShiftedColumnOperation.addShiftedColumns(table,
+                new ShiftedColumnDefinition("Value", -1 * shiftConst));
+        final Table shiftPlusConst = ShiftedColumnOperation.addShiftedColumns(table,
+                new ShiftedColumnDefinition("Value", shiftConst));
 
         printTableUpdates(table, shiftMinusConst, shiftPlusConst, "pre-update", shiftConst);
 
@@ -2392,8 +2495,10 @@ public class ShiftedColumnOperationTest {
                 intCol("Sentinel", 1, 2, 3, 4, 5, 6, 7, 8, 9),
                 intCol("Value", 10, 12, 14, 16, 18, 20, 22, 24, 26));
 
-        final Table shiftMinusConst = ShiftedColumnOperation.addShiftedColumns(table, (-1 * shiftConst), "CV3=Value");
-        final Table shiftPlusConst = ShiftedColumnOperation.addShiftedColumns(table, shiftConst, "CV2=Value");
+        final Table shiftMinusConst = ShiftedColumnOperation.addShiftedColumns(table,
+                new ShiftedColumnDefinition("Value", -1 * shiftConst));
+        final Table shiftPlusConst = ShiftedColumnOperation.addShiftedColumns(table,
+                new ShiftedColumnDefinition("Value", shiftConst));
 
         printTableUpdates(table, shiftMinusConst, shiftPlusConst, "pre-update", shiftConst);
 
@@ -2446,8 +2551,10 @@ public class ShiftedColumnOperationTest {
                 intCol("Sentinel", 1, 2, 3, 4, 5, 6, 7),
                 intCol("Value", 10, 12, 14, 16, 18, 20, 22));
 
-        final Table shiftMinusConst = ShiftedColumnOperation.addShiftedColumns(table, (-1 * shiftConst), "CV3=Value");
-        final Table shiftPlusConst = ShiftedColumnOperation.addShiftedColumns(table, shiftConst, "CV2=Value");
+        final Table shiftMinusConst = ShiftedColumnOperation.addShiftedColumns(table,
+                new ShiftedColumnDefinition("Value", -1 * shiftConst));
+        final Table shiftPlusConst = ShiftedColumnOperation.addShiftedColumns(table,
+                new ShiftedColumnDefinition("Value", shiftConst));
 
         printTableUpdates(table, shiftMinusConst, shiftPlusConst, "pre-update", shiftConst);
 
@@ -2524,7 +2631,8 @@ public class ShiftedColumnOperationTest {
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         final Table shifted = updateGraph.sharedLock().computeLocked(
-                () -> ShiftedColumnOperation.addShiftedColumns(table, -1, "VS=Value"));
+                () -> ShiftedColumnOperation.addShiftedColumns(table,
+                        new ShiftedColumnDefinition("Value", -1)));
         TableTools.showWithRowSet(shifted);
 
         assertTableEquals(updateGraph.sharedLock().computeLocked(
@@ -2600,8 +2708,8 @@ public class ShiftedColumnOperationTest {
 
         final Table dummy = new QueryTable(proxyRowSet, Collections.emptyMap()).update("X=ii", "X2=ii*2");
 
-        final Table shifted = ShiftedColumnOperation.addShiftedColumns(dummy, -1, "S=X");
-        final Table shifted2 = ShiftedColumnOperation.addShiftedColumns(shifted, -1, "S2=X2");
+        final Table shifted = ShiftedColumnOperation.addShiftedColumns(dummy, new ShiftedColumnDefinition("X", -1));
+        final Table shifted2 = ShiftedColumnOperation.addShiftedColumns(shifted, new ShiftedColumnDefinition("X2", -1));
 
         final ColumnSource<Long> scs = shifted2.getColumnSource("S", long.class);
         final ColumnSource<Long> s2cs = shifted2.getColumnSource("S2", long.class);
@@ -2673,14 +2781,17 @@ public class ShiftedColumnOperationTest {
         }
 
         final EvalNugget[] en = new EvalNugget[maxShiftConst * 2];
-        String[] matchColumns = new String[] {"Sym2=Sym", "intCol2=intCol", "doubleCol2=doubleCol"};
 
         for (int i = 0; i < maxShiftConst; i++) {
             long shift = i + 1;
-            en[i * 2] =
-                    EvalNugget.from(() -> ShiftedColumnOperation.addShiftedColumns(queryTable, -shift, matchColumns));
-            en[i * 2 + 1] =
-                    EvalNugget.from(() -> ShiftedColumnOperation.addShiftedColumns(queryTable, shift, matchColumns));
+            en[i * 2] = EvalNugget.from(() -> ShiftedColumnOperation.addShiftedColumns(queryTable,
+                    new ShiftedColumnDefinition("Sym", -shift),
+                    new ShiftedColumnDefinition("intCol", -shift),
+                    new ShiftedColumnDefinition("doubleCol", -shift)));
+            en[i * 2 + 1] = EvalNugget.from(() -> ShiftedColumnOperation.addShiftedColumns(queryTable,
+                    new ShiftedColumnDefinition("Sym", shift),
+                    new ShiftedColumnDefinition("intCol", shift),
+                    new ShiftedColumnDefinition("doubleCol", shift)));
         }
 
         for (int step = 0; step < simulationSize; step++) {

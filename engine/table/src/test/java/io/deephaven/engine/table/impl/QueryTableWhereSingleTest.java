@@ -20,7 +20,7 @@ public class QueryTableWhereSingleTest extends QueryTableWhereTest {
     }
 
     @Override
-    public void testWhereBarrierOnConstantArrayAccess() {
-        super.testWhereBarrierOnConstantArrayAccess();
+    public void testSerialOnConstantArrayAccess() {
+        super.testSerialOnConstantArrayAccess();
     }
 }

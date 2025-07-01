@@ -21,6 +21,7 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.DataIndex;
 import io.deephaven.engine.table.ShiftObliviousListener;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
@@ -2275,7 +2276,7 @@ public abstract class QueryTableWhereTest {
         QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT = 10_000;
         final QueryTable source = testRefreshingTable(RowSetFactory.flat(100_000).toTracking());
         final QueryTable sourceWithData = (QueryTable) source.update("A = ii");
-        DataIndexer.getOrCreateDataIndex(sourceWithData, "A");
+        final DataIndex dataIndex = DataIndexer.getOrCreateDataIndex(sourceWithData, "A");
 
         final RowSetCapturingFilter preFilter = new RowSetCapturingFilter();
         final RowSetCapturingFilter preFilter2 = new RowSetCapturingFilter();
@@ -2583,7 +2584,51 @@ public abstract class QueryTableWhereTest {
     }
 
     @Test
-    public void testWhereBarrierOnConstantArrayAccess() {
+    public void testSerialOnConstantArrayAccess() {
+        QueryTable.PARALLEL_WHERE_SEGMENTS = 10;
+        QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT = 10_000;
+        final QueryTable source = testRefreshingTable(RowSetFactory.flat(100_000).toTracking());
+        final QueryTable sourceWithData = (QueryTable) source.update("A = ii");
+        final DataIndex dataIndex = DataIndexer.getOrCreateDataIndex(sourceWithData, "A");
+
+        final RowSetCapturingFilter filter0 = new RowSetCapturingFilter(RawString.of("A < 50000"));
+        final RowSetCapturingFilter filter1 = new RowSetCapturingFilter(RawString.of("A > 15000"));
+
+        final Table res0 = sourceWithData.where(Filter.and(
+                filter0,
+                RawString.of("A_[ii - 1] < 25000").withSerial(),
+                filter1));
+        assertEquals(filter0.numRowsProcessed(), 100000);
+        assertEquals(10_000, res0.size());
+        // TODO: should this really be [0, 25001] given that A_[ii - 1] should be null?
+        assertEquals(filter1.numRowsProcessed(), 25001);
+    }
+
+
+    @Test
+    public void testBarrierOnConstantArrayAccess() {
+        QueryTable.PARALLEL_WHERE_SEGMENTS = 10;
+        QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT = 10_000;
+        final QueryTable source = testRefreshingTable(RowSetFactory.flat(100_000).toTracking());
+        final QueryTable sourceWithData = (QueryTable) source.update("A = ii");
+        final DataIndex dataIndex = DataIndexer.getOrCreateDataIndex(sourceWithData, "A");
+
+        final Object barrier = new Object();
+        final RowSetCapturingFilter filter0 = new RowSetCapturingFilter(RawString.of("A < 50000"));
+        final RowSetCapturingFilter filter1 = new RowSetCapturingFilter(RawString.of("A > 15000"));
+
+        final Table res0 = sourceWithData.where(Filter.and(
+                filter0,
+                RawString.of("A_[ii - 1] < 25000").withBarrier(barrier),
+                filter1.respectsBarrier(barrier)));
+        assertEquals(filter0.numRowsProcessed(), 100000);
+        assertEquals(10_000, res0.size());
+        // TODO: should this really be [0, 25001] given that A_[ii - 1] should be null?
+        assertEquals(filter1.numRowsProcessed(), 25001);
+    }
+
+    @Test
+    public void testRespectsBarrierOnConstantArrayAccess() {
         QueryTable.PARALLEL_WHERE_SEGMENTS = 10;
         QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT = 10_000;
         final QueryTable source = testRefreshingTable(RowSetFactory.flat(100_000).toTracking());
@@ -2607,6 +2652,7 @@ public abstract class QueryTableWhereTest {
         filter0.reset();
         preFilter.reset();
 
+        // TODO: this respectsBarrier could be lost and we wouldn't know it!
         final Table res1 = sourceWithData.where(Filter.and(
                 filter0.withBarrier(barrier),
                 preFilter,

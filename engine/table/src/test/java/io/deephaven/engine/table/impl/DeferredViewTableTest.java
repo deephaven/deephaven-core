@@ -283,38 +283,38 @@ public class DeferredViewTableTest {
 
     @Test
     public void testMatchFilterRename() {
-        testHelpFilterIsPrioritized(new MatchFilter(MatchFilter.MatchType.Regular, "Y", "A"));
+        verifyFilterIsPrioritized(new MatchFilter(MatchFilter.MatchType.Regular, "Y", "A"));
     }
 
     @Test
     public void testConditionFilterRename() {
-        testHelpFilterIsPrioritized(ConditionFilter.createConditionFilter("Y = `A`"));
+        verifyFilterIsPrioritized(ConditionFilter.createConditionFilter("Y = `A`"));
     }
 
     @Test
     public void testInvertedWrappedRenames() {
         final WhereFilter filter = new MatchFilter(MatchFilter.MatchType.Regular, "Y", "B", "C", "D");
-        testHelpFilterIsPrioritized(WhereFilterInvertedImpl.of(filter));
+        verifyFilterIsPrioritized(WhereFilterInvertedImpl.of(filter));
     }
 
     @Test
     public void testSerialWrappedRenames() {
         // note serial filters require incoming rowsets to match as if all previous filters were applied
         final Filter filter = new MatchFilter(MatchFilter.MatchType.Regular, "Y", "A");
-        testHelpFilterIsPrioritized(filter.withSerial(), false);
+        verifyFilterIsPrioritized(filter.withSerial(), false);
     }
 
     @Test
     public void testBarrierWrappedRenames() {
         final Filter filter = new MatchFilter(MatchFilter.MatchType.Regular, "Y", "A");
-        testHelpFilterIsPrioritized(filter.withBarrier(new Object()));
+        verifyFilterIsPrioritized(filter.withBarrier(new Object()));
     }
 
     @Test
     public void testRespectsBarrierWrappedRenames() {
         final Object barrier = new Object();
         final WhereFilter filter = new MatchFilter(MatchFilter.MatchType.Regular, "Y", "A");
-        testHelpFilterIsPrioritized(ConjunctiveFilter.of(
+        verifyFilterIsPrioritized(ConjunctiveFilter.of(
                 ConditionFilter.createConditionFilter("true").withBarrier(barrier),
                 filter.respectsBarrier(barrier)));
     }
@@ -323,7 +323,7 @@ public class DeferredViewTableTest {
     public void testConjunctiveFilterRename() {
         // get crafty nesting a conjunctive filter inside of a disjunctive filter
         final WhereFilter filter = new MatchFilter(MatchFilter.MatchType.Regular, "Y", "A");
-        testHelpFilterIsPrioritized(DisjunctiveFilter.of(
+        verifyFilterIsPrioritized(DisjunctiveFilter.of(
                 ConditionFilter.createConditionFilter("false"),
                 ConjunctiveFilter.of(
                         ConditionFilter.createConditionFilter("true"),
@@ -335,18 +335,18 @@ public class DeferredViewTableTest {
     public void testNestedConjunctiveFilterRename() {
         // get crafty with some nesting
         final WhereFilter filter = new MatchFilter(MatchFilter.MatchType.Regular, "Y", "A");
-        testHelpFilterIsPrioritized(ConjunctiveFilter.of(
+        verifyFilterIsPrioritized(ConjunctiveFilter.of(
                 ConditionFilter.createConditionFilter("true"),
                 ConjunctiveFilter.of(
                         ConditionFilter.createConditionFilter("true"),
                         filter.withBarrier(new Object()))));
     }
 
-    private void testHelpFilterIsPrioritized(final Filter filterToTest) {
-        testHelpFilterIsPrioritized(filterToTest, true);
+    private void verifyFilterIsPrioritized(final Filter filterToTest) {
+        verifyFilterIsPrioritized(filterToTest, true);
     }
 
-    private void testHelpFilterIsPrioritized(final Filter filterToTest, final boolean expectsJump) {
+    private void verifyFilterIsPrioritized(final Filter filterToTest, final boolean expectsJump) {
         final String[] values = new String[] {"A", "B", "C", "D"};
         ExecutionContext.getContext().getQueryScope().putParam("values", values);
 
