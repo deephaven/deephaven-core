@@ -52,7 +52,8 @@ public class PerformanceEntry extends BasePerformanceEntry implements TableListe
         this.operationNumber = operationNumber;
         this.description = description;
         this.callerLine = callerLine;
-        authContext = id == QueryConstants.NULL_LONG ? null : Require.neqNull(ExecutionContext.getContext().getAuthContext(), "authContext");
+        authContext = id == QueryConstants.NULL_LONG ? null
+                : Require.neqNull(ExecutionContext.getContext().getAuthContext(), "authContext");
         this.updateGraphName = updateGraphName;
         startSample = new RuntimeMemory.Sample();
         endSample = new RuntimeMemory.Sample();
