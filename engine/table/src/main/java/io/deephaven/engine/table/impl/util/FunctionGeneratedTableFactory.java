@@ -164,9 +164,9 @@ public class FunctionGeneratedTableFactory {
 
     private long updateTable() {
         final Table newTable;
-        try (final SafeCloseable ignored = executionContextForUpdates.open()) {
+//        try (final SafeCloseable ignored = executionContextForUpdates.open()) {
             newTable = tableGenerator.get();
-        }
+//        }
         if (newTable.isRefreshing()) {
             if (ExecutionContext.getContext().getUpdateGraph() != newTable.getUpdateGraph()) {
                 throw new IllegalStateException(

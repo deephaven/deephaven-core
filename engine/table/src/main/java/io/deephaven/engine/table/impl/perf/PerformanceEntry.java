@@ -6,6 +6,7 @@ package io.deephaven.engine.table.impl.perf;
 import io.deephaven.auth.AuthContext;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.verify.Require;
+import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetShiftData;
@@ -20,6 +21,14 @@ import org.jetbrains.annotations.NotNull;
  * Entry class for tracking the performance characteristics of a single recurring update event.
  */
 public class PerformanceEntry extends BasePerformanceEntry implements TableListener.Entry {
+    /**
+     * If your system requires authentication contexts for performance logging, then set this property to true.
+     * Otherwise, errors can be delayed until the entry is logged; which makes them much harder to track down. The
+     * Community Core product does not require authentication contexts, so this defaults to false.
+     */
+    private final static boolean REQUIRE_AUTH_CONTEXT =
+            Configuration.getInstance().getBooleanWithDefault("PerformanceEntry.requireAuthContext", false);
+
     private final long id;
     private final long evaluationNumber;
     private final int operationNumber;
@@ -52,8 +61,7 @@ public class PerformanceEntry extends BasePerformanceEntry implements TableListe
         this.operationNumber = operationNumber;
         this.description = description;
         this.callerLine = callerLine;
-        authContext = id == QueryConstants.NULL_LONG ? null
-                : Require.neqNull(ExecutionContext.getContext().getAuthContext(), "authContext");
+        authContext = id == QueryConstants.NULL_LONG ? null : getContext();
         this.updateGraphName = updateGraphName;
         startSample = new RuntimeMemory.Sample();
         endSample = new RuntimeMemory.Sample();
@@ -62,6 +70,11 @@ public class PerformanceEntry extends BasePerformanceEntry implements TableListe
         collections = 0;
         collectionTimeMs = 0;
         loggedOnce = false;
+    }
+
+    private static AuthContext getContext() {
+        final AuthContext currentAuthContext = ExecutionContext.getContext().getAuthContext();
+        return REQUIRE_AUTH_CONTEXT ? Require.neqNull(currentAuthContext, "authContext") : currentAuthContext;
     }
 
     public final void onUpdateStart() {
