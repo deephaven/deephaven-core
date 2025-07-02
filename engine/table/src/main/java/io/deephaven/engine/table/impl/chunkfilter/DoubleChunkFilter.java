@@ -15,8 +15,10 @@ public abstract class DoubleChunkFilter implements ChunkFilter {
     public abstract boolean matches(double value);
 
     /**
-     * Returns {@code true} if the range filter overlaps with the input range, else {@code false}. This function is
-     * intended to be accurate rather than fast and is not recommended for performance-critical value comparison.
+     * Returns {@code true} if any values between inputLower (inclusive) and inputUpper (inclusive) may be accepted by
+     * this filter. Returns {@code false} if no values between inputLower (inclusive) and inputUpper (inclusive) can be
+     * matched by this filter. This function is intended to be accurate rather than fast and is not recommended for
+     * performance-critical value comparison.
      *
      * @throws CannotComputeOverlapsException if not supported for this filter type
      */

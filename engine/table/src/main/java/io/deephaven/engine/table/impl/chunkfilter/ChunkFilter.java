@@ -56,7 +56,9 @@ public interface ChunkFilter {
      */
     interface ConstantChunkFilter extends ChunkFilter {
         /**
-         * Returns {@code true} if the range filter overlaps with the input range, else {@code false}.
+         * Returns {@code true} if any values between inputLower (inclusive) and inputUpper (inclusive) may be accepted
+         * by this filter. Returns {@code false} if no values between inputLower (inclusive) and inputUpper (inclusive)
+         * can be matched by this filter.
          */
         boolean overlaps(Object inputLower, Object inputUpper);
 
