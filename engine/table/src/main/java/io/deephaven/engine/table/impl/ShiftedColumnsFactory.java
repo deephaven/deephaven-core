@@ -69,6 +69,7 @@ import com.github.javaparser.ast.type.VoidType;
 import com.github.javaparser.ast.type.WildcardType;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
 import io.deephaven.api.filter.Filter;
+import io.deephaven.base.Pair;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.filter.ExtractShiftedColumnDefinitions;
 import io.deephaven.engine.table.impl.lang.JavaExpressionParser;
@@ -82,10 +83,9 @@ import io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer;
 import io.deephaven.util.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -100,10 +100,13 @@ public class ShiftedColumnsFactory extends VoidVisitorAdapter<ShiftedColumnsFact
      * @param expression expression to analyze for ShiftedColumnDefinitions
      * @return Mappings from inner-formula-expression to ShiftedColumnDefinition
      */
-    public static Map<String, ShiftedColumnDefinition> getShiftedColumnDefinitions(@NotNull Expression expression) {
+    public static Pair<String, Set<ShiftedColumnDefinition>> getShiftedColumnDefinitions(
+            @NotNull Expression expression) {
         final ShiftedColumnAttributes formulaAttributes = new ShiftedColumnAttributes();
         expression.accept(new ShiftedColumnsFactory(), formulaAttributes);
-        return formulaAttributes.shifted;
+        return formulaAttributes.shifted.isEmpty()
+                ? null
+                : new Pair(formulaAttributes.formulaBuilder.toString(), formulaAttributes.shifted);
     }
 
     /**
@@ -258,16 +261,10 @@ public class ShiftedColumnsFactory extends VoidVisitorAdapter<ShiftedColumnsFact
     // ----------------------------------------------------------------------------------------------------------------
     @Override
     public void visit(ArrayAccessExpr expr, ShiftedColumnAttributes attributes) {
-        ShiftedColumnDefinition definition = attributes.shifted.get(expr.toString());
-        if (definition != null) {
-            attributes.formulaBuilder.append(definition.getResultColumnName());
-            return;
-        }
-
         ShiftedColumnDefinition shifted = parseForConstantArrayAccessAttributes(expr);
         if (shifted != null) {
             attributes.formulaBuilder.append(shifted.getResultColumnName());
-            attributes.shifted.put(expr.toString(), shifted);
+            attributes.shifted.add(shifted);
             return;
         }
 
@@ -811,12 +808,12 @@ public class ShiftedColumnsFactory extends VoidVisitorAdapter<ShiftedColumnsFact
     public static class ShiftedColumnAttributes {
         final MutableInt index;
         final StringBuilder formulaBuilder;
-        final Map<String, ShiftedColumnDefinition> shifted;
+        final Set<ShiftedColumnDefinition> shifted;
 
         public ShiftedColumnAttributes() {
             this.index = new MutableInt(1);
             this.formulaBuilder = new StringBuilder();
-            this.shifted = new HashMap<>();
+            this.shifted = new HashSet<>();
         }
     }
 }

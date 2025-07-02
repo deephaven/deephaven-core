@@ -83,6 +83,7 @@ import com.github.javaparser.ast.visitor.GenericVisitor;
 import com.github.javaparser.ast.visitor.VoidVisitor;
 import com.github.javaparser.printer.lexicalpreservation.LexicalPreservingPrinter;
 import groovy.lang.Closure;
+import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.impl.ShiftedColumnsFactory;
@@ -309,7 +310,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         try {
             final Expression expr = JavaExpressionParser.parseExpression(expression);
             final boolean isConstantValueExpression = JavaExpressionParser.isConstantValueExpression(expr);
-            final Map<String, ShiftedColumnDefinition> shiftedColumnDefinitions =
+            final Pair<String, Set<ShiftedColumnDefinition>> shiftedColumnDefinitions =
                     ShiftedColumnsFactory.getShiftedColumnDefinitions(expr);
 
             WrapperNode wrapperNode = new WrapperNode(expr);
@@ -3244,7 +3245,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         private final HashSet<String> variablesUsed;
         private final Map<String, Object> possibleParams;
         private final boolean isConstantValueExpression;
-        private final Map<String, ShiftedColumnDefinition> shiftedColumnDefinitions;
+        private final Pair<String, Set<ShiftedColumnDefinition>> shiftedColumnDefinitions;
         private final TimeLiteralReplacedExpression timeConversionResult;
 
         Result(
@@ -3253,7 +3254,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                 HashSet<String> variablesUsed,
                 Map<String, Object> possibleParams,
                 boolean isConstantValueExpression,
-                Map<String, ShiftedColumnDefinition> shiftedColumnDefinitions,
+                Pair<String, Set<ShiftedColumnDefinition>> shiftedColumnDefinitions,
                 TimeLiteralReplacedExpression timeConversionResult) {
             this.type = Objects.requireNonNull(type, "type");
             this.source = source;
@@ -3284,7 +3285,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             return possibleParams;
         }
 
-        public Map<String, ShiftedColumnDefinition> getShiftedColumnDefinitions() {
+        public Pair<String, Set<ShiftedColumnDefinition>> getShiftedColumnDefinitions() {
             return shiftedColumnDefinitions;
         }
 

@@ -9,6 +9,7 @@ import com.github.javaparser.ast.expr.AssignExpr;
 import com.github.javaparser.ast.expr.ConditionalExpr;
 import com.github.javaparser.ast.expr.Expression;
 import com.google.common.collect.Sets;
+import io.deephaven.base.Pair;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.rowset.RowSet;
@@ -786,12 +787,13 @@ public class TestFormulaArrayEvaluation {
         try {
             for (String expression : singleResultColumn) {
                 final Expression expr = JavaExpressionParser.parseExpression(expression);
-                final Map<String, ShiftedColumnDefinition> shifted =
+                final Pair<String, Set<ShiftedColumnDefinition>> shifted =
                         ShiftedColumnsFactory.getShiftedColumnDefinitions(expr);
                 Assert.assertNotNull(shifted);
-                Assert.assertEquals(1, shifted.size());
 
-                final ShiftedColumnDefinition definition = shifted.get(expr.toString());
+                final Set<ShiftedColumnDefinition> definitions = shifted.getSecond();
+                Assert.assertEquals(1, definitions.size());
+                final ShiftedColumnDefinition definition = definitions.iterator().next();
                 Assert.assertNotNull(definition);
                 Assert.assertEquals(shift, definition.getShiftAmount());
                 Assert.assertEquals(sourceCol, definition.getColumnName());
@@ -809,12 +811,13 @@ public class TestFormulaArrayEvaluation {
             final Set<String> sourceSet = Arrays.stream(sourceCol).collect(Collectors.toSet());
             for (String expression : expressions) {
                 final Expression expr = JavaExpressionParser.parseExpression(expression);
-                final Map<String, ShiftedColumnDefinition> shifted =
+                final Pair<String, Set<ShiftedColumnDefinition>> shifted =
                         ShiftedColumnsFactory.getShiftedColumnDefinitions(expr);
                 Assert.assertNotNull(shifted);
-                Assert.assertEquals(sourceCol.length, shifted.size());
-                Assert.assertTrue(shifted.values().stream().allMatch(col -> sourceSet.contains(col.getColumnName())));
-                Assert.assertTrue(shifted.values().stream().allMatch(col -> col.getShiftAmount() == shift));
+                Assert.assertEquals(sourceCol.length, shifted.getSecond().size());
+                Assert.assertTrue(
+                        shifted.getSecond().stream().allMatch(col -> sourceSet.contains(col.getColumnName())));
+                Assert.assertTrue(shifted.getSecond().stream().allMatch(col -> col.getShiftAmount() == shift));
             }
         } catch (Exception exception) {
             exception.printStackTrace();
@@ -828,12 +831,13 @@ public class TestFormulaArrayEvaluation {
             final Set<Long> shiftSet = Arrays.stream(shift).boxed().collect(Collectors.toSet());
             for (String expression : expressions) {
                 final Expression expr = JavaExpressionParser.parseExpression(expression);
-                final Map<String, ShiftedColumnDefinition> shifted =
+                final Pair<String, Set<ShiftedColumnDefinition>> shifted =
                         ShiftedColumnsFactory.getShiftedColumnDefinitions(expr);
                 Assert.assertNotNull(shifted);
-                Assert.assertEquals(shift.length, shifted.size());
-                Assert.assertTrue(shifted.values().stream().allMatch(col -> shiftSet.contains(col.getShiftAmount())));
-                Assert.assertTrue(shifted.values().stream().allMatch(col -> col.getColumnName().equals(sourceCol)));
+                Assert.assertEquals(shift.length, shifted.getSecond().size());
+                Assert.assertTrue(
+                        shifted.getSecond().stream().allMatch(col -> shiftSet.contains(col.getShiftAmount())));
+                Assert.assertTrue(shifted.getSecond().stream().allMatch(col -> col.getColumnName().equals(sourceCol)));
             }
         } catch (Exception exception) {
             exception.printStackTrace();
@@ -851,9 +855,9 @@ public class TestFormulaArrayEvaluation {
             }
             for (String expression : expressions) {
                 final Expression expr = JavaExpressionParser.parseExpression(expression);
-                final Map<String, ShiftedColumnDefinition> shifted =
+                final Pair<String, Set<ShiftedColumnDefinition>> shifted =
                         ShiftedColumnsFactory.getShiftedColumnDefinitions(expr);
-                assertShiftedColumnDefinitionsMatch(new HashSet<>(shifted.values()), expectedDefinitions);
+                assertShiftedColumnDefinitionsMatch(shifted.getSecond(), expectedDefinitions);
             }
         } catch (Exception exception) {
             exception.printStackTrace();
@@ -891,11 +895,11 @@ public class TestFormulaArrayEvaluation {
         }
         ArrayInitializerExpr arrayInitializerExpr = new ArrayInitializerExpr(expressionList);
 
-        final Map<String, ShiftedColumnDefinition> shifted =
+        final Pair<String, Set<ShiftedColumnDefinition>> shifted =
                 ShiftedColumnsFactory.getShiftedColumnDefinitions(arrayInitializerExpr);
-        Assert.assertEquals(shifted.size(), expectedDefinitions.length);
+        Assert.assertEquals(shifted.getSecond().size(), expectedDefinitions.length);
         if (expectedDefinitions.length > 0) {
-            assertShiftedColumnDefinitionsMatch(new HashSet<>(shifted.values()), expectedDefinitions);
+            assertShiftedColumnDefinitionsMatch(shifted.getSecond(), expectedDefinitions);
         } else {
             Assert.assertNull(shifted);
         }
@@ -948,14 +952,13 @@ public class TestFormulaArrayEvaluation {
         Expression then = JavaExpressionParser.parseExpression(conditionalTriple.getMiddle());
         Expression elseExpr = JavaExpressionParser.parseExpression(conditionalTriple.getRight());
         ConditionalExpr conditionalExpr = new ConditionalExpr(condition, then, elseExpr);
-        final Map<String, ShiftedColumnDefinition> shifted =
+        final Pair<String, Set<ShiftedColumnDefinition>> shifted =
                 ShiftedColumnsFactory.getShiftedColumnDefinitions(conditionalExpr);
         if (!expectedShifts.isEmpty()) {
             Assert.assertNotNull(shifted);
-            Assert.assertEquals("compare map sizes", expectedShifts.size(), shifted.size());
+            Assert.assertEquals("compare map sizes", expectedShifts.size(), shifted.getSecond().size());
             assertShiftedColumnDefinitionsMatch(
-                    new HashSet<>(shifted.values()),
-                    expectedShifts.toArray(new ShiftedColumnDefinition[0]));
+                    shifted.getSecond(), expectedShifts.toArray(new ShiftedColumnDefinition[0]));
         } else {
             Assert.assertNull(shifted);
         }
@@ -1015,9 +1018,9 @@ public class TestFormulaArrayEvaluation {
     private void constantArrayAccessTest(String[] expressions, boolean assertTrue) {
         for (String expression : expressions) {
             final Expression expr = JavaExpressionParser.parseExpression(expression);
-            final Map<String, ShiftedColumnDefinition> shifted =
+            final Pair<String, Set<ShiftedColumnDefinition>> shifted =
                     ShiftedColumnsFactory.getShiftedColumnDefinitions(expr);
-            final boolean hasConstantArrayAccess = shifted != null && !shifted.isEmpty();
+            final boolean hasConstantArrayAccess = shifted != null && !shifted.getSecond().isEmpty();
 
             if (assertTrue) {
                 Assert.assertTrue("\"" + expression + "\" has Constant ArrayAccess Expression",

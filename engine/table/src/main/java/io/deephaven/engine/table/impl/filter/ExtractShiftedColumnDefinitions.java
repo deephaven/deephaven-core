@@ -30,7 +30,7 @@ public class ExtractShiftedColumnDefinitions
     public Set<ShiftedColumnDefinition> visitWhereFilter(final WhereFilter filter) {
         if (filter instanceof AbstractConditionFilter
                 && ((AbstractConditionFilter) filter).hasConstantArrayAccess()) {
-            return new HashSet<>(((AbstractConditionFilter) filter).getFormulaShiftedColumnDefinitions().values());
+            return new HashSet<>(((AbstractConditionFilter) filter).getFormulaShiftedColumnDefinitions().getSecond());
         }
         return WhereFilter.Visitor.super.visitWhereFilter(filter);
     }

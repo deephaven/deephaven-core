@@ -37,7 +37,7 @@ public interface FormulaColumn extends SelectColumn {
      * @return true or false
      */
     default boolean hasConstantArrayAccess() {
-        return getFormulaShiftedColumnDefinitions() != null;
+        return getFormulaShiftedColumnDefinitions() != null && !getFormulaShiftedColumnDefinitions().isEmpty();
     }
 
     /**

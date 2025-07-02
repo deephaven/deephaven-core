@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.UncheckedDeephavenException;
+import io.deephaven.base.Pair;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
@@ -60,7 +61,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
 
     private FormulaAnalyzer.Result analyzedFormula;
     private boolean hasConstantValue;
-    private Map<String, ShiftedColumnDefinition> formulaShiftedColumnDefinitions;
+    private Pair<String, Set<ShiftedColumnDefinition>> formulaShiftedColumnDefinitions;
 
     public FormulaColumnPython getFormulaColumnPython() {
         return formulaColumnPython;
@@ -760,20 +761,20 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
 
     @Override
     public Set<ShiftedColumnDefinition> getFormulaShiftedColumnDefinitions() {
-        return new HashSet<>(formulaShiftedColumnDefinitions.values());
+        if (formulaShiftedColumnDefinitions == null) {
+            return null;
+        }
+
+        return formulaShiftedColumnDefinitions.getSecond();
     }
 
     @Override
     public String getShiftedFormulaString() {
         if (formulaShiftedColumnDefinitions == null) {
-            return formulaString;
+            return null;
         }
 
-        String retFormulaString = formulaString;
-        for (final Map.Entry<String, ShiftedColumnDefinition> entry : formulaShiftedColumnDefinitions.entrySet()) {
-            retFormulaString = retFormulaString.replace(entry.getKey(), entry.getValue().getResultColumnName());
-        }
-        return retFormulaString;
+        return formulaShiftedColumnDefinitions.getFirst();
     }
 
     private void compileFormula(@NotNull final QueryCompilerRequestProcessor compilationRequestProcessor) {

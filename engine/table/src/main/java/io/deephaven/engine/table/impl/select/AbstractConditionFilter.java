@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.table.impl.select;
 
+import io.deephaven.base.Pair;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableBooleanChunk;
@@ -46,7 +47,7 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
     boolean usesII;
     boolean usesK;
     private final boolean unboxArguments;
-    private Map<String, ShiftedColumnDefinition> formulaShiftedColumnDefinitions;
+    private Pair<String, Set<ShiftedColumnDefinition>> formulaShiftedColumnDefinitions;
 
     protected AbstractConditionFilter(@NotNull String formula, boolean unboxArguments) {
         this.formula = formula;
@@ -97,23 +98,28 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
             formulaShiftedColumnDefinitions = result.getShiftedColumnDefinitions();
             if (formulaShiftedColumnDefinitions != null) {
                 log.debug().append("Formula (after shift conversion) : ")
-                        .append(formulaShiftedColumnDefinitions.values().stream()
+                        .append(formulaShiftedColumnDefinitions.getSecond().stream()
                                 .map(ShiftedColumnDefinition::toString)
                                 .collect(Collectors.joining(", ")))
                         .endl();
 
                 // apply renames to shift column pairs immediately
                 if (!outerToInnerNames.isEmpty()) {
-                    final Map<String, ShiftedColumnDefinition> resultSet = new LinkedHashMap<>();
-                    formulaShiftedColumnDefinitions.forEach((expr, shift) -> {
+                    String newFormula = formulaShiftedColumnDefinitions.getFirst();
+                    final Set<ShiftedColumnDefinition> resultSet = new LinkedHashSet<>();
+                    for (final ShiftedColumnDefinition shift : formulaShiftedColumnDefinitions.getSecond()) {
                         if (outerToInnerNames.containsKey(shift.getColumnName())) {
                             final String innerName = outerToInnerNames.get(shift.getColumnName());
-                            resultSet.put(expr, new ShiftedColumnDefinition(innerName, shift.getShiftAmount()));
+                            final ShiftedColumnDefinition newDefinition =
+                                    new ShiftedColumnDefinition(innerName, shift.getShiftAmount());
+                            resultSet.add(newDefinition);
+                            newFormula = newFormula.replaceAll(shift.getResultColumnName(),
+                                    newDefinition.getResultColumnName());
                         } else {
-                            resultSet.put(expr, shift);
+                            resultSet.add(shift);
                         }
-                    });
-                    formulaShiftedColumnDefinitions = resultSet;
+                    }
+                    formulaShiftedColumnDefinitions = new Pair(newFormula, resultSet);
                 }
             }
 
@@ -340,7 +346,7 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
      *         and their shifts that this expression has Array Access that conforms to "i +/- &lt;constant&gt;" or "ii
      *         +/- &lt;constant&gt;". If there is a parsing error for the expression null is returned.
      */
-    public Map<String, ShiftedColumnDefinition> getFormulaShiftedColumnDefinitions() {
+    public Pair<String, Set<ShiftedColumnDefinition>> getFormulaShiftedColumnDefinitions() {
         return formulaShiftedColumnDefinitions;
     }
 
