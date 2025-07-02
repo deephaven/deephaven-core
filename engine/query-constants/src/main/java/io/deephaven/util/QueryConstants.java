@@ -191,7 +191,7 @@ public class QueryConstants {
      * {@code Float.toHexString(Math.nextUp(-Float.MAX_VALUE))} in jshell, and tests validate that this matches the
      * expected expression.
      */
-    public static final float MIN_FINITE_FLOAT = -0x1.fffffcp127f; // 0x1.fffffeP+127f
+    public static final float MIN_FINITE_FLOAT = -0x1.fffffcp127f;
 
     /**
      * Maximum finite value of type float.

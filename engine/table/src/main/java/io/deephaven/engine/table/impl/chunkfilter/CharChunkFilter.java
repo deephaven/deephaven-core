@@ -14,7 +14,7 @@ public abstract class CharChunkFilter implements ChunkFilter {
      * Returns {@code true} if the range filter overlaps with the input range, else {@code false}. This function is
      * intended to be accurate rather than fast and is not recommended for performance-critical value comparison.
      *
-     * @throws UnsupportedOperationException not supported for this filter type
+     * @throws CannotComputeOverlapsException if not supported for this filter type
      */
     public abstract boolean overlaps(char inputLower, char inputUpper);
 

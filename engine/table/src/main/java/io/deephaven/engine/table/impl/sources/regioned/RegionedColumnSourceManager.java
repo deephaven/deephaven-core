@@ -1005,12 +1005,6 @@ public class RegionedColumnSourceManager
         public Map<String, String> renameMap() {
             return renameMap;
         }
-
-        @Override
-        public void close() {
-            renameMap.clear();
-            super.close();
-        }
     }
 
     @Override

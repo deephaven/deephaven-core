@@ -11,6 +11,7 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.chunkfilter.CannotComputeOverlapsException;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
 import io.deephaven.engine.table.impl.chunkfilter.ObjectChunkFilter;
 import org.jetbrains.annotations.NotNull;
@@ -163,7 +164,7 @@ final class WhereFilterPatternImpl extends WhereFilterImpl {
     private static abstract class WhereFilterPatternObjectChunkFilter extends ObjectChunkFilter<CharSequence> {
         @Override
         public boolean overlaps(CharSequence inputLower, CharSequence inputUpper) {
-            throw new UnsupportedOperationException("Overlap not supported when using pattern based filters");
+            throw new CannotComputeOverlapsException("Overlap not supported when using pattern based filters");
         }
     }
 

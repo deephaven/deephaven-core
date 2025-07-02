@@ -11,23 +11,27 @@ import io.deephaven.util.SafeCloseable;
  */
 public class PushdownResult implements SafeCloseable {
 
+    // Heuristic cost estimates for different push-down operations. Larger numbers indicate operations that are expected
+    // to touch more data or incur higher I/O latency; the values are strictly relative.
     /**
-     * Heuristic cost estimates for different push-down operations. Larger numbers indicate operations that are expected
-     * to touch more data or incur higher I/O latency; the values are strictly relative.
+     * Only table/row-group statistics are checked, assuming the metadata is already loaded
      */
-    // Only table/row-group statistics are checked, assuming the metadata is already loaded
     public static final long METADATA_STATS_COST = 10_000L;
-
-    // Column-level Bloom-filter needs to be used
+    /**
+     * Column-level Bloom-filter needs to be used
+     */
     public static final long BLOOM_FILTER_COST = 20_000L;
-
-    // Requires querying an in-memory index structure
+    /**
+     * Requires querying an in-memory index structure
+     */
     public static final long IN_MEMORY_DATA_INDEX_COST = 30_000L;
-
-    // Requires reading the min/max values of the column
+    /**
+     * Requires reading the min/max values of the column
+     */
     public static final long SORTED_DATA_COST = 40_000L;
-
-    // Requires reading an external index table to satisfy
+    /**
+     * Requires reading an external index table to satisfy
+     */
     public static final long DEFERRED_DATA_INDEX_COST = 50_000L;
 
     /**

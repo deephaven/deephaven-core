@@ -860,18 +860,14 @@ public class ParquetTableLocation extends AbstractTableLocation {
                     // noinspection unchecked,rawtypes
                     final ObjectChunkFilter objectChunkFilter = (ObjectChunkFilter) chunkFilter;
                     // noinspection unchecked,rawtypes
-                    try {
-                        maybeMatches = (nullCount > 0 && objectChunkFilter.matches(null)) ||
-                                objectChunkFilter.overlaps(minMax.min(), minMax.max());
-                    } catch (final CannotComputeOverlapsException e) {
-                        // If the objectChunkFilter cannot handle the min/max values, we assume everything matches.
-                        maybeMatches = true;
-                    }
+                    maybeMatches = (nullCount > 0 && objectChunkFilter.matches(null)) ||
+                            objectChunkFilter.overlaps(minMax.min(), minMax.max());
                 } else {
                     // Unsupported chunk filter type for push down, so we can't filter anything.
                     maybeMatches = true;
                 }
-            } catch (final UnsupportedOperationException e) {
+            } catch (final CannotComputeOverlapsException e) {
+                // If we can't compute overlaps, we assume that the filter matches all rows.
                 maybeMatches = true;
             }
 
