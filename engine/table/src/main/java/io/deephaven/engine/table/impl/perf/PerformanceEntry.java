@@ -5,6 +5,7 @@ package io.deephaven.engine.table.impl.perf;
 
 import io.deephaven.auth.AuthContext;
 import io.deephaven.base.log.LogOutput;
+import io.deephaven.base.verify.Require;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetShiftData;
@@ -51,7 +52,7 @@ public class PerformanceEntry extends BasePerformanceEntry implements TableListe
         this.operationNumber = operationNumber;
         this.description = description;
         this.callerLine = callerLine;
-        authContext = id == QueryConstants.NULL_INT ? null : ExecutionContext.getContext().getAuthContext();
+        authContext = id == QueryConstants.NULL_LONG ? null : Require.neqNull(ExecutionContext.getContext().getAuthContext(), "authContext");
         this.updateGraphName = updateGraphName;
         startSample = new RuntimeMemory.Sample();
         endSample = new RuntimeMemory.Sample();
