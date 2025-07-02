@@ -76,8 +76,9 @@ public class FloatChunkMatchFilterFactory {
 
         @Override
         public boolean overlaps(float inputLower, float inputUpper) {
-            // true if the range contains ANY float other than the excluded one
-            return !(FloatComparisons.eq(value, inputLower) && FloatComparisons.eq(value, inputUpper));
+            // Any interval wider than one point must include a float not equal to `value`, so we simply need to
+            // check whether we have a single-point range [value,value] or not.
+            return matches(inputLower) || matches(inputUpper);
         }
     }
 
@@ -118,13 +119,20 @@ public class FloatChunkMatchFilterFactory {
 
         @Override
         public boolean overlaps(float inputLower, float inputUpper) {
-            final int maxSteps = 3; // two excluded values
-            for (float value = inputLower, steps = 0; FloatComparisons.leq(value, inputUpper)
-                    && steps < maxSteps; value = Math.nextAfter(value, Float.POSITIVE_INFINITY), ++steps) {
-                if (!FloatComparisons.eq(value, value1) && !FloatComparisons.eq(value, value2)) {
+            // Iterate through the range from inputLower to inputUpper, checking for any value that matches the inverse
+            // condition. We only need to check the first three floats in the range because at max two floats in
+            // the range are excluded (value1 and value2).
+            final int maxSteps = 3;
+            int steps = 0;
+            // @formatter:off
+            for (float value = inputLower;
+                 FloatComparisons.leq(value, inputUpper) && steps < maxSteps;
+                 value = Math.nextAfter(value, Float.POSITIVE_INFINITY), steps++) {
+                if (matches(value)) {
                     return true;
                 }
             }
+            // @formatter:on
             return false;
         }
     }
@@ -175,15 +183,20 @@ public class FloatChunkMatchFilterFactory {
 
         @Override
         public boolean overlaps(float inputLower, float inputUpper) {
-            final int maxSteps = 4; // three excluded values
-            for (float value = inputLower, steps = 0; FloatComparisons.leq(value, inputUpper)
-                    && steps < maxSteps; value = Math.nextAfter(value, Float.POSITIVE_INFINITY), ++steps) {
-                if (!FloatComparisons.eq(value, value1) &&
-                        !FloatComparisons.eq(value, value2) &&
-                        !FloatComparisons.eq(value, value3)) {
+            // Iterate through the range from inputLower to inputUpper, checking for any value that matches the inverse
+            // condition. We only need to check the first four floats in the range because at max three floats
+            // in the range are excluded (value1, value2, and value3).
+            final int maxSteps = 4;
+            int steps = 0;
+            // @formatter:off
+            for (float value = inputLower;
+                 FloatComparisons.leq(value, inputUpper) && steps < maxSteps;
+                 value = Math.nextAfter(value, Float.POSITIVE_INFINITY), steps++) {
+                if (matches(value)) {
                     return true;
                 }
             }
+            // @formatter:on
             return false;
         }
     }
@@ -227,13 +240,20 @@ public class FloatChunkMatchFilterFactory {
 
         @Override
         public boolean overlaps(float inputLower, float inputUpper) {
+            // Iterate through the range from inputLower to inputUpper, checking for any value that matches the inverse
+            // condition. We only need to check the first `values.size() + 1` floats in the range because at max
+            // `values.size()` floats in the range are excluded.
             final int maxSteps = values.size() + 1;
-            for (float value = inputLower, steps = 0; FloatComparisons.leq(value, inputUpper)
-                    && steps < maxSteps; value = Math.nextAfter(value, Float.POSITIVE_INFINITY), ++steps) {
-                if (!values.contains(value)) {
+            int steps = 0;
+            // @formatter:off
+            for (float value = inputLower;
+                 FloatComparisons.leq(value, inputUpper) && steps < maxSteps;
+                 value = Math.nextAfter(value, Float.POSITIVE_INFINITY), steps++) {
+                if (matches(value)) {
                     return true;
                 }
             }
+            // @formatter:on
             return false;
         }
     }

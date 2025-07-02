@@ -80,8 +80,9 @@ public class DoubleChunkMatchFilterFactory {
 
         @Override
         public boolean overlaps(double inputLower, double inputUpper) {
-            // true if the range contains ANY double other than the excluded one
-            return !(DoubleComparisons.eq(value, inputLower) && DoubleComparisons.eq(value, inputUpper));
+            // Any interval wider than one point must include a double not equal to `value`, so we simply need to
+            // check whether we have a single-point range [value,value] or not.
+            return matches(inputLower) || matches(inputUpper);
         }
     }
 
@@ -122,13 +123,20 @@ public class DoubleChunkMatchFilterFactory {
 
         @Override
         public boolean overlaps(double inputLower, double inputUpper) {
-            final int maxSteps = 3; // two excluded values
-            for (double value = inputLower, steps = 0; DoubleComparisons.leq(value, inputUpper)
-                    && steps < maxSteps; value = Math.nextAfter(value, Double.POSITIVE_INFINITY), ++steps) {
-                if (!DoubleComparisons.eq(value, value1) && !DoubleComparisons.eq(value, value2)) {
+            // Iterate through the range from inputLower to inputUpper, checking for any value that matches the inverse
+            // condition. We only need to check the first three doubles in the range because at max two doubles in
+            // the range are excluded (value1 and value2).
+            final int maxSteps = 3;
+            int steps = 0;
+            // @formatter:off
+            for (double value = inputLower;
+                 DoubleComparisons.leq(value, inputUpper) && steps < maxSteps;
+                 value = Math.nextAfter(value, Double.POSITIVE_INFINITY), steps++) {
+                if (matches(value)) {
                     return true;
                 }
             }
+            // @formatter:on
             return false;
         }
     }
@@ -179,15 +187,20 @@ public class DoubleChunkMatchFilterFactory {
 
         @Override
         public boolean overlaps(double inputLower, double inputUpper) {
-            final int maxSteps = 4; // three excluded values
-            for (double value = inputLower, steps = 0; DoubleComparisons.leq(value, inputUpper)
-                    && steps < maxSteps; value = Math.nextAfter(value, Double.POSITIVE_INFINITY), ++steps) {
-                if (!DoubleComparisons.eq(value, value1) &&
-                        !DoubleComparisons.eq(value, value2) &&
-                        !DoubleComparisons.eq(value, value3)) {
+            // Iterate through the range from inputLower to inputUpper, checking for any value that matches the inverse
+            // condition. We only need to check the first four doubles in the range because at max three doubles
+            // in the range are excluded (value1, value2, and value3).
+            final int maxSteps = 4;
+            int steps = 0;
+            // @formatter:off
+            for (double value = inputLower;
+                 DoubleComparisons.leq(value, inputUpper) && steps < maxSteps;
+                 value = Math.nextAfter(value, Double.POSITIVE_INFINITY), steps++) {
+                if (matches(value)) {
                     return true;
                 }
             }
+            // @formatter:on
             return false;
         }
     }
@@ -231,13 +244,20 @@ public class DoubleChunkMatchFilterFactory {
 
         @Override
         public boolean overlaps(double inputLower, double inputUpper) {
+            // Iterate through the range from inputLower to inputUpper, checking for any value that matches the inverse
+            // condition. We only need to check the first `values.size() + 1` doubles in the range because at max
+            // `values.size()` doubles in the range are excluded.
             final int maxSteps = values.size() + 1;
-            for (double value = inputLower, steps = 0; DoubleComparisons.leq(value, inputUpper)
-                    && steps < maxSteps; value = Math.nextAfter(value, Double.POSITIVE_INFINITY), ++steps) {
-                if (!values.contains(value)) {
+            int steps = 0;
+            // @formatter:off
+            for (double value = inputLower;
+                 DoubleComparisons.leq(value, inputUpper) && steps < maxSteps;
+                 value = Math.nextAfter(value, Double.POSITIVE_INFINITY), steps++) {
+                if (matches(value)) {
                     return true;
                 }
             }
+            // @formatter:on
             return false;
         }
     }

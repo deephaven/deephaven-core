@@ -92,7 +92,7 @@ class StringChunkMatchFilterFactory {
         @Override
         public boolean overlaps(String inputLower, String inputUpper) {
             // We can always insert a new value in the input range unless the range is exactly equal to the value.
-            return !(inputLower.equalsIgnoreCase(inputUpper) && value.equalsIgnoreCase(inputLower));
+            return !inputLower.equalsIgnoreCase(inputUpper) || matches(inputLower);
         }
     }
 
@@ -134,8 +134,7 @@ class StringChunkMatchFilterFactory {
         @Override
         public boolean overlaps(String inputLower, String inputUpper) {
             // We can always insert a new value in the input range unless the range is exactly equal to the value.
-            return !(inputLower.equalsIgnoreCase(inputUpper)
-                    && (value1.equalsIgnoreCase(inputLower) || value2.equalsIgnoreCase(inputLower)));
+            return !inputLower.equalsIgnoreCase(inputUpper) || matches(inputLower);
         }
     }
 
@@ -183,10 +182,7 @@ class StringChunkMatchFilterFactory {
         @Override
         public boolean overlaps(String inputLower, String inputUpper) {
             // We can always insert a new value in the input range unless the range is exactly equal to the value.
-            return !(inputLower.equalsIgnoreCase(inputUpper)
-                    && (value1.equalsIgnoreCase(inputLower)
-                            || value2.equalsIgnoreCase(inputLower)
-                            || value3.equalsIgnoreCase(inputLower)));
+            return !inputLower.equalsIgnoreCase(inputUpper) || matches(inputLower);
         }
     }
 
@@ -236,7 +232,7 @@ class StringChunkMatchFilterFactory {
         @Override
         public boolean overlaps(String inputLower, String inputUpper) {
             // We can always insert a new value in the input range unless the range is exactly equal to the value.
-            return !(inputLower.equalsIgnoreCase(inputUpper) && values.containsKey(inputLower));
+            return !inputLower.equalsIgnoreCase(inputUpper) || matches(inputLower);
         }
     }
 }

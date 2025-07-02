@@ -80,8 +80,9 @@ public class ShortChunkMatchFilterFactory {
 
         @Override
         public boolean overlaps(short inputLower, short inputUpper) {
-            // true if the range contains ANY short other than the excluded one
-            return !(ShortComparisons.eq(value, inputLower) && ShortComparisons.eq(value, inputUpper));
+            // Any interval wider than one point must include a short not equal to `value`, so we simply need to
+            // check whether we have a single-point range [value,value] or not.
+            return matches(inputLower) || matches(inputUpper);
         }
     }
 
@@ -122,9 +123,12 @@ public class ShortChunkMatchFilterFactory {
 
         @Override
         public boolean overlaps(short inputLower, short inputUpper) {
-            for (long v = inputLower; v <= inputUpper; v++) { // long to avoid overflow issues
-                final short value = (short) v;
-                if (!ShortComparisons.eq(value, value1) && !ShortComparisons.eq(value, value2)) {
+            // Iterate through the range from inputLower to inputUpper, checking for any value that matches the inverse
+            // condition. We only need to check the first three shorts in the range because at max two shorts in
+            // the range are excluded (value1 and value2).
+            final int maxSteps = 3;
+            for (long v = inputLower, steps = 0; v <= inputUpper && steps < maxSteps; v++, steps++) {
+                if (matches((short) v)) {
                     return true;
                 }
             }
@@ -178,10 +182,12 @@ public class ShortChunkMatchFilterFactory {
 
         @Override
         public boolean overlaps(short inputLower, short inputUpper) {
-            for (long v = inputLower; v <= inputUpper; v++) {
-                final short value = (short) v;
-                if (!ShortComparisons.eq(value, value1) && !ShortComparisons.eq(value, value2)
-                        && !ShortComparisons.eq(value, value3)) {
+            // Iterate through the range from inputLower to inputUpper, checking for any value that matches the inverse
+            // condition. We only need to check the first four shorts in the range because at max three shorts
+            // in the range are excluded (value1, value2, and value3).
+            final int maxSteps = 4;
+            for (long v = inputLower, steps = 0; v <= inputUpper && steps < maxSteps; v++, steps++) {
+                if (matches((short) v)) {
                     return true;
                 }
             }
@@ -228,8 +234,12 @@ public class ShortChunkMatchFilterFactory {
 
         @Override
         public boolean overlaps(short inputLower, short inputUpper) {
-            for (long ci = inputLower; ci <= inputUpper; ci++) {
-                if (!values.contains((short) ci)) {
+            // Iterate through the range from inputLower to inputUpper, checking for any value that matches the inverse
+            // condition. We only need to check the first `values.size() + 1` shorts in the range because at max
+            // `values.size()` shorts in the range are excluded.
+            final int maxSteps = values.size() + 1;
+            for (long v = inputLower, steps = 0; v <= inputUpper && steps < maxSteps; v++, steps++) {
+                if (matches((short) v)) {
                     return true;
                 }
             }

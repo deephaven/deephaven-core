@@ -18,16 +18,12 @@ import java.util.Optional;
 public abstract class MinMaxFromStatistics {
 
     /**
-     * Get the min and max values from the statistics.
-     * <p>
-     * This class assumes that the statistics do not have any {@code NaN} values because {@code NaN} values are
-     * automatically handled for floats and doubles by {@link Statistics.Builder}.
+     * Get the (non-NaN) min and max values from the statistics.
      *
      * @param statistics The statistics to analyze
      * @return An {@link Optional} the min and max values from the statistics, or empty if statistics are missing or
      *         unsupported.
      */
-    // TODO Add unit tests for sanitization of statistics done by Statistics.Builder
     public static Optional<MinMax<?>> get(@Nullable final Statistics<?> statistics) {
         if (statistics == null || !statistics.hasNonNullValue()) {
             // Cannot determine min/max
@@ -69,10 +65,24 @@ public abstract class MinMaxFromStatistics {
                 return wrapMinMax((Integer) statistics.genericGetMin(), (Integer) statistics.genericGetMax());
             case INT64:
                 return wrapMinMax((Long) statistics.genericGetMin(), (Long) statistics.genericGetMax());
-            case DOUBLE:
-                return wrapMinMax((Double) statistics.genericGetMin(), (Double) statistics.genericGetMax());
             case FLOAT:
-                return wrapMinMax((Float) statistics.genericGetMin(), (Float) statistics.genericGetMax());
+                final Float minFloat = (Float) statistics.genericGetMin();
+                final Float maxFloat = (Float) statistics.genericGetMax();
+                if (minFloat.isNaN() || maxFloat.isNaN()) {
+                    // NaN is not a valid min/max value and should have been handled automatically by the Builder logic,
+                    // so we return empty
+                    return Optional.empty();
+                }
+                return wrapMinMax(minFloat, maxFloat);
+            case DOUBLE:
+                final Double minDouble = (Double) statistics.genericGetMin();
+                final Double maxDouble = (Double) statistics.genericGetMax();
+                if (minDouble.isNaN() || maxDouble.isNaN()) {
+                    // NaN is not a valid min/max value and should have been handled automatically by the Builder logic,
+                    // so we return empty
+                    return Optional.empty();
+                }
+                return wrapMinMax((Double) statistics.genericGetMin(), (Double) statistics.genericGetMax());
             case INT96:
                 final long minInstantNanos = InstantNanosFromInt96Materializer.convertValue(statistics.getMinBytes());
                 final long maxInstantNanos = InstantNanosFromInt96Materializer.convertValue(statistics.getMaxBytes());

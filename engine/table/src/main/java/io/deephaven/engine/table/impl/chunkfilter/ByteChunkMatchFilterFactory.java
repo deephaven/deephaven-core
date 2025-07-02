@@ -80,8 +80,9 @@ public class ByteChunkMatchFilterFactory {
 
         @Override
         public boolean overlaps(byte inputLower, byte inputUpper) {
-            // true if the range contains ANY byte other than the excluded one
-            return !(ByteComparisons.eq(value, inputLower) && ByteComparisons.eq(value, inputUpper));
+            // Any interval wider than one point must include a byte not equal to `value`, so we simply need to
+            // check whether we have a single-point range [value,value] or not.
+            return matches(inputLower) || matches(inputUpper);
         }
     }
 
@@ -122,9 +123,12 @@ public class ByteChunkMatchFilterFactory {
 
         @Override
         public boolean overlaps(byte inputLower, byte inputUpper) {
-            for (long v = inputLower; v <= inputUpper; v++) { // long to avoid overflow issues
-                final byte value = (byte) v;
-                if (!ByteComparisons.eq(value, value1) && !ByteComparisons.eq(value, value2)) {
+            // Iterate through the range from inputLower to inputUpper, checking for any value that matches the inverse
+            // condition. We only need to check the first three bytes in the range because at max two bytes in
+            // the range are excluded (value1 and value2).
+            final int maxSteps = 3;
+            for (long v = inputLower, steps = 0; v <= inputUpper && steps < maxSteps; v++, steps++) {
+                if (matches((byte) v)) {
                     return true;
                 }
             }
@@ -178,10 +182,12 @@ public class ByteChunkMatchFilterFactory {
 
         @Override
         public boolean overlaps(byte inputLower, byte inputUpper) {
-            for (long v = inputLower; v <= inputUpper; v++) {
-                final byte value = (byte) v;
-                if (!ByteComparisons.eq(value, value1) && !ByteComparisons.eq(value, value2)
-                        && !ByteComparisons.eq(value, value3)) {
+            // Iterate through the range from inputLower to inputUpper, checking for any value that matches the inverse
+            // condition. We only need to check the first four bytes in the range because at max three bytes
+            // in the range are excluded (value1, value2, and value3).
+            final int maxSteps = 4;
+            for (long v = inputLower, steps = 0; v <= inputUpper && steps < maxSteps; v++, steps++) {
+                if (matches((byte) v)) {
                     return true;
                 }
             }
@@ -228,8 +234,12 @@ public class ByteChunkMatchFilterFactory {
 
         @Override
         public boolean overlaps(byte inputLower, byte inputUpper) {
-            for (long ci = inputLower; ci <= inputUpper; ci++) {
-                if (!values.contains((byte) ci)) {
+            // Iterate through the range from inputLower to inputUpper, checking for any value that matches the inverse
+            // condition. We only need to check the first `values.size() + 1` bytes in the range because at max
+            // `values.size()` bytes in the range are excluded.
+            final int maxSteps = values.size() + 1;
+            for (long v = inputLower, steps = 0; v <= inputUpper && steps < maxSteps; v++, steps++) {
+                if (matches((byte) v)) {
                     return true;
                 }
             }

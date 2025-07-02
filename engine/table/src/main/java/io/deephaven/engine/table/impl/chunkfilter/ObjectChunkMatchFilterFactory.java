@@ -58,18 +58,6 @@ public class ObjectChunkMatchFilterFactory {
         }
     }
 
-    /**
-     * Checks if the given bound is excluded from the set of excluded values.
-     */
-    private static boolean boundIsExcluded(Object bound, Object... excluded) {
-        for (Object ex : excluded) {
-            if (Objects.equals(bound, ex)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     private final static class InverseSingleValueObjectChunkFilter extends ObjectChunkFilter<Object> {
         private final Object value;
 
@@ -84,7 +72,9 @@ public class ObjectChunkMatchFilterFactory {
 
         @Override
         public boolean overlaps(Object inputLower, Object inputUpper) {
-            return !(ObjectComparisons.eq(inputLower, inputUpper) && ObjectComparisons.eq(inputLower, value));
+            // Any interval wider than one point must include an object not equal to `value`, so we simply need to
+            // check whether we have a single-point range [value,value] or not.
+            return matches(inputLower) || matches(inputUpper);
         }
     }
 
@@ -126,7 +116,7 @@ public class ObjectChunkMatchFilterFactory {
         @Override
         public boolean overlaps(Object inputLower, Object inputUpper) {
             // If either bound is NOT an excluded value, the range surely overlaps.
-            if (!boundIsExcluded(inputLower, value1, value2) || !boundIsExcluded(inputUpper, value1, value2)) {
+            if (matches(inputLower) || matches(inputUpper)) {
                 return true;
             }
             throw new CannotComputeOverlapsException("Failed to determine overlap for bounds: " +
@@ -177,8 +167,7 @@ public class ObjectChunkMatchFilterFactory {
         @Override
         public boolean overlaps(Object inputLower, Object inputUpper) {
             // If either bound is NOT an excluded value, the range surely overlaps.
-            if (!boundIsExcluded(inputLower, value1, value2, value3) ||
-                    !boundIsExcluded(inputUpper, value1, value2, value3)) {
+            if (matches(inputLower) || matches(inputUpper)) {
                 return true;
             }
             throw new CannotComputeOverlapsException("Failed to determine overlap for bounds: " + inputLower + " and "
@@ -226,7 +215,7 @@ public class ObjectChunkMatchFilterFactory {
         @Override
         public boolean overlaps(Object inputLower, Object inputUpper) {
             // If either bound is NOT an excluded value, the range surely overlaps.
-            if (!values.contains(inputLower) || !values.contains(inputUpper)) {
+            if (matches(inputLower) || matches(inputUpper)) {
                 return true;
             }
             throw new CannotComputeOverlapsException("Failed to determine overlap for bounds: " + inputLower + " and "

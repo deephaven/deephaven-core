@@ -7,8 +7,6 @@ import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
-import io.deephaven.engine.table.impl.chunkfilter.FloatChunkFilter;
-import io.deephaven.util.annotations.InternalUseOnly;
 import io.deephaven.util.compare.FloatComparisons;
 import io.deephaven.engine.table.impl.chunkfilter.FloatRangeComparator;
 import io.deephaven.engine.table.ColumnSource;
