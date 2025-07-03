@@ -29,6 +29,10 @@ public abstract class FloatPushdownHandler {
             final FloatChunkFilter floatChunkFilter,
             final MinMax<?> minMax,
             final long nullCount) {
+        if (floatChunkFilter.matches(QueryConstants.NAN_FLOAT)) {
+            // Cannot be filtered using statistics because parquet statistics do not include NaN.
+            return true;
+        }
         final float min = TypeUtils.getUnboxedFloat(minMax.min());
         final float max = TypeUtils.getUnboxedFloat(minMax.max());
         final boolean doStatsContainNull = nullCount > 0 || containsDeephavenNullFloat(min, max);

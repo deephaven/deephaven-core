@@ -2,7 +2,7 @@
 // Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
-// ****** Edit CharPushdownHandler and run "./gradlew replicateParquetPushdownHandlers" to regenerate
+// ****** Edit FloatPushdownHandler and run "./gradlew replicateParquetPushdownHandlers" to regenerate
 //
 // @formatter:off
 package io.deephaven.parquet.table.pushdown;
@@ -29,6 +29,10 @@ public abstract class DoublePushdownHandler {
             final DoubleChunkFilter doubleChunkFilter,
             final MinMax<?> minMax,
             final long nullCount) {
+        if (doubleChunkFilter.matches(QueryConstants.NAN_DOUBLE)) {
+            // Cannot be filtered using statistics because parquet statistics do not include NaN.
+            return true;
+        }
         final double min = TypeUtils.getUnboxedDouble(minMax.min());
         final double max = TypeUtils.getUnboxedDouble(minMax.max());
         final boolean doStatsContainNull = nullCount > 0 || containsDeephavenNullDouble(min, max);

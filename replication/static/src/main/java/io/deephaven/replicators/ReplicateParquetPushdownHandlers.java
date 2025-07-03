@@ -4,14 +4,26 @@
 package io.deephaven.replicators;
 
 import java.io.IOException;
+import java.util.Collections;
 
 import static io.deephaven.replication.ReplicatePrimitiveCode.*;
 
 public class ReplicateParquetPushdownHandlers {
     private static final String TASK = "replicateParquetPushdownHandlers";
 
+    private static final String PUSHDOWN_HANDLER_PATH =
+            "extensions/parquet/table/src/main/java/io/deephaven/parquet/table/pushdown/";
+    private static final String CHAR_PUSHDOWN_HANDLER = PUSHDOWN_HANDLER_PATH + "CharPushdownHandler.java";
+    private static final String FLOAT_PUSHDOWN_HANDLER = PUSHDOWN_HANDLER_PATH + "FloatPushdownHandler.java";
+
     public static void main(String[] args) throws IOException {
-        charToAllButBoolean(TASK,
-                "extensions/parquet/table/src/main/java/io/deephaven/parquet/table/pushdown/CharPushdownHandler.java");
+        // char -> short, byte, int, long
+        charToShortAndByte(TASK, CHAR_PUSHDOWN_HANDLER);
+        charToInteger(TASK, CHAR_PUSHDOWN_HANDLER,
+                Collections.emptyMap());
+        charToLong(TASK, CHAR_PUSHDOWN_HANDLER);
+
+        // float -> double
+        floatToAllFloatingPoints(TASK, FLOAT_PUSHDOWN_HANDLER);
     }
 }
