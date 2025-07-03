@@ -57,6 +57,13 @@ public class FlightSession implements AutoCloseable {
     }
 
     /**
+     * @return the session's FlightClient instance
+     */
+    public FlightClient getClient() {
+        return client;
+    }
+
+    /**
      * Create a schema from the existing handle's response.
      *
      * <p>
