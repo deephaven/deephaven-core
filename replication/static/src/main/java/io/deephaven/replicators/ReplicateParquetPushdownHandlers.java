@@ -4,7 +4,6 @@
 package io.deephaven.replicators;
 
 import java.io.IOException;
-import java.util.Collections;
 
 import static io.deephaven.replication.ReplicatePrimitiveCode.*;
 
@@ -19,8 +18,7 @@ public class ReplicateParquetPushdownHandlers {
     public static void main(String[] args) throws IOException {
         // char -> short, byte, int, long
         charToShortAndByte(TASK, CHAR_PUSHDOWN_HANDLER);
-        charToInteger(TASK, CHAR_PUSHDOWN_HANDLER,
-                Collections.emptyMap());
+        charToIntegers(TASK, CHAR_PUSHDOWN_HANDLER);
         charToLong(TASK, CHAR_PUSHDOWN_HANDLER);
 
         // float -> double
