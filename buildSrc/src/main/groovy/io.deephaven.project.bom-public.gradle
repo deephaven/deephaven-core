@@ -1,32 +1,34 @@
 import io.deephaven.project.util.JavaDependencies
 import io.deephaven.project.util.PublishingTools
+import io.deephaven.tools.License
 
 plugins {
     id 'io.deephaven.common-conventions'
     id 'java-platform'
-    id 'maven-publish'
+    // Note: applying `com.vanniktech.maven.publish.base` instead of `com.vanniktech.maven.publish` which gives us more
+    // control over (otherwise `com.vanniktech.maven.publish.JavaPlatform` would be applied by default).
+    id 'com.vanniktech.maven.publish.base'
     id 'signing'
 }
 
-publishing {
-    publications {
-        myPlatform(MavenPublication) {
-            from components.javaPlatform
+project
+        .extensions
+        .getByType(PublishingExtension)
+        .publications
+        .create('myPublication', MavenPublication) {
+            // "javaPlatform" is the component name created by the java-platform plugin (does not provide a constant)
+            from(project.components.named('javaPlatform').get())
             pom {
                 licenses {
                     license {
-                        name = 'The Apache License, Version 2.0'
-                        url = 'https://www.apache.org/licenses/LICENSE-2.0.txt'
+                        name = License.APACHE_LICENSE_NAME
+                        url = License.APACHE_LICENSE_URL
                     }
                 }
             }
         }
-    }
-}
 
-PublishingTools.setupRepositories(project)
-PublishingTools.setupMavenPublication(project, publishing.publications.myPlatform)
-PublishingTools.setupSigning(project, publishing.publications.myPlatform)
+PublishingTools.setupBomPublishing(project)
 
 project.tasks
         .getByName('quick')
