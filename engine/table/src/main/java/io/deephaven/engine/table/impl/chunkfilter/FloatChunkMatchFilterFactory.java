@@ -8,7 +8,6 @@
 package io.deephaven.engine.table.impl.chunkfilter;
 
 import gnu.trove.set.hash.TFloatHashSet;
-import io.deephaven.util.compare.FloatComparisons;
 
 /**
  * Creates chunk filters for float values.
@@ -56,7 +55,7 @@ public class FloatChunkMatchFilterFactory {
 
         @Override
         public boolean matches(float value) {
-            return FloatComparisons.eq(value, this.value);
+            return value == this.value;
         }
     }
 
@@ -69,7 +68,7 @@ public class FloatChunkMatchFilterFactory {
 
         @Override
         public boolean matches(float value) {
-            return !FloatComparisons.eq(value, this.value);
+            return value != this.value;
         }
     }
 
@@ -84,7 +83,7 @@ public class FloatChunkMatchFilterFactory {
 
         @Override
         public boolean matches(float value) {
-            return FloatComparisons.eq(value, value1) || FloatComparisons.eq(value, value2);
+            return value == value1 || value == value2;
         }
     }
 
@@ -99,7 +98,7 @@ public class FloatChunkMatchFilterFactory {
 
         @Override
         public boolean matches(float value) {
-            return !FloatComparisons.eq(value, value1) && !FloatComparisons.eq(value, value2);
+            return value != value1 && value != value2;
         }
     }
 
@@ -116,9 +115,7 @@ public class FloatChunkMatchFilterFactory {
 
         @Override
         public boolean matches(float value) {
-            return FloatComparisons.eq(value, value1) ||
-                    FloatComparisons.eq(value, value2) ||
-                    FloatComparisons.eq(value, value3);
+            return value == value1 || value == value2 || value == value3;
         }
     }
 
@@ -135,9 +132,7 @@ public class FloatChunkMatchFilterFactory {
 
         @Override
         public boolean matches(float value) {
-            return !FloatComparisons.eq(value, value1) &&
-                    !FloatComparisons.eq(value, value2) &&
-                    !FloatComparisons.eq(value, value3);
+            return value != value1 && value != value2 && value != value3;
         }
     }
 

@@ -8,7 +8,6 @@
 package io.deephaven.engine.table.impl.chunkfilter;
 
 import gnu.trove.set.hash.TLongHashSet;
-import io.deephaven.util.compare.LongComparisons;
 
 /**
  * Creates chunk filters for long values.
@@ -56,7 +55,7 @@ public class LongChunkMatchFilterFactory {
 
         @Override
         public boolean matches(long value) {
-            return LongComparisons.eq(value, this.value);
+            return value == this.value;
         }
     }
 
@@ -69,7 +68,7 @@ public class LongChunkMatchFilterFactory {
 
         @Override
         public boolean matches(long value) {
-            return !LongComparisons.eq(value, this.value);
+            return value != this.value;
         }
     }
 
@@ -84,7 +83,7 @@ public class LongChunkMatchFilterFactory {
 
         @Override
         public boolean matches(long value) {
-            return LongComparisons.eq(value, value1) || LongComparisons.eq(value, value2);
+            return value == value1 || value == value2;
         }
     }
 
@@ -99,7 +98,7 @@ public class LongChunkMatchFilterFactory {
 
         @Override
         public boolean matches(long value) {
-            return !LongComparisons.eq(value, value1) && !LongComparisons.eq(value, value2);
+            return value != value1 && value != value2;
         }
     }
 
@@ -116,9 +115,7 @@ public class LongChunkMatchFilterFactory {
 
         @Override
         public boolean matches(long value) {
-            return LongComparisons.eq(value, value1) ||
-                    LongComparisons.eq(value, value2) ||
-                    LongComparisons.eq(value, value3);
+            return value == value1 || value == value2 || value == value3;
         }
     }
 
@@ -135,9 +132,7 @@ public class LongChunkMatchFilterFactory {
 
         @Override
         public boolean matches(long value) {
-            return !LongComparisons.eq(value, value1) &&
-                    !LongComparisons.eq(value, value2) &&
-                    !LongComparisons.eq(value, value3);
+            return value != value1 && value != value2 && value != value3;
         }
     }
 

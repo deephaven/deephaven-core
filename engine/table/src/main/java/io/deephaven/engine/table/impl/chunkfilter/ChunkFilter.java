@@ -50,28 +50,10 @@ public interface ChunkFilter {
      */
     int filterAnd(Chunk<? extends Values> values, WritableBooleanChunk<Values> results);
 
-
-    /**
-     * Base class for filters that are either always true or always false.
-     */
-    interface ConstantChunkFilter extends ChunkFilter {
-        /**
-         * Returns {@code true} if any values between inputLower (inclusive) and inputUpper (inclusive) may be accepted
-         * by this filter. Returns {@code false} if no values between inputLower (inclusive) and inputUpper (inclusive)
-         * can be matched by this filter.
-         */
-        boolean overlaps(Object inputLower, Object inputUpper);
-
-        /**
-         * Returns {@code true} if the filter matches the given value, else {@code false}.
-         */
-        boolean matches(Object value);
-    }
-
     /**
      * A filter that always returns false.
      */
-    ChunkFilter FALSE_FILTER_INSTANCE = new ConstantChunkFilter() {
+    ChunkFilter FALSE_FILTER_INSTANCE = new ChunkFilter() {
         @Override
         public void filter(Chunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
                 WritableLongChunk<OrderedRowKeys> results) {
@@ -97,22 +79,12 @@ public interface ChunkFilter {
             }
             return count;
         }
-
-        @Override
-        public boolean overlaps(Object inputLower, Object inputUpper) {
-            return false;
-        }
-
-        @Override
-        public boolean matches(Object value) {
-            return false;
-        }
     };
 
     /**
      * A filter that always returns true.
      */
-    ChunkFilter TRUE_FILTER_INSTANCE = new ConstantChunkFilter() {
+    ChunkFilter TRUE_FILTER_INSTANCE = new ChunkFilter() {
         @Override
         public void filter(Chunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
                 WritableLongChunk<OrderedRowKeys> results) {
@@ -131,16 +103,6 @@ public interface ChunkFilter {
         public int filterAnd(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
             // No values were set to false
             return 0;
-        }
-
-        @Override
-        public boolean overlaps(Object inputLower, Object inputUpper) {
-            return false;
-        }
-
-        @Override
-        public boolean matches(Object value) {
-            return false;
         }
     };
 
