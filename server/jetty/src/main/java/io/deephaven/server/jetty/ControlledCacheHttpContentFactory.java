@@ -4,10 +4,9 @@
 package io.deephaven.server.jetty;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.ArrayList;
-import java.util.List;
 
-import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.content.FileMappingHttpContentFactory;
 import org.eclipse.jetty.http.content.HttpContent;
@@ -40,8 +39,8 @@ public class ControlledCacheHttpContentFactory extends ResourceHttpContentFactor
         HttpContent.Factory contentFactory = new ControlledCacheHttpContentFactory(baseResource, mimeTypes);
         contentFactory = new FileMappingHttpContentFactory(contentFactory);
         contentFactory = new PreCompressedHttpContentFactory(contentFactory, new ArrayList<>());
-        contentFactory = new ValidatingCachingHttpContentFactory(contentFactory,
-                java.time.Duration.ofSeconds(1).toMillis(), byteBufferPool);
+        contentFactory = new ValidatingCachingHttpContentFactory(contentFactory, Duration.ofSeconds(1).toMillis(),
+                byteBufferPool);
 
         return contentFactory;
     }
