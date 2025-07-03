@@ -16,6 +16,7 @@ public class PushdownResult implements SafeCloseable {
     public static long METADATA_STATS_COST = 10_000L;
     public static long BLOOM_FILTER_COST = 20_000L;
     public static long IN_MEMORY_DATA_INDEX_COST = 30_000L;
+    public static long DICTIONARY_DATA_COST = 35_000L;
     public static long SORTED_DATA_COST = 40_000L;
     public static long DEFERRED_DATA_INDEX_COST = 50_000L;
 

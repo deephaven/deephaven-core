@@ -34,6 +34,12 @@ public class LongChunkFactory implements ChunkFactory {
 
     @NotNull
     @Override
+    public final <ATTR extends Any> LongChunk<ATTR> getNullChunk() {
+        return LongChunk.getNullChunk();
+    }
+
+    @NotNull
+    @Override
     public final <ATTR extends Any> LongChunkChunk<ATTR> getEmptyChunkChunk() {
         return LongChunkChunk.getEmptyChunk();
     }
