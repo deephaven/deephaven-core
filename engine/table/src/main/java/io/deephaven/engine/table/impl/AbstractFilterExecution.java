@@ -582,13 +582,11 @@ abstract class AbstractFilterExecution {
             @NotNull final AbstractFilterExecution.FilterComplete onComplete,
             @NotNull final Consumer<Exception> onError) {
 
-        // TODO: looks like this may need cleanup?
         // Union the added and modified inputs (if needed).
         final WritableRowSet input = runModifiedFilters ? addedInput.union(modifiedInput) : addedInput.copy();
 
         // Short-circuit if there is no input to filter.
         if (input.isEmpty()) {
-            input.close();
             onComplete.accept(RowSetFactory.empty(), RowSetFactory.empty());
             return;
         }
