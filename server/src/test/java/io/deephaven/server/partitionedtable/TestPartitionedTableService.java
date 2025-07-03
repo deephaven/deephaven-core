@@ -3,6 +3,7 @@
 //
 package io.deephaven.server.partitionedtable;
 
+import io.deephaven.auth.AuthContext;
 import io.deephaven.auth.codegen.impl.PartitionedTableServiceContextualAuthWiring;
 import io.deephaven.base.testing.BaseCachedJMockTestCase;
 import io.deephaven.engine.context.ExecutionContext;
@@ -37,10 +38,7 @@ public class TestPartitionedTableService extends BaseCachedJMockTestCase {
         final GetTableRequest getTableRequestMerged = GetTableRequest.newBuilder()
                 .setUniqueBehavior(GetTableRequest.UniqueBehavior.PERMIT_MULTIPLE_KEYS).build();
 
-        final OperationInitializer initializer = OperationInitializer.NON_PARALLELIZABLE;
-        final ControlledUpdateGraph updateGraph = new ControlledUpdateGraph(initializer);
-        final ExecutionContext executionContext = ExecutionContext.newBuilder().setOperationInitializer(initializer)
-                .setUpdateGraph(updateGraph).newQueryScope().newQueryLibrary().build();
+        final ExecutionContext executionContext = makeExecutionContext();
         try (final SafeCloseable ignored = executionContext.open()) {
             final Table keyTable = TableTools.newTable(stringCol("Key", "Apple"));
 
@@ -87,6 +85,17 @@ public class TestPartitionedTableService extends BaseCachedJMockTestCase {
         }
     }
 
+    private static ExecutionContext makeExecutionContext() {
+        final OperationInitializer initializer = OperationInitializer.NON_PARALLELIZABLE;
+        final ControlledUpdateGraph updateGraph = new ControlledUpdateGraph(initializer);
+        updateGraph.enableUnitTestMode();
+        updateGraph.resetForUnitTests(false);
+        final ExecutionContext executionContext = ExecutionContext.newBuilder().setOperationInitializer(initializer)
+                .setUpdateGraph(updateGraph).newQueryScope().newQueryLibrary().build()
+                .withAuthContext(new AuthContext.Anonymous());
+        return executionContext;
+    }
+
     @Test
 
     public void testGetTableTicking() {
@@ -96,13 +105,8 @@ public class TestPartitionedTableService extends BaseCachedJMockTestCase {
         final GetTableRequest getTableRequestMerged = GetTableRequest.newBuilder()
                 .setUniqueBehavior(GetTableRequest.UniqueBehavior.PERMIT_MULTIPLE_KEYS).build();
 
-        final OperationInitializer initializer = OperationInitializer.NON_PARALLELIZABLE;
-        final ControlledUpdateGraph updateGraph = new ControlledUpdateGraph(initializer);
-        updateGraph.enableUnitTestMode();
-        updateGraph.resetForUnitTests(false);
-
-        final ExecutionContext executionContext = ExecutionContext.newBuilder().setOperationInitializer(initializer)
-                .setUpdateGraph(updateGraph).newQueryScope().newQueryLibrary().build();
+        final ExecutionContext executionContext = makeExecutionContext();
+        final ControlledUpdateGraph updateGraph = executionContext.getUpdateGraph().cast();
         try (final SafeCloseable ignored = executionContext.open()) {
             final QueryTable keyTable = TstUtils.testRefreshingTable(stringCol("Key", "Apple"));
 
@@ -139,14 +143,11 @@ public class TestPartitionedTableService extends BaseCachedJMockTestCase {
         final GetTableRequest getTableRequestMerged = GetTableRequest.newBuilder()
                 .setUniqueBehavior(GetTableRequest.UniqueBehavior.PERMIT_MULTIPLE_KEYS).build();
 
-        final OperationInitializer initializer = OperationInitializer.NON_PARALLELIZABLE;
-        final ControlledUpdateGraph updateGraph1 = new ControlledUpdateGraph(initializer);
-        final ExecutionContext executionContext1 = ExecutionContext.newBuilder().setOperationInitializer(initializer)
-                .setUpdateGraph(updateGraph1).newQueryScope().newQueryLibrary().build();
+        final ExecutionContext executionContext1 = makeExecutionContext();
+        final ControlledUpdateGraph updateGraph1 = executionContext1.getUpdateGraph().cast();
 
-        final ControlledUpdateGraph updateGraph2 = new ControlledUpdateGraph(initializer);
-        final ExecutionContext executionContext2 = ExecutionContext.newBuilder().setOperationInitializer(initializer)
-                .setUpdateGraph(updateGraph2).newQueryScope().newQueryLibrary().build();
+        final ExecutionContext executionContext2 = makeExecutionContext();
+        final ControlledUpdateGraph updateGraph2 = executionContext2.getUpdateGraph().cast();
 
         final Table keyTable;
 

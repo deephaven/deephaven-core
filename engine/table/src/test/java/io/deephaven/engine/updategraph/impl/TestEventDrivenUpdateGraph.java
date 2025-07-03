@@ -4,6 +4,7 @@
 package io.deephaven.engine.updategraph.impl;
 
 import io.deephaven.api.agg.Aggregation;
+import io.deephaven.auth.AuthContext;
 import io.deephaven.configuration.DataDir;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryCompiler;
@@ -115,13 +116,7 @@ public class TestEventDrivenUpdateGraph {
     public void testSimpleAdd() {
         final EventDrivenUpdateGraph eventDrivenUpdateGraph = EventDrivenUpdateGraph.newBuilder("TestEDUG").build();
 
-        final ExecutionContext context = ExecutionContext.newBuilder()
-                .setUpdateGraph(eventDrivenUpdateGraph)
-                .emptyQueryScope()
-                .newQueryLibrary()
-                .setOperationInitializer(OPERATION_INITIALIZATION)
-                .setQueryCompiler(compilerForUnitTests())
-                .build();
+        final ExecutionContext context = makeContext(eventDrivenUpdateGraph);
         try (final SafeCloseable ignored = context.open()) {
             final SourceThatRefreshes sourceThatRefreshes = new SourceThatRefreshes(eventDrivenUpdateGraph);
             final Table updated =
@@ -140,13 +135,7 @@ public class TestEventDrivenUpdateGraph {
     public void testSimpleModify() {
         final EventDrivenUpdateGraph eventDrivenUpdateGraph = new EventDrivenUpdateGraph.Builder("TestEDUG").build();
 
-        final ExecutionContext context = ExecutionContext.newBuilder()
-                .setUpdateGraph(eventDrivenUpdateGraph)
-                .emptyQueryScope()
-                .newQueryLibrary()
-                .setOperationInitializer(OPERATION_INITIALIZATION)
-                .setQueryCompiler(compilerForUnitTests())
-                .build();
+        final ExecutionContext context = makeContext(eventDrivenUpdateGraph);
         try (final SafeCloseable ignored = context.open()) {
             final SourceThatModifiesItself modifySource = new SourceThatModifiesItself(eventDrivenUpdateGraph);
             final Table updated =
@@ -168,6 +157,17 @@ public class TestEventDrivenUpdateGraph {
             } while (steps++ < 100);
             TestCase.assertEquals(1, updated.size());
         }
+    }
+
+    private ExecutionContext makeContext(final EventDrivenUpdateGraph eventDrivenUpdateGraph) {
+        return ExecutionContext.newBuilder()
+                .setUpdateGraph(eventDrivenUpdateGraph)
+                .emptyQueryScope()
+                .newQueryLibrary()
+                .setOperationInitializer(OPERATION_INITIALIZATION)
+                .setQueryCompiler(compilerForUnitTests())
+                .build()
+                .withAuthContext(new AuthContext.Anonymous());
     }
 
     @Test
@@ -223,7 +223,11 @@ public class TestEventDrivenUpdateGraph {
 
     @Test
     public void testUpdatePerformanceTracker() {
-        final Table upt = UpdatePerformanceTracker.getQueryTable();
+        final Table upt;
+        try (final SafeCloseable ignored =
+                ExecutionContext.getContext().withAuthContext(new AuthContext.Anonymous()).open()) {
+            upt = UpdatePerformanceTracker.getQueryTable();
+        }
 
         final EventDrivenUpdateGraph eventDrivenUpdateGraph1 = EventDrivenUpdateGraph.newBuilder("TestEDUG1").build();
         final EventDrivenUpdateGraph eventDrivenUpdateGraph2 = EventDrivenUpdateGraph.newBuilder("TestEDUG2").build();
@@ -256,7 +260,8 @@ public class TestEventDrivenUpdateGraph {
                 .newQueryLibrary()
                 .setQueryCompiler(compilerForUnitTests())
                 .setOperationInitializer(OPERATION_INITIALIZATION)
-                .build();
+                .build()
+                .withAuthContext(new AuthContext.Anonymous());
         try (final SafeCloseable ignored = context.open()) {
             final Table uptAgged = upt.where("!isNull(EntryId)").aggBy(
                     Aggregation.AggSum("UsageNanos", "InvocationCount", "RowsModified"),
@@ -269,8 +274,10 @@ public class TestEventDrivenUpdateGraph {
         }
         TableTools.show(inRange);
 
-        final Table compare =
-                inRange.dropColumns("EntryId", "UsageNanos", "EIUExpectedMillis", "TotalExpectedTime");
+        final Table compare;
+        try (final SafeCloseable ignored2 = context.open()) {
+            compare = inRange.dropColumns("EntryId", "UsageNanos", "EIUExpectedMillis", "TotalExpectedTime");
+        }
         TableTools.show(compare);
 
         final Table expect = TableTools.newTable(stringCol("UpdateGraph", "TestEDUG1", "TestEDUG2"),
@@ -296,13 +303,7 @@ public class TestEventDrivenUpdateGraph {
 
     private Object doWork(final EventDrivenUpdateGraph eventDrivenUpdateGraph, final int durationMillis,
             final int steps) {
-        final ExecutionContext context = ExecutionContext.newBuilder()
-                .setUpdateGraph(eventDrivenUpdateGraph)
-                .emptyQueryScope()
-                .newQueryLibrary()
-                .setQueryCompiler(compilerForUnitTests())
-                .setOperationInitializer(OPERATION_INITIALIZATION)
-                .build();
+        final ExecutionContext context = makeContext(eventDrivenUpdateGraph);
         try (final SafeCloseable ignored = context.open()) {
             final SourceThatModifiesItself modifySource = new SourceThatModifiesItself(eventDrivenUpdateGraph);
             final Table updated =

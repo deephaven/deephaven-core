@@ -6,6 +6,7 @@ package io.deephaven.engine.table.impl.util;
 import guru.nidi.graphviz.engine.Format;
 import guru.nidi.graphviz.engine.Graphviz;
 import guru.nidi.graphviz.model.*;
+import io.deephaven.auth.AuthContext;
 import io.deephaven.base.FileUtils;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryCompilerImpl;
@@ -58,7 +59,7 @@ public class TestUpdateAncestorViz {
                 .setQueryCompiler(QueryCompilerImpl.create(
                         cacheDir, TestUpdateAncestorViz.class.getClassLoader()))
                 .setOperationInitializer(ForkJoinPoolOperationInitializer.fromCommonPool())
-                .setUpdateGraph(defaultUpdateGraph).build();
+                .setUpdateGraph(defaultUpdateGraph).build().withAuthContext(new AuthContext.Anonymous());
     }
 
     @AfterEach
@@ -102,8 +103,11 @@ public class TestUpdateAncestorViz {
         final StandaloneLivenessManager manager = new StandaloneLivenessManager(false);
 
         // because we have two separate calls to testGraphGen we should make sure to keep these around for the duration
-        final Table upl = TableLoggers.updatePerformanceLog();
-        final Table ua = TableLoggers.updatePerformanceAncestorsLog();
+        final Table upl, ua;
+        try (final SafeCloseable ignored = executionContext.open()) {
+            upl = TableLoggers.updatePerformanceLog();
+            ua = TableLoggers.updatePerformanceAncestorsLog();
+        }
         manager.manage(upl);
         manager.manage(ua);
 
@@ -151,11 +155,11 @@ public class TestUpdateAncestorViz {
     private void testGraphGen(final String terminalOperation,
             final Map<String, Integer> expectedNodes,
             final ThrowingSupplier<Table, RuntimeException> testSnippet) {
-        final Table upl = TableLoggers.updatePerformanceLog();
-        final Table ua = TableLoggers.updatePerformanceAncestorsLog();
-
         try (final SafeCloseable ignored = executionContext.open();
                 final SafeCloseable ignored2 = LivenessScopeStack.open()) {
+            final Table upl = TableLoggers.updatePerformanceLog();
+            final Table ua = TableLoggers.updatePerformanceAncestorsLog();
+
             // noinspection unused, referential integrity
             final Table result = defaultUpdateGraph.sharedLock().computeLocked(testSnippet);
 

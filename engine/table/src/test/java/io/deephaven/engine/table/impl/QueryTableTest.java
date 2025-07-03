@@ -8,6 +8,7 @@ import io.deephaven.api.Selectable;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.snapshot.SnapshotWhenOptions.Flag;
+import io.deephaven.auth.AuthContext;
 import io.deephaven.base.FileUtils;
 import io.deephaven.base.Pair;
 import io.deephaven.base.log.LogOutput;
@@ -3501,7 +3502,12 @@ public class QueryTableTest extends QueryTableTestBase {
                 // The specific scenario we are trying to catch is when the parent re-uses data structures (i.e. RowSet)
                 // from its parent, which have valid prev values, but the prev values must not be used during the first
                 // cycle.
-                final Thread offugp = new Thread(() -> ft.setValue((QueryTable) nj.getValue().flatten()));
+                final Thread offugp = new Thread(() -> {
+                    try (final SafeCloseable ignored =
+                            ExecutionContext.getContext().withAuthContext(new AuthContext.Anonymous()).open()) {
+                        ft.setValue((QueryTable) nj.getValue().flatten());
+                    }
+                });
                 offugp.start();
                 offugp.join();
             } catch (final Exception e) {

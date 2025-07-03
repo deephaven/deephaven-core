@@ -41,7 +41,8 @@ public class ExportTableUpdateListenerTest {
 
     private static final AuthContext AUTH_CONTEXT = new AuthContext.SuperUser();
 
-    private SafeCloseable executionContext;
+    private ExecutionContext executionContext;
+    private SafeCloseable executionContextCloseable;
     private ControlledUpdateGraph updateGraph;
 
     private TestControlledScheduler scheduler;
@@ -51,7 +52,8 @@ public class ExportTableUpdateListenerTest {
 
     @Before
     public void setup() {
-        executionContext = TestExecutionContext.createForUnitTests().open();
+        executionContext = TestExecutionContext.createForUnitTests();
+        executionContextCloseable = executionContext.open();
         updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.enableUnitTestMode();
         updateGraph.resetForUnitTests(false);
@@ -72,7 +74,7 @@ public class ExportTableUpdateListenerTest {
         session = null;
         observer = null;
 
-        executionContext.close();
+        executionContextCloseable.close();
     }
 
     private ExportedTableUpdateListener createListener(
@@ -84,7 +86,7 @@ public class ExportTableUpdateListenerTest {
     @Test
     public void testLifeCycleStaticTable() {
         final ExportedTableUpdateListener listener = createListener(session, observer);
-        try (final SafeCloseable scope = LivenessScopeStack.open()) {
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
             session.addExportListener(listener);
         }
         expectNoMessage(); // the run is empty
@@ -303,7 +305,8 @@ public class ExportTableUpdateListenerTest {
 
             // Must be off-thread to use concurrent instantiation
             final Thread thread = new Thread(() -> {
-                try (final SafeCloseable scope = LivenessScopeStack.open()) {
+                try (final SafeCloseable ignored = LivenessScopeStack.open();
+                        final SafeCloseable ignored2 = executionContext.open()) {
                     t1.setValue(session.newServerSideExport(src));
                 }
             });

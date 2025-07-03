@@ -44,6 +44,7 @@ public class FunctionGeneratedTableFactory {
     private final Map<String, WritableColumnSource<?>> writableSources = new LinkedHashMap<>();
     private final Map<String, ColumnSource<?>> columns = new LinkedHashMap<>();
     private final TrackingWritableRowSet rowSet;
+    private final ExecutionContext executionContextForUpdates;
 
     private long nextRefresh;
 
@@ -129,6 +130,7 @@ public class FunctionGeneratedTableFactory {
     private FunctionGeneratedTableFactory(@NotNull final Supplier<Table> tableGenerator, final int refreshIntervalMs) {
         this.tableGenerator = tableGenerator;
         this.refreshIntervalMs = refreshIntervalMs;
+        this.executionContextForUpdates = ExecutionContext.getContext();
         nextRefresh = System.currentTimeMillis() + this.refreshIntervalMs;
 
         Table initialTable = tableGenerator.get();
@@ -161,7 +163,10 @@ public class FunctionGeneratedTableFactory {
     }
 
     private long updateTable() {
-        Table newTable = tableGenerator.get();
+        final Table newTable;
+        try (final SafeCloseable ignored = executionContextForUpdates.open()) {
+            newTable = tableGenerator.get();
+        }
         if (newTable.isRefreshing()) {
             if (ExecutionContext.getContext().getUpdateGraph() != newTable.getUpdateGraph()) {
                 throw new IllegalStateException(
