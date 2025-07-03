@@ -3,11 +3,15 @@
 //
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.api.RawString;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.liveness.LiveSupplier;
 import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.filter.ExtractBarriers;
+import io.deephaven.engine.table.impl.filter.ExtractInnerConjunctiveFilters;
+import io.deephaven.engine.table.impl.filter.ExtractRespectedBarriers;
 import io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
@@ -112,11 +116,27 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
         protected TableAndRemainingFilters getWithWhere(WhereFilter... whereFilters) {
             final List<WhereFilter> partitionFilters = new ArrayList<>();
             final List<WhereFilter> otherFilters = new ArrayList<>();
+
+            boolean serialFilterFound = false;
+            final Set<Object> partitionBarriers = new HashSet<>();
             for (WhereFilter whereFilter : whereFilters) {
-                if (!(whereFilter instanceof ReindexingFilter)
+                if (!whereFilter.permitParallelization()) {
+                    serialFilterFound = true;
+                }
+
+                final boolean isPartitioningFilter = !(whereFilter instanceof ReindexingFilter)
                         && ((PartitionAwareSourceTable) table).isValidAgainstColumnPartitionTable(
-                                whereFilter.getColumns(), whereFilter.getColumnArrays())) {
+                                whereFilter.getColumns(), whereFilter.getColumnArrays());
+
+                final boolean missingBarrier = !partitionBarriers.containsAll(ExtractRespectedBarriers.of(whereFilter));
+                if (serialFilterFound || missingBarrier) {
+                    otherFilters.add(whereFilter);
+                    continue;
+                }
+
+                if (isPartitioningFilter) {
                     partitionFilters.add(whereFilter);
+                    partitionBarriers.addAll(ExtractBarriers.of(whereFilter));
                 } else {
                     otherFilters.add(whereFilter);
                 }
@@ -125,6 +145,13 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
             final Table result = partitionFilters.isEmpty()
                     ? table
                     : table.where(Filter.and(partitionFilters));
+
+            if (!partitionBarriers.isEmpty()) {
+                final WhereFilter trueFilter = WhereFilter.of(RawString.of("true"));
+                otherFilters.addAll(0, partitionBarriers.stream()
+                        .map(barrier -> trueFilter.copy().withBarrier(barrier))
+                        .collect(Collectors.toSet()));
+            }
 
             return new TableAndRemainingFilters(result.coalesce(),
                     otherFilters.toArray(WhereFilter.ZERO_LENGTH_WHERE_FILTER_ARRAY));
@@ -263,30 +290,54 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
 
     @Override
     public Table where(Filter filter) {
-        return whereImpl(WhereFilter.fromInternal(filter));
+        return whereImpl(ExtractInnerConjunctiveFilters.of(ConjunctiveFilter.of(WhereFilter.fromInternal(filter))));
     }
 
-    private Table whereImpl(final WhereFilter[] whereFilters) {
-        if (whereFilters.length == 0) {
+    private Table whereImpl(final List<WhereFilter> whereFilters) {
+        if (whereFilters.isEmpty()) {
             return prepareReturnThis();
         }
 
         final QueryCompilerRequestProcessor.BatchProcessor compilationProcessor = QueryCompilerRequestProcessor.batch();
         final List<WhereFilter> partitionFilters = new ArrayList<>();
         final List<WhereFilter> otherFilters = new ArrayList<>();
+
+        boolean serialFilterFound = false;
+        boolean partitioningFilterFound = false;
+        final Set<Object> partitionBarriers = new HashSet<>();
         for (WhereFilter whereFilter : whereFilters) {
             whereFilter.init(definition, compilationProcessor);
-            if (!(whereFilter instanceof ReindexingFilter)
-                    && isValidAgainstColumnPartitionTable(whereFilter.getColumns(), whereFilter.getColumnArrays())) {
+
+            if (!whereFilter.permitParallelization()) {
+                serialFilterFound = true;
+            }
+
+            final boolean isPartitioningFilter = !(whereFilter instanceof ReindexingFilter)
+                    && isValidAgainstColumnPartitionTable(whereFilter.getColumns(), whereFilter.getColumnArrays());
+            partitioningFilterFound |= isPartitioningFilter;
+
+            final boolean missingBarrier = !partitionBarriers.containsAll(ExtractRespectedBarriers.of(whereFilter));
+            if (serialFilterFound || missingBarrier) {
+                otherFilters.add(whereFilter);
+                continue;
+            }
+
+            if (isPartitioningFilter) {
                 partitionFilters.add(whereFilter);
+                partitionBarriers.addAll(ExtractBarriers.of(whereFilter));
             } else {
                 otherFilters.add(whereFilter);
             }
         }
         compilationProcessor.compile();
 
-        // If we have no partition filters, we defer all filters.
         if (partitionFilters.isEmpty()) {
+            if (partitioningFilterFound) {
+                // unfortunately we found a partitioning filter but could not re-prioritize it
+                return coalesce().where(Filter.and(otherFilters));
+            }
+
+            // If we have no partition filters, we defer all filters.
             return new DeferredViewTable(definition, getDescription() + "-withDeferredFilters",
                     new PartitionAwareTableReference(this), null, null,
                     otherFilters.toArray(WhereFilter.ZERO_LENGTH_WHERE_FILTER_ARRAY));
@@ -297,6 +348,14 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
         final Table withPartitionsFiltered = QueryPerformanceRecorder.withNugget(
                 "getFilteredTable(" + partitionFilters + ")", () -> getFilteredTable(partitionFilters));
         final Table coalesced = withPartitionsFiltered.coalesce();
+
+        if (!partitionBarriers.isEmpty()) {
+            final WhereFilter trueFilter = WhereFilter.of(RawString.of("true"));
+            otherFilters.addAll(0, partitionBarriers.stream()
+                    .map(barrier -> trueFilter.copy().withBarrier(barrier))
+                    .collect(Collectors.toSet()));
+        }
+
         return otherFilters.isEmpty()
                 ? coalesced
                 : coalesced.where(Filter.and(otherFilters));
