@@ -106,7 +106,7 @@ public abstract class CopyingPermutedBlinkFirstOrLastChunkedOperator extends Bas
                 try (final RowSequence sliceSources =
                         RowSequenceFactory.wrapRowKeysChunkAsRowSequence(WritableLongChunk.downcast(sourceIndices))) {
                     for (int ci = 0; ci < numResultColumns; ++ci) {
-                        final Chunk<? extends Values> inputChunk =
+                        final Chunk inputChunk =
                                 inputColumns[ci].getChunk(inputContexts[ci], sliceSources);
                         permuteKernels[ci].permute(inputChunk, sourceIndicesOrder, outputChunks[ci]);
                         outputColumns[ci].fillFromChunk(outputContexts[ci], outputChunks[ci], sliceDestinations);
