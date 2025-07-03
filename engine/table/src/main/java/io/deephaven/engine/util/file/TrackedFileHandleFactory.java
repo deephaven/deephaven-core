@@ -142,10 +142,8 @@ public class TrackedFileHandleFactory implements FileHandleFactory {
             // Synchronous cleanup at full capacity.
             cleanup();
         }
-        final FileChannel fileChannel = FileChannel.open(file.toPath(), openOptions);
-        final CloseRecorder closeRecorder = new CloseRecorder();
-        final FileHandle handle = new FileHandle(fileChannel, closeRecorder);
-        handleReferences.add(new HandleReference(handle, fileChannel, closeRecorder));
+        final FileHandle handle = FileHandle.open(file.toPath(), CloseRecorder::new, openOptions);
+        handleReferences.add(new HandleReference(handle));
         return handle;
     }
 
@@ -207,16 +205,15 @@ public class TrackedFileHandleFactory implements FileHandleFactory {
         }
     }
 
-    private class HandleReference extends WeakReference<FileHandle> {
+    private static class HandleReference extends WeakReference<FileHandle> {
 
         private final FileChannel fileChannel;
-        private final CloseRecorder closeRecorder;
+        private final Runnable closeRecorder;
 
-        private HandleReference(@NotNull final FileHandle referent, @NotNull final FileChannel fileChannel,
-                @NotNull final CloseRecorder closeRecorder) {
+        private HandleReference(@NotNull final FileHandle referent) {
             super(referent);
-            this.fileChannel = fileChannel;
-            this.closeRecorder = closeRecorder;
+            this.fileChannel = referent.fileChannel();
+            this.closeRecorder = referent.postCloseProcedure();
         }
 
         private void reclaim() {
