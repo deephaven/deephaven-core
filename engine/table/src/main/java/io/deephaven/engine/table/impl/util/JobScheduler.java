@@ -118,6 +118,7 @@ public interface JobScheduler {
         private final Consumer<Exception> onError;
         private final IterateResumeAction<CONTEXT_TYPE> action;
         private final Runnable onComplete;
+        private final Runnable onCompleteCleanup;
 
         private final AtomicInteger nextAvailableTaskIndex;
         private final AtomicInteger remainingTaskCount;
@@ -129,6 +130,7 @@ public interface JobScheduler {
                 final int count,
                 @NotNull final IterateResumeAction<CONTEXT_TYPE> action,
                 @NotNull final Runnable onComplete,
+                @NotNull final Runnable onCompleteCleanup,
                 @NotNull final Consumer<Exception> onError) {
             this.description = description;
             this.start = start;
@@ -136,6 +138,7 @@ public interface JobScheduler {
             this.onError = onError;
             this.action = action;
             this.onComplete = onComplete;
+            this.onCompleteCleanup = onCompleteCleanup;
 
             nextAvailableTaskIndex = new AtomicInteger(start);
             remainingTaskCount = new AtomicInteger(count);
@@ -147,7 +150,7 @@ public interface JobScheduler {
                 @Nullable final ExecutionContext executionContext,
                 @NotNull final Supplier<CONTEXT_TYPE> taskThreadContextFactory,
                 final int maxThreads) {
-            // Increment this once in order to maintain >=1 until completed
+            // Increment this once in order to maintain >=1 until all tasks have been submitted
             incrementReferenceCount();
             final int numTaskInvokers = Math.min(maxThreads, scheduler.threadCount());
             for (int tii = 0; tii < numTaskInvokers; ++tii) {
@@ -164,42 +167,45 @@ public interface JobScheduler {
                 scheduler.submit(executionContext, taskInvoker::execute, description,
                         IterationManager::onUnexpectedJobError);
             }
+            decrementReferenceCount();
         }
 
         private void onTaskComplete() {
             if (remainingTaskCount.decrementAndGet() == 0) {
                 Assert.eqNull(exception.get(), "exception.get()");
-                decrementReferenceCount();
             }
         }
 
         private void onTaskError(@NotNull final Exception e) {
-            if (exception.compareAndSet(null, e)) {
-                decrementReferenceCount();
-            }
+            exception.compareAndSet(null, e);
         }
 
         @Override
         protected void onReferenceCountAtZero() {
             final Exception localException = exception.get();
             if (localException != null) {
-                try {
-                    onError.accept(localException);
-                } catch (Exception e) {
-                    e.addSuppressed(localException);
-                    onUnexpectedJobError(e);
-                }
+                invokeOnError(localException);
                 return;
             }
             try {
                 onComplete.run();
             } catch (Exception e) {
-                try {
-                    onError.accept(e);
-                } catch (Exception e2) {
-                    e2.addSuppressed(e);
-                    onUnexpectedJobError(e2);
-                }
+                invokeOnError(e);
+                return;
+            }
+            try {
+                onCompleteCleanup.run();
+            } catch (Exception e) {
+                onUnexpectedJobError(e);
+            }
+        }
+
+        private void invokeOnError(@NotNull final Exception exception) {
+            try {
+                onError.accept(exception);
+            } catch (Exception e) {
+                e.addSuppressed(exception);
+                onUnexpectedJobError(e);
             }
         }
 
@@ -336,7 +342,9 @@ public interface JobScheduler {
      * @param count the number of times this task should be called
      * @param action the task to perform, the current iteration index is provided as a parameter
      * @param onComplete this will be called when all iterations are complete
-     * @param onError error handler for the scheduler to use while iterating
+     * @param onCompleteCleanup called after onComplete successfully returns. If the invocation of the cleanup throws an
+     *        exception, onError will <em>not</em> be called.
+     * @param onError error handler for the scheduler to use while iterating, or if onComplete throws an exception.
      */
     @FinalDefault
     default <CONTEXT_TYPE extends JobThreadContext> void iterateParallel(
@@ -347,6 +355,7 @@ public interface JobScheduler {
             final int count,
             @NotNull final IterateAction<CONTEXT_TYPE> action,
             @NotNull final Runnable onComplete,
+            @NotNull final Runnable onCompleteCleanup,
             @NotNull final Consumer<Exception> onError) {
         iterateParallel(executionContext, description, taskThreadContextFactory, start, count,
                 (final CONTEXT_TYPE taskThreadContext,
@@ -355,8 +364,7 @@ public interface JobScheduler {
                         final Runnable resume) -> {
                     action.run(taskThreadContext, taskIndex, nestedErrorConsumer);
                     resume.run();
-                },
-                onComplete, onError);
+                }, onComplete, onCompleteCleanup, onError);
     }
 
     /**
@@ -372,7 +380,9 @@ public interface JobScheduler {
      * @param count the number of times this task should be called
      * @param action the task to perform, the current iteration index and a resume Runnable are parameters
      * @param onComplete this will be called when all iterations are complete
-     * @param onError error handler for the scheduler to use while iterating
+     * @param onCompleteCleanup called after onComplete successfully returns. If the invocation of the cleanup throws an
+     *        exception, onError will <em>not</em> be called.
+     * @param onError error handler for the scheduler to use while iterating, or if onComplete throws an exception.
      */
     @FinalDefault
     default <CONTEXT_TYPE extends JobThreadContext> void iterateParallel(
@@ -383,15 +393,20 @@ public interface JobScheduler {
             final int count,
             @NotNull final IterateResumeAction<CONTEXT_TYPE> action,
             @NotNull final Runnable onComplete,
+            @NotNull final Runnable onCompleteCleanup,
             @NotNull final Consumer<Exception> onError) {
-
         if (count == 0) {
-            // no work to do
-            onComplete.run();
+            try {
+                onComplete.run();
+            } catch (Exception e) {
+                onError.accept(e);
+                return;
+            }
+            onCompleteCleanup.run();
+            return;
         }
-
         final IterationManager<CONTEXT_TYPE> iterationManager =
-                new IterationManager<>(description, start, count, action, onComplete, onError);
+                new IterationManager<>(description, start, count, action, onComplete, onCompleteCleanup, onError);
         iterationManager.startTasks(this, executionContext, taskThreadContextFactory, count);
     }
 
@@ -408,7 +423,9 @@ public interface JobScheduler {
      * @param count the number of times this task should be called
      * @param action the task to perform, the current iteration index and a resume Runnable are parameters
      * @param onComplete this will be called when all iterations are complete
-     * @param onError error handler for the scheduler to use while iterating
+     * @param onCompleteCleanup called after onComplete successfully returns. If the invocation of the cleanup throws an
+     *        exception, onError will <em>not</em> be called.
+     * @param onError error handler for the scheduler to use while iterating, or if onComplete throws an exception.
      */
     @FinalDefault
     default <CONTEXT_TYPE extends JobThreadContext> void iterateSerial(
@@ -419,15 +436,20 @@ public interface JobScheduler {
             final int count,
             @NotNull final IterateResumeAction<CONTEXT_TYPE> action,
             @NotNull final Runnable onComplete,
+            @NotNull final Runnable onCompleteCleanup,
             @NotNull final Consumer<Exception> onError) {
-
         if (count == 0) {
-            // no work to do
-            onComplete.run();
+            try {
+                onComplete.run();
+            } catch (Exception e) {
+                onError.accept(e);
+                return;
+            }
+            onCompleteCleanup.run();
+            return;
         }
-
         final IterationManager<CONTEXT_TYPE> iterationManager =
-                new IterationManager<>(description, start, count, action, onComplete, onError);
+                new IterationManager<>(description, start, count, action, onComplete, onCompleteCleanup, onError);
         iterationManager.startTasks(this, executionContext, taskThreadContextFactory, 1);
     }
 }
