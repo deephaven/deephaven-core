@@ -57,6 +57,8 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
     private final SessionService sessionService;
     private final HierarchicalTableServiceContextualAuthWiring authWiring;
     private final TicketResolver.Authorization authTransformation;
+    @NotNull
+    private final ColumnExpressionValidator columnExpressionValidator;
 
     private static class UpdateViewRequest {
         final Selectable columnSpec;
@@ -72,11 +74,13 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
     public HierarchicalTableServiceGrpcImpl(
             @NotNull final TicketRouter ticketRouter,
             @NotNull final SessionService sessionService,
-            @NotNull final AuthorizationProvider authorizationProvider) {
+            @NotNull final AuthorizationProvider authorizationProvider,
+            @NotNull final ColumnExpressionValidator columnExpressionValidator) {
         this.ticketRouter = ticketRouter;
         this.sessionService = sessionService;
         this.authWiring = authorizationProvider.getHierarchicalTableServiceContextualAuthWiring();
         this.authTransformation = authorizationProvider.getTicketResolverAuthorization();
+        this.columnExpressionValidator = columnExpressionValidator;
     }
 
     @Override
@@ -397,7 +401,7 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
     }
 
     @Nullable
-    private static Collection<UpdateViewRequest> translateAndValidateUpdateViews(
+    private Collection<UpdateViewRequest> translateAndValidateUpdateViews(
             @NotNull final HierarchicalTableApplyRequest request,
             @NotNull final HierarchicalTable<?> inputHierarchicalTable) {
         if (request.getUpdateViewsCount() == 0) {
@@ -412,7 +416,7 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
                 .map(Strings::of)
                 .toArray(String[]::new);
         final SelectColumn[] expressions = SelectColumn.from(selectables);
-        ColumnExpressionValidator.validateColumnExpressions(expressions, columnSpecs, source);
+        columnExpressionValidator.validateColumnExpressions(expressions, columnSpecs, source);
 
         return request.getUpdateViewsList().stream()
                 .map(uvr -> new UpdateViewRequest(
@@ -422,7 +426,7 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
     }
 
     @Nullable
-    private static Collection<UpdateViewRequest> translateAndValidateFormatViews(
+    private Collection<UpdateViewRequest> translateAndValidateFormatViews(
             @NotNull final HierarchicalTableApplyRequest request,
             @NotNull final HierarchicalTable<?> inputHierarchicalTable) {
         if (request.getFormatViewsCount() == 0) {
@@ -437,7 +441,7 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
                 .map(Strings::of)
                 .toArray(String[]::new);
         final SelectColumn[] expressions = SelectColumn.from(selectables);
-        ColumnExpressionValidator.validateColumnExpressions(expressions, columnSpecs, source);
+        columnExpressionValidator.validateColumnExpressions(expressions, columnSpecs, source);
 
         return request.getFormatViewsList().stream()
                 .map(uvr -> new UpdateViewRequest(
