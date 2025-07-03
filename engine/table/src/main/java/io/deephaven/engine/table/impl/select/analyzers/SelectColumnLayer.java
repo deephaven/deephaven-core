@@ -291,6 +291,8 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                     }
                     onSuccess.run();
                 },
+                () -> {
+                },
                 onError);
     }
 

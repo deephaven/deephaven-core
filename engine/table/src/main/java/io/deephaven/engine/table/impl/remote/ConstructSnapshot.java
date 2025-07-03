@@ -1422,6 +1422,8 @@ public class ConstructSnapshot {
                         columnSources.subList(colRank, colRank + 1),
                         usePrev, snapshot),
                 () -> waitForParallelSnapshot.complete(null),
+                () -> {
+                },
                 waitForParallelSnapshot::completeExceptionally);
         try {
             waitForParallelSnapshot.get();

@@ -504,7 +504,10 @@ public abstract class UpdateBy {
                             }
                             inputSourceReferenceCounts.set(srcIdx, useCount);
                         }
-                    }, onComputeComplete, this::onError);
+                    }, onComputeComplete,
+                    () -> {
+                    },
+                    this::onError);
         }
 
         /**
@@ -556,7 +559,8 @@ public abstract class UpdateBy {
                                 }
                             });
                         }
-                    }, onParallelPopulationComplete, this::onError);
+                    }, onParallelPopulationComplete, () -> {
+                    }, this::onError);
         }
 
         /**
@@ -613,7 +617,10 @@ public abstract class UpdateBy {
                             }
                             windowComplete.run();
                         }, nestedErrorConsumer);
-                    }, onWindowsComplete, this::onError);
+                    }, onWindowsComplete,
+                    () -> {
+                    },
+                    this::onError);
         }
 
         /**
@@ -692,7 +699,11 @@ public abstract class UpdateBy {
                                         opSetComplete.run();
                                     }, nestedErrorConsumer);
                         }, nestedErrorConsumer);
-                    }, onProcessWindowOperatorsComplete, onProcessWindowOperatorsError);
+                    },
+                    onProcessWindowOperatorsComplete,
+                    () -> {
+                    },
+                    onProcessWindowOperatorsError);
         }
 
         /**
@@ -716,6 +727,8 @@ public abstract class UpdateBy {
                     (context, idx, nestedErrorConsumer, sourceComplete) -> createCachedColumnSource(
                             srcIndices[idx], sourceComplete, nestedErrorConsumer),
                     onCachingComplete,
+                    () -> {
+                    },
                     onCachingError);
         }
 
@@ -790,6 +803,7 @@ public abstract class UpdateBy {
                         // assign this now
                         maybeCachedInputSources[srcIdx] = outputSource;
                         onSourceComplete.run();
+                    }, () -> {
                     }, onSourceError);
         }
 
@@ -852,7 +866,8 @@ public abstract class UpdateBy {
                                     context.chunkContexts,
                                     initialStep);
                         }
-                    }, onProcessWindowOperatorSetComplete, onProcessWindowOperatorSetError);
+                    }, onProcessWindowOperatorSetComplete, () -> {
+                    }, onProcessWindowOperatorSetError);
         }
 
 
