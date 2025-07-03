@@ -31,10 +31,22 @@ public class ObjectChunk<T, ATTR extends Any> extends ChunkBase<ATTR> {
     @SuppressWarnings("rawtypes")
     private static final ObjectChunk EMPTY = new ObjectChunk<>(ArrayTypeUtils.EMPTY_OBJECT_ARRAY, 0, 0);
 
+    // region NULL_definition
+    @SuppressWarnings("rawtypes")
+    private static final ObjectChunk NULL = new ObjectChunk<>(ArrayTypeUtils.objectNullArray(1), 0, 1);
+    // endregion NULL_definition
+
     public static <T, ATTR extends Any> ObjectChunk<T, ATTR> getEmptyChunk() {
         // noinspection unchecked
         return EMPTY;
     }
+
+    // region getNullChunk
+    public static <T, ATTR extends Any> ObjectChunk<T, ATTR> getNullChunk() {
+        // noinspection unchecked
+        return NULL;
+    }
+    // endregion getNullChunk
 
     @SuppressWarnings("rawtypes")
     private static final ObjectChunk[] EMPTY_OBJECT_CHUNK_ARRAY = new ObjectChunk[0];

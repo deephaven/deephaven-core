@@ -270,6 +270,13 @@ public class QueryTable extends BaseTable<QueryTable> {
             Configuration.getInstance().getBooleanWithDefault("QueryTable.disableWherePushdownDataIndex", false);
 
     /**
+     * Disable the usage of parquet row group dictionaries during push-down filtering.
+     */
+    public static boolean DISABLE_WHERE_PUSHDOWN_PARQUET_DICTIONARY =
+            Configuration.getInstance().getBooleanWithDefault("QueryTable.disableWherePushdownParquetDictionary",
+                    false);
+
+    /**
      * You can choose to enable or disable the column parallel select and update.
      */
     static boolean ENABLE_PARALLEL_SELECT_AND_UPDATE =

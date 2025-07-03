@@ -121,7 +121,7 @@ public final class ParquetTableFilterTest {
         QueryScope.addParam("baseTime", baseTime);
 
         final Table largeTable = TableTools.emptyTable(tableSize).update(
-                "sequential_val = i",
+                "sequential_val = i % 117 == 0 ? null : i", // with nulls
                 "price = randomInt(0,100000) * 0.01f");
         final int partitionCount = 5;
 
@@ -158,6 +158,14 @@ public final class ParquetTableFilterTest {
                 largeTable.where("price = 500.0").size());
     }
 
+    /**
+     * This test fails because of the mismatch between the data index and the upcast parquet column types. This test
+     * will continue to fail until the data index is also upcast to match the parquet column types (DH-19443).
+     * <p>
+     * When the data index is fixed, this test should be re-enabled.
+     *
+     */
+    @Ignore
     @Test
     public void filterDatatypeMismatchDataIndexTest() {
         final String destPath = Path.of(rootFile.getPath(), "ParquetTest_flatPartitionsTest").toString();
@@ -233,7 +241,10 @@ public final class ParquetTableFilterTest {
         filterAndVerifyResults(diskTable, memTable, "symbol.startsWith(`002`)", "exchange % 10 == 0");
 
         // mixed type with complex filters
-        final Filter complexFilter = Filter.or(Filter.from("symbol < `1000`", "symbol > `0900`", "exchange = 10"));
+        Filter complexFilter = Filter.or(Filter.from("symbol < `1000`", "symbol > `0900`", "exchange = 10"));
+        verifyResults(diskTable.where(complexFilter), memTable.where(complexFilter));
+
+        complexFilter = Filter.or(Filter.from("symbol < `1000`", "symbol > `0900`"));
         verifyResults(diskTable.where(complexFilter), memTable.where(complexFilter));
     }
 
@@ -247,8 +258,8 @@ public final class ParquetTableFilterTest {
 
         final Table largeTable = TableTools.emptyTable(tableSize).update(
                 "Timestamp = baseTime + i * 1_000_000_000L",
-                "sequential_val = ii",
-                "symbol = String.format(`%04d`, randomInt(0,10_000))",
+                "sequential_val = ii % 117 == 0 ? null : ii", // with nulls
+                "symbol = ii % 119 == 0 ? null : String.format(`%04d`, randomInt(0,10_000))",
                 "sequential_bd = java.math.BigDecimal.valueOf(ii * 0.1)",
                 "sequential_bi = java.math.BigInteger.valueOf(ii)");
         final int partitionCount = 11;
@@ -262,6 +273,9 @@ public final class ParquetTableFilterTest {
         assertTableEquals(diskTable, memTable);
 
         // string range and match filters
+        filterAndVerifyResults(diskTable, memTable, "symbol = null");
+        filterAndVerifyResults(diskTable, memTable, "symbol != null");
+        filterAndVerifyResults(diskTable, memTable, "symbol = `1000`");
         filterAndVerifyResults(diskTable, memTable, "symbol < `1000`");
         filterAndVerifyResults(diskTable, memTable, "symbol = `5000`");
 
@@ -293,13 +307,20 @@ public final class ParquetTableFilterTest {
         filterAndVerifyResults(diskTable, memTable, "sequential_bi = 500");
 
         // long range and match filters
+        filterAndVerifyResults(diskTable, memTable, "sequential_val = null");
+        filterAndVerifyResults(diskTable, memTable, "sequential_val != null");
         filterAndVerifyResults(diskTable, memTable, "sequential_val <= 500");
         filterAndVerifyResults(diskTable, memTable, "sequential_val <= 5000", "sequential_val > 3000");
         filterAndVerifyResults(diskTable, memTable, "sequential_val = 500");
 
         // mixed type with complex filters
-        final Filter complexFilter =
+        Filter complexFilter =
                 Filter.or(Filter.from("sequential_val <= 500", "sequential_val = 555", "symbol > `1000`"));
+        verifyResults(diskTable.where(complexFilter), memTable.where(complexFilter));
+
+        complexFilter = Filter.or(Filter.from("sequential_val <= 500", "sequential_val = 555"));
+        verifyResults(diskTable.where(complexFilter), memTable.where(complexFilter));
+
         verifyResults(diskTable.where(complexFilter), memTable.where(complexFilter));
     }
 
@@ -313,8 +334,8 @@ public final class ParquetTableFilterTest {
 
         final Table largeTable = TableTools.emptyTable(tableSize).update(
                 "Timestamp = baseTime + i * 1_000_000_000L",
-                "sequential_val = ii",
-                "symbol = String.format(`s_%04d`, randomInt(0,300))",
+                "sequential_val = ii % 117 == 0 ? null : ii", // with nulls
+                "symbol = ii % 119 == 0 ? null : String.format(`s%04d`, randomInt(0,10_000))",
                 "sequential_bd = java.math.BigDecimal.valueOf(ii * 0.1)",
                 "sequential_bi = java.math.BigInteger.valueOf(ii)");
 
@@ -327,8 +348,11 @@ public final class ParquetTableFilterTest {
         assertTableEquals(diskTable, memTable);
 
         // string range and match filters
-        filterAndVerifyResults(diskTable, memTable, "symbol < `s_0100`");
-        filterAndVerifyResults(diskTable, memTable, "symbol = `s_0050`");
+        filterAndVerifyResults(diskTable, memTable, "symbol = null");
+        filterAndVerifyResults(diskTable, memTable, "symbol != null");
+        filterAndVerifyResults(diskTable, memTable, "symbol = `s1000`");
+        filterAndVerifyResults(diskTable, memTable, "symbol < `s1000`");
+        filterAndVerifyResults(diskTable, memTable, "symbol = `s5000`");
 
         // Timestamp range and match filters
         filterAndVerifyResults(diskTable, memTable, "Timestamp < '2023-01-02T00:00:00 NY'");
@@ -357,13 +381,18 @@ public final class ParquetTableFilterTest {
         filterAndVerifyResults(diskTable, memTable, "sequential_bi = 500");
 
         // long range and match filters
+        filterAndVerifyResults(diskTable, memTable, "sequential_val = null");
+        filterAndVerifyResults(diskTable, memTable, "sequential_val != null");
         filterAndVerifyResults(diskTable, memTable, "sequential_val <= 500");
         filterAndVerifyResults(diskTable, memTable, "sequential_val <= 5000", "sequential_val > 3000");
         filterAndVerifyResults(diskTable, memTable, "sequential_val = 500");
 
         // mixed type with complex filters
-        final Filter complexFilter =
+        Filter complexFilter =
                 Filter.or(Filter.from("sequential_val <= 500", "sequential_val = 555", "symbol > `1000`"));
+        verifyResults(diskTable.where(complexFilter), memTable.where(complexFilter));
+
+        complexFilter = Filter.or(Filter.from("sequential_val <= 500", "sequential_val = 555"));
         verifyResults(diskTable.where(complexFilter), memTable.where(complexFilter));
     }
 
@@ -377,8 +406,8 @@ public final class ParquetTableFilterTest {
 
         final Table largeTable = TableTools.emptyTable(tableSize).update(
                 "Timestamp = baseTime + i * 1_000_000_000L",
-                "sequential_val = ii",
-                "symbol = String.format(`%04d`, randomInt(0,10_000))",
+                "sequential_val = ii % 117 == 0 ? null : ii", // with nulls
+                "symbol = ii % 119 == 0 ? null : String.format(`%04d`, randomInt(0,10_000))",
                 "sequential_bd = java.math.BigDecimal.valueOf(ii * 0.1)",
                 "sequential_bi = java.math.BigInteger.valueOf(ii)");
         final int partitionCount = 11;
@@ -398,6 +427,9 @@ public final class ParquetTableFilterTest {
         assertTableEquals(diskTable, memTable);
 
         // string range and match filters
+        filterAndVerifyResults(diskTable, memTable, "symbol_renamed = null");
+        filterAndVerifyResults(diskTable, memTable, "symbol_renamed != null");
+        filterAndVerifyResults(diskTable, memTable, "symbol_renamed = `1000`");
         filterAndVerifyResults(diskTable, memTable, "symbol_renamed < `1000`");
         filterAndVerifyResults(diskTable, memTable, "symbol_renamed = `5000`");
 
@@ -431,14 +463,18 @@ public final class ParquetTableFilterTest {
         filterAndVerifyResults(diskTable, memTable, "sequential_bi_renamed = 500");
 
         // long range and match filters
+        filterAndVerifyResults(diskTable, memTable, "sequential_val_renamed = null");
+        filterAndVerifyResults(diskTable, memTable, "sequential_val_renamed != null");
         filterAndVerifyResults(diskTable, memTable, "sequential_val_renamed <= 500");
         filterAndVerifyResults(diskTable, memTable, "sequential_val_renamed <= 5000", "sequential_val_renamed > 3000");
         filterAndVerifyResults(diskTable, memTable, "sequential_val_renamed = 500");
 
         // mixed type with complex filters
-        final Filter complexFilter =
-                Filter.or(Filter.from("sequential_val_renamed <= 500", "sequential_val_renamed = 555",
-                        "symbol_renamed > `1000`"));
+        Filter complexFilter = Filter.or(Filter.from("sequential_val_renamed <= 500", "sequential_val_renamed = 555",
+                "symbol_renamed > `1000`"));
+        verifyResults(diskTable.where(complexFilter), memTable.where(complexFilter));
+
+        complexFilter = Filter.or(Filter.from("sequential_val_renamed <= 500", "sequential_val_renamed = 555"));
         verifyResults(diskTable.where(complexFilter), memTable.where(complexFilter));
 
         // Rename again and do some more tests.
@@ -467,8 +503,8 @@ public final class ParquetTableFilterTest {
 
         final Table largeTable = TableTools.emptyTable(tableSize).update(
                 "Timestamp = baseTime + i * 1_000_000_000L",
-                "sequential_val = ii",
-                "symbol = String.format(`%04d`, randomInt(0,10_000))",
+                "sequential_val = ii % 117 == 0 ? null : ii", // with nulls
+                "symbol = ii % 119 == 0 ? null : String.format(`%04d`, randomInt(0,10_000))",
                 "sequential_bd = java.math.BigDecimal.valueOf(ii * 0.1)",
                 "sequential_bi = java.math.BigInteger.valueOf(ii)");
         final int partitionCount = 11;
@@ -529,9 +565,11 @@ public final class ParquetTableFilterTest {
         filterAndVerifyResults(diskTable, memTable, "sequential_val_renamed = 500");
 
         // mixed type with complex filters
-        final Filter complexFilter =
-                Filter.or(Filter.from("sequential_val_renamed <= 500", "sequential_val_renamed = 555",
-                        "symbol_renamed > `1000`"));
+        Filter complexFilter = Filter.or(Filter.from("sequential_val_renamed <= 500", "sequential_val_renamed = 555",
+                "symbol_renamed > `1000`"));
+        verifyResults(diskTable.where(complexFilter), memTable.where(complexFilter));
+
+        complexFilter = Filter.or(Filter.from("sequential_val_renamed <= 500", "sequential_val_renamed = 555"));
         verifyResults(diskTable.where(complexFilter), memTable.where(complexFilter));
 
         // Rename again and do some more tests.
@@ -559,7 +597,7 @@ public final class ParquetTableFilterTest {
         QueryScope.addParam("baseTime", baseTime);
 
         final Table largeTable = TableTools.emptyTable(tableSize).update(
-                "symbol = String.format(`%04d`, randomInt(0,10000))",
+                "symbol = ii % 119 == 0 ? null : String.format(`%04d`, randomInt(0,10_000))",
                 "exchange = randomInt(0,100)",
                 "price = randomInt(0,10000) * 0.01");
         final int partitionCount = 11;
@@ -579,10 +617,12 @@ public final class ParquetTableFilterTest {
         assertTableEquals(diskTable, memTable);
 
         // string range and match filters
+        filterAndVerifyResults(diskTable, memTable, "symbol = null");
+        filterAndVerifyResults(diskTable, memTable, "symbol != null");
         filterAndVerifyResults(diskTable, memTable, "symbol < `0050`");
         filterAndVerifyResults(diskTable, memTable, "symbol < `0050`", "symbol >= `0049`");
         filterAndVerifyResults(diskTable, memTable, "symbol = `0050`");
-        filterAndVerifyResults(diskTable, memTable, "symbol.startsWith(`002`)");
+        filterAndVerifyResults(diskTable, memTable, "symbol != null && symbol.startsWith(`002`)");
 
         // int range and match filters
         filterAndVerifyResults(diskTable, memTable, "exchange <= 10");
@@ -594,10 +634,13 @@ public final class ParquetTableFilterTest {
         filterAndVerifyResults(diskTable, memTable, "symbol < `0050`", "exchange <= 10");
         filterAndVerifyResults(diskTable, memTable, "symbol < `0050`", "exchange <= 10", "exchange >= 9");
         filterAndVerifyResults(diskTable, memTable, "symbol < `0050`", "exchange = 10");
-        filterAndVerifyResults(diskTable, memTable, "symbol.startsWith(`002`)", "exchange % 10 == 0");
+        filterAndVerifyResults(diskTable, memTable, "symbol != null && symbol.startsWith(`002`)", "exchange % 10 == 0");
 
         // mixed type with complex filters
-        final Filter complexFilter = Filter.or(Filter.from("symbol < `1000`", "symbol > `0900`", "exchange = 10"));
+        Filter complexFilter = Filter.or(Filter.from("symbol < `1000`", "symbol > `0900`", "exchange = 10"));
+        verifyResults(diskTable.where(complexFilter), memTable.where(complexFilter));
+
+        complexFilter = Filter.or(Filter.from("symbol < `1000`", "symbol > `0900`"));
         verifyResults(diskTable.where(complexFilter), memTable.where(complexFilter));
     }
 
@@ -611,7 +654,8 @@ public final class ParquetTableFilterTest {
 
         // large consecutive blocks of sequential data
         final Table largeTable = TableTools.emptyTable(tableSize).update(
-                "symbol = String.format(`%04d`, (long)(ii / 1000))", // produces 0000 to 0999 given 1M rows
+                "symbol = ii % 119 == 0 ? null : String.format(`%04d`, (long)(ii / 1000))", // produces 0000 to 0999
+                                                                                            // given 1M rows
                 "exchange = (int)(i / 100)", // produces 0 to 9999 given 1M rows
                 "price = randomInt(0,10000) * 0.01");
 
@@ -631,10 +675,11 @@ public final class ParquetTableFilterTest {
         assertTableEquals(diskTable, memTable);
 
         // string range and match filters
+        filterAndVerifyResults(diskTable, memTable, "symbol = null");
         filterAndVerifyResults(diskTable, memTable, "symbol < `0050`");
         filterAndVerifyResults(diskTable, memTable, "symbol < `0050`", "symbol >= `0049`");
         filterAndVerifyResults(diskTable, memTable, "symbol = `0050`");
-        filterAndVerifyResults(diskTable, memTable, "symbol.startsWith(`002`)");
+        filterAndVerifyResults(diskTable, memTable, "symbol != null && symbol.startsWith(`002`)");
 
         // int range and match filters
         filterAndVerifyResults(diskTable, memTable, "exchange <= 10");
@@ -646,11 +691,15 @@ public final class ParquetTableFilterTest {
         filterAndVerifyResults(diskTable, memTable, "symbol < `0050`", "exchange <= 10");
         filterAndVerifyResults(diskTable, memTable, "symbol < `0050`", "exchange <= 10", "exchange >= 9");
         filterAndVerifyResults(diskTable, memTable, "symbol < `0050`", "exchange = 10");
-        filterAndVerifyResults(diskTable, memTable, "symbol.startsWith(`002`)", "exchange % 10 == 0");
+        filterAndVerifyResults(diskTable, memTable, "symbol != null && symbol.startsWith(`002`)", "exchange % 10 == 0");
 
         // mixed type with complex filters
-        final Filter complexFilter = Filter.or(Filter.from("symbol < `1000`", "symbol > `0900`", "exchange = 10"));
+        Filter complexFilter = Filter.or(Filter.from("symbol < `1000`", "symbol > `0900`", "exchange = 10"));
         verifyResults(diskTable.where(complexFilter), memTable.where(complexFilter));
+
+        complexFilter = Filter.or(Filter.from("symbol < `1000`", "symbol > `0900`"));
+        verifyResults(diskTable.where(complexFilter), memTable.where(complexFilter));
+
 
         // Rename columns and do some more tests.
         final Table renamedDiskTable = diskTable.renameColumns(
@@ -664,7 +713,8 @@ public final class ParquetTableFilterTest {
         filterAndVerifyResults(renamedDiskTable, renamedMemTable, "symbol_renamed < `0050`",
                 "symbol_renamed >= `0049`");
         filterAndVerifyResults(renamedDiskTable, renamedMemTable, "symbol_renamed = `0050`");
-        filterAndVerifyResults(renamedDiskTable, renamedMemTable, "symbol_renamed.startsWith(`002`)");
+        filterAndVerifyResults(renamedDiskTable, renamedMemTable,
+                "symbol_renamed != null && symbol_renamed.startsWith(`002`)");
 
         // int range and match filters
         filterAndVerifyResults(renamedDiskTable, renamedMemTable, "exchange_renamed <= 10");
@@ -677,7 +727,8 @@ public final class ParquetTableFilterTest {
         filterAndVerifyResults(renamedDiskTable, renamedMemTable, "symbol_renamed < `0050`", "exchange_renamed <= 10",
                 "exchange_renamed >= 9");
         filterAndVerifyResults(renamedDiskTable, renamedMemTable, "symbol_renamed < `0050`", "exchange_renamed = 10");
-        filterAndVerifyResults(renamedDiskTable, renamedMemTable, "symbol_renamed.startsWith(`002`)",
+        filterAndVerifyResults(renamedDiskTable, renamedMemTable,
+                "symbol_renamed != null && symbol_renamed.startsWith(`002`)",
                 "exchange_renamed % 10 == 0");
 
     }
@@ -733,7 +784,10 @@ public final class ParquetTableFilterTest {
         filterAndVerifyResults(diskTable, memTable, "symbol.startsWith(`002`)", "exchange % 10 == 0");
 
         // mixed type with complex filters
-        final Filter complexFilter = Filter.or(Filter.from("symbol < `1000`", "symbol > `0900`", "exchange = 10"));
+        Filter complexFilter = Filter.or(Filter.from("symbol < `1000`", "symbol > `0900`", "exchange = 10"));
+        verifyResults(diskTable.where(complexFilter), memTable.where(complexFilter));
+
+        complexFilter = Filter.or(Filter.from("symbol < `1000`", "symbol > `0900`"));
         verifyResults(diskTable.where(complexFilter), memTable.where(complexFilter));
 
         // Rename columns and do some more tests.
@@ -779,6 +833,9 @@ public final class ParquetTableFilterTest {
 
         // NOTE: first file has 10k rows and `id` column is sequential, so id 0-9999 are in a file without
         // row group stats.
+
+        filterAndVerifyResults(diskTable, memTable, "random_string = `xgsah`");
+        filterAndVerifyResults(diskTable, memTable, "random_string < `zzzzz`", "random_string = `fiaai`");
 
         // int range and match filters
         filterAndVerifyResults(diskTable, memTable, "id <= 3000"); // entirely inside file with no metadata

@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl.sources.regioned;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.*;
@@ -26,7 +27,6 @@ import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.ReferentialIntegrity;
-import io.deephaven.util.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -69,9 +69,19 @@ public class RegionedColumnSourceManager
     private final List<ColumnDefinition<?>> columnDefinitions;
 
     /**
+     * The column definitions of this table as a map from column name.
+     */
+    private Map<String, ColumnDefinition<?>> columnNameToDefinition;
+
+    /**
      * The column sources that make up this table.
      */
     private final Map<String, RegionedColumnSource<?>> columnSources = new LinkedHashMap<>();
+
+    /**
+     * The column sources of this table as a map from column source to column name.
+     */
+    private Map<ColumnSource<?>, String> columnSourceToName;
 
     /**
      * An unmodifiable view of columnSources.
@@ -863,7 +873,6 @@ public class RegionedColumnSourceManager
     @Override
     public long estimatePushdownFilterCost(
             final WhereFilter filter,
-            final Map<String, String> renameMap,
             final RowSet selection,
             final RowSet fullSet,
             final boolean usePrev,
@@ -879,7 +888,7 @@ public class RegionedColumnSourceManager
             return overlappingRegionsSample
                     .parallelStream()
                     .mapToLong(overlappingRegion -> overlappingRegion.tle.location.estimatePushdownFilterCost(
-                            filter, renameMap, overlappingRegion.rowSet, fullSet, usePrev, context))
+                            filter, overlappingRegion.rowSet, fullSet, usePrev, context))
                     .min()
                     .orElse(Long.MAX_VALUE);
         }
@@ -888,7 +897,6 @@ public class RegionedColumnSourceManager
     @Override
     public void pushdownFilter(
             final WhereFilter filter,
-            final Map<String, String> renameMap,
             final RowSet input,
             final RowSet fullSet,
             final boolean usePrev,
@@ -903,9 +911,8 @@ public class RegionedColumnSourceManager
             return;
         }
 
-        final RowSetBuilderRandom matchBuilder = RowSetFactory.builderRandom();
-        final RowSetBuilderRandom maybeMatchBuilder = RowSetFactory.builderRandom();
-        final MutableLong maybeMatchCount = new MutableLong(0);
+        final WritableRowSet matches = RowSetFactory.empty();
+        final WritableRowSet maybeMatches = RowSetFactory.empty();
 
         // Use the job scheduler to run every location in parallel.
         jobScheduler.iterateParallel(
@@ -917,62 +924,95 @@ public class RegionedColumnSourceManager
                     try (final RegionInfoHolder regionInfo = overlappingRegions.get(idx)) {
                         final int regionIndex = regionInfo.tle.regionIndex;
                         final TableLocation location = regionInfo.tle.location;
-                        final WritableRowSet overlappingRowSet = regionInfo.rowSet;
 
                         final long locationStartKey = getFirstRowKey(regionIndex);
                         final Consumer<PushdownResult> resultConsumer = result -> {
                             try (final PushdownResult ignored = result) {
                                 // Add the results to the global set.
                                 if (result.match().isNonempty()) {
-                                    synchronized (matchBuilder) {
+                                    synchronized (matches) {
                                         result.match().shiftInPlace(locationStartKey);
-                                        matchBuilder.addRowSet(result.match());
+                                        matches.insert(result.match());
                                     }
                                 }
                                 if (result.maybeMatch().isNonempty()) {
-                                    synchronized (maybeMatchBuilder) {
+                                    synchronized (maybeMatches) {
                                         result.maybeMatch().shiftInPlace(locationStartKey);
-                                        maybeMatchBuilder.addRowSet(result.maybeMatch());
-                                        maybeMatchCount.add(result.maybeMatch().size());
+                                        maybeMatches.insert(result.maybeMatch());
+                                        // maybeMatchCount.add(result.maybeMatch().size());
                                     }
                                 }
                             }
                         };
-                        location.pushdownFilter(filter, renameMap, overlappingRowSet, fullSet, usePrev,
-                                context, costCeiling, jobScheduler, resultConsumer, onError);
+                        location.pushdownFilter(filter, regionInfo.rowSet, fullSet, usePrev, context,
+                                costCeiling, jobScheduler, resultConsumer, onError);
                     }
                     locationResume.run();
-                }, () -> onComplete.accept(PushdownResult.of(matchBuilder.build(),
-                        maybeMatchCount.get() == input.size() ? input.copy() : maybeMatchBuilder.build())),
+                }, () -> onComplete.accept(PushdownResult.of(matches, maybeMatches)),
                 onError);
     }
 
-    @Override
-    public Map<String, String> renameMap(final WhereFilter filter, final ColumnSource<?>[] filterSources) {
-        final Map<? extends ColumnSource<?>, String> lookupMap = getColumnSources().entrySet().stream()
-                .collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey));
+    public static class RegionedColumnSourcePushdownFilterContext extends BasePushdownFilterContext {
+        public final List<ColumnDefinition<?>> columnDefinitions;
+        public final Map<String, String> renameMap;
 
-        final List<String> filterColumns = filter.getColumns();
+        public RegionedColumnSourcePushdownFilterContext(
+                final RegionedColumnSourceManager manager,
+                final WhereFilter filter,
+                final List<ColumnSource<?>> columnSources) {
+            super(filter, columnSources);
 
-        final Map<String, String> renameMap = new HashMap<>();
-        for (int ii = 0; ii < filterColumns.size(); ii++) {
-            final String filterColumnName = filterColumns.get(ii);
-            final ColumnSource<?> filterSource = filterSources[ii];
-            final String localColumnName = lookupMap.get(filterSource);
-            if (localColumnName == null) {
-                throw new IllegalArgumentException(
-                        "No associated source for '" + filterColumnName + "' found in column sources");
+            final List<String> filterColumns = filter.getColumns();
+            Require.eq(filterColumns.size(), "filterColumns.size()",
+                    columnSources.size(), "columnSources.size()");
+
+            // We know the column sources are in the same order as the filter columns, build a rename map and collect
+            // column definitions for the filter sources
+            columnDefinitions = new ArrayList<>(columnSources.size());
+
+            // Maybe populate some useful lookup maps
+            if (manager.columnSourceToName == null) {
+                manager.columnSourceToName = manager.columnSources.entrySet().stream()
+                        .collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey));
             }
-            if (localColumnName.equals(filterColumnName)) {
-                continue;
+            if (manager.columnNameToDefinition == null) {
+                manager.columnNameToDefinition = manager.columnDefinitions.stream()
+                        .collect(Collectors.toMap(ColumnDefinition::getName, cd -> cd));
             }
-            renameMap.put(filterColumnName, localColumnName);
+
+            renameMap = new HashMap<>();
+            for (int ii = 0; ii < filterColumns.size(); ii++) {
+                final String filterColumnName = filterColumns.get(ii);
+                final ColumnSource<?> filterSource = columnSources.get(ii);
+                final String localColumnName = manager.columnSourceToName.get(filterSource);
+                if (localColumnName == null) {
+                    throw new IllegalArgumentException(
+                            "No associated source for '" + filterColumnName + "' found in column sources");
+                }
+                // Add the definition.
+                columnDefinitions.add(manager.columnNameToDefinition.get(localColumnName));
+
+                // Add the rename (if needed)
+                if (localColumnName.equals(filterColumnName)) {
+                    continue;
+                }
+                renameMap.put(filterColumnName, localColumnName);
+            }
         }
-        return renameMap;
+
+        @Override
+        public void close() {
+            columnDefinitions.clear();
+            renameMap.clear();
+            closeList.close();
+            super.close();
+        }
     }
 
     @Override
-    public PushdownFilterContext makePushdownFilterContext() {
-        return new BasePushdownFilterContext();
+    public PushdownFilterContext makePushdownFilterContext(
+            final WhereFilter filter,
+            final List<ColumnSource<?>> filterSources) {
+        return new RegionedColumnSourcePushdownFilterContext(this, filter, filterSources);
     }
 }
