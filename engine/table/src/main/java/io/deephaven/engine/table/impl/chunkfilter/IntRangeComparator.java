@@ -22,7 +22,7 @@ public class IntRangeComparator {
         }
     }
 
-    final static class IntIntInclusiveInclusiveFilter extends IntIntFilter {
+    private final static class IntIntInclusiveInclusiveFilter extends IntIntFilter {
         private IntIntInclusiveInclusiveFilter(int lower, int upper) {
             super(lower, upper);
         }
@@ -31,9 +31,14 @@ public class IntRangeComparator {
         public boolean matches(int value) {
             return IntComparisons.geq(value, lower) && IntComparisons.leq(value, upper);
         }
+
+        @Override
+        public boolean overlaps(int inputLower, int inputUpper) {
+            return IntComparisons.geq(inputUpper, lower) && IntComparisons.geq(upper, inputLower);
+        }
     }
 
-    final static class IntIntInclusiveExclusiveFilter extends IntIntFilter {
+    private final static class IntIntInclusiveExclusiveFilter extends IntIntFilter {
         private IntIntInclusiveExclusiveFilter(int lower, int upper) {
             super(lower, upper);
         }
@@ -42,9 +47,14 @@ public class IntRangeComparator {
         public boolean matches(int value) {
             return IntComparisons.geq(value, lower) && IntComparisons.lt(value, upper);
         }
+
+        @Override
+        public boolean overlaps(int inputLower, int inputUpper) {
+            return IntComparisons.geq(inputUpper, lower) && IntComparisons.gt(upper, inputLower);
+        }
     }
 
-    final static class IntIntExclusiveInclusiveFilter extends IntIntFilter {
+    private final static class IntIntExclusiveInclusiveFilter extends IntIntFilter {
         private IntIntExclusiveInclusiveFilter(int lower, int upper) {
             super(lower, upper);
         }
@@ -53,9 +63,14 @@ public class IntRangeComparator {
         public boolean matches(int value) {
             return IntComparisons.gt(value, lower) && IntComparisons.leq(value, upper);
         }
+
+        @Override
+        public boolean overlaps(int inputLower, int inputUpper) {
+            return IntComparisons.gt(inputUpper, lower) && IntComparisons.geq(upper, inputLower);
+        }
     }
 
-    final static class IntIntExclusiveExclusiveFilter extends IntIntFilter {
+    private final static class IntIntExclusiveExclusiveFilter extends IntIntFilter {
         private IntIntExclusiveExclusiveFilter(int lower, int upper) {
             super(lower, upper);
         }
@@ -63,6 +78,11 @@ public class IntRangeComparator {
         @Override
         public boolean matches(int value) {
             return IntComparisons.gt(value, lower) && IntComparisons.lt(value, upper);
+        }
+
+        @Override
+        public boolean overlaps(int inputLower, int inputUpper) {
+            return IntComparisons.gt(inputUpper, lower) && IntComparisons.gt(upper, inputLower);
         }
     }
 

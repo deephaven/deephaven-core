@@ -1,13 +1,11 @@
 //
 // Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
-// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
-// ****** Edit CharChunkMatchFilterFactory and run "./gradlew replicateChunkFilters" to regenerate
-//
-// @formatter:off
 package io.deephaven.engine.table.impl.chunkfilter;
 
+import gnu.trove.iterator.TFloatIterator;
 import gnu.trove.set.hash.TFloatHashSet;
+import io.deephaven.util.compare.FloatComparisons;
 
 /**
  * Creates chunk filters for float values.
@@ -55,7 +53,12 @@ public class FloatChunkMatchFilterFactory {
 
         @Override
         public boolean matches(float value) {
-            return value == this.value;
+            return FloatComparisons.eq(value, this.value);
+        }
+
+        @Override
+        public boolean overlaps(float inputLower, float inputUpper) {
+            return FloatComparisons.leq(inputLower, value) && FloatComparisons.leq(value, inputUpper);
         }
     }
 
@@ -68,7 +71,14 @@ public class FloatChunkMatchFilterFactory {
 
         @Override
         public boolean matches(float value) {
-            return value != this.value;
+            return !FloatComparisons.eq(value, this.value);
+        }
+
+        @Override
+        public boolean overlaps(float inputLower, float inputUpper) {
+            // Any interval wider than one point must include a float not equal to `value`, so we simply need to
+            // check whether we have a single-point range [value,value] or not.
+            return matches(inputLower) || matches(inputUpper);
         }
     }
 
@@ -83,7 +93,13 @@ public class FloatChunkMatchFilterFactory {
 
         @Override
         public boolean matches(float value) {
-            return value == value1 || value == value2;
+            return FloatComparisons.eq(value, value1) || FloatComparisons.eq(value, value2);
+        }
+
+        @Override
+        public boolean overlaps(float inputLower, float inputUpper) {
+            return (FloatComparisons.leq(inputLower, value1) && FloatComparisons.leq(value1, inputUpper)) ||
+                    (FloatComparisons.leq(inputLower, value2) && FloatComparisons.leq(value2, inputUpper));
         }
     }
 
@@ -98,7 +114,26 @@ public class FloatChunkMatchFilterFactory {
 
         @Override
         public boolean matches(float value) {
-            return value != value1 && value != value2;
+            return !FloatComparisons.eq(value, value1) && !FloatComparisons.eq(value, value2);
+        }
+
+        @Override
+        public boolean overlaps(float inputLower, float inputUpper) {
+            // Iterate through the range from inputLower to inputUpper, checking for any value that matches the inverse
+            // condition. We only need to check the first three floats in the range because at max two floats in
+            // the range are excluded (value1 and value2).
+            final int maxSteps = 3;
+            int steps = 0;
+            // @formatter:off
+            for (float value = inputLower;
+                 FloatComparisons.leq(value, inputUpper) && steps < maxSteps;
+                 value = Math.nextAfter(value, Float.POSITIVE_INFINITY), steps++) {
+                if (matches(value)) {
+                    return true;
+                }
+            }
+            // @formatter:on
+            return false;
         }
     }
 
@@ -115,7 +150,16 @@ public class FloatChunkMatchFilterFactory {
 
         @Override
         public boolean matches(float value) {
-            return value == value1 || value == value2 || value == value3;
+            return FloatComparisons.eq(value, value1) ||
+                    FloatComparisons.eq(value, value2) ||
+                    FloatComparisons.eq(value, value3);
+        }
+
+        @Override
+        public boolean overlaps(float inputLower, float inputUpper) {
+            return (FloatComparisons.leq(inputLower, value1) && FloatComparisons.leq(value1, inputUpper)) ||
+                    (FloatComparisons.leq(inputLower, value2) && FloatComparisons.leq(value2, inputUpper)) ||
+                    (FloatComparisons.leq(inputLower, value3) && FloatComparisons.leq(value3, inputUpper));
         }
     }
 
@@ -132,7 +176,28 @@ public class FloatChunkMatchFilterFactory {
 
         @Override
         public boolean matches(float value) {
-            return value != value1 && value != value2 && value != value3;
+            return !FloatComparisons.eq(value, value1) &&
+                    !FloatComparisons.eq(value, value2) &&
+                    !FloatComparisons.eq(value, value3);
+        }
+
+        @Override
+        public boolean overlaps(float inputLower, float inputUpper) {
+            // Iterate through the range from inputLower to inputUpper, checking for any value that matches the inverse
+            // condition. We only need to check the first four floats in the range because at max three floats
+            // in the range are excluded (value1, value2, and value3).
+            final int maxSteps = 4;
+            int steps = 0;
+            // @formatter:off
+            for (float value = inputLower;
+                 FloatComparisons.leq(value, inputUpper) && steps < maxSteps;
+                 value = Math.nextAfter(value, Float.POSITIVE_INFINITY), steps++) {
+                if (matches(value)) {
+                    return true;
+                }
+            }
+            // @formatter:on
+            return false;
         }
     }
 
@@ -147,6 +212,18 @@ public class FloatChunkMatchFilterFactory {
         public boolean matches(float value) {
             return this.values.contains(value);
         }
+
+        @Override
+        public boolean overlaps(float inputLower, float inputUpper) {
+            final TFloatIterator iterator = values.iterator();
+            while (iterator.hasNext()) {
+                final float value = iterator.next();
+                if (FloatComparisons.leq(inputLower, value) && FloatComparisons.leq(value, inputUpper)) {
+                    return true;
+                }
+            }
+            return false;
+        }
     }
 
     private final static class InverseMultiValueFloatChunkFilter extends FloatChunkFilter {
@@ -159,6 +236,25 @@ public class FloatChunkMatchFilterFactory {
         @Override
         public boolean matches(float value) {
             return !this.values.contains(value);
+        }
+
+        @Override
+        public boolean overlaps(float inputLower, float inputUpper) {
+            // Iterate through the range from inputLower to inputUpper, checking for any value that matches the inverse
+            // condition. We only need to check the first `values.size() + 1` floats in the range because at max
+            // `values.size()` floats in the range are excluded.
+            final int maxSteps = values.size() + 1;
+            int steps = 0;
+            // @formatter:off
+            for (float value = inputLower;
+                 FloatComparisons.leq(value, inputUpper) && steps < maxSteps;
+                 value = Math.nextAfter(value, Float.POSITIVE_INFINITY), steps++) {
+                if (matches(value)) {
+                    return true;
+                }
+            }
+            // @formatter:on
+            return false;
         }
     }
 }

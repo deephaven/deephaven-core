@@ -10,6 +10,7 @@ package io.deephaven.engine.table.impl.select;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
 import io.deephaven.util.compare.DoubleComparisons;
 import io.deephaven.engine.table.impl.chunkfilter.DoubleRangeComparator;
 import io.deephaven.engine.table.ColumnSource;
@@ -89,7 +90,11 @@ public class DoubleRangeFilter extends AbstractRangeFilter {
             throw new RuntimeException("Column \"" + columnName + "\" doesn't exist in this table, available columns: "
                     + tableDefinition.getColumnNames());
         }
-        chunkFilter = DoubleRangeComparator.makeDoubleFilter(lower, upper, lowerInclusive, upperInclusive);
+        initChunkFilter();
+    }
+
+    ChunkFilter initChunkFilter() {
+        return chunkFilter = DoubleRangeComparator.makeDoubleFilter(lower, upper, lowerInclusive, upperInclusive);
     }
 
     @Override
@@ -166,42 +171,5 @@ public class DoubleRangeFilter extends AbstractRangeFilter {
             }
         }
         return minPosition;
-    }
-
-    @Override
-    public boolean overlaps(
-            @NotNull final Object lower,
-            @NotNull final Object upper,
-            final boolean lowerInclusive,
-            final boolean upperInclusive) {
-
-        final int c1 = CompareUtils.compare(this.lower, upper);
-        if (c1 > 0) {
-            return false; // this.lower > inputUpper, no overlap possible.
-        }
-        final int c2 = CompareUtils.compare(lower, this.upper);
-        if (c2 > 0) {
-            return false; // inputLower > this.upper, no overlap possible.
-        }
-        // Test for complete inclusion and test the edges.
-        return (c1 < 0 && c2 < 0)
-                || (c1 == 0 && this.lowerInclusive && upperInclusive)
-                || (c2 == 0 && lowerInclusive && this.upperInclusive);
-    }
-
-    @Override
-    public boolean contains(@NotNull final Object value) {
-        final int c1 = CompareUtils.compare(this.lower, value);
-        if (c1 > 0) {
-            return false; // this.lower > value, no overlap possible.
-        }
-        final int c2 = CompareUtils.compare(value, this.upper);
-        if (c2 > 0) {
-            return false; // value > this.upper, no overlap possible.
-        }
-        // Test for complete inclusion and test the edges.
-        return (c1 < 0 && c2 < 0)
-                || (c1 == 0 && this.lowerInclusive)
-                || (c2 == 0 && this.upperInclusive);
     }
 }

@@ -3,7 +3,9 @@
 //
 package io.deephaven.engine.table.impl.chunkfilter;
 
+import gnu.trove.iterator.TCharIterator;
 import gnu.trove.set.hash.TCharHashSet;
+import io.deephaven.util.compare.CharComparisons;
 
 /**
  * Creates chunk filters for char values.
@@ -51,7 +53,12 @@ public class CharChunkMatchFilterFactory {
 
         @Override
         public boolean matches(char value) {
-            return value == this.value;
+            return CharComparisons.eq(value, this.value);
+        }
+
+        @Override
+        public boolean overlaps(char inputLower, char inputUpper) {
+            return CharComparisons.leq(inputLower, value) && CharComparisons.leq(value, inputUpper);
         }
     }
 
@@ -64,7 +71,14 @@ public class CharChunkMatchFilterFactory {
 
         @Override
         public boolean matches(char value) {
-            return value != this.value;
+            return !CharComparisons.eq(value, this.value);
+        }
+
+        @Override
+        public boolean overlaps(char inputLower, char inputUpper) {
+            // Any interval wider than one point must include a char not equal to `value`, so we simply need to
+            // check whether we have a single-point range [value,value] or not.
+            return matches(inputLower) || matches(inputUpper);
         }
     }
 
@@ -79,7 +93,13 @@ public class CharChunkMatchFilterFactory {
 
         @Override
         public boolean matches(char value) {
-            return value == value1 || value == value2;
+            return CharComparisons.eq(value, value1) || CharComparisons.eq(value, value2);
+        }
+
+        @Override
+        public boolean overlaps(char inputLower, char inputUpper) {
+            return (CharComparisons.leq(inputLower, value1) && CharComparisons.leq(value1, inputUpper)) ||
+                    (CharComparisons.leq(inputLower, value2) && CharComparisons.leq(value2, inputUpper));
         }
     }
 
@@ -94,7 +114,21 @@ public class CharChunkMatchFilterFactory {
 
         @Override
         public boolean matches(char value) {
-            return value != value1 && value != value2;
+            return !CharComparisons.eq(value, value1) && !CharComparisons.eq(value, value2);
+        }
+
+        @Override
+        public boolean overlaps(char inputLower, char inputUpper) {
+            // Iterate through the range from inputLower to inputUpper, checking for any value that matches the inverse
+            // condition. We only need to check the first three chars in the range because at max two chars in
+            // the range are excluded (value1 and value2).
+            final int maxSteps = 3;
+            for (long v = inputLower, steps = 0; v <= inputUpper && steps < maxSteps; v++, steps++) {
+                if (matches((char) v)) {
+                    return true;
+                }
+            }
+            return false;
         }
     }
 
@@ -111,7 +145,16 @@ public class CharChunkMatchFilterFactory {
 
         @Override
         public boolean matches(char value) {
-            return value == value1 || value == value2 || value == value3;
+            return CharComparisons.eq(value, value1) ||
+                    CharComparisons.eq(value, value2) ||
+                    CharComparisons.eq(value, value3);
+        }
+
+        @Override
+        public boolean overlaps(char inputLower, char inputUpper) {
+            return (CharComparisons.leq(inputLower, value1) && CharComparisons.leq(value1, inputUpper)) ||
+                    (CharComparisons.leq(inputLower, value2) && CharComparisons.leq(value2, inputUpper)) ||
+                    (CharComparisons.leq(inputLower, value3) && CharComparisons.leq(value3, inputUpper));
         }
     }
 
@@ -128,7 +171,23 @@ public class CharChunkMatchFilterFactory {
 
         @Override
         public boolean matches(char value) {
-            return value != value1 && value != value2 && value != value3;
+            return !CharComparisons.eq(value, value1) &&
+                    !CharComparisons.eq(value, value2) &&
+                    !CharComparisons.eq(value, value3);
+        }
+
+        @Override
+        public boolean overlaps(char inputLower, char inputUpper) {
+            // Iterate through the range from inputLower to inputUpper, checking for any value that matches the inverse
+            // condition. We only need to check the first four chars in the range because at max three chars
+            // in the range are excluded (value1, value2, and value3).
+            final int maxSteps = 4;
+            for (long v = inputLower, steps = 0; v <= inputUpper && steps < maxSteps; v++, steps++) {
+                if (matches((char) v)) {
+                    return true;
+                }
+            }
+            return false;
         }
     }
 
@@ -143,6 +202,18 @@ public class CharChunkMatchFilterFactory {
         public boolean matches(char value) {
             return this.values.contains(value);
         }
+
+        @Override
+        public boolean overlaps(char inputLower, char inputUpper) {
+            final TCharIterator iterator = values.iterator();
+            while (iterator.hasNext()) {
+                final char value = iterator.next();
+                if (CharComparisons.leq(inputLower, value) && CharComparisons.leq(value, inputUpper)) {
+                    return true;
+                }
+            }
+            return false;
+        }
     }
 
     private final static class InverseMultiValueCharChunkFilter extends CharChunkFilter {
@@ -155,6 +226,20 @@ public class CharChunkMatchFilterFactory {
         @Override
         public boolean matches(char value) {
             return !this.values.contains(value);
+        }
+
+        @Override
+        public boolean overlaps(char inputLower, char inputUpper) {
+            // Iterate through the range from inputLower to inputUpper, checking for any value that matches the inverse
+            // condition. We only need to check the first `values.size() + 1` chars in the range because at max
+            // `values.size()` chars in the range are excluded.
+            final int maxSteps = values.size() + 1;
+            for (long v = inputLower, steps = 0; v <= inputUpper && steps < maxSteps; v++, steps++) {
+                if (matches((char) v)) {
+                    return true;
+                }
+            }
+            return false;
         }
     }
 }

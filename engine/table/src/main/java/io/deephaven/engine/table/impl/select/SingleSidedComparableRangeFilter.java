@@ -8,12 +8,14 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
 import io.deephaven.engine.table.impl.chunkfilter.ObjectChunkFilter;
+import io.deephaven.util.annotations.InternalUseOnly;
 import io.deephaven.util.compare.ObjectComparisons;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.util.annotations.TestUseOnly;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 public class SingleSidedComparableRangeFilter extends AbstractRangeFilter {
     private final Comparable<?> pivot;
@@ -46,10 +48,15 @@ public class SingleSidedComparableRangeFilter extends AbstractRangeFilter {
         Assert.assertion(Comparable.class.isAssignableFrom(def.getDataType()),
                 "Comparable.class.isAssignableFrom(def.getDataType())", def.getDataType(), "def.getDataType()");
 
-        chunkFilter = makeComparableChunkFilter(pivot, lowerInclusive, isGreaterThan);
+        initChunkFilter();
     }
 
-    public static ChunkFilter makeComparableChunkFilter(Comparable<?> pivot, boolean inclusive, boolean isGreaterThan) {
+    ChunkFilter initChunkFilter() {
+        return chunkFilter = makeComparableChunkFilter(pivot, lowerInclusive, isGreaterThan);
+    }
+
+    private static ChunkFilter makeComparableChunkFilter(Comparable<?> pivot, boolean inclusive,
+            boolean isGreaterThan) {
         if (inclusive) {
             if (isGreaterThan) {
                 return new GeqComparableChunkFilter(pivot);
@@ -91,6 +98,11 @@ public class SingleSidedComparableRangeFilter extends AbstractRangeFilter {
         public boolean matches(Comparable<?> value) {
             return ObjectComparisons.geq(value, pivot);
         }
+
+        @Override
+        public boolean overlaps(Comparable<?> inputLower, Comparable<?> inputUpper) {
+            return ObjectComparisons.leq(pivot, inputUpper);
+        }
     }
 
     private static class LeqComparableChunkFilter extends ObjectChunkFilter<Comparable<?>> {
@@ -103,6 +115,11 @@ public class SingleSidedComparableRangeFilter extends AbstractRangeFilter {
         @Override
         public boolean matches(Comparable<?> value) {
             return ObjectComparisons.leq(value, pivot);
+        }
+
+        @Override
+        public boolean overlaps(Comparable<?> inputLower, Comparable<?> inputUpper) {
+            return ObjectComparisons.leq(inputLower, pivot);
         }
     }
 
@@ -117,6 +134,11 @@ public class SingleSidedComparableRangeFilter extends AbstractRangeFilter {
         public boolean matches(Comparable<?> value) {
             return ObjectComparisons.gt(value, pivot);
         }
+
+        @Override
+        public boolean overlaps(Comparable<?> inputLower, Comparable<?> inputUpper) {
+            return ObjectComparisons.lt(pivot, inputUpper);
+        }
     }
 
     private static class LtComparableChunkFilter extends ObjectChunkFilter<Comparable<?>> {
@@ -129,6 +151,11 @@ public class SingleSidedComparableRangeFilter extends AbstractRangeFilter {
         @Override
         public boolean matches(Comparable<?> value) {
             return ObjectComparisons.lt(value, pivot);
+        }
+
+        @Override
+        public boolean overlaps(Comparable<?> inputLower, Comparable<?> inputUpper) {
+            return ObjectComparisons.lt(inputLower, pivot);
         }
     }
 
@@ -154,31 +181,6 @@ public class SingleSidedComparableRangeFilter extends AbstractRangeFilter {
             return selection.subSetByPositionRange(0, lowerBoundMin);
         } else {
             return selection.subSetByPositionRange(lowerBoundMin, selection.size());
-        }
-    }
-
-    @Override
-    public boolean overlaps(
-            @NotNull final Object lower,
-            @NotNull final Object upper,
-            final boolean lowerInclusive,
-            final boolean upperInclusive) {
-        if (isGreaterThan) {
-            final int c = CompareUtils.compare(pivot, upper);
-            return c < 0 || (c == 0 && this.lowerInclusive);
-        } else {
-            final int c = CompareUtils.compare(lower, pivot);
-            return c < 0 || (c == 0 && this.lowerInclusive);
-        }
-    }
-
-    @Override
-    public boolean contains(@NotNull final Object value) {
-        final int c = CompareUtils.compare(pivot, value);
-        if (isGreaterThan) {
-            return c < 0 || (c == 0 && this.lowerInclusive);
-        } else {
-            return c > 0 || (c == 0 && this.lowerInclusive);
         }
     }
 }

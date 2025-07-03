@@ -244,7 +244,7 @@ public class ArrayTypeUtils {
     public static byte[] getUnboxedByteArray(Object[] boxedArray) {
         final byte[] result = new byte[boxedArray.length];
         for (int i = 0; i < result.length; i++) {
-            result[i] = (boxedArray[i] != null ? (((Number) boxedArray[i]).byteValue()) : NULL_BYTE);
+            result[i] = TypeUtils.getUnboxedByte(boxedArray[i]);
         }
         return result;
     }
@@ -252,7 +252,7 @@ public class ArrayTypeUtils {
     public static char[] getUnboxedCharArray(Object[] boxedArray) {
         final char[] result = new char[boxedArray.length];
         for (int i = 0; i < result.length; i++) {
-            result[i] = (boxedArray[i] != null ? ((char) boxedArray[i]) : NULL_CHAR);
+            result[i] = TypeUtils.getUnboxedChar(boxedArray[i]);
         }
         return result;
     }
@@ -260,7 +260,7 @@ public class ArrayTypeUtils {
     public static short[] getUnboxedShortArray(Object[] boxedArray) {
         final short[] result = new short[boxedArray.length];
         for (int i = 0; i < result.length; i++) {
-            result[i] = (boxedArray[i] != null ? (((Number) boxedArray[i]).shortValue()) : NULL_SHORT);
+            result[i] = TypeUtils.getUnboxedShort(boxedArray[i]);
         }
         return result;
     }
@@ -268,7 +268,7 @@ public class ArrayTypeUtils {
     public static int[] getUnboxedIntArray(Object[] boxedArray) {
         final int[] result = new int[boxedArray.length];
         for (int i = 0; i < result.length; i++) {
-            result[i] = (boxedArray[i] != null ? (((Number) boxedArray[i]).intValue()) : NULL_INT);
+            result[i] = TypeUtils.getUnboxedInt(boxedArray[i]);
         }
         return result;
     }
@@ -276,7 +276,7 @@ public class ArrayTypeUtils {
     public static long[] getUnboxedLongArray(Object[] boxedArray) {
         final long[] result = new long[boxedArray.length];
         for (int i = 0; i < result.length; i++) {
-            result[i] = (boxedArray[i] != null ? ((Number) boxedArray[i]).longValue() : NULL_LONG);
+            result[i] = TypeUtils.getUnboxedLong(boxedArray[i]);
         }
         return result;
     }
@@ -284,7 +284,7 @@ public class ArrayTypeUtils {
     public static float[] getUnboxedFloatArray(Object[] boxedArray) {
         final float[] result = new float[boxedArray.length];
         for (int i = 0; i < result.length; i++) {
-            result[i] = (boxedArray[i] != null ? ((Number) boxedArray[i]).floatValue() : NULL_FLOAT);
+            result[i] = TypeUtils.getUnboxedFloat(boxedArray[i]);
         }
         return result;
     }
@@ -292,7 +292,7 @@ public class ArrayTypeUtils {
     public static double[] getUnboxedDoubleArray(Object[] boxedArray) {
         final double[] result = new double[boxedArray.length];
         for (int i = 0; i < result.length; i++) {
-            result[i] = (boxedArray[i] != null ? ((Number) boxedArray[i]).doubleValue() : NULL_DOUBLE);
+            result[i] = TypeUtils.getUnboxedDouble(boxedArray[i]);
         }
         return result;
     }

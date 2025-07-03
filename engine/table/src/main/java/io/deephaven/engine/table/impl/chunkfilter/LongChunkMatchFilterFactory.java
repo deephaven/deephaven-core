@@ -7,7 +7,9 @@
 // @formatter:off
 package io.deephaven.engine.table.impl.chunkfilter;
 
+import gnu.trove.iterator.TLongIterator;
 import gnu.trove.set.hash.TLongHashSet;
+import io.deephaven.util.compare.LongComparisons;
 
 /**
  * Creates chunk filters for long values.
@@ -55,7 +57,12 @@ public class LongChunkMatchFilterFactory {
 
         @Override
         public boolean matches(long value) {
-            return value == this.value;
+            return LongComparisons.eq(value, this.value);
+        }
+
+        @Override
+        public boolean overlaps(long inputLower, long inputUpper) {
+            return LongComparisons.leq(inputLower, value) && LongComparisons.leq(value, inputUpper);
         }
     }
 
@@ -68,7 +75,14 @@ public class LongChunkMatchFilterFactory {
 
         @Override
         public boolean matches(long value) {
-            return value != this.value;
+            return !LongComparisons.eq(value, this.value);
+        }
+
+        @Override
+        public boolean overlaps(long inputLower, long inputUpper) {
+            // Any interval wider than one point must include a long not equal to `value`, so we simply need to
+            // check whether we have a single-point range [value,value] or not.
+            return matches(inputLower) || matches(inputUpper);
         }
     }
 
@@ -83,7 +97,13 @@ public class LongChunkMatchFilterFactory {
 
         @Override
         public boolean matches(long value) {
-            return value == value1 || value == value2;
+            return LongComparisons.eq(value, value1) || LongComparisons.eq(value, value2);
+        }
+
+        @Override
+        public boolean overlaps(long inputLower, long inputUpper) {
+            return (LongComparisons.leq(inputLower, value1) && LongComparisons.leq(value1, inputUpper)) ||
+                    (LongComparisons.leq(inputLower, value2) && LongComparisons.leq(value2, inputUpper));
         }
     }
 
@@ -98,7 +118,21 @@ public class LongChunkMatchFilterFactory {
 
         @Override
         public boolean matches(long value) {
-            return value != value1 && value != value2;
+            return !LongComparisons.eq(value, value1) && !LongComparisons.eq(value, value2);
+        }
+
+        @Override
+        public boolean overlaps(long inputLower, long inputUpper) {
+            // Iterate through the range from inputLower to inputUpper, checking for any value that matches the inverse
+            // condition. We only need to check the first three longs in the range because at max two longs in
+            // the range are excluded (value1 and value2).
+            final int maxSteps = 3;
+            for (long v = inputLower, steps = 0; v <= inputUpper && steps < maxSteps; v++, steps++) {
+                if (matches((long) v)) {
+                    return true;
+                }
+            }
+            return false;
         }
     }
 
@@ -115,7 +149,16 @@ public class LongChunkMatchFilterFactory {
 
         @Override
         public boolean matches(long value) {
-            return value == value1 || value == value2 || value == value3;
+            return LongComparisons.eq(value, value1) ||
+                    LongComparisons.eq(value, value2) ||
+                    LongComparisons.eq(value, value3);
+        }
+
+        @Override
+        public boolean overlaps(long inputLower, long inputUpper) {
+            return (LongComparisons.leq(inputLower, value1) && LongComparisons.leq(value1, inputUpper)) ||
+                    (LongComparisons.leq(inputLower, value2) && LongComparisons.leq(value2, inputUpper)) ||
+                    (LongComparisons.leq(inputLower, value3) && LongComparisons.leq(value3, inputUpper));
         }
     }
 
@@ -132,7 +175,23 @@ public class LongChunkMatchFilterFactory {
 
         @Override
         public boolean matches(long value) {
-            return value != value1 && value != value2 && value != value3;
+            return !LongComparisons.eq(value, value1) &&
+                    !LongComparisons.eq(value, value2) &&
+                    !LongComparisons.eq(value, value3);
+        }
+
+        @Override
+        public boolean overlaps(long inputLower, long inputUpper) {
+            // Iterate through the range from inputLower to inputUpper, checking for any value that matches the inverse
+            // condition. We only need to check the first four longs in the range because at max three longs
+            // in the range are excluded (value1, value2, and value3).
+            final int maxSteps = 4;
+            for (long v = inputLower, steps = 0; v <= inputUpper && steps < maxSteps; v++, steps++) {
+                if (matches((long) v)) {
+                    return true;
+                }
+            }
+            return false;
         }
     }
 
@@ -147,6 +206,18 @@ public class LongChunkMatchFilterFactory {
         public boolean matches(long value) {
             return this.values.contains(value);
         }
+
+        @Override
+        public boolean overlaps(long inputLower, long inputUpper) {
+            final TLongIterator iterator = values.iterator();
+            while (iterator.hasNext()) {
+                final long value = iterator.next();
+                if (LongComparisons.leq(inputLower, value) && LongComparisons.leq(value, inputUpper)) {
+                    return true;
+                }
+            }
+            return false;
+        }
     }
 
     private final static class InverseMultiValueLongChunkFilter extends LongChunkFilter {
@@ -159,6 +230,20 @@ public class LongChunkMatchFilterFactory {
         @Override
         public boolean matches(long value) {
             return !this.values.contains(value);
+        }
+
+        @Override
+        public boolean overlaps(long inputLower, long inputUpper) {
+            // Iterate through the range from inputLower to inputUpper, checking for any value that matches the inverse
+            // condition. We only need to check the first `values.size() + 1` longs in the range because at max
+            // `values.size()` longs in the range are excluded.
+            final int maxSteps = values.size() + 1;
+            for (long v = inputLower, steps = 0; v <= inputUpper && steps < maxSteps; v++, steps++) {
+                if (matches((long) v)) {
+                    return true;
+                }
+            }
+            return false;
         }
     }
 }

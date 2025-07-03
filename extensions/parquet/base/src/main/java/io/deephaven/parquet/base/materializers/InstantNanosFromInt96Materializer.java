@@ -32,18 +32,32 @@ public class InstantNanosFromInt96Materializer extends LongMaterializerBase impl
         }
     };
 
+    private static final int BYTES_PER_VALUE = Long.BYTES + Integer.BYTES;
+
+    public static long convertValue(final byte[] data) {
+        if (data.length != BYTES_PER_VALUE) {
+            throw new IllegalArgumentException("Invalid Int96 data length: " + data.length + ", expected: "
+                    + BYTES_PER_VALUE);
+        }
+        final ByteBuffer resultBuffer = ByteBuffer.wrap(data);
+        resultBuffer.order(java.nio.ByteOrder.LITTLE_ENDIAN);
+        final long nanos = resultBuffer.getLong();
+        final int julianDate = resultBuffer.getInt();
+        return (julianDate - JULIAN_OFFSET_TO_UNIX_EPOCH_DAYS) * (NANOS_PER_DAY) + nanos + offset;
+    }
+
     /*
      * Potential references/points of comparison for this algorithm: https://github.com/apache/iceberg/pull/1184/files
      * https://github.com/apache/arrow/blob/master/cpp/src/parquet/types.h (last retrieved as
      * https://github.com/apache/arrow/blob/d5a2aa2ffb1c2fc4f3ca48c829fcdba80ec67916/cpp/src/parquet/types.h)
      */
-    private static final long NANOS_PER_DAY = 86400L * 1000 * 1000 * 1000;
-    private static final int JULIAN_OFFSET_TO_UNIX_EPOCH_DAYS = 2_440_588;
-    private static long offset;
+    static final long NANOS_PER_DAY = 86400L * 1000 * 1000 * 1000;
+    static final int JULIAN_OFFSET_TO_UNIX_EPOCH_DAYS = 2_440_588;
+    static long offset;
     static {
         final String referenceTimeZone =
                 Configuration.getInstance().getStringWithDefault("deephaven.parquet.referenceTimeZone", "UTC");
-        setReferenceTimeZone(referenceTimeZone);
+        offset = getReferenceTimeZone(referenceTimeZone);
     }
 
     private final ValuesReader dataReader;
@@ -62,23 +76,15 @@ public class InstantNanosFromInt96Materializer extends LongMaterializerBase impl
      * globally with the parameter deephaven.parquet.referenceTimeZone. Valid values are time zone strings that would be
      * used in {@link DateTimeUtils#parseInstant(String) parseInstant}, such as NY.
      */
-    private static void setReferenceTimeZone(@NotNull final String timeZone) {
-        offset = DateTimeUtils.nanosOfDay(DateTimeUtils.parseInstant("1970-01-01T00:00:00 " + timeZone),
+    static long getReferenceTimeZone(@NotNull final String timeZone) {
+        return DateTimeUtils.nanosOfDay(DateTimeUtils.parseInstant("1970-01-01T00:00:00 " + timeZone),
                 ZoneId.of("UTC"), false);
     }
 
     @Override
     public void fillValues(int startIndex, int endIndex) {
         for (int ii = startIndex; ii < endIndex; ii++) {
-            data[ii] = readInstantNanos();
+            data[ii] = convertValue(dataReader.readBytes().getBytesUnsafe());
         }
-    }
-
-    long readInstantNanos() {
-        final ByteBuffer resultBuffer = ByteBuffer.wrap(dataReader.readBytes().getBytesUnsafe());
-        resultBuffer.order(java.nio.ByteOrder.LITTLE_ENDIAN);
-        final long nanos = resultBuffer.getLong();
-        final int julianDate = resultBuffer.getInt();
-        return (julianDate - JULIAN_OFFSET_TO_UNIX_EPOCH_DAYS) * (NANOS_PER_DAY) + nanos + offset;
     }
 }

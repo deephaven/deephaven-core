@@ -17,13 +17,13 @@ import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseableArray;
+import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -215,10 +215,6 @@ abstract class AbstractFilterExecution {
          */
         public final WhereFilter filter;
         /**
-         * Map of filter column names to underlying column names.
-         */
-        public final Map<String, String> renameMap;
-        /**
          * The executor to use for pushdown filtering, or null if pushdown is not supported.
          */
         public final PushdownFilterMatcher pushdownMatcher;
@@ -238,14 +234,12 @@ abstract class AbstractFilterExecution {
         public StatelessFilter(
                 final int filterIdx,
                 final WhereFilter filter,
-                final Map<String, String> renameMap,
                 final PushdownFilterMatcher pushdownMatcher,
                 final PushdownFilterContext context) {
             Require.eqTrue((pushdownMatcher == null) == (context == null),
                     "pushdownExecutor and context must be both null or both non-null");
             this.filterIdx = filterIdx;
             this.filter = filter;
-            this.renameMap = renameMap;
             this.pushdownMatcher = pushdownMatcher;
             this.context = context;
         }
@@ -258,8 +252,8 @@ abstract class AbstractFilterExecution {
                 final PushdownFilterContext context) {
             pushdownFilterCost = pushdownMatcher == null
                     ? Long.MAX_VALUE
-                    : pushdownMatcher.estimatePushdownFilterCost(filter, renameMap, selection, sourceTable.getRowSet(),
-                            usePrev, context);
+                    : pushdownMatcher.estimatePushdownFilterCost(filter, selection, sourceTable.getRowSet(), usePrev,
+                            context);
         }
 
         @Override
@@ -426,8 +420,8 @@ abstract class AbstractFilterExecution {
         final RowSet input = localInput.getValue();
         if (sf.pushdownMatcher != null && sf.pushdownFilterCost < Long.MAX_VALUE) {
             // Execute the pushdown filter and return.
-            sf.pushdownMatcher.pushdownFilter(sf.filter, sf.renameMap, input, sourceTable.getRowSet(), usePrev,
-                    sf.context, costCeiling, jobScheduler(), onPushdownComplete, filterNec);
+            sf.pushdownMatcher.pushdownFilter(sf.filter, input, sourceTable.getRowSet(), usePrev, sf.context,
+                    costCeiling, jobScheduler(), onPushdownComplete, filterNec);
             return;
         }
 
@@ -463,35 +457,47 @@ abstract class AbstractFilterExecution {
 
         // Create stateless filter objects for the filters in this collection.
         final StatelessFilter[] statelessFilters = new StatelessFilter[filters.size()];
-        for (int ii = 0; ii < filters.size(); ii++) {
-            final WhereFilter filter = filters.get(ii);
-            final PushdownFilterMatcher executor;
-            if (filter.getColumns().size() > 1) {
-                executor = PushdownPredicateManager.getSharedPPM(filter.getColumns().stream()
-                        .map(sourceTable::getColumnSource)
-                        .collect(Collectors.toList()));
-            } else if (filter.getColumns().size() == 1) {
-                final ColumnSource<?> columnSource =
-                        sourceTable.getColumnSource(filter.getColumns().get(0));
-                executor = (columnSource instanceof AbstractColumnSource)
-                        ? (AbstractColumnSource<?>) columnSource
-                        : null;
-            } else {
-                executor = null;
+        final MutableBoolean filtersReady = new MutableBoolean(false);
+        try (final SafeCloseable ignored = () -> {
+            if (!filtersReady.booleanValue()) {
+                SafeCloseableArray.close(statelessFilters);
             }
-            // Create a rename map.
-            final ColumnSource<?>[] filterSources = filter.getColumns().stream()
-                    .map(sourceTable::getColumnSource)
-                    .toArray(ColumnSource[]::new);
-            final Map<String, String> renameMap =
-                    executor != null ? executor.renameMap(filter, filterSources) : Map.of();
+        }) {
+            for (int ii = 0; ii < filters.size(); ii++) {
+                final WhereFilter filter = filters.get(ii);
 
-            statelessFilters[ii] = new StatelessFilter(ii, filter, renameMap, executor,
-                    executor != null ? executor.makePushdownFilterContext() : null);
+                final PushdownFilterMatcher executor;
+                if (filter.getColumns().size() > 1) {
+                    executor = PushdownPredicateManager.getSharedPPM(filter.getColumns().stream()
+                            .map(sourceTable::getColumnSource)
+                            .collect(Collectors.toList()));
+                } else if (filter.getColumns().size() == 1) {
+                    final ColumnSource<?> columnSource =
+                            sourceTable.getColumnSource(filter.getColumns().get(0));
+                    executor = (columnSource instanceof AbstractColumnSource)
+                            ? (AbstractColumnSource<?>) columnSource
+                            : null;
+                } else {
+                    executor = null;
+                }
+                final List<ColumnSource<?>> filterSources = filter.getColumns().stream()
+                        .map(sourceTable::getColumnSource)
+                        .collect(Collectors.toList());
+                final PushdownFilterContext context = executor != null
+                        ? executor.makePushdownFilterContext(filter, filterSources)
+                        : null;
+                statelessFilters[ii] = new StatelessFilter(ii, filter, executor, context);
+            }
+
+            // Sort the filters by cost, with the lowest cost first.
+            maybeUpdateAndSortStatelessFilters(statelessFilters, 0, localInput.getValue());
+
+            // The job scheduler will close the stateless filters when it is done.
+            filtersReady.setTrue();
+        } catch (final Exception ex) {
+            collectionNec.accept(ex);
+            return;
         }
-
-        // Sort the filters by cost, with the lowest cost first.
-        maybeUpdateAndSortStatelessFilters(statelessFilters, 0, localInput.getValue());
 
         // Iterate serially through the stateless filters in this set. Each filter will successively
         // restrict the input to the next filter, until we reach the end of the filter chain or no rows match.
@@ -511,7 +517,10 @@ abstract class AbstractFilterExecution {
                     // Clean up the stateless filter objects.
                     SafeCloseableArray.close(statelessFilters);
                     collectionResume.run();
-                }, collectionNec);
+                }, ex -> {
+                    SafeCloseableArray.close(statelessFilters);
+                    collectionNec.accept(ex);
+                });
     }
 
     /**

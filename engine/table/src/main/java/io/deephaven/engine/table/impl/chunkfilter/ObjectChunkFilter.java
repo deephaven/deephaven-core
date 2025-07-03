@@ -7,8 +7,19 @@ import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 
+
 public abstract class ObjectChunkFilter<T> implements ChunkFilter {
     public abstract boolean matches(T value);
+
+    /**
+     * Returns {@code true} if any values between inputLower (inclusive) and inputUpper (inclusive) may be accepted by
+     * this filter. Returns {@code false} if no values between inputLower (inclusive) and inputUpper (inclusive) can be
+     * matched by this filter. This function is intended to be accurate rather than fast and is not recommended for
+     * performance-critical value comparison.
+     *
+     * @throws CannotComputeOverlapsException if unable to compute the overlap
+     */
+    public abstract boolean overlaps(T inputLower, T inputUpper);
 
     @Override
     public final void filter(

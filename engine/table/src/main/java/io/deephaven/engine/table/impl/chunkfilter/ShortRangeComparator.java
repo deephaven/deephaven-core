@@ -22,7 +22,7 @@ public class ShortRangeComparator {
         }
     }
 
-    final static class ShortShortInclusiveInclusiveFilter extends ShortShortFilter {
+    private final static class ShortShortInclusiveInclusiveFilter extends ShortShortFilter {
         private ShortShortInclusiveInclusiveFilter(short lower, short upper) {
             super(lower, upper);
         }
@@ -31,9 +31,14 @@ public class ShortRangeComparator {
         public boolean matches(short value) {
             return ShortComparisons.geq(value, lower) && ShortComparisons.leq(value, upper);
         }
+
+        @Override
+        public boolean overlaps(short inputLower, short inputUpper) {
+            return ShortComparisons.geq(inputUpper, lower) && ShortComparisons.geq(upper, inputLower);
+        }
     }
 
-    final static class ShortShortInclusiveExclusiveFilter extends ShortShortFilter {
+    private final static class ShortShortInclusiveExclusiveFilter extends ShortShortFilter {
         private ShortShortInclusiveExclusiveFilter(short lower, short upper) {
             super(lower, upper);
         }
@@ -42,9 +47,14 @@ public class ShortRangeComparator {
         public boolean matches(short value) {
             return ShortComparisons.geq(value, lower) && ShortComparisons.lt(value, upper);
         }
+
+        @Override
+        public boolean overlaps(short inputLower, short inputUpper) {
+            return ShortComparisons.geq(inputUpper, lower) && ShortComparisons.gt(upper, inputLower);
+        }
     }
 
-    final static class ShortShortExclusiveInclusiveFilter extends ShortShortFilter {
+    private final static class ShortShortExclusiveInclusiveFilter extends ShortShortFilter {
         private ShortShortExclusiveInclusiveFilter(short lower, short upper) {
             super(lower, upper);
         }
@@ -53,9 +63,14 @@ public class ShortRangeComparator {
         public boolean matches(short value) {
             return ShortComparisons.gt(value, lower) && ShortComparisons.leq(value, upper);
         }
+
+        @Override
+        public boolean overlaps(short inputLower, short inputUpper) {
+            return ShortComparisons.gt(inputUpper, lower) && ShortComparisons.geq(upper, inputLower);
+        }
     }
 
-    final static class ShortShortExclusiveExclusiveFilter extends ShortShortFilter {
+    private final static class ShortShortExclusiveExclusiveFilter extends ShortShortFilter {
         private ShortShortExclusiveExclusiveFilter(short lower, short upper) {
             super(lower, upper);
         }
@@ -63,6 +78,11 @@ public class ShortRangeComparator {
         @Override
         public boolean matches(short value) {
             return ShortComparisons.gt(value, lower) && ShortComparisons.lt(value, upper);
+        }
+
+        @Override
+        public boolean overlaps(short inputLower, short inputUpper) {
+            return ShortComparisons.gt(inputUpper, lower) && ShortComparisons.gt(upper, inputLower);
         }
     }
 
