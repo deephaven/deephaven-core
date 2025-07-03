@@ -51,6 +51,14 @@ public class IntRangeFilter extends AbstractRangeFilter {
         }
     }
 
+    public int getUpper() {
+        return upper;
+    }
+
+    public int getLower() {
+        return lower;
+    }
+
     static WhereFilter makeIntRangeFilter(String columnName, Condition condition, int value) {
         switch (condition) {
             case LESS_THAN:

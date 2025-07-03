@@ -31,11 +31,6 @@ public class IntRangeComparator {
         public boolean matches(int value) {
             return IntComparisons.geq(value, lower) && IntComparisons.leq(value, upper);
         }
-
-        @Override
-        public boolean overlaps(int inputLower, int inputUpper) {
-            return IntComparisons.geq(inputUpper, lower) && IntComparisons.geq(upper, inputLower);
-        }
     }
 
     private final static class IntIntInclusiveExclusiveFilter extends IntIntFilter {
@@ -46,11 +41,6 @@ public class IntRangeComparator {
         @Override
         public boolean matches(int value) {
             return IntComparisons.geq(value, lower) && IntComparisons.lt(value, upper);
-        }
-
-        @Override
-        public boolean overlaps(int inputLower, int inputUpper) {
-            return IntComparisons.geq(inputUpper, lower) && IntComparisons.gt(upper, inputLower);
         }
     }
 
@@ -63,11 +53,6 @@ public class IntRangeComparator {
         public boolean matches(int value) {
             return IntComparisons.gt(value, lower) && IntComparisons.leq(value, upper);
         }
-
-        @Override
-        public boolean overlaps(int inputLower, int inputUpper) {
-            return IntComparisons.gt(inputUpper, lower) && IntComparisons.geq(upper, inputLower);
-        }
     }
 
     private final static class IntIntExclusiveExclusiveFilter extends IntIntFilter {
@@ -78,11 +63,6 @@ public class IntRangeComparator {
         @Override
         public boolean matches(int value) {
             return IntComparisons.gt(value, lower) && IntComparisons.lt(value, upper);
-        }
-
-        @Override
-        public boolean overlaps(int inputLower, int inputUpper) {
-            return IntComparisons.gt(inputUpper, lower) && IntComparisons.gt(upper, inputLower);
         }
     }
 

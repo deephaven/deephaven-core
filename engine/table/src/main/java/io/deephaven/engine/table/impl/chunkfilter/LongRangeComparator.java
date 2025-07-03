@@ -31,11 +31,6 @@ public class LongRangeComparator {
         public boolean matches(long value) {
             return LongComparisons.geq(value, lower) && LongComparisons.leq(value, upper);
         }
-
-        @Override
-        public boolean overlaps(long inputLower, long inputUpper) {
-            return LongComparisons.geq(inputUpper, lower) && LongComparisons.geq(upper, inputLower);
-        }
     }
 
     private final static class LongLongInclusiveExclusiveFilter extends LongLongFilter {
@@ -46,11 +41,6 @@ public class LongRangeComparator {
         @Override
         public boolean matches(long value) {
             return LongComparisons.geq(value, lower) && LongComparisons.lt(value, upper);
-        }
-
-        @Override
-        public boolean overlaps(long inputLower, long inputUpper) {
-            return LongComparisons.geq(inputUpper, lower) && LongComparisons.gt(upper, inputLower);
         }
     }
 
@@ -63,11 +53,6 @@ public class LongRangeComparator {
         public boolean matches(long value) {
             return LongComparisons.gt(value, lower) && LongComparisons.leq(value, upper);
         }
-
-        @Override
-        public boolean overlaps(long inputLower, long inputUpper) {
-            return LongComparisons.gt(inputUpper, lower) && LongComparisons.geq(upper, inputLower);
-        }
     }
 
     private final static class LongLongExclusiveExclusiveFilter extends LongLongFilter {
@@ -78,11 +63,6 @@ public class LongRangeComparator {
         @Override
         public boolean matches(long value) {
             return LongComparisons.gt(value, lower) && LongComparisons.lt(value, upper);
-        }
-
-        @Override
-        public boolean overlaps(long inputLower, long inputUpper) {
-            return LongComparisons.gt(inputUpper, lower) && LongComparisons.gt(upper, inputLower);
         }
     }
 

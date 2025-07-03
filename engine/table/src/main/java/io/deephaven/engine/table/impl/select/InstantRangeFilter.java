@@ -134,11 +134,6 @@ public class InstantRangeFilter extends LongRangeFilter {
         }
 
         @InternalUseOnly
-        public boolean overlaps(long inputLower, long inputUpper) {
-            return ((LongChunkFilter) longFilter).overlaps(inputLower, inputUpper);
-        }
-
-        @InternalUseOnly
         public boolean matches(long value) {
             return ((LongChunkFilter) longFilter).matches(value);
         }

@@ -31,11 +31,6 @@ public class FloatRangeComparator {
         public boolean matches(float value) {
             return FloatComparisons.geq(value, lower) && FloatComparisons.leq(value, upper);
         }
-
-        @Override
-        public boolean overlaps(float inputLower, float inputUpper) {
-            return FloatComparisons.geq(inputUpper, lower) && FloatComparisons.geq(upper, inputLower);
-        }
     }
 
     private final static class FloatFloatInclusiveExclusiveFilter extends FloatFloatFilter {
@@ -46,11 +41,6 @@ public class FloatRangeComparator {
         @Override
         public boolean matches(float value) {
             return FloatComparisons.geq(value, lower) && FloatComparisons.lt(value, upper);
-        }
-
-        @Override
-        public boolean overlaps(float inputLower, float inputUpper) {
-            return FloatComparisons.geq(inputUpper, lower) && FloatComparisons.gt(upper, inputLower);
         }
     }
 
@@ -63,11 +53,6 @@ public class FloatRangeComparator {
         public boolean matches(float value) {
             return FloatComparisons.gt(value, lower) && FloatComparisons.leq(value, upper);
         }
-
-        @Override
-        public boolean overlaps(float inputLower, float inputUpper) {
-            return FloatComparisons.gt(inputUpper, lower) && FloatComparisons.geq(upper, inputLower);
-        }
     }
 
     private final static class FloatFloatExclusiveExclusiveFilter extends FloatFloatFilter {
@@ -78,11 +63,6 @@ public class FloatRangeComparator {
         @Override
         public boolean matches(float value) {
             return FloatComparisons.gt(value, lower) && FloatComparisons.lt(value, upper);
-        }
-
-        @Override
-        public boolean overlaps(float inputLower, float inputUpper) {
-            return FloatComparisons.gt(inputUpper, lower) && FloatComparisons.gt(upper, inputLower);
         }
     }
 

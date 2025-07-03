@@ -47,6 +47,14 @@ public class CharRangeFilter extends AbstractRangeFilter {
         }
     }
 
+    public char getUpper() {
+        return upper;
+    }
+
+    public char getLower() {
+        return lower;
+    }
+
     static WhereFilter makeCharRangeFilter(String columnName, Condition condition, char value) {
         switch (condition) {
             case LESS_THAN:

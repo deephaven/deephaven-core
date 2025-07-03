@@ -49,6 +49,14 @@ public abstract class AbstractRangeFilter extends WhereFilterImpl implements Exp
         this.lowerInclusive = lowerInclusive;
     }
 
+    public boolean isUpperInclusive() {
+        return upperInclusive;
+    }
+
+    public boolean isLowerInclusive() {
+        return lowerInclusive;
+    }
+
     @Override
     public Optional<ChunkFilter> chunkFilter() {
         return Optional.of(chunkFilter);

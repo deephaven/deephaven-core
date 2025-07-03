@@ -11,7 +11,6 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.table.impl.chunkfilter.CannotComputeOverlapsException;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
 import io.deephaven.engine.table.impl.chunkfilter.DoubleChunkFilter;
 import io.deephaven.engine.table.impl.chunkfilter.FloatChunkFilter;
@@ -93,11 +92,6 @@ class ValidFloatingPointFilter extends WhereFilterImpl {
         public boolean matches(final double value) {
             return !Double.isNaN(value) && value != NULL_DOUBLE;
         }
-
-        @Override
-        public boolean overlaps(final double inputLower, final double inputUpper) {
-            throw new CannotComputeOverlapsException("ValidFloatingPointFilter does not support overlaps");
-        }
     }
 
     private static final class FloatFilter extends FloatChunkFilter {
@@ -109,11 +103,6 @@ class ValidFloatingPointFilter extends WhereFilterImpl {
         @Override
         public boolean matches(final float value) {
             return !Float.isNaN(value) && value != NULL_FLOAT;
-        }
-
-        @Override
-        public boolean overlaps(final float inputLower, final float inputUpper) {
-            throw new CannotComputeOverlapsException("ValidFloatingPointFilter does not support overlaps");
         }
     }
 

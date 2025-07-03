@@ -1,7 +1,7 @@
 //
 // Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
-package io.deephaven.parquet.table.location;
+package io.deephaven.parquet.table.pushdown;
 
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;

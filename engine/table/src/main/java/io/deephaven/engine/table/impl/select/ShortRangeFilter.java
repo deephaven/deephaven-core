@@ -51,6 +51,14 @@ public class ShortRangeFilter extends AbstractRangeFilter {
         }
     }
 
+    public short getUpper() {
+        return upper;
+    }
+
+    public short getLower() {
+        return lower;
+    }
+
     static WhereFilter makeShortRangeFilter(String columnName, Condition condition, short value) {
         switch (condition) {
             case LESS_THAN:

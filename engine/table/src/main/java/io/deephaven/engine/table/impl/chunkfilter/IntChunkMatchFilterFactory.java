@@ -7,7 +7,6 @@
 // @formatter:off
 package io.deephaven.engine.table.impl.chunkfilter;
 
-import gnu.trove.iterator.TIntIterator;
 import gnu.trove.set.hash.TIntHashSet;
 import io.deephaven.util.compare.IntComparisons;
 
@@ -59,11 +58,6 @@ public class IntChunkMatchFilterFactory {
         public boolean matches(int value) {
             return IntComparisons.eq(value, this.value);
         }
-
-        @Override
-        public boolean overlaps(int inputLower, int inputUpper) {
-            return IntComparisons.leq(inputLower, value) && IntComparisons.leq(value, inputUpper);
-        }
     }
 
     private final static class InverseSingleValueIntChunkFilter extends IntChunkFilter {
@@ -76,13 +70,6 @@ public class IntChunkMatchFilterFactory {
         @Override
         public boolean matches(int value) {
             return !IntComparisons.eq(value, this.value);
-        }
-
-        @Override
-        public boolean overlaps(int inputLower, int inputUpper) {
-            // Any interval wider than one point must include a int not equal to `value`, so we simply need to
-            // check whether we have a single-point range [value,value] or not.
-            return matches(inputLower) || matches(inputUpper);
         }
     }
 
@@ -99,12 +86,6 @@ public class IntChunkMatchFilterFactory {
         public boolean matches(int value) {
             return IntComparisons.eq(value, value1) || IntComparisons.eq(value, value2);
         }
-
-        @Override
-        public boolean overlaps(int inputLower, int inputUpper) {
-            return (IntComparisons.leq(inputLower, value1) && IntComparisons.leq(value1, inputUpper)) ||
-                    (IntComparisons.leq(inputLower, value2) && IntComparisons.leq(value2, inputUpper));
-        }
     }
 
     private final static class InverseTwoValueIntChunkFilter extends IntChunkFilter {
@@ -119,20 +100,6 @@ public class IntChunkMatchFilterFactory {
         @Override
         public boolean matches(int value) {
             return !IntComparisons.eq(value, value1) && !IntComparisons.eq(value, value2);
-        }
-
-        @Override
-        public boolean overlaps(int inputLower, int inputUpper) {
-            // Iterate through the range from inputLower to inputUpper, checking for any value that matches the inverse
-            // condition. We only need to check the first three ints in the range because at max two ints in
-            // the range are excluded (value1 and value2).
-            final int maxSteps = 3;
-            for (long v = inputLower, steps = 0; v <= inputUpper && steps < maxSteps; v++, steps++) {
-                if (matches((int) v)) {
-                    return true;
-                }
-            }
-            return false;
         }
     }
 
@@ -153,13 +120,6 @@ public class IntChunkMatchFilterFactory {
                     IntComparisons.eq(value, value2) ||
                     IntComparisons.eq(value, value3);
         }
-
-        @Override
-        public boolean overlaps(int inputLower, int inputUpper) {
-            return (IntComparisons.leq(inputLower, value1) && IntComparisons.leq(value1, inputUpper)) ||
-                    (IntComparisons.leq(inputLower, value2) && IntComparisons.leq(value2, inputUpper)) ||
-                    (IntComparisons.leq(inputLower, value3) && IntComparisons.leq(value3, inputUpper));
-        }
     }
 
     private final static class InverseThreeValueIntChunkFilter extends IntChunkFilter {
@@ -179,20 +139,6 @@ public class IntChunkMatchFilterFactory {
                     !IntComparisons.eq(value, value2) &&
                     !IntComparisons.eq(value, value3);
         }
-
-        @Override
-        public boolean overlaps(int inputLower, int inputUpper) {
-            // Iterate through the range from inputLower to inputUpper, checking for any value that matches the inverse
-            // condition. We only need to check the first four ints in the range because at max three ints
-            // in the range are excluded (value1, value2, and value3).
-            final int maxSteps = 4;
-            for (long v = inputLower, steps = 0; v <= inputUpper && steps < maxSteps; v++, steps++) {
-                if (matches((int) v)) {
-                    return true;
-                }
-            }
-            return false;
-        }
     }
 
     private final static class MultiValueIntChunkFilter extends IntChunkFilter {
@@ -206,18 +152,6 @@ public class IntChunkMatchFilterFactory {
         public boolean matches(int value) {
             return this.values.contains(value);
         }
-
-        @Override
-        public boolean overlaps(int inputLower, int inputUpper) {
-            final TIntIterator iterator = values.iterator();
-            while (iterator.hasNext()) {
-                final int value = iterator.next();
-                if (IntComparisons.leq(inputLower, value) && IntComparisons.leq(value, inputUpper)) {
-                    return true;
-                }
-            }
-            return false;
-        }
     }
 
     private final static class InverseMultiValueIntChunkFilter extends IntChunkFilter {
@@ -230,20 +164,6 @@ public class IntChunkMatchFilterFactory {
         @Override
         public boolean matches(int value) {
             return !this.values.contains(value);
-        }
-
-        @Override
-        public boolean overlaps(int inputLower, int inputUpper) {
-            // Iterate through the range from inputLower to inputUpper, checking for any value that matches the inverse
-            // condition. We only need to check the first `values.size() + 1` ints in the range because at max
-            // `values.size()` ints in the range are excluded.
-            final int maxSteps = values.size() + 1;
-            for (long v = inputLower, steps = 0; v <= inputUpper && steps < maxSteps; v++, steps++) {
-                if (matches((int) v)) {
-                    return true;
-                }
-            }
-            return false;
         }
     }
 }

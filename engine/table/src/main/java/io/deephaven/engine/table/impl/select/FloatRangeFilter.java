@@ -6,7 +6,6 @@ package io.deephaven.engine.table.impl.select;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
 import io.deephaven.util.compare.FloatComparisons;
 import io.deephaven.engine.table.impl.chunkfilter.FloatRangeComparator;
 import io.deephaven.engine.table.ColumnSource;
@@ -51,6 +50,14 @@ public class FloatRangeFilter extends AbstractRangeFilter {
         }
     }
 
+    public float getUpper() {
+        return upper;
+    }
+
+    public float getLower() {
+        return lower;
+    }
+
     public static WhereFilter makeRange(String columnName, String val) {
         final int precision = findPrecision(val);
         final double parsed = Double.parseDouble(val);
@@ -86,11 +93,7 @@ public class FloatRangeFilter extends AbstractRangeFilter {
             throw new RuntimeException("Column \"" + columnName + "\" doesn't exist in this table, available columns: "
                     + tableDefinition.getColumnNames());
         }
-        initChunkFilter();
-    }
-
-    ChunkFilter initChunkFilter() {
-        return chunkFilter = FloatRangeComparator.makeFloatFilter(lower, upper, lowerInclusive, upperInclusive);
+        chunkFilter = FloatRangeComparator.makeFloatFilter(lower, upper, lowerInclusive, upperInclusive);
     }
 
     @Override

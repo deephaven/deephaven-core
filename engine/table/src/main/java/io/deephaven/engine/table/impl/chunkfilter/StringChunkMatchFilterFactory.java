@@ -7,8 +7,6 @@ import io.deephaven.hash.KeyedObjectHashSet;
 import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.base.string.cache.CharSequenceUtils;
 
-import java.util.Iterator;
-
 class StringChunkMatchFilterFactory {
     private static final class CIStringKey implements KeyedObjectKey<String, String> {
         @Override
@@ -70,11 +68,6 @@ class StringChunkMatchFilterFactory {
         public boolean matches(String value) {
             return this.value.equalsIgnoreCase(value);
         }
-
-        @Override
-        public boolean overlaps(String inputLower, String inputUpper) {
-            return value.compareToIgnoreCase(inputLower) >= 0 && value.compareToIgnoreCase(inputUpper) <= 0;
-        }
     }
 
     private static class InverseSingleValueStringChunkFilter extends ObjectChunkFilter<String> {
@@ -87,12 +80,6 @@ class StringChunkMatchFilterFactory {
         @Override
         public boolean matches(String value) {
             return !this.value.equalsIgnoreCase(value);
-        }
-
-        @Override
-        public boolean overlaps(String inputLower, String inputUpper) {
-            // We can always insert a new value in the input range unless the range is exactly equal to the value.
-            return !inputLower.equalsIgnoreCase(inputUpper) || matches(inputLower);
         }
     }
 
@@ -109,12 +96,6 @@ class StringChunkMatchFilterFactory {
         public boolean matches(String value) {
             return value1.equalsIgnoreCase(value) || value2.equalsIgnoreCase(value);
         }
-
-        @Override
-        public boolean overlaps(String inputLower, String inputUpper) {
-            return (value1.compareToIgnoreCase(inputLower) >= 0 && value1.compareToIgnoreCase(inputUpper) <= 0) ||
-                    (value2.compareToIgnoreCase(inputLower) >= 0 && value2.compareToIgnoreCase(inputUpper) <= 0);
-        }
     }
 
     private static class InverseTwoValueStringChunkFilter extends ObjectChunkFilter<String> {
@@ -129,12 +110,6 @@ class StringChunkMatchFilterFactory {
         @Override
         public boolean matches(String value) {
             return !value1.equalsIgnoreCase(value) && !value2.equalsIgnoreCase(value);
-        }
-
-        @Override
-        public boolean overlaps(String inputLower, String inputUpper) {
-            // We can always insert a new value in the input range unless the range is exactly equal to the value.
-            return !inputLower.equalsIgnoreCase(inputUpper) || matches(inputLower);
         }
     }
 
@@ -152,13 +127,6 @@ class StringChunkMatchFilterFactory {
         @Override
         public boolean matches(String value) {
             return value1.equalsIgnoreCase(value) || value2.equalsIgnoreCase(value) || value3.equalsIgnoreCase(value);
-        }
-
-        @Override
-        public boolean overlaps(String inputLower, String inputUpper) {
-            return (value1.compareToIgnoreCase(inputLower) >= 0 && value1.compareToIgnoreCase(inputUpper) <= 0) ||
-                    (value2.compareToIgnoreCase(inputLower) >= 0 && value2.compareToIgnoreCase(inputUpper) <= 0) ||
-                    (value3.compareToIgnoreCase(inputLower) >= 0 && value3.compareToIgnoreCase(inputUpper) <= 0);
         }
     }
 
@@ -178,12 +146,6 @@ class StringChunkMatchFilterFactory {
             return !value1.equalsIgnoreCase(value) && !value2.equalsIgnoreCase(value)
                     && !value3.equalsIgnoreCase(value);
         }
-
-        @Override
-        public boolean overlaps(String inputLower, String inputUpper) {
-            // We can always insert a new value in the input range unless the range is exactly equal to the value.
-            return !inputLower.equalsIgnoreCase(inputUpper) || matches(inputLower);
-        }
     }
 
     private static class MultiValueStringChunkFilter extends ObjectChunkFilter<String> {
@@ -200,18 +162,6 @@ class StringChunkMatchFilterFactory {
         public boolean matches(String value) {
             return this.values.containsKey(value);
         }
-
-        @Override
-        public boolean overlaps(String inputLower, String inputUpper) {
-            final Iterator<String> iterator = values.iterator();
-            while (iterator.hasNext()) {
-                final String value = iterator.next();
-                if (value.compareToIgnoreCase(inputLower) >= 0 && value.compareToIgnoreCase(inputUpper) <= 0) {
-                    return true;
-                }
-            }
-            return false;
-        }
     }
 
     private static class InverseMultiValueStringChunkFilter extends ObjectChunkFilter<String> {
@@ -227,12 +177,6 @@ class StringChunkMatchFilterFactory {
         @Override
         public boolean matches(String value) {
             return !this.values.containsKey(value);
-        }
-
-        @Override
-        public boolean overlaps(String inputLower, String inputUpper) {
-            // We can always insert a new value in the input range unless the range is exactly equal to the value.
-            return !inputLower.equalsIgnoreCase(inputUpper) || matches(inputLower);
         }
     }
 }

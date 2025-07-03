@@ -3,11 +3,8 @@
 //
 package io.deephaven.engine.table.impl.chunkfilter;
 
-import io.deephaven.util.compare.ObjectComparisons;
-
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Objects;
 
 public class ObjectChunkMatchFilterFactory {
@@ -51,11 +48,6 @@ public class ObjectChunkMatchFilterFactory {
         public boolean matches(Object value) {
             return Objects.equals(value, this.value);
         }
-
-        @Override
-        public boolean overlaps(Object inputLower, Object inputUpper) {
-            return ObjectComparisons.leq(inputLower, value) && ObjectComparisons.leq(value, inputUpper);
-        }
     }
 
     private final static class InverseSingleValueObjectChunkFilter extends ObjectChunkFilter<Object> {
@@ -68,13 +60,6 @@ public class ObjectChunkMatchFilterFactory {
         @Override
         public boolean matches(Object value) {
             return !Objects.equals(value, this.value);
-        }
-
-        @Override
-        public boolean overlaps(Object inputLower, Object inputUpper) {
-            // Any interval wider than one point must include an object not equal to `value`, so we simply need to
-            // check whether we have a single-point range [value,value] or not.
-            return matches(inputLower) || matches(inputUpper);
         }
     }
 
@@ -91,12 +76,6 @@ public class ObjectChunkMatchFilterFactory {
         public boolean matches(Object value) {
             return Objects.equals(value, value1) || Objects.equals(value, value2);
         }
-
-        @Override
-        public boolean overlaps(Object inputLower, Object inputUpper) {
-            return (ObjectComparisons.leq(inputLower, value1) && ObjectComparisons.leq(value1, inputUpper)) ||
-                    (ObjectComparisons.leq(inputLower, value2) && ObjectComparisons.leq(value2, inputUpper));
-        }
     }
 
     private final static class InverseTwoValueObjectChunkFilter extends ObjectChunkFilter<Object> {
@@ -111,16 +90,6 @@ public class ObjectChunkMatchFilterFactory {
         @Override
         public boolean matches(Object value) {
             return !(Objects.equals(value, value1) || Objects.equals(value, value2));
-        }
-
-        @Override
-        public boolean overlaps(Object inputLower, Object inputUpper) {
-            // If either bound is NOT an excluded value, the range surely overlaps.
-            if (matches(inputLower) || matches(inputUpper)) {
-                return true;
-            }
-            throw new CannotComputeOverlapsException("Failed to determine overlap for bounds: " +
-                    inputLower + " and " + inputUpper + " with excluded values: " + value1 + ", " + value2);
         }
     }
 
@@ -139,13 +108,6 @@ public class ObjectChunkMatchFilterFactory {
         public boolean matches(Object value) {
             return Objects.equals(value, value1) || Objects.equals(value, value2) || Objects.equals(value, value3);
         }
-
-        @Override
-        public boolean overlaps(Object inputLower, Object inputUpper) {
-            return (ObjectComparisons.leq(inputLower, value1) && ObjectComparisons.leq(value1, inputUpper)) ||
-                    (ObjectComparisons.leq(inputLower, value2) && ObjectComparisons.leq(value2, inputUpper)) ||
-                    (ObjectComparisons.leq(inputLower, value3) && ObjectComparisons.leq(value3, inputUpper));
-        }
     }
 
     private final static class InverseThreeValueObjectChunkFilter extends ObjectChunkFilter<Object> {
@@ -163,16 +125,6 @@ public class ObjectChunkMatchFilterFactory {
         public boolean matches(Object value) {
             return !(Objects.equals(value, value1) || Objects.equals(value, value2) || Objects.equals(value, value3));
         }
-
-        @Override
-        public boolean overlaps(Object inputLower, Object inputUpper) {
-            // If either bound is NOT an excluded value, the range surely overlaps.
-            if (matches(inputLower) || matches(inputUpper)) {
-                return true;
-            }
-            throw new CannotComputeOverlapsException("Failed to determine overlap for bounds: " + inputLower + " and "
-                    + inputUpper + " with excluded values: " + value1 + ", " + value2 + ", " + value3);
-        }
     }
 
     private final static class MultiValueObjectChunkFilter extends ObjectChunkFilter<Object> {
@@ -186,18 +138,6 @@ public class ObjectChunkMatchFilterFactory {
         public boolean matches(Object value) {
             return this.values.contains(value);
         }
-
-        @Override
-        public boolean overlaps(Object inputLower, Object inputUpper) {
-            final Iterator<?> iterator = values.iterator();
-            while (iterator.hasNext()) {
-                final Object value = iterator.next();
-                if (ObjectComparisons.leq(inputLower, value) && ObjectComparisons.leq(value, inputUpper)) {
-                    return true;
-                }
-            }
-            return false;
-        }
     }
 
     private final static class InverseMultiValueObjectChunkFilter extends ObjectChunkFilter<Object> {
@@ -210,16 +150,6 @@ public class ObjectChunkMatchFilterFactory {
         @Override
         public boolean matches(Object value) {
             return !this.values.contains(value);
-        }
-
-        @Override
-        public boolean overlaps(Object inputLower, Object inputUpper) {
-            // If either bound is NOT an excluded value, the range surely overlaps.
-            if (matches(inputLower) || matches(inputUpper)) {
-                return true;
-            }
-            throw new CannotComputeOverlapsException("Failed to determine overlap for bounds: " + inputLower + " and "
-                    + inputUpper + " with excluded values: " + values);
         }
     }
 }

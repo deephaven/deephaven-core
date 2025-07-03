@@ -8,7 +8,6 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
 import io.deephaven.engine.table.impl.chunkfilter.ObjectChunkFilter;
-import io.deephaven.util.annotations.InternalUseOnly;
 import io.deephaven.util.compare.ObjectComparisons;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.rowset.WritableRowSet;
@@ -54,11 +53,7 @@ public class ComparableRangeFilter extends AbstractRangeFilter {
         Assert.assertion(Comparable.class.isAssignableFrom(def.getDataType()),
                 "Comparable.class.isAssignableFrom(def.getDataType())", def.getDataType(), "def.getDataType()");
 
-        initChunkFilter();
-    }
-
-    ChunkFilter initChunkFilter() {
-        return chunkFilter = makeComparableChunkFilter(lower, upper, lowerInclusive, upperInclusive);
+        chunkFilter = makeComparableChunkFilter(lower, upper, lowerInclusive, upperInclusive);
     }
 
     public static ChunkFilter makeComparableChunkFilter(
@@ -94,82 +89,67 @@ public class ComparableRangeFilter extends AbstractRangeFilter {
                 (upperInclusive ? "]" : ")") + ")";
     }
 
+    private final static class InclusiveInclusiveComparableChunkFilter
+            extends ObjectChunkFilter<Comparable<?>> {
+        private final Comparable<?> lower;
+        private final Comparable<?> upper;
 
-    private static abstract class ComparableObjectChunkFilter extends ObjectChunkFilter<Comparable<?>> {
-        final Comparable<?> lower;
-        final Comparable<?> upper;
-
-        private ComparableObjectChunkFilter(Comparable<?> lower, Comparable<?> upper) {
+        private InclusiveInclusiveComparableChunkFilter(Comparable<?> lower, Comparable<?> upper) {
             this.lower = lower;
             this.upper = upper;
         }
-    }
-
-    private final static class InclusiveInclusiveComparableChunkFilter extends ComparableObjectChunkFilter {
-
-        private InclusiveInclusiveComparableChunkFilter(Comparable<?> lower, Comparable<?> upper) {
-            super(lower, upper);
-        }
 
         @Override
         public boolean matches(Comparable<?> value) {
-            return ObjectComparisons.leq(lower, value) && ObjectComparisons.geq(upper, value);
-        }
-
-        @Override
-        public boolean overlaps(Comparable<?> inputLower, Comparable<?> inputUpper) {
-            return ObjectComparisons.geq(inputUpper, lower) && ObjectComparisons.geq(upper, inputLower);
+            return ObjectComparisons.compare(lower, value) <= 0 && ObjectComparisons.compare(upper, value) >= 0;
         }
     }
 
-    private final static class InclusiveExclusiveComparableChunkFilter extends ComparableObjectChunkFilter {
+    private final static class InclusiveExclusiveComparableChunkFilter
+            extends ObjectChunkFilter<Comparable<?>> {
+        private final Comparable<?> lower;
+        private final Comparable<?> upper;
 
         private InclusiveExclusiveComparableChunkFilter(Comparable<?> lower, Comparable<?> upper) {
-            super(lower, upper);
+            this.lower = lower;
+            this.upper = upper;
         }
 
         @Override
         public boolean matches(Comparable<?> value) {
-            return ObjectComparisons.leq(lower, value) && ObjectComparisons.gt(upper, value);
-        }
-
-        @Override
-        public boolean overlaps(Comparable<?> inputLower, Comparable<?> inputUpper) {
-            return ObjectComparisons.geq(inputUpper, lower) && ObjectComparisons.gt(upper, inputLower);
+            return ObjectComparisons.compare(lower, value) <= 0 && ObjectComparisons.compare(upper, value) > 0;
         }
     }
 
-    private final static class ExclusiveInclusiveComparableChunkFilter extends ComparableObjectChunkFilter {
+    private final static class ExclusiveInclusiveComparableChunkFilter
+            extends ObjectChunkFilter<Comparable<?>> {
+        private final Comparable<?> lower;
+        private final Comparable<?> upper;
 
         private ExclusiveInclusiveComparableChunkFilter(Comparable<?> lower, Comparable<?> upper) {
-            super(lower, upper);
+            this.lower = lower;
+            this.upper = upper;
         }
 
         @Override
         public boolean matches(Comparable<?> value) {
-            return ObjectComparisons.lt(lower, value) && ObjectComparisons.geq(upper, value);
-        }
-
-        @Override
-        public boolean overlaps(Comparable<?> inputLower, Comparable<?> inputUpper) {
-            return ObjectComparisons.gt(inputUpper, lower) && ObjectComparisons.geq(upper, inputLower);
+            return ObjectComparisons.compare(lower, value) < 0 && ObjectComparisons.compare(upper, value) >= 0;
         }
     }
 
-    private final static class ExclusiveExclusiveComparableChunkFilter extends ComparableObjectChunkFilter {
+    private final static class ExclusiveExclusiveComparableChunkFilter
+            extends ObjectChunkFilter<Comparable<?>> {
+        private final Comparable<?> lower;
+        private final Comparable<?> upper;
 
         private ExclusiveExclusiveComparableChunkFilter(Comparable<?> lower, Comparable<?> upper) {
-            super(lower, upper);
+            this.lower = lower;
+            this.upper = upper;
         }
 
         @Override
         public boolean matches(Comparable<?> value) {
-            return ObjectComparisons.lt(lower, value) && ObjectComparisons.gt(upper, value);
-        }
-
-        @Override
-        public boolean overlaps(Comparable<?> inputLower, Comparable<?> inputUpper) {
-            return ObjectComparisons.gt(inputUpper, lower) && ObjectComparisons.gt(upper, inputLower);
+            return ObjectComparisons.compare(lower, value) < 0 && ObjectComparisons.compare(upper, value) > 0;
         }
     }
 

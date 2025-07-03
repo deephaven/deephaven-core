@@ -18,7 +18,7 @@ public class PushdownResult implements SafeCloseable {
      */
     public static final long METADATA_STATS_COST = 10_000L;
     /**
-     * Column-level Bloom-filter needs to be used
+     * Column-level Bloom filter needs to be used
      */
     public static final long BLOOM_FILTER_COST = 20_000L;
     /**

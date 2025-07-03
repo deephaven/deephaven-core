@@ -27,11 +27,6 @@ public class CharRangeComparator {
         public boolean matches(char value) {
             return CharComparisons.geq(value, lower) && CharComparisons.leq(value, upper);
         }
-
-        @Override
-        public boolean overlaps(char inputLower, char inputUpper) {
-            return CharComparisons.geq(inputUpper, lower) && CharComparisons.geq(upper, inputLower);
-        }
     }
 
     private final static class CharCharInclusiveExclusiveFilter extends CharCharFilter {
@@ -42,11 +37,6 @@ public class CharRangeComparator {
         @Override
         public boolean matches(char value) {
             return CharComparisons.geq(value, lower) && CharComparisons.lt(value, upper);
-        }
-
-        @Override
-        public boolean overlaps(char inputLower, char inputUpper) {
-            return CharComparisons.geq(inputUpper, lower) && CharComparisons.gt(upper, inputLower);
         }
     }
 
@@ -59,11 +49,6 @@ public class CharRangeComparator {
         public boolean matches(char value) {
             return CharComparisons.gt(value, lower) && CharComparisons.leq(value, upper);
         }
-
-        @Override
-        public boolean overlaps(char inputLower, char inputUpper) {
-            return CharComparisons.gt(inputUpper, lower) && CharComparisons.geq(upper, inputLower);
-        }
     }
 
     private final static class CharCharExclusiveExclusiveFilter extends CharCharFilter {
@@ -74,11 +59,6 @@ public class CharRangeComparator {
         @Override
         public boolean matches(char value) {
             return CharComparisons.gt(value, lower) && CharComparisons.lt(value, upper);
-        }
-
-        @Override
-        public boolean overlaps(char inputLower, char inputUpper) {
-            return CharComparisons.gt(inputUpper, lower) && CharComparisons.gt(upper, inputLower);
         }
     }
 

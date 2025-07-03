@@ -11,7 +11,6 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.table.impl.chunkfilter.CannotComputeOverlapsException;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
 import io.deephaven.engine.table.impl.chunkfilter.ObjectChunkFilter;
 import org.jetbrains.annotations.NotNull;
@@ -160,64 +159,56 @@ final class WhereFilterPatternImpl extends WhereFilterImpl {
         return value != null && !filterPattern.pattern().matcher(value).find();
     }
 
-
-    private static abstract class WhereFilterPatternObjectChunkFilter extends ObjectChunkFilter<CharSequence> {
-        @Override
-        public boolean overlaps(CharSequence inputLower, CharSequence inputUpper) {
-            throw new CannotComputeOverlapsException("Overlap not supported when using pattern based filters");
-        }
-    }
-
-    private final class Matches extends WhereFilterPatternObjectChunkFilter {
+    private final class Matches extends ObjectChunkFilter<CharSequence> {
         @Override
         public boolean matches(CharSequence value) {
             return WhereFilterPatternImpl.this.matches(value);
         }
     }
 
-    private final class MatchesPatternInverted extends WhereFilterPatternObjectChunkFilter {
+    private final class MatchesPatternInverted extends ObjectChunkFilter<CharSequence> {
         @Override
         public boolean matches(CharSequence value) {
             return WhereFilterPatternImpl.this.matchesPatternInverted(value);
         }
     }
 
-    private final class Find extends WhereFilterPatternObjectChunkFilter {
+    private final class Find extends ObjectChunkFilter<CharSequence> {
         @Override
         public boolean matches(CharSequence value) {
             return WhereFilterPatternImpl.this.find(value);
         }
     }
 
-    private final class FindPatternInverted extends WhereFilterPatternObjectChunkFilter {
+    private final class FindPatternInverted extends ObjectChunkFilter<CharSequence> {
         @Override
         public boolean matches(CharSequence value) {
             return WhereFilterPatternImpl.this.findPatternInverted(value);
         }
     }
 
-    private final class NotMatches extends WhereFilterPatternObjectChunkFilter {
+    private final class NotMatches extends ObjectChunkFilter<CharSequence> {
         @Override
         public boolean matches(CharSequence value) {
             return !WhereFilterPatternImpl.this.matches(value);
         }
     }
 
-    private final class NotMatchesPatternInverted extends WhereFilterPatternObjectChunkFilter {
+    private final class NotMatchesPatternInverted extends ObjectChunkFilter<CharSequence> {
         @Override
         public boolean matches(CharSequence value) {
             return !WhereFilterPatternImpl.this.matchesPatternInverted(value);
         }
     }
 
-    private final class NotFind extends WhereFilterPatternObjectChunkFilter {
+    private final class NotFind extends ObjectChunkFilter<CharSequence> {
         @Override
         public boolean matches(CharSequence value) {
             return !WhereFilterPatternImpl.this.find(value);
         }
     }
 
-    private final class NotFindPatternInverted extends WhereFilterPatternObjectChunkFilter {
+    private final class NotFindPatternInverted extends ObjectChunkFilter<CharSequence> {
         @Override
         public boolean matches(CharSequence value) {
             return !WhereFilterPatternImpl.this.findPatternInverted(value);

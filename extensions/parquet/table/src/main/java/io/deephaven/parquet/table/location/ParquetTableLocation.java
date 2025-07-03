@@ -16,14 +16,12 @@ import io.deephaven.engine.table.impl.PushdownFilterContext;
 import io.deephaven.engine.table.impl.PushdownResult;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.chunkfilter.ByteChunkFilter;
-import io.deephaven.engine.table.impl.chunkfilter.CannotComputeOverlapsException;
 import io.deephaven.engine.table.impl.chunkfilter.CharChunkFilter;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
 import io.deephaven.engine.table.impl.chunkfilter.DoubleChunkFilter;
 import io.deephaven.engine.table.impl.chunkfilter.FloatChunkFilter;
 import io.deephaven.engine.table.impl.chunkfilter.IntChunkFilter;
 import io.deephaven.engine.table.impl.chunkfilter.LongChunkFilter;
-import io.deephaven.engine.table.impl.chunkfilter.ObjectChunkFilter;
 import io.deephaven.engine.table.impl.chunkfilter.ShortChunkFilter;
 import io.deephaven.engine.table.impl.dataindex.StandaloneDataIndex;
 import io.deephaven.engine.table.impl.locations.*;
@@ -46,11 +44,9 @@ import io.deephaven.parquet.table.metadata.DataIndexInfo;
 import io.deephaven.parquet.table.metadata.GroupingColumnInfo;
 import io.deephaven.parquet.table.metadata.SortColumnInfo;
 import io.deephaven.parquet.table.metadata.TableInfo;
-import io.deephaven.time.DateTimeUtils;
-import io.deephaven.util.QueryConstants;
+import io.deephaven.parquet.table.pushdown.*;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.mutable.MutableLong;
-import io.deephaven.util.type.TypeUtils;
 import org.apache.parquet.column.statistics.Statistics;
 import org.apache.parquet.format.RowGroup;
 import org.apache.parquet.hadoop.metadata.BlockMetaData;
@@ -64,7 +60,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Instant;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -73,13 +68,6 @@ import java.util.stream.IntStream;
 import static io.deephaven.parquet.base.ParquetFileReader.FILE_URI_SCHEME;
 import static io.deephaven.parquet.table.ParquetTableWriter.*;
 import static io.deephaven.parquet.table.ParquetTableWriter.GROUPING_END_POS_COLUMN_NAME;
-import static io.deephaven.parquet.table.location.ParquetPushdownUtils.containsDeephavenNullByte;
-import static io.deephaven.parquet.table.location.ParquetPushdownUtils.containsDeephavenNullChar;
-import static io.deephaven.parquet.table.location.ParquetPushdownUtils.containsDeephavenNullDouble;
-import static io.deephaven.parquet.table.location.ParquetPushdownUtils.containsDeephavenNullFloat;
-import static io.deephaven.parquet.table.location.ParquetPushdownUtils.containsDeephavenNullInt;
-import static io.deephaven.parquet.table.location.ParquetPushdownUtils.containsDeephavenNullLong;
-import static io.deephaven.parquet.table.location.ParquetPushdownUtils.containsDeephavenNullShort;
 
 public class ParquetTableLocation extends AbstractTableLocation {
 
@@ -474,7 +462,10 @@ public class ParquetTableLocation extends AbstractTableLocation {
         // Some range filters host a condition filter as the internal filter, and we can't push that down.
         final boolean isRangeFilter =
                 filter instanceof RangeFilter && ((RangeFilter) filter).getRealFilter() instanceof AbstractRangeFilter;
-        final boolean isMatchFilter = filter instanceof MatchFilter;
+
+        // Some match filters host a failover condition filter, and we can't push that down.
+        final boolean isMatchFilter = filter instanceof MatchFilter &&
+                ((MatchFilter) filter).getFailoverFilterIfCached() != null;
 
         final Optional<List<ResolvedColumnInfo>> maybeResolvedColumns = resolveColumns(filter, ctx.renameMap());
         if (maybeResolvedColumns.isEmpty()) {
@@ -627,7 +618,10 @@ public class ParquetTableLocation extends AbstractTableLocation {
         // Some range filters host a condition filter as the internal filter, and we can't push that down.
         final boolean isRangeFilter =
                 filter instanceof RangeFilter && ((RangeFilter) filter).getRealFilter() instanceof AbstractRangeFilter;
-        final boolean isMatchFilter = filter instanceof MatchFilter;
+
+        // Some match filters host a failover condition filter, and we can't push that down.
+        final boolean isMatchFilter = filter instanceof MatchFilter &&
+                ((MatchFilter) filter).getFailoverFilterIfCached() != null;
 
         // Initialize the pushdown result with the selection rowset as "maybe" rows
         PushdownResult result = PushdownResult.of(RowSetFactory.empty(), selection.copy());
@@ -780,7 +774,6 @@ public class ParquetTableLocation extends AbstractTableLocation {
 
             final MinMax<?> minMax = minMaxFromStatistics.get();
 
-            boolean maybeMatches;
             final Optional<ChunkFilter> optionalChunkFilter;
             if (filter instanceof AbstractRangeFilter || filter instanceof MatchFilter) {
                 optionalChunkFilter = ((ExposesChunkFilter) filter).chunkFilter();
@@ -795,83 +788,34 @@ public class ParquetTableLocation extends AbstractTableLocation {
             }
             final ChunkFilter chunkFilter = optionalChunkFilter.get();
 
-            try {
-                if (chunkFilter instanceof ByteChunkFilter) {
-                    final ByteChunkFilter byteChunkFilter = (ByteChunkFilter) chunkFilter;
-                    final byte min = TypeUtils.getUnboxedByte(minMax.min());
-                    final byte max = TypeUtils.getUnboxedByte(minMax.max());
-                    final boolean doStatsContainNull = nullCount > 0 || containsDeephavenNullByte(min, max);
-                    maybeMatches = (doStatsContainNull && byteChunkFilter.matches(QueryConstants.NULL_BYTE))
-                            || byteChunkFilter.overlaps(min, max);
-                } else if (chunkFilter instanceof CharChunkFilter) {
-                    final CharChunkFilter charChunkFilter = (CharChunkFilter) chunkFilter;
-                    final char min = (char) (((Number) minMax.min()).intValue());
-                    final char max = (char) (((Number) minMax.max()).intValue());
-                    final boolean doStatsContainNull = nullCount > 0 || containsDeephavenNullChar(min, max);
-                    maybeMatches = (doStatsContainNull && charChunkFilter.matches(QueryConstants.NULL_CHAR))
-                            || charChunkFilter.overlaps(min, max);
-                } else if (chunkFilter instanceof ShortChunkFilter) {
-                    final ShortChunkFilter shortChunkFilter = (ShortChunkFilter) chunkFilter;
-                    final short min = TypeUtils.getUnboxedShort(minMax.min());
-                    final short max = TypeUtils.getUnboxedShort(minMax.max());
-                    final boolean doStatsContainNull = nullCount > 0 || containsDeephavenNullShort(min, max);
-                    maybeMatches = (doStatsContainNull && shortChunkFilter.matches(QueryConstants.NULL_SHORT))
-                            || shortChunkFilter.overlaps(min, max);
-                } else if (chunkFilter instanceof IntChunkFilter) {
-                    final IntChunkFilter intChunkFilter = (IntChunkFilter) chunkFilter;
-                    final int min = TypeUtils.getUnboxedInt(minMax.min());
-                    final int max = TypeUtils.getUnboxedInt(minMax.max());
-                    final boolean doStatsContainNull = nullCount > 0 || containsDeephavenNullInt(min, max);
-                    maybeMatches = (doStatsContainNull && intChunkFilter.matches(QueryConstants.NULL_INT))
-                            || intChunkFilter.overlaps(min, max);
-                } else if (filter instanceof InstantRangeFilter.InstantLongChunkFilterAdapter) {
-                    final InstantRangeFilter.InstantLongChunkFilterAdapter instantChunkFilter =
-                            (InstantRangeFilter.InstantLongChunkFilterAdapter) filter;
-                    final long min = DateTimeUtils.epochNanos((Instant) minMax.min());
-                    final long max = DateTimeUtils.epochNanos((Instant) minMax.max());
-                    final boolean doStatsContainNull = nullCount > 0 || containsDeephavenNullLong(min, max);
-                    maybeMatches = (doStatsContainNull && instantChunkFilter.matches(QueryConstants.NULL_LONG))
-                            || instantChunkFilter.overlaps(min, max);
-                } else if (chunkFilter instanceof LongChunkFilter) {
-                    final LongChunkFilter longChunkFilter = (LongChunkFilter) chunkFilter;
-                    final long min = TypeUtils.getUnboxedLong(minMax.min());
-                    final long max = TypeUtils.getUnboxedLong(minMax.max());
-                    final boolean doStatsContainNull = nullCount > 0 || containsDeephavenNullLong(min, max);
-                    maybeMatches = (doStatsContainNull && longChunkFilter.matches(QueryConstants.NULL_LONG))
-                            || longChunkFilter.overlaps(min, max);
-                } else if (chunkFilter instanceof FloatChunkFilter) {
-                    final FloatChunkFilter floatChunkFilter = (FloatChunkFilter) chunkFilter;
-                    final float min = TypeUtils.getUnboxedFloat(minMax.min());
-                    final float max = TypeUtils.getUnboxedFloat(minMax.max());
-                    final boolean doStatsContainNull = nullCount > 0 || containsDeephavenNullFloat(min, max);
-                    maybeMatches = (doStatsContainNull && floatChunkFilter.matches(QueryConstants.NULL_FLOAT))
-                            || floatChunkFilter.overlaps(min, max);
-                } else if (chunkFilter instanceof DoubleChunkFilter) {
-                    final DoubleChunkFilter doubleChunkFilter = (DoubleChunkFilter) chunkFilter;
-                    final double min = TypeUtils.getUnboxedDouble(minMax.min());
-                    final double max = TypeUtils.getUnboxedDouble(minMax.max());
-                    final boolean doStatsContainNull = nullCount > 0 || containsDeephavenNullDouble(min, max);
-                    maybeMatches = (doStatsContainNull && doubleChunkFilter.matches(QueryConstants.NULL_DOUBLE))
-                            || doubleChunkFilter.overlaps(min, max);
-                } else if (chunkFilter instanceof ChunkFilter.ConstantChunkFilter) {
-                    maybeMatches =
-                            ((ChunkFilter.ConstantChunkFilter) chunkFilter).overlaps(minMax.min(), minMax.max());
-                } else if (chunkFilter instanceof ObjectChunkFilter) {
-                    // noinspection unchecked,rawtypes
-                    final ObjectChunkFilter objectChunkFilter = (ObjectChunkFilter) chunkFilter;
-                    // noinspection unchecked,rawtypes
-                    maybeMatches = (nullCount > 0 && objectChunkFilter.matches(null)) ||
-                            objectChunkFilter.overlaps(minMax.min(), minMax.max());
-                } else {
-                    // Unsupported chunk filter type for push down, so we can't filter anything.
-                    maybeMatches = true;
-                }
-            } catch (final CannotComputeOverlapsException e) {
-                // If we can't compute overlaps, we assume that the filter matches all rows.
-                maybeMatches = true;
+            final boolean maybeOverlaps;
+            if (chunkFilter instanceof ByteChunkFilter) {
+                maybeOverlaps = BytePushdownHandler.maybeOverlaps(
+                        filter, (ByteChunkFilter) chunkFilter, minMax, nullCount);
+            } else if (chunkFilter instanceof CharChunkFilter) {
+                maybeOverlaps = CharPushdownHandler.maybeOverlaps(
+                        filter, (CharChunkFilter) chunkFilter, minMax, nullCount);
+            } else if (chunkFilter instanceof ShortChunkFilter) {
+                maybeOverlaps = ShortPushdownHandler.maybeOverlaps(
+                        filter, (ShortChunkFilter) chunkFilter, minMax, nullCount);
+            } else if (chunkFilter instanceof IntChunkFilter) {
+                maybeOverlaps = IntPushdownHandler.maybeOverlaps(
+                        filter, (IntChunkFilter) chunkFilter, minMax, nullCount);
+            } else if (chunkFilter instanceof LongChunkFilter) {
+                maybeOverlaps = LongPushdownHandler.maybeOverlaps(
+                        filter, (LongChunkFilter) chunkFilter, minMax, nullCount);
+            } else if (chunkFilter instanceof FloatChunkFilter) {
+                maybeOverlaps = FloatPushdownHandler.maybeOverlaps(
+                        filter, (FloatChunkFilter) chunkFilter, minMax, nullCount);
+            } else if (chunkFilter instanceof DoubleChunkFilter) {
+                maybeOverlaps = DoublePushdownHandler.maybeOverlaps(
+                        filter, (DoubleChunkFilter) chunkFilter, minMax, nullCount);
+            } else {
+                // Unsupported filter type for push down, so we can't filter anything.
+                maybeOverlaps = true;
             }
-
-            if (maybeMatches) {
+            // TODO Add support for Strings, Objects, Instants, ComparableRange, SingleSidedComparableRange etc.
+            if (maybeOverlaps) {
                 maybeBuilder.appendRowSequence(rs);
                 maybeCount.add(rs.size());
             }

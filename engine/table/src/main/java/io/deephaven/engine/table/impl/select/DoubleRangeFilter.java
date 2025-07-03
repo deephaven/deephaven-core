@@ -10,7 +10,6 @@ package io.deephaven.engine.table.impl.select;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
 import io.deephaven.util.compare.DoubleComparisons;
 import io.deephaven.engine.table.impl.chunkfilter.DoubleRangeComparator;
 import io.deephaven.engine.table.ColumnSource;
@@ -55,6 +54,14 @@ public class DoubleRangeFilter extends AbstractRangeFilter {
         }
     }
 
+    public double getUpper() {
+        return upper;
+    }
+
+    public double getLower() {
+        return lower;
+    }
+
     public static WhereFilter makeRange(String columnName, String val) {
         final int precision = findPrecision(val);
         final double parsed = Double.parseDouble(val);
@@ -90,11 +97,7 @@ public class DoubleRangeFilter extends AbstractRangeFilter {
             throw new RuntimeException("Column \"" + columnName + "\" doesn't exist in this table, available columns: "
                     + tableDefinition.getColumnNames());
         }
-        initChunkFilter();
-    }
-
-    ChunkFilter initChunkFilter() {
-        return chunkFilter = DoubleRangeComparator.makeDoubleFilter(lower, upper, lowerInclusive, upperInclusive);
+        chunkFilter = DoubleRangeComparator.makeDoubleFilter(lower, upper, lowerInclusive, upperInclusive);
     }
 
     @Override

@@ -26,6 +26,7 @@ import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.annotations.InternalUseOnly;
 import io.deephaven.util.datastructures.CachingSupplier;
 import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.util.type.TypeUtils;
@@ -141,7 +142,9 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
         this.values = values;
     }
 
-    private ConditionFilter getFailoverFilterIfCached() {
+    @InternalUseOnly
+    @Nullable
+    public ConditionFilter getFailoverFilterIfCached() {
         return failoverFilter != null ? failoverFilter.getIfCached() : null;
     }
 
