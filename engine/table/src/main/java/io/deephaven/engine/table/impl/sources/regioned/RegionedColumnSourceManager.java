@@ -27,7 +27,6 @@ import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.ReferentialIntegrity;
-import io.deephaven.util.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -912,9 +911,8 @@ public class RegionedColumnSourceManager
             return;
         }
 
-        final RowSetBuilderRandom matchBuilder = RowSetFactory.builderRandom();
-        final RowSetBuilderRandom maybeMatchBuilder = RowSetFactory.builderRandom();
-        final MutableLong maybeMatchCount = new MutableLong(0);
+        final WritableRowSet matches = RowSetFactory.empty();
+        final WritableRowSet maybeMatches = RowSetFactory.empty();
 
         // Use the job scheduler to run every location in parallel.
         jobScheduler.iterateParallel(
@@ -926,33 +924,31 @@ public class RegionedColumnSourceManager
                     try (final RegionInfoHolder regionInfo = overlappingRegions.get(idx)) {
                         final int regionIndex = regionInfo.tle.regionIndex;
                         final TableLocation location = regionInfo.tle.location;
-                        final WritableRowSet overlappingRowSet = regionInfo.rowSet;
 
                         final long locationStartKey = getFirstRowKey(regionIndex);
                         final Consumer<PushdownResult> resultConsumer = result -> {
                             try (final PushdownResult ignored = result) {
                                 // Add the results to the global set.
                                 if (result.match().isNonempty()) {
-                                    synchronized (matchBuilder) {
+                                    synchronized (matches) {
                                         result.match().shiftInPlace(locationStartKey);
-                                        matchBuilder.addRowSet(result.match());
+                                        matches.insert(result.match());
                                     }
                                 }
                                 if (result.maybeMatch().isNonempty()) {
-                                    synchronized (maybeMatchBuilder) {
+                                    synchronized (maybeMatches) {
                                         result.maybeMatch().shiftInPlace(locationStartKey);
-                                        maybeMatchBuilder.addRowSet(result.maybeMatch());
-                                        maybeMatchCount.add(result.maybeMatch().size());
+                                        maybeMatches.insert(result.maybeMatch());
+                                        // maybeMatchCount.add(result.maybeMatch().size());
                                     }
                                 }
                             }
                         };
-                        location.pushdownFilter(filter, overlappingRowSet, fullSet, usePrev, context,
+                        location.pushdownFilter(filter, regionInfo.rowSet, fullSet, usePrev, context,
                                 costCeiling, jobScheduler, resultConsumer, onError);
                     }
                     locationResume.run();
-                }, () -> onComplete.accept(PushdownResult.of(matchBuilder.build(),
-                        maybeMatchCount.get() == input.size() ? input.copy() : maybeMatchBuilder.build())),
+                }, () -> onComplete.accept(PushdownResult.of(matches, maybeMatches)),
                 onError);
     }
 

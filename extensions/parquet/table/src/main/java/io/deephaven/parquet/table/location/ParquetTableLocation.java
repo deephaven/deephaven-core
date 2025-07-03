@@ -460,7 +460,8 @@ public class ParquetTableLocation extends AbstractTableLocation {
         return chunkSuppliers != null
                 && chunkSuppliers.length > 0
                 && chunkSuppliers[0] != null
-                && chunkSuppliers[0].get() != null;
+                && chunkSuppliers[0].get() != null
+                && chunkSuppliers[0].get().size() > 0;
     }
 
     @Override
@@ -656,7 +657,8 @@ public class ParquetTableLocation extends AbstractTableLocation {
         // Should we look at dictionary operations?
         if (shouldExecute(QueryTable.DISABLE_WHERE_PUSHDOWN_PARQUET_DICTIONARY,
                 PushdownResult.DICTIONARY_DATA_COST, executedFilterCost, costCeiling)
-                && ctx.supportsChunkFilter()) {
+                && ctx.supportsChunkFilter()
+                && hasDictionaryPage(parquetColumnNames[0], ctx.columnDefinitions.get(0))) {
             try (final PushdownResult ignored = result) {
                 result = pushdownFilterDictionary(ctx, filter, parquetColumnNames, result);
             }
@@ -854,30 +856,6 @@ public class ParquetTableLocation extends AbstractTableLocation {
             final WhereFilter filter,
             final String[] parquetColumnNames,
             final PushdownResult result) {
-
-        // If the filter is a RangeFilter, we need to use the underlying filter. This might be an AbstractRangeFilter
-        // or a ConditionFilter, but either is a valid filter to use for the dictionary chunk filtering.
-        final WhereFilter filterToUse = (filter instanceof RangeFilter
-                ? ((RangeFilter) filter).getRealFilter()
-                : filter);
-
-        // TODO: this test is not sufficient. When we have a condition filter, we won't have an easy test for null
-        // inclusion. I expect that we will need to create a dummy chunk with all null values and pass that to the
-        // filter to see if it includes nulls. This is a potentially expensive operation that we would not want to
-        // perform for each location. We may need to consider collecting WhereFilter metadata at a high level so
-        // we don't continue to perform duplicate tests at the location level. This filter metadata could be part of
-        // the PushdownFilterContext.
-        //
-        // Things we need to check for RegionedColumnSource pushdown (and the reason):
-        // 1. Is range filter with an AbstractRangeFilter `real` filter? (for rowgroup min/max checks)
-        // 2. Is match filter? (for rowgroup min/max checks)
-        // 3. Nulls included in filter? (for rowgroup min/max and dictionary chunk filtering)
-        // 4. Support chunk filter and is a single-column? (For dictionary chunk filtering)
-        //
-        // These computations could be performed as part of `RegionedColumnSourceManager.makePushdownFilterContext()`
-        // call and included as part of the context. As an alternative, these could be implemented as accessors on the
-        // context and deferred until queried. Some synchronization would be needed since they would likely be called
-        // during parallel code execution.
 
         final RowSetBuilderSequential matchBuilder = RowSetFactory.builderSequential();
         final RowSetBuilderSequential maybeBuilder = RowSetFactory.builderSequential();
