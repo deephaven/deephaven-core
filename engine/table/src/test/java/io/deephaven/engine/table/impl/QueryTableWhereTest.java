@@ -1864,7 +1864,6 @@ public abstract class QueryTableWhereTest {
         static void pushdownFilter(
                 final WhereFilter filter,
                 final RowSet selection,
-                final RowSet fullSet,
                 final boolean usePrev,
                 final ColumnSource<?> source,
                 final double maybePercentage,
@@ -1872,16 +1871,15 @@ public abstract class QueryTableWhereTest {
             try (final SafeCloseable ignored = LivenessScopeStack.open()) {
                 final String colName = filter.getColumns().get(0);
                 final Map<String, ColumnSource<?>> csMap = Collections.singletonMap(colName, source);
-                final Table dummy = new QueryTable(fullSet.copy().toTracking(), csMap);
+                final Table dummy = new QueryTable(selection.copy().toTracking(), csMap);
 
-                try (final RowSet matches = filter.filter(selection, fullSet, dummy, usePrev)) {
+                try (final WritableRowSet matches = filter.filter(selection, selection, dummy, usePrev)) {
                     final long size = matches.size();
                     final long maybeSize = (long) (size * maybePercentage);
                     final WritableRowSet addedRowSet = matches.subSetByPositionRange(0, maybeSize);
                     final WritableRowSet maybeRowSet = matches.subSetByPositionRange(maybeSize, size);
-
-                    // Default to returning all results as maybe
-                    onComplete.accept(PushdownResult.of(addedRowSet, maybeRowSet));
+                    // Obvious these row sets do not overlap
+                    onComplete.accept(PushdownResult.ofUnsafe(matches.copy(), addedRowSet, maybeRowSet));
                 }
             }
         }
@@ -1903,18 +1901,17 @@ public abstract class QueryTableWhereTest {
 
         @Override
         public long estimatePushdownFilterCost(WhereFilter filter, Map<String, String> renameMap, RowSet selection,
-                RowSet fullSet, boolean usePrev, final PushdownFilterContext context) {
+                boolean usePrev, final PushdownFilterContext context) {
             return pushdownCost;
         }
 
         @Override
         public void pushdownFilter(final WhereFilter filter, final Map<String, String> renameMap, final RowSet input,
-                final RowSet fullSet, final boolean usePrev, final PushdownFilterContext context,
+                final boolean usePrev, final PushdownFilterContext context,
                 final long costCeiling, final JobScheduler jobScheduler, final Consumer<PushdownResult> onComplete,
                 final Consumer<Exception> onError) {
             encounterOrder = counter.getAndIncrement();
-            PushdownColumnSourceHeler.pushdownFilter(filter, input, fullSet, usePrev, this, maybePercentage,
-                    onComplete);
+            PushdownColumnSourceHeler.pushdownFilter(filter, input, usePrev, this, maybePercentage, onComplete);
         }
 
         public static void resetCounter() {
@@ -2085,7 +2082,6 @@ public abstract class QueryTableWhereTest {
                 final WhereFilter filter,
                 final Map<String, String> renameMap,
                 final RowSet selection,
-                final RowSet fullSet,
                 final boolean usePrev,
                 final PushdownFilterContext context) {
             return pushdownCost;
@@ -2096,7 +2092,6 @@ public abstract class QueryTableWhereTest {
                 final WhereFilter filter,
                 final Map<String, String> renameMap,
                 final RowSet selection,
-                final RowSet fullSet,
                 final boolean usePrev,
                 final PushdownFilterContext context,
                 final long costCeiling,
@@ -2107,13 +2102,13 @@ public abstract class QueryTableWhereTest {
                 throw new IllegalStateException("Table not assigned to TestPPM");
             }
             try (final SafeCloseable ignored = LivenessScopeStack.open()) {
-                try (final RowSet matches = filter.filter(selection, fullSet, table, usePrev)) {
+                try (final WritableRowSet matches = filter.filter(selection, selection, table, usePrev)) {
                     final long size = matches.size();
                     final long maybeSize = (long) (size * maybePercentage);
                     final WritableRowSet addedRowSet = matches.subSetByPositionRange(0, maybeSize);
                     final WritableRowSet maybeRowSet = matches.subSetByPositionRange(maybeSize, size);
-
-                    onComplete.accept(PushdownResult.of(addedRowSet, maybeRowSet));
+                    // Obvious these row sets do not overlap
+                    onComplete.accept(PushdownResult.ofUnsafe(matches.copy(), addedRowSet, maybeRowSet));
                 }
             }
         }

@@ -109,11 +109,10 @@ abstract class RegionedColumnSourceBase<DATA_TYPE, ATTR extends Values, REGION_T
             final WhereFilter filter,
             final Map<String, String> renameMap,
             final RowSet selection,
-            final RowSet fullSet,
             final boolean usePrev,
             final PushdownFilterContext context) {
         // Delegate to the manager.
-        return manager.estimatePushdownFilterCost(filter, renameMap, selection, fullSet, usePrev, context);
+        return manager.estimatePushdownFilterCost(filter, renameMap, selection, usePrev, context);
     }
 
     @Override
@@ -121,7 +120,6 @@ abstract class RegionedColumnSourceBase<DATA_TYPE, ATTR extends Values, REGION_T
             final WhereFilter filter,
             final Map<String, String> renameMap,
             final RowSet selection,
-            final RowSet fullSet,
             final boolean usePrev,
             final PushdownFilterContext context,
             final long costCeiling,
@@ -129,8 +127,8 @@ abstract class RegionedColumnSourceBase<DATA_TYPE, ATTR extends Values, REGION_T
             final Consumer<PushdownResult> onComplete,
             final Consumer<Exception> onError) {
         // Delegate to the manager.
-        manager.pushdownFilter(filter, renameMap, selection, fullSet, usePrev, context, costCeiling, jobScheduler,
-                onComplete, onError);
+        manager.pushdownFilter(filter, renameMap, selection, usePrev, context, costCeiling, jobScheduler, onComplete,
+                onError);
     }
 
     @Override
