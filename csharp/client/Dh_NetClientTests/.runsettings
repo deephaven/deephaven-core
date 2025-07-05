@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RunSettings>
+  <RunConfiguration>
+    <EnvironmentVariables>
+    <!-- List of environment variables we want to set.
+	We provide two options for setting the server host and port when running unit tests.
+    1. CommonContextForTests.FixedDhHost and FixedDhPort
+    2. Otherwise the environment variables DH_HOST and DH_PORT are used.
+    The Visual Studio test runner will read environment variable settings from this .runsettings file.
+    in the project directory. However, note that the *Resharper* test runner does not seem to honor
+    .runsettings. -->
+    <!-- <DH_HOST>10.0.4.109</DH_HOST> -->
+	<!-- <DH_PORT>10000</DH_PORT> -->
+    </EnvironmentVariables>
+  </RunConfiguration>
+</RunSettings>
