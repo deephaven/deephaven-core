@@ -7,7 +7,6 @@
     <RootNamespace>Deephaven.Dh_NetClient</RootNamespace>
     <PackageId>Deephaven.CommunityClient</PackageId>
     <Title>Client Library for Deephaven Community Core</Title>
-    <Version>0.39.1-SNAPSHOT</Version>
     <Company>Deephaven Data Labs LLC</Company>
     <Authors>Deephaven Authors</Authors>
     <RepositoryUrl>https://github.com/deephaven/deephaven-core</RepositoryUrl>
