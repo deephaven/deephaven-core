@@ -3,18 +3,20 @@
 //
 package io.deephaven.engine.table.impl.by;
 
+import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 class NullColumnAggregationTransformer implements AggregationContextTransformer {
 
-    private final Map<String, Class<?>> resultColumnTypes;
+    private final List<ColumnDefinition<?>> resultColumnTypes;
 
-    NullColumnAggregationTransformer(@NotNull final Map<String, Class<?>> resultColumnTypes) {
+    NullColumnAggregationTransformer(@NotNull final List<ColumnDefinition<?>> resultColumnTypes) {
         this.resultColumnTypes = resultColumnTypes;
     }
 
@@ -23,7 +25,8 @@ class NullColumnAggregationTransformer implements AggregationContextTransformer 
         final Map<String, ColumnSource<?>> savedColumns = new LinkedHashMap<>(resultColumns);
         resultColumns.clear();
         resultColumnTypes
-                .forEach((key, value) -> resultColumns.put(key, NullValueColumnSource.getInstance(value, null)));
+                .forEach((cd) -> resultColumns.put(cd.getName(),
+                        NullValueColumnSource.getInstance(cd.getDataType(), cd.getComponentType())));
         resultColumns.putAll(savedColumns);
     }
 }

@@ -20,6 +20,8 @@ import io.deephaven.engine.table.impl.select.WhereFilterFactory;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.test.types.OutOfBandTest;
+import io.deephaven.vector.IntVector;
+import io.deephaven.vector.IntVectorDirect;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -309,5 +311,32 @@ public class TestRollupTable extends RefreshingTableTestCase {
                 () -> rollup1.makeNodeOperationsRecorder(RollupTable.NodeType.Aggregated)
                         .sort(List.of(SortColumn.asc(ColumnName.of("ObjCol")))));
         assertEquals("ObjCol is not a sortable type: class java.lang.Object", nse3.getMessage());
+    }
+
+    @Test
+    public void testVectorKeyColumn() {
+        final Table arr = emptyTable(6).update("I = i", "J = i % 3", "K = i % 2").groupBy("J");
+        TableTools.showWithRowSet(arr);
+        final RollupTable vectorRollup = arr.rollup(List.of(AggCount("Count")), List.of(ColumnName.of("I")));
+
+        final IntVector[] arrayWithNull = new IntVector[1];
+        final Table keyTable = newTable(
+                intCol(vectorRollup.getRowDepthColumn().name(), 0),
+                col("I", arrayWithNull),
+                byteCol("Action", HierarchicalTable.KEY_TABLE_ACTION_EXPAND_ALL));
+
+        final HierarchicalTable.SnapshotState ss1 = vectorRollup.makeSnapshotState();
+        final Table snapshot =
+                snapshotToTable(vectorRollup, ss1, keyTable, ColumnName.of("Action"), null, RowSetFactory.flat(30));
+        TableTools.showWithRowSet(snapshot);
+        assertTableEquals(
+                TableTools.newTable(
+                        intCol(vectorRollup.getRowDepthColumn().name(), 1, 2, 2, 2),
+                        booleanCol(vectorRollup.getRowExpandedColumn().name(), true, null, null, null),
+                        col("I", null, (IntVector) new IntVectorDirect(0, 3), new IntVectorDirect(1, 4),
+                                new IntVectorDirect(2, 5)),
+                        longCol("Count", 3, 1, 1, 1)),
+                snapshot);
+        freeSnapshotTableChunks(snapshot);
     }
 }

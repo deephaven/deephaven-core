@@ -687,9 +687,9 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
         while (!columnsToReaggregateBy.isEmpty()) {
             nullColumnNames.addFirst(columnsToReaggregateBy.removeLast().name());
             final TableDefinition lastLevelDefinition = lastLevel.getDefinition();
-            final Map<String, Class<?>> nullColumns = nullColumnNames.stream().collect(Collectors.toMap(
-                    Function.identity(), ncn -> lastLevelDefinition.getColumn(ncn).getDataType(),
-                    Assert::neverInvoked, LinkedHashMap::new));
+            final List<ColumnDefinition<?>> nullColumns =
+                    nullColumnNames.stream().map(lastLevelDefinition::getColumn).collect(Collectors.toList());
+
             lastLevel = lastLevel.aggNoMemo(
                     AggregationProcessor.forRollupReaggregated(aggregations, nullColumns, ROLLUP_COLUMN),
                     false, null, new ArrayList<>(columnsToReaggregateBy));
