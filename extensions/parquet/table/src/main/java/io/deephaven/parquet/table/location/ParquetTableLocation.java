@@ -51,7 +51,9 @@ import org.apache.parquet.column.statistics.Statistics;
 import org.apache.parquet.format.RowGroup;
 import org.apache.parquet.hadoop.metadata.BlockMetaData;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
+import org.apache.parquet.schema.ColumnOrder;
 import org.apache.parquet.schema.MessageType;
+import org.apache.parquet.schema.Type;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -529,6 +531,17 @@ public class ParquetTableLocation extends AbstractTableLocation {
 
         // Should not have a codec defined in the instructions or footer metadata
         final String columnNameInSchema = columnPath.get(0);
+
+        final Type parquetType = parquetSchema.getType(columnNameInSchema);
+        if (!parquetType.isPrimitive()) {
+            // Cannot push down filters on group types
+            return false;
+        }
+        if (parquetType.asPrimitiveType().columnOrder() != ColumnOrder.typeDefined()) {
+            // Cannot use statistics if column order is not type-defined
+            return false;
+        }
+
         final String codecFromInstructions = readInstructions.getCodecName(colNameFromDef);
         final ColumnTypeInfo columnTypeInfo = getColumnTypes().get(columnNameInSchema);
         final Object codec = codecFromInstructions != null ? codecFromInstructions

@@ -3,8 +3,8 @@
 //
 package io.deephaven.parquet.table.pushdown;
 
-import io.deephaven.parquet.base.materializers.InstantNanosFromInt96Materializer;
 import org.apache.parquet.column.statistics.Statistics;
+import org.apache.parquet.schema.ColumnOrder;
 import org.apache.parquet.schema.LogicalTypeAnnotation;
 import org.apache.parquet.schema.PrimitiveType;
 import org.jetbrains.annotations.NotNull;
@@ -33,9 +33,15 @@ public abstract class MinMaxFromStatistics {
             // Not expected to have null min/max values, but if they are null, we cannot determine min/max
             return Optional.empty();
         }
+        final PrimitiveType columnType = statistics.type();
+        if (columnType.columnOrder() != ColumnOrder.typeDefined()) {
+            // If the column order is not type defined, we cannot determine min/max from statistics
+            return Optional.empty();
+        }
         // First try from logical type, then from primitive type
-        final LogicalTypeAnnotation logicalType = statistics.type().getLogicalTypeAnnotation();
-        final PrimitiveType.PrimitiveTypeName primitiveTypeName = statistics.type().getPrimitiveTypeName();
+        final LogicalTypeAnnotation logicalType = columnType.getLogicalTypeAnnotation();
+        final PrimitiveType.PrimitiveTypeName primitiveTypeName = columnType.getPrimitiveTypeName();
+
         return fromLogicalType(logicalType, statistics)
                 .or(() -> fromPrimitiveType(primitiveTypeName, statistics));
     }
@@ -83,12 +89,7 @@ public abstract class MinMaxFromStatistics {
                     return Optional.empty();
                 }
                 return wrapMinMax((Double) statistics.genericGetMin(), (Double) statistics.genericGetMax());
-            case INT96:
-                final long minInstantNanos = InstantNanosFromInt96Materializer.convertValue(statistics.getMinBytes());
-                final long maxInstantNanos = InstantNanosFromInt96Materializer.convertValue(statistics.getMaxBytes());
-                return wrapMinMax(
-                        ParquetPushdownUtils.epochNanosToInstant(minInstantNanos),
-                        ParquetPushdownUtils.epochNanosToInstant(maxInstantNanos));
+            case INT96: // The column-order for INT96 is undefined, so cannot use the statistics.
             case BINARY:
             case FIXED_LEN_BYTE_ARRAY:
             default:

@@ -25,7 +25,9 @@ import io.deephaven.test.types.OutOfBandTest;
 import org.apache.parquet.column.statistics.Statistics;
 import org.apache.parquet.hadoop.metadata.ColumnChunkMetaData;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
+import org.apache.parquet.schema.ColumnOrder;
 import org.apache.parquet.schema.MessageType;
+import org.apache.parquet.schema.Type;
 import org.jetbrains.annotations.NotNull;
 import org.junit.*;
 import org.junit.experimental.categories.Category;
@@ -33,6 +35,7 @@ import org.junit.experimental.categories.Category;
 import java.io.File;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.*;
@@ -1160,6 +1163,25 @@ public final class ParquetTableFilterTest {
 
         filterAndVerifyResultsAllowEmpty(diskTable, memTable, "Doubles == null");
         filterAndVerifyResultsAllowEmpty(diskTable, memTable, "Doubles != null");
+    }
+
+    @Test
+    public void testInt96Timestamps() throws URISyntaxException {
+        // Int96 timestamps do not have column-order as TYPE_DEFINED, so we cannot use the statistics to filter
+        final String path = ParquetTableFilterTest.class.getResource("/ReferenceInt96Timestamps.parquet").getFile();
+        {
+            final ParquetMetadata metadata = new ParquetTableLocationKey(
+                    new File(path).toURI(), 0, null, ParquetInstructions.EMPTY).getMetadata();
+            final MessageType schema = metadata.getFileMetaData().getSchema();
+            final Type type = schema.getType("event_time");
+            assertTrue(type.isPrimitive());
+            assertEquals(ColumnOrder.undefined(), type.asPrimitiveType().columnOrder());
+        }
+        final Table diskTable = ParquetTools.readTable(path);
+        final Table memTable = diskTable.select();
+        filterAndVerifyResultsAllowEmpty(diskTable, memTable, "event_time == null");
+        filterAndVerifyResults(diskTable, memTable, "event_time != null");
+        filterAndVerifyResults(diskTable, memTable, "event_time <= java.time.Instant.parse(\"2025-01-01T00:00:00Z\")");
     }
 
     /**
