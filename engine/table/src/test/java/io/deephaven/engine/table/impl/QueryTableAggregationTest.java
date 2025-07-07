@@ -4055,6 +4055,13 @@ public class QueryTableAggregationTest {
         final Table aggregated = t2.minBy(colNames);
     }
 
+    @Test
+    public void testArrayKeys() {
+        final Table arraySource = newTable(col("Key", new int[] {1}, new int[] {2}, new int[] {1}));
+        final IllegalArgumentException iae = assertThrows(IllegalArgumentException.class, () -> arraySource.countBy("Count", "Key"));
+        assertEquals("Cannot aggregate using an array column: Key, column type is an array of int", iae.getMessage());
+    }
+
     private void diskBackedTestHarness(Consumer<Table> testFunction) throws IOException {
         final File directory = Files.createTempDirectory("QueryTableAggregationTest").toFile();
 
