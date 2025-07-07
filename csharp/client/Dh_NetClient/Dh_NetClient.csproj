@@ -5,7 +5,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <RootNamespace>Deephaven.Dh_NetClient</RootNamespace>
-    <PackageId>Deephaven.CommunityClient</PackageId>
+    <PackageId>Deephaven.CoreClient</PackageId>
     <Title>Client Library for Deephaven Community Core</Title>
     <Company>Deephaven Data Labs LLC</Company>
     <Authors>Deephaven Authors</Authors>
