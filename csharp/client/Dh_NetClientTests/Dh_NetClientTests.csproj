@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
@@ -9,7 +9,7 @@
     <IsTestProject>true</IsTestProject>
     <NoWarn>1701;1702;1591;612</NoWarn>
     <RootNamespace>Deephaven.Dh_NetClientTests</RootNamespace>
-    <AssemblyName>Deephaven.CommunityClientTests</AssemblyName>
+    <AssemblyName>Deephaven.CoreClientTests</AssemblyName>
   </PropertyGroup>
 
   <ItemGroup>

@@ -17,7 +17,7 @@
     <RepositoryType>git</RepositoryType>
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
     <NoWarn>1701;1702;1591;612</NoWarn>
-    <AssemblyName>Deephaven.CommunityClient</AssemblyName>
+    <AssemblyName>Deephaven.CoreClient</AssemblyName>
   </PropertyGroup>
 
   <ItemGroup>
