@@ -4,8 +4,11 @@
 package io.deephaven.engine.table.impl.by.rollup;
 
 import io.deephaven.annotations.BuildableStyle;
+import io.deephaven.engine.table.ColumnDefinition;
 import org.immutables.value.Value;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -15,19 +18,19 @@ import java.util.Map;
 @BuildableStyle
 public abstract class NullColumns extends RollupAggregationBase {
 
-    public static NullColumns of(String name, Class<?> type) {
-        return builder().putResultColumns(name, type).build();
+    public static NullColumns of(ColumnDefinition<?> resultColumn) {
+        return builder().addResultColumns(resultColumn).build();
     }
 
-    public static NullColumns from(Map<String, Class<?>> resultColumns) {
-        return builder().putAllResultColumns(resultColumns).build();
+    public static NullColumns from(Iterable<? extends ColumnDefinition<?>> resultColumns) {
+        return builder().addAllResultColumns(resultColumns).build();
     }
 
     public static Builder builder() {
         return ImmutableNullColumns.builder();
     }
 
-    public abstract Map<String, Class<?>> resultColumns();
+    public abstract List<ColumnDefinition<?>> resultColumns();
 
     @Override
     public final <V extends RollupAggregation.Visitor> V walk(V visitor) {
@@ -44,9 +47,9 @@ public abstract class NullColumns extends RollupAggregationBase {
     }
 
     public interface Builder {
-        Builder putResultColumns(String name, Class<?> type);
+        Builder addResultColumns(ColumnDefinition<?> type);
 
-        Builder putAllResultColumns(Map<String, ? extends Class<?>> resultColumns);
+        Builder addAllResultColumns(Iterable<? extends ColumnDefinition<?>> resultColumns);
 
         NullColumns build();
     }
