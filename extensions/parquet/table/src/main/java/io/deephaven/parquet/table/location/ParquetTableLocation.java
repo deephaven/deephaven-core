@@ -22,7 +22,9 @@ import io.deephaven.engine.table.impl.chunkfilter.DoubleChunkFilter;
 import io.deephaven.engine.table.impl.chunkfilter.FloatChunkFilter;
 import io.deephaven.engine.table.impl.chunkfilter.IntChunkFilter;
 import io.deephaven.engine.table.impl.chunkfilter.LongChunkFilter;
+import io.deephaven.engine.table.impl.chunkfilter.ObjectChunkFilter;
 import io.deephaven.engine.table.impl.chunkfilter.ShortChunkFilter;
+import io.deephaven.engine.table.impl.chunkfilter.StringChunkMatchFilterFactory;
 import io.deephaven.engine.table.impl.dataindex.StandaloneDataIndex;
 import io.deephaven.engine.table.impl.locations.*;
 import io.deephaven.engine.table.impl.locations.impl.AbstractTableLocation;
@@ -528,21 +530,23 @@ public class ParquetTableLocation extends AbstractTableLocation {
         if (columnPath.size() != 1) {
             return false;
         }
-
-        // Should not have a codec defined in the instructions or footer metadata
         final String columnNameInSchema = columnPath.get(0);
-
+        if (!parquetSchema.containsField(columnNameInSchema)) {
+            // Column not found in the schema
+            return false;
+        }
         final Type parquetType = parquetSchema.getType(columnNameInSchema);
         if (!parquetType.isPrimitive()) {
             // Cannot push down filters on group types
             return false;
         }
         if (parquetType.asPrimitiveType().columnOrder() != ColumnOrder.typeDefined()) {
-            // We only handle typeDefined min/max right now; if new orders get defined in the future, they need to be
-            // explicitly handled
+            // We only handle typeDefined min/max right now; if new orders get defined in the future, they need to
+            // be explicitly handled
             return false;
         }
 
+        // Should not have a codec defined in the instructions or footer metadata
         final String codecFromInstructions = readInstructions.getCodecName(colNameFromDef);
         final ColumnTypeInfo columnTypeInfo = getColumnTypes().get(columnNameInSchema);
         final Object codec = codecFromInstructions != null ? codecFromInstructions
@@ -824,6 +828,21 @@ public class ParquetTableLocation extends AbstractTableLocation {
             } else if (chunkFilter instanceof DoubleChunkFilter) {
                 maybeOverlaps = DoublePushdownHandler.maybeOverlaps(
                         filter, (DoubleChunkFilter) chunkFilter, minMax, nullCount);
+            } else if (chunkFilter instanceof StringChunkMatchFilterFactory.CaseInsensitiveStringChunkFilter) {
+                maybeOverlaps = CaseInsensitiveStringMatchPushdownHandler.maybeOverlaps(
+                        (MatchFilter) filter,
+                        (StringChunkMatchFilterFactory.CaseInsensitiveStringChunkFilter) chunkFilter, minMax,
+                        nullCount);
+            } else if (filter instanceof InstantRangeFilter) {
+                maybeOverlaps = InstantPushdownHandler.maybeOverlaps(
+                        (InstantRangeFilter) filter, (InstantRangeFilter.InstantLongChunkFilterAdapter) chunkFilter,
+                        minMax, nullCount);
+            } else if (filter instanceof SingleSidedComparableRangeFilter) {
+                maybeOverlaps = SingleSidedComparableRangePushdownHandler.maybeOverlaps(
+                        (SingleSidedComparableRangeFilter) filter, chunkFilter, minMax, nullCount);
+            } else if (chunkFilter instanceof ObjectChunkFilter) {
+                maybeOverlaps = ObjectPushdownHandler.maybeOverlaps(
+                        filter, (ObjectChunkFilter<?>) chunkFilter, minMax, nullCount);
             } else {
                 // Unsupported filter type for push down, so we can't filter anything.
                 maybeOverlaps = true;

@@ -52,7 +52,7 @@ public abstract class LongPushdownHandler {
     /**
      * Verifies that the {@code [min, max]} range intersects the range defined by the given lower and upper bounds.
      */
-    private static boolean maybeOverlaps(
+    static boolean maybeOverlaps(
             final long min, final long max,
             final long lower, final boolean lowerInclusive,
             final long upper, final boolean upperInclusive) {
@@ -77,7 +77,7 @@ public abstract class LongPushdownHandler {
     }
 
     /**
-     * Verifies that the {@code [min, max]} range intersects every point supplied in {@code values}, taking into account
+     * Verifies that the {@code [min, max]} range intersects any point supplied in {@code values}, taking into account
      * the {@code inverseMatch} flag.
      */
     private static boolean maybeMatches(
@@ -96,7 +96,7 @@ public abstract class LongPushdownHandler {
     }
 
     /**
-     * Verifies that the {@code [min, max]} range intersects every point supplied in {@code values}.
+     * Verifies that the {@code [min, max]} range intersects any point supplied in {@code values}.
      */
     private static boolean maybeMatchesImpl(
             final long min,
@@ -104,17 +104,17 @@ public abstract class LongPushdownHandler {
             @NotNull final Object[] values) {
         for (final Object v : values) {
             final long value = TypeUtils.getUnboxedLong(v);
-            if (!maybeOverlaps(min, max, value, true, value, true)) {
-                return false;
+            if (maybeOverlaps(min, max, value, true, value, true)) {
+                return true;
             }
         }
-        return true;
+        return false;
     }
 
     /**
-     * Verifies that the {@code [min, max]} range includes values that are not in the given {@code values} array. This
-     * is done by checking whether {@code [min, max]} overlaps with every open gap produced by excluding the given
-     * values. For example, if the values are sorted as {@code v_0, v_1, ..., v_n-1}, then the gaps are:
+     * Verifies that the {@code [min, max]} range includes any value that is not in the given {@code values} array. This
+     * is done by checking whether {@code [min, max]} overlaps with any open gap produced by excluding the given values.
+     * For example, if the values are sorted as {@code v_0, v_1, ..., v_n-1}, then the gaps are:
      * 
      * <pre>
      * [QueryConstants.NULL_LONG, v_0), (v_0, v_1), ... , (v_n-2, v_n-1), (v_n-1, QueryConstants.MAX_LONG]
@@ -128,8 +128,8 @@ public abstract class LongPushdownHandler {
         long lower = QueryConstants.NULL_LONG;
         boolean lowerInclusive = true;
         for (final long upper : sortedValues) {
-            if (!maybeOverlaps(min, max, lower, lowerInclusive, upper, false)) {
-                return false;
+            if (maybeOverlaps(min, max, lower, lowerInclusive, upper, false)) {
+                return true;
             }
             lower = upper;
             lowerInclusive = false;

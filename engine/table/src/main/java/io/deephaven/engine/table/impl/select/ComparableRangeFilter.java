@@ -32,6 +32,14 @@ public class ComparableRangeFilter extends AbstractRangeFilter {
         }
     }
 
+    public Comparable<?> getUpper() {
+        return upper;
+    }
+
+    public Comparable<?> getLower() {
+        return lower;
+    }
+
     @TestUseOnly
     public static ComparableRangeFilter makeForTest(String columnName, Comparable<?> lower, Comparable<?> upper,
             boolean lowerInclusive, boolean upperInclusive) {

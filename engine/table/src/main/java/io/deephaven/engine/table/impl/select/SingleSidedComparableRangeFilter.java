@@ -25,6 +25,14 @@ public class SingleSidedComparableRangeFilter extends AbstractRangeFilter {
         pivot = val;
     }
 
+    public Comparable<?> getPivot() {
+        return pivot;
+    }
+
+    public boolean isGreaterThan() {
+        return isGreaterThan;
+    }
+
     @TestUseOnly
     public static SingleSidedComparableRangeFilter makeForTest(String columnName, Comparable<?> value,
             boolean inclusive, boolean isGreaterThan) {
