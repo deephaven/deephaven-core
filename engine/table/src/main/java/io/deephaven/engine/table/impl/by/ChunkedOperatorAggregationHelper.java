@@ -153,7 +153,14 @@ public class ChunkedOperatorAggregationHelper {
         }
 
         final ColumnSource<?>[] keySources =
-                Arrays.stream(keyNames).map(input::getColumnSource).toArray(ColumnSource[]::new);
+                Arrays.stream(keyNames).map(name -> {
+                    final ColumnSource<?> source = input.getColumnSource(name);
+                    if (source.getType().isArray()) {
+                        throw new IllegalArgumentException("Cannot aggregate using an array column: " + name
+                                + ", column type is an array of " + source.getType().getComponentType());
+                    }
+                    return source;
+                }).toArray(ColumnSource[]::new);
         final ColumnSource<?>[] reinterpretedKeySources = Arrays.stream(keySources)
                 .map(ReinterpretUtils::maybeConvertToPrimitive).toArray(ColumnSource[]::new);
 
