@@ -26,6 +26,6 @@ public class RollupAggregationOutputs extends AggregationOutputs implements Roll
 
     @Override
     public void visit(NullColumns nullColumns) {
-        out = nullColumns.resultColumns().keySet().stream().map(ColumnName::of);
+        out = nullColumns.resultColumns().stream().map(cd -> ColumnName.of(cd.getName()));
     }
 }
