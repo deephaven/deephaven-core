@@ -22,6 +22,7 @@ import io.deephaven.engine.table.impl.ShiftedColumnsFactory;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.select.FormulaColumn;
 import io.deephaven.engine.table.impl.select.SelectColumn;
+import io.deephaven.engine.table.impl.select.ShiftedColumnDefinition;
 import io.deephaven.engine.table.impl.select.SourceColumn;
 import io.deephaven.engine.table.impl.select.SwitchColumn;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
@@ -307,19 +308,19 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
     }
 
     private static boolean hasPositiveOffsetConstantArrayAccess(final SelectColumn sc) {
-        Pair<String, Map<Long, List<MatchPair>>> shifts = null;
+        Set<ShiftedColumnDefinition> shifts = null;
         if (sc instanceof FormulaColumn) {
-            shifts = ((FormulaColumn) sc).getFormulaShiftColPair();
+            shifts = ((FormulaColumn) sc).getFormulaShiftedColumnDefinitions();
         } else if (sc instanceof SwitchColumn) {
             final SelectColumn realColumn = ((SwitchColumn) sc).getRealColumn();
             if (realColumn instanceof FormulaColumn) {
-                shifts = ((FormulaColumn) realColumn).getFormulaShiftColPair();
+                shifts = ((FormulaColumn) realColumn).getFormulaShiftedColumnDefinitions();
             }
         }
         if (shifts == null) {
             throw new IllegalStateException("Column " + sc.getName() + " does not have constant array access");
         }
-        return shifts.getSecond().keySet().stream().max(Long::compareTo).orElse(0L) > 0;
+        return shifts.stream().anyMatch(col -> col.getShiftAmount() > 0);
     }
 
 

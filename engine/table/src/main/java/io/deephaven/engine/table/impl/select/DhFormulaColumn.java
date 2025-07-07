@@ -13,7 +13,6 @@ import io.deephaven.engine.context.QueryCompilerRequest;
 import io.deephaven.engine.context.QueryScopeParam;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
 import io.deephaven.engine.table.impl.lang.QueryLanguageParser;
@@ -62,7 +61,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
 
     private FormulaAnalyzer.Result analyzedFormula;
     private boolean hasConstantValue;
-    private Pair<String, Map<Long, List<MatchPair>>> formulaShiftColPair;
+    private Pair<String, Set<ShiftedColumnDefinition>> formulaShiftedColumnDefinitions;
 
     public FormulaColumnPython getFormulaColumnPython() {
         return formulaColumnPython;
@@ -183,7 +182,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
                     compilationRequestProcessor.getFormulaImports());
             analyzedFormula = FormulaAnalyzer.analyze(formulaString, columnDefinitionMap, result);
             hasConstantValue = result.isConstantValueExpression();
-            formulaShiftColPair = result.getFormulaShiftColPair();
+            formulaShiftedColumnDefinitions = result.getShiftedColumnDefinitions();
 
             log.debug().append("Expression (after language conversion) : ").append(analyzedFormula.cookedFormulaString)
                     .endl();
@@ -749,7 +748,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
             copy.hasConstantValue = hasConstantValue;
             copy.returnedType = returnedType;
             copy.formulaColumnPython = formulaColumnPython;
-            copy.formulaShiftColPair = formulaShiftColPair;
+            copy.formulaShiftedColumnDefinitions = formulaShiftedColumnDefinitions;
             onCopy(copy);
         }
         return copy;
@@ -761,8 +760,21 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
     }
 
     @Override
-    public Pair<String, Map<Long, List<MatchPair>>> getFormulaShiftColPair() {
-        return formulaShiftColPair;
+    public Set<ShiftedColumnDefinition> getFormulaShiftedColumnDefinitions() {
+        if (formulaShiftedColumnDefinitions == null) {
+            return null;
+        }
+
+        return formulaShiftedColumnDefinitions.getSecond();
+    }
+
+    @Override
+    public String getShiftedFormulaString() {
+        if (formulaShiftedColumnDefinitions == null) {
+            return null;
+        }
+
+        return formulaShiftedColumnDefinitions.getFirst();
     }
 
     private void compileFormula(@NotNull final QueryCompilerRequestProcessor compilationRequestProcessor) {
