@@ -7,7 +7,6 @@ import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 
-
 public abstract class ObjectChunkFilter<T> implements ChunkFilter {
     public abstract boolean matches(T value);
 

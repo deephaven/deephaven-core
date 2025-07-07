@@ -538,7 +538,8 @@ public class ParquetTableLocation extends AbstractTableLocation {
             return false;
         }
         if (parquetType.asPrimitiveType().columnOrder() != ColumnOrder.typeDefined()) {
-            // Cannot use statistics if column order is not type-defined
+            // We only handle typeDefined min/max right now; if new orders get defined in the future, they need to be
+            // explicitly handled
             return false;
         }
 

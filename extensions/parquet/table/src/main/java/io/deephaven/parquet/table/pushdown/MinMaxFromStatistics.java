@@ -35,7 +35,8 @@ public abstract class MinMaxFromStatistics {
         }
         final PrimitiveType columnType = statistics.type();
         if (columnType.columnOrder() != ColumnOrder.typeDefined()) {
-            // If the column order is not type defined, we cannot determine min/max from statistics
+            // We only handle typeDefined min/max right now; if new orders get defined in the future, they need to be
+            // explicitly handled
             return Optional.empty();
         }
         // First try from logical type, then from primitive type
