@@ -130,7 +130,8 @@ public class Aggregate {
   /// for each input column.
   /// </summary>
   /// <param name="percentile">The designated percentile</param>
-  /// <param name="avgMedian"></param>
+  /// <param name="avgMedian">When the percentile splits the group into two halves, whether to average the two middle values for the output value</param>
+
   /// <param name="columnSpecs"></param>
   /// <returns>An Aggregate object representing the aggregation</returns>
   public static Aggregate Pct(double percentile, bool avgMedian, params string[] columnSpecs) {
