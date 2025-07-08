@@ -34,8 +34,9 @@ public class Aggregate {
   }
 
   /// <summary>
-  /// Returns an aggregator that computes the total sum of values, within an aggregation group,
+  /// Returns an aggregator that computes the total sum of absolute values, within an aggregation group,
   /// for each input column.
+
   /// </summary>
   /// <param name="columnSpecs"></param>
   /// <returns>An Aggregate object representing the aggregation</returns>
