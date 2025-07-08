@@ -15,8 +15,6 @@ import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.InternalUseOnly;
 import io.deephaven.util.compare.ShortComparisons;
 import io.deephaven.util.type.TypeUtils;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 import static io.deephaven.parquet.table.pushdown.ParquetPushdownUtils.containsDeephavenNullShort;
@@ -83,7 +81,7 @@ public abstract class ShortPushdownHandler {
     private static boolean maybeMatches(
             final short min,
             final short max,
-            @Nullable final Object[] values,
+            final Object[] values,
             final boolean inverseMatch) {
         if (values == null || values.length == 0) {
             // No values to check against, so we consider it as a maybe overlap.
@@ -101,7 +99,7 @@ public abstract class ShortPushdownHandler {
     private static boolean maybeMatchesImpl(
             final short min,
             final short max,
-            @NotNull final Object[] values) {
+            final Object[] values) {
         for (final Object v : values) {
             final short value = TypeUtils.getUnboxedShort(v);
             if (maybeOverlaps(min, max, value, true, value, true)) {
@@ -123,8 +121,8 @@ public abstract class ShortPushdownHandler {
     private static boolean maybeMatchesInverseImpl(
             final short min,
             final short max,
-            @NotNull final Object[] values) {
-        final Short[] sortedValues = sort((Short[]) values);
+            final Object[] values) {
+        final Short[] sortedValues = sort(values);
         short lower = QueryConstants.NULL_SHORT;
         boolean lowerInclusive = true;
         for (final short upper : sortedValues) {
@@ -138,7 +136,7 @@ public abstract class ShortPushdownHandler {
     }
 
     // TODO (deephaven-core#5920): Use the more efficient sorting method when available.
-    private static Short[] sort(@NotNull final Short[] values) {
+    private static Short[] sort(final Object[] values) {
         // Unbox to get the primitive values, and then box them back for sorting with custom comparator.
         final Short[] boxedValues = Arrays.stream(values)
                 .map(TypeUtils::getUnboxedShort)

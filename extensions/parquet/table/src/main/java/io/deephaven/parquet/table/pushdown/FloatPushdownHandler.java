@@ -1,10 +1,6 @@
 //
 // Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
-// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
-// ****** Edit CharPushdownHandler and run "./gradlew replicateParquetPushdownHandlers" to regenerate
-//
-// @formatter:off
 package io.deephaven.parquet.table.pushdown;
 
 import io.deephaven.api.filter.Filter;
@@ -15,8 +11,6 @@ import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.InternalUseOnly;
 import io.deephaven.util.compare.FloatComparisons;
 import io.deephaven.util.type.TypeUtils;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 import static io.deephaven.parquet.table.pushdown.ParquetPushdownUtils.containsDeephavenNullFloat;
@@ -87,7 +81,7 @@ public abstract class FloatPushdownHandler {
     private static boolean maybeMatches(
             final float min,
             final float max,
-            @Nullable final Object[] values,
+            final Object[] values,
             final boolean inverseMatch) {
         if (values == null || values.length == 0) {
             // No values to check against, so we consider it as a maybe overlap.
@@ -105,7 +99,7 @@ public abstract class FloatPushdownHandler {
     private static boolean maybeMatchesImpl(
             final float min,
             final float max,
-            @NotNull final Object[] values) {
+            final Object[] values) {
         for (final Object v : values) {
             final float value = TypeUtils.getUnboxedFloat(v);
             if (maybeOverlaps(min, max, value, true, value, true)) {
@@ -127,8 +121,8 @@ public abstract class FloatPushdownHandler {
     private static boolean maybeMatchesInverseImpl(
             final float min,
             final float max,
-            @NotNull final Object[] values) {
-        final Float[] sortedValues = sort((Float[]) values);
+            final Object[] values) {
+        final Float[] sortedValues = sort(values);
         float lower = QueryConstants.NULL_FLOAT;
         boolean lowerInclusive = true;
         for (final float upper : sortedValues) {
@@ -142,7 +136,7 @@ public abstract class FloatPushdownHandler {
     }
 
     // TODO (deephaven-core#5920): Use the more efficient sorting method when available.
-    private static Float[] sort(@NotNull final Float[] values) {
+    private static Float[] sort(final Object[] values) {
         // Unbox to get the primitive values, and then box them back for sorting with custom comparator.
         final Float[] boxedValues = Arrays.stream(values)
                 .map(TypeUtils::getUnboxedFloat)

@@ -11,8 +11,6 @@ import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.InternalUseOnly;
 import io.deephaven.util.compare.CharComparisons;
 import io.deephaven.util.type.TypeUtils;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 import static io.deephaven.parquet.table.pushdown.ParquetPushdownUtils.containsDeephavenNullChar;
@@ -79,7 +77,7 @@ public abstract class CharPushdownHandler {
     private static boolean maybeMatches(
             final char min,
             final char max,
-            @Nullable final Object[] values,
+            final Object[] values,
             final boolean inverseMatch) {
         if (values == null || values.length == 0) {
             // No values to check against, so we consider it as a maybe overlap.
@@ -97,7 +95,7 @@ public abstract class CharPushdownHandler {
     private static boolean maybeMatchesImpl(
             final char min,
             final char max,
-            @NotNull final Object[] values) {
+            final Object[] values) {
         for (final Object v : values) {
             final char value = TypeUtils.getUnboxedChar(v);
             if (maybeOverlaps(min, max, value, true, value, true)) {
@@ -119,8 +117,8 @@ public abstract class CharPushdownHandler {
     private static boolean maybeMatchesInverseImpl(
             final char min,
             final char max,
-            @NotNull final Object[] values) {
-        final Character[] sortedValues = sort((Character[]) values);
+            final Object[] values) {
+        final Character[] sortedValues = sort(values);
         char lower = QueryConstants.NULL_CHAR;
         boolean lowerInclusive = true;
         for (final char upper : sortedValues) {
@@ -134,7 +132,7 @@ public abstract class CharPushdownHandler {
     }
 
     // TODO (deephaven-core#5920): Use the more efficient sorting method when available.
-    private static Character[] sort(@NotNull final Character[] values) {
+    private static Character[] sort(final Object[] values) {
         // Unbox to get the primitive values, and then box them back for sorting with custom comparator.
         final Character[] boxedValues = Arrays.stream(values)
                 .map(TypeUtils::getUnboxedChar)

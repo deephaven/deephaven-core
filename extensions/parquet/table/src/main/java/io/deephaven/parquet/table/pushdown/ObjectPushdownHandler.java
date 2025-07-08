@@ -32,12 +32,7 @@ public abstract class ObjectPushdownHandler {
                     comparableRangeFilter.getUpper(), comparableRangeFilter.isUpperInclusive());
         } else if (filter instanceof MatchFilter) {
             final MatchFilter matchFilter = (MatchFilter) filter;
-            final Object[] values = matchFilter.getValues();
-            if (!(values instanceof Comparable<?>[])) {
-                // If the values are not comparable, we cannot determine overlap.
-                return true;
-            }
-            return maybeMatches(min, max, (Comparable<?>[]) matchFilter.getValues(), matchFilter.getInvertMatch());
+            return maybeMatches(min, max, matchFilter.getValues(), matchFilter.getInvertMatch());
         }
         return true;
     }
@@ -76,7 +71,7 @@ public abstract class ObjectPushdownHandler {
     private static boolean maybeMatches(
             final Comparable<?> min,
             final Comparable<?> max,
-            final Comparable<?>[] values,
+            final Object[] values,
             final boolean inverseMatch) {
         if (values == null || values.length == 0) {
             // No values to check against, so we consider it as a maybe overlap.
@@ -94,9 +89,14 @@ public abstract class ObjectPushdownHandler {
     private static boolean maybeMatchesImpl(
             final Comparable<?> min,
             final Comparable<?> max,
-            final Comparable<?>[] values) {
-        for (final Comparable<?> value : values) {
-            if (maybeOverlaps(min, max, value, true, value, true)) {
+            final Object[] values) {
+        for (final Object value : values) {
+            if (!(value instanceof Comparable)) {
+                // If the values are not comparable, we cannot determine overlap.
+                return true;
+            }
+            final Comparable<?> valueComparable = (Comparable<?>) value;
+            if (maybeOverlaps(min, max, valueComparable, true, valueComparable, true)) {
                 return true;
             }
         }
@@ -109,9 +109,9 @@ public abstract class ObjectPushdownHandler {
     private static boolean maybeMatchesInverseImpl(
             final Comparable<?> min,
             final Comparable<?> max,
-            final Comparable<?>[] values) {
+            final Object[] values) {
         if (ObjectComparisons.eq(min, max)) {
-            for (final Comparable<?> value : values) {
+            for (final Object value : values) {
                 if (ObjectComparisons.eq(min, value)) {
                     // This is the only case where we can definitely say there is no match.
                     return false;

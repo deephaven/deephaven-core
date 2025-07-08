@@ -15,8 +15,6 @@ import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.InternalUseOnly;
 import io.deephaven.util.compare.IntComparisons;
 import io.deephaven.util.type.TypeUtils;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 import static io.deephaven.parquet.table.pushdown.ParquetPushdownUtils.containsDeephavenNullInt;
@@ -83,7 +81,7 @@ public abstract class IntPushdownHandler {
     private static boolean maybeMatches(
             final int min,
             final int max,
-            @Nullable final Object[] values,
+            final Object[] values,
             final boolean inverseMatch) {
         if (values == null || values.length == 0) {
             // No values to check against, so we consider it as a maybe overlap.
@@ -101,7 +99,7 @@ public abstract class IntPushdownHandler {
     private static boolean maybeMatchesImpl(
             final int min,
             final int max,
-            @NotNull final Object[] values) {
+            final Object[] values) {
         for (final Object v : values) {
             final int value = TypeUtils.getUnboxedInt(v);
             if (maybeOverlaps(min, max, value, true, value, true)) {
@@ -123,8 +121,8 @@ public abstract class IntPushdownHandler {
     private static boolean maybeMatchesInverseImpl(
             final int min,
             final int max,
-            @NotNull final Object[] values) {
-        final Integer[] sortedValues = sort((Integer[]) values);
+            final Object[] values) {
+        final Integer[] sortedValues = sort(values);
         int lower = QueryConstants.NULL_INT;
         boolean lowerInclusive = true;
         for (final int upper : sortedValues) {
@@ -138,7 +136,7 @@ public abstract class IntPushdownHandler {
     }
 
     // TODO (deephaven-core#5920): Use the more efficient sorting method when available.
-    private static Integer[] sort(@NotNull final Integer[] values) {
+    private static Integer[] sort(final Object[] values) {
         // Unbox to get the primitive values, and then box them back for sorting with custom comparator.
         final Integer[] boxedValues = Arrays.stream(values)
                 .map(TypeUtils::getUnboxedInt)

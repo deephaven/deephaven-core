@@ -469,7 +469,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
 
         // Some match filters host a failover condition filter, and we can't push that down.
         final boolean isMatchFilter = filter instanceof MatchFilter &&
-                ((MatchFilter) filter).getFailoverFilterIfCached() != null;
+                ((MatchFilter) filter).getFailoverFilterIfCached() == null;
 
         final Optional<List<ResolvedColumnInfo>> maybeResolvedColumns = resolveColumns(filter, ctx.renameMap());
         if (maybeResolvedColumns.isEmpty()) {
@@ -639,7 +639,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
 
         // Some match filters host a failover condition filter, and we can't push that down.
         final boolean isMatchFilter = filter instanceof MatchFilter &&
-                ((MatchFilter) filter).getFailoverFilterIfCached() != null;
+                ((MatchFilter) filter).getFailoverFilterIfCached() == null;
 
         // Initialize the pushdown result with the selection rowset as "maybe" rows
         PushdownResult result = PushdownResult.of(RowSetFactory.empty(), selection.copy());

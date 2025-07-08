@@ -15,8 +15,6 @@ import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.InternalUseOnly;
 import io.deephaven.util.compare.ByteComparisons;
 import io.deephaven.util.type.TypeUtils;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 import static io.deephaven.parquet.table.pushdown.ParquetPushdownUtils.containsDeephavenNullByte;
@@ -83,7 +81,7 @@ public abstract class BytePushdownHandler {
     private static boolean maybeMatches(
             final byte min,
             final byte max,
-            @Nullable final Object[] values,
+            final Object[] values,
             final boolean inverseMatch) {
         if (values == null || values.length == 0) {
             // No values to check against, so we consider it as a maybe overlap.
@@ -101,7 +99,7 @@ public abstract class BytePushdownHandler {
     private static boolean maybeMatchesImpl(
             final byte min,
             final byte max,
-            @NotNull final Object[] values) {
+            final Object[] values) {
         for (final Object v : values) {
             final byte value = TypeUtils.getUnboxedByte(v);
             if (maybeOverlaps(min, max, value, true, value, true)) {
@@ -123,8 +121,8 @@ public abstract class BytePushdownHandler {
     private static boolean maybeMatchesInverseImpl(
             final byte min,
             final byte max,
-            @NotNull final Object[] values) {
-        final Byte[] sortedValues = sort((Byte[]) values);
+            final Object[] values) {
+        final Byte[] sortedValues = sort(values);
         byte lower = QueryConstants.NULL_BYTE;
         boolean lowerInclusive = true;
         for (final byte upper : sortedValues) {
@@ -138,7 +136,7 @@ public abstract class BytePushdownHandler {
     }
 
     // TODO (deephaven-core#5920): Use the more efficient sorting method when available.
-    private static Byte[] sort(@NotNull final Byte[] values) {
+    private static Byte[] sort(final Object[] values) {
         // Unbox to get the primitive values, and then box them back for sorting with custom comparator.
         final Byte[] boxedValues = Arrays.stream(values)
                 .map(TypeUtils::getUnboxedByte)

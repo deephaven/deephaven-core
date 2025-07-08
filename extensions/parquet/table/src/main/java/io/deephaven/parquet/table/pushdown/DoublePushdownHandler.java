@@ -15,8 +15,6 @@ import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.InternalUseOnly;
 import io.deephaven.util.compare.DoubleComparisons;
 import io.deephaven.util.type.TypeUtils;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 import static io.deephaven.parquet.table.pushdown.ParquetPushdownUtils.containsDeephavenNullDouble;
@@ -87,7 +85,7 @@ public abstract class DoublePushdownHandler {
     private static boolean maybeMatches(
             final double min,
             final double max,
-            @Nullable final Object[] values,
+            final Object[] values,
             final boolean inverseMatch) {
         if (values == null || values.length == 0) {
             // No values to check against, so we consider it as a maybe overlap.
@@ -105,7 +103,7 @@ public abstract class DoublePushdownHandler {
     private static boolean maybeMatchesImpl(
             final double min,
             final double max,
-            @NotNull final Object[] values) {
+            final Object[] values) {
         for (final Object v : values) {
             final double value = TypeUtils.getUnboxedDouble(v);
             if (maybeOverlaps(min, max, value, true, value, true)) {
@@ -127,8 +125,8 @@ public abstract class DoublePushdownHandler {
     private static boolean maybeMatchesInverseImpl(
             final double min,
             final double max,
-            @NotNull final Object[] values) {
-        final Double[] sortedValues = sort((Double[]) values);
+            final Object[] values) {
+        final Double[] sortedValues = sort(values);
         double lower = QueryConstants.NULL_DOUBLE;
         boolean lowerInclusive = true;
         for (final double upper : sortedValues) {
@@ -142,7 +140,7 @@ public abstract class DoublePushdownHandler {
     }
 
     // TODO (deephaven-core#5920): Use the more efficient sorting method when available.
-    private static Double[] sort(@NotNull final Double[] values) {
+    private static Double[] sort(final Object[] values) {
         // Unbox to get the primitive values, and then box them back for sorting with custom comparator.
         final Double[] boxedValues = Arrays.stream(values)
                 .map(TypeUtils::getUnboxedDouble)
