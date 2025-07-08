@@ -191,6 +191,4 @@ public class ClientOptions {
     _extraHeaders.Add((headerName, headerValue));
     return this;
   }
-
-
 }
