@@ -38,7 +38,7 @@ public class Aggregate {
   /// for each input column.
 
   /// </summary>
-  /// <param name="columnSpecs"></param>
+  /// <param name="columnSpecs">The source columns for the calculation</param>
   /// <returns>An Aggregate object representing the aggregation</returns>
   public static Aggregate AbsSum(params string[] columnSpecs) {
     return CreateAggForMatchPairs(ComboAggregateRequest.Types.AggType.AbsSum, columnSpecs);
@@ -48,7 +48,7 @@ public class Aggregate {
   /// Returns an aggregator that computes the average (mean) of values, within an aggregation group,
   /// for each input column.
   /// </summary>
-  /// <param name="columnSpecs"></param>
+  /// <param name="columnSpecs">The source columns for the calculation</param>
   /// <returns>An Aggregate object representing the aggregation</returns>
   public static Aggregate Avg(params string[] columnSpecs) {
     return CreateAggForMatchPairs(ComboAggregateRequest.Types.AggType.Avg, columnSpecs);
@@ -58,7 +58,7 @@ public class Aggregate {
   /// Returns an aggregator that computes the number of elements within an aggregation group,
   /// for each input column.
   /// </summary>
-  /// <param name="columnSpec">The column spec</param>
+  /// <param name="columnSpec">The source column</param>
   /// <returns>An Aggregate object representing the aggregation</returns>
   public static Aggregate Count(string columnSpec) {
     var ad = CreateDescForColumn(ComboAggregateRequest.Types.AggType.Count, columnSpec);
@@ -69,7 +69,7 @@ public class Aggregate {
   /// Returns an aggregator that computes the first value, within an aggregation group,
   /// for each input column.
   /// </summary>
-  /// <param name="columnSpecs"></param>
+  /// <param name="columnSpecs">The source columns for the calculation</param>
   /// <returns>An Aggregate object representing the aggregation</returns>
   public static Aggregate First(params string[] columnSpecs) {
     return CreateAggForMatchPairs(ComboAggregateRequest.Types.AggType.First, columnSpecs);
@@ -79,7 +79,7 @@ public class Aggregate {
   /// Returns an aggregator that computes an array of all values within an aggregation group,
   /// for each input column.
   /// </summary>
-  /// <param name="columnSpecs"></param>
+  /// <param name="columnSpecs">The source columns for the calculation</param>
   /// <returns>An Aggregate object representing the aggregation</returns>
   public static Aggregate Group(params string[] columnSpecs) {
     return CreateAggForMatchPairs(ComboAggregateRequest.Types.AggType.Group, columnSpecs);
@@ -89,7 +89,7 @@ public class Aggregate {
   /// Returns an aggregator that computes the last value, within an aggregation group,
   /// for each input column.
   /// </summary>
-  /// <param name="columnSpecs"></param>
+  /// <param name="columnSpecs">The source columns for the calculation</param>
   /// <returns>An Aggregate object representing the aggregation</returns>
   public static Aggregate Last(params string[] columnSpecs) {
     return CreateAggForMatchPairs(ComboAggregateRequest.Types.AggType.Last, columnSpecs);
@@ -99,7 +99,7 @@ public class Aggregate {
   /// Returns an aggregator that computes the maximum value, within an aggregation group,
   /// for each input column.
   /// </summary>
-  /// <param name="columnSpecs"></param>
+  /// <param name="columnSpecs">The source columns for the calculation</param>
   /// <returns>An Aggregate object representing the aggregation</returns>
   public static Aggregate Max(params string[] columnSpecs) {
     return CreateAggForMatchPairs(ComboAggregateRequest.Types.AggType.Max, columnSpecs);
@@ -109,7 +109,7 @@ public class Aggregate {
   /// Returns an aggregator that computes the median value, within an aggregation group,
   /// for each input column.
   /// </summary>
-  /// <param name="columnSpecs"></param>
+  /// <param name="columnSpecs">The source columns for the calculation</param>
   /// <returns>An Aggregate object representing the aggregation</returns>
   public static Aggregate Med(params string[] columnSpecs) {
     return CreateAggForMatchPairs(ComboAggregateRequest.Types.AggType.Median, columnSpecs);
@@ -119,7 +119,7 @@ public class Aggregate {
   /// Returns an aggregator that computes the minimum value, within an aggregation group,
   /// for each input column.
   /// </summary>
-  /// <param name="columnSpecs"></param>
+  /// <param name="columnSpecs">The source columns for the calculation</param>
   /// <returns>An Aggregate object representing the aggregation</returns>
   public static Aggregate Min(params string[] columnSpecs) {
     return CreateAggForMatchPairs(ComboAggregateRequest.Types.AggType.Min, columnSpecs);
@@ -131,8 +131,7 @@ public class Aggregate {
   /// </summary>
   /// <param name="percentile">The designated percentile</param>
   /// <param name="avgMedian">When the percentile splits the group into two halves, whether to average the two middle values for the output value</param>
-
-  /// <param name="columnSpecs"></param>
+  /// <param name="columnSpecs">The source columns for the calculation</param>
   /// <returns>An Aggregate object representing the aggregation</returns>
   public static Aggregate Pct(double percentile, bool avgMedian, params string[] columnSpecs) {
     var pd = new ComboAggregateRequest.Types.Aggregate {
@@ -151,7 +150,7 @@ public class Aggregate {
   /// Sample standard deviation is computed using Bessel's correction (https://en.wikipedia.org/wiki/Bessel%27s_correction),
   /// which ensures that the sample variance will be an unbiased estimator of population variance.
   /// </summary>
-  /// <param name="columnSpecs"></param>
+  /// <param name="columnSpecs">The source columns for the calculation</param>
   /// <returns>An Aggregate object representing the aggregation</returns>
   public static Aggregate Std(params string[] columnSpecs) {
     return CreateAggForMatchPairs(ComboAggregateRequest.Types.AggType.Std, columnSpecs);
@@ -161,7 +160,7 @@ public class Aggregate {
   /// Returns an aggregator that computes the total sum of values, within an
   /// aggregation group, for each input column.
   /// </summary>
-  /// <param name="columnSpecs"></param>
+  /// <param name="columnSpecs">The source columns for the calculation</param>
   /// <returns>An Aggregate object representing the aggregation</returns>
   public static Aggregate Sum(params string[] columnSpecs) {
     return CreateAggForMatchPairs(ComboAggregateRequest.Types.AggType.Sum, columnSpecs);
@@ -174,7 +173,7 @@ public class Aggregate {
   /// Sample variance is computed using Bessel's correction (https://en.wikipedia.org/wiki/Bessel%27s_correction),
   /// which ensures that the sample variance will be an unbiased estimator of population variance.
   /// </summary>
-  /// <param name="columnSpecs"></param>
+  /// <param name="columnSpecs">The source columns for the calculation</param>
   /// <returns>An Aggregate object representing the aggregation</returns>
   public static Aggregate Var(params string[] columnSpecs) {
     return CreateAggForMatchPairs(ComboAggregateRequest.Types.AggType.Var, columnSpecs);
@@ -184,11 +183,26 @@ public class Aggregate {
   /// Returns an aggregator that computes the weighted average of values, within an
   /// aggregation group, for each input column.
   /// </summary>
-  /// <param name="columnSpecs"></param>
+  /// <param name="weightCol">The weight column for the calculation</param>
+  /// <param name="columnSpecs">The source columns for the calculation</param>
   /// <returns>An Aggregate object representing the aggregation</returns>
-  public static Aggregate WAvg(params string[] columnSpecs) {
-    return CreateAggForMatchPairs(ComboAggregateRequest.Types.AggType.WeightedAvg, columnSpecs);
+  public static Aggregate WAvg(string weightCol, params string[] columnSpecs) {
+    var desc = CreateDescForWeightedAverage(ComboAggregateRequest.Types.AggType.WeightedAvg,
+      weightCol, columnSpecs);
+    return new Aggregate(desc);
   }
+
+  private static ComboAggregateRequest.Types.Aggregate
+    CreateDescForWeightedAverage(ComboAggregateRequest.Types.AggType aggregateType,
+      string weightCol, string[] columnSpecs) {
+    var result = new ComboAggregateRequest.Types.Aggregate {
+      ColumnName = weightCol,
+      Type = aggregateType
+    };
+    result.MatchPairs.AddRange(columnSpecs);
+    return result;
+  }
+
 
   private static ComboAggregateRequest.Types.Aggregate
     CreateDescForMatchPairs(ComboAggregateRequest.Types.AggType aggregateType,
