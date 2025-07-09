@@ -129,10 +129,8 @@ public class TableMaker {
     public static ColumnBuilder ForType(Type type, IArrowArrayBuilder? callerProvidedBuilder) {
       var nullableUnderlyingType = Nullable.GetUnderlyingType(type);
       if (nullableUnderlyingType != null) {
-        var miGeneric = typeof(ColumnBuilder).GetMethod(nameof(ForNullableType));
-        if (miGeneric == null) {
+        var miGeneric = typeof(ColumnBuilder).GetMethod(nameof(ForNullableType)) ??
           throw new Exception($"Can't find {nameof(ForNullableType)}");
-        }
         var miInstantiated = miGeneric.MakeGenericMethod(nullableUnderlyingType);
         return (ColumnBuilder)miInstantiated.Invoke(null, [callerProvidedBuilder])!;
       }
@@ -142,7 +140,8 @@ public class TableMaker {
           (IArrowArrayBuilder<sbyte, Int8Array, Int8Array.Builder>?)callerProvidedBuilder
           ?? new Apache.Arrow.Int8Array.Builder();
         return new TypicalBuilder<sbyte, Apache.Arrow.Int8Array, Apache.Arrow.Int8Array.Builder>(
-          builderToUse, Apache.Arrow.Types.Int8Type.Default, DeephavenMetadataConstants.Types.Int8);
+          builderToUse, Apache.Arrow.Types.Int8Type.Default, DeephavenMetadataConstants.Types.Int8,
+          DeephavenConstants.NullByte);
       }
 
       if (type == typeof(Int16)) {
@@ -150,7 +149,8 @@ public class TableMaker {
           (IArrowArrayBuilder<Int16, Int16Array, Int16Array.Builder>?)callerProvidedBuilder ??
           new Apache.Arrow.Int16Array.Builder();
         return new TypicalBuilder<Int16, Apache.Arrow.Int16Array, Apache.Arrow.Int16Array.Builder>(
-          builderToUse, Apache.Arrow.Types.Int16Type.Default, DeephavenMetadataConstants.Types.Int16);
+          builderToUse, Apache.Arrow.Types.Int16Type.Default, DeephavenMetadataConstants.Types.Int16,
+          DeephavenConstants.NullShort);
       }
 
       if (type == typeof(Int32)) {
@@ -158,7 +158,8 @@ public class TableMaker {
           (IArrowArrayBuilder<Int32, Int32Array, Int32Array.Builder>?)callerProvidedBuilder ??
           new Apache.Arrow.Int32Array.Builder();
         return new TypicalBuilder<Int32, Apache.Arrow.Int32Array, Apache.Arrow.Int32Array.Builder>(
-          builderToUse, Apache.Arrow.Types.Int32Type.Default, DeephavenMetadataConstants.Types.Int32);
+          builderToUse, Apache.Arrow.Types.Int32Type.Default, DeephavenMetadataConstants.Types.Int32,
+          DeephavenConstants.NullInt);
       }
 
       if (type == typeof(Int64)) {
@@ -166,7 +167,8 @@ public class TableMaker {
           (IArrowArrayBuilder<Int64, Int64Array, Int64Array.Builder>?)callerProvidedBuilder ?? 
           new Apache.Arrow.Int64Array.Builder();
         return new TypicalBuilder<Int64, Apache.Arrow.Int64Array, Apache.Arrow.Int64Array.Builder>(
-          builderToUse, Apache.Arrow.Types.Int64Type.Default, DeephavenMetadataConstants.Types.Int64);
+          builderToUse, Apache.Arrow.Types.Int64Type.Default, DeephavenMetadataConstants.Types.Int64,
+          DeephavenConstants.NullLong);
       }
 
       if (type == typeof(float)) {
@@ -174,7 +176,8 @@ public class TableMaker {
           (IArrowArrayBuilder<float, FloatArray, FloatArray.Builder>?)callerProvidedBuilder ??
           new Apache.Arrow.FloatArray.Builder();
         return new TypicalBuilder<float, Apache.Arrow.FloatArray, Apache.Arrow.FloatArray.Builder>(
-          builderToUse, Apache.Arrow.Types.FloatType.Default, DeephavenMetadataConstants.Types.Float);
+          builderToUse, Apache.Arrow.Types.FloatType.Default, DeephavenMetadataConstants.Types.Float,
+          DeephavenConstants.NullFloat);
       }
 
       if (type == typeof(double)) {
@@ -182,7 +185,8 @@ public class TableMaker {
           (IArrowArrayBuilder<double, DoubleArray, DoubleArray.Builder>?)callerProvidedBuilder ??
           new Apache.Arrow.DoubleArray.Builder();
         return new TypicalBuilder<double, Apache.Arrow.DoubleArray, Apache.Arrow.DoubleArray.Builder>(
-          builderToUse, Apache.Arrow.Types.DoubleType.Default, DeephavenMetadataConstants.Types.Double);
+          builderToUse, Apache.Arrow.Types.DoubleType.Default, DeephavenMetadataConstants.Types.Double,
+          DeephavenConstants.NullDouble);
       }
 
       if (type == typeof(bool)) {
@@ -190,7 +194,8 @@ public class TableMaker {
           (IArrowArrayBuilder<bool, BooleanArray, BooleanArray.Builder>?)callerProvidedBuilder ??
           new Apache.Arrow.BooleanArray.Builder();
         return new TypicalBuilder<bool, Apache.Arrow.BooleanArray, Apache.Arrow.BooleanArray.Builder>(
-          builderToUse, Apache.Arrow.Types.BooleanType.Default, DeephavenMetadataConstants.Types.Bool);
+          builderToUse, Apache.Arrow.Types.BooleanType.Default, DeephavenMetadataConstants.Types.Bool,
+          null);
       }
 
       if (type == typeof(char)) {
@@ -213,7 +218,7 @@ public class TableMaker {
           (IArrowArrayBuilder<DateTimeOffset, TimestampArray, TimestampArray.Builder>?)callerProvidedBuilder ??
           new Apache.Arrow.TimestampArray.Builder(dataType);
         return new TypicalBuilder<DateTimeOffset, Apache.Arrow.TimestampArray, Apache.Arrow.TimestampArray.Builder>(
-          builderToUse, dataType, DeephavenMetadataConstants.Types.DateTime);
+          builderToUse, dataType, DeephavenMetadataConstants.Types.DateTime, null);
       }
 
       if (type == typeof(DateOnly)) {
@@ -221,7 +226,8 @@ public class TableMaker {
           (IArrowArrayBuilder<DateOnly, Date64Array, Date64Array.Builder>?)callerProvidedBuilder ??
           new Apache.Arrow.Date64Array.Builder();
         return new TypicalBuilder<DateOnly, Apache.Arrow.Date64Array, Apache.Arrow.Date64Array.Builder>(
-          builderToUse, Apache.Arrow.Types.Date64Type.Default, DeephavenMetadataConstants.Types.LocalDate);
+          builderToUse, Apache.Arrow.Types.Date64Type.Default, DeephavenMetadataConstants.Types.LocalDate,
+          null);
       }
 
       if (type == typeof(TimeOnly)) {
@@ -229,15 +235,14 @@ public class TableMaker {
           (IArrowArrayBuilder<TimeOnly, Time64Array, Time64Array.Builder>?)callerProvidedBuilder ??
           new Apache.Arrow.Time64Array.Builder();
         return new TypicalBuilder<TimeOnly, Apache.Arrow.Time64Array, Apache.Arrow.Time64Array.Builder>(
-          builderToUse, Apache.Arrow.Types.Time64Type.Default, DeephavenMetadataConstants.Types.LocalTime);
+          builderToUse, Apache.Arrow.Types.Time64Type.Default, DeephavenMetadataConstants.Types.LocalTime,
+          null);
       }
 
       var listUnderlyingType = GetIListInterfaceUnderlyingType(type);
       if (listUnderlyingType != null) {
-        var miGeneric = typeof(ColumnBuilder).GetMethod(nameof(ForIListType));
-        if (miGeneric == null) {
+        var miGeneric = typeof(ColumnBuilder).GetMethod(nameof(ForIListType)) ??
           throw new Exception($"Can't find {nameof(ForIListType)}");
-        }
         var miInstantiated = miGeneric.MakeGenericMethod(type, listUnderlyingType);
         return (ColumnBuilder)miInstantiated.Invoke(null, [callerProvidedBuilder])!;
       }
@@ -291,21 +296,28 @@ public class TableMaker {
   }
 
   private sealed class TypicalBuilder<T, TArray, TBuilder> : ColumnBuilder<T>
+    where T : struct, IEquatable<T>
     where TArray : Apache.Arrow.IArrowArray
     where TBuilder : Apache.Arrow.IArrowArrayBuilder<TArray> {
     private readonly Apache.Arrow.IArrowArrayBuilder<T, TArray, TBuilder> _builder;
     private readonly Apache.Arrow.Types.IArrowType _arrowType;
     private readonly string _deephavenTypeName;
+    private readonly T? _deephavenNullValue;
 
     public TypicalBuilder(Apache.Arrow.IArrowArrayBuilder<T, TArray, TBuilder> builder,
-      Apache.Arrow.Types.IArrowType arrowType, string deephavenTypeName) {
+      Apache.Arrow.Types.IArrowType arrowType, string deephavenTypeName, T? deephavenNullValue) {
       _builder = builder;
       _arrowType = arrowType;
       _deephavenTypeName = deephavenTypeName;
+      _deephavenNullValue = deephavenNullValue;
     }
 
     public override void Append(T item) {
-      _builder.Append(item);
+      if (_deephavenNullValue.HasValue && _deephavenNullValue.Value.Equals(item)) {
+        _builder.AppendNull();
+      } else {
+        _builder.Append(item);
+      }
     }
 
     public override void AppendNull() {
@@ -329,7 +341,11 @@ public class TableMaker {
     }
 
     public override void Append(char item) {
-      _builder.Append(item);
+      if (item == DeephavenConstants.NullChar) {
+        _builder.AppendNull();
+      } else {
+        _builder.Append(item);
+      }
     }
 
     public override void AppendNull() {

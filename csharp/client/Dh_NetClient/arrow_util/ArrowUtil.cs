@@ -2,6 +2,7 @@
 // Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 using System.Collections;
+using System.Reflection;
 using Apache.Arrow;
 using Apache.Arrow.Flight;
 using Io.Deephaven.Proto.Backplane.Grpc;
@@ -45,6 +46,10 @@ public static class ArrowUtil {
     return new ArrowTable(clientTable.Schema, columns);
   }
 
+  public static IClientTable ToClientTable(ArrowTable arrowTable) {
+    return ArrowClientTable.Create(arrowTable);
+  }
+
   public static string Render(ArrowTable table, bool wantHeaders, bool wantLineNumbers) {
     var sw = new StringWriter();
     var numCols = table.ColumnCount;
@@ -62,13 +67,11 @@ public static class ArrowUtil {
     }
 
     var enumerables = Enumerable.Range(0, numCols)
-      .Select(i => MakeScalarEnumerable(table.Column(i).Data).GetEnumerator())
+      .Select(i => ChunkedArrayToEnumerable(table.Column(i).Data).GetEnumerator())
       .ToArray();
     var hasMore = new bool[numCols];
 
     int rowNum = 0;
-
-    var build = new List<object>();
 
     while (true) {
       for (var i = 0; i != numCols; ++i) {
@@ -79,23 +82,21 @@ public static class ArrowUtil {
         break;
       }
 
-      build.Clear();
-
       if (wantLineNumbers) {
-        build.Add($"[{rowNum}]");
+        sw.Write(separator);
+        sw.Write($"[{rowNum}]");
+        separator = "\t";
       }
 
       for (var i = 0; i != numCols; ++i) {
+        sw.Write(separator);
         if (!hasMore[i]) {
-          build.Add("[exhausted]");
-          continue;
+          sw.Write("[exhausted]");
+        } else {
+          RenderObject(sw, enumerables[i].Current);
         }
-        var current = enumerables[i].Current;
-        build.Add(current ?? "[null]");
+        separator = "\t";
       }
-
-      sw.Write(separator);
-      sw.Write(string.Join('\t', build));
       separator = "\n";
       ++rowNum;
     }
@@ -106,63 +107,96 @@ public static class ArrowUtil {
     return sw.ToString();
   }
 
-  public static IEnumerable<object> MakeScalarEnumerable(Apache.Arrow.ChunkedArray chunkedArray) {
+  public static string RenderObject(object? o) {
+    var sw = new StringWriter();
+    RenderObject(sw, o);
+    return sw.ToString();
+  }
+
+  public static void RenderObject(StringWriter sw, object? o) {
+    if (o == null) {
+      sw.Write("[null]");
+      return;
+    }
+    if (o is not IList ilist) {
+      sw.Write(o);
+      return;
+    }
+
+    sw.Write('[');
+    var separator = "";
+    foreach (var element in ilist) {
+      sw.Write(separator);
+      RenderObject(sw, element);
+      separator = ",";
+    }
+    sw.Write(']');
+  }
+
+  /// <summary>
+  /// Turns an Arrow.ChunkedArray into an IEnumerable&lt;object&gt;. This involves
+  /// both flattening the ChunkedArray and converting any embedded ListArray objects
+  /// into .NET IList&gt;object&gt; elements.
+  /// </summary>
+  /// <param name="chunkedArray">The ChunkedArray to convert</param>
+  /// <returns>The enumerable</returns>
+  public static IEnumerable<object?> ChunkedArrayToEnumerable(Apache.Arrow.ChunkedArray chunkedArray) {
     var numArrays = chunkedArray.ArrayCount;
-    var visitor = new ScalarEnumerableVisitor();
     for (var i = 0; i != numArrays; ++i) {
       var array = chunkedArray.ArrowArray(i);
-      array.Accept(visitor);
-      foreach (var result in visitor.Result) {
+      var enumerable = ArrowArrayToEnumerable(array);
+      foreach (var result in enumerable) {
         yield return result;
       }
     }
   }
 
-  private class ScalarEnumerableVisitor : Apache.Arrow.IArrowArrayVisitor,
+  /// <summary>
+  /// Turns an Arrow.IArrowArray into an IEnumerable&lt;object&gt;. This involves
+  /// converting any embedded ListArray objects into .NET IList&gt;object&gt; elements.
+  /// </summary>
+  /// <param name="arrowArray">The IArrowArray to convert</param>
+  /// <returns>The enumerable</returns>
+  public static IEnumerable<object?> ArrowArrayToEnumerable(Apache.Arrow.IArrowArray arrowArray) {
+    var visitor = new ToEnumerableVisitor();
+    arrowArray.Accept(visitor);
+    foreach (var result in visitor.Result) {
+      yield return result;
+    }
+  }
+
+  private class ToEnumerableVisitor : Apache.Arrow.IArrowArrayVisitor,
     IArrowArrayVisitor<ListArray> {
     public IEnumerable Result = Array.Empty<object>();
 
+    /// <summary>
+    /// The default is to just use the IEnumerable interface built in to the IArrowArray
+    /// </summary>
+    /// <param name="array"></param>
     public void Visit(IArrowArray array) {
       Result = (IEnumerable)array;
     }
 
+    /// <summary>
+    /// For ListArray, we use recursion to expand each element of the ListArray, and
+    /// reify it into an IList&lt;object&gt;.
+    /// </summary>
+    /// <param name="array"></param>
     public void Visit(ListArray array) {
-      Result = ListArrayHelper(array);
+      Result = VisitListArrayHelper(array);
     }
 
-    private IEnumerable ListArrayHelper(ListArray array) {
-      var innerVisitor = new ScalarEnumerableVisitor();
+    private IEnumerable VisitListArrayHelper(ListArray array) {
+      // ListArray's elements are IArrowArrays. For each element,
+      // we turn the IArrowArray into a List<object>.
+      // To do this, we recursivel invoke the ToEnumerableVisitor (to handle the case
+      // where the elements are themselves lists).
+      var innerVisitor = new ToEnumerableVisitor();
       for (var i = 0; i != array.Length; ++i) {
         var slice = array.GetSlicedValues(i);
         slice.Accept(innerVisitor);
-        yield return new ObjectListWithEqualityAndToString(innerVisitor.Result);
+        yield return new List<object>(innerVisitor.Result.Cast<object>());
       }
-    }
-  }
-
-  private sealed class ObjectListWithEqualityAndToString : IEquatable<ObjectListWithEqualityAndToString> {
-    private readonly object?[] _values;
-
-    public ObjectListWithEqualityAndToString(IEnumerable items) {
-      _values = items.Cast<object?>().ToArray();
-    }
-
-    public bool Equals(ObjectListWithEqualityAndToString? other) {
-      return other != null &&
-        StructuralComparisons.StructuralEqualityComparer.Equals(_values, other._values);
-    }
-
-    public override bool Equals(object? other) {
-      return Equals(other as ObjectListWithEqualityAndToString);
-    }
-
-    public override int GetHashCode() {
-      return StructuralComparisons.StructuralEqualityComparer.GetHashCode(_values);
-    }
-
-    public override string ToString() {
-      var filterNull = _values.Select(e => e ?? "[null]");
-      return $"[{string.Join(", ", filterNull)}]";
     }
   }
 }

@@ -116,7 +116,7 @@ public class UpdateByTest(ITestOutputHelper output) {
     }
   }
 
-  private TableHandle[] MakeTables(TableHandleManager tm) {
+  private static TableHandle[] MakeTables(TableHandleManager tm) {
     var staticTable = MakeRandomTable(tm).Update("Timestamp=now()");
     var tickingTable = tm.TimeTable(TimeSpan.FromSeconds(1))
       .Update("a = i", "b = i*i % 13", "c = i * 13 % 23", "d = a + b", "e = a - b");

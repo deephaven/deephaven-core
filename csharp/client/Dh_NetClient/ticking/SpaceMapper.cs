@@ -59,7 +59,7 @@ public class SpaceMapper {
 
     var index = _set.LastIndexOf(interval.Begin);
     if (index < 0) {
-      throw new Exception("Programming error: item not found?");
+      throw new Exception("Assertion failed: item not found?");
     }
 
     return Interval.OfStartAndSize((UInt64)index, (UInt64)rangeSize);

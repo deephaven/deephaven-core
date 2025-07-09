@@ -3,7 +3,7 @@
 //
 namespace Deephaven.Dh_NetClient;
 
-public class IndexDecoder {
+public class RowSequenceDecoder {
   public static RowSequence ReadExternalCompressedDelta(DataInput input) {
     var builder = new RowSequenceBuilder();
 

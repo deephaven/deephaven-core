@@ -28,7 +28,7 @@ internal class SubscriptionThread {
       Ticket ticket, IObserver<TickingUpdate> observer) {
       var result = new UpdateProcessor(exchange, schema, ticket, observer);
       // TODO(kosak): This could be a Task rather than a thread.
-      new Thread(result.RunForever) { IsBackground = true }.Start();
+      Task.Run(result.RunForever).Forget();
       return result;
     }
 

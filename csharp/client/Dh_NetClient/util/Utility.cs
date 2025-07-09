@@ -24,23 +24,4 @@ public static class Utility {
     }
     sw.Write('>');
   }
-
-  public static bool TryConvertToBase52(long value, Span<char> dest) {
-    if (value < 0) {
-      return false;
-    }
-    const string digits = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-    var destLength = dest.Length;
-    for (var i = 0; i != destLength; ++i) {
-      var resIndex = (value % digits.Length).ToIntExact();
-      value /= digits.Length;
-      dest[i] = digits[resIndex];
-    }
-    if (value != 0) {
-      // Value too large to fit in dest.
-      return false;
-    }
-    dest.Reverse();
-    return true;
-  }
 }

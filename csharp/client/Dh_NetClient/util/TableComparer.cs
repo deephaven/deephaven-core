@@ -54,8 +54,8 @@ public static class TableComparer {
         throw new Exception($"Column {i}: Expected length {exp.Length}, actual length {act.Length}");
       }
 
-      using var expIter = ArrowUtil.MakeScalarEnumerable(exp.Data).GetEnumerator();
-      using var actIter = ArrowUtil.MakeScalarEnumerable(act.Data).GetEnumerator();
+      using var expIter = ArrowUtil.ChunkedArrayToEnumerable(exp.Data).GetEnumerator();
+      using var actIter = ArrowUtil.ChunkedArrayToEnumerable(act.Data).GetEnumerator();
 
       var rowsConsumed = 0;
       while (true) {
@@ -72,11 +72,31 @@ public static class TableComparer {
           break;
         }
 
-        if (!object.Equals(expIter.Current, actIter.Current)) {
+        if (!CompareObjects(expIter.Current, actIter.Current)) {
+          var expRendered = ArrowUtil.RenderObject(expIter.Current);
+          var actRendered = ArrowUtil.RenderObject(actIter.Current);
           throw new Exception(
-            $"Values differ at row {rowsConsumed}: expected={expIter.Current}, actual={actIter.Current}");
+            $"Values differ at row {rowsConsumed}: expected={expRendered}, actual={actRendered}");
         }
       }
     }
+  }
+
+  private static bool CompareObjects(object? lhs, object? rhs) {
+    if (lhs is not IList llist || rhs is not IList rlist) {
+      return object.Equals(lhs, rhs);
+    }
+
+    if (llist.Count != rlist.Count) {
+      return false;
+    }
+
+    for (var i = 0; i != llist.Count; ++i) {
+      if (!CompareObjects(llist[i], rlist[i])) {
+        return false;
+      }
+    }
+
+    return true;
   }
 }

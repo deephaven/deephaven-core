@@ -1,6 +1,7 @@
 ﻿//
 // Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
+
 using Apache.Arrow;
 using Google.FlatBuffers;
 using io.deephaven.barrage.flatbuf;
@@ -36,20 +37,18 @@ public class BarrageProcessor {
 
     var subReq = BarrageSubscriptionRequest.CreateBarrageSubscriptionRequest(payloadBuilder, ticket, default,
       default, subOptions);
-    // Is .Value correct?
     payloadBuilder.Finish(subReq.Value);
 
     var payloadBuilderBytes = payloadBuilder.SizedByteArray();
 
-    // TODO: I'd really like to just point this buffer backwards to the thing I just created, rather
-    // then copying it. But, eh, version 2.
+    // Now that we've constructed the bytes for the payload, let's build the outer BarrageMessageWrapper
+    // which has payload as one of its members.
     var wrapperBuilder = new FlatBufferBuilder(4096);
     wrapperBuilder.StartVector(1, payloadBuilderBytes.Length, 1);
     wrapperBuilder.Add(payloadBuilderBytes);
     var payload = wrapperBuilder.EndVector();
     var messageWrapper = BarrageMessageWrapper.CreateBarrageMessageWrapper(wrapperBuilder,
       DeephavenMagicNumber, BarrageMessageType.BarrageSubscriptionRequest, payload);
-    // Is .Value correct?
     wrapperBuilder.Finish(messageWrapper.Value);
 
     return wrapperBuilder.SizedByteArray();
@@ -57,7 +56,7 @@ public class BarrageProcessor {
 
   public TickingUpdate? ProcessNextChunk(IColumnSource[] sources, int[] sizes, byte[]? metadata) {
     if (sources.Length != sizes.Length) {
-      throw new Exception($"Programming error: sources has length {sources.Length} but sizes has length {sizes.Length}");
+      throw new Exception($"Assertion failed: sources has length {sources.Length} but sizes has length {sizes.Length}");
     }
     var sourcesAndRanges = Enumerable.Range(0, sources.Length)
       .Select(i => new SourceAndRange(sources[i], Interval.Of(0, (UInt64)sizes[i])))
@@ -85,9 +84,6 @@ class AwaitingMetadata(TableState tableState) : IChunkProcessor {
         $"Expected Barrage Message Type {BarrageMessageType.BarrageUpdateMetadata}, got {bmw.MsgType}");
     }
 
-    // var payloadRawSbytes = bmw.GetMsgPayloadArray();
-    // var payloadRawBytes = new byte[payloadRawSbytes.Length];
-    // Array.Copy(payloadRawSbytes, payloadRawBytes, payloadRawSbytes.Length);
     var bytes = bmw.GetMsgPayloadBytes()!.ToArray<byte>();
     var bmd = BarrageUpdateMetadata.GetRootAsBarrageUpdateMetadata(new ByteBuffer(bytes));
 
@@ -95,33 +91,33 @@ class AwaitingMetadata(TableState tableState) : IChunkProcessor {
     var shiftDataBytes = bmd.GetShiftDataBytes();
     var addedRowsBytes = bmd.GetAddedRowsBytes();
     if (removedRowsBytes == null || shiftDataBytes == null || addedRowsBytes == null) {
-      throw new Exception("Programming error: These data structures should not be null");
+      throw new Exception("Assertion failed: These data structures should not be null");
     }
 
     var diRemoved = new DataInput(removedRowsBytes);
     var diThreeShiftIndices = new DataInput(shiftDataBytes);
     var diAdded = new DataInput(addedRowsBytes);
 
-    var removedRows = IndexDecoder.ReadExternalCompressedDelta(diRemoved);
-    var shiftStartIndex = IndexDecoder.ReadExternalCompressedDelta(diThreeShiftIndices);
-    var shiftEndIndex = IndexDecoder.ReadExternalCompressedDelta(diThreeShiftIndices);
-    var shiftDestIndex = IndexDecoder.ReadExternalCompressedDelta(diThreeShiftIndices);
-    var addedRows = IndexDecoder.ReadExternalCompressedDelta(diAdded);
+    var removedRows = RowSequenceDecoder.ReadExternalCompressedDelta(diRemoved);
+    var shiftStartIndex = RowSequenceDecoder.ReadExternalCompressedDelta(diThreeShiftIndices);
+    var shiftEndIndex = RowSequenceDecoder.ReadExternalCompressedDelta(diThreeShiftIndices);
+    var shiftDestIndex = RowSequenceDecoder.ReadExternalCompressedDelta(diThreeShiftIndices);
+    var addedRows = RowSequenceDecoder.ReadExternalCompressedDelta(diAdded);
 
     var perColumnModifies = new List<RowSequence>();
     for (var i = 0; i != bmd.ModColumnNodesLength; ++i) {
       var mcns = bmd.ModColumnNodes(i);
       if (!mcns.HasValue) {
-        throw new Exception($"Programming error: ModColumnNodes[{i}] should not be empty");
+        throw new Exception($"Assertion failed: ModColumnNodes[{i}] should not be empty");
       }
 
       var modifiedRowsBytes = mcns.Value.GetModifiedRowsBytes();
       if (modifiedRowsBytes == null) {
-        throw new Exception($"Programming error: modifiedRowsBytes[{i}] should not be null");
+        throw new Exception($"Assertion failed: modifiedRowsBytes[{i}] should not be null");
       }
 
       var diModified = new DataInput(modifiedRowsBytes);
-      var modRows = IndexDecoder.ReadExternalCompressedDelta(diModified);
+      var modRows = RowSequenceDecoder.ReadExternalCompressedDelta(diModified);
       perColumnModifies.Add(modRows);
     }
 
@@ -194,7 +190,7 @@ class AwaitingAdds(
     }
 
     if (_addedRowsRemaining.IsEmpty) {
-      throw new Exception("Programming error: addedRowsRemaining is empty");
+      throw new Exception("Assertion failed: addedRowsRemaining is empty");
     }
 
     var chunkSize = sourcesAndRanges[0].Range.Count;

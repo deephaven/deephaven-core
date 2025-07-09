@@ -193,16 +193,16 @@ public class Server : IDisposable {
     }
   }
 
-  public static Ticket MakeNewTicket(Int32 ticketId) {
-    // Format is: 'e' + 4 bytes
-    var chars = new char[5];
-    chars[0] = 'e';
-    var span = new Span<char>(chars, 1, 4);
-    if (!Utility.TryConvertToBase52(ticketId, span)) {
-      throw new Exception($"Programming error: couldn't convert {ticketId} to base 52");
+  public Ticket MakeNewTicket(Int32 ticketId) {
+    // 'e' + 4 bytes
+    var bytes = new byte[5];
+    bytes[0] = (byte)'e';
+    var span = new Span<byte>(bytes, 1, 4);
+    if (!BitConverter.TryWriteBytes(span, ticketId)) {
+      throw new Exception("Assertion failure: TryWriteBytes failed");
     }
     var result = new Ticket {
-      Ticket_ = ByteString.CopyFromUtf8(new string(chars))
+      Ticket_ = ByteString.CopyFrom(bytes)
     };
     return result;
   }

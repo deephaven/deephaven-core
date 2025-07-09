@@ -14,9 +14,9 @@ public sealed class CommonContextForTests : IDisposable {
   /// in the project directory. However, note that the Resharper test runner does not seem to honor
   /// .runsettings.
   /// </summary>
-  private const string? DefaultDhHost = "10.0.4.109";
+  private const string? DefaultDhHost = null;
 
-  private const string? DefaultDhPort = "10000";
+  private const string? DefaultDhPort = null;
 
   public readonly Client Client;
   public readonly TableHandle TestTable;

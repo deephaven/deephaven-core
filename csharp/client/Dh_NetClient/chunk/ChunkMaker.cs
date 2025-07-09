@@ -39,7 +39,7 @@ public static class ChunkMaker {
     public void Visit(ITimeOnlyColumnSource cs) => Make(cs);
 
     public void Visit(IColumnSource cs) {
-      throw new Exception($"Programming error: No visitor for type {Utility.FriendlyTypeName(cs.GetType())}");
+      throw new Exception($"Assertion failed: No visitor for type {Utility.FriendlyTypeName(cs.GetType())}");
     }
 
     private void Make<T>(IColumnSource<T> _) {

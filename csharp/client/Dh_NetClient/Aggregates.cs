@@ -36,7 +36,6 @@ public class Aggregate {
   /// <summary>
   /// Returns an aggregator that computes the total sum of absolute values, within an aggregation group,
   /// for each input column.
-
   /// </summary>
   /// <param name="columnSpecs">The source columns for the calculation</param>
   /// <returns>An Aggregate object representing the aggregation</returns>
