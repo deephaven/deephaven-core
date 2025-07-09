@@ -476,12 +476,13 @@ public class TableHandle : IDisposable {
 
   /// <summary>
   /// Performs one or more UpdateByOperation ops grouped by zero or more key columns to calculate
-  /// cumulative or window-based aggregations of columns in a source table.Operations include
-  /// cumulative sums, moving averages, EMAs, etc.The aggregations are defined by the provided
+  /// cumulative or window-based aggregations of columns in a source table. Operations include
+  /// cumulative sums, moving averages, EMAs, etc. The aggregations are defined by the provided
   /// operations, which support incremental aggregations over the corresponding rows in the source
   /// table.Cumulative aggregations use all rows in the source table, whereas rolling aggregations
   /// will apply position or time-based windowing relative to the current row.Calculations are
   /// performed over all rows or each row group as identified by the provided key columns.
+
   /// </summary>
   /// <param name="ops">The requested UpdateByOperation ops</param>
   /// <param name="by">The columns to group by</param>
