@@ -13,14 +13,6 @@ namespace Deephaven.Dh_NetClient;
 
 internal class SubscriptionThread {
   public static IDisposable Start(Server server, Schema schema, Ticket ticket, IObserver<TickingUpdate> observer) {
-    // std::promise<std::shared_ptr<SubscriptionHandle>> promise;
-    // auto future = promise.get_future();
-    // std::vector<int8_t> ticket_bytes(ticket.ticket().begin(), ticket.ticket().end());
-    // auto ss = std::make_shared<SubscribeState>(std::move(server), std::move(ticket_bytes),
-    //   std::move(schema), std::move(promise), std::move(callback));
-    // flight_executor->Invoke([ss] () { ss->Invoke(); });
-    // return future.get();
-
     var metadata = new Metadata();
     server.ForEachHeaderNameAndValue(metadata.Add);
     var fcw = server.FlightClient;
