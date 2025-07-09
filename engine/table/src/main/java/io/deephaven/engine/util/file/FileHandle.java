@@ -99,17 +99,32 @@ public final class FileHandle implements SeekableByteChannel {
             @NotNull final Supplier<Runnable> postCloseProcedureSupplier,
             @NotNull final OpenOption... options)
             throws IOException {
-        // Note: there is a chance for a race here (that the attributes read here are for a different file than what
-        // is represented by fileChannel); Java does not provide an API for getting file attributes from an already
-        // open FileChannel. (Arguably, this is something Java could provide in the future with an
-        // https://linux.die.net/man/2/fstat call, which they already use internally in some cases.). That said, a
-        // race here at worst will lead to our old behavior of not doing a safety check. If we really wanted to, we
-        // could work around the race by sandwiching two readAttribute calls around the open call, and verifying
-        // that the two readAttribute call keys were the same (and if not, retrying until success).
-        final Object fileKey = SAFETY_CHECK_ENABLED
-                ? Files.readAttributes(path, BasicFileAttributes.class).fileKey()
-                : null;
         final FileChannel fileChannel = FileChannel.open(path, options);
+        final Object fileKey;
+        if (!SAFETY_CHECK_ENABLED) {
+            fileKey = null;
+        } else {
+            // Note: there is a chance for a race here (that the attributes read here are for a different file that what
+            // is represented by fileChannel); Java does not provide an API for getting file attributes from an already
+            // open FileChannel. (Arguably, this is something Java could provide in the future with an
+            // https://linux.die.net/man/2/fstat call, which they already use internally in some cases.). That said, a
+            // race here at worst will lead to our old behavior of not doing a safety check. If we really wanted to, we
+            // could work around the race by sandwiching two readAttribute calls around the open call, and verifying
+            // that the two readAttribute call keys were the same (and if not, retrying until success).
+            final BasicFileAttributes attributes;
+            try {
+                attributes = Files.readAttributes(path, BasicFileAttributes.class);
+            } catch (final RuntimeException e) {
+                try {
+                    fileChannel.close();
+                } catch (final RuntimeException e2) {
+                    e.addSuppressed(e2);
+                }
+                throw e;
+            }
+            // May be null here still
+            fileKey = attributes.fileKey();
+        }
         return new FileHandle(fileChannel, postCloseProcedureSupplier.get(), fileKey);
     }
 
