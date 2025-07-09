@@ -7,7 +7,13 @@ import org.gradle.jvm.tasks.Jar
 plugins {
   id 'java'
   id 'signing'
-  id 'maven-publish'
+  // Note: applying `com.vanniktech.maven.publish.base` instead of `com.vanniktech.maven.publish` since we need more
+  // fine-grained configuration wrt shadowing. Specifically, when `com.vanniktech.maven.publish.JavaLibrary` is applied
+  // by `com.vanniktech.maven.publish`, it automatically creates a "maven" publication based on the "java" component,
+  // and that conflicts with our desires for the "shadow" publication, and would result in the error:
+  // Multiple publications with coordinates '...' are published to repository 'mavenLocal'. The publications 'maven' in
+  // project '...' and 'shadow' in project '...' will overwrite each other!
+  id 'com.vanniktech.maven.publish.base'
   id 'com.gradleup.shadow'
   id 'io.deephaven.javadoc-conventions'
 }
@@ -22,15 +28,15 @@ tasks.withType(Javadoc).configureEach {
   options.addStringOption('sourcepath', sourceSets.main.allJava.getSourceDirectories().getAsPath())
 }
 
-def shadowPublication = project
-        .extensions
-        .getByType(PublishingExtension)
-        .publications
-        .create(PublishingTools.SHADOW_PUBLICATION_NAME, MavenPublication) {
-          from(project.components.named(ShadowBasePlugin.COMPONENT_NAME).get())
-          artifact(project.tasks.named('sourcesJar'))
-          artifact(project.tasks.named('javadocJar'))
-        }
+project
+    .extensions
+    .getByType(PublishingExtension)
+    .publications
+    .create(PublishingTools.SHADOW_PUBLICATION_NAME, MavenPublication) {
+      from(project.components.named(ShadowBasePlugin.COMPONENT_NAME).get())
+      artifact(project.tasks.named('sourcesJar'))
+      artifact(project.tasks.named('javadocJar'))
+    }
 
 def shadowJar = project.tasks.named(ShadowJavaPlugin.SHADOW_JAR_TASK_NAME, ShadowJar) {
   // We want the shadow jar to be the "default" jar, so we don't want it to have a classifier
@@ -48,8 +54,5 @@ project.tasks.named('assemble') {
   it.dependsOn(shadowJar)
 }
 
-PublishingTools.setupRepositories(project)
-PublishingTools.setupLicense(project, shadowPublication)
-PublishingTools.setupMavenPublication(project, shadowPublication)
-PublishingTools.setupSigning(project, shadowPublication)
+PublishingTools.setupPublishing(project)
 // Projects will need to call PublishingTools.setupShadowName to setup appropriate shadow names
