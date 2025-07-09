@@ -123,8 +123,9 @@ public class TableHandle : IDisposable {
   }
 
   /// <summary>
-  /// Creates a new table from this table Where the specified columns have been excluded.
+  /// Creates a new table from this table where the specified columns have been excluded.
   /// </summary>
+
   /// <param name="columnSpecs">The columnSpecs to exclude.</param>
   /// <returns></returns>
   public TableHandle DropColumns(params string[] columnSpecs) {
