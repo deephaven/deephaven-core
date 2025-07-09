@@ -15,6 +15,7 @@ import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.ReferentialIntegrity;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.util.*;
@@ -130,10 +131,13 @@ public class FunctionGeneratedTableFactory {
     private FunctionGeneratedTableFactory(@NotNull final Supplier<Table> tableGenerator, final int refreshIntervalMs) {
         this.tableGenerator = tableGenerator;
         this.refreshIntervalMs = refreshIntervalMs;
-        this.executionContextForUpdates = ExecutionContext.getContext();
+        this.executionContextForUpdates = makeExecutionContextForUpdates();
         nextRefresh = System.currentTimeMillis() + this.refreshIntervalMs;
 
-        Table initialTable = tableGenerator.get();
+        final Table initialTable;
+        try (final SafeCloseable ignored = executionContextForUpdates.open()) {
+            initialTable = tableGenerator.get();
+        }
         if (initialTable.isRefreshing()) {
             if (ExecutionContext.getContext().getUpdateGraph() != initialTable.getUpdateGraph()) {
                 throw new IllegalStateException(
@@ -156,6 +160,22 @@ public class FunctionGeneratedTableFactory {
         columns.values().forEach(ColumnSource::startTrackingPrevValues);
 
         rowSet = RowSetFactory.flat(initialTable.size()).toTracking();
+    }
+
+    /**
+     * If we have a systemtic context we need to capture the authentication context. If we have a user-supplied context
+     * we should keep that so that any query scope, query library, etc. is available to produce the table.
+     *
+     * @return the execution context to use for updates
+     */
+    private static @NotNull ExecutionContext makeExecutionContextForUpdates() {
+        final ExecutionContext contextToRecord = ExecutionContext.getContextToRecord();
+        if (contextToRecord != null) {
+            return contextToRecord;
+        } else {
+            return ExecutionContext.newBuilder().build()
+                    .withAuthContext(ExecutionContext.getContext().getAuthContext());
+        }
     }
 
     private FunctionBackedTable getTable() {

@@ -71,17 +71,18 @@ public class HierarchicalTableViewSubscription extends LivenessArtifact {
     private final BarrageSubscriptionOptions subscriptionOptions;
     private final long intervalDurationNanos;
 
+    /**
+     * We must capture the ExecutionContext when the subscription is created, because during processing we initiate
+     * operations and should include the correct context for those subsequent operations as part of the propagation job.
+     */
+    private final ExecutionContext executionContext;
+
     private final Stats stats;
 
     private final TableUpdateListener keyTableListener;
     private final TableUpdateListener sourceTableListener;
 
     private final Runnable propagationJob;
-    /**
-     * We must capture the ExecutionContext when the subscription is created, because during processing we initiate
-     * operations and should include the correct context for those subsequent operations as part of the propagation job.
-     */
-    private final ExecutionContext executionContext;
 
     private final Object schedulingLock = new Object();
     // region Guarded by scheduling lock
@@ -122,7 +123,10 @@ public class HierarchicalTableViewSubscription extends LivenessArtifact {
         this.listener = listener;
         this.subscriptionOptions = subscriptionOptions;
         this.intervalDurationNanos = NANOSECONDS.convert(intervalDurationMillis, MILLISECONDS);
-        this.executionContext = Require.neqNull(ExecutionContext.getContext(), "executionContext");
+        final ExecutionContext currentExecutionContext =
+                Require.neqNull(ExecutionContext.getContext(), "currentExecutionContext");
+        this.executionContext =
+                ExecutionContext.newBuilder().build().withAuthContext(currentExecutionContext.getAuthContext());
 
         final String statsKey = BarragePerformanceLog.getKeyFor(
                 view.getHierarchicalTable(), view.getHierarchicalTable()::getDescription);
