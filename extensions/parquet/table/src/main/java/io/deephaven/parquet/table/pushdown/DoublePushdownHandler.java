@@ -8,53 +8,53 @@
 package io.deephaven.parquet.table.pushdown;
 
 import io.deephaven.api.filter.Filter;
-import io.deephaven.engine.table.impl.chunkfilter.DoubleChunkFilter;
 import io.deephaven.engine.table.impl.select.DoubleRangeFilter;
 import io.deephaven.engine.table.impl.select.MatchFilter;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.InternalUseOnly;
 import io.deephaven.util.compare.DoubleComparisons;
 import io.deephaven.util.type.TypeUtils;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
-import static io.deephaven.parquet.table.pushdown.ParquetPushdownUtils.containsDeephavenNullDouble;
 
 @InternalUseOnly
 public abstract class DoublePushdownHandler {
 
     public static boolean maybeOverlaps(
             final Filter filter,
-            final DoubleChunkFilter doubleChunkFilter,
-            final MinMax<?> minMax,
-            final long nullCount) {
-        if (doubleChunkFilter.matches(QueryConstants.NAN_DOUBLE)) {
-            // Cannot be filtered using statistics because parquet statistics do not include NaN.
-            return true;
-        }
-        final double min = TypeUtils.getUnboxedDouble(minMax.min());
-        final double max = TypeUtils.getUnboxedDouble(minMax.max());
-        final boolean doStatsContainNull = nullCount > 0 || containsDeephavenNullDouble(min, max);
-        final boolean matchesNull = (doStatsContainNull && doubleChunkFilter.matches(QueryConstants.NULL_DOUBLE));
-        if (matchesNull) {
-            return true;
-        }
+            final MinMax<?> minMax) {
+        final double min = (Double) minMax.min();
+        final double max = (Double) minMax.max();
         if (filter instanceof DoubleRangeFilter) {
-            final DoubleRangeFilter doubleRangeFilter = (DoubleRangeFilter) filter;
-            return maybeOverlaps(
-                    min, max,
-                    doubleRangeFilter.getLower(), doubleRangeFilter.isLowerInclusive(),
-                    doubleRangeFilter.getUpper(), doubleRangeFilter.isUpperInclusive());
+            return maybeOverlaps(min, max, (DoubleRangeFilter) filter);
         } else if (filter instanceof MatchFilter) {
-            final MatchFilter matchFilter = (MatchFilter) filter;
-            return maybeMatches(min, max, matchFilter.getValues(), matchFilter.getInvertMatch());
+            return maybeMatches(min, max, (MatchFilter) filter);
         }
         return true;
+    }
+
+    private static boolean maybeOverlaps(
+            final double min,
+            final double max,
+            final DoubleRangeFilter doubleRangeFilter) {
+        // Skip pushdown-based filtering for nulls and NaNs
+        final double dhLower = doubleRangeFilter.getLower();
+        final double dhUpper = doubleRangeFilter.getUpper();
+        if (Double.isNaN(dhLower) || Double.isNaN(dhUpper) ||
+                dhLower == QueryConstants.NULL_DOUBLE || dhUpper == QueryConstants.NULL_DOUBLE) {
+            return true;
+        }
+        return maybeOverlapsImpl(
+                min, max,
+                dhLower, doubleRangeFilter.isLowerInclusive(),
+                dhUpper, doubleRangeFilter.isUpperInclusive());
     }
 
     /**
      * Verifies that the {@code [min, max]} range intersects the range defined by the given lower and upper bounds.
      */
-    private static boolean maybeOverlaps(
+    private static boolean maybeOverlapsImpl(
             final double min, final double max,
             final double lower, final boolean lowerInclusive,
             final double upper, final boolean upperInclusive) {
@@ -79,22 +79,32 @@ public abstract class DoublePushdownHandler {
     }
 
     /**
-     * Verifies that the {@code [min, max]} range intersects any point supplied in {@code values}, taking into account
-     * the {@code inverseMatch} flag.
+     * Verifies that the {@code [min, max]} range intersects any point supplied in the filter.
      */
     private static boolean maybeMatches(
             final double min,
             final double max,
-            final Object[] values,
-            final boolean inverseMatch) {
+            final MatchFilter matchFilter) {
+        final Object[] values = matchFilter.getValues();
+        final boolean invertMatch = matchFilter.getInvertMatch();
+
         if (values == null || values.length == 0) {
             // No values to check against, so we consider it as a maybe overlap.
             return true;
         }
-        if (!inverseMatch) {
-            return maybeMatchesImpl(min, max, values);
+        // Skip pushdown-based filtering for nulls and NaNs
+        final double[] unboxedValues = new double[values.length];
+        for (int i = 0; i < values.length; i++) {
+            final double value = TypeUtils.getUnboxedDouble(values[i]);
+            if (Double.isNaN(value) || value == QueryConstants.NULL_DOUBLE) {
+                return true;
+            }
+            unboxedValues[i] = value;
         }
-        return maybeMatchesInverseImpl(min, max, values);
+        if (!invertMatch) {
+            return maybeMatchesImpl(min, max, unboxedValues);
+        }
+        return maybeMatchesInverseImpl(min, max, unboxedValues);
     }
 
     /**
@@ -103,10 +113,9 @@ public abstract class DoublePushdownHandler {
     private static boolean maybeMatchesImpl(
             final double min,
             final double max,
-            final Object[] values) {
-        for (final Object v : values) {
-            final double value = TypeUtils.getUnboxedDouble(v);
-            if (maybeOverlaps(min, max, value, true, value, true)) {
+            @NotNull final double[] values) {
+        for (final double value : values) {
+            if (maybeOverlapsImpl(min, max, value, true, value, true)) {
                 return true;
             }
         }
@@ -117,35 +126,25 @@ public abstract class DoublePushdownHandler {
      * Verifies that the {@code [min, max]} range includes any value that is not in the given {@code values} array. This
      * is done by checking whether {@code [min, max]} overlaps with every open gap produced by excluding the given
      * values. For example, if the values are sorted as {@code v_0, v_1, ..., v_n-1}, then the gaps are:
-     * 
+     *
      * <pre>
-     * [QueryConstants.NULL_DOUBLE, v_0), (v_0, v_1), ... , (v_n-2, v_n-1), (v_n-1, QueryConstants.NAN_DOUBLE]
+     * [Double.NEGATIVE_INFINITY, v_0), (v_0, v_1), ... , (v_n-2, v_n-1), (v_n-1, Double.POSITIVE_INFINITY]
      * </pre>
      */
     private static boolean maybeMatchesInverseImpl(
             final double min,
             final double max,
-            final Object[] values) {
-        final Double[] sortedValues = sort(values);
-        double lower = QueryConstants.NULL_DOUBLE;
+            @NotNull final double[] values) {
+        Arrays.sort(values);
+        double lower = Double.NEGATIVE_INFINITY;
         boolean lowerInclusive = true;
-        for (final double upper : sortedValues) {
-            if (maybeOverlaps(min, max, lower, lowerInclusive, upper, false)) {
+        for (final double upper : values) {
+            if (maybeOverlapsImpl(min, max, lower, lowerInclusive, upper, false)) {
                 return true;
             }
             lower = upper;
             lowerInclusive = false;
         }
-        return maybeOverlaps(min, max, lower, lowerInclusive, QueryConstants.NAN_DOUBLE, true);
-    }
-
-    // TODO (deephaven-core#5920): Use the more efficient sorting method when available.
-    private static Double[] sort(final Object[] values) {
-        // Unbox to get the primitive values, and then box them back for sorting with custom comparator.
-        final Double[] boxedValues = Arrays.stream(values)
-                .map(TypeUtils::getUnboxedDouble)
-                .toArray(Double[]::new);
-        Arrays.sort(boxedValues, DoubleComparisons::compare);
-        return boxedValues;
+        return maybeOverlapsImpl(min, max, lower, lowerInclusive, Double.POSITIVE_INFINITY, true);
     }
 }

@@ -225,11 +225,11 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
                             + "\" doesn't exist in this table, available columns: " + tableDefinition.getColumnNames());
                 }
             }
+            columnType = column.getDataType();
             if (strValues == null) {
                 initialized = true;
                 return;
             }
-            columnType = column.getDataType();
             final List<Object> valueList = new ArrayList<>();
             final Map<String, Object> queryScopeVariables =
                     compilationProcessor.getFormulaImports().getQueryScopeVariables();

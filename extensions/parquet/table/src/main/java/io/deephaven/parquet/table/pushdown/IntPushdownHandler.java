@@ -8,63 +8,65 @@
 package io.deephaven.parquet.table.pushdown;
 
 import io.deephaven.api.filter.Filter;
-import io.deephaven.engine.table.impl.chunkfilter.IntChunkFilter;
 import io.deephaven.engine.table.impl.select.IntRangeFilter;
 import io.deephaven.engine.table.impl.select.MatchFilter;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.InternalUseOnly;
-import io.deephaven.util.compare.IntComparisons;
 import io.deephaven.util.type.TypeUtils;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
-import static io.deephaven.parquet.table.pushdown.ParquetPushdownUtils.containsDeephavenNullInt;
 
 @InternalUseOnly
 public abstract class IntPushdownHandler {
 
     public static boolean maybeOverlaps(
             final Filter filter,
-            final IntChunkFilter intChunkFilter,
-            final MinMax<?> minMax,
-            final long nullCount) {
-        final int min = TypeUtils.getUnboxedInt(minMax.min());
-        final int max = TypeUtils.getUnboxedInt(minMax.max());
-        final boolean doStatsContainNull = nullCount > 0 || containsDeephavenNullInt(min, max);
-        final boolean matchesNull = (doStatsContainNull && intChunkFilter.matches(QueryConstants.NULL_INT));
-        if (matchesNull) {
-            return true;
-        }
+            final MinMax<?> minMax) {
+        final int min = (Integer) minMax.min();
+        final int max = (Integer) minMax.max();
         if (filter instanceof IntRangeFilter) {
-            final IntRangeFilter intRangeFilter = (IntRangeFilter) filter;
-            return maybeOverlaps(
-                    min, max,
-                    intRangeFilter.getLower(), intRangeFilter.isLowerInclusive(),
-                    intRangeFilter.getUpper(), intRangeFilter.isUpperInclusive());
+            return maybeOverlaps(min, max, (IntRangeFilter) filter);
         } else if (filter instanceof MatchFilter) {
-            final MatchFilter matchFilter = (MatchFilter) filter;
-            return maybeMatches(min, max, matchFilter.getValues(), matchFilter.getInvertMatch());
+            return maybeMatches(min, max, (MatchFilter) filter);
         }
         return true;
+    }
+
+    static boolean maybeOverlaps(
+            final int min,
+            final int max,
+            final IntRangeFilter intRangeFilter) {
+        // Skip pushdown-based filtering for nulls
+        final int dhLower = intRangeFilter.getLower();
+        final int dhUpper = intRangeFilter.getUpper();
+        if (dhLower == QueryConstants.NULL_INT || dhUpper == QueryConstants.NULL_INT) {
+            return true;
+        }
+        return maybeOverlapsImpl(
+                min, max,
+                dhLower, intRangeFilter.isLowerInclusive(),
+                dhUpper, intRangeFilter.isUpperInclusive());
     }
 
     /**
      * Verifies that the {@code [min, max]} range intersects the range defined by the given lower and upper bounds.
      */
-    static boolean maybeOverlaps(
+    private static boolean maybeOverlapsImpl(
             final int min, final int max,
             final int lower, final boolean lowerInclusive,
             final int upper, final boolean upperInclusive) {
-        final int c0 = IntComparisons.compare(lower, upper);
+        final int c0 = Integer.compare(lower, upper);
         if (c0 > 0 || (c0 == 0 && !(lowerInclusive && upperInclusive))) {
             // lower > upper, no overlap possible.
             return false;
         }
-        final int c1 = IntComparisons.compare(lower, max);
+        final int c1 = Integer.compare(lower, max);
         if (c1 > 0) {
             // lower > max, no overlap possible.
             return false;
         }
-        final int c2 = IntComparisons.compare(min, upper);
+        final int c2 = Integer.compare(min, upper);
         if (c2 > 0) {
             // min > upper, no overlap possible.
             return false;
@@ -75,22 +77,32 @@ public abstract class IntPushdownHandler {
     }
 
     /**
-     * Verifies that the {@code [min, max]} range intersects any point supplied in {@code values}, taking into account
-     * the {@code inverseMatch} flag.
+     * Verifies that the {@code [min, max]} range intersects any point supplied in the filter.
      */
     private static boolean maybeMatches(
             final int min,
             final int max,
-            final Object[] values,
-            final boolean inverseMatch) {
+            final MatchFilter matchFilter) {
+        final Object[] values = matchFilter.getValues();
+        final boolean invertMatch = matchFilter.getInvertMatch();
+
         if (values == null || values.length == 0) {
             // No values to check against, so we consider it as a maybe overlap.
             return true;
         }
-        if (!inverseMatch) {
-            return maybeMatchesImpl(min, max, values);
+        // Skip pushdown-based filtering for nulls
+        final int[] unboxedValues = new int[values.length];
+        for (int i = 0; i < values.length; i++) {
+            final int value = TypeUtils.getUnboxedInt(values[i]);
+            if (value == QueryConstants.NULL_INT) {
+                return true;
+            }
+            unboxedValues[i] = value;
         }
-        return maybeMatchesInverseImpl(min, max, values);
+        if (!invertMatch) {
+            return maybeMatchesImpl(min, max, unboxedValues);
+        }
+        return maybeMatchesInverseImpl(min, max, unboxedValues);
     }
 
     /**
@@ -99,10 +111,9 @@ public abstract class IntPushdownHandler {
     private static boolean maybeMatchesImpl(
             final int min,
             final int max,
-            final Object[] values) {
-        for (final Object v : values) {
-            final int value = TypeUtils.getUnboxedInt(v);
-            if (maybeOverlaps(min, max, value, true, value, true)) {
+            @NotNull final int[] values) {
+        for (final int value : values) {
+            if (maybeOverlapsImpl(min, max, value, true, value, true)) {
                 return true;
             }
         }
@@ -111,37 +122,27 @@ public abstract class IntPushdownHandler {
 
     /**
      * Verifies that the {@code [min, max]} range includes any value that is not in the given {@code values} array. This
-     * is done by checking whether {@code [min, max]} overlaps with any open gap produced by excluding the given values.
-     * For example, if the values are sorted as {@code v_0, v_1, ..., v_n-1}, then the gaps are:
-     * 
+     * is done by checking whether {@code [min, max]} overlaps with every open gap produced by excluding the given
+     * values. For example, if the values are sorted as {@code v_0, v_1, ..., v_n-1}, then the gaps are:
+     *
      * <pre>
-     * [QueryConstants.NULL_INT, v_0), (v_0, v_1), ... , (v_n-2, v_n-1), (v_n-1, QueryConstants.MAX_INT]
+     * [Integer.MIN_VALUE, v_0), (v_0, v_1), ... , (v_n-2, v_n-1), (v_n-1, Integer.MAX_VALUE]
      * </pre>
      */
     private static boolean maybeMatchesInverseImpl(
             final int min,
             final int max,
-            final Object[] values) {
-        final Integer[] sortedValues = sort(values);
-        int lower = QueryConstants.NULL_INT;
+            @NotNull final int[] values) {
+        Arrays.sort(values);
+        int lower = Integer.MIN_VALUE;
         boolean lowerInclusive = true;
-        for (final int upper : sortedValues) {
-            if (maybeOverlaps(min, max, lower, lowerInclusive, upper, false)) {
+        for (final int upper : values) {
+            if (maybeOverlapsImpl(min, max, lower, lowerInclusive, upper, false)) {
                 return true;
             }
             lower = upper;
             lowerInclusive = false;
         }
-        return maybeOverlaps(min, max, lower, lowerInclusive, QueryConstants.MAX_INT, true);
-    }
-
-    // TODO (deephaven-core#5920): Use the more efficient sorting method when available.
-    private static Integer[] sort(final Object[] values) {
-        // Unbox to get the primitive values, and then box them back for sorting with custom comparator.
-        final Integer[] boxedValues = Arrays.stream(values)
-                .map(TypeUtils::getUnboxedInt)
-                .toArray(Integer[]::new);
-        Arrays.sort(boxedValues, IntComparisons::compare);
-        return boxedValues;
+        return maybeOverlapsImpl(min, max, lower, lowerInclusive, Integer.MAX_VALUE, true);
     }
 }

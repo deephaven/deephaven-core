@@ -12,6 +12,9 @@ import io.deephaven.engine.table.impl.BasePushdownFilterContext;
 import io.deephaven.engine.table.impl.PushdownFilterContext;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.locations.impl.StandaloneTableKey;
+import io.deephaven.engine.table.impl.select.DoubleRangeFilter;
+import io.deephaven.engine.table.impl.select.FloatRangeFilter;
+import io.deephaven.engine.table.impl.select.MatchFilter;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
@@ -129,8 +132,16 @@ public final class ParquetTableFilterTest {
         verifyResults(diskTable.where(filters).coalesce(), memTable.where(filters).coalesce());
     }
 
+    private static void filterAndVerifyResults(Table diskTable, Table memTable, WhereFilter filter) {
+        verifyResults(diskTable.where(filter).coalesce(), memTable.where(filter).coalesce());
+    }
+
     private static void filterAndVerifyResultsAllowEmpty(Table diskTable, Table memTable, String... filters) {
         verifyResultsAllowEmpty(diskTable.where(filters).coalesce(), memTable.where(filters).coalesce());
+    }
+
+    private static void filterAndVerifyResultsAllowEmpty(Table diskTable, Table memTable, WhereFilter filter) {
+        verifyResultsAllowEmpty(diskTable.where(filter).coalesce(), memTable.where(filter).coalesce());
     }
 
     private static void verifyResultsAllowEmpty(Table filteredDiskTable, Table filteredMemTable) {
@@ -1166,7 +1177,7 @@ public final class ParquetTableFilterTest {
     }
 
     @Test
-    public void testInt96Timestamps() throws URISyntaxException {
+    public void testInt96Timestamps() {
         // Int96 timestamps do not have column-order as TYPE_DEFINED, so we cannot use the statistics to filter
         final String path = ParquetTableFilterTest.class.getResource("/ReferenceInt96Timestamps.parquet").getFile();
         {
@@ -1236,6 +1247,82 @@ public final class ParquetTableFilterTest {
         }
 
         testFilteringNanImpl(readTable(dest));
+    }
+
+    @Test
+    public void testFilteringFloatInfinity() {
+        final Table source = newTable(
+                floatCol("floats", Float.POSITIVE_INFINITY, Float.NEGATIVE_INFINITY, 1.0f, -1.0f));
+        final String dest = Path.of(rootFile.getPath(), "testFilteringFloatInfinity.parquet").toString();
+        writeTable(source, dest);
+        {
+            final Statistics<?> floatStats = getColumnStatistics(new File(dest), "floats");
+            assertEquals(Float.NEGATIVE_INFINITY, floatStats.genericGetMin());
+            assertEquals(Float.POSITIVE_INFINITY, floatStats.genericGetMax());
+        }
+
+        final Table diskTable = ParquetTools.readTable(dest);
+        final Table memTable = diskTable.select();
+        assertTableEquals(diskTable, memTable);
+
+        filterAndVerifyResultsAllowEmpty(diskTable, memTable, "floats != null");
+        filterAndVerifyResultsAllowEmpty(diskTable, memTable, "floats == null");
+        filterAndVerifyResultsAllowEmpty(diskTable, memTable, "floats > 0");
+        filterAndVerifyResultsAllowEmpty(diskTable, memTable, "floats <= 0");
+        filterAndVerifyResultsAllowEmpty(diskTable, memTable,
+                new FloatRangeFilter("floats", Float.NEGATIVE_INFINITY, 5.0f));
+        filterAndVerifyResultsAllowEmpty(diskTable, memTable,
+                new FloatRangeFilter("floats", Float.NEGATIVE_INFINITY, Float.POSITIVE_INFINITY));
+        filterAndVerifyResultsAllowEmpty(diskTable, memTable,
+                new FloatRangeFilter("floats", -2.0f, Float.POSITIVE_INFINITY));
+        filterAndVerifyResultsAllowEmpty(diskTable, memTable,
+                new FloatRangeFilter("floats", Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY));
+        filterAndVerifyResultsAllowEmpty(diskTable, memTable,
+                new MatchFilter(MatchFilter.MatchType.Inverted, "floats", Float.POSITIVE_INFINITY));
+        filterAndVerifyResultsAllowEmpty(diskTable, memTable,
+                new MatchFilter(MatchFilter.MatchType.Inverted, "floats", Float.NEGATIVE_INFINITY));
+        filterAndVerifyResultsAllowEmpty(diskTable, memTable,
+                new MatchFilter(MatchFilter.MatchType.Regular, "floats", Float.POSITIVE_INFINITY));
+        filterAndVerifyResultsAllowEmpty(diskTable, memTable,
+                new MatchFilter(MatchFilter.MatchType.Regular, "floats", Float.NEGATIVE_INFINITY));
+    }
+
+    @Test
+    public void testFilteringDoubleInfinity() {
+        final Table source = newTable(
+                doubleCol("doubles", Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY, 1.0f, -1.0f));
+        final String dest = Path.of(rootFile.getPath(), "testFilteringDoubleInfinity.parquet").toString();
+        writeTable(source, dest);
+        {
+            final Statistics<?> doubleStats = getColumnStatistics(new File(dest), "doubles");
+            assertEquals(Double.NEGATIVE_INFINITY, doubleStats.genericGetMin());
+            assertEquals(Double.POSITIVE_INFINITY, doubleStats.genericGetMax());
+        }
+        final Table diskTable = ParquetTools.readTable(dest);
+        final Table memTable = diskTable.select();
+
+        assertTableEquals(diskTable, memTable);
+
+        filterAndVerifyResultsAllowEmpty(diskTable, memTable, "doubles != null");
+        filterAndVerifyResultsAllowEmpty(diskTable, memTable, "doubles == null");
+        filterAndVerifyResultsAllowEmpty(diskTable, memTable, "doubles > 0");
+        filterAndVerifyResultsAllowEmpty(diskTable, memTable, "doubles <= 0");
+        filterAndVerifyResultsAllowEmpty(diskTable, memTable,
+                new DoubleRangeFilter("doubles", Double.NEGATIVE_INFINITY, 5.0));
+        filterAndVerifyResultsAllowEmpty(diskTable, memTable,
+                new DoubleRangeFilter("doubles", Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY));
+        filterAndVerifyResultsAllowEmpty(diskTable, memTable,
+                new DoubleRangeFilter("doubles", -2.0, Double.POSITIVE_INFINITY));
+        filterAndVerifyResultsAllowEmpty(diskTable, memTable,
+                new DoubleRangeFilter("doubles", Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY));
+        filterAndVerifyResultsAllowEmpty(diskTable, memTable,
+                new MatchFilter(MatchFilter.MatchType.Inverted, "doubles", Double.POSITIVE_INFINITY));
+        filterAndVerifyResultsAllowEmpty(diskTable, memTable,
+                new MatchFilter(MatchFilter.MatchType.Inverted, "doubles", Double.NEGATIVE_INFINITY));
+        filterAndVerifyResultsAllowEmpty(diskTable, memTable,
+                new MatchFilter(MatchFilter.MatchType.Regular, "doubles", Double.POSITIVE_INFINITY));
+        filterAndVerifyResultsAllowEmpty(diskTable, memTable,
+                new MatchFilter(MatchFilter.MatchType.Regular, "doubles", Double.NEGATIVE_INFINITY));
     }
 
     /**

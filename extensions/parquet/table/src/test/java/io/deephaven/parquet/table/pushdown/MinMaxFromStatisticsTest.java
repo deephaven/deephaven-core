@@ -1,15 +1,14 @@
 //
 // Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
-package io.deephaven.parquet.table;
+package io.deephaven.parquet.table.pushdown;
 
 import io.deephaven.base.FileUtils;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.parquet.base.NullStatistics;
-import io.deephaven.parquet.table.pushdown.MinMax;
-import io.deephaven.parquet.table.pushdown.MinMaxFromStatistics;
+import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.time.DateTimeUtils;
@@ -122,7 +121,7 @@ public class MinMaxFromStatisticsTest {
         final String columnName = "Characters";
 
         writeTable(newTable(charCol(columnName, NULL_CHAR, 'A', 'z', 'M', NULL_CHAR)), dest.toString());
-        assertMinMax(dest, columnName, IntStatistics.class, 2, (long) 'A', (long) 'z');
+        assertMinMax(dest, columnName, IntStatistics.class, 2, 'A', 'z');
 
         writeTable(newTable(charCol(columnName, NULL_CHAR, NULL_CHAR, NULL_CHAR)), dest.toString());
         assertEmptyStatistics(dest, columnName, IntStatistics.class, 3);
@@ -134,7 +133,7 @@ public class MinMaxFromStatisticsTest {
         final String columnName = "Bytes";
 
         writeTable(newTable(byteCol(columnName, NULL_BYTE, (byte) -10, (byte) 100, (byte) 0)), dest.toString());
-        assertMinMax(dest, columnName, IntStatistics.class, 1, -10, 100);
+        assertMinMax(dest, columnName, IntStatistics.class, 1, (byte) -10, (byte) 100);
 
         writeTable(newTable(byteCol(columnName, NULL_BYTE, NULL_BYTE, NULL_BYTE)), dest.toString());
         assertEmptyStatistics(dest, columnName, IntStatistics.class, 3);
@@ -146,7 +145,7 @@ public class MinMaxFromStatisticsTest {
         final String columnName = "Shorts";
 
         writeTable(newTable(shortCol(columnName, NULL_SHORT, (short) -1024, (short) 2048)), dest.toString());
-        assertMinMax(dest, columnName, IntStatistics.class, 1, -1024, 2048);
+        assertMinMax(dest, columnName, IntStatistics.class, 1, (short) -1024, (short) 2048);
 
         writeTable(newTable(shortCol(columnName, NULL_SHORT, NULL_SHORT)), dest.toString());
         assertEmptyStatistics(dest, columnName, IntStatistics.class, 2);

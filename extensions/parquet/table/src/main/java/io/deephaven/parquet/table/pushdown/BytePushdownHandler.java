@@ -8,63 +8,65 @@
 package io.deephaven.parquet.table.pushdown;
 
 import io.deephaven.api.filter.Filter;
-import io.deephaven.engine.table.impl.chunkfilter.ByteChunkFilter;
 import io.deephaven.engine.table.impl.select.ByteRangeFilter;
 import io.deephaven.engine.table.impl.select.MatchFilter;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.InternalUseOnly;
-import io.deephaven.util.compare.ByteComparisons;
 import io.deephaven.util.type.TypeUtils;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
-import static io.deephaven.parquet.table.pushdown.ParquetPushdownUtils.containsDeephavenNullByte;
 
 @InternalUseOnly
 public abstract class BytePushdownHandler {
 
     public static boolean maybeOverlaps(
             final Filter filter,
-            final ByteChunkFilter byteChunkFilter,
-            final MinMax<?> minMax,
-            final long nullCount) {
-        final byte min = TypeUtils.getUnboxedByte(minMax.min());
-        final byte max = TypeUtils.getUnboxedByte(minMax.max());
-        final boolean doStatsContainNull = nullCount > 0 || containsDeephavenNullByte(min, max);
-        final boolean matchesNull = (doStatsContainNull && byteChunkFilter.matches(QueryConstants.NULL_BYTE));
-        if (matchesNull) {
-            return true;
-        }
+            final MinMax<?> minMax) {
+        final byte min = (Byte) minMax.min();
+        final byte max = (Byte) minMax.max();
         if (filter instanceof ByteRangeFilter) {
-            final ByteRangeFilter byteRangeFilter = (ByteRangeFilter) filter;
-            return maybeOverlaps(
-                    min, max,
-                    byteRangeFilter.getLower(), byteRangeFilter.isLowerInclusive(),
-                    byteRangeFilter.getUpper(), byteRangeFilter.isUpperInclusive());
+            return maybeOverlaps(min, max, (ByteRangeFilter) filter);
         } else if (filter instanceof MatchFilter) {
-            final MatchFilter matchFilter = (MatchFilter) filter;
-            return maybeMatches(min, max, matchFilter.getValues(), matchFilter.getInvertMatch());
+            return maybeMatches(min, max, (MatchFilter) filter);
         }
         return true;
+    }
+
+    static boolean maybeOverlaps(
+            final byte min,
+            final byte max,
+            final ByteRangeFilter byteRangeFilter) {
+        // Skip pushdown-based filtering for nulls
+        final byte dhLower = byteRangeFilter.getLower();
+        final byte dhUpper = byteRangeFilter.getUpper();
+        if (dhLower == QueryConstants.NULL_BYTE || dhUpper == QueryConstants.NULL_BYTE) {
+            return true;
+        }
+        return maybeOverlapsImpl(
+                min, max,
+                dhLower, byteRangeFilter.isLowerInclusive(),
+                dhUpper, byteRangeFilter.isUpperInclusive());
     }
 
     /**
      * Verifies that the {@code [min, max]} range intersects the range defined by the given lower and upper bounds.
      */
-    static boolean maybeOverlaps(
+    private static boolean maybeOverlapsImpl(
             final byte min, final byte max,
             final byte lower, final boolean lowerInclusive,
             final byte upper, final boolean upperInclusive) {
-        final int c0 = ByteComparisons.compare(lower, upper);
+        final int c0 = Byte.compare(lower, upper);
         if (c0 > 0 || (c0 == 0 && !(lowerInclusive && upperInclusive))) {
             // lower > upper, no overlap possible.
             return false;
         }
-        final int c1 = ByteComparisons.compare(lower, max);
+        final int c1 = Byte.compare(lower, max);
         if (c1 > 0) {
             // lower > max, no overlap possible.
             return false;
         }
-        final int c2 = ByteComparisons.compare(min, upper);
+        final int c2 = Byte.compare(min, upper);
         if (c2 > 0) {
             // min > upper, no overlap possible.
             return false;
@@ -75,22 +77,32 @@ public abstract class BytePushdownHandler {
     }
 
     /**
-     * Verifies that the {@code [min, max]} range intersects any point supplied in {@code values}, taking into account
-     * the {@code inverseMatch} flag.
+     * Verifies that the {@code [min, max]} range intersects any point supplied in the filter.
      */
     private static boolean maybeMatches(
             final byte min,
             final byte max,
-            final Object[] values,
-            final boolean inverseMatch) {
+            final MatchFilter matchFilter) {
+        final Object[] values = matchFilter.getValues();
+        final boolean invertMatch = matchFilter.getInvertMatch();
+
         if (values == null || values.length == 0) {
             // No values to check against, so we consider it as a maybe overlap.
             return true;
         }
-        if (!inverseMatch) {
-            return maybeMatchesImpl(min, max, values);
+        // Skip pushdown-based filtering for nulls
+        final byte[] unboxedValues = new byte[values.length];
+        for (int i = 0; i < values.length; i++) {
+            final byte value = TypeUtils.getUnboxedByte(values[i]);
+            if (value == QueryConstants.NULL_BYTE) {
+                return true;
+            }
+            unboxedValues[i] = value;
         }
-        return maybeMatchesInverseImpl(min, max, values);
+        if (!invertMatch) {
+            return maybeMatchesImpl(min, max, unboxedValues);
+        }
+        return maybeMatchesInverseImpl(min, max, unboxedValues);
     }
 
     /**
@@ -99,10 +111,9 @@ public abstract class BytePushdownHandler {
     private static boolean maybeMatchesImpl(
             final byte min,
             final byte max,
-            final Object[] values) {
-        for (final Object v : values) {
-            final byte value = TypeUtils.getUnboxedByte(v);
-            if (maybeOverlaps(min, max, value, true, value, true)) {
+            @NotNull final byte[] values) {
+        for (final byte value : values) {
+            if (maybeOverlapsImpl(min, max, value, true, value, true)) {
                 return true;
             }
         }
@@ -111,37 +122,27 @@ public abstract class BytePushdownHandler {
 
     /**
      * Verifies that the {@code [min, max]} range includes any value that is not in the given {@code values} array. This
-     * is done by checking whether {@code [min, max]} overlaps with any open gap produced by excluding the given values.
-     * For example, if the values are sorted as {@code v_0, v_1, ..., v_n-1}, then the gaps are:
-     * 
+     * is done by checking whether {@code [min, max]} overlaps with every open gap produced by excluding the given
+     * values. For example, if the values are sorted as {@code v_0, v_1, ..., v_n-1}, then the gaps are:
+     *
      * <pre>
-     * [QueryConstants.NULL_BYTE, v_0), (v_0, v_1), ... , (v_n-2, v_n-1), (v_n-1, QueryConstants.MAX_BYTE]
+     * [Byte.MIN_VALUE, v_0), (v_0, v_1), ... , (v_n-2, v_n-1), (v_n-1, Byte.MAX_VALUE]
      * </pre>
      */
     private static boolean maybeMatchesInverseImpl(
             final byte min,
             final byte max,
-            final Object[] values) {
-        final Byte[] sortedValues = sort(values);
-        byte lower = QueryConstants.NULL_BYTE;
+            @NotNull final byte[] values) {
+        Arrays.sort(values);
+        byte lower = Byte.MIN_VALUE;
         boolean lowerInclusive = true;
-        for (final byte upper : sortedValues) {
-            if (maybeOverlaps(min, max, lower, lowerInclusive, upper, false)) {
+        for (final byte upper : values) {
+            if (maybeOverlapsImpl(min, max, lower, lowerInclusive, upper, false)) {
                 return true;
             }
             lower = upper;
             lowerInclusive = false;
         }
-        return maybeOverlaps(min, max, lower, lowerInclusive, QueryConstants.MAX_BYTE, true);
-    }
-
-    // TODO (deephaven-core#5920): Use the more efficient sorting method when available.
-    private static Byte[] sort(final Object[] values) {
-        // Unbox to get the primitive values, and then box them back for sorting with custom comparator.
-        final Byte[] boxedValues = Arrays.stream(values)
-                .map(TypeUtils::getUnboxedByte)
-                .toArray(Byte[]::new);
-        Arrays.sort(boxedValues, ByteComparisons::compare);
-        return boxedValues;
+        return maybeOverlapsImpl(min, max, lower, lowerInclusive, Byte.MAX_VALUE, true);
     }
 }

@@ -3,39 +3,28 @@
 //
 package io.deephaven.parquet.table.pushdown;
 
-import io.deephaven.engine.table.impl.chunkfilter.StringChunkMatchFilterFactory;
 import io.deephaven.engine.table.impl.select.MatchFilter;
 import io.deephaven.util.annotations.InternalUseOnly;
 
 @InternalUseOnly
 public abstract class CaseInsensitiveStringMatchPushdownHandler {
 
-    public static boolean maybeOverlaps(
+    public static boolean maybeMatches(
             final MatchFilter matchFilter,
-            final StringChunkMatchFilterFactory.CaseInsensitiveStringChunkFilter stringChunkFilter,
-            final MinMax<?> minMax,
-            final long nullCount) {
+            final MinMax<?> minMax) {
         final String min = (String) minMax.min();
         final String max = (String) minMax.max();
-        final boolean matchesNull = (nullCount > 0 && stringChunkFilter.matches(null));
-        if (matchesNull) {
-            return true;
-        }
-        return maybeMatches(min, max, (String[]) matchFilter.getValues(), matchFilter.getInvertMatch());
-    }
-
-    /**
-     * Verifies that the {@code [min, max]} range intersects every point supplied in {@code values}, taking into account
-     * the {@code inverseMatch} flag.
-     */
-    private static boolean maybeMatches(
-            final String min,
-            final String max,
-            final String[] values,
-            final boolean inverseMatch) {
+        final Object[] values = matchFilter.getValues();
+        final boolean inverseMatch = matchFilter.getInvertMatch();
         if (values == null || values.length == 0) {
             // No values to check against, so we consider it as a maybe overlap.
             return true;
+        }
+        // Skip pushdown-based filtering for nulls
+        for (final Object value : values) {
+            if (value == null) {
+                return true;
+            }
         }
         if (!inverseMatch) {
             return maybeMatchesImpl(min, max, values);
@@ -49,13 +38,10 @@ public abstract class CaseInsensitiveStringMatchPushdownHandler {
     private static boolean maybeMatchesImpl(
             final String min,
             final String max,
-            final String[] values) {
-        for (final String value : values) {
-            if (value == null) {
-                // Nulls are handled separately, so we skip them here.
-                continue;
-            }
-            if (value.compareToIgnoreCase(min) >= 0 && value.compareToIgnoreCase(max) <= 0) {
+            final Object[] values) {
+        for (final Object value : values) {
+            final String valueStr = (String) value;
+            if (valueStr.compareToIgnoreCase(min) >= 0 && valueStr.compareToIgnoreCase(max) <= 0) {
                 // Found a value within the range [min, max].
                 return true;
             }
@@ -69,11 +55,12 @@ public abstract class CaseInsensitiveStringMatchPushdownHandler {
     private static boolean maybeMatchesInverseImpl(
             final String min,
             final String max,
-            final String[] values) {
+            final Object[] values) {
         // We can always insert a new value in the input range unless the range is exactly equal to the value.
         if (min.equalsIgnoreCase(max)) {
-            for (final String value : values) {
-                if (min.compareToIgnoreCase(value) == 0) {
+            for (final Object value : values) {
+                final String valueStr = (String) value;
+                if (min.compareToIgnoreCase(valueStr) == 0) {
                     return false;
                 }
             }

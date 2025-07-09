@@ -3,8 +3,6 @@
 //
 package io.deephaven.parquet.table.pushdown;
 
-import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
-import io.deephaven.engine.table.impl.chunkfilter.ObjectChunkFilter;
 import io.deephaven.engine.table.impl.select.SingleSidedComparableRangeFilter;
 import io.deephaven.util.annotations.InternalUseOnly;
 import io.deephaven.util.compare.ObjectComparisons;
@@ -14,29 +12,24 @@ public abstract class SingleSidedComparableRangePushdownHandler {
 
     public static boolean maybeOverlaps(
             final SingleSidedComparableRangeFilter sscrf,
-            final ChunkFilter chunkFilter,
-            final MinMax<?> minMax,
-            final long nullCount) {
+            final MinMax<?> minMax) {
         final Comparable<?> min = minMax.min();
         final Comparable<?> max = minMax.max();
-        if (!(chunkFilter instanceof ObjectChunkFilter)) {
-            // If the chunk filter is not an ObjectChunkFilter, we cannot handle it.
+        final Comparable<?> pivot = sscrf.getPivot();
+        final boolean isGreaterThan = sscrf.isGreaterThan();
+        if (pivot == null || !isGreaterThan) {
+            // Skip pushdown-based filtering for nulls, which are considered smaller than any value.
             return true;
         }
-        final ObjectChunkFilter<Comparable<?>> objectChunkFilter = (ObjectChunkFilter<Comparable<?>>) chunkFilter;
-        final boolean matchesNull = nullCount > 0 && objectChunkFilter.matches(null);
-        if (matchesNull) {
-            return true;
-        }
-        return maybeOverlaps(min, max,
-                sscrf.getPivot(), sscrf.isGreaterThan(),
+        return maybeOverlapsImpl(min, max,
+                pivot, sscrf.isGreaterThan(),
                 sscrf.isLowerInclusive(), sscrf.isUpperInclusive());
     }
 
     /**
      * Verifies that the {@code [min, max]} range intersects the range defined by the given pivot.
      */
-    private static boolean maybeOverlaps(
+    private static boolean maybeOverlapsImpl(
             final Comparable<?> min, final Comparable<?> max,
             final Comparable<?> pivot, final boolean isGreaterThan,
             final boolean lowerInclusive, final boolean upperInclusive) {

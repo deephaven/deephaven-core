@@ -3,18 +3,18 @@
 //
 package io.deephaven.parquet.table.pushdown;
 
+import io.deephaven.util.annotations.InternalUseOnly;
 import org.apache.parquet.column.statistics.Statistics;
 import org.apache.parquet.schema.ColumnOrder;
 import org.apache.parquet.schema.LogicalTypeAnnotation;
 import org.apache.parquet.schema.PrimitiveType;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.jetbrains.annotations.VisibleForTesting;
 
 import java.time.LocalDate;
 import java.util.Optional;
 
-@VisibleForTesting
+@InternalUseOnly
 public abstract class MinMaxFromStatistics {
 
     /**
@@ -154,12 +154,40 @@ public abstract class MinMaxFromStatistics {
 
         @Override
         public Optional<MinMax<?>> visit(final LogicalTypeAnnotation.IntLogicalTypeAnnotation intLogicalType) {
-            final int minFromStatistics = (Integer) statistics.genericGetMin();
-            final int maxFromStatistics = (Integer) statistics.genericGetMax();
             if (intLogicalType.isSigned()) {
-                return wrapMinMax(minFromStatistics, maxFromStatistics);
+                switch (intLogicalType.getBitWidth()) {
+                    case 8:
+                        return wrapMinMax(
+                                ((Integer) statistics.genericGetMin()).byteValue(),
+                                ((Integer) statistics.genericGetMax()).byteValue());
+                    case 16:
+                        return wrapMinMax(
+                                ((Integer) statistics.genericGetMin()).shortValue(),
+                                ((Integer) statistics.genericGetMax()).shortValue());
+                    case 32:
+                        return wrapMinMax(
+                                ((Integer) statistics.genericGetMin()),
+                                ((Integer) statistics.genericGetMax()));
+                    case 64:
+                        return wrapMinMax(
+                                ((Long) statistics.genericGetMin()),
+                                ((Long) statistics.genericGetMax()));
+                }
+            } else {
+                switch (intLogicalType.getBitWidth()) {
+                    case 8:
+                        // TODO Process depending on the column type
+                    case 16:
+                        return wrapMinMax(
+                                (char) (((Integer) statistics.genericGetMin()).intValue()),
+                                (char) (((Integer) statistics.genericGetMax()).intValue()));
+                    case 32:
+                        return wrapMinMax(
+                                Integer.toUnsignedLong((Integer) statistics.genericGetMin()),
+                                Integer.toUnsignedLong((Integer) statistics.genericGetMax()));
+                }
             }
-            return wrapMinMax(Integer.toUnsignedLong(minFromStatistics), Integer.toUnsignedLong(maxFromStatistics));
+            return Optional.empty();
         }
 
         @Override

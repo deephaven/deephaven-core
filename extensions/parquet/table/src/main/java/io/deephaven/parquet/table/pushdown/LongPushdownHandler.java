@@ -8,63 +8,65 @@
 package io.deephaven.parquet.table.pushdown;
 
 import io.deephaven.api.filter.Filter;
-import io.deephaven.engine.table.impl.chunkfilter.LongChunkFilter;
 import io.deephaven.engine.table.impl.select.LongRangeFilter;
 import io.deephaven.engine.table.impl.select.MatchFilter;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.InternalUseOnly;
-import io.deephaven.util.compare.LongComparisons;
 import io.deephaven.util.type.TypeUtils;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
-import static io.deephaven.parquet.table.pushdown.ParquetPushdownUtils.containsDeephavenNullLong;
 
 @InternalUseOnly
 public abstract class LongPushdownHandler {
 
     public static boolean maybeOverlaps(
             final Filter filter,
-            final LongChunkFilter longChunkFilter,
-            final MinMax<?> minMax,
-            final long nullCount) {
-        final long min = TypeUtils.getUnboxedLong(minMax.min());
-        final long max = TypeUtils.getUnboxedLong(minMax.max());
-        final boolean doStatsContainNull = nullCount > 0 || containsDeephavenNullLong(min, max);
-        final boolean matchesNull = (doStatsContainNull && longChunkFilter.matches(QueryConstants.NULL_LONG));
-        if (matchesNull) {
-            return true;
-        }
+            final MinMax<?> minMax) {
+        final long min = (Long) minMax.min();
+        final long max = (Long) minMax.max();
         if (filter instanceof LongRangeFilter) {
-            final LongRangeFilter longRangeFilter = (LongRangeFilter) filter;
-            return maybeOverlaps(
-                    min, max,
-                    longRangeFilter.getLower(), longRangeFilter.isLowerInclusive(),
-                    longRangeFilter.getUpper(), longRangeFilter.isUpperInclusive());
+            return maybeOverlaps(min, max, (LongRangeFilter) filter);
         } else if (filter instanceof MatchFilter) {
-            final MatchFilter matchFilter = (MatchFilter) filter;
-            return maybeMatches(min, max, matchFilter.getValues(), matchFilter.getInvertMatch());
+            return maybeMatches(min, max, (MatchFilter) filter);
         }
         return true;
+    }
+
+    static boolean maybeOverlaps(
+            final long min,
+            final long max,
+            final LongRangeFilter longRangeFilter) {
+        // Skip pushdown-based filtering for nulls
+        final long dhLower = longRangeFilter.getLower();
+        final long dhUpper = longRangeFilter.getUpper();
+        if (dhLower == QueryConstants.NULL_LONG || dhUpper == QueryConstants.NULL_LONG) {
+            return true;
+        }
+        return maybeOverlapsImpl(
+                min, max,
+                dhLower, longRangeFilter.isLowerInclusive(),
+                dhUpper, longRangeFilter.isUpperInclusive());
     }
 
     /**
      * Verifies that the {@code [min, max]} range intersects the range defined by the given lower and upper bounds.
      */
-    static boolean maybeOverlaps(
+    private static boolean maybeOverlapsImpl(
             final long min, final long max,
             final long lower, final boolean lowerInclusive,
             final long upper, final boolean upperInclusive) {
-        final int c0 = LongComparisons.compare(lower, upper);
+        final int c0 = Long.compare(lower, upper);
         if (c0 > 0 || (c0 == 0 && !(lowerInclusive && upperInclusive))) {
             // lower > upper, no overlap possible.
             return false;
         }
-        final int c1 = LongComparisons.compare(lower, max);
+        final int c1 = Long.compare(lower, max);
         if (c1 > 0) {
             // lower > max, no overlap possible.
             return false;
         }
-        final int c2 = LongComparisons.compare(min, upper);
+        final int c2 = Long.compare(min, upper);
         if (c2 > 0) {
             // min > upper, no overlap possible.
             return false;
@@ -75,22 +77,32 @@ public abstract class LongPushdownHandler {
     }
 
     /**
-     * Verifies that the {@code [min, max]} range intersects any point supplied in {@code values}, taking into account
-     * the {@code inverseMatch} flag.
+     * Verifies that the {@code [min, max]} range intersects any point supplied in the filter.
      */
     private static boolean maybeMatches(
             final long min,
             final long max,
-            final Object[] values,
-            final boolean inverseMatch) {
+            final MatchFilter matchFilter) {
+        final Object[] values = matchFilter.getValues();
+        final boolean invertMatch = matchFilter.getInvertMatch();
+
         if (values == null || values.length == 0) {
             // No values to check against, so we consider it as a maybe overlap.
             return true;
         }
-        if (!inverseMatch) {
-            return maybeMatchesImpl(min, max, values);
+        // Skip pushdown-based filtering for nulls
+        final long[] unboxedValues = new long[values.length];
+        for (int i = 0; i < values.length; i++) {
+            final long value = TypeUtils.getUnboxedLong(values[i]);
+            if (value == QueryConstants.NULL_LONG) {
+                return true;
+            }
+            unboxedValues[i] = value;
         }
-        return maybeMatchesInverseImpl(min, max, values);
+        if (!invertMatch) {
+            return maybeMatchesImpl(min, max, unboxedValues);
+        }
+        return maybeMatchesInverseImpl(min, max, unboxedValues);
     }
 
     /**
@@ -99,10 +111,9 @@ public abstract class LongPushdownHandler {
     private static boolean maybeMatchesImpl(
             final long min,
             final long max,
-            final Object[] values) {
-        for (final Object v : values) {
-            final long value = TypeUtils.getUnboxedLong(v);
-            if (maybeOverlaps(min, max, value, true, value, true)) {
+            @NotNull final long[] values) {
+        for (final long value : values) {
+            if (maybeOverlapsImpl(min, max, value, true, value, true)) {
                 return true;
             }
         }
@@ -111,37 +122,27 @@ public abstract class LongPushdownHandler {
 
     /**
      * Verifies that the {@code [min, max]} range includes any value that is not in the given {@code values} array. This
-     * is done by checking whether {@code [min, max]} overlaps with any open gap produced by excluding the given values.
-     * For example, if the values are sorted as {@code v_0, v_1, ..., v_n-1}, then the gaps are:
-     * 
+     * is done by checking whether {@code [min, max]} overlaps with every open gap produced by excluding the given
+     * values. For example, if the values are sorted as {@code v_0, v_1, ..., v_n-1}, then the gaps are:
+     *
      * <pre>
-     * [QueryConstants.NULL_LONG, v_0), (v_0, v_1), ... , (v_n-2, v_n-1), (v_n-1, QueryConstants.MAX_LONG]
+     * [Long.MIN_VALUE, v_0), (v_0, v_1), ... , (v_n-2, v_n-1), (v_n-1, Long.MAX_VALUE]
      * </pre>
      */
     private static boolean maybeMatchesInverseImpl(
             final long min,
             final long max,
-            final Object[] values) {
-        final Long[] sortedValues = sort(values);
-        long lower = QueryConstants.NULL_LONG;
+            @NotNull final long[] values) {
+        Arrays.sort(values);
+        long lower = Long.MIN_VALUE;
         boolean lowerInclusive = true;
-        for (final long upper : sortedValues) {
-            if (maybeOverlaps(min, max, lower, lowerInclusive, upper, false)) {
+        for (final long upper : values) {
+            if (maybeOverlapsImpl(min, max, lower, lowerInclusive, upper, false)) {
                 return true;
             }
             lower = upper;
             lowerInclusive = false;
         }
-        return maybeOverlaps(min, max, lower, lowerInclusive, QueryConstants.MAX_LONG, true);
-    }
-
-    // TODO (deephaven-core#5920): Use the more efficient sorting method when available.
-    private static Long[] sort(final Object[] values) {
-        // Unbox to get the primitive values, and then box them back for sorting with custom comparator.
-        final Long[] boxedValues = Arrays.stream(values)
-                .map(TypeUtils::getUnboxedLong)
-                .toArray(Long[]::new);
-        Arrays.sort(boxedValues, LongComparisons::compare);
-        return boxedValues;
+        return maybeOverlapsImpl(min, max, lower, lowerInclusive, Long.MAX_VALUE, true);
     }
 }

@@ -4,63 +4,65 @@
 package io.deephaven.parquet.table.pushdown;
 
 import io.deephaven.api.filter.Filter;
-import io.deephaven.engine.table.impl.chunkfilter.CharChunkFilter;
 import io.deephaven.engine.table.impl.select.CharRangeFilter;
 import io.deephaven.engine.table.impl.select.MatchFilter;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.InternalUseOnly;
-import io.deephaven.util.compare.CharComparisons;
 import io.deephaven.util.type.TypeUtils;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
-import static io.deephaven.parquet.table.pushdown.ParquetPushdownUtils.containsDeephavenNullChar;
 
 @InternalUseOnly
 public abstract class CharPushdownHandler {
 
     public static boolean maybeOverlaps(
             final Filter filter,
-            final CharChunkFilter charChunkFilter,
-            final MinMax<?> minMax,
-            final long nullCount) {
-        final char min = TypeUtils.getUnboxedChar(minMax.min());
-        final char max = TypeUtils.getUnboxedChar(minMax.max());
-        final boolean doStatsContainNull = nullCount > 0 || containsDeephavenNullChar(min, max);
-        final boolean matchesNull = (doStatsContainNull && charChunkFilter.matches(QueryConstants.NULL_CHAR));
-        if (matchesNull) {
-            return true;
-        }
+            final MinMax<?> minMax) {
+        final char min = (Character) minMax.min();
+        final char max = (Character) minMax.max();
         if (filter instanceof CharRangeFilter) {
-            final CharRangeFilter charRangeFilter = (CharRangeFilter) filter;
-            return maybeOverlaps(
-                    min, max,
-                    charRangeFilter.getLower(), charRangeFilter.isLowerInclusive(),
-                    charRangeFilter.getUpper(), charRangeFilter.isUpperInclusive());
+            return maybeOverlaps(min, max, (CharRangeFilter) filter);
         } else if (filter instanceof MatchFilter) {
-            final MatchFilter matchFilter = (MatchFilter) filter;
-            return maybeMatches(min, max, matchFilter.getValues(), matchFilter.getInvertMatch());
+            return maybeMatches(min, max, (MatchFilter) filter);
         }
         return true;
+    }
+
+    static boolean maybeOverlaps(
+            final char min,
+            final char max,
+            final CharRangeFilter charRangeFilter) {
+        // Skip pushdown-based filtering for nulls
+        final char dhLower = charRangeFilter.getLower();
+        final char dhUpper = charRangeFilter.getUpper();
+        if (dhLower == QueryConstants.NULL_CHAR || dhUpper == QueryConstants.NULL_CHAR) {
+            return true;
+        }
+        return maybeOverlapsImpl(
+                min, max,
+                dhLower, charRangeFilter.isLowerInclusive(),
+                dhUpper, charRangeFilter.isUpperInclusive());
     }
 
     /**
      * Verifies that the {@code [min, max]} range intersects the range defined by the given lower and upper bounds.
      */
-    static boolean maybeOverlaps(
+    private static boolean maybeOverlapsImpl(
             final char min, final char max,
             final char lower, final boolean lowerInclusive,
             final char upper, final boolean upperInclusive) {
-        final int c0 = CharComparisons.compare(lower, upper);
+        final int c0 = Character.compare(lower, upper);
         if (c0 > 0 || (c0 == 0 && !(lowerInclusive && upperInclusive))) {
             // lower > upper, no overlap possible.
             return false;
         }
-        final int c1 = CharComparisons.compare(lower, max);
+        final int c1 = Character.compare(lower, max);
         if (c1 > 0) {
             // lower > max, no overlap possible.
             return false;
         }
-        final int c2 = CharComparisons.compare(min, upper);
+        final int c2 = Character.compare(min, upper);
         if (c2 > 0) {
             // min > upper, no overlap possible.
             return false;
@@ -71,22 +73,32 @@ public abstract class CharPushdownHandler {
     }
 
     /**
-     * Verifies that the {@code [min, max]} range intersects any point supplied in {@code values}, taking into account
-     * the {@code inverseMatch} flag.
+     * Verifies that the {@code [min, max]} range intersects any point supplied in the filter.
      */
     private static boolean maybeMatches(
             final char min,
             final char max,
-            final Object[] values,
-            final boolean inverseMatch) {
+            final MatchFilter matchFilter) {
+        final Object[] values = matchFilter.getValues();
+        final boolean invertMatch = matchFilter.getInvertMatch();
+
         if (values == null || values.length == 0) {
             // No values to check against, so we consider it as a maybe overlap.
             return true;
         }
-        if (!inverseMatch) {
-            return maybeMatchesImpl(min, max, values);
+        // Skip pushdown-based filtering for nulls
+        final char[] unboxedValues = new char[values.length];
+        for (int i = 0; i < values.length; i++) {
+            final char value = TypeUtils.getUnboxedChar(values[i]);
+            if (value == QueryConstants.NULL_CHAR) {
+                return true;
+            }
+            unboxedValues[i] = value;
         }
-        return maybeMatchesInverseImpl(min, max, values);
+        if (!invertMatch) {
+            return maybeMatchesImpl(min, max, unboxedValues);
+        }
+        return maybeMatchesInverseImpl(min, max, unboxedValues);
     }
 
     /**
@@ -95,10 +107,9 @@ public abstract class CharPushdownHandler {
     private static boolean maybeMatchesImpl(
             final char min,
             final char max,
-            final Object[] values) {
-        for (final Object v : values) {
-            final char value = TypeUtils.getUnboxedChar(v);
-            if (maybeOverlaps(min, max, value, true, value, true)) {
+            @NotNull final char[] values) {
+        for (final char value : values) {
+            if (maybeOverlapsImpl(min, max, value, true, value, true)) {
                 return true;
             }
         }
@@ -107,37 +118,27 @@ public abstract class CharPushdownHandler {
 
     /**
      * Verifies that the {@code [min, max]} range includes any value that is not in the given {@code values} array. This
-     * is done by checking whether {@code [min, max]} overlaps with any open gap produced by excluding the given values.
-     * For example, if the values are sorted as {@code v_0, v_1, ..., v_n-1}, then the gaps are:
-     * 
+     * is done by checking whether {@code [min, max]} overlaps with every open gap produced by excluding the given
+     * values. For example, if the values are sorted as {@code v_0, v_1, ..., v_n-1}, then the gaps are:
+     *
      * <pre>
-     * [QueryConstants.NULL_CHAR, v_0), (v_0, v_1), ... , (v_n-2, v_n-1), (v_n-1, QueryConstants.MAX_CHAR]
+     * [Character.MIN_VALUE, v_0), (v_0, v_1), ... , (v_n-2, v_n-1), (v_n-1, Character.MAX_VALUE]
      * </pre>
      */
     private static boolean maybeMatchesInverseImpl(
             final char min,
             final char max,
-            final Object[] values) {
-        final Character[] sortedValues = sort(values);
-        char lower = QueryConstants.NULL_CHAR;
+            @NotNull final char[] values) {
+        Arrays.sort(values);
+        char lower = Character.MIN_VALUE;
         boolean lowerInclusive = true;
-        for (final char upper : sortedValues) {
-            if (maybeOverlaps(min, max, lower, lowerInclusive, upper, false)) {
+        for (final char upper : values) {
+            if (maybeOverlapsImpl(min, max, lower, lowerInclusive, upper, false)) {
                 return true;
             }
             lower = upper;
             lowerInclusive = false;
         }
-        return maybeOverlaps(min, max, lower, lowerInclusive, QueryConstants.MAX_CHAR, true);
-    }
-
-    // TODO (deephaven-core#5920): Use the more efficient sorting method when available.
-    private static Character[] sort(final Object[] values) {
-        // Unbox to get the primitive values, and then box them back for sorting with custom comparator.
-        final Character[] boxedValues = Arrays.stream(values)
-                .map(TypeUtils::getUnboxedChar)
-                .toArray(Character[]::new);
-        Arrays.sort(boxedValues, CharComparisons::compare);
-        return boxedValues;
+        return maybeOverlapsImpl(min, max, lower, lowerInclusive, Character.MAX_VALUE, true);
     }
 }
