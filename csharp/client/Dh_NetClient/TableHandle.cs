@@ -531,9 +531,10 @@ public class TableHandle : IDisposable {
   // TODO(kosak): document keyColumn
 
   /// <summary>
-  /// * Creates a new table by merging `sources` together.The tables are essentially stacked on top
+  /// * Creates a new table by merging `sources` together. The tables are essentially stacked on top
   /// of each other.
   /// </summary>
+
   /// <param name="keyColumn"></param>
   /// <param name="sources">the tables to Merge.</param>
   /// <returns>The TableHandle of the new table</returns>
