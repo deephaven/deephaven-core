@@ -49,11 +49,11 @@ public abstract class AbstractRangeFilter extends WhereFilterImpl implements Exp
         this.lowerInclusive = lowerInclusive;
     }
 
-    public boolean isUpperInclusive() {
+    public final boolean isUpperInclusive() {
         return upperInclusive;
     }
 
-    public boolean isLowerInclusive() {
+    public final boolean isLowerInclusive() {
         return lowerInclusive;
     }
 

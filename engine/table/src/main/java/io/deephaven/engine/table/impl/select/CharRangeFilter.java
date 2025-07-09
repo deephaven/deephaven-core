@@ -47,11 +47,11 @@ public class CharRangeFilter extends AbstractRangeFilter {
         }
     }
 
-    public char getUpper() {
+    public final char getUpper() {
         return upper;
     }
 
-    public char getLower() {
+    public final char getLower() {
         return lower;
     }
 

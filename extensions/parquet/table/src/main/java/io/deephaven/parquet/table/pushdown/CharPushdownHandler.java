@@ -9,16 +9,24 @@ import io.deephaven.engine.table.impl.select.MatchFilter;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.InternalUseOnly;
 import io.deephaven.util.type.TypeUtils;
+import org.apache.parquet.column.statistics.Statistics;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
+import java.util.Optional;
 
 @InternalUseOnly
 public abstract class CharPushdownHandler {
 
     public static boolean maybeOverlaps(
             final Filter filter,
-            final MinMax<?> minMax) {
+            final Statistics<?> statistics) {
+        final Optional<MinMax<?>> minMaxFromStatistics = MinMaxFromStatistics.get(statistics, Character.class);
+        if (minMaxFromStatistics.isEmpty()) {
+            // Statistics could not be processed, so we cannot determine overlaps.
+            return true;
+        }
+        final MinMax<?> minMax = minMaxFromStatistics.get();
         final char min = (Character) minMax.min();
         final char max = (Character) minMax.max();
         if (filter instanceof CharRangeFilter) {
@@ -80,8 +88,6 @@ public abstract class CharPushdownHandler {
             final char max,
             final MatchFilter matchFilter) {
         final Object[] values = matchFilter.getValues();
-        final boolean invertMatch = matchFilter.getInvertMatch();
-
         if (values == null || values.length == 0) {
             // No values to check against, so we consider it as a maybe overlap.
             return true;
@@ -95,7 +101,7 @@ public abstract class CharPushdownHandler {
             }
             unboxedValues[i] = value;
         }
-        if (!invertMatch) {
+        if (!matchFilter.getInvertMatch()) {
             return maybeMatchesImpl(min, max, unboxedValues);
         }
         return maybeMatchesInverseImpl(min, max, unboxedValues);

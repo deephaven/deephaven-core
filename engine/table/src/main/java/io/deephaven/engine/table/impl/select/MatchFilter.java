@@ -175,6 +175,10 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
         return invertMatch ? MatchType.Inverted : MatchType.Regular;
     }
 
+    public Class<?> getColumnType() {
+        return columnType;
+    }
+
     @Override
     public List<String> getColumns() {
         if (!initialized) {

@@ -51,11 +51,11 @@ public class IntRangeFilter extends AbstractRangeFilter {
         }
     }
 
-    public int getUpper() {
+    public final int getUpper() {
         return upper;
     }
 
-    public int getLower() {
+    public final int getLower() {
         return lower;
     }
 

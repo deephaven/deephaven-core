@@ -18,6 +18,7 @@ import org.jetbrains.annotations.NotNull;
 public class ComparableRangeFilter extends AbstractRangeFilter {
     private final Comparable<?> upper;
     private final Comparable<?> lower;
+    private Class<?> columnType;
 
     ComparableRangeFilter(String columnName, Comparable<?> val1, Comparable<?> val2, boolean lowerInclusive,
             boolean upperInclusive) {
@@ -32,12 +33,16 @@ public class ComparableRangeFilter extends AbstractRangeFilter {
         }
     }
 
-    public Comparable<?> getUpper() {
+    public final Comparable<?> getUpper() {
         return upper;
     }
 
-    public Comparable<?> getLower() {
+    public final Comparable<?> getLower() {
         return lower;
+    }
+
+    public Class<?> getColumnType() {
+        return columnType;
     }
 
     @TestUseOnly
@@ -57,9 +62,10 @@ public class ComparableRangeFilter extends AbstractRangeFilter {
             throw new RuntimeException("Column \"" + columnName + "\" doesn't exist in this table, available columns: "
                     + tableDefinition.getColumnNames());
         }
+        columnType = def.getDataType();
 
-        Assert.assertion(Comparable.class.isAssignableFrom(def.getDataType()),
-                "Comparable.class.isAssignableFrom(def.getDataType())", def.getDataType(), "def.getDataType()");
+        Assert.assertion(Comparable.class.isAssignableFrom(columnType), "Comparable.class.isAssignableFrom(columnType)",
+                columnType, "columnType");
 
         chunkFilter = makeComparableChunkFilter(lower, upper, lowerInclusive, upperInclusive);
     }

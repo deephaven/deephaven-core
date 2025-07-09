@@ -5,13 +5,22 @@ package io.deephaven.parquet.table.pushdown;
 
 import io.deephaven.engine.table.impl.select.MatchFilter;
 import io.deephaven.util.annotations.InternalUseOnly;
+import org.apache.parquet.column.statistics.Statistics;
+
+import java.util.Optional;
 
 @InternalUseOnly
 public abstract class CaseInsensitiveStringMatchPushdownHandler {
 
     public static boolean maybeMatches(
             final MatchFilter matchFilter,
-            final MinMax<?> minMax) {
+            final Statistics<?> statistics) {
+        final Optional<MinMax<?>> minMaxFromStatistics = MinMaxFromStatistics.get(statistics, String.class);
+        if (minMaxFromStatistics.isEmpty()) {
+            // Statistics could not be processed, so we cannot determine overlaps.
+            return true;
+        }
+        final MinMax<?> minMax = minMaxFromStatistics.get();
         final String min = (String) minMax.min();
         final String max = (String) minMax.max();
         final Object[] values = matchFilter.getValues();

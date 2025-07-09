@@ -54,11 +54,11 @@ public class DoubleRangeFilter extends AbstractRangeFilter {
         }
     }
 
-    public double getUpper() {
+    public final double getUpper() {
         return upper;
     }
 
-    public double getLower() {
+    public final double getLower() {
         return lower;
     }
 

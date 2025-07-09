@@ -50,11 +50,11 @@ public class FloatRangeFilter extends AbstractRangeFilter {
         }
     }
 
-    public float getUpper() {
+    public final float getUpper() {
         return upper;
     }
 
-    public float getLower() {
+    public final float getLower() {
         return lower;
     }
 

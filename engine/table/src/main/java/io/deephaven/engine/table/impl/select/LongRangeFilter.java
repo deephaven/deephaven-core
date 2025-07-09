@@ -51,11 +51,11 @@ public class LongRangeFilter extends AbstractRangeFilter {
         }
     }
 
-    public long getUpper() {
+    public final long getUpper() {
         return upper;
     }
 
-    public long getLower() {
+    public final long getLower() {
         return lower;
     }
 

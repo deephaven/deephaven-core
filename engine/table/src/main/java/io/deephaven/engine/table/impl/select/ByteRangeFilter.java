@@ -51,11 +51,11 @@ public class ByteRangeFilter extends AbstractRangeFilter {
         }
     }
 
-    public byte getUpper() {
+    public final byte getUpper() {
         return upper;
     }
 
-    public byte getLower() {
+    public final byte getLower() {
         return lower;
     }
 

@@ -6,22 +6,30 @@ package io.deephaven.parquet.table.pushdown;
 import io.deephaven.engine.table.impl.select.SingleSidedComparableRangeFilter;
 import io.deephaven.util.annotations.InternalUseOnly;
 import io.deephaven.util.compare.ObjectComparisons;
+import org.apache.parquet.column.statistics.Statistics;
+
+import java.util.Optional;
 
 @InternalUseOnly
 public abstract class SingleSidedComparableRangePushdownHandler {
 
     public static boolean maybeOverlaps(
             final SingleSidedComparableRangeFilter sscrf,
-            final MinMax<?> minMax) {
-        final Comparable<?> min = minMax.min();
-        final Comparable<?> max = minMax.max();
+            final Statistics<?> statistics) {
+        final Optional<MinMax<?>> minMaxFromStatistics = MinMaxFromStatistics.get(statistics, sscrf.getColumnType());
+        if (minMaxFromStatistics.isEmpty()) {
+            // Statistics could not be processed, so we cannot determine overlaps.
+            return true;
+        }
+        final MinMax<?> minMax = minMaxFromStatistics.get();
         final Comparable<?> pivot = sscrf.getPivot();
         final boolean isGreaterThan = sscrf.isGreaterThan();
         if (pivot == null || !isGreaterThan) {
             // Skip pushdown-based filtering for nulls, which are considered smaller than any value.
             return true;
         }
-        return maybeOverlapsImpl(min, max,
+        return maybeOverlapsImpl(
+                minMax.min(), minMax.max(),
                 pivot, sscrf.isGreaterThan(),
                 sscrf.isLowerInclusive(), sscrf.isUpperInclusive());
     }

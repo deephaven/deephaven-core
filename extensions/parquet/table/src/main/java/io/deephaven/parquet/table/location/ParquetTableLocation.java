@@ -769,18 +769,6 @@ public class ParquetTableLocation extends AbstractTableLocation {
 
         final List<BlockMetaData> blocks = parquetMetadata.getBlocks();
         iterateRowGroupsAndRowSet(result.maybeMatch(), (rgIdx, rs) -> {
-            final Statistics<?> statistics = blocks.get(rgIdx).getColumns().get(columnIndex).getStatistics();
-
-            final Optional<MinMax<?>> minMaxFromStatistics = MinMaxFromStatistics.get(statistics);
-            if (minMaxFromStatistics.isEmpty()) {
-                // No statistics, so we can't filter anything.
-                maybeBuilder.appendRowSequence(rs);
-                maybeCount.add(rs.size());
-                return;
-            }
-
-            final MinMax<?> minMax = minMaxFromStatistics.get();
-
             final Optional<ChunkFilter> optionalChunkFilter;
             if (filter instanceof AbstractRangeFilter || filter instanceof MatchFilter) {
                 optionalChunkFilter = ((ExposesChunkFilter) filter).chunkFilter();
@@ -795,35 +783,36 @@ public class ParquetTableLocation extends AbstractTableLocation {
             }
             final ChunkFilter chunkFilter = optionalChunkFilter.get();
 
+            final Statistics<?> statistics = blocks.get(rgIdx).getColumns().get(columnIndex).getStatistics();
             final boolean maybeOverlaps;
             if (chunkFilter instanceof ByteChunkFilter) {
-                maybeOverlaps = BytePushdownHandler.maybeOverlaps(filter, minMax);
+                maybeOverlaps = BytePushdownHandler.maybeOverlaps(filter, statistics);
             } else if (chunkFilter instanceof CharChunkFilter) {
-                maybeOverlaps = CharPushdownHandler.maybeOverlaps(filter, minMax);
+                maybeOverlaps = CharPushdownHandler.maybeOverlaps(filter, statistics);
             } else if (chunkFilter instanceof ShortChunkFilter) {
-                maybeOverlaps = ShortPushdownHandler.maybeOverlaps(filter, minMax);
+                maybeOverlaps = ShortPushdownHandler.maybeOverlaps(filter, statistics);
             } else if (chunkFilter instanceof IntChunkFilter) {
-                maybeOverlaps = IntPushdownHandler.maybeOverlaps(filter, minMax);
+                maybeOverlaps = IntPushdownHandler.maybeOverlaps(filter, statistics);
             } else if (chunkFilter instanceof LongChunkFilter) {
-                maybeOverlaps = LongPushdownHandler.maybeOverlaps(filter, minMax);
+                maybeOverlaps = LongPushdownHandler.maybeOverlaps(filter, statistics);
             } else if (chunkFilter instanceof FloatChunkFilter) {
-                maybeOverlaps = FloatPushdownHandler.maybeOverlaps(filter, minMax);
+                maybeOverlaps = FloatPushdownHandler.maybeOverlaps(filter, statistics);
             } else if (chunkFilter instanceof DoubleChunkFilter) {
-                maybeOverlaps = DoublePushdownHandler.maybeOverlaps(filter, minMax);
+                maybeOverlaps = DoublePushdownHandler.maybeOverlaps(filter, statistics);
             } else if (chunkFilter instanceof StringChunkMatchFilterFactory.CaseInsensitiveStringChunkFilter) {
-                maybeOverlaps = CaseInsensitiveStringMatchPushdownHandler.maybeMatches((MatchFilter) filter, minMax);
+                maybeOverlaps =
+                        CaseInsensitiveStringMatchPushdownHandler.maybeMatches((MatchFilter) filter, statistics);
             } else if (filter instanceof InstantRangeFilter) {
-                maybeOverlaps = InstantPushdownHandler.maybeOverlaps((InstantRangeFilter) filter, minMax);
+                maybeOverlaps = InstantPushdownHandler.maybeOverlaps((InstantRangeFilter) filter, statistics);
             } else if (filter instanceof SingleSidedComparableRangeFilter) {
                 maybeOverlaps = SingleSidedComparableRangePushdownHandler.maybeOverlaps(
-                        (SingleSidedComparableRangeFilter) filter, minMax);
+                        (SingleSidedComparableRangeFilter) filter, statistics);
             } else if (chunkFilter instanceof ObjectChunkFilter) {
-                maybeOverlaps = ObjectPushdownHandler.maybeOverlaps(filter, minMax);
+                maybeOverlaps = ObjectPushdownHandler.maybeOverlaps(filter, statistics);
             } else {
                 // Unsupported filter type for push down, so we can't filter anything.
                 maybeOverlaps = true;
             }
-            // TODO Add support for Strings, Objects, Instants, ComparableRange, SingleSidedComparableRange etc.
             if (maybeOverlaps) {
                 maybeBuilder.appendRowSequence(rs);
                 maybeCount.add(rs.size());

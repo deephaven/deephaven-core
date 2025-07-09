@@ -51,11 +51,11 @@ public class ShortRangeFilter extends AbstractRangeFilter {
         }
     }
 
-    public short getUpper() {
+    public final short getUpper() {
         return upper;
     }
 
-    public short getLower() {
+    public final short getLower() {
         return lower;
     }
 
