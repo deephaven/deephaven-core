@@ -499,10 +499,6 @@ public class TableHandle : IDisposable {
     return TableHandle.Create(Manager, resp);
   }
 
-  public TableHandle Merge(params TableHandle[] sources) {
-    return Merge("", sources);
-  }
-
   /// <summary>
   /// Creates a new table from this table, sorted By sortPairs.
   /// </summary>
@@ -528,15 +524,22 @@ public class TableHandle : IDisposable {
     return TableHandle.Create(Manager, resp);
   }
 
-  // TODO(kosak): document keyColumn
-
   /// <summary>
-  /// * Creates a new table by merging `sources` together. The tables are essentially stacked on top
+  /// Creates a new table by merging `sources` together. The tables are essentially stacked on top
   /// of each other.
   /// </summary>
+  /// <param name="sources">The tables to Merge.</param>
+  /// <returns>The TableHandle of the new table</returns>
+  public TableHandle Merge(params TableHandle[] sources) {
+    return Merge("", sources);
+  }
 
-  /// <param name="keyColumn"></param>
-  /// <param name="sources">the tables to Merge.</param>
+  /// <summary>
+  /// Creates a new table by merging `sources` together. The tables are essentially stacked on top
+  /// of each other.
+  /// </summary>
+  /// <param name="keyColumn">The column by which the resulting table is sorted. Use the empty string for no sorting.</param>
+  /// <param name="sources">The tables to Merge.</param>
   /// <returns>The TableHandle of the new table</returns>
   public TableHandle Merge(string keyColumn, params TableHandle[] sources) {
     var sourceRefs = sources.Prepend(this).Select(th => new TableReference {Ticket = th.Ticket}).ToArray();
@@ -674,7 +677,8 @@ public class TableHandle : IDisposable {
 
   public IDisposable Subscribe(IObserver<TickingUpdate> observer) {
     var disposer = SubscriptionThread.Start(Server, Schema, Ticket, observer);
-    // Manager.AddSubscriptionDisposer(disposer);
+    // TODO(kosak): Add this subscription to a set of things that the TableHandleManager
+    // will dispose when it is disposed.
     return disposer;
   }
 

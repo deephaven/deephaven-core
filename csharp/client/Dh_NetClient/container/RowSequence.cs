@@ -53,6 +53,21 @@ sealed class SequentialRowSequence(Interval interval) : RowSequence {
   }
 }
 
+/// <summary>
+/// This class represents a RowSequence as a bunch of intervals. This is useful because the elements
+/// of a RowSequence are often clumped together into contiguous blobs, so it is more efficient to
+/// store those blobs as intervals rather than store each element individually. For example, the
+/// RowSequence [10, 11, 12, 13, 100, 5000, 5001, 5002] would be represented here as
+/// [ [10, 14) [100, 101), [5000, 5003) ]
+/// and note we are using half-open intervals.
+///
+/// The complication in this class comes from the fact that this same class can represent either
+/// the original RowSequence, or any subsequence of the RowSequence, and those subsequences share
+/// the underlying Interval array. Doing a "Take" operation (trimming items off the end) is efficient
+/// as it just involves adjusting the Count parameter. Doing a "Drop" operation (trimming items off
+/// the front) is an O(n) operation, as we interate over intervals until the correct amount has
+/// been consumed.
+/// </summary>
 sealed class BasicRowSequence : RowSequence {
   public static BasicRowSequence Create(IEnumerable<Interval> intervals) {
     var intervalsArray = intervals.ToArray();
@@ -64,9 +79,25 @@ sealed class BasicRowSequence : RowSequence {
     return new BasicRowSequence(intervalsArray, 0, 0, count);
   }
 
+  /// <summary>
+  /// The original set of interals
+  /// </summary>
   private readonly Interval[] _intervals;
+  /// <summary>
+  /// The array index of the starting interval of this subsequence. If this RowSequence
+  /// starts at the beginning of the _intervals array, then both _startIndex and _startOffset
+  /// will be 0.
+  /// </summary>
   private readonly int _startIndex = 0;
+  /// <summary>
+  /// The offset inside the starting interval of this subsequence. If this RowSequence
+  /// starts at the beginning of the _intervals array, then both _startIndex and _startOffset
+  /// will be 0.
+  /// </summary>
   private readonly UInt64 _startOffset = 0;
+  /// <summary>
+  /// The number of elements of this subsequence.
+  /// </summary>
   public override UInt64 Count { get; }
 
   private BasicRowSequence(Interval[] intervals, int startIndex, UInt64 startOffset, UInt64 count) {
@@ -80,13 +111,41 @@ sealed class BasicRowSequence : RowSequence {
     new BasicRowSequence(_intervals, _startIndex, _startOffset, count);
 
   public override RowSequence Drop(UInt64 count) {
-    return DropHelper(count).Last().Item2!;
+    return SplitHelper(count).Last().Item2!;
   }
 
   public override IEnumerable<Interval> Intervals =>
-      DropHelper(Count).Where(elt => elt.Item2 == null).Select(elt => elt.Item1);
+      SplitHelper(Count).Where(elt => elt.Item2 == null).Select(elt => elt.Item1);
 
-  private IEnumerable<(Interval, RowSequence?)> DropHelper(UInt64 requestedCount) {
+  /// <summary>
+  /// Conceptually this method breaks the current RowSequence into two parts:
+  /// 1. The first 'requestedCount' elements
+  /// 2. The remaining elements
+  ///
+  /// These items are returned as pairs, which can be thought of as a kind of variant
+  /// tuple where only one of the elements is valid at a time.
+  ///
+  /// The enumeration it creates looks like this:
+  /// (interval_1, null)
+  /// (interval_2, null)
+  /// ...
+  /// (interval_N, null)
+  /// (null, Residual RowSequence)
+  ///
+  /// Both the Intervals property and the Drop() method use this helper method.
+  /// 
+  /// The Intervals method just transforms this sequence, passing through every interval_1 through
+  /// interval_N and ignoring the final Residual RowSequence value.
+  ///
+  /// On the other hand, the Drop() method ignores all the intervals items and returns the
+  /// final Residual RowSequence item. This may seem wasteful (and it is, somewhat) but this
+  /// data structure needs to scan intervals sequentially to figure out where to stop, so it's
+  /// O(n) work that needs to be done anyway.
+  /// </summary>
+  /// <param name="requestedCount">Requested number of items that should appear in the first
+  /// part of the sequence</param>
+  /// <returns>An enumeration as described above</returns>
+  private IEnumerable<(Interval, RowSequence?)> SplitHelper(UInt64 requestedCount) {
     if (requestedCount == 0) {
       yield return (Interval.OfEmpty, this);
       yield break;

@@ -25,24 +25,24 @@ public static class ChunkMaker {
     IColumnSourceVisitor<ITimeOnlyColumnSource> {
     public Chunk? Result { get; private set; }
 
-    public void Visit(ICharColumnSource cs) => Doit(cs);
-    public void Visit(IByteColumnSource cs) => Doit(cs);
-    public void Visit(IInt16ColumnSource cs) => Doit(cs);
-    public void Visit(IInt32ColumnSource cs) => Doit(cs);
-    public void Visit(IInt64ColumnSource cs) => Doit(cs);
-    public void Visit(IFloatColumnSource cs) => Doit(cs);
-    public void Visit(IDoubleColumnSource cs) => Doit(cs);
-    public void Visit(IBooleanColumnSource cs) => Doit(cs);
-    public void Visit(IStringColumnSource cs) => Doit(cs);
-    public void Visit(IDateTimeOffsetColumnSource cs) => Doit(cs);
-    public void Visit(IDateOnlyColumnSource cs) => Doit(cs);
-    public void Visit(ITimeOnlyColumnSource cs) => Doit(cs);
+    public void Visit(ICharColumnSource cs) => Make(cs);
+    public void Visit(IByteColumnSource cs) => Make(cs);
+    public void Visit(IInt16ColumnSource cs) => Make(cs);
+    public void Visit(IInt32ColumnSource cs) => Make(cs);
+    public void Visit(IInt64ColumnSource cs) => Make(cs);
+    public void Visit(IFloatColumnSource cs) => Make(cs);
+    public void Visit(IDoubleColumnSource cs) => Make(cs);
+    public void Visit(IBooleanColumnSource cs) => Make(cs);
+    public void Visit(IStringColumnSource cs) => Make(cs);
+    public void Visit(IDateTimeOffsetColumnSource cs) => Make(cs);
+    public void Visit(IDateOnlyColumnSource cs) => Make(cs);
+    public void Visit(ITimeOnlyColumnSource cs) => Make(cs);
 
     public void Visit(IColumnSource cs) {
       throw new Exception($"Programming error: No visitor for type {Utility.FriendlyTypeName(cs.GetType())}");
     }
 
-    private void Doit<T>(IColumnSource<T> _) {
+    private void Make<T>(IColumnSource<T> _) {
       Result = Chunk<T>.Create(chunkSize);
     }
   }

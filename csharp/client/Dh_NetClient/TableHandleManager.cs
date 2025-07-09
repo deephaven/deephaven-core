@@ -96,9 +96,14 @@ public class TableHandleManager : IDisposable {
   /// Creates a ticking table
   /// </summary>
   /// <param name="period">Table ticking frequency, specified as a TimeSpan,
-  /// Int64 nanoseconds, or a string containing an ISO 8601 duration representation</param>
-  /// <param name="startTime">When the table should start ticking, specified as a std::chrono::time_point,
-  /// Int64 nanoseconds since the epoch, or a string containing an ISO 8601 time point specifier</param>
+  /// Int64 nanoseconds, or a string containing an ISO 8601 duration representation.
+  /// DurationSpecifier has implicit conversion operators so you can specify a TimeSpan,
+  /// Int64, or string directly here.
+  /// </param>
+  /// <param name="startTime">When the table should start ticking, specified as
+  /// Int64 nanoseconds since the epoch, or a string containing an ISO 8601 time point specifier.
+  /// TimePointSpecifier has implicit conversion operators so you can specify an Int64 or string
+  /// directly here.</param>
   /// <param name="blinkTable">Whether the table is a blink table</param>
   /// <returns>The TableHandle of the new table</returns>
   public TableHandle TimeTable(DurationSpecifier period, TimePointSpecifier? startTime = null,

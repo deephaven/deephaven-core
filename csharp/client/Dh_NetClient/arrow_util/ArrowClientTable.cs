@@ -7,7 +7,6 @@ namespace Deephaven.Dh_NetClient;
 
 public sealed class ArrowClientTable : IClientTable {
   public static IClientTable Create(Apache.Arrow.Table arrowTable) {
-    // var schema = ArrowUtil.MakeDeephavenSchema(arrowTable.Schema);
     var rowSequence = RowSequence.CreateSequential(Interval.Of(0, (UInt64)arrowTable.RowCount));
 
     var columnSources = new List<IColumnSource>();
