@@ -152,22 +152,25 @@ public interface JobScheduler {
                 final int maxThreads) {
             // Increment this once in order to maintain >=1 until all tasks have been submitted
             incrementReferenceCount();
-            final int numTaskInvokers = Math.min(maxThreads, scheduler.threadCount());
-            for (int tii = 0; tii < numTaskInvokers; ++tii) {
-                final int initialTaskIndex = nextAvailableTaskIndex.getAndIncrement();
-                if (initialTaskIndex >= start + count || exception.get() != null) {
-                    break;
+            try {
+                final int numTaskInvokers = Math.min(maxThreads, scheduler.threadCount());
+                for (int tii = 0; tii < numTaskInvokers; ++tii) {
+                    final int initialTaskIndex = nextAvailableTaskIndex.getAndIncrement();
+                    if (initialTaskIndex >= start + count || exception.get() != null) {
+                        break;
+                    }
+                    final CONTEXT_TYPE context = taskThreadContextFactory.get();
+                    if (!tryIncrementReferenceCount()) {
+                        context.close();
+                        break;
+                    }
+                    final TaskInvoker taskInvoker = new TaskInvoker(context, tii, initialTaskIndex);
+                    scheduler.submit(executionContext, taskInvoker::execute, description,
+                            IterationManager::onUnexpectedJobError);
                 }
-                final CONTEXT_TYPE context = taskThreadContextFactory.get();
-                if (!tryIncrementReferenceCount()) {
-                    context.close();
-                    break;
-                }
-                final TaskInvoker taskInvoker = new TaskInvoker(context, tii, initialTaskIndex);
-                scheduler.submit(executionContext, taskInvoker::execute, description,
-                        IterationManager::onUnexpectedJobError);
+            } finally {
+                decrementReferenceCount();
             }
-            decrementReferenceCount();
         }
 
         private void onTaskComplete() {
@@ -395,16 +398,6 @@ public interface JobScheduler {
             @NotNull final Runnable onComplete,
             @NotNull final Runnable onCompleteCleanup,
             @NotNull final Consumer<Exception> onError) {
-        if (count == 0) {
-            try {
-                onComplete.run();
-            } catch (Exception e) {
-                onError.accept(e);
-                return;
-            }
-            onCompleteCleanup.run();
-            return;
-        }
         final IterationManager<CONTEXT_TYPE> iterationManager =
                 new IterationManager<>(description, start, count, action, onComplete, onCompleteCleanup, onError);
         iterationManager.startTasks(this, executionContext, taskThreadContextFactory, count);
@@ -438,16 +431,6 @@ public interface JobScheduler {
             @NotNull final Runnable onComplete,
             @NotNull final Runnable onCompleteCleanup,
             @NotNull final Consumer<Exception> onError) {
-        if (count == 0) {
-            try {
-                onComplete.run();
-            } catch (Exception e) {
-                onError.accept(e);
-                return;
-            }
-            onCompleteCleanup.run();
-            return;
-        }
         final IterationManager<CONTEXT_TYPE> iterationManager =
                 new IterationManager<>(description, start, count, action, onComplete, onCompleteCleanup, onError);
         iterationManager.startTasks(this, executionContext, taskThreadContextFactory, 1);
