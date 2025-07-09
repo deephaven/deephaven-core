@@ -451,6 +451,14 @@ public readonly struct Bitset64(UInt64 value) : IEquatable<Bitset64> {
     return (_value & ((UInt64)1 << element)) != 0;
   }
 
+  public override bool Equals(object? obj) {
+    return obj is Bitset64 other && Equals(other);
+  }
+
+  public override int GetHashCode() {
+    return _value.GetHashCode();
+  }
+
   public bool Equals(Bitset64 other) {
     return _value == other._value;
   }
@@ -473,7 +481,7 @@ public readonly struct Bitset64(UInt64 value) : IEquatable<Bitset64> {
       return true;
     }
 
-    public int Current => _current;
+    public readonly int Current => _current;
   }
 }
 

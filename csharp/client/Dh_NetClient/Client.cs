@@ -48,7 +48,13 @@ public class Client : IDisposable {
   /// after Dispose() is called. If the caller tries to do so, the behavior is unspecified.
   /// </summary>
   public void Dispose() {
-    Manager.Dispose();
+    if (_manager == null) {
+      return;
+    }
+    GC.SuppressFinalize(this);
+    var temp = _manager;
+    _manager = null;
+    temp.Dispose();
   }
 
   /// <summary>
@@ -68,10 +74,7 @@ public class Client : IDisposable {
   public TableHandleManager Manager {
     get {
       var result = _manager;
-      if (result == null) {
-        throw new InvalidOperationException("This Client has no Manager");
-      }
-      return result;
+      return result ?? throw new InvalidOperationException("This Client has no Manager");
     }
   }
 }

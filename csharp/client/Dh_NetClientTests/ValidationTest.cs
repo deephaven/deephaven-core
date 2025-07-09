@@ -9,17 +9,17 @@ namespace Deephaven.Dh_NetClientTests;
 public class ValidationTest(ITestOutputHelper output) {
   [Fact]
   public void Select() {
-    var badSelects = new[] {
-      new[] { "X = 3)" },
-      new[] { "S = `hello`", "T = java.util.regex.Pattern.quote(S)" }, // Pattern.quote not on whitelist
-      new[] { "X = Math.min(3, 4)" } // Math.min not on whitelist
-    };
-    var goodSelects = new[] {
-      new[] { "X = 3" },
-      new[] { "S = `hello`", "T = S.length()" }, // instance methods of String ok
-      new[] { "X = min(3, 4)" }, // "builtin" from GroovyStaticImports
-      new[] { "X = isFinite(3)" }, // another builtin from GroovyStaticImports
-    };
+    string[][] badSelects = [
+      [ "X = 3)" ],
+      ["S = `hello`", "T = java.util.regex.Pattern.quote(S)"], // Pattern.quote not on whitelist
+      ["X = Math.min(3, 4)"] // Math.min not on whitelist
+    ];
+    string[][] goodSelects = [
+      ["X = 3"],
+      ["S = `hello`", "T = S.length()"], // instance methods of String ok
+      ["X = min(3, 4)"], // "builtin" from GroovyStaticImports
+      ["X = isFinite(3)"], // another builtin from GroovyStaticImports
+    ];
 
     using var ctx = CommonContextForTests.Create(new ClientOptions());
     var thm = ctx.Client.Manager;
@@ -30,21 +30,21 @@ public class ValidationTest(ITestOutputHelper output) {
 
   [Fact]
   public void Where() {
-    var badWheres = new[] {
+    string[] badWheres = [
       "X > 3)", // syntax error
       "S = new String(`hello`)", // new not allowed
       "S = java.util.regex.Pattern.quote(S)", // Pattern.quote not on whitelist
       "X = Math.min(3, 4)" // Math.min not on whitelist
-    };
+    ];
 
-    var goodWheres = new[] {
+    string[] goodWheres = [
       "X = 3",
       "S = `hello`",
       "S.length() = 17", // instance methods of String ok
       "X = min(3, 4)", // "builtin" from GroovyStaticImports
       "X = isFinite(3)", // another builtin from GroovyStaticImports
-      "X in 3, 4, 5",
-    };
+      "X in 3, 4, 5"
+    ];
 
     using var ctx = CommonContextForTests.Create(new ClientOptions());
     var thm = ctx.Client.Manager;

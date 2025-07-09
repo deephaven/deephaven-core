@@ -58,9 +58,9 @@ public class ClientOptions {
   /// Extra headers that should be sent with each outgoing server request.
   /// </summary>
   public IReadOnlyList<(string, string)> ExtraHeaders => _extraHeaders;
-  private readonly List<(string, int)> _intOptions = new();
-  private readonly List<(string, string)> _stringOptions = new();
-  private readonly List<(string, string)> _extraHeaders = new();
+  private readonly List<(string, int)> _intOptions = [];
+  private readonly List<(string, string)> _stringOptions = [];
+  private readonly List<(string, string)> _extraHeaders = [];
 
   /// <summary>
   /// Creates a default ClientOptions object with default authentication and Python scripting.

@@ -15,21 +15,7 @@ public class Server : IDisposable {
   private const string AuthorizationKey = "authorization";
   private const string TimeoutKey = "http.session.durationMs";
 
-  // fix client_options
   public static Server CreateFromTarget(string target, ClientOptions clientOptions) {
-
-// grpc::ChannelArguments channel_args;
-// auto options = arrow::flight::FlightClientOptions::Defaults();
-//   for (const auto &opt : client_options.IntOptions()) {
-//     channel_args.SetInt(opt.first, opt.second);
-//     options.generic_options.emplace_back(opt.first, opt.second);
-//   }
-//   for (const auto &opt : client_options.StringOptions()) {
-//   channel_args.SetString(opt.first, opt.second);
-//   options.generic_options.emplace_back(opt.first, opt.second);
-// }
-//
-
     var channel = GrpcUtil.CreateChannel(target, clientOptions);
 
     var aps = new ApplicationService.ApplicationServiceClient(channel);
@@ -70,7 +56,7 @@ public class Server : IDisposable {
 
   private static InterlockedLong _nextFreeServerId;
 
-  public string Me { get; }
+  public string Id { get; }
   private readonly GrpcChannel _channel;
   public ApplicationService.ApplicationServiceClient ApplicationStub { get; }
   public ConsoleService.ConsoleServiceClient ConsoleStub { get; }
@@ -88,7 +74,7 @@ public class Server : IDisposable {
   private struct SyncedFields {
     public readonly object SyncRoot = new();
     public Int32 NextFreeTicketId = 1;
-    public readonly HashSet<Ticket> OutstandingTickets = new();
+    public readonly HashSet<Ticket> OutstandingTickets = [];
     public string SessionToken;
     public readonly Timer Keepalive;
     public bool Cancelled = false;
@@ -113,7 +99,7 @@ public class Server : IDisposable {
     IReadOnlyList<(string, string)> extraHeaders,
     string sessionToken,
     TimeSpan expirationInterval) {
-    Me = $"{nameof(Server)}-{_nextFreeServerId.Increment()}";
+    Id = $"{nameof(Server)}-{_nextFreeServerId.Increment()}";
     _channel = channel;
     ApplicationStub = applicationStub;
     ConsoleStub = consoleStub;
@@ -137,6 +123,7 @@ public class Server : IDisposable {
       if (_synced.Cancelled) {
         return;
       }
+      GC.SuppressFinalize(this);
       _synced.Cancelled = true;
       _synced.Keepalive.Dispose();
       outstanding = _synced.OutstandingTickets.ToArray();
@@ -206,16 +193,16 @@ public class Server : IDisposable {
     }
   }
 
-  public Ticket MakeNewTicket(Int32 ticketId) {
-    // 'e' + 4 bytes
-    var bytes = new byte[5];
-    bytes[0] = (byte)'e';
-    var span = new Span<byte>(bytes, 1, 4);
-    if (!BitConverter.TryWriteBytes(span, ticketId)) {
-      throw new Exception("Programming error: TryWriteBytes failed");
+  public static Ticket MakeNewTicket(Int32 ticketId) {
+    // Format is: 'e' + 4 bytes
+    var chars = new char[5];
+    chars[0] = 'e';
+    var span = new Span<char>(chars, 1, 4);
+    if (!Utility.TryConvertToBase52(ticketId, span)) {
+      throw new Exception($"Programming error: couldn't convert {ticketId} to base 52");
     }
     var result = new Ticket {
-      Ticket_ = ByteString.CopyFrom(bytes)
+      Ticket_ = ByteString.CopyFromUtf8(new string(chars))
     };
     return result;
   }
@@ -265,37 +252,3 @@ public class Server : IDisposable {
     return true;
   }
 }
-
-//   if (!result.ok()) {
-//     auto message = fmt::format("Can't get configuration constants. Error {}: {}",
-//         static_cast<int>(result.error_code()), result.error_message());
-//     throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
-//   }
-//
-//   const auto &md = ctx.GetServerInitialMetadata();
-//   auto ip = md.find(kAuthorizationKey);
-//   if (ip == md.end()) {
-//     throw std::runtime_error(
-//         DEEPHAVEN_LOCATION_STR("Configuration response didn't contain authorization token"));
-//   }
-//   session_token.assign(ip->second.begin(), ip->second.end());
-//
-//   // Get expiration interval.
-//   auto exp_int = ExtractExpirationInterval(cc_resp);
-//   if (exp_int.has_value()) {
-//     expiration_interval = *exp_int;
-//   } else {
-//     expiration_interval = std::chrono::seconds(10);
-//   }
-// }
-//
-// auto next_handshake_time = send_time + expiration_interval;
-//
-// auto result = std::make_shared<Server>(Private(), std::move(as), std::move(cs),
-//     std::move(ss), std::move(ts), std::move(cfs), std::move(its), std::move(*client_res),
-//     clientOptions.ExtraHeaders(), std::move(session_token), expiration_interval, next_handshake_time);
-// result->keepAliveThread_ = std::thread(&SendKeepaliveMessages, result);
-// return result;
-// }
-
-
