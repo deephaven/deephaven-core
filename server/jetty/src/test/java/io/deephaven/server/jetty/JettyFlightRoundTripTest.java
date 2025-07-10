@@ -61,24 +61,33 @@ public class JettyFlightRoundTripTest extends FlightMessageRoundTripTest {
     }
 
     @Test
+    @DeferServerStart
     public void jsPlugins() throws Exception {
         // Note: JettyFlightRoundTripTest is not the most minimal / appropriate bootstrapping for this test, but it is
         // the most convenient since it has all of the necessary prerequisites
         new Example123Registration().registerInto(component.registration());
+
+        startServer();
+
         testJsPluginExamples(false, true, true);
     }
 
     @Test
+    @DeferServerStart
     public void jsPluginsFromManifest() throws Exception {
         // Note: JettyFlightRoundTripTest is not the most minimal / appropriate bootstrapping for this test, but it is
         // the most convenient since it has all of the necessary prerequisites
         final Path manifestRoot = Path.of(Sentinel.class.getResource("examples").toURI());
         new JsPluginsManifestRegistration(manifestRoot)
                 .registerInto(component.registration());
+
+        startServer();
+
         testJsPluginExamples(false, false, true);
     }
 
     @Test
+    @DeferServerStart
     public void jsPluginsFromNpmPackages() throws Exception {
         // Note: JettyFlightRoundTripTest is not the most minimal / appropriate bootstrapping for this test, but it is
         // the most convenient since it has all of the necessary prerequisites
@@ -89,6 +98,9 @@ public class JettyFlightRoundTripTest extends FlightMessageRoundTripTest {
                 .registerInto(component.registration());
         new JsPluginsNpmPackageRegistration(example2Root)
                 .registerInto(component.registration());
+
+        startServer();
+
         testJsPluginExamples(true, true, false);
     }
 

@@ -536,16 +536,7 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
 
     @Override
     public RollupTableImpl rebase(@NotNull final Table newSource) {
-        if (!newSource.getDefinition().equals(source.getDefinition())) {
-            if (newSource.getDefinition().equalsIgnoreOrder(source.getDefinition())) {
-                throw new IllegalArgumentException(
-                        "Cannot rebase a RollupTable with a new source definition, column order is not identical");
-            }
-            final String differenceDescription = newSource.getDefinition()
-                    .getDifferenceDescription(source.getDefinition(), "new source", "existing source", ",");
-            throw new IllegalArgumentException(
-                    "Cannot rebase a RollupTable with a new source definition: " + differenceDescription);
-        }
+        checkRebaseDefinition("RollupTable", source, newSource);
 
         final QueryTable newSourceQueryTable;
         if (rollupKeyFilters != null) {
@@ -696,9 +687,9 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
         while (!columnsToReaggregateBy.isEmpty()) {
             nullColumnNames.addFirst(columnsToReaggregateBy.removeLast().name());
             final TableDefinition lastLevelDefinition = lastLevel.getDefinition();
-            final Map<String, Class<?>> nullColumns = nullColumnNames.stream().collect(Collectors.toMap(
-                    Function.identity(), ncn -> lastLevelDefinition.getColumn(ncn).getDataType(),
-                    Assert::neverInvoked, LinkedHashMap::new));
+            final List<ColumnDefinition<?>> nullColumns =
+                    nullColumnNames.stream().map(lastLevelDefinition::getColumn).collect(Collectors.toList());
+
             lastLevel = lastLevel.aggNoMemo(
                     AggregationProcessor.forRollupReaggregated(aggregations, nullColumns, ROLLUP_COLUMN),
                     false, null, new ArrayList<>(columnsToReaggregateBy));

@@ -14,6 +14,7 @@ import io.deephaven.javascript.proto.dhinternal.grpcweb.transports.transport.Tra
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.session_pb.TerminationNotificationResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.session_pb.terminationnotificationresponse.StackTrace;
 import io.deephaven.web.client.api.ConnectOptions;
+import io.deephaven.web.client.api.JsTable;
 import io.deephaven.web.client.api.QueryConnectable;
 import io.deephaven.web.client.api.ServerObject;
 import io.deephaven.web.client.api.WorkerConnection;
@@ -30,6 +31,8 @@ import io.deephaven.web.shared.fu.JsRunnable;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsType;
 import jsinterop.base.JsPropertyMap;
+
+import static io.deephaven.web.client.api.QueryInfoConstants.EVENT_TABLE_OPENED;
 
 /**
  * Presently, this is the entrypoint into the Deephaven JS API. By creating an instance of this with the server URL and
@@ -242,6 +245,28 @@ public class IdeConnection extends QueryConnectable<IdeConnection> {
             public BrowserHeaders getMetadata() {
                 return new BrowserHeaders(); // nothing to offer
             }
+        });
+    }
+
+    public Promise<JsTable> newTable(String[] columnNames, String[] types, String[][] data, String userTimeZone) {
+        return connection.get().newTable(columnNames, types, data, userTimeZone, this).then(table -> {
+            fireEvent(EVENT_TABLE_OPENED, table);
+
+            return Promise.resolve(table);
+        });
+    }
+
+    /**
+     * Merges the given tables into a single table. Assumes all tables have the same structure.
+     * 
+     * @param tables
+     * @return {@link Promise} of {@link JsTable}
+     */
+    public Promise<JsTable> mergeTables(JsTable[] tables) {
+        return connection.get().mergeTables(tables, this).then(table -> {
+            fireEvent(EVENT_TABLE_OPENED, table);
+
+            return Promise.resolve(table);
         });
     }
 }

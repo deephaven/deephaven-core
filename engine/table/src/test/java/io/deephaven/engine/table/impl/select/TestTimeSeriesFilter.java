@@ -6,6 +6,7 @@ package io.deephaven.engine.table.impl.select;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
@@ -31,8 +32,7 @@ import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static io.deephaven.engine.testutil.TstUtils.*;
-import static io.deephaven.engine.util.TableTools.intCol;
-import static io.deephaven.engine.util.TableTools.longCol;
+import static io.deephaven.engine.util.TableTools.*;
 
 public class TestTimeSeriesFilter extends RefreshingTableTestCase {
     public void testSimple() {
@@ -43,7 +43,7 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
             times[ii] = DateTimeUtils.epochNanosToInstant((startTime + (ii * 1000)) * 1000000L);
         }
 
-        Table source = TableTools.newTable(TableTools.col("Timestamp", times));
+        Table source = TableTools.newTable(col("Timestamp", times));
         TableTools.show(source);
 
         final TestClock testClock = new TestClock().setMillis(startTime);
@@ -91,7 +91,7 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
             times[ii] = DateTimeUtils.epochNanosToInstant((startTime + (ii * 1000)) * 1000000L);
         }
 
-        Table source = TableTools.newTable(TableTools.col("Timestamp", times));
+        Table source = TableTools.newTable(col("Timestamp", times));
         TableTools.show(source);
 
         final TestClock testClock = new TestClock().setMillis(startTime);
@@ -373,5 +373,37 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
         assertEquals(4, cfi2.count.intValue());
         assertEquals(6, cfe1.count.intValue());
         assertEquals(2, cfe2.count.intValue());
+    }
+
+    public void testStatic() {
+        final long start = DateTimeUtils.epochNanos(DateTimeUtils.parseInstant("2025-07-08T21:29:00 NY"));
+
+        final int size = 60;
+        final Instant[] times = new Instant[size];
+        final int[] sentinel = new int[size];
+
+        for (int ii = 0; ii < times.length; ++ii) {
+            sentinel[ii] = ii;
+            times[ii] = DateTimeUtils.epochNanosToInstant(start + (ii * DateTimeUtils.MINUTE));
+        }
+
+        final QueryTable source =
+                testTable(RowSetFactory.flat(size).toTracking(), col("Timestamp", times), intCol("Sentinel", sentinel));
+        final TestClock testClock = new TestClock().setNanos(start + 30 * DateTimeUtils.MINUTE);
+
+        final TimeSeriesFilter timeSeriesFilter =
+                TimeSeriesFilter.newBuilder().columnName("Timestamp").period("PT5m").clock(testClock).invert(true)
+                        .build();
+        final Table filtered = source.where(timeSeriesFilter);
+        assertTrue(filtered.isRefreshing());
+        assertEquals(25, filtered.size());
+
+        testClock.setNanos(start + 120 * DateTimeUtils.MINUTE);
+        final TimeSeriesFilter timeSeriesFilter2 =
+                TimeSeriesFilter.newBuilder().columnName("Timestamp").period("PT5m").clock(testClock).invert(true)
+                        .build();
+        final Table filtered2 = source.where(timeSeriesFilter2);
+        assertFalse(filtered2.isRefreshing());
+        assertEquals(size, filtered2.size());
     }
 }

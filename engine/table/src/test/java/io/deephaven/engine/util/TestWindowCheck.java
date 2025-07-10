@@ -45,6 +45,7 @@ import java.util.stream.Stream;
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.col;
 import static io.deephaven.engine.util.TableTools.intCol;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 @Category(OutOfBandTest.class)
@@ -522,6 +523,35 @@ public class TestWindowCheck {
             });
             TstUtils.validate("Step " + step, en);
         }
+    }
+
+    @Test
+    public void testStaticTable() {
+        final TestClock timeProvider = new TestClock();
+        final Instant startTime = DateTimeUtils.parseInstant("2025-07-07T09:30:00 NY");
+
+        final long regionSize = 10_000L;
+
+        QueryScope.addParam("startTime", startTime);
+        QueryScope.addParam("regionSize", regionSize);
+
+        final TrackingWritableRowSet inputRowSet = RowSetFactory.fromRange(0, 49999).toTracking();
+        final QueryTable rowsetTable = TstUtils.testTable(inputRowSet);
+        // each chunk of 10_000 rows should account for one minute, or 60_000_000_000 / 10_000 = 6_000_000 nanos per row
+        final Table inputTable = rowsetTable.updateView("Timestamp = startTime + ((k % regionSize) * 6_000_000)");
+
+        // start an hour after the beginning, so that the table need not update
+        timeProvider.now = DateTimeUtils.epochNanos(startTime) + 3600 * 1_000_000_000L;
+        final Pair<Table, WindowCheck.TimeWindowListener> withWindow = WindowCheck.addTimeWindowInternal(timeProvider,
+                (QueryTable) inputTable, "Timestamp", 300 * DateTimeUtils.SECOND, "InWindow", false);
+        assertFalse(withWindow.first.isRefreshing());
+
+        // we are not past the window, so the table must update as time advances
+        timeProvider.now = DateTimeUtils.epochNanos(startTime) + 60 * 1_000_000_000L;
+        final Pair<Table, WindowCheck.TimeWindowListener> withTickingWindow = WindowCheck.addTimeWindowInternal(
+                timeProvider, (QueryTable) inputTable, "Timestamp", 300 * DateTimeUtils.SECOND, "InWindow", false);
+        assertTrue(withTickingWindow.first.isRefreshing());
+
     }
 
     @Test
