@@ -11,6 +11,7 @@ import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.InternalUseOnly;
 import io.deephaven.util.annotations.ScriptApi;
+import io.deephaven.util.annotations.VisibleForTesting;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -160,12 +161,14 @@ public class DateTimeUtils {
     /**
      * Maximum time in microseconds that can be converted to an instant without overflow.
      */
-    private static final long MAX_CONVERTIBLE_MICROS = Long.MAX_VALUE / 1_000L;
+    @VisibleForTesting
+    public static final long MAX_CONVERTIBLE_MICROS = Long.MAX_VALUE / 1_000L;
 
     /**
      * Maximum time in milliseconds that can be converted to an instant without overflow.
      */
-    private static final long MAX_CONVERTIBLE_MILLIS = Long.MAX_VALUE / 1_000_000L;
+    @VisibleForTesting
+    public static final long MAX_CONVERTIBLE_MILLIS = Long.MAX_VALUE / 1_000_000L;
 
     /**
      * Maximum time in seconds that can be converted to an instant without overflow.
