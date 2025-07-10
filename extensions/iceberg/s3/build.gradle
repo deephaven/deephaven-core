@@ -25,7 +25,7 @@ dependencies {
     implementation platform(libs.awssdk.bom)
     implementation libs.awssdk.s3
     implementation libs.awssdk.crt.client
-    runtimeOnly libs.awssdk.sts
+    implementation libs.awssdk.sts
     implementation libs.awssdk.glue
 
     // For some reason, this property flag does not seem to be working. But keeping block here, as it is useful to
