@@ -51,6 +51,7 @@ import io.deephaven.server.runner.GrpcServer;
 import io.deephaven.server.runner.MainHelper;
 import io.deephaven.server.session.*;
 import io.deephaven.server.table.TableModule;
+import io.deephaven.server.table.validation.ExpressionValidatorModule;
 import io.deephaven.server.test.TestAuthModule.FakeBearer;
 import io.deephaven.server.util.Scheduler;
 import io.deephaven.util.QueryConstants;
@@ -131,6 +132,7 @@ public abstract class FlightMessageRoundTripTest {
             ObfuscatingErrorTransformerModule.class,
             PluginsModule.class,
             ExchangeMarshallerModule.class,
+            ExpressionValidatorModule.class,
     })
     public static class FlightTestModule {
         @IntoSet
