@@ -25,6 +25,10 @@ public class LocalDateTimeFromMillisMaterializer extends ObjectMaterializerBase<
         }
     };
 
+    public static LocalDateTime convertValue(long value) {
+        return ParquetTimeUtils.epochMillisToLocalDateTimeUTC(value);
+    }
+
     private final ValuesReader dataReader;
 
     private LocalDateTimeFromMillisMaterializer(ValuesReader dataReader, int numValues) {
@@ -40,7 +44,7 @@ public class LocalDateTimeFromMillisMaterializer extends ObjectMaterializerBase<
     @Override
     public void fillValues(int startIndex, int endIndex) {
         for (int ii = startIndex; ii < endIndex; ii++) {
-            data[ii] = ParquetTimeUtils.epochMillisToLocalDateTimeUTC(dataReader.readLong());
+            data[ii] = convertValue(dataReader.readLong());
         }
     }
 }

@@ -24,6 +24,10 @@ public class LocalDateMaterializer extends ObjectMaterializerBase<LocalDate> imp
         }
     };
 
+    public static LocalDate convertValue(int value) {
+        return DateTimeUtils.epochDaysAsIntToLocalDateImpl(value);
+    }
+
     private final ValuesReader dataReader;
 
     private LocalDateMaterializer(ValuesReader dataReader, int numValues) {
@@ -38,7 +42,7 @@ public class LocalDateMaterializer extends ObjectMaterializerBase<LocalDate> imp
     @Override
     public void fillValues(int startIndex, int endIndex) {
         for (int ii = startIndex; ii < endIndex; ii++) {
-            data[ii] = DateTimeUtils.epochDaysAsIntToLocalDate(dataReader.readInteger());
+            data[ii] = convertValue(dataReader.readInteger());
         }
     }
 }

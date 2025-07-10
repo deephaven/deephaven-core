@@ -761,28 +761,25 @@ public class ParquetTableLocation extends AbstractTableLocation {
             final WhereFilter filter,
             final List<Integer> columnIndices,
             final PushdownResult result) {
+        final Optional<ChunkFilter> optionalChunkFilter;
+        if (filter instanceof AbstractRangeFilter || filter instanceof MatchFilter) {
+            optionalChunkFilter = ((ExposesChunkFilter) filter).chunkFilter();
+        } else {
+            // Unsupported filter type, we can't push it down.
+            return PushdownResult.of(result.match().copy(), result.maybeMatch().copy());
+        }
+        if (optionalChunkFilter.isEmpty()) {
+            throw new IllegalStateException("Chunk filter not initialized for: " + filter);
+        }
+        final ChunkFilter chunkFilter = optionalChunkFilter.get();
+
         final RowSetBuilderSequential maybeBuilder = RowSetFactory.builderSequential();
         final MutableLong maybeCount = new MutableLong(0);
 
         // Only one column in these filters
         final Integer columnIndex = columnIndices.get(0);
-
         final List<BlockMetaData> blocks = parquetMetadata.getBlocks();
         iterateRowGroupsAndRowSet(result.maybeMatch(), (rgIdx, rs) -> {
-            final Optional<ChunkFilter> optionalChunkFilter;
-            if (filter instanceof AbstractRangeFilter || filter instanceof MatchFilter) {
-                optionalChunkFilter = ((ExposesChunkFilter) filter).chunkFilter();
-            } else {
-                // Unsupported filter type, we can't push it down.
-                maybeBuilder.appendRowSequence(rs);
-                maybeCount.add(rs.size());
-                return;
-            }
-            if (optionalChunkFilter.isEmpty()) {
-                throw new IllegalStateException("Chunk filter not initialized for: " + filter);
-            }
-            final ChunkFilter chunkFilter = optionalChunkFilter.get();
-
             final Statistics<?> statistics = blocks.get(rgIdx).getColumns().get(columnIndex).getStatistics();
             final boolean maybeOverlaps;
             if (chunkFilter instanceof ByteChunkFilter) {

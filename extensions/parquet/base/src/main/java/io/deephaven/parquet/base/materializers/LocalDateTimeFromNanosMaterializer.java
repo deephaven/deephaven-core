@@ -29,6 +29,10 @@ public class LocalDateTimeFromNanosMaterializer extends ObjectMaterializerBase<L
         }
     };
 
+    public static LocalDateTime convertValue(long value) {
+        return ParquetTimeUtils.epochNanosToLocalDateTimeUTC(value);
+    }
+
     private final ValuesReader dataReader;
 
     private LocalDateTimeFromNanosMaterializer(ValuesReader dataReader, int numValues) {
@@ -44,7 +48,7 @@ public class LocalDateTimeFromNanosMaterializer extends ObjectMaterializerBase<L
     @Override
     public void fillValues(int startIndex, int endIndex) {
         for (int ii = startIndex; ii < endIndex; ii++) {
-            data[ii] = ParquetTimeUtils.epochNanosToLocalDateTimeUTC(dataReader.readLong());
+            data[ii] = convertValue(dataReader.readLong());
         }
     }
 }

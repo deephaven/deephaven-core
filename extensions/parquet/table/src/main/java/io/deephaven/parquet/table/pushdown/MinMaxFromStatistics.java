@@ -3,15 +3,33 @@
 //
 package io.deephaven.parquet.table.pushdown;
 
+import io.deephaven.parquet.base.materializers.ByteMaterializer;
+import io.deephaven.parquet.base.materializers.CharMaterializer;
+import io.deephaven.parquet.base.materializers.DoubleFromFloatMaterializer;
+import io.deephaven.parquet.base.materializers.DoubleMaterializer;
+import io.deephaven.parquet.base.materializers.FloatMaterializer;
+import io.deephaven.parquet.base.materializers.InstantNanosFromMicrosMaterializer;
+import io.deephaven.parquet.base.materializers.InstantNanosFromMillisMaterializer;
 import io.deephaven.parquet.base.materializers.IntFromBooleanMaterializer;
 import io.deephaven.parquet.base.materializers.IntFromUnsignedByteMaterializer;
 import io.deephaven.parquet.base.materializers.IntFromUnsignedShortMaterializer;
+import io.deephaven.parquet.base.materializers.IntMaterializer;
+import io.deephaven.parquet.base.materializers.LocalDateMaterializer;
+import io.deephaven.parquet.base.materializers.LocalDateTimeFromMicrosMaterializer;
+import io.deephaven.parquet.base.materializers.LocalDateTimeFromMillisMaterializer;
+import io.deephaven.parquet.base.materializers.LocalDateTimeFromNanosMaterializer;
+import io.deephaven.parquet.base.materializers.LocalTimeFromMicrosMaterializer;
+import io.deephaven.parquet.base.materializers.LocalTimeFromMillisMaterializer;
+import io.deephaven.parquet.base.materializers.LocalTimeFromNanosMaterializer;
 import io.deephaven.parquet.base.materializers.LongFromBooleanMaterializer;
+import io.deephaven.parquet.base.materializers.LongFromIntMaterializer;
 import io.deephaven.parquet.base.materializers.LongFromUnsignedByteMaterializer;
 import io.deephaven.parquet.base.materializers.LongFromUnsignedIntMaterializer;
 import io.deephaven.parquet.base.materializers.LongFromUnsignedShortMaterializer;
+import io.deephaven.parquet.base.materializers.LongMaterializer;
 import io.deephaven.parquet.base.materializers.ShortFromBooleanMaterializer;
 import io.deephaven.parquet.base.materializers.ShortFromUnsignedByteMaterializer;
+import io.deephaven.parquet.base.materializers.ShortMaterializer;
 import io.deephaven.util.annotations.InternalUseOnly;
 import org.apache.parquet.column.statistics.Statistics;
 import org.apache.parquet.schema.ColumnOrder;
@@ -119,16 +137,22 @@ public abstract class MinMaxFromStatistics {
                 final Integer minInt = (Integer) statistics.genericGetMin();
                 final Integer maxInt = (Integer) statistics.genericGetMax();
                 if (dhColumnType == Integer.class || dhColumnType == int.class) {
-                    return wrapMinMax(minInt, maxInt, dhColumnType);
+                    return wrapMinMax(
+                            IntMaterializer.convertValue(minInt),
+                            IntMaterializer.convertValue(maxInt),
+                            dhColumnType);
                 } else if (dhColumnType == Long.class || dhColumnType == long.class) {
-                    return wrapMinMax(minInt.longValue(), maxInt.longValue(), dhColumnType);
+                    return wrapMinMax(
+                            LongFromIntMaterializer.convertValue(minInt),
+                            LongFromIntMaterializer.convertValue(maxInt),
+                            dhColumnType);
                 }
                 break;
             case INT64:
                 if (dhColumnType == Long.class || dhColumnType == long.class) {
                     return wrapMinMax(
-                            (Long) statistics.genericGetMin(),
-                            (Long) statistics.genericGetMax(),
+                            LongMaterializer.convertValue((Long) statistics.genericGetMin()),
+                            LongMaterializer.convertValue((Long) statistics.genericGetMax()),
                             dhColumnType);
                 }
                 break;
@@ -141,9 +165,15 @@ public abstract class MinMaxFromStatistics {
                     return Optional.empty();
                 }
                 if (dhColumnType == Float.class || dhColumnType == float.class) {
-                    return wrapMinMax(minFloat, maxFloat, dhColumnType);
+                    return wrapMinMax(
+                            FloatMaterializer.convertValue(minFloat),
+                            FloatMaterializer.convertValue(maxFloat),
+                            dhColumnType);
                 } else if (dhColumnType == Double.class || dhColumnType == double.class) {
-                    return wrapMinMax(minFloat.doubleValue(), maxFloat.doubleValue(), dhColumnType);
+                    return wrapMinMax(
+                            DoubleFromFloatMaterializer.convertValue(minFloat),
+                            DoubleFromFloatMaterializer.convertValue(maxFloat),
+                            dhColumnType);
                 }
                 break;
             case DOUBLE:
@@ -155,7 +185,10 @@ public abstract class MinMaxFromStatistics {
                     return Optional.empty();
                 }
                 if (dhColumnType == Double.class || dhColumnType == double.class) {
-                    return wrapMinMax(minDouble, maxDouble, dhColumnType);
+                    return wrapMinMax(
+                            DoubleMaterializer.convertValue(minDouble),
+                            DoubleMaterializer.convertValue(maxDouble),
+                            dhColumnType);
                 }
                 break;
             case INT96: // The column-order for INT96 is undefined, so cannot use the statistics.
@@ -192,13 +225,17 @@ public abstract class MinMaxFromStatistics {
                 switch (timestampLogicalType.getUnit()) {
                     case MILLIS:
                         return wrapMinMax(
-                                ParquetPushdownUtils.epochMillisToInstant(minFromStatistics),
-                                ParquetPushdownUtils.epochMillisToInstant(maxFromStatistics),
+                                ParquetPushdownUtils.epochNanosToInstant(
+                                        InstantNanosFromMillisMaterializer.convertValue(minFromStatistics)),
+                                ParquetPushdownUtils.epochNanosToInstant(
+                                        InstantNanosFromMillisMaterializer.convertValue(maxFromStatistics)),
                                 dhColumnType);
                     case MICROS:
                         return wrapMinMax(
-                                ParquetPushdownUtils.epochMicrosToInstant(minFromStatistics),
-                                ParquetPushdownUtils.epochMicrosToInstant(maxFromStatistics),
+                                ParquetPushdownUtils.epochNanosToInstant(
+                                        InstantNanosFromMicrosMaterializer.convertValue(minFromStatistics)),
+                                ParquetPushdownUtils.epochNanosToInstant(
+                                        InstantNanosFromMicrosMaterializer.convertValue(maxFromStatistics)),
                                 dhColumnType);
                     case NANOS:
                         return wrapMinMax(
@@ -210,18 +247,18 @@ public abstract class MinMaxFromStatistics {
                 switch (timestampLogicalType.getUnit()) {
                     case MILLIS:
                         return wrapMinMax(
-                                ParquetPushdownUtils.epochMillisToLocalDateTimeUTC(minFromStatistics),
-                                ParquetPushdownUtils.epochMillisToLocalDateTimeUTC(maxFromStatistics),
+                                LocalDateTimeFromMillisMaterializer.convertValue(minFromStatistics),
+                                LocalDateTimeFromMillisMaterializer.convertValue(maxFromStatistics),
                                 dhColumnType);
                     case MICROS:
                         return wrapMinMax(
-                                ParquetPushdownUtils.epochMicrosToLocalDateTimeUTC(minFromStatistics),
-                                ParquetPushdownUtils.epochMicrosToLocalDateTimeUTC(maxFromStatistics),
+                                LocalDateTimeFromMicrosMaterializer.convertValue(minFromStatistics),
+                                LocalDateTimeFromMicrosMaterializer.convertValue(maxFromStatistics),
                                 dhColumnType);
                     case NANOS:
                         return wrapMinMax(
-                                ParquetPushdownUtils.epochNanosToLocalDateTimeUTC(minFromStatistics),
-                                ParquetPushdownUtils.epochNanosToLocalDateTimeUTC(maxFromStatistics),
+                                LocalDateTimeFromNanosMaterializer.convertValue(minFromStatistics),
+                                LocalDateTimeFromNanosMaterializer.convertValue(maxFromStatistics),
                                 dhColumnType);
                 }
             }
@@ -232,88 +269,126 @@ public abstract class MinMaxFromStatistics {
         public Optional<MinMax<?>> visit(final LogicalTypeAnnotation.IntLogicalTypeAnnotation intLogicalType) {
             if (intLogicalType.isSigned()) {
                 switch (intLogicalType.getBitWidth()) {
-                    case 8:
-                        final byte minByte = ((Integer) statistics.genericGetMin()).byteValue();
-                        final byte maxByte = ((Integer) statistics.genericGetMax()).byteValue();
+                    case 8: {
+                        final int min = ((Integer) statistics.genericGetMin());
+                        final int max = ((Integer) statistics.genericGetMax());
                         if (dhColumnType == Byte.class || dhColumnType == byte.class) {
-                            return wrapMinMax(minByte, maxByte, dhColumnType);
+                            return wrapMinMax(
+                                    ByteMaterializer.convertValue(min),
+                                    ByteMaterializer.convertValue(max),
+                                    dhColumnType);
                         } else if (dhColumnType == Short.class || dhColumnType == short.class) {
-                            return wrapMinMax((short) minByte, (short) maxByte, dhColumnType);
+                            return wrapMinMax(
+                                    ShortMaterializer.convertValue(min),
+                                    ShortMaterializer.convertValue(max),
+                                    dhColumnType);
                         } else if (dhColumnType == Integer.class || dhColumnType == int.class) {
-                            return wrapMinMax((int) minByte, (int) maxByte, dhColumnType);
+                            return wrapMinMax(
+                                    IntMaterializer.convertValue(min),
+                                    IntMaterializer.convertValue(max),
+                                    dhColumnType);
                         } else if (dhColumnType == Long.class || dhColumnType == long.class) {
-                            return wrapMinMax((long) minByte, (long) maxByte, dhColumnType);
+                            return wrapMinMax(
+                                    LongFromIntMaterializer.convertValue(min),
+                                    LongFromIntMaterializer.convertValue(max),
+                                    dhColumnType);
                         }
+                    }
                         break;
-                    case 16:
-                        final short minShort = ((Integer) statistics.genericGetMin()).shortValue();
-                        final short maxShort = ((Integer) statistics.genericGetMax()).shortValue();
+                    case 16: {
+                        final int min = ((Integer) statistics.genericGetMin());
+                        final int max = ((Integer) statistics.genericGetMax());
                         if (dhColumnType == Short.class || dhColumnType == short.class) {
-                            return wrapMinMax(minShort, maxShort, dhColumnType);
+                            return wrapMinMax(
+                                    ShortMaterializer.convertValue(min),
+                                    ShortMaterializer.convertValue(max),
+                                    dhColumnType);
                         } else if (dhColumnType == Integer.class || dhColumnType == int.class) {
-                            return wrapMinMax((int) minShort, (int) maxShort, dhColumnType);
+                            return wrapMinMax(
+                                    IntMaterializer.convertValue(min),
+                                    IntMaterializer.convertValue(max),
+                                    dhColumnType);
                         } else if (dhColumnType == Long.class || dhColumnType == long.class) {
-                            return wrapMinMax((long) minShort, (long) maxShort, dhColumnType);
+                            return wrapMinMax(
+                                    LongFromIntMaterializer.convertValue(min),
+                                    LongFromIntMaterializer.convertValue(max),
+                                    dhColumnType);
                         }
+                    }
                         break;
-                    case 32:
-                        final int minInt = (Integer) statistics.genericGetMin();
-                        final int maxInt = (Integer) statistics.genericGetMax();
+                    case 32: {
+                        final int min = ((Integer) statistics.genericGetMin());
+                        final int max = ((Integer) statistics.genericGetMax());
                         if (dhColumnType == Integer.class || dhColumnType == int.class) {
-                            return wrapMinMax(minInt, maxInt, dhColumnType);
+                            return wrapMinMax(
+                                    IntMaterializer.convertValue(min),
+                                    IntMaterializer.convertValue(max),
+                                    dhColumnType);
                         } else if (dhColumnType == Long.class || dhColumnType == long.class) {
-                            return wrapMinMax((long) minInt, (long) maxInt, dhColumnType);
+                            return wrapMinMax(
+                                    LongFromIntMaterializer.convertValue(min),
+                                    LongFromIntMaterializer.convertValue(max),
+                                    dhColumnType);
                         }
+                    }
                         break;
                     case 64:
                         if (dhColumnType == Long.class || dhColumnType == long.class) {
                             return wrapMinMax(
-                                    ((Long) statistics.genericGetMin()),
-                                    ((Long) statistics.genericGetMax()),
+                                    LongMaterializer.convertValue((Long) statistics.genericGetMin()),
+                                    LongMaterializer.convertValue((Long) statistics.genericGetMax()),
                                     dhColumnType);
                         }
                         break;
                 }
             } else {
                 switch (intLogicalType.getBitWidth()) {
-                    case 8:
-                        final byte minByte = ((Integer) statistics.genericGetMin()).byteValue();
-                        final byte maxByte = ((Integer) statistics.genericGetMax()).byteValue();
+                    case 8: {
+                        final int min = ((Integer) statistics.genericGetMin());
+                        final int max = ((Integer) statistics.genericGetMax());
                         if (dhColumnType == Character.class || dhColumnType == char.class) {
-                            return wrapMinMax((char) minByte, (char) maxByte, dhColumnType);
+                            return wrapMinMax(
+                                    CharMaterializer.convertValue(min),
+                                    CharMaterializer.convertValue(max),
+                                    dhColumnType);
                         } else if (dhColumnType == Short.class || dhColumnType == short.class) {
                             return wrapMinMax(
-                                    ShortFromUnsignedByteMaterializer.convertValue(minByte),
-                                    ShortFromUnsignedByteMaterializer.convertValue(maxByte),
+                                    ShortFromUnsignedByteMaterializer.convertValue(min),
+                                    ShortFromUnsignedByteMaterializer.convertValue(max),
                                     dhColumnType);
                         } else if (dhColumnType == Integer.class || dhColumnType == int.class) {
                             return wrapMinMax(
-                                    IntFromUnsignedByteMaterializer.convertValue(minByte),
-                                    IntFromUnsignedByteMaterializer.convertValue(maxByte),
+                                    IntFromUnsignedByteMaterializer.convertValue(min),
+                                    IntFromUnsignedByteMaterializer.convertValue(max),
                                     dhColumnType);
                         } else if (dhColumnType == Long.class || dhColumnType == long.class) {
                             return wrapMinMax(
-                                    LongFromUnsignedByteMaterializer.convertValue(minByte),
-                                    LongFromUnsignedByteMaterializer.convertValue(maxByte),
+                                    LongFromUnsignedByteMaterializer.convertValue(min),
+                                    LongFromUnsignedByteMaterializer.convertValue(max),
                                     dhColumnType);
                         }
+                    }
                         break;
-                    case 16:
-                        final short minShort = ((Integer) statistics.genericGetMin()).shortValue();
-                        final short maxShort = ((Integer) statistics.genericGetMax()).shortValue();
+                    case 16: {
+                        final int min = ((Integer) statistics.genericGetMin());
+                        final int max = ((Integer) statistics.genericGetMax());
                         if (dhColumnType == Character.class || dhColumnType == char.class) {
-                            return wrapMinMax((char) minShort, (char) maxShort, dhColumnType);
+                            return wrapMinMax(
+                                    CharMaterializer.convertValue(min),
+                                    CharMaterializer.convertValue(max),
+                                    dhColumnType);
                         } else if (dhColumnType == Integer.class || dhColumnType == int.class) {
                             return wrapMinMax(
-                                    IntFromUnsignedShortMaterializer.convertValue(minShort),
-                                    IntFromUnsignedShortMaterializer.convertValue(maxShort),
+                                    IntFromUnsignedShortMaterializer.convertValue(min),
+                                    IntFromUnsignedShortMaterializer.convertValue(max),
                                     dhColumnType);
                         } else if (dhColumnType == Long.class || dhColumnType == long.class) {
                             return wrapMinMax(
-                                    LongFromUnsignedShortMaterializer.convertValue(minShort),
-                                    LongFromUnsignedShortMaterializer.convertValue(maxShort),
+                                    LongFromUnsignedShortMaterializer.convertValue(min),
+                                    LongFromUnsignedShortMaterializer.convertValue(max),
                                     dhColumnType);
                         }
+                    }
                         break;
                     case 32:
                         if (dhColumnType == Long.class || dhColumnType == long.class) {
@@ -332,8 +407,8 @@ public abstract class MinMaxFromStatistics {
         public Optional<MinMax<?>> visit(final LogicalTypeAnnotation.DateLogicalTypeAnnotation dateLogicalType) {
             if (dhColumnType == LocalDate.class) {
                 return wrapMinMax(
-                        LocalDate.ofEpochDay((Integer) statistics.genericGetMin()),
-                        LocalDate.ofEpochDay((Integer) statistics.genericGetMax()),
+                        LocalDateMaterializer.convertValue((Integer) statistics.genericGetMin()),
+                        LocalDateMaterializer.convertValue((Integer) statistics.genericGetMax()),
                         dhColumnType);
             }
             return Optional.empty();
@@ -345,18 +420,18 @@ public abstract class MinMaxFromStatistics {
                 switch (timeLogicalType.getUnit()) {
                     case MILLIS:
                         return wrapMinMax(
-                                ParquetPushdownUtils.millisOfDayToLocalTime((Integer) statistics.genericGetMin()),
-                                ParquetPushdownUtils.millisOfDayToLocalTime((Integer) statistics.genericGetMax()),
+                                LocalTimeFromMillisMaterializer.convertValue((Integer) statistics.genericGetMin()),
+                                LocalTimeFromMillisMaterializer.convertValue((Integer) statistics.genericGetMax()),
                                 dhColumnType);
                     case MICROS:
                         return wrapMinMax(
-                                ParquetPushdownUtils.microsOfDayToLocalTime((Long) statistics.genericGetMin()),
-                                ParquetPushdownUtils.microsOfDayToLocalTime((Long) statistics.genericGetMax()),
+                                LocalTimeFromMicrosMaterializer.convertValue((Long) statistics.genericGetMin()),
+                                LocalTimeFromMicrosMaterializer.convertValue((Long) statistics.genericGetMax()),
                                 dhColumnType);
                     case NANOS:
                         return wrapMinMax(
-                                ParquetPushdownUtils.nanosOfDayToLocalTime((Long) statistics.genericGetMin()),
-                                ParquetPushdownUtils.nanosOfDayToLocalTime((Long) statistics.genericGetMax()),
+                                LocalTimeFromNanosMaterializer.convertValue((Long) statistics.genericGetMin()),
+                                LocalTimeFromNanosMaterializer.convertValue((Long) statistics.genericGetMax()),
                                 dhColumnType);
                 }
             }

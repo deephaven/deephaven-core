@@ -25,6 +25,10 @@ public class DoubleMaterializer extends DoubleMaterializerBase implements PageMa
         }
     };
 
+    public static double convertValue(double value) {
+        return value;
+    }
+
     private final ValuesReader dataReader;
 
     private DoubleMaterializer(ValuesReader dataReader, int numValues) {
@@ -39,7 +43,7 @@ public class DoubleMaterializer extends DoubleMaterializerBase implements PageMa
     @Override
     public void fillValues(int startIndex, int endIndex) {
         for (int ii = startIndex; ii < endIndex; ii++) {
-            data[ii] = dataReader.readDouble();
+            data[ii] = convertValue(dataReader.readDouble());
         }
     }
 }

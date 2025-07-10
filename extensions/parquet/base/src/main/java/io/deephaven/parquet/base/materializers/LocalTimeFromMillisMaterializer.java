@@ -28,6 +28,10 @@ public class LocalTimeFromMillisMaterializer extends ObjectMaterializerBase<Loca
         }
     };
 
+    public static LocalTime convertValue(int value) {
+        return DateTimeUtils.millisOfDayToLocalTimeImpl(value);
+    }
+
     private final ValuesReader dataReader;
 
     private LocalTimeFromMillisMaterializer(ValuesReader dataReader, int numValues) {
@@ -42,7 +46,7 @@ public class LocalTimeFromMillisMaterializer extends ObjectMaterializerBase<Loca
     @Override
     public void fillValues(int startIndex, int endIndex) {
         for (int ii = startIndex; ii < endIndex; ii++) {
-            data[ii] = DateTimeUtils.millisOfDayToLocalTime(dataReader.readInteger());
+            data[ii] = convertValue(dataReader.readInteger());
         }
     }
 }

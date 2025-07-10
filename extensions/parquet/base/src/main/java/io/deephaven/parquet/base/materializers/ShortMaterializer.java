@@ -25,6 +25,10 @@ public class ShortMaterializer extends ShortMaterializerBase implements PageMate
         }
     };
 
+    public static short convertValue(int value) {
+        return (short) value;
+    }
+
     private final ValuesReader dataReader;
 
     private ShortMaterializer(ValuesReader dataReader, int numValues) {
@@ -39,7 +43,7 @@ public class ShortMaterializer extends ShortMaterializerBase implements PageMate
     @Override
     public void fillValues(int startIndex, int endIndex) {
         for (int ii = startIndex; ii < endIndex; ii++) {
-            data[ii] = (short) dataReader.readInteger();
+            data[ii] = convertValue(dataReader.readInteger());
         }
     }
 }
