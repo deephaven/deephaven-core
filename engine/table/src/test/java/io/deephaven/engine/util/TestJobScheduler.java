@@ -58,7 +58,7 @@ public final class TestJobScheduler {
                     50,
                     (context, idx, nec) -> completed[idx] = true,
                     observer::onComplete,
-                    observer::onCompleteCleanup,
+                    observer::cleanup,
                     observer::onError);
         });
         observer.awaitFinished(Duration.ofSeconds(10));
@@ -93,7 +93,7 @@ public final class TestJobScheduler {
                         resume.run();
                     },
                     observer::onComplete,
-                    observer::onCompleteCleanup,
+                    observer::cleanup,
                     observer::onError);
         });
         observer.awaitFinished(Duration.ofSeconds(10));
@@ -133,7 +133,7 @@ public final class TestJobScheduler {
                         resume.run();
                     },
                     observer::onComplete,
-                    observer::onCompleteCleanup,
+                    observer::cleanup,
                     observer::onError);
         });
         observer.awaitFinished(Duration.ofSeconds(10));
@@ -172,7 +172,7 @@ public final class TestJobScheduler {
                         resume.run();
                     },
                     observer::onComplete,
-                    observer::onCompleteCleanup,
+                    observer::cleanup,
                     observer::onError);
         });
         observer.awaitFinished(Duration.ofSeconds(10));
@@ -213,7 +213,7 @@ public final class TestJobScheduler {
                         resume.run();
                     },
                     observer::onComplete,
-                    observer::onCompleteCleanup,
+                    observer::cleanup,
                     observer::onError);
         });
         observer.awaitFinished(Duration.ofSeconds(10));
@@ -240,7 +240,7 @@ public final class TestJobScheduler {
                         // nop
                     },
                     observer::onComplete,
-                    observer::onCompleteCleanup,
+                    observer::cleanup,
                     observer::onError);
         });
         observer.awaitFinished(Duration.ofSeconds(10));
@@ -267,7 +267,7 @@ public final class TestJobScheduler {
                         // nop
                     },
                     observer::onComplete,
-                    observer::onCompleteCleanup,
+                    observer::cleanup,
                     observer::onError);
         });
         observer.awaitFinished(Duration.ofSeconds(10));
@@ -293,7 +293,7 @@ public final class TestJobScheduler {
                         // nop
                     },
                     observer::onComplete,
-                    observer::onCompleteCleanup,
+                    observer::cleanup,
                     observer::onError);
         });
         observer.awaitFinished(Duration.ofSeconds(10));
@@ -321,7 +321,7 @@ public final class TestJobScheduler {
                         // nop
                     },
                     observer::onComplete,
-                    observer::onCompleteCleanup,
+                    observer::cleanup,
                     observer::onError);
         });
         observer.awaitFinished(Duration.ofSeconds(10));
@@ -358,7 +358,7 @@ public final class TestJobScheduler {
                         completed[idx] = true;
                     },
                     observer::onComplete,
-                    observer::onCompleteCleanup,
+                    observer::cleanup,
                     observer::onError);
         });
         observer.awaitFinished(Duration.ofSeconds(10));
@@ -399,7 +399,7 @@ public final class TestJobScheduler {
                         resume.run();
                     },
                     observer::onComplete,
-                    observer::onCompleteCleanup,
+                    observer::cleanup,
                     observer::onError);
         });
         observer.awaitFinished(Duration.ofSeconds(10));
@@ -454,7 +454,7 @@ public final class TestJobScheduler {
                                 }, nec1);
                     },
                     observer::onComplete,
-                    observer::onCompleteCleanup,
+                    observer::cleanup,
                     observer::onError);
         });
         observer.awaitFinished(Duration.ofSeconds(10));
@@ -498,7 +498,7 @@ public final class TestJobScheduler {
                                 }, nec1);
                     },
                     observer::onComplete,
-                    observer::onCompleteCleanup,
+                    observer::cleanup,
                     observer::onError);
         });
         observer.awaitFinished(Duration.ofSeconds(10));
@@ -538,7 +538,7 @@ public final class TestJobScheduler {
                                 }, nec1);
                     },
                     observer::onComplete,
-                    observer::onCompleteCleanup,
+                    observer::cleanup,
                     observer::onError);
         });
         observer.awaitFinished(Duration.ofSeconds(10));
@@ -582,7 +582,7 @@ public final class TestJobScheduler {
                             completed[idx] = true;
                         },
                         observer::onComplete,
-                        observer::onCompleteCleanup,
+                        observer::cleanup,
                         observer::onError);
             });
             TestCase.fail("Expected exception");
@@ -621,7 +621,7 @@ public final class TestJobScheduler {
                             completed[idx] = true;
                         },
                         observer::onComplete,
-                        observer::onCompleteCleanup,
+                        observer::cleanup,
                         observer::onError);
             });
             TestCase.fail("Expected exception");
@@ -634,20 +634,20 @@ public final class TestJobScheduler {
     private static class Observer extends ContextFactory {
 
         private final Runnable onComplete;
-        private final Runnable onCompleteCleanup;
+        private final Runnable cleanup;
         private final Consumer<Exception> onError;
 
         private final AtomicBoolean onCompleteInvoked;
-        private final AtomicBoolean onCompleteCleanupInvoked;
+        private final AtomicBoolean cleanupInvoked;
         private final AtomicReference<Exception> onErrorInvoked;
         private final CountDownLatch finished;
 
-        public Observer(Runnable onComplete, Runnable onCompleteCleanup, Consumer<Exception> onError) {
+        public Observer(Runnable onComplete, Runnable cleanup, Consumer<Exception> onError) {
             this.onComplete = onComplete;
-            this.onCompleteCleanup = onCompleteCleanup;
+            this.cleanup = cleanup;
             this.onError = onError;
             onCompleteInvoked = new AtomicBoolean(false);
-            onCompleteCleanupInvoked = new AtomicBoolean(false);
+            cleanupInvoked = new AtomicBoolean(false);
             onErrorInvoked = new AtomicReference<>();
             finished = new CountDownLatch(1);
         }
@@ -661,19 +661,19 @@ public final class TestJobScheduler {
             }
         }
 
-        public void onCompleteCleanup() {
+        public void cleanup() {
             if (!onCompleteInvoked.get()) {
                 throw new IllegalStateException("onCompleteCleanup called, but onComplete not called");
             }
             if (onErrorInvoked.get() != null) {
                 throw new IllegalStateException("onCompleteCleanup called, but onError has already been called");
             }
-            if (!onCompleteCleanupInvoked.compareAndSet(false, true)) {
+            if (!cleanupInvoked.compareAndSet(false, true)) {
                 throw new IllegalStateException("onCompleteCleanup called more than once");
             }
             try {
-                if (onCompleteCleanup != null) {
-                    onCompleteCleanup.run();
+                if (cleanup != null) {
+                    cleanup.run();
                 }
             } finally {
                 finished.countDown();
@@ -681,7 +681,7 @@ public final class TestJobScheduler {
         }
 
         public void onError(Exception e) {
-            if (onCompleteCleanupInvoked.get()) {
+            if (cleanupInvoked.get()) {
                 throw new IllegalStateException("onError called, but onCompleteCleanup has already been called");
             }
             if (!onErrorInvoked.compareAndSet(null, e)) {
