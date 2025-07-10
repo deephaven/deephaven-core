@@ -29,7 +29,7 @@ public class LocalTimeFromMillisMaterializer extends ObjectMaterializerBase<Loca
     };
 
     public static LocalTime convertValue(int value) {
-        return DateTimeUtils.millisOfDayToLocalTimeImpl(value);
+        return LocalTime.ofNanoOfDay(value * DateTimeUtils.MILLI);
     }
 
     private final ValuesReader dataReader;

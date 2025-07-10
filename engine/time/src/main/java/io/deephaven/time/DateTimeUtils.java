@@ -615,7 +615,7 @@ public class DateTimeUtils {
 
     @InternalUseOnly
     public static long microsToNanosImpl(final long micros) {
-        if (Math.abs(micros) > MAX_CONVERTIBLE_MICROS) {
+        if (micros > MAX_CONVERTIBLE_MICROS || micros < -MAX_CONVERTIBLE_MICROS) {
             throw new DateTimeOverflowException("Converting " + micros + " micros to nanos would overflow");
         }
         return micros * 1000;
@@ -638,7 +638,7 @@ public class DateTimeUtils {
 
     @InternalUseOnly
     public static long millisToNanosImpl(final long millis) {
-        if (Math.abs(millis) > MAX_CONVERTIBLE_MILLIS) {
+        if (millis > MAX_CONVERTIBLE_MILLIS || millis < -MAX_CONVERTIBLE_MILLIS) {
             throw new DateTimeOverflowException("Converting " + millis + " millis to nanos would overflow");
         }
         return millis * 1000000;

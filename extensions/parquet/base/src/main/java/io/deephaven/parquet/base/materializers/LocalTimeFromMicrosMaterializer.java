@@ -25,7 +25,7 @@ public class LocalTimeFromMicrosMaterializer extends ObjectMaterializerBase<Loca
     };
 
     public static LocalTime convertValue(long value) {
-        return DateTimeUtils.microsOfDayToLocalTimeImpl(value);
+        return LocalTime.ofNanoOfDay(value * DateTimeUtils.MICRO);
     }
 
     private final ValuesReader dataReader;
