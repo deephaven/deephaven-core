@@ -945,7 +945,8 @@ public class RegionedColumnSourceManager
                 },
                 () -> onComplete.accept(PushdownResult.of(matchBuilder.build(),
                         maybeMatchCount.get() == input.size() ? input.copy() : maybeMatchBuilder.build())),
-                () -> {},
+                () -> {
+                },
                 onError);
     }
 
