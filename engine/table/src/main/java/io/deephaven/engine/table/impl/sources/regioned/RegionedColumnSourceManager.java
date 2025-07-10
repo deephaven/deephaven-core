@@ -907,8 +907,6 @@ public class RegionedColumnSourceManager
         final RowSetBuilderRandom maybeMatchBuilder = RowSetFactory.builderRandom();
         final MutableLong maybeMatchCount = new MutableLong(0);
 
-        final WritableRowSet inputCopy = input.copy();
-
         // Use the job scheduler to run every location in parallel.
         jobScheduler.iterateParallel(
                 ExecutionContext.getContext(),
@@ -946,13 +944,9 @@ public class RegionedColumnSourceManager
                     locationResume.run();
                 },
                 () -> onComplete.accept(PushdownResult.of(matchBuilder.build(),
-                        maybeMatchCount.get() == inputCopy.size() ? inputCopy.copy() : maybeMatchBuilder.build())),
-                inputCopy::close,
-                exception -> {
-                    try (inputCopy) {
-                        onError.accept(exception);
-                    }
-                });
+                        maybeMatchCount.get() == input.size() ? input.copy() : maybeMatchBuilder.build())),
+                () -> {},
+                onError);
     }
 
     @Override
