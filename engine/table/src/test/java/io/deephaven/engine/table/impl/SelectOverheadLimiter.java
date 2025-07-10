@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
@@ -13,6 +14,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.sources.SwitchColumnSource;
 import io.deephaven.engine.table.impl.sources.sparse.SparseConstants;
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.VisibleForTesting;
 import gnu.trove.map.hash.TLongIntHashMap;
 import org.apache.commons.lang3.mutable.MutableObject;
@@ -125,6 +127,7 @@ public class SelectOverheadLimiter {
             ListenerRecorder flatRecorder;
             ModifiedColumnSet.Transformer flatTransformer;
             ModifiedColumnSet.Transformer inputTransformer;
+            final ExecutionContext executionContext = ExecutionContext.getContext();
 
             {
                 inputRecorder.getValue().setMergedListener(this);
@@ -164,9 +167,10 @@ public class SelectOverheadLimiter {
 
                 // we need to convert this to the flat table
                 overheadTracker.clear();
-                flatResult = input.flatten();
-                flatRecorder =
-                        new ListenerRecorder("clampSelectOverhead.flatResult()", flatResult, result);
+                try (final SafeCloseable ignored = executionContext.open()) {
+                    flatResult = input.flatten();
+                    flatRecorder = new ListenerRecorder("clampSelectOverhead.flatResult()", flatResult, result);
+                }
                 flatRecorder.setMergedListener(this);
                 flatTransformer = ((QueryTable) flatResult).newModifiedColumnSetTransformer(result,
                         result.getDefinition().getColumnNamesArray());
