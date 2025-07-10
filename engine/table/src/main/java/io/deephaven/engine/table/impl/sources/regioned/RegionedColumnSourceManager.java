@@ -942,8 +942,11 @@ public class RegionedColumnSourceManager
                                 context, costCeiling, jobScheduler, resultConsumer, onError);
                     }
                     locationResume.run();
-                }, () -> onComplete.accept(PushdownResult.of(matchBuilder.build(),
+                },
+                () -> onComplete.accept(PushdownResult.of(matchBuilder.build(),
                         maybeMatchCount.get() == input.size() ? input.copy() : maybeMatchBuilder.build())),
+                () -> {
+                },
                 onError);
     }
 

@@ -189,12 +189,13 @@ abstract class AbstractFilterExecution {
                     // Filter this segment of the input rows.
                     doFilter(filter, inputCopy, startOffSet, endOffset, onFilterComplete, nec);
                 },
-                () -> {
+                () -> onComplete.accept(filterResult),
+                inputCopy::close,
+                exception -> {
                     try (inputCopy) {
-                        onComplete.accept(filterResult);
+                        onError.accept(exception);
                     }
-                },
-                onError);
+                });
     }
 
     public LogOutput append(LogOutput output) {
@@ -507,11 +508,16 @@ abstract class AbstractFilterExecution {
                         return;
                     }
                     executeStatelessFilter(statelessFilters, filterIdx, localInput, filterResume, filterNec);
-                }, () -> {
-                    // Clean up the stateless filter objects.
-                    SafeCloseableArray.close(statelessFilters);
-                    collectionResume.run();
-                }, collectionNec);
+                },
+                collectionResume,
+                () -> SafeCloseableArray.close(statelessFilters),
+                exception -> {
+                    try {
+                        collectionNec.accept(exception);
+                    } finally {
+                        SafeCloseableArray.close(statelessFilters);
+                    }
+                });
     }
 
     /**
@@ -559,7 +565,11 @@ abstract class AbstractFilterExecution {
 
                     // Stateful filters require serial execution.
                     doFilter(filter, input, 0, inputSize, onFilterComplete, filterNec);
-                }, collectionResume, collectionNec);
+                },
+                collectionResume,
+                () -> {
+                },
+                collectionNec);
     }
 
     /**
@@ -602,7 +612,7 @@ abstract class AbstractFilterExecution {
                     }
                 }, () -> {
                     // Return empty RowSets instead of null.
-                    final RowSet result = localInput.getValue();
+                    final WritableRowSet result = localInput.getValue();
                     final BasePerformanceEntry baseEntry = jobScheduler().getAccumulatedPerformance();
                     if (baseEntry != null) {
                         basePerformanceEntry.accumulate(baseEntry);
@@ -610,13 +620,15 @@ abstract class AbstractFilterExecution {
 
                     // Separate the added and modified result if necessary.
                     if (runModifiedFilters) {
-                        final WritableRowSet writableResult = result.writableCast();
-                        final WritableRowSet addedResult = writableResult.extract(addedInput);
+                        final WritableRowSet addedResult = result.extract(addedInput);
                         onComplete.accept(addedResult, result);
                     } else {
                         onComplete.accept(result, RowSetFactory.empty());
                     }
-                }, onError);
+                },
+                () -> {
+                },
+                onError);
     }
 
     /**
