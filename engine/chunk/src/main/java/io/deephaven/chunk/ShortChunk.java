@@ -33,10 +33,22 @@ public class ShortChunk<ATTR extends Any> extends ChunkBase<ATTR> {
     @SuppressWarnings("rawtypes")
     private static final ShortChunk EMPTY = new ShortChunk<>(ArrayTypeUtils.EMPTY_SHORT_ARRAY, 0, 0);
 
+    // region NULL_definition
+    @SuppressWarnings("rawtypes")
+    private static final ShortChunk NULL = new ShortChunk<>(ArrayTypeUtils.shortNullArray(1), 0, 1);
+    // endregion NULL_definition
+
     public static <ATTR extends Any> ShortChunk<ATTR> getEmptyChunk() {
         // noinspection unchecked
         return EMPTY;
     }
+
+    // region getNullChunk
+    public static <ATTR extends Any> ShortChunk<ATTR> getNullChunk() {
+        // noinspection unchecked
+        return NULL;
+    }
+    // endregion getNullChunk
 
     @SuppressWarnings("rawtypes")
     private static final ShortChunk[] EMPTY_SHORT_CHUNK_ARRAY = new ShortChunk[0];
