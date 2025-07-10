@@ -663,13 +663,13 @@ public final class TestJobScheduler {
 
         public void cleanup() {
             if (!onCompleteInvoked.get()) {
-                throw new IllegalStateException("onCompleteCleanup called, but onComplete not called");
+                throw new IllegalStateException("cleanup called, but onComplete not called");
             }
             if (onErrorInvoked.get() != null) {
-                throw new IllegalStateException("onCompleteCleanup called, but onError has already been called");
+                throw new IllegalStateException("cleanup called, but onError has already been called");
             }
             if (!cleanupInvoked.compareAndSet(false, true)) {
-                throw new IllegalStateException("onCompleteCleanup called more than once");
+                throw new IllegalStateException("cleanup called more than once");
             }
             try {
                 if (cleanup != null) {
@@ -682,7 +682,7 @@ public final class TestJobScheduler {
 
         public void onError(Exception e) {
             if (cleanupInvoked.get()) {
-                throw new IllegalStateException("onError called, but onCompleteCleanup has already been called");
+                throw new IllegalStateException("onError called, but cleanup has already been called");
             }
             if (!onErrorInvoked.compareAndSet(null, e)) {
                 throw new IllegalStateException("onError called more than once");
