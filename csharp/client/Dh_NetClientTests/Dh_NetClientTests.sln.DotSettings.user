@@ -1,0 +1,7 @@
+﻿<wpf:ResourceDictionary xml:space="preserve" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:s="clr-namespace:System;assembly=mscorlib" xmlns:ss="urn:shemas-jetbrains-com:settings-storage-xaml" xmlns:wpf="http://schemas.microsoft.com/winfx/2006/xaml/presentation">
+	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=5fd7195b_002Dfec8_002D4885_002D8c87_002D0ee3b87796dc/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" IsActive="True" Name="SentinelsVisible" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;&#xD;
+  &lt;TestAncestor&gt;&#xD;
+    &lt;TestId&gt;xUnit::F17AD94B-7BA5-4B5B-B865-C80C497AC047::net8.0::Deephaven.Dh_NetClientTests.NullSentinelPassthroughTest.SentinelsVisible&lt;/TestId&gt;&#xD;
+    &lt;TestId&gt;xUnit::F17AD94B-7BA5-4B5B-B865-C80C497AC047::net8.0::UtilityTest.TestConvertToBase52&lt;/TestId&gt;&#xD;
+  &lt;/TestAncestor&gt;&#xD;
+&lt;/SessionState&gt;</s:String></wpf:ResourceDictionary>
