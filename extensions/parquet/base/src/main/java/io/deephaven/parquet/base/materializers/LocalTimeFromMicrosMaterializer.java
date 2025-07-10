@@ -24,6 +24,10 @@ public class LocalTimeFromMicrosMaterializer extends ObjectMaterializerBase<Loca
         }
     };
 
+    public static LocalTime convertValue(long value) {
+        return DateTimeUtils.microsOfDayToLocalTimeImpl(value);
+    }
+
     private final ValuesReader dataReader;
 
     private LocalTimeFromMicrosMaterializer(ValuesReader dataReader, int numValues) {
@@ -38,7 +42,7 @@ public class LocalTimeFromMicrosMaterializer extends ObjectMaterializerBase<Loca
     @Override
     public void fillValues(int startIndex, int endIndex) {
         for (int ii = startIndex; ii < endIndex; ii++) {
-            data[ii] = DateTimeUtils.microsOfDayToLocalTime(dataReader.readLong());
+            data[ii] = convertValue(dataReader.readLong());
         }
     }
 }

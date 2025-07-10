@@ -28,6 +28,10 @@ public class LocalTimeFromNanosMaterializer extends ObjectMaterializerBase<Local
         }
     };
 
+    public static LocalTime convertValue(long value) {
+        return DateTimeUtils.nanosOfDayToLocalTimeImpl(value);
+    }
+
     private final ValuesReader dataReader;
 
     private LocalTimeFromNanosMaterializer(ValuesReader dataReader, int numValues) {
@@ -42,7 +46,7 @@ public class LocalTimeFromNanosMaterializer extends ObjectMaterializerBase<Local
     @Override
     public void fillValues(int startIndex, int endIndex) {
         for (int ii = startIndex; ii < endIndex; ii++) {
-            data[ii] = DateTimeUtils.nanosOfDayToLocalTime(dataReader.readLong());
+            data[ii] = convertValue(dataReader.readLong());
         }
     }
 }

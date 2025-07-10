@@ -60,7 +60,9 @@ public class ReplicatePageMaterializers {
         // Int -> IntFromBoolean
         pairs = new String[][] {
                 {"IntMaterializer", "IntFromBooleanMaterializer"},
-                {"readInteger\\(\\)", "readBoolean() ? 1 : 0"}
+                {"readInteger\\(\\)", "readBoolean()"},
+                {"int value", "boolean value"},
+                {"return value", "return value ? 1 : 0"}
         };
         replaceAll(TASK, INT_MATERIALIZER_PATH, null, new String[] {"IntMaterializerBase"}, pairs);
 
@@ -73,7 +75,9 @@ public class ReplicatePageMaterializers {
 
         // Long -> Short
         pairs = new String[][] {
-                {"dataReader.readLong", "(short) dataReader.readInteger"},
+                {"dataReader.readLong", "dataReader.readInteger"},
+                {"long value", "int value"},
+                {"return value", "return (short) value"},
                 {"dataReader, 0, numValues", "dataReader, (short) 0, numValues"},
                 {"Long", "Short"},
                 {"long", "short"}
@@ -84,6 +88,7 @@ public class ReplicatePageMaterializers {
         pairs = new String[][] {
                 {"LongMaterializer", "LongFromIntMaterializer"},
                 {"readLong", "readInteger"},
+                {"long value", "int value"}
         };
         replaceAll(TASK, LONG_MATERIALIZER_PATH, LONG_FROM_INT_MATERIALIZER_PATH, null,
                 new String[] {"LongMaterializerBase"}, pairs);
@@ -91,7 +96,9 @@ public class ReplicatePageMaterializers {
         // Long -> LongFromBoolean
         pairs = new String[][] {
                 {"LongMaterializer", "LongFromBooleanMaterializer"},
-                {"readLong\\(\\)", "readBoolean() ? 1 : 0"},
+                {"readLong\\(\\)", "readBoolean()"},
+                {"long value", "boolean value"},
+                {"return value", "return value ? 1 : 0"}
         };
         replaceAll(TASK, LONG_MATERIALIZER_PATH, null, new String[] {"LongMaterializerBase"}, pairs);
 
@@ -145,6 +152,7 @@ public class ReplicatePageMaterializers {
         // Double -> DoubleFromFloat
         pairs = new String[][] {
                 {"DoubleMaterializer", "DoubleFromFloatMaterializer"},
+                {"double value", "float value"},
                 {"Double", "Float"}
         };
         replaceAll(TASK, DOUBLE_MATERIALIZER_PATH, null, new String[] {"DoubleMaterializerBase"}, pairs);
@@ -152,7 +160,9 @@ public class ReplicatePageMaterializers {
         // Short -> ShortFromBoolean
         pairs = new String[][] {
                 {"ShortMaterializer", "ShortFromBooleanMaterializer"},
-                {"dataReader.readInteger\\(\\)", "(dataReader.readBoolean() ? 1 : 0)"}
+                {"readInteger", "readBoolean"},
+                {"int value", "boolean value"},
+                {"return \\(short\\) value", "return \\(short\\) (value ? 1 : 0)"}
         };
         replaceAll(TASK, SHORT_MATERIALIZER_PATH, null, new String[] {"ShortMaterializerBase"}, pairs);
 
@@ -163,6 +173,7 @@ public class ReplicatePageMaterializers {
                 {"Micros", "Millis"},
                 {"micros", "millis"},
                 {"readLong", "readInteger"},
+                {"long value", "int value"}
         };
         replaceAll(TASK, LOCAL_TIME_FROM_MICROS_MATERIALIZER_PATH, null, NO_EXCEPTIONS, pairs);
 

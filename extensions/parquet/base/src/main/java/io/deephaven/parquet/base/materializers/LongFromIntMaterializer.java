@@ -25,6 +25,10 @@ public class LongFromIntMaterializer extends LongMaterializerBase implements Pag
         }
     };
 
+    public static long convertValue(int value) {
+        return value;
+    }
+
     private final ValuesReader dataReader;
 
     private LongFromIntMaterializer(ValuesReader dataReader, int numValues) {
@@ -39,7 +43,7 @@ public class LongFromIntMaterializer extends LongMaterializerBase implements Pag
     @Override
     public void fillValues(int startIndex, int endIndex) {
         for (int ii = startIndex; ii < endIndex; ii++) {
-            data[ii] = dataReader.readInteger();
+            data[ii] = convertValue(dataReader.readInteger());
         }
     }
 }

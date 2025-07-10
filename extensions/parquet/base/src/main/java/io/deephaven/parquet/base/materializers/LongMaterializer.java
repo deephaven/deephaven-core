@@ -21,6 +21,10 @@ public class LongMaterializer extends LongMaterializerBase implements PageMateri
         }
     };
 
+    public static long convertValue(long value) {
+        return value;
+    }
+
     private final ValuesReader dataReader;
 
     private LongMaterializer(ValuesReader dataReader, int numValues) {
@@ -35,7 +39,7 @@ public class LongMaterializer extends LongMaterializerBase implements PageMateri
     @Override
     public void fillValues(int startIndex, int endIndex) {
         for (int ii = startIndex; ii < endIndex; ii++) {
-            data[ii] = dataReader.readLong();
+            data[ii] = convertValue(dataReader.readLong());
         }
     }
 }

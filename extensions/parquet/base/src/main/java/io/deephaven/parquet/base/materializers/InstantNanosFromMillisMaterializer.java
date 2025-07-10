@@ -26,6 +26,10 @@ public class InstantNanosFromMillisMaterializer extends LongMaterializerBase imp
         }
     };
 
+    public static long convertValue(long value) {
+        return DateTimeUtils.millisToNanosImpl(value);
+    }
+
     private final ValuesReader dataReader;
 
     private InstantNanosFromMillisMaterializer(ValuesReader dataReader, int numValues) {
@@ -40,7 +44,7 @@ public class InstantNanosFromMillisMaterializer extends LongMaterializerBase imp
     @Override
     public void fillValues(int startIndex, int endIndex) {
         for (int ii = startIndex; ii < endIndex; ii++) {
-            data[ii] = DateTimeUtils.millisToNanos(dataReader.readLong());
+            data[ii] = convertValue(dataReader.readLong());
         }
     }
 }

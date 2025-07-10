@@ -29,6 +29,10 @@ public class LocalDateTimeFromMicrosMaterializer extends ObjectMaterializerBase<
         }
     };
 
+    public static LocalDateTime convertValue(long value) {
+        return ParquetTimeUtils.epochMicrosToLocalDateTimeUTC(value);
+    }
+
     private final ValuesReader dataReader;
 
     private LocalDateTimeFromMicrosMaterializer(ValuesReader dataReader, int numValues) {
@@ -44,7 +48,7 @@ public class LocalDateTimeFromMicrosMaterializer extends ObjectMaterializerBase<
     @Override
     public void fillValues(int startIndex, int endIndex) {
         for (int ii = startIndex; ii < endIndex; ii++) {
-            data[ii] = ParquetTimeUtils.epochMicrosToLocalDateTimeUTC(dataReader.readLong());
+            data[ii] = convertValue(dataReader.readLong());
         }
     }
 }
