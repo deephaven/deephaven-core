@@ -173,8 +173,7 @@ public class FunctionGeneratedTableFactory {
         if (contextToRecord != null) {
             return contextToRecord;
         } else {
-            return ExecutionContext.newBuilder().build()
-                    .withAuthContext(ExecutionContext.getContext().getAuthContext());
+            return ExecutionContext.newBuilder().build();
         }
     }
 

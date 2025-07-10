@@ -123,10 +123,7 @@ public class HierarchicalTableViewSubscription extends LivenessArtifact {
         this.listener = listener;
         this.subscriptionOptions = subscriptionOptions;
         this.intervalDurationNanos = NANOSECONDS.convert(intervalDurationMillis, MILLISECONDS);
-        final ExecutionContext currentExecutionContext =
-                Require.neqNull(ExecutionContext.getContext(), "currentExecutionContext");
-        this.executionContext =
-                ExecutionContext.newBuilder().build().withAuthContext(currentExecutionContext.getAuthContext());
+        this.executionContext = ExecutionContext.newBuilder().build();
 
         final String statsKey = BarragePerformanceLog.getKeyFor(
                 view.getHierarchicalTable(), view.getHierarchicalTable()::getDescription);
