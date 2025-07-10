@@ -48,14 +48,27 @@ public abstract class FileHandleAccessor {
      * @return The current file handle, possibly newly created
      */
     protected final FileHandle refreshFileHandle(final FileHandle previousLocalHandle) {
-        if (previousLocalHandle == fileHandle) {
+        FileHandle localFileHandle;
+        if (previousLocalHandle == (localFileHandle = fileHandle)) {
             synchronized (this) {
-                if (previousLocalHandle == fileHandle) {
-                    fileHandle = makeHandle();
+                if (previousLocalHandle == (localFileHandle = fileHandle)) {
+                    final FileHandle newFileHandle = makeHandle();
+                    if (!fileHandle.equalsFileKey(newFileHandle)) {
+                        final IllegalStateException e = new IllegalStateException(String.format(
+                                "The file key has changed during a refresh for '%s'! This can lead to very hard to debug issues downstream since Deephaven assumes that file paths will always refer to the same physical file. If you are sure that the file in question has not been recreated, this could be an indication of a filesystem or Java bug. To disable this safety check (not advised), you can set the configuration property '%s = false'. Before doing so, please share this stacktrace with Deephaven.",
+                                file, FileHandle.SAFETY_CHECK_PROPERTY));
+                        try {
+                            newFileHandle.close();
+                        } catch (final IOException e2) {
+                            e.addSuppressed(e2);
+                        }
+                        throw e;
+                    }
+                    fileHandle = localFileHandle = newFileHandle;
                 }
             }
         }
-        return fileHandle;
+        return localFileHandle;
     }
 
     @Override
