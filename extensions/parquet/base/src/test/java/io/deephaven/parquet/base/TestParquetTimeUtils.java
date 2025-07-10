@@ -30,7 +30,6 @@ class TestParquetTimeUtils {
         final Instant dt2 = Instant.ofEpochSecond(0, nanos);
         final LocalDateTime ldt = LocalDateTime.ofInstant(dt2, ZoneId.of("UTC"));
         assertThat(ParquetTimeUtils.epochNanosToLocalDateTimeUTC(nanos)).isEqualTo(ldt);
-        assertThat(ParquetTimeUtils.epochNanosToLocalDateTimeUTC(QueryConstants.NULL_LONG)).isNull();
     }
 
     @Test
@@ -41,7 +40,6 @@ class TestParquetTimeUtils {
         final Instant dt2 = Instant.ofEpochSecond(0, nanos);
         final LocalDateTime ldt = LocalDateTime.ofInstant(dt2, ZoneId.of("UTC"));
         assertThat(ParquetTimeUtils.epochMicrosToLocalDateTimeUTC(micros)).isEqualTo(ldt);
-        assertThat(ParquetTimeUtils.epochMicrosToLocalDateTimeUTC(QueryConstants.NULL_LONG)).isNull();
     }
 
     @Test
@@ -52,6 +50,5 @@ class TestParquetTimeUtils {
         final Instant dt2 = Instant.ofEpochSecond(0, nanos);
         final LocalDateTime ldt = LocalDateTime.ofInstant(dt2, ZoneId.of("UTC"));
         assertThat(ParquetTimeUtils.epochMillisToLocalDateTimeUTC(millis)).isEqualTo(ldt);
-        assertThat(ParquetTimeUtils.epochMillisToLocalDateTimeUTC(QueryConstants.NULL_LONG)).isNull();
     }
 }

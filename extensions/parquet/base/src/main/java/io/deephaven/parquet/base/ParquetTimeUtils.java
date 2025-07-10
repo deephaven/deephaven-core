@@ -5,6 +5,7 @@ package io.deephaven.parquet.base;
 
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
+import io.deephaven.util.annotations.InternalUseOnly;
 import org.jetbrains.annotations.Nullable;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -12,6 +13,7 @@ import java.time.ZoneOffset;
 /**
  * Internal library with utility methods for converting time data between Deephaven and Parquet.
  */
+@InternalUseOnly
 public class ParquetTimeUtils {
     /**
      * Returns nanoseconds from the Epoch for a {@link LocalDateTime} value in UTC timezone.
@@ -33,7 +35,6 @@ public class ParquetTimeUtils {
      * @param nanos nanoseconds since Epoch
      * @return The input nanoseconds from the Epoch converted to a {@link LocalDateTime} in UTC timezone
      */
-    @Nullable
     public static LocalDateTime epochNanosToLocalDateTimeUTC(final long nanos) {
         return LocalDateTime.ofEpochSecond(nanos / 1_000_000_000L, (int) (nanos % 1_000_000_000L), ZoneOffset.UTC);
     }
@@ -44,7 +45,6 @@ public class ParquetTimeUtils {
      * @param micros microseconds since Epoch
      * @return The input microseconds from the Epoch converted to a {@link LocalDateTime} in UTC timezone
      */
-    @Nullable
     public static LocalDateTime epochMicrosToLocalDateTimeUTC(final long micros) {
         return LocalDateTime.ofEpochSecond(micros / 1_000_000L, (int) ((micros % 1_000_000L) * DateTimeUtils.MICRO),
                 ZoneOffset.UTC);
@@ -56,7 +56,6 @@ public class ParquetTimeUtils {
      * @param millis milliseconds since Epoch
      * @return The input milliseconds from the Epoch converted to a {@link LocalDateTime} in UTC timezone
      */
-    @Nullable
     public static LocalDateTime epochMillisToLocalDateTimeUTC(final long millis) {
         return LocalDateTime.ofEpochSecond(millis / 1_000L, (int) ((millis % 1_000L) * DateTimeUtils.MILLI),
                 ZoneOffset.UTC);
