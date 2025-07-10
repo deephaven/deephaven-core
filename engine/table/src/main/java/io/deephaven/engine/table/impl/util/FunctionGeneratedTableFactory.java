@@ -163,7 +163,7 @@ public class FunctionGeneratedTableFactory {
     }
 
     /**
-     * If we have a systemtic context we need to capture the authentication context. If we have a user-supplied context
+     * If we have a systemic context we need to capture the authentication context. If we have a user-supplied context
      * we should keep that so that any query scope, query library, etc. is available to produce the table.
      *
      * @return the execution context to use for updates
