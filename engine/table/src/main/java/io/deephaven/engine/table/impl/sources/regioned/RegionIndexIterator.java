@@ -34,7 +34,7 @@ final class RegionIndexIterator implements PrimitiveIterator.OfInt, Closeable {
 
     @Override
     public boolean hasNext() {
-        return sit.advance(key);
+        return key >= 0 && sit.advance(key);
     }
 
     @Override
@@ -53,7 +53,13 @@ final class RegionIndexIterator implements PrimitiveIterator.OfInt, Closeable {
     public int nextRegionIndexUnchecked() {
         final long currentKey = sit.currentValue();
         final int regionIndex = RegionedColumnSource.getRegionIndex(currentKey);
-        key = RegionedColumnSource.getLastRowKey(regionIndex) + 1;
+        final long regionLastRowKey = RegionedColumnSource.getLastRowKey(regionIndex);
+        if (regionLastRowKey == Long.MAX_VALUE) {
+            // this is the _last_ region; have to set a sentinel value to stop iteration
+            key = -1;
+        } else {
+            key = regionLastRowKey + 1;
+        }
         return regionIndex;
     }
 

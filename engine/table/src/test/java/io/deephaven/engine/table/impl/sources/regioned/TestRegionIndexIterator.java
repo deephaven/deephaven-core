@@ -82,6 +82,13 @@ public class TestRegionIndexIterator {
         }
     }
 
+    @Test
+    public void lastRegion() {
+        try (final WritableRowSet rowSet = fromKeys(Long.MAX_VALUE)) {
+            expect(rowSet, RegionedColumnSource.MAXIMUM_REGION_COUNT - 1);
+        }
+    }
+
     private void expect(RowSet rowSet, int... expectedRegionIndices) {
         expectViaNextInt(rowSet, expectedRegionIndices);
         expectViaNextRegionIndexUnchecked(rowSet, expectedRegionIndices);
