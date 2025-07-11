@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl.by.rollup;
 
 import io.deephaven.api.agg.Aggregation;
+import io.deephaven.engine.table.ColumnDefinition;
 
 import java.util.Map;
 
@@ -12,11 +13,11 @@ import java.util.Map;
  */
 public interface RollupAggregation extends Aggregation {
 
-    static RollupAggregation nullColumns(String name, Class<?> type) {
-        return NullColumns.of(name, type);
+    static RollupAggregation nullColumns(final ColumnDefinition<?> type) {
+        return NullColumns.of(type);
     }
 
-    static RollupAggregation nullColumns(Map<String, Class<?>> resultColumns) {
+    static RollupAggregation nullColumns(final Iterable<ColumnDefinition<?>> resultColumns) {
         return NullColumns.from(resultColumns);
     }
 

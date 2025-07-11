@@ -14,12 +14,14 @@ import io.deephaven.javascript.proto.dhinternal.grpcweb.transports.transport.Tra
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.session_pb.TerminationNotificationResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.session_pb.terminationnotificationresponse.StackTrace;
 import io.deephaven.web.client.api.ConnectOptions;
+import io.deephaven.web.client.api.JsTable;
 import io.deephaven.web.client.api.QueryConnectable;
 import io.deephaven.web.client.api.ServerObject;
 import io.deephaven.web.client.api.WorkerConnection;
 import io.deephaven.web.client.api.barrage.stream.ResponseStreamWrapper;
 import io.deephaven.web.client.api.console.JsVariableChanges;
 import io.deephaven.web.client.api.console.JsVariableDescriptor;
+import io.deephaven.web.client.api.console.JsVariableType;
 import io.deephaven.web.client.api.grpc.GrpcTransport;
 import io.deephaven.web.client.api.grpc.GrpcTransportFactory;
 import io.deephaven.web.client.api.grpc.GrpcTransportOptions;
@@ -28,8 +30,11 @@ import io.deephaven.web.shared.data.ConnectToken;
 import io.deephaven.web.shared.fu.JsConsumer;
 import io.deephaven.web.shared.fu.JsRunnable;
 import jsinterop.annotations.JsIgnore;
+import jsinterop.annotations.JsOptional;
 import jsinterop.annotations.JsType;
 import jsinterop.base.JsPropertyMap;
+
+import static io.deephaven.web.client.api.QueryInfoConstants.EVENT_TABLE_OPENED;
 
 /**
  * Presently, this is the entrypoint into the Deephaven JS API. By creating an instance of this with the server URL and
@@ -131,6 +136,23 @@ public class IdeConnection extends QueryConnectable<IdeConnection> {
         } else {
             return Promise.reject("Cannot connect, session is dead.");
         }
+    }
+
+    /**
+     * Load the named table, with columns and size information already fully populated.
+     *
+     * @param name the name of the table to fetch
+     * @param applyPreviewColumns false to disable previews, defaults to true
+     * @return a {@link Promise} that will resolve to the table, or reject with an error if it cannot be loaded.
+     * @deprecated Added to resolve a specific issue, in the future preview will be applied as part of the subscription.
+     */
+    @Deprecated
+    public Promise<JsTable> getTable(String name, @JsOptional Boolean applyPreviewColumns) {
+        return connection.get().getVariableDefinition(name, JsVariableType.TABLE).then(varDef -> {
+            final Promise<JsTable> table = connection.get().getTable(varDef, applyPreviewColumns);
+            fireEvent(EVENT_TABLE_OPENED, table);
+            return table;
+        });
     }
 
     public Promise<?> getObject(@TsTypeRef(JsVariableDescriptor.class) JsPropertyMap<Object> definitionObject) {
@@ -242,6 +264,28 @@ public class IdeConnection extends QueryConnectable<IdeConnection> {
             public BrowserHeaders getMetadata() {
                 return new BrowserHeaders(); // nothing to offer
             }
+        });
+    }
+
+    public Promise<JsTable> newTable(String[] columnNames, String[] types, String[][] data, String userTimeZone) {
+        return connection.get().newTable(columnNames, types, data, userTimeZone, this).then(table -> {
+            fireEvent(EVENT_TABLE_OPENED, table);
+
+            return Promise.resolve(table);
+        });
+    }
+
+    /**
+     * Merges the given tables into a single table. Assumes all tables have the same structure.
+     * 
+     * @param tables
+     * @return {@link Promise} of {@link JsTable}
+     */
+    public Promise<JsTable> mergeTables(JsTable[] tables) {
+        return connection.get().mergeTables(tables, this).then(table -> {
+            fireEvent(EVENT_TABLE_OPENED, table);
+
+            return Promise.resolve(table);
         });
     }
 }

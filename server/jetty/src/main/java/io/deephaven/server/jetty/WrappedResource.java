@@ -3,27 +3,18 @@
 //
 package io.deephaven.server.jetty;
 
-import org.eclipse.jetty.util.resource.Resource;
-
 import java.net.URI;
 import java.nio.file.Path;
-import java.time.Instant;
+
+import org.eclipse.jetty.util.resource.Resource;
 
 /**
- * Simple wrapper around the Jetty Resource type, to grant us control over caching features. The current implementation
- * only removes the last-modified value, but a future version could provide a "real" weak/strong etag.
+ * Simple wrapper around the Jetty {@link Resource} type. Can be extended to target specific method overrides.
  */
-public class ControlledCacheResource extends Resource {
-    public static ControlledCacheResource wrap(Resource wrapped) {
-        if (wrapped instanceof ControlledCacheResource) {
-            return (ControlledCacheResource) wrapped;
-        }
-        return new ControlledCacheResource(wrapped);
-    }
+public abstract class WrappedResource extends Resource {
+    protected final Resource wrapped;
 
-    private final Resource wrapped;
-
-    private ControlledCacheResource(Resource wrapped) {
+    protected WrappedResource(Resource wrapped) {
         this.wrapped = wrapped;
     }
 
@@ -53,14 +44,6 @@ public class ControlledCacheResource extends Resource {
     }
 
     @Override
-    public Instant lastModified() {
-        // Always return -1, so that we don't get the build system timestamp. In theory, we could return the app startup
-        // time as well, so that clients that connect don't need to revalidate quite as often, but this could have other
-        // side effects such as in load balancing with a short-lived old build against a seconds-older new build.
-        return Instant.ofEpochMilli(-1);
-    }
-
-    @Override
     public long length() {
         return wrapped.length();
     }
@@ -82,7 +65,7 @@ public class ControlledCacheResource extends Resource {
 
     @Override
     public Resource resolve(String subUriPath) {
-        return wrap(wrapped.resolve(subUriPath));
+        return wrapped.resolve(subUriPath);
     }
 
     @Override

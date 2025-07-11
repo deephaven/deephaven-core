@@ -855,16 +855,10 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
             jobScheduler = new OperationInitializerJobScheduler();
         }
 
-        final AtomicBoolean cleanupAlreadyRun = new AtomicBoolean();
         final JavaFileManager fileManager = acquireFileManager();
         final AtomicReference<RuntimeException> exception = new AtomicReference<>();
         final CountDownLatch latch = new CountDownLatch(1);
         final Runnable cleanup = () -> {
-            if (!cleanupAlreadyRun.compareAndSet(false, true)) {
-                // onError could be run after cleanup if cleanup throws an exception
-                return;
-            }
-
             try {
                 try {
                     FileUtils.deleteRecursively(new File(tempDirAsString));
@@ -896,7 +890,11 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
                     final int endExclusive = Math.min(requests.size(), (jobId + 1) * requestsPerTask);
                     doCreateClasses(
                             fileManager, requests, rootPathAsString, tempDirAsString, startInclusive, endExclusive);
-                }, cleanup, onError);
+                },
+                () -> {
+                },
+                cleanup,
+                onError);
 
         try {
             latch.await();

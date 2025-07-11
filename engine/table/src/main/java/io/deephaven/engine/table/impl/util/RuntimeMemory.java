@@ -6,6 +6,7 @@ package io.deephaven.engine.table.impl.util;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.internal.log.LoggerFactory;
+import io.deephaven.util.annotations.TestUseOnly;
 
 import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.ManagementFactory;
@@ -153,11 +154,20 @@ public class RuntimeMemory {
             totalCollectionTimeMs = s.totalCollectionTimeMs;
         }
 
+        /**
+         * How much heap memory is used according to this sample.
+         * 
+         * @return the total memory minus the free memory
+         */
+        public long usedHeapMemory() {
+            return totalMemory - freeMemory;
+        }
+
         @Override
         public String toString() {
             final DecimalFormat format = new DecimalFormat("###,###");
             return "Sample{" +
-                    "usedMemory (calculated)=" + format.format(totalMemory - freeMemory) +
+                    "usedMemory (calculated)=" + format.format(usedHeapMemory()) +
                     ", freeMemory=" + format.format(freeMemory) +
                     ", totalMemory=" + format.format(totalMemory) +
                     ", totalCollections=" + format.format(totalCollections) +
@@ -221,5 +231,13 @@ public class RuntimeMemory {
      */
     public long maxMemory() {
         return maxMemory;
+    }
+
+    /**
+     * How long, in millis, do we cache the samples
+     */
+    @TestUseOnly
+    public int getCacheIntervalMillis() {
+        return cacheInterval;
     }
 }

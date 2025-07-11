@@ -5,7 +5,6 @@ package io.deephaven.parquet.base.materializers;
 
 import io.deephaven.parquet.base.PageMaterializer;
 import io.deephaven.parquet.base.PageMaterializerFactory;
-import io.deephaven.time.DateTimeUtils;
 import org.apache.parquet.column.values.ValuesReader;
 
 import java.time.LocalDate;
@@ -25,7 +24,7 @@ public class LocalDateMaterializer extends ObjectMaterializerBase<LocalDate> imp
     };
 
     public static LocalDate convertValue(int value) {
-        return DateTimeUtils.epochDaysAsIntToLocalDateImpl(value);
+        return LocalDate.ofEpochDay(value);
     }
 
     private final ValuesReader dataReader;

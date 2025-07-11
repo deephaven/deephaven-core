@@ -5,10 +5,11 @@ package io.deephaven.parquet.base.materializers;
 
 import io.deephaven.parquet.base.PageMaterializer;
 import io.deephaven.parquet.base.PageMaterializerFactory;
-import io.deephaven.time.DateTimeUtils;
 import org.apache.parquet.column.values.ValuesReader;
 
 import java.time.LocalTime;
+
+import static io.deephaven.parquet.base.materializers.ParquetMaterializerUtils.MICRO;
 
 public class LocalTimeFromMicrosMaterializer extends ObjectMaterializerBase<LocalTime> implements PageMaterializer {
 
@@ -25,7 +26,7 @@ public class LocalTimeFromMicrosMaterializer extends ObjectMaterializerBase<Loca
     };
 
     public static LocalTime convertValue(long value) {
-        return DateTimeUtils.microsOfDayToLocalTimeImpl(value);
+        return LocalTime.ofNanoOfDay(value * MICRO);
     }
 
     private final ValuesReader dataReader;

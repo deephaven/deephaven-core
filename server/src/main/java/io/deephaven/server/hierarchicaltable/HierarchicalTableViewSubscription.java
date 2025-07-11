@@ -5,9 +5,11 @@ package io.deephaven.server.hierarchicaltable;
 
 import com.google.rpc.Code;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -69,6 +71,12 @@ public class HierarchicalTableViewSubscription extends LivenessArtifact {
     private final BarrageSubscriptionOptions subscriptionOptions;
     private final long intervalDurationNanos;
 
+    /**
+     * We must capture the ExecutionContext when the subscription is created, because during processing we initiate
+     * operations and should include the correct context for those subsequent operations as part of the propagation job.
+     */
+    private final ExecutionContext executionContext;
+
     private final Stats stats;
 
     private final TableUpdateListener keyTableListener;
@@ -115,6 +123,7 @@ public class HierarchicalTableViewSubscription extends LivenessArtifact {
         this.listener = listener;
         this.subscriptionOptions = subscriptionOptions;
         this.intervalDurationNanos = NANOSECONDS.convert(intervalDurationMillis, MILLISECONDS);
+        this.executionContext = ExecutionContext.newBuilder().build();
 
         final String statsKey = BarragePerformanceLog.getKeyFor(
                 view.getHierarchicalTable(), view.getHierarchicalTable()::getDescription);
@@ -282,7 +291,7 @@ public class HierarchicalTableViewSubscription extends LivenessArtifact {
                 GrpcUtil.safelyError(listener, errorTransformer.transform(upstreamFailure));
                 return;
             }
-            try {
+            try (final SafeCloseable ignored = executionContext == null ? null : executionContext.open()) {
                 buildAndSendSnapshot(streamGeneratorFactory, listener, subscriptionOptions, view,
                         this::recordSnapshotNanos, this::recordWriteMetrics, columns, rows, prevKeyspaceViewportRows);
             } catch (Exception e) {

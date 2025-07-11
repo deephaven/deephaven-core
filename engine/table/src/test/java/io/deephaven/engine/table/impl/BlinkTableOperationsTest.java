@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.api.TableOperations;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSet;
@@ -16,8 +17,12 @@ import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.sources.RedirectedColumnSource;
 import io.deephaven.engine.table.impl.util.*;
+import io.deephaven.engine.updategraph.UpdateGraph;
+import io.deephaven.engine.util.TableTools;
+import io.deephaven.engine.util.TickSuppressor;
 import io.deephaven.qst.table.EmptyTable;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
+import io.deephaven.vector.IntVectorDirect;
 import junit.framework.ComparisonFailure;
 import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;
@@ -29,9 +34,14 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.PrimitiveIterator;
 import java.util.Random;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
+
+import static io.deephaven.engine.testutil.TstUtils.i;
+import static io.deephaven.engine.util.TableTools.intCol;
 
 /**
  * Unit tests that exercise optimized operations for blink tables.
@@ -175,4 +185,50 @@ public class BlinkTableOperationsTest {
     public void testSortMultipleColumnsWindowed() {
         doOperatorTest(table -> table.sort("Price", "Sym"), true, true);
     }
+
+    @Test
+    public void testLastByVectors() {
+        final BiFunction<Table, String, Table> apply = TableOperations::lastBy;
+        doFirstLastArrayTest(apply, false);
+    }
+
+    @Test
+    public void testFirstByVectors() {
+        final BiFunction<Table, String, Table> apply = TableOperations::firstBy;
+        doFirstLastArrayTest(apply, true);
+    }
+
+    private static void doFirstLastArrayTest(BiFunction<Table, String, Table> apply, boolean isFirst) {
+        final QueryTable source = TstUtils.testRefreshingTable(intCol("Group", 1, 1, 1), intCol("Value", 1, 2, 3));
+        final Table grouped = source.groupBy("Group");
+        final Table noMods = TickSuppressor.convertModificationsToAddsAndRemoves(grouped);
+        final Table withBlink = noMods.withAttributes(Map.of(Table.BLINK_TABLE_ATTRIBUTE, true));
+        final Table result = apply.apply(withBlink, "Group");
+
+        TableTools.showWithRowSet(result);
+
+        final IntVectorDirect value1 = new IntVectorDirect(1, 2, 3);
+        final IntVectorDirect value2 = new IntVectorDirect(4, 5, 6);
+
+        final Object cur = result.getColumnSource("Value").get(result.getRowSet().firstRowKey());
+        TestCase.assertEquals(value1, cur);
+        final Object prev = result.getColumnSource("Value").get(result.getRowSet().firstRowKey());
+        TestCase.assertEquals(value1, prev);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.startCycleForUnitTests(true);
+        TstUtils.addToTable(source, i(3, 4, 5), intCol("Group", 1, 1, 1), intCol("Value", 4, 5, 6));
+        TstUtils.removeRows(source, i(0, 1, 2));
+        source.notifyListeners(i(3, 4, 5), i(0, 1, 2), i());
+        // noinspection StatementWithEmptyBody
+        while (updateGraph.flushOneNotificationForUnitTests());
+
+        final Object cur2 = result.getColumnSource("Value").get(result.getRowSet().firstRowKey());
+        TestCase.assertEquals(isFirst ? value1 : value2, cur2);
+        final Object prev2 = result.getColumnSource("Value").getPrev(result.getRowSet().firstRowKey());
+        TestCase.assertEquals(value1, prev2);
+
+        updateGraph.completeCycleForUnitTests();
+    }
+
 }
