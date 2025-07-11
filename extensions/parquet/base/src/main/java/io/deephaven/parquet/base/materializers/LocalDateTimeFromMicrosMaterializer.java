@@ -9,10 +9,11 @@ package io.deephaven.parquet.base.materializers;
 
 import io.deephaven.parquet.base.PageMaterializer;
 import io.deephaven.parquet.base.PageMaterializerFactory;
-import io.deephaven.parquet.base.ParquetTimeUtils;
+import io.deephaven.time.DateTimeUtils;
 import org.apache.parquet.column.values.ValuesReader;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
 public class LocalDateTimeFromMicrosMaterializer extends ObjectMaterializerBase<LocalDateTime>
         implements PageMaterializer {
@@ -29,8 +30,15 @@ public class LocalDateTimeFromMicrosMaterializer extends ObjectMaterializerBase<
         }
     };
 
+    /**
+     * Converts microseconds from the Epoch to a {@link LocalDateTime} in UTC timezone.
+     *
+     * @param value microseconds since Epoch
+     * @return The input microseconds from the Epoch converted to a {@link LocalDateTime} in UTC timezone
+     */
     public static LocalDateTime convertValue(long value) {
-        return ParquetTimeUtils.epochMicrosToLocalDateTimeUTC(value);
+        return LocalDateTime.ofEpochSecond(value / 1_000_000L, (int) ((value % 1_000_000L) * DateTimeUtils.MICRO),
+                ZoneOffset.UTC);
     }
 
     private final ValuesReader dataReader;

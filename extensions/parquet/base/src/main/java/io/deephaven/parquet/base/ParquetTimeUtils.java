@@ -28,37 +28,4 @@ public class ParquetTimeUtils {
         return DateTimeUtils.secondsToNanos(localDateTime.toEpochSecond(ZoneOffset.UTC))
                 + localDateTime.toLocalTime().getNano();
     }
-
-    /**
-     * Converts nanoseconds from the Epoch to a {@link LocalDateTime} in UTC timezone.
-     *
-     * @param nanos nanoseconds since Epoch
-     * @return The input nanoseconds from the Epoch converted to a {@link LocalDateTime} in UTC timezone
-     */
-    public static LocalDateTime epochNanosToLocalDateTimeUTC(final long nanos) {
-        return LocalDateTime.ofEpochSecond(nanos / 1_000_000_000L, (int) (nanos % 1_000_000_000L), ZoneOffset.UTC);
-    }
-
-    /**
-     * Converts microseconds from the Epoch to a {@link LocalDateTime} in UTC timezone.
-     *
-     * @param micros microseconds since Epoch
-     * @return The input microseconds from the Epoch converted to a {@link LocalDateTime} in UTC timezone
-     */
-    public static LocalDateTime epochMicrosToLocalDateTimeUTC(final long micros) {
-        return LocalDateTime.ofEpochSecond(micros / 1_000_000L, (int) ((micros % 1_000_000L) * DateTimeUtils.MICRO),
-                ZoneOffset.UTC);
-    }
-
-    /**
-     * Converts milliseconds from the Epoch to a {@link LocalDateTime} in UTC timezone.
-     *
-     * @param millis milliseconds since Epoch
-     * @return The input milliseconds from the Epoch converted to a {@link LocalDateTime} in UTC timezone
-     */
-    public static LocalDateTime epochMillisToLocalDateTimeUTC(final long millis) {
-        return LocalDateTime.ofEpochSecond(millis / 1_000L, (int) ((millis % 1_000L) * DateTimeUtils.MILLI),
-                ZoneOffset.UTC);
-    }
-
 }

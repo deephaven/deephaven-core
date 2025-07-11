@@ -112,6 +112,11 @@ public class DateTimeUtils {
     public static final Instant[] ZERO_LENGTH_INSTANT_ARRAY = new Instant[0];
 
     /**
+     * One nanosecond in nanoseconds.
+     */
+    public static final long NANO = 1;
+
+    /**
      * One microsecond in nanoseconds.
      */
     public static final long MICRO = 1_000;
@@ -236,7 +241,8 @@ public class DateTimeUtils {
          *
          * @param message the error string
          */
-        private DateTimeOverflowException(@NotNull final String message) {
+        @InternalUseOnly
+        public DateTimeOverflowException(@NotNull final String message) {
             super(message);
         }
 
@@ -613,12 +619,7 @@ public class DateTimeUtils {
         if (micros == NULL_LONG) {
             return NULL_LONG;
         }
-        return microsToNanosImpl(micros);
-    }
-
-    @InternalUseOnly
-    public static long microsToNanosImpl(final long micros) {
-        if (micros > MAX_CONVERTIBLE_MICROS || micros < -MAX_CONVERTIBLE_MICROS) {
+        if (Math.abs(micros) > MAX_CONVERTIBLE_MICROS) {
             throw new DateTimeOverflowException("Converting " + micros + " micros to nanos would overflow");
         }
         return micros * 1000;
@@ -636,12 +637,7 @@ public class DateTimeUtils {
         if (millis == NULL_LONG) {
             return NULL_LONG;
         }
-        return millisToNanosImpl(millis);
-    }
-
-    @InternalUseOnly
-    public static long millisToNanosImpl(final long millis) {
-        if (millis > MAX_CONVERTIBLE_MILLIS || millis < -MAX_CONVERTIBLE_MILLIS) {
+        if (Math.abs(millis) > MAX_CONVERTIBLE_MILLIS) {
             throw new DateTimeOverflowException("Converting " + millis + " millis to nanos would overflow");
         }
         return millis * 1000000;

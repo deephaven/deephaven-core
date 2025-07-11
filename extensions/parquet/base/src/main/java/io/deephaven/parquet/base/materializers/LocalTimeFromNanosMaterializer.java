@@ -9,6 +9,7 @@ package io.deephaven.parquet.base.materializers;
 
 import io.deephaven.parquet.base.PageMaterializer;
 import io.deephaven.parquet.base.PageMaterializerFactory;
+import io.deephaven.time.DateTimeUtils;
 import org.apache.parquet.column.values.ValuesReader;
 
 import java.time.LocalTime;
@@ -28,7 +29,7 @@ public class LocalTimeFromNanosMaterializer extends ObjectMaterializerBase<Local
     };
 
     public static LocalTime convertValue(long value) {
-        return LocalTime.ofNanoOfDay(value);
+        return LocalTime.ofNanoOfDay(value * DateTimeUtils.NANO);
     }
 
     private final ValuesReader dataReader;

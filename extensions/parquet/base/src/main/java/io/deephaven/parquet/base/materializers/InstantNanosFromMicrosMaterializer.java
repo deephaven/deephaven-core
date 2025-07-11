@@ -23,7 +23,11 @@ public class InstantNanosFromMicrosMaterializer extends LongMaterializerBase imp
     };
 
     public static long convertValue(long value) {
-        return DateTimeUtils.microsToNanosImpl(value);
+        if (value > DateTimeUtils.MAX_CONVERTIBLE_MICROS || value < -DateTimeUtils.MAX_CONVERTIBLE_MICROS) {
+            throw new DateTimeUtils.DateTimeOverflowException(
+                    "Converting " + value + " micros to nanos would overflow");
+        }
+        return value * DateTimeUtils.MICRO;
     }
 
     private final ValuesReader dataReader;

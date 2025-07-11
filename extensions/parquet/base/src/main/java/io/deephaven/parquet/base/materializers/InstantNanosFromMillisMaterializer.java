@@ -27,7 +27,11 @@ public class InstantNanosFromMillisMaterializer extends LongMaterializerBase imp
     };
 
     public static long convertValue(long value) {
-        return DateTimeUtils.millisToNanosImpl(value);
+        if (value > DateTimeUtils.MAX_CONVERTIBLE_MILLIS || value < -DateTimeUtils.MAX_CONVERTIBLE_MILLIS) {
+            throw new DateTimeUtils.DateTimeOverflowException(
+                    "Converting " + value + " millis to nanos would overflow");
+        }
+        return value * DateTimeUtils.MILLI;
     }
 
     private final ValuesReader dataReader;

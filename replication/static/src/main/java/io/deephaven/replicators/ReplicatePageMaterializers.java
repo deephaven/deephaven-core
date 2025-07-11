@@ -171,6 +171,7 @@ public class ReplicatePageMaterializers {
         // exceptions than the other way around.
         pairs = new String[][] {
                 {"Micros", "Millis"},
+                {"MICRO", "MILLI"},
                 {"micros", "millis"},
                 {"readLong", "readInteger"},
                 {"long value", "int value"}
@@ -179,6 +180,7 @@ public class ReplicatePageMaterializers {
 
         // LocalTimeFromMicros -> LocalTimeFromNanos
         pairs = new String[][] {
+                {"MICRO", "NANO"},
                 {"Micros", "Nanos"},
                 {"micros", "nanos"},
         };
@@ -186,20 +188,27 @@ public class ReplicatePageMaterializers {
 
         // LocalDateTimeFromMillis -> LocalDateTimeFromMicros
         pairs = new String[][] {
-                {"Millis", "Micros"}
+                {"Milli", "Micro"},
+                {"milli", "micro"},
+                {"MILLI", "MICRO"},
+                {"1_000L", "1_000_000L"},
         };
         replaceAll(TASK, LOCAL_DATE_TIME_FROM_MILLIS_MATERIALIZER_PATH, null, NO_EXCEPTIONS, pairs);
 
         // LocalDateTimeFromMillis -> LocalDateTimeFromNanos
         pairs = new String[][] {
-                {"Millis", "Nanos"}
+                {"Millis", "Nanos"},
+                {"millis", "nanos"},
+                {"MILLI", "NANO"},
+                {"1_000L", "1_000_000_000L"},
         };
         replaceAll(TASK, LOCAL_DATE_TIME_FROM_MILLIS_MATERIALIZER_PATH, null, NO_EXCEPTIONS, pairs);
 
         // InstantNanosFromMicros -> InstantNanosFromMillis
         pairs = new String[][] {
                 {"Micros", "Millis"},
-                {"micros", "millis"}
+                {"micros", "millis"},
+                {"MICRO", "MILLI"}
         };
         replaceAll(TASK, INSTANT_NANOS_FROM_MICROS_MATERIALIZER_PATH, null, NO_EXCEPTIONS, pairs);
 
