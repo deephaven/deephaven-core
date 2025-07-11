@@ -11,8 +11,6 @@ import java.util.Objects;
 import java.util.PrimitiveIterator;
 import java.util.function.IntConsumer;
 
-import static io.deephaven.engine.table.impl.sources.regioned.RegionedColumnSource.getLastRowKey;
-
 final class RegionIndexIterator implements PrimitiveIterator.OfInt, Closeable {
 
     /**
@@ -55,7 +53,7 @@ final class RegionIndexIterator implements PrimitiveIterator.OfInt, Closeable {
     public int nextRegionIndexUnchecked() {
         final long regionStartKey = sit.currentValue();
         final int regionIndex = RegionedColumnSource.getRegionIndex(regionStartKey);
-        key = getLastRowKey(regionIndex) + 1;
+        key = RegionedColumnSource.getLastRowKey(regionIndex) + 1;
         return regionIndex;
     }
 
