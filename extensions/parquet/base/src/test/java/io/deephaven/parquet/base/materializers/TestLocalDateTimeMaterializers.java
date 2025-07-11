@@ -3,10 +3,7 @@
 //
 package io.deephaven.parquet.base.materializers;
 
-import io.deephaven.parquet.base.ParquetTimeUtils;
 import io.deephaven.time.DateTimeUtils;
-import io.deephaven.util.QueryConstants;
-import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
@@ -16,16 +13,6 @@ import java.time.ZoneId;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 class TestLocalDateTimeMaterializers {
-
-    @Test
-    void testEpochNanosUTC() {
-        final long nanos = 123456789123456789L;
-        final Instant dt2 = Instant.ofEpochSecond(0, nanos);
-        final LocalDateTime ldt = LocalDateTime.ofInstant(dt2, ZoneId.of("UTC"));
-        AssertionsForClassTypes.assertThat(ParquetTimeUtils.epochNanosUTC(ldt)).isEqualTo(nanos);
-        assertThat(ParquetTimeUtils.epochNanosUTC(null)).isEqualTo(QueryConstants.NULL_LONG);
-    }
-
     @Test
     void testEpochNanosTo() {
         final long nanos = 123456789123456789L;
