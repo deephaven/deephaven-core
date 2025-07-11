@@ -51,6 +51,7 @@ import io.deephaven.parquet.base.BigDecimalParquetBytesCodec;
 import io.deephaven.parquet.base.BigIntegerParquetBytesCodec;
 import io.deephaven.parquet.base.InvalidParquetFileException;
 import io.deephaven.parquet.base.NullStatistics;
+import io.deephaven.parquet.base.materializers.ParquetMaterializerUtils;
 import io.deephaven.parquet.table.location.ParquetTableLocation;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
 import io.deephaven.parquet.table.pagestore.ColumnChunkPageStore;
@@ -131,13 +132,12 @@ import static io.deephaven.engine.util.TableTools.merge;
 import static io.deephaven.engine.util.TableTools.newTable;
 import static io.deephaven.engine.util.TableTools.shortCol;
 import static io.deephaven.engine.util.TableTools.stringCol;
+import static io.deephaven.parquet.base.materializers.ParquetMaterializerUtils.MAX_CONVERTIBLE_MILLIS;
 import static io.deephaven.parquet.table.ParquetTableWriter.INDEX_ROW_SET_COLUMN_NAME;
 import static io.deephaven.parquet.table.ParquetTools.readTable;
 import static io.deephaven.parquet.table.ParquetTools.writeKeyValuePartitionedTable;
 import static io.deephaven.parquet.table.ParquetTools.writeTable;
 import static io.deephaven.parquet.table.ParquetTools.writeTables;
-import static io.deephaven.time.DateTimeUtils.MAX_CONVERTIBLE_MICROS;
-import static io.deephaven.time.DateTimeUtils.MAX_CONVERTIBLE_MILLIS;
 import static io.deephaven.util.QueryConstants.*;
 import static org.apache.parquet.schema.LogicalTypeAnnotation.decimalType;
 import static org.apache.parquet.schema.LogicalTypeAnnotation.intType;
@@ -2009,9 +2009,9 @@ public final class ParquetTableReadWriteTest {
             } catch (final UncheckedDeephavenException e) {
                 assertTrue(e.getCause().getMessage().contains("micros to nanos would overflow"));
             }
-            assertEquals(epochMicrosToInstant(MAX_CONVERTIBLE_MICROS),
+            assertEquals(epochMicrosToInstant(ParquetMaterializerUtils.MAX_CONVERTIBLE_MICROS),
                     fromDisk.getColumnSource("timestamps_us_max").get(0));
-            assertEquals(epochMicrosToInstant(-MAX_CONVERTIBLE_MICROS),
+            assertEquals(epochMicrosToInstant(-ParquetMaterializerUtils.MAX_CONVERTIBLE_MICROS),
                     fromDisk.getColumnSource("timestamps_us_min").get(0));
         }
         assertEquals(null, fromDisk.getColumnSource("timestamps_ns_null").get(0));

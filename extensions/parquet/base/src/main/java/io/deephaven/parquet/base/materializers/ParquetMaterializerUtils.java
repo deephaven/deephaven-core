@@ -3,12 +3,15 @@
 //
 package io.deephaven.parquet.base.materializers;
 
+import io.deephaven.util.annotations.VisibleForTesting;
+
 /**
  * Internal library with utility methods for converting time data between Deephaven and Parquet.
  *
  * @implNote Some duplication with DateTimeUtils is intentional to minimize dependency.
  */
-class ParquetMaterializerUtils {
+@VisibleForTesting
+public class ParquetMaterializerUtils {
 
     /**
      * One nanosecond in nanoseconds.
@@ -28,10 +31,12 @@ class ParquetMaterializerUtils {
     /**
      * Maximum time in microseconds that can be converted to an instant without overflow.
      */
-    static final long MAX_CONVERTIBLE_MICROS = Long.MAX_VALUE / 1_000L;
+    @VisibleForTesting
+    public static final long MAX_CONVERTIBLE_MICROS = Long.MAX_VALUE / 1_000L;
 
     /**
      * Maximum time in milliseconds that can be converted to an instant without overflow.
      */
-    static final long MAX_CONVERTIBLE_MILLIS = Long.MAX_VALUE / 1_000_000L;
+    @VisibleForTesting
+    public static final long MAX_CONVERTIBLE_MILLIS = Long.MAX_VALUE / 1_000_000L;
 }

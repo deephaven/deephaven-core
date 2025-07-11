@@ -112,11 +112,6 @@ public class DateTimeUtils {
     public static final Instant[] ZERO_LENGTH_INSTANT_ARRAY = new Instant[0];
 
     /**
-     * One nanosecond in nanoseconds.
-     */
-    public static final long NANO = 1;
-
-    /**
      * One microsecond in nanoseconds.
      */
     public static final long MICRO = 1_000;
@@ -166,12 +161,12 @@ public class DateTimeUtils {
     /**
      * Maximum time in microseconds that can be converted to an instant without overflow.
      */
-    public static final long MAX_CONVERTIBLE_MICROS = Long.MAX_VALUE / 1_000L;
+    private static final long MAX_CONVERTIBLE_MICROS = Long.MAX_VALUE / 1_000L;
 
     /**
      * Maximum time in milliseconds that can be converted to an instant without overflow.
      */
-    public static final long MAX_CONVERTIBLE_MILLIS = Long.MAX_VALUE / 1_000_000L;
+    private static final long MAX_CONVERTIBLE_MILLIS = Long.MAX_VALUE / 1_000_000L;
 
     /**
      * Maximum time in seconds that can be converted to an instant without overflow.
@@ -239,8 +234,7 @@ public class DateTimeUtils {
          *
          * @param message the error string
          */
-        @InternalUseOnly
-        public DateTimeOverflowException(@NotNull final String message) {
+        private DateTimeOverflowException(@NotNull final String message) {
             super(message);
         }
 
@@ -620,7 +614,7 @@ public class DateTimeUtils {
         if (Math.abs(micros) > MAX_CONVERTIBLE_MICROS) {
             throw new DateTimeOverflowException("Converting " + micros + " micros to nanos would overflow");
         }
-        return micros * 1_000;
+        return micros * 1000;
     }
 
     /**
@@ -638,7 +632,7 @@ public class DateTimeUtils {
         if (Math.abs(millis) > MAX_CONVERTIBLE_MILLIS) {
             throw new DateTimeOverflowException("Converting " + millis + " millis to nanos would overflow");
         }
-        return millis * 1_000_000;
+        return millis * 1000000;
     }
 
     /**
@@ -657,7 +651,7 @@ public class DateTimeUtils {
             throw new DateTimeOverflowException("Converting " + seconds + " seconds to nanos would overflow");
         }
 
-        return seconds * 1_000_000_000L;
+        return seconds * 1000000000L;
     }
 
     /**
