@@ -25,22 +25,28 @@ final class RegionIndexIterator implements PrimitiveIterator.OfInt, Closeable {
         // SearchIterator#currentValue exactly once without needing to otherwise keep more complicated state handling
         // if hasNext was on-demand.
         final RowSet.SearchIterator sit = rowSet.searchIterator();
-        return new RegionIndexIterator(sit, sit.advance(0) ? sit.currentValue() : DONE_KEY);
+        return new RegionIndexIterator(sit, nextRegion(sit, 0));
     }
 
-    private static final int DONE_KEY = -1;
+    private static final int DONE_REGION = -1;
 
     private final RowSet.SearchIterator sit;
-    private long currentKey;
+    private int nextRegion;
 
-    private RegionIndexIterator(final RowSet.SearchIterator sit, final long currentKey) {
+    private static int nextRegion(final RowSet.SearchIterator sit, final long key) {
+        return sit.advance(key)
+                ? RegionedColumnSource.getRegionIndex(sit.currentValue())
+                : DONE_REGION;
+    }
+
+    private RegionIndexIterator(final RowSet.SearchIterator sit, final int nextRegion) {
         this.sit = Objects.requireNonNull(sit);
-        this.currentKey = currentKey;
+        this.nextRegion = nextRegion;
     }
 
     @Override
     public boolean hasNext() {
-        return currentKey >= 0;
+        return nextRegion >= 0;
     }
 
     @Override
@@ -48,14 +54,12 @@ final class RegionIndexIterator implements PrimitiveIterator.OfInt, Closeable {
         if (!hasNext()) {
             throw new NoSuchElementException();
         }
-        final int regionIndex = RegionedColumnSource.getRegionIndex(currentKey);
-        final long regionLastRowKey = RegionedColumnSource.getLastRowKey(regionIndex);
-        if (regionLastRowKey == Long.MAX_VALUE || !sit.advance(regionLastRowKey + 1)) {
-            currentKey = DONE_KEY;
-        } else {
-            currentKey = sit.currentValue();
-        }
-        return regionIndex;
+        final int currentRegion = nextRegion;
+        final long currentRegionLastRowKey = RegionedColumnSource.getLastRowKey(nextRegion);
+        nextRegion = currentRegionLastRowKey == Long.MAX_VALUE
+                ? DONE_REGION
+                : nextRegion(sit, currentRegionLastRowKey + 1);
+        return currentRegion;
     }
 
     @Override
