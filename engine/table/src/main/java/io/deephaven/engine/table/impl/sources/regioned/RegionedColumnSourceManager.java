@@ -821,11 +821,9 @@ public class RegionedColumnSourceManager
     private ArrayList<RegionInfoHolder> getOverlappingRegions(final RowSet inputRowSet, final int maxRegions) {
         final List<IncludedTableLocationEntry> tableLocationEntries = includedLocationEntries();
         final ArrayList<RegionInfoHolder> includedRegions = new ArrayList<>();
-        try (final RowSet.SearchIterator sit = inputRowSet.searchIterator()) {
-            long startSearchFrom = 0;
-            while (includedRegions.size() < maxRegions && sit.advance(startSearchFrom)) {
-                final long regionStartKey = sit.currentValue();
-                final int regionIndex = RegionedColumnSource.getRegionIndex(regionStartKey);
+        try (final RegionIndexIterator rit = RegionIndexIterator.of(inputRowSet)) {
+            while (includedRegions.size() < maxRegions && rit.hasNext()) {
+                final int regionIndex = rit.nextRegionIndexUnchecked();
                 if (regionIndex >= tableLocationEntries.size()) {
                     throw new IllegalStateException("Region index " + regionIndex + " exceeds the number of included " +
                             "locations: " + tableLocationEntries.size() + " for input row set: " + inputRowSet);
@@ -840,9 +838,6 @@ public class RegionedColumnSourceManager
                                         + inputRowSet);
                     }
                     includedRegions.add(new RegionInfoHolder(entry, overlappingShiftedRowSet.copy()));
-                    // Move to the next region, skipping the current one
-                    final long regionEndKey = getLastRowKey(regionIndex);
-                    startSearchFrom = regionEndKey + 1;
                 }
             }
         }
