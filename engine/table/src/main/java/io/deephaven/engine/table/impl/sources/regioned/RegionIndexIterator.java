@@ -51,8 +51,8 @@ final class RegionIndexIterator implements PrimitiveIterator.OfInt, Closeable {
      * @return the next region index
      */
     public int nextRegionIndexUnchecked() {
-        final long regionStartKey = sit.currentValue();
-        final int regionIndex = RegionedColumnSource.getRegionIndex(regionStartKey);
+        final long currentKey = sit.currentValue();
+        final int regionIndex = RegionedColumnSource.getRegionIndex(currentKey);
         key = RegionedColumnSource.getLastRowKey(regionIndex) + 1;
         return regionIndex;
     }
