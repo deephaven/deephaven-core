@@ -21,6 +21,7 @@ import io.deephaven.web.client.api.WorkerConnection;
 import io.deephaven.web.client.api.barrage.stream.ResponseStreamWrapper;
 import io.deephaven.web.client.api.console.JsVariableChanges;
 import io.deephaven.web.client.api.console.JsVariableDescriptor;
+import io.deephaven.web.client.api.console.JsVariableType;
 import io.deephaven.web.client.api.grpc.GrpcTransport;
 import io.deephaven.web.client.api.grpc.GrpcTransportFactory;
 import io.deephaven.web.client.api.grpc.GrpcTransportOptions;
@@ -29,6 +30,7 @@ import io.deephaven.web.shared.data.ConnectToken;
 import io.deephaven.web.shared.fu.JsConsumer;
 import io.deephaven.web.shared.fu.JsRunnable;
 import jsinterop.annotations.JsIgnore;
+import jsinterop.annotations.JsOptional;
 import jsinterop.annotations.JsType;
 import jsinterop.base.JsPropertyMap;
 
@@ -134,6 +136,23 @@ public class IdeConnection extends QueryConnectable<IdeConnection> {
         } else {
             return Promise.reject("Cannot connect, session is dead.");
         }
+    }
+
+    /**
+     * Load the named table, with columns and size information already fully populated.
+     *
+     * @param name the name of the table to fetch
+     * @param applyPreviewColumns false to disable previews, defaults to true
+     * @return a {@link Promise} that will resolve to the table, or reject with an error if it cannot be loaded.
+     * @deprecated Added to resolve a specific issue, in the future preview will be applied as part of the subscription.
+     */
+    @Deprecated
+    public Promise<JsTable> getTable(String name, @JsOptional Boolean applyPreviewColumns) {
+        return connection.get().getVariableDefinition(name, JsVariableType.TABLE).then(varDef -> {
+            final Promise<JsTable> table = connection.get().getTable(varDef, applyPreviewColumns);
+            fireEvent(EVENT_TABLE_OPENED, table);
+            return table;
+        });
     }
 
     public Promise<?> getObject(@TsTypeRef(JsVariableDescriptor.class) JsPropertyMap<Object> definitionObject) {
