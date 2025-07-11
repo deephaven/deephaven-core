@@ -1102,11 +1102,6 @@ public class DateTimeUtils {
         if (millis == NULL_INT) {
             return null;
         }
-        return millisOfDayToLocalTimeImpl(millis);
-    }
-
-    @InternalUseOnly
-    public static @NotNull LocalTime millisOfDayToLocalTimeImpl(final int millis) {
         return LocalTime.ofNanoOfDay(millis * MILLI);
     }
 
@@ -1121,11 +1116,6 @@ public class DateTimeUtils {
         if (micros == NULL_LONG) {
             return null;
         }
-        return microsOfDayToLocalTimeImpl(micros);
-    }
-
-    @InternalUseOnly
-    public static @NotNull LocalTime microsOfDayToLocalTimeImpl(final long micros) {
         return LocalTime.ofNanoOfDay(micros * MICRO);
     }
 
@@ -1140,11 +1130,6 @@ public class DateTimeUtils {
         if (nanos == NULL_LONG) {
             return null;
         }
-        return nanosOfDayToLocalTimeImpl(nanos);
-    }
-
-    @InternalUseOnly
-    public static @NotNull LocalTime nanosOfDayToLocalTimeImpl(final long nanos) {
         return LocalTime.ofNanoOfDay(nanos);
     }
 
@@ -1549,12 +1534,7 @@ public class DateTimeUtils {
      */
     @ScriptApi
     public static @Nullable LocalDate epochDaysAsIntToLocalDate(final int days) {
-        return days == NULL_INT ? null : epochDaysAsIntToLocalDateImpl(days);
-    }
-
-    @InternalUseOnly
-    public static @NotNull LocalDate epochDaysAsIntToLocalDateImpl(final int days) {
-        return LocalDate.ofEpochDay(days);
+        return days == NULL_INT ? null : LocalDate.ofEpochDay(days);
     }
 
     // endregion
