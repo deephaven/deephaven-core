@@ -9,7 +9,6 @@ import java.io.Closeable;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.PrimitiveIterator;
-import java.util.function.IntConsumer;
 
 final class RegionIndexIterator implements PrimitiveIterator.OfInt, Closeable {
 
@@ -21,20 +20,27 @@ final class RegionIndexIterator implements PrimitiveIterator.OfInt, Closeable {
      * @return the region index iterator
      */
     public static RegionIndexIterator of(final RowSet rowSet) {
-        return new RegionIndexIterator(rowSet.searchIterator());
+        // Note: we are doing an up-front check, with our implementation doing the follow-up hasNext check as part of
+        // the nextInt calculation. This allows us to be efficient and call SearchIterator#advance and
+        // SearchIterator#currentValue exactly once without needing to otherwise keep more complicated state handling
+        // if hasNext was on-demand.
+        final RowSet.SearchIterator sit = rowSet.searchIterator();
+        return new RegionIndexIterator(sit, sit.advance(0) ? sit.currentValue() : DONE_KEY);
     }
 
-    private final RowSet.SearchIterator sit;
-    private long key;
+    private static final int DONE_KEY = -1;
 
-    private RegionIndexIterator(final RowSet.SearchIterator sit) {
+    private final RowSet.SearchIterator sit;
+    private long currentKey;
+
+    private RegionIndexIterator(final RowSet.SearchIterator sit, final long currentKey) {
         this.sit = Objects.requireNonNull(sit);
-        this.key = 0;
+        this.currentKey = currentKey;
     }
 
     @Override
     public boolean hasNext() {
-        return key >= 0 && sit.advance(key);
+        return currentKey >= 0;
     }
 
     @Override
@@ -42,32 +48,14 @@ final class RegionIndexIterator implements PrimitiveIterator.OfInt, Closeable {
         if (!hasNext()) {
             throw new NoSuchElementException();
         }
-        return nextRegionIndexUnchecked();
-    }
-
-    /**
-     * The next region index. The caller must have already verified {@link #hasNext()} is {@code true}.
-     *
-     * @return the next region index
-     */
-    public int nextRegionIndexUnchecked() {
-        final long currentKey = sit.currentValue();
         final int regionIndex = RegionedColumnSource.getRegionIndex(currentKey);
         final long regionLastRowKey = RegionedColumnSource.getLastRowKey(regionIndex);
-        if (regionLastRowKey == Long.MAX_VALUE) {
-            // this is the _last_ region; have to set a sentinel value to stop iteration
-            key = -1;
+        if (regionLastRowKey == Long.MAX_VALUE || !sit.advance(regionLastRowKey + 1)) {
+            currentKey = DONE_KEY;
         } else {
-            key = regionLastRowKey + 1;
+            currentKey = sit.currentValue();
         }
         return regionIndex;
-    }
-
-    @Override
-    public void forEachRemaining(IntConsumer action) {
-        while (hasNext()) {
-            action.accept(nextRegionIndexUnchecked());
-        }
     }
 
     @Override

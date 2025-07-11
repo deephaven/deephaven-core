@@ -10,9 +10,6 @@ import io.deephaven.engine.rowset.WritableRowSet;
 import org.junit.Test;
 
 import java.util.NoSuchElementException;
-import java.util.PrimitiveIterator;
-import java.util.function.IntConsumer;
-import java.util.stream.IntStream;
 
 import static io.deephaven.engine.rowset.RowSetFactory.fromKeys;
 import static io.deephaven.engine.rowset.RowSetFactory.fromRange;
@@ -90,39 +87,12 @@ public class TestRegionIndexIterator {
     }
 
     private void expect(RowSet rowSet, int... expectedRegionIndices) {
-        expectViaNextInt(rowSet, expectedRegionIndices);
-        expectViaNextRegionIndexUnchecked(rowSet, expectedRegionIndices);
-        expectViaForEach(rowSet, expectedRegionIndices);
-    }
-
-    private static void expectViaNextInt(RowSet rowSet, int[] expectedRegionIndices) {
         try (final RegionIndexIterator it = RegionIndexIterator.of(rowSet)) {
             for (final int expected : expectedRegionIndices) {
                 assertThat(it).hasNext();
                 assertThat(it.nextInt()).isEqualTo(expected);
             }
             assertThat(it).isExhausted();
-            expectNextIntNoSuchElement(it);
-        }
-    }
-
-    private static void expectViaNextRegionIndexUnchecked(RowSet rowSet, int[] expectedRegionIndices) {
-        try (final RegionIndexIterator it = RegionIndexIterator.of(rowSet)) {
-            for (final int expected : expectedRegionIndices) {
-                assertThat(it).hasNext();
-                assertThat(it.nextRegionIndexUnchecked()).isEqualTo(expected);
-            }
-            assertThat(it).isExhausted();
-            expectNextIntNoSuchElement(it);
-        }
-    }
-
-    private static void expectViaForEach(RowSet rowSet, int[] expectedRegionIndices) {
-        try (final RegionIndexIterator it = RegionIndexIterator.of(rowSet)) {
-            final PrimitiveIterator.OfInt expectedIt = IntStream.of(expectedRegionIndices).iterator();
-            it.forEachRemaining((IntConsumer) value -> assertThat(value).isEqualTo(expectedIt.nextInt()));
-            assertThat(it).isExhausted();
-            assertThat(expectedIt).isExhausted();
             expectNextIntNoSuchElement(it);
         }
     }

@@ -823,7 +823,7 @@ public class RegionedColumnSourceManager
         final ArrayList<RegionInfoHolder> includedRegions = new ArrayList<>();
         try (final RegionIndexIterator rit = RegionIndexIterator.of(inputRowSet)) {
             while (includedRegions.size() < maxRegions && rit.hasNext()) {
-                final int regionIndex = rit.nextRegionIndexUnchecked();
+                final int regionIndex = rit.nextInt();
                 if (regionIndex >= tableLocationEntries.size()) {
                     throw new IllegalStateException("Region index " + regionIndex + " exceeds the number of included " +
                             "locations: " + tableLocationEntries.size() + " for input row set: " + inputRowSet);
