@@ -25,6 +25,10 @@ public class LongFromUnsignedByteMaterializer extends LongMaterializerBase imple
         }
     };
 
+    public static long convertValue(int value) {
+        return Byte.toUnsignedLong((byte) value);
+    }
+
     private final ValuesReader dataReader;
 
     private LongFromUnsignedByteMaterializer(ValuesReader dataReader, int numValues) {
@@ -39,7 +43,7 @@ public class LongFromUnsignedByteMaterializer extends LongMaterializerBase imple
     @Override
     public void fillValues(int startIndex, int endIndex) {
         for (int ii = startIndex; ii < endIndex; ii++) {
-            data[ii] = Byte.toUnsignedLong((byte) dataReader.readInteger());
+            data[ii] = convertValue(dataReader.readInteger());
         }
     }
 }

@@ -25,6 +25,10 @@ public class LongFromUnsignedIntMaterializer extends LongMaterializerBase implem
         }
     };
 
+    public static long convertValue(int value) {
+        return Integer.toUnsignedLong((int) value);
+    }
+
     private final ValuesReader dataReader;
 
     private LongFromUnsignedIntMaterializer(ValuesReader dataReader, int numValues) {
@@ -39,7 +43,7 @@ public class LongFromUnsignedIntMaterializer extends LongMaterializerBase implem
     @Override
     public void fillValues(int startIndex, int endIndex) {
         for (int ii = startIndex; ii < endIndex; ii++) {
-            data[ii] = Integer.toUnsignedLong((int) dataReader.readInteger());
+            data[ii] = convertValue(dataReader.readInteger());
         }
     }
 }
