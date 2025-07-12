@@ -6,9 +6,8 @@ package io.deephaven.parquet.table.pushdown;
 import io.deephaven.engine.table.impl.select.SingleSidedComparableRangeFilter;
 import io.deephaven.util.annotations.InternalUseOnly;
 import io.deephaven.util.compare.ObjectComparisons;
+import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.parquet.column.statistics.Statistics;
-
-import java.util.Optional;
 
 @InternalUseOnly
 public abstract class SingleSidedComparableRangePushdownHandler {
@@ -16,20 +15,22 @@ public abstract class SingleSidedComparableRangePushdownHandler {
     public static boolean maybeOverlaps(
             final SingleSidedComparableRangeFilter sscrf,
             final Statistics<?> statistics) {
-        final Optional<MinMax<?>> minMaxFromStatistics = MinMaxFromStatistics.get(statistics, sscrf.getColumnType());
-        if (minMaxFromStatistics.isEmpty()) {
-            // Statistics could not be processed, so we cannot determine overlaps.
-            return true;
-        }
-        final MinMax<?> minMax = minMaxFromStatistics.get();
         final Comparable<?> pivot = sscrf.getPivot();
         final boolean isGreaterThan = sscrf.isGreaterThan();
         if (pivot == null || !isGreaterThan) {
             // Skip pushdown-based filtering for nulls, which are considered smaller than any value.
             return true;
         }
+        final Class<?> dhColumnType = sscrf.getColumnType();
+        final MutableObject<Comparable<?>> mutableMin = new MutableObject<>();
+        final MutableObject<Comparable<?>> mutableMax = new MutableObject<>();
+        if (!MinMaxFromStatistics.getMinMaxForComparable(statistics, mutableMin::setValue, mutableMax::setValue,
+                dhColumnType)) {
+            // Statistics could not be processed, so we assume that we overlap.
+            return true;
+        }
         return maybeOverlapsImpl(
-                minMax.min(), minMax.max(),
+                mutableMin.getValue(), mutableMax.getValue(),
                 pivot, sscrf.isGreaterThan(),
                 sscrf.isLowerInclusive(), sscrf.isUpperInclusive());
     }

@@ -7,52 +7,40 @@
 // @formatter:off
 package io.deephaven.parquet.table.pushdown;
 
-import io.deephaven.api.filter.Filter;
 import io.deephaven.engine.table.impl.select.ByteRangeFilter;
 import io.deephaven.engine.table.impl.select.MatchFilter;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.InternalUseOnly;
 import io.deephaven.util.type.TypeUtils;
+import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.parquet.column.statistics.Statistics;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
-import java.util.Optional;
 
 @InternalUseOnly
 public abstract class BytePushdownHandler {
 
+    /**
+     * Verifies that the statistics range intersects the range defined by the filter.
+     */
     public static boolean maybeOverlaps(
-            final Filter filter,
-            final Statistics<?> statistics) {
-        final Optional<MinMax<?>> minMaxFromStatistics = MinMaxFromStatistics.get(statistics, Byte.class);
-        if (minMaxFromStatistics.isEmpty()) {
-            // Statistics could not be processed, so we cannot determine overlaps.
-            return true;
-        }
-        final MinMax<?> minMax = minMaxFromStatistics.get();
-        final byte min = (Byte) minMax.min();
-        final byte max = (Byte) minMax.max();
-        if (filter instanceof ByteRangeFilter) {
-            return maybeOverlaps(min, max, (ByteRangeFilter) filter);
-        } else if (filter instanceof MatchFilter) {
-            return maybeMatches(min, max, (MatchFilter) filter);
-        }
-        return true;
-    }
-
-    static boolean maybeOverlaps(
-            final byte min,
-            final byte max,
-            final ByteRangeFilter byteRangeFilter) {
+            @NotNull final ByteRangeFilter byteRangeFilter,
+            @NotNull final Statistics<?> statistics) {
         // Skip pushdown-based filtering for nulls
         final byte dhLower = byteRangeFilter.getLower();
         final byte dhUpper = byteRangeFilter.getUpper();
         if (dhLower == QueryConstants.NULL_BYTE || dhUpper == QueryConstants.NULL_BYTE) {
             return true;
         }
-        return maybeOverlapsImpl(
-                min, max,
+        final MutableObject<Byte> mutableMin = new MutableObject<>();
+        final MutableObject<Byte> mutableMax = new MutableObject<>();
+        if (!MinMaxFromStatistics.getMinMaxForBytes(statistics, mutableMin::setValue, mutableMax::setValue)) {
+            // Statistics could not be processed, so we cannot determine overlaps. Assume that we overlap.
+            return true;
+        }
+        return maybeOverlapsRangeImpl(
+                mutableMin.getValue(), mutableMax.getValue(),
                 dhLower, byteRangeFilter.isLowerInclusive(),
                 dhUpper, byteRangeFilter.isUpperInclusive());
     }
@@ -60,7 +48,7 @@ public abstract class BytePushdownHandler {
     /**
      * Verifies that the {@code [min, max]} range intersects the range defined by the given lower and upper bounds.
      */
-    private static boolean maybeOverlapsImpl(
+    private static boolean maybeOverlapsRangeImpl(
             final byte min, final byte max,
             final byte lower, final boolean lowerInclusive,
             final byte upper, final boolean upperInclusive) {
@@ -85,12 +73,11 @@ public abstract class BytePushdownHandler {
     }
 
     /**
-     * Verifies that the {@code [min, max]} range intersects any point supplied in the filter.
+     * Verifies that the statistics range intersects any point provided in the match filter.
      */
-    private static boolean maybeMatches(
-            final byte min,
-            final byte max,
-            final MatchFilter matchFilter) {
+    public static boolean maybeOverlaps(
+            @NotNull final MatchFilter matchFilter,
+            @NotNull final Statistics<?> statistics) {
         final Object[] values = matchFilter.getValues();
         if (values == null || values.length == 0) {
             // No values to check against, so we consider it as a maybe overlap.
@@ -105,21 +92,27 @@ public abstract class BytePushdownHandler {
             }
             unboxedValues[i] = value;
         }
-        if (!matchFilter.getInvertMatch()) {
-            return maybeMatchesImpl(min, max, unboxedValues);
+        final MutableObject<Byte> mutableMin = new MutableObject<>();
+        final MutableObject<Byte> mutableMax = new MutableObject<>();
+        if (!MinMaxFromStatistics.getMinMaxForBytes(statistics, mutableMin::setValue, mutableMax::setValue)) {
+            // Statistics could not be processed, so we cannot determine overlaps. Assume that we overlap.
+            return true;
         }
-        return maybeMatchesInverseImpl(min, max, unboxedValues);
+        if (!matchFilter.getInvertMatch()) {
+            return maybeMatches(mutableMin.getValue(), mutableMax.getValue(), unboxedValues);
+        }
+        return maybeMatchesInverse(mutableMin.getValue(), mutableMax.getValue(), unboxedValues);
     }
 
     /**
      * Verifies that the {@code [min, max]} range intersects any point supplied in {@code values}.
      */
-    private static boolean maybeMatchesImpl(
+    private static boolean maybeMatches(
             final byte min,
             final byte max,
             @NotNull final byte[] values) {
         for (final byte value : values) {
-            if (maybeOverlapsImpl(min, max, value, true, value, true)) {
+            if (maybeOverlapsRangeImpl(min, max, value, true, value, true)) {
                 return true;
             }
         }
@@ -135,7 +128,7 @@ public abstract class BytePushdownHandler {
      * [Byte.MIN_VALUE, v_0), (v_0, v_1), ... , (v_n-2, v_n-1), (v_n-1, Byte.MAX_VALUE]
      * </pre>
      */
-    private static boolean maybeMatchesInverseImpl(
+    private static boolean maybeMatchesInverse(
             final byte min,
             final byte max,
             @NotNull final byte[] values) {
@@ -143,12 +136,12 @@ public abstract class BytePushdownHandler {
         byte lower = Byte.MIN_VALUE;
         boolean lowerInclusive = true;
         for (final byte upper : values) {
-            if (maybeOverlapsImpl(min, max, lower, lowerInclusive, upper, false)) {
+            if (maybeOverlapsRangeImpl(min, max, lower, lowerInclusive, upper, false)) {
                 return true;
             }
             lower = upper;
             lowerInclusive = false;
         }
-        return maybeOverlapsImpl(min, max, lower, lowerInclusive, Byte.MAX_VALUE, true);
+        return maybeOverlapsRangeImpl(min, max, lower, lowerInclusive, Byte.MAX_VALUE, true);
     }
 }

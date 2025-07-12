@@ -7,52 +7,40 @@
 // @formatter:off
 package io.deephaven.parquet.table.pushdown;
 
-import io.deephaven.api.filter.Filter;
 import io.deephaven.engine.table.impl.select.LongRangeFilter;
 import io.deephaven.engine.table.impl.select.MatchFilter;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.InternalUseOnly;
 import io.deephaven.util.type.TypeUtils;
+import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.parquet.column.statistics.Statistics;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
-import java.util.Optional;
 
 @InternalUseOnly
 public abstract class LongPushdownHandler {
 
+    /**
+     * Verifies that the statistics range intersects the range defined by the filter.
+     */
     public static boolean maybeOverlaps(
-            final Filter filter,
-            final Statistics<?> statistics) {
-        final Optional<MinMax<?>> minMaxFromStatistics = MinMaxFromStatistics.get(statistics, Long.class);
-        if (minMaxFromStatistics.isEmpty()) {
-            // Statistics could not be processed, so we cannot determine overlaps.
-            return true;
-        }
-        final MinMax<?> minMax = minMaxFromStatistics.get();
-        final long min = (Long) minMax.min();
-        final long max = (Long) minMax.max();
-        if (filter instanceof LongRangeFilter) {
-            return maybeOverlaps(min, max, (LongRangeFilter) filter);
-        } else if (filter instanceof MatchFilter) {
-            return maybeMatches(min, max, (MatchFilter) filter);
-        }
-        return true;
-    }
-
-    static boolean maybeOverlaps(
-            final long min,
-            final long max,
-            final LongRangeFilter longRangeFilter) {
+            @NotNull final LongRangeFilter longRangeFilter,
+            @NotNull final Statistics<?> statistics) {
         // Skip pushdown-based filtering for nulls
         final long dhLower = longRangeFilter.getLower();
         final long dhUpper = longRangeFilter.getUpper();
         if (dhLower == QueryConstants.NULL_LONG || dhUpper == QueryConstants.NULL_LONG) {
             return true;
         }
-        return maybeOverlapsImpl(
-                min, max,
+        final MutableObject<Long> mutableMin = new MutableObject<>();
+        final MutableObject<Long> mutableMax = new MutableObject<>();
+        if (!MinMaxFromStatistics.getMinMaxForLongs(statistics, mutableMin::setValue, mutableMax::setValue)) {
+            // Statistics could not be processed, so we cannot determine overlaps. Assume that we overlap.
+            return true;
+        }
+        return maybeOverlapsRangeImpl(
+                mutableMin.getValue(), mutableMax.getValue(),
                 dhLower, longRangeFilter.isLowerInclusive(),
                 dhUpper, longRangeFilter.isUpperInclusive());
     }
@@ -60,7 +48,7 @@ public abstract class LongPushdownHandler {
     /**
      * Verifies that the {@code [min, max]} range intersects the range defined by the given lower and upper bounds.
      */
-    private static boolean maybeOverlapsImpl(
+     static boolean maybeOverlapsRangeImpl(
             final long min, final long max,
             final long lower, final boolean lowerInclusive,
             final long upper, final boolean upperInclusive) {
@@ -85,12 +73,11 @@ public abstract class LongPushdownHandler {
     }
 
     /**
-     * Verifies that the {@code [min, max]} range intersects any point supplied in the filter.
+     * Verifies that the statistics range intersects any point provided in the match filter.
      */
-    private static boolean maybeMatches(
-            final long min,
-            final long max,
-            final MatchFilter matchFilter) {
+    public static boolean maybeOverlaps(
+            @NotNull final MatchFilter matchFilter,
+            @NotNull final Statistics<?> statistics) {
         final Object[] values = matchFilter.getValues();
         if (values == null || values.length == 0) {
             // No values to check against, so we consider it as a maybe overlap.
@@ -105,21 +92,27 @@ public abstract class LongPushdownHandler {
             }
             unboxedValues[i] = value;
         }
-        if (!matchFilter.getInvertMatch()) {
-            return maybeMatchesImpl(min, max, unboxedValues);
+        final MutableObject<Long> mutableMin = new MutableObject<>();
+        final MutableObject<Long> mutableMax = new MutableObject<>();
+        if (!MinMaxFromStatistics.getMinMaxForLongs(statistics, mutableMin::setValue, mutableMax::setValue)) {
+            // Statistics could not be processed, so we cannot determine overlaps. Assume that we overlap.
+            return true;
         }
-        return maybeMatchesInverseImpl(min, max, unboxedValues);
+        if (!matchFilter.getInvertMatch()) {
+            return maybeMatches(mutableMin.getValue(), mutableMax.getValue(), unboxedValues);
+        }
+        return maybeMatchesInverse(mutableMin.getValue(), mutableMax.getValue(), unboxedValues);
     }
 
     /**
      * Verifies that the {@code [min, max]} range intersects any point supplied in {@code values}.
      */
-    private static boolean maybeMatchesImpl(
+     static boolean maybeMatches(
             final long min,
             final long max,
             @NotNull final long[] values) {
         for (final long value : values) {
-            if (maybeOverlapsImpl(min, max, value, true, value, true)) {
+            if (maybeOverlapsRangeImpl(min, max, value, true, value, true)) {
                 return true;
             }
         }
@@ -135,7 +128,7 @@ public abstract class LongPushdownHandler {
      * [Long.MIN_VALUE, v_0), (v_0, v_1), ... , (v_n-2, v_n-1), (v_n-1, Long.MAX_VALUE]
      * </pre>
      */
-    private static boolean maybeMatchesInverseImpl(
+     static boolean maybeMatchesInverse(
             final long min,
             final long max,
             @NotNull final long[] values) {
@@ -143,12 +136,12 @@ public abstract class LongPushdownHandler {
         long lower = Long.MIN_VALUE;
         boolean lowerInclusive = true;
         for (final long upper : values) {
-            if (maybeOverlapsImpl(min, max, lower, lowerInclusive, upper, false)) {
+            if (maybeOverlapsRangeImpl(min, max, lower, lowerInclusive, upper, false)) {
                 return true;
             }
             lower = upper;
             lowerInclusive = false;
         }
-        return maybeOverlapsImpl(min, max, lower, lowerInclusive, Long.MAX_VALUE, true);
+        return maybeOverlapsRangeImpl(min, max, lower, lowerInclusive, Long.MAX_VALUE, true);
     }
 }

@@ -7,52 +7,40 @@
 // @formatter:off
 package io.deephaven.parquet.table.pushdown;
 
-import io.deephaven.api.filter.Filter;
 import io.deephaven.engine.table.impl.select.IntRangeFilter;
 import io.deephaven.engine.table.impl.select.MatchFilter;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.InternalUseOnly;
 import io.deephaven.util.type.TypeUtils;
+import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.parquet.column.statistics.Statistics;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
-import java.util.Optional;
 
 @InternalUseOnly
 public abstract class IntPushdownHandler {
 
+    /**
+     * Verifies that the statistics range intersects the range defined by the filter.
+     */
     public static boolean maybeOverlaps(
-            final Filter filter,
-            final Statistics<?> statistics) {
-        final Optional<MinMax<?>> minMaxFromStatistics = MinMaxFromStatistics.get(statistics, Integer.class);
-        if (minMaxFromStatistics.isEmpty()) {
-            // Statistics could not be processed, so we cannot determine overlaps.
-            return true;
-        }
-        final MinMax<?> minMax = minMaxFromStatistics.get();
-        final int min = (Integer) minMax.min();
-        final int max = (Integer) minMax.max();
-        if (filter instanceof IntRangeFilter) {
-            return maybeOverlaps(min, max, (IntRangeFilter) filter);
-        } else if (filter instanceof MatchFilter) {
-            return maybeMatches(min, max, (MatchFilter) filter);
-        }
-        return true;
-    }
-
-    static boolean maybeOverlaps(
-            final int min,
-            final int max,
-            final IntRangeFilter intRangeFilter) {
+            @NotNull final IntRangeFilter intRangeFilter,
+            @NotNull final Statistics<?> statistics) {
         // Skip pushdown-based filtering for nulls
         final int dhLower = intRangeFilter.getLower();
         final int dhUpper = intRangeFilter.getUpper();
         if (dhLower == QueryConstants.NULL_INT || dhUpper == QueryConstants.NULL_INT) {
             return true;
         }
-        return maybeOverlapsImpl(
-                min, max,
+        final MutableObject<Integer> mutableMin = new MutableObject<>();
+        final MutableObject<Integer> mutableMax = new MutableObject<>();
+        if (!MinMaxFromStatistics.getMinMaxForInts(statistics, mutableMin::setValue, mutableMax::setValue)) {
+            // Statistics could not be processed, so we cannot determine overlaps. Assume that we overlap.
+            return true;
+        }
+        return maybeOverlapsRangeImpl(
+                mutableMin.getValue(), mutableMax.getValue(),
                 dhLower, intRangeFilter.isLowerInclusive(),
                 dhUpper, intRangeFilter.isUpperInclusive());
     }
@@ -60,7 +48,7 @@ public abstract class IntPushdownHandler {
     /**
      * Verifies that the {@code [min, max]} range intersects the range defined by the given lower and upper bounds.
      */
-    private static boolean maybeOverlapsImpl(
+    private static boolean maybeOverlapsRangeImpl(
             final int min, final int max,
             final int lower, final boolean lowerInclusive,
             final int upper, final boolean upperInclusive) {
@@ -85,12 +73,11 @@ public abstract class IntPushdownHandler {
     }
 
     /**
-     * Verifies that the {@code [min, max]} range intersects any point supplied in the filter.
+     * Verifies that the statistics range intersects any point provided in the match filter.
      */
-    private static boolean maybeMatches(
-            final int min,
-            final int max,
-            final MatchFilter matchFilter) {
+    public static boolean maybeOverlaps(
+            @NotNull final MatchFilter matchFilter,
+            @NotNull final Statistics<?> statistics) {
         final Object[] values = matchFilter.getValues();
         if (values == null || values.length == 0) {
             // No values to check against, so we consider it as a maybe overlap.
@@ -105,21 +92,27 @@ public abstract class IntPushdownHandler {
             }
             unboxedValues[i] = value;
         }
-        if (!matchFilter.getInvertMatch()) {
-            return maybeMatchesImpl(min, max, unboxedValues);
+        final MutableObject<Integer> mutableMin = new MutableObject<>();
+        final MutableObject<Integer> mutableMax = new MutableObject<>();
+        if (!MinMaxFromStatistics.getMinMaxForInts(statistics, mutableMin::setValue, mutableMax::setValue)) {
+            // Statistics could not be processed, so we cannot determine overlaps. Assume that we overlap.
+            return true;
         }
-        return maybeMatchesInverseImpl(min, max, unboxedValues);
+        if (!matchFilter.getInvertMatch()) {
+            return maybeMatches(mutableMin.getValue(), mutableMax.getValue(), unboxedValues);
+        }
+        return maybeMatchesInverse(mutableMin.getValue(), mutableMax.getValue(), unboxedValues);
     }
 
     /**
      * Verifies that the {@code [min, max]} range intersects any point supplied in {@code values}.
      */
-    private static boolean maybeMatchesImpl(
+    private static boolean maybeMatches(
             final int min,
             final int max,
             @NotNull final int[] values) {
         for (final int value : values) {
-            if (maybeOverlapsImpl(min, max, value, true, value, true)) {
+            if (maybeOverlapsRangeImpl(min, max, value, true, value, true)) {
                 return true;
             }
         }
@@ -135,7 +128,7 @@ public abstract class IntPushdownHandler {
      * [Integer.MIN_VALUE, v_0), (v_0, v_1), ... , (v_n-2, v_n-1), (v_n-1, Integer.MAX_VALUE]
      * </pre>
      */
-    private static boolean maybeMatchesInverseImpl(
+    private static boolean maybeMatchesInverse(
             final int min,
             final int max,
             @NotNull final int[] values) {
@@ -143,12 +136,12 @@ public abstract class IntPushdownHandler {
         int lower = Integer.MIN_VALUE;
         boolean lowerInclusive = true;
         for (final int upper : values) {
-            if (maybeOverlapsImpl(min, max, lower, lowerInclusive, upper, false)) {
+            if (maybeOverlapsRangeImpl(min, max, lower, lowerInclusive, upper, false)) {
                 return true;
             }
             lower = upper;
             lowerInclusive = false;
         }
-        return maybeOverlapsImpl(min, max, lower, lowerInclusive, Integer.MAX_VALUE, true);
+        return maybeOverlapsRangeImpl(min, max, lower, lowerInclusive, Integer.MAX_VALUE, true);
     }
 }

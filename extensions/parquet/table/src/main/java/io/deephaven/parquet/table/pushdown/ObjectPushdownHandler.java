@@ -3,66 +3,39 @@
 //
 package io.deephaven.parquet.table.pushdown;
 
-import io.deephaven.api.filter.Filter;
 import io.deephaven.engine.table.impl.select.ComparableRangeFilter;
 import io.deephaven.engine.table.impl.select.MatchFilter;
 import io.deephaven.util.annotations.InternalUseOnly;
 import io.deephaven.util.compare.ObjectComparisons;
+import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.parquet.column.statistics.Statistics;
 import org.jetbrains.annotations.NotNull;
-
-import java.util.Optional;
 
 @InternalUseOnly
 public abstract class ObjectPushdownHandler {
 
     public static boolean maybeOverlaps(
-            final Filter filter,
-            final Statistics<?> statistics) {
-        // Get the column type from the filter
-        final Class<?> dhColumnType;
-        final boolean isComparableRangeFilter = filter instanceof ComparableRangeFilter;
-        final boolean isMatchFilter = filter instanceof MatchFilter;
-        if (isComparableRangeFilter) {
-            dhColumnType = ((ComparableRangeFilter) filter).getColumnType();
-        } else if (isMatchFilter) {
-            dhColumnType = ((MatchFilter) filter).getColumnType();
-        } else {
-            // If the filter is not a ComparableRangeFilter or MatchFilter, we cannot determine overlaps.
-            return true;
-        }
-        if (dhColumnType == null) {
-            throw new IllegalStateException("Filter not initialized with a column type: " + filter);
-        }
-        final Optional<MinMax<?>> minMaxFromStatistics = MinMaxFromStatistics.get(statistics, dhColumnType);
-        if (minMaxFromStatistics.isEmpty()) {
-            // Statistics could not be processed, so we cannot determine overlaps.
-            return true;
-        }
-        final MinMax<?> minMax = minMaxFromStatistics.get();
-        final Comparable<?> min = minMax.min();
-        final Comparable<?> max = minMax.max();
-        if (isComparableRangeFilter) {
-            return maybeOverlaps(min, max, (ComparableRangeFilter) filter);
-        }
-        return maybeMatches(min, max, (MatchFilter) filter);
-    }
-
-    private static boolean maybeOverlaps(
-            final Comparable<?> min,
-            final Comparable<?> max,
-            final ComparableRangeFilter comparableRangeFilter) {
+            @NotNull final ComparableRangeFilter comparableRangeFilter,
+            @NotNull final Statistics<?> statistics) {
         // Skip pushdown-based filtering for nulls.
         final Comparable<?> dhLower = comparableRangeFilter.getLower();
         final Comparable<?> dhUpper = comparableRangeFilter.getUpper();
         if (dhLower == null || dhUpper == null) {
             return true;
         }
+        // Get the column type from the filter
+        final Class<?> dhColumnType = comparableRangeFilter.getColumnType();
+        final MutableObject<Comparable<?>> mutableMin = new MutableObject<>();
+        final MutableObject<Comparable<?>> mutableMax = new MutableObject<>();
+        if (!MinMaxFromStatistics.getMinMaxForComparable(statistics, mutableMin::setValue, mutableMax::setValue,
+                dhColumnType)) {
+            // Statistics could not be processed, so we assume that we overlap.
+            return true;
+        }
         return maybeOverlapsImpl(
-                min, max,
+                mutableMin.getValue(), mutableMax.getValue(),
                 dhLower, comparableRangeFilter.isLowerInclusive(),
                 dhUpper, comparableRangeFilter.isUpperInclusive());
-
     }
 
     /**
@@ -95,10 +68,9 @@ public abstract class ObjectPushdownHandler {
     /**
      * Verifies that the {@code [min, max]} range intersects any point supplied in the filter.
      */
-    private static boolean maybeMatches(
-            @NotNull final Comparable<?> min,
-            @NotNull final Comparable<?> max,
-            final MatchFilter matchFilter) {
+    public static boolean maybeOverlaps(
+            @NotNull final MatchFilter matchFilter,
+            @NotNull final Statistics<?> statistics) {
         final Object[] values = matchFilter.getValues();
         if (values == null || values.length == 0) {
             // No values to check against, so we consider it as a maybe overlap.
@@ -107,17 +79,25 @@ public abstract class ObjectPushdownHandler {
         final Comparable<?>[] comparableValues = new Comparable[values.length];
         for (int i = 0; i < values.length; i++) {
             final Object value = values[i];
-            if (value == null || !(value instanceof Comparable)) {
+            if (!(value instanceof Comparable)) {
                 // Skip pushdown-based filtering for nulls or non-comparable values.
                 return true;
             }
             comparableValues[i] = (Comparable<?>) value;
         }
-
-        if (!matchFilter.getInvertMatch()) {
-            return maybeMatchesImpl(min, max, comparableValues);
+        // Get the column type from the filter
+        final Class<?> dhColumnType = matchFilter.getColumnType();
+        final MutableObject<Comparable<?>> mutableMin = new MutableObject<>();
+        final MutableObject<Comparable<?>> mutableMax = new MutableObject<>();
+        if (!MinMaxFromStatistics.getMinMaxForComparable(statistics, mutableMin::setValue, mutableMax::setValue,
+                dhColumnType)) {
+            // Statistics could not be processed, so we cannot determine overlaps. Assume that we overlap.
+            return true;
         }
-        return maybeMatchesInverseImpl(min, max, comparableValues);
+        if (!matchFilter.getInvertMatch()) {
+            return maybeMatchesImpl(mutableMin.getValue(), mutableMax.getValue(), comparableValues);
+        }
+        return maybeMatchesInverseImpl(mutableMin.getValue(), mutableMax.getValue(), comparableValues);
     }
 
     /**

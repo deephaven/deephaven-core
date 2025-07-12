@@ -31,418 +31,472 @@ import io.deephaven.parquet.base.materializers.ShortFromBooleanMaterializer;
 import io.deephaven.parquet.base.materializers.ShortFromUnsignedByteMaterializer;
 import io.deephaven.parquet.base.materializers.ShortMaterializer;
 import io.deephaven.util.annotations.InternalUseOnly;
+import org.apache.parquet.column.statistics.BooleanStatistics;
+import org.apache.parquet.column.statistics.DoubleStatistics;
+import org.apache.parquet.column.statistics.FloatStatistics;
+import org.apache.parquet.column.statistics.IntStatistics;
+import org.apache.parquet.column.statistics.LongStatistics;
 import org.apache.parquet.column.statistics.Statistics;
-import org.apache.parquet.schema.ColumnOrder;
 import org.apache.parquet.schema.LogicalTypeAnnotation;
 import org.apache.parquet.schema.PrimitiveType;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.Optional;
+import java.util.function.Consumer;
 
-import static io.deephaven.util.type.TypeUtils.getBoxedType;
 
+/**
+ * This is a utility class that provides methods to extract minimum and maximum values from Parquet statistics based on
+ * the column's logical and primitive types. The general structure is that based on the type requested by user, we first
+ * try to extract the min/max values from the logical type, and if that fails, we try to extract them from the primitive
+ * type. If both fail, we return {@code false}
+ */
 @InternalUseOnly
 public abstract class MinMaxFromStatistics {
 
     /**
-     * Get the (non-NaN) min and max values from the statistics.
-     *
-     * @param statistics The statistics to analyze
-     * @param dhColumnType The expected type of the column in the Deephaven table. This is used to determine how to
-     *        interpret the min and max values from the statistics. Also, this will be the type of the returned minimum
-     *        and maximum values.
-     * @return An {@link Optional} the min and max values from the statistics, or empty if statistics are missing or
-     *         unsupported.
+     * Attempts to retrieve the minimum and maximum bytes from the given {@code statistics}.
+     * <p>
+     * Byte values can be read from parquet statistics of logical type INT_8.
      */
-    public static Optional<MinMax<?>> get(
-            @Nullable final Statistics<?> statistics,
-            @NotNull final Class<?> dhColumnType) {
-        if (statistics == null || !statistics.hasNonNullValue()) {
-            // Cannot determine min/max
-            return Optional.empty();
-        }
-        if (statistics.genericGetMin() == null || statistics.genericGetMax() == null) {
-            // Not expected to have null min/max values, but if they are null, we cannot determine min/max
-            return Optional.empty();
-        }
+    static boolean getMinMaxForBytes(
+            @NotNull final Statistics<?> statistics,
+            @NotNull final Consumer<Byte> minSetter,
+            @NotNull final Consumer<Byte> maxSetter) {
         final PrimitiveType parquetColType = statistics.type();
-        if (parquetColType.columnOrder() != ColumnOrder.typeDefined()) {
-            // We only handle typeDefined min/max right now; if new orders get defined in the future, they need to be
-            // explicitly handled
-            return Optional.empty();
+        final LogicalTypeAnnotation logicalType = parquetColType.getLogicalTypeAnnotation();
+        if (logicalType instanceof LogicalTypeAnnotation.IntLogicalTypeAnnotation) {
+            final LogicalTypeAnnotation.IntLogicalTypeAnnotation intLogicalType =
+                    (LogicalTypeAnnotation.IntLogicalTypeAnnotation) logicalType;
+            if (intLogicalType.isSigned() && intLogicalType.getBitWidth() == 8) {
+                final IntStatistics intStats = (IntStatistics) statistics;
+                minSetter.accept(ByteMaterializer.convertValue(intStats.getMin()));
+                maxSetter.accept(ByteMaterializer.convertValue(intStats.getMax()));
+                return true;
+            }
         }
-        // First try from logical type, then primitive type, similar to how the Parquet reader does it
-        // (see ParquetColumnLocation.makeToPage).
+        return false;
+    }
+
+    /**
+     * Attempts to retrieve the minimum and maximum characters from the given {@code statistics}.
+     * <p>
+     * Character values can be read from parquet statistics of logical type UINT_8, UINT_16.
+     */
+    static boolean getMinMaxForChars(
+            @NotNull final Statistics<?> statistics,
+            @NotNull final Consumer<Character> minSetter,
+            @NotNull final Consumer<Character> maxSetter) {
+        final PrimitiveType parquetColType = statistics.type();
+        final LogicalTypeAnnotation logicalType = parquetColType.getLogicalTypeAnnotation();
+        if (logicalType instanceof LogicalTypeAnnotation.IntLogicalTypeAnnotation) {
+            final LogicalTypeAnnotation.IntLogicalTypeAnnotation intLogicalType =
+                    (LogicalTypeAnnotation.IntLogicalTypeAnnotation) logicalType;
+            if (!intLogicalType.isSigned()) {
+                final int bitWidth = intLogicalType.getBitWidth();
+                if (bitWidth == 8 || bitWidth == 16) {
+                    final IntStatistics intStats = (IntStatistics) statistics;
+                    minSetter.accept(CharMaterializer.convertValue(intStats.getMin()));
+                    maxSetter.accept(CharMaterializer.convertValue(intStats.getMax()));
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Attempts to retrieve the minimum and maximum shorts from the given {@code statistics}.
+     * <p>
+     * Short values can be read from parquet statistics of logical type INT_8, INT_16, UINT_8, or primitive type
+     * BOOLEAN.
+     */
+    static boolean getMinMaxForShorts(
+            @NotNull final Statistics<?> statistics,
+            @NotNull final Consumer<Short> minSetter,
+            @NotNull final Consumer<Short> maxSetter) {
+        final PrimitiveType parquetColType = statistics.type();
         final LogicalTypeAnnotation logicalType = parquetColType.getLogicalTypeAnnotation();
         final PrimitiveType.PrimitiveTypeName primitiveTypeName = parquetColType.getPrimitiveTypeName();
-
-        return fromLogicalType(logicalType, statistics, dhColumnType)
-                .or(() -> fromPrimitiveType(primitiveTypeName, statistics, dhColumnType));
-    }
-
-    private static <T extends Comparable<T>> Optional<MinMax<?>> wrapMinMax(
-            @NotNull final T min,
-            @NotNull final T max,
-            @NotNull final Class<?> dhColumnType) {
-        if (min.getClass() != getBoxedType(dhColumnType)) {
-            throw new IllegalStateException("Min value type " + min.getClass().getName() + " does not match expected " +
-                    "type " + getBoxedType(dhColumnType));
-        }
-        return Optional.of(MinMax.of(min, max));
-    }
-
-    private static Optional<MinMax<?>> fromLogicalType(
-            @Nullable final LogicalTypeAnnotation logicalType,
-            @NotNull final Statistics<?> statistics,
-            @NotNull final Class<?> dhColumnType) {
-        if (logicalType != null) {
-            return logicalType.accept(new LogicalTypeVisitor(statistics, dhColumnType));
-        }
-        return Optional.empty();
-    }
-
-    private static Optional<MinMax<?>> fromPrimitiveType(
-            @NotNull final PrimitiveType.PrimitiveTypeName typeName,
-            @NotNull final Statistics<?> statistics,
-            @NotNull final Class<?> dhColumnType) {
-        switch (typeName) {
-            case BOOLEAN:
-                final Boolean minBool = (Boolean) statistics.genericGetMin();
-                final Boolean maxBool = (Boolean) statistics.genericGetMax();
-                if (dhColumnType == Boolean.class || dhColumnType == boolean.class) {
-                    return wrapMinMax(minBool, maxBool, dhColumnType);
-                } else if (dhColumnType == Short.class || dhColumnType == short.class) {
-                    return wrapMinMax(
-                            ShortFromBooleanMaterializer.convertValue(minBool),
-                            ShortFromBooleanMaterializer.convertValue(maxBool),
-                            dhColumnType);
-                } else if (dhColumnType == Integer.class || dhColumnType == int.class) {
-                    return wrapMinMax(
-                            IntFromBooleanMaterializer.convertValue(minBool),
-                            IntFromBooleanMaterializer.convertValue(maxBool),
-                            dhColumnType);
-                } else if (dhColumnType == Long.class || dhColumnType == long.class) {
-                    return wrapMinMax(
-                            LongFromBooleanMaterializer.convertValue(minBool),
-                            LongFromBooleanMaterializer.convertValue(maxBool),
-                            dhColumnType);
-                }
-                break;
-            case INT32:
-                final Integer minInt = (Integer) statistics.genericGetMin();
-                final Integer maxInt = (Integer) statistics.genericGetMax();
-                if (dhColumnType == Integer.class || dhColumnType == int.class) {
-                    return wrapMinMax(
-                            IntMaterializer.convertValue(minInt),
-                            IntMaterializer.convertValue(maxInt),
-                            dhColumnType);
-                } else if (dhColumnType == Long.class || dhColumnType == long.class) {
-                    return wrapMinMax(
-                            LongFromIntMaterializer.convertValue(minInt),
-                            LongFromIntMaterializer.convertValue(maxInt),
-                            dhColumnType);
-                }
-                break;
-            case INT64:
-                if (dhColumnType == Long.class || dhColumnType == long.class) {
-                    return wrapMinMax(
-                            LongMaterializer.convertValue((Long) statistics.genericGetMin()),
-                            LongMaterializer.convertValue((Long) statistics.genericGetMax()),
-                            dhColumnType);
-                }
-                break;
-            case FLOAT:
-                final Float minFloat = (Float) statistics.genericGetMin();
-                final Float maxFloat = (Float) statistics.genericGetMax();
-                if (minFloat.isNaN() || maxFloat.isNaN()) {
-                    // NaN is not a valid min/max value and should have been handled automatically by the Builder logic,
-                    // so we return empty
-                    return Optional.empty();
-                }
-                if (dhColumnType == Float.class || dhColumnType == float.class) {
-                    return wrapMinMax(
-                            FloatMaterializer.convertValue(minFloat),
-                            FloatMaterializer.convertValue(maxFloat),
-                            dhColumnType);
-                } else if (dhColumnType == Double.class || dhColumnType == double.class) {
-                    return wrapMinMax(
-                            DoubleFromFloatMaterializer.convertValue(minFloat),
-                            DoubleFromFloatMaterializer.convertValue(maxFloat),
-                            dhColumnType);
-                }
-                break;
-            case DOUBLE:
-                final Double minDouble = (Double) statistics.genericGetMin();
-                final Double maxDouble = (Double) statistics.genericGetMax();
-                if (minDouble.isNaN() || maxDouble.isNaN()) {
-                    // NaN is not a valid min/max value and should have been handled automatically by the Builder logic,
-                    // so we return empty
-                    return Optional.empty();
-                }
-                if (dhColumnType == Double.class || dhColumnType == double.class) {
-                    return wrapMinMax(
-                            DoubleMaterializer.convertValue(minDouble),
-                            DoubleMaterializer.convertValue(maxDouble),
-                            dhColumnType);
-                }
-                break;
-            case INT96: // The column-order for INT96 is undefined, so cannot use the statistics.
-            case BINARY:
-            case FIXED_LEN_BYTE_ARRAY:
-        }
-        return Optional.empty();
-    }
-
-    private static class LogicalTypeVisitor implements LogicalTypeAnnotation.LogicalTypeAnnotationVisitor<MinMax<?>> {
-        final Statistics<?> statistics;
-        final Class<?> dhColumnType;
-
-        LogicalTypeVisitor(@NotNull final Statistics<?> statistics, @NotNull final Class<?> dhColumnType) {
-            this.statistics = statistics;
-            this.dhColumnType = dhColumnType;
-        }
-
-        @Override
-        public Optional<MinMax<?>> visit(
-                final LogicalTypeAnnotation.StringLogicalTypeAnnotation stringLogicalType) {
-            if (dhColumnType == String.class) {
-                return wrapMinMax(statistics.minAsString(), statistics.maxAsString(), dhColumnType);
+        if (logicalType instanceof LogicalTypeAnnotation.IntLogicalTypeAnnotation) {
+            final LogicalTypeAnnotation.IntLogicalTypeAnnotation intLogicalType =
+                    (LogicalTypeAnnotation.IntLogicalTypeAnnotation) logicalType;
+            final boolean isSigned = intLogicalType.isSigned();
+            final int bitWidth = intLogicalType.getBitWidth();
+            if (isSigned && (bitWidth == 8 || bitWidth == 16)) {
+                final IntStatistics intStats = (IntStatistics) statistics;
+                minSetter.accept(ShortMaterializer.convertValue(intStats.getMin()));
+                maxSetter.accept(ShortMaterializer.convertValue(intStats.getMax()));
+                return true;
+            } else if (!isSigned && bitWidth == 8) {
+                final IntStatistics intStats = (IntStatistics) statistics;
+                minSetter.accept(ShortFromUnsignedByteMaterializer.convertValue(intStats.getMin()));
+                maxSetter.accept(ShortFromUnsignedByteMaterializer.convertValue(intStats.getMax()));
+                return true;
             }
-            return Optional.empty();
+        } else if (primitiveTypeName == PrimitiveType.PrimitiveTypeName.BOOLEAN) {
+            final BooleanStatistics booleanStatistics = (BooleanStatistics) statistics;
+            minSetter.accept(ShortFromBooleanMaterializer.convertValue(booleanStatistics.getMin()));
+            maxSetter.accept(ShortFromBooleanMaterializer.convertValue(booleanStatistics.getMax()));
+            return true;
         }
+        return false;
+    }
 
-        @Override
-        public Optional<MinMax<?>> visit(
-                final LogicalTypeAnnotation.TimestampLogicalTypeAnnotation timestampLogicalType) {
-            final long minFromStatistics = (Long) statistics.genericGetMin();
-            final long maxFromStatistics = (Long) statistics.genericGetMax();
-            if (timestampLogicalType.isAdjustedToUTC() && dhColumnType == Instant.class) {
-                switch (timestampLogicalType.getUnit()) {
-                    case MILLIS:
-                        return wrapMinMax(
-                                ParquetPushdownUtils.epochNanosToInstant(
-                                        InstantNanosFromMillisMaterializer.convertValue(minFromStatistics)),
-                                ParquetPushdownUtils.epochNanosToInstant(
-                                        InstantNanosFromMillisMaterializer.convertValue(maxFromStatistics)),
-                                dhColumnType);
-                    case MICROS:
-                        return wrapMinMax(
-                                ParquetPushdownUtils.epochNanosToInstant(
-                                        InstantNanosFromMicrosMaterializer.convertValue(minFromStatistics)),
-                                ParquetPushdownUtils.epochNanosToInstant(
-                                        InstantNanosFromMicrosMaterializer.convertValue(maxFromStatistics)),
-                                dhColumnType);
-                    case NANOS:
-                        return wrapMinMax(
-                                ParquetPushdownUtils.epochNanosToInstant(minFromStatistics),
-                                ParquetPushdownUtils.epochNanosToInstant(maxFromStatistics),
-                                dhColumnType);
-                }
-            } else if (!timestampLogicalType.isAdjustedToUTC() && dhColumnType == LocalDateTime.class) {
-                switch (timestampLogicalType.getUnit()) {
-                    case MILLIS:
-                        return wrapMinMax(
-                                LocalDateTimeFromMillisMaterializer.convertValue(minFromStatistics),
-                                LocalDateTimeFromMillisMaterializer.convertValue(maxFromStatistics),
-                                dhColumnType);
-                    case MICROS:
-                        return wrapMinMax(
-                                LocalDateTimeFromMicrosMaterializer.convertValue(minFromStatistics),
-                                LocalDateTimeFromMicrosMaterializer.convertValue(maxFromStatistics),
-                                dhColumnType);
-                    case NANOS:
-                        return wrapMinMax(
-                                LocalDateTimeFromNanosMaterializer.convertValue(minFromStatistics),
-                                LocalDateTimeFromNanosMaterializer.convertValue(maxFromStatistics),
-                                dhColumnType);
+    /**
+     * Attempts to retrieve the minimum and maximum integers from the given {@code statistics}.
+     * <p>
+     * Integer values can be read from parquet statistics of logical type INT_8, INT_16, INT_32, UINT_8, UINT16, or
+     * primitive type BOOLEAN, INT_32.
+     */
+    static boolean getMinMaxForInts(
+            @NotNull final Statistics<?> statistics,
+            @NotNull final Consumer<Integer> minSetter,
+            @NotNull final Consumer<Integer> maxSetter) {
+        final PrimitiveType parquetColType = statistics.type();
+        final LogicalTypeAnnotation logicalType = parquetColType.getLogicalTypeAnnotation();
+        final PrimitiveType.PrimitiveTypeName primitiveTypeName = parquetColType.getPrimitiveTypeName();
+        if (logicalType instanceof LogicalTypeAnnotation.IntLogicalTypeAnnotation) {
+            final LogicalTypeAnnotation.IntLogicalTypeAnnotation intLogicalType =
+                    (LogicalTypeAnnotation.IntLogicalTypeAnnotation) logicalType;
+            final boolean isSigned = intLogicalType.isSigned();
+            final int bitWidth = intLogicalType.getBitWidth();
+            if (isSigned && (bitWidth == 8 || bitWidth == 16 || bitWidth == 32)) {
+                final IntStatistics intStats = (IntStatistics) statistics;
+                minSetter.accept(IntMaterializer.convertValue(intStats.getMin()));
+                maxSetter.accept(IntMaterializer.convertValue(intStats.getMax()));
+                return true;
+            } else if (!isSigned) {
+                if (bitWidth == 8) {
+                    final IntStatistics intStats = (IntStatistics) statistics;
+                    minSetter.accept(IntFromUnsignedByteMaterializer.convertValue(intStats.getMin()));
+                    maxSetter.accept(IntFromUnsignedByteMaterializer.convertValue(intStats.getMax()));
+                    return true;
+                } else if (bitWidth == 16) {
+                    final IntStatistics intStats = (IntStatistics) statistics;
+                    minSetter.accept(IntFromUnsignedShortMaterializer.convertValue(intStats.getMin()));
+                    maxSetter.accept(IntFromUnsignedShortMaterializer.convertValue(intStats.getMax()));
+                    return true;
                 }
             }
-            return Optional.empty();
+        } else if (primitiveTypeName == PrimitiveType.PrimitiveTypeName.BOOLEAN) {
+            final BooleanStatistics booleanStats = (BooleanStatistics) statistics;
+            minSetter.accept(IntFromBooleanMaterializer.convertValue(booleanStats.getMin()));
+            maxSetter.accept(IntFromBooleanMaterializer.convertValue(booleanStats.getMax()));
+            return true;
+        } else if (primitiveTypeName == PrimitiveType.PrimitiveTypeName.INT32) {
+            final IntStatistics intStats = (IntStatistics) statistics;
+            minSetter.accept(IntMaterializer.convertValue(intStats.getMin()));
+            maxSetter.accept(IntMaterializer.convertValue(intStats.getMax()));
+            return true;
         }
+        return false;
+    }
 
-        @Override
-        public Optional<MinMax<?>> visit(final LogicalTypeAnnotation.IntLogicalTypeAnnotation intLogicalType) {
-            if (intLogicalType.isSigned()) {
-                switch (intLogicalType.getBitWidth()) {
-                    case 8: {
-                        final int min = ((Integer) statistics.genericGetMin());
-                        final int max = ((Integer) statistics.genericGetMax());
-                        if (dhColumnType == Byte.class || dhColumnType == byte.class) {
-                            return wrapMinMax(
-                                    ByteMaterializer.convertValue(min),
-                                    ByteMaterializer.convertValue(max),
-                                    dhColumnType);
-                        } else if (dhColumnType == Short.class || dhColumnType == short.class) {
-                            return wrapMinMax(
-                                    ShortMaterializer.convertValue(min),
-                                    ShortMaterializer.convertValue(max),
-                                    dhColumnType);
-                        } else if (dhColumnType == Integer.class || dhColumnType == int.class) {
-                            return wrapMinMax(
-                                    IntMaterializer.convertValue(min),
-                                    IntMaterializer.convertValue(max),
-                                    dhColumnType);
-                        } else if (dhColumnType == Long.class || dhColumnType == long.class) {
-                            return wrapMinMax(
-                                    LongFromIntMaterializer.convertValue(min),
-                                    LongFromIntMaterializer.convertValue(max),
-                                    dhColumnType);
-                        }
-                    }
-                        break;
-                    case 16: {
-                        final int min = ((Integer) statistics.genericGetMin());
-                        final int max = ((Integer) statistics.genericGetMax());
-                        if (dhColumnType == Short.class || dhColumnType == short.class) {
-                            return wrapMinMax(
-                                    ShortMaterializer.convertValue(min),
-                                    ShortMaterializer.convertValue(max),
-                                    dhColumnType);
-                        } else if (dhColumnType == Integer.class || dhColumnType == int.class) {
-                            return wrapMinMax(
-                                    IntMaterializer.convertValue(min),
-                                    IntMaterializer.convertValue(max),
-                                    dhColumnType);
-                        } else if (dhColumnType == Long.class || dhColumnType == long.class) {
-                            return wrapMinMax(
-                                    LongFromIntMaterializer.convertValue(min),
-                                    LongFromIntMaterializer.convertValue(max),
-                                    dhColumnType);
-                        }
-                    }
-                        break;
-                    case 32: {
-                        final int min = ((Integer) statistics.genericGetMin());
-                        final int max = ((Integer) statistics.genericGetMax());
-                        if (dhColumnType == Integer.class || dhColumnType == int.class) {
-                            return wrapMinMax(
-                                    IntMaterializer.convertValue(min),
-                                    IntMaterializer.convertValue(max),
-                                    dhColumnType);
-                        } else if (dhColumnType == Long.class || dhColumnType == long.class) {
-                            return wrapMinMax(
-                                    LongFromIntMaterializer.convertValue(min),
-                                    LongFromIntMaterializer.convertValue(max),
-                                    dhColumnType);
-                        }
-                    }
-                        break;
-                    case 64:
-                        if (dhColumnType == Long.class || dhColumnType == long.class) {
-                            return wrapMinMax(
-                                    LongMaterializer.convertValue((Long) statistics.genericGetMin()),
-                                    LongMaterializer.convertValue((Long) statistics.genericGetMax()),
-                                    dhColumnType);
-                        }
-                        break;
+
+    /**
+     * Attempts to retrieve the minimum and maximum longs from the given {@code statistics}.
+     * <p>
+     * Long values can be read from parquet statistics of logical type INT_8, INT_16, INT_32, INT_64, UINT_8, UINT_16,
+     * UINT_32, or primitive type BOOLEAN, INT_32, INT_64.
+     */
+    static boolean getMinMaxForLongs(
+            @NotNull final Statistics<?> statistics,
+            @NotNull final Consumer<Long> minSetter,
+            @NotNull final Consumer<Long> maxSetter) {
+        final PrimitiveType parquetColType = statistics.type();
+        final LogicalTypeAnnotation logicalType = parquetColType.getLogicalTypeAnnotation();
+        final PrimitiveType.PrimitiveTypeName primitiveTypeName = parquetColType.getPrimitiveTypeName();
+        if (logicalType instanceof LogicalTypeAnnotation.IntLogicalTypeAnnotation) {
+            final LogicalTypeAnnotation.IntLogicalTypeAnnotation intLogicalType =
+                    (LogicalTypeAnnotation.IntLogicalTypeAnnotation) logicalType;
+            final boolean isSigned = intLogicalType.isSigned();
+            final int bitWidth = intLogicalType.getBitWidth();
+            if (isSigned) {
+                if (bitWidth == 8 || bitWidth == 16 || bitWidth == 32) {
+                    final IntStatistics intStats = (IntStatistics) statistics;
+                    minSetter.accept(LongFromIntMaterializer.convertValue(intStats.getMin()));
+                    maxSetter.accept(LongFromIntMaterializer.convertValue(intStats.getMax()));
+                    return true;
+                } else if (bitWidth == 64) {
+                    final LongStatistics longStats = (LongStatistics) statistics;
+                    minSetter.accept(LongMaterializer.convertValue(longStats.getMin()));
+                    maxSetter.accept(LongMaterializer.convertValue(longStats.getMax()));
+                    return true;
                 }
             } else {
-                switch (intLogicalType.getBitWidth()) {
-                    case 8: {
-                        final int min = ((Integer) statistics.genericGetMin());
-                        final int max = ((Integer) statistics.genericGetMax());
-                        if (dhColumnType == Character.class || dhColumnType == char.class) {
-                            return wrapMinMax(
-                                    CharMaterializer.convertValue(min),
-                                    CharMaterializer.convertValue(max),
-                                    dhColumnType);
-                        } else if (dhColumnType == Short.class || dhColumnType == short.class) {
-                            return wrapMinMax(
-                                    ShortFromUnsignedByteMaterializer.convertValue(min),
-                                    ShortFromUnsignedByteMaterializer.convertValue(max),
-                                    dhColumnType);
-                        } else if (dhColumnType == Integer.class || dhColumnType == int.class) {
-                            return wrapMinMax(
-                                    IntFromUnsignedByteMaterializer.convertValue(min),
-                                    IntFromUnsignedByteMaterializer.convertValue(max),
-                                    dhColumnType);
-                        } else if (dhColumnType == Long.class || dhColumnType == long.class) {
-                            return wrapMinMax(
-                                    LongFromUnsignedByteMaterializer.convertValue(min),
-                                    LongFromUnsignedByteMaterializer.convertValue(max),
-                                    dhColumnType);
-                        }
-                    }
-                        break;
-                    case 16: {
-                        final int min = ((Integer) statistics.genericGetMin());
-                        final int max = ((Integer) statistics.genericGetMax());
-                        if (dhColumnType == Character.class || dhColumnType == char.class) {
-                            return wrapMinMax(
-                                    CharMaterializer.convertValue(min),
-                                    CharMaterializer.convertValue(max),
-                                    dhColumnType);
-                        } else if (dhColumnType == Integer.class || dhColumnType == int.class) {
-                            return wrapMinMax(
-                                    IntFromUnsignedShortMaterializer.convertValue(min),
-                                    IntFromUnsignedShortMaterializer.convertValue(max),
-                                    dhColumnType);
-                        } else if (dhColumnType == Long.class || dhColumnType == long.class) {
-                            return wrapMinMax(
-                                    LongFromUnsignedShortMaterializer.convertValue(min),
-                                    LongFromUnsignedShortMaterializer.convertValue(max),
-                                    dhColumnType);
-                        }
-                    }
-                        break;
-                    case 32:
-                        if (dhColumnType == Long.class || dhColumnType == long.class) {
-                            return wrapMinMax(
-                                    LongFromUnsignedIntMaterializer.convertValue((Integer) statistics.genericGetMin()),
-                                    LongFromUnsignedIntMaterializer.convertValue((Integer) statistics.genericGetMax()),
-                                    dhColumnType);
-                        }
-                        break;
+                if (bitWidth == 8) {
+                    final IntStatistics intStats = (IntStatistics) statistics;
+                    minSetter.accept(LongFromUnsignedByteMaterializer.convertValue(intStats.getMin()));
+                    maxSetter.accept(LongFromUnsignedByteMaterializer.convertValue(intStats.getMax()));
+                    return true;
+                } else if (bitWidth == 16) {
+                    final IntStatistics intStats = (IntStatistics) statistics;
+                    minSetter.accept(LongFromUnsignedShortMaterializer.convertValue(intStats.getMin()));
+                    maxSetter.accept(LongFromUnsignedShortMaterializer.convertValue(intStats.getMax()));
+                    return true;
+                } else if (bitWidth == 32) {
+                    final IntStatistics intStats = (IntStatistics) statistics;
+                    minSetter.accept(LongFromUnsignedIntMaterializer.convertValue(intStats.getMin()));
+                    maxSetter.accept(LongFromUnsignedIntMaterializer.convertValue(intStats.getMax()));
+                    return true;
                 }
             }
-            return Optional.empty();
+        } else if (primitiveTypeName == PrimitiveType.PrimitiveTypeName.BOOLEAN) {
+            final BooleanStatistics booleanStats = (BooleanStatistics) statistics;
+            minSetter.accept(LongFromBooleanMaterializer.convertValue(booleanStats.getMin()));
+            maxSetter.accept(LongFromBooleanMaterializer.convertValue(booleanStats.getMax()));
+            return true;
+        } else if (primitiveTypeName == PrimitiveType.PrimitiveTypeName.INT32) {
+            final IntStatistics intStats = (IntStatistics) statistics;
+            minSetter.accept(LongFromIntMaterializer.convertValue(intStats.getMin()));
+            maxSetter.accept(LongFromIntMaterializer.convertValue(intStats.getMax()));
+            return true;
+        } else if (primitiveTypeName == PrimitiveType.PrimitiveTypeName.INT64) {
+            final LongStatistics longStats = (LongStatistics) statistics;
+            minSetter.accept(LongMaterializer.convertValue(longStats.getMin()));
+            maxSetter.accept(LongMaterializer.convertValue(longStats.getMax()));
+            return true;
         }
+        return false;
+    }
 
-        @Override
-        public Optional<MinMax<?>> visit(final LogicalTypeAnnotation.DateLogicalTypeAnnotation dateLogicalType) {
-            if (dhColumnType == LocalDate.class) {
-                return wrapMinMax(
-                        LocalDateMaterializer.convertValue((Integer) statistics.genericGetMin()),
-                        LocalDateMaterializer.convertValue((Integer) statistics.genericGetMax()),
-                        dhColumnType);
+    /**
+     * Attempts to retrieve the minimum and maximum floats from the given {@code statistics}.
+     * <p>
+     * Float values can be read from parquet statistics of primitive type FLOAT.
+     */
+    static boolean getMinMaxForFloats(
+            @NotNull final Statistics<?> statistics,
+            @NotNull final Consumer<Float> minSetter,
+            @NotNull final Consumer<Float> maxSetter) {
+        final PrimitiveType parquetColType = statistics.type();
+        final PrimitiveType.PrimitiveTypeName primitiveTypeName = parquetColType.getPrimitiveTypeName();
+        if (primitiveTypeName == PrimitiveType.PrimitiveTypeName.FLOAT) {
+            final float minFloat = ((FloatStatistics) statistics).getMin();
+            final float maxFloat = ((FloatStatistics) statistics).getMax();
+            if (Float.isNaN(minFloat) || Float.isNaN(maxFloat)) {
+                // NaN is not a valid min/max value and should have been handled automatically by the Builder logic,
+                // so we return empty
+                return false;
             }
-            return Optional.empty();
+            minSetter.accept(FloatMaterializer.convertValue(minFloat));
+            maxSetter.accept(FloatMaterializer.convertValue(maxFloat));
+            return true;
         }
+        return false;
+    }
 
-        @Override
-        public Optional<MinMax<?>> visit(final LogicalTypeAnnotation.TimeLogicalTypeAnnotation timeLogicalType) {
-            if (dhColumnType == LocalTime.class) {
-                switch (timeLogicalType.getUnit()) {
+    /**
+     * Attempts to retrieve the minimum and maximum doubles from the given {@code statistics}.
+     * <p>
+     * Double values can be read from parquet statistics of primitive type FLOAT, DOUBLE.
+     */
+    static boolean getMinMaxForDoubles(
+            @NotNull final Statistics<?> statistics,
+            @NotNull final Consumer<Double> minSetter,
+            @NotNull final Consumer<Double> maxSetter) {
+        final PrimitiveType parquetColType = statistics.type();
+        final PrimitiveType.PrimitiveTypeName primitiveTypeName = parquetColType.getPrimitiveTypeName();
+        if (primitiveTypeName == PrimitiveType.PrimitiveTypeName.FLOAT) {
+            final float minFloat = ((FloatStatistics) statistics).getMin();
+            final float maxFloat = ((FloatStatistics) statistics).getMax();
+            if (Float.isNaN(minFloat) || Float.isNaN(maxFloat)) {
+                // NaN is not a valid min/max value and should have been handled automatically by the Builder logic,
+                // so we return empty
+                return false;
+            }
+            minSetter.accept(DoubleFromFloatMaterializer.convertValue(minFloat));
+            maxSetter.accept(DoubleFromFloatMaterializer.convertValue(maxFloat));
+            return true;
+        } else if (primitiveTypeName == PrimitiveType.PrimitiveTypeName.DOUBLE) {
+            final double minDouble = ((DoubleStatistics) statistics).getMin();
+            final double maxDouble = ((DoubleStatistics) statistics).getMax();
+            if (Double.isNaN(minDouble) || Double.isNaN(maxDouble)) {
+                // NaN is not a valid min/max value and should have been handled automatically by the Builder logic,
+                // so we return empty
+                return false;
+            }
+            minSetter.accept(DoubleMaterializer.convertValue(minDouble));
+            maxSetter.accept(DoubleMaterializer.convertValue(maxDouble));
+            return true;
+        }
+        return false;
+    }
+
+    static boolean getMinMaxForComparable(
+            @NotNull final Statistics<?> statistics,
+            @NotNull final Consumer<Comparable<?>> minSetter,
+            @NotNull final Consumer<Comparable<?>> maxSetter,
+            final Class<?> columnType) {
+        if (columnType == String.class) {
+            return getMinMaxForStrings(statistics, minSetter::accept, maxSetter::accept);
+        } else if (columnType == Instant.class) {
+            return getMinMaxForInstants(statistics, minSetter::accept, maxSetter::accept);
+        } else if (columnType == LocalDateTime.class) {
+            return getMinMaxForLocalDateTimes(statistics, minSetter::accept, maxSetter::accept);
+        } else if (columnType == LocalDate.class) {
+            return getMinMaxForLocalDates(statistics, minSetter::accept, maxSetter::accept);
+        } else if (columnType == LocalTime.class) {
+            return getMinMaxForLocalTimes(statistics, minSetter::accept, maxSetter::accept);
+        }
+        // TODO (DH-19666): Add support for more types like BigDecimal and BigInteger min/max values
+        return false;
+    }
+
+    /**
+     * Attempts to retrieve the minimum and maximum string from the given {@code statistics}.
+     */
+    static boolean getMinMaxForStrings(
+            @NotNull final Statistics<?> statistics,
+            @NotNull final Consumer<String> minSetter,
+            @NotNull final Consumer<String> maxSetter) {
+        final PrimitiveType parquetColType = statistics.type();
+        final LogicalTypeAnnotation logicalType = parquetColType.getLogicalTypeAnnotation();
+        if (logicalType instanceof LogicalTypeAnnotation.StringLogicalTypeAnnotation) {
+            final String minString = statistics.minAsString();
+            final String maxString = statistics.maxAsString();
+            minSetter.accept(minString);
+            maxSetter.accept(maxString);
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Attempts to retrieve the minimum and maximum values for instants from the given {@code statistics}.
+     * <p>
+     * Instant values can be read from parquet statistics of logical type TIMESTAMP (when adjusted to UTC)
+     */
+    static boolean getMinMaxForInstants(
+            @NotNull final Statistics<?> statistics,
+            @NotNull final Consumer<Instant> minSetter,
+            @NotNull final Consumer<Instant> maxSetter) {
+        final PrimitiveType parquetColType = statistics.type();
+        final LogicalTypeAnnotation logicalType = parquetColType.getLogicalTypeAnnotation();
+        if (logicalType instanceof LogicalTypeAnnotation.TimestampLogicalTypeAnnotation) {
+            final LogicalTypeAnnotation.TimestampLogicalTypeAnnotation timestampLogicalType =
+                    (LogicalTypeAnnotation.TimestampLogicalTypeAnnotation) logicalType;
+            if (timestampLogicalType.isAdjustedToUTC()) {
+                final long minLong = ((LongStatistics) statistics).getMin();
+                final long maxLong = ((LongStatistics) statistics).getMax();
+                switch (timestampLogicalType.getUnit()) {
                     case MILLIS:
-                        return wrapMinMax(
-                                LocalTimeFromMillisMaterializer.convertValue((Integer) statistics.genericGetMin()),
-                                LocalTimeFromMillisMaterializer.convertValue((Integer) statistics.genericGetMax()),
-                                dhColumnType);
+                        minSetter.accept(ParquetPushdownUtils.epochNanosToInstant(
+                                InstantNanosFromMillisMaterializer.convertValue(minLong)));
+                        maxSetter.accept(ParquetPushdownUtils.epochNanosToInstant(
+                                InstantNanosFromMillisMaterializer.convertValue(maxLong)));
+                        return true;
                     case MICROS:
-                        return wrapMinMax(
-                                LocalTimeFromMicrosMaterializer.convertValue((Long) statistics.genericGetMin()),
-                                LocalTimeFromMicrosMaterializer.convertValue((Long) statistics.genericGetMax()),
-                                dhColumnType);
+                        minSetter.accept(ParquetPushdownUtils.epochNanosToInstant(
+                                InstantNanosFromMicrosMaterializer.convertValue(minLong)));
+                        maxSetter.accept(ParquetPushdownUtils.epochNanosToInstant(
+                                InstantNanosFromMicrosMaterializer.convertValue(maxLong)));
+                        return true;
                     case NANOS:
-                        return wrapMinMax(
-                                LocalTimeFromNanosMaterializer.convertValue((Long) statistics.genericGetMin()),
-                                LocalTimeFromNanosMaterializer.convertValue((Long) statistics.genericGetMax()),
-                                dhColumnType);
+                        minSetter.accept(ParquetPushdownUtils.epochNanosToInstant(minLong));
+                        maxSetter.accept(ParquetPushdownUtils.epochNanosToInstant(maxLong));
+                        return true;
                 }
             }
-            return Optional.empty();
         }
+        return false;
+    }
 
-        @Override
-        public Optional<MinMax<?>> visit(
-                final LogicalTypeAnnotation.DecimalLogicalTypeAnnotation decimalLogicalType) {
-            // TODO (DH-19666): Add support for BigDecimal and BigInteger min/max values
-            return Optional.empty();
+    /**
+     * Attempts to retrieve the minimum and maximum values for {@link LocalDateTime} from given {@code statistics}.
+     * <p>
+     * LocalDateTime values can be read from parquet statistics of logical type TIMESTAMP (when not adjusted to UTC).
+     */
+    static boolean getMinMaxForLocalDateTimes(
+            @NotNull final Statistics<?> statistics,
+            @NotNull final Consumer<LocalDateTime> minSetter,
+            @NotNull final Consumer<LocalDateTime> maxSetter) {
+        final PrimitiveType parquetColType = statistics.type();
+        final LogicalTypeAnnotation logicalType = parquetColType.getLogicalTypeAnnotation();
+        if (logicalType instanceof LogicalTypeAnnotation.TimestampLogicalTypeAnnotation) {
+            final LogicalTypeAnnotation.TimestampLogicalTypeAnnotation timestampLogicalType =
+                    (LogicalTypeAnnotation.TimestampLogicalTypeAnnotation) logicalType;
+            if (!timestampLogicalType.isAdjustedToUTC()) {
+                final long minLong = ((LongStatistics) statistics).getMin();
+                final long maxLong = ((LongStatistics) statistics).getMax();
+                switch (timestampLogicalType.getUnit()) {
+                    case MILLIS:
+                        minSetter.accept(LocalDateTimeFromMillisMaterializer.convertValue(minLong));
+                        maxSetter.accept(LocalDateTimeFromMillisMaterializer.convertValue(maxLong));
+                        return true;
+                    case MICROS:
+                        minSetter.accept(LocalDateTimeFromMicrosMaterializer.convertValue(minLong));
+                        maxSetter.accept(LocalDateTimeFromMicrosMaterializer.convertValue(maxLong));
+                        return true;
+                    case NANOS:
+                        minSetter.accept(LocalDateTimeFromNanosMaterializer.convertValue(minLong));
+                        maxSetter.accept(LocalDateTimeFromNanosMaterializer.convertValue(maxLong));
+                        return true;
+                }
+            }
         }
+        return false;
+    }
+
+    /**
+     * Attempts to retrieve the minimum and maximum values for {@link LocalDate} from given {@code statistics}.
+     * <p>
+     * LocalDate values can be read from parquet statistics of logical type DATE.
+     */
+    static boolean getMinMaxForLocalDates(
+            @NotNull final Statistics<?> statistics,
+            @NotNull final Consumer<LocalDate> minSetter,
+            @NotNull final Consumer<LocalDate> maxSetter) {
+        final PrimitiveType parquetColType = statistics.type();
+        final LogicalTypeAnnotation logicalType = parquetColType.getLogicalTypeAnnotation();
+        if (logicalType instanceof LogicalTypeAnnotation.DateLogicalTypeAnnotation) {
+            final IntStatistics intStats = (IntStatistics) statistics;
+            minSetter.accept(LocalDateMaterializer.convertValue(intStats.getMin()));
+            maxSetter.accept(LocalDateMaterializer.convertValue(intStats.getMax()));
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Attempts to retrieve the minimum and maximum values for {@link LocalTime} from given {@code statistics}.
+     * <p>
+     * LocalTime values can be read from parquet statistics of logical type TIME.
+     */
+    static boolean getMinMaxForLocalTimes(
+            @NotNull final Statistics<?> statistics,
+            @NotNull final Consumer<LocalTime> minSetter,
+            @NotNull final Consumer<LocalTime> maxSetter) {
+        final PrimitiveType parquetColType = statistics.type();
+        final LogicalTypeAnnotation logicalType = parquetColType.getLogicalTypeAnnotation();
+        if (logicalType instanceof LogicalTypeAnnotation.TimeLogicalTypeAnnotation) {
+            final LogicalTypeAnnotation.TimeLogicalTypeAnnotation timeLogicalType =
+                    (LogicalTypeAnnotation.TimeLogicalTypeAnnotation) logicalType;
+            switch (timeLogicalType.getUnit()) {
+                case MILLIS: {
+                    final IntStatistics intStats = (IntStatistics) statistics;
+                    minSetter.accept(LocalTimeFromMillisMaterializer.convertValue(intStats.getMin()));
+                    maxSetter.accept(LocalTimeFromMillisMaterializer.convertValue(intStats.getMax()));
+                    return true;
+                }
+                case MICROS: {
+                    final LongStatistics longStats = (LongStatistics) statistics;
+                    minSetter.accept(LocalTimeFromMicrosMaterializer.convertValue(longStats.getMin()));
+                    maxSetter.accept(LocalTimeFromMicrosMaterializer.convertValue(longStats.getMax()));
+                    return true;
+                }
+                case NANOS: {
+                    final LongStatistics longStats = (LongStatistics) statistics;
+                    minSetter.accept(LocalTimeFromNanosMaterializer.convertValue(longStats.getMin()));
+                    maxSetter.accept(LocalTimeFromNanosMaterializer.convertValue(longStats.getMax()));
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 }

@@ -5,24 +5,16 @@ package io.deephaven.parquet.table.pushdown;
 
 import io.deephaven.engine.table.impl.select.MatchFilter;
 import io.deephaven.util.annotations.InternalUseOnly;
+import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.parquet.column.statistics.Statistics;
-
-import java.util.Optional;
+import org.jetbrains.annotations.NotNull;
 
 @InternalUseOnly
 public abstract class CaseInsensitiveStringMatchPushdownHandler {
 
-    public static boolean maybeMatches(
-            final MatchFilter matchFilter,
-            final Statistics<?> statistics) {
-        final Optional<MinMax<?>> minMaxFromStatistics = MinMaxFromStatistics.get(statistics, String.class);
-        if (minMaxFromStatistics.isEmpty()) {
-            // Statistics could not be processed, so we cannot determine overlaps.
-            return true;
-        }
-        final MinMax<?> minMax = minMaxFromStatistics.get();
-        final String min = (String) minMax.min();
-        final String max = (String) minMax.max();
+    public static boolean maybeOverlaps(
+            @NotNull final MatchFilter matchFilter,
+            @NotNull final Statistics<?> statistics) {
         final Object[] values = matchFilter.getValues();
         final boolean inverseMatch = matchFilter.getInvertMatch();
         if (values == null || values.length == 0) {
@@ -35,10 +27,16 @@ public abstract class CaseInsensitiveStringMatchPushdownHandler {
                 return true;
             }
         }
-        if (!inverseMatch) {
-            return maybeMatchesImpl(min, max, values);
+        final MutableObject<String> mutableMin = new MutableObject<>();
+        final MutableObject<String> mutableMax = new MutableObject<>();
+        if (!MinMaxFromStatistics.getMinMaxForStrings(statistics, mutableMin::setValue, mutableMax::setValue)) {
+            // Statistics could not be processed, so we cannot determine overlaps. Assume that we overlap.
+            return true;
         }
-        return maybeMatchesInverseImpl(min, max, values);
+        if (!inverseMatch) {
+            return maybeMatchesImpl(mutableMin.getValue(), mutableMax.getValue(), values);
+        }
+        return maybeMatchesInverseImpl(mutableMin.getValue(), mutableMax.getValue(), values);
     }
 
     /**

@@ -438,27 +438,27 @@ public class MinMaxFromStatisticsTest {
      * import pyarrow.parquet as pq
      *
      * def time_array(values, unit):
-     *     return pa.array(values, type=pa.time32(unit) if unit == "ms" else pa.time64(unit))
+     * return pa.array(values, type=pa.time32(unit) if unit == "ms" else pa.time64(unit))
      *
      * table = pa.Table.from_arrays(
-     *     [
-     *         # MILLIS
-     *         time_array([None, 1_000, 50_000], "ms"),
-     *         time_array([None, None, None], "ms"),
+     * [
+     * # MILLIS
+     * time_array([None, 1_000, 50_000], "ms"),
+     * time_array([None, None, None], "ms"),
      *
-     *         # MICROS
-     *         time_array([None, 1_000_000, 5_000_000], "us"),
-     *         time_array([None, None, None], "us"),
+     * # MICROS
+     * time_array([None, 1_000_000, 5_000_000], "us"),
+     * time_array([None, None, None], "us"),
      *
-     *         # NANOS
-     *         time_array([None, 100_000_000, 500_000_000], "ns"),
-     *         time_array([None, None, None], "ns"),
-     *     ],
-     *     names=[
-     *         "time_ms_mix", "time_ms_null",
-     *         "time_us_mix", "time_us_null",
-     *         "time_ns_mix", "time_ns_null",
-     *     ],
+     * # NANOS
+     * time_array([None, 100_000_000, 500_000_000], "ns"),
+     * time_array([None, None, None], "ns"),
+     * ],
+     * names=[
+     * "time_ms_mix", "time_ms_null",
+     * "time_us_mix", "time_us_null",
+     * "time_ns_mix", "time_ns_null",
+     * ],
      * )
      *
      * pq.write_table(table, "ReferenceTimeColumn.parquet")
@@ -497,27 +497,27 @@ public class MinMaxFromStatisticsTest {
      * import pyarrow.parquet as pq
      *
      * def ts_array(values, unit):
-     *     return pa.array(values, type=pa.timestamp(unit))
+     * return pa.array(values, type=pa.timestamp(unit))
      *
      * table = pa.Table.from_arrays(
-     *     [
-     *         # MILLIS
-     *         ts_array([None, 1_000, 50_000], "ms"),
-     *         ts_array([None, None, None], "ms"),
+     * [
+     * # MILLIS
+     * ts_array([None, 1_000, 50_000], "ms"),
+     * ts_array([None, None, None], "ms"),
      *
-     *         # MICROS
-     *         ts_array([None, 1_000_000, 5_000_000], "us"),
-     *         ts_array([None, None, None], "us"),
+     * # MICROS
+     * ts_array([None, 1_000_000, 5_000_000], "us"),
+     * ts_array([None, None, None], "us"),
      *
-     *         # NANOS
-     *         ts_array([None, 100_000_000, 500_000_000], "ns"),
-     *         ts_array([None, None, None], "ns"),
-     *     ],
-     *     names=[
-     *         "ts_ms_mix", "ts_ms_null",
-     *         "ts_us_mix", "ts_us_null",
-     *         "ts_ns_mix", "ts_ns_null",
-     *     ],
+     * # NANOS
+     * ts_array([None, 100_000_000, 500_000_000], "ns"),
+     * ts_array([None, None, None], "ns"),
+     * ],
+     * names=[
+     * "ts_ms_mix", "ts_ms_null",
+     * "ts_us_mix", "ts_us_null",
+     * "ts_ns_mix", "ts_ns_null",
+     * ],
      * )
      *
      * pq.write_table(table, "ReferenceTimestampNonUTCColumn.parquet")
@@ -556,27 +556,27 @@ public class MinMaxFromStatisticsTest {
      * import pyarrow.parquet as pq
      *
      * def ts_array(values, unit):
-     *     return pa.array(values, type=pa.timestamp(unit, tz="UTC"))
+     * return pa.array(values, type=pa.timestamp(unit, tz="UTC"))
      *
      * table = pa.Table.from_arrays(
-     *     [
-     *         # MILLIS
-     *         ts_array([None, 0, 50_000], "ms"),
-     *         ts_array([None, None, None], "ms"),
+     * [
+     * # MILLIS
+     * ts_array([None, 0, 50_000], "ms"),
+     * ts_array([None, None, None], "ms"),
      *
-     *         # MICROS
-     *         ts_array([None, 1_000_000, 5_000_000], "us"),
-     *         ts_array([None, None, None], "us"),
+     * # MICROS
+     * ts_array([None, 1_000_000, 5_000_000], "us"),
+     * ts_array([None, None, None], "us"),
      *
-     *         # NANOS
-     *         ts_array([None, 100_000_000, 500_000_000], "ns"),
-     *         ts_array([None, None, None], "ns"),
-     *     ],
-     *     names=[
-     *         "ts_ms_mix", "ts_ms_null",
-     *         "ts_us_mix", "ts_us_null",
-     *         "ts_ns_mix", "ts_ns_null",
-     *     ],
+     * # NANOS
+     * ts_array([None, 100_000_000, 500_000_000], "ns"),
+     * ts_array([None, None, None], "ns"),
+     * ],
+     * names=[
+     * "ts_ms_mix", "ts_ms_null",
+     * "ts_us_mix", "ts_us_null",
+     * "ts_ns_mix", "ts_ns_null",
+     * ],
      * )
      *
      * pq.write_table(table, "ReferenceTimestampUTCColumn.parquet")

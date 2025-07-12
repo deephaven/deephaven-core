@@ -3,45 +3,27 @@
 //
 package io.deephaven.parquet.table.pushdown;
 
-import io.deephaven.api.filter.Filter;
 import io.deephaven.engine.table.impl.select.FloatRangeFilter;
 import io.deephaven.engine.table.impl.select.MatchFilter;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.InternalUseOnly;
-import io.deephaven.util.compare.FloatComparisons;
 import io.deephaven.util.type.TypeUtils;
+import org.apache.commons.lang3.mutable.Mutable;
+import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.parquet.column.statistics.Statistics;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
-import java.util.Optional;
 
 @InternalUseOnly
 public abstract class FloatPushdownHandler {
 
+    /**
+     * Verifies that the statistics range intersects the range defined by the filter.
+     */
     public static boolean maybeOverlaps(
-            final Filter filter,
-            final Statistics<?> statistics) {
-        final Optional<MinMax<?>> minMaxFromStatistics = MinMaxFromStatistics.get(statistics, Float.class);
-        if (minMaxFromStatistics.isEmpty()) {
-            // Statistics could not be processed, so we cannot determine overlaps.
-            return true;
-        }
-        final MinMax<?> minMax = minMaxFromStatistics.get();
-        final float min = (Float) minMax.min();
-        final float max = (Float) minMax.max();
-        if (filter instanceof FloatRangeFilter) {
-            return maybeOverlaps(min, max, (FloatRangeFilter) filter);
-        } else if (filter instanceof MatchFilter) {
-            return maybeMatches(min, max, (MatchFilter) filter);
-        }
-        return true;
-    }
-
-    private static boolean maybeOverlaps(
-            final float min,
-            final float max,
-            final FloatRangeFilter floatRangeFilter) {
+            @NotNull final FloatRangeFilter floatRangeFilter,
+            @NotNull final Statistics<?> statistics) {
         // Skip pushdown-based filtering for nulls and NaNs
         final float dhLower = floatRangeFilter.getLower();
         final float dhUpper = floatRangeFilter.getUpper();
@@ -49,8 +31,14 @@ public abstract class FloatPushdownHandler {
                 dhLower == QueryConstants.NULL_FLOAT || dhUpper == QueryConstants.NULL_FLOAT) {
             return true;
         }
-        return maybeOverlapsImpl(
-                min, max,
+        final MutableObject<Float> mutableMin = new MutableObject<>();
+        final MutableObject<Float> mutableMax = new MutableObject<>();
+        if (!MinMaxFromStatistics.getMinMaxForFloats(statistics, mutableMin::setValue, mutableMax::setValue)) {
+            // Statistics could not be processed, so we cannot determine overlaps. Assume that we overlap.
+            return true;
+        }
+        return maybeOverlapsRangeImpl(
+                mutableMin.getValue(), mutableMax.getValue(),
                 dhLower, floatRangeFilter.isLowerInclusive(),
                 dhUpper, floatRangeFilter.isUpperInclusive());
     }
@@ -58,21 +46,21 @@ public abstract class FloatPushdownHandler {
     /**
      * Verifies that the {@code [min, max]} range intersects the range defined by the given lower and upper bounds.
      */
-    private static boolean maybeOverlapsImpl(
+    private static boolean maybeOverlapsRangeImpl(
             final float min, final float max,
             final float lower, final boolean lowerInclusive,
             final float upper, final boolean upperInclusive) {
-        final int c0 = FloatComparisons.compare(lower, upper);
+        final int c0 = Float.compare(lower, upper);
         if (c0 > 0 || (c0 == 0 && !(lowerInclusive && upperInclusive))) {
             // lower > upper, no overlap possible.
             return false;
         }
-        final int c1 = FloatComparisons.compare(lower, max);
+        final int c1 = Float.compare(lower, max);
         if (c1 > 0) {
             // lower > max, no overlap possible.
             return false;
         }
-        final int c2 = FloatComparisons.compare(min, upper);
+        final int c2 = Float.compare(min, upper);
         if (c2 > 0) {
             // min > upper, no overlap possible.
             return false;
@@ -83,12 +71,11 @@ public abstract class FloatPushdownHandler {
     }
 
     /**
-     * Verifies that the {@code [min, max]} range intersects any point supplied in the filter.
+     * Verifies that the statistics range intersects any point provided in the match filter.
      */
-    private static boolean maybeMatches(
-            final float min,
-            final float max,
-            final MatchFilter matchFilter) {
+    public static boolean maybeOverlaps(
+            @NotNull final MatchFilter matchFilter,
+            @NotNull final Statistics<?> statistics) {
         final Object[] values = matchFilter.getValues();
         if (values == null || values.length == 0) {
             // No values to check against, so we consider it as a maybe overlap.
@@ -103,21 +90,27 @@ public abstract class FloatPushdownHandler {
             }
             unboxedValues[i] = value;
         }
-        if (!matchFilter.getInvertMatch()) {
-            return maybeMatchesImpl(min, max, unboxedValues);
+        final MutableObject<Float> mutableMin = new MutableObject<>();
+        final MutableObject<Float> mutableMax = new MutableObject<>();
+        if (!MinMaxFromStatistics.getMinMaxForFloats(statistics, mutableMin::setValue, mutableMax::setValue)) {
+            // Statistics could not be processed, so we cannot determine overlaps. Assume that we overlap.
+            return true;
         }
-        return maybeMatchesInverseImpl(min, max, unboxedValues);
+        if (!matchFilter.getInvertMatch()) {
+            return maybeMatches(mutableMin.getValue(), mutableMax.getValue(), unboxedValues);
+        }
+        return maybeMatchesInverse(mutableMin.getValue(), mutableMax.getValue(), unboxedValues);
     }
 
     /**
      * Verifies that the {@code [min, max]} range intersects any point supplied in {@code values}.
      */
-    private static boolean maybeMatchesImpl(
+    private static boolean maybeMatches(
             final float min,
             final float max,
             @NotNull final float[] values) {
         for (final float value : values) {
-            if (maybeOverlapsImpl(min, max, value, true, value, true)) {
+            if (maybeOverlapsRangeImpl(min, max, value, true, value, true)) {
                 return true;
             }
         }
@@ -133,7 +126,7 @@ public abstract class FloatPushdownHandler {
      * [Float.NEGATIVE_INFINITY, v_0), (v_0, v_1), ... , (v_n-2, v_n-1), (v_n-1, Float.POSITIVE_INFINITY]
      * </pre>
      */
-    private static boolean maybeMatchesInverseImpl(
+    private static boolean maybeMatchesInverse(
             final float min,
             final float max,
             @NotNull final float[] values) {
@@ -141,12 +134,12 @@ public abstract class FloatPushdownHandler {
         float lower = Float.NEGATIVE_INFINITY;
         boolean lowerInclusive = true;
         for (final float upper : values) {
-            if (maybeOverlapsImpl(min, max, lower, lowerInclusive, upper, false)) {
+            if (maybeOverlapsRangeImpl(min, max, lower, lowerInclusive, upper, false)) {
                 return true;
             }
             lower = upper;
             lowerInclusive = false;
         }
-        return maybeOverlapsImpl(min, max, lower, lowerInclusive, Float.POSITIVE_INFINITY, true);
+        return maybeOverlapsRangeImpl(min, max, lower, lowerInclusive, Float.POSITIVE_INFINITY, true);
     }
 }

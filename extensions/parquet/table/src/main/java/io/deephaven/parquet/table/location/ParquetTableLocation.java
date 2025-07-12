@@ -15,16 +15,6 @@ import io.deephaven.engine.table.impl.BasePushdownFilterContext;
 import io.deephaven.engine.table.impl.PushdownFilterContext;
 import io.deephaven.engine.table.impl.PushdownResult;
 import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.table.impl.chunkfilter.ByteChunkFilter;
-import io.deephaven.engine.table.impl.chunkfilter.CharChunkFilter;
-import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
-import io.deephaven.engine.table.impl.chunkfilter.DoubleChunkFilter;
-import io.deephaven.engine.table.impl.chunkfilter.FloatChunkFilter;
-import io.deephaven.engine.table.impl.chunkfilter.IntChunkFilter;
-import io.deephaven.engine.table.impl.chunkfilter.LongChunkFilter;
-import io.deephaven.engine.table.impl.chunkfilter.ObjectChunkFilter;
-import io.deephaven.engine.table.impl.chunkfilter.ShortChunkFilter;
-import io.deephaven.engine.table.impl.chunkfilter.StringChunkMatchFilterFactory;
 import io.deephaven.engine.table.impl.dataindex.StandaloneDataIndex;
 import io.deephaven.engine.table.impl.locations.*;
 import io.deephaven.engine.table.impl.locations.impl.AbstractTableLocation;
@@ -49,12 +39,14 @@ import io.deephaven.parquet.table.metadata.TableInfo;
 import io.deephaven.parquet.table.pushdown.*;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.mutable.MutableLong;
+import org.apache.commons.lang3.DoubleRange;
 import org.apache.parquet.column.statistics.Statistics;
 import org.apache.parquet.format.RowGroup;
 import org.apache.parquet.hadoop.metadata.BlockMetaData;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
 import org.apache.parquet.schema.ColumnOrder;
 import org.apache.parquet.schema.MessageType;
+import org.apache.parquet.schema.PrimitiveType;
 import org.apache.parquet.schema.Type;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -64,6 +56,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -753,6 +746,23 @@ public class ParquetTableLocation extends AbstractTableLocation {
         }
     }
 
+    private static boolean areStatisticsUsable(final Statistics<?> statistics) {
+        if (statistics == null || !statistics.hasNonNullValue()) {
+            return false;
+        }
+        if (statistics.genericGetMin() == null || statistics.genericGetMax() == null) {
+            // Not expected to have null min/max values, but if they are null, we cannot determine min/max
+            return false;
+        }
+        final PrimitiveType parquetColType = statistics.type();
+        if (parquetColType.columnOrder() != ColumnOrder.typeDefined()) {
+            // We only handle typeDefined min/max right now; if new orders get defined in the future, they need to be
+            // explicitly handled
+            return false;
+        }
+        return true;
+    }
+
     /**
      * Apply the filter to the row group metadata and return the result.
      */
@@ -761,18 +771,6 @@ public class ParquetTableLocation extends AbstractTableLocation {
             final WhereFilter filter,
             final List<Integer> columnIndices,
             final PushdownResult result) {
-        final Optional<ChunkFilter> optionalChunkFilter;
-        if (filter instanceof AbstractRangeFilter || filter instanceof MatchFilter) {
-            optionalChunkFilter = ((ExposesChunkFilter) filter).chunkFilter();
-        } else {
-            // Unsupported filter type, we can't push it down.
-            return PushdownResult.of(result.match().copy(), result.maybeMatch().copy());
-        }
-        if (optionalChunkFilter.isEmpty()) {
-            throw new IllegalStateException("Chunk filter not initialized for: " + filter);
-        }
-        final ChunkFilter chunkFilter = optionalChunkFilter.get();
-
         final RowSetBuilderSequential maybeBuilder = RowSetFactory.builderSequential();
         final MutableLong maybeCount = new MutableLong(0);
 
@@ -782,32 +780,58 @@ public class ParquetTableLocation extends AbstractTableLocation {
         iterateRowGroupsAndRowSet(result.maybeMatch(), (rgIdx, rs) -> {
             final Statistics<?> statistics = blocks.get(rgIdx).getColumns().get(columnIndex).getStatistics();
             final boolean maybeOverlaps;
-            if (chunkFilter instanceof ByteChunkFilter) {
-                maybeOverlaps = BytePushdownHandler.maybeOverlaps(filter, statistics);
-            } else if (chunkFilter instanceof CharChunkFilter) {
-                maybeOverlaps = CharPushdownHandler.maybeOverlaps(filter, statistics);
-            } else if (chunkFilter instanceof ShortChunkFilter) {
-                maybeOverlaps = ShortPushdownHandler.maybeOverlaps(filter, statistics);
-            } else if (chunkFilter instanceof IntChunkFilter) {
-                maybeOverlaps = IntPushdownHandler.maybeOverlaps(filter, statistics);
-            } else if (chunkFilter instanceof LongChunkFilter) {
-                maybeOverlaps = LongPushdownHandler.maybeOverlaps(filter, statistics);
-            } else if (chunkFilter instanceof FloatChunkFilter) {
-                maybeOverlaps = FloatPushdownHandler.maybeOverlaps(filter, statistics);
-            } else if (chunkFilter instanceof DoubleChunkFilter) {
-                maybeOverlaps = DoublePushdownHandler.maybeOverlaps(filter, statistics);
-            } else if (chunkFilter instanceof StringChunkMatchFilterFactory.CaseInsensitiveStringChunkFilter) {
-                maybeOverlaps =
-                        CaseInsensitiveStringMatchPushdownHandler.maybeMatches((MatchFilter) filter, statistics);
+            if (!areStatisticsUsable(statistics)) {
+                // We assume it overlaps if we cannot use the statistics.
+                maybeOverlaps = true;
+            } else if (filter instanceof ByteRangeFilter) {
+                maybeOverlaps = BytePushdownHandler.maybeOverlaps((ByteRangeFilter) filter, statistics);
+            } else if (filter instanceof CharRangeFilter) {
+                maybeOverlaps = CharPushdownHandler.maybeOverlaps((CharRangeFilter) filter, statistics);
+            } else if (filter instanceof ShortRangeFilter) {
+                maybeOverlaps = ShortPushdownHandler.maybeOverlaps((ShortRangeFilter) filter, statistics);
+            } else if (filter instanceof IntRangeFilter) {
+                maybeOverlaps = IntPushdownHandler.maybeOverlaps((IntRangeFilter) filter, statistics);
             } else if (filter instanceof InstantRangeFilter) {
                 maybeOverlaps = InstantPushdownHandler.maybeOverlaps((InstantRangeFilter) filter, statistics);
+            } else if (filter instanceof LongRangeFilter) {
+                maybeOverlaps = LongPushdownHandler.maybeOverlaps((LongRangeFilter) filter, statistics);
+            } else if (filter instanceof FloatRangeFilter) {
+                maybeOverlaps = FloatPushdownHandler.maybeOverlaps((FloatRangeFilter) filter, statistics);
+            } else if (filter instanceof DoubleRangeFilter) {
+                maybeOverlaps = DoublePushdownHandler.maybeOverlaps((DoubleRangeFilter) filter, statistics);
+            } else if (filter instanceof ComparableRangeFilter) {
+                maybeOverlaps = ObjectPushdownHandler.maybeOverlaps((ComparableRangeFilter) filter, statistics);
             } else if (filter instanceof SingleSidedComparableRangeFilter) {
                 maybeOverlaps = SingleSidedComparableRangePushdownHandler.maybeOverlaps(
                         (SingleSidedComparableRangeFilter) filter, statistics);
-            } else if (chunkFilter instanceof ObjectChunkFilter) {
-                maybeOverlaps = ObjectPushdownHandler.maybeOverlaps(filter, statistics);
+            } else if (filter instanceof MatchFilter) {
+                final MatchFilter matchFilter = (MatchFilter) filter;
+                final Class<?> dhColumnType = matchFilter.getColumnType();
+                if (dhColumnType == null) {
+                    throw new IllegalStateException("Filter not initialized with a column type: " + filter);
+                } else if (dhColumnType == byte.class || dhColumnType == Byte.class) {
+                    maybeOverlaps = BytePushdownHandler.maybeOverlaps(matchFilter, statistics);
+                } else if (dhColumnType == char.class || dhColumnType == Character.class) {
+                    maybeOverlaps = CharPushdownHandler.maybeOverlaps(matchFilter, statistics);
+                } else if (dhColumnType == short.class || dhColumnType == Short.class) {
+                    maybeOverlaps = ShortPushdownHandler.maybeOverlaps(matchFilter, statistics);
+                } else if (dhColumnType == int.class || dhColumnType == Integer.class) {
+                    maybeOverlaps = IntPushdownHandler.maybeOverlaps(matchFilter, statistics);
+                } else if (dhColumnType == long.class || dhColumnType == Long.class) {
+                    maybeOverlaps = LongPushdownHandler.maybeOverlaps(matchFilter, statistics);
+                } else if (dhColumnType == float.class || dhColumnType == Float.class) {
+                    maybeOverlaps = FloatPushdownHandler.maybeOverlaps(matchFilter, statistics);
+                } else if (dhColumnType == double.class || dhColumnType == Double.class) {
+                    maybeOverlaps = DoublePushdownHandler.maybeOverlaps(matchFilter, statistics);
+                } else if (dhColumnType == String.class && matchFilter.isCaseInsensitive()) {
+                    maybeOverlaps = CaseInsensitiveStringMatchPushdownHandler.maybeOverlaps(matchFilter, statistics);
+                } else if (dhColumnType == Instant.class) {
+                    maybeOverlaps = InstantPushdownHandler.maybeOverlaps(matchFilter, statistics);
+                } else {
+                    maybeOverlaps = ObjectPushdownHandler.maybeOverlaps(matchFilter, statistics);
+                }
             } else {
-                // Unsupported filter type for push down, so we can't filter anything.
+                // Unsupported filter type for push down, so assume it overlaps.
                 maybeOverlaps = true;
             }
             if (maybeOverlaps) {

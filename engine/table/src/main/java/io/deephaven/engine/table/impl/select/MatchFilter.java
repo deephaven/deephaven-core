@@ -179,6 +179,10 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
         return columnType;
     }
 
+    public boolean isCaseInsensitive() {
+        return caseInsensitive;
+    }
+
     @Override
     public List<String> getColumns() {
         if (!initialized) {
