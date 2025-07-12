@@ -24,7 +24,9 @@ public abstract class FloatPushdownHandler {
     public static boolean maybeOverlaps(
             @NotNull final FloatRangeFilter floatRangeFilter,
             @NotNull final Statistics<?> statistics) {
-        // Skip pushdown-based filtering for nulls and NaNs
+        // Skip pushdown-based filtering for nulls and NaNs to err on the safer side instead of adding more complex
+        // handling logic.
+        // TODO (DH-19666): Improve handling of nulls
         final float dhLower = floatRangeFilter.getLower();
         final float dhUpper = floatRangeFilter.getUpper();
         if (Float.isNaN(dhLower) || Float.isNaN(dhUpper) ||
@@ -81,7 +83,9 @@ public abstract class FloatPushdownHandler {
             // No values to check against, so we consider it as a maybe overlap.
             return true;
         }
-        // Skip pushdown-based filtering for nulls and NaNs
+        // Skip pushdown-based filtering for nulls and NaNs to err on the safer side instead of adding more complex
+        // handling logic.
+        // TODO (DH-19666): Improve handling of nulls
         final float[] unboxedValues = new float[values.length];
         for (int i = 0; i < values.length; i++) {
             final float value = TypeUtils.getUnboxedFloat(values[i]);

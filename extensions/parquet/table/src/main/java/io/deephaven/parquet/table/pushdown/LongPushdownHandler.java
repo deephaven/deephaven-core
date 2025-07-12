@@ -27,7 +27,8 @@ public abstract class LongPushdownHandler {
     public static boolean maybeOverlaps(
             @NotNull final LongRangeFilter longRangeFilter,
             @NotNull final Statistics<?> statistics) {
-        // Skip pushdown-based filtering for nulls
+        // Skip pushdown-based filtering for nulls to err on the safer side instead of adding more complex handling logic.
+        // TODO (DH-19666): Improve handling of nulls
         final long dhLower = longRangeFilter.getLower();
         final long dhUpper = longRangeFilter.getUpper();
         if (dhLower == QueryConstants.NULL_LONG || dhUpper == QueryConstants.NULL_LONG) {
@@ -83,7 +84,8 @@ public abstract class LongPushdownHandler {
             // No values to check against, so we consider it as a maybe overlap.
             return true;
         }
-        // Skip pushdown-based filtering for nulls
+        // Skip pushdown-based filtering for nulls to err on the safer side instead of adding more complex handling logic.
+        // TODO (DH-19666): Improve handling of nulls
         final long[] unboxedValues = new long[values.length];
         for (int i = 0; i < values.length; i++) {
             final long value = TypeUtils.getUnboxedLong(values[i]);

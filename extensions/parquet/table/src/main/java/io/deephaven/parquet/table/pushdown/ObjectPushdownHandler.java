@@ -17,7 +17,9 @@ public abstract class ObjectPushdownHandler {
     public static boolean maybeOverlaps(
             @NotNull final ComparableRangeFilter comparableRangeFilter,
             @NotNull final Statistics<?> statistics) {
-        // Skip pushdown-based filtering for nulls.
+        // Skip pushdown-based filtering for nulls to err on the safer side instead of adding more complex handling
+        // logic.
+        // TODO (DH-19666): Improve handling of nulls
         final Comparable<?> dhLower = comparableRangeFilter.getLower();
         final Comparable<?> dhUpper = comparableRangeFilter.getUpper();
         if (dhLower == null || dhUpper == null) {
@@ -25,6 +27,9 @@ public abstract class ObjectPushdownHandler {
         }
         // Get the column type from the filter
         final Class<?> dhColumnType = comparableRangeFilter.getColumnType();
+        if (dhColumnType == null) {
+            throw new IllegalStateException("Filter not initialized with a column type: " + comparableRangeFilter);
+        }
         final MutableObject<Comparable<?>> mutableMin = new MutableObject<>();
         final MutableObject<Comparable<?>> mutableMax = new MutableObject<>();
         if (!MinMaxFromStatistics.getMinMaxForComparable(statistics, mutableMin::setValue, mutableMax::setValue,
@@ -80,13 +85,18 @@ public abstract class ObjectPushdownHandler {
         for (int i = 0; i < values.length; i++) {
             final Object value = values[i];
             if (!(value instanceof Comparable)) {
-                // Skip pushdown-based filtering for nulls or non-comparable values.
+                // Skip pushdown-based filtering for nulls or non-comparable values to err on the safer side instead of
+                // adding more complex handling logic.
+                // TODO (DH-19666): Improve handling of nulls
                 return true;
             }
             comparableValues[i] = (Comparable<?>) value;
         }
         // Get the column type from the filter
         final Class<?> dhColumnType = matchFilter.getColumnType();
+        if (dhColumnType == null) {
+            throw new IllegalStateException("Filter not initialized with a column type: " + matchFilter);
+        }
         final MutableObject<Comparable<?>> mutableMin = new MutableObject<>();
         final MutableObject<Comparable<?>> mutableMax = new MutableObject<>();
         if (!MinMaxFromStatistics.getMinMaxForComparable(statistics, mutableMin::setValue, mutableMax::setValue,

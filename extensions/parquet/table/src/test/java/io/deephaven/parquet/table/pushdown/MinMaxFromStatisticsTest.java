@@ -4,26 +4,15 @@
 package io.deephaven.parquet.table.pushdown;
 
 import io.deephaven.base.FileUtils;
-import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
-import io.deephaven.parquet.base.NullStatistics;
-import io.deephaven.parquet.table.ParquetInstructions;
-import io.deephaven.parquet.table.location.ParquetTableLocationKey;
 import io.deephaven.test.types.OutOfBandTest;
-import io.deephaven.time.DateTimeUtils;
+import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.parquet.bytes.BytesUtils;
-import org.apache.parquet.column.statistics.BinaryStatistics;
-import org.apache.parquet.column.statistics.BooleanStatistics;
-import org.apache.parquet.column.statistics.DoubleStatistics;
-import org.apache.parquet.column.statistics.FloatStatistics;
-import org.apache.parquet.column.statistics.IntStatistics;
-import org.apache.parquet.column.statistics.LongStatistics;
 import org.apache.parquet.column.statistics.Statistics;
-import org.apache.parquet.hadoop.metadata.ColumnChunkMetaData;
-import org.apache.parquet.hadoop.metadata.ParquetMetadata;
-import org.apache.parquet.schema.MessageType;
+import org.apache.parquet.schema.LogicalTypeAnnotation;
 import org.apache.parquet.schema.PrimitiveType;
 import org.apache.parquet.schema.Type;
+import org.apache.parquet.schema.Types;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -32,34 +21,20 @@ import org.junit.experimental.categories.Category;
 
 import java.io.File;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneOffset;
-import java.util.Optional;
 
-import static io.deephaven.engine.util.TableTools.booleanCol;
-import static io.deephaven.engine.util.TableTools.byteCol;
-import static io.deephaven.engine.util.TableTools.charCol;
-import static io.deephaven.engine.util.TableTools.doubleCol;
-import static io.deephaven.engine.util.TableTools.floatCol;
-import static io.deephaven.engine.util.TableTools.instantCol;
-import static io.deephaven.engine.util.TableTools.intCol;
-import static io.deephaven.engine.util.TableTools.longCol;
-import static io.deephaven.engine.util.TableTools.newTable;
-import static io.deephaven.engine.util.TableTools.shortCol;
-import static io.deephaven.engine.util.TableTools.stringCol;
-import static io.deephaven.parquet.table.ParquetTools.writeTable;
-import static io.deephaven.util.QueryConstants.NULL_BYTE;
-import static io.deephaven.util.QueryConstants.NULL_CHAR;
-import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
-import static io.deephaven.util.QueryConstants.NULL_FLOAT;
-import static io.deephaven.util.QueryConstants.NULL_INT;
-import static io.deephaven.util.QueryConstants.NULL_LONG;
-import static io.deephaven.util.QueryConstants.NULL_SHORT;
+import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.BOOLEAN;
+import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.DOUBLE;
 import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.FLOAT;
+import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.INT32;
+import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.INT64;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertFalse;
 
@@ -88,586 +63,830 @@ public class MinMaxFromStatisticsTest {
         FileUtils.deleteRecursively(rootFile);
     }
 
-    @Test
-    public void nullStatisticsTest() {
-        {
-            final Statistics<?> statistics = null;
-            final Optional<MinMax<?>> minMax = MinMaxFromStatistics.get(statistics, Boolean.class);
-            assertEquals(Optional.empty(), minMax);
-        }
-        {
-            final Statistics<?> statistics = NullStatistics.INSTANCE;
-            final Optional<MinMax<?>> minMax = MinMaxFromStatistics.get(statistics, Boolean.class);
-            assertEquals(Optional.empty(), minMax);
-        }
+    /*---- Helpers ----*/
+    private static Statistics<?> buildStats(
+            final PrimitiveType colType,
+            final byte[] min,
+            final byte[] max,
+            final long nullCount) {
+        return Statistics.getBuilderForReading(colType)
+                .withMin(min)
+                .withMax(max)
+                .withNumNulls(nullCount)
+                .build();
     }
 
-    @Test
-    public void booleanColumnTest() {
-        final File dest = new File(rootFile, "booleanColumn.parquet");
-        final String columnName = "Booleans";
-        {
-            writeTable(newTable(booleanCol(columnName, null, false, true, false, null, true)), dest.toString());
-            // Read as Boolean
-            assertMinMax(dest, columnName, BooleanStatistics.class, 2, false, true, Boolean.class);
-            // Read as Short
-            assertMinMax(dest, columnName, BooleanStatistics.class, 2, (short) 0, (short) 1, Short.class);
-            // Read as Integer
-            assertMinMax(dest, columnName, BooleanStatistics.class, 2, 0, 1, Integer.class);
-            // Read as Long
-            assertMinMax(dest, columnName, BooleanStatistics.class, 2, 0L, 1L, Long.class);
-            // Read as float
-            assertEmptyMinMax(dest, columnName, BooleanStatistics.class, 2, Float.class);
-        }
-        {
-            // all nulls
-            writeTable(newTable(booleanCol(columnName, null, null, null)), dest.toString());
-            assertEmptyMinMax(dest, columnName, BooleanStatistics.class, 3, Boolean.class);
-        }
+    private static Statistics<?> buildIntStats(
+            final PrimitiveType colType, final byte[] min, final byte[] max, final long nulls) {
+        return buildStats(colType, min, max, nulls);
     }
 
-    @Test
-    public void charColumnTest() {
-        final File dest = new File(rootFile, "charColumn.parquet");
-        final String columnName = "Characters";
-        {
-            writeTable(newTable(charCol(columnName, NULL_CHAR, 'A', 'z', 'M', NULL_CHAR)), dest.toString());
-            // Read as Character
-            assertMinMax(dest, columnName, IntStatistics.class, 2, 'A', 'z', Character.class);
-            // Read as Integer
-            assertMinMax(dest, columnName, IntStatistics.class, 2, 65, 122, Integer.class);
-            // Read as Long
-            assertMinMax(dest, columnName, IntStatistics.class, 2, 65L, 122L, Long.class);
-            // Read as Short (unsupported)
-            assertEmptyMinMax(dest, columnName, IntStatistics.class, 2, Short.class);
-            // Read as Float (unsupported)
-            assertEmptyMinMax(dest, columnName, IntStatistics.class, 2, Float.class);
-        }
-        {
-            // all nulls
-            writeTable(newTable(charCol(columnName, NULL_CHAR, NULL_CHAR, NULL_CHAR)), dest.toString());
-            assertEmptyMinMax(dest, columnName, IntStatistics.class, 3, Character.class);
-        }
+    private static Statistics<?> buildPrimitiveInt32Stats(
+            final int min, final int max, final long nulls) {
+        final PrimitiveType colType = Types.required(INT32).named("int32Primitive");
+        return buildStats(colType,
+                BytesUtils.intToBytes(min),
+                BytesUtils.intToBytes(max),
+                nulls);
     }
 
-    @Test
-    public void byteColumnTest() {
-        final File dest = new File(rootFile, "byteColumn.parquet");
-        final String columnName = "Bytes";
-        {
-            writeTable(newTable(byteCol(columnName, NULL_BYTE, (byte) -10, (byte) 100, (byte) 0)), dest.toString());
-            // Read as Byte
-            assertMinMax(dest, columnName, IntStatistics.class, 1, (byte) -10, (byte) 100, Byte.class);
-            // Read as byte
-            assertMinMax(dest, columnName, IntStatistics.class, 1, (byte) -10, (byte) 100, byte.class);
-            // Read as Short
-            assertMinMax(dest, columnName, IntStatistics.class, 1, (short) -10, (short) 100, Short.class);
-            // Read as Integer
-            assertMinMax(dest, columnName, IntStatistics.class, 1, -10, 100, Integer.class);
-            // Read as Long
-            assertMinMax(dest, columnName, IntStatistics.class, 1, -10L, 100L, Long.class);
-            // Read as Boolean (unsupported)
-            assertEmptyMinMax(dest, columnName, IntStatistics.class, 1, Boolean.class);
-        }
-        {
-            // all nulls
-            writeTable(newTable(byteCol(columnName, NULL_BYTE, NULL_BYTE, NULL_BYTE)), dest.toString());
-            assertEmptyMinMax(dest, columnName, IntStatistics.class, 3, Byte.class);
-        }
+    private static Statistics<?> buildBooleanStats(
+            final boolean minVal, final boolean maxVal, final long nulls) {
+        final PrimitiveType colType = Types.required(BOOLEAN).named("boolCol");
+        return buildStats(colType,
+                new byte[] {(byte) (minVal ? 1 : 0)},
+                new byte[] {(byte) (maxVal ? 1 : 0)},
+                nulls);
     }
 
-    @Test
-    public void shortColumnTest() {
-        final File dest = new File(rootFile, "shortColumn.parquet");
-        final String columnName = "Shorts";
-        {
-            writeTable(newTable(shortCol(columnName, NULL_SHORT, (short) -1024, (short) 2048)), dest.toString());
-            // Read as Short
-            assertMinMax(dest, columnName, IntStatistics.class, 1, (short) -1024, (short) 2048, Short.class);
-            // Read as short
-            assertMinMax(dest, columnName, IntStatistics.class, 1, (short) -1024, (short) 2048, short.class);
-            // Read as Integer
-            assertMinMax(dest, columnName, IntStatistics.class, 1, -1024, 2048, Integer.class);
-            // Read as int
-            assertMinMax(dest, columnName, IntStatistics.class, 1, -1024, 2048, int.class);
-            // Read as Long
-            assertMinMax(dest, columnName, IntStatistics.class, 1, -1024L, 2048L, Long.class);
-            // Read as long
-            assertMinMax(dest, columnName, IntStatistics.class, 1, -1024L, 2048L, long.class);
-            // Read as Byte (unsupported)
-            assertEmptyMinMax(dest, columnName, IntStatistics.class, 1, Byte.class);
-        }
-        {
-            // all nulls
-            writeTable(newTable(shortCol(columnName, NULL_SHORT, NULL_SHORT)), dest.toString());
-            assertEmptyMinMax(dest, columnName, IntStatistics.class, 2, Short.class);
-        }
+    private static Statistics<?> buildFloatStats(
+            final float min, final float max, final long nulls) {
+        final PrimitiveType colType = Types.required(FLOAT).named("floatPrimitive");
+        return buildStats(colType,
+                BytesUtils.intToBytes(Float.floatToIntBits(min)),
+                BytesUtils.intToBytes(Float.floatToIntBits(max)),
+                nulls);
     }
 
-    @Test
-    public void intColumnTest() {
-        final File dest = new File(rootFile, "intColumn.parquet");
-        final String columnName = "Integers";
-        {
-            writeTable(
-                    newTable(intCol(columnName, NULL_INT, 42, -1, 100, 200, NULL_INT, 300, 400, NULL_INT, 500)),
-                    dest.toString());
-            // Read as Integer
-            assertMinMax(dest, columnName, IntStatistics.class, 3, -1, 500, Integer.class);
-            // Read as int
-            assertMinMax(dest, columnName, IntStatistics.class, 3, -1, 500, int.class);
-            // Read as Long
-            assertMinMax(dest, columnName, IntStatistics.class, 3, -1L, 500L, Long.class);
-            // Read as long
-            assertMinMax(dest, columnName, IntStatistics.class, 3, -1L, 500L, long.class);
-            // Read as Short (unsupported)
-            assertEmptyMinMax(dest, columnName, IntStatistics.class, 3, Short.class);
-        }
-        {
-            // all nulls
-            writeTable(newTable(intCol(columnName, NULL_INT, NULL_INT, NULL_INT)), dest.toString());
-            assertEmptyMinMax(dest, columnName, IntStatistics.class, 3, Integer.class);
-        }
+    private static Statistics<?> buildDoubleStats(
+            final double min, final double max, final long nulls) {
+        final PrimitiveType colType = Types.required(DOUBLE).named("doublePrimitive");
+        return buildStats(colType,
+                BytesUtils.longToBytes(Double.doubleToLongBits(min)),
+                BytesUtils.longToBytes(Double.doubleToLongBits(max)),
+                nulls);
     }
 
+    private static Statistics<?> buildTimestampStats(
+            final LogicalTypeAnnotation.TimeUnit unit,
+            final boolean utc,
+            final long min, final long max) {
+        final PrimitiveType colType = Types.required(INT64)
+                .as(LogicalTypeAnnotation.timestampType(utc, unit))
+                .named("tsCol");
+        return buildStats(colType,
+                BytesUtils.longToBytes(min),
+                BytesUtils.longToBytes(max),
+                0L);
+    }
+
+    private static Statistics<?> buildTimeStats(
+            final LogicalTypeAnnotation.TimeUnit unit,
+            final long min, final long max) {
+        final PrimitiveType colType = (unit == LogicalTypeAnnotation.TimeUnit.MILLIS
+                ? Types.required(INT32)
+                : Types.required(INT64))
+                .as(LogicalTypeAnnotation.timeType(false, unit))
+                .named("timeCol");
+        return buildStats(colType,
+                unit == LogicalTypeAnnotation.TimeUnit.MILLIS
+                        ? BytesUtils.intToBytes((int) min)
+                        : BytesUtils.longToBytes(min),
+                unit == LogicalTypeAnnotation.TimeUnit.MILLIS
+                        ? BytesUtils.intToBytes((int) max)
+                        : BytesUtils.longToBytes(max),
+                0L);
+    }
+
+    private static <T> void assertMatches(
+            final boolean ok,
+            final MutableObject<T> min,
+            final T expectedMin,
+            final MutableObject<T> max,
+            final T expectedMax) {
+        assertTrue(ok);
+        assertEquals(min.getValue(), expectedMin);
+        assertEquals(max.getValue(), expectedMax);
+    }
+
+    private static <T> void assertRejected(
+            final boolean ok,
+            final MutableObject<T> min,
+            final MutableObject<T> max) {
+        assertFalse(ok);
+        assertNull(min.getValue());
+        assertNull(max.getValue());
+    }
+
+    /*---- Tests ----*/
+
+    // Bytes
 
     @Test
-    public void longColumnTest() {
-        final File dest = new File(rootFile, "longColumn.parquet");
-        final String columnName = "Longs";
-        {
-            writeTable(newTable(longCol(columnName, NULL_LONG,
-                    -10_000_000_000L, 100L, 10_000_000_000L)), dest.toString());
-            // Read as Long
-            assertMinMax(dest, columnName, LongStatistics.class, 1,
-                    -10_000_000_000L, 10_000_000_000L, Long.class);
-            // Read as long
-            assertMinMax(dest, columnName, LongStatistics.class, 1,
-                    -10_000_000_000L, 10_000_000_000L, long.class);
-            // Read as Integer (unsupported)
-            assertEmptyMinMax(dest, columnName, LongStatistics.class, 1, Integer.class);
-        }
-        {
-            // all nulls
-            writeTable(newTable(longCol(columnName, NULL_LONG, NULL_LONG)), dest.toString());
-            assertEmptyMinMax(dest, columnName, LongStatistics.class, 2, Long.class);
-        }
+    public void signedByteStatisticsAreMaterialised() {
+        final PrimitiveType colType = Types.required(INT32)
+                .as(LogicalTypeAnnotation.intType(8, /* signed */ true))
+                .named("byteColumn");
+        final Statistics<?> stats = buildIntStats(colType, BytesUtils.intToBytes(-10), BytesUtils.intToBytes(10), 0L);
+        final MutableObject<Byte> min = new MutableObject<>();
+        final MutableObject<Byte> max = new MutableObject<>();
+        assertMatches(
+                MinMaxFromStatistics.getMinMaxForBytes(stats, min::setValue, max::setValue),
+                min, (byte) -10,
+                max, (byte) 10);
     }
 
     @Test
-    public void floatColumnTest() {
-        final File dest = new File(rootFile, "floatColumn.parquet");
-        final String columnName = "Floats";
-        {
-            writeTable(newTable(floatCol(columnName, NULL_FLOAT, -1.5f, 3f, 2.7f)), dest.toString());
-            // Read as Float
-            assertMinMax(dest, columnName, FloatStatistics.class, 1,
-                    -1.5f, 3f, Float.class);
-            // Read as float
-            assertMinMax(dest, columnName, FloatStatistics.class, 1,
-                    -1.5f, 3f, float.class);
-            // Read as Double
-            assertMinMax(dest, columnName, FloatStatistics.class, 1,
-                    -1.5d, 3d, Double.class);
-            // Read as double
-            assertMinMax(dest, columnName, FloatStatistics.class, 1,
-                    -1.5d, 3d, double.class);
-            // Read as Long (unsupported)
-            assertEmptyMinMax(dest, columnName, FloatStatistics.class, 1, Long.class);
-        }
-        {
-            // all nulls
-            writeTable(newTable(floatCol(columnName, NULL_FLOAT, NULL_FLOAT, NULL_FLOAT)), dest.toString());
-            assertEmptyMinMax(dest, columnName, FloatStatistics.class, 3, Float.class);
-        }
+    public void unsignedByteStatisticsAreRejected() {
+        final PrimitiveType colType = Types.required(INT32)
+                .as(LogicalTypeAnnotation.intType(8, /* signed */ false))
+                .named("byteColumn");
+        final Statistics<?> stats = buildIntStats(colType, BytesUtils.intToBytes(5), BytesUtils.intToBytes(10), 0L);
+        final MutableObject<Byte> min = new MutableObject<>();
+        final MutableObject<Byte> max = new MutableObject<>();
+        assertRejected(MinMaxFromStatistics.getMinMaxForBytes(stats, min::setValue, max::setValue), min, max);
+    }
+
+    // Characters
+
+    @Test
+    public void unsignedByteCharStatisticsAreMaterialised() {
+        final PrimitiveType colType = Types.required(INT32)
+                .as(LogicalTypeAnnotation.intType(8, /* signed */ false))
+                .named("charUINT8");
+        final Statistics<?> stats =
+                buildIntStats(colType, BytesUtils.intToBytes(65), BytesUtils.intToBytes(122), 0L);
+
+        final MutableObject<Character> min = new MutableObject<>();
+        final MutableObject<Character> max = new MutableObject<>();
+        assertMatches(
+                MinMaxFromStatistics.getMinMaxForChars(stats, min::setValue, max::setValue),
+                min, (char) 65,
+                max, (char) 122);
     }
 
     @Test
-    public void doubleColumnTest() {
-        final File dest = new File(rootFile, "doubleColumn.parquet");
-        final String columnName = "Doubles";
-        {
-            writeTable(newTable(doubleCol(columnName, NULL_DOUBLE, -1.5, 2.718, 3.14)), dest.toString());
-            // Read as Double
-            assertMinMax(dest, columnName, DoubleStatistics.class, 1,
-                    -1.5, 3.14, Double.class);
-            // Read as double
-            assertMinMax(dest, columnName, DoubleStatistics.class, 1,
-                    -1.5, 3.14, double.class);
-            // Read as Float (unsupported)
-            assertEmptyMinMax(dest, columnName, DoubleStatistics.class, 1, Float.class);
-        }
-        {
-            // all nulls
-            writeTable(newTable(doubleCol(columnName, NULL_DOUBLE, NULL_DOUBLE)), dest.toString());
-            assertEmptyMinMax(dest, columnName, DoubleStatistics.class, 2, Double.class);
-        }
-    }
+    public void unsignedShortCharStatisticsAreMaterialised() {
+        final PrimitiveType colType = Types.required(INT32)
+                .as(LogicalTypeAnnotation.intType(16, /* signed */ false))
+                .named("charUINT16");
+        final Statistics<?> stats =
+                buildIntStats(colType, BytesUtils.intToBytes(65), BytesUtils.intToBytes(1024), 0L);
 
-
-    @Test
-    public void stringColumnTest() {
-        final File dest = new File(rootFile, "stringColumn.parquet");
-        final String columnName = "Strings";
-        {
-            writeTable(newTable(stringCol(columnName, null, "aaa", "zzz", "mmm", null)), dest.toString());
-            // Read as String
-            assertMinMax(dest, columnName, BinaryStatistics.class, 2,
-                    "aaa", "zzz", String.class);
-            // Read as Object (unsupported)
-            assertEmptyMinMax(dest, columnName, BinaryStatistics.class, 2, Object.class);
-        }
-        {
-            // all nulls
-            writeTable(newTable(stringCol(columnName, null, null, null)), dest.toString());
-            assertEmptyMinMax(dest, columnName, BinaryStatistics.class, 3, String.class);
-        }
+        final MutableObject<Character> min = new MutableObject<>();
+        final MutableObject<Character> max = new MutableObject<>();
+        assertMatches(
+                MinMaxFromStatistics.getMinMaxForChars(stats, min::setValue, max::setValue),
+                min, (char) 65,
+                max, (char) 1024);
     }
 
     @Test
-    public void instantColumnTest() {
-        final File dest = new File(rootFile, "instantColumn.parquet");
-        final String columnName = "Instants";
-        {
-            final Instant i1 = Instant.ofEpochMilli(1_234L);
-            final Instant i2 = Instant.ofEpochMilli(10_000L);
-            final Instant i3 = Instant.ofEpochMilli(5_532L);
-            writeTable(newTable(instantCol(columnName, null, i1, i2, i3)), dest.toString());
-            // Read as Instant
-            assertMinMax(dest, columnName, LongStatistics.class, 1, i1, i2, Instant.class);
-            // Read as LocalDateTime (unsupported)
-            assertEmptyMinMax(dest, columnName, LongStatistics.class, 1, LocalDateTime.class);
-        }
-        {
-            // all nulls
-            writeTable(newTable(instantCol(columnName, null, null, null)), dest.toString());
-            assertEmptyMinMax(dest, columnName, LongStatistics.class, 3, Instant.class);
-        }
+    public void signedByteCharStatisticsAreRejected() {
+        final PrimitiveType colType = Types.required(INT32)
+                .as(LogicalTypeAnnotation.intType(8, /* signed */ true))
+                .named("charINT8");
+        final Statistics<?> stats =
+                buildIntStats(colType, BytesUtils.intToBytes(5), BytesUtils.intToBytes(10), 0L);
+
+        final MutableObject<Character> min = new MutableObject<>();
+        final MutableObject<Character> max = new MutableObject<>();
+        assertRejected(
+                MinMaxFromStatistics.getMinMaxForChars(stats, min::setValue, max::setValue),
+                min, max);
     }
 
+    // Shorts
 
     @Test
-    public void localDateColumnTest() {
-        final File dest = new File(rootFile, "localDateColumn.parquet");
-        final String columnName = "LocalDates";
-        {
-            final LocalDate d1 = LocalDate.of(2020, 1, 1);
-            final LocalDate d2 = LocalDate.of(2020, 12, 31);
-            writeTable(newTable(new ColumnHolder<>(columnName, LocalDate.class, null, false,
-                    d1, null, d2)), dest.toString());
-            // Read as LocalDate
-            assertMinMax(dest, columnName, IntStatistics.class, 1, d1, d2, LocalDate.class);
-            // Read as Instant (unsupported)
-            assertEmptyMinMax(dest, columnName, IntStatistics.class, 1, Instant.class);
-        }
-        {
-            // all nulls
-            writeTable(newTable(new ColumnHolder<>(columnName, LocalDate.class, null, false,
-                    null, null)), dest.toString());
-            assertEmptyMinMax(dest, columnName, IntStatistics.class, 2, LocalDate.class);
-        }
-    }
-
-
-    @Test
-    public void localTimeColumnTest() {
-        final File dest = new File(rootFile, "localTimeColumn.parquet");
-        final String columnName = "LocalTimes";
-        {
-            final LocalTime t1 = LocalTime.of(1, 2, 3, 4);
-            final LocalTime t2 = LocalTime.of(23, 59, 59);
-            writeTable(newTable(new ColumnHolder<>(columnName, LocalTime.class, null, false,
-                    t1, null, t2)), dest.toString());
-            // Read as LocalTime
-            assertMinMax(dest, columnName, LongStatistics.class, 1, t1, t2, LocalTime.class);
-            // Read as Integer (unsupported)
-            assertEmptyMinMax(dest, columnName, LongStatistics.class, 1, Integer.class);
-        }
-        {
-            // all nulls
-            writeTable(newTable(new ColumnHolder<>(columnName, LocalTime.class, null, false,
-                    null, null)), dest.toString());
-            assertEmptyMinMax(dest, columnName, LongStatistics.class, 2, LocalTime.class);
-        }
+    public void signedByteShortStatisticsAreMaterialised() {
+        final PrimitiveType colType = Types.required(INT32)
+                .as(LogicalTypeAnnotation.intType(8, /* signed */ true))
+                .named("shortINT8");
+        final Statistics<?> stats =
+                buildIntStats(colType, BytesUtils.intToBytes(-10), BytesUtils.intToBytes(100), 0L);
+        final MutableObject<Short> min = new MutableObject<>();
+        final MutableObject<Short> max = new MutableObject<>();
+        assertMatches(
+                MinMaxFromStatistics.getMinMaxForShorts(stats, min::setValue, max::setValue),
+                min, (short) -10,
+                max, (short) 100);
     }
 
     @Test
-    public void localDateTimeColumnTest() {
-        final File dest = new File(rootFile, "localDateTimeColumn.parquet");
-        final String columnName = "LocalDateTimes";
-        {
-            final LocalDateTime dt1 = LocalDateTime.of(2020, 1, 1, 1, 2);
-            final LocalDateTime dt2 = LocalDateTime.of(2020, 12, 31, 23, 59, 59);
-            writeTable(newTable(new ColumnHolder<>(columnName, LocalDateTime.class, null, false,
-                    dt1, null, dt2)), dest.toString());
-            // Read as LocalDateTime
-            assertMinMax(dest, columnName, LongStatistics.class, 1, dt1, dt2, LocalDateTime.class);
-            // Read as Instant (unsupported)
-            assertEmptyMinMax(dest, columnName, LongStatistics.class, 1, Instant.class);
-        }
-        {
-            // all nulls
-            writeTable(newTable(new ColumnHolder<>(columnName, LocalDateTime.class, null, false,
-                    null, null)), dest.toString());
-            assertEmptyMinMax(dest, columnName, LongStatistics.class, 2, LocalDateTime.class);
-        }
+    public void signedShortStatisticsAreMaterialised() {
+        final PrimitiveType colType = Types.required(INT32)
+                .as(LogicalTypeAnnotation.intType(16, /* signed */ true))
+                .named("shortINT16");
+        final Statistics<?> stats =
+                buildIntStats(colType, BytesUtils.intToBytes(-1024), BytesUtils.intToBytes(2048), 0L);
+        final MutableObject<Short> min = new MutableObject<>();
+        final MutableObject<Short> max = new MutableObject<>();
+        assertMatches(
+                MinMaxFromStatistics.getMinMaxForShorts(stats, min::setValue, max::setValue),
+                min, (short) -1024,
+                max, (short) 2048);
     }
 
     @Test
-    public void decimalColumnTest() {
-        final File dest = new File(rootFile, "decimalColumn.parquet");
-        final String columnName = "Decimals";
-        {
-            final BigDecimal bd1 = BigDecimal.valueOf(123_423_367_532L);
-            final BigDecimal bd2 = BigDecimal.valueOf(422_123_132_234L);
-            writeTable(newTable(new ColumnHolder<>(columnName, BigDecimal.class, null, false,
-                    bd1, null, bd2)), dest.toString());
-            // Decimal statistics are not supported yet
-            assertEmptyMinMax(dest, columnName, BinaryStatistics.class, 1, BigDecimal.class);
-        }
-        {
-            writeTable(newTable(new ColumnHolder<>(columnName, BigDecimal.class, null, false,
-                    null, null)), dest.toString());
-            assertEmptyMinMax(dest, columnName, BinaryStatistics.class, 2, BigDecimal.class);
-        }
+    public void unsignedByteShortStatisticsAreMaterialised() {
+        final PrimitiveType colType = Types.required(INT32)
+                .as(LogicalTypeAnnotation.intType(8, /* signed */ false))
+                .named("shortUINT8");
+        final Statistics<?> stats =
+                buildIntStats(colType, BytesUtils.intToBytes(0), BytesUtils.intToBytes(255), 0L);
+        final MutableObject<Short> min = new MutableObject<>();
+        final MutableObject<Short> max = new MutableObject<>();
+        assertMatches(
+                MinMaxFromStatistics.getMinMaxForShorts(stats, min::setValue, max::setValue),
+                min, (short) 0,
+                max, (short) 255);
     }
 
-    /**
-     * <pre>
-     * import pyarrow as pa
-     * import pyarrow.parquet as pq
-     *
-     * def time_array(values, unit):
-     * return pa.array(values, type=pa.time32(unit) if unit == "ms" else pa.time64(unit))
-     *
-     * table = pa.Table.from_arrays(
-     * [
-     * # MILLIS
-     * time_array([None, 1_000, 50_000], "ms"),
-     * time_array([None, None, None], "ms"),
-     *
-     * # MICROS
-     * time_array([None, 1_000_000, 5_000_000], "us"),
-     * time_array([None, None, None], "us"),
-     *
-     * # NANOS
-     * time_array([None, 100_000_000, 500_000_000], "ns"),
-     * time_array([None, None, None], "ns"),
-     * ],
-     * names=[
-     * "time_ms_mix", "time_ms_null",
-     * "time_us_mix", "time_us_null",
-     * "time_ns_mix", "time_ns_null",
-     * ],
-     * )
-     *
-     * pq.write_table(table, "ReferenceTimeColumn.parquet")
-     * </pre>
-     */
     @Test
-    public void timeColumnTest() {
-        final File dest = new File(
-                MinMaxFromStatisticsTest.class.getResource("/ReferenceTimeColumn.parquet").getFile());
-
-        // TIME millis
-        assertMinMax(dest, "time_ms_mix", IntStatistics.class, 1,
-                LocalTime.ofNanoOfDay(1_000 * DateTimeUtils.MILLI),
-                LocalTime.ofNanoOfDay(50_000 * DateTimeUtils.MILLI),
-                LocalTime.class);
-        assertEmptyMinMax(dest, "time_ms_null", IntStatistics.class, 3, LocalTime.class);
-
-        // TIME micros
-        assertMinMax(dest, "time_us_mix", LongStatistics.class, 1,
-                LocalTime.ofNanoOfDay(1_000_000 * DateTimeUtils.MICRO),
-                LocalTime.ofNanoOfDay(5_000_000 * DateTimeUtils.MICRO),
-                LocalTime.class);
-        assertEmptyMinMax(dest, "time_us_null", LongStatistics.class, 3, LocalTime.class);
-
-        // TIME nanos
-        assertMinMax(dest, "time_ns_mix", LongStatistics.class, 1,
-                LocalTime.ofNanoOfDay(100_000_000),
-                LocalTime.ofNanoOfDay(500_000_000),
-                LocalTime.class);
-        assertEmptyMinMax(dest, "time_ns_null", LongStatistics.class, 3, LocalTime.class);
+    public void booleanShortStatisticsAreMaterialised() {
+        final Statistics<?> stats = buildBooleanStats(false, true, 0L);
+        final MutableObject<Short> min = new MutableObject<>();
+        final MutableObject<Short> max = new MutableObject<>();
+        assertMatches(
+                MinMaxFromStatistics.getMinMaxForShorts(stats, min::setValue, max::setValue),
+                min, (short) 0,
+                max, (short) 1);
     }
 
-    /**
-     * <pre>
-     * import pyarrow as pa
-     * import pyarrow.parquet as pq
-     *
-     * def ts_array(values, unit):
-     * return pa.array(values, type=pa.timestamp(unit))
-     *
-     * table = pa.Table.from_arrays(
-     * [
-     * # MILLIS
-     * ts_array([None, 1_000, 50_000], "ms"),
-     * ts_array([None, None, None], "ms"),
-     *
-     * # MICROS
-     * ts_array([None, 1_000_000, 5_000_000], "us"),
-     * ts_array([None, None, None], "us"),
-     *
-     * # NANOS
-     * ts_array([None, 100_000_000, 500_000_000], "ns"),
-     * ts_array([None, None, None], "ns"),
-     * ],
-     * names=[
-     * "ts_ms_mix", "ts_ms_null",
-     * "ts_us_mix", "ts_us_null",
-     * "ts_ns_mix", "ts_ns_null",
-     * ],
-     * )
-     *
-     * pq.write_table(table, "ReferenceTimestampNonUTCColumn.parquet")
-     * </pre>
-     */
     @Test
-    public void timestampNonUTCColumnTest() {
-        final File dest = new File(
-                MinMaxFromStatisticsTest.class.getResource("/ReferenceTimestampNonUTCColumn.parquet").getFile());
-
-        // TIMESTAMP millis
-        assertMinMax(dest, "ts_ms_mix", LongStatistics.class, 1,
-                LocalDateTime.ofInstant(Instant.ofEpochMilli(1_000L), ZoneOffset.UTC),
-                LocalDateTime.ofInstant(Instant.ofEpochMilli(50_000L), ZoneOffset.UTC),
-                LocalDateTime.class);
-        assertEmptyMinMax(dest, "ts_ms_null", LongStatistics.class, 3, LocalDateTime.class);
-
-        // TIMESTAMP micros
-        assertMinMax(dest, "ts_us_mix", LongStatistics.class, 1,
-                LocalDateTime.ofEpochSecond(1, 0, ZoneOffset.UTC),
-                LocalDateTime.ofEpochSecond(5, 0, ZoneOffset.UTC),
-                LocalDateTime.class);
-        assertEmptyMinMax(dest, "ts_us_null", LongStatistics.class, 3, LocalDateTime.class);
-
-        // TIMESTAMP nanos
-        assertMinMax(dest, "ts_ns_mix", LongStatistics.class, 1,
-                LocalDateTime.ofEpochSecond(0, 100_000_000, ZoneOffset.UTC),
-                LocalDateTime.ofEpochSecond(0, 500_000_000, ZoneOffset.UTC),
-                LocalDateTime.class);
-        assertEmptyMinMax(dest, "ts_ns_null", LongStatistics.class, 3, LocalDateTime.class);
+    public void unsignedShortStatisticsAreRejected() {
+        final PrimitiveType colType = Types.required(INT32)
+                .as(LogicalTypeAnnotation.intType(16, /* signed */ false))
+                .named("shortUINT16");
+        final Statistics<?> stats =
+                buildIntStats(colType, BytesUtils.intToBytes(5), BytesUtils.intToBytes(10), 0L);
+        final MutableObject<Short> min = new MutableObject<>();
+        final MutableObject<Short> max = new MutableObject<>();
+        assertRejected(
+                MinMaxFromStatistics.getMinMaxForShorts(stats, min::setValue, max::setValue),
+                min, max);
     }
 
-    /**
-     * <pre>
-     * import pyarrow as pa
-     * import pyarrow.parquet as pq
-     *
-     * def ts_array(values, unit):
-     * return pa.array(values, type=pa.timestamp(unit, tz="UTC"))
-     *
-     * table = pa.Table.from_arrays(
-     * [
-     * # MILLIS
-     * ts_array([None, 0, 50_000], "ms"),
-     * ts_array([None, None, None], "ms"),
-     *
-     * # MICROS
-     * ts_array([None, 1_000_000, 5_000_000], "us"),
-     * ts_array([None, None, None], "us"),
-     *
-     * # NANOS
-     * ts_array([None, 100_000_000, 500_000_000], "ns"),
-     * ts_array([None, None, None], "ns"),
-     * ],
-     * names=[
-     * "ts_ms_mix", "ts_ms_null",
-     * "ts_us_mix", "ts_us_null",
-     * "ts_ns_mix", "ts_ns_null",
-     * ],
-     * )
-     *
-     * pq.write_table(table, "ReferenceTimestampUTCColumn.parquet")
-     * </pre>
-     */
+    // Integers
+
     @Test
-    public void timestampUTCColumnTest() {
-        final File dest = new File(
-                MinMaxFromStatisticsTest.class.getResource("/ReferenceTimestampUTCColumn.parquet").getFile());
-
-        // TIMESTAMP millis
-        assertMinMax(dest, "ts_ms_mix", LongStatistics.class, 1,
-                Instant.ofEpochMilli(0L),
-                Instant.ofEpochMilli(50_000L),
-                Instant.class);
-        assertEmptyMinMax(dest, "ts_ms_null", LongStatistics.class, 3, Instant.class);
-
-        // TIMESTAMP micros
-        assertMinMax(dest, "ts_us_mix", LongStatistics.class, 1,
-                Instant.ofEpochMilli(1_000L),
-                Instant.ofEpochMilli(5_000L),
-                Instant.class);
-        assertEmptyMinMax(dest, "ts_us_null", LongStatistics.class, 3, Instant.class);
-
-        // TIMESTAMP nanos
-        assertMinMax(dest, "ts_ns_mix", LongStatistics.class, 1,
-                Instant.ofEpochMilli(100L),
-                Instant.ofEpochMilli(500L),
-                Instant.class);
-        assertEmptyMinMax(dest, "ts_ns_null", LongStatistics.class, 3, Instant.class);
+    public void signedByteIntStatisticsAreMaterialised() {
+        final PrimitiveType colType = Types.required(INT32)
+                .as(LogicalTypeAnnotation.intType(8, /* signed */ true))
+                .named("intINT8");
+        final Statistics<?> stats = buildIntStats(colType, BytesUtils.intToBytes(-10), BytesUtils.intToBytes(100), 0L);
+        final MutableObject<Integer> min = new MutableObject<>();
+        final MutableObject<Integer> max = new MutableObject<>();
+        assertMatches(
+                MinMaxFromStatistics.getMinMaxForInts(stats, min::setValue, max::setValue),
+                min, -10,
+                max, 100);
     }
 
-    /**
-     * Helper method to get the column statistics for the specified column name.
-     */
-    private static Statistics<?> getColumnStatistics(final File dest, final String columnName) {
-        final ParquetMetadata metadata = new ParquetTableLocationKey(
-                dest.toURI(), 0, null, ParquetInstructions.EMPTY).getMetadata();
-        final MessageType schema = metadata.getFileMetaData().getSchema();
-        final int colIdx = schema.getFieldIndex(columnName);
-        final ColumnChunkMetaData columnChunkMetaData = metadata.getBlocks().get(0).getColumns().get(colIdx);
-        return columnChunkMetaData.getStatistics();
+    @Test
+    public void signedShortIntStatisticsAreMaterialised() {
+        final PrimitiveType colType = Types.required(INT32)
+                .as(LogicalTypeAnnotation.intType(16, /* signed */ true))
+                .named("intINT16");
+        final Statistics<?> stats =
+                buildIntStats(colType, BytesUtils.intToBytes(-1024), BytesUtils.intToBytes(2048), 0L);
+        final MutableObject<Integer> min = new MutableObject<>();
+        final MutableObject<Integer> max = new MutableObject<>();
+        assertMatches(
+                MinMaxFromStatistics.getMinMaxForInts(stats, min::setValue, max::setValue),
+                min, -1024,
+                max, 2048);
     }
 
-    /**
-     * Helper method to assert the min/max values from the statistics.
-     */
-    private static void assertMinMax(
-            final File dest,
-            final String columnName,
-            final Class<? extends Statistics<?>> statsClass,
-            final int expectedNulls,
-            final Object expectedMin,
-            final Object expectedMax,
-            final Class<?> dhColumnType) {
-        final Optional<MinMax<?>> minMax =
-                getMinMaxFromStatisticsHelper(dest, columnName, statsClass, expectedNulls, dhColumnType);
-        assertTrue(minMax.isPresent());
-        assertEquals(expectedMin, minMax.get().min());
-        assertEquals(expectedMax, minMax.get().max());
+    @Test
+    public void signedInt32StatisticsAreMaterialised() {
+        final PrimitiveType colType = Types.required(INT32)
+                .as(LogicalTypeAnnotation.intType(32, /* signed */ true))
+                .named("intINT32");
+        final Statistics<?> stats =
+                buildIntStats(colType, BytesUtils.intToBytes(-1_000_000), BytesUtils.intToBytes(1_000_000), 0L);
+        final MutableObject<Integer> min = new MutableObject<>();
+        final MutableObject<Integer> max = new MutableObject<>();
+        assertMatches(
+                MinMaxFromStatistics.getMinMaxForInts(stats, min::setValue, max::setValue),
+                min, -1_000_000,
+                max, 1_000_000);
     }
 
-    /**
-     * Helper method to assert that min-max derived from statistics is empty (which means unusable by DH).
-     */
-    private static void assertEmptyMinMax(
-            final File dest,
-            final String columnName,
-            final Class<? extends Statistics<?>> statsClass,
-            final int expectedNulls,
-            final Class<?> dhColumnType) {
-        final Optional<MinMax<?>> minMax =
-                getMinMaxFromStatisticsHelper(dest, columnName, statsClass, expectedNulls, dhColumnType);
-        assertTrue(minMax.isEmpty());
+    @Test
+    public void unsignedByteIntStatisticsAreMaterialised() {
+        final PrimitiveType colType = Types.required(INT32)
+                .as(LogicalTypeAnnotation.intType(8, /* signed */ false))
+                .named("intUINT8");
+        final Statistics<?> stats = buildIntStats(colType, BytesUtils.intToBytes(0), BytesUtils.intToBytes(255), 0L);
+        final MutableObject<Integer> min = new MutableObject<>();
+        final MutableObject<Integer> max = new MutableObject<>();
+        assertMatches(
+                MinMaxFromStatistics.getMinMaxForInts(stats, min::setValue, max::setValue),
+                min, 0,
+                max, 255);
     }
 
-    private static Optional<MinMax<?>> getMinMaxFromStatisticsHelper(
-            final File dest,
-            final String columnName,
-            final Class<? extends Statistics<?>> statsClass,
-            final int expectedNulls,
-            final Class<?> dhColumnType) {
-        final Statistics<?> statistics = getColumnStatistics(dest, columnName);
-        assertTrue(statsClass.getSimpleName(), statsClass.isInstance(statistics));
-        assertEquals(expectedNulls, statistics.getNumNulls());
-        return MinMaxFromStatistics.get(statistics, dhColumnType);
+    @Test
+    public void unsignedShortIntStatisticsAreMaterialised() {
+        final PrimitiveType colType = Types.required(INT32)
+                .as(LogicalTypeAnnotation.intType(16, /* signed */ false))
+                .named("intUINT16");
+        final Statistics<?> stats = buildIntStats(colType, BytesUtils.intToBytes(0), BytesUtils.intToBytes(65_535), 0L);
+        final MutableObject<Integer> min = new MutableObject<>();
+        final MutableObject<Integer> max = new MutableObject<>();
+        assertMatches(
+                MinMaxFromStatistics.getMinMaxForInts(stats, min::setValue, max::setValue),
+                min, 0,
+                max, 65_535);
+    }
+
+    @Test
+    public void booleanIntStatisticsAreMaterialised() {
+        final Statistics<?> stats = buildBooleanStats(false, true, 0L);
+        final MutableObject<Integer> min = new MutableObject<>();
+        final MutableObject<Integer> max = new MutableObject<>();
+        assertMatches(
+                MinMaxFromStatistics.getMinMaxForInts(stats, min::setValue, max::setValue),
+                min, 0,
+                max, 1);
+    }
+
+    @Test
+    public void primitiveInt32StatisticsAreMaterialised() {
+        final Statistics<?> stats = buildPrimitiveInt32Stats(-42, 2042, 0L);
+        final MutableObject<Integer> min = new MutableObject<>();
+        final MutableObject<Integer> max = new MutableObject<>();
+        assertMatches(
+                MinMaxFromStatistics.getMinMaxForInts(stats, min::setValue, max::setValue),
+                min, -42,
+                max, 2042);
+    }
+
+    @Test
+    public void unsignedInt32StatisticsAreRejected() {
+        final PrimitiveType colType = Types.required(INT32)
+                .as(LogicalTypeAnnotation.intType(32, /* signed */ false))
+                .named("intUINT32");
+        final Statistics<?> stats = buildIntStats(colType, BytesUtils.intToBytes(5), BytesUtils.intToBytes(10), 0L);
+        final MutableObject<Integer> min = new MutableObject<>();
+        final MutableObject<Integer> max = new MutableObject<>();
+        assertRejected(
+                MinMaxFromStatistics.getMinMaxForInts(stats, min::setValue, max::setValue),
+                min, max);
+    }
+
+    // Longs
+
+    @Test
+    public void signedByteLongStatisticsAreMaterialised() {
+        final PrimitiveType colType = Types.required(INT32)
+                .as(LogicalTypeAnnotation.intType(8, /* signed */ true))
+                .named("longINT8");
+        final Statistics<?> stats =
+                buildIntStats(colType, BytesUtils.intToBytes(-10), BytesUtils.intToBytes(100), 0L);
+        final MutableObject<Long> min = new MutableObject<>();
+        final MutableObject<Long> max = new MutableObject<>();
+        assertMatches(
+                MinMaxFromStatistics.getMinMaxForLongs(stats, min::setValue, max::setValue),
+                min, -10L,
+                max, 100L);
+    }
+
+    @Test
+    public void signedShortLongStatisticsAreMaterialised() {
+        final PrimitiveType colType = Types.required(INT32)
+                .as(LogicalTypeAnnotation.intType(16, /* signed */ true))
+                .named("longINT16");
+        final Statistics<?> stats =
+                buildIntStats(colType, BytesUtils.intToBytes(-1024), BytesUtils.intToBytes(2048), 0L);
+        final MutableObject<Long> min = new MutableObject<>();
+        final MutableObject<Long> max = new MutableObject<>();
+        assertMatches(
+                MinMaxFromStatistics.getMinMaxForLongs(stats, min::setValue, max::setValue),
+                min, -1024L,
+                max, 2048L);
+    }
+
+    @Test
+    public void signedIntLongStatisticsAreMaterialised() {
+        final PrimitiveType colType = Types.required(INT32)
+                .as(LogicalTypeAnnotation.intType(32, /* signed */ true))
+                .named("longINT32");
+        final Statistics<?> stats =
+                buildIntStats(colType, BytesUtils.intToBytes(-1_000_000), BytesUtils.intToBytes(1_000_000), 0L);
+        final MutableObject<Long> min = new MutableObject<>();
+        final MutableObject<Long> max = new MutableObject<>();
+        assertMatches(
+                MinMaxFromStatistics.getMinMaxForLongs(stats, min::setValue, max::setValue),
+                min, -1_000_000L,
+                max, 1_000_000L);
+    }
+
+    @Test
+    public void signedLongStatisticsAreMaterialised() {
+        final PrimitiveType colType = Types.required(INT64)
+                .as(LogicalTypeAnnotation.intType(64, /* signed */ true))
+                .named("longINT64");
+        final Statistics<?> stats =
+                buildStats(colType, BytesUtils.longToBytes(-5_000_000_000L), BytesUtils.longToBytes(5_000_000_000L),
+                        0L);
+        final MutableObject<Long> min = new MutableObject<>();
+        final MutableObject<Long> max = new MutableObject<>();
+        assertMatches(
+                MinMaxFromStatistics.getMinMaxForLongs(stats, min::setValue, max::setValue),
+                min, -5_000_000_000L,
+                max, 5_000_000_000L);
+    }
+
+    @Test
+    public void unsignedByteLongStatisticsAreMaterialised() {
+        final PrimitiveType colType = Types.required(INT32)
+                .as(LogicalTypeAnnotation.intType(8, /* signed */ false))
+                .named("longUINT8");
+        final Statistics<?> stats =
+                buildIntStats(colType, BytesUtils.intToBytes(0), BytesUtils.intToBytes(255), 0L);
+        final MutableObject<Long> min = new MutableObject<>();
+        final MutableObject<Long> max = new MutableObject<>();
+        assertMatches(
+                MinMaxFromStatistics.getMinMaxForLongs(stats, min::setValue, max::setValue),
+                min, 0L,
+                max, 255L);
+    }
+
+    @Test
+    public void unsignedShortLongStatisticsAreMaterialised() {
+        final PrimitiveType colType = Types.required(INT32)
+                .as(LogicalTypeAnnotation.intType(16, /* signed */ false))
+                .named("longUINT16");
+        final Statistics<?> stats =
+                buildIntStats(colType, BytesUtils.intToBytes(0), BytesUtils.intToBytes(65_535), 0L);
+        final MutableObject<Long> min = new MutableObject<>();
+        final MutableObject<Long> max = new MutableObject<>();
+        assertMatches(
+                MinMaxFromStatistics.getMinMaxForLongs(stats, min::setValue, max::setValue),
+                min, 0L,
+                max, 65_535L);
+    }
+
+    @Test
+    public void unsignedIntLongStatisticsAreMaterialised() {
+        final PrimitiveType colType = Types.required(INT32)
+                .as(LogicalTypeAnnotation.intType(32, /* signed */ false))
+                .named("longUINT32");
+        final Statistics<?> stats =
+                buildIntStats(colType, BytesUtils.intToBytes(0), BytesUtils.intToBytes(Integer.MAX_VALUE), 0L);
+        final MutableObject<Long> min = new MutableObject<>();
+        final MutableObject<Long> max = new MutableObject<>();
+        assertMatches(
+                MinMaxFromStatistics.getMinMaxForLongs(stats, min::setValue, max::setValue),
+                min, 0L,
+                max, (long) Integer.MAX_VALUE);
+    }
+
+    @Test
+    public void booleanLongStatisticsAreMaterialised() {
+        final Statistics<?> stats = buildBooleanStats(false, true, 0L);
+        final MutableObject<Long> min = new MutableObject<>();
+        final MutableObject<Long> max = new MutableObject<>();
+        assertMatches(
+                MinMaxFromStatistics.getMinMaxForLongs(stats, min::setValue, max::setValue),
+                min, 0L,
+                max, 1L);
+    }
+
+    @Test
+    public void primitiveInt32LongStatisticsAreMaterialised() {
+        final Statistics<?> stats = buildPrimitiveInt32Stats(-42, 2_042, 0L);
+        final MutableObject<Long> min = new MutableObject<>();
+        final MutableObject<Long> max = new MutableObject<>();
+        assertMatches(
+                MinMaxFromStatistics.getMinMaxForLongs(stats, min::setValue, max::setValue),
+                min, -42L,
+                max, 2_042L);
+    }
+
+    @Test
+    public void primitiveInt64LongStatisticsAreMaterialised() {
+        final PrimitiveType colType = Types.required(INT64).named("int64Primitive");
+        final Statistics<?> stats =
+                buildStats(colType, BytesUtils.longToBytes(-10_000L), BytesUtils.longToBytes(99_999L), 0L);
+        final MutableObject<Long> min = new MutableObject<>();
+        final MutableObject<Long> max = new MutableObject<>();
+        assertMatches(
+                MinMaxFromStatistics.getMinMaxForLongs(stats, min::setValue, max::setValue),
+                min, -10_000L,
+                max, 99_999L);
+    }
+
+    @Test
+    public void unsignedLongStatisticsAreRejected() {
+        final PrimitiveType colType = Types.required(INT64)
+                .as(LogicalTypeAnnotation.intType(64, /* signed */ false))
+                .named("longUINT64");
+        final Statistics<?> stats =
+                buildStats(colType, BytesUtils.longToBytes(5L), BytesUtils.longToBytes(10L), 0L);
+        final MutableObject<Long> min = new MutableObject<>();
+        final MutableObject<Long> max = new MutableObject<>();
+        assertRejected(
+                MinMaxFromStatistics.getMinMaxForLongs(stats, min::setValue, max::setValue),
+                min, max);
+    }
+
+    // Floats
+
+    @Test
+    public void floatStatisticsAreMaterialised() {
+        final Statistics<?> stats = buildFloatStats(-1.5f, 3.0f, 0L);
+        final MutableObject<Float> min = new MutableObject<>();
+        final MutableObject<Float> max = new MutableObject<>();
+        assertMatches(
+                MinMaxFromStatistics.getMinMaxForFloats(stats, min::setValue, max::setValue),
+                min, -1.5f,
+                max, 3.0f);
+    }
+
+    @Test
+    public void doublePrimitiveIsRejectedByGetMinMaxForFloats() {
+        final Statistics<?> stats = buildDoubleStats(-2.0, 2.0, 0L);
+        final MutableObject<Float> min = new MutableObject<>();
+        final MutableObject<Float> max = new MutableObject<>();
+        assertRejected(
+                MinMaxFromStatistics.getMinMaxForFloats(stats, min::setValue, max::setValue),
+                min, max);
+    }
+
+    // Doubles
+
+    @Test
+    public void floatPrimitiveDoublesAreMaterialised() {
+        final Statistics<?> stats = buildFloatStats(-1.5f, 3.0f, 0L);
+        final MutableObject<Double> min = new MutableObject<>();
+        final MutableObject<Double> max = new MutableObject<>();
+        assertMatches(
+                MinMaxFromStatistics.getMinMaxForDoubles(stats, min::setValue, max::setValue),
+                min, -1.5,
+                max, 3.0);
+    }
+
+    @Test
+    public void doublePrimitiveDoublesAreMaterialised() {
+        final Statistics<?> stats = buildDoubleStats(-2.0, 4.0, 0L);
+        final MutableObject<Double> min = new MutableObject<>();
+        final MutableObject<Double> max = new MutableObject<>();
+        assertMatches(
+                MinMaxFromStatistics.getMinMaxForDoubles(stats, min::setValue, max::setValue),
+                min, -2.0,
+                max, 4.0);
+    }
+
+    // Strings
+
+    @Test
+    public void stringLogicalStatisticsAreMaterialised() {
+        final PrimitiveType colType = Types.required(PrimitiveType.PrimitiveTypeName.BINARY)
+                .as(LogicalTypeAnnotation.stringType())
+                .named("strBinary");
+        final Statistics<?> stats = buildStats(
+                colType, "aaa".getBytes(StandardCharsets.UTF_8), "zzz".getBytes(StandardCharsets.UTF_8), 0L);
+        final MutableObject<String> min = new MutableObject<>();
+        final MutableObject<String> max = new MutableObject<>();
+        assertMatches(
+                MinMaxFromStatistics.getMinMaxForStrings(stats, min::setValue, max::setValue),
+                min, "aaa",
+                max, "zzz");
+    }
+
+    @Test
+    public void binaryWithoutStringLogicalTypeIsRejected() {
+        final PrimitiveType colType = Types.required(PrimitiveType.PrimitiveTypeName.BINARY).named("rawBinary");
+        final Statistics<?> stats = buildStats(
+                colType, "foo".getBytes(StandardCharsets.UTF_8), "qux".getBytes(StandardCharsets.UTF_8), 0L);
+        final MutableObject<String> min = new MutableObject<>();
+        final MutableObject<String> max = new MutableObject<>();
+        assertRejected(
+                MinMaxFromStatistics.getMinMaxForStrings(stats, min::setValue, max::setValue),
+                min, max);
+    }
+
+    // Instants
+
+    @Test
+    public void timestampMillisUTCStatisticsAreMaterialised() {
+        final Statistics<?> stats = buildTimestampStats(
+                LogicalTypeAnnotation.TimeUnit.MILLIS, /* adjustedToUTC */ true,
+                0L, 50_000L);
+        final MutableObject<Instant> min = new MutableObject<>();
+        final MutableObject<Instant> max = new MutableObject<>();
+        assertMatches(
+                MinMaxFromStatistics.getMinMaxForInstants(stats, min::setValue, max::setValue),
+                min, Instant.ofEpochMilli(0L),
+                max, Instant.ofEpochMilli(50_000L));
+    }
+
+    @Test
+    public void timestampMicrosUTCStatisticsAreMaterialised() {
+        final Statistics<?> stats = buildTimestampStats(
+                LogicalTypeAnnotation.TimeUnit.MICROS, /* adjustedToUTC */ true,
+                1_000_000L, 5_000_000L);
+        final MutableObject<Instant> min = new MutableObject<>();
+        final MutableObject<Instant> max = new MutableObject<>();
+        assertMatches(
+                MinMaxFromStatistics.getMinMaxForInstants(stats, min::setValue, max::setValue),
+                min, Instant.ofEpochSecond(1),
+                max, Instant.ofEpochSecond(5));
+    }
+
+    @Test
+    public void timestampNanosUTCStatisticsAreMaterialised() {
+        final Statistics<?> stats = buildTimestampStats(
+                LogicalTypeAnnotation.TimeUnit.NANOS, /* adjustedToUTC */ true,
+                100_000_000L, 500_000_000L);
+        final MutableObject<Instant> min = new MutableObject<>();
+        final MutableObject<Instant> max = new MutableObject<>();
+        assertMatches(
+                MinMaxFromStatistics.getMinMaxForInstants(stats, min::setValue, max::setValue),
+                min, Instant.ofEpochSecond(0, 100_000_000L),
+                max, Instant.ofEpochSecond(0, 500_000_000L));
+    }
+
+    @Test
+    public void timestampNonUTCStatisticsAreRejected() {
+        final Statistics<?> stats = buildTimestampStats(
+                LogicalTypeAnnotation.TimeUnit.MILLIS, /* adjustedToUTC */ false,
+                0L, 1_000L);
+        final MutableObject<Instant> min = new MutableObject<>();
+        final MutableObject<Instant> max = new MutableObject<>();
+        assertRejected(
+                MinMaxFromStatistics.getMinMaxForInstants(stats, min::setValue, max::setValue),
+                min, max);
+    }
+
+    // LocalDateTime
+
+    @Test
+    public void timestampMillisNonUTCStatisticsAreMaterialised() {
+        final Statistics<?> stats = buildTimestampStats(
+                LogicalTypeAnnotation.TimeUnit.MILLIS, /* adjustedToUTC */ false,
+                1_000L, 50_000L);
+        final MutableObject<LocalDateTime> min = new MutableObject<>();
+        final MutableObject<LocalDateTime> max = new MutableObject<>();
+        assertMatches(
+                MinMaxFromStatistics.getMinMaxForLocalDateTimes(stats, min::setValue, max::setValue),
+                min, LocalDateTime.ofInstant(Instant.ofEpochMilli(1_000L), ZoneOffset.UTC),
+                max, LocalDateTime.ofInstant(Instant.ofEpochMilli(50_000L), ZoneOffset.UTC));
+    }
+
+    @Test
+    public void timestampMicrosNonUTCStatisticsAreMaterialised() {
+        final Statistics<?> stats = buildTimestampStats(
+                LogicalTypeAnnotation.TimeUnit.MICROS, /* adjustedToUTC */ false,
+                1_000_000L, 5_000_000L);
+        final MutableObject<LocalDateTime> min = new MutableObject<>();
+        final MutableObject<LocalDateTime> max = new MutableObject<>();
+        assertMatches(
+                MinMaxFromStatistics.getMinMaxForLocalDateTimes(stats, min::setValue, max::setValue),
+                min, LocalDateTime.ofEpochSecond(1, 0, ZoneOffset.UTC),
+                max, LocalDateTime.ofEpochSecond(5, 0, ZoneOffset.UTC));
+    }
+
+    @Test
+    public void timestampNanosNonUTCStatisticsAreMaterialised() {
+        final Statistics<?> stats = buildTimestampStats(
+                LogicalTypeAnnotation.TimeUnit.NANOS, /* adjustedToUTC */ false,
+                100_000_000L, 500_000_000L);
+        final MutableObject<LocalDateTime> min = new MutableObject<>();
+        final MutableObject<LocalDateTime> max = new MutableObject<>();
+        assertMatches(
+                MinMaxFromStatistics.getMinMaxForLocalDateTimes(stats, min::setValue, max::setValue),
+                min, LocalDateTime.ofEpochSecond(0, 100_000_000, ZoneOffset.UTC),
+                max, LocalDateTime.ofEpochSecond(0, 500_000_000, ZoneOffset.UTC));
+    }
+
+    @Test
+    public void timestampUTCStatisticsAreRejectedForLocalDateTime() {
+        final Statistics<?> stats = buildTimestampStats(
+                LogicalTypeAnnotation.TimeUnit.MILLIS, /* adjustedToUTC */ true,
+                0L, 1_000L);
+        final MutableObject<LocalDateTime> min = new MutableObject<>();
+        final MutableObject<LocalDateTime> max = new MutableObject<>();
+        assertRejected(
+                MinMaxFromStatistics.getMinMaxForLocalDateTimes(stats, min::setValue, max::setValue),
+                min, max);
+    }
+
+    // LocalDate
+
+    @Test
+    public void dateStatisticsAreMaterialised() {
+        final PrimitiveType colType = Types.required(INT32)
+                .as(LogicalTypeAnnotation.dateType())
+                .named("dateCol");
+        final int minDays = (int) LocalDate.of(2020, 1, 1).toEpochDay();
+        final int maxDays = (int) LocalDate.of(2020, 12, 31).toEpochDay();
+        final Statistics<?> stats =
+                buildIntStats(colType, BytesUtils.intToBytes(minDays), BytesUtils.intToBytes(maxDays), 0L);
+        final MutableObject<LocalDate> min = new MutableObject<>();
+        final MutableObject<LocalDate> max = new MutableObject<>();
+        assertMatches(
+                MinMaxFromStatistics.getMinMaxForLocalDates(stats, min::setValue, max::setValue),
+                min, LocalDate.of(2020, 1, 1),
+                max, LocalDate.of(2020, 12, 31));
+    }
+
+    @Test
+    public void nonDateStatisticsAreRejected() {
+        final PrimitiveType colType = Types.required(INT32)
+                .as(LogicalTypeAnnotation.intType(32, /* signed */ true))
+                .named("intCol");
+        final Statistics<?> stats =
+                buildIntStats(colType, BytesUtils.intToBytes(0), BytesUtils.intToBytes(10), 0L);
+        final MutableObject<LocalDate> min = new MutableObject<>();
+        final MutableObject<LocalDate> max = new MutableObject<>();
+        assertRejected(
+                MinMaxFromStatistics.getMinMaxForLocalDates(stats, min::setValue, max::setValue),
+                min, max);
+    }
+
+    // LocalTime
+
+    @Test
+    public void timeMillisStatisticsAreMaterialised() {
+        final Statistics<?> stats = buildTimeStats(
+                LogicalTypeAnnotation.TimeUnit.MILLIS,
+                1_000L, 50_000L);
+        final MutableObject<LocalTime> min = new MutableObject<>();
+        final MutableObject<LocalTime> max = new MutableObject<>();
+        assertMatches(
+                MinMaxFromStatistics.getMinMaxForLocalTimes(stats, min::setValue, max::setValue),
+                min, LocalTime.ofNanoOfDay(1_000_000_000L),
+                max, LocalTime.ofNanoOfDay(50_000_000_000L));
+    }
+
+    @Test
+    public void timeMicrosStatisticsAreMaterialised() {
+        final Statistics<?> stats = buildTimeStats(
+                LogicalTypeAnnotation.TimeUnit.MICROS,
+                1_000_000L, 5_000_000L);
+        final MutableObject<LocalTime> min = new MutableObject<>();
+        final MutableObject<LocalTime> max = new MutableObject<>();
+        assertMatches(
+                MinMaxFromStatistics.getMinMaxForLocalTimes(stats, min::setValue, max::setValue),
+                min, LocalTime.ofNanoOfDay(1_000_000_000L),
+                max, LocalTime.ofNanoOfDay(5_000_000_000L));
+    }
+
+    @Test
+    public void timeNanosStatisticsAreMaterialised() {
+        final Statistics<?> stats = buildTimeStats(
+                LogicalTypeAnnotation.TimeUnit.NANOS,
+                100_000_000L, 500_000_000L);
+        final MutableObject<LocalTime> min = new MutableObject<>();
+        final MutableObject<LocalTime> max = new MutableObject<>();
+        assertMatches(
+                MinMaxFromStatistics.getMinMaxForLocalTimes(stats, min::setValue, max::setValue),
+                min, LocalTime.ofNanoOfDay(100_000_000L),
+                max, LocalTime.ofNanoOfDay(500_000_000L));
+    }
+
+    @Test
+    public void nonTimeStatisticsAreRejected() {
+        final PrimitiveType colType = Types.required(INT32)
+                .as(LogicalTypeAnnotation.intType(32, /* signed */ true))
+                .named("intCol");
+        final Statistics<?> stats =
+                buildIntStats(colType, BytesUtils.intToBytes(0), BytesUtils.intToBytes(10), 0L);
+        final MutableObject<LocalTime> min = new MutableObject<>();
+        final MutableObject<LocalTime> max = new MutableObject<>();
+        assertRejected(
+                MinMaxFromStatistics.getMinMaxForLocalTimes(stats, min::setValue, max::setValue),
+                min, max);
+    }
+
+    // Comparables generic
+
+    @Test
+    public void comparableInstantStatisticsAreMaterialised() {
+        final Statistics<?> stats = buildTimestampStats(
+                LogicalTypeAnnotation.TimeUnit.MILLIS, /* adjustedToUTC */ true,
+                0L, 50_000L);
+        final MutableObject<Comparable<?>> min = new MutableObject<>();
+        final MutableObject<Comparable<?>> max = new MutableObject<>();
+        assertMatches(
+                MinMaxFromStatistics.getMinMaxForComparable(stats, min::setValue, max::setValue, Instant.class),
+                min, Instant.ofEpochMilli(0L),
+                max, Instant.ofEpochMilli(50_000L));
+    }
+
+    @Test
+    public void comparableUnsupportedTypeIsRejected() {
+        final PrimitiveType colType = Types.required(INT32)
+                .as(LogicalTypeAnnotation.intType(32, /* signed */ true))
+                .named("intCol");
+        final Statistics<?> stats =
+                buildIntStats(colType, BytesUtils.intToBytes(1), BytesUtils.intToBytes(2), 0L);
+        final MutableObject<Comparable<?>> min = new MutableObject<>();
+        final MutableObject<Comparable<?>> max = new MutableObject<>();
+        assertRejected(
+                MinMaxFromStatistics.getMinMaxForComparable(stats, min::setValue, max::setValue, BigDecimal.class),
+                min, max);
     }
 
     /**
      * This test verifies that the statistics builder logic for NaN values automatically handles NaN values. This
-     * behavior is important because DH currently writes NaN values to statistics.
+     * behavior is important because DH currently writes NaN values to statistics which automatically gets fixed by the
+     * statistics builder.
      */
     // TODO (DH-10771): DH should not write NaN values to statistics.
     @Test
@@ -679,8 +898,5 @@ public class MinMaxFromStatisticsTest {
         builder.withNumNulls(0);
         final Statistics<?> statistics = builder.build();
         assertFalse(statistics.hasNonNullValue());
-
-        // MinMaxFromStatistics should return Optional.empty() regardless of dhColumnType
-        assertTrue(MinMaxFromStatistics.get(statistics, Float.class).isEmpty());
     }
 }

@@ -23,7 +23,9 @@ public abstract class CharPushdownHandler {
     public static boolean maybeOverlaps(
             @NotNull final CharRangeFilter charRangeFilter,
             @NotNull final Statistics<?> statistics) {
-        // Skip pushdown-based filtering for nulls
+        // Skip pushdown-based filtering for nulls to err on the safer side instead of adding more complex handling
+        // logic.
+        // TODO (DH-19666): Improve handling of nulls
         final char dhLower = charRangeFilter.getLower();
         final char dhUpper = charRangeFilter.getUpper();
         if (dhLower == QueryConstants.NULL_CHAR || dhUpper == QueryConstants.NULL_CHAR) {
@@ -79,7 +81,9 @@ public abstract class CharPushdownHandler {
             // No values to check against, so we consider it as a maybe overlap.
             return true;
         }
-        // Skip pushdown-based filtering for nulls
+        // Skip pushdown-based filtering for nulls to err on the safer side instead of adding more complex handling
+        // logic.
+        // TODO (DH-19666): Improve handling of nulls.
         final char[] unboxedValues = new char[values.length];
         for (int i = 0; i < values.length; i++) {
             final char value = TypeUtils.getUnboxedChar(values[i]);

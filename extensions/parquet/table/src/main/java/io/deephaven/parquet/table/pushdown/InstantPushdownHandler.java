@@ -14,16 +14,15 @@ import org.jetbrains.annotations.NotNull;
 
 import java.time.Instant;
 
-import static io.deephaven.parquet.table.pushdown.LongPushdownHandler.maybeMatches;
-import static io.deephaven.parquet.table.pushdown.LongPushdownHandler.maybeMatchesInverse;
-
 @InternalUseOnly
 public abstract class InstantPushdownHandler {
 
     public static boolean maybeOverlaps(
             final InstantRangeFilter instantRangeFilter,
             final Statistics<?> statistics) {
-        // Skip pushdown-based filtering for nulls
+        // Skip pushdown-based filtering for nulls to err on the safer side instead of adding more complex handling
+        // logic.
+        // TODO (DH-19666): Improve handling of nulls
         final long dhLower = instantRangeFilter.getLower();
         final long dhUpper = instantRangeFilter.getUpper();
         if (dhLower == QueryConstants.NULL_LONG || dhUpper == QueryConstants.NULL_LONG) {
@@ -54,12 +53,13 @@ public abstract class InstantPushdownHandler {
             // No values to check against, so we consider it as a maybe overlap.
             return true;
         }
-        // Skip pushdown-based filtering for nulls
+        // Skip pushdown-based filtering for nulls to err on the safer side instead of adding more complex handling
+        // logic.
+        // TODO (DH-19666): Improve handling of nulls
         final long[] instantNanos = new long[values.length];
         for (int i = 0; i < values.length; i++) {
             final Object value = values[i];
             if (!(value instanceof Instant)) {
-                // Skip pushdown-based filtering for nulls or non-comparable values.
                 return true;
             }
             instantNanos[i] = DateTimeUtils.epochNanos((Instant) value);
@@ -74,8 +74,8 @@ public abstract class InstantPushdownHandler {
         final long min = DateTimeUtils.epochNanos(mutableMin.getValue());
         final long max = DateTimeUtils.epochNanos(mutableMax.getValue());
         if (!matchFilter.getInvertMatch()) {
-            return maybeMatches(min, max, instantNanos);
+            return LongPushdownHandler.maybeMatches(min, max, instantNanos);
         }
-        return maybeMatchesInverse(min, max, instantNanos);
+        return LongPushdownHandler.maybeMatchesInverse(min, max, instantNanos);
     }
 }

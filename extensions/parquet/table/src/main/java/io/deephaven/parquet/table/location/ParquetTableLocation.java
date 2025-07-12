@@ -780,6 +780,10 @@ public class ParquetTableLocation extends AbstractTableLocation {
         iterateRowGroupsAndRowSet(result.maybeMatch(), (rgIdx, rs) -> {
             final Statistics<?> statistics = blocks.get(rgIdx).getColumns().get(columnIndex).getStatistics();
             final boolean maybeOverlaps;
+            // TODO (DH-19666) Right now, the pushdown logic only returns maybeMatch for row group. For the future, we
+            // can return "match" for scenarios like filter of {X == 3}, and statistics of {min=3, max=3, num_nulls=0}.
+            // Similarly, if filter is {X == null}, and statistics is {hasNonNullValue=false, num_nulls=<row-group
+            // size>}, we can return "match" for the row group.
             if (!areStatisticsUsable(statistics)) {
                 // We assume it overlaps if we cannot use the statistics.
                 maybeOverlaps = true;

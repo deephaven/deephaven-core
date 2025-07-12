@@ -18,10 +18,15 @@ public abstract class SingleSidedComparableRangePushdownHandler {
         final Comparable<?> pivot = sscrf.getPivot();
         final boolean isGreaterThan = sscrf.isGreaterThan();
         if (pivot == null || !isGreaterThan) {
-            // Skip pushdown-based filtering for nulls, which are considered smaller than any value.
+            // Skip pushdown-based filtering for nulls (which are considered smaller than any value), to err on the
+            // safer side instead of adding more complex handling logic.
+            // TODO (DH-19666): Improve handling of nulls
             return true;
         }
         final Class<?> dhColumnType = sscrf.getColumnType();
+        if (dhColumnType == null) {
+            throw new IllegalStateException("Filter not initialized with a column type: " + sscrf);
+        }
         final MutableObject<Comparable<?>> mutableMin = new MutableObject<>();
         final MutableObject<Comparable<?>> mutableMax = new MutableObject<>();
         if (!MinMaxFromStatistics.getMinMaxForComparable(statistics, mutableMin::setValue, mutableMax::setValue,

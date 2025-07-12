@@ -27,7 +27,8 @@ public abstract class BytePushdownHandler {
     public static boolean maybeOverlaps(
             @NotNull final ByteRangeFilter byteRangeFilter,
             @NotNull final Statistics<?> statistics) {
-        // Skip pushdown-based filtering for nulls
+        // Skip pushdown-based filtering for nulls to err on the safer side instead of adding more complex handling logic.
+        // TODO (DH-19666): Improve handling of nulls
         final byte dhLower = byteRangeFilter.getLower();
         final byte dhUpper = byteRangeFilter.getUpper();
         if (dhLower == QueryConstants.NULL_BYTE || dhUpper == QueryConstants.NULL_BYTE) {
@@ -83,7 +84,8 @@ public abstract class BytePushdownHandler {
             // No values to check against, so we consider it as a maybe overlap.
             return true;
         }
-        // Skip pushdown-based filtering for nulls
+        // Skip pushdown-based filtering for nulls to err on the safer side instead of adding more complex handling logic.
+        // TODO (DH-19666): Improve handling of nulls
         final byte[] unboxedValues = new byte[values.length];
         for (int i = 0; i < values.length; i++) {
             final byte value = TypeUtils.getUnboxedByte(values[i]);

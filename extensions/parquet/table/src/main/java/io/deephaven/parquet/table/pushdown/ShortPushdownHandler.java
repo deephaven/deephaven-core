@@ -27,7 +27,8 @@ public abstract class ShortPushdownHandler {
     public static boolean maybeOverlaps(
             @NotNull final ShortRangeFilter shortRangeFilter,
             @NotNull final Statistics<?> statistics) {
-        // Skip pushdown-based filtering for nulls
+        // Skip pushdown-based filtering for nulls to err on the safer side instead of adding more complex handling logic.
+        // TODO (DH-19666): Improve handling of nulls
         final short dhLower = shortRangeFilter.getLower();
         final short dhUpper = shortRangeFilter.getUpper();
         if (dhLower == QueryConstants.NULL_SHORT || dhUpper == QueryConstants.NULL_SHORT) {
@@ -83,7 +84,8 @@ public abstract class ShortPushdownHandler {
             // No values to check against, so we consider it as a maybe overlap.
             return true;
         }
-        // Skip pushdown-based filtering for nulls
+        // Skip pushdown-based filtering for nulls to err on the safer side instead of adding more complex handling logic.
+        // TODO (DH-19666): Improve handling of nulls
         final short[] unboxedValues = new short[values.length];
         for (int i = 0; i < values.length; i++) {
             final short value = TypeUtils.getUnboxedShort(values[i]);

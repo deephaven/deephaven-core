@@ -21,7 +21,9 @@ public abstract class CaseInsensitiveStringMatchPushdownHandler {
             // No values to check against, so we consider it as a maybe overlap.
             return true;
         }
-        // Skip pushdown-based filtering for nulls
+        // Skip pushdown-based filtering for nulls to err on the safer side instead of adding more complex handling
+        // logic.
+        // TODO (DH-19666): Improve handling of nulls
         for (final Object value : values) {
             if (value == null) {
                 return true;

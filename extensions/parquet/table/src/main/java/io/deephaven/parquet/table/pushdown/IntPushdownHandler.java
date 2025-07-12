@@ -27,7 +27,8 @@ public abstract class IntPushdownHandler {
     public static boolean maybeOverlaps(
             @NotNull final IntRangeFilter intRangeFilter,
             @NotNull final Statistics<?> statistics) {
-        // Skip pushdown-based filtering for nulls
+        // Skip pushdown-based filtering for nulls to err on the safer side instead of adding more complex handling logic.
+        // TODO (DH-19666): Improve handling of nulls
         final int dhLower = intRangeFilter.getLower();
         final int dhUpper = intRangeFilter.getUpper();
         if (dhLower == QueryConstants.NULL_INT || dhUpper == QueryConstants.NULL_INT) {
@@ -83,7 +84,8 @@ public abstract class IntPushdownHandler {
             // No values to check against, so we consider it as a maybe overlap.
             return true;
         }
-        // Skip pushdown-based filtering for nulls
+        // Skip pushdown-based filtering for nulls to err on the safer side instead of adding more complex handling logic.
+        // TODO (DH-19666): Improve handling of nulls
         final int[] unboxedValues = new int[values.length];
         for (int i = 0; i < values.length; i++) {
             final int value = TypeUtils.getUnboxedInt(values[i]);
