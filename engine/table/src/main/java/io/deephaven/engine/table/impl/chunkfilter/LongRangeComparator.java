@@ -22,7 +22,7 @@ public class LongRangeComparator {
         }
     }
 
-    final static class LongLongInclusiveInclusiveFilter extends LongLongFilter {
+    private final static class LongLongInclusiveInclusiveFilter extends LongLongFilter {
         private LongLongInclusiveInclusiveFilter(long lower, long upper) {
             super(lower, upper);
         }
@@ -33,7 +33,7 @@ public class LongRangeComparator {
         }
     }
 
-    final static class LongLongInclusiveExclusiveFilter extends LongLongFilter {
+    private final static class LongLongInclusiveExclusiveFilter extends LongLongFilter {
         private LongLongInclusiveExclusiveFilter(long lower, long upper) {
             super(lower, upper);
         }
@@ -44,7 +44,7 @@ public class LongRangeComparator {
         }
     }
 
-    final static class LongLongExclusiveInclusiveFilter extends LongLongFilter {
+    private final static class LongLongExclusiveInclusiveFilter extends LongLongFilter {
         private LongLongExclusiveInclusiveFilter(long lower, long upper) {
             super(lower, upper);
         }
@@ -55,7 +55,7 @@ public class LongRangeComparator {
         }
     }
 
-    final static class LongLongExclusiveExclusiveFilter extends LongLongFilter {
+    private final static class LongLongExclusiveExclusiveFilter extends LongLongFilter {
         private LongLongExclusiveExclusiveFilter(long lower, long upper) {
             super(lower, upper);
         }

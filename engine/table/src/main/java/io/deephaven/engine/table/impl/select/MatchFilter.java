@@ -26,6 +26,7 @@ import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.annotations.InternalUseOnly;
 import io.deephaven.util.datastructures.CachingSupplier;
 import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.util.type.TypeUtils;
@@ -141,7 +142,9 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
         this.values = values;
     }
 
-    private ConditionFilter getFailoverFilterIfCached() {
+    @InternalUseOnly
+    @Nullable
+    public ConditionFilter getFailoverFilterIfCached() {
         return failoverFilter != null ? failoverFilter.getIfCached() : null;
     }
 
@@ -170,6 +173,14 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
 
     public MatchType getMatchType() {
         return invertMatch ? MatchType.Inverted : MatchType.Regular;
+    }
+
+    public Class<?> getColumnType() {
+        return columnType;
+    }
+
+    public boolean isCaseInsensitive() {
+        return caseInsensitive;
     }
 
     @Override
@@ -222,11 +233,11 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
                             + "\" doesn't exist in this table, available columns: " + tableDefinition.getColumnNames());
                 }
             }
+            columnType = column.getDataType();
             if (strValues == null) {
                 initialized = true;
                 return;
             }
-            columnType = column.getDataType();
             final List<Object> valueList = new ArrayList<>();
             final Map<String, Object> queryScopeVariables =
                     compilationProcessor.getFormulaImports().getQueryScopeVariables();
@@ -330,58 +341,6 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
         }
 
         return true;
-    }
-
-    /**
-     * Returns true if the match filter has a value within the given range. This function is intended to be accurate
-     * rather than fast and is not recommended for performance-critical value comparison.
-     *
-     * @param lower the lower value bound of the range
-     * @param upper the upper value bound of the range
-     * @param lowerInclusive whether the lower bound is inclusive
-     * @param upperInclusive whether the upper bound is inclusive
-     * @return {@code true} if the range filter overlaps with the given range, {@code false} otherwise
-     */
-    public boolean overlaps(
-            @NotNull final Object lower,
-            @NotNull final Object upper,
-            final boolean lowerInclusive,
-            final boolean upperInclusive) {
-
-        // Converting to upper case lowers (or maintains) ordering, lower case raises (or maintains) it.
-        final Object oLower = caseInsensitive ? ((String) lower).toUpperCase() : lower;
-        final Object oUpper = caseInsensitive ? ((String) upper).toLowerCase() : upper;
-
-        // Use the strValues if values is null (for String comparisons, e.g.)
-        final Object[] valuesToTest = values == null ? strValues : values;
-
-        // Test every value in the filter against the min/max values
-        for (final Object value : valuesToTest) {
-            final int compareLower = CompareUtils.compare(value, oLower);
-            if (compareLower < 0 || (compareLower == 0 && !lowerInclusive)) {
-                continue; // this value is too low
-            }
-            final int compareUpper = CompareUtils.compare(value, oUpper);
-            if (compareUpper > 0 || (compareUpper == 0 && !upperInclusive)) {
-                continue; // this value is too high
-            }
-            // this value is within the range
-            return !invertMatch; // if inverted, return false instead of true
-        }
-        return invertMatch; // if inverted, return true instead of false
-    }
-
-    /**
-     * Returns true if the match filter has a value within the given range (assumes the provided min/max values are
-     * inclusive). This function is intended to be accurate rather than fast and is not recommended for
-     * performance-critical value comparison.
-     *
-     * @param min the minimum value in the given range
-     * @param max the maximum value in the given range
-     * @return {@code true} if the range filter overlaps with the given range, {@code false} otherwise
-     */
-    public boolean overlaps(@NotNull final Object min, @NotNull final Object max) {
-        return overlaps(min, max, true, true);
     }
 
     @Override
@@ -987,6 +946,7 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
         if (initialized) {
             copy.initialized = true;
             copy.values = values;
+            copy.columnType = columnType;
         }
         return copy;
     }
