@@ -59,11 +59,11 @@ public class CaseInsensitiveStringMatchPushdownHandlerTest {
                         "s", "aa`"),
                 stats));
 
-        // empty list → true
+        // empty list
         assertTrue(CaseInsensitiveStringMatchPushdownHandler.maybeOverlaps(
                 new MatchFilter(MatchFilter.MatchType.Regular, "s"), stats));
 
-        // list containing null → true
+        // list containing null
         assertTrue(CaseInsensitiveStringMatchPushdownHandler.maybeOverlaps(
                 new MatchFilter(MatchFilter.MatchType.Regular,
                         "s", "xyz", null),

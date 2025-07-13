@@ -9,14 +9,12 @@ import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.impl.chunkfilter.LongChunkFilter;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.time.DateTimeUtils;
-import io.deephaven.util.annotations.InternalUseOnly;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.Instant;
@@ -91,8 +89,7 @@ public class InstantRangeFilter extends LongRangeFilter {
         return super.binarySearch(selection, instantColumnSource, usePrev, reverse);
     }
 
-    @InternalUseOnly
-    public class InstantLongChunkFilterAdapter implements ChunkFilter {
+    private class InstantLongChunkFilterAdapter implements ChunkFilter {
         /**
          * Convert an Instant chunk to a Long chunk.
          */
@@ -131,11 +128,6 @@ public class InstantRangeFilter extends LongRangeFilter {
             try (final WritableLongChunk<Values> convertedChunk = convert(values)) {
                 return longFilter.filterAnd(convertedChunk, results);
             }
-        }
-
-        @InternalUseOnly
-        public boolean matches(long value) {
-            return ((LongChunkFilter) longFilter).matches(value);
         }
     }
 }

@@ -8,8 +8,7 @@ import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.base.string.cache.CharSequenceUtils;
 import io.deephaven.util.annotations.InternalUseOnly;
 
-@InternalUseOnly
-public class StringChunkMatchFilterFactory {
+class StringChunkMatchFilterFactory {
     private static final class CIStringKey implements KeyedObjectKey<String, String> {
         @Override
         public String getKey(String s) {
@@ -31,12 +30,8 @@ public class StringChunkMatchFilterFactory {
 
     private StringChunkMatchFilterFactory() {} // static use only
 
-    @InternalUseOnly
-    public static abstract class CaseInsensitiveStringChunkFilter extends ObjectChunkFilter<String> {
-    }
-
     @SuppressWarnings("rawtypes")
-    static CaseInsensitiveStringChunkFilter makeCaseInsensitiveFilter(boolean invert, Object... values) {
+    static ObjectChunkFilter makeCaseInsensitiveFilter(boolean invert, Object... values) {
         if (invert) {
             if (values.length == 1) {
                 return new InverseSingleValueStringChunkFilter((String) values[0]);
@@ -63,7 +58,7 @@ public class StringChunkMatchFilterFactory {
         }
     }
 
-    private final static class SingleValueStringChunkFilter extends CaseInsensitiveStringChunkFilter {
+    private final static class SingleValueStringChunkFilter extends ObjectChunkFilter<String> {
         private final String value;
 
         private SingleValueStringChunkFilter(String value) {
@@ -76,7 +71,7 @@ public class StringChunkMatchFilterFactory {
         }
     }
 
-    private static class InverseSingleValueStringChunkFilter extends CaseInsensitiveStringChunkFilter {
+    private static class InverseSingleValueStringChunkFilter extends ObjectChunkFilter<String> {
         private final String value;
 
         private InverseSingleValueStringChunkFilter(String value) {
@@ -89,7 +84,7 @@ public class StringChunkMatchFilterFactory {
         }
     }
 
-    private static class TwoValueStringChunkFilter extends CaseInsensitiveStringChunkFilter {
+    private static class TwoValueStringChunkFilter extends ObjectChunkFilter<String> {
         private final String value1;
         private final String value2;
 
@@ -104,7 +99,7 @@ public class StringChunkMatchFilterFactory {
         }
     }
 
-    private static class InverseTwoValueStringChunkFilter extends CaseInsensitiveStringChunkFilter {
+    private static class InverseTwoValueStringChunkFilter extends ObjectChunkFilter<String> {
         private final String value1;
         private final String value2;
 
@@ -119,7 +114,7 @@ public class StringChunkMatchFilterFactory {
         }
     }
 
-    private static class ThreeValueStringChunkFilter extends CaseInsensitiveStringChunkFilter {
+    private static class ThreeValueStringChunkFilter extends ObjectChunkFilter<String> {
         private final String value1;
         private final String value2;
         private final String value3;
@@ -136,7 +131,7 @@ public class StringChunkMatchFilterFactory {
         }
     }
 
-    private static class InverseThreeValueStringChunkFilter extends CaseInsensitiveStringChunkFilter {
+    private static class InverseThreeValueStringChunkFilter extends ObjectChunkFilter<String> {
         private final String value1;
         private final String value2;
         private final String value3;
@@ -154,7 +149,7 @@ public class StringChunkMatchFilterFactory {
         }
     }
 
-    private static class MultiValueStringChunkFilter extends CaseInsensitiveStringChunkFilter {
+    private static class MultiValueStringChunkFilter extends ObjectChunkFilter<String> {
         private final KeyedObjectHashSet<String, String> values;
 
         private MultiValueStringChunkFilter(Object... values) {
@@ -170,7 +165,7 @@ public class StringChunkMatchFilterFactory {
         }
     }
 
-    private static class InverseMultiValueStringChunkFilter extends CaseInsensitiveStringChunkFilter {
+    private static class InverseMultiValueStringChunkFilter extends ObjectChunkFilter<String> {
         private final KeyedObjectHashSet<String, String> values;
 
         private InverseMultiValueStringChunkFilter(Object... values) {

@@ -69,7 +69,7 @@ public class DoublePushdownHandlerTest {
         assertTrue(DoublePushdownHandler.maybeOverlaps(
                 new DoubleRangeFilter("d", 200.0, -200.0, true, true), stats));
 
-        // ranges using ±∞ still overlap finite stats
+        // ranges using ±inf still overlap finite stats
         assertTrue(DoublePushdownHandler.maybeOverlaps(
                 new DoubleRangeFilter("d", Double.NEGATIVE_INFINITY, -1.0, true, true), stats));
         assertTrue(DoublePushdownHandler.maybeOverlaps(
@@ -106,7 +106,7 @@ public class DoublePushdownHandlerTest {
         assertTrue(DoublePushdownHandler.maybeOverlaps(
                 new MatchFilter(MatchFilter.MatchType.Regular, "d", withInside), stats));
 
-        // list containing ±∞ values
+        // list containing ±inf values
         assertTrue(DoublePushdownHandler.maybeOverlaps(
                 new MatchFilter(MatchFilter.MatchType.Regular, "d",
                         Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, 200.0),
@@ -145,7 +145,7 @@ public class DoublePushdownHandlerTest {
                 new MatchFilter(MatchFilter.MatchType.Inverted, "d", exclude),
                 doubleStats(0.0, 29.0)));
 
-        // excluding ±∞ still leaves a finite gap
+        // excluding ±inf still leaves a finite gap
         assertTrue(DoublePushdownHandler.maybeOverlaps(
                 new MatchFilter(MatchFilter.MatchType.Inverted, "d",
                         Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY),

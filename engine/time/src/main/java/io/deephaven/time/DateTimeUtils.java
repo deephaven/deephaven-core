@@ -9,7 +9,6 @@ import io.deephaven.function.Numeric;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.util.QueryConstants;
-import io.deephaven.util.annotations.InternalUseOnly;
 import io.deephaven.util.annotations.ScriptApi;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -610,15 +609,10 @@ public class DateTimeUtils {
         if (micros == NULL_LONG) {
             return NULL_LONG;
         }
-        return microsToNanosImpl(micros);
-    }
-
-    @InternalUseOnly
-    public static long microsToNanosImpl(final long micros) {
         if (Math.abs(micros) > MAX_CONVERTIBLE_MICROS) {
             throw new DateTimeOverflowException("Converting " + micros + " micros to nanos would overflow");
         }
-        return micros * MICRO;
+        return micros * 1000;
     }
 
     /**
@@ -633,11 +627,6 @@ public class DateTimeUtils {
         if (millis == NULL_LONG) {
             return NULL_LONG;
         }
-        return millisToNanosImpl(millis);
-    }
-
-    @InternalUseOnly
-    public static long millisToNanosImpl(final long millis) {
         if (Math.abs(millis) > MAX_CONVERTIBLE_MILLIS) {
             throw new DateTimeOverflowException("Converting " + millis + " millis to nanos would overflow");
         }
@@ -1099,11 +1088,6 @@ public class DateTimeUtils {
         if (millis == NULL_INT) {
             return null;
         }
-        return millisOfDayToLocalTimeImpl(millis);
-    }
-
-    @InternalUseOnly
-    public static @NotNull LocalTime millisOfDayToLocalTimeImpl(final int millis) {
         return LocalTime.ofNanoOfDay(millis * MILLI);
     }
 
@@ -1118,11 +1102,6 @@ public class DateTimeUtils {
         if (micros == NULL_LONG) {
             return null;
         }
-        return microsOfDayToLocalTimeImpl(micros);
-    }
-
-    @InternalUseOnly
-    public static @NotNull LocalTime microsOfDayToLocalTimeImpl(final long micros) {
         return LocalTime.ofNanoOfDay(micros * MICRO);
     }
 
@@ -1137,11 +1116,6 @@ public class DateTimeUtils {
         if (nanos == NULL_LONG) {
             return null;
         }
-        return nanosOfDayToLocalTimeImpl(nanos);
-    }
-
-    @InternalUseOnly
-    public static @NotNull LocalTime nanosOfDayToLocalTimeImpl(final long nanos) {
         return LocalTime.ofNanoOfDay(nanos);
     }
 
@@ -1546,12 +1520,7 @@ public class DateTimeUtils {
      */
     @ScriptApi
     public static @Nullable LocalDate epochDaysAsIntToLocalDate(final int days) {
-        return days == NULL_INT ? null : epochDaysAsIntToLocalDateImpl(days);
-    }
-
-    @InternalUseOnly
-    public static @NotNull LocalDate epochDaysAsIntToLocalDateImpl(final int days) {
-        return LocalDate.ofEpochDay(days);
+        return days == NULL_INT ? null : LocalDate.ofEpochDay(days);
     }
 
     // endregion
