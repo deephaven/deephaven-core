@@ -5,29 +5,28 @@
 // ****** Edit CharPushdownHandler and run "./gradlew replicateParquetPushdownHandlers" to regenerate
 //
 // @formatter:off
-package io.deephaven.parquet.table.pushdown;
+package io.deephaven.parquet.table.location;
 
 import io.deephaven.engine.table.impl.select.LongRangeFilter;
 import io.deephaven.engine.table.impl.select.MatchFilter;
 import io.deephaven.util.QueryConstants;
-import io.deephaven.util.annotations.InternalUseOnly;
-import io.deephaven.util.type.TypeUtils;
+import io.deephaven.util.type.ArrayTypeUtils;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.parquet.column.statistics.Statistics;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
 
-@InternalUseOnly
-public abstract class LongPushdownHandler {
+final class LongPushdownHandler {
 
     /**
      * Verifies that the statistics range intersects the range defined by the filter.
      */
-    public static boolean maybeOverlaps(
+    static boolean maybeOverlaps(
             @NotNull final LongRangeFilter longRangeFilter,
             @NotNull final Statistics<?> statistics) {
-        // Skip pushdown-based filtering for nulls to err on the safer side instead of adding more complex handling logic.
+        // Skip pushdown-based filtering for nulls to err on the safer side instead of adding more complex handling
+        // logic.
         // TODO (DH-19666): Improve handling of nulls
         final long dhLower = longRangeFilter.getLower();
         final long dhUpper = longRangeFilter.getUpper();
@@ -49,34 +48,21 @@ public abstract class LongPushdownHandler {
     /**
      * Verifies that the {@code [min, max]} range intersects the range defined by the given lower and upper bounds.
      */
-     static boolean maybeOverlapsRangeImpl(
+    static boolean maybeOverlapsRangeImpl(
             final long min, final long max,
             final long lower, final boolean lowerInclusive,
             final long upper, final boolean upperInclusive) {
-        final int c0 = Long.compare(lower, upper);
-        if (c0 > 0 || (c0 == 0 && !(lowerInclusive && upperInclusive))) {
-            // lower > upper, no overlap possible.
+        if (lower > upper || (lower == upper && !(lowerInclusive && upperInclusive))) {
             return false;
         }
-        final int c1 = Long.compare(lower, max);
-        if (c1 > 0) {
-            // lower > max, no overlap possible.
-            return false;
-        }
-        final int c2 = Long.compare(min, upper);
-        if (c2 > 0) {
-            // min > upper, no overlap possible.
-            return false;
-        }
-        return (c1 < 0 && c2 < 0)
-                || (c1 == 0 && lowerInclusive)
-                || (c2 == 0 && upperInclusive);
+        return (upperInclusive ? min <= upper : min < upper)
+                && (lowerInclusive ? max >= lower : max > lower);
     }
 
     /**
      * Verifies that the statistics range intersects any point provided in the match filter.
      */
-    public static boolean maybeOverlaps(
+    static boolean maybeOverlaps(
             @NotNull final MatchFilter matchFilter,
             @NotNull final Statistics<?> statistics) {
         final Object[] values = matchFilter.getValues();
@@ -84,15 +70,14 @@ public abstract class LongPushdownHandler {
             // No values to check against, so we consider it as a maybe overlap.
             return true;
         }
-        // Skip pushdown-based filtering for nulls to err on the safer side instead of adding more complex handling logic.
-        // TODO (DH-19666): Improve handling of nulls
-        final long[] unboxedValues = new long[values.length];
-        for (int i = 0; i < values.length; i++) {
-            final long value = TypeUtils.getUnboxedLong(values[i]);
+        // Skip pushdown-based filtering for nulls to err on the safer side instead of adding more complex handling
+        // logic.
+        // TODO (DH-19666): Improve handling of nulls.
+        final long[] unboxedValues = ArrayTypeUtils.getUnboxedLongArray(values);
+        for (final long value : unboxedValues) {
             if (value == QueryConstants.NULL_LONG) {
                 return true;
             }
-            unboxedValues[i] = value;
         }
         final MutableObject<Long> mutableMin = new MutableObject<>();
         final MutableObject<Long> mutableMax = new MutableObject<>();
@@ -109,7 +94,7 @@ public abstract class LongPushdownHandler {
     /**
      * Verifies that the {@code [min, max]} range intersects any point supplied in {@code values}.
      */
-     static boolean maybeMatches(
+    static boolean maybeMatches(
             final long min,
             final long max,
             @NotNull final long[] values) {
@@ -130,7 +115,7 @@ public abstract class LongPushdownHandler {
      * [Long.MIN_VALUE, v_0), (v_0, v_1), ... , (v_n-2, v_n-1), (v_n-1, Long.MAX_VALUE]
      * </pre>
      */
-     static boolean maybeMatchesInverse(
+    static boolean maybeMatchesInverse(
             final long min,
             final long max,
             @NotNull final long[] values) {

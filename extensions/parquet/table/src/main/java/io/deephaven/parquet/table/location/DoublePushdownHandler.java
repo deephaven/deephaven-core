@@ -5,29 +5,28 @@
 // ****** Edit FloatPushdownHandler and run "./gradlew replicateParquetPushdownHandlers" to regenerate
 //
 // @formatter:off
-package io.deephaven.parquet.table.pushdown;
+package io.deephaven.parquet.table.location;
 
 import io.deephaven.engine.table.impl.select.DoubleRangeFilter;
 import io.deephaven.engine.table.impl.select.MatchFilter;
 import io.deephaven.util.QueryConstants;
-import io.deephaven.util.annotations.InternalUseOnly;
-import io.deephaven.util.type.TypeUtils;
+import io.deephaven.util.type.ArrayTypeUtils;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.parquet.column.statistics.Statistics;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
 
-@InternalUseOnly
-public abstract class DoublePushdownHandler {
+final class DoublePushdownHandler {
 
     /**
      * Verifies that the statistics range intersects the range defined by the filter.
      */
-    public static boolean maybeOverlaps(
+    static boolean maybeOverlaps(
             @NotNull final DoubleRangeFilter doubleRangeFilter,
             @NotNull final Statistics<?> statistics) {
-        // Skip pushdown-based filtering for nulls and NaNs to err on the safer side instead of adding more complex handling logic.
+        // Skip pushdown-based filtering for nulls and NaNs to err on the safer side instead of adding more complex
+        // handling logic.
         // TODO (DH-19666): Improve handling of nulls
         final double dhLower = doubleRangeFilter.getLower();
         final double dhUpper = doubleRangeFilter.getUpper();
@@ -48,36 +47,25 @@ public abstract class DoublePushdownHandler {
     }
 
     /**
-     * Verifies that the {@code [min, max]} range intersects the range defined by the given lower and upper bounds.
+     * Verifies that the {@code [min, max]} range intersects the range defined by the given lower and upper bounds. This
+     * method assumes that the caller would filter NaN values. Also, this method is lenient towards -0.0 / 0.0
+     * comparisons, when compared to {@link Double#compare}
      */
     private static boolean maybeOverlapsRangeImpl(
             final double min, final double max,
             final double lower, final boolean lowerInclusive,
             final double upper, final boolean upperInclusive) {
-        final int c0 = Double.compare(lower, upper);
-        if (c0 > 0 || (c0 == 0 && !(lowerInclusive && upperInclusive))) {
-            // lower > upper, no overlap possible.
+        if (lower > upper || (lower == upper && !(lowerInclusive && upperInclusive))) {
             return false;
         }
-        final int c1 = Double.compare(lower, max);
-        if (c1 > 0) {
-            // lower > max, no overlap possible.
-            return false;
-        }
-        final int c2 = Double.compare(min, upper);
-        if (c2 > 0) {
-            // min > upper, no overlap possible.
-            return false;
-        }
-        return (c1 < 0 && c2 < 0)
-                || (c1 == 0 && lowerInclusive)
-                || (c2 == 0 && upperInclusive);
+        return (upperInclusive ? min <= upper : min < upper)
+                && (lowerInclusive ? max >= lower : max > lower);
     }
 
     /**
      * Verifies that the statistics range intersects any point provided in the match filter.
      */
-    public static boolean maybeOverlaps(
+    static boolean maybeOverlaps(
             @NotNull final MatchFilter matchFilter,
             @NotNull final Statistics<?> statistics) {
         final Object[] values = matchFilter.getValues();
@@ -85,15 +73,14 @@ public abstract class DoublePushdownHandler {
             // No values to check against, so we consider it as a maybe overlap.
             return true;
         }
-        // Skip pushdown-based filtering for nulls and NaNs to err on the safer side instead of adding more complex handling logic.
+        // Skip pushdown-based filtering for nulls and NaNs to err on the safer side instead of adding more complex
+        // handling logic.
         // TODO (DH-19666): Improve handling of nulls
-        final double[] unboxedValues = new double[values.length];
-        for (int i = 0; i < values.length; i++) {
-            final double value = TypeUtils.getUnboxedDouble(values[i]);
+        final double[] unboxedValues = ArrayTypeUtils.getUnboxedDoubleArray(values);
+        for (final double value : unboxedValues) {
             if (Double.isNaN(value) || value == QueryConstants.NULL_DOUBLE) {
                 return true;
             }
-            unboxedValues[i] = value;
         }
         final MutableObject<Double> mutableMin = new MutableObject<>();
         final MutableObject<Double> mutableMax = new MutableObject<>();

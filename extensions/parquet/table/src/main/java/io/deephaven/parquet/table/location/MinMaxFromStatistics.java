@@ -1,8 +1,12 @@
 //
 // Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
-package io.deephaven.parquet.table.pushdown;
+package io.deephaven.parquet.table.location;
 
+import io.deephaven.engine.primitive.function.ByteConsumer;
+import io.deephaven.engine.primitive.function.CharConsumer;
+import io.deephaven.engine.primitive.function.FloatConsumer;
+import io.deephaven.engine.primitive.function.ShortConsumer;
 import io.deephaven.parquet.base.materializers.ByteMaterializer;
 import io.deephaven.parquet.base.materializers.CharMaterializer;
 import io.deephaven.parquet.base.materializers.DoubleFromFloatMaterializer;
@@ -30,7 +34,6 @@ import io.deephaven.parquet.base.materializers.LongMaterializer;
 import io.deephaven.parquet.base.materializers.ShortFromBooleanMaterializer;
 import io.deephaven.parquet.base.materializers.ShortFromUnsignedByteMaterializer;
 import io.deephaven.parquet.base.materializers.ShortMaterializer;
-import io.deephaven.util.annotations.InternalUseOnly;
 import org.apache.parquet.column.statistics.BooleanStatistics;
 import org.apache.parquet.column.statistics.DoubleStatistics;
 import org.apache.parquet.column.statistics.FloatStatistics;
@@ -46,6 +49,9 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.function.Consumer;
+import java.util.function.DoubleConsumer;
+import java.util.function.IntConsumer;
+import java.util.function.LongConsumer;
 
 
 /**
@@ -59,8 +65,18 @@ import java.util.function.Consumer;
  * the logical type, and if that fails, we try to extract them from the primitive type. If both fail, we return
  * {@code false}.
  */
-@InternalUseOnly
-public abstract class MinMaxFromStatistics {
+final class MinMaxFromStatistics {
+
+    private static void verifyPrimitive(
+            final Statistics<?> stats,
+            final PrimitiveType.PrimitiveTypeName expected) {
+        final PrimitiveType.PrimitiveTypeName actual = stats.type().getPrimitiveTypeName();
+        if (actual != expected) {
+            throw new IllegalStateException(String.format(
+                    "Unexpected primitive type %s (expected %s) for logical type %s",
+                    actual, expected, stats.type().getLogicalTypeAnnotation()));
+        }
+    }
 
     /**
      * Attempts to retrieve the minimum and maximum bytes from the given {@code statistics}.
@@ -69,8 +85,8 @@ public abstract class MinMaxFromStatistics {
      */
     static boolean getMinMaxForBytes(
             @NotNull final Statistics<?> statistics,
-            @NotNull final Consumer<Byte> minSetter,
-            @NotNull final Consumer<Byte> maxSetter) {
+            @NotNull final ByteConsumer minSetter,
+            @NotNull final ByteConsumer maxSetter) {
         if (!statistics.hasNonNullValue()) {
             throw new IllegalStateException("Statistics must have a non-null value");
         }
@@ -80,6 +96,7 @@ public abstract class MinMaxFromStatistics {
             final LogicalTypeAnnotation.IntLogicalTypeAnnotation intLogicalType =
                     (LogicalTypeAnnotation.IntLogicalTypeAnnotation) logicalType;
             if (intLogicalType.isSigned() && intLogicalType.getBitWidth() == 8) {
+                verifyPrimitive(statistics, PrimitiveType.PrimitiveTypeName.INT32);
                 final IntStatistics intStats = (IntStatistics) statistics;
                 minSetter.accept(ByteMaterializer.convertValue(intStats.getMin()));
                 maxSetter.accept(ByteMaterializer.convertValue(intStats.getMax()));
@@ -96,8 +113,8 @@ public abstract class MinMaxFromStatistics {
      */
     static boolean getMinMaxForChars(
             @NotNull final Statistics<?> statistics,
-            @NotNull final Consumer<Character> minSetter,
-            @NotNull final Consumer<Character> maxSetter) {
+            @NotNull final CharConsumer minSetter,
+            @NotNull final CharConsumer maxSetter) {
         final PrimitiveType parquetColType = statistics.type();
         final LogicalTypeAnnotation logicalType = parquetColType.getLogicalTypeAnnotation();
         if (logicalType instanceof LogicalTypeAnnotation.IntLogicalTypeAnnotation) {
@@ -106,6 +123,7 @@ public abstract class MinMaxFromStatistics {
             if (!intLogicalType.isSigned()) {
                 final int bitWidth = intLogicalType.getBitWidth();
                 if (bitWidth == 8 || bitWidth == 16) {
+                    verifyPrimitive(statistics, PrimitiveType.PrimitiveTypeName.INT32);
                     final IntStatistics intStats = (IntStatistics) statistics;
                     minSetter.accept(CharMaterializer.convertValue(intStats.getMin()));
                     maxSetter.accept(CharMaterializer.convertValue(intStats.getMax()));
@@ -124,8 +142,8 @@ public abstract class MinMaxFromStatistics {
      */
     static boolean getMinMaxForShorts(
             @NotNull final Statistics<?> statistics,
-            @NotNull final Consumer<Short> minSetter,
-            @NotNull final Consumer<Short> maxSetter) {
+            @NotNull final ShortConsumer minSetter,
+            @NotNull final ShortConsumer maxSetter) {
         final PrimitiveType parquetColType = statistics.type();
         final LogicalTypeAnnotation logicalType = parquetColType.getLogicalTypeAnnotation();
         final PrimitiveType.PrimitiveTypeName primitiveTypeName = parquetColType.getPrimitiveTypeName();
@@ -135,11 +153,13 @@ public abstract class MinMaxFromStatistics {
             final boolean isSigned = intLogicalType.isSigned();
             final int bitWidth = intLogicalType.getBitWidth();
             if (isSigned && (bitWidth == 8 || bitWidth == 16)) {
+                verifyPrimitive(statistics, PrimitiveType.PrimitiveTypeName.INT32);
                 final IntStatistics intStats = (IntStatistics) statistics;
                 minSetter.accept(ShortMaterializer.convertValue(intStats.getMin()));
                 maxSetter.accept(ShortMaterializer.convertValue(intStats.getMax()));
                 return true;
             } else if (!isSigned && bitWidth == 8) {
+                verifyPrimitive(statistics, PrimitiveType.PrimitiveTypeName.INT32);
                 final IntStatistics intStats = (IntStatistics) statistics;
                 minSetter.accept(ShortFromUnsignedByteMaterializer.convertValue(intStats.getMin()));
                 maxSetter.accept(ShortFromUnsignedByteMaterializer.convertValue(intStats.getMax()));
@@ -162,8 +182,8 @@ public abstract class MinMaxFromStatistics {
      */
     static boolean getMinMaxForInts(
             @NotNull final Statistics<?> statistics,
-            @NotNull final Consumer<Integer> minSetter,
-            @NotNull final Consumer<Integer> maxSetter) {
+            @NotNull final IntConsumer minSetter,
+            @NotNull final IntConsumer maxSetter) {
         final PrimitiveType parquetColType = statistics.type();
         final LogicalTypeAnnotation logicalType = parquetColType.getLogicalTypeAnnotation();
         final PrimitiveType.PrimitiveTypeName primitiveTypeName = parquetColType.getPrimitiveTypeName();
@@ -173,17 +193,20 @@ public abstract class MinMaxFromStatistics {
             final boolean isSigned = intLogicalType.isSigned();
             final int bitWidth = intLogicalType.getBitWidth();
             if (isSigned && (bitWidth == 8 || bitWidth == 16 || bitWidth == 32)) {
+                verifyPrimitive(statistics, PrimitiveType.PrimitiveTypeName.INT32);
                 final IntStatistics intStats = (IntStatistics) statistics;
                 minSetter.accept(IntMaterializer.convertValue(intStats.getMin()));
                 maxSetter.accept(IntMaterializer.convertValue(intStats.getMax()));
                 return true;
             } else if (!isSigned) {
                 if (bitWidth == 8) {
+                    verifyPrimitive(statistics, PrimitiveType.PrimitiveTypeName.INT32);
                     final IntStatistics intStats = (IntStatistics) statistics;
                     minSetter.accept(IntFromUnsignedByteMaterializer.convertValue(intStats.getMin()));
                     maxSetter.accept(IntFromUnsignedByteMaterializer.convertValue(intStats.getMax()));
                     return true;
                 } else if (bitWidth == 16) {
+                    verifyPrimitive(statistics, PrimitiveType.PrimitiveTypeName.INT32);
                     final IntStatistics intStats = (IntStatistics) statistics;
                     minSetter.accept(IntFromUnsignedShortMaterializer.convertValue(intStats.getMin()));
                     maxSetter.accept(IntFromUnsignedShortMaterializer.convertValue(intStats.getMax()));
@@ -213,8 +236,8 @@ public abstract class MinMaxFromStatistics {
      */
     static boolean getMinMaxForLongs(
             @NotNull final Statistics<?> statistics,
-            @NotNull final Consumer<Long> minSetter,
-            @NotNull final Consumer<Long> maxSetter) {
+            @NotNull final LongConsumer minSetter,
+            @NotNull final LongConsumer maxSetter) {
         final PrimitiveType parquetColType = statistics.type();
         final LogicalTypeAnnotation logicalType = parquetColType.getLogicalTypeAnnotation();
         final PrimitiveType.PrimitiveTypeName primitiveTypeName = parquetColType.getPrimitiveTypeName();
@@ -225,11 +248,13 @@ public abstract class MinMaxFromStatistics {
             final int bitWidth = intLogicalType.getBitWidth();
             if (isSigned) {
                 if (bitWidth == 8 || bitWidth == 16 || bitWidth == 32) {
+                    verifyPrimitive(statistics, PrimitiveType.PrimitiveTypeName.INT32);
                     final IntStatistics intStats = (IntStatistics) statistics;
                     minSetter.accept(LongFromIntMaterializer.convertValue(intStats.getMin()));
                     maxSetter.accept(LongFromIntMaterializer.convertValue(intStats.getMax()));
                     return true;
                 } else if (bitWidth == 64) {
+                    verifyPrimitive(statistics, PrimitiveType.PrimitiveTypeName.INT64);
                     final LongStatistics longStats = (LongStatistics) statistics;
                     minSetter.accept(LongMaterializer.convertValue(longStats.getMin()));
                     maxSetter.accept(LongMaterializer.convertValue(longStats.getMax()));
@@ -237,16 +262,19 @@ public abstract class MinMaxFromStatistics {
                 }
             } else {
                 if (bitWidth == 8) {
+                    verifyPrimitive(statistics, PrimitiveType.PrimitiveTypeName.INT32);
                     final IntStatistics intStats = (IntStatistics) statistics;
                     minSetter.accept(LongFromUnsignedByteMaterializer.convertValue(intStats.getMin()));
                     maxSetter.accept(LongFromUnsignedByteMaterializer.convertValue(intStats.getMax()));
                     return true;
                 } else if (bitWidth == 16) {
+                    verifyPrimitive(statistics, PrimitiveType.PrimitiveTypeName.INT32);
                     final IntStatistics intStats = (IntStatistics) statistics;
                     minSetter.accept(LongFromUnsignedShortMaterializer.convertValue(intStats.getMin()));
                     maxSetter.accept(LongFromUnsignedShortMaterializer.convertValue(intStats.getMax()));
                     return true;
                 } else if (bitWidth == 32) {
+                    verifyPrimitive(statistics, PrimitiveType.PrimitiveTypeName.INT32);
                     final IntStatistics intStats = (IntStatistics) statistics;
                     minSetter.accept(LongFromUnsignedIntMaterializer.convertValue(intStats.getMin()));
                     maxSetter.accept(LongFromUnsignedIntMaterializer.convertValue(intStats.getMax()));
@@ -279,8 +307,8 @@ public abstract class MinMaxFromStatistics {
      */
     static boolean getMinMaxForFloats(
             @NotNull final Statistics<?> statistics,
-            @NotNull final Consumer<Float> minSetter,
-            @NotNull final Consumer<Float> maxSetter) {
+            @NotNull final FloatConsumer minSetter,
+            @NotNull final FloatConsumer maxSetter) {
         final PrimitiveType parquetColType = statistics.type();
         final PrimitiveType.PrimitiveTypeName primitiveTypeName = parquetColType.getPrimitiveTypeName();
         if (primitiveTypeName == PrimitiveType.PrimitiveTypeName.FLOAT) {
@@ -305,8 +333,8 @@ public abstract class MinMaxFromStatistics {
      */
     static boolean getMinMaxForDoubles(
             @NotNull final Statistics<?> statistics,
-            @NotNull final Consumer<Double> minSetter,
-            @NotNull final Consumer<Double> maxSetter) {
+            @NotNull final DoubleConsumer minSetter,
+            @NotNull final DoubleConsumer maxSetter) {
         final PrimitiveType parquetColType = statistics.type();
         final PrimitiveType.PrimitiveTypeName primitiveTypeName = parquetColType.getPrimitiveTypeName();
         if (primitiveTypeName == PrimitiveType.PrimitiveTypeName.FLOAT) {
@@ -365,6 +393,7 @@ public abstract class MinMaxFromStatistics {
         final PrimitiveType parquetColType = statistics.type();
         final LogicalTypeAnnotation logicalType = parquetColType.getLogicalTypeAnnotation();
         if (logicalType instanceof LogicalTypeAnnotation.StringLogicalTypeAnnotation) {
+            verifyPrimitive(statistics, PrimitiveType.PrimitiveTypeName.BINARY);
             final String minString = statistics.minAsString();
             final String maxString = statistics.maxAsString();
             minSetter.accept(minString);
@@ -389,6 +418,7 @@ public abstract class MinMaxFromStatistics {
             final LogicalTypeAnnotation.TimestampLogicalTypeAnnotation timestampLogicalType =
                     (LogicalTypeAnnotation.TimestampLogicalTypeAnnotation) logicalType;
             if (timestampLogicalType.isAdjustedToUTC()) {
+                verifyPrimitive(statistics, PrimitiveType.PrimitiveTypeName.INT64);
                 final long minLong = ((LongStatistics) statistics).getMin();
                 final long maxLong = ((LongStatistics) statistics).getMax();
                 switch (timestampLogicalType.getUnit()) {
@@ -429,6 +459,7 @@ public abstract class MinMaxFromStatistics {
             final LogicalTypeAnnotation.TimestampLogicalTypeAnnotation timestampLogicalType =
                     (LogicalTypeAnnotation.TimestampLogicalTypeAnnotation) logicalType;
             if (!timestampLogicalType.isAdjustedToUTC()) {
+                verifyPrimitive(statistics, PrimitiveType.PrimitiveTypeName.INT64);
                 final long minLong = ((LongStatistics) statistics).getMin();
                 final long maxLong = ((LongStatistics) statistics).getMax();
                 switch (timestampLogicalType.getUnit()) {
@@ -462,6 +493,7 @@ public abstract class MinMaxFromStatistics {
         final PrimitiveType parquetColType = statistics.type();
         final LogicalTypeAnnotation logicalType = parquetColType.getLogicalTypeAnnotation();
         if (logicalType instanceof LogicalTypeAnnotation.DateLogicalTypeAnnotation) {
+            verifyPrimitive(statistics, PrimitiveType.PrimitiveTypeName.INT32);
             final IntStatistics intStats = (IntStatistics) statistics;
             minSetter.accept(LocalDateMaterializer.convertValue(intStats.getMin()));
             maxSetter.accept(LocalDateMaterializer.convertValue(intStats.getMax()));
@@ -486,18 +518,21 @@ public abstract class MinMaxFromStatistics {
                     (LogicalTypeAnnotation.TimeLogicalTypeAnnotation) logicalType;
             switch (timeLogicalType.getUnit()) {
                 case MILLIS: {
+                    verifyPrimitive(statistics, PrimitiveType.PrimitiveTypeName.INT32);
                     final IntStatistics intStats = (IntStatistics) statistics;
                     minSetter.accept(LocalTimeFromMillisMaterializer.convertValue(intStats.getMin()));
                     maxSetter.accept(LocalTimeFromMillisMaterializer.convertValue(intStats.getMax()));
                     return true;
                 }
                 case MICROS: {
+                    verifyPrimitive(statistics, PrimitiveType.PrimitiveTypeName.INT64);
                     final LongStatistics longStats = (LongStatistics) statistics;
                     minSetter.accept(LocalTimeFromMicrosMaterializer.convertValue(longStats.getMin()));
                     maxSetter.accept(LocalTimeFromMicrosMaterializer.convertValue(longStats.getMax()));
                     return true;
                 }
                 case NANOS: {
+                    verifyPrimitive(statistics, PrimitiveType.PrimitiveTypeName.INT64);
                     final LongStatistics longStats = (LongStatistics) statistics;
                     minSetter.accept(LocalTimeFromNanosMaterializer.convertValue(longStats.getMin()));
                     maxSetter.accept(LocalTimeFromNanosMaterializer.convertValue(longStats.getMax()));

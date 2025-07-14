@@ -1,20 +1,18 @@
 //
 // Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
-package io.deephaven.parquet.table.pushdown;
+package io.deephaven.parquet.table.location;
 
 import io.deephaven.engine.table.impl.select.ComparableRangeFilter;
 import io.deephaven.engine.table.impl.select.MatchFilter;
-import io.deephaven.util.annotations.InternalUseOnly;
 import io.deephaven.util.compare.ObjectComparisons;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.parquet.column.statistics.Statistics;
 import org.jetbrains.annotations.NotNull;
 
-@InternalUseOnly
-public abstract class ObjectPushdownHandler {
+final class ObjectPushdownHandler {
 
-    public static boolean maybeOverlaps(
+    static boolean maybeOverlaps(
             @NotNull final ComparableRangeFilter comparableRangeFilter,
             @NotNull final Statistics<?> statistics) {
         // Skip pushdown-based filtering for nulls to err on the safer side instead of adding more complex handling
@@ -50,30 +48,20 @@ public abstract class ObjectPushdownHandler {
             @NotNull final Comparable<?> min, @NotNull final Comparable<?> max,
             @NotNull final Comparable<?> lower, final boolean lowerInclusive,
             @NotNull final Comparable<?> upper, final boolean upperInclusive) {
-        final int c0 = ((Comparable) lower).compareTo(upper);
-        if (c0 > 0 || (c0 == 0 && !(lowerInclusive && upperInclusive))) {
-            // lower > upper, no overlap possible.
+        final int cmpLowerUpper = ((Comparable) lower).compareTo(upper);
+        if (cmpLowerUpper > 0 || (cmpLowerUpper == 0 && (!lowerInclusive || !upperInclusive))) {
             return false;
         }
-        final int c1 = ((Comparable) lower).compareTo(max);
-        if (c1 > 0) {
-            // lower > max, no overlap possible.
-            return false;
-        }
-        final int c2 = ((Comparable) min).compareTo(upper);
-        if (c2 > 0) {
-            // min > upper, no overlap possible.
-            return false;
-        }
-        return (c1 < 0 && c2 < 0)
-                || (c1 == 0 && lowerInclusive)
-                || (c2 == 0 && upperInclusive);
+        return (upperInclusive ? ((Comparable) min).compareTo(upper) <= 0
+                : ((Comparable) min).compareTo(upper) < 0)
+                && (lowerInclusive ? ((Comparable) max).compareTo(lower) >= 0
+                        : ((Comparable) max).compareTo(lower) > 0);
     }
 
     /**
      * Verifies that the {@code [min, max]} range intersects any point supplied in the filter.
      */
-    public static boolean maybeOverlaps(
+    static boolean maybeOverlaps(
             @NotNull final MatchFilter matchFilter,
             @NotNull final Statistics<?> statistics) {
         final Object[] values = matchFilter.getValues();

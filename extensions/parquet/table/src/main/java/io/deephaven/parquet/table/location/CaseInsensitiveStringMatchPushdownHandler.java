@@ -1,18 +1,16 @@
 //
 // Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
-package io.deephaven.parquet.table.pushdown;
+package io.deephaven.parquet.table.location;
 
 import io.deephaven.engine.table.impl.select.MatchFilter;
-import io.deephaven.util.annotations.InternalUseOnly;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.parquet.column.statistics.Statistics;
 import org.jetbrains.annotations.NotNull;
 
-@InternalUseOnly
-public abstract class CaseInsensitiveStringMatchPushdownHandler {
+final class CaseInsensitiveStringMatchPushdownHandler {
 
-    public static boolean maybeOverlaps(
+    static boolean maybeOverlaps(
             @NotNull final MatchFilter matchFilter,
             @NotNull final Statistics<?> statistics) {
         final Object[] values = matchFilter.getValues();

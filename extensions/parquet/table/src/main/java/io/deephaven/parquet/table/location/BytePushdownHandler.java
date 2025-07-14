@@ -5,29 +5,28 @@
 // ****** Edit CharPushdownHandler and run "./gradlew replicateParquetPushdownHandlers" to regenerate
 //
 // @formatter:off
-package io.deephaven.parquet.table.pushdown;
+package io.deephaven.parquet.table.location;
 
 import io.deephaven.engine.table.impl.select.ByteRangeFilter;
 import io.deephaven.engine.table.impl.select.MatchFilter;
 import io.deephaven.util.QueryConstants;
-import io.deephaven.util.annotations.InternalUseOnly;
-import io.deephaven.util.type.TypeUtils;
+import io.deephaven.util.type.ArrayTypeUtils;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.parquet.column.statistics.Statistics;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
 
-@InternalUseOnly
-public abstract class BytePushdownHandler {
+final class BytePushdownHandler {
 
     /**
      * Verifies that the statistics range intersects the range defined by the filter.
      */
-    public static boolean maybeOverlaps(
+    static boolean maybeOverlaps(
             @NotNull final ByteRangeFilter byteRangeFilter,
             @NotNull final Statistics<?> statistics) {
-        // Skip pushdown-based filtering for nulls to err on the safer side instead of adding more complex handling logic.
+        // Skip pushdown-based filtering for nulls to err on the safer side instead of adding more complex handling
+        // logic.
         // TODO (DH-19666): Improve handling of nulls
         final byte dhLower = byteRangeFilter.getLower();
         final byte dhUpper = byteRangeFilter.getUpper();
@@ -49,34 +48,21 @@ public abstract class BytePushdownHandler {
     /**
      * Verifies that the {@code [min, max]} range intersects the range defined by the given lower and upper bounds.
      */
-    private static boolean maybeOverlapsRangeImpl(
+    static boolean maybeOverlapsRangeImpl(
             final byte min, final byte max,
             final byte lower, final boolean lowerInclusive,
             final byte upper, final boolean upperInclusive) {
-        final int c0 = Byte.compare(lower, upper);
-        if (c0 > 0 || (c0 == 0 && !(lowerInclusive && upperInclusive))) {
-            // lower > upper, no overlap possible.
+        if (lower > upper || (lower == upper && !(lowerInclusive && upperInclusive))) {
             return false;
         }
-        final int c1 = Byte.compare(lower, max);
-        if (c1 > 0) {
-            // lower > max, no overlap possible.
-            return false;
-        }
-        final int c2 = Byte.compare(min, upper);
-        if (c2 > 0) {
-            // min > upper, no overlap possible.
-            return false;
-        }
-        return (c1 < 0 && c2 < 0)
-                || (c1 == 0 && lowerInclusive)
-                || (c2 == 0 && upperInclusive);
+        return (upperInclusive ? min <= upper : min < upper)
+                && (lowerInclusive ? max >= lower : max > lower);
     }
 
     /**
      * Verifies that the statistics range intersects any point provided in the match filter.
      */
-    public static boolean maybeOverlaps(
+    static boolean maybeOverlaps(
             @NotNull final MatchFilter matchFilter,
             @NotNull final Statistics<?> statistics) {
         final Object[] values = matchFilter.getValues();
@@ -84,15 +70,14 @@ public abstract class BytePushdownHandler {
             // No values to check against, so we consider it as a maybe overlap.
             return true;
         }
-        // Skip pushdown-based filtering for nulls to err on the safer side instead of adding more complex handling logic.
-        // TODO (DH-19666): Improve handling of nulls
-        final byte[] unboxedValues = new byte[values.length];
-        for (int i = 0; i < values.length; i++) {
-            final byte value = TypeUtils.getUnboxedByte(values[i]);
+        // Skip pushdown-based filtering for nulls to err on the safer side instead of adding more complex handling
+        // logic.
+        // TODO (DH-19666): Improve handling of nulls.
+        final byte[] unboxedValues = ArrayTypeUtils.getUnboxedByteArray(values);
+        for (final byte value : unboxedValues) {
             if (value == QueryConstants.NULL_BYTE) {
                 return true;
             }
-            unboxedValues[i] = value;
         }
         final MutableObject<Byte> mutableMin = new MutableObject<>();
         final MutableObject<Byte> mutableMax = new MutableObject<>();
@@ -109,7 +94,7 @@ public abstract class BytePushdownHandler {
     /**
      * Verifies that the {@code [min, max]} range intersects any point supplied in {@code values}.
      */
-    private static boolean maybeMatches(
+    static boolean maybeMatches(
             final byte min,
             final byte max,
             @NotNull final byte[] values) {
@@ -130,7 +115,7 @@ public abstract class BytePushdownHandler {
      * [Byte.MIN_VALUE, v_0), (v_0, v_1), ... , (v_n-2, v_n-1), (v_n-1, Byte.MAX_VALUE]
      * </pre>
      */
-    private static boolean maybeMatchesInverse(
+    static boolean maybeMatchesInverse(
             final byte min,
             final byte max,
             @NotNull final byte[] values) {

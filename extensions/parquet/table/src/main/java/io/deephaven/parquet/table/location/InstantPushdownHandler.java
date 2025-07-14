@@ -1,23 +1,21 @@
 //
 // Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
-package io.deephaven.parquet.table.pushdown;
+package io.deephaven.parquet.table.location;
 
 import io.deephaven.engine.table.impl.select.InstantRangeFilter;
 import io.deephaven.engine.table.impl.select.MatchFilter;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
-import io.deephaven.util.annotations.InternalUseOnly;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.parquet.column.statistics.Statistics;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.Instant;
 
-@InternalUseOnly
-public abstract class InstantPushdownHandler {
+final class InstantPushdownHandler {
 
-    public static boolean maybeOverlaps(
+    static boolean maybeOverlaps(
             final InstantRangeFilter instantRangeFilter,
             final Statistics<?> statistics) {
         // Skip pushdown-based filtering for nulls to err on the safer side instead of adding more complex handling
@@ -45,7 +43,7 @@ public abstract class InstantPushdownHandler {
     /**
      * Verifies that the statistics range intersects any point provided in the match filter.
      */
-    public static boolean maybeOverlaps(
+    static boolean maybeOverlaps(
             @NotNull final MatchFilter matchFilter,
             @NotNull final Statistics<?> statistics) {
         final Object[] values = matchFilter.getValues();

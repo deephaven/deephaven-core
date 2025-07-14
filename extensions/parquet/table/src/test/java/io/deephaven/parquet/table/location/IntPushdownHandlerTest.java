@@ -1,7 +1,7 @@
 //
 // Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
-package io.deephaven.parquet.table.pushdown;
+package io.deephaven.parquet.table.location;
 
 import io.deephaven.engine.table.impl.select.IntRangeFilter;
 import io.deephaven.engine.table.impl.select.MatchFilter;

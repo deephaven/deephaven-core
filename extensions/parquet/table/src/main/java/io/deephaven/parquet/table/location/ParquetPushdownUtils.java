@@ -1,10 +1,9 @@
 //
 // Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
-package io.deephaven.parquet.table.pushdown;
+package io.deephaven.parquet.table.location;
 
 import io.deephaven.time.DateTimeUtils;
-import io.deephaven.util.annotations.InternalUseOnly;
 import org.apache.parquet.column.statistics.Statistics;
 import org.apache.parquet.schema.ColumnOrder;
 import org.apache.parquet.schema.PrimitiveType;
@@ -14,8 +13,7 @@ import java.time.Instant;
 /**
  * Utility methods for Parquet pushdown operations.
  */
-@InternalUseOnly
-public abstract class ParquetPushdownUtils {
+final class ParquetPushdownUtils {
     private static final long NANOS_PER_SECOND = DateTimeUtils.SECOND;
 
     /**
@@ -26,7 +24,7 @@ public abstract class ParquetPushdownUtils {
     }
 
 
-    public static boolean areStatisticsUsable(final Statistics<?> statistics) {
+    static boolean areStatisticsUsable(final Statistics<?> statistics) {
         if (statistics == null || !statistics.hasNonNullValue()) {
             return false;
         }

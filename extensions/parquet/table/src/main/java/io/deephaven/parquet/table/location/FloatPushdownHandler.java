@@ -1,26 +1,24 @@
 //
 // Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
-package io.deephaven.parquet.table.pushdown;
+package io.deephaven.parquet.table.location;
 
 import io.deephaven.engine.table.impl.select.FloatRangeFilter;
 import io.deephaven.engine.table.impl.select.MatchFilter;
 import io.deephaven.util.QueryConstants;
-import io.deephaven.util.annotations.InternalUseOnly;
-import io.deephaven.util.type.TypeUtils;
+import io.deephaven.util.type.ArrayTypeUtils;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.parquet.column.statistics.Statistics;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
 
-@InternalUseOnly
-public abstract class FloatPushdownHandler {
+final class FloatPushdownHandler {
 
     /**
      * Verifies that the statistics range intersects the range defined by the filter.
      */
-    public static boolean maybeOverlaps(
+    static boolean maybeOverlaps(
             @NotNull final FloatRangeFilter floatRangeFilter,
             @NotNull final Statistics<?> statistics) {
         // Skip pushdown-based filtering for nulls and NaNs to err on the safer side instead of adding more complex
@@ -45,36 +43,25 @@ public abstract class FloatPushdownHandler {
     }
 
     /**
-     * Verifies that the {@code [min, max]} range intersects the range defined by the given lower and upper bounds.
+     * Verifies that the {@code [min, max]} range intersects the range defined by the given lower and upper bounds. This
+     * method assumes that the caller would filter NaN values. Also, this method is lenient towards -0.0 / 0.0
+     * comparisons, when compared to {@link Float#compare}
      */
     private static boolean maybeOverlapsRangeImpl(
             final float min, final float max,
             final float lower, final boolean lowerInclusive,
             final float upper, final boolean upperInclusive) {
-        final int c0 = Float.compare(lower, upper);
-        if (c0 > 0 || (c0 == 0 && !(lowerInclusive && upperInclusive))) {
-            // lower > upper, no overlap possible.
+        if (lower > upper || (lower == upper && !(lowerInclusive && upperInclusive))) {
             return false;
         }
-        final int c1 = Float.compare(lower, max);
-        if (c1 > 0) {
-            // lower > max, no overlap possible.
-            return false;
-        }
-        final int c2 = Float.compare(min, upper);
-        if (c2 > 0) {
-            // min > upper, no overlap possible.
-            return false;
-        }
-        return (c1 < 0 && c2 < 0)
-                || (c1 == 0 && lowerInclusive)
-                || (c2 == 0 && upperInclusive);
+        return (upperInclusive ? min <= upper : min < upper)
+                && (lowerInclusive ? max >= lower : max > lower);
     }
 
     /**
      * Verifies that the statistics range intersects any point provided in the match filter.
      */
-    public static boolean maybeOverlaps(
+    static boolean maybeOverlaps(
             @NotNull final MatchFilter matchFilter,
             @NotNull final Statistics<?> statistics) {
         final Object[] values = matchFilter.getValues();
@@ -85,13 +72,11 @@ public abstract class FloatPushdownHandler {
         // Skip pushdown-based filtering for nulls and NaNs to err on the safer side instead of adding more complex
         // handling logic.
         // TODO (DH-19666): Improve handling of nulls
-        final float[] unboxedValues = new float[values.length];
-        for (int i = 0; i < values.length; i++) {
-            final float value = TypeUtils.getUnboxedFloat(values[i]);
+        final float[] unboxedValues = ArrayTypeUtils.getUnboxedFloatArray(values);
+        for (final float value : unboxedValues) {
             if (Float.isNaN(value) || value == QueryConstants.NULL_FLOAT) {
                 return true;
             }
-            unboxedValues[i] = value;
         }
         final MutableObject<Float> mutableMin = new MutableObject<>();
         final MutableObject<Float> mutableMax = new MutableObject<>();

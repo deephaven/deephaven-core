@@ -1,22 +1,25 @@
 //
 // Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
-package io.deephaven.parquet.table.pushdown;
+package io.deephaven.parquet.table.location;
 
 import io.deephaven.engine.table.impl.select.SingleSidedComparableRangeFilter;
-import io.deephaven.util.annotations.InternalUseOnly;
 import io.deephaven.util.compare.ObjectComparisons;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.parquet.column.statistics.Statistics;
 
-@InternalUseOnly
-public abstract class SingleSidedComparableRangePushdownHandler {
+final class SingleSidedComparableRangePushdownHandler {
 
-    public static boolean maybeOverlaps(
+    static boolean maybeOverlaps(
             final SingleSidedComparableRangeFilter sscrf,
             final Statistics<?> statistics) {
         final Comparable<?> pivot = sscrf.getPivot();
         final boolean isGreaterThan = sscrf.isGreaterThan();
+        if (sscrf.isLowerInclusive() != sscrf.isUpperInclusive()) {
+            throw new IllegalStateException("SingleSidedComparableRangeFilter must have both bounds inclusive or " +
+                    "exclusive: " + sscrf);
+        }
+        final boolean isInclusive = sscrf.isLowerInclusive();
         if (pivot == null || !isGreaterThan) {
             // Skip pushdown-based filtering for nulls (which are considered smaller than any value), to err on the
             // safer side instead of adding more complex handling logic.
@@ -36,8 +39,7 @@ public abstract class SingleSidedComparableRangePushdownHandler {
         }
         return maybeOverlapsImpl(
                 mutableMin.getValue(), mutableMax.getValue(),
-                pivot, sscrf.isGreaterThan(),
-                sscrf.isLowerInclusive(), sscrf.isUpperInclusive());
+                pivot, isInclusive, isGreaterThan);
     }
 
     /**
@@ -45,29 +47,8 @@ public abstract class SingleSidedComparableRangePushdownHandler {
      */
     private static boolean maybeOverlapsImpl(
             final Comparable<?> min, final Comparable<?> max,
-            final Comparable<?> pivot, final boolean isGreaterThan,
-            final boolean lowerInclusive, final boolean upperInclusive) {
-        if (isGreaterThan) {
-            final int c1 = ObjectComparisons.compare(pivot, max);
-            if (c1 > 0) {
-                // pivot > max, no overlap possible.
-                return false;
-            }
-            if (c1 == 0 && !upperInclusive) {
-                // pivot == max, but upper is not inclusive, no overlap possible.
-                return false;
-            }
-        } else {
-            final int c2 = ObjectComparisons.compare(min, pivot);
-            if (c2 > 0) {
-                // min > pivot, no overlap possible.
-                return false;
-            }
-            if (c2 == 0 && !lowerInclusive) {
-                // min == pivot, but lower is not inclusive, no overlap possible.
-                return false;
-            }
-        }
-        return true;
+            final Comparable<?> pivot, final boolean inclusive, final boolean isGreaterThan) {
+        return isGreaterThan ? (inclusive ? ObjectComparisons.geq(max, pivot) : ObjectComparisons.gt(max, pivot))
+                : (inclusive ? ObjectComparisons.leq(min, pivot) : ObjectComparisons.lt(min, pivot));
     }
 }

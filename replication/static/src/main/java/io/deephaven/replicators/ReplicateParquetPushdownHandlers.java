@@ -11,7 +11,7 @@ public class ReplicateParquetPushdownHandlers {
     private static final String TASK = "replicateParquetPushdownHandlers";
 
     private static final String PUSHDOWN_HANDLER_PATH =
-            "extensions/parquet/table/src/main/java/io/deephaven/parquet/table/pushdown/";
+            "extensions/parquet/table/src/main/java/io/deephaven/parquet/table/location/";
     private static final String CHAR_PUSHDOWN_HANDLER = PUSHDOWN_HANDLER_PATH + "CharPushdownHandler.java";
     private static final String FLOAT_PUSHDOWN_HANDLER = PUSHDOWN_HANDLER_PATH + "FloatPushdownHandler.java";
 
