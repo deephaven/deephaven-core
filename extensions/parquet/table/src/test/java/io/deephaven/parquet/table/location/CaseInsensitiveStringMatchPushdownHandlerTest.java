@@ -33,7 +33,7 @@ public class CaseInsensitiveStringMatchPushdownHandlerTest {
 
     @Test
     public void regularMatchScenarios() {
-        final Statistics<?> stats = stringStats("aaa", "zzz");
+        final Statistics<?> stats = stringStats("aAa", "zZz");
 
         // at least one value inside (case-mixed)
         assertTrue(CaseInsensitiveStringMatchPushdownHandler.maybeOverlaps(
@@ -82,7 +82,7 @@ public class CaseInsensitiveStringMatchPushdownHandlerTest {
         assertFalse(CaseInsensitiveStringMatchPushdownHandler.maybeOverlaps(
                 new MatchFilter(MatchFilter.MatchType.Inverted,
                         "s", "FoO"),
-                stringStats("foo", "foo")));
+                stringStats("foo", "fOo")));
 
         // stats foo..foo ; exclude different value, so gap exists
         assertTrue(CaseInsensitiveStringMatchPushdownHandler.maybeOverlaps(
@@ -94,7 +94,7 @@ public class CaseInsensitiveStringMatchPushdownHandlerTest {
         assertTrue(CaseInsensitiveStringMatchPushdownHandler.maybeOverlaps(
                 new MatchFilter(MatchFilter.MatchType.Inverted,
                         "s", "BAR", "baz"),
-                stringStats("bar", "baz")));
+                stringStats("bar", "Baz")));
 
         // empty exclusion list
         assertTrue(CaseInsensitiveStringMatchPushdownHandler.maybeOverlaps(

@@ -105,7 +105,7 @@ final class ComparablePushdownHandler {
     /**
      * Verifies that the {@code [min, max]} range intersects any point supplied in {@code values}.
      */
-    private static boolean maybeMatches(
+    static boolean maybeMatches(
             @NotNull final Comparable<?> min,
             @NotNull final Comparable<?> max,
             @NotNull final Comparable<?>[] values) {
@@ -128,7 +128,7 @@ final class ComparablePushdownHandler {
      * 
      * where {@code ...} represents the extreme ends of the range.
      */
-    private static boolean maybeMatchesInverse(
+    static boolean maybeMatchesInverse(
             @NotNull final Comparable<?> min,
             @NotNull final Comparable<?> max,
             @NotNull final Comparable<?>[] values) {
