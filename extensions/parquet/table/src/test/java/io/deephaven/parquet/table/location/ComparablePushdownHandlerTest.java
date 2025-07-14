@@ -122,7 +122,7 @@ public class ComparablePushdownHandlerTest {
 
         // Overlapping ('aaa', 'aaa'] with stats ['aaa', 'bbb'] should return false
         assertFalse(ComparablePushdownHandler.maybeOverlaps(
-                makeComparableRangeFilter("i", "aaa", "aaa", false, true), stringStats("aaa", "bbb")));
+                makeComparableRangeFilter("strCol", "aaa", "aaa", false, true), stringStats("aaa", "bbb")));
     }
 
     @Test
