@@ -1385,7 +1385,8 @@ public class QueryTable extends BaseTable<QueryTable> {
 
                     boolean hasConstArrayOffsetFilter = false;
                     for (final WhereFilter filter : filters) {
-                        if (ExtractShiftedColumnDefinitions.of(filter) != null) {
+                        final Set<ShiftedColumnDefinition> shifted = ExtractShiftedColumnDefinitions.of(filter);
+                        if (shifted != null && !shifted.isEmpty()) {
                             hasConstArrayOffsetFilter = true;
                             break;
                         }

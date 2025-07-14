@@ -72,6 +72,7 @@ import io.deephaven.api.filter.Filter;
 import io.deephaven.base.Pair;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.filter.ExtractShiftedColumnDefinitions;
+import io.deephaven.engine.table.impl.filter.TransformToFinalFormula;
 import io.deephaven.engine.table.impl.lang.JavaExpressionParser;
 import io.deephaven.engine.table.impl.lang.QueryLanguageParser;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
@@ -145,8 +146,8 @@ public class ShiftedColumnsFactory extends VoidVisitorAdapter<ShiftedColumnsFact
                 ')';
 
         return QueryPerformanceRecorder.withNugget(nuggetName, source.sizeForInstrumentation(), () -> {
-            final Set<ShiftedColumnDefinition> shifted = ExtractShiftedColumnDefinitions.of(
-                    ConjunctiveFilter.of(filters.toArray(WhereFilter[]::new)));
+            final WhereFilter aggFilter = ConjunctiveFilter.of(filters.toArray(WhereFilter[]::new));
+            final Set<ShiftedColumnDefinition> shifted = ExtractShiftedColumnDefinitions.of(aggFilter);
 
             final String[] columnsToDrop = shifted.stream()
                     .map(ShiftedColumnDefinition::getResultColumnName)
@@ -154,6 +155,7 @@ public class ShiftedColumnsFactory extends VoidVisitorAdapter<ShiftedColumnsFact
 
             return ShiftedColumnOperation
                     .addShiftedColumns(source, shifted)
+                    .where(TransformToFinalFormula.of(aggFilter))
                     .dropColumns(columnsToDrop);
         });
     }
@@ -179,6 +181,7 @@ public class ShiftedColumnsFactory extends VoidVisitorAdapter<ShiftedColumnsFact
 
             final String[] columnsToDrop = shiftedColumnDefinitions.stream()
                     .map(ShiftedColumnDefinition::getResultColumnName)
+                    .filter(name -> !name.equals(formulaColumn.getName()))
                     .toArray(String[]::new);
 
             // invoke SCO#addShiftedColumns with the shifted column definitions

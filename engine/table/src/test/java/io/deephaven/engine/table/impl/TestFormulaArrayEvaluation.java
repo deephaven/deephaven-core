@@ -41,10 +41,8 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -52,6 +50,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 import static io.deephaven.engine.table.impl.MemoizedOperationKey.SelectUpdateViewOrUpdateView.*;
+import static io.deephaven.engine.table.impl.ShiftedColumnOperationTest.shiftColName;
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.testutil.testcase.RefreshingTableTestCase.simulateShiftAwareStep;
 import static io.deephaven.engine.util.TableTools.*;
@@ -310,34 +309,36 @@ public class TestFormulaArrayEvaluation {
         final ShiftedColumnDefinition d0 = new ShiftedColumnDefinition("A", -1);
         final ShiftedColumnDefinition d1 = new ShiftedColumnDefinition("A", 1);
         final ShiftedColumnDefinition d2 = new ShiftedColumnDefinition("B", -2);
-        Table shiftedTable = emptyTable(tableSize)
-                .update("A=k * 10", "B=i * 2");
-        shiftedTable = ShiftedColumnOperation.addShiftedColumns(shiftedTable, d0);
-        shiftedTable = ShiftedColumnOperation.addShiftedColumns(shiftedTable, d1);
-        shiftedTable = ShiftedColumnOperation.addShiftedColumns(shiftedTable, d2);
-        shiftedTable = shiftedTable.view("A", "B", "Z",
-                String.format("D=%s * %s", d1.getResultColumnName(), d2.getResultColumnName()),
-                "C=true");
-
         Table source = emptyTable(tableSize);
+        Table shiftedTable = emptyTable(tableSize);
         switch (flavor) {
             case Update: {
                 source = source.update(formulas);
+                shiftedTable = shiftedTable.update("A=k * 10", "B=i * 2");
                 break;
             }
             case UpdateView: {
                 source = source.updateView(formulas);
+                shiftedTable = shiftedTable.updateView("A=k * 10", "B=i * 2");
                 break;
             }
             case Select: {
                 source = source.select(formulas);
+                shiftedTable = shiftedTable.select("A=k * 10", "B=i * 2");
                 break;
             }
             case View: {
                 source = source.view(formulas);
+                shiftedTable = shiftedTable.view("A=k * 10", "B=i * 2");
                 break;
             }
         }
+
+        shiftedTable = ShiftedColumnOperation.addShiftedColumns(shiftedTable, d0);
+        shiftedTable = ShiftedColumnOperation.addShiftedColumns(shiftedTable, d1);
+        shiftedTable = ShiftedColumnOperation.addShiftedColumns(shiftedTable, d2);
+        shiftedTable = shiftedTable.view("A", "B", "Z=__A_Shifted_Minus_1__",
+                "D = __A_Shifted_Plus_1__ * __B_Shifted_Minus_2__", "C=true");
 
         showTableWithRowSet(source, Math.min(tableSize, displayTableSize));
         showTableWithRowSet(shiftedTable, Math.min(tableSize, displayTableSize));
@@ -442,6 +443,7 @@ public class TestFormulaArrayEvaluation {
                 source = source.update(formulas);
                 shiftedTable = ShiftedColumnOperation
                         .addShiftedColumns(shiftedTable.update("A=k * 10", "B=i * 2"), d0)
+                        .renameColumns("Z = __A_Shifted_Minus_1__")
                         .update("D=i", "C=true");
                 break;
             }
@@ -449,6 +451,7 @@ public class TestFormulaArrayEvaluation {
                 source = source.updateView(formulas);
                 shiftedTable = ShiftedColumnOperation
                         .addShiftedColumns(shiftedTable.updateView("A=k * 10", "B=i * 2"), d0)
+                        .renameColumns("Z = __A_Shifted_Minus_1__")
                         .updateView("D=i", "C=true");
                 break;
             }
@@ -456,6 +459,7 @@ public class TestFormulaArrayEvaluation {
                 source = source.select(formulas);
                 shiftedTable = ShiftedColumnOperation
                         .addShiftedColumns(shiftedTable.select("A=k * 10", "B=i * 2"), d0)
+                        .renameColumns("Z = __A_Shifted_Minus_1__")
                         .view("A", "B", "Z", "D=i", "C=true");
                 break;
             }
@@ -463,6 +467,7 @@ public class TestFormulaArrayEvaluation {
                 source = source.view(formulas);
                 shiftedTable = ShiftedColumnOperation
                         .addShiftedColumns(shiftedTable.view("A=k * 10", "B=i * 2"), d0)
+                        .renameColumns("Z = __A_Shifted_Minus_1__")
                         .view("A", "B", "Z", "D=i", "C=true");
                 break;
             }
@@ -725,7 +730,7 @@ public class TestFormulaArrayEvaluation {
                 new ShiftedColumnDefinition("B", 2),
                 new ShiftedColumnDefinition("B", 2));
         expressions = new String[] {"(Y_[i+1] * B_[ i - 2] ) + (Y_[ii - 1] * B_[ii + 2]) + (Y_[i + 1] * B_[i - 2])"};
-        multiShiftMultiColumnTest(expressions, shift, new String[] {"Y", "B"});
+        multiShiftMultiColumnTest(expressions, shift, new String[] {"Y", "Y", "B", "B"});
 
         // singleResultColumnTest - different expressions
         expressions = new String[] {"Y_[i-1] * true"};
@@ -897,7 +902,7 @@ public class TestFormulaArrayEvaluation {
 
         final Pair<String, Set<ShiftedColumnDefinition>> shifted =
                 ShiftedColumnsFactory.getShiftedColumnDefinitions(arrayInitializerExpr);
-        Assert.assertEquals(shifted.getSecond().size(), expectedDefinitions.length);
+        Assert.assertEquals(shifted == null ? 0 : shifted.getSecond().size(), expectedDefinitions.length);
         if (expectedDefinitions.length > 0) {
             assertShiftedColumnDefinitionsMatch(shifted.getSecond(), expectedDefinitions);
         } else {
@@ -1045,22 +1050,22 @@ public class TestFormulaArrayEvaluation {
 
         String[][] formulas = new String[][] {
                 {"Y=Y_[i-1] && A=A_[i-1]",
-                        "Y == " + ShiftedColumnsFactory.SHIFTED_COL_PREFIX + 1 + " && A == "
-                                + ShiftedColumnsFactory.SHIFTED_COL_PREFIX + 2},
+                        "Y == " + shiftColName("Y", -1) + " && A == "
+                                + shiftColName("A", -1)},
                 {"Y_[i-1]==A_[i-1]",
-                        ShiftedColumnsFactory.SHIFTED_COL_PREFIX + 1 + " == "
-                                + ShiftedColumnsFactory.SHIFTED_COL_PREFIX + 2},
-                {"Y_[1-i]==A_[i-1]", "Y_[1 - i] == " + ShiftedColumnsFactory.SHIFTED_COL_PREFIX + 1},
+                        shiftColName("Y", -1) + " == "
+                                + shiftColName("A", -1)},
+                {"Y_[1-i]==A_[i-1]", "Y_[1 - i] == " + shiftColName("A", -1)},
                 {"Y=Y_[i-1] && A=A_[ii-1]",
-                        "Y == " + ShiftedColumnsFactory.SHIFTED_COL_PREFIX + 1 + " && A == "
-                                + ShiftedColumnsFactory.SHIFTED_COL_PREFIX + 2},
+                        "Y == " + shiftColName("Y", -1) + " && A == "
+                                + shiftColName("A", -1)},
                 {"(Y==Y_[i-1]) && (A==A_[ii-1])",
-                        "(Y == " + ShiftedColumnsFactory.SHIFTED_COL_PREFIX + 1 + ") && (A == "
-                                + ShiftedColumnsFactory.SHIFTED_COL_PREFIX + 2 + ")"},
+                        "(Y == " + shiftColName("Y", -1) + ") && (A == "
+                                + shiftColName("A", -1) + ")"},
                 {"(Y==Y_[i-k]) && (A==A_[2-ii])", "(Y == Y_[i - k]) && (A == A_[2 - ii])"},
                 {"(1 <= Y_[i - 1] && Y_[i - 1] > 10)",
-                        "(1 <= " + ShiftedColumnsFactory.SHIFTED_COL_PREFIX + 1 + " && "
-                                + ShiftedColumnsFactory.SHIFTED_COL_PREFIX + 1 + " > 10)"}
+                        "(1 <= " + shiftColName("Y", -1) + " && "
+                                + shiftColName("Y", -1) + " > 10)"}
         };
 
 

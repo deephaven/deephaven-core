@@ -317,6 +317,14 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
             partitioningFilterFound |= isPartitioningFilter;
 
             final boolean missingBarrier = !partitionBarriers.containsAll(ExtractRespectedBarriers.of(whereFilter));
+            // once we've found a serial filter, then we cannot prioritize any filter and we put every filter (including
+            // the partitioning filters) into the post coalescing filter set.
+
+            // similarly, anytime we prioritize a partitioning filter, we record the barriers that it declares. A filter
+            // that respects no barriers, or only those prioritized barriers may also be prioritized.  A filter that
+            // respects any barrier which was not in partition filters (meaning it must be in in otherFilters - because
+            // otherwise you would be respecting an undeclared barrier); cannot be prioritized because that would jump
+            // the barrier.
             if (serialFilterFound || missingBarrier) {
                 otherFilters.add(whereFilter);
                 continue;
