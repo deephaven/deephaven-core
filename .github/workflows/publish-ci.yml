@@ -60,9 +60,7 @@ jobs:
         if: ${{ startsWith(github.ref, 'refs/heads/release/v') }}
         # We need to be explicit here about no parallelism to ensure we don't create disjointed staging repositories.
         # Edit: unclear if above note is still possible with the new portal API / plugin implementation.
-        # Note: --no-configuration-cache is documented as necessary due https://github.com/gradle/gradle/issues/22779
-        # from https://vanniktech.github.io/gradle-maven-publish-plugin/central/#uploading-with-automatic-publishing
-        run: ./gradlew --no-parallel --no-configuration-cache server-netty-app:build server-jetty-app:build py-server:build py-embedded-server:build py-client:build py-client-ticking:build web-client-api:types:build publishToMavenCentral
+        run: ./gradlew --no-parallel server-netty-app:build server-jetty-app:build py-server:build py-embedded-server:build py-client:build py-client-ticking:build web-client-api:types:build publishToMavenCentral
         env:
           ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
           ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
