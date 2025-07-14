@@ -580,6 +580,112 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         assertTableEquals(tableUpdate3, reverse3);
     }
 
+    public void testUngroup() throws ExecutionException, InterruptedException, TimeoutException {
+        final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
+                intCol("Key", 1, 2, 3), col("Value", new int[]{101}, new int[]{201, 202}, new int[]{301}));
+
+        final Table tableStart = TableTools.newTable(intCol("Key", 1, 2, 2, 3), intCol("Value", 101, 201, 202, 301));
+        final Table tableUpdate = TableTools.newTable(intCol("Key", 1, 2, 2, 3, 4), intCol("Value", 101, 201, 202, 301, 401));
+        final Table tableUpdate2 = TableTools.newTable(intCol("Key", 1, 2, 2, 3, 4, 5, 5), intCol("Value", 101, 201, 202, 301, 401, 501, 502));
+        final Table tableUpdate3 = TableTools.newTable(intCol("Key", 1, 2, 2, 3, 4, 6, 6, 6), intCol("Value", 101, 201, 202, 301, 401, 601, 602, 603));
+
+        updateGraph.startCycleForUnitTests(false);
+
+        final Table ungroup1 = pool.submit(() -> table.ungroup()).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
+
+        assertTableEquals(ungroup1, tableStart);
+
+        TstUtils.addToTable(table, i(8), intCol("Key", 4), col("Value", new int[]{401}));
+
+        final Table ungroup2 = pool.submit(() -> table.ungroup()).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
+
+        TstUtils.assertTableEquals(tableStart, prevTable(ungroup1));
+        TstUtils.assertTableEquals(tableStart, prevTable(ungroup2));
+
+        table.notifyListeners(i(8), i(), i());
+        updateGraph.markSourcesRefreshedForUnitTests();
+
+        final Table ungroup3 = pool.submit(() -> table.ungroup()).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
+
+        TstUtils.assertTableEquals(tableStart, prevTable(ungroup1));
+        TstUtils.assertTableEquals(tableStart, prevTable(ungroup2));
+
+        updateGraph.completeCycleForUnitTests();
+
+        TstUtils.assertTableEquals(tableUpdate, ungroup1);
+        TstUtils.assertTableEquals(tableUpdate, ungroup2);
+        TstUtils.assertTableEquals(tableUpdate, ungroup3);
+
+        updateGraph.runWithinUnitTestCycle(() -> {
+            TstUtils.addToTable(table, i(10000), intCol("Key", 5), col("Value", new int[]{501, 502}));
+            table.notifyListeners(i(10000), i(), i());
+        });
+        assertTableEquals(tableUpdate2, ungroup1);
+        assertTableEquals(tableUpdate2, ungroup2);
+        assertTableEquals(tableUpdate2, ungroup3);
+
+        updateGraph.runWithinUnitTestCycle(() -> {
+            TstUtils.addToTable(table, i(10000), col("Key", 6), col("Value", new int[]{601, 602, 603}));
+            table.notifyListeners(i(), i(), i(10000));
+        });
+        assertTableEquals(tableUpdate3, ungroup1);
+        assertTableEquals(tableUpdate3, ungroup2);
+        assertTableEquals(tableUpdate3, ungroup3);
+    }
+
+    public void testUngroupSizeChanges() throws ExecutionException, InterruptedException, TimeoutException {
+        final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
+                intCol("Key", 1, 2, 3), col("Value", new int[]{101}, new int[]{201, 202}, new int[]{301}));
+
+        final Table tableStart = TableTools.newTable(intCol("Key", 1, 2, 2, 3), intCol("Value", 101, 201, 202, 301));
+        final Table tableUpdate = TableTools.newTable(intCol("Key", 4, 4, 4, 5, 3), intCol("Value", 401, 402, 403, 501, 301));
+        final Table tableUpdate2 = TableTools.newTable(intCol("Key", 4, 4, 4, 5, 3, 6, 6), intCol("Value", 401, 402, 403, 501, 301, 601, 602));
+        final Table tableUpdate3 = TableTools.newTable(intCol("Key", 4, 4, 4, 5, 3, 7), intCol("Value", 401, 402, 403, 501, 301, 701));
+
+        updateGraph.startCycleForUnitTests(false);
+
+        final Table ungroup1 = pool.submit(() -> table.ungroup()).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
+
+        assertTableEquals(ungroup1, tableStart);
+
+        TstUtils.addToTable(table, i(2, 4), intCol("Key", 4, 5), col("Value", new int[]{401, 402, 403}, new int[]{501}));
+
+        final Table ungroup2 = pool.submit(() -> table.ungroup()).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
+
+        TstUtils.assertTableEquals(tableStart, prevTable(ungroup1));
+        TstUtils.assertTableEquals(tableStart, prevTable(ungroup2));
+
+        table.notifyListeners(i(), i(), i(2, 4));
+        updateGraph.markSourcesRefreshedForUnitTests();
+
+        final Table ungroup3 = pool.submit(() -> table.ungroup()).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
+
+        TstUtils.assertTableEquals(tableStart, prevTable(ungroup1));
+        TstUtils.assertTableEquals(tableStart, prevTable(ungroup2));
+
+        updateGraph.completeCycleForUnitTests();
+
+        TstUtils.assertTableEquals(tableUpdate, ungroup1);
+        TstUtils.assertTableEquals(tableUpdate, ungroup2);
+        TstUtils.assertTableEquals(tableUpdate, ungroup3);
+
+        updateGraph.runWithinUnitTestCycle(() -> {
+            TstUtils.addToTable(table, i(10000), intCol("Key", 6), col("Value", new int[]{601, 602}));
+            table.notifyListeners(i(10000), i(), i());
+        });
+        assertTableEquals(tableUpdate2, ungroup1);
+        assertTableEquals(tableUpdate2, ungroup2);
+        assertTableEquals(tableUpdate2, ungroup3);
+
+        updateGraph.runWithinUnitTestCycle(() -> {
+            TstUtils.addToTable(table, i(10000), col("Key", 7), col("Value", new int[]{701}));
+            table.notifyListeners(i(), i(), i(10000));
+        });
+        assertTableEquals(tableUpdate3, ungroup1);
+        assertTableEquals(tableUpdate3, ungroup2);
+        assertTableEquals(tableUpdate3, ungroup3);
+    }
+
     public void testSortOfPartitionBy() throws ExecutionException, InterruptedException, TimeoutException {
         final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
                 col("x", 1, 2, 3), col("y", "a", "a", "a"));
