@@ -80,6 +80,10 @@ public class CharPushdownHandlerTest {
         final Statistics<?> statsFull = charStats(Character.MIN_VALUE, Character.MAX_VALUE);
         assertTrue(CharPushdownHandler.maybeOverlaps(
                 new CharRangeFilter("c", 'A', 'A', true, true), statsFull));
+
+        // Overlapping (a,a] with stats [a, b] should return false
+        assertFalse(CharPushdownHandler.maybeOverlaps(
+                new CharRangeFilter("i", 'a', 'a', false, true), charStats('a', 'b')));
     }
 
     @Test
@@ -145,6 +149,12 @@ public class CharPushdownHandlerTest {
         // NULL value disables push-down in inverted mode
         assertTrue(CharPushdownHandler.maybeOverlaps(
                 new MatchFilter(MatchFilter.MatchType.Inverted, "c", QueryConstants.NULL_CHAR),
+                charStats('A', 'B')));
+
+        // Inverse match of {'A', 'B'} against statistics ['A', 'A'] should return false but currently returns true
+        // since the implementation assumes the range ('A', 'B') overlaps with the statistics range ['A', 'B'].
+        assertTrue(CharPushdownHandler.maybeOverlaps(
+                new MatchFilter(MatchFilter.MatchType.Inverted, "i", 'A', 'B'),
                 charStats('A', 'B')));
     }
 }

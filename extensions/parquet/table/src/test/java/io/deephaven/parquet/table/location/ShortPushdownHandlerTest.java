@@ -80,6 +80,10 @@ public class ShortPushdownHandlerTest {
         final Statistics<?> statsFull = shortStats(Short.MIN_VALUE, Short.MAX_VALUE);
         assertTrue(ShortPushdownHandler.maybeOverlaps(
                 new ShortRangeFilter("s", (short) 0, (short) 0, true, true), statsFull));
+
+        // Overlapping (3,3] with stats [3, 4] should return false
+        assertFalse(ShortPushdownHandler.maybeOverlaps(
+                new ShortRangeFilter("i", (short) 3, (short) 3, false, true), shortStats((short) 3, (short) 4)));
     }
 
     @Test
@@ -143,6 +147,12 @@ public class ShortPushdownHandlerTest {
         // NULL disables push-down
         assertTrue(ShortPushdownHandler.maybeOverlaps(
                 new MatchFilter(MatchFilter.MatchType.Inverted, "s", QueryConstants.NULL_SHORT),
+                shortStats((short) 11, (short) 12)));
+
+        // Inverse match of {5, 6} against statistics [5, 6] should return false but currently returns true since
+        // the implementation assumes the range (5, 6) overlaps with the statistics range [5, 6].
+        assertTrue(ShortPushdownHandler.maybeOverlaps(
+                new MatchFilter(MatchFilter.MatchType.Inverted, "i", 5, 6),
                 shortStats((short) 11, (short) 12)));
     }
 }

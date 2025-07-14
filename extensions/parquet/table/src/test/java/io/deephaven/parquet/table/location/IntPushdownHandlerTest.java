@@ -80,6 +80,10 @@ public class IntPushdownHandlerTest {
         final Statistics<?> statsFull = intStats(Integer.MIN_VALUE, Integer.MAX_VALUE);
         assertTrue(IntPushdownHandler.maybeOverlaps(
                 new IntRangeFilter("i", 0, 0, true, true), statsFull));
+
+        // Overlapping (3,3] with stats [3, 4] should return false
+        assertFalse(IntPushdownHandler.maybeOverlaps(
+                new IntRangeFilter("i", 3, 3, false, true), intStats(3, 4)));
     }
 
     @Test
@@ -143,6 +147,12 @@ public class IntPushdownHandlerTest {
         // NULL disables push-down
         assertTrue(IntPushdownHandler.maybeOverlaps(
                 new MatchFilter(MatchFilter.MatchType.Inverted, "i", QueryConstants.NULL_INT),
+                intStats(5, 6)));
+
+        // Inverse match of {5, 6} against statistics [5, 6] should return false but currently returns true since
+        // the implementation assumes the range (5, 6) overlaps with the statistics range [5, 6].
+        assertTrue(IntPushdownHandler.maybeOverlaps(
+                new MatchFilter(MatchFilter.MatchType.Inverted, "i", 5, 6),
                 intStats(5, 6)));
     }
 }

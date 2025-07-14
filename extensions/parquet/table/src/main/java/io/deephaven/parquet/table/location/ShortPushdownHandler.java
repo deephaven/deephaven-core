@@ -52,9 +52,11 @@ final class ShortPushdownHandler {
             final short min, final short max,
             final short lower, final boolean lowerInclusive,
             final short upper, final boolean upperInclusive) {
-        if (lower > upper || (lower == upper && !(lowerInclusive && upperInclusive))) {
-            return false;
+        if ((upperInclusive && lowerInclusive) ? lower > upper : lower >= upper) {
+            return false; // Empty range, no overlap
         }
+        // Following logic assumes (min, max) to be a continuous range and not granular. So (a,b) will be considered
+        // as "maybe overlapping" with [a, b] where b follows immediately after a.
         return (upperInclusive ? min <= upper : min < upper)
                 && (lowerInclusive ? max >= lower : max > lower);
     }
@@ -112,23 +114,28 @@ final class ShortPushdownHandler {
      * values. For example, if the values are sorted as {@code v_0, v_1, ..., v_n-1}, then the gaps are:
      *
      * <pre>
-     * [Short.MIN_VALUE, v_0), (v_0, v_1), ... , (v_n-2, v_n-1), (v_n-1, Short.MAX_VALUE]
+     * [..., v_0), (v_0, v_1), . . , (v_n-2, v_n-1), (v_n-1, ...]
      * </pre>
+     * 
+     * where {@code ...} represents the extreme ends of the range.
      */
     static boolean maybeMatchesInverse(
             final short min,
             final short max,
             @NotNull final short[] values) {
         Arrays.sort(values);
-        short lower = Short.MIN_VALUE;
-        boolean lowerInclusive = true;
-        for (final short upper : values) {
-            if (maybeOverlapsRangeImpl(min, max, lower, lowerInclusive, upper, false)) {
+        if (min < values[0]) {
+            return true;
+        }
+        final int numValues = values.length;
+        for (int i = 0; i < numValues - 1; i++) {
+            if (maybeOverlapsRangeImpl(min, max, values[i], false, values[i + 1], false)) {
                 return true;
             }
-            lower = upper;
-            lowerInclusive = false;
         }
-        return maybeOverlapsRangeImpl(min, max, lower, lowerInclusive, Short.MAX_VALUE, true);
+        if (max > values[numValues - 1]) {
+            return true;
+        }
+        return false;
     }
 }

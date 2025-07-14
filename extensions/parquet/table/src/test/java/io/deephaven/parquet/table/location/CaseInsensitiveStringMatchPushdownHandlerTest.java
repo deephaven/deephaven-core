@@ -106,5 +106,11 @@ public class CaseInsensitiveStringMatchPushdownHandlerTest {
                 new MatchFilter(MatchFilter.MatchType.Inverted,
                         "s", null),
                 stringStats("x", "y")));
+
+        // exclusion list with a value that is in the stats range
+        assertTrue(CaseInsensitiveStringMatchPushdownHandler.maybeOverlaps(
+                new MatchFilter(MatchFilter.MatchType.Inverted,
+                        "s", "x", "y"),
+                stringStats("x", "y")));
     }
 }

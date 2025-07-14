@@ -80,6 +80,10 @@ public class LongPushdownHandlerTest {
         final Statistics<?> statsFull = longStats(Long.MIN_VALUE, Long.MAX_VALUE);
         assertTrue(LongPushdownHandler.maybeOverlaps(
                 new LongRangeFilter("l", 0L, 0L, true, true), statsFull));
+
+        // Overlapping (3,3] with stats [3, 4] should return false
+        assertFalse(LongPushdownHandler.maybeOverlaps(
+                new LongRangeFilter("i", 3, 3, false, true), longStats(3, 4)));
     }
 
     @Test
@@ -144,5 +148,11 @@ public class LongPushdownHandlerTest {
         assertTrue(LongPushdownHandler.maybeOverlaps(
                 new MatchFilter(MatchFilter.MatchType.Inverted, "l", QueryConstants.NULL_LONG),
                 longStats(100L, 200L)));
+
+        // Inverse match of {5, 6} against statistics [5, 6] should return false but currently returns true since
+        // the implementation assumes the range (5, 6) overlaps with the statistics range [5, 6].
+        assertTrue(LongPushdownHandler.maybeOverlaps(
+                new MatchFilter(MatchFilter.MatchType.Inverted, "i", 5, 6),
+                longStats(5, 6)));
     }
 }

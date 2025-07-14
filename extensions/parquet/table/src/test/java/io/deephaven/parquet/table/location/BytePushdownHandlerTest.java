@@ -80,6 +80,10 @@ public class BytePushdownHandlerTest {
         final Statistics<?> statsFull = byteStats(Byte.MIN_VALUE, Byte.MAX_VALUE);
         assertTrue(BytePushdownHandler.maybeOverlaps(
                 new ByteRangeFilter("b", (byte) 0, (byte) 0, true, true), statsFull));
+
+        // Overlapping (3,3] with stats [3, 4] should return false
+        assertFalse(BytePushdownHandler.maybeOverlaps(
+                new ByteRangeFilter("i", (byte) 3, (byte) 3, false, true), byteStats((byte) 3, (byte) 4)));
     }
 
     @Test
@@ -147,6 +151,12 @@ public class BytePushdownHandlerTest {
         // NULL disables push-down
         assertTrue(BytePushdownHandler.maybeOverlaps(
                 new MatchFilter(MatchFilter.MatchType.Inverted, "b", QueryConstants.NULL_BYTE),
+                byteStats((byte) 5, (byte) 6)));
+
+        // Inverse match of {5, 6} against statistics [5, 6] should return false but currently returns true since
+        // the implementation assumes the range (5, 6) overlaps with the statistics range [5, 6].
+        assertTrue(BytePushdownHandler.maybeOverlaps(
+                new MatchFilter(MatchFilter.MatchType.Inverted, "i", 5, 6),
                 byteStats((byte) 5, (byte) 6)));
     }
 }

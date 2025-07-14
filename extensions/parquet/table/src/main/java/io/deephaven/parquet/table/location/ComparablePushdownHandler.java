@@ -10,7 +10,9 @@ import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.parquet.column.statistics.Statistics;
 import org.jetbrains.annotations.NotNull;
 
-final class ObjectPushdownHandler {
+import java.util.Arrays;
+
+final class ComparablePushdownHandler {
 
     static boolean maybeOverlaps(
             @NotNull final ComparableRangeFilter comparableRangeFilter,
@@ -35,7 +37,7 @@ final class ObjectPushdownHandler {
             // Statistics could not be processed, so we assume that we overlap.
             return true;
         }
-        return maybeOverlapsImpl(
+        return maybeOverlapsRangeImpl(
                 mutableMin.getValue(), mutableMax.getValue(),
                 dhLower, comparableRangeFilter.isLowerInclusive(),
                 dhUpper, comparableRangeFilter.isUpperInclusive());
@@ -44,14 +46,16 @@ final class ObjectPushdownHandler {
     /**
      * Verifies that the {@code [min, max]} range intersects the range defined by the given lower and upper bounds.
      */
-    private static boolean maybeOverlapsImpl(
+    private static boolean maybeOverlapsRangeImpl(
             @NotNull final Comparable<?> min, @NotNull final Comparable<?> max,
             @NotNull final Comparable<?> lower, final boolean lowerInclusive,
             @NotNull final Comparable<?> upper, final boolean upperInclusive) {
         final int cmpLowerUpper = ((Comparable) lower).compareTo(upper);
-        if (cmpLowerUpper > 0 || (cmpLowerUpper == 0 && (!lowerInclusive || !upperInclusive))) {
-            return false;
+        if ((upperInclusive && lowerInclusive) ? cmpLowerUpper > 0 : cmpLowerUpper >= 0) {
+            return false; // Empty range, no overlap
         }
+        // Following logic assumes (min, max) to be a continuous range and not granular. So (a,b) will be considered
+        // as "maybe overlapping" with [a, b] where b follows immediately after a.
         return (upperInclusive ? ((Comparable) min).compareTo(upper) <= 0
                 : ((Comparable) min).compareTo(upper) < 0)
                 && (lowerInclusive ? ((Comparable) max).compareTo(lower) >= 0
@@ -93,20 +97,20 @@ final class ObjectPushdownHandler {
             return true;
         }
         if (!matchFilter.getInvertMatch()) {
-            return maybeMatchesImpl(mutableMin.getValue(), mutableMax.getValue(), comparableValues);
+            return maybeMatches(mutableMin.getValue(), mutableMax.getValue(), comparableValues);
         }
-        return maybeMatchesInverseImpl(mutableMin.getValue(), mutableMax.getValue(), comparableValues);
+        return maybeMatchesInverse(mutableMin.getValue(), mutableMax.getValue(), comparableValues);
     }
 
     /**
      * Verifies that the {@code [min, max]} range intersects any point supplied in {@code values}.
      */
-    private static boolean maybeMatchesImpl(
+    private static boolean maybeMatches(
             @NotNull final Comparable<?> min,
             @NotNull final Comparable<?> max,
             @NotNull final Comparable<?>[] values) {
         for (final Comparable<?> value : values) {
-            if (maybeOverlapsImpl(min, max, value, true, value, true)) {
+            if (maybeOverlapsRangeImpl(min, max, value, true, value, true)) {
                 return true;
             }
         }
@@ -114,20 +118,33 @@ final class ObjectPushdownHandler {
     }
 
     /**
-     * Verifies that the {@code [min, max]} range includes any value that is not in the given {@code values} array.
+     * Verifies that the {@code [min, max]} range includes any value that is not in the given {@code values} array. This
+     * is done by checking whether {@code [min, max]} overlaps with every open gap produced by excluding the given
+     * values. For example, if the values are sorted as {@code v_0, v_1, ..., v_n-1}, then the gaps are:
+     *
+     * <pre>
+     * [..., v_0), (v_0, v_1), . . , (v_n-2, v_n-1), (v_n-1, ...]
+     * </pre>
+     * 
+     * where {@code ...} represents the extreme ends of the range.
      */
-    private static boolean maybeMatchesInverseImpl(
+    private static boolean maybeMatchesInverse(
             @NotNull final Comparable<?> min,
             @NotNull final Comparable<?> max,
             @NotNull final Comparable<?>[] values) {
-        if (ObjectComparisons.eq(min, max)) {
-            for (final Comparable<?> value : values) {
-                if (ObjectComparisons.eq(min, value)) {
-                    // This is the only case where we can definitely say there is no match.
-                    return false;
-                }
+        Arrays.sort(values);
+        if (ObjectComparisons.lt(min, values[0])) {
+            return true;
+        }
+        final int numValues = values.length;
+        for (int i = 0; i < numValues - 1; i++) {
+            if (maybeOverlapsRangeImpl(min, max, values[i], false, values[i + 1], false)) {
+                return true;
             }
         }
-        return true;
+        if (ObjectComparisons.gt(max, values[values.length - 1])) {
+            return true;
+        }
+        return false;
     }
 }

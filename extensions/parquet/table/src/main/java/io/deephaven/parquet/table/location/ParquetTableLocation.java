@@ -784,7 +784,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
             } else if (filter instanceof DoubleRangeFilter) {
                 maybeOverlaps = DoublePushdownHandler.maybeOverlaps((DoubleRangeFilter) filter, statistics);
             } else if (filter instanceof ComparableRangeFilter) {
-                maybeOverlaps = ObjectPushdownHandler.maybeOverlaps((ComparableRangeFilter) filter, statistics);
+                maybeOverlaps = ComparablePushdownHandler.maybeOverlaps((ComparableRangeFilter) filter, statistics);
             } else if (filter instanceof SingleSidedComparableRangeFilter) {
                 maybeOverlaps = SingleSidedComparableRangePushdownHandler.maybeOverlaps(
                         (SingleSidedComparableRangeFilter) filter, statistics);
@@ -812,7 +812,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
                 } else if (dhColumnType == Instant.class) {
                     maybeOverlaps = InstantPushdownHandler.maybeOverlaps(matchFilter, statistics);
                 } else {
-                    maybeOverlaps = ObjectPushdownHandler.maybeOverlaps(matchFilter, statistics);
+                    maybeOverlaps = ComparablePushdownHandler.maybeOverlaps(matchFilter, statistics);
                 }
             } else {
                 // Unsupported filter type for push down, so assume it overlaps.

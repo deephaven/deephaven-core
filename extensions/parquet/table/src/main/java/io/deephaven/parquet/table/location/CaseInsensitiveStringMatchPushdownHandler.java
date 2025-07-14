@@ -67,7 +67,7 @@ final class CaseInsensitiveStringMatchPushdownHandler {
         if (min.equalsIgnoreCase(max)) {
             for (final Object value : values) {
                 final String valueStr = (String) value;
-                if (min.compareToIgnoreCase(valueStr) == 0) {
+                if (min.equalsIgnoreCase(valueStr)) {
                     return false;
                 }
             }

@@ -69,7 +69,7 @@ public class FloatPushdownHandlerTest {
         assertTrue(FloatPushdownHandler.maybeOverlaps(
                 new FloatRangeFilter("f", 10f, -10f, true, true), stats));
 
-        // ranges that use ±inf still overlap finite stats
+        // ranges that use inf still overlap finite stats
         assertTrue(FloatPushdownHandler.maybeOverlaps(
                 new FloatRangeFilter("f", Float.NEGATIVE_INFINITY, -1f, true, true), stats));
         assertTrue(FloatPushdownHandler.maybeOverlaps(
@@ -85,6 +85,10 @@ public class FloatPushdownHandlerTest {
         assertTrue(FloatPushdownHandler.maybeOverlaps(
                 new FloatRangeFilter("d", -10.0f, 10.0f, true, true),
                 floatStats(Float.NEGATIVE_INFINITY, Float.POSITIVE_INFINITY)));
+
+        // Overlapping (3,3] with stats [3, 4] should return false
+        assertFalse(FloatPushdownHandler.maybeOverlaps(
+                new FloatRangeFilter("i", 3.0f, 3.0f, false, true), floatStats(3, 4)));
     }
 
     @Test
@@ -111,7 +115,7 @@ public class FloatPushdownHandlerTest {
         assertTrue(FloatPushdownHandler.maybeOverlaps(
                 new MatchFilter(MatchFilter.MatchType.Regular, "f", withInside), stats));
 
-        // list containing ±inf values
+        // list containing inf values
         assertTrue(FloatPushdownHandler.maybeOverlaps(
                 new MatchFilter(MatchFilter.MatchType.Regular, "f",
                         Float.NEGATIVE_INFINITY, Float.POSITIVE_INFINITY, 20f),
@@ -155,7 +159,7 @@ public class FloatPushdownHandlerTest {
                 new MatchFilter(MatchFilter.MatchType.Inverted, "f", exclude),
                 floatStats(0f, 29f)));
 
-        // excluding ±inf still leaves a finite gap
+        // excluding inf still leaves a finite gap
         assertTrue(FloatPushdownHandler.maybeOverlaps(
                 new MatchFilter(MatchFilter.MatchType.Inverted, "f",
                         Float.NEGATIVE_INFINITY, Float.POSITIVE_INFINITY),
@@ -178,5 +182,13 @@ public class FloatPushdownHandlerTest {
         assertTrue(FloatPushdownHandler.maybeOverlaps(
                 new MatchFilter(MatchFilter.MatchType.Inverted, "f", Float.NaN),
                 floatStats(5f, 6f)));
+
+        final float nextAfterFive = Math.nextAfter(5.0f, Float.POSITIVE_INFINITY);
+        // Inverse match of {5, nextAfterFive} against statistics [5, nextAfterFive] should return false but currently
+        // returns true since the implementation assumes the range (5, nextAfterFive) overlaps with the statistics range
+        // [5,nextAfterFive].
+        assertTrue(FloatPushdownHandler.maybeOverlaps(
+                new MatchFilter(MatchFilter.MatchType.Inverted, "i", 5, nextAfterFive),
+                floatStats(5.0f, nextAfterFive)));
     }
 }
