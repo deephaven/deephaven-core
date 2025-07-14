@@ -11,6 +11,7 @@ import io.deephaven.engine.table.impl.util.JobScheduler;
 
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.function.LongConsumer;
 
 /**
  * Interface for entities that support pushdown filtering. Must implement a filter cost estimation function that allows
@@ -35,15 +36,20 @@ public interface PushdownFilterMatcher {
      * @param fullSet The full set of rows
      * @param usePrev Whether to use the previous result
      * @param context The {@link PushdownFilterContext} to use for the pushdown operation.
-     * @return The estimated cost of the push down operation.
+     * @param jobScheduler The job scheduler to use for scheduling child jobs
+     * @param onComplete Consumer of the estimated cost of the pushdown operation.
+     * @param onError Consumer of any exceptions that occur during the estimate operation
      */
-    long estimatePushdownFilterCost(
+    void estimatePushdownFilterCost(
             final WhereFilter filter,
             final Map<String, String> renameMap,
             final RowSet selection,
             final RowSet fullSet,
             final boolean usePrev,
-            final PushdownFilterContext context);
+            final PushdownFilterContext context,
+            final JobScheduler jobScheduler,
+            final LongConsumer onComplete,
+            final Consumer<Exception> onError);
 
     /**
      * Push down the given filter to the underlying table and pass the result to the consumer. This method is expected

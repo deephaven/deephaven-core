@@ -22,8 +22,10 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -254,13 +256,20 @@ abstract class AbstractFilterExecution {
         /**
          * Update the pushdown cost for this filter (or set to Long.MAX_VALUE if pushdown is not supported).
          */
-        public void updatePushdownFilterCost(
+        public CompletableFuture<Void> updatePushdownFilterCost(
                 final RowSet selection,
                 final PushdownFilterContext context) {
-            pushdownFilterCost = pushdownMatcher == null
-                    ? Long.MAX_VALUE
-                    : pushdownMatcher.estimatePushdownFilterCost(filter, renameMap, selection, sourceTable.getRowSet(),
-                            usePrev, context);
+            if (pushdownMatcher == null) {
+                pushdownFilterCost = Long.MAX_VALUE;
+                return CompletableFuture.completedFuture(null);
+            }
+            final CompletableFuture<Void> future = new CompletableFuture<>();
+            pushdownMatcher.estimatePushdownFilterCost(filter, renameMap, selection, sourceTable.getRowSet(), usePrev,
+                    context, jobScheduler(), value -> {
+                        StatelessFilter.this.pushdownFilterCost = value;
+                        future.complete(null);
+                    }, future::completeExceptionally);
+            return future;
         }
 
         @Override
@@ -292,15 +301,28 @@ abstract class AbstractFilterExecution {
         if (startIndex >= filters.length) {
             return;
         }
-
+        final List<CompletableFuture<Void>> filterFutures = new ArrayList<>(filters.length - startIndex);
         // Update the pushdown filter cost for each filter in the array, starting at the given index.
         for (int i = startIndex; i < filters.length; i++) {
             final StatelessFilter filter = filters[i];
-            filters[i].updatePushdownFilterCost(selection, filter.context);
+            filterFutures.add(filters[i].updatePushdownFilterCost(selection, filter.context));
         }
-
+        onExceptionOrAllOf(filterFutures).join();
         // Sort the filters by non-descending cost, starting at the given index.
         Arrays.sort(filters, startIndex, filters.length);
+    }
+
+    private static <T> CompletableFuture<?> onExceptionOrAllOf(final Collection<CompletableFuture<T>> futures) {
+        // errorFuture will never be completed normally
+        final CompletableFuture<Void> errorFuture = new CompletableFuture<>();
+        for (final CompletableFuture<?> future : futures) {
+            future.whenComplete((x, e) -> {
+                if (e != null) {
+                    errorFuture.completeExceptionally(e);
+                }
+            });
+        }
+        return CompletableFuture.anyOf(errorFuture, CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new)));
     }
 
     /**

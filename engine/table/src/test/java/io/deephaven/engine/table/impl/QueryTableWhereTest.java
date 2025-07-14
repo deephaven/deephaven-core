@@ -63,6 +63,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.IntUnaryOperator;
+import java.util.function.LongConsumer;
 import java.util.stream.IntStream;
 
 import static io.deephaven.engine.testutil.TstUtils.*;
@@ -1902,9 +1903,10 @@ public abstract class QueryTableWhereTest {
         }
 
         @Override
-        public long estimatePushdownFilterCost(WhereFilter filter, Map<String, String> renameMap, RowSet selection,
-                RowSet fullSet, boolean usePrev, final PushdownFilterContext context) {
-            return pushdownCost;
+        public void estimatePushdownFilterCost(WhereFilter filter, Map<String, String> renameMap, RowSet selection,
+                RowSet fullSet, boolean usePrev, PushdownFilterContext context, JobScheduler jobScheduler,
+                LongConsumer onComplete, Consumer<Exception> onError) {
+            onComplete.accept(pushdownCost);
         }
 
         @Override
@@ -2081,14 +2083,17 @@ public abstract class QueryTableWhereTest {
         }
 
         @Override
-        public long estimatePushdownFilterCost(
+        public void estimatePushdownFilterCost(
                 final WhereFilter filter,
                 final Map<String, String> renameMap,
                 final RowSet selection,
                 final RowSet fullSet,
                 final boolean usePrev,
-                final PushdownFilterContext context) {
-            return pushdownCost;
+                final PushdownFilterContext context,
+                final JobScheduler jobScheduler,
+                final LongConsumer onComplete,
+                final Consumer<Exception> onError) {
+            onComplete.accept(pushdownCost);
         }
 
         @Override
