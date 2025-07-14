@@ -80,6 +80,11 @@ public class FloatPushdownHandlerTest {
                 new FloatRangeFilter("f", QueryConstants.NULL_FLOAT, 0f, true, true), stats));
         assertTrue(FloatPushdownHandler.maybeOverlaps(
                 new FloatRangeFilter("f", -1f, Float.NaN, true, true), stats));
+
+        // stats (-Inf .. +Inf), any finite filter overlaps
+        assertTrue(FloatPushdownHandler.maybeOverlaps(
+                new FloatRangeFilter("d", -10.0f, 10.0f, true, true),
+                floatStats(Float.NEGATIVE_INFINITY, Float.POSITIVE_INFINITY)));
     }
 
     @Test
@@ -125,6 +130,11 @@ public class FloatPushdownHandlerTest {
                 new MatchFilter(MatchFilter.MatchType.Regular, "f",
                         Float.NaN, 50f),
                 stats));
+
+        // stats (-Inf .. +Inf), inside match should still overlap
+        assertTrue(FloatPushdownHandler.maybeOverlaps(
+                new MatchFilter(MatchFilter.MatchType.Regular, "d", 0.0),
+                floatStats(Float.NEGATIVE_INFINITY, Float.POSITIVE_INFINITY)));
     }
 
     @Test
@@ -150,6 +160,11 @@ public class FloatPushdownHandlerTest {
                 new MatchFilter(MatchFilter.MatchType.Inverted, "f",
                         Float.NEGATIVE_INFINITY, Float.POSITIVE_INFINITY),
                 floatStats(-10f, 10f)));
+
+        // stats (-Inf .. +Inf) and exclusion misses, still overlap
+        assertTrue(FloatPushdownHandler.maybeOverlaps(
+                new MatchFilter(MatchFilter.MatchType.Inverted, "d", 0.0),
+                floatStats(Float.NEGATIVE_INFINITY, Float.POSITIVE_INFINITY)));
 
         // empty exclusion list
         assertTrue(FloatPushdownHandler.maybeOverlaps(

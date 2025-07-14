@@ -746,23 +746,6 @@ public class ParquetTableLocation extends AbstractTableLocation {
         }
     }
 
-    private static boolean areStatisticsUsable(final Statistics<?> statistics) {
-        if (statistics == null || !statistics.hasNonNullValue()) {
-            return false;
-        }
-        if (statistics.genericGetMin() == null || statistics.genericGetMax() == null) {
-            // Not expected to have null min/max values, but if they are null, we cannot determine min/max
-            return false;
-        }
-        final PrimitiveType parquetColType = statistics.type();
-        if (parquetColType.columnOrder() != ColumnOrder.typeDefined()) {
-            // We only handle typeDefined min/max right now; if new orders get defined in the future, they need to be
-            // explicitly handled
-            return false;
-        }
-        return true;
-    }
-
     /**
      * Apply the filter to the row group metadata and return the result.
      */
@@ -784,7 +767,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
             // can return "match" for scenarios like filter of {X == 3}, and statistics of {min=3, max=3, num_nulls=0}.
             // Similarly, if filter is {X == null}, and statistics is {hasNonNullValue=false, num_nulls=<row-group
             // size>}, we can return "match" for the row group.
-            if (!areStatisticsUsable(statistics)) {
+            if (!ParquetPushdownUtils.areStatisticsUsable(statistics)) {
                 // We assume it overlaps if we cannot use the statistics.
                 maybeOverlaps = true;
             } else if (filter instanceof ByteRangeFilter) {

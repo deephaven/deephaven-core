@@ -4,13 +4,18 @@
 package io.deephaven.parquet.table.pushdown;
 
 import io.deephaven.time.DateTimeUtils;
+import io.deephaven.util.annotations.InternalUseOnly;
+import org.apache.parquet.column.statistics.Statistics;
+import org.apache.parquet.schema.ColumnOrder;
+import org.apache.parquet.schema.PrimitiveType;
 
 import java.time.Instant;
 
 /**
  * Utility methods for Parquet pushdown operations.
  */
-abstract class ParquetPushdownUtils {
+@InternalUseOnly
+public abstract class ParquetPushdownUtils {
     private static final long NANOS_PER_SECOND = DateTimeUtils.SECOND;
 
     /**
@@ -18,5 +23,23 @@ abstract class ParquetPushdownUtils {
      */
     static Instant epochNanosToInstant(final long nanos) {
         return Instant.ofEpochSecond(nanos / NANOS_PER_SECOND, nanos % NANOS_PER_SECOND);
+    }
+
+
+    public static boolean areStatisticsUsable(final Statistics<?> statistics) {
+        if (statistics == null || !statistics.hasNonNullValue()) {
+            return false;
+        }
+        if (statistics.genericGetMin() == null || statistics.genericGetMax() == null) {
+            // Not expected to have null min/max values, but if they are null, we cannot determine min/max
+            return false;
+        }
+        final PrimitiveType parquetColType = statistics.type();
+        if (parquetColType.columnOrder() != ColumnOrder.typeDefined()) {
+            // We only handle typeDefined min/max right now; if new orders get defined in the future, they need to be
+            // explicitly handled
+            return false;
+        }
+        return true;
     }
 }

@@ -80,6 +80,11 @@ public class DoublePushdownHandlerTest {
                 new DoubleRangeFilter("d", QueryConstants.NULL_DOUBLE, 0.0, true, true), stats));
         assertTrue(DoublePushdownHandler.maybeOverlaps(
                 new DoubleRangeFilter("d", -1.0, Double.NaN, true, true), stats));
+
+        // stats (-Inf .. +Inf), any finite filter overlaps
+        assertTrue(DoublePushdownHandler.maybeOverlaps(
+                new DoubleRangeFilter("d", -10.0, 10.0, true, true),
+                doubleStats(Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY)));
     }
 
     @Test
@@ -111,6 +116,11 @@ public class DoublePushdownHandlerTest {
                 new MatchFilter(MatchFilter.MatchType.Regular, "d",
                         Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, 200.0),
                 stats));
+
+        // stats (-Inf .. +Inf), inside match should still overlap
+        assertTrue(DoublePushdownHandler.maybeOverlaps(
+                new MatchFilter(MatchFilter.MatchType.Regular, "d", 0.0),
+                doubleStats(Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY)));
 
         // empty list
         assertTrue(DoublePushdownHandler.maybeOverlaps(
@@ -150,6 +160,11 @@ public class DoublePushdownHandlerTest {
                 new MatchFilter(MatchFilter.MatchType.Inverted, "d",
                         Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY),
                 doubleStats(-10.0, 10.0)));
+
+        // stats (-Inf .. +Inf) and exclusion misses, still overlap
+        assertTrue(DoublePushdownHandler.maybeOverlaps(
+                new MatchFilter(MatchFilter.MatchType.Inverted, "d", 0.0),
+                doubleStats(Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY)));
 
         // empty exclusion list
         assertTrue(DoublePushdownHandler.maybeOverlaps(

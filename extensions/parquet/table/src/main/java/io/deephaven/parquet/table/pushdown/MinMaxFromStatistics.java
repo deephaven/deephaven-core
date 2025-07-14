@@ -50,9 +50,14 @@ import java.util.function.Consumer;
 
 /**
  * This is a utility class that provides methods to extract minimum and maximum values from Parquet statistics based on
- * the column's logical and primitive types. The general structure is that based on the type requested by user, we first
- * try to extract the min/max values from the logical type, and if that fails, we try to extract them from the primitive
- * type. If both fail, we return {@code false}
+ * the column's logical and primitive types.
+ * <p>
+ * This class assumes that the statistics provided are valid and {@link ParquetPushdownUtils#areStatisticsUsable
+ * usable}.
+ * <p>
+ * The general structure is that based on the type requested by user, we first try to extract the min/max values from
+ * the logical type, and if that fails, we try to extract them from the primitive type. If both fail, we return
+ * {@code false}.
  */
 @InternalUseOnly
 public abstract class MinMaxFromStatistics {
@@ -66,6 +71,9 @@ public abstract class MinMaxFromStatistics {
             @NotNull final Statistics<?> statistics,
             @NotNull final Consumer<Byte> minSetter,
             @NotNull final Consumer<Byte> maxSetter) {
+        if (!statistics.hasNonNullValue()) {
+            throw new IllegalStateException("Statistics must have a non-null value");
+        }
         final PrimitiveType parquetColType = statistics.type();
         final LogicalTypeAnnotation logicalType = parquetColType.getLogicalTypeAnnotation();
         if (logicalType instanceof LogicalTypeAnnotation.IntLogicalTypeAnnotation) {
