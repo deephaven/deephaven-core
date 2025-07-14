@@ -48,10 +48,14 @@ public class Client : IDisposable {
   /// after Dispose() is called. If the caller tries to do so, the behavior is unspecified.
   /// </summary>
   public void Dispose() {
+    Dispose(true);
+    GC.SuppressFinalize(this);
+  }
+
+  protected virtual void Dispose(bool disposing) {
     if (_manager == null) {
       return;
     }
-    GC.SuppressFinalize(this);
     var temp = _manager;
     _manager = null;
     temp.Dispose();

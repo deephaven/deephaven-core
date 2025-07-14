@@ -52,6 +52,11 @@ public class TableHandleManager : IDisposable {
   }
 
   public void Dispose() {
+    Dispose(true);
+    GC.SuppressFinalize(this);
+  }
+
+  protected void Dispose(bool disposing) {
     if (_isDisposed) {
       return;
     }
