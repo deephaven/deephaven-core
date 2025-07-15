@@ -55,13 +55,9 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
 
         final Table expected =
                 TableTools.newTable(intCol("Key", 1, 2, 2, 3, 3, 3), intCol("Value", 101, 201, 202, 301, 302, 303));
-        TableTools.showWithRowSet(source);
 
         final Table ungrouped = source.ungroup();
         assertTableEquals(expected, ungrouped);
-
-        TableTools.showWithRowSet(source);
-        TableTools.showWithRowSet(ungrouped);
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.runWithinUnitTestCycle(() -> {
@@ -73,9 +69,18 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
             source.notifyListeners(new TableUpdateImpl(i(), i(), i(), sd, ModifiedColumnSet.EMPTY));
         });
 
-        TableTools.showWithRowSet(source);
-        TableTools.showWithRowSet(ungrouped);
+        assertTableEquals(expected, ungrouped);
+    }
 
+    public void testStatic() {
+        final Table source = newTable(
+                intCol("Key", 1, 2, 3),
+                col("Value", new int[] {101}, new int[] {201, 202}, new int[] {301, 302, 303}));
+
+        final Table expected =
+                TableTools.newTable(intCol("Key", 1, 2, 2, 3, 3, 3), intCol("Value", 101, 201, 202, 301, 302, 303));
+
+        final Table ungrouped = source.ungroup();
         assertTableEquals(expected, ungrouped);
     }
 
@@ -420,34 +425,34 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
                                 new String[] {"a", "b", "c"})));
 
         final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
-                // EvalNugget.from(() -> table.groupBy().ungroup(nullFill)),
-                // EvalNugget.from(() -> table.groupBy("C1").sort("C1").ungroup(nullFill)),
-                // new UpdateValidatorNugget(table.groupBy("C1").ungroup(nullFill)),
-                // EvalNugget.from(() -> table.groupBy().ungroup(nullFill, "C1")),
-                // EvalNugget.from(() -> table.groupBy("C1").sort("C1").ungroup(nullFill, "C2")),
-                // EvalNugget.from(() -> table.groupBy("C1").sort("C1").ungroup(nullFill, "C2").ungroup(nullFill,
-                // "Date")),
-                // EvalNugget.from(() -> table.groupBy("C1").sort("C1").ungroup(nullFill, "C2").ungroup(nullFill)),
-                // EvalNugget.from(() -> table.groupBy("C1", "C2").sort("C1", "C2").ungroup(nullFill)),
-                // EvalNugget
-                // .from(() -> table.groupBy().update("Date=Date.toArray()", "C1=C1.toArray()", "C2=C2.toArray()")
-                // .ungroup(nullFill)),
-                // EvalNugget.from(() -> table.groupBy("C1").update("Date=Date.toArray()", "C2=C2.toArray()").sort("C1")
-                // .ungroup(nullFill)),
-                // EvalNugget
-                // .from(() -> table.groupBy().update("Date=Date.toArray()", "C1=C1.toArray()", "C2=C2.toArray()")
-                // .ungroup(nullFill, "C1")),
-                // EvalNugget.from(() -> table.groupBy("C1").update("Date=Date.toArray()", "C2=C2.toArray()").sort("C1")
-                // .ungroup(nullFill, "C2")),
-                // EvalNugget.from(() -> table.groupBy("C1").update("Date=Date.toArray()", "C2=C2.toArray()").sort("C1")
-                // .ungroup(nullFill, "C2").ungroup(nullFill, "Date")),
-                // EvalNugget.from(() -> table.groupBy("C1").update("Date=Date.toArray()", "C2=C2.toArray()").sort("C1")
-                // .ungroup(nullFill, "C2").ungroup(nullFill)),
-                // EvalNugget.from(
-                // () -> table.groupBy("C1", "C2").update("Date=Date.toArray()").sort("C1", "C2")
-                // .ungroup(nullFill)),
-                // EvalNugget.from(() -> table.groupBy("C1").update("Date=Date.toArray()", "C2=C2.toArray()").sort("C1")
-                // .ungroup(nullFill)),
+                EvalNugget.from(() -> table.groupBy().ungroup(nullFill)),
+                EvalNugget.from(() -> table.groupBy("C1").sort("C1").ungroup(nullFill)),
+                new UpdateValidatorNugget(table.groupBy("C1").ungroup(nullFill)),
+                EvalNugget.from(() -> table.groupBy().ungroup(nullFill, "C1")),
+                EvalNugget.from(() -> table.groupBy("C1").sort("C1").ungroup(nullFill, "C2")),
+                EvalNugget.from(() -> table.groupBy("C1").sort("C1").ungroup(nullFill, "C2").ungroup(nullFill,
+                        "Date")),
+                EvalNugget.from(() -> table.groupBy("C1").sort("C1").ungroup(nullFill, "C2").ungroup(nullFill)),
+                EvalNugget.from(() -> table.groupBy("C1", "C2").sort("C1", "C2").ungroup(nullFill)),
+                EvalNugget
+                        .from(() -> table.groupBy().update("Date=Date.toArray()", "C1=C1.toArray()", "C2=C2.toArray()")
+                                .ungroup(nullFill)),
+                EvalNugget.from(() -> table.groupBy("C1").update("Date=Date.toArray()", "C2=C2.toArray()").sort("C1")
+                        .ungroup(nullFill)),
+                EvalNugget
+                        .from(() -> table.groupBy().update("Date=Date.toArray()", "C1=C1.toArray()", "C2=C2.toArray()")
+                                .ungroup(nullFill, "C1")),
+                EvalNugget.from(() -> table.groupBy("C1").update("Date=Date.toArray()", "C2=C2.toArray()").sort("C1")
+                        .ungroup(nullFill, "C2")),
+                EvalNugget.from(() -> table.groupBy("C1").update("Date=Date.toArray()", "C2=C2.toArray()").sort("C1")
+                        .ungroup(nullFill, "C2").ungroup(nullFill, "Date")),
+                EvalNugget.from(() -> table.groupBy("C1").update("Date=Date.toArray()", "C2=C2.toArray()").sort("C1")
+                        .ungroup(nullFill, "C2").ungroup(nullFill)),
+                EvalNugget.from(
+                        () -> table.groupBy("C1", "C2").update("Date=Date.toArray()").sort("C1", "C2")
+                                .ungroup(nullFill)),
+                EvalNugget.from(() -> table.groupBy("C1").update("Date=Date.toArray()", "C2=C2.toArray()").sort("C1")
+                        .ungroup(nullFill)),
                 EvalNugget.from(() -> table.view("C3").ungroup(nullFill))
         };
 

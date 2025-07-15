@@ -584,6 +584,8 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
                 intCol("Key", 1, 2, 3), col("Value", new int[] {101}, new int[] {201, 202}, new int[] {301}));
 
+        final Table withVector = table.update("Value=new io.deephaven.vector.IntVectorDirect(Value)");
+
         final Table tableStart = TableTools.newTable(intCol("Key", 1, 2, 2, 3), intCol("Value", 101, 201, 202, 301));
         final Table tableUpdate =
                 TableTools.newTable(intCol("Key", 1, 2, 2, 3, 4), intCol("Value", 101, 201, 202, 301, 401));
@@ -595,29 +597,51 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         updateGraph.startCycleForUnitTests(false);
 
         final Table ungroup1 = pool.submit(() -> table.ungroup()).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
+        final Table ungroupv1 = pool.submit(() -> withVector.ungroup()).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
         assertTableEquals(ungroup1, tableStart);
+        assertTableEquals(ungroupv1, tableStart);
 
         TstUtils.addToTable(table, i(8), intCol("Key", 4), col("Value", new int[] {401}));
 
         final Table ungroup2 = pool.submit(() -> table.ungroup()).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
+        final Table ungroupv2 = pool.submit(() -> withVector.ungroup()).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
         TstUtils.assertTableEquals(tableStart, prevTable(ungroup1));
+        TstUtils.assertTableEquals(tableStart, prevTable(ungroup2));
+        TstUtils.assertTableEquals(tableStart, prevTable(ungroupv1));
         TstUtils.assertTableEquals(tableStart, prevTable(ungroup2));
 
         table.notifyListeners(i(8), i(), i());
         updateGraph.markSourcesRefreshedForUnitTests();
 
         final Table ungroup3 = pool.submit(() -> table.ungroup()).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
+        final Table ungroupv3 = pool.submit(() -> withVector.ungroup()).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
         TstUtils.assertTableEquals(tableStart, prevTable(ungroup1));
         TstUtils.assertTableEquals(tableStart, prevTable(ungroup2));
+        TstUtils.assertTableEquals(tableUpdate, ungroup3);
+        TstUtils.assertTableEquals(tableStart, prevTable(ungroupv1));
+        TstUtils.assertTableEquals(tableStart, prevTable(ungroupv2));
+        // ungroup v3 doesn't actually have the data yet
+        TstUtils.assertTableEquals(tableStart, prevTable(ungroupv3));
+
+        while (((BaseTable) withVector).getLastNotificationStep() < updateGraph.clock().currentStep()) {
+            updateGraph.flushOneNotificationForUnitTests();
+        }
+
+        final Table ungroupv4 = pool.submit(() -> withVector.ungroup()).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
+        TstUtils.assertTableEquals(tableUpdate, ungroupv4);
 
         updateGraph.completeCycleForUnitTests();
 
         TstUtils.assertTableEquals(tableUpdate, ungroup1);
         TstUtils.assertTableEquals(tableUpdate, ungroup2);
         TstUtils.assertTableEquals(tableUpdate, ungroup3);
+        TstUtils.assertTableEquals(tableUpdate, ungroupv1);
+        TstUtils.assertTableEquals(tableUpdate, ungroupv2);
+        TstUtils.assertTableEquals(tableUpdate, ungroupv3);
+        TstUtils.assertTableEquals(tableUpdate, ungroupv4);
 
         updateGraph.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(table, i(10000), intCol("Key", 5), col("Value", new int[] {501, 502}));
@@ -626,6 +650,10 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         assertTableEquals(tableUpdate2, ungroup1);
         assertTableEquals(tableUpdate2, ungroup2);
         assertTableEquals(tableUpdate2, ungroup3);
+        assertTableEquals(tableUpdate2, ungroupv1);
+        assertTableEquals(tableUpdate2, ungroupv2);
+        assertTableEquals(tableUpdate2, ungroupv3);
+        assertTableEquals(tableUpdate2, ungroupv4);
 
         updateGraph.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(table, i(10000), col("Key", 6), col("Value", new int[] {601, 602, 603}));
@@ -634,11 +662,17 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         assertTableEquals(tableUpdate3, ungroup1);
         assertTableEquals(tableUpdate3, ungroup2);
         assertTableEquals(tableUpdate3, ungroup3);
+        assertTableEquals(tableUpdate3, ungroupv1);
+        assertTableEquals(tableUpdate3, ungroupv2);
+        assertTableEquals(tableUpdate3, ungroupv3);
+        assertTableEquals(tableUpdate3, ungroupv4);
     }
 
     public void testUngroupSizeChanges() throws ExecutionException, InterruptedException, TimeoutException {
         final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
                 intCol("Key", 1, 2, 3), col("Value", new int[] {101}, new int[] {201, 202}, new int[] {301}));
+
+        final Table withVector = table.update("Value=new io.deephaven.vector.IntVectorDirect(Value)");
 
         final Table tableStart = TableTools.newTable(intCol("Key", 1, 2, 2, 3), intCol("Value", 101, 201, 202, 301));
         final Table tableUpdate =
@@ -651,30 +685,52 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         updateGraph.startCycleForUnitTests(false);
 
         final Table ungroup1 = pool.submit(() -> table.ungroup()).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
+        final Table ungroupv1 = pool.submit(() -> withVector.ungroup()).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
         assertTableEquals(ungroup1, tableStart);
+        assertTableEquals(ungroupv1, tableStart);
 
         TstUtils.addToTable(table, i(2, 4), intCol("Key", 4, 5),
                 col("Value", new int[] {401, 402, 403}, new int[] {501}));
 
         final Table ungroup2 = pool.submit(() -> table.ungroup()).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
+        final Table ungroupv2 = pool.submit(() -> withVector.ungroup()).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
         TstUtils.assertTableEquals(tableStart, prevTable(ungroup1));
         TstUtils.assertTableEquals(tableStart, prevTable(ungroup2));
+        TstUtils.assertTableEquals(tableStart, prevTable(ungroupv1));
+        TstUtils.assertTableEquals(tableStart, prevTable(ungroupv2));
 
         table.notifyListeners(i(), i(), i(2, 4));
         updateGraph.markSourcesRefreshedForUnitTests();
 
         final Table ungroup3 = pool.submit(() -> table.ungroup()).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
+        final Table ungroupv3 = pool.submit(() -> withVector.ungroup()).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
         TstUtils.assertTableEquals(tableStart, prevTable(ungroup1));
         TstUtils.assertTableEquals(tableStart, prevTable(ungroup2));
+        TstUtils.assertTableEquals(tableUpdate, ungroup3);
+        TstUtils.assertTableEquals(tableStart, prevTable(ungroupv1));
+        TstUtils.assertTableEquals(tableStart, prevTable(ungroupv2));
+        // ungroup v3 doesn't actually have the data yet
+        TstUtils.assertTableEquals(tableStart, prevTable(ungroupv3));
+
+        while (((BaseTable) withVector).getLastNotificationStep() < updateGraph.clock().currentStep()) {
+            updateGraph.flushOneNotificationForUnitTests();
+        }
+
+        final Table ungroupv4 = pool.submit(() -> withVector.ungroup()).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
+        TstUtils.assertTableEquals(tableUpdate, ungroupv4);
 
         updateGraph.completeCycleForUnitTests();
 
         TstUtils.assertTableEquals(tableUpdate, ungroup1);
         TstUtils.assertTableEquals(tableUpdate, ungroup2);
         TstUtils.assertTableEquals(tableUpdate, ungroup3);
+        TstUtils.assertTableEquals(tableUpdate, ungroupv1);
+        TstUtils.assertTableEquals(tableUpdate, ungroupv2);
+        TstUtils.assertTableEquals(tableUpdate, ungroupv3);
+        TstUtils.assertTableEquals(tableUpdate, ungroupv4);
 
         updateGraph.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(table, i(10000), intCol("Key", 6), col("Value", new int[] {601, 602}));
@@ -683,6 +739,10 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         assertTableEquals(tableUpdate2, ungroup1);
         assertTableEquals(tableUpdate2, ungroup2);
         assertTableEquals(tableUpdate2, ungroup3);
+        assertTableEquals(tableUpdate2, ungroupv1);
+        assertTableEquals(tableUpdate2, ungroupv2);
+        assertTableEquals(tableUpdate2, ungroupv3);
+        assertTableEquals(tableUpdate2, ungroupv4);
 
         updateGraph.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(table, i(10000), col("Key", 7), col("Value", new int[] {701}));
@@ -691,6 +751,10 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         assertTableEquals(tableUpdate3, ungroup1);
         assertTableEquals(tableUpdate3, ungroup2);
         assertTableEquals(tableUpdate3, ungroup3);
+        assertTableEquals(tableUpdate3, ungroupv1);
+        assertTableEquals(tableUpdate3, ungroupv2);
+        assertTableEquals(tableUpdate3, ungroupv3);
+        assertTableEquals(tableUpdate3, ungroupv4);
     }
 
     public void testSortOfPartitionBy() throws ExecutionException, InterruptedException, TimeoutException {
