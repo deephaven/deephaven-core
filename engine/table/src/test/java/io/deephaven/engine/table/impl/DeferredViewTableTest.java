@@ -16,8 +16,8 @@ import io.deephaven.engine.table.impl.select.ConjunctiveFilter;
 import io.deephaven.engine.table.impl.select.DisjunctiveFilter;
 import io.deephaven.engine.table.impl.select.MatchFilter;
 import io.deephaven.engine.table.impl.select.RangeFilter;
+import io.deephaven.engine.table.impl.select.IncrementalReleaseFilter;
 import io.deephaven.engine.table.impl.select.SelectColumn;
-import io.deephaven.engine.table.impl.select.TimeSeriesFilter;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.select.WhereFilterInvertedImpl;
 import io.deephaven.engine.testutil.TstUtils;
@@ -91,9 +91,9 @@ public class DeferredViewTableTest {
                 ColumnDefinition.fromGenericType("Timestamp", Instant.class));
         final Table sourceTable = TableTools.emptyTable(10).update("Timestamp = DateTimeUtils.now()");
 
-        // We'll use a time series filter for convenience but any refreshing filter will do.
+        // We'll use a incremental release filter for convenience but any refreshing filter will do.
         final WhereFilter[] whereFilters = new WhereFilter[] {
-                new TimeSeriesFilter("Timestamp", "PT1s")
+                new IncrementalReleaseFilter(1, 1)
         };
         Assert.eqTrue(whereFilters[0].isRefreshing(), "whereFilters[0].isRefreshing()");
 

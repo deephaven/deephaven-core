@@ -112,14 +112,20 @@ public class WindowCheck {
         final WindowListenerRecorder recorder = new WindowListenerRecorder(table, result);
         final TimeWindowListenerImpl timeWindowListenerImpl =
                 new TimeWindowListenerImpl(inWindowColumn, inWindowColumnSource, recorder, table, result);
-        recorder.setMergedListener(timeWindowListenerImpl);
-        if (table.isRefreshing()) {
-            table.addUpdateListener(recorder);
-        }
         timeWindowListenerImpl.addRowSequence(table.getRowSet(), false);
-        result.addParentReference(timeWindowListenerImpl);
-        if (addToMonitor) {
-            result.getUpdateGraph().addSource(timeWindowListenerImpl);
+
+        // if we cannot update any rows (because everything is already outside our window),
+        // then there is no sense in having a refreshing output
+        final boolean rowsCanBeUpdated = table.isRefreshing() || !timeWindowListenerImpl.priorityQueue.isEmpty();
+        if (rowsCanBeUpdated) {
+            recorder.setMergedListener(timeWindowListenerImpl);
+            if (table.isRefreshing()) {
+                table.addUpdateListener(recorder);
+            }
+            result.addParentReference(timeWindowListenerImpl);
+            if (addToMonitor) {
+                result.getUpdateGraph().addSource(timeWindowListenerImpl);
+            }
         }
         return new Pair<>(result, timeWindowListenerImpl);
     }

@@ -152,7 +152,7 @@ Note: release branches are _not_ typically merged back into `main`.
 The release will proceed with [GitHub Actions](https://github.com/deephaven/deephaven-core/actions/workflows/publish-ci.yml).
 The specific action can be found based off of the name of the release branch: [?query=branch%3Arelease%2FvX.Y.Z](https://github.com/deephaven/deephaven-core/actions/workflows/publish-ci.yml?query=branch%3Arelease%2FvX.Y.Z).
 
-The "Publish" step creates the artifacts and publishes the jars to a [Maven Central staging repository](https://s01.oss.sonatype.org).
+The "Publish" step creates the artifacts and publishes the jars to a [Maven Central Portal staging repository](https://central.sonatype.com/).
 
 The "Upload Artifacts" step uploads the Deephaven server application, the deephaven-core wheel, and the deephaven-server wheel as *temporary* GitHub action artifacts.
 
@@ -203,7 +203,7 @@ Please post the difference to the Deephaven team to ensure there are no unexpect
 
 ### 7. Maven Central jars
 
-The jars are put into a [Maven Central Repository Manager](https://s01.oss.sonatype.org) staging repository.
+The jars are put into a [Maven Central Portal](https://central.sonatype.com/) staging repository.
 You'll need your own username and password to sign in (to ensure auditability).
 
 Arguably, the Maven Central jars are the most important artifacts - once they are officially released from the staging repository, they are released "forever".
