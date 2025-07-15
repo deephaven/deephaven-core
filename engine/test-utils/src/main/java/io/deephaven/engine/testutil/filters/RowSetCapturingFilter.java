@@ -28,23 +28,35 @@ import java.util.List;
  * Once used, or between-uses, it is expected that the {@link #reset()} method is called to clear the captured RowSets.
  */
 public class RowSetCapturingFilter extends WhereFilterImpl implements SafeCloseable {
-    private final List<RowSet> rowSets = new ArrayList<>();
+    private final List<RowSet> rowSets;
     private final WhereFilter innerFilter;
 
     /**
      * Creates a RowSetCapturingFilter that assumes an always-true filter.
      */
     public RowSetCapturingFilter() {
-        this(null);
+        this(null, new ArrayList<>());
     }
 
     /**
      * Creates a RowSetCapturingFilter that wraps the provided filter.
      *
-     * @param filter
+     * @param filter the filter to wrap, may be null
      */
     public RowSetCapturingFilter(final Filter filter) {
-        this.innerFilter = filter == null ? null : WhereFilter.of(filter);
+        this(filter == null ? null : WhereFilter.of(filter), new ArrayList<>());
+    }
+
+    /**
+     * Creates a RowSetCapturingFilter that wraps the provided filter and accumulates captured RowSets in the provided
+     * list.
+     *
+     * @param filter the filter to wrap, may be null
+     *
+     */
+    private RowSetCapturingFilter(final WhereFilter filter, final List<RowSet> rowSets) {
+        this.rowSets = rowSets;
+        this.innerFilter = filter;
     }
 
     @Override
@@ -107,7 +119,8 @@ public class RowSetCapturingFilter extends WhereFilterImpl implements SafeClosea
         if (innerFilter != null) {
             final WhereFilter newInner = innerFilter.copy();
             if (newInner != innerFilter) {
-                return new RowSetCapturingFilter(newInner);
+                // note we share the rowset collection
+                return new RowSetCapturingFilter(newInner, rowSets);
             }
         }
         return this;

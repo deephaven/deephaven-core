@@ -147,11 +147,11 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
                     : table.where(Filter.and(partitionFilters));
 
             if (!partitionBarriers.isEmpty()) {
-                WhereFilter trueFilter = WhereAllFilter.INSTANCE;
+                WhereFilter barrierFilter = WhereAllFilter.INSTANCE;
                 for (final Object barrier : partitionBarriers) {
-                    trueFilter = trueFilter.withBarrier(barrier);
+                    barrierFilter = barrierFilter.withBarrier(barrier);
                 }
-                otherFilters.add(0, trueFilter);
+                otherFilters.add(0, barrierFilter);
             }
 
             return new TableAndRemainingFilters(result.coalesce(),
@@ -359,12 +359,12 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
         final Table coalesced = withPartitionsFiltered.coalesce();
 
         if (!partitionBarriers.isEmpty()) {
-            WhereFilter trueFilter = WhereAllFilter.INSTANCE;
+            WhereFilter barrierFilter = WhereAllFilter.INSTANCE;
 
             for (final Object barrier : partitionBarriers) {
-                trueFilter = trueFilter.withBarrier(barrier);
+                barrierFilter = barrierFilter.withBarrier(barrier);
             }
-            otherFilters.add(0, trueFilter);
+            otherFilters.add(0, barrierFilter);
         }
 
         return otherFilters.isEmpty()

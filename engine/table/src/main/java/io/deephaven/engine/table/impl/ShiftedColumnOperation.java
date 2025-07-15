@@ -251,7 +251,7 @@ public class ShiftedColumnOperation {
             final long minShift,
             final long maxShift) {
         if (minShift == 0 && maxShift == 0) {
-            return updatedRowSet.copy();
+            return RowSetFactory.empty();
         }
         if (minShift == maxShift || maxShift == 0) {
             return computeDirtyModifiedRowSetInPositionSpace(sourceRowSet, updatedRowSet, minShift);

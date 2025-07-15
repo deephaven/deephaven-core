@@ -225,100 +225,101 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
 
             if (myRenames.isEmpty()) {
                 preViewFilters.add(filter);
-            } else {
-                final WhereFilter preFilter = filter.walkWhereFilter(new WhereFilter.Visitor<>() {
-                    @Override
-                    public WhereFilter visitWhereFilter(WhereFilter filter) {
-                        if (filter instanceof MatchFilter) {
-                            final MatchFilter matchFilter = (MatchFilter) filter;
-                            Assert.assertion(myRenames.size() == 1, "Match Filters should only use one column!");
-                            return matchFilter.renameFilter(myRenames);
-                        } else if (filter instanceof ConditionFilter) {
-                            return ((ConditionFilter) filter).renameFilter(myRenames);
-                        }
-                        return WhereFilter.Visitor.super.visitWhereFilter(filter);
-                    }
+                continue;
+            }
 
-                    @Override
-                    public WhereFilter visitWhereFilter(WhereFilterInvertedImpl filter) {
-                        final WhereFilter innerPreFilter = filter.getWrappedFilter().walkWhereFilter(this);
-                        return innerPreFilter == null
-                                ? null
-                                : WhereFilterInvertedImpl.of(innerPreFilter);
+            final WhereFilter preFilter = filter.walkWhereFilter(new WhereFilter.Visitor<>() {
+                @Override
+                public WhereFilter visitWhereFilter(WhereFilter filter) {
+                    if (filter instanceof MatchFilter) {
+                        final MatchFilter matchFilter = (MatchFilter) filter;
+                        Assert.assertion(myRenames.size() == 1, "Match Filters should only use one column!");
+                        return matchFilter.renameFilter(myRenames);
+                    } else if (filter instanceof ConditionFilter) {
+                        return ((ConditionFilter) filter).renameFilter(myRenames);
                     }
-
-                    @Override
-                    public WhereFilter visitWhereFilter(WhereFilterSerialImpl filter) {
-                        // serial filters cannot be run out of order w.r.t. the set of filters that come before and the
-                        // set of filters that come after.
-                        return null;
-                    }
-
-                    @Override
-                    public WhereFilter visitWhereFilter(WhereFilterBarrierImpl filter) {
-                        final WhereFilter innerPreFilter = filter.getWrappedFilter().walkWhereFilter(this);
-                        return innerPreFilter == null
-                                ? null
-                                : WhereFilterBarrierImpl.of(innerPreFilter, filter.barrier());
-                    }
-
-                    @Override
-                    public WhereFilter visitWhereFilter(WhereFilterRespectsBarrierImpl filter) {
-                        final WhereFilter innerPreFilter = filter.getWrappedFilter().walkWhereFilter(this);
-                        return innerPreFilter == null
-                                ? null
-                                : WhereFilterRespectsBarrierImpl.of(innerPreFilter, filter.respectedBarriers());
-                    }
-
-                    @Override
-                    public WhereFilter visitWhereFilter(DisjunctiveFilter filter) {
-                        final List<WhereFilter> subFilters = filter.getFilters();
-                        final WhereFilter[] wrappedFilters = new WhereFilter[subFilters.size()];
-                        for (int ii = 0; ii < wrappedFilters.length; ++ii) {
-                            final WhereFilter subWrap = subFilters.get(ii).walkWhereFilter(this);
-                            if (subWrap == null) {
-                                return null;
-                            }
-                            wrappedFilters[ii] = subWrap;
-                        }
-                        return DisjunctiveFilter.makeDisjunctiveFilter(wrappedFilters);
-                    }
-
-                    @Override
-                    public WhereFilter visitWhereFilter(ConjunctiveFilter filter) {
-                        final List<WhereFilter> subFilters = filter.getFilters();
-                        final WhereFilter[] wrappedFilters = new WhereFilter[subFilters.size()];
-                        for (int ii = 0; ii < wrappedFilters.length; ++ii) {
-                            final WhereFilter subWrap = subFilters.get(ii).walkWhereFilter(this);
-                            if (subWrap == null) {
-                                return null;
-                            }
-                            wrappedFilters[ii] = subWrap;
-                        }
-                        return ConjunctiveFilter.makeConjunctiveFilter(wrappedFilters);
-                    }
-                });
-
-                if (preFilter != null) {
-                    preFilter.init(tableReference.getDefinition(), compilationProcessor);
-                    preViewFilters.add(preFilter);
-                } else {
-                    // if this filter is serial, all subsequent filters must be postViewFilters
-                    if (!filter.permitParallelization()) {
-                        serialFilterFound = true;
-                    }
-
-                    final Collection<Object> newBarriers = ExtractBarriers.of(filter);
-                    final Optional<Object> dupBarrier = newBarriers.stream()
-                            .filter(postViewBarriers::contains)
-                            .findFirst();
-                    if (dupBarrier.isPresent()) {
-                        throw new IllegalArgumentException("Filter Barriers must be unique! Found duplicate: " +
-                                dupBarrier.get());
-                    }
-                    postViewFilters.add(filter);
-                    postViewBarriers.addAll(newBarriers);
+                    return WhereFilter.Visitor.super.visitWhereFilter(filter);
                 }
+
+                @Override
+                public WhereFilter visitWhereFilter(WhereFilterInvertedImpl filter) {
+                    final WhereFilter innerPreFilter = filter.getWrappedFilter().walkWhereFilter(this);
+                    return innerPreFilter == null
+                            ? null
+                            : WhereFilterInvertedImpl.of(innerPreFilter);
+                }
+
+                @Override
+                public WhereFilter visitWhereFilter(WhereFilterSerialImpl filter) {
+                    // serial filters cannot be run out of order w.r.t. the set of filters that come before and the
+                    // set of filters that come after.
+                    return null;
+                }
+
+                @Override
+                public WhereFilter visitWhereFilter(WhereFilterBarrierImpl filter) {
+                    final WhereFilter innerPreFilter = filter.getWrappedFilter().walkWhereFilter(this);
+                    return innerPreFilter == null
+                            ? null
+                            : WhereFilterBarrierImpl.of(innerPreFilter, filter.barrier());
+                }
+
+                @Override
+                public WhereFilter visitWhereFilter(WhereFilterRespectsBarrierImpl filter) {
+                    final WhereFilter innerPreFilter = filter.getWrappedFilter().walkWhereFilter(this);
+                    return innerPreFilter == null
+                            ? null
+                            : WhereFilterRespectsBarrierImpl.of(innerPreFilter, filter.respectedBarriers());
+                }
+
+                @Override
+                public WhereFilter visitWhereFilter(DisjunctiveFilter filter) {
+                    final List<WhereFilter> subFilters = filter.getFilters();
+                    final WhereFilter[] wrappedFilters = new WhereFilter[subFilters.size()];
+                    for (int ii = 0; ii < wrappedFilters.length; ++ii) {
+                        final WhereFilter subWrap = subFilters.get(ii).walkWhereFilter(this);
+                        if (subWrap == null) {
+                            return null;
+                        }
+                        wrappedFilters[ii] = subWrap;
+                    }
+                    return DisjunctiveFilter.makeDisjunctiveFilter(wrappedFilters);
+                }
+
+                @Override
+                public WhereFilter visitWhereFilter(ConjunctiveFilter filter) {
+                    final List<WhereFilter> subFilters = filter.getFilters();
+                    final WhereFilter[] wrappedFilters = new WhereFilter[subFilters.size()];
+                    for (int ii = 0; ii < wrappedFilters.length; ++ii) {
+                        final WhereFilter subWrap = subFilters.get(ii).walkWhereFilter(this);
+                        if (subWrap == null) {
+                            return null;
+                        }
+                        wrappedFilters[ii] = subWrap;
+                    }
+                    return ConjunctiveFilter.makeConjunctiveFilter(wrappedFilters);
+                }
+            });
+
+            if (preFilter != null) {
+                preFilter.init(tableReference.getDefinition(), compilationProcessor);
+                preViewFilters.add(preFilter);
+            } else {
+                // if this filter is serial, all subsequent filters must be postViewFilters
+                if (!filter.permitParallelization()) {
+                    serialFilterFound = true;
+                }
+
+                final Collection<Object> newBarriers = ExtractBarriers.of(filter);
+                final Optional<Object> dupBarrier = newBarriers.stream()
+                        .filter(postViewBarriers::contains)
+                        .findFirst();
+                if (dupBarrier.isPresent()) {
+                    throw new IllegalArgumentException("Filter Barriers must be unique! Found duplicate: " +
+                            dupBarrier.get());
+                }
+                postViewFilters.add(filter);
+                postViewBarriers.addAll(newBarriers);
             }
         }
 
@@ -327,10 +328,11 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
                 .flatMap(wf -> ExtractBarriers.of(wf).stream())
                 .collect(Collectors.toSet());
         if (!preViewBarriers.isEmpty() && !postViewFilters.isEmpty()) {
-            final WhereFilter trueFilter = WhereFilter.of(RawString.of("true"));
-            postViewFilters.addAll(0, preViewBarriers.stream()
-                    .map(barrier -> trueFilter.copy().withBarrier(barrier))
-                    .collect(Collectors.toList()));
+            WhereFilter barrierFilter = WhereAllFilter.INSTANCE;
+            for (final Object barrier : preViewBarriers) {
+                barrierFilter = barrierFilter.withBarrier(barrier);
+            }
+            postViewFilters.add(0, barrierFilter);
         }
         compilationProcessor.compile();
 
