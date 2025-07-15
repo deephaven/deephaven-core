@@ -382,9 +382,9 @@ abstract class AbstractFilterExecution {
         }
     }
 
-    private static void whenComplete(final CompletableFuture<?> f, final Runnable filterComplete,
+    private static CompletableFuture<?> whenComplete(final CompletableFuture<?> f, final Runnable filterComplete,
             final Consumer<Exception> filterNec) {
-        f.whenComplete((x, e) -> {
+        return f.whenComplete((x, e) -> {
             if (e == null) {
                 filterComplete.run();
             }
@@ -437,15 +437,15 @@ abstract class AbstractFilterExecution {
 
             if (pushdownResult.maybeMatch().isEmpty()) {
                 localInput.setValue(pushdownResult.match().copy());
-                // todo: cleanup pushDownResult
-                CompletableFuture<?> f =
+                final CompletableFuture<?> f =
                         maybeUpdateAndSortStatelessFilters(statelessFilters, filterIdx + 1, localInput.getValue());
-                whenComplete(f, filterComplete, filterNec);
+                whenComplete(f, filterComplete, filterNec)
+                        .whenComplete((x, e) -> pushdownResult.close());
                 return;
             }
 
             // We still have some maybe rows, sort the filters again, including the current index.
-            CompletableFuture<?> f =
+            final CompletableFuture<?> f =
                     maybeUpdateAndSortStatelessFilters(statelessFilters, filterIdx, localInput.getValue());
             whenComplete(f, () -> {
                 // If there is a new filter at the current index, need to evaluate it.
@@ -539,7 +539,7 @@ abstract class AbstractFilterExecution {
         }
 
         // Sort the filters by cost, with the lowest cost first.
-        CompletableFuture<?> f = maybeUpdateAndSortStatelessFilters(statelessFilters, 0, localInput.getValue());
+        final CompletableFuture<?> f = maybeUpdateAndSortStatelessFilters(statelessFilters, 0, localInput.getValue());
         whenComplete(f, () -> {
             // Iterate serially through the stateless filters in this set. Each filter will successively
             // restrict the input to the next filter, until we reach the end of the filter chain or no rows match.
