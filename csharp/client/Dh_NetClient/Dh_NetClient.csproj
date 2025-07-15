@@ -5,7 +5,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <RootNamespace>Deephaven.Dh_NetClient</RootNamespace>
-    <PackageId>Deephaven.CoreClient</PackageId>
+    <PackageId>Deephaven.Core.Client</PackageId>
     <Title>Client Library for Deephaven Community Core</Title>
     <Company>Deephaven Data Labs LLC</Company>
     <Authors>Deephaven Authors</Authors>
@@ -17,7 +17,7 @@
     <RepositoryType>git</RepositoryType>
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
     <NoWarn>1701;1702;1591;612</NoWarn>
-    <AssemblyName>Deephaven.CoreClient</AssemblyName>
+    <AssemblyName>Deephaven.Core.Client</AssemblyName>
     <PackageReadmeFile>README-nuget.md</PackageReadmeFile>
   </PropertyGroup>
 
