@@ -88,12 +88,12 @@ public class CharSequenceUtils {
     }
 
     /**
-     * Compare two CharSequences for case-insensitive, with the same Unicode code point semantics as
+     * Compare two CharSequences ignoring case differences, with the same Unicode code point semantics as
      * {@link String#equalsIgnoreCase(String)}.
      * 
      * @param cs1 The first CharSequence
      * @param cs2 The second CharSequence
-     * @return Whether the supplied CharSequences represent an equal sequence of chars, disregarding case.
+     * @return Whether the supplied CharSequences represent an equal sequence of chars, ignoring case differences.
      */
     public static boolean contentEqualsIgnoreCase(@NotNull final CharSequence cs1, @NotNull final CharSequence cs2) {
         if (cs1 == cs2) {
