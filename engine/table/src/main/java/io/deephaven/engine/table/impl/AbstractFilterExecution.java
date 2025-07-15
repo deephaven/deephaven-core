@@ -26,6 +26,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -296,10 +297,11 @@ abstract class AbstractFilterExecution {
     /**
      * Update the cost for each stateless filter and sort by the new cost, starting at the given index.
      */
-    private void maybeUpdateAndSortStatelessFilters(final StatelessFilter[] filters, final int startIndex,
+    private CompletableFuture<?> maybeUpdateAndSortStatelessFilters(final StatelessFilter[] filters,
+            final int startIndex,
             final RowSet selection) {
         if (startIndex >= filters.length) {
-            return;
+            return CompletableFuture.completedFuture(null);
         }
         final List<CompletableFuture<Void>> filterFutures = new ArrayList<>(filters.length - startIndex);
         // Update the pushdown filter cost for each filter in the array, starting at the given index.
@@ -307,12 +309,21 @@ abstract class AbstractFilterExecution {
             final StatelessFilter filter = filters[i];
             filterFutures.add(filters[i].updatePushdownFilterCost(selection, filter.context));
         }
-        onExceptionOrAllOf(filterFutures).join();
-        // Sort the filters by non-descending cost, starting at the given index.
-        Arrays.sort(filters, startIndex, filters.length);
+        return onExceptionOrAllOf(filterFutures).whenComplete((x, e) -> {
+            if (e == null) {
+                // Sort the filters by non-descending cost, starting at the given index.
+                Arrays.sort(filters, startIndex, filters.length);
+            }
+        });
     }
 
     private static <T> CompletableFuture<?> onExceptionOrAllOf(final Collection<CompletableFuture<T>> futures) {
+        if (futures.isEmpty()) {
+            return CompletableFuture.completedFuture(null);
+        }
+        if (futures.size() == 1) {
+            return futures.iterator().next().copy();
+        }
         // errorFuture will never be completed normally
         final CompletableFuture<Void> errorFuture = new CompletableFuture<>();
         for (final CompletableFuture<?> future : futures) {
@@ -374,6 +385,23 @@ abstract class AbstractFilterExecution {
         }
     }
 
+    private static void whenComplete(final CompletableFuture<?> f, final Runnable filterComplete,
+            final Consumer<Exception> filterNec) {
+        f.whenComplete((x, e) -> {
+            if (e == null) {
+                filterComplete.run();
+            }
+        }).whenComplete((x, e) -> {
+            if (e != null) {
+                if (e instanceof Exception) {
+                    filterNec.accept((Exception) e);
+                } else {
+                    filterNec.accept(new CompletionException(e));
+                }
+            }
+        });
+    }
+
     /**
      * Execute the stateless filter at the provided index and pass the result to the consumer.
      */
@@ -400,8 +428,9 @@ abstract class AbstractFilterExecution {
                 localInput.setValue(result);
             }
             // This filter is complete, sort the remaining filters and conclude.
-            maybeUpdateAndSortStatelessFilters(statelessFilters, filterIdx + 1, localInput.getValue());
-            filterComplete.run();
+            final CompletableFuture<?> f =
+                    maybeUpdateAndSortStatelessFilters(statelessFilters, filterIdx + 1, localInput.getValue());
+            whenComplete(f, filterComplete, filterNec);
         };
 
         // Result consumer for push-down filtering.
@@ -411,39 +440,38 @@ abstract class AbstractFilterExecution {
 
             if (pushdownResult.maybeMatch().isEmpty()) {
                 localInput.setValue(pushdownResult.match().copy());
-                maybeUpdateAndSortStatelessFilters(statelessFilters, filterIdx + 1, localInput.getValue());
-
-                // Cleanup the rowsets and call the consumer.
-                try (final PushdownResult ignored = pushdownResult) {
-                    filterComplete.run();
-                    return;
-                }
+                // todo: cleanup pushDownResult
+                CompletableFuture<?> f =
+                        maybeUpdateAndSortStatelessFilters(statelessFilters, filterIdx + 1, localInput.getValue());
+                whenComplete(f, filterComplete, filterNec);
+                return;
             }
 
             // We still have some maybe rows, sort the filters again, including the current index.
-            maybeUpdateAndSortStatelessFilters(statelessFilters, filterIdx, localInput.getValue());
+            CompletableFuture<?> f =
+                    maybeUpdateAndSortStatelessFilters(statelessFilters, filterIdx, localInput.getValue());
+            whenComplete(f, () -> {
+                // If there is a new filter at the current index, need to evaluate it.
+                if (!sf.equals(statelessFilters[filterIdx])) {
+                    // Use the union of the match and maybe rows as the input for the next filter.
+                    localInput.setValue(pushdownResult.match().union(pushdownResult.maybeMatch()));
 
-            // If there is a new filter at the current index, need to evaluate it.
-            if (!sf.equals(statelessFilters[filterIdx])) {
-                // Use the union of the match and maybe rows as the input for the next filter.
-                localInput.setValue(pushdownResult.match().union(pushdownResult.maybeMatch()));
+                    // Store the result for later use by the companion regular filter.
+                    sf.pushdownResult = pushdownResult;
 
-                // Store the result for later use by the companion regular filter.
-                sf.pushdownResult = pushdownResult;
-
-                // Do the next round of filtering with the new filter that bubbled up to the current index.
-                executeStatelessFilter(statelessFilters, filterIdx, localInput, filterComplete, filterNec);
-            } else {
-                // Leverage push-down results to reduce the chunk filter input.
-                final Consumer<WritableRowSet> localConsumer = (rows) -> {
-                    try (final RowSet ignored = rows; final PushdownResult ignored2 = pushdownResult) {
-                        onFilterComplete.accept(rows.union(pushdownResult.match()));
-                    }
-                };
-
-                // Do the final filtering at this position.
-                executeFinalFilter(sf.filter, pushdownResult.maybeMatch(), localConsumer, filterNec);
-            }
+                    // Do the next round of filtering with the new filter that bubbled up to the current index.
+                    executeStatelessFilter(statelessFilters, filterIdx, localInput, filterComplete, filterNec);
+                } else {
+                    // Leverage push-down results to reduce the chunk filter input.
+                    final Consumer<WritableRowSet> localConsumer = (rows) -> {
+                        try (final RowSet ignored = rows; final PushdownResult ignored2 = pushdownResult) {
+                            onFilterComplete.accept(rows.union(pushdownResult.match()));
+                        }
+                    };
+                    // Do the final filtering at this position.
+                    executeFinalFilter(sf.filter, pushdownResult.maybeMatch(), localConsumer, filterNec);
+                }
+            }, filterNec);
         };
 
         final RowSet input = localInput.getValue();
@@ -514,32 +542,33 @@ abstract class AbstractFilterExecution {
         }
 
         // Sort the filters by cost, with the lowest cost first.
-        maybeUpdateAndSortStatelessFilters(statelessFilters, 0, localInput.getValue());
-
-        // Iterate serially through the stateless filters in this set. Each filter will successively
-        // restrict the input to the next filter, until we reach the end of the filter chain or no rows match.
-        jobScheduler().iterateSerial(
-                ExecutionContext.getContext(),
-                this::append,
-                JobScheduler.DEFAULT_CONTEXT_FACTORY,
-                0, statelessFilters.length,
-                (filterContext, filterIdx, filterNec, filterResume) -> {
-                    if (localInput.getValue().isEmpty()) {
-                        // If there are no rows left to filter, skip this filter.
-                        filterResume.run();
-                        return;
-                    }
-                    executeStatelessFilter(statelessFilters, filterIdx, localInput, filterResume, filterNec);
-                },
-                collectionResume,
-                () -> SafeCloseableArray.close(statelessFilters),
-                exception -> {
-                    try {
-                        collectionNec.accept(exception);
-                    } finally {
-                        SafeCloseableArray.close(statelessFilters);
-                    }
-                });
+        CompletableFuture<?> f = maybeUpdateAndSortStatelessFilters(statelessFilters, 0, localInput.getValue());
+        whenComplete(f, () -> {
+            // Iterate serially through the stateless filters in this set. Each filter will successively
+            // restrict the input to the next filter, until we reach the end of the filter chain or no rows match.
+            jobScheduler().iterateSerial(
+                    ExecutionContext.getContext(),
+                    this::append,
+                    JobScheduler.DEFAULT_CONTEXT_FACTORY,
+                    0, statelessFilters.length,
+                    (filterContext, filterIdx, filterNec, filterResume) -> {
+                        if (localInput.getValue().isEmpty()) {
+                            // If there are no rows left to filter, skip this filter.
+                            filterResume.run();
+                            return;
+                        }
+                        executeStatelessFilter(statelessFilters, filterIdx, localInput, filterResume, filterNec);
+                    },
+                    collectionResume,
+                    () -> SafeCloseableArray.close(statelessFilters),
+                    exception -> {
+                        try {
+                            collectionNec.accept(exception);
+                        } finally {
+                            SafeCloseableArray.close(statelessFilters);
+                        }
+                    });
+        }, collectionNec);
     }
 
     /**
