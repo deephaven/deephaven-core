@@ -257,9 +257,7 @@ abstract class AbstractFilterExecution {
         /**
          * Update the pushdown cost for this filter (or set to Long.MAX_VALUE if pushdown is not supported).
          */
-        public CompletableFuture<Void> updatePushdownFilterCost(
-                final RowSet selection,
-                final PushdownFilterContext context) {
+        public CompletableFuture<Void> updatePushdownFilterCost(final RowSet selection) {
             if (pushdownMatcher == null) {
                 pushdownFilterCost = Long.MAX_VALUE;
                 return CompletableFuture.completedFuture(null);
@@ -306,8 +304,7 @@ abstract class AbstractFilterExecution {
         final List<CompletableFuture<Void>> filterFutures = new ArrayList<>(filters.length - startIndex);
         // Update the pushdown filter cost for each filter in the array, starting at the given index.
         for (int i = startIndex; i < filters.length; i++) {
-            final StatelessFilter filter = filters[i];
-            filterFutures.add(filters[i].updatePushdownFilterCost(selection, filter.context));
+            filterFutures.add(filters[i].updatePushdownFilterCost(selection));
         }
         return onExceptionOrAllOf(filterFutures).whenComplete((x, e) -> {
             if (e == null) {
