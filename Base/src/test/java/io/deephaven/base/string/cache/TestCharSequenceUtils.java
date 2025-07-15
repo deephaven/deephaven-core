@@ -91,8 +91,8 @@ public class TestCharSequenceUtils {
 
         assertThat(CharSequenceUtils.contentEqualsIgnoreCase(s1, s2)).isTrue();
         assertThat(CharSequenceUtils.contentEqualsIgnoreCase(s2, s1)).isTrue();
-        assertThat(CharSequenceUtils.CASE_INSENSITIVE_COMPARATOR.compare(s1, s2)).isZero();
-        assertThat(CharSequenceUtils.CASE_INSENSITIVE_COMPARATOR.compare(s2, s1)).isZero();
+        assertThat(CharSequenceUtils.compareToIgnoreCase(s1, s2)).isZero();
+        assertThat(CharSequenceUtils.compareToIgnoreCase(s2, s1)).isZero();
         assertThat(CharSequenceUtils.caseInsensitiveHashCode(s1))
                 .isEqualTo(CharSequenceUtils.caseInsensitiveHashCode(s2));
     }
@@ -104,8 +104,8 @@ public class TestCharSequenceUtils {
 
         assertThat(CharSequenceUtils.contentEqualsIgnoreCase(s1, s2)).isFalse();
         assertThat(CharSequenceUtils.contentEqualsIgnoreCase(s2, s1)).isFalse();
-        assertThat(CharSequenceUtils.CASE_INSENSITIVE_COMPARATOR.compare(s1, s2)).isNegative();
-        assertThat(CharSequenceUtils.CASE_INSENSITIVE_COMPARATOR.compare(s2, s1)).isPositive();
+        assertThat(CharSequenceUtils.compareToIgnoreCase(s1, s2)).isNegative();
+        assertThat(CharSequenceUtils.compareToIgnoreCase(s2, s1)).isPositive();
         // can't say anything about hashCode for non-equal items
     }
 }
