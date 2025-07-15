@@ -27,22 +27,22 @@ public abstract class FilterBarrier extends FilterBase implements Filter {
     public abstract Filter filter();
 
     /**
-     * The barrier object that can be used to synchronize or coordinate with other filters.
+     * The barrier objects that are used to synchronize and coordinate with other filters.
      *
-     * @return the barrier object
+     * @return the barrier objects
      */
     @Parameter
-    public abstract Object barrier();
+    public abstract Object[] barriers();
 
     /**
      * Creates a new FilterBarrier wrapper for the given filter and barrier.
      *
      * @param filter the filter to wrap
-     * @param barrier the barrier object being declared
+     * @param barriers the barrier object being declared
      * @return a new instance of FilterBarrier
      */
-    public static FilterBarrier of(Filter filter, Object barrier) {
-        return ImmutableFilterBarrier.of(filter, barrier);
+    public static FilterBarrier of(Filter filter, Object... barriers) {
+        return ImmutableFilterBarrier.of(filter, barriers);
     }
 
     /**
@@ -52,7 +52,7 @@ public abstract class FilterBarrier extends FilterBase implements Filter {
      */
     @Override
     public Filter invert() {
-        return FilterBarrier.of(filter().invert(), barrier());
+        return FilterBarrier.of(filter().invert(), barriers());
     }
 
     @Override

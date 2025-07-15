@@ -254,7 +254,7 @@ public class Strings {
 
     public static String of(FilterBarrier barrier, boolean invert) {
         // we don't have a way to represent barrier in the query language; so this can't round trip
-        final String barrierId = barrier.barrier().toString();
+        final String barrierId = Arrays.toString(barrier.barriers());
         return "withBarrier(" + barrierId + ", " + of(barrier.filter(), invert) + ")";
     }
 

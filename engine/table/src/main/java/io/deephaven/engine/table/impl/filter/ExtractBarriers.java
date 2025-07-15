@@ -29,13 +29,12 @@ import io.deephaven.engine.table.impl.select.WhereFilterSerialImpl;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Objects;
+import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * Performs a recursive "barrier-extraction" against {@code filter}. If {@code filter}, or any sub-filter, is a
- * {@link FilterBarrier}, {@link FilterBarrier#barrier()} will be included in the returned collection. Otherwise, an
+ * {@link FilterBarrier}, {@link FilterBarrier#barriers()} will be included in the returned collection. Otherwise, an
  * empty collection will be returned.
  */
 public enum ExtractBarriers implements Visitor<Collection<Object>>, WhereFilter.Visitor<Collection<Object>> {
@@ -100,8 +99,7 @@ public enum ExtractBarriers implements Visitor<Collection<Object>>, WhereFilter.
 
     @Override
     public Collection<Object> visit(FilterBarrier barrier) {
-        final Set<Object> resultBarriers = new HashSet<>();
-        resultBarriers.add(barrier.barrier());
+        final Set<Object> resultBarriers = new HashSet<>(List.of(barrier.barriers()));
         resultBarriers.addAll(of(barrier.filter()));
         return resultBarriers;
     }
@@ -143,8 +141,7 @@ public enum ExtractBarriers implements Visitor<Collection<Object>>, WhereFilter.
 
     @Override
     public Collection<Object> visitWhereFilter(WhereFilterBarrierImpl filter) {
-        final Set<Object> resultBarriers = new HashSet<>();
-        resultBarriers.add(filter.barrier());
+        final Set<Object> resultBarriers = new HashSet<>(List.of(filter.barriers()));
         resultBarriers.addAll(of(filter.getWrappedFilter()));
         return resultBarriers;
     }

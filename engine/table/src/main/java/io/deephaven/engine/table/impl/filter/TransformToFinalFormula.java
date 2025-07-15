@@ -43,7 +43,7 @@ public class TransformToFinalFormula implements WhereFilter.Visitor<WhereFilter>
 
     @Override
     public WhereFilter visitWhereFilter(final WhereFilterBarrierImpl filter) {
-        return visitWhereFilter(filter.getWrappedFilter()).withBarrier(filter.barrier());
+        return visitWhereFilter(filter.getWrappedFilter()).withBarrier(filter.barriers());
     }
 
     @Override

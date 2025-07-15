@@ -3,41 +3,43 @@
 //
 package io.deephaven.engine.table.impl.select;
 
+import java.util.Arrays;
+
 /**
  * A wrapper for a {@link WhereFilter} that declares this filter as a barrier. A barrier is a filter that must be
  * executed before other filters that respect it.
  */
 public class WhereFilterBarrierImpl extends WhereFilterDelegatingBase {
     /**
-     * Wraps the provided {@link WhereFilter} with a barrier declaration.
+     * Wraps the provided {@link WhereFilter} with one or more barrier declarations.
      *
      * @param filter the filter to wrap
-     * @param barrier the barrier that this filter declares
+     * @param barriers the barrier objects that this filter declares
      * @return a new {@code WhereFilterBarrierImpl} instance that declares the barrier
      */
-    public static WhereFilter of(WhereFilter filter, Object barrier) {
-        return new WhereFilterBarrierImpl(filter, barrier);
+    public static WhereFilter of(WhereFilter filter, Object... barriers) {
+        return new WhereFilterBarrierImpl(filter, barriers);
     }
 
-    private final Object barrier;
+    private final Object[] barriers;
 
     private WhereFilterBarrierImpl(
             WhereFilter filter,
-            Object barrier) {
+            Object... barriers) {
         super(filter);
-        this.barrier = barrier;
+        this.barriers = barriers;
     }
 
-    public Object barrier() {
-        return barrier;
+    public Object[] barriers() {
+        return barriers;
     }
 
     public WhereFilter copy() {
-        return new WhereFilterBarrierImpl(filter.copy(), barrier);
+        return new WhereFilterBarrierImpl(filter.copy(), barriers);
     }
 
     @Override
     public String toString() {
-        return "barrier{" + barrier + ", filter=" + filter + "}";
+        return "barrier{" + Arrays.toString(barriers) + ", filter=" + filter + "}";
     }
 }

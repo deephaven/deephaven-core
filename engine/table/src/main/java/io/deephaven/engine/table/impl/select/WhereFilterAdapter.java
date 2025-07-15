@@ -142,7 +142,7 @@ class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
 
     public static WhereFilter of(FilterBarrier barrier, boolean inverted) {
         final WhereFilter innerFilter = WhereFilter.of(inverted ? barrier.filter().invert() : barrier.filter());
-        return WhereFilterBarrierImpl.of(innerFilter, barrier.barrier());
+        return WhereFilterBarrierImpl.of(innerFilter, barrier.barriers());
     }
 
     public static WhereFilter of(FilterRespectsBarrier respectsBarrier, boolean inverted) {

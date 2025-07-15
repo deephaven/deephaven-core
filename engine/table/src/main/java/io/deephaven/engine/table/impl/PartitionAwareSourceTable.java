@@ -3,7 +3,6 @@
 //
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.api.RawString;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.base.verify.Assert;
@@ -147,11 +146,7 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
                     : table.where(Filter.and(partitionFilters));
 
             if (!partitionBarriers.isEmpty()) {
-                WhereFilter barrierFilter = WhereAllFilter.INSTANCE;
-                for (final Object barrier : partitionBarriers) {
-                    barrierFilter = barrierFilter.withBarrier(barrier);
-                }
-                otherFilters.add(0, barrierFilter);
+                otherFilters.add(0, WhereAllFilter.INSTANCE.withBarrier(partitionBarriers.toArray(Object[]::new)));
             }
 
             return new TableAndRemainingFilters(result.coalesce(),
@@ -359,12 +354,7 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
         final Table coalesced = withPartitionsFiltered.coalesce();
 
         if (!partitionBarriers.isEmpty()) {
-            WhereFilter barrierFilter = WhereAllFilter.INSTANCE;
-
-            for (final Object barrier : partitionBarriers) {
-                barrierFilter = barrierFilter.withBarrier(barrier);
-            }
-            otherFilters.add(0, barrierFilter);
+            otherFilters.add(0, WhereAllFilter.INSTANCE.withBarrier(partitionBarriers.toArray(Object[]::new)));
         }
 
         return otherFilters.isEmpty()

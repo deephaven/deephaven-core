@@ -40,24 +40,24 @@ public interface ConcurrencyControl<T> {
     T withSerial();
 
     /**
-     * Designates the filter/selectable as a barrier with the specified barrier object.
+     * Designates the filter/selectable as a barrier with the specified barrier object(s).
      * <p>
      * A barrier does not affect concurrency but imposes an ordering constraint for the filter/selectable that respect
-     * the same barrier. When a filter/selectable is marked as respecting this barrier, it indicates that the respecting
-     * filter/selectable will be executed entirely after this barrier wrapped filter/selectable.
+     * the same barrier. When a filter/selectable is marked as respecting a barrier object, it indicates that the
+     * respecting filter/selectable will be executed entirely after the filter/selectable declaring the barrier.
      * <p>
      * Each barrier must be unique and declared by at most one filter. Object {@link Object#equals(Object) equals} and
-     * {@link Object#hashCode()} hashCode will be used to determine uniqueness and identification of barriers.
+     * {@link Object#hashCode()} hashCode will be used to determine uniqueness and identification of barrier objects.
      *
-     * @param barrier the unique identifier for the barrier
-     * @return a new instance of T with the barrier applied
+     * @param barriers the unique barrier object identifiers
+     * @return a new instance of T with the barriers applied
      */
-    T withBarrier(Object barrier);
+    T withBarrier(Object... barriers);
 
     /**
      * Specifies that the filter/selectable should respect the ordering constraints of the given barriers.
      * <p>
-     * Filters that define a barrier (using {@link #withBarrier(Object)}) will be executed entirely before
+     * Filters that define a barrier (using {@link #withBarrier(Object...)}) will be executed entirely before
      * filters/selectables that respect that barrier.
      * <p>
      * It is an error to respect a barrier that has not already been defined per the natural left to right ordering of
@@ -67,8 +67,8 @@ public interface ConcurrencyControl<T> {
      * Object {@link Object#equals(Object) equals} and {@link Object#hashCode()} hashCode will be used to identify which
      * barriers are respected.
      *
-     * @param barrier the unique identifiers for all barriers to respect.
-     * @return a new instance of T with the barrier ordering applied.
+     * @param barriers the unique barrier object identifiers to respect
+     * @return a new instance of T with the respects barrier rule applied
      */
-    T respectsBarrier(Object... barrier);
+    T respectsBarrier(Object... barriers);
 }

@@ -200,14 +200,14 @@ public interface Filter extends Expression, ConcurrencyControl<Filter> {
     }
 
     /**
-     * Wraps the given filter with a FilterBarrier to declare a barrier that other filters can respect.
+     * Wraps the given filter with a FilterBarrier to declare one or more barriers that other filters can respect.
      *
      * @param filter the filter to wrap
-     * @param barrier the barrier object being declared
+     * @param barriers the barrier objects being declared
      * @return a FilterBarrier instance wrapping the provided filter
      */
-    static FilterBarrier barrier(Filter filter, Object barrier) {
-        return FilterBarrier.of(filter, barrier);
+    static FilterBarrier barrier(Filter filter, Object... barriers) {
+        return FilterBarrier.of(filter, barriers);
     }
 
     /**
@@ -253,8 +253,8 @@ public interface Filter extends Expression, ConcurrencyControl<Filter> {
     }
 
     @Override
-    default Filter withBarrier(Object barrier) {
-        return barrier(this, barrier);
+    default Filter withBarrier(Object... barriers) {
+        return barrier(this, barriers);
     }
 
     <T> T walk(Visitor<T> visitor);

@@ -18,9 +18,4 @@ public class QueryTableWhereSingleTest extends QueryTableWhereTest {
         QueryTable.FORCE_PARALLEL_WHERE = false;
         QueryTable.DISABLE_PARALLEL_WHERE = true;
     }
-
-    @Override
-    public void testSerialOnConstantArrayAccess() {
-        super.testSerialOnConstantArrayAccess();
-    }
 }

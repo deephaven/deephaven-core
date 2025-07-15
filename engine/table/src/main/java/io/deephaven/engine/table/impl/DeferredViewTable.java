@@ -3,10 +3,8 @@
 //
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.api.RawString;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.filter.Filter;
-import io.deephaven.api.literal.Literal;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.liveness.Liveness;
 import io.deephaven.engine.table.*;
@@ -261,7 +259,7 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
                     final WhereFilter innerPreFilter = filter.getWrappedFilter().walkWhereFilter(this);
                     return innerPreFilter == null
                             ? null
-                            : WhereFilterBarrierImpl.of(innerPreFilter, filter.barrier());
+                            : WhereFilterBarrierImpl.of(innerPreFilter, filter.barriers());
                 }
 
                 @Override
@@ -328,11 +326,7 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
                 .flatMap(wf -> ExtractBarriers.of(wf).stream())
                 .collect(Collectors.toSet());
         if (!preViewBarriers.isEmpty() && !postViewFilters.isEmpty()) {
-            WhereFilter barrierFilter = WhereAllFilter.INSTANCE;
-            for (final Object barrier : preViewBarriers) {
-                barrierFilter = barrierFilter.withBarrier(barrier);
-            }
-            postViewFilters.add(0, barrierFilter);
+            postViewFilters.add(0, WhereAllFilter.INSTANCE.withBarrier(preViewBarriers.toArray(Object[]::new)));
         }
         compilationProcessor.compile();
 
