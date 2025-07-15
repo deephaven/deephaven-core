@@ -147,10 +147,11 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
                     : table.where(Filter.and(partitionFilters));
 
             if (!partitionBarriers.isEmpty()) {
-                final WhereFilter trueFilter = WhereFilter.of(RawString.of("true"));
-                otherFilters.addAll(0, partitionBarriers.stream()
-                        .map(barrier -> trueFilter.copy().withBarrier(barrier))
-                        .collect(Collectors.toSet()));
+                WhereFilter trueFilter = WhereAllFilter.INSTANCE;
+                for (final Object barrier : partitionBarriers) {
+                    trueFilter = trueFilter.withBarrier(barrier);
+                }
+                otherFilters.add(0, trueFilter);
             }
 
             return new TableAndRemainingFilters(result.coalesce(),
@@ -321,7 +322,7 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
             // the partitioning filters) into the post coalescing filter set.
 
             // similarly, anytime we prioritize a partitioning filter, we record the barriers that it declares. A filter
-            // that respects no barriers, or only those prioritized barriers may also be prioritized.  A filter that
+            // that respects no barriers, or only those prioritized barriers may also be prioritized. A filter that
             // respects any barrier which was not in partition filters (meaning it must be in in otherFilters - because
             // otherwise you would be respecting an undeclared barrier); cannot be prioritized because that would jump
             // the barrier.
@@ -358,10 +359,12 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
         final Table coalesced = withPartitionsFiltered.coalesce();
 
         if (!partitionBarriers.isEmpty()) {
-            final WhereFilter trueFilter = WhereFilter.of(RawString.of("true"));
-            otherFilters.addAll(0, partitionBarriers.stream()
-                    .map(barrier -> trueFilter.copy().withBarrier(barrier))
-                    .collect(Collectors.toSet()));
+            WhereFilter trueFilter = WhereAllFilter.INSTANCE;
+
+            for (final Object barrier : partitionBarriers) {
+                trueFilter = trueFilter.withBarrier(barrier);
+            }
+            otherFilters.add(0, trueFilter);
         }
 
         return otherFilters.isEmpty()

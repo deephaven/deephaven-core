@@ -3,24 +3,27 @@
 //
 package io.deephaven.engine.table.impl.select;
 
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetFactory;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collections;
 import java.util.List;
 
 /**
- * A Select filter that always returns an empty RowSet.
+ * A WhereFilter that always returns all rows in the selection.
+ * <p>
+ * This filter is used when no filtering is required, effectively passing through the entire selection. Using it allows
+ * us to validate respectsBarriers even when a barrier was systematically moved to an operation earlier in the query
+ * pipeline.
  */
-public class WhereNoneFilter extends WhereFilterImpl {
+public class WhereAllFilter extends WhereFilterImpl {
+    public static final WhereAllFilter INSTANCE = new WhereAllFilter();
 
-    public static final WhereNoneFilter INSTANCE = new WhereNoneFilter();
-
-    private WhereNoneFilter() {}
+    private WhereAllFilter() {}
 
     @Override
     public List<String> getColumns() {
@@ -39,14 +42,14 @@ public class WhereNoneFilter extends WhereFilterImpl {
     @Override
     public WritableRowSet filter(
             @NotNull RowSet selection, @NotNull RowSet fullSet, @NotNull Table table, boolean usePrev) {
-        return RowSetFactory.empty();
+        return selection.copy();
     }
 
     @NotNull
     @Override
     public WritableRowSet filterInverse(
             @NotNull RowSet selection, @NotNull RowSet fullSet, @NotNull Table table, boolean usePrev) {
-        return selection.copy();
+        return RowSetFactory.empty();
     }
 
     @Override
@@ -55,7 +58,7 @@ public class WhereNoneFilter extends WhereFilterImpl {
     }
 
     @Override
-    public void setRecomputeListener(RecomputeListener result) {}
+    public void setRecomputeListener(WhereFilter.RecomputeListener result) {}
 
     @Override
     public WhereFilter copy() {
@@ -69,6 +72,6 @@ public class WhereNoneFilter extends WhereFilterImpl {
 
     @Override
     public String toString() {
-        return "WhereNoneFilter";
+        return "WhereAllFilter";
     }
 }

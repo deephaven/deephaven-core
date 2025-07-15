@@ -18,14 +18,31 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * A WhereFilter that captures the RowSets it filters, allowing for inspection of the behavior of the
+ * {@code AbstractFilterExecution}.
+ * <p>
+ * This filter is intended to be used in tests with well-defined execution boundaries (either static content or using a
+ * {@link io.deephaven.engine.testutil.ControlledUpdateGraph ControlledUpdateGraph}).
+ * <p>
+ * Once used, or between-uses, it is expected that the {@link #reset()} method is called to clear the captured RowSets.
+ */
 public class RowSetCapturingFilter extends WhereFilterImpl implements SafeCloseable {
     private final List<RowSet> rowSets = new ArrayList<>();
     private final WhereFilter innerFilter;
 
+    /**
+     * Creates a RowSetCapturingFilter that assumes an always-true filter.
+     */
     public RowSetCapturingFilter() {
         this(null);
     }
 
+    /**
+     * Creates a RowSetCapturingFilter that wraps the provided filter.
+     *
+     * @param filter
+     */
     public RowSetCapturingFilter(final Filter filter) {
         this.innerFilter = filter == null ? null : WhereFilter.of(filter);
     }
@@ -87,6 +104,12 @@ public class RowSetCapturingFilter extends WhereFilterImpl implements SafeClosea
 
     @Override
     public WhereFilter copy() {
+        if (innerFilter != null) {
+            final WhereFilter newInner = innerFilter.copy();
+            if (newInner != innerFilter) {
+                return new RowSetCapturingFilter(newInner);
+            }
+        }
         return this;
     }
 
@@ -95,6 +118,9 @@ public class RowSetCapturingFilter extends WhereFilterImpl implements SafeClosea
         reset();
     }
 
+    /**
+     * Frees all captured RowSets and clears the internal list of RowSets.
+     */
     public void reset() {
         synchronized (rowSets) {
             SafeCloseable.closeAll(rowSets.stream());
@@ -102,12 +128,21 @@ public class RowSetCapturingFilter extends WhereFilterImpl implements SafeClosea
         }
     }
 
+    /**
+     * Returns a copy of the RowSets captured by this filter. The RowSets are owned by this filter and should not be
+     * modified or closed by the caller.
+     *
+     * @return a list of RowSets captured by this filter
+     */
     public List<RowSet> rowSets() {
         synchronized (rowSets) {
             return new ArrayList<>(rowSets);
         }
     }
 
+    /**
+     * @return the total number of rows processed by this filter, which is the sum of the sizes of all captured RowSets
+     */
     public long numRowsProcessed() {
         synchronized (rowSets) {
             return rowSets.stream().mapToLong(RowSet::size).sum();
