@@ -3,6 +3,8 @@
 //
 package io.deephaven.base.string.cache;
 
+import org.assertj.core.api.AssumptionExceptionFactory;
+import org.assertj.core.api.Assumptions;
 import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -64,6 +66,9 @@ public class TestCharSequenceUtils {
 
     @Test
     public void deseretScript() {
+        // This case is not handled in 11, works on 17+. (Don't care about anything in-between.)
+        Assumptions.assumeThat(Runtime.version()).isGreaterThanOrEqualTo(Runtime.Version.parse("17"));
+
         final String deseretSmallA = "\uD801\uDC28"; // 𐐨 (Deseret Small Letter Long I)
         final String deseretCapitalA = "\uD801\uDC00"; // 𐐀 (Deseret Capital Letter Long I)
         assertEqualsIgnoreCase(deseretSmallA, deseretCapitalA);
@@ -71,6 +76,9 @@ public class TestCharSequenceUtils {
 
     @Test
     public void adlamScript() {
+        // This case is not handled in 11, works on 17+. (Don't care about anything in-between.)
+        Assumptions.assumeThat(Runtime.version()).isGreaterThanOrEqualTo(Runtime.Version.parse("17"));
+
         final String adlamLower = "\uD83A\uDD00\uD83A\uDD01\uD83A\uDD02";
         final String adlamUpper = "\uD83A\uDD22\uD83A\uDD23\uD83A\uDD24";
         assertEqualsIgnoreCase(adlamLower, adlamUpper);
