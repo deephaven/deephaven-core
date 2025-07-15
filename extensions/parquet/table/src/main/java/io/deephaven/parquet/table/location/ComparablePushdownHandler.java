@@ -50,16 +50,15 @@ final class ComparablePushdownHandler {
             @NotNull final Comparable<?> min, @NotNull final Comparable<?> max,
             @NotNull final Comparable<?> lower, final boolean lowerInclusive,
             @NotNull final Comparable<?> upper, final boolean upperInclusive) {
-        final int cmpLowerUpper = ((Comparable) lower).compareTo(upper);
-        if ((upperInclusive && lowerInclusive) ? cmpLowerUpper > 0 : cmpLowerUpper >= 0) {
+        if ((upperInclusive && lowerInclusive)
+                ? ObjectComparisons.gt(lower, upper)
+                : ObjectComparisons.geq(lower, upper)) {
             return false; // Empty range, no overlap
         }
         // Following logic assumes (min, max) to be a continuous range and not granular. So (a,b) will be considered
         // as "maybe overlapping" with [a, b] where b follows immediately after a.
-        return (upperInclusive ? ((Comparable) min).compareTo(upper) <= 0
-                : ((Comparable) min).compareTo(upper) < 0)
-                && (lowerInclusive ? ((Comparable) max).compareTo(lower) >= 0
-                        : ((Comparable) max).compareTo(lower) > 0);
+        return (upperInclusive ? ObjectComparisons.leq(min, upper) : ObjectComparisons.lt(min, upper))
+                && (lowerInclusive ? ObjectComparisons.geq(max, lower) : ObjectComparisons.gt(max, lower));
     }
 
     /**
