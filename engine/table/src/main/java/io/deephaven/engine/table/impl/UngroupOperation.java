@@ -279,10 +279,10 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
     }
 
     private static long computeMaxSize(final RowSet rowSet,
-                                       final Map<String, ColumnSource<?>> arrayColumns,
-                                       final Map<String, ColumnSource<?>> vectorColumns,
-                                       final long[] sizes,
-                                       final boolean nullFill) {
+            final Map<String, ColumnSource<?>> arrayColumns,
+            final Map<String, ColumnSource<?>> vectorColumns,
+            final long[] sizes,
+            final boolean nullFill) {
         if (nullFill) {
             return computeMaxSizeNullFill(rowSet, arrayColumns, vectorColumns, sizes);
         }
@@ -755,7 +755,8 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
                             // get the range from our result rowset, I'm not sure that I love creating a rowset for each
                             // row; we could instead do iteration because we are not actually modifying this thing as we
                             // go
-                            try (final WritableRowSet expandedRowsetForRow = resultRowset.subSetByKeyRange(oldRangeStart, oldRangeEnd)) {
+                            try (final WritableRowSet expandedRowsetForRow =
+                                    resultRowset.subSetByKeyRange(oldRangeStart, oldRangeEnd)) {
                                 if (expandedRowsetForRow.isNonempty()) {
                                     // no need to shift things that don't exist anymore
                                     shiftBuilder.shiftRange(oldRangeStart, oldRangeEnd, resultShiftAmount);
