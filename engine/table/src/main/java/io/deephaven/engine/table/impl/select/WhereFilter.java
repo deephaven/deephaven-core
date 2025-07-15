@@ -92,12 +92,12 @@ public interface WhereFilter extends Filter {
     WhereFilter[] ZERO_LENGTH_WHERE_FILTER_ARRAY = new WhereFilter[0];
 
     @Override
-    default WhereFilter withBarrier(Object... barriers) {
+    default WhereFilter withBarriers(Object... barriers) {
         return WhereFilterBarrierImpl.of(this, barriers);
     }
 
     @Override
-    default WhereFilter respectsBarrier(Object... barriers) {
+    default WhereFilter respectsBarriers(Object... barriers) {
         return WhereFilterRespectsBarrierImpl.of(this, barriers);
     }
 

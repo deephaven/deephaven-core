@@ -2260,8 +2260,8 @@ public abstract class QueryTableWhereTest {
         final Object barrier = new Object(); // dummy barrier object for testing
         final Table result = sourceWithData.where(
                 Filter.and(
-                        preFilter.withBarrier(barrier),
-                        RawString.of("A < 50000").respectsBarrier(barrier),
+                        preFilter.withBarriers(barrier),
+                        RawString.of("A < 50000").respectsBarriers(barrier),
                         postFilter));
 
         assertEquals(100_000, numRowsFiltered(preFilter));
@@ -2286,9 +2286,9 @@ public abstract class QueryTableWhereTest {
         // we are looking to see the RawString prioritize over preFilter2
         final Table result = sourceWithData.where(
                 Filter.and(
-                        preFilter.withBarrier(barrier),
+                        preFilter.withBarriers(barrier),
                         preFilter2,
-                        RawString.of("A < 50000").respectsBarrier(barrier),
+                        RawString.of("A < 50000").respectsBarriers(barrier),
                         postFilter));
 
         assertEquals(100_000, numRowsFiltered(preFilter));
@@ -2333,8 +2333,8 @@ public abstract class QueryTableWhereTest {
 
         final Table result = sourceWithData.where(
                 Filter.and(
-                        preFilter.withBarrier(new DeepEqBarrier("my_test_barrier")),
-                        RawString.of("A < 50000").respectsBarrier(new DeepEqBarrier("my_test_barrier")),
+                        preFilter.withBarriers(new DeepEqBarrier("my_test_barrier")),
+                        RawString.of("A < 50000").respectsBarriers(new DeepEqBarrier("my_test_barrier")),
                         postFilter));
 
         assertEquals(100_000, numRowsFiltered(preFilter));
@@ -2355,8 +2355,8 @@ public abstract class QueryTableWhereTest {
 
         final IllegalArgumentException err = assertThrows(IllegalArgumentException.class, () -> {
             sourceWithData.where(Filter.and(
-                    preFilter.withBarrier(new Object()),
-                    RawString.of("A < 50000").respectsBarrier(new Object()),
+                    preFilter.withBarriers(new Object()),
+                    RawString.of("A < 50000").respectsBarriers(new Object()),
                     postFilter));
         });
         assertTrue(err.getMessage().contains("respects barrier"));
@@ -2381,8 +2381,8 @@ public abstract class QueryTableWhereTest {
 
         final IllegalArgumentException err = assertThrows(IllegalArgumentException.class, () -> {
             sourceWithData.where(Filter.and(
-                    preFilter.withBarrier(barrier),
-                    RawString.of("A < 50000").withBarrier(barrier),
+                    preFilter.withBarriers(barrier),
+                    RawString.of("A < 50000").withBarriers(barrier),
                     postFilter));
         });
         assertTrue(err.getMessage().contains("Filter Barriers must be unique!"));
@@ -2408,9 +2408,9 @@ public abstract class QueryTableWhereTest {
         final Table result = sourceWithData.where(
                 Filter.and(
                         preFilter,
-                        RawString.of("A < 50000").withBarrier(barrier),
-                        midFilter.respectsBarrier(barrier),
-                        RawString.of("A < 25000").respectsBarrier(barrier),
+                        RawString.of("A < 50000").withBarriers(barrier),
+                        midFilter.respectsBarriers(barrier),
+                        RawString.of("A < 25000").respectsBarriers(barrier),
                         postFilter));
 
         // note that while the mid-filter respects the barrier, but will not be prioritized
@@ -2438,9 +2438,9 @@ public abstract class QueryTableWhereTest {
         final Table result = sourceWithData.where(
                 Filter.and(
                         preFilter,
-                        filter1.withSerial().withBarrier(barrier),
-                        midFilter.withBarrier("mid_barrier").respectsBarrier(barrier),
-                        filter2.respectsBarrier("mid_barrier"),
+                        filter1.withSerial().withBarriers(barrier),
+                        midFilter.withBarriers("mid_barrier").respectsBarriers(barrier),
+                        filter2.respectsBarriers("mid_barrier"),
                         postFilter));
 
         // note that while the mid-filter respects the barrier, but will not be prioritized
@@ -2500,9 +2500,9 @@ public abstract class QueryTableWhereTest {
         allFilters.forEach(RowSetCapturingFilter::reset);
         sourceWithData.where(Filter.and(
                 preFilter,
-                filter1.withBarrier(barrier),
+                filter1.withBarriers(barrier),
                 midFilter,
-                filter2.respectsBarrier(barrier),
+                filter2.respectsBarriers(barrier),
                 postFilter));
         // should bubble up filter1, then filter2, finally remaining three filters
         assertEquals(5_000, numRowsFiltered(preFilter));
@@ -2515,10 +2515,10 @@ public abstract class QueryTableWhereTest {
         allFilters.forEach(RowSetCapturingFilter::reset);
         sourceWithData.where(Filter.and(
                 preFilter,
-                filter1.withBarrier(barrier),
+                filter1.withBarriers(barrier),
                 midFilter.withSerial(),
                 postFilter,
-                filter2.respectsBarrier(barrier)));
+                filter2.respectsBarriers(barrier)));
         // should bubble up filter 1, preFilter, midFilter, then filter2 and postFilter
         assertEquals(80_000, numRowsFiltered(preFilter));
         assertEquals(100_000, numRowsFiltered(filter1));
@@ -2529,11 +2529,11 @@ public abstract class QueryTableWhereTest {
         // partial reorder where filter 1 cannot move, and filter 2 bumps up to the serial filter
         allFilters.forEach(RowSetCapturingFilter::reset);
         sourceWithData.where(Filter.and(
-                preFilter.withBarrier(preFilter),
-                filter1.respectsBarrier(preFilter).withBarrier(barrier),
+                preFilter.withBarriers(preFilter),
+                filter1.respectsBarriers(preFilter).withBarriers(barrier),
                 midFilter.withSerial(),
                 postFilter,
-                filter2.respectsBarrier(barrier)));
+                filter2.respectsBarriers(barrier)));
         // should bubble up preFilter, filter 1, midFilter, then filter2 and postFilter
         assertEquals(100_000, numRowsFiltered(preFilter));
         assertEquals(100_000, numRowsFiltered(filter1));
@@ -2571,9 +2571,9 @@ public abstract class QueryTableWhereTest {
 
         sourceWithData.where(Filter.and(
                 preFilter,
-                filter1.withBarrier("1"),
-                filter2.respectsBarrier("1").withBarrier("2"),
-                filter3.respectsBarrier("2"),
+                filter1.withBarriers("1"),
+                filter2.respectsBarriers("1").withBarriers("2"),
+                filter3.respectsBarriers("2"),
                 postFilter));
         // should be f1, f2, f3, pre, then post
         assertEquals(5_000, numRowsFiltered(preFilter));
@@ -2619,8 +2619,8 @@ public abstract class QueryTableWhereTest {
 
         final Table res0 = sourceWithData.where(Filter.and(
                 filter0,
-                RawString.of("A_[ii - 1] < 25000").withBarrier(barrier),
-                filter1.respectsBarrier(barrier)));
+                RawString.of("A_[ii - 1] < 25000").withBarriers(barrier),
+                filter1.respectsBarriers(barrier)));
         assertEquals(filter0.numRowsProcessed(), 100000);
         assertEquals(10_000, res0.size());
         // TODO: should this really be [0, 25001] given that A_[ii - 1] should be null?
@@ -2641,7 +2641,7 @@ public abstract class QueryTableWhereTest {
 
         // ensure that we get what we expect without the respectsBarrier first
         final Table res0 = sourceWithData.where(Filter.and(
-                filter0.withBarrier(barrier),
+                filter0.withBarriers(barrier),
                 preFilter,
                 RawString.of("A_[ii - 1] < 25000")));
         assertEquals(filter0.numRowsProcessed(), 100000);
@@ -2654,9 +2654,9 @@ public abstract class QueryTableWhereTest {
 
         // TODO: this respectsBarrier could be lost and we wouldn't know it!
         final Table res1 = sourceWithData.where(Filter.and(
-                filter0.withBarrier(barrier),
+                filter0.withBarriers(barrier),
                 preFilter,
-                RawString.of("A_[ii - 1] < 25000").respectsBarrier(barrier)));
+                RawString.of("A_[ii - 1] < 25000").respectsBarriers(barrier)));
         assertEquals(filter0.numRowsProcessed(), 100000);
         assertEquals(preFilter.numRowsProcessed(), 50000);
         assertEquals(25_001, res1.size());

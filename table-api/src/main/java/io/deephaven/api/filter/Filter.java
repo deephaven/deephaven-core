@@ -248,12 +248,12 @@ public interface Filter extends Expression, ConcurrencyControl<Filter> {
     }
 
     @Override
-    default Filter respectsBarrier(Object... barriers) {
+    default Filter respectsBarriers(Object... barriers) {
         return respectsBarrier(this, barriers);
     }
 
     @Override
-    default Filter withBarrier(Object... barriers) {
+    default Filter withBarriers(Object... barriers) {
         return barrier(this, barriers);
     }
 

@@ -326,7 +326,7 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
                 .flatMap(wf -> ExtractBarriers.of(wf).stream())
                 .collect(Collectors.toSet());
         if (!preViewBarriers.isEmpty() && !postViewFilters.isEmpty()) {
-            postViewFilters.add(0, WhereAllFilter.INSTANCE.withBarrier(preViewBarriers.toArray(Object[]::new)));
+            postViewFilters.add(0, WhereAllFilter.INSTANCE.withBarriers(preViewBarriers.toArray(Object[]::new)));
         }
         compilationProcessor.compile();
 

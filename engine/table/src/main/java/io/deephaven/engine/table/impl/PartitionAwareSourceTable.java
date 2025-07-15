@@ -146,7 +146,7 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
                     : table.where(Filter.and(partitionFilters));
 
             if (!partitionBarriers.isEmpty()) {
-                otherFilters.add(0, WhereAllFilter.INSTANCE.withBarrier(partitionBarriers.toArray(Object[]::new)));
+                otherFilters.add(0, WhereAllFilter.INSTANCE.withBarriers(partitionBarriers.toArray(Object[]::new)));
             }
 
             return new TableAndRemainingFilters(result.coalesce(),
@@ -354,7 +354,7 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
         final Table coalesced = withPartitionsFiltered.coalesce();
 
         if (!partitionBarriers.isEmpty()) {
-            otherFilters.add(0, WhereAllFilter.INSTANCE.withBarrier(partitionBarriers.toArray(Object[]::new)));
+            otherFilters.add(0, WhereAllFilter.INSTANCE.withBarriers(partitionBarriers.toArray(Object[]::new)));
         }
 
         return otherFilters.isEmpty()

@@ -52,12 +52,12 @@ public interface ConcurrencyControl<T> {
      * @param barriers the unique barrier object identifiers
      * @return a new instance of T with the barriers applied
      */
-    T withBarrier(Object... barriers);
+    T withBarriers(Object... barriers);
 
     /**
      * Specifies that the filter/selectable should respect the ordering constraints of the given barriers.
      * <p>
-     * Filters that define a barrier (using {@link #withBarrier(Object...)}) will be executed entirely before
+     * Filters that define a barrier (using {@link #withBarriers(Object...)}) will be executed entirely before
      * filters/selectables that respect that barrier.
      * <p>
      * It is an error to respect a barrier that has not already been defined per the natural left to right ordering of
@@ -70,5 +70,5 @@ public interface ConcurrencyControl<T> {
      * @param barriers the unique barrier object identifiers to respect
      * @return a new instance of T with the respects barrier rule applied
      */
-    T respectsBarrier(Object... barriers);
+    T respectsBarriers(Object... barriers);
 }
