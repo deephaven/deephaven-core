@@ -105,6 +105,62 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
         assertTableEquals(expected, ug);
     }
 
+    public void testModifyToNull() {
+        final QueryTable qt = testRefreshingTable(
+                col("C1", new int[] {1, 2, 3}, new int[0], null, new int[] {7}),
+                col("C2", new IntVectorDirect(4, 5, 6), new IntVectorDirect(), null, new IntVectorDirect(8)));
+
+        final Table ug = qt.ungroup(false);
+
+        final QueryTable expected1 = testTable(
+                col("C1", 1, 2, 3, 7),
+                col("C2", 4, 5, 6, 8));
+        assertTableEquals(expected1, ug);
+
+        setExpectError(false);
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            final RowSet mods = i(0, 2);
+            addToTable(qt, mods,
+                    col("C1", null, new int[] {10, 11, 12}),
+                    col("C2", null, new IntVectorDirect(20, 21, 22)));
+            qt.notifyListeners(i(), i(), mods);
+        });
+
+        final QueryTable expected2 = testTable(
+                col("C1", 10, 11, 12, 7),
+                col("C2", 20, 21, 22, 8));
+        assertTableEquals(expected2, ug);
+    }
+
+    public void testModifyToNullFill() {
+        final QueryTable qt = testRefreshingTable(
+                col("C1", new int[] {1, 2, 3}, new int[0], null, new int[] {7}),
+                col("C2", new IntVectorDirect(4, 5), new IntVectorDirect(), null, new IntVectorDirect(8, 9)));
+
+        final Table ug = qt.ungroup(true);
+
+        final QueryTable expected1 = testTable(
+                col("C1", 1, 2, 3, 7, null),
+                col("C2", 4, 5, null, 8, 9));
+        assertTableEquals(expected1, ug);
+
+        setExpectError(false);
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            final RowSet mods = i(0, 2, 3);
+            addToTable(qt, mods,
+                    col("C1", null, new int[] {10}, new int[] {30, 31, 33}),
+                    col("C2", null, new IntVectorDirect(20, 22), new IntVectorDirect(40, 41)));
+            qt.notifyListeners(i(), i(), mods);
+        });
+
+        final QueryTable expected2 = testTable(
+                col("C1", 10, null, 30, 31, 33),
+                col("C2", 20, 22, 40, 41, null));
+        assertTableEquals(expected2, ug);
+    }
+
     public void testUngroupingAgnostic() {
         final int[][] data1 = new int[][] {new int[] {4, 5, 6}, new int[0], new int[] {7, 8}};
         final Table table = testRefreshingTable(col("X", 1, 2, 3),
@@ -406,8 +462,17 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
     }
 
     public void testUngroupIncremental() throws ParseException {
+        testUngroupIncremental(10, false, 0, 100);
         testUngroupIncremental(100, false, 0, 100);
         testUngroupIncremental(100, true, 0, 100);
+    }
+
+    public static ObjectVector<String> toString(final DoubleVector vector) {
+        final String[] data = new String[vector.intSize()];
+        for (int ii = 0; ii < vector.intSize(); ++ii) {
+            data[ii] = Double.toString(vector.get(ii));
+        }
+        return new ObjectVectorDirect<>(data);
     }
 
     @SuppressWarnings("SameParameterValue")
@@ -418,12 +483,14 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
 
         final ColumnInfo<?, ?>[] columnInfo;
         final QueryTable table = getTable(tableSize, random,
-                columnInfo = initColumnInfos(new String[] {"Date", "C1", "C2", "C3"},
+                columnInfo = initColumnInfos(new String[] {"Date", "C1", "C2", "C3", "C4"},
                         new DateGenerator(format.parse("2011-02-02"), format.parse("2011-02-03")),
                         new SetGenerator<>("a", "b"),
                         new SetGenerator<>(10, 20, 30),
                         new SetGenerator<>(ArrayTypeUtils.EMPTY_STRING_ARRAY, new String[] {"a", "b"},
-                                new String[] {"a", "b", "c"})));
+                                new String[] {"a", "b", "c"}),
+                        new SetGenerator<>(null, new double[] {Math.PI}, new double[] {Math.E, Math.PI},
+                                new double[] {Math.E, Math.PI, Math.PI * 2})));
 
         final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
                 EvalNugget.from(() -> table.groupBy().ungroup(nullFill)),
@@ -454,7 +521,14 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
                                 .ungroup(nullFill)),
                 EvalNugget.from(() -> table.groupBy("C1").update("Date=Date.toArray()", "C2=C2.toArray()").sort("C1")
                         .ungroup(nullFill)),
-                EvalNugget.from(() -> table.view("C3").ungroup(nullFill))
+                EvalNugget.from(() -> table.view("C3").ungroup(nullFill)),
+                EvalNugget.from(
+                        () -> table.select("C3=new io.deephaven.vector.ObjectVectorDirect(C3)").ungroup(nullFill)),
+                EvalNugget.from(() -> table.view("C4").ungroup(nullFill)),
+                EvalNugget.from(() -> table.select(
+                        "C5=C4 == null ? null : new io.deephaven.vector.DoubleVectorDirect(C4)",
+                        "C6=C4==null ? null : io.deephaven.engine.table.impl.QueryTableUngroupTest.toString(C5)",
+                        "C7=C6==null ? null : C6.toArray()").ungroup(nullFill)),
         };
 
         final int stepSize = (int) Math.ceil(Math.sqrt(tableSize));
