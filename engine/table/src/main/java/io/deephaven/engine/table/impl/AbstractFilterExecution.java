@@ -255,7 +255,10 @@ abstract class AbstractFilterExecution {
         }
 
         /**
-         * Update the pushdown cost for this filter (or set to Long.MAX_VALUE if pushdown is not supported).
+         * Returns a future whose successful completion means that the pushdown cost for this filter will have been
+         * updated (or set to Long.MAX_VALUE if pushdown is not supported).
+         *
+         * @return the future
          */
         public CompletableFuture<Void> updatePushdownFilterCost(final RowSet selection) {
             if (pushdownMatcher == null) {
@@ -293,20 +296,23 @@ abstract class AbstractFilterExecution {
     }
 
     /**
-     * Update the cost for each stateless filter and sort by the new cost, starting at the given index.
+     * Returns a future whose successful completion means that the pushdown cost for all the filters have been updated,
+     * and the filters have been sorted by the new cost, starting at the given index.
+     *
+     * @return the future
      */
-    private CompletableFuture<?> maybeUpdateAndSortStatelessFilters(final StatelessFilter[] filters,
+    private static CompletableFuture<Void> maybeUpdateAndSortStatelessFilters(final StatelessFilter[] filters,
             final int startIndex,
             final RowSet selection) {
         if (startIndex >= filters.length) {
             return CompletableFuture.completedFuture(null);
         }
-        final List<CompletableFuture<Void>> filterFutures = new ArrayList<>(filters.length - startIndex);
+        final List<CompletableFuture<?>> filterFutures = new ArrayList<>(filters.length - startIndex);
         // Update the pushdown filter cost for each filter in the array, starting at the given index.
         for (int i = startIndex; i < filters.length; i++) {
             filterFutures.add(filters[i].updatePushdownFilterCost(selection));
         }
-        return onExceptionOrAllOf(filterFutures).whenComplete((x, e) -> {
+        return allOfOrException(filterFutures).whenComplete((x, e) -> {
             if (e == null) {
                 // Sort the filters by non-descending cost, starting at the given index.
                 Arrays.sort(filters, startIndex, filters.length);
@@ -314,12 +320,12 @@ abstract class AbstractFilterExecution {
         });
     }
 
-    private static <T> CompletableFuture<?> onExceptionOrAllOf(final Collection<CompletableFuture<T>> futures) {
+    private static CompletableFuture<Void> allOfOrException(final Collection<CompletableFuture<?>> futures) {
         if (futures.isEmpty()) {
             return CompletableFuture.completedFuture(null);
         }
         if (futures.size() == 1) {
-            return futures.iterator().next().copy();
+            return futures.iterator().next().thenApply(AbstractFilterExecution::toVoid);
         }
         // errorFuture will never be completed normally
         final CompletableFuture<Void> errorFuture = new CompletableFuture<>();
@@ -330,7 +336,12 @@ abstract class AbstractFilterExecution {
                 }
             });
         }
-        return CompletableFuture.anyOf(errorFuture, CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new)));
+        return CompletableFuture.anyOf(errorFuture, CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new)))
+                .thenApply(AbstractFilterExecution::toVoid);
+    }
+
+    private static Void toVoid(Object x) {
+        return null;
     }
 
     /**
