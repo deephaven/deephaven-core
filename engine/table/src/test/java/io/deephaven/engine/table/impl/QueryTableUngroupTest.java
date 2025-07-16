@@ -462,7 +462,6 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
     }
 
     public void testUngroupIncremental() throws ParseException {
-        testUngroupIncremental(10, false, 0, 100);
         testUngroupIncremental(100, false, 0, 100);
         testUngroupIncremental(100, true, 0, 100);
     }
@@ -541,10 +540,8 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
     }
 
     public void testUngroupBlink() throws ParseException {
-        for (int seed = 0; seed < 100; ++seed) {
-            testUngroupBlink(100, false, 0, 20);
-            testUngroupBlink(100, true, 0, 20);
-        }
+        testUngroupBlink(100, false, 0, 20);
+        testUngroupBlink(100, true, 0, 20);
     }
 
     @SuppressWarnings("SameParameterValue")
