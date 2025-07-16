@@ -135,14 +135,15 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
                         ArrayTypeUtils.EMPTY_STRING_ARRAY),
                 col("Z", data));
 
-        final AssertionFailure e = Assert.assertThrows(AssertionFailure.class, table2::ungroup);
+        final IllegalStateException e = Assert.assertThrows(IllegalStateException.class, table2::ungroup);
         assertEquals(
-                "Assertion failed: asserted sizes[idx] == Array.getLength(arrayColumn.get(idx)), instead referenceColumn == \"Y\", name == \"Z\", row == 1.",
+                "Array sizes differ at row key 1 (position 1), Y has size 2, Z has size 0",
                 e.getMessage());
 
-        final AssertionFailure e2 = Assert.assertThrows(AssertionFailure.class, () -> table2.ungroup("Y", "Z"));
+        final IllegalStateException e2 =
+                Assert.assertThrows(IllegalStateException.class, () -> table2.ungroup("Y", "Z"));
         assertEquals(
-                "Assertion failed: asserted sizes[idx] == Array.getLength(arrayColumn.get(idx)), instead referenceColumn == \"Y\", name == \"Z\", row == 1.",
+                "Array sizes differ at row key 1 (position 1), Y has size 2, Z has size 0",
                 e2.getMessage());
 
         t1 = table2.ungroup("Y");
@@ -469,8 +470,8 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
         testUngroupMismatch(100, true);
         try {
             testUngroupMismatch(100, false);
-            fail("Expected AssertionFailure");
-        } catch (AssertionFailure ignored) {
+            fail("Expected IllegalStateException");
+        } catch (IllegalStateException ignored) {
         }
     }
 
@@ -751,10 +752,12 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
     public void testRevertToMinimumSize() {
         int oldMinimumUngroupBase = QueryTable.setMinimumUngroupBase(2);
         try {
-            final QueryTable table = TstUtils.testRefreshingTable(intCol("X", 1, 3), col("Y", new int[] {10, 20, 30, 40, 50, 60}, new int[] {110}));
+            final QueryTable table = TstUtils.testRefreshingTable(intCol("X", 1, 3),
+                    col("Y", new int[] {10, 20, 30, 40, 50, 60}, new int[] {110}));
             final Table ungrouped = table.ungroup();
 
-            final Table expected = TableTools.newTable(intCol("X", 1, 1, 1, 1, 1, 1, 3), intCol("Y", 10, 20, 30, 40, 50, 60, 110));
+            final Table expected =
+                    TableTools.newTable(intCol("X", 1, 1, 1, 1, 1, 1, 3), intCol("Y", 10, 20, 30, 40, 50, 60, 110));
             assertTableEquals(expected, ungrouped);
 
             // our base is going to be 3, not 2; so the maximum key expected should be at position 8
@@ -766,8 +769,9 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
                 final WritableRowSet toRemove = i(0, 1);
                 final WritableRowSet toAdd = i(0, 1);
                 table.getRowSet().writableCast().resetTo(toAdd);
-                TstUtils.addToTable(table, i(0), intCol("X", 2), col("Y", new int[]{201, 202}));
-                table.notifyListeners(new TableUpdateImpl(toAdd, toRemove, i(0), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
+                TstUtils.addToTable(table, i(0), intCol("X", 2), col("Y", new int[] {201, 202}));
+                table.notifyListeners(
+                        new TableUpdateImpl(toAdd, toRemove, i(0), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
             });
 
             final Table expected2 = TableTools.newTable(intCol("X", 2, 2, 3), intCol("Y", 201, 202, 110));
