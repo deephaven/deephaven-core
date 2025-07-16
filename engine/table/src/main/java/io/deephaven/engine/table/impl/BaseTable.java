@@ -425,6 +425,17 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
     }
 
     /**
+     * Create a copy of this table which reports itself as add-only.
+     *
+     * <p>If this table is already add-only, returns a copy of this.  Otherwise, the {@link #ADD_ONLY_TABLE_ATTRIBUTE} is set and a new child table is returned.  If this table does not conform to the add-only contract, then the child will produce an error notification.</p>
+     *
+     * @return a copy of this table with the {@link #ADD_ONLY_TABLE_ATTRIBUTE} set
+     */
+    public Table assertAddOnly() {
+        return withAttributes(Map.of(Table.ADD_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE));
+    }
+
+    /**
      * Returns true if this table is append-only, or has an attribute asserting that no modifies, shifts, or removals
      * are generated and that all new rows are added to the end of the table.
      *
