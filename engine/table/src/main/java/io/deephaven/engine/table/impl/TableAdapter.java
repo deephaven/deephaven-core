@@ -304,6 +304,11 @@ public interface TableAdapter extends TableDefaults {
     }
 
     @Override
+    default Table assertBlink() {
+        return throwUnsupported();
+    }
+
+    @Override
     default PartitionedTable partitionBy(boolean dropKeys, String... keyColumnNames) {
         return throwUnsupported();
     }

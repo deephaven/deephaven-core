@@ -4,7 +4,6 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.Pair;
-import io.deephaven.base.verify.AssertionFailure;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.context.ExecutionContext;
@@ -19,6 +18,7 @@ import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.*;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.util.TableTools;
+import io.deephaven.engine.util.TickSuppressor;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.type.ArrayTypeUtils;
@@ -223,9 +223,9 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
     }
 
     private static void testUngroupConstructSnapshotBoxedNullFewColumnsHelper(@NotNull final BarrageMessage snap) {
-        assertEquals(snap.rowsIncluded, i(1, 2));
-        assertEquals(snap.addColumnData[1].data.get(0).asIntChunk().get(0), 5);
-        assertEquals(snap.addColumnData[1].data.get(0).asIntChunk().get(1), QueryConstants.NULL_INT);
+        assertEquals(i(1, 2), snap.rowsIncluded);
+        assertEquals(5, snap.addColumnData[1].data.get(0).asIntChunk().get(0));
+        assertEquals(QueryConstants.NULL_INT, snap.addColumnData[1].data.get(0).asIntChunk().get(1));
     }
 
 
@@ -466,6 +466,45 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
         }
     }
 
+    public void testUngroupBlink() throws ParseException {
+        for (int seed = 0; seed < 100; ++seed) {
+            testUngroupBlink(100, false, 0, 20);
+            testUngroupBlink(100, true, 0, 20);
+        }
+    }
+
+    @SuppressWarnings("SameParameterValue")
+    private void testUngroupBlink(final int tableSize, final boolean nullFill, final int seed, final int maxSteps)
+            throws ParseException {
+        final Random random = new Random(seed);
+        QueryScope.addParam("f", new SimpleDateFormat("dd HH:mm:ss"));
+
+        final ColumnInfo<?, ?>[] columnInfo;
+        final QueryTable table = getTable(tableSize, random,
+                columnInfo = initColumnInfos(new String[] {"Date", "C1", "C2", "C3"},
+                        new DateGenerator(format.parse("2011-02-02"), format.parse("2011-02-03")),
+                        new SetGenerator<>("a", "b"),
+                        new SetGenerator<>(10, 20, 30),
+                        new SetGenerator<>(ArrayTypeUtils.EMPTY_STRING_ARRAY, new String[] {"a", "b"},
+                                new String[] {"a", "b", "c"})));
+        table.setAttribute(Table.BLINK_TABLE_ATTRIBUTE, true);
+
+        final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
+                EvalNugget.from(
+                        () -> TickSuppressor.convertModificationsToAddsAndRemoves(table.removeBlink().groupBy("C1"))
+                                .assertBlink().sort("C1").ungroup(nullFill)),
+                EvalNugget.from(() -> table.view("C3").ungroup(nullFill))
+        };
+
+        final int stepSize = (int) Math.ceil(Math.sqrt(tableSize));
+        for (int step = 0; step < maxSteps; step++) {
+            if (RefreshingTableTestCase.printTableUpdates) {
+                System.out.println("Seed == " + seed + ", Step == " + step);
+            }
+            simulateShiftAwareStep(stepSize, random, table, columnInfo, en);
+        }
+    }
+
     public void testUngroupMismatch() {
         testUngroupMismatch(100, true);
         try {
@@ -631,7 +670,7 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
     }
 
     public void testUngroupAgnosticRebase() {
-        int oldMinimumUngroupBase = QueryTable.setMinimumUngroupBase(2);
+        final int oldMinimumUngroupBase = QueryTable.setMinimumUngroupBase(2);
         try {
             ColumnHolder<?> arrayColumnHolder = col("Y", new int[] {10, 20}, new int[] {110, 120, 130});
             final QueryTable table = TstUtils.testRefreshingTable(col("X", 1, 3), arrayColumnHolder);
@@ -710,8 +749,8 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
             keysToRemove = RowSetFactory.fromKeys();
             keysToModify = RowSetFactory.fromKeys(2, 3);
 
-            ColumnHolder<?> keyAdditions = col("X", 2);
-            ColumnHolder<?> valueAdditions = col("Y", new int[] {210, 220, 230, 240, 250, 260});
+            final ColumnHolder<?> keyAdditions = col("X", 2);
+            final ColumnHolder<?> valueAdditions = col("Y", new int[] {210, 220, 230, 240, 250, 260});
             valueModifications = col("Y", new int[] {110, 120, 140}, new int[] {320});
             keyModifications = col("X", 3, 4);
 
@@ -750,7 +789,7 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
     }
 
     public void testRevertToMinimumSize() {
-        int oldMinimumUngroupBase = QueryTable.setMinimumUngroupBase(2);
+        final int oldMinimumUngroupBase = QueryTable.setMinimumUngroupBase(2);
         try {
             final QueryTable table = TstUtils.testRefreshingTable(intCol("X", 1, 3),
                     col("Y", new int[] {10, 20, 30, 40, 50, 60}, new int[] {110}));

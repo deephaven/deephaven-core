@@ -454,6 +454,11 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
         return withoutAttributes(Set.of(BLINK_TABLE_ATTRIBUTE));
     }
 
+    @Override
+    public Table assertBlink() {
+        return withAttributes(Map.of(BLINK_TABLE_ATTRIBUTE, true));
+    }
+
     // ------------------------------------------------------------------------------------------------------------------
     // Implementation for update propagation support
     // ------------------------------------------------------------------------------------------------------------------

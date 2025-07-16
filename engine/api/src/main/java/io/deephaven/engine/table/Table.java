@@ -555,6 +555,19 @@ public interface Table extends
     @ConcurrentMethod
     Table removeBlink();
 
+    /**
+     * Returns a child Table with {@link #BLINK_TABLE_ATTRIBUTE} set to {@code true}.
+     *
+     * <p>
+     * This table must already produce an update pattern that conforms to blink semantics. If the Table produces an
+     * update that does not conform to blink semantics, then the child table will notify of an error.
+     * </p>
+     *
+     * @return A child table with the blink attribute set, or this table if already a blink table.
+     */
+    @ConcurrentMethod
+    Table assertBlink();
+
     // -----------------------------------------------------------------------------------------------------------------
     // PartitionBy Operations
     // -----------------------------------------------------------------------------------------------------------------
