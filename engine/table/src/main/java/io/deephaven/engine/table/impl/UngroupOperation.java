@@ -136,34 +136,6 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
         return new Result<>(result, listener);
     }
 
-    private long computeModifiedIndicesAndMaxSize(final RowSet modified,
-            final RowSet modifiedPreShift,
-            final RowSetBuilderSequential modifyBuilder,
-            final RowSetBuilderSequential addedBuilded,
-            final RowSetBuilderSequential removedBuilder,
-            final long base) {
-        final int size = modified.intSize("ungroup");
-        final long[] sizes = new long[size];
-        final long[] prevSizes = new long[size];
-
-        final long maxSize = computeMaxSize(modified, sizes, false);
-        computePrevSize(modifiedPreShift, prevSizes);
-
-        // TODO: if the base is going to increase there is no point in doing the below index updates, we'll throw
-        // everything out anyway
-        final RowSet.Iterator iterator = modified.iterator();
-        final RowSet.Iterator iteratorPreShift = modifiedPreShift.iterator();
-        for (int idx = 0; idx < size; idx++) {
-            final long currentRowKey = iterator.nextLong();
-            final long previousRowKey = iteratorPreShift.nextLong();
-
-            updateIndexForRow(modifyBuilder, addedBuilded, removedBuilder, sizes[idx], prevSizes[idx], currentRowKey,
-                    previousRowKey, base);
-        }
-
-        return maxSize;
-    }
-
     private void updateIndexForRow(final RowSetBuilderSequential modifyBuilder,
             final RowSetBuilderSequential addedBuilded,
             final RowSetBuilderSequential removedBuilder,
@@ -608,10 +580,12 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
             final long[] sizes = new long[rowSet.intSize("ungroup")];
             final long maxSize = computeMaxSize(rowSet, sizes, false);
             final int minBase = 64 - Long.numberOfLeadingZeros(maxSize);
-            final int base = Math.max(newBase, minBase);
-            // TODO: we could be throwing this out, maybe we shouldn't build it
-            getUngroupIndex(sizes, ungroupBuilder, base, rowSet);
-            return base;
+            if (minBase > newBase) {
+                // If we are going to change the base, there is no point in creating this index
+                return minBase;
+            }
+            getUngroupIndex(sizes, ungroupBuilder, newBase, rowSet);
+            return newBase;
         }
 
         private void evaluateRemovedIndex(final RowSet rowSet, final RowSetBuilderSequential builder) {
@@ -628,19 +602,36 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
                 final RowSetBuilderSequential modifyBuilder,
                 final RowSetBuilderSequential addedBuilded,
                 final RowSetBuilderSequential removedBuilder,
-                final int newBase) {
+                final int currentBase) {
             if (modified.isEmpty()) {
-                return newBase;
+                return currentBase;
             }
 
-            final long maxSize = computeModifiedIndicesAndMaxSize(modified,
-                    modifiedPreShift,
-                    modifyBuilder,
-                    addedBuilded,
-                    removedBuilder,
-                    shiftState.getNumShiftBits());
+            final long base = shiftState.getNumShiftBits();
+            final int size = modified.intSize("ungroup");
+            final long[] sizes = new long[size];
+            final long[] prevSizes = new long[size];
+
+            final long maxSize = computeMaxSize(modified, sizes, false);
+            computePrevSize(modifiedPreShift, prevSizes);
             final int minBase = 64 - Long.numberOfLeadingZeros(maxSize);
-            return Math.max(newBase, minBase);
+            if (minBase > currentBase) {
+                // If we are going to force a rebase, there is no need to compute the entire index
+                return minBase;
+            }
+
+            final RowSet.Iterator iterator = modified.iterator();
+            final RowSet.Iterator iteratorPreShift = modifiedPreShift.iterator();
+            for (int idx = 0; idx < size; idx++) {
+                final long currentRowKey = iterator.nextLong();
+                final long previousRowKey = iteratorPreShift.nextLong();
+
+                updateIndexForRow(modifyBuilder, addedBuilded, removedBuilder, sizes[idx], prevSizes[idx],
+                        currentRowKey,
+                        previousRowKey, base);
+            }
+
+            return currentBase;
         }
     }
 }
