@@ -11,8 +11,9 @@ import io.deephaven.util.SafeCloseable;
  */
 public class PushdownResult implements SafeCloseable {
 
-    // Heuristic cost estimates for different push-down operations. Larger numbers indicate operations that are expected
-    // to touch more data or incur higher I/O latency; the values are strictly relative.
+    // Heuristic cost estimates for different push-down operations to find matching rows.
+    // Larger numbers indicate operations that are expected to touch more data or incur higher I/O latency; the values
+    // are strictly relative.
     /**
      * Only table/row-group statistics are checked, assuming the metadata is already loaded
      */
@@ -26,11 +27,11 @@ public class PushdownResult implements SafeCloseable {
      */
     public static final long IN_MEMORY_DATA_INDEX_COST = 30_000L;
     /**
-     * Requires reading the min/max values of the column
+     * Requires using binary search on sorted data
      */
     public static final long SORTED_DATA_COST = 40_000L;
     /**
-     * Requires reading an external index table to satisfy
+     * Requires reading and querying an external index table
      */
     public static final long DEFERRED_DATA_INDEX_COST = 50_000L;
 

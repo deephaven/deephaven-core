@@ -47,7 +47,9 @@ import static io.deephaven.engine.table.impl.select.WhereFilterFactory.getExpres
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
 import static io.deephaven.engine.util.TableTools.doubleCol;
 import static io.deephaven.engine.util.TableTools.floatCol;
+import static io.deephaven.engine.util.TableTools.intCol;
 import static io.deephaven.engine.util.TableTools.newTable;
+import static io.deephaven.engine.util.TableTools.stringCol;
 import static io.deephaven.parquet.table.ParquetTools.readTable;
 import static io.deephaven.parquet.table.ParquetTools.writeTable;
 import static io.deephaven.time.DateTimeUtils.parseInstant;
@@ -1246,6 +1248,29 @@ public final class ParquetTableFilterTest {
         }
 
         testFilteringNanImpl(readTable(dest));
+    }
+
+    @Test
+    public void testEmptyMatchFilter() {
+        final Table source = newTable(
+                stringCol("strings", "a", "b", "c"),
+                intCol("ints", 1, 2, 3));
+        final String dest = Path.of(rootFile.getPath(), "testEmptyMatchFilter.parquet").toString();
+        writeTable(source, dest);
+        final Table diskTable = ParquetTools.readTable(dest);
+        final Table memTable = diskTable.select();
+
+        // Empty match filter should return no rows
+        filterAndVerifyResultsAllowEmpty(diskTable, memTable,
+                new MatchFilter(MatchFilter.MatchType.Regular, "ints"));
+        filterAndVerifyResultsAllowEmpty(diskTable, memTable,
+                new MatchFilter(MatchFilter.CaseSensitivity.MatchCase, MatchFilter.MatchType.Regular, "strings"));
+
+        // Inverted empty match filter should return all rows
+        filterAndVerifyResults(diskTable, memTable,
+                new MatchFilter(MatchFilter.MatchType.Inverted, "ints"));
+        filterAndVerifyResults(diskTable, memTable,
+                new MatchFilter(MatchFilter.MatchType.Inverted, "strings"));
     }
 
     @Test

@@ -14,10 +14,10 @@ final class CaseInsensitiveStringMatchPushdownHandler {
             @NotNull final MatchFilter matchFilter,
             @NotNull final Statistics<?> statistics) {
         final Object[] values = matchFilter.getValues();
-        final boolean inverseMatch = matchFilter.getInvertMatch();
+        final boolean invertMatch = matchFilter.getInvertMatch();
         if (values == null || values.length == 0) {
-            // No values to check against, so we consider it as a maybe overlap.
-            return true;
+            // No values to check against
+            return invertMatch;
         }
         // Skip pushdown-based filtering for nulls to err on the safer side instead of adding more complex handling
         // logic.
@@ -33,7 +33,7 @@ final class CaseInsensitiveStringMatchPushdownHandler {
             // Statistics could not be processed, so we cannot determine overlaps. Assume that we overlap.
             return true;
         }
-        if (!inverseMatch) {
+        if (!invertMatch) {
             return maybeMatchesImpl(mutableMin.getValue(), mutableMax.getValue(), values);
         }
         return maybeMatchesInverseImpl(mutableMin.getValue(), mutableMax.getValue(), values);

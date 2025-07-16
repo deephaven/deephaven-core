@@ -47,9 +47,10 @@ final class InstantPushdownHandler {
             @NotNull final MatchFilter matchFilter,
             @NotNull final Statistics<?> statistics) {
         final Object[] values = matchFilter.getValues();
+        final boolean invertMatch = matchFilter.getInvertMatch();
         if (values == null || values.length == 0) {
-            // No values to check against, so we consider it as a maybe overlap.
-            return true;
+            // No values to check against
+            return invertMatch;
         }
         // Skip pushdown-based filtering for nulls to err on the safer side instead of adding more complex handling
         // logic.
@@ -71,7 +72,7 @@ final class InstantPushdownHandler {
         }
         final long min = DateTimeUtils.epochNanos(mutableMin.getValue());
         final long max = DateTimeUtils.epochNanos(mutableMax.getValue());
-        if (!matchFilter.getInvertMatch()) {
+        if (!invertMatch) {
             return LongPushdownHandler.maybeMatches(min, max, instantNanos);
         }
         return LongPushdownHandler.maybeMatchesInverse(min, max, instantNanos);

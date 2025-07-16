@@ -71,9 +71,10 @@ final class DoublePushdownHandler {
             @NotNull final MatchFilter matchFilter,
             @NotNull final Statistics<?> statistics) {
         final Object[] values = matchFilter.getValues();
+        final boolean invertMatch = matchFilter.getInvertMatch();
         if (values == null || values.length == 0) {
-            // No values to check against, so we consider it as a maybe overlap.
-            return true;
+            // No values to check against
+            return invertMatch;
         }
         // Skip pushdown-based filtering for nulls and NaNs to err on the safer side instead of adding more complex
         // handling logic.
@@ -90,7 +91,7 @@ final class DoublePushdownHandler {
             // Statistics could not be processed, so we cannot determine overlaps. Assume that we overlap.
             return true;
         }
-        if (!matchFilter.getInvertMatch()) {
+        if (!invertMatch) {
             return maybeMatches(mutableMin.getValue(), mutableMax.getValue(), unboxedValues);
         }
         return maybeMatchesInverse(mutableMin.getValue(), mutableMax.getValue(), unboxedValues);
