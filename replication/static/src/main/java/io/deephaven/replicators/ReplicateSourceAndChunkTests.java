@@ -142,7 +142,7 @@ public class ReplicateSourceAndChunkTests {
                         m.group(1) + "checkFromValues(" + m.group(2) + "Boolean fromChunk" + m.group(3) + ") {"));
         lines = applyFixup(lines, "fromvalues", "(.*)fromValues, fromChunk\\);", m -> Collections.singletonList(m
                 .group(1)
-                + "fromValues == BooleanUtils.NULL_BOOLEAN_AS_BYTE ? null : fromValues == BooleanUtils.TRUE_BOOLEAN_AS_BYTE, fromChunk);"));
+                + "BooleanUtils.isNull(fromValues) ? null : fromValues == BooleanUtils.TRUE_BOOLEAN_AS_BYTE, fromChunk);"));
         lines = removeRegion(lines, "samecheck");
         lines = addImport(lines, "import io.deephaven.util.BooleanUtils;");
         lines = addImport(lines, "import io.deephaven.chunk.WritableObjectChunk;");
