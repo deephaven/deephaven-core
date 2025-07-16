@@ -15,6 +15,8 @@ import io.deephaven.engine.table.impl.sources.UngroupedColumnSource;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.vector.Vector;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.Array;
 import java.util.Arrays;
@@ -713,79 +715,82 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
 
             final RowSetShiftData.Builder shiftBuilder = new RowSetShiftData.Builder();
 
-            if (!clearResult) {
+            if (clearResult) {
                 newBase = evaluateIndex(upstream.added(), ungroupAdded, newBase);
-                newBase = evaluateModified(upstream.modified(), upstream.getModifiedPreShift(), ungroupModifiedModified,
-                        ungroupModifiedAdded, ungroupModifiedRemoved, newBase);
+                rebase(newBase, ungroupAdded.build());
+                return;
             }
 
+            newBase = evaluateIndex(upstream.added(), ungroupAdded, newBase);
+            newBase = evaluateModified(upstream.modified(), upstream.getModifiedPreShift(), ungroupModifiedModified,
+                    ungroupModifiedAdded, ungroupModifiedRemoved, newBase);
             if (newBase != shiftState.getNumShiftBits()) {
                 rebase(newBase + 1);
-            } else {
-                evaluateRemovedIndex(upstream.removed(), ungroupRemoved);
+                return;
+            }
 
-                final WritableRowSet addedRowSet = ungroupAdded.build();
-                final WritableRowSet removedRowSet = ungroupRemoved.build();
+            evaluateRemovedIndex(upstream.removed(), ungroupRemoved);
 
-                addedRowSet.insert(ungroupModifiedAdded.build());
-                removedRowSet.insert(ungroupModifiedRemoved.build());
+            final WritableRowSet addedRowSet = ungroupAdded.build();
+            final WritableRowSet removedRowSet = ungroupRemoved.build();
 
-                // noinspection resource
-                final TrackingWritableRowSet resultRowset = result.getRowSet().writableCast();
-                resultRowset.remove(removedRowSet);
+            addedRowSet.insert(ungroupModifiedAdded.build());
+            removedRowSet.insert(ungroupModifiedRemoved.build());
 
-                final RowSetBuilderRandom removedByShiftBuilder = RowSetFactory.builderRandom();
-                final RowSetBuilderRandom addedByShiftBuilder = RowSetFactory.builderRandom();
-                if (upstream.shifted().nonempty()) {
-                    final long base = newBase;
-                    final long currentBaseSize = (1L << newBase) - 1;
+            // noinspection resource
+            final TrackingWritableRowSet resultRowset = result.getRowSet().writableCast();
+            resultRowset.remove(removedRowSet);
 
-                    final RowSetShiftData upstreamShift = upstream.shifted();
-                    final long shiftSize = upstreamShift.size();
-                    for (int ii = 0; ii < shiftSize; ++ii) {
-                        final long begin = upstreamShift.getBeginRange(ii);
-                        final long end = upstreamShift.getEndRange(ii);
-                        final long shiftDelta = upstreamShift.getShiftDelta(ii);
+            final RowSetBuilderRandom removedByShiftBuilder = RowSetFactory.builderRandom();
+            final RowSetBuilderRandom addedByShiftBuilder = RowSetFactory.builderRandom();
+            if (upstream.shifted().nonempty()) {
+                final long currentBaseSize = (1L << newBase) - 1;
 
-                        final long resultShiftAmount = shiftDelta << base;
+                final RowSetShiftData upstreamShift = upstream.shifted();
+                final long shiftSize = upstreamShift.size();
+                for (int ii = 0; ii < shiftSize; ++ii) {
+                    final long begin = upstreamShift.getBeginRange(ii);
+                    final long end = upstreamShift.getEndRange(ii);
+                    final long shiftDelta = upstreamShift.getShiftDelta(ii);
 
-                        for (long rk = begin; rk <= end; rk++) {
-                            final long oldRangeStart = rk << base;
-                            final long oldRangeEnd = (rk << base) + currentBaseSize;
-                            // get the range from our result rowset, I'm not sure that I love creating a rowset for each
-                            // row; we could instead do iteration because we are not actually modifying this thing as we
-                            // go
-                            try (final WritableRowSet expandedRowsetForRow =
-                                    resultRowset.subSetByKeyRange(oldRangeStart, oldRangeEnd)) {
-                                if (expandedRowsetForRow.isNonempty()) {
-                                    // no need to shift things that don't exist anymore
-                                    shiftBuilder.shiftRange(oldRangeStart, oldRangeEnd, resultShiftAmount);
-                                    removedByShiftBuilder.addRowSet(expandedRowsetForRow);
-                                    // move it over
-                                    expandedRowsetForRow.shiftInPlace(resultShiftAmount);
-                                    addedByShiftBuilder.addRowSet(expandedRowsetForRow);
-                                }
+                    final long resultShiftAmount = shiftDelta << (long) newBase;
+
+                    for (long rk = begin; rk <= end; rk++) {
+                        final long oldRangeStart = rk << (long) newBase;
+                        final long oldRangeEnd = (rk << (long) newBase) + currentBaseSize;
+                        // get the range from our result rowset, I'm not sure that I love creating a rowset for each
+                        // row; we could instead do iteration because we are not actually modifying this thing as we
+                        // go
+                        try (final WritableRowSet expandedRowsetForRow =
+                                     resultRowset.subSetByKeyRange(oldRangeStart, oldRangeEnd)) {
+                            if (expandedRowsetForRow.isNonempty()) {
+                                // no need to shift things that don't exist anymore
+                                shiftBuilder.shiftRange(oldRangeStart, oldRangeEnd, resultShiftAmount);
+                                removedByShiftBuilder.addRowSet(expandedRowsetForRow);
+                                // move it over
+                                expandedRowsetForRow.shiftInPlace(resultShiftAmount);
+                                addedByShiftBuilder.addRowSet(expandedRowsetForRow);
                             }
                         }
                     }
                 }
-
-                resultRowset.remove(removedByShiftBuilder.build());
-                resultRowset.insert(addedByShiftBuilder.build());
-                resultRowset.insert(addedRowSet);
-                for (final ColumnSource<?> source : resultMap.values()) {
-                    if (source instanceof UngroupedColumnSource) {
-                        ((UngroupedColumnSource<?>) source).setBase(newBase);
-                    }
-                }
-
-                // TODO: we should examine the MCS to avoid work on rebased columns that have not changed (and just
-                // transform things for the key columns)
-                final RowSet modifiedRowSet = ungroupModifiedModified.build();
-                final TableUpdateImpl downstream = new TableUpdateImpl(addedRowSet, removedRowSet, modifiedRowSet,
-                        shiftBuilder.build(), ModifiedColumnSet.ALL);
-                result.notifyListeners(downstream);
             }
+
+            resultRowset.remove(removedByShiftBuilder.build());
+            resultRowset.insert(addedByShiftBuilder.build());
+            resultRowset.insert(addedRowSet);
+            for (final ColumnSource<?> source : resultMap.values()) {
+                if (source instanceof UngroupedColumnSource) {
+                    ((UngroupedColumnSource<?>) source).setBase(newBase);
+                }
+            }
+
+            // TODO: we should examine the MCS to avoid work on rebased columns that have not changed (and just
+            // transform things for the key columns)
+            final RowSet modifiedRowSet = ungroupModifiedModified.build();
+            final TableUpdateImpl downstream = new TableUpdateImpl(addedRowSet, removedRowSet, modifiedRowSet,
+                    shiftBuilder.build(), ModifiedColumnSet.ALL);
+            result.notifyListeners(downstream);
         }
 
         private void rebase(final int newBase) {
@@ -795,6 +800,10 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
             getUngroupIndex(computeSize(parentRowset, arrayColumns, vectorColumns, nullFill), builder, newBase,
                     parentRowset);
             final WritableRowSet newRowSet = builder.build();
+            rebase(newBase, newRowSet);
+        }
+
+        private void rebase(final int newBase, final WritableRowSet newRowSet) {
             final TrackingWritableRowSet resultRowset = result.getRowSet().writableCast();
             resultRowset.resetTo(newRowSet);
 
@@ -809,7 +818,7 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
                     RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
         }
 
-        private int evaluateIndex(final RowSet rowSet, final RowSetBuilderSequential ungroupBuilder,
+        private int evaluateIndex(final RowSet rowSet, @NotNull final RowSetBuilderSequential ungroupBuilder,
                 final int newBase) {
             if (rowSet.isEmpty()) {
                 return newBase;
@@ -817,9 +826,10 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
             final long[] sizes = new long[rowSet.intSize("ungroup")];
             final long maxSize = computeMaxSize(rowSet, arrayColumns, vectorColumns, sizes, nullFill);
             final int minBase = 64 - Long.numberOfLeadingZeros(maxSize);
+            int base = Math.max(newBase, minBase);
             // TODO: we could be throwing this out, maybe we shouldn't build it
-            getUngroupIndex(sizes, ungroupBuilder, shiftState.getNumShiftBits(), rowSet);
-            return Math.max(newBase, minBase);
+            getUngroupIndex(sizes, ungroupBuilder, base, rowSet);
+            return base;
         }
 
         private void evaluateRemovedIndex(final RowSet rowSet, final RowSetBuilderSequential builder) {
