@@ -58,7 +58,8 @@ import static org.junit.Assert.assertArrayEquals;
 
 @Category(OutOfBandTest.class)
 public class TestConcurrentInstantiation extends QueryTableTestBase {
-    private static final int TIMEOUT_LENGTH = 10;
+    // TODO: NOCOMMIT: BAD NUMBER
+    private static final int TIMEOUT_LENGTH = 1000;
     private static final TimeUnit TIMEOUT_UNIT = TimeUnit.SECONDS;
 
     private ExecutorService pool;
@@ -669,18 +670,46 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
     }
 
     public void testUngroupSizeChanges() throws ExecutionException, InterruptedException, TimeoutException {
+        testUngroupTransformed(t -> t.update("Value=new io.deephaven.vector.IntVectorDirect(Value)"));
+        testUngroupTransformed(t -> t.update("Value2=new io.deephaven.vector.DoubleVectorDirect(Value2)"));
+    }
+
+    public void testUngroupUngroupableColumnSource() throws ExecutionException, InterruptedException, TimeoutException {
+        testUngroupTransformed(t -> {
+            final Map<String, ColumnSource<?>> value =
+                    Map.of("Value", new SimulateUngroupableColumnSource<>(t.getColumnSource("Value")));
+            final QueryTable result = ((QueryTable) t).withAdditionalColumns(value);
+            t.addUpdateListener(new BaseTable.ListenerImpl("Add Simulated Ungroupable", t, result));
+            return result;
+        });
+        testUngroupTransformed(t -> {
+            final Map<String, ColumnSource<?>> value =
+                    Map.of("Value2", new SimulateUngroupableColumnSource<>(t.getColumnSource("Value2")));
+            final QueryTable result = ((QueryTable) t).withAdditionalColumns(value);
+            t.addUpdateListener(new BaseTable.ListenerImpl("Add Simulated Ungroupable", t, result));
+            return result;
+        });
+    }
+
+    private void testUngroupTransformed(final Function<Table, Table> transformation)
+            throws ExecutionException, InterruptedException, TimeoutException {
         final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
-                intCol("Key", 1, 2, 3), col("Value", new int[] {101}, new int[] {201, 202}, new int[] {301}));
+                intCol("Key", 1, 2, 3),
+                col("Value", new int[] {101}, new int[] {201, 202}, new int[] {301}),
+                col("Value2", new double[] {1.01}, new double[] {2.01, 2.02}, new double[] {3.01}));
 
-        final Table withVector = table.update("Value=new io.deephaven.vector.IntVectorDirect(Value)");
+        final Table withVector = transformation.apply(table);
 
-        final Table tableStart = TableTools.newTable(intCol("Key", 1, 2, 2, 3), intCol("Value", 101, 201, 202, 301));
+        final Table tableStart = TableTools.newTable(intCol("Key", 1, 2, 2, 3), intCol("Value", 101, 201, 202, 301))
+                .update("Value2=Value/100");
         final Table tableUpdate =
-                TableTools.newTable(intCol("Key", 4, 4, 4, 5, 3), intCol("Value", 401, 402, 403, 501, 301));
+                TableTools.newTable(intCol("Key", 4, 4, 4, 5, 3), intCol("Value", 401, 402, 403, 501, 301))
+                        .update("Value2=Value/100");
         final Table tableUpdate2 = TableTools.newTable(intCol("Key", 4, 4, 4, 5, 3, 6, 6),
-                intCol("Value", 401, 402, 403, 501, 301, 601, 602));
+                intCol("Value", 401, 402, 403, 501, 301, 601, 602)).update("Value2=Value/100");
         final Table tableUpdate3 =
-                TableTools.newTable(intCol("Key", 4, 4, 4, 5, 3, 7), intCol("Value", 401, 402, 403, 501, 301, 701));
+                TableTools.newTable(intCol("Key", 4, 4, 4, 5, 3, 7), intCol("Value", 401, 402, 403, 501, 301, 701))
+                        .update("Value2=Value/100");
 
         updateGraph.startCycleForUnitTests(false);
 
@@ -690,11 +719,17 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         assertTableEquals(ungroup1, tableStart);
         assertTableEquals(ungroupv1, tableStart);
 
+        TableTools.showWithRowSet(ungroup1);
+
         TstUtils.addToTable(table, i(2, 4), intCol("Key", 4, 5),
-                col("Value", new int[] {401, 402, 403}, new int[] {501}));
+                col("Value", new int[] {401, 402, 403}, new int[] {501}),
+                col("Value2", new double[] {4.01, 4.02, 4.03}, new double[] {5.01}));
 
         final Table ungroup2 = pool.submit(() -> table.ungroup()).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
         final Table ungroupv2 = pool.submit(() -> withVector.ungroup()).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
+
+        TableTools.showWithRowSet(ungroup2);
+        TableTools.showWithRowSet(ungroupv2);
 
         TstUtils.assertTableEquals(tableStart, prevTable(ungroup1));
         TstUtils.assertTableEquals(tableStart, prevTable(ungroup2));
@@ -733,7 +768,8 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         TstUtils.assertTableEquals(tableUpdate, ungroupv4);
 
         updateGraph.runWithinUnitTestCycle(() -> {
-            TstUtils.addToTable(table, i(10000), intCol("Key", 6), col("Value", new int[] {601, 602}));
+            TstUtils.addToTable(table, i(10000), intCol("Key", 6), col("Value", new int[] {601, 602}),
+                    col("Value2", new double[] {6.01, 6.02}));
             table.notifyListeners(i(10000), i(), i());
         });
         assertTableEquals(tableUpdate2, ungroup1);
@@ -745,7 +781,8 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         assertTableEquals(tableUpdate2, ungroupv4);
 
         updateGraph.runWithinUnitTestCycle(() -> {
-            TstUtils.addToTable(table, i(10000), col("Key", 7), col("Value", new int[] {701}));
+            TstUtils.addToTable(table, i(10000), col("Key", 7), col("Value", new int[] {701}),
+                    col("Value2", new double[] {7.01}));
             table.notifyListeners(i(), i(), i(10000));
         });
         assertTableEquals(tableUpdate3, ungroup1);

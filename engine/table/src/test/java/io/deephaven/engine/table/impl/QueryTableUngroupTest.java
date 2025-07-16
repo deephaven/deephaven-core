@@ -161,7 +161,18 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
         assertTableEquals(expected2, ug);
     }
 
-    public void testUngroupingAgnostic() {
+    public void testNoColumns() {
+        final Table table = newTable(col("X", 1, 2, 3));
+        final Table result = table.ungroup();
+        assertSame(table, result);
+
+        final Table table2 = newTable(col("X", 1, 2, 3), col("Y", new int[] {1}, null, null));
+        final InvalidColumnException columnException =
+                Assert.assertThrows(InvalidColumnException.class, () -> table2.ungroup("X"));
+        assertEquals("Column X is not an array", columnException.getMessage());
+    }
+
+    public void testSimple() {
         final int[][] data1 = new int[][] {new int[] {4, 5, 6}, new int[0], new int[] {7, 8}};
         final Table table = testRefreshingTable(col("X", 1, 2, 3),
                 col("Y", new String[] {"a", "b", "c"}, ArrayTypeUtils.EMPTY_STRING_ARRAY,
@@ -191,16 +202,14 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
                         ArrayTypeUtils.EMPTY_STRING_ARRAY),
                 col("Z", data));
 
-        final IllegalStateException e = Assert.assertThrows(IllegalStateException.class, table2::ungroup);
-        assertEquals(
-                "Array sizes differ at row key 1 (position 1), Y has size 2, Z has size 0",
-                e.getMessage());
-
-        final IllegalStateException e2 =
-                Assert.assertThrows(IllegalStateException.class, () -> table2.ungroup("Y", "Z"));
-        assertEquals(
-                "Array sizes differ at row key 1 (position 1), Y has size 2, Z has size 0",
-                e2.getMessage());
+        final String expectedMessage = "Array sizes differ at row key 1 (position 1), Y has size 2, Z has size 0";
+        assertEquals(expectedMessage, Assert.assertThrows(IllegalStateException.class, table2::ungroup).getMessage());
+        assertEquals(expectedMessage,
+                Assert.assertThrows(IllegalStateException.class, () -> table2.ungroup("Y", "Z")).getMessage());
+        assertEquals(expectedMessage, Assert.assertThrows(IllegalStateException.class,
+                () -> table2.update("Z=new io.deephaven.vector.IntVectorDirect(Z)").ungroup("Y", "Z")).getMessage());
+        assertEquals(expectedMessage, Assert.assertThrows(IllegalStateException.class,
+                () -> convertToUngroupable(table2, "Z").ungroup("Y", "Z")).getMessage());
 
         t1 = table2.ungroup("Y");
         assertEquals(5, t1.size());
@@ -231,6 +240,16 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
         assertArrayEquals(new int[] {4, 4, 4, 5, 5, 5, 6, 6, 6}, ColumnVectors.ofInt(t1, "Z").toArray());
         assertArrayEquals(new String[] {"a", "b", "c", "a", "b", "c", "a", "b", "c"},
                 ColumnVectors.ofObject(t1, "Y", String.class).toArray());
+    }
+
+    public static Table convertToUngroupable(final Table table, final String... columns) {
+        final Map<String, ColumnSource<?>> columnSources = new LinkedHashMap<>();
+        for (final String column : columns) {
+            columnSources.put(column, new SimulateUngroupableColumnSource<>(table.getColumnSource(column)));
+        }
+        final QueryTable result = ((QueryTable) table).withAdditionalColumns(columnSources);
+        table.addUpdateListener(new BaseTable.ListenerImpl("Add Simulated Ungroupable", table, result));
+        return result;
     }
 
     public void testUngroupConstructSnapshotOfBoxedNull() {
@@ -528,6 +547,7 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
                         "C5=C4 == null ? null : new io.deephaven.vector.DoubleVectorDirect(C4)",
                         "C6=C4==null ? null : io.deephaven.engine.table.impl.QueryTableUngroupTest.toString(C5)",
                         "C7=C6==null ? null : C6.toArray()").ungroup(nullFill)),
+                EvalNugget.from(() -> convertToUngroupable(table.select("C4", "C5=C4"), "C4", "C5").ungroup(nullFill)),
         };
 
         final int stepSize = (int) Math.ceil(Math.sqrt(tableSize));

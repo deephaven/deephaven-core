@@ -70,7 +70,7 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
                 checkSizeFunctions[columnIndex] = UngroupSizeKernels::checkSizeVector;
                 maybeIncreaseSizeFunctions[columnIndex] = UngroupSizeKernels::maybeIncreaseSizeVector;
             } else {
-                throw new RuntimeException("Column " + name + " is not an array");
+                throw new InvalidColumnException("Column " + name + " is not an array");
             }
         }
     }
