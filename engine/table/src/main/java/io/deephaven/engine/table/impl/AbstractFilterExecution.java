@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.table.impl;
 
+import com.google.common.collect.Streams;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.context.ExecutionContext;
@@ -12,6 +13,8 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.ModifiedColumnSet;
+import io.deephaven.engine.table.impl.filter.ExtractBarriers;
+import io.deephaven.engine.table.impl.filter.ExtractRespectedBarriers;
 import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.util.JobScheduler;
@@ -22,10 +25,13 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * The AbstractFilterExecution incorporates the idea that we have an added and modified RowSet to filter and that there
@@ -235,13 +241,22 @@ abstract class AbstractFilterExecution {
          * The result of the pushdown filter operation, or null if pushdown is not supported.
          */
         public PushdownResult pushdownResult;
+        /**
+         * The barriers declared by this filter.
+         */
+        public final Collection<Object> declaredBarriers;
+        /**
+         * The barriers respected by this filter including any implicit recursive dependencies.
+         */
+        public final Collection<Object> respectedBarriers;
 
         public StatelessFilter(
                 final int filterIdx,
                 final WhereFilter filter,
                 final Map<String, String> renameMap,
                 final PushdownFilterMatcher pushdownMatcher,
-                final PushdownFilterContext context) {
+                final PushdownFilterContext context,
+                final Map<Object, Collection<Object>> barrierDependencies) {
             Require.eqTrue((pushdownMatcher == null) == (context == null),
                     "pushdownExecutor and context must be both null or both non-null");
             this.filterIdx = filterIdx;
@@ -249,6 +264,16 @@ abstract class AbstractFilterExecution {
             this.renameMap = renameMap;
             this.pushdownMatcher = pushdownMatcher;
             this.context = context;
+            this.declaredBarriers = ExtractBarriers.of(filter);
+            this.respectedBarriers = ExtractRespectedBarriers.of(filter).stream()
+                    .flatMap(barrier -> {
+                        final Collection<Object> dependencies = barrierDependencies.get(barrier);
+                        if (dependencies == null) {
+                            return Stream.of(barrier);
+                        }
+                        return Streams.concat(Stream.of(barrier), dependencies.stream());
+                    })
+                    .collect(Collectors.toSet());
         }
 
         /**
@@ -265,11 +290,21 @@ abstract class AbstractFilterExecution {
 
         @Override
         public int compareTo(@NotNull StatelessFilter o) {
-            // Compare by pushdown filter cost, then by original index. This will preserve the original order of
-            // execution as for similar cost filters.
+            // Does other filter respect a barrier that exists on this filter?
+            if (declaredBarriers.stream().anyMatch(o.respectedBarriers::contains)) {
+                return -1;
+            }
+            // Does this filter respect a barrier that exists on the other filter?
+            if (o.declaredBarriers.stream().anyMatch(respectedBarriers::contains)) {
+                return 1;
+            }
+
+            // Primarily sort by push-down cost.
             if (pushdownFilterCost != o.pushdownFilterCost) {
                 return Long.compare(pushdownFilterCost, o.pushdownFilterCost);
             }
+
+            // Break ties via original index to preserve the original order of execution for similar cost filters.
             return Integer.compare(filterIdx, o.filterIdx);
         }
 
@@ -461,9 +496,17 @@ abstract class AbstractFilterExecution {
             final MutableObject<WritableRowSet> localInput,
             final Runnable collectionResume,
             final Consumer<Exception> collectionNec) {
-
         // Create stateless filter objects for the filters in this collection.
         final StatelessFilter[] statelessFilters = new StatelessFilter[filters.size()];
+
+        // To properly respect barriers, we need each StatelessFilter to be aware of any respected barrier including
+        // transitive implicit dependencies. For example filter A may respect barrier B, defined in filter B, which
+        // respects barrier C, defined in filter C. In this case, filter A should also respect barrier C even though
+        // it was not explicitly declared in filter A. We build up the set of implicit and explicit inter-barrier
+        // dependencies in a dynamic-programming fashion; by adding all dependent respected barriers by the filter that
+        // declares the barrier to any filter that respects it.
+        final Map<Object, Collection<Object>> barrierDependencies = new HashMap<>();
+
         for (int ii = 0; ii < filters.size(); ii++) {
             final WhereFilter filter = filters.get(ii);
             final PushdownFilterMatcher executor;
@@ -488,7 +531,15 @@ abstract class AbstractFilterExecution {
                     executor != null ? executor.renameMap(filter, filterSources) : Map.of();
 
             statelessFilters[ii] = new StatelessFilter(ii, filter, renameMap, executor,
-                    executor != null ? executor.makePushdownFilterContext() : null);
+                    executor != null ? executor.makePushdownFilterContext() : null,
+                    barrierDependencies);
+
+            for (Object barrier : statelessFilters[ii].declaredBarriers) {
+                if (barrierDependencies.containsKey(barrier)) {
+                    throw new IllegalArgumentException("Duplicate barrier declared: " + barrier);
+                }
+                barrierDependencies.put(barrier, statelessFilters[ii].respectedBarriers);
+            }
         }
 
         // Sort the filters by cost, with the lowest cost first.
