@@ -127,7 +127,7 @@ public class DoublePushdownHandlerTest {
                 doubleStats(Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY)));
 
         // empty list
-        assertTrue(DoublePushdownHandler.maybeOverlaps(
+        assertFalse(DoublePushdownHandler.maybeOverlaps(
                 new MatchFilter(MatchFilter.MatchType.Regular, "d"), stats));
 
         // list containing NULL or NaN

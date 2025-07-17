@@ -111,7 +111,7 @@ public class IntPushdownHandlerTest {
                 new MatchFilter(MatchFilter.MatchType.Regular, "i", withInside), stats));
 
         // empty list
-        assertTrue(IntPushdownHandler.maybeOverlaps(
+        assertFalse(IntPushdownHandler.maybeOverlaps(
                 new MatchFilter(MatchFilter.MatchType.Regular, "i"), stats));
 
         // list containing NULL

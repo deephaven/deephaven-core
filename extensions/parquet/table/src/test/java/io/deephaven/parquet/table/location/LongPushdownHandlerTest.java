@@ -111,7 +111,7 @@ public class LongPushdownHandlerTest {
                 new MatchFilter(MatchFilter.MatchType.Regular, "l", withInside), stats));
 
         // empty list
-        assertTrue(LongPushdownHandler.maybeOverlaps(
+        assertFalse(LongPushdownHandler.maybeOverlaps(
                 new MatchFilter(MatchFilter.MatchType.Regular, "l"), stats));
 
         // list containing NULL

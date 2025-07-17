@@ -112,8 +112,8 @@ public class CharPushdownHandlerTest {
         assertTrue(CharPushdownHandler.maybeOverlaps(
                 new MatchFilter(MatchFilter.MatchType.Regular, "c", withInside), stats));
 
-        // empty list returns true
-        assertTrue(CharPushdownHandler.maybeOverlaps(
+        // empty list
+        assertFalse(CharPushdownHandler.maybeOverlaps(
                 new MatchFilter(MatchFilter.MatchType.Regular, "c"), stats));
 
         // list containing NULL disables push-down

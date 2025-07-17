@@ -60,7 +60,7 @@ public class CaseInsensitiveStringMatchPushdownHandlerTest {
                 stats));
 
         // empty list
-        assertTrue(CaseInsensitiveStringMatchPushdownHandler.maybeOverlaps(
+        assertFalse(CaseInsensitiveStringMatchPushdownHandler.maybeOverlaps(
                 new MatchFilter(MatchFilter.MatchType.Regular, "s"), stats));
 
         // list containing null

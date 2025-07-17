@@ -142,7 +142,7 @@ public class ComparablePushdownHandlerTest {
                 makeMatchFilter(MatchFilter.MatchType.Regular, "strCol", "zzz", "zzz1"), stats));
 
         // empty list
-        assertTrue(ComparablePushdownHandler.maybeOverlaps(
+        assertFalse(ComparablePushdownHandler.maybeOverlaps(
                 makeMatchFilter(MatchFilter.MatchType.Regular, "strCol"), stats));
 
         // null entry

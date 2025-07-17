@@ -113,7 +113,7 @@ public class BytePushdownHandlerTest {
                 new MatchFilter(MatchFilter.MatchType.Regular, "b", withInside), stats));
 
         // empty list
-        assertTrue(BytePushdownHandler.maybeOverlaps(
+        assertFalse(BytePushdownHandler.maybeOverlaps(
                 new MatchFilter(MatchFilter.MatchType.Regular, "b"), stats));
 
         // list containing NULL

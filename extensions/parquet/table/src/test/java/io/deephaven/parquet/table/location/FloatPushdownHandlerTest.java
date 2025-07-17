@@ -122,7 +122,7 @@ public class FloatPushdownHandlerTest {
                 stats));
 
         // empty list
-        assertTrue(FloatPushdownHandler.maybeOverlaps(
+        assertFalse(FloatPushdownHandler.maybeOverlaps(
                 new MatchFilter(MatchFilter.MatchType.Regular, "f"), stats));
 
         // list containing NULL or NaN

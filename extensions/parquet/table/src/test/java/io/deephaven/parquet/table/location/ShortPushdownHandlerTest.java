@@ -111,7 +111,7 @@ public class ShortPushdownHandlerTest {
                 new MatchFilter(MatchFilter.MatchType.Regular, "s", withInside), stats));
 
         // empty list
-        assertTrue(ShortPushdownHandler.maybeOverlaps(
+        assertFalse(ShortPushdownHandler.maybeOverlaps(
                 new MatchFilter(MatchFilter.MatchType.Regular, "s"), stats));
 
         // list containing NULL

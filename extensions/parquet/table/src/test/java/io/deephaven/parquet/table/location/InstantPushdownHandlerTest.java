@@ -106,7 +106,7 @@ public class InstantPushdownHandlerTest {
                 stats));
 
         // empty list
-        assertTrue(InstantPushdownHandler.maybeOverlaps(
+        assertFalse(InstantPushdownHandler.maybeOverlaps(
                 new MatchFilter(MatchFilter.MatchType.Regular, "t"), stats));
 
         // list containing null
