@@ -24,6 +24,10 @@ public class DisjunctiveFilter extends ComposedFilter {
         return DisjunctiveFilter.makeDisjunctiveFilter(WhereFilter.from(ors.filters()));
     }
 
+    public static WhereFilter of(WhereFilter... filters) {
+        return makeDisjunctiveFilter(filters);
+    }
+
     public static WhereFilter makeDisjunctiveFilter(WhereFilter... componentFilters) {
         if (componentFilters.length == 1) {
             return componentFilters[0];

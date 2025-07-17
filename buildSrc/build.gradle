@@ -30,13 +30,13 @@ dependencies {
         because('needed by plugin com.avast.gradle.docker-compose')
     }
 
-    implementation('com.diffplug.spotless:spotless-plugin-gradle:7.0.3') {
+    implementation('com.diffplug.spotless:spotless-plugin-gradle:7.1.0') {
         because('needed by plugin java-coding-conventions')
     }
 
     implementation "com.gradleup.shadow:shadow-gradle-plugin:8.3.8"
 
-    implementation('com.vanniktech.maven.publish:com.vanniktech.maven.publish.gradle.plugin:0.33.0') {
+    implementation('com.vanniktech.maven.publish:com.vanniktech.maven.publish.gradle.plugin:0.34.0') {
         because('needed by plugin java-publishing-conventions')
     }
 }

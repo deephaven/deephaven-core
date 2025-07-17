@@ -31,6 +31,9 @@ import io.deephaven.engine.table.hierarchical.RollupTable;
 import io.deephaven.engine.table.hierarchical.TreeTable;
 import io.deephaven.engine.table.impl.MemoizedOperationKey.SelectUpdateViewOrUpdateView.Flavor;
 import io.deephaven.engine.table.impl.by.*;
+import io.deephaven.engine.table.impl.filter.ExtractBarriers;
+import io.deephaven.engine.table.impl.filter.ExtractShiftedColumnDefinitions;
+import io.deephaven.engine.table.impl.filter.ExtractRespectedBarriers;
 import io.deephaven.engine.table.impl.hierarchical.RollupTableImpl;
 import io.deephaven.engine.table.impl.hierarchical.TreeTableImpl;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
@@ -1269,13 +1272,43 @@ public class QueryTable extends BaseTable<QueryTable> {
 
         // Initialize our filters immediately so we can examine the columns they use. Note that filter
         // initialization is safe to invoke repeatedly.
+        final Set<Object> knownBarriers = new HashSet<>();
         for (final WhereFilter filter : filters) {
             filter.init(getDefinition(), compilationProcessor);
+
+            // Add barriers declared by this filter; filters may appear to depend on themselves when examined in
+            // aggregate.
+            final Collection<Object> newBarriers = ExtractBarriers.of(filter);
+            final Optional<Object> dupBarrier = newBarriers.stream().filter(knownBarriers::contains).findFirst();
+            if (dupBarrier.isPresent()) {
+                throw new IllegalArgumentException("Filter Barriers must be unique! Found duplicate: " +
+                        dupBarrier.get());
+            }
+            knownBarriers.addAll(newBarriers);
+
+            for (final Object respectedBarrier : ExtractRespectedBarriers.of(filter)) {
+                if (!knownBarriers.contains(respectedBarrier)) {
+                    throw new IllegalArgumentException("Filter " + filter + " respects barrier " + respectedBarrier +
+                            " that is not declared by any filter so far.");
+                }
+            }
         }
         compilationProcessor.compile();
 
+        final Set<Object> priorityBarriers = new HashSet<>();
         for (int fi = 0; fi < numFilters; ++fi) {
             final WhereFilter filter = filters[fi];
+
+            if (!filter.permitParallelization()) {
+                // serial filters are guaranteed to see the expected rowset as if all previous filters were applied
+                // thus, we're not allowed to reorder any remaining filters
+                break;
+            }
+
+            if (!priorityBarriers.containsAll(ExtractRespectedBarriers.of(filter))) {
+                // this filter is not permitted to be reordered as it depends on a filter that has not been prioritized
+                continue;
+            }
 
             // Simple filters against indexed columns get priority
             if (dataIndexer != null
@@ -1283,6 +1316,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                     && filter.isSimpleFilter()
                     && DataIndexer.hasDataIndex(this, filter.getColumns().toArray(String[]::new))) {
                 priorityFilterIndexes.set(fi);
+                priorityBarriers.addAll(ExtractBarriers.of(filter));
             }
         }
 
@@ -1349,19 +1383,16 @@ public class QueryTable extends BaseTable<QueryTable> {
                         return result;
                     }
 
-                    final List<WhereFilter> whereFilters = new LinkedList<>();
-                    final List<io.deephaven.base.Pair<String, Map<Long, List<MatchPair>>>> shiftColPairs =
-                            new LinkedList<>();
+                    boolean hasConstArrayOffsetFilter = false;
                     for (final WhereFilter filter : filters) {
-                        if (filter instanceof AbstractConditionFilter
-                                && ((AbstractConditionFilter) filter).hasConstantArrayAccess()) {
-                            shiftColPairs.add(((AbstractConditionFilter) filter).getFormulaShiftColPair());
-                        } else {
-                            whereFilters.add(filter);
+                        final Set<ShiftedColumnDefinition> shifted = ExtractShiftedColumnDefinitions.of(filter);
+                        if (shifted != null && !shifted.isEmpty()) {
+                            hasConstArrayOffsetFilter = true;
+                            break;
                         }
                     }
-                    if (!shiftColPairs.isEmpty()) {
-                        return (QueryTable) ShiftedColumnsFactory.where(this, shiftColPairs, whereFilters);
+                    if (hasConstArrayOffsetFilter) {
+                        return (QueryTable) ShiftedColumnsFactory.where(this, Arrays.asList(filters));
                     }
 
                     return memoizeResult(MemoizedOperationKey.filter(filters), () -> {
