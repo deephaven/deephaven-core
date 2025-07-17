@@ -107,7 +107,7 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean>
             return;
         }
         final int indexWithinBlock = (int) (key & INDEX_MASK);
-        if (blocks2[indexWithinBlock] == NULL_BOOLEAN_AS_BYTE) {
+        if (BooleanUtils.isNull(blocks2[indexWithinBlock])) {
             return;
         }
 
