@@ -29,7 +29,7 @@ public class UngroupedBoxedBooleanArrayColumnSource extends UngroupedColumnSourc
         long segment = rowKey >> base;
         int offset = (int) (rowKey & ((1 << base) - 1));
         Boolean[] array = innerSource.get(segment);
-        if (offset >= array.length) {
+        if (array == null || offset >= array.length) {
             return null;
         }
         return array[offset];
@@ -43,7 +43,7 @@ public class UngroupedBoxedBooleanArrayColumnSource extends UngroupedColumnSourc
         long segment = rowKey >> getPrevBase();
         int offset = (int) (rowKey & ((1 << getPrevBase()) - 1));
         Boolean[] array = innerSource.getPrev(segment);
-        if (offset >= array.length) {
+        if (array == null || offset >= array.length) {
             return null;
         }
         return array[offset];

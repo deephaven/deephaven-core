@@ -670,19 +670,27 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
     }
 
     public void testUngroupSizeChanges() throws ExecutionException, InterruptedException, TimeoutException {
-        testUngroupTransformed(t -> t.update("Value=new io.deephaven.vector.IntVectorDirect(Value)"));
-        testUngroupTransformed(t -> t.update("Value2=new io.deephaven.vector.DoubleVectorDirect(Value2)"));
+        testUngroupTransformed(false, t -> t.update("Value=new io.deephaven.vector.IntVectorDirect(Value)"));
+        testUngroupTransformed(false, t -> t.update("Value2=new io.deephaven.vector.DoubleVectorDirect(Value2)"));
+        testUngroupTransformed(true, t -> t.update("Value=new io.deephaven.vector.IntVectorDirect(Value)"));
+        testUngroupTransformed(true, t -> t.update("Value2=new io.deephaven.vector.DoubleVectorDirect(Value2)"));
     }
 
     public void testUngroupUngroupableColumnSource() throws ExecutionException, InterruptedException, TimeoutException {
-        testUngroupTransformed(t -> {
+        testUngroupUngroupableColumnSource(false);
+        testUngroupUngroupableColumnSource(true);
+    }
+
+    private void testUngroupUngroupableColumnSource(final boolean nullFill)
+            throws ExecutionException, InterruptedException, TimeoutException {
+        testUngroupTransformed(nullFill, t -> {
             final Map<String, ColumnSource<?>> value =
                     Map.of("Value", new SimulateUngroupableColumnSource<>(t.getColumnSource("Value")));
             final QueryTable result = ((QueryTable) t).withAdditionalColumns(value);
             t.addUpdateListener(new BaseTable.ListenerImpl("Add Simulated Ungroupable", t, result));
             return result;
         });
-        testUngroupTransformed(t -> {
+        testUngroupTransformed(nullFill, t -> {
             final Map<String, ColumnSource<?>> value =
                     Map.of("Value2", new SimulateUngroupableColumnSource<>(t.getColumnSource("Value2")));
             final QueryTable result = ((QueryTable) t).withAdditionalColumns(value);
@@ -691,7 +699,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         });
     }
 
-    private void testUngroupTransformed(final Function<Table, Table> transformation)
+    private void testUngroupTransformed(final boolean nullFill, final Function<Table, Table> transformation)
             throws ExecutionException, InterruptedException, TimeoutException {
         final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
                 intCol("Key", 1, 2, 3),
@@ -713,8 +721,8 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
         updateGraph.startCycleForUnitTests(false);
 
-        final Table ungroup1 = pool.submit(() -> table.ungroup()).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
-        final Table ungroupv1 = pool.submit(() -> withVector.ungroup()).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
+        final Table ungroup1 = pool.submit(() -> table.ungroup(nullFill)).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
+        final Table ungroupv1 = pool.submit(() -> withVector.ungroup(nullFill)).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
         assertTableEquals(ungroup1, tableStart);
         assertTableEquals(ungroupv1, tableStart);
@@ -725,8 +733,8 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
                 col("Value", new int[] {401, 402, 403}, new int[] {501}),
                 col("Value2", new double[] {4.01, 4.02, 4.03}, new double[] {5.01}));
 
-        final Table ungroup2 = pool.submit(() -> table.ungroup()).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
-        final Table ungroupv2 = pool.submit(() -> withVector.ungroup()).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
+        final Table ungroup2 = pool.submit(() -> table.ungroup(nullFill)).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
+        final Table ungroupv2 = pool.submit(() -> withVector.ungroup(nullFill)).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
         TableTools.showWithRowSet(ungroup2);
         TableTools.showWithRowSet(ungroupv2);
@@ -739,8 +747,8 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         table.notifyListeners(i(), i(), i(2, 4));
         updateGraph.markSourcesRefreshedForUnitTests();
 
-        final Table ungroup3 = pool.submit(() -> table.ungroup()).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
-        final Table ungroupv3 = pool.submit(() -> withVector.ungroup()).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
+        final Table ungroup3 = pool.submit(() -> table.ungroup(nullFill)).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
+        final Table ungroupv3 = pool.submit(() -> withVector.ungroup(nullFill)).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
         TstUtils.assertTableEquals(tableStart, prevTable(ungroup1));
         TstUtils.assertTableEquals(tableStart, prevTable(ungroup2));
@@ -754,7 +762,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
             updateGraph.flushOneNotificationForUnitTests();
         }
 
-        final Table ungroupv4 = pool.submit(() -> withVector.ungroup()).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
+        final Table ungroupv4 = pool.submit(() -> withVector.ungroup(nullFill)).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
         TstUtils.assertTableEquals(tableUpdate, ungroupv4);
 
         updateGraph.completeCycleForUnitTests();

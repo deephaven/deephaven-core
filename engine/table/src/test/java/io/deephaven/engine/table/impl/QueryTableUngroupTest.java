@@ -8,6 +8,7 @@ import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
+import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
@@ -21,6 +22,7 @@ import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.util.TickSuppressor;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.QueryConstants;
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.vector.*;
 import org.jetbrains.annotations.NotNull;
@@ -34,6 +36,7 @@ import java.util.*;
 import static io.deephaven.engine.table.impl.SnapshotTestUtils.verifySnapshotBarrageMessage;
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.*;
+import static io.deephaven.util.QueryConstants.NULL_INT;
 import static org.junit.Assert.assertArrayEquals;
 
 /**
@@ -103,6 +106,40 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
                 col("C1", 4, 5, 6),
                 col("C2", 6, 5, 4));
         assertTableEquals(expected, ug);
+    }
+
+    public void testNullFillWithNull() {
+        final String[][] dataWithNullStringArray = new String[][] {null};
+        final Boolean[][] dataWithNullBooleanArray = new Boolean[][] {null};
+        final QueryTable qt = testRefreshingTable(
+                col("C1", new int[] {1, 2, 3}),
+                col("C2", new int[0]),
+                col("C3", new double[] {1.01, 2.02, 3.03, 4.04}),
+                col("C4", dataWithNullStringArray),
+                col("C5", dataWithNullBooleanArray));
+
+        final Table ungrouped = qt.ungroup(true);
+
+        final Table expected = newTable(
+                intCol("C1", 1, 2, 3, NULL_INT),
+                intCol("C2", NULL_INT, NULL_INT, NULL_INT, NULL_INT),
+                doubleCol("C3", 1.01, 2.02, 3.03, 4.04),
+                stringCol("C4", null, null, null, null),
+                booleanCol("C5", null, null, null, null));
+        assertTableEquals(expected, ungrouped);
+
+        final QueryTable qt2 = testRefreshingTable(
+                col("C1", new int[] {1}, new int[] {4}),
+                col("C2", new ObjectVectorDirect<>("A"), null),
+                col("C3", new ObjectVectorDirect<>(Boolean.TRUE), null));
+
+        final Table ungrouped2 = qt2.ungroup(true);
+        final Table expected2 = newTable(
+                intCol("C1", 1, 4),
+                stringCol("C2", "A", null),
+                booleanCol("C3", true, null));
+
+        assertTableEquals(expected2.update("C2=(Object)C2", "C3=(Object)C3"), ungrouped2);
     }
 
     public void testModifyToNull() {
@@ -288,9 +325,9 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
     private static void testUngroupConstructSnapshotBoxedNullAllColumnHelper(@NotNull final BarrageMessage snap) {
         assertEquals(snap.rowsAdded, i(0, 1, 2));
         final List<Chunk<Values>> firstColChunk = snap.addColumnData[0].data;
-        final int[] firstColExpected = new int[] {QueryConstants.NULL_INT, 2, 3};
+        final int[] firstColExpected = new int[] {NULL_INT, 2, 3};
         final List<Chunk<Values>> secondColChunk = snap.addColumnData[1].data;
-        final int[] secondColExpected = new int[] {4, 5, QueryConstants.NULL_INT};
+        final int[] secondColExpected = new int[] {4, 5, NULL_INT};
         for (int i = 0; i < 3; i++) {
             assertEquals(firstColChunk.get(0).asIntChunk().get(i), firstColExpected[i]);
             assertEquals(secondColChunk.get(0).asIntChunk().get(i), secondColExpected[i]);
@@ -300,7 +337,7 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
     private static void testUngroupConstructSnapshotBoxedNullFewColumnsHelper(@NotNull final BarrageMessage snap) {
         assertEquals(i(1, 2), snap.rowsIncluded);
         assertEquals(5, snap.addColumnData[1].data.get(0).asIntChunk().get(0));
-        assertEquals(QueryConstants.NULL_INT, snap.addColumnData[1].data.get(0).asIntChunk().get(1));
+        assertEquals(NULL_INT, snap.addColumnData[1].data.get(0).asIntChunk().get(1));
     }
 
 
@@ -323,7 +360,7 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
     private static void testUngroupConstructSnapshotSingleColumnHelper(@NotNull final BarrageMessage snap) {
         assertEquals(snap.rowsAdded, i(0, 1, 2));
         final List<Chunk<Values>> firstColChunk = snap.addColumnData[0].data;
-        final int[] firstColExpected = new int[] {QueryConstants.NULL_INT, 2, 3};
+        final int[] firstColExpected = new int[] {NULL_INT, 2, 3};
         for (int i = 0; i < 3; i++) {
             assertEquals(firstColChunk.get(0).asIntChunk().get(i), firstColExpected[i]);
         }
@@ -365,7 +402,7 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
         final int[] intDirect = (int[]) ColumnVectors.of(t2, "Int").toArray();
         System.out.println(Arrays.toString(intDirect));
 
-        final int[] expected = new int[] {1, 2, 3, 4, 5, 6, 7, QueryConstants.NULL_INT};
+        final int[] expected = new int[] {1, 2, 3, 4, 5, 6, 7, NULL_INT};
 
         if (!Arrays.equals(expected, intDirect)) {
             System.out.println("Expected: " + Arrays.toString(expected));
@@ -480,9 +517,67 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
         }
     }
 
-    public void testUngroupIncremental() throws ParseException {
-        testUngroupIncremental(100, false, 0, 100);
-        testUngroupIncremental(100, true, 0, 100);
+    public void testUngroupIncrementalLarge() throws ParseException {
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            testUngroupIncrementalLarge(3000, false, 0, 5);
+        }
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            testUngroupIncrementalLarge(3000, true, 0, 5);
+        }
+    }
+
+    @SuppressWarnings("SameParameterValue")
+    private void testUngroupIncrementalLarge(final int tableSize, final boolean nullFill, final int seed,
+            final int maxSteps) {
+        final Random random = new Random(seed);
+        QueryScope.addParam("f", new SimpleDateFormat("dd HH:mm:ss"));
+
+        final ColumnInfo<?, ?>[] columnInfo;
+        final QueryTable table = getTable(tableSize, random,
+                columnInfo = initColumnInfos(new String[] {"KeyCol", "C1", "C2"},
+                        new SetGenerator<>("a", "b"),
+                        new SetGenerator<>(ArrayTypeUtils.EMPTY_STRING_ARRAY, new String[] {"a", "b"},
+                                new String[] {"a", "b", "c"}, null),
+                        new SetGenerator<>(ArrayTypeUtils.EMPTY_DOUBLE_ARRAY, new double[] {1.0, 2.0, 3.0},
+                                new double[] {Math.PI, Math.pow(2, 100)})));
+
+        TableTools.showWithRowSet(table.view("KeyCol", "C1"));
+        TableTools.showWithRowSet(table.view("KeyCol", "C1").ungroup(false));
+
+        final List<EvalNuggetInterface> nuggets = new ArrayList<>(Arrays.asList(
+                EvalNugget.from(() -> table.groupBy().ungroup(nullFill)),
+                new UpdateValidatorNugget(table.groupBy().ungroup(nullFill)),
+                EvalNugget.from(() -> table.view("KeyCol", "C1").ungroup(nullFill)),
+                EvalNugget.from(() -> table.view("KeyCol", "C2").ungroup(nullFill)),
+                EvalNugget.from(() -> table
+                        .select("KeyCol", "C1=C1 == null ? null : new io.deephaven.vector.ObjectVectorDirect(C1)")
+                        .ungroup(nullFill)),
+                EvalNugget.from(() -> table
+                        .select("KeyCol", "C2=C2 == null ? null : new io.deephaven.vector.DoubleVectorDirect(C2)")
+                        .ungroup(nullFill)),
+                EvalNugget.from(() -> convertToUngroupable(table.view("KeyCol", "C1").ungroup(nullFill)))));
+        if (nullFill) {
+            nuggets.addAll(Arrays.asList(
+                    EvalNugget.from(() -> table.ungroup(nullFill)),
+                    EvalNugget.from(() -> table
+                            .select("KeyCol", "C1=C1 == null ? null : new io.deephaven.vector.ObjectVectorDirect(C1)",
+                                    "C2=C2 == null ? null : new io.deephaven.vector.DoubleVectorDirect(C2)")
+                            .ungroup(nullFill)),
+                    EvalNugget.from(() -> convertToUngroupable(table.view("KeyCol", "C1", "C2").ungroup(nullFill)))));
+        } else {
+            nuggets.add(EvalNugget.from(() -> table.view("KeyCol", "C2",
+                    "C3=C2 == null ? null : io.deephaven.engine.table.impl.QueryTableUngroupTest.toString(new io.deephaven.vector.DoubleVectorDirect(C2))")
+                    .ungroup(nullFill)));
+        }
+        final EvalNuggetInterface[] en = nuggets.toArray(new EvalNuggetInterface[0]);
+
+        final int stepSize = (int) Math.ceil(Math.sqrt(tableSize));
+        for (int step = 0; step < maxSteps; step++) {
+            if (RefreshingTableTestCase.printTableUpdates) {
+                System.out.println("Seed == " + seed + ", Step == " + step);
+            }
+            simulateShiftAwareStep(stepSize, random, table, columnInfo, en);
+        }
     }
 
     public static ObjectVector<String> toString(final DoubleVector vector) {
@@ -491,6 +586,11 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
             data[ii] = Double.toString(vector.get(ii));
         }
         return new ObjectVectorDirect<>(data);
+    }
+
+    public void testUngroupIncremental() throws ParseException {
+        testUngroupIncremental(100, false, 0, 50);
+        testUngroupIncremental(100, true, 0, 50);
     }
 
     @SuppressWarnings("SameParameterValue")
@@ -623,6 +723,7 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
 
             final EvalNugget[] en = new EvalNugget[] {
                     EvalNugget.from(() -> mismatch.ungroup(nullFill)),
+                    EvalNugget.from(() -> convertToUngroupable(mismatch, "MyBoolean", "MyDouble").ungroup(nullFill)),
             };
 
             for (int i = 0; i < 10; i++) {
@@ -680,8 +781,8 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
                         QueryConstants.NULL_BYTE, QueryConstants.NULL_BYTE),
                 shortCol("SValue", QueryConstants.NULL_SHORT, (short) 1,
                         QueryConstants.NULL_SHORT, QueryConstants.NULL_SHORT),
-                intCol("EulavI", QueryConstants.NULL_INT, 1,
-                        QueryConstants.NULL_INT, QueryConstants.NULL_INT),
+                intCol("EulavI", NULL_INT, 1,
+                        NULL_INT, NULL_INT),
                 longCol("LValue", QueryConstants.NULL_LONG, (long) 1,
                         QueryConstants.NULL_LONG, QueryConstants.NULL_LONG),
                 floatCol("FValue", QueryConstants.NULL_FLOAT, 1.1f,
@@ -706,7 +807,7 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
                 ungrouped.getColumnSource("SValue").getShort(firstKey));
         assertEquals((short) 1, ungrouped.getColumnSource("SValue").getShort(secondKey));
 
-        assertEquals(QueryConstants.NULL_INT, ungrouped.getColumnSource("EulavI").getInt(firstKey));
+        assertEquals(NULL_INT, ungrouped.getColumnSource("EulavI").getInt(firstKey));
         assertEquals(1, ungrouped.getColumnSource("EulavI").getInt(secondKey));
 
         assertEquals(QueryConstants.NULL_LONG, ungrouped.getColumnSource("LValue").getLong(firstKey));
@@ -732,7 +833,7 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
                 ungrouped.getColumnSource("SValue").getPrevShort(firstKey));
         assertEquals((short) 1, ungrouped.getColumnSource("SValue").getPrevShort(secondKey));
 
-        assertEquals(QueryConstants.NULL_INT,
+        assertEquals(NULL_INT,
                 ungrouped.getColumnSource("EulavI").getPrevInt(firstKey));
         assertEquals(1, ungrouped.getColumnSource("EulavI").getPrevInt(secondKey));
 
