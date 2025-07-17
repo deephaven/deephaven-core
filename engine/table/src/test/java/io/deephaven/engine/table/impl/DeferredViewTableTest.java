@@ -342,6 +342,15 @@ public class DeferredViewTableTest {
                         filter.withBarriers(new Object()))));
     }
 
+
+    @Test
+    public void testNestedDisjunctiveMultiFilterRename() {
+        // goal of this test is to rename multiple inner filters via a top-level filter
+        final WhereFilter filter0 = new MatchFilter(MatchFilter.MatchType.Regular, "Y", "A");
+        final WhereFilter filter1 = new MatchFilter(MatchFilter.MatchType.Regular, "Y2", "A");
+        verifyFilterIsPrioritized(DisjunctiveFilter.of(filter0, filter1));
+    }
+
     private void verifyFilterIsPrioritized(final Filter filterToTest) {
         verifyFilterIsPrioritized(filterToTest, true);
     }
@@ -360,14 +369,15 @@ public class DeferredViewTableTest {
                 new RowSetCapturingFilter(new RangeFilter("I", Condition.LESS_THAN, "25000"));
 
         // here we expect that filter0 can jump over filter1 w/a rename
-        Table deferredTable = new DeferredViewTable(
+        final Table source = new DeferredViewTable(
                 resultDef,
                 "test",
                 new DeferredViewTable.TableReference(sourceTable),
                 ArrayTypeUtils.EMPTY_STRING_ARRAY,
                 SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY,
                 WhereFilter.ZERO_LENGTH_WHERE_FILTER_ARRAY)
-                .updateView("Y = X", "I = I + 0")
+                .updateView("Y = X", "Y2 = Y", "I = I + 0");
+        final Table deferredTable = source
                 .where(ConjunctiveFilter.of(
                         filter1,
                         WhereFilter.of(filterToTest)))
@@ -375,7 +385,8 @@ public class DeferredViewTableTest {
 
         Assert.eq(deferredTable.size(), "deferredTable.size()", 6250);
         if (expectsJump) {
-            Assert.eq(numRowsFiltered(filter1), "numRowsFiltered(filter1)", 25_000);
+            final Table expected = source.where(filterToTest);
+            Assert.eq(numRowsFiltered(filter1), "numRowsFiltered(filter1)", expected.size(), "expected.size()");
         } else {
             Assert.eq(numRowsFiltered(filter1), "numRowsFiltered(filter1)", 100_000);
         }

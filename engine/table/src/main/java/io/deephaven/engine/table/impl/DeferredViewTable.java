@@ -230,9 +230,7 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
                 @Override
                 public WhereFilter visitWhereFilter(WhereFilter filter) {
                     if (filter instanceof MatchFilter) {
-                        final MatchFilter matchFilter = (MatchFilter) filter;
-                        Assert.assertion(myRenames.size() == 1, "Match Filters should only use one column!");
-                        return matchFilter.renameFilter(myRenames);
+                        return ((MatchFilter) filter).renameFilter(myRenames);
                     } else if (filter instanceof ConditionFilter) {
                         return ((ConditionFilter) filter).renameFilter(myRenames);
                     }

@@ -2600,7 +2600,6 @@ public abstract class QueryTableWhereTest {
                 filter1));
         assertEquals(filter0.numRowsProcessed(), 100000);
         assertEquals(10_000, res0.size());
-        // TODO: should this really be [0, 25001] given that A_[ii - 1] should be null?
         assertEquals(filter1.numRowsProcessed(), 25001);
     }
 
@@ -2623,7 +2622,6 @@ public abstract class QueryTableWhereTest {
                 filter1.respectsBarriers(barrier)));
         assertEquals(filter0.numRowsProcessed(), 100000);
         assertEquals(10_000, res0.size());
-        // TODO: should this really be [0, 25001] given that A_[ii - 1] should be null?
         assertEquals(filter1.numRowsProcessed(), 25001);
     }
 
@@ -2646,7 +2644,6 @@ public abstract class QueryTableWhereTest {
                 RawString.of("A_[ii - 1] < 25000")));
         assertEquals(filter0.numRowsProcessed(), 100000);
         assertEquals(preFilter.numRowsProcessed(), 50000);
-        // TODO: is this a bug? should the first row be included given that A_[-1] is null/undefined?
         assertEquals(25_001, res0.size());
 
         filter0.reset();
