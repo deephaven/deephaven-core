@@ -171,6 +171,31 @@ class ApplicationTicket(Ticket):
 
         return cls(ticket_bytes=f'a/{app_id}/f/{field}'.encode(encoding='ascii'))
 
+class FunctionTicket(Ticket):
+    """A FunctionTicket is a ticket that references a registered function by name"""
+    def __init__(self, ticket_bytes: bytes):
+        """Initializes a FunctionTicket.
+
+        Args:
+            ticket_bytes (bytes): the raw bytes for the ticket
+        """
+        if not ticket_bytes:
+            raise DHError('FunctionTicket: ticket_bytes is None')
+        elif not ticket_bytes.startswith(b'f/'):
+            raise DHError(f'FunctionTicket: ticket_bytes {ticket_bytes} is not a FunctionTicket')
+        super().__init__(ticket_bytes)
+
+    @classmethod
+    def function_ticket(cls, name: str) -> FunctionTicket:
+        """Creates a ticket that references a function by name
+
+        Args:
+            name (str): the registered name of the function
+
+        Returns:
+            a FunctionTicket
+        """
+        return cls(ticket_bytes=f'f/{name}'.encode(encoding='ascii'))
 
 def _ticket_from_proto(ticket: ticket_pb2.Ticket) -> Ticket:
     """Creates a Ticket from a gRPC protobuf ticket.
