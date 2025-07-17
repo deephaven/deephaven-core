@@ -1274,6 +1274,23 @@ public final class ParquetTableFilterTest {
     }
 
     @Test
+    public void testInstantMatchFilter() {
+        final Instant baseTime = parseInstant("2023-01-01T00:00:00 NY");
+        QueryScope.addParam("baseTime", baseTime);
+        final Table source = TableTools.emptyTable(100).update("Timestamp = baseTime");
+
+        final String dest = Path.of(rootFile.getPath(), "ParquetTest_InstantMatchFilter.parquet").toString();
+        writeTable(source, dest);
+        final Table diskTable = ParquetTools.readTable(dest);
+        final Table memTable = diskTable.select();
+
+        filterAndVerifyResults(diskTable, memTable,
+                new MatchFilter(MatchFilter.MatchType.Regular, "Timestamp", baseTime));
+        filterAndVerifyResultsAllowEmpty(diskTable, memTable,
+                new MatchFilter(MatchFilter.MatchType.Inverted, "Timestamp", baseTime));
+    }
+
+    @Test
     public void testFilteringFloatInfinity() {
         final Table source = newTable(
                 floatCol("floats", Float.POSITIVE_INFINITY, Float.NEGATIVE_INFINITY, 1.0f, -1.0f));
