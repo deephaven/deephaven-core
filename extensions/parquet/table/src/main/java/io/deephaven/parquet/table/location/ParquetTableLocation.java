@@ -438,7 +438,6 @@ public class ParquetTableLocation extends AbstractTableLocation {
     @Override
     public void estimatePushdownFilterCost(
             final WhereFilter filter,
-            final Map<String, String> renameMap,
             final RowSet selection,
             final RowSet fullSet,
             final boolean usePrev,
@@ -446,7 +445,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
             final JobScheduler jobScheduler,
             final LongConsumer onComplete,
             final Consumer<Exception> onError) {
-        onComplete.accept(estimatePushdownFilterCost(filter, renameMap, selection, fullSet, usePrev, context));
+        onComplete.accept(estimatePushdownFilterCost(filter, selection, fullSet, usePrev, context));
     }
 
     private long estimatePushdownFilterCost(
