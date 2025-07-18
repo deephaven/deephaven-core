@@ -1936,8 +1936,8 @@ public abstract class QueryTableWhereTest {
 
         @Override
         public void estimatePushdownFilterCost(WhereFilter filter, RowSet selection, RowSet fullSet, boolean usePrev,
-                                                       PushdownFilterContext context, JobScheduler jobScheduler, LongConsumer onComplete,
- Consumer<Exception> onError) {
+                PushdownFilterContext context, JobScheduler jobScheduler, LongConsumer onComplete,
+                Consumer<Exception> onError) {
             onComplete.accept(pushdownCost);
         }
 

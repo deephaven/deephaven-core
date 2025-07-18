@@ -36,7 +36,8 @@ public interface PushdownFilterMatcher {
      * @param usePrev Whether to use the previous result
      * @param context The {@link PushdownFilterContext} to use for the pushdown operation.
      * @param jobScheduler The job scheduler to use for scheduling child jobs
-     * @param onComplete Consumer of the estimated cost of the pushdown operation. {@value Long#MAX_VALUE} indicates that the filter cannot be pushed down.
+     * @param onComplete Consumer of the estimated cost of the pushdown operation. {@value Long#MAX_VALUE} indicates
+     *        that the filter cannot be pushed down.
      * @param onError Consumer of any exceptions that occur during the estimate operation
      */
     void estimatePushdownFilterCost(
