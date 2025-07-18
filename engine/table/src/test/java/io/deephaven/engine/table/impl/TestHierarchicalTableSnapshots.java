@@ -208,6 +208,11 @@ public class TestHierarchicalTableSnapshots {
 
     @Test
     public void testSortedExpandAll() throws CsvReaderException {
+        testSortedExpandAll(false);
+        testSortedExpandAll(true);
+    }
+
+    private void testSortedExpandAll(final boolean absolute) throws CsvReaderException {
         final String data = "A,B,C,N\n" +
                 "Apple,One,Alpha,1\n" +
                 "Apple,One,Alpha,2\n" +
@@ -222,12 +227,16 @@ public class TestHierarchicalTableSnapshots {
                 "Banana,Three,Bravo,1\n" +
                 "Banana,Three,Bravo,1\n";
 
-        final Table source = CsvTools.readCsv(new ByteArrayInputStream(data.getBytes()));
+        Table source = CsvTools.readCsv(new ByteArrayInputStream(data.getBytes()));
+        if (absolute) {
+            source = source.update("N=-N");
+        }
 
         TableTools.show(source);
         final RollupTable rollupTable = source.rollup(List.of(Aggregation.of(AggSpec.sum(), "N")), "A", "B", "C");
         final RollupTable sortedRollup = rollupTable.withNodeOperations(
-                rollupTable.makeNodeOperationsRecorder(RollupTable.NodeType.Aggregated).sortDescending("N"));
+                rollupTable.makeNodeOperationsRecorder(RollupTable.NodeType.Aggregated)
+                        .sortDescending(absolute ? "__ABS__N" : "N"));
 
         final String[] arrayWithNull = new String[1];
         final Table keyTable = newTable(
@@ -255,7 +264,13 @@ public class TestHierarchicalTableSnapshots {
         // then we have six rows of banana, and that should be identical
         assertTableEquals(snapshot.slice(5, 11), snapshotSort.slice(1, 7));
         // then we need to check on the apple rows, but those are not actually identical because of sorting
-        Table appleExpected = snapshot.where("A=`Apple`").sortDescending("N");
+        final Table appleRows = snapshot.where("A=`Apple`");
+        final Table appleExpected;
+        if (absolute) {
+            appleExpected = appleRows.update("NA=-N").sortDescending("NA").dropColumns("NA");
+        } else {
+            appleExpected = appleRows.sortDescending("N");
+        }
         assertTableEquals(appleExpected, snapshotSort.slice(7, 11));
 
         freeSnapshotTableChunks(snapshot);
