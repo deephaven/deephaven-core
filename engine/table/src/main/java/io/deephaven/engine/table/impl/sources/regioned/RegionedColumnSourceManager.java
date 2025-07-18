@@ -80,9 +80,10 @@ public class RegionedColumnSourceManager
     private final Map<String, RegionedColumnSource<?>> columnSources = new LinkedHashMap<>();
 
     /**
-     * The column sources of this table as a map from column source to column name.
+     * The column sources of this table as a map from column source to column name. This map should not be accessed
+     * directly, but rather through {@link #columnSourceToName()}.
      */
-    private volatile Map<ColumnSource<?>, String> columnSourceToName;
+    private volatile IdentityHashMap<ColumnSource<?>, String> columnSourceToName;
 
     /**
      * An unmodifiable view of columnSources.
@@ -957,12 +958,13 @@ public class RegionedColumnSourceManager
     /**
      * Get (or create) a map from column source to column name.
      */
-    private Map<ColumnSource<?>, String> columnSourceToName() {
+    private IdentityHashMap<ColumnSource<?>, String> columnSourceToName() {
         if (columnSourceToName == null) {
             synchronized (this) {
                 if (columnSourceToName == null) {
-                    columnSourceToName = columnSources.entrySet().stream()
-                            .collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey));
+                    final IdentityHashMap<ColumnSource<?>, String> tmp = new IdentityHashMap<>(columnSources.size());
+                    columnSources.forEach((name, src) -> tmp.put(src, name));
+                    columnSourceToName = tmp;
                 }
             }
         }
@@ -980,7 +982,7 @@ public class RegionedColumnSourceManager
             Require.eq(filterColumns.size(), "filterColumns.size()",
                     columnSources.size(), "columnSources.size()");
 
-            final Map<ColumnSource<?>, String> columnSourceToName = manager.columnSourceToName();
+            final IdentityHashMap<ColumnSource<?>, String> columnSourceToName = manager.columnSourceToName();
             renameMap = new HashMap<>();
             for (int ii = 0; ii < filterColumns.size(); ii++) {
                 final String filterColumnName = filterColumns.get(ii);
