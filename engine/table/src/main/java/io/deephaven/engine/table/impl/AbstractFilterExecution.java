@@ -561,36 +561,43 @@ abstract class AbstractFilterExecution {
         // declares the barrier to any filter that respects it.
         final Map<Object, Collection<Object>> barrierDependencies = new HashMap<>();
 
-        for (int ii = 0; ii < filters.size(); ii++) {
-            final WhereFilter filter = filters.get(ii);
-            final PushdownFilterMatcher executor;
-            if (filter.getColumns().size() > 1) {
-                executor = PushdownPredicateManager.getSharedPPM(filter.getColumns().stream()
-                        .map(sourceTable::getColumnSource)
-                        .collect(Collectors.toList()));
-            } else if (filter.getColumns().size() == 1) {
-                final ColumnSource<?> columnSource =
-                        sourceTable.getColumnSource(filter.getColumns().get(0));
-                executor = (columnSource instanceof AbstractColumnSource)
-                        ? (AbstractColumnSource<?>) columnSource
-                        : null;
-            } else {
-                executor = null;
-            }
-            final List<ColumnSource<?>> filterSources = filter.getColumns().stream()
-                    .map(sourceTable::getColumnSource)
-                    .collect(Collectors.toList());
-            final PushdownFilterContext context = executor != null
-                    ? executor.makePushdownFilterContext(filter, filterSources)
-                    : null;
-            statelessFilters[ii] = new StatelessFilter(ii, filter, executor, context, barrierDependencies);
-
-            for (Object barrier : statelessFilters[ii].declaredBarriers) {
-                if (barrierDependencies.containsKey(barrier)) {
-                    throw new IllegalArgumentException("Duplicate barrier declared: " + barrier);
+        try {
+            for (int ii = 0; ii < filters.size(); ii++) {
+                final WhereFilter filter = filters.get(ii);
+                final PushdownFilterMatcher executor;
+                if (filter.getColumns().size() > 1) {
+                    executor = PushdownPredicateManager.getSharedPPM(filter.getColumns().stream()
+                            .map(sourceTable::getColumnSource)
+                            .collect(Collectors.toList()));
+                } else if (filter.getColumns().size() == 1) {
+                    final ColumnSource<?> columnSource =
+                            sourceTable.getColumnSource(filter.getColumns().get(0));
+                    executor = (columnSource instanceof AbstractColumnSource)
+                            ? (AbstractColumnSource<?>) columnSource
+                            : null;
+                } else {
+                    executor = null;
                 }
-                barrierDependencies.put(barrier, statelessFilters[ii].respectedBarriers);
+                final List<ColumnSource<?>> filterSources = filter.getColumns().stream()
+                        .map(sourceTable::getColumnSource)
+                        .collect(Collectors.toList());
+                final PushdownFilterContext context = executor != null
+                        ? executor.makePushdownFilterContext(filter, filterSources)
+                        : null;
+                statelessFilters[ii] = new StatelessFilter(ii, filter, executor, context, barrierDependencies);
+
+                for (Object barrier : statelessFilters[ii].declaredBarriers) {
+                    if (barrierDependencies.containsKey(barrier)) {
+                        throw new IllegalArgumentException("Duplicate barrier declared: " + barrier);
+                    }
+                    barrierDependencies.put(barrier, statelessFilters[ii].respectedBarriers);
+                }
             }
+        } catch (final Exception ex) {
+            try (final SafeCloseable ignored = () -> SafeCloseableArray.close(statelessFilters)) {
+                collectionNec.accept(ex);
+            }
+            return;
         }
 
         // Sort the filters by cost, with the lowest cost first.
