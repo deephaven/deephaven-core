@@ -17,6 +17,7 @@ import io.deephaven.engine.table.impl.select.FloatRangeFilter;
 import io.deephaven.engine.table.impl.select.MatchFilter;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
+import io.deephaven.engine.table.impl.util.ImmediateJobScheduler;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.parquet.table.location.ParquetColumnResolverMap;
@@ -41,6 +42,8 @@ import java.math.BigInteger;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 import static io.deephaven.base.FileUtils.convertToURI;
 import static io.deephaven.engine.table.impl.select.WhereFilterFactory.getExpression;
@@ -1106,13 +1109,18 @@ public final class ParquetTableFilterTest {
         final WhereFilter filter = getExpression(filterExpr);
         filter.init(source.getDefinition());
 
-        Assert.assertEquals(Long.MAX_VALUE,
-                location.estimatePushdownFilterCost(
-                        filter,
-                        source.getRowSet(),
-                        source.getRowSet(),
-                        false,
-                        TEST_PUSHDOWN_FILTER_CONTEXT));
+        final CompletableFuture<Long> costFuture = new CompletableFuture<>();
+        location.estimatePushdownFilterCost(
+                filter,
+                source.getRowSet(),
+                source.getRowSet(),
+                false,
+                TEST_PUSHDOWN_FILTER_CONTEXT,
+                new ImmediateJobScheduler(),
+                costFuture::complete,
+                costFuture::completeExceptionally);
+        Assert.assertTrue(costFuture.isDone());
+        Assert.assertEquals(Long.MAX_VALUE, (long) costFuture.join());
     }
 
     /**
