@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl.sources.regioned;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.*;
@@ -72,6 +73,12 @@ public class RegionedColumnSourceManager
      * The column sources that make up this table.
      */
     private final Map<String, RegionedColumnSource<?>> columnSources = new LinkedHashMap<>();
+
+    /**
+     * The column sources of this table as a map from column source to column name. This map should not be accessed
+     * directly, but rather through {@link #columnSourceToName()}.
+     */
+    private volatile IdentityHashMap<ColumnSource<?>, String> columnSourceToName;
 
     /**
      * An unmodifiable view of columnSources.
@@ -858,7 +865,6 @@ public class RegionedColumnSourceManager
     @Override
     public long estimatePushdownFilterCost(
             final WhereFilter filter,
-            final Map<String, String> renameMap,
             final RowSet selection,
             final RowSet fullSet,
             final boolean usePrev,
@@ -874,7 +880,7 @@ public class RegionedColumnSourceManager
             return overlappingRegionsSample
                     .parallelStream()
                     .mapToLong(overlappingRegion -> overlappingRegion.tle.location.estimatePushdownFilterCost(
-                            filter, renameMap, overlappingRegion.rowSet, fullSet, usePrev, context))
+                            filter, overlappingRegion.rowSet, fullSet, usePrev, context))
                     .min()
                     .orElse(Long.MAX_VALUE);
         }
@@ -883,7 +889,6 @@ public class RegionedColumnSourceManager
     @Override
     public void pushdownFilter(
             final WhereFilter filter,
-            final Map<String, String> renameMap,
             final RowSet input,
             final RowSet fullSet,
             final boolean usePrev,
@@ -933,8 +938,8 @@ public class RegionedColumnSourceManager
                                 }
                             }
                         };
-                        location.pushdownFilter(filter, renameMap, overlappingRowSet, fullSet, usePrev,
-                                context, costCeiling, jobScheduler, resultConsumer, onError);
+                        location.pushdownFilter(filter, overlappingRowSet, fullSet, usePrev, context, costCeiling,
+                                jobScheduler, resultConsumer, onError);
                     }
                     locationResume.run();
                 },
@@ -945,32 +950,62 @@ public class RegionedColumnSourceManager
                 onError);
     }
 
-    @Override
-    public Map<String, String> renameMap(final WhereFilter filter, final ColumnSource<?>[] filterSources) {
-        final Map<? extends ColumnSource<?>, String> lookupMap = getColumnSources().entrySet().stream()
-                .collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey));
-
-        final List<String> filterColumns = filter.getColumns();
-
-        final Map<String, String> renameMap = new HashMap<>();
-        for (int ii = 0; ii < filterColumns.size(); ii++) {
-            final String filterColumnName = filterColumns.get(ii);
-            final ColumnSource<?> filterSource = filterSources[ii];
-            final String localColumnName = lookupMap.get(filterSource);
-            if (localColumnName == null) {
-                throw new IllegalArgumentException(
-                        "No associated source for '" + filterColumnName + "' found in column sources");
+    /**
+     * Get (or create) a map from column source to column name.
+     */
+    private IdentityHashMap<ColumnSource<?>, String> columnSourceToName() {
+        if (columnSourceToName == null) {
+            synchronized (this) {
+                if (columnSourceToName == null) {
+                    final IdentityHashMap<ColumnSource<?>, String> tmp = new IdentityHashMap<>(columnSources.size());
+                    columnSources.forEach((name, src) -> tmp.put(src, name));
+                    columnSourceToName = tmp;
+                }
             }
-            if (localColumnName.equals(filterColumnName)) {
-                continue;
-            }
-            renameMap.put(filterColumnName, localColumnName);
         }
-        return renameMap;
+        return columnSourceToName;
+    }
+
+    public static class RegionedColumnSourcePushdownFilterContext extends BasePushdownFilterContext {
+        private final Map<String, String> renameMap;
+
+        public RegionedColumnSourcePushdownFilterContext(
+                final RegionedColumnSourceManager manager,
+                final WhereFilter filter,
+                final List<ColumnSource<?>> columnSources) {
+            final List<String> filterColumns = filter.getColumns();
+            Require.eq(filterColumns.size(), "filterColumns.size()",
+                    columnSources.size(), "columnSources.size()");
+
+            final IdentityHashMap<ColumnSource<?>, String> columnSourceToName = manager.columnSourceToName();
+            renameMap = new HashMap<>();
+            for (int ii = 0; ii < filterColumns.size(); ii++) {
+                final String filterColumnName = filterColumns.get(ii);
+                final ColumnSource<?> filterSource = columnSources.get(ii);
+                final String localColumnName = columnSourceToName.get(filterSource);
+                if (localColumnName == null) {
+                    throw new IllegalArgumentException(
+                            "No associated source for '" + filterColumnName + "' found in column sources");
+                }
+
+                // Add the rename (if needed)
+                if (localColumnName.equals(filterColumnName)) {
+                    continue;
+                }
+                renameMap.put(filterColumnName, localColumnName);
+            }
+        }
+
+        @Override
+        public Map<String, String> renameMap() {
+            return renameMap;
+        }
     }
 
     @Override
-    public PushdownFilterContext makePushdownFilterContext() {
-        return new BasePushdownFilterContext();
+    public PushdownFilterContext makePushdownFilterContext(
+            final WhereFilter filter,
+            final List<ColumnSource<?>> filterSources) {
+        return new RegionedColumnSourcePushdownFilterContext(this, filter, filterSources);
     }
 }

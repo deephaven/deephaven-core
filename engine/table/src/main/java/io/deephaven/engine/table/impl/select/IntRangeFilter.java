@@ -51,6 +51,14 @@ public class IntRangeFilter extends AbstractRangeFilter {
         }
     }
 
+    public final int getUpper() {
+        return upper;
+    }
+
+    public final int getLower() {
+        return lower;
+    }
+
     static WhereFilter makeIntRangeFilter(String columnName, Condition condition, int value) {
         switch (condition) {
             case LESS_THAN:
@@ -163,42 +171,5 @@ public class IntRangeFilter extends AbstractRangeFilter {
             }
         }
         return minPosition;
-    }
-
-    @Override
-    public boolean overlaps(
-            @NotNull final Object lower,
-            @NotNull final Object upper,
-            final boolean lowerInclusive,
-            final boolean upperInclusive) {
-
-        final int c1 = CompareUtils.compare(this.lower, upper);
-        if (c1 > 0) {
-            return false; // this.lower > inputUpper, no overlap possible.
-        }
-        final int c2 = CompareUtils.compare(lower, this.upper);
-        if (c2 > 0) {
-            return false; // inputLower > this.upper, no overlap possible.
-        }
-        // Test for complete inclusion and test the edges.
-        return (c1 < 0 && c2 < 0)
-                || (c1 == 0 && this.lowerInclusive && upperInclusive)
-                || (c2 == 0 && lowerInclusive && this.upperInclusive);
-    }
-
-    @Override
-    public boolean contains(@NotNull final Object value) {
-        final int c1 = CompareUtils.compare(this.lower, value);
-        if (c1 > 0) {
-            return false; // this.lower > value, no overlap possible.
-        }
-        final int c2 = CompareUtils.compare(value, this.upper);
-        if (c2 > 0) {
-            return false; // value > this.upper, no overlap possible.
-        }
-        // Test for complete inclusion and test the edges.
-        return (c1 < 0 && c2 < 0)
-                || (c1 == 0 && this.lowerInclusive)
-                || (c2 == 0 && this.upperInclusive);
     }
 }

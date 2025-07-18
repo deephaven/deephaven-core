@@ -4,37 +4,38 @@
 package io.deephaven.replicators;
 
 import java.io.IOException;
-import java.util.Collections;
 
 import static io.deephaven.replication.ReplicatePrimitiveCode.*;
 
 public class ReplicateChunkFilters {
     private static final String TASK = "replicateChunkFilters";
 
+    private static final String CHUNK_FILTER_PATH =
+            "engine/table/src/main/java/io/deephaven/engine/table/impl/chunkfilter/";
+    private static final String CHAR_CHUNK_FILTER = CHUNK_FILTER_PATH + "CharChunkFilter.java";
+    private static final String CHAR_RANGE_COMPARATOR = CHUNK_FILTER_PATH + "CharRangeComparator.java";
+    private static final String CHAR_CHUNK_MATCH_FILTER_FACTORY =
+            CHUNK_FILTER_PATH + "CharChunkMatchFilterFactory.java";
+
+    private static final String RANGE_FILTER_PATH =
+            "engine/table/src/main/java/io/deephaven/engine/table/impl/select/";
+    private static final String CHAR_RANGE_FILTER = RANGE_FILTER_PATH + "CharRangeFilter.java";
+    private static final String FLOAT_RANGE_FILTER = RANGE_FILTER_PATH + "FloatRangeFilter.java";
+
     public static void main(String[] args) throws IOException {
-        charToAllButBoolean(TASK,
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/chunkfilter/CharChunkFilter.java");
+        // *ChunkFilter.java
+        charToAllButBoolean(TASK, CHAR_CHUNK_FILTER);
 
-        charToShortAndByte(TASK,
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/chunkfilter/CharRangeComparator.java");
-        charToInteger(TASK,
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/chunkfilter/CharRangeComparator.java",
-                Collections.emptyMap());
-        charToLong(TASK,
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/chunkfilter/CharRangeComparator.java");
+        // *RangeComparator.java
+        charToAllButBoolean(TASK, CHAR_RANGE_COMPARATOR);
 
-        charToShortAndByte(TASK,
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/select/CharRangeFilter.java");
-        charToInteger(TASK, "engine/table/src/main/java/io/deephaven/engine/table/impl/select/CharRangeFilter.java",
-                Collections.emptyMap());
-        charToLong(TASK, "engine/table/src/main/java/io/deephaven/engine/table/impl/select/CharRangeFilter.java");
+        // *ChunkMatchFilterFactory.java
+        charToAllButBoolean(TASK, CHAR_CHUNK_MATCH_FILTER_FACTORY);
 
-        floatToAllFloatingPoints(TASK,
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/chunkfilter/FloatRangeComparator.java");
-        floatToAllFloatingPoints(TASK,
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/select/FloatRangeFilter.java");
-
-        charToAllButBoolean(TASK,
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/chunkfilter/CharChunkMatchFilterFactory.java");
+        // *RangeFilter.java
+        charToShortAndByte(TASK, CHAR_RANGE_FILTER);
+        charToIntegers(TASK, CHAR_RANGE_FILTER);
+        charToLong(TASK, CHAR_RANGE_FILTER);
+        floatToAllFloatingPoints(TASK, FLOAT_RANGE_FILTER);
     }
 }
