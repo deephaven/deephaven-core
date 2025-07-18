@@ -70,11 +70,6 @@ public class RegionedColumnSourceManager
     private final List<ColumnDefinition<?>> columnDefinitions;
 
     /**
-     * The column definitions of this table as a map from column name.
-     */
-    private volatile Map<String, ColumnDefinition<?>> columnNameToDefinition;
-
-    /**
      * The column sources that make up this table.
      */
     private final Map<String, RegionedColumnSource<?>> columnSources = new LinkedHashMap<>();
