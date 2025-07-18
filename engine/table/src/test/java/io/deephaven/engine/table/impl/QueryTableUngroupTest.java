@@ -861,7 +861,7 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
         }
     }
 
-    public void testUngroupAgnosticRebase() {
+    public void testUngroupRebase() {
         final int oldMinimumUngroupBase = QueryTable.setMinimumUngroupBase(2);
         try {
             ColumnHolder<?> arrayColumnHolder = col("Y", new int[] {10, 20}, new int[] {110, 120, 130});
