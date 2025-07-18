@@ -467,9 +467,9 @@ abstract class AbstractFilterExecution {
                 localInput.setValue(result);
             }
             // This filter is complete, sort the remaining filters and conclude.
-            final CompletableFuture<?> f =
+            final CompletableFuture<?> updateAndSortFuture =
                     maybeUpdateAndSortStatelessFilters(statelessFilters, filterIdx + 1, localInput.getValue());
-            whenComplete(f, filterComplete, filterNec);
+            whenComplete(updateAndSortFuture, filterComplete, filterNec);
         };
 
         // Result consumer for push-down filtering.
@@ -479,17 +479,17 @@ abstract class AbstractFilterExecution {
 
             if (pushdownResult.maybeMatch().isEmpty()) {
                 localInput.setValue(pushdownResult.match().copy());
-                final CompletableFuture<?> f =
+                final CompletableFuture<?> updateAndSortFuture =
                         maybeUpdateAndSortStatelessFilters(statelessFilters, filterIdx + 1, localInput.getValue());
-                whenComplete(f, filterComplete, filterNec)
+                whenComplete(updateAndSortFuture, filterComplete, filterNec)
                         .whenComplete((x, e) -> pushdownResult.close());
                 return;
             }
 
             // We still have some maybe rows, sort the filters again, including the current index.
-            final CompletableFuture<?> f =
+            final CompletableFuture<?> updateAndSortFuture =
                     maybeUpdateAndSortStatelessFilters(statelessFilters, filterIdx, localInput.getValue());
-            whenComplete(f, () -> {
+            whenComplete(updateAndSortFuture, () -> {
                 // If there is a new filter at the current index, need to evaluate it.
                 if (!sf.equals(statelessFilters[filterIdx])) {
                     // Use the union of the match and maybe rows as the input for the next filter.
@@ -594,8 +594,9 @@ abstract class AbstractFilterExecution {
         }
 
         // Sort the filters by cost, with the lowest cost first.
-        final CompletableFuture<?> f = maybeUpdateAndSortStatelessFilters(statelessFilters, 0, localInput.getValue());
-        whenComplete(f, () -> {
+        final CompletableFuture<?> updateAndSortFuture =
+                maybeUpdateAndSortStatelessFilters(statelessFilters, 0, localInput.getValue());
+        whenComplete(updateAndSortFuture, () -> {
             // Iterate serially through the stateless filters in this set. Each filter will successively
             // restrict the input to the next filter, until we reach the end of the filter chain or no rows match.
             jobScheduler().iterateSerial(
