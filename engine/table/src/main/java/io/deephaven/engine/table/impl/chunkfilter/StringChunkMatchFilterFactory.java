@@ -6,6 +6,7 @@ package io.deephaven.engine.table.impl.chunkfilter;
 import io.deephaven.hash.KeyedObjectHashSet;
 import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.base.string.cache.CharSequenceUtils;
+import io.deephaven.util.annotations.InternalUseOnly;
 
 class StringChunkMatchFilterFactory {
     private static final class CIStringKey implements KeyedObjectKey<String, String> {

@@ -27,7 +27,7 @@ public interface PushdownFilterContext extends SafeCloseable {
     };
 
     /**
-     * Return the cost of the pushdown filter operations that have already been executed for this context.
+     * Returns the maximum cost of the pushdown filter operation that has already been executed for this context.
      */
     long executedFilterCost();
 

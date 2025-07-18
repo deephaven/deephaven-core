@@ -49,6 +49,14 @@ public abstract class AbstractRangeFilter extends WhereFilterImpl implements Exp
         this.lowerInclusive = lowerInclusive;
     }
 
+    public final boolean isUpperInclusive() {
+        return upperInclusive;
+    }
+
+    public final boolean isLowerInclusive() {
+        return lowerInclusive;
+    }
+
     @Override
     public Optional<ChunkFilter> chunkFilter() {
         return Optional.of(chunkFilter);
@@ -113,42 +121,4 @@ public abstract class AbstractRangeFilter extends WhereFilterImpl implements Exp
 
     @Override
     public void setRecomputeListener(RecomputeListener listener) {}
-
-    /**
-     * Returns true if the range filter overlaps with the given range. This function is intended to be accurate rather
-     * than fast and is not recommended for performance-critical value comparison.
-     *
-     * @param lower the lower value bound of the range
-     * @param upper the upper value bound of the range
-     * @param lowerInclusive whether the lower bound is inclusive
-     * @param upperInclusive whether the upper bound is inclusive
-     * @return {@code true} if the range filter overlaps with the given range, {@code false} otherwise
-     */
-    public abstract boolean overlaps(
-            @NotNull final Object lower,
-            @NotNull final Object upper,
-            final boolean lowerInclusive,
-            final boolean upperInclusive);
-
-    /**
-     * Returns true if the range filter overlaps with the given range (assumes the provided min/max values are
-     * inclusive). This function is intended to be accurate rather than fast and is not recommended for
-     * performance-critical value comparison.
-     * 
-     * @param min the minimum value in the given range
-     * @param max the maximum value in the given range
-     * @return {@code true} if the range filter overlaps with the given range, {@code false} otherwise
-     */
-    public boolean overlaps(@NotNull final Object min, @NotNull final Object max) {
-        return overlaps(min, max, true, true);
-    }
-
-    /**
-     * Returns true if the given value is found within the range filter. This function is intended to be accurate rather
-     * than fast and is not recommended for performance-critical value comparison.
-     *
-     * @param value the value to check
-     * @return {@code true} if the range filter matches the given value, {@code false} otherwise
-     */
-    public abstract boolean contains(@NotNull final Object value);
 }

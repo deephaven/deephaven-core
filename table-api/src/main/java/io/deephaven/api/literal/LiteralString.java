@@ -4,8 +4,6 @@
 package io.deephaven.api.literal;
 
 import io.deephaven.annotations.SimpleStyle;
-import io.deephaven.util.QueryConstants;
-import org.immutables.value.Value.Check;
 import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Parameter;
 

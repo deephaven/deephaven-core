@@ -1,6 +1,10 @@
 //
 // Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharRangeComparator and run "./gradlew replicateChunkFilters" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.chunkfilter;
 
 import io.deephaven.util.compare.FloatComparisons;
@@ -18,8 +22,8 @@ public class FloatRangeComparator {
         }
     }
 
-    private final static class FloatDoubleInclusiveInclusiveFilter extends FloatFloatFilter {
-        private FloatDoubleInclusiveInclusiveFilter(float lower, float upper) {
+    private final static class FloatFloatInclusiveInclusiveFilter extends FloatFloatFilter {
+        private FloatFloatInclusiveInclusiveFilter(float lower, float upper) {
             super(lower, upper);
         }
 
@@ -29,8 +33,8 @@ public class FloatRangeComparator {
         }
     }
 
-    private final static class FloatDoubleInclusiveExclusiveFilter extends FloatFloatFilter {
-        private FloatDoubleInclusiveExclusiveFilter(float lower, float upper) {
+    private final static class FloatFloatInclusiveExclusiveFilter extends FloatFloatFilter {
+        private FloatFloatInclusiveExclusiveFilter(float lower, float upper) {
             super(lower, upper);
         }
 
@@ -40,8 +44,8 @@ public class FloatRangeComparator {
         }
     }
 
-    private final static class FloatDoubleExclusiveInclusiveFilter extends FloatFloatFilter {
-        private FloatDoubleExclusiveInclusiveFilter(float lower, float upper) {
+    private final static class FloatFloatExclusiveInclusiveFilter extends FloatFloatFilter {
+        private FloatFloatExclusiveInclusiveFilter(float lower, float upper) {
             super(lower, upper);
         }
 
@@ -51,8 +55,8 @@ public class FloatRangeComparator {
         }
     }
 
-    private final static class FloatDoubleExclusiveExclusiveFilter extends FloatFloatFilter {
-        private FloatDoubleExclusiveExclusiveFilter(float lower, float upper) {
+    private final static class FloatFloatExclusiveExclusiveFilter extends FloatFloatFilter {
+        private FloatFloatExclusiveExclusiveFilter(float lower, float upper) {
             super(lower, upper);
         }
 
@@ -66,15 +70,15 @@ public class FloatRangeComparator {
             boolean upperInclusive) {
         if (lowerInclusive) {
             if (upperInclusive) {
-                return new FloatDoubleInclusiveInclusiveFilter(lower, upper);
+                return new FloatFloatInclusiveInclusiveFilter(lower, upper);
             } else {
-                return new FloatDoubleInclusiveExclusiveFilter(lower, upper);
+                return new FloatFloatInclusiveExclusiveFilter(lower, upper);
             }
         } else {
             if (upperInclusive) {
-                return new FloatDoubleExclusiveInclusiveFilter(lower, upper);
+                return new FloatFloatExclusiveInclusiveFilter(lower, upper);
             } else {
-                return new FloatDoubleExclusiveExclusiveFilter(lower, upper);
+                return new FloatFloatExclusiveExclusiveFilter(lower, upper);
             }
         }
     }

@@ -1935,14 +1935,14 @@ public abstract class QueryTableWhereTest {
         }
 
         @Override
-        public void estimatePushdownFilterCost(WhereFilter filter, Map<String, String> renameMap, RowSet selection,
-                RowSet fullSet, boolean usePrev, PushdownFilterContext context, JobScheduler jobScheduler,
-                LongConsumer onComplete, Consumer<Exception> onError) {
+        public void estimatePushdownFilterCost(WhereFilter filter, RowSet selection, RowSet fullSet, boolean usePrev,
+                                                       PushdownFilterContext context, JobScheduler jobScheduler, LongConsumer onComplete,
+ Consumer<Exception> onError) {
             onComplete.accept(pushdownCost);
         }
 
         @Override
-        public void pushdownFilter(final WhereFilter filter, final Map<String, String> renameMap, final RowSet input,
+        public void pushdownFilter(final WhereFilter filter, final RowSet input,
                 final RowSet fullSet, final boolean usePrev, final PushdownFilterContext context,
                 final long costCeiling, final JobScheduler jobScheduler, final Consumer<PushdownResult> onComplete,
                 final Consumer<Exception> onError) {
@@ -2117,7 +2117,6 @@ public abstract class QueryTableWhereTest {
         @Override
         public void estimatePushdownFilterCost(
                 final WhereFilter filter,
-                final Map<String, String> renameMap,
                 final RowSet selection,
                 final RowSet fullSet,
                 final boolean usePrev,
@@ -2131,7 +2130,6 @@ public abstract class QueryTableWhereTest {
         @Override
         public void pushdownFilter(
                 final WhereFilter filter,
-                final Map<String, String> renameMap,
                 final RowSet selection,
                 final RowSet fullSet,
                 final boolean usePrev,
@@ -2156,12 +2154,9 @@ public abstract class QueryTableWhereTest {
         }
 
         @Override
-        public Map<String, String> renameMap(WhereFilter filter, ColumnSource<?>[] filterSources) {
-            return Map.of();
-        }
-
-        @Override
-        public PushdownFilterContext makePushdownFilterContext() {
+        public PushdownFilterContext makePushdownFilterContext(
+                final WhereFilter filter,
+                final List<ColumnSource<?>> filterSources) {
             return PushdownFilterContext.NO_PUSHDOWN_CONTEXT;
         }
     }
