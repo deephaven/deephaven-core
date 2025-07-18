@@ -40,21 +40,21 @@ public interface TableDataArrayRetriever {
      */
     Object[] createDataArrays(int len);
 
-    default void fillDataArrays(boolean usePrev, Object[] recordDataArrs, RowSet tableIndex) {
-        fillDataArrays(usePrev, tableIndex, recordDataArrs, null);
+    default void fillDataArrays(boolean usePrev, Object[] recordDataArrs, RowSet rowSet) {
+        fillDataArrays(usePrev, rowSet, recordDataArrs, null);
     }
 
     /**
-     * Fills the {@code dataArrs} with data from column sources, for the positions given by {@code tableIndex}. This
+     * Fills the {@code dataArrs} with data from column sources, for the positions given by {@code rowSet}. This
      * <b>must</b> be called <b>with</b> the LiveTableMonitor lock or under
      * {@link io.deephaven.engine.table.impl.remote.ConstructSnapshot ConstructSnapshot}.
      *
      * @param usePrev Whether to retrieve prev data instead of current
-     * @param tableIndex Index of rows for which to retrieve data
+     * @param rowSet Index of rows for which to retrieve data
      * @param dataArrs Arrays to populate with table data (created by {@link #createDataArrays})
-     * @param keyConsumer Consumer that will be passed all keys in {@code tableIndex}
+     * @param keyConsumer Consumer that will be passed all keys in {@code rowSet}
      */
-    void fillDataArrays(boolean usePrev, RowSet tableIndex, Object[] dataArrs, @NotNull TLongList keyConsumer);
+    void fillDataArrays(boolean usePrev, RowSet rowSet, Object[] dataArrs, @NotNull TLongList keyConsumer);
 
     static TableDataArrayRetriever makeDefault(final List<String> columnNames, Table table) {
         return new TableDataArrayRetrieverImpl(columnNames, table);

@@ -104,25 +104,25 @@ public abstract class AbstractTableDataArrayRetrieverImpl implements TableDataAr
 
     public static void fillDataArrays(final ColumnSource<?>[] columnSources,
             final boolean usePrev,
-            final RowSet tableIndex,
+            final RowSet rowSet,
             final Object[] dataArrs,
             final TLongList recordDataKeys) {
-        final int chunkSize = Math.min(MAX_CHUNK_SIZE, tableIndex.intSize());
+        final int chunkSize = Math.min(MAX_CHUNK_SIZE, rowSet.intSize());
         try (final ContextHolder contextHolder = new ContextHolder(chunkSize, columnSources)) {
-            AbstractTableDataArrayRetrieverImpl.fillDataArrays(usePrev, tableIndex, columnSources, dataArrs,
+            AbstractTableDataArrayRetrieverImpl.fillDataArrays(usePrev, rowSet, columnSources, dataArrs,
                     recordDataKeys, contextHolder, 0);
         }
     }
 
     public static void fillDataArrays(final boolean usePrev,
-            final RowSet tableIndex,
+            final RowSet rowSet,
             final ColumnSource<?>[] columnSources,
             final Object[] dataArrs,
             final TLongList recordDataKeys,
             final ContextHolder contextHolder,
             final int startOffset) {
         int arrIdx = startOffset;
-        try (final RowSequence.Iterator iter = tableIndex.getRowSequenceIterator()) {
+        try (final RowSequence.Iterator iter = rowSet.getRowSequenceIterator()) {
             while (iter.hasMore()) {
                 final RowSequence rowSequence = iter.getNextRowSequenceWithLength(contextHolder.getChunkSize());
                 final int rowSequenceSize = rowSequence.intSize();

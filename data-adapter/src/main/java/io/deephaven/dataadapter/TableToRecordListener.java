@@ -150,12 +150,12 @@ public class TableToRecordListener<T> extends InstrumentedTableUpdateListenerAda
                         "UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked() to instantiate under the lock.");
             }
 
-            final RowSet tableIndex = table.getRowSet();
-            final int tableSize = tableIndex.intSize();
+            final RowSet rowSet = table.getRowSet();
+            final int tableSize = rowSet.intSize();
 
             // Read the data into arrays:
             final Object[] dataArraysInitialData = tableDataArrayRetriever.createDataArrays(tableSize);
-            tableDataArrayRetriever.fillDataArrays(false, dataArraysInitialData, tableIndex);
+            tableDataArrayRetriever.fillDataArrays(false, dataArraysInitialData, rowSet);
 
             // Process the arrays of data into records:
             processUpdateRecords(UpdateType.ADDED_UPDATED, tableSize, dataArraysInitialData);

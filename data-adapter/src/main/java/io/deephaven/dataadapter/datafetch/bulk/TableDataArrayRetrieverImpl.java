@@ -24,8 +24,8 @@ public final class TableDataArrayRetrieverImpl extends AbstractTableDataArrayRet
         this.columnSources = columnNames.stream().map(table::getColumnSource).toArray(ColumnSource[]::new);
     }
 
-    public void fillDataArrays(final boolean usePrev, final RowSet tableIndex, final Object[] dataArrs,
+    public void fillDataArrays(final boolean usePrev, final RowSet rowSet, final Object[] dataArrs,
             final @NotNull TLongList keyConsumer) {
-        fillDataArrays(columnSources, usePrev, tableIndex, dataArrs, keyConsumer);
+        fillDataArrays(columnSources, usePrev, rowSet, dataArrs, keyConsumer);
     }
 }
