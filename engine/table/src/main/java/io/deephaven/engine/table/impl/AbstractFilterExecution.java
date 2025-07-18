@@ -422,18 +422,20 @@ abstract class AbstractFilterExecution {
         }
     }
 
-    private static CompletableFuture<?> whenComplete(final CompletableFuture<?> f, final Runnable filterComplete,
-            final Consumer<Exception> filterNec) {
-        return f.whenComplete((x, e) -> {
+    private static CompletableFuture<?> whenComplete(
+            final CompletableFuture<?> future,
+            final Runnable onComplete,
+            final Consumer<Exception> onError) {
+        return future.whenComplete((x, e) -> {
             if (e == null) {
-                filterComplete.run();
+                onComplete.run();
             }
         }).whenComplete((x, e) -> {
             if (e != null) {
                 if (e instanceof Exception) {
-                    filterNec.accept((Exception) e);
+                    onError.accept((Exception) e);
                 } else {
-                    filterNec.accept(new CompletionException(e));
+                    onError.accept(new CompletionException(e));
                 }
             }
         });
@@ -559,50 +561,41 @@ abstract class AbstractFilterExecution {
         // declares the barrier to any filter that respects it.
         final Map<Object, Collection<Object>> barrierDependencies = new HashMap<>();
 
-        final MutableBoolean filtersReady = new MutableBoolean(false);
-        try (final SafeCloseable ignored = () -> {
-            if (!filtersReady.booleanValue()) {
-                SafeCloseableArray.close(statelessFilters);
-            }
-        }) {
-            for (int ii = 0; ii < filters.size(); ii++) {
-                final WhereFilter filter = filters.get(ii);
-                final PushdownFilterMatcher executor;
-                if (filter.getColumns().size() > 1) {
-                    executor = PushdownPredicateManager.getSharedPPM(filter.getColumns().stream()
-                            .map(sourceTable::getColumnSource)
-                            .collect(Collectors.toList()));
-                } else if (filter.getColumns().size() == 1) {
-                    final ColumnSource<?> columnSource =
-                            sourceTable.getColumnSource(filter.getColumns().get(0));
-                    executor = (columnSource instanceof AbstractColumnSource)
-                            ? (AbstractColumnSource<?>) columnSource
-                            : null;
-                } else {
-                    executor = null;
-                }
-                final List<ColumnSource<?>> filterSources = filter.getColumns().stream()
+        for (int ii = 0; ii < filters.size(); ii++) {
+            final WhereFilter filter = filters.get(ii);
+            final PushdownFilterMatcher executor;
+            if (filter.getColumns().size() > 1) {
+                executor = PushdownPredicateManager.getSharedPPM(filter.getColumns().stream()
                         .map(sourceTable::getColumnSource)
-                        .collect(Collectors.toList());
-                final PushdownFilterContext context = executor != null
-                        ? executor.makePushdownFilterContext(filter, filterSources)
+                        .collect(Collectors.toList()));
+            } else if (filter.getColumns().size() == 1) {
+                final ColumnSource<?> columnSource =
+                        sourceTable.getColumnSource(filter.getColumns().get(0));
+                executor = (columnSource instanceof AbstractColumnSource)
+                        ? (AbstractColumnSource<?>) columnSource
                         : null;
-                statelessFilters[ii] = new StatelessFilter(ii, filter, executor, context, barrierDependencies);
-
-                for (Object barrier : statelessFilters[ii].declaredBarriers) {
-                    if (barrierDependencies.containsKey(barrier)) {
-                        throw new IllegalArgumentException("Duplicate barrier declared: " + barrier);
-                    }
-                    barrierDependencies.put(barrier, statelessFilters[ii].respectedBarriers);
-                }
+            } else {
+                executor = null;
             }
+            final List<ColumnSource<?>> filterSources = filter.getColumns().stream()
+                    .map(sourceTable::getColumnSource)
+                    .collect(Collectors.toList());
+            final PushdownFilterContext context = executor != null
+                    ? executor.makePushdownFilterContext(filter, filterSources)
+                    : null;
+            statelessFilters[ii] = new StatelessFilter(ii, filter, executor, context, barrierDependencies);
+
+            for (Object barrier : statelessFilters[ii].declaredBarriers) {
+                if (barrierDependencies.containsKey(barrier)) {
+                    throw new IllegalArgumentException("Duplicate barrier declared: " + barrier);
+                }
+                barrierDependencies.put(barrier, statelessFilters[ii].respectedBarriers);
+            }
+        }
 
         // Sort the filters by cost, with the lowest cost first.
         final CompletableFuture<?> f = maybeUpdateAndSortStatelessFilters(statelessFilters, 0, localInput.getValue());
         whenComplete(f, () -> {
-            // The job scheduler will close the stateless filters when it is done.
-            filtersReady.setTrue();
-
             // Iterate serially through the stateless filters in this set. Each filter will successively
             // restrict the input to the next filter, until we reach the end of the filter chain or no rows match.
             jobScheduler().iterateSerial(
@@ -619,15 +612,11 @@ abstract class AbstractFilterExecution {
                         executeStatelessFilter(statelessFilters, filterIdx, localInput, filterResume, filterNec);
                     },
                     collectionResume,
-                    () -> SafeCloseableArray.close(statelessFilters),
-                    exception -> {
-                        try {
-                            collectionNec.accept(exception);
-                        } finally {
-                            SafeCloseableArray.close(statelessFilters);
-                        }
-                    });
-        }, collectionNec);
+                    () -> {
+                    },
+                    collectionNec);
+        }, collectionNec)
+                .whenComplete((x, e) -> SafeCloseableArray.close(statelessFilters));
     }
 
     /**
