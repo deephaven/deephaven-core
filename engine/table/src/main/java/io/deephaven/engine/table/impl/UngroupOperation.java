@@ -499,33 +499,40 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
             final RowSetBuilderRandom removedByShiftBuilder = RowSetFactory.builderRandom();
             final RowSetBuilderRandom addedByShiftBuilder = RowSetFactory.builderRandom();
             if (upstream.shifted().nonempty()) {
-                final long currentBaseSize = (1L << newBase) - 1;
+                try (final RowSequence.Iterator rsit = resultRowset.getRowSequenceIterator()) {
+                    final long currentBaseSize = (1L << newBase) - 1;
 
-                final RowSetShiftData upstreamShift = upstream.shifted();
-                final long shiftSize = upstreamShift.size();
-                for (int ii = 0; ii < shiftSize; ++ii) {
-                    final long begin = upstreamShift.getBeginRange(ii);
-                    final long end = upstreamShift.getEndRange(ii);
-                    final long shiftDelta = upstreamShift.getShiftDelta(ii);
+                    final RowSetShiftData upstreamShift = upstream.shifted();
+                    final long shiftSize = upstreamShift.size();
+                    for (int ii = 0; ii < shiftSize; ++ii) {
+                        final long begin = upstreamShift.getBeginRange(ii);
+                        final long end = upstreamShift.getEndRange(ii);
+                        final long shiftDelta = upstreamShift.getShiftDelta(ii);
 
-                    final long resultShiftAmount = shiftDelta << (long) newBase;
+                        final long resultShiftAmount = shiftDelta << (long) newBase;
 
-                    for (long rk = begin; rk <= end; rk++) {
-                        final long oldRangeStart = rk << (long) newBase;
-                        final long oldRangeEnd = (rk << (long) newBase) + currentBaseSize;
-                        // get the range from our result rowset, I'm not sure that I love creating a rowset for each
-                        // row; we could instead do iteration because we are not actually modifying this thing as we
-                        // go
-                        try (final WritableRowSet expandedRowsetForRow =
-                                resultRowset.subSetByKeyRange(oldRangeStart, oldRangeEnd)) {
-                            if (expandedRowsetForRow.isNonempty()) {
-                                // no need to shift things that don't exist anymore
-                                shiftBuilder.shiftRange(oldRangeStart, oldRangeEnd, resultShiftAmount);
-                                removedByShiftBuilder.addRowSet(expandedRowsetForRow);
-                                // move it over
-                                expandedRowsetForRow.shiftInPlace(resultShiftAmount);
-                                addedByShiftBuilder.addRowSet(expandedRowsetForRow);
+                        for (long rk = begin; rk <= end; rk++) {
+                            final long oldRangeStart = rk << (long) newBase;
+                            final long oldRangeEnd = (rk << (long) newBase) + currentBaseSize;
+
+                            if (!rsit.advance(oldRangeStart)) {
+                                break;
                             }
+
+                            // get the range from our result rowset
+                            final RowSequence expandedRowSequence = rsit.getNextRowSequenceThrough(oldRangeEnd);
+                            if (expandedRowSequence.isEmpty()) {
+                                // no need to shift things that don't exist anymore
+                                continue;
+                            }
+
+                            shiftBuilder.shiftRange(oldRangeStart, oldRangeEnd, resultShiftAmount);
+                            // should only be one range
+                            expandedRowSequence.forAllRowKeyRanges((rangeStart, rangeEnd) -> {
+                                removedByShiftBuilder.addRange(rangeStart, rangeEnd);
+                                addedByShiftBuilder.addRange(rangeStart + resultShiftAmount,
+                                        rangeEnd + resultShiftAmount);
+                            });
                         }
                     }
                 }
