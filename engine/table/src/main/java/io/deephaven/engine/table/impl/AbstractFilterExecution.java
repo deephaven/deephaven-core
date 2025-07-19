@@ -20,7 +20,6 @@ import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseableArray;
-import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 
@@ -30,8 +29,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
+import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -178,7 +176,7 @@ abstract class AbstractFilterExecution {
 
         jobScheduler().iterateParallel(
                 ExecutionContext.getContext(),
-                this::append,
+                this::appendFilterExecution,
                 JobScheduler.DEFAULT_CONTEXT_FACTORY,
                 0, targetSegments,
                 (localContext, idx, nec, resume) -> {
@@ -207,7 +205,12 @@ abstract class AbstractFilterExecution {
                 });
     }
 
-    public LogOutput append(LogOutput output) {
+    public LogOutput appendFilterEstimation(LogOutput output) {
+        return output.append("FilterEstimation{")
+                .append(System.identityHashCode(this)).append(": ");
+    }
+
+    public LogOutput appendFilterExecution(LogOutput output) {
         return output.append("FilterExecution{")
                 .append(System.identityHashCode(this)).append(": ");
     }
@@ -274,23 +277,16 @@ abstract class AbstractFilterExecution {
         }
 
         /**
-         * Returns a future whose successful completion means that the pushdown cost for this filter will have been
-         * updated (or set to Long.MAX_VALUE if pushdown is not supported).
-         *
-         * @return the future
+         * Schedules pushdown filter cost estimation for {@link #pushdownMatcher}. After {@link #pushdownFilterCost} has
+         * been set (or set to {@link Long#MAX_VALUE} if pushdown is not supported), {@code onComplete} will be called.
          */
-        public CompletableFuture<Void> updatePushdownFilterCost(final RowSet selection) {
-            if (pushdownMatcher == null) {
-                pushdownFilterCost = Long.MAX_VALUE;
-                return CompletableFuture.completedFuture(null);
-            }
-            final CompletableFuture<Void> future = new CompletableFuture<>();
-            pushdownMatcher.estimatePushdownFilterCost(filter, selection, sourceTable.getRowSet(), usePrev,
-                    context, jobScheduler(), value -> {
-                        StatelessFilter.this.pushdownFilterCost = value;
-                        future.complete(null);
-                    }, future::completeExceptionally);
-            return future;
+        public void scheduleUpdatePushdownFilterCost(final RowSet selection, final Runnable onComplete,
+                final Consumer<Exception> onError) {
+            pushdownMatcher.estimatePushdownFilterCost(filter, selection, sourceTable.getRowSet(), usePrev, context,
+                    jobScheduler(), value -> {
+                        pushdownFilterCost = value;
+                        onComplete.run();
+                    }, onError);
         }
 
         @Override
@@ -325,52 +321,33 @@ abstract class AbstractFilterExecution {
     }
 
     /**
-     * Returns a future whose successful completion means that the pushdown cost for all the filters have been updated,
-     * and the filters have been sorted by the new cost, starting at the given index.
-     *
-     * @return the future
+     * Updates and sorts the filters according to the estimated pushdown cost, starting at the given index.
+     * {@code onComplete} is invoked once this is done. If there is an exception during the estimation, sorting, or
+     * invocation of {@code onComplete}, {@code onError} will be called with that error.
      */
-    private static CompletableFuture<Void> maybeUpdateAndSortStatelessFilters(final StatelessFilter[] filters,
+    private void scheduleAndSortCostEstimates(
+            final StatelessFilter[] filters,
             final int startIndex,
-            final RowSet selection) {
-        if (startIndex >= filters.length) {
-            return CompletableFuture.completedFuture(null);
-        }
-        final List<CompletableFuture<?>> filterFutures = new ArrayList<>(filters.length - startIndex);
-        // Update the pushdown filter cost for each filter in the array, starting at the given index.
-        for (int i = startIndex; i < filters.length; i++) {
-            filterFutures.add(filters[i].updatePushdownFilterCost(selection));
-        }
-        return allOfOrException(filterFutures).whenComplete((x, e) -> {
-            if (e == null) {
-                // Sort the filters by non-descending cost, starting at the given index.
-                Arrays.sort(filters, startIndex, filters.length);
-            }
-        });
-    }
-
-    private static CompletableFuture<Void> allOfOrException(final Collection<CompletableFuture<?>> futures) {
-        if (futures.isEmpty()) {
-            return CompletableFuture.completedFuture(null);
-        }
-        if (futures.size() == 1) {
-            return futures.iterator().next().thenApply(AbstractFilterExecution::toVoid);
-        }
-        // errorFuture will never be completed normally
-        final CompletableFuture<Void> errorFuture = new CompletableFuture<>();
-        for (final CompletableFuture<?> future : futures) {
-            future.whenComplete((x, e) -> {
-                if (e != null) {
-                    errorFuture.completeExceptionally(e);
-                }
-            });
-        }
-        return CompletableFuture.anyOf(errorFuture, CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new)))
-                .thenApply(AbstractFilterExecution::toVoid);
-    }
-
-    private static Void toVoid(Object x) {
-        return null;
+            final RowSet selection,
+            final Runnable onComplete,
+            final Consumer<Exception> onError) {
+        jobScheduler().iterateParallel(
+                ExecutionContext.getContext(),
+                this::appendFilterEstimation,
+                JobScheduler.DEFAULT_CONTEXT_FACTORY,
+                startIndex,
+                filters.length - startIndex,
+                (taskThreadContext, index, nestedErrorConsumer, resume) -> {
+                    filters[index].scheduleUpdatePushdownFilterCost(selection, resume, nestedErrorConsumer);
+                },
+                () -> {
+                    // Sort the filters by non-descending cost, starting at the given index.
+                    Arrays.sort(filters, startIndex, filters.length);
+                    onComplete.run();
+                },
+                () -> {
+                },
+                onError);
     }
 
     /**
@@ -422,25 +399,6 @@ abstract class AbstractFilterExecution {
         }
     }
 
-    private static CompletableFuture<?> whenComplete(
-            final CompletableFuture<?> future,
-            final Runnable onComplete,
-            final Consumer<Exception> onError) {
-        return future.whenComplete((x, e) -> {
-            if (e == null) {
-                onComplete.run();
-            }
-        }).whenComplete((x, e) -> {
-            if (e != null) {
-                if (e instanceof Exception) {
-                    onError.accept((Exception) e);
-                } else {
-                    onError.accept(new CompletionException(e));
-                }
-            }
-        });
-    }
-
     /**
      * Execute the stateless filter at the provided index and pass the result to the consumer.
      */
@@ -451,7 +409,7 @@ abstract class AbstractFilterExecution {
             final Runnable filterComplete,
             final Consumer<Exception> filterNec) {
 
-        final StatelessFilter sf = statelessFilters[filterIdx];
+        final StatelessFilter sf = Objects.requireNonNull(statelessFilters[filterIdx]);
 
         // Our ceiling cost is the cost of the next filter in the list, or Long.MAX_VALUE if this is the last filter.
         // This will limit the pushdown filters excecuted during this cycle to this maximum cost.
@@ -467,9 +425,8 @@ abstract class AbstractFilterExecution {
                 localInput.setValue(result);
             }
             // This filter is complete, sort the remaining filters and conclude.
-            final CompletableFuture<?> updateAndSortFuture =
-                    maybeUpdateAndSortStatelessFilters(statelessFilters, filterIdx + 1, localInput.getValue());
-            whenComplete(updateAndSortFuture, filterComplete, filterNec);
+            scheduleAndSortCostEstimates(statelessFilters, filterIdx + 1, localInput.getValue(), filterComplete,
+                    filterNec);
         };
 
         // Result consumer for push-down filtering.
@@ -479,17 +436,13 @@ abstract class AbstractFilterExecution {
 
             if (pushdownResult.maybeMatch().isEmpty()) {
                 localInput.setValue(pushdownResult.match().copy());
-                final CompletableFuture<?> updateAndSortFuture =
-                        maybeUpdateAndSortStatelessFilters(statelessFilters, filterIdx + 1, localInput.getValue());
-                whenComplete(updateAndSortFuture, filterComplete, filterNec)
-                        .whenComplete((x, e) -> pushdownResult.close());
+                scheduleAndSortCostEstimates(statelessFilters, filterIdx + 1, localInput.getValue(),
+                        filterComplete, filterNec);
                 return;
             }
 
             // We still have some maybe rows, sort the filters again, including the current index.
-            final CompletableFuture<?> updateAndSortFuture =
-                    maybeUpdateAndSortStatelessFilters(statelessFilters, filterIdx, localInput.getValue());
-            whenComplete(updateAndSortFuture, () -> {
+            scheduleAndSortCostEstimates(statelessFilters, filterIdx, localInput.getValue(), () -> {
                 // If there is a new filter at the current index, need to evaluate it.
                 if (!sf.equals(statelessFilters[filterIdx])) {
                     // Use the union of the match and maybe rows as the input for the next filter.
@@ -594,37 +547,50 @@ abstract class AbstractFilterExecution {
                 }
             }
         } catch (final Exception ex) {
-            try (final SafeCloseable ignored = () -> SafeCloseableArray.close(statelessFilters)) {
-                collectionNec.accept(ex);
-            }
+            informAndCloseAll(collectionNec, ex, statelessFilters);
             return;
         }
 
         // Sort the filters by cost, with the lowest cost first.
-        final CompletableFuture<?> updateAndSortFuture =
-                maybeUpdateAndSortStatelessFilters(statelessFilters, 0, localInput.getValue());
-        whenComplete(updateAndSortFuture, () -> {
-            // Iterate serially through the stateless filters in this set. Each filter will successively
-            // restrict the input to the next filter, until we reach the end of the filter chain or no rows match.
-            jobScheduler().iterateSerial(
-                    ExecutionContext.getContext(),
-                    this::append,
-                    JobScheduler.DEFAULT_CONTEXT_FACTORY,
-                    0, statelessFilters.length,
-                    (filterContext, filterIdx, filterNec, filterResume) -> {
-                        if (localInput.getValue().isEmpty()) {
-                            // If there are no rows left to filter, skip this filter.
-                            filterResume.run();
-                            return;
-                        }
-                        executeStatelessFilter(statelessFilters, filterIdx, localInput, filterResume, filterNec);
-                    },
-                    collectionResume,
-                    () -> {
-                    },
-                    collectionNec);
-        }, collectionNec)
-                .whenComplete((x, e) -> SafeCloseableArray.close(statelessFilters));
+        scheduleAndSortCostEstimates(statelessFilters, 0, localInput.getValue(),
+                // Update and sorting is completed
+                () -> {
+                    // Iterate serially through the stateless filters in this set. Each filter will successively
+                    // restrict the input to the next filter, until we reach the end of the filter chain or no rows
+                    // match.
+                    jobScheduler().iterateSerial(
+                            ExecutionContext.getContext(),
+                            this::appendFilterExecution,
+                            JobScheduler.DEFAULT_CONTEXT_FACTORY,
+                            0, statelessFilters.length,
+                            (filterContext, filterIdx, filterNec, filterResume) -> {
+                                if (localInput.getValue().isEmpty()) {
+                                    // If there are no rows left to filter, skip this filter.
+                                    filterResume.run();
+                                    return;
+                                }
+                                executeStatelessFilter(statelessFilters, filterIdx, localInput, filterResume,
+                                        filterNec);
+                            },
+
+                            // Jobs have all completed
+                            collectionResume,
+
+                            // collectionResume has completed successfully
+                            () -> SafeCloseableArray.close(statelessFilters),
+
+                            // Jobs, or collectionResume, has had an error
+                            e -> informAndCloseAll(collectionNec, e, statelessFilters));
+                },
+                // Update and sort, or _orchestration_ of inner scheduling, failed
+                e -> informAndCloseAll(collectionNec, e, statelessFilters));
+    }
+
+    private static void informAndCloseAll(final Consumer<Exception> collectionNec, final Exception e,
+            final StatelessFilter[] statelessFilters) {
+        try (final SafeCloseable ignore = () -> SafeCloseableArray.close(statelessFilters)) {
+            collectionNec.accept(e);
+        }
     }
 
     /**
@@ -645,7 +611,7 @@ abstract class AbstractFilterExecution {
         // restrict the input to the next filter, until we reach the end of the filter chain.
         jobScheduler().iterateSerial(
                 ExecutionContext.getContext(),
-                this::append,
+                this::appendFilterExecution,
                 JobScheduler.DEFAULT_CONTEXT_FACTORY,
                 0, filters.size(),
                 (filterContext, filterIdx, filterNec, filterResume) -> {
@@ -707,7 +673,7 @@ abstract class AbstractFilterExecution {
         // Iterate serially through the filter collections.
         jobScheduler().iterateSerial(
                 ExecutionContext.getContext(),
-                this::append,
+                this::appendFilterExecution,
                 JobScheduler.DEFAULT_CONTEXT_FACTORY,
                 0, filterCollections.size(),
                 (collectionCtx, collectionIdx, collectionNec, collectionResume) -> {
