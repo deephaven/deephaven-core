@@ -33,6 +33,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.function.LongConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -863,27 +864,37 @@ public class RegionedColumnSourceManager
     }
 
     @Override
-    public long estimatePushdownFilterCost(
-            final WhereFilter filter,
-            final RowSet selection,
-            final RowSet fullSet,
-            final boolean usePrev,
-            final PushdownFilterContext context) {
-        // We want to test out a small sample of locations to estimate the cost of the filter pushdown, and assume the
-        // rest of the locations are similar.
+    public void estimatePushdownFilterCost(WhereFilter filter, RowSet selection,
+            RowSet fullSet, boolean usePrev, PushdownFilterContext context, JobScheduler jobScheduler,
+            LongConsumer onComplete, Consumer<Exception> onError) {
         final List<RegionInfoHolder> overlappingRegionsSample =
                 getOverlappingRegions(selection, PUSHDOWN_LOCATION_SAMPLES);
-        if (overlappingRegionsSample.isEmpty()) {
-            return Long.MAX_VALUE;
-        }
-        try (final SafeCloseable ignored = () -> SafeCloseable.closeAll(overlappingRegionsSample.stream())) {
-            return overlappingRegionsSample
-                    .parallelStream()
-                    .mapToLong(overlappingRegion -> overlappingRegion.tle.location.estimatePushdownFilterCost(
-                            filter, overlappingRegion.rowSet, fullSet, usePrev, context))
-                    .min()
-                    .orElse(Long.MAX_VALUE);
-        }
+        final MutableLong min = new MutableLong(Long.MAX_VALUE);
+        jobScheduler.iterateParallel(
+                ExecutionContext.getContext(),
+                logOutput -> logOutput.append("RegionedColumnSourceManager#estimatePushdownFilterCost"),
+                JobScheduler.DEFAULT_CONTEXT_FACTORY,
+                0, overlappingRegionsSample.size(),
+                (ctx, idx, locationNec, locationResume) -> {
+                    final RegionInfoHolder overlappingRegion = overlappingRegionsSample.get(idx);
+                    overlappingRegion.tle.location.estimatePushdownFilterCost(filter,
+                            overlappingRegion.rowSet, fullSet, usePrev, context, jobScheduler, value -> {
+                                synchronized (min) {
+                                    if (value < min.get()) {
+                                        min.set(value);
+                                    }
+                                }
+                                locationResume.run();
+                            }, locationNec);
+                },
+                () -> onComplete.accept(min.get()),
+                () -> SafeCloseable.closeAll(overlappingRegionsSample.iterator()),
+                (e) -> {
+                    try (final SafeCloseable ignored =
+                            () -> SafeCloseable.closeAll(overlappingRegionsSample.iterator())) {
+                        onError.accept(e);
+                    }
+                });
     }
 
     @Override

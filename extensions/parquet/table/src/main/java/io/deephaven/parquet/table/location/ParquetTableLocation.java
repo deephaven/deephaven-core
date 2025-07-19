@@ -56,6 +56,7 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.function.LongConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -435,7 +436,19 @@ public class ParquetTableLocation extends AbstractTableLocation {
     // region Pushdown Filtering
 
     @Override
-    public long estimatePushdownFilterCost(
+    public void estimatePushdownFilterCost(
+            final WhereFilter filter,
+            final RowSet selection,
+            final RowSet fullSet,
+            final boolean usePrev,
+            final PushdownFilterContext context,
+            final JobScheduler jobScheduler,
+            final LongConsumer onComplete,
+            final Consumer<Exception> onError) {
+        onComplete.accept(estimatePushdownFilterCost(filter, selection, fullSet, usePrev, context));
+    }
+
+    private long estimatePushdownFilterCost(
             final WhereFilter filter,
             final RowSet selection,
             final RowSet fullSet,
