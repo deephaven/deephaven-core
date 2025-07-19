@@ -282,6 +282,11 @@ abstract class AbstractFilterExecution {
          */
         public void scheduleUpdatePushdownFilterCost(final RowSet selection, final Runnable onComplete,
                 final Consumer<Exception> onError) {
+            if (pushdownMatcher == null) {
+                pushdownFilterCost = Long.MAX_VALUE;
+                onComplete.run();
+                return;
+            }
             pushdownMatcher.estimatePushdownFilterCost(filter, selection, sourceTable.getRowSet(), usePrev, context,
                     jobScheduler(), value -> {
                         pushdownFilterCost = value;
