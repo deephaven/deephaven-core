@@ -265,7 +265,10 @@ abstract class BaseNodeOperationsRecorder<TYPE> {
             }
 
             for (final SortColumn sc : columnsToSortBy) {
-                final String columnName = sc.column().name();
+                String columnName = sc.column().name();
+                if (AbsoluteSortColumnConventions.isAbsoluteColumnName(columnName)) {
+                    columnName = AbsoluteSortColumnConventions.absoluteColumnNameToBaseName(columnName);
+                }
                 final ColumnDefinition<Object> defToSort = getDefinition().getColumn(columnName);
                 final Class<Object> dataType = defToSort.getDataType();
                 if (!dataType.isPrimitive() && !Comparable.class.isAssignableFrom(dataType)) {
