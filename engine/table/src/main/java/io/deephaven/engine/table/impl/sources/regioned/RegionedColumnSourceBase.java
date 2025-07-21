@@ -18,6 +18,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.LongConsumer;
 
 /**
  * Partial implementation of {@link RegionedColumnSource} for array-backed and delegating implementations to extend.
@@ -105,14 +106,18 @@ abstract class RegionedColumnSourceBase<DATA_TYPE, ATTR extends Values, REGION_T
     }
 
     @Override
-    public long estimatePushdownFilterCost(
+    public void estimatePushdownFilterCost(
             final WhereFilter filter,
             final RowSet selection,
             final RowSet fullSet,
             final boolean usePrev,
-            final PushdownFilterContext context) {
+            final PushdownFilterContext context,
+            final JobScheduler jobScheduler,
+            final LongConsumer onComplete,
+            final Consumer<Exception> onError) {
         // Delegate to the manager.
-        return manager.estimatePushdownFilterCost(filter, selection, fullSet, usePrev, context);
+        manager.estimatePushdownFilterCost(filter, selection, fullSet, usePrev, context, jobScheduler,
+                onComplete, onError);
     }
 
     @Override
