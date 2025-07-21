@@ -98,10 +98,11 @@ abstract class BaseAggregateColumnSource<VECTOR_TYPE extends Vector<VECTOR_TYPE>
         final AggregateFillContext afc = (AggregateFillContext) fillContext;
         final ObjectChunk<RowSet, ? extends Values> rowsetChunk =
                 groupRowSetSource.getChunk(afc.groupRowSetGetContext, rowSequence).asObjectChunk();
-        for (int ii = 0; ii < rowsetChunk.size(); ++ii) {
+        final int size = rowsetChunk.size();
+        for (int ii = 0; ii < size; ++ii) {
             sizes.set(ii, rowsetChunk.get(ii).size());
         }
-        sizes.setSize(rowsetChunk.size());
+        sizes.setSize(size);
     }
 
     @Override
@@ -110,7 +111,8 @@ abstract class BaseAggregateColumnSource<VECTOR_TYPE extends Vector<VECTOR_TYPE>
         final AggregateFillContext afc = (AggregateFillContext) fillContext;
         final ObjectChunk<RowSet, ? extends Values> rowsetChunk =
                 groupRowSetSource.getPrevChunk(afc.groupRowSetGetContext, rowSequence).asObjectChunk();
-        for (int ii = 0; ii < rowsetChunk.size(); ++ii) {
+        final int size = rowsetChunk.size();
+        for (int ii = 0; ii < size; ++ii) {
             final RowSet groupRowSetPrev = rowsetChunk.get(ii);
             if (groupRowSetPrev.isTracking()) {
                 sizes.set(ii, groupRowSetPrev.trackingCast().sizePrev());
@@ -118,7 +120,7 @@ abstract class BaseAggregateColumnSource<VECTOR_TYPE extends Vector<VECTOR_TYPE>
                 sizes.set(ii, groupRowSetPrev.size());
             }
         }
-        sizes.setSize(rowsetChunk.size());
+        sizes.setSize(size);
     }
 
     private long getPrevRowKey(final long groupIndexKey, final int offsetInGroup) {

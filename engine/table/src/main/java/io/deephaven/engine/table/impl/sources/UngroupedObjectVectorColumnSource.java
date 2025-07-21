@@ -38,10 +38,7 @@ public class UngroupedObjectVectorColumnSource<T> extends UngroupedColumnSource<
             return (T) ((UngroupableColumnSource) innerSource).getUngrouped(segment, (int) offset);
         } else {
             final ObjectVector<T> vector = innerSource.get(segment);
-            if (vector == null) {
-                return null;
-            }
-            return vector.get((int) offset);
+            return vector == null ? null : vector.get((int) offset);
         }
     }
 
@@ -59,10 +56,7 @@ public class UngroupedObjectVectorColumnSource<T> extends UngroupedColumnSource<
         } else {
             Assert.neqNull(innerSource, "innerSource");
             final ObjectVector<T> prevArray = innerSource.getPrev(segment);
-            if (prevArray == null) {
-                return null;
-            }
-            return prevArray.get((int) offset);
+            return prevArray == null ? null : prevArray.get((int) offset);
         }
     }
 

@@ -119,7 +119,7 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
             resultMap.put(name, result);
         }
         final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
-        getUngroupIndex(sizes, builder, initialBase, initRowSet);
+        getUngroupRowset(sizes, builder, initialBase, initRowSet);
         final TrackingWritableRowSet resultRowset = builder.build().toTracking();
         final QueryTable result = new QueryTable(resultRowset, resultMap);
         if (parent.isBlink()) {
@@ -136,13 +136,13 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
         return new Result<>(result, listener);
     }
 
-    private void updateIndexForRow(final RowSetBuilderSequential modifyBuilder,
-            final RowSetBuilderSequential addedBuilded,
-            final RowSetBuilderSequential removedBuilder,
-            final long size,
-            final long prevSize, long currentRowKey,
-            long previousRowKey,
-            final long base) {
+    private void updateRowsetForRow(final RowSetBuilderSequential modifyBuilder,
+                                    final RowSetBuilderSequential addedBuilded,
+                                    final RowSetBuilderSequential removedBuilder,
+                                    final long size,
+                                    final long prevSize, long currentRowKey,
+                                    long previousRowKey,
+                                    final long base) {
         currentRowKey <<= base;
         previousRowKey <<= base;
 
@@ -183,8 +183,8 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
 
                 if (ungroupable == null) {
                     int offset = 0;
-                    try (final ChunkSource.GetContext getContext = arrayColumn.makeGetContext(CHUNK_SIZE)) {
-                        final RowSequence.Iterator rsit = rowSet.getRowSequenceIterator();
+                    try (final ChunkSource.GetContext getContext = arrayColumn.makeGetContext(CHUNK_SIZE);
+                         final RowSequence.Iterator rsit = rowSet.getRowSequenceIterator()) {
                         while (rsit.hasMore()) {
                             final RowSequence rsChunk = rsit.getNextRowSequenceWithLength(CHUNK_SIZE);
                             final Chunk<? extends Values> chunk =
@@ -200,8 +200,8 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
                     int offset = 0;
                     try (final ChunkSource.FillContext fillContext = arrayColumn.makeFillContext(CHUNK_SIZE);
                             final ResettableWritableLongChunk<Values> resettable =
-                                    ResettableWritableLongChunk.makeResettableChunk()) {
-                        final RowSequence.Iterator rsit = rowSet.getRowSequenceIterator();
+                                    ResettableWritableLongChunk.makeResettableChunk();
+                         final RowSequence.Iterator rsit = rowSet.getRowSequenceIterator()) {
                         while (rsit.hasMore()) {
                             final RowSequence rsChunk = rsit.getNextRowSequenceWithLength(CHUNK_SIZE);
                             resettable.resetFromArray(sizes, offset, rsChunk.intSize());
@@ -220,8 +220,8 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
                 }
             } else if (nullFill) {
                 if (ungroupable == null) {
-                    try (final ChunkSource.GetContext getContext = arrayColumn.makeGetContext(CHUNK_SIZE)) {
-                        final RowSequence.Iterator rsit = rowSet.getRowSequenceIterator();
+                    try (final ChunkSource.GetContext getContext = arrayColumn.makeGetContext(CHUNK_SIZE);
+                         final RowSequence.Iterator rsit = rowSet.getRowSequenceIterator()) {
                         int offset = 0;
                         while (rsit.hasMore()) {
                             final RowSequence rsChunk = rsit.getNextRowSequenceWithLength(CHUNK_SIZE);
@@ -240,8 +240,9 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
                     int offset = 0;
                     try (final ChunkSource.FillContext fillContext = arrayColumn.makeFillContext(CHUNK_SIZE);
                             final WritableLongChunk<Values> currentSizes =
-                                    WritableLongChunk.makeWritableChunk(CHUNK_SIZE)) {
-                        final RowSequence.Iterator rsit = rowSet.getRowSequenceIterator();
+                                    WritableLongChunk.makeWritableChunk(CHUNK_SIZE);
+                         final RowSequence.Iterator rsit = rowSet.getRowSequenceIterator()) {
+
                         while (rsit.hasMore()) {
                             final RowSequence rsChunk = rsit.getNextRowSequenceWithLength(CHUNK_SIZE);
                             if (usePrev) {
@@ -263,11 +264,11 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
                 }
             } else {
                 if (ungroupable == null) {
-                    final MutableLong encountered = new MutableLong();
+                    final MutableLong mismatchedSize = new MutableLong();
 
                     int offset = 0;
-                    try (final ChunkSource.GetContext getContext = arrayColumn.makeGetContext(CHUNK_SIZE)) {
-                        final RowSequence.Iterator rsit = rowSet.getRowSequenceIterator();
+                    try (final ChunkSource.GetContext getContext = arrayColumn.makeGetContext(CHUNK_SIZE);
+                         final RowSequence.Iterator rsit = rowSet.getRowSequenceIterator()) {
                         while (rsit.hasMore()) {
                             final RowSequence rsChunk = rsit.getNextRowSequenceWithLength(CHUNK_SIZE);
                             final Chunk<? extends Values> chunk =
@@ -275,14 +276,16 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
                                             : arrayColumn.getChunk(getContext, rsChunk);
                             final ObjectChunk<Object, ? extends Values> objectChunk = chunk.asObjectChunk();
                             final int firstDifference =
-                                    checkSizeFunctions[columnIndex].checkSize(objectChunk, sizes, offset, encountered);
+                                    checkSizeFunctions[columnIndex].checkSize(objectChunk, sizes, offset, mismatchedSize);
                             if (firstDifference >= 0) {
-                                final long correspondingRowKey = rsChunk.asRowSet().get(firstDifference);
-                                final String message = String.format(
-                                        "Array sizes differ at row key %d (position %d), %s has size %d, %s has size %d",
-                                        correspondingRowKey, offset + firstDifference, referenceColumn,
-                                        sizes[offset + firstDifference], name, encountered.get());
-                                throw new IllegalStateException(message);
+                                try (final RowSet rowset = rsChunk.asRowSet()) {
+                                    final long correspondingRowKey = rowset.get(firstDifference);
+                                    final String message = String.format(
+                                            "Array sizes differ at row key %d (position %d), %s has size %d, %s has size %d",
+                                            correspondingRowKey, offset + firstDifference, referenceColumn,
+                                            sizes[offset + firstDifference], name, mismatchedSize.get());
+                                    throw new IllegalStateException(message);
+                                }
                             }
                             offset += objectChunk.size();
                         }
@@ -291,8 +294,8 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
                     int offset = 0;
                     try (final ChunkSource.FillContext fillContext = arrayColumn.makeFillContext(CHUNK_SIZE);
                             final WritableLongChunk<Values> currentSizes =
-                                    WritableLongChunk.makeWritableChunk(CHUNK_SIZE)) {
-                        final RowSequence.Iterator rsit = rowSet.getRowSequenceIterator();
+                                    WritableLongChunk.makeWritableChunk(CHUNK_SIZE);
+                         final RowSequence.Iterator rsit = rowSet.getRowSequenceIterator()) {
                         while (rsit.hasMore()) {
                             final RowSequence rsChunk = rsit.getNextRowSequenceWithLength(CHUNK_SIZE);
                             if (usePrev) {
@@ -306,13 +309,16 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
                             for (int ii = 0; ii < currentSizes.size(); ii++) {
                                 final long currentSize = currentSizes.get(ii);
                                 if (currentSize != sizes[offset + ii]) {
-                                    final long correspondingRowKey = rsChunk.asRowSet().get(ii);
-                                    final String message = String.format(
-                                            "Array sizes differ at row key %d (position %d), %s has size %d, %s has size %d",
-                                            correspondingRowKey, offset + ii, referenceColumn,
-                                            sizes[offset + ii], name, currentSize);
-                                    throw new IllegalStateException(message);
+                                    try (final RowSet rowset = rsChunk.asRowSet()) {
+                                        final long correspondingRowKey = rowset.get(ii);
+                                        final String message = String.format(
+                                                "Array sizes differ at row key %d (position %d), %s has size %d, %s has size %d",
+                                                correspondingRowKey, offset + ii, referenceColumn,
+                                                sizes[offset + ii], name, currentSize);
+                                        throw new IllegalStateException(message);
+                                    }
                                 }
+
                             }
                             offset += currentSizes.size();
                         }
@@ -402,8 +408,8 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
         }
     }
 
-    private void getUngroupIndex(final long[] sizes, final RowSetBuilderSequential builder, final long base,
-            final RowSet rowSet) {
+    private void getUngroupRowset(final long[] sizes, final RowSetBuilderSequential builder, final long base,
+                                  final RowSet rowSet) {
         Assert.assertion(base >= 0 && base <= 63, "base >= 0 && base <= 63", base, "base");
         final long mask = ((1L << base) - 1) << (64 - base);
         final long lastKey = rowSet.lastRowKey();
@@ -416,11 +422,10 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
         int pos = 0;
         for (final RowSet.Iterator iterator = rowSet.iterator(); iterator.hasNext();) {
             final long next = iterator.nextLong();
-            final long nextShift = next << base;
-            Assert.assertion(nextShift >= 0, "nextShift >= 0", nextShift, "nextShift", base, "base", next, "next");
+            final long nextShifted = next << base;
             final long arraySize = sizes[pos++];
             if (arraySize != 0) {
-                builder.appendRange(nextShift, nextShift + arraySize - 1);
+                builder.appendRange(nextShifted, nextShifted + arraySize - 1);
             }
         }
     }
@@ -469,12 +474,12 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
             final RowSetShiftData.Builder shiftBuilder = new RowSetShiftData.Builder();
 
             if (clearResult) {
-                newBase = evaluateIndex(upstream.added(), ungroupAdded, newBase);
+                newBase = evaluateRowset(upstream.added(), ungroupAdded, newBase);
                 rebase(newBase, ungroupAdded.build());
                 return;
             }
 
-            newBase = evaluateIndex(upstream.added(), ungroupAdded, newBase);
+            newBase = evaluateRowset(upstream.added(), ungroupAdded, newBase);
             if (newBase == shiftState.getNumShiftBits()) {
                 newBase = evaluateModified(upstream.modified(), upstream.getModifiedPreShift(), ungroupModifiedModified,
                         ungroupModifiedAdded, ungroupModifiedRemoved, newBase);
@@ -484,7 +489,7 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
                 return;
             }
 
-            evaluateRemovedIndex(upstream.removed(), ungroupRemoved);
+            evaluateRemovedRowset(upstream.removed(), ungroupRemoved);
 
             final WritableRowSet addedRowSet = ungroupAdded.build();
             final WritableRowSet removedRowSet = ungroupRemoved.build();
@@ -559,7 +564,7 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
             final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
             final long[] sizes = new long[parentRowset.intSize()];
             computeMaxSize(parentRowset, sizes, false);
-            getUngroupIndex(sizes, builder, newBase, parentRowset);
+            getUngroupRowset(sizes, builder, newBase, parentRowset);
             final WritableRowSet newRowSet = builder.build();
             rebase(newBase, newRowSet);
         }
@@ -579,8 +584,8 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
                     RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
         }
 
-        private int evaluateIndex(final RowSet rowSet, @NotNull final RowSetBuilderSequential ungroupBuilder,
-                final int newBase) {
+        private int evaluateRowset(final RowSet rowSet, @NotNull final RowSetBuilderSequential ungroupBuilder,
+                                   final int newBase) {
             if (rowSet.isEmpty()) {
                 return newBase;
             }
@@ -588,20 +593,20 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
             final long maxSize = computeMaxSize(rowSet, sizes, false);
             final int minBase = 64 - Long.numberOfLeadingZeros(maxSize);
             if (minBase > newBase) {
-                // If we are going to change the base, there is no point in creating this index
+                // If we are going to change the base, there is no point in creating this rowset
                 return minBase;
             }
-            getUngroupIndex(sizes, ungroupBuilder, newBase, rowSet);
+            getUngroupRowset(sizes, ungroupBuilder, newBase, rowSet);
             return newBase;
         }
 
-        private void evaluateRemovedIndex(final RowSet rowSet, final RowSetBuilderSequential builder) {
+        private void evaluateRemovedRowset(final RowSet rowSet, final RowSetBuilderSequential builder) {
             if (rowSet.isEmpty()) {
                 return;
             }
             final long[] sizes = new long[rowSet.intSize("ungroup")];
             computePrevSize(rowSet, sizes);
-            getUngroupIndex(sizes, builder, shiftState.getNumShiftBits(), rowSet);
+            getUngroupRowset(sizes, builder, shiftState.getNumShiftBits(), rowSet);
         }
 
         private int evaluateModified(final RowSet modified,
@@ -623,7 +628,7 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
             computePrevSize(modifiedPreShift, prevSizes);
             final int minBase = 64 - Long.numberOfLeadingZeros(maxSize);
             if (minBase > currentBase) {
-                // If we are going to force a rebase, there is no need to compute the entire index
+                // If we are going to force a rebase, there is no need to compute the entire rowset
                 return minBase;
             }
 
@@ -633,7 +638,7 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
                 final long currentRowKey = iterator.nextLong();
                 final long previousRowKey = iteratorPreShift.nextLong();
 
-                updateIndexForRow(modifyBuilder, addedBuilded, removedBuilder, sizes[idx], prevSizes[idx],
+                updateRowsetForRow(modifyBuilder, addedBuilded, removedBuilder, sizes[idx], prevSizes[idx],
                         currentRowKey,
                         previousRowKey, base);
             }
