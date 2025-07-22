@@ -731,11 +731,11 @@ public abstract class MemoizedOperationKey {
 
     private static class Ungroup extends AttributeAgnosticMemoizedOperationKey {
         private final boolean nullFill;
-        private final String[] columns;
+        private final HashSet<String> columns;
 
         private Ungroup(boolean nullFill, String[] columns) {
             this.nullFill = nullFill;
-            this.columns = columns;
+            this.columns = new HashSet<>(Arrays.asList(columns));
         }
 
         @Override
@@ -749,12 +749,12 @@ public abstract class MemoizedOperationKey {
 
             final Ungroup ungroup = (Ungroup) other;
 
-            return nullFill == ungroup.nullFill && Arrays.equals(columns, ungroup.columns);
+            return nullFill == ungroup.nullFill && columns.equals(ungroup.columns);
         }
 
         @Override
         public int hashCode() {
-            return Boolean.hashCode(nullFill) ^ Arrays.hashCode(columns);
+            return Boolean.hashCode(nullFill) ^ columns.hashCode();
         }
 
         @Override

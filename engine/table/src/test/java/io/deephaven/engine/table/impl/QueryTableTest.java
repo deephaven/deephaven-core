@@ -2734,6 +2734,8 @@ public class QueryTableTest extends QueryTableTestBase {
                 new IntGenerator(0, 100),
                 new DoubleGenerator(0, 100)));
 
+        final Table grouped = source.groupBy();
+
         final boolean old = QueryTable.setMemoizeResults(true);
         try {
             testMemoize(source, Table::flatten);
@@ -2807,6 +2809,10 @@ public class QueryTableTest extends QueryTableTestBase {
             testNoMemoize(source, t -> t.sumBy("Sym"), t -> t.countBy("Count", "Sym"));
             testNoMemoize(source, t -> t.sumBy("Sym"), t -> t.avgBy("Sym"));
             testNoMemoize(source, t -> t.minBy("Sym"), t -> t.maxBy("Sym"));
+            testMemoize(grouped, t -> t.ungroup("Sym"), t -> t.ungroup("Sym"));
+            testNoMemoize(grouped, t -> t.ungroup("Sym"), t -> t.ungroup("intCol"));
+            testMemoize(grouped, t -> t.ungroup(true, "Sym", "intCol"), t -> t.ungroup(true, "intCol", "Sym"));
+            testNoMemoize(grouped, t -> t.ungroup(true, "Sym", "intCol"), t -> t.ungroup(false, "Sym", "intCol"));
 
             final List<String> value = new ArrayList<>();
             value.add("aa");
