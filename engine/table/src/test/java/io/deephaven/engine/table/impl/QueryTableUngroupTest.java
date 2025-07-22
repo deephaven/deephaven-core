@@ -614,6 +614,39 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
         }
     }
 
+    public void testRebaseWithShift() {
+        final int minimumUngroupBase = QueryTable.setMinimumUngroupBase(2);
+        try {
+            final QueryTable table = testRefreshingTable(i(15, 17).toTracking(),
+                    intCol("X", 1, 2), col("Y", new String[] {"a", "b", "c"}, new String[] {"d", "e"}));
+            TableTools.showWithRowSet(table);
+            final QueryTable t1 = (QueryTable) table.ungroup("Y");
+            TableTools.showWithRowSet(t1);
+            assertEquals(5, t1.size());
+
+            final Table expected = TableTools.newTable(intCol("X", 1, 1, 1, 2, 2), stringCol("Y", "a", "b", "c", "d", "e"));
+            assertTableEquals(expected, t1);
+            QueryTableTest.validateUpdates(t1);
+
+            final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+            updateGraph.runWithinUnitTestCycle(() -> {
+                removeRows(table, i(15, 17));
+                addToTable(table, i(5, 7), intCol("X", 1, 2), col("Y", new String[]{"alpha", "bravo", "charlie", "delta", "echo"}, new String[]{"d", "e"}));
+
+                final RowSetShiftData.Builder shiftBuilder = new RowSetShiftData.Builder();
+                shiftBuilder.shiftRange(10, 20, -10);
+
+                final RowSetShiftData sd = shiftBuilder.build();
+                table.notifyListeners(new TableUpdateImpl(i(), i(), i(5), sd, ModifiedColumnSet.ALL));
+            });
+            TableTools.showWithRowSet(t1);
+            final Table expected2 = TableTools.newTable(intCol("X", 1, 1, 1, 1, 1, 2, 2), stringCol("Y", "alpha", "bravo", "charlie", "delta", "echo", "d", "e"));
+            assertTableEquals(expected2, t1);
+        } finally {
+            QueryTable.setMinimumUngroupBase(minimumUngroupBase);
+        }
+    }
+
     public void testUngroupIncrementalLarge() throws ParseException {
         try (final SafeCloseable ignored = LivenessScopeStack.open()) {
             testUngroupIncrementalLarge(3000, false, 0, 5);
