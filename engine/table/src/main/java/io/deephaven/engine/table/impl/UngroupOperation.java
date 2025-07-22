@@ -18,6 +18,7 @@ import io.deephaven.engine.table.impl.sources.UngroupedColumnSource;
 import io.deephaven.util.SafeCloseableArray;
 import io.deephaven.util.mutable.MutableLong;
 import io.deephaven.vector.Vector;
+import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
@@ -340,41 +341,49 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
             if (upstream.removed().size() == parent.getRowSet().sizePrev()) {
                 // our new base can safely be the minimum base; as everything has been removed from this table. This
                 // is convenient to allow the base to shrink in some circumstances.
-                final RowSetBuilderSequential ungroupAdded = RowSetFactory.builderSequential();
-                final int newBase = evaluateAdded(upstream.added(), ungroupAdded, QueryTable.minimumUngroupBase, true);
-                clearAndRecompute(newBase, ungroupAdded.build());
+                final RowSetBuilderSequential added = RowSetFactory.builderSequential();
+                final int newBase = evaluateAdded(upstream.added(), added, QueryTable.minimumUngroupBase, true);
+                clearAndRecompute(newBase, added.build());
                 return;
             }
 
-            final RowSetBuilderSequential ungroupAdded = RowSetFactory.builderSequential();
-            final RowSetBuilderSequential ungroupRemoved = RowSetFactory.builderSequential();
+            final RowSetBuilderSequential added = RowSetFactory.builderSequential();
+            final RowSetBuilderSequential removed = RowSetFactory.builderSequential();
 
-            final RowSetBuilderSequential ungroupModifiedAdded = RowSetFactory.builderSequential();
-            final RowSetBuilderSequential ungroupModifiedRemoved = RowSetFactory.builderSequential();
-            final RowSetBuilderSequential ungroupModifiedModified = RowSetFactory.builderSequential();
+            final RowSetBuilderSequential addedByModifies = RowSetFactory.builderSequential();
+            final RowSetBuilderSequential removedByModifies = RowSetFactory.builderSequential();
+            final RowSetBuilderSequential modifiedByModifies = RowSetFactory.builderSequential();
 
             final RowSetShiftData.Builder shiftBuilder = new RowSetShiftData.Builder();
 
-            int requiredBase = evaluateAdded(upstream.added(), ungroupAdded, shiftState.getNumShiftBits(), false);
+            final MutableObject<long[]> modifiedCurrentSizes = new MutableObject<>();
+
+            int requiredBase = evaluateAdded(upstream.added(), added, shiftState.getNumShiftBits(), false);
             if (requiredBase == shiftState.getNumShiftBits()) {
                 requiredBase = evaluateModified(upstream.modified(),
                         upstream.getModifiedPreShift(),
-                        ungroupModifiedAdded,
-                        ungroupModifiedRemoved,
-                        ungroupModifiedModified);
+                        addedByModifies,
+                        removedByModifies,
+                        modifiedByModifies,
+                        shiftState.getNumShiftBits(),
+                        modifiedCurrentSizes);
+            } else {
+                modifiedCurrentSizes.setValue(new long[upstream.modified().intSize()]);
+                final long maxModSize = computeMaxSize(upstream.modified(), modifiedCurrentSizes.get(), false);
+                requiredBase = Math.max(determineRequiredBase(maxModSize), requiredBase);
             }
             if (requiredBase != shiftState.getNumShiftBits()) {
-                rebase(requiredBase);
+                rebase(requiredBase, upstream, modifiedCurrentSizes.get());
                 return;
             }
 
-            evaluateRemoved(upstream.removed(), ungroupRemoved);
+            evaluateRemoved(upstream.removed(), removed);
 
-            final WritableRowSet addedRowSet = ungroupAdded.build();
-            final WritableRowSet removedRowSet = ungroupRemoved.build();
+            final WritableRowSet addedRowSet = added.build();
+            final WritableRowSet removedRowSet = removed.build();
 
-            addedRowSet.insert(ungroupModifiedAdded.build());
-            removedRowSet.insert(ungroupModifiedRemoved.build());
+            addedRowSet.insert(addedByModifies.build());
+            removedRowSet.insert(removedByModifies.build());
 
             final TrackingWritableRowSet resultRowset = result.getRowSet().writableCast();
             resultRowset.remove(removedRowSet);
@@ -389,7 +398,7 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
             resultRowset.insert(addedRowSet);
 
             // TODO: we should examine the MCS to avoid work on columns that have not changed
-            final RowSet modifiedRowSet = ungroupModifiedModified.build();
+            final RowSet modifiedRowSet = modifiedByModifies.build();
             transformer.clearAndTransform(upstream.modifiedColumnSet(), result.getModifiedColumnSetForUpdates());
             final TableUpdateImpl downstream = new TableUpdateImpl(addedRowSet, removedRowSet, modifiedRowSet,
                     shiftBuilder.build(), result.getModifiedColumnSetForUpdates());
@@ -455,29 +464,160 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
             }
         }
 
-        private void rebase(final int newBase) {
+        private void rebase(final int newBase, final TableUpdate upstream, final long[] modifiedCurrentSizes) {
+            final RowSetBuilderSequential addedBuilder = RowSetFactory.builderSequential();
+            final RowSetBuilderSequential removedBuilder = RowSetFactory.builderSequential();
+
+            final RowSetBuilderSequential addedByModifiesBuilder = RowSetFactory.builderSequential();
+            final RowSetBuilderSequential removedByModifiesBuilder = RowSetFactory.builderSequential();
+            final RowSetBuilderSequential modifiedByModifiesBuilder = RowSetFactory.builderSequential();
+
+            final int computedAddBase = evaluateAdded(upstream.added(), addedBuilder, newBase, false);
+            final int computedModifiedBase = evaluateModified(upstream.modified(), upstream.getModifiedPreShift(),
+                    addedByModifiesBuilder, removedByModifiesBuilder, modifiedByModifiesBuilder, newBase,
+                    new MutableObject<>(modifiedCurrentSizes));
+            Assert.leq(computedAddBase, "computedAddBase", newBase, "newBase");
+            Assert.leq(computedModifiedBase, "computedAddBase", newBase, "newBase");
+
+            evaluateRemoved(upstream.removed(), removedBuilder);
+
+            final WritableRowSet removedRowSet = removedBuilder.build();
+            removedRowSet.insert(removedByModifiesBuilder.build());
+            // we want to remove everything that is no longer relevant for our shift
+            final TrackingWritableRowSet resultRowset = result.getRowSet().writableCast();
+            resultRowset.remove(removedRowSet);
+
+            final int prevBase = shiftState.getPrevNumShiftBits();
+            final int maxOldSlotSize = (prevBase << 1) - 1;
+
+            final RowSetShiftData.Builder shiftBuilder = new RowSetShiftData.Builder();
             final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
-            final long[] sizes = new long[parentRowset.intSize()];
-            computeMaxSize(parentRowset, sizes, false);
-            getUngroupRowset(sizes, builder, newBase, parentRowset);
-            final WritableRowSet newRowSet = builder.build();
-            // TODO: don't actually clear and recompute, but rather build a suitable shift structure
-            clearAndRecompute(newBase, newRowSet);
+
+            final ShiftWrapper shiftWrapper = new ShiftWrapper(upstream.shifted());
+
+            try (final RowSet.RangeIterator rangeIterator = result.getRowSet().rangeIterator()) {
+                // everything that exists needs to be shifted
+                while (rangeIterator.hasNext()) {
+                    rangeIterator.next();
+
+                    final long startRange = rangeIterator.currentRangeStart();
+                    final long endRange = rangeIterator.currentRangeEnd();
+
+                    for (long oldSlotStart = startRange; oldSlotStart <= endRange; oldSlotStart += maxOldSlotSize) {
+                        final long oldSlotEnd = Math.min(oldSlotStart + maxOldSlotSize, endRange);
+                        final long existingSlotSize = oldSlotEnd - oldSlotStart + 1;
+
+                        final long oldSourceKey = oldSlotStart >> prevBase;
+                        final long newSourceKey;
+
+                        shiftWrapper.advance(oldSourceKey);
+
+                        if (shiftWrapper.hasCurrent() && shiftWrapper.currentShiftedKey() == oldSourceKey) {
+                            newSourceKey = oldSourceKey + shiftWrapper.currentShiftDelta();
+                        } else {
+                            newSourceKey = oldSourceKey;
+                        }
+
+                        final long newSlotStart = newSourceKey << newBase;
+                        final long newSlotEnd = newSlotStart + existingSlotSize - 1;
+                        shiftBuilder.shiftRange(oldSlotStart, oldSlotEnd, newSlotStart - oldSlotStart);
+                        builder.appendRange(newSlotStart, newSlotEnd);
+                    }
+                }
+            }
+            resultRowset.resetTo(builder.build());
+            final WritableRowSet added = addedBuilder.build();
+            final RowSet addedByModifies = addedByModifiesBuilder.build();
+            added.insert(addedByModifies);
+
+            resultRowset.insert(added);
+
+            setNewBase(newBase);
+
+            final RowSet modifiedRowSet = modifiedByModifiesBuilder.build();
+            transformer.clearAndTransform(upstream.modifiedColumnSet(), result.getModifiedColumnSetForUpdates());
+            final TableUpdateImpl downstream = new TableUpdateImpl(added, removedRowSet, modifiedRowSet,
+                    shiftBuilder.build(), result.getModifiedColumnSetForUpdates());
+            result.notifyListeners(downstream);
+        }
+
+        private class ShiftWrapper {
+            RowSetShiftData shiftData;
+            int pos = -1;
+            long nextKey;
+
+            ShiftWrapper(RowSetShiftData shiftData) {
+                this.shiftData = shiftData;
+                if (shiftData.nonempty()) {
+                    pos = 0;
+                    nextKey = shiftData.getBeginRange(pos);
+                } else {
+                    nextKey = RowSet.NULL_ROW_KEY;
+                }
+            }
+
+            boolean hasCurrent() {
+                return nextKey != RowSet.NULL_ROW_KEY;
+            }
+
+            long currentShiftedKey() {
+                if (pos < 0) {
+                    return RowSet.NULL_ROW_KEY;
+                }
+                return nextKey;
+            }
+
+            long currentShiftDelta() {
+                return shiftData.getShiftDelta(pos);
+            }
+
+            void advance(final long advanceTo) {
+                if (nextKey == RowSet.NULL_ROW_KEY) {
+                    // already at the end
+                    return;
+                }
+                if (advanceTo == nextKey) {
+                    // at the right place
+                    return;
+                }
+
+                if (advanceTo < shiftData.getEndRange(pos)) {
+                    Assert.geq(advanceTo, "advanceTo", shiftData.getBeginRange(pos), "shiftData.getBeginRange(pos)");
+                    nextKey = advanceTo;
+                    return;
+                }
+                if (nextKey != shiftData.getEndRange(pos)) {
+                    return;
+                }
+
+                while (pos < shiftData.size()) {
+                    if (nextKey < shiftData.getEndRange(pos)) {
+                        nextKey = Math.max(shiftData.getBeginRange(pos), nextKey);
+                        return;
+                    }
+                    pos++;
+                }
+                nextKey = RowSet.NULL_ROW_KEY;
+            }
         }
 
         private void clearAndRecompute(final int newBase, final WritableRowSet newRowSet) {
             final TrackingWritableRowSet resultRowset = result.getRowSet().writableCast();
             resultRowset.resetTo(newRowSet);
 
+            setNewBase(newBase);
+
+            result.notifyListeners(new TableUpdateImpl(newRowSet, resultRowset.copyPrev(), RowSetFactory.empty(),
+                    RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
+        }
+
+        private void setNewBase(int newBase) {
             for (final ColumnSource<?> source : resultMap.values()) {
                 if (source instanceof UngroupedColumnSource) {
                     ((UngroupedColumnSource<?>) source).setBase(newBase);
                 }
             }
             shiftState.setNumShiftBitsAndUpdatePrev(newBase);
-
-            result.notifyListeners(new TableUpdateImpl(newRowSet, resultRowset.copyPrev(), RowSetFactory.empty(),
-                    RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
         }
 
         private int evaluateAdded(final RowSet rowSet, @NotNull final RowSetBuilderSequential ungroupBuilder,
@@ -504,31 +644,57 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
                 return;
             }
             final long[] sizes = new long[rowSet.intSize("ungroup")];
-            computePrevSize(result.getRowSet().prev(), shiftState.getNumShiftBits(), rowSet, sizes);
-            getUngroupRowset(sizes, builder, shiftState.getNumShiftBits(), rowSet);
+            computePrevSize(result.getRowSet().prev(), shiftState.getPrevNumShiftBits(), rowSet, sizes);
+            getUngroupRowset(sizes, builder, shiftState.getPrevNumShiftBits(), rowSet);
         }
 
+        /**
+         *
+         * @param modified the modified index, in post-shift space
+         * @param modifiedPreShift the modified index, in pre-shift space
+         * @param addedBuilder the builder for rows added by modifications
+         * @param removedBuilder the builder for rows removed by modifications
+         * @param modifyBuilder the builder for rows modified by modifications
+         * @param currentSizes an output parameter when we determine a change of base is necessary; if we've already
+         *        computed these values we stuff them in the mutable, so that they can be reused as input again
+         * @return the necessary base
+         */
         private int evaluateModified(final RowSet modified,
                 final RowSet modifiedPreShift,
                 final RowSetBuilderSequential addedBuilder,
                 final RowSetBuilderSequential removedBuilder,
-                final RowSetBuilderSequential modifyBuilder) {
-            final int base = shiftState.getNumShiftBits();
+                final RowSetBuilderSequential modifyBuilder,
+                final int base,
+                final MutableObject<long[]> currentSizes) {
             if (modified.isEmpty()) {
                 return base;
             }
 
             final int size = modified.intSize("ungroup");
-            final long[] sizes = new long[size];
-            final long[] prevSizes = new long[size];
-
-            final long maxSize = computeMaxSize(modified, sizes, false);
-            computePrevSize(result.getRowSet().prev(), shiftState.getNumShiftBits(), modifiedPreShift, prevSizes);
-            final int minBase = determineRequiredBase(maxSize);
-            if (minBase > base) {
-                // If we are going to force a rebase, there is no need to compute the entire rowset
-                return minBase;
+            final long[] sizes;
+            final long maxSize;
+            if (currentSizes.get() == null) {
+                sizes = new long[size];
+                maxSize = computeMaxSize(modified, sizes, false);
+                final int minBase = determineRequiredBase(maxSize);
+                if (minBase > base) {
+                    // If we are going to force a rebase, there is no need to compute the entire rowset, but the caller
+                    // would
+                    // like our copy of the sizes we computed
+                    currentSizes.setValue(sizes);
+                    return minBase;
+                }
+            } else {
+                sizes = currentSizes.get();
+                maxSize = Arrays.stream(sizes).max().getAsLong();
+                final int minBase = determineRequiredBase(maxSize);
+                Assert.leq(minBase, "minBase", minBase, "maxBase");
             }
+
+
+            final long[] prevSizes = new long[size];
+            computePrevSize(result.getRowSet().prev(), shiftState.getPrevNumShiftBits(), modifiedPreShift, prevSizes);
+            final int prevBase = shiftState.getPrevNumShiftBits();
 
             final RowSet.Iterator iterator = modified.iterator();
             final RowSet.Iterator iteratorPreShift = modifiedPreShift.iterator();
@@ -537,7 +703,7 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
                 final long previousRowKey = iteratorPreShift.nextLong();
 
                 updateRowsetForRow(addedBuilder, removedBuilder, modifyBuilder, sizes[idx], prevSizes[idx],
-                        currentRowKey, previousRowKey, base);
+                        currentRowKey, previousRowKey, base, prevBase);
             }
 
             return base;
@@ -551,9 +717,10 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
             final long prevSize,
             long currentRowKey,
             long previousRowKey,
-            final long base) {
+            final long base,
+            final long prevBase) {
         currentRowKey <<= base;
-        previousRowKey <<= base;
+        previousRowKey <<= prevBase;
 
         Require.requirement(currentRowKey >= 0 && (size == 0 || (currentRowKey + size - 1 >= 0)),
                 "rowKey >= 0 && (size == 0 || (rowKey + size - 1 >= 0))");
