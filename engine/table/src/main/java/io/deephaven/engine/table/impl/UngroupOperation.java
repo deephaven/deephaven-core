@@ -4,7 +4,6 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ResettableWritableLongChunk;
 import io.deephaven.chunk.WritableLongChunk;
@@ -295,7 +294,8 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
 
     private void getUngroupRowset(final long[] sizes, final RowSetBuilderSequential builder, final long base,
             final RowSet rowSet) {
-        Assert.assertion(base >= 0 && base <= 63, "base >= 0 && base <= 63", base, "base");
+        Assert.geqZero(base, "base");
+        Assert.leq(base, "base", 63);
         final long mask = ((1L << base) - 1) << (64 - base);
         final long lastKey = rowSet.lastRowKey();
         if ((lastKey > 0) && ((lastKey & mask) != 0)) {
@@ -543,7 +543,7 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
             int pos = -1;
             long nextKey;
 
-            ShiftWrapper(RowSetShiftData shiftData) {
+            ShiftWrapper(final RowSetShiftData shiftData) {
                 this.shiftData = shiftData;
                 if (shiftData.nonempty()) {
                     pos = 0;
@@ -605,7 +605,7 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
                     RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
         }
 
-        private void setNewBase(int newBase) {
+        private void setNewBase(final int newBase) {
             for (final ColumnSource<?> source : resultMap.values()) {
                 if (source instanceof UngroupedColumnSource) {
                     ((UngroupedColumnSource<?>) source).setBase(newBase);
@@ -716,8 +716,10 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
         currentRowKey <<= base;
         previousRowKey <<= prevBase;
 
-        Require.requirement(currentRowKey >= 0 && (size == 0 || (currentRowKey + size - 1 >= 0)),
-                "rowKey >= 0 && (size == 0 || (rowKey + size - 1 >= 0))");
+        Assert.geqZero(currentRowKey, "currentRowKey");
+        if (size > 0) {
+            Assert.geqZero(currentRowKey + size - 1, "currentRowKey + size - 1");
+        }
 
         if (size == prevSize) {
             if (size > 0) {
