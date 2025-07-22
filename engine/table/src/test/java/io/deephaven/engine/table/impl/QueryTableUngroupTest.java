@@ -88,6 +88,90 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
         assertTableEquals(expected.head(0), ungrouped);
     }
 
+    public void testContiguousShift() {
+        final int oldBase = QueryTable.minimumUngroupBase;
+        try (final SafeCloseable ignored = () -> QueryTable.minimumUngroupBase = oldBase) {
+            QueryTable.minimumUngroupBase = 2;
+
+            final int[] a1 = {101, 102, 103, 104};
+            final int[] a2 = {201, 202, 203, 204};
+            final int[] a3 = {301, 302, 303, 304};
+            final QueryTable source = testRefreshingTable(
+                    intCol("Key", 1, 2, 3),
+                    col("Value", a1, a2, a3));
+
+            final Table expected =
+                    TableTools.newTable(intCol("Key", 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3),
+                            intCol("Value", 101, 102, 103, 104, 201, 202, 203, 204, 301, 302, 303, 304));
+
+            final Table ungrouped = source.ungroup();
+            TableTools.showWithRowSet(ungrouped, 14);
+            assertEquals(4 * 3 - 1, ungrouped.getRowSet().lastRowKey());
+            assertTableEquals(expected, ungrouped);
+
+            // we are shifting 1 and 2, which should take up the entire table
+            final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+            updateGraph.runWithinUnitTestCycle(() -> {
+                TstUtils.removeRows(source, i(1, 2));
+                TstUtils.addToTable(source, i(11, 12), intCol("Key", 2, 3), col("Value", a2, a3));
+
+                final RowSetShiftData.Builder sb = new RowSetShiftData.Builder();
+                sb.shiftRange(1, 9, 10);
+                final RowSetShiftData sd = sb.build();
+                source.notifyListeners(new TableUpdateImpl(i(), i(), i(), sd, ModifiedColumnSet.EMPTY));
+            });
+
+            // and just for fun, shift more than our actual existing range with extra keys in front
+            updateGraph.runWithinUnitTestCycle(() -> {
+                TstUtils.removeRows(source, i(11, 12));
+                TstUtils.addToTable(source, i(21, 22), intCol("Key", 2, 3), col("Value", a2, a3));
+
+                final RowSetShiftData.Builder sb = new RowSetShiftData.Builder();
+                sb.shiftRange(1, 19, 10);
+                final RowSetShiftData sd = sb.build();
+                source.notifyListeners(new TableUpdateImpl(i(), i(), i(), sd, ModifiedColumnSet.EMPTY));
+            });
+
+            assertTableEquals(expected, ungrouped);
+        }
+    }
+
+    public void testContiguousRemoves() {
+        final int oldBase = QueryTable.minimumUngroupBase;
+        try (final SafeCloseable ignored = () -> QueryTable.minimumUngroupBase = oldBase) {
+            QueryTable.minimumUngroupBase = 2;
+
+            final int[] a1 = {101, 102, 103, 104};
+            final int[] a2 = {201, 202, 203, 204};
+            final int[] a3 = {301, 302, 303, 304};
+            final QueryTable source = testRefreshingTable(
+                    intCol("Key", 1, 2, 3),
+                    col("Value", a1, a2, a3));
+
+            final Table expected =
+                    TableTools.newTable(intCol("Key", 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3),
+                            intCol("Value", 101, 102, 103, 104, 201, 202, 203, 204, 301, 302, 303, 304));
+
+            final Table ungrouped = source.ungroup();
+            TableTools.showWithRowSet(ungrouped, 14);
+            assertEquals(4 * 3 - 1, ungrouped.getRowSet().lastRowKey());
+            assertTableEquals(expected, ungrouped);
+
+            // we are shifting 1 and 2, which should take up the entire table
+            final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+            updateGraph.runWithinUnitTestCycle(() -> {
+                TstUtils.removeRows(source, i(1));
+
+                source.notifyListeners(
+                        new TableUpdateImpl(i(), i(1), i(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
+            });
+
+            final Table expected2 = TableTools.newTable(intCol("Key", 1, 1, 1, 1, 3, 3, 3, 3),
+                    intCol("Value", 101, 102, 103, 104, 301, 302, 303, 304));
+            assertTableEquals(expected2, ungrouped);
+        }
+    }
+
     public void testStatic() {
         final Table source = newTable(
                 intCol("Key", 1, 2, 3),

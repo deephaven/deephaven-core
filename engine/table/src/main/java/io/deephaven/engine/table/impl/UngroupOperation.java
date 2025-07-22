@@ -6,7 +6,6 @@ package io.deephaven.engine.table.impl;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.Chunk;
-import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.ResettableWritableLongChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Values;
@@ -90,7 +89,7 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
         final RowSet initRowSet = usePrev ? parentRowset.prev() : parentRowset;
 
         final long maxSize = computeMaxSize(initRowSet, sizes, usePrev);
-        final int initialBase = Math.max(64 - Long.numberOfLeadingZeros(maxSize), QueryTable.minimumUngroupBase);
+        final int initialBase = Math.max(determineRequiredBase(maxSize), QueryTable.minimumUngroupBase);
 
         final CrossJoinShiftState shiftState = new CrossJoinShiftState(initialBase, true);
 
@@ -125,6 +124,22 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
             listener = null;
         }
         return new Result<>(result, listener);
+    }
+
+    /**
+     * For a given maximum size of each row, determine the necessary base.
+     * 
+     * @param maxSize the maximum size of the rows
+     * @return the required base to accomodate maxSize
+     */
+    private static int determineRequiredBase(final long maxSize) {
+        if (maxSize == 0) {
+            // to avoid edge cases we always assign one value; even though we should have an empty index
+            return 1;
+        }
+        // if we have a size of e.g. 4, then we should determine how many leading zeros are present for 3; because we
+        // should allow our ranges to be contiguous
+        return 64 - Long.numberOfLeadingZeros(maxSize - 1);
     }
 
     private void updateRowsetForRow(final RowSetBuilderSequential addedBuilder,
@@ -289,6 +304,7 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
             }
 
             final long firstKeyForRow = parentKey << base;
+            final long lastKeyForRow = ((parentKey + 1) << base) - 1;
             if (!prevIt.advance(firstKeyForRow)) {
                 // the rest of the sizes must be zero, because there is nothing else in our result rowset
                 Arrays.fill(sizes, pos, sizes.length, 0);
@@ -296,11 +312,11 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
             }
 
             if (prevIt.currentRangeStart() == firstKeyForRow) {
-                sizes[pos] = prevIt.currentRangeEnd() - firstKeyForRow + 1;
+                final long actualEnd = Math.min(prevIt.currentRangeEnd(), lastKeyForRow);
+                sizes[pos] = actualEnd - firstKeyForRow + 1;
             } else {
                 sizes[pos] = 0;
                 // we should be in some other row
-                final long lastKeyForRow = ((parentKey + 1) << base) - 1;
                 Assert.gt(prevIt.currentRangeStart(), "prevIt.currentRangeStart()", lastKeyForRow, "lastRowForKey");
                 nextKey = prevIt.currentRangeStart() >> base;
             }
@@ -380,7 +396,7 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
                         ungroupModifiedModified);
             }
             if (requiredBase != shiftState.getNumShiftBits()) {
-                rebase(requiredBase + 1);
+                rebase(requiredBase);
                 return;
             }
 
@@ -392,73 +408,83 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
             addedRowSet.insert(ungroupModifiedAdded.build());
             removedRowSet.insert(ungroupModifiedRemoved.build());
 
-            // noinspection resource
             final TrackingWritableRowSet resultRowset = result.getRowSet().writableCast();
             resultRowset.remove(removedRowSet);
 
             final RowSetBuilderRandom removedByShiftBuilder = RowSetFactory.builderRandom();
             final RowSetBuilderRandom addedByShiftBuilder = RowSetFactory.builderRandom();
-            if (upstream.shifted().nonempty()) {
-                try (final RowSet.RangeIterator rsit = resultRowset.rangeIterator()) {
-                    // there must be at least one thing in the result rowset, otherwise we would have followed the clear
-                    // logic instead of this logic
-                    rsit.next();
-                    long nextResultKey = rsit.currentRangeStart();
-                    long nextSourceKey = nextResultKey >> requiredBase;
-
-                    final long lastRowKeyOffset = (1L << requiredBase) - 1;
-
-                    final RowSetShiftData upstreamShift = upstream.shifted();
-                    final long shiftSize = upstreamShift.size();
-                    SHIFT_LOOP: for (int ii = 0; ii < shiftSize; ++ii) {
-                        final long begin = upstreamShift.getBeginRange(ii);
-                        final long end = upstreamShift.getEndRange(ii);
-                        final long shiftDelta = upstreamShift.getShiftDelta(ii);
-
-                        final long resultShiftAmount = shiftDelta << (long) requiredBase;
-
-                        for (long rk = Math.max(begin, nextSourceKey); rk <= end; rk =
-                                Math.max(rk + 1, nextSourceKey)) {
-                            final long oldRangeStart = rk << (long) requiredBase;
-                            final long oldRangeEnd = (rk << (long) requiredBase) + lastRowKeyOffset;
-
-                            if (!rsit.advance(oldRangeStart)) {
-                                break SHIFT_LOOP;
-                            }
-                            // we successfully advanced
-                            nextResultKey = rsit.currentRangeStart();
-                            nextSourceKey = nextResultKey >> requiredBase;
-
-                            if (nextResultKey > oldRangeEnd) {
-                                // no need to shift things that don't exist anymore
-                                continue;
-                            }
-
-                            // get the range from our result rowset
-                            Assert.eq(oldRangeStart, "oldRangeStart", rsit.currentRangeStart(),
-                                    "rsit.currentRangeStart()");
-                            final long actualRangeEnd = rsit.currentRangeEnd();
-                            shiftBuilder.shiftRange(oldRangeStart, actualRangeEnd, resultShiftAmount);
-                            removedByShiftBuilder.addRange(oldRangeStart, actualRangeEnd);
-                            addedByShiftBuilder.addRange(oldRangeStart + resultShiftAmount,
-                                    actualRangeEnd + resultShiftAmount);
-
-                        }
-                    }
-                }
-            }
+            processShifts(upstream, resultRowset, requiredBase, shiftBuilder, removedByShiftBuilder,
+                    addedByShiftBuilder);
 
             resultRowset.remove(removedByShiftBuilder.build());
             resultRowset.insert(addedByShiftBuilder.build());
             resultRowset.insert(addedRowSet);
 
-            // TODO: we should examine the MCS to avoid work on rebased columns that have not changed (and just
-            // transform things for the key columns)
+            // TODO: we should examine the MCS to avoid work on columns that have not changed
             final RowSet modifiedRowSet = ungroupModifiedModified.build();
             transformer.clearAndTransform(upstream.modifiedColumnSet(), result.getModifiedColumnSetForUpdates());
             final TableUpdateImpl downstream = new TableUpdateImpl(addedRowSet, removedRowSet, modifiedRowSet,
                     shiftBuilder.build(), result.getModifiedColumnSetForUpdates());
             result.notifyListeners(downstream);
+        }
+
+        private void processShifts(final TableUpdate upstream,
+                final TrackingWritableRowSet resultRowset,
+                final int requiredBase,
+                final RowSetShiftData.Builder shiftBuilder,
+                final RowSetBuilderRandom removedByShiftBuilder,
+                final RowSetBuilderRandom addedByShiftBuilder) {
+            if (upstream.shifted().empty()) {
+                return;
+            }
+
+            try (final RowSet.RangeIterator rsit = resultRowset.rangeIterator()) {
+                // there must be at least one thing in the result rowset, otherwise we would have followed the clear
+                // logic instead of this logic
+                rsit.next();
+                long nextResultKey = rsit.currentRangeStart();
+                long nextSourceKey = nextResultKey >> requiredBase;
+
+                final long lastRowKeyOffset = (1L << requiredBase) - 1;
+
+                final RowSetShiftData upstreamShift = upstream.shifted();
+                final long shiftSize = upstreamShift.size();
+                SHIFT_LOOP: for (int ii = 0; ii < shiftSize; ++ii) {
+                    final long begin = upstreamShift.getBeginRange(ii);
+                    final long end = upstreamShift.getEndRange(ii);
+                    final long shiftDelta = upstreamShift.getShiftDelta(ii);
+
+                    final long resultShiftAmount = shiftDelta << (long) requiredBase;
+
+                    for (long rk = Math.max(begin, nextSourceKey); rk <= end; rk =
+                            Math.max(rk + 1, nextSourceKey)) {
+                        final long oldRangeStart = rk << (long) requiredBase;
+                        final long oldRangeEnd = (rk << (long) requiredBase) + lastRowKeyOffset;
+
+                        if (!rsit.advance(oldRangeStart)) {
+                            break SHIFT_LOOP;
+                        }
+                        // we successfully advanced
+                        nextResultKey = rsit.currentRangeStart();
+                        nextSourceKey = nextResultKey >> requiredBase;
+
+                        if (nextResultKey > oldRangeEnd) {
+                            // no need to shift things that don't exist anymore
+                            continue;
+                        }
+
+                        // get the range from our result rowset
+                        Assert.eq(oldRangeStart, "oldRangeStart", rsit.currentRangeStart(),
+                                "rsit.currentRangeStart()");
+                        final long actualRangeEnd = Math.min(rsit.currentRangeEnd(), oldRangeEnd);
+                        shiftBuilder.shiftRange(oldRangeStart, actualRangeEnd, resultShiftAmount);
+                        removedByShiftBuilder.addRange(oldRangeStart, actualRangeEnd);
+                        addedByShiftBuilder.addRange(oldRangeStart + resultShiftAmount,
+                                actualRangeEnd + resultShiftAmount);
+
+                    }
+                }
+            }
         }
 
         private void rebase(final int newBase) {
@@ -493,7 +519,7 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
             }
             final long[] sizes = new long[rowSet.intSize("ungroup")];
             final long maxSize = computeMaxSize(rowSet, sizes, false);
-            final int minBase = 64 - Long.numberOfLeadingZeros(maxSize);
+            final int minBase = determineRequiredBase(maxSize);
 
             if (!alwaysBuild && minBase > existingBase) {
                 // If we are going to change the base, there is no point in creating this rowset
@@ -529,7 +555,7 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
 
             final long maxSize = computeMaxSize(modified, sizes, false);
             computePrevSize(result.getRowSet().prev(), shiftState.getNumShiftBits(), modifiedPreShift, prevSizes);
-            final int minBase = 64 - Long.numberOfLeadingZeros(maxSize);
+            final int minBase = determineRequiredBase(maxSize);
             if (minBase > base) {
                 // If we are going to force a rebase, there is no need to compute the entire rowset
                 return minBase;
