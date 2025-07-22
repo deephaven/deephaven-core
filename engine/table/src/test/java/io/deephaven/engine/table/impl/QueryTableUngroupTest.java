@@ -624,14 +624,16 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
             TableTools.showWithRowSet(t1);
             assertEquals(5, t1.size());
 
-            final Table expected = TableTools.newTable(intCol("X", 1, 1, 1, 2, 2), stringCol("Y", "a", "b", "c", "d", "e"));
+            final Table expected =
+                    TableTools.newTable(intCol("X", 1, 1, 1, 2, 2), stringCol("Y", "a", "b", "c", "d", "e"));
             assertTableEquals(expected, t1);
             QueryTableTest.validateUpdates(t1);
 
             final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
             updateGraph.runWithinUnitTestCycle(() -> {
                 removeRows(table, i(15, 17));
-                addToTable(table, i(5, 7), intCol("X", 1, 2), col("Y", new String[]{"alpha", "bravo", "charlie", "delta", "echo"}, new String[]{"d", "e"}));
+                addToTable(table, i(5, 7), intCol("X", 1, 2),
+                        col("Y", new String[] {"alpha", "bravo", "charlie", "delta", "echo"}, new String[] {"d", "e"}));
 
                 final RowSetShiftData.Builder shiftBuilder = new RowSetShiftData.Builder();
                 shiftBuilder.shiftRange(10, 20, -10);
@@ -640,10 +642,79 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
                 table.notifyListeners(new TableUpdateImpl(i(), i(), i(5), sd, ModifiedColumnSet.ALL));
             });
             TableTools.showWithRowSet(t1);
-            final Table expected2 = TableTools.newTable(intCol("X", 1, 1, 1, 1, 1, 2, 2), stringCol("Y", "alpha", "bravo", "charlie", "delta", "echo", "d", "e"));
+            final Table expected2 = TableTools.newTable(intCol("X", 1, 1, 1, 1, 1, 2, 2),
+                    stringCol("Y", "alpha", "bravo", "charlie", "delta", "echo", "d", "e"));
             assertTableEquals(expected2, t1);
         } finally {
             QueryTable.setMinimumUngroupBase(minimumUngroupBase);
+        }
+    }
+
+
+    public void testUngroupIncrementalRebase() {
+        final int minimumUngroupBase = QueryTable.setMinimumUngroupBase(2);
+        try (final SafeCloseable ignored2 = () -> QueryTable.setMinimumUngroupBase(minimumUngroupBase)) {
+            for (int seed = 0; seed < 20; ++seed) {
+                try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+                    testUngroupIncrementalRebase(10, false, seed, 5);
+                }
+                try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+                    testUngroupIncrementalRebase(10, true, seed, 5);
+                }
+            }
+        }
+    }
+
+    public static int[] allocateInt(final int sentinel, final int size) {
+        final int[] result = new int[size];
+        for (int ii = 0; ii < size; ++ii) {
+            result[ii] = sentinel * 1000 + ii;
+        }
+        return result;
+    }
+
+    public static double[] allocateDouble(final int sentinel, final int size) {
+        final double[] result = new double[size];
+        for (int ii = 0; ii < size; ++ii) {
+            result[ii] = ii + ((double) sentinel / 100.0);
+        }
+        return result;
+    }
+
+    @SuppressWarnings("SameParameterValue")
+    private void testUngroupIncrementalRebase(final int tableSize,
+            final boolean nullFill,
+            final int seed,
+            final int maxSteps) {
+        final Random random = new Random(seed);
+        QueryScope.addParam("f", new SimpleDateFormat("dd HH:mm:ss"));
+
+        final ColumnInfo<?, ?>[] columnInfo;
+        final QueryTable table = getTable(tableSize, random,
+                columnInfo = initColumnInfos(
+                        new String[] {"Sentinel", "MiddleArray", "BigArray", "SmallSize", "MiddleSize", "BigSize"},
+                        new IntGenerator(0, 100),
+                        new BooleanGenerator(0.05),
+                        new BooleanGenerator(0.01),
+                        new IntGenerator(0, 3),
+                        new IntGenerator(4, 7),
+                        new IntGenerator(8, 32)));
+
+        final Table withArrays = table.update("Sz=BigArray ? BigSize : MiddleArray ? MiddleSize: SmallSize",
+                "A1=io.deephaven.engine.table.impl.QueryTableUngroupTest.allocateInt(Sentinel, Sz)",
+                "A2=io.deephaven.engine.table.impl.QueryTableUngroupTest.allocateDouble(Sentinel, Sz)");
+
+        final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
+                EvalNugget.from(() -> withArrays.ungroup(nullFill)),
+                // new UpdateValidatorNugget(withArrays.ungroup(nullFill))
+        };
+
+        final int stepSize = (int) Math.ceil(Math.sqrt(tableSize));
+        for (int step = 0; step < maxSteps; step++) {
+            if (RefreshingTableTestCase.printTableUpdates) {
+                System.out.println("Seed == " + seed + ", Step == " + step);
+            }
+            simulateShiftAwareStep(stepSize, random, table, columnInfo, en);
         }
     }
 

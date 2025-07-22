@@ -341,9 +341,7 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
             if (upstream.removed().size() == parent.getRowSet().sizePrev()) {
                 // our new base can safely be the minimum base; as everything has been removed from this table. This
                 // is convenient to allow the base to shrink in some circumstances.
-                final RowSetBuilderSequential added = RowSetFactory.builderSequential();
-                final int newBase = evaluateAdded(upstream.added(), added, QueryTable.minimumUngroupBase, true);
-                clearAndRecompute(newBase, added.build());
+                clearAndRecompute(upstream);
                 return;
             }
 
@@ -488,7 +486,7 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
             resultRowset.remove(removedRowSet);
 
             final int prevBase = shiftState.getPrevNumShiftBits();
-            final int maxOldSlotSize = (prevBase << 1) - 1;
+            final int maxOldSlotSize = 1 << prevBase;
 
             final RowSetShiftData.Builder shiftBuilder = new RowSetShiftData.Builder();
             final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
@@ -504,15 +502,13 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
                     final long endRange = rangeIterator.currentRangeEnd();
 
                     for (long oldSlotStart = startRange; oldSlotStart <= endRange; oldSlotStart += maxOldSlotSize) {
-                        final long oldSlotEnd = Math.min(oldSlotStart + maxOldSlotSize, endRange);
+                        final long oldSlotEnd = Math.min(oldSlotStart + maxOldSlotSize - 1, endRange);
                         final long existingSlotSize = oldSlotEnd - oldSlotStart + 1;
 
                         final long oldSourceKey = oldSlotStart >> prevBase;
                         final long newSourceKey;
 
-                        shiftWrapper.advance(oldSourceKey);
-
-                        if (shiftWrapper.hasCurrent() && shiftWrapper.currentShiftedKey() == oldSourceKey) {
+                        if (shiftWrapper.advance(oldSourceKey)) {
                             newSourceKey = oldSourceKey + shiftWrapper.currentShiftDelta();
                         } else {
                             newSourceKey = oldSourceKey;
@@ -520,6 +516,7 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
 
                         final long newSlotStart = newSourceKey << newBase;
                         final long newSlotEnd = newSlotStart + existingSlotSize - 1;
+
                         shiftBuilder.shiftRange(oldSlotStart, oldSlotEnd, newSlotStart - oldSlotStart);
                         builder.appendRange(newSlotStart, newSlotEnd);
                     }
@@ -571,43 +568,51 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
                 return shiftData.getShiftDelta(pos);
             }
 
-            void advance(final long advanceTo) {
+            /**
+             * Advance the shift data to the given key.
+             * 
+             * @param advanceTo the key to advance to
+             * @return true if the shift data is positioned at the desired key, false otherwise
+             */
+            boolean advance(final long advanceTo) {
                 if (nextKey == RowSet.NULL_ROW_KEY) {
                     // already at the end
-                    return;
+                    return false;
                 }
-                if (advanceTo == nextKey) {
-                    // at the right place
-                    return;
+                if (advanceTo <= nextKey) {
+                    // already at the right place
+                    return advanceTo == nextKey;
                 }
 
-                if (advanceTo < shiftData.getEndRange(pos)) {
+                if (advanceTo <= shiftData.getEndRange(pos)) {
                     Assert.geq(advanceTo, "advanceTo", shiftData.getBeginRange(pos), "shiftData.getBeginRange(pos)");
                     nextKey = advanceTo;
-                    return;
-                }
-                if (nextKey != shiftData.getEndRange(pos)) {
-                    return;
+                    return true;
                 }
 
                 while (pos < shiftData.size()) {
-                    if (nextKey < shiftData.getEndRange(pos)) {
+                    if (advanceTo <= shiftData.getEndRange(pos)) {
                         nextKey = Math.max(shiftData.getBeginRange(pos), nextKey);
-                        return;
+                        return nextKey == advanceTo;
                     }
                     pos++;
                 }
                 nextKey = RowSet.NULL_ROW_KEY;
+                return false;
             }
         }
 
-        private void clearAndRecompute(final int newBase, final WritableRowSet newRowSet) {
+        private void clearAndRecompute(final TableUpdate upstream) {
+            final RowSetBuilderSequential added = RowSetFactory.builderSequential();
+            final int newBase = evaluateAdded(upstream.added(), added, QueryTable.minimumUngroupBase, true);
+
+            final WritableRowSet newRowset = added.build();
             final TrackingWritableRowSet resultRowset = result.getRowSet().writableCast();
-            resultRowset.resetTo(newRowSet);
+            resultRowset.resetTo(newRowset);
 
             setNewBase(newBase);
 
-            result.notifyListeners(new TableUpdateImpl(newRowSet, resultRowset.copyPrev(), RowSetFactory.empty(),
+            result.notifyListeners(new TableUpdateImpl(newRowset, resultRowset.copyPrev(), RowSetFactory.empty(),
                     RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
         }
 
