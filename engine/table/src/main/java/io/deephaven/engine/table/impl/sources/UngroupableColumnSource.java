@@ -52,7 +52,7 @@ public interface UngroupableColumnSource {
      * Get the size of the vectors at each row key.
      *
      * <p>
-     * >This method is equivalent to calling {@link #getUngroupedSize(long)} on each row key in the row sequence.
+     * This method is equivalent to calling {@link #getUngroupedSize(long)} on each row key in the row sequence.
      * </p>
      *
      * @param rowSequence the row keys to fetch
@@ -64,10 +64,10 @@ public interface UngroupableColumnSource {
     }
 
     /**
-     * Get the size of the vectors at each row key.
+     * Get the previous size of the vectors at each row key.
      *
      * <p>
-     * >This method is equivalent to calling {@link #getUngroupedPrevSize(long)} on each row key in the row sequence.
+     * This method is equivalent to calling {@link #getUngroupedPrevSize(long)} on each row key in the row sequence.
      * </p>
      *
      * @param rowSequence the row keys to fetch

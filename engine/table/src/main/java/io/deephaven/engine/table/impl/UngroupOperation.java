@@ -12,20 +12,19 @@ import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.rowset.*;
-import io.deephaven.engine.table.ChunkSource;
-import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.ModifiedColumnSet;
-import io.deephaven.engine.table.TableUpdate;
+import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.sources.BitShiftingColumnSource;
 import io.deephaven.engine.table.impl.sources.UngroupableColumnSource;
 import io.deephaven.engine.table.impl.sources.UngroupedColumnSource;
-import io.deephaven.util.mutable.MutableInt;
 import io.deephaven.util.mutable.MutableLong;
 import io.deephaven.vector.Vector;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 
+/**
+ * The ungroup operation implements {@link Table#ungroup()}.
+ */
 public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTable> {
     static final int CHUNK_SIZE =
             Configuration.getInstance().getIntegerWithDefault("UngroupOperation.chunkSize", 1 << 10);
@@ -36,10 +35,7 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
 
     final ColumnSource<?>[] ungroupSources;
     final UngroupableColumnSource[] ungroupableColumnSources;
-    final UngroupSizeKernels.SizeFunction[] sizeFunctions;
-    final UngroupSizeKernels.MaxSizeFunction[] maxSizeFunctions;
-    final UngroupSizeKernels.CheckSizeFunction[] checkSizeFunctions;
-    final UngroupSizeKernels.MaybeIncreaseSizeFunction[] maybeIncreaseSizeFunctions;
+    final UngroupSizeKernel[] sizeKernels;
 
     public UngroupOperation(final QueryTable parent, final boolean nullFill, final String[] columnsToUngroupBy) {
         this.parent = parent;
@@ -48,10 +44,7 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
 
         ungroupSources = new ColumnSource[columnsToUngroupBy.length];
         ungroupableColumnSources = new UngroupableColumnSource[columnsToUngroupBy.length];
-        sizeFunctions = new UngroupSizeKernels.SizeFunction[columnsToUngroupBy.length];
-        maxSizeFunctions = new UngroupSizeKernels.MaxSizeFunction[columnsToUngroupBy.length];
-        checkSizeFunctions = new UngroupSizeKernels.CheckSizeFunction[columnsToUngroupBy.length];
-        maybeIncreaseSizeFunctions = new UngroupSizeKernels.MaybeIncreaseSizeFunction[columnsToUngroupBy.length];
+        sizeKernels = new UngroupSizeKernel[columnsToUngroupBy.length];
 
         for (int columnIndex = 0; columnIndex < columnsToUngroupBy.length; columnIndex++) {
             final String name = columnsToUngroupBy[columnIndex];
@@ -61,15 +54,9 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
             }
             ungroupSources[columnIndex] = column;
             if (column.getType().isArray()) {
-                sizeFunctions[columnIndex] = UngroupSizeKernels::sizeArray;
-                maxSizeFunctions[columnIndex] = UngroupSizeKernels::maxSizeArray;
-                checkSizeFunctions[columnIndex] = UngroupSizeKernels::checkSizeArray;
-                maybeIncreaseSizeFunctions[columnIndex] = UngroupSizeKernels::maybeIncreaseSizeArray;
+                sizeKernels[columnIndex] = UngroupSizeKernel.ArraySizeKernel.INSTANCE;
             } else if (Vector.class.isAssignableFrom(column.getType())) {
-                sizeFunctions[columnIndex] = UngroupSizeKernels::sizeVector;
-                maxSizeFunctions[columnIndex] = UngroupSizeKernels::maxSizeVector;
-                checkSizeFunctions[columnIndex] = UngroupSizeKernels::checkSizeVector;
-                maybeIncreaseSizeFunctions[columnIndex] = UngroupSizeKernels::maybeIncreaseSizeVector;
+                sizeKernels[columnIndex] = UngroupSizeKernel.VectorSizeKernel.INSTANCE;
             } else {
                 throw new InvalidColumnException("Column " + name + " is not an array or Vector");
             }
@@ -191,7 +178,7 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
                                     usePrev ? arrayColumn.getPrevChunk(getContext, rsChunk)
                                             : arrayColumn.getChunk(getContext, rsChunk);
                             final ObjectChunk<Object, ? extends Values> objectChunk = chunk.asObjectChunk();
-                            maxSize = Math.max(maxSizeFunctions[columnIndex].maxSize(objectChunk, sizes, offset),
+                            maxSize = Math.max(sizeKernels[columnIndex].maxSize(objectChunk, sizes, offset),
                                     maxSize);
                             offset += objectChunk.size();
                         }
@@ -230,7 +217,7 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
                                             : arrayColumn.getChunk(getContext, rsChunk);
                             final ObjectChunk<Object, ? extends Values> objectChunk = chunk.asObjectChunk();
 
-                            final long maxSizeForChunk = maybeIncreaseSizeFunctions[columnIndex]
+                            final long maxSizeForChunk = sizeKernels[columnIndex]
                                     .maybeIncreaseSize(objectChunk, sizes, offset);
                             maxSize = Math.max(maxSizeForChunk, maxSize);
                             offset += objectChunk.size();
@@ -275,16 +262,15 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
                                     usePrev ? arrayColumn.getPrevChunk(getContext, rsChunk)
                                             : arrayColumn.getChunk(getContext, rsChunk);
                             final ObjectChunk<Object, ? extends Values> objectChunk = chunk.asObjectChunk();
-                            final int firstDifference =
-                                    checkSizeFunctions[columnIndex].checkSize(objectChunk, sizes, offset,
-                                            mismatchedSize);
-                            if (firstDifference >= 0) {
+                            final int firstDifferenceChunkOffset =
+                                    sizeKernels[columnIndex].checkSize(objectChunk, sizes, offset, mismatchedSize);
+                            if (firstDifferenceChunkOffset >= 0) {
                                 try (final RowSet rowset = rsChunk.asRowSet()) {
-                                    final long correspondingRowKey = rowset.get(firstDifference);
+                                    final long correspondingRowKey = rowset.get(firstDifferenceChunkOffset);
                                     final String message = String.format(
                                             "Array sizes differ at row key %d (position %d), %s has size %d, %s has size %d",
-                                            correspondingRowKey, offset + firstDifference, referenceColumn,
-                                            sizes[offset + firstDifference], name, mismatchedSize.get());
+                                            correspondingRowKey, offset + firstDifferenceChunkOffset, referenceColumn,
+                                            sizes[offset + firstDifferenceChunkOffset], name, mismatchedSize.get());
                                     throw new IllegalStateException(message);
                                 }
                             }

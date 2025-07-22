@@ -206,7 +206,7 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
         final Table table2 = newTable(col("X", 1, 2, 3), col("Y", new int[] {1}, null, null));
         final InvalidColumnException columnException =
                 Assert.assertThrows(InvalidColumnException.class, () -> table2.ungroup("X"));
-        assertEquals("Column X is not an array", columnException.getMessage());
+        assertEquals("Column X is not an array or Vector", columnException.getMessage());
     }
 
     public void testSimple() {
