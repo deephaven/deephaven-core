@@ -14,15 +14,6 @@ import java.lang.reflect.Array;
  */
 interface UngroupSizeKernel {
     /**
-     * Determine the size of each element in chunk. Write results beginning at offset in sizesOut.
-     * 
-     * @param chunk the input chunk
-     * @param sizesOut the output array
-     * @param offset the position in the output array of the first result
-     */
-    void size(final ObjectChunk<Object, ?> chunk, final long[] sizesOut, final int offset);
-
-    /**
      * Determine the size of each element in chunk. Write results beginning at offset in sizesOut. Additionally, returns
      * the maximum size seen.
      *
@@ -62,16 +53,6 @@ interface UngroupSizeKernel {
 
     class ArraySizeKernel implements UngroupSizeKernel {
         public static ArraySizeKernel INSTANCE = new ArraySizeKernel();
-
-        @Override
-        public void size(final ObjectChunk<Object, ?> chunk, final long[] sizesOut, final int offset) {
-            final int chunkSize = chunk.size();
-            for (int ii = 0; ii < chunkSize; ++ii) {
-                final Object array = chunk.get(ii);
-                final int size = array == null ? 0 : Array.getLength(array);
-                sizesOut[ii + offset] = size;
-            }
-        }
 
         @Override
         public long maxSize(final ObjectChunk<Object, ?> chunk, final long[] sizesOut, final int offset) {
@@ -120,16 +101,6 @@ interface UngroupSizeKernel {
 
     class VectorSizeKernel implements UngroupSizeKernel {
         public static VectorSizeKernel INSTANCE = new VectorSizeKernel();
-
-        @Override
-        public void size(final ObjectChunk<Object, ?> chunk, final long[] sizesOut, final int offset) {
-            final int chunkSize = chunk.size();
-            for (int ii = 0; ii < chunkSize; ++ii) {
-                final Vector<?> vector = (Vector<?>) chunk.get(ii);
-                final long size = vector != null ? vector.size() : 0;
-                sizesOut[ii + offset] = size;
-            }
-        }
 
         @Override
         public long maxSize(final ObjectChunk<Object, ?> chunk, final long[] sizesOut, final int offset) {

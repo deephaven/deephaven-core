@@ -73,6 +73,19 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
         });
 
         assertTableEquals(expected, ungrouped);
+
+        // this one is silly, we are going to shift an empty table; which was to cover a since deleted branch
+        updateGraph.runWithinUnitTestCycle(() -> {
+            final RowSet rowsToRemove = source.getRowSet().copy();
+            TstUtils.removeRows(source, rowsToRemove);
+            final RowSetShiftData.Builder sb = new RowSetShiftData.Builder();
+            sb.shiftRange(100, 200, 100);
+            final RowSetShiftData sd = sb.build();
+            source.notifyListeners(new TableUpdateImpl(i(), rowsToRemove, i(), sd, ModifiedColumnSet.EMPTY));
+        });
+        TableTools.show(source);
+        TableTools.show(ungrouped);
+        assertTableEquals(expected.head(0), ungrouped);
     }
 
     public void testStatic() {
@@ -1000,9 +1013,10 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
                 final WritableRowSet toRemove = i(0, 1);
                 final WritableRowSet toAdd = i(0, 1);
                 table.getRowSet().writableCast().resetTo(toAdd);
+                // we are being sneaky here by leaving 1 in place but calling it an add + remove
                 TstUtils.addToTable(table, i(0), intCol("X", 2), col("Y", new int[] {201, 202}));
                 table.notifyListeners(
-                        new TableUpdateImpl(toAdd, toRemove, i(0), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
+                        new TableUpdateImpl(toAdd, toRemove, i(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
             });
 
             final Table expected2 = TableTools.newTable(intCol("X", 2, 2, 3), intCol("Y", 201, 202, 110));
@@ -1010,6 +1024,26 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
 
             // our base should be 2 again, not 3; so the maximum key expected should be at position 4
             assertEquals(4, ungrouped.getRowSet().lastRowKey());
+
+            // start fresh again, but this time we are going to exceed the minimum base
+            updateGraph.runWithinUnitTestCycle(() -> {
+                final WritableRowSet toRemove = i(0, 1);
+                final WritableRowSet toAdd = i(0, 3);
+                table.getRowSet().writableCast().resetTo(toAdd);
+                TstUtils.addToTable(table, i(0, 3), intCol("X", 4, 5),
+                        col("Y", new int[] {401, 402, 403, 404, 405, 406, 407, 408, 409, 410}, new int[] {501}));
+                table.notifyListeners(
+                        new TableUpdateImpl(toAdd, toRemove, i(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
+            });
+
+            final Table expected3 = TableTools.newTable(intCol("X", 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 5),
+                    intCol("Y", 401, 402, 403, 404, 405, 406, 407, 408, 409, 410, 501));
+            assertTableEquals(expected3, ungrouped);
+
+            // our base should be 4 now, not 3; so the maximum key expected should be at position 3 (our last row key) *
+            // 16
+            assertEquals(3 * 16, ungrouped.getRowSet().lastRowKey());
+
         } finally {
             QueryTable.setMinimumUngroupBase(oldMinimumUngroupBase);
         }

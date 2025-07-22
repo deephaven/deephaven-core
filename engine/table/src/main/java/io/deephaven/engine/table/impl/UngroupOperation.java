@@ -399,42 +399,49 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
             final RowSetBuilderRandom removedByShiftBuilder = RowSetFactory.builderRandom();
             final RowSetBuilderRandom addedByShiftBuilder = RowSetFactory.builderRandom();
             if (upstream.shifted().nonempty()) {
-                try (final RowSequence.Iterator rsit = resultRowset.getRowSequenceIterator()) {
+                try (final RowSet.RangeIterator rsit = resultRowset.rangeIterator()) {
+                    // there must be at least one thing in the result rowset, otherwise we would have followed the clear
+                    // logic instead of this logic
+                    rsit.next();
+                    long nextResultKey = rsit.currentRangeStart();
+                    long nextSourceKey = nextResultKey >> requiredBase;
+
                     final long lastRowKeyOffset = (1L << requiredBase) - 1;
 
                     final RowSetShiftData upstreamShift = upstream.shifted();
                     final long shiftSize = upstreamShift.size();
-                    for (int ii = 0; ii < shiftSize; ++ii) {
+                    SHIFT_LOOP: for (int ii = 0; ii < shiftSize; ++ii) {
                         final long begin = upstreamShift.getBeginRange(ii);
                         final long end = upstreamShift.getEndRange(ii);
                         final long shiftDelta = upstreamShift.getShiftDelta(ii);
 
                         final long resultShiftAmount = shiftDelta << (long) requiredBase;
 
-                        // TODO: if we don't actually have the corresponding thing in our input rowset, this is
-                        // certainly a waste of time
-                        for (long rk = begin; rk <= end; rk++) {
+                        for (long rk = Math.max(begin, nextSourceKey); rk <= end; rk =
+                                Math.max(rk + 1, nextSourceKey)) {
                             final long oldRangeStart = rk << (long) requiredBase;
                             final long oldRangeEnd = (rk << (long) requiredBase) + lastRowKeyOffset;
 
                             if (!rsit.advance(oldRangeStart)) {
-                                break;
+                                break SHIFT_LOOP;
                             }
+                            // we successfully advanced
+                            nextResultKey = rsit.currentRangeStart();
+                            nextSourceKey = nextResultKey >> requiredBase;
 
-
-                            // get the range from our result rowset
-                            final RowSequence expandedRowSequence = rsit.getNextRowSequenceThrough(oldRangeEnd);
-                            if (expandedRowSequence.isEmpty()) {
+                            if (nextResultKey > oldRangeEnd) {
                                 // no need to shift things that don't exist anymore
                                 continue;
                             }
 
-                            shiftBuilder.shiftRange(oldRangeStart, expandedRowSequence.lastRowKey(), resultShiftAmount);
-                            Assert.assertion(expandedRowSequence.isContiguous(), "expandedRowSequence.isContiguous()");
-                            removedByShiftBuilder.addRange(expandedRowSequence.firstRowKey(),
-                                    expandedRowSequence.lastRowKey());
-                            addedByShiftBuilder.addRange(expandedRowSequence.firstRowKey() + resultShiftAmount,
-                                    expandedRowSequence.lastRowKey() + resultShiftAmount);
+                            // get the range from our result rowset
+                            Assert.eq(oldRangeStart, "oldRangeStart", rsit.currentRangeStart(),
+                                    "rsit.currentRangeStart()");
+                            final long actualRangeEnd = rsit.currentRangeEnd();
+                            shiftBuilder.shiftRange(oldRangeStart, actualRangeEnd, resultShiftAmount);
+                            removedByShiftBuilder.addRange(oldRangeStart, actualRangeEnd);
+                            addedByShiftBuilder.addRange(oldRangeStart + resultShiftAmount,
+                                    actualRangeEnd + resultShiftAmount);
 
                         }
                     }
@@ -479,20 +486,22 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
         }
 
         private int evaluateAdded(final RowSet rowSet, @NotNull final RowSetBuilderSequential ungroupBuilder,
-                final int newBase,
+                final int existingBase,
                 final boolean alwaysBuild) {
             if (rowSet.isEmpty()) {
-                return newBase;
+                return existingBase;
             }
             final long[] sizes = new long[rowSet.intSize("ungroup")];
             final long maxSize = computeMaxSize(rowSet, sizes, false);
             final int minBase = 64 - Long.numberOfLeadingZeros(maxSize);
-            if (!alwaysBuild && minBase > newBase) {
+
+            if (!alwaysBuild && minBase > existingBase) {
                 // If we are going to change the base, there is no point in creating this rowset
                 return minBase;
             }
-            getUngroupRowset(sizes, ungroupBuilder, newBase, rowSet);
-            return newBase;
+            final int resultBase = Math.max(existingBase, minBase);
+            getUngroupRowset(sizes, ungroupBuilder, resultBase, rowSet);
+            return resultBase;
         }
 
         private void evaluateRemoved(final RowSet rowSet, final RowSetBuilderSequential builder) {
