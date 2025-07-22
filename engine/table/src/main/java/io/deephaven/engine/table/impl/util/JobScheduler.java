@@ -90,7 +90,8 @@ public interface JobScheduler {
      * automatically schedule the next iteration.
      * <p>
      * NOTE: failing to call {@code resume} will result in the scheduler not scheduling all remaining iterations. This
-     * will not block the scheduler, but the {@code completeAction} {@link Runnable} will never be called.
+     * will not block the scheduler, but the {@code completeAction} {@link Runnable} will never be called. TODO: does
+     * resume need to be called even if nestedErrorConsumer is invoked?
      */
     @FunctionalInterface
     interface IterateResumeAction<CONTEXT_TYPE extends JobThreadContext> {

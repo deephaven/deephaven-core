@@ -5,7 +5,6 @@ package io.deephaven.engine.table.impl.locations.impl;
 
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.liveness.*;
-import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.BasicDataIndex;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.PushdownFilterContext;
@@ -300,7 +299,6 @@ public abstract class AbstractTableLocation
     public void estimatePushdownFilterCost(
             final WhereFilter filter,
             final RowSet selection,
-            final RowSet fullSet,
             final boolean usePrev,
             final PushdownFilterContext context,
             final JobScheduler jobScheduler,
@@ -314,7 +312,6 @@ public abstract class AbstractTableLocation
     public void pushdownFilter(
             final WhereFilter filter,
             final RowSet selection,
-            final RowSet fullSet,
             final boolean usePrev,
             final PushdownFilterContext context,
             final long costCeiling,
@@ -322,7 +319,7 @@ public abstract class AbstractTableLocation
             final Consumer<PushdownResult> onComplete,
             final Consumer<Exception> onError) {
         // Default to returning all results as "maybe"
-        onComplete.accept(PushdownResult.of(RowSetFactory.empty(), selection.copy()));
+        onComplete.accept(PushdownResult.maybeMatch(selection));
     }
 
     @Override

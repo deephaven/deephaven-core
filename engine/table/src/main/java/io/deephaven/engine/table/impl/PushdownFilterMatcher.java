@@ -32,7 +32,6 @@ public interface PushdownFilterMatcher {
      *
      * @param filter The {@link Filter filter} to test.
      * @param selection The set of rows to tests.
-     * @param fullSet The full set of rows
      * @param usePrev Whether to use the previous result
      * @param context The {@link PushdownFilterContext} to use for the pushdown operation.
      * @param jobScheduler The job scheduler to use for scheduling child jobs
@@ -43,7 +42,6 @@ public interface PushdownFilterMatcher {
     void estimatePushdownFilterCost(
             final WhereFilter filter,
             final RowSet selection,
-            final RowSet fullSet,
             final boolean usePrev,
             final PushdownFilterContext context,
             final JobScheduler jobScheduler,
@@ -55,9 +53,19 @@ public interface PushdownFilterMatcher {
      * to execute all pushdown filter steps that are greater than {@link PushdownFilterContext#executedFilterCost()} and
      * less than or equal to {@code costCeiling}.
      *
+     * <p>
+     * The resulting {@link PushdownResult} (to {@code onComplete}) must only contain rows from {@code selection}. The
+     * {@link PushdownResult#match() match row set} are rows that are guaranteed to match. The implicitly "missing" rows
+     * {@code selection - match - maybeMatch} are rows that are guaranteed to <b>not</b> match. The remaining
+     * {@link PushdownResult#maybeMatch() maybe match row set} are rows that may, or may not, match. The pushdown result
+     * ownership passes to {@code onComplete}.
+     *
+     * <p>
+     * A no-op implementation should simply return {@code PushdownResult.maybeMatch(selection)}. Note that any
+     * references to {@code selection} should be {@link RowSet#copy() copied}.
+     *
      * @param filter The {@link Filter filter} to apply.
      * @param selection The set of rows to test.
-     * @param fullSet The full set of rows
      * @param usePrev Whether to use the previous result
      * @param context The {@link PushdownFilterContext} to use for the pushdown operation.
      * @param costCeiling Execute all possible filters with a cost less than or equal this value.
@@ -68,7 +76,6 @@ public interface PushdownFilterMatcher {
     void pushdownFilter(
             final WhereFilter filter,
             final RowSet selection,
-            final RowSet fullSet,
             final boolean usePrev,
             final PushdownFilterContext context,
             final long costCeiling,
