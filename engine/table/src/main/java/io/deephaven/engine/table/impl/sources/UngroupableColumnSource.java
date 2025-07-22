@@ -267,7 +267,7 @@ public interface UngroupableColumnSource {
 
     /**
      * Helper method for a naive implementation of
-     * {@link #getUngroupedSize(ChunkSource.FillContext, RowSequence, WritableLongChunk)}.
+     * {@link #getUngroupedPrevSize(ChunkSource.FillContext, RowSequence, WritableLongChunk)}.
      *
      * @param ungroupableColumnSource the ungroupable column source
      * @param rowSequence the rowsequence of keys to determine vector sizes
