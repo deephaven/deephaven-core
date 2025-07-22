@@ -454,6 +454,21 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
         return withoutAttributes(Set.of(BLINK_TABLE_ATTRIBUTE));
     }
 
+    @Override
+    public Table assertBlink() {
+        return withAttributes(Map.of(BLINK_TABLE_ATTRIBUTE, true));
+    }
+
+    @Override
+    public Table assertAddOnly() {
+        return withAttributes(Map.of(ADD_ONLY_TABLE_ATTRIBUTE, true));
+    }
+
+    @Override
+    public Table assertAppendOnly() {
+        return withAttributes(Map.of(APPEND_ONLY_TABLE_ATTRIBUTE, true));
+    }
+
     // ------------------------------------------------------------------------------------------------------------------
     // Implementation for update propagation support
     // ------------------------------------------------------------------------------------------------------------------
@@ -705,13 +720,6 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
 
         maybeSignal();
 
-        final boolean hasNoListeners = !hasListeners();
-        if (hasNoListeners) {
-            lastNotificationStep = currentStep;
-            updateToSend.release();
-            return;
-        }
-
         Assert.neqNull(updateToSend.added(), "added");
         Assert.neqNull(updateToSend.removed(), "removed");
         Assert.neqNull(updateToSend.modified(), "modified");
@@ -735,6 +743,13 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
             Assert.eq(updateToSend.removed().size(), "removed size", getRowSet().sizePrev(), "previous table size");
             Assert.assertion(updateToSend.modified().isEmpty(), "updateToSend.modified.isEmpty()");
             Assert.assertion(updateToSend.shifted().empty(), "updateToSend.shifted.empty()");
+        }
+
+        final boolean hasNoListeners = !hasListeners();
+        if (hasNoListeners) {
+            lastNotificationStep = currentStep;
+            updateToSend.release();
+            return;
         }
 
         // First validate that each rowSet is in a sane state.

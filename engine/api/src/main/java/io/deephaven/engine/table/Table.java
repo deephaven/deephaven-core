@@ -550,10 +550,67 @@ public interface Table extends
      * If this table is a blink table, i.e. it has {@link #BLINK_TABLE_ATTRIBUTE} set to {@code true}, return a child
      * without the attribute, restoring standard semantics for aggregation operations.
      *
+     * <p>
+     * Removing the {@link #BLINK_TABLE_ATTRIBUTE} does not change the underlying update pattern of the table. On each
+     * cycle, all exist rows are removed. When used with an aggregation, this has the effect of providing the aggregated
+     * values for only this cycle.
+     * </p>
+     *
+     * <p>
+     * Some aggregations (in particular {@link #groupBy()} and {@link #partitionBy(String...)} cannot provide the
+     * desired blink table aggregation semantics; because it would require storing the entire stream of blink updates in
+     * memory. If that behavior is desired, use {@code blinkToAppendOnly()}. If on the other hand, you would like to
+     * group or partition only values from the current update, remove the blink attribute with this method.
+     * </p>
+     *
+     * <p>
+     * To add the blink attribute back to a table that generates updates consistent with blink semantics, use
+     * {@link #assertBlink()}.
+     * </p>
+     *
      * @return A non-blink child table, or this table if it is not a blink table
      */
     @ConcurrentMethod
     Table removeBlink();
+
+    /**
+     * Returns {@code this} or a child Table with {@link #BLINK_TABLE_ATTRIBUTE} set to {@code true}.
+     *
+     * <p>
+     * This table must already produce an update pattern that conforms to blink semantics. If it produces an update that
+     * does not conform to blink semantics, then the returned table will notify of an error.
+     * </p>
+     *
+     * @return A child table with the blink attribute set, or this table if already a blink table.
+     */
+    @ConcurrentMethod
+    Table assertBlink();
+
+    /**
+     * Returns {@code this} or a child Table with {@link #ADD_ONLY_TABLE_ATTRIBUTE} set to {@code true}.
+     *
+     * <p>
+     * This table must already produce an update pattern that conforms to add-only semantics. If it produces an update
+     * that does not conform to add-only semantics, then the returned table will notify of an error.
+     * </p>
+     *
+     * @return A child table with the add-only attribute set, or this table if already an add-only table.
+     */
+    @ConcurrentMethod
+    Table assertAddOnly();
+
+    /**
+     * Returns {@code this} or a child Table with {@link #APPEND_ONLY_TABLE_ATTRIBUTE} set to {@code true}.
+     *
+     * <p>
+     * This table must already produce an update pattern that conforms to append-only semantics. If it produces an
+     * update that does not conform to append-only semantics, then the returned table will notify of an error.
+     * </p>
+     *
+     * @return A child table with the append-only attribute set, or this table if already an add-only table.
+     */
+    @ConcurrentMethod
+    Table assertAppendOnly();
 
     // -----------------------------------------------------------------------------------------------------------------
     // PartitionBy Operations
