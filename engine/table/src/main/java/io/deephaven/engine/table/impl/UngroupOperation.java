@@ -142,37 +142,6 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
         return 64 - Long.numberOfLeadingZeros(maxSize - 1);
     }
 
-    private void updateRowsetForRow(final RowSetBuilderSequential addedBuilder,
-            final RowSetBuilderSequential removedBuilder,
-            final RowSetBuilderSequential modifyBuilder,
-            final long size,
-            final long prevSize,
-            long currentRowKey,
-            long previousRowKey,
-            final long base) {
-        currentRowKey <<= base;
-        previousRowKey <<= base;
-
-        Require.requirement(currentRowKey >= 0 && (size == 0 || (currentRowKey + size - 1 >= 0)),
-                "rowKey >= 0 && (size == 0 || (rowKey + size - 1 >= 0))");
-
-        if (size == prevSize) {
-            if (size > 0) {
-                modifyBuilder.appendRange(currentRowKey, currentRowKey + size - 1);
-            }
-        } else if (size < prevSize) {
-            if (size > 0) {
-                modifyBuilder.appendRange(currentRowKey, currentRowKey + size - 1);
-            }
-            removedBuilder.appendRange(previousRowKey + size, previousRowKey + prevSize - 1);
-        } else {
-            if (prevSize > 0) {
-                modifyBuilder.appendRange(currentRowKey, currentRowKey + prevSize - 1);
-            }
-            addedBuilder.appendRange(currentRowKey + prevSize, currentRowKey + size - 1);
-        }
-    }
-
     private long computeMaxSize(final RowSet rowSet, final long[] sizes, final boolean usePrev) {
         long maxSize = 0;
 
@@ -330,8 +299,8 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
         final long lastKey = rowSet.lastRowKey();
         if ((lastKey > 0) && ((lastKey & mask) != 0)) {
             throw new IllegalStateException(
-                    "Key overflow detected, perhaps you should flatten your table before calling ungroup.  "
-                            + ",lastRowKey=" + lastKey + ", base=" + base);
+                    "Key overflow detected, perhaps you should flatten your table before calling ungroup: lastRowKey="
+                            + lastKey + ", base=" + base);
         }
 
         int pos = 0;
@@ -372,9 +341,8 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
                 // our new base can safely be the minimum base; as everything has been removed from this table. This
                 // is convenient to allow the base to shrink in some circumstances.
                 final RowSetBuilderSequential ungroupAdded = RowSetFactory.builderSequential();
-                // TODO: cover the true vs. false
                 final int newBase = evaluateAdded(upstream.added(), ungroupAdded, QueryTable.minimumUngroupBase, true);
-                rebase(newBase, ungroupAdded.build());
+                clearAndRecompute(newBase, ungroupAdded.build());
                 return;
             }
 
@@ -493,10 +461,11 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
             computeMaxSize(parentRowset, sizes, false);
             getUngroupRowset(sizes, builder, newBase, parentRowset);
             final WritableRowSet newRowSet = builder.build();
-            rebase(newBase, newRowSet);
+            // TODO: don't actually clear and recompute, but rather build a suitable shift structure
+            clearAndRecompute(newBase, newRowSet);
         }
 
-        private void rebase(final int newBase, final WritableRowSet newRowSet) {
+        private void clearAndRecompute(final int newBase, final WritableRowSet newRowSet) {
             final TrackingWritableRowSet resultRowset = result.getRowSet().writableCast();
             resultRowset.resetTo(newRowSet);
 
@@ -572,6 +541,37 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
             }
 
             return base;
+        }
+    }
+
+    private void updateRowsetForRow(final RowSetBuilderSequential addedBuilder,
+            final RowSetBuilderSequential removedBuilder,
+            final RowSetBuilderSequential modifyBuilder,
+            final long size,
+            final long prevSize,
+            long currentRowKey,
+            long previousRowKey,
+            final long base) {
+        currentRowKey <<= base;
+        previousRowKey <<= base;
+
+        Require.requirement(currentRowKey >= 0 && (size == 0 || (currentRowKey + size - 1 >= 0)),
+                "rowKey >= 0 && (size == 0 || (rowKey + size - 1 >= 0))");
+
+        if (size == prevSize) {
+            if (size > 0) {
+                modifyBuilder.appendRange(currentRowKey, currentRowKey + size - 1);
+            }
+        } else if (size < prevSize) {
+            if (size > 0) {
+                modifyBuilder.appendRange(currentRowKey, currentRowKey + size - 1);
+            }
+            removedBuilder.appendRange(previousRowKey + size, previousRowKey + prevSize - 1);
+        } else {
+            if (prevSize > 0) {
+                modifyBuilder.appendRange(currentRowKey, currentRowKey + prevSize - 1);
+            }
+            addedBuilder.appendRange(currentRowKey + prevSize, currentRowKey + size - 1);
         }
     }
 }
