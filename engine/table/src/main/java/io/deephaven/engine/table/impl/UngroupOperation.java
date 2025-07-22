@@ -553,17 +553,6 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
                 }
             }
 
-            boolean hasCurrent() {
-                return nextKey != RowSet.NULL_ROW_KEY;
-            }
-
-            long currentShiftedKey() {
-                if (pos < 0) {
-                    return RowSet.NULL_ROW_KEY;
-                }
-                return nextKey;
-            }
-
             long currentShiftDelta() {
                 return shiftData.getShiftDelta(pos);
             }

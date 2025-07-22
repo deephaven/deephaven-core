@@ -654,7 +654,7 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
     public void testUngroupIncrementalRebase() {
         final int minimumUngroupBase = QueryTable.setMinimumUngroupBase(2);
         try (final SafeCloseable ignored2 = () -> QueryTable.setMinimumUngroupBase(minimumUngroupBase)) {
-            for (int seed = 0; seed < 20; ++seed) {
+            for (int seed = 0; seed < 100; ++seed) {
                 try (final SafeCloseable ignored = LivenessScopeStack.open()) {
                     testUngroupIncrementalRebase(10, false, seed, 5);
                 }
