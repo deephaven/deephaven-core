@@ -22,8 +22,7 @@ public class UngroupedObjectVectorColumnSource<T> extends UngroupedColumnSource<
         // noinspection unchecked
         super((Class<T>) innerSource.getComponentType());
         this.innerSource = innerSource;
-        this.isUngroupable = innerSource instanceof UngroupableColumnSource
-                && ((UngroupableColumnSource) innerSource).isUngroupable();
+        this.isUngroupable = UngroupableColumnSource.isUngroupable(innerSource);
     }
 
     @Override
