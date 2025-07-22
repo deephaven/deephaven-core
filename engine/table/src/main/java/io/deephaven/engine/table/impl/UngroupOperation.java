@@ -16,6 +16,7 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.sources.BitShiftingColumnSource;
 import io.deephaven.engine.table.impl.sources.UngroupableColumnSource;
 import io.deephaven.engine.table.impl.sources.UngroupedColumnSource;
+import io.deephaven.util.SafeCloseableArray;
 import io.deephaven.util.mutable.MutableLong;
 import io.deephaven.vector.Vector;
 import org.jetbrains.annotations.NotNull;
@@ -35,6 +36,7 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
 
     final ColumnSource<?>[] ungroupSources;
     final UngroupableColumnSource[] ungroupableColumnSources;
+    final boolean anyUngroupable;
     final UngroupSizeKernel[] sizeKernels;
 
     public UngroupOperation(final QueryTable parent, final boolean nullFill, final String[] columnsToUngroupBy) {
@@ -61,6 +63,7 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
                 throw new InvalidColumnException("Column " + name + " is not an array or Vector");
             }
         }
+        anyUngroupable = Arrays.stream(ungroupableColumnSources).anyMatch(Objects::nonNull);
     }
 
     @Override
@@ -156,163 +159,117 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
     }
 
     private long computeMaxSize(final RowSet rowSet, final long[] sizes, final boolean usePrev) {
-        String referenceColumn = null;
         long maxSize = 0;
-        boolean sizeIsInitialized = false;
-        for (int columnIndex = 0; columnIndex < ungroupSources.length; columnIndex++) {
-            final ColumnSource<?> arrayColumn = ungroupSources[columnIndex];
-            final String name = columnsToUngroupBy[columnIndex];
-            final UngroupableColumnSource ungroupable = ungroupableColumnSources[columnIndex];
 
-            if (!sizeIsInitialized) {
-                sizeIsInitialized = true;
-                referenceColumn = name;
+        final int chunkSize = (int) Math.min(CHUNK_SIZE, rowSet.size());
 
-                if (ungroupable == null) {
-                    int offset = 0;
-                    try (final ChunkSource.GetContext getContext = arrayColumn.makeGetContext(CHUNK_SIZE);
-                            final RowSequence.Iterator rsit = rowSet.getRowSequenceIterator()) {
-                        while (rsit.hasMore()) {
-                            final RowSequence rsChunk = rsit.getNextRowSequenceWithLength(CHUNK_SIZE);
-                            final Chunk<? extends Values> chunk =
-                                    usePrev ? arrayColumn.getPrevChunk(getContext, rsChunk)
-                                            : arrayColumn.getChunk(getContext, rsChunk);
-                            final ObjectChunk<Object, ? extends Values> objectChunk = chunk.asObjectChunk();
-                            maxSize = Math.max(sizeKernels[columnIndex].maxSize(objectChunk, sizes, offset),
-                                    maxSize);
-                            offset += objectChunk.size();
-                        }
-                    }
+        final ChunkSource.GetContext[] getContexts = new ChunkSource.GetContext[columnsToUngroupBy.length];
+        final ChunkSource.FillContext[] fillContexts =
+                anyUngroupable ? new ChunkSource.FillContext[columnsToUngroupBy.length] : null;
+        try (final SafeCloseableArray<ChunkSource.GetContext> ignored = new SafeCloseableArray<>(getContexts);
+                final SafeCloseableArray<ChunkSource.FillContext> ignored2 =
+                        anyUngroupable ? new SafeCloseableArray<>(fillContexts) : null;
+                final SharedContext sharedContext = SharedContext.makeSharedContext();
+                final RowSequence.Iterator rsit = rowSet.getRowSequenceIterator();
+                final WritableLongChunk<Values> currentSizes =
+                        anyUngroupable ? WritableLongChunk.makeWritableChunk(chunkSize) : null;
+                final ResettableWritableLongChunk<Values> resettable =
+                        anyUngroupable ? ResettableWritableLongChunk.makeResettableChunk() : null) {
+
+            for (int ci = 0; ci < ungroupSources.length; ++ci) {
+                if (ungroupableColumnSources[ci] == null) {
+                    // noinspection resource
+                    getContexts[ci] = ungroupSources[ci].makeGetContext(chunkSize);
                 } else {
-                    int offset = 0;
-                    try (final ChunkSource.FillContext fillContext = arrayColumn.makeFillContext(CHUNK_SIZE);
-                            final ResettableWritableLongChunk<Values> resettable =
-                                    ResettableWritableLongChunk.makeResettableChunk();
-                            final RowSequence.Iterator rsit = rowSet.getRowSequenceIterator()) {
-                        while (rsit.hasMore()) {
-                            final RowSequence rsChunk = rsit.getNextRowSequenceWithLength(CHUNK_SIZE);
-                            resettable.resetFromArray(sizes, offset, rsChunk.intSize());
-                            if (usePrev) {
-                                ungroupable.getUngroupedPrevSize(fillContext, rsChunk, resettable);
-                            } else {
-                                ungroupable.getUngroupedSize(fillContext, rsChunk, resettable);
-                            }
-
-                            for (int ii = 0; ii < resettable.size(); ii++) {
-                                maxSize = Math.max(resettable.get(ii), maxSize);
-                            }
-                            offset += resettable.size();
-                        }
-                    }
+                    // noinspection resource,DataFlowIssue
+                    fillContexts[ci] = ungroupSources[ci].makeFillContext(chunkSize);
                 }
-            } else if (nullFill) {
-                if (ungroupable == null) {
-                    try (final ChunkSource.GetContext getContext = arrayColumn.makeGetContext(CHUNK_SIZE);
-                            final RowSequence.Iterator rsit = rowSet.getRowSequenceIterator()) {
-                        int offset = 0;
-                        while (rsit.hasMore()) {
-                            final RowSequence rsChunk = rsit.getNextRowSequenceWithLength(CHUNK_SIZE);
-                            final Chunk<? extends Values> chunk =
-                                    usePrev ? arrayColumn.getPrevChunk(getContext, rsChunk)
-                                            : arrayColumn.getChunk(getContext, rsChunk);
-                            final ObjectChunk<Object, ? extends Values> objectChunk = chunk.asObjectChunk();
+            }
 
-                            final long maxSizeForChunk = sizeKernels[columnIndex]
-                                    .maybeIncreaseSize(objectChunk, sizes, offset);
+            int offset = 0;
+            while (rsit.hasMore()) {
+                final RowSequence rsChunk = rsit.getNextRowSequenceWithLength(CHUNK_SIZE);
+                sharedContext.reset();
+
+                for (int columnIndex = 0; columnIndex < ungroupSources.length; columnIndex++) {
+                    final ColumnSource<?> arrayColumn = ungroupSources[columnIndex];
+                    final String name = columnsToUngroupBy[columnIndex];
+                    final UngroupableColumnSource ungroupable = ungroupableColumnSources[columnIndex];
+
+                    if (ungroupable == null) {
+                        final Chunk<? extends Values> chunk =
+                                usePrev ? arrayColumn.getPrevChunk(getContexts[columnIndex], rsChunk)
+                                        : arrayColumn.getChunk(getContexts[columnIndex], rsChunk);
+                        if (columnIndex == 0) {
+                            maxSize = Math.max(sizeKernels[0].maxSize(chunk.asObjectChunk(), sizes, offset), maxSize);
+                        } else if (nullFill) {
+                            final long maxSizeForChunk =
+                                    sizeKernels[columnIndex].maybeIncreaseSize(chunk.asObjectChunk(), sizes, offset);
                             maxSize = Math.max(maxSizeForChunk, maxSize);
-                            offset += objectChunk.size();
-                        }
-                    }
-                } else {
-                    int offset = 0;
-                    try (final ChunkSource.FillContext fillContext = arrayColumn.makeFillContext(CHUNK_SIZE);
-                            final WritableLongChunk<Values> currentSizes =
-                                    WritableLongChunk.makeWritableChunk(CHUNK_SIZE);
-                            final RowSequence.Iterator rsit = rowSet.getRowSequenceIterator()) {
-
-                        while (rsit.hasMore()) {
-                            final RowSequence rsChunk = rsit.getNextRowSequenceWithLength(CHUNK_SIZE);
-                            if (usePrev) {
-                                ungroupable.getUngroupedPrevSize(fillContext, rsChunk, currentSizes);
-                            } else {
-                                ungroupable.getUngroupedSize(fillContext, rsChunk, currentSizes);
-                            }
-
-                            for (int ii = 0; ii < currentSizes.size(); ii++) {
-                                final long currentSize = currentSizes.get(ii);
-                                if (currentSize > sizes[offset + ii]) {
-                                    sizes[offset + ii] = currentSize;
-                                    maxSize = Math.max(currentSize, maxSize);
-                                }
-                            }
-                            offset += currentSizes.size();
-                        }
-                    }
-                }
-            } else {
-                if (ungroupable == null) {
-                    final MutableLong mismatchedSize = new MutableLong();
-
-                    int offset = 0;
-                    try (final ChunkSource.GetContext getContext = arrayColumn.makeGetContext(CHUNK_SIZE);
-                            final RowSequence.Iterator rsit = rowSet.getRowSequenceIterator()) {
-                        while (rsit.hasMore()) {
-                            final RowSequence rsChunk = rsit.getNextRowSequenceWithLength(CHUNK_SIZE);
-                            final Chunk<? extends Values> chunk =
-                                    usePrev ? arrayColumn.getPrevChunk(getContext, rsChunk)
-                                            : arrayColumn.getChunk(getContext, rsChunk);
-                            final ObjectChunk<Object, ? extends Values> objectChunk = chunk.asObjectChunk();
+                        } else {
+                            final MutableLong mismatchedSize = new MutableLong();
                             final int firstDifferenceChunkOffset =
-                                    sizeKernels[columnIndex].checkSize(objectChunk, sizes, offset, mismatchedSize);
+                                    sizeKernels[columnIndex].checkSize(chunk.asObjectChunk(), sizes, offset,
+                                            mismatchedSize);
                             if (firstDifferenceChunkOffset >= 0) {
                                 try (final RowSet rowset = rsChunk.asRowSet()) {
                                     final long correspondingRowKey = rowset.get(firstDifferenceChunkOffset);
                                     final String message = String.format(
                                             "Array sizes differ at row key %d (position %d), %s has size %d, %s has size %d",
-                                            correspondingRowKey, offset + firstDifferenceChunkOffset, referenceColumn,
+                                            correspondingRowKey, offset + firstDifferenceChunkOffset,
+                                            columnsToUngroupBy[0],
                                             sizes[offset + firstDifferenceChunkOffset], name, mismatchedSize.get());
                                     throw new IllegalStateException(message);
                                 }
                             }
-                            offset += objectChunk.size();
                         }
-                    }
-                } else {
-                    int offset = 0;
-                    try (final ChunkSource.FillContext fillContext = arrayColumn.makeFillContext(CHUNK_SIZE);
-                            final WritableLongChunk<Values> currentSizes =
-                                    WritableLongChunk.makeWritableChunk(CHUNK_SIZE);
-                            final RowSequence.Iterator rsit = rowSet.getRowSequenceIterator()) {
-                        while (rsit.hasMore()) {
-                            final RowSequence rsChunk = rsit.getNextRowSequenceWithLength(CHUNK_SIZE);
-                            if (usePrev) {
-                                ungroupable.getUngroupedPrevSize(fillContext, rsChunk, currentSizes);
-                            } else {
-                                ungroupable.getUngroupedSize(fillContext, rsChunk, currentSizes);
-                            }
-                            Assert.eq(currentSizes.size(), "currentSizes.size()", rsChunk.intSize(),
-                                    "rsChunk.intSize()");
+                    } else if (columnIndex == 0) {
+                        resettable.resetFromArray(sizes, offset, rsChunk.intSize());
+                        if (usePrev) {
+                            ungroupableColumnSources[columnIndex].getUngroupedPrevSize(fillContexts[columnIndex],
+                                    rsChunk, resettable);
+                        } else {
+                            ungroupableColumnSources[columnIndex].getUngroupedSize(fillContexts[columnIndex], rsChunk,
+                                    resettable);
+                        }
 
-                            for (int ii = 0; ii < currentSizes.size(); ii++) {
-                                final long currentSize = currentSizes.get(ii);
-                                if (currentSize != sizes[offset + ii]) {
-                                    try (final RowSet rowset = rsChunk.asRowSet()) {
-                                        final long correspondingRowKey = rowset.get(ii);
-                                        final String message = String.format(
-                                                "Array sizes differ at row key %d (position %d), %s has size %d, %s has size %d",
-                                                correspondingRowKey, offset + ii, referenceColumn,
-                                                sizes[offset + ii], name, currentSize);
-                                        throw new IllegalStateException(message);
-                                    }
+                        for (int ii = 0; ii < resettable.size(); ii++) {
+                            maxSize = Math.max(resettable.get(ii), maxSize);
+                        }
+                    } else {
+                        if (usePrev) {
+                            ungroupableColumnSources[columnIndex].getUngroupedPrevSize(fillContexts[columnIndex],
+                                    rsChunk, currentSizes);
+                        } else {
+                            ungroupableColumnSources[columnIndex].getUngroupedSize(fillContexts[columnIndex], rsChunk,
+                                    currentSizes);
+                        }
+
+                        for (int ii = 0; ii < currentSizes.size(); ii++) {
+                            final long currentSize = currentSizes.get(ii);
+                            if (nullFill) {
+                                if (currentSize > sizes[offset + ii]) {
+                                    sizes[offset + ii] = currentSize;
+                                    maxSize = Math.max(currentSize, maxSize);
                                 }
-
+                            } else if (currentSize != sizes[offset + ii]) {
+                                try (final RowSet rowset = rsChunk.asRowSet()) {
+                                    final long correspondingRowKey = rowset.get(ii);
+                                    final String message = String.format(
+                                            "Array sizes differ at row key %d (position %d), %s has size %d, %s has size %d",
+                                            correspondingRowKey, offset + ii, columnsToUngroupBy[0],
+                                            sizes[offset + ii], name, currentSize);
+                                    throw new IllegalStateException(message);
+                                }
                             }
-                            offset += currentSizes.size();
                         }
                     }
                 }
+
+                offset += rsChunk.intSize();
             }
         }
+
         return maxSize;
     }
 
@@ -378,6 +335,7 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
         private final CrossJoinShiftState shiftState;
         private final TrackingRowSet parentRowset;
         private final Map<String, ColumnSource<?>> resultMap;
+        private final ModifiedColumnSet.Transformer transformer;
 
         public UngroupListener(final QueryTable result, final CrossJoinShiftState shiftState,
                 final TrackingRowSet parentRowset,
@@ -387,6 +345,7 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
             this.shiftState = shiftState;
             this.parentRowset = parentRowset;
             this.resultMap = resultMap;
+            this.transformer = parent.newModifiedColumnSetIdentityTransformer(result);
         }
 
         @Override
@@ -412,16 +371,16 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
 
             final RowSetShiftData.Builder shiftBuilder = new RowSetShiftData.Builder();
 
-            int newBase = evaluateAdded(upstream.added(), ungroupAdded, shiftState.getNumShiftBits(), false);
-            if (newBase == shiftState.getNumShiftBits()) {
-                newBase = evaluateModified(upstream.modified(),
+            int requiredBase = evaluateAdded(upstream.added(), ungroupAdded, shiftState.getNumShiftBits(), false);
+            if (requiredBase == shiftState.getNumShiftBits()) {
+                requiredBase = evaluateModified(upstream.modified(),
                         upstream.getModifiedPreShift(),
                         ungroupModifiedAdded,
                         ungroupModifiedRemoved,
                         ungroupModifiedModified);
             }
-            if (newBase != shiftState.getNumShiftBits()) {
-                rebase(newBase + 1);
+            if (requiredBase != shiftState.getNumShiftBits()) {
+                rebase(requiredBase + 1);
                 return;
             }
 
@@ -441,7 +400,7 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
             final RowSetBuilderRandom addedByShiftBuilder = RowSetFactory.builderRandom();
             if (upstream.shifted().nonempty()) {
                 try (final RowSequence.Iterator rsit = resultRowset.getRowSequenceIterator()) {
-                    final long lastRowKeyOffset = (1L << newBase) - 1;
+                    final long lastRowKeyOffset = (1L << requiredBase) - 1;
 
                     final RowSetShiftData upstreamShift = upstream.shifted();
                     final long shiftSize = upstreamShift.size();
@@ -450,17 +409,18 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
                         final long end = upstreamShift.getEndRange(ii);
                         final long shiftDelta = upstreamShift.getShiftDelta(ii);
 
-                        final long resultShiftAmount = shiftDelta << (long) newBase;
+                        final long resultShiftAmount = shiftDelta << (long) requiredBase;
 
                         // TODO: if we don't actually have the corresponding thing in our input rowset, this is
                         // certainly a waste of time
                         for (long rk = begin; rk <= end; rk++) {
-                            final long oldRangeStart = rk << (long) newBase;
-                            final long oldRangeEnd = (rk << (long) newBase) + lastRowKeyOffset;
+                            final long oldRangeStart = rk << (long) requiredBase;
+                            final long oldRangeEnd = (rk << (long) requiredBase) + lastRowKeyOffset;
 
                             if (!rsit.advance(oldRangeStart)) {
                                 break;
                             }
+
 
                             // get the range from our result rowset
                             final RowSequence expandedRowSequence = rsit.getNextRowSequenceThrough(oldRangeEnd);
@@ -475,6 +435,7 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
                                     expandedRowSequence.lastRowKey());
                             addedByShiftBuilder.addRange(expandedRowSequence.firstRowKey() + resultShiftAmount,
                                     expandedRowSequence.lastRowKey() + resultShiftAmount);
+
                         }
                     }
                 }
@@ -487,8 +448,9 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
             // TODO: we should examine the MCS to avoid work on rebased columns that have not changed (and just
             // transform things for the key columns)
             final RowSet modifiedRowSet = ungroupModifiedModified.build();
+            transformer.clearAndTransform(upstream.modifiedColumnSet(), result.getModifiedColumnSetForUpdates());
             final TableUpdateImpl downstream = new TableUpdateImpl(addedRowSet, removedRowSet, modifiedRowSet,
-                    shiftBuilder.build(), ModifiedColumnSet.ALL);
+                    shiftBuilder.build(), result.getModifiedColumnSetForUpdates());
             result.notifyListeners(downstream);
         }
 
