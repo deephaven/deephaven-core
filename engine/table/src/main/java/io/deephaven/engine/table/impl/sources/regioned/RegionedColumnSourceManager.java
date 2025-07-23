@@ -4,7 +4,6 @@
 package io.deephaven.engine.table.impl.sources.regioned;
 
 import io.deephaven.base.log.LogOutput;
-import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
@@ -49,7 +48,6 @@ import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.ObjectArraySource;
 import io.deephaven.engine.table.impl.util.DelayedErrorNotifier;
-import io.deephaven.engine.table.impl.util.ImmediateJobScheduler;
 import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.updategraph.UpdateCommitter;
 import io.deephaven.hash.KeyedObjectHashMap;
@@ -58,7 +56,6 @@ import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.ReferentialIntegrity;
-import io.deephaven.util.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -75,7 +72,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Spliterator;
 import java.util.Spliterators;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
@@ -861,6 +857,16 @@ public class RegionedColumnSourceManager
         return attributes;
     }
 
+    private static int[] regionIndices(final RowSet selection, final int maxCount) {
+        try (final RegionIndexIterator rit = RegionIndexIterator.of(selection)) {
+            final IntStream.Builder builder = IntStream.builder();
+            for (int i = 0; i < maxCount && rit.hasNext(); ++i) {
+                builder.add(rit.nextInt());
+            }
+            return builder.build().toArray();
+        }
+    }
+
     @Override
     public void estimatePushdownFilterCost(
             final WhereFilter filter,
@@ -870,16 +876,9 @@ public class RegionedColumnSourceManager
             final JobScheduler jobScheduler,
             final LongConsumer onComplete,
             final Consumer<Exception> onError) {
-        final int[] regionIndices;
-        try (final RegionIndexIterator rit = RegionIndexIterator.of(selection)) {
-            final IntStream.Builder builder = IntStream.builder();
-            for (int i = 0; i < PUSHDOWN_LOCATION_SAMPLES && rit.hasNext(); ++i) {
-                builder.add(rit.nextInt());
-            }
-            regionIndices = builder.build().toArray();
-        }
+        final int[] regionIndices = regionIndices(selection, PUSHDOWN_LOCATION_SAMPLES);
         new EstimateJobBuilder(selection.copy(), regionIndices, onComplete, onError)
-                .run(jobScheduler, filter, usePrev, context);
+                .iterateParallel(jobScheduler, filter, usePrev, context);
     }
 
     @Override
@@ -892,14 +891,9 @@ public class RegionedColumnSourceManager
             final JobScheduler jobScheduler,
             final Consumer<PushdownResult> onComplete,
             final Consumer<Exception> onError) {
-        final int[] regionIndices;
-        try (final RegionIndexIterator rit = RegionIndexIterator.of(selection)) {
-            final IntStream.Builder builder = IntStream.builder();
-            rit.forEachRemaining(builder);
-            regionIndices = builder.build().toArray();
-        }
+        final int[] regionIndices = regionIndices(selection, Integer.MAX_VALUE);
         new PushdownJobBuilder(selection.copy(), regionIndices, onComplete, onError)
-                .run(jobScheduler, filter, usePrev, context, costCeiling);
+                .iterateParallel(jobScheduler, filter, usePrev, context, costCeiling);
     }
 
     /**
@@ -961,25 +955,125 @@ public class RegionedColumnSourceManager
         return new RegionedColumnSourcePushdownFilterContext(this, filter, filterSources);
     }
 
-    final class EstimateJobBuilder extends JobBuilder {
+    private abstract class JobBuilder {
+
+        protected final WritableRowSet selection;
+        protected final int[] regionIndices;
+        protected final Consumer<Exception> onError;
+
+        private JobBuilder(
+                final WritableRowSet selection,
+                final int[] regionIndices,
+                final Consumer<Exception> onError) {
+            this.selection = Objects.requireNonNull(selection);
+            this.regionIndices = Objects.requireNonNull(regionIndices);
+            this.onError = Objects.requireNonNull(onError);
+        }
+
+        public final void iterateParallel(
+                final JobScheduler jobScheduler,
+                final JobScheduler.IterateResumeAction<JobScheduler.JobThreadContext> action) {
+            jobScheduler.iterateParallel(
+                    ExecutionContext.getContext(),
+                    this::log,
+                    JobScheduler.DEFAULT_CONTEXT_FACTORY,
+                    0,
+                    regionIndices.length,
+                    action,
+                    this::onJobsComplete,
+                    this::jobsCleanup,
+                    this::onJobsError);
+        }
+
+        protected abstract LogOutput log(LogOutput output);
+
+        protected abstract void onJobsComplete();
+
+        private void jobsCleanup() {
+            cleanupImpl();
+        }
+
+        private void onJobsError(Exception e) {
+            try (final SafeCloseable ignored = this::cleanupImpl) {
+                onError.accept(e);
+            }
+        }
+
+        protected abstract void cleanupImpl();
+
+        abstract class JobRunner implements JobScheduler.IterateResumeAction<JobScheduler.JobThreadContext> {
+            protected final WhereFilter filter;
+            protected final boolean usePrev;
+            protected final PushdownFilterContext context;
+            protected final JobScheduler jobScheduler;
+
+            JobRunner(
+                    final WhereFilter filter,
+                    final boolean usePrev,
+                    final PushdownFilterContext context,
+                    final JobScheduler jobScheduler) {
+                this.filter = Objects.requireNonNull(filter);
+                this.usePrev = usePrev;
+                this.context = Objects.requireNonNull(context);
+                this.jobScheduler = Objects.requireNonNull(jobScheduler);
+            }
+
+            abstract class Job {
+                protected final int jobIndex;
+                private final Consumer<Exception> nestedErrorConsumer;
+                private final Runnable locationResume;
+                protected final IncludedTableLocationEntry tle;
+                protected final WritableRowSet shiftedSubset;
+                private final AtomicBoolean closed;
+
+                Job(final int jobIndex, final Consumer<Exception> nestedErrorConsumer, final Runnable locationResume) {
+                    this.jobIndex = jobIndex;
+                    this.locationResume = Objects.requireNonNull(locationResume);
+                    this.nestedErrorConsumer = Objects.requireNonNull(nestedErrorConsumer);
+                    // todo: does this need to be synchronized? can it change?
+                    this.tle = orderedIncludedTableLocations.get(regionIndices[jobIndex]);
+                    this.shiftedSubset = tle.subsetAndShiftIntoLocationSpace(selection);
+                    this.closed = new AtomicBoolean(false);
+                }
+
+                protected final void onCompleteSuccess() {
+                    locationResume.run();
+                    close();
+                }
+
+                protected final void onError(Exception e) {
+                    try (final SafeCloseable ignored = this::close) {
+                        nestedErrorConsumer.accept(e);
+                    }
+                }
+
+                private void close() {
+                    if (!closed.compareAndSet(false, true)) {
+                        return;
+                    }
+                    shiftedSubset.close();
+                }
+            }
+        }
+    }
+
+    private final class EstimateJobBuilder extends JobBuilder {
         private final LongConsumer onEstimateComplete;
-        private final Consumer<Exception> onEstimateError;
         private final long[] estimateResults;
 
-        public EstimateJobBuilder(WritableRowSet selection, int[] regionIndices, LongConsumer onEstimateComplete,
+        EstimateJobBuilder(WritableRowSet selection, int[] regionIndices, LongConsumer onEstimateComplete,
                 Consumer<Exception> onEstimateError) {
-            super(selection, regionIndices);
+            super(selection, regionIndices, onEstimateError);
             this.onEstimateComplete = Objects.requireNonNull(onEstimateComplete);
-            this.onEstimateError = Objects.requireNonNull(onEstimateError);
             this.estimateResults = new long[regionIndices.length];
         }
 
-        public void run(
+        public void iterateParallel(
                 final JobScheduler jobScheduler,
                 final WhereFilter filter,
                 final boolean usePrev,
                 final PushdownFilterContext context) {
-            run(jobScheduler, new EstimateJobRunner(filter, usePrev, context, jobScheduler));
+            iterateParallel(jobScheduler, new EstimateJobRunner(filter, usePrev, context, jobScheduler));
         }
 
         private synchronized void addEstimate(final int ix, final long estimate) {
@@ -1001,23 +1095,12 @@ public class RegionedColumnSourceManager
         }
 
         @Override
-        protected void jobsCleanup() {
-            estimateClose();
-        }
-
-        @Override
-        protected void onJobsError(Exception e) {
-            try (final SafeCloseable ignored = this::estimateClose) {
-                onEstimateError.accept(e);
-            }
-        }
-
-        private void estimateClose() {
+        protected void cleanupImpl() {
             selection.close();
         }
 
         final class EstimateJobRunner extends JobRunner {
-            public EstimateJobRunner(WhereFilter filter, boolean usePrev, PushdownFilterContext context,
+            EstimateJobRunner(WhereFilter filter, boolean usePrev, PushdownFilterContext context,
                     JobScheduler jobScheduler) {
                 super(filter, usePrev, context, jobScheduler);
             }
@@ -1029,7 +1112,7 @@ public class RegionedColumnSourceManager
             }
 
             final class EstimateJob extends Job {
-                public EstimateJob(int jobIndex, Consumer<Exception> nestedErrorConsumer, Runnable locationResume) {
+                EstimateJob(int jobIndex, Consumer<Exception> nestedErrorConsumer, Runnable locationResume) {
                     super(jobIndex, nestedErrorConsumer, locationResume);
                 }
 
@@ -1040,33 +1123,30 @@ public class RegionedColumnSourceManager
 
                 private void onComplete(long estimatedCost) {
                     addEstimate(jobIndex, estimatedCost);
-                    locationResume.run();
-                    close();
+                    onCompleteSuccess();
                 }
             }
         }
     }
 
-    final class PushdownJobBuilder extends JobBuilder {
+    private final class PushdownJobBuilder extends JobBuilder {
         private final Consumer<PushdownResult> onPushdownComplete;
-        private final Consumer<Exception> onPushdownError;
         private final PushdownResult[] pushdownResults;
 
         public PushdownJobBuilder(WritableRowSet selection, int[] regionIndices,
                 Consumer<PushdownResult> onPushdownComplete, Consumer<Exception> onPushdownError) {
-            super(selection, regionIndices);
+            super(selection, regionIndices, onPushdownError);
             this.onPushdownComplete = Objects.requireNonNull(onPushdownComplete);
-            this.onPushdownError = Objects.requireNonNull(onPushdownError);
             this.pushdownResults = new PushdownResult[regionIndices.length];
         }
 
-        public void run(
+        public void iterateParallel(
                 final JobScheduler jobScheduler,
                 final WhereFilter filter,
                 final boolean usePrev,
                 final PushdownFilterContext context,
                 final long costCeiling) {
-            run(jobScheduler, new PushdownJobRunner(filter, usePrev, context, jobScheduler, costCeiling));
+            iterateParallel(jobScheduler, new PushdownJobRunner(filter, usePrev, context, jobScheduler, costCeiling));
         }
 
         private synchronized void addResult(final int ix, final PushdownResult result) {
@@ -1115,18 +1195,7 @@ public class RegionedColumnSourceManager
         }
 
         @Override
-        protected void jobsCleanup() {
-            pushdownClose();
-        }
-
-        @Override
-        protected void onJobsError(Exception e) {
-            try (final SafeCloseable ignored = this::pushdownClose) {
-                onPushdownError.accept(e);
-            }
-        }
-
-        private void pushdownClose() {
+        protected void cleanupImpl() {
             selection.close();
         }
 
@@ -1159,96 +1228,10 @@ public class RegionedColumnSourceManager
                 private void onComplete(final PushdownResult pushdownResult) {
                     tle.unshiftIntoRegionSpace(pushdownResult);
                     addResult(jobIndex, pushdownResult);
-                    locationResume.run();
-                    close();
+                    onCompleteSuccess();
                 }
             }
         }
 
-    }
-
-    abstract class JobBuilder {
-
-        protected final WritableRowSet selection;
-        protected final int[] regionIndices;
-
-        private JobBuilder(
-                final WritableRowSet selection,
-                final int[] regionIndices) {
-            this.selection = Objects.requireNonNull(selection);
-            this.regionIndices = Objects.requireNonNull(regionIndices);
-        }
-
-        public final void run(final JobScheduler jobScheduler,
-                final JobScheduler.IterateResumeAction<JobScheduler.JobThreadContext> action) {
-            jobScheduler.iterateParallel(
-                    ExecutionContext.getContext(),
-                    this::log,
-                    JobScheduler.DEFAULT_CONTEXT_FACTORY,
-                    0,
-                    regionIndices.length,
-                    action,
-                    this::onJobsComplete,
-                    this::jobsCleanup,
-                    this::onJobsError);
-        }
-
-        protected abstract LogOutput log(LogOutput output);
-
-        protected abstract void onJobsComplete();
-
-        protected abstract void jobsCleanup();
-
-        protected abstract void onJobsError(Exception e);
-
-        abstract class JobRunner implements JobScheduler.IterateResumeAction<JobScheduler.JobThreadContext> {
-            protected final WhereFilter filter;
-            protected final boolean usePrev;
-            protected final PushdownFilterContext context;
-            protected final JobScheduler jobScheduler;
-
-            JobRunner(
-                    final WhereFilter filter,
-                    final boolean usePrev,
-                    final PushdownFilterContext context,
-                    final JobScheduler jobScheduler) {
-                this.filter = Objects.requireNonNull(filter);
-                this.usePrev = usePrev;
-                this.context = Objects.requireNonNull(context);
-                this.jobScheduler = Objects.requireNonNull(jobScheduler);
-            }
-
-            abstract class Job {
-                protected final int jobIndex;
-                private final Consumer<Exception> nestedErrorConsumer;
-                protected final Runnable locationResume;
-                protected final IncludedTableLocationEntry tle;
-                protected final WritableRowSet shiftedSubset;
-                private final AtomicBoolean closed;
-
-                Job(final int jobIndex, final Consumer<Exception> nestedErrorConsumer, final Runnable locationResume) {
-                    this.jobIndex = jobIndex;
-                    this.locationResume = Objects.requireNonNull(locationResume);
-                    this.nestedErrorConsumer = Objects.requireNonNull(nestedErrorConsumer);
-                    // todo: does this need to be synchronized? can it change?
-                    this.tle = orderedIncludedTableLocations.get(regionIndices[jobIndex]);
-                    this.shiftedSubset = tle.subsetAndShiftIntoLocationSpace(selection);
-                    this.closed = new AtomicBoolean(false);
-                }
-
-                protected final void onError(Exception e) {
-                    try (final SafeCloseable ignored = this::close) {
-                        nestedErrorConsumer.accept(e);
-                    }
-                }
-
-                protected final void close() {
-                    if (!closed.compareAndSet(false, true)) {
-                        return;
-                    }
-                    shiftedSubset.close();
-                }
-            }
-        }
     }
 }
