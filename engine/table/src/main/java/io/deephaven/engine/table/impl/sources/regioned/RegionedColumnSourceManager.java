@@ -8,40 +8,12 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.liveness.DelegatingLivenessNode;
-import io.deephaven.engine.liveness.LivenessArtifact;
-import io.deephaven.engine.liveness.LivenessNode;
-import io.deephaven.engine.liveness.LivenessScopeStack;
-import io.deephaven.engine.liveness.ReferenceCountedLivenessNode;
-import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetBuilderSequential;
-import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.rowset.RowSetShiftData;
-import io.deephaven.engine.rowset.TrackingWritableRowSet;
-import io.deephaven.engine.rowset.WritableRowSet;
-import io.deephaven.engine.table.ColumnDefinition;
-import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.DataIndex;
-import io.deephaven.engine.table.ModifiedColumnSet;
-import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.table.TableListener;
-import io.deephaven.engine.table.TableUpdate;
-import io.deephaven.engine.table.WritableColumnSource;
-import io.deephaven.engine.table.impl.BasePushdownFilterContext;
-import io.deephaven.engine.table.impl.ColumnSourceManager;
-import io.deephaven.engine.table.impl.ColumnToCodecMappings;
-import io.deephaven.engine.table.impl.PushdownFilterContext;
-import io.deephaven.engine.table.impl.PushdownPredicateManager;
-import io.deephaven.engine.table.impl.PushdownResult;
-import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.table.impl.TableUpdateImpl;
-import io.deephaven.engine.table.impl.TableUpdateMode;
+import io.deephaven.engine.liveness.*;
+import io.deephaven.engine.rowset.*;
+import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
-import io.deephaven.engine.table.impl.locations.ColumnLocation;
-import io.deephaven.engine.table.impl.locations.ImmutableTableLocationKey;
-import io.deephaven.engine.table.impl.locations.TableDataException;
-import io.deephaven.engine.table.impl.locations.TableLocation;
+import io.deephaven.engine.table.impl.locations.*;
 import io.deephaven.engine.table.impl.locations.impl.AbstractTableLocation;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationUpdateSubscriptionBuffer;
 import io.deephaven.engine.table.impl.select.WhereFilter;
@@ -59,31 +31,16 @@ import io.deephaven.util.annotations.ReferentialIntegrity;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.IdentityHashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Spliterator;
-import java.util.Spliterators;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import java.util.stream.LongStream;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-import static io.deephaven.engine.table.impl.sources.regioned.RegionedColumnSource.ROW_KEY_TO_SUB_REGION_ROW_INDEX_MASK;
-import static io.deephaven.engine.table.impl.sources.regioned.RegionedColumnSource.getFirstRowKey;
-import static io.deephaven.engine.table.impl.sources.regioned.RegionedColumnSource.getLastRowKey;
+import static io.deephaven.engine.table.impl.sources.regioned.RegionedColumnSource.*;
 
 /**
  * Manage column sources made up of regions in their own row key address space.
@@ -1030,7 +987,6 @@ public class RegionedColumnSourceManager
                     this.jobIndex = jobIndex;
                     this.locationResume = Objects.requireNonNull(locationResume);
                     this.nestedErrorConsumer = Objects.requireNonNull(nestedErrorConsumer);
-                    // todo: does this need to be synchronized? can it change?
                     this.tle = orderedIncludedTableLocations.get(regionIndices[jobIndex]);
                     this.shiftedSubset = tle.subsetAndShiftIntoLocationSpace(selection);
                     this.closed = new AtomicBoolean(false);
@@ -1059,13 +1015,13 @@ public class RegionedColumnSourceManager
 
     private final class EstimateJobBuilder extends JobBuilder {
         private final LongConsumer onEstimateComplete;
-        private final long[] estimateResults;
+        private long minEstimate;
 
         EstimateJobBuilder(WritableRowSet selection, int[] regionIndices, LongConsumer onEstimateComplete,
                 Consumer<Exception> onEstimateError) {
             super(selection, regionIndices, onEstimateError);
             this.onEstimateComplete = Objects.requireNonNull(onEstimateComplete);
-            this.estimateResults = new long[regionIndices.length];
+            this.minEstimate = Long.MAX_VALUE;
         }
 
         public void iterateParallel(
@@ -1076,22 +1032,20 @@ public class RegionedColumnSourceManager
             iterateParallel(jobScheduler, new EstimateJobRunner(filter, usePrev, context, jobScheduler));
         }
 
-        private synchronized void addEstimate(final int ix, final long estimate) {
-            this.estimateResults[ix] = estimate;
-        }
-
-        private synchronized long buildEstimate() {
-            return LongStream.of(estimateResults).min().orElse(Long.MAX_VALUE);
+        private synchronized void addEstimate(final long estimate) {
+            if (estimate < minEstimate) {
+                minEstimate = estimate;
+            }
         }
 
         @Override
         protected LogOutput log(LogOutput output) {
-            return output.append("RegionedColumnSourceManager#estimate");
+            return output.append("RegionedColumnSourceManager#estimatePushdownFilterCost");
         }
 
         @Override
         protected void onJobsComplete() {
-            onEstimateComplete.accept(buildEstimate());
+            onEstimateComplete.accept(minEstimate);
         }
 
         @Override
@@ -1122,7 +1076,7 @@ public class RegionedColumnSourceManager
                 }
 
                 private void onComplete(long estimatedCost) {
-                    addEstimate(jobIndex, estimatedCost);
+                    addEstimate(estimatedCost);
                     onCompleteSuccess();
                 }
             }

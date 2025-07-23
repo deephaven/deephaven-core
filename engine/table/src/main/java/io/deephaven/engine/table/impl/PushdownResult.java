@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.WritableRowSet;
@@ -38,6 +39,9 @@ public final class PushdownResult implements SafeCloseable {
      * Requires reading and querying an external index table
      */
     public static final long DEFERRED_DATA_INDEX_COST = 50_000L;
+
+    private static final boolean FORCE_VALIDATION =
+            Configuration.getInstance().getBooleanWithDefault("PushdownResult.forceValidation", false);
 
     /**
      * The selection. Retaining selection here makes the pushdown result "self-contained" which helps with composability
@@ -114,7 +118,7 @@ public final class PushdownResult implements SafeCloseable {
 
     /**
      * Constructs a new result with {@code selection}, {@code match}, and {@code maybeMatch}. {@code match} and
-     * {@code maybeMatch} must be non-overlapping subsets of {@code selection}, but this is <b>not</b> thoroughly check.
+     * {@code maybeMatch} must be non-overlapping subsets of {@code selection}, but this may not be checked.
      *
      * @param selection the selection
      * @param match rows that match
@@ -125,7 +129,9 @@ public final class PushdownResult implements SafeCloseable {
             final RowSet selection,
             final RowSet match,
             final RowSet maybeMatch) {
-        // return of(selection, match, maybeMatch);
+        if (FORCE_VALIDATION) {
+            return of(selection, match, maybeMatch);
+        }
         final long matchSize = match.size();
         final long maybeMatchSize = maybeMatch.size();
         final long selectionSize = selection.size();
