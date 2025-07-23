@@ -113,25 +113,34 @@ abstract class AbstractFilterExecution {
 
     /**
      * Run the single filter specified by this AbstractFilterExecution and store the results in addedResult and
-     * modifyResult.
+     * modifyResult. Allows specification of the start and end positions in the added and modified inputs.
      *
      * @param filter the filter to execute
      * @param input the input to use for this filter
+     * @param inputStart the start position in the input
+     * @param inputEnd the end position in the input (exclusive)
      * @param onComplete the routine to call after the filter has been successfully executed
      * @param onError the routine to call if a filter raises an exception
      */
-    private void doFilterInline(
+    private void doFilter(
             final WhereFilter filter,
             @NotNull final RowSet input,
+            final long inputStart,
+            final long inputEnd,
             final Consumer<WritableRowSet> onComplete,
             final Consumer<Exception> onError) {
         if (Thread.interrupted()) {
             throw new CancellationException("interrupted while filtering");
         }
         try {
-            final WritableRowSet result = input.isEmpty()
-                    ? RowSetFactory.empty()
-                    : filter.filter(input, sourceTable.getRowSet(), sourceTable, usePrev);
+            final WritableRowSet result;
+            if (inputStart < inputEnd) {
+                try (final RowSet restrictedInput = input.subSetByPositionRange(inputStart, inputEnd)) {
+                    result = filter.filter(restrictedInput, sourceTable.getRowSet(), sourceTable, usePrev);
+                }
+            } else {
+                result = RowSetFactory.empty();
+            }
             onComplete.accept(result);
         } catch (Exception e) {
             onError.accept(e);
@@ -162,7 +171,8 @@ abstract class AbstractFilterExecution {
                 QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT - 1) / QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT);
         final long targetSize = (inputSize + targetSegments - 1) / targetSegments;
 
-        final WritableRowSet[] results = new WritableRowSet[targetSegments];
+        // noinspection resource
+        final WritableRowSet filterResult = RowSetFactory.empty();
 
         jobScheduler().iterateParallel(
                 ExecutionContext.getContext(),
@@ -174,22 +184,22 @@ abstract class AbstractFilterExecution {
                     final long endOffset = startOffSet + targetSize;
 
                     final Consumer<WritableRowSet> onFilterComplete = (result) -> {
-                        synchronized (results) {
-                            results[idx] = result;
+                        // Clean up the row sets created by the filter.
+                        try (result) {
+                            synchronized (filterResult) {
+                                filterResult.insert(result);
+                            }
                         }
                         resume.run();
                     };
 
                     // Filter this segment of the input rows.
-                    try (final WritableRowSet subset = inputCopy.subSetByPositionRange(startOffSet, endOffset)) {
-                        doFilterInline(filter, subset, onFilterComplete, nec);
-                    }
+                    doFilter(filter, inputCopy, startOffSet, endOffset, onFilterComplete, nec);
                 },
-                () -> onComplete.accept(RowSetFactory.union(Arrays.asList(results))),
-                () -> SafeCloseable.closeAll(Stream.concat(Stream.of(inputCopy), Stream.of(results))),
+                () -> onComplete.accept(filterResult),
+                inputCopy::close,
                 exception -> {
-                    try (final SafeCloseable ignore =
-                            () -> SafeCloseable.closeAll(Stream.concat(Stream.of(inputCopy), Stream.of(results)))) {
+                    try (inputCopy) {
                         onError.accept(exception);
                     }
                 });
@@ -278,8 +288,8 @@ abstract class AbstractFilterExecution {
                 return;
             }
             pushdownMatcher.estimatePushdownFilterCost(filter, selection, usePrev, context,
-                    jobScheduler(), estimatedCost -> {
-                        pushdownFilterCost = estimatedCost;
+                    jobScheduler(), value -> {
+                        pushdownFilterCost = value;
                         onComplete.run();
                     }, onError);
         }
@@ -388,7 +398,7 @@ abstract class AbstractFilterExecution {
         // Run serially or parallelized?
         final long inputSize = input.size();
         if (!shouldParallelizeFilter(filter, inputSize)) {
-            doFilterInline(filter, input, resultConsumer, exceptionConsumer);
+            doFilter(filter, input, 0, inputSize, resultConsumer, exceptionConsumer);
         } else {
             doFilterParallel(filter, input, resultConsumer, exceptionConsumer);
         }
@@ -429,7 +439,7 @@ abstract class AbstractFilterExecution {
             // Update the context to reflect the filtering already executed..
             sf.context.updateExecutedFilterCost(costCeiling);
 
-            if (pushdownResult.isFinished()) {
+            if (pushdownResult.maybeMatch().isEmpty()) {
                 localInput.setValue(pushdownResult.match().copy());
                 scheduleAndSortCostEstimates(statelessFilters, filterIdx + 1, localInput.getValue(),
                         filterComplete, filterNec);
@@ -471,9 +481,13 @@ abstract class AbstractFilterExecution {
 
         if (sf.pushdownResult != null) {
             // Leverage push-down results to reduce the chunk filter input before the final filter.
-            final Consumer<WritableRowSet> localConsumer = (maybeMatchFiltered) -> {
-                onFilterComplete.accept(maybeMatchFiltered.union(sf.pushdownResult.match()));
+            final Consumer<WritableRowSet> localConsumer = (rows) -> {
+                onFilterComplete.accept(rows.union(sf.pushdownResult.match()));
             };
+
+            sf.pushdownResult.match().retain(input);
+            sf.pushdownResult.maybeMatch().retain(input);
+
             executeFinalFilter(sf.filter, sf.pushdownResult.maybeMatch(), localConsumer, filterNec);
             return;
         }
@@ -628,7 +642,7 @@ abstract class AbstractFilterExecution {
                     };
 
                     // Stateful filters require serial execution.
-                    doFilterInline(filter, input, onFilterComplete, filterNec);
+                    doFilter(filter, input, 0, inputSize, onFilterComplete, filterNec);
                 },
                 collectionResume,
                 () -> {
