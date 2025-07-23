@@ -111,39 +111,9 @@ abstract class AbstractFilterExecution {
         void accept(@NotNull RowSet adds, @NotNull RowSet mods);
     }
 
-    /**
-     * Run the single filter specified by this AbstractFilterExecution and store the results in addedResult and
-     * modifyResult. Allows specification of the start and end positions in the added and modified inputs.
-     *
-     * @param filter the filter to execute
-     * @param input the input to use for this filter
-     * @param inputStart the start position in the input
-     * @param inputEnd the end position in the input (exclusive)
-     * @param onComplete the routine to call after the filter has been successfully executed
-     * @param onError the routine to call if a filter raises an exception
-     */
-    private void doFilter(
-            final WhereFilter filter,
-            @NotNull final RowSet input,
-            final long inputStart,
-            final long inputEnd,
-            final Consumer<WritableRowSet> onComplete,
-            final Consumer<Exception> onError) {
+    private static void cancelIfInterrupted() {
         if (Thread.interrupted()) {
             throw new CancellationException("interrupted while filtering");
-        }
-        try {
-            final WritableRowSet result;
-            if (inputStart < inputEnd) {
-                try (final RowSet restrictedInput = input.subSetByPositionRange(inputStart, inputEnd)) {
-                    result = filter.filter(restrictedInput, sourceTable.getRowSet(), sourceTable, usePrev);
-                }
-            } else {
-                result = RowSetFactory.empty();
-            }
-            onComplete.accept(result);
-        } catch (Exception e) {
-            onError.accept(e);
         }
     }
 
@@ -160,10 +130,6 @@ abstract class AbstractFilterExecution {
             @NotNull final RowSet input,
             final Consumer<WritableRowSet> onComplete,
             final Consumer<Exception> onError) {
-        if (Thread.interrupted()) {
-            throw new CancellationException("interrupted while filtering");
-        }
-
         final long inputSize = input.size();
         final WritableRowSet inputCopy = input.copy();
 
@@ -180,21 +146,18 @@ abstract class AbstractFilterExecution {
                 JobScheduler.DEFAULT_CONTEXT_FACTORY,
                 0, targetSegments,
                 (localContext, idx, nec, resume) -> {
+                    cancelIfInterrupted();
                     final long startOffSet = idx * targetSize;
                     final long endOffset = startOffSet + targetSize;
-
-                    final Consumer<WritableRowSet> onFilterComplete = (result) -> {
-                        // Clean up the row sets created by the filter.
-                        try (result) {
-                            synchronized (filterResult) {
-                                filterResult.insert(result);
-                            }
-                        }
-                        resume.run();
-                    };
-
                     // Filter this segment of the input rows.
-                    doFilter(filter, inputCopy, startOffSet, endOffset, onFilterComplete, nec);
+                    try (
+                            final WritableRowSet subset = inputCopy.subSetByPositionRange(startOffSet, endOffset);
+                            final WritableRowSet result = filter(filter, subset)) {
+                        synchronized (filterResult) {
+                            filterResult.insert(result);
+                        }
+                    }
+                    resume.run();
                 },
                 () -> onComplete.accept(filterResult),
                 inputCopy::close,
@@ -395,10 +358,11 @@ abstract class AbstractFilterExecution {
             final RowSet input,
             final Consumer<WritableRowSet> resultConsumer,
             final Consumer<Exception> exceptionConsumer) {
+        cancelIfInterrupted();
         // Run serially or parallelized?
         final long inputSize = input.size();
         if (!shouldParallelizeFilter(filter, inputSize)) {
-            doFilter(filter, input, 0, inputSize, resultConsumer, exceptionConsumer);
+            resultConsumer.accept(filter(filter, input));
         } else {
             doFilterParallel(filter, input, resultConsumer, exceptionConsumer);
         }
@@ -425,12 +389,10 @@ abstract class AbstractFilterExecution {
         // Result consumer for normal filtering.
         final Consumer<WritableRowSet> onFilterComplete = (result) -> {
             // Clean up the row sets created by the filter.
-            try (final WritableRowSet ignored = localInput.getValue()) {
-                // Store the output as the next filter input.
-                localInput.setValue(result);
-            }
+            // Store the output as the next filter input.
+            replace(localInput, result);
             // This filter is complete, sort the remaining filters and conclude.
-            scheduleAndSortCostEstimates(statelessFilters, filterIdx + 1, localInput.getValue(), filterComplete,
+            scheduleAndSortCostEstimates(statelessFilters, filterIdx + 1, localInput.get(), filterComplete,
                     filterNec);
         };
 
@@ -441,13 +403,13 @@ abstract class AbstractFilterExecution {
 
             if (pushdownResult.maybeMatch().isEmpty()) {
                 localInput.setValue(pushdownResult.match().copy());
-                scheduleAndSortCostEstimates(statelessFilters, filterIdx + 1, localInput.getValue(),
+                scheduleAndSortCostEstimates(statelessFilters, filterIdx + 1, localInput.get(),
                         filterComplete, filterNec);
                 return;
             }
 
             // We still have some maybe rows, sort the filters again, including the current index.
-            scheduleAndSortCostEstimates(statelessFilters, filterIdx, localInput.getValue(), () -> {
+            scheduleAndSortCostEstimates(statelessFilters, filterIdx, localInput.get(), () -> {
                 // If there is a new filter at the current index, need to evaluate it.
                 if (!sf.equals(statelessFilters[filterIdx])) {
                     // Use the union of the match and maybe rows as the input for the next filter.
@@ -471,7 +433,7 @@ abstract class AbstractFilterExecution {
             }, filterNec);
         };
 
-        final RowSet input = localInput.getValue();
+        final RowSet input = localInput.get();
         if (sf.pushdownMatcher != null && sf.pushdownFilterCost < Long.MAX_VALUE) {
             // Execute the pushdown filter and return.
             sf.pushdownMatcher.pushdownFilter(sf.filter, input, usePrev, sf.context,
@@ -557,7 +519,7 @@ abstract class AbstractFilterExecution {
         }
 
         // Sort the filters by cost, with the lowest cost first.
-        scheduleAndSortCostEstimates(statelessFilters, 0, localInput.getValue(),
+        scheduleAndSortCostEstimates(statelessFilters, 0, localInput.get(),
                 // Update and sorting is completed
                 () -> {
                     // Iterate serially through the stateless filters in this set. Each filter will successively
@@ -569,7 +531,7 @@ abstract class AbstractFilterExecution {
                             JobScheduler.DEFAULT_CONTEXT_FACTORY,
                             0, statelessFilters.length,
                             (filterContext, filterIdx, filterNec, filterResume) -> {
-                                if (localInput.getValue().isEmpty()) {
+                                if (localInput.get().isEmpty()) {
                                     // If there are no rows left to filter, skip this filter.
                                     filterResume.run();
                                     return;
@@ -620,34 +582,32 @@ abstract class AbstractFilterExecution {
                 JobScheduler.DEFAULT_CONTEXT_FACTORY,
                 0, filters.size(),
                 (filterContext, filterIdx, filterNec, filterResume) -> {
+                    cancelIfInterrupted();
                     final WhereFilter filter = filters.get(filterIdx);
                     // Use the restricted output for the next filter (if this is not the first invocation)
-                    final RowSet input = localInput.getValue();
-
-                    if (input.isEmpty()) {
-                        // If there are no rows left to filter, skip this filter.
-                        filterResume.run();
-                        return;
-                    }
-
-                    final long inputSize = input.size();
-
-                    final Consumer<WritableRowSet> onFilterComplete = (result) -> {
-                        // Clean up the row sets created by the filter.
-                        try (final RowSet ignored = localInput.getValue()) {
-                            // Store the output as the next filter input.
-                            localInput.setValue(result);
-                        }
-                        filterResume.run();
-                    };
-
-                    // Stateful filters require serial execution.
-                    doFilter(filter, input, 0, inputSize, onFilterComplete, filterNec);
+                    final WritableRowSet result = filter(filter, localInput.get());
+                    // Clean up the row sets created by the filter.
+                    // Store the output as the next filter input.
+                    replace(localInput, result);
+                    filterResume.run();
                 },
                 collectionResume,
                 () -> {
                 },
                 collectionNec);
+    }
+
+    private WritableRowSet filter(final WhereFilter filter, final RowSet input) {
+        // If there are no rows left to filter, skip this filter.
+        return input.isEmpty()
+                ? RowSetFactory.empty()
+                : filter.filter(input, sourceTable.getRowSet(), sourceTable, usePrev);
+    }
+
+    private static void replace(final MutableObject<WritableRowSet> obj, final WritableRowSet result) {
+        try (final WritableRowSet ignored = obj.get()) {
+            obj.setValue(result);
+        }
     }
 
     /**
@@ -690,7 +650,7 @@ abstract class AbstractFilterExecution {
                     }
                 }, () -> {
                     // Return empty RowSets instead of null.
-                    final WritableRowSet result = localInput.getValue();
+                    final WritableRowSet result = localInput.get();
                     final BasePerformanceEntry baseEntry = jobScheduler().getAccumulatedPerformance();
                     if (baseEntry != null) {
                         basePerformanceEntry.accumulate(baseEntry);
