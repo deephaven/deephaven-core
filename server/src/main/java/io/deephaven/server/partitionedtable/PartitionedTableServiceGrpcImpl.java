@@ -46,18 +46,15 @@ public class PartitionedTableServiceGrpcImpl extends PartitionedTableServiceGrpc
     private final TicketRouter ticketRouter;
     private final SessionService sessionService;
     private final PartitionedTableServiceContextualAuthWiring authWiring;
-    private final TicketResolver.Authorization authorizationTransformation;
 
     @Inject
     public PartitionedTableServiceGrpcImpl(
             TicketRouter ticketRouter,
             SessionService sessionService,
-            AuthorizationProvider authorizationProvider,
             PartitionedTableServiceContextualAuthWiring authWiring) {
         this.ticketRouter = ticketRouter;
         this.sessionService = sessionService;
         this.authWiring = authWiring;
-        this.authorizationTransformation = authorizationProvider.getTicketResolverAuthorization();
     }
 
     @Override
@@ -120,16 +117,11 @@ public class PartitionedTableServiceGrpcImpl extends PartitionedTableServiceGrpc
                         final Table table = partitionedTable.get().table();
                         authWiring.checkPermissionMerge(session.getAuthContext(), request,
                                 Collections.singletonList(table));
-                        Table merged;
+                        final Table merged;
                         if (table.isRefreshing()) {
                             merged = table.getUpdateGraph().sharedLock().computeLocked(partitionedTable.get()::merge);
                         } else {
                             merged = partitionedTable.get().merge();
-                        }
-                        merged = authorizationTransformation.transform(merged);
-                        if (merged == null) {
-                            throw Exceptions.statusRuntimeException(
-                                    Code.FAILED_PRECONDITION, "Not authorized to merge table.");
                         }
                         return merged;
                     });
@@ -163,18 +155,13 @@ public class PartitionedTableServiceGrpcImpl extends PartitionedTableServiceGrpc
                     .onSuccess((final Table table) -> safelyOnNextAndComplete(responseObserver,
                             buildTableCreationResponse(request.getResultId(), table)))
                     .submit(() -> {
-                        Table table;
-                        Table keyTable = keys.get();
+                        final Table table;
+                        final Table keyTable = keys.get();
                         authWiring.checkPermissionGetTable(session.getAuthContext(), request,
                                 List.of(partitionedTable.get().table(), keyTable));
 
                         table = lockAndGetConstituents(request, keyTable, partitionedTable.get());
 
-                        table = authorizationTransformation.transform(table);
-                        if (table == null) {
-                            throw Exceptions.statusRuntimeException(
-                                    Code.FAILED_PRECONDITION, "Not authorized to get table.");
-                        }
                         return table;
                     });
         }
