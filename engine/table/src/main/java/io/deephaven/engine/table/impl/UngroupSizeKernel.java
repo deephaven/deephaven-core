@@ -91,8 +91,10 @@ interface UngroupSizeKernel {
                 final Object array = chunk.get(ii);
                 final int size = array == null ? 0 : Array.getLength(array);
                 final long existing = sizesInAndOut[ii + offset];
-                sizesInAndOut[ii + offset] = Math.max(size, existing);
-                maxSize = Math.max(sizesInAndOut[ii + offset], maxSize);
+                if (size > existing) {
+                    sizesInAndOut[ii + offset] = size;
+                    maxSize = Math.max(size, maxSize);
+                }
             }
             return maxSize;
         }
@@ -139,8 +141,10 @@ interface UngroupSizeKernel {
                 final Vector<?> vector = (Vector<?>) chunk.get(ii);
                 final long size = vector != null ? vector.size() : 0;
                 final long existing = sizesInAndOut[ii + offset];
-                sizesInAndOut[ii + offset] = Math.max(size, existing);
-                maxSize = Math.max(sizesInAndOut[ii + offset], maxSize);
+                if (size > existing) {
+                    sizesInAndOut[ii + offset] = size;
+                    maxSize = Math.max(size, maxSize);
+                }
             }
             return maxSize;
         }
