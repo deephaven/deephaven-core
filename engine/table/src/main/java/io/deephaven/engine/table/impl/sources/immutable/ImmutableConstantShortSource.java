@@ -124,8 +124,8 @@ public class ImmutableConstantShortSource
             final Consumer<PushdownResult> onComplete,
             final Consumer<Exception> onError) {
         // Delegate to the shared code for RowKeyAgnosticChunkSource
-        RowKeyAgnosticChunkSource.pushdownFilterHelper(this, filter, null, selection, fullSet, usePrev, context,
-                costCeiling, jobScheduler, onComplete, onError);
+        RowKeyAgnosticChunkSource.pushdownFilterHelper(this, filter, selection, fullSet, usePrev, context, costCeiling,
+                jobScheduler, onComplete, onError);
     }
 
     // region reinterpretation

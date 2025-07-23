@@ -41,7 +41,6 @@ public interface RowKeyAgnosticChunkSource<ATTR extends Any> extends FillUnorder
     static void pushdownFilterHelper(
             final ColumnSource<?> columnSource,
             final WhereFilter filter,
-            final Map<String, String> renameMap,
             final RowSet selection,
             final RowSet fullSet,
             final boolean usePrev,
