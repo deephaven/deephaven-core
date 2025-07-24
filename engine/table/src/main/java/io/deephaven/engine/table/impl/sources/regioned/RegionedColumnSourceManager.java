@@ -227,7 +227,6 @@ public class RegionedColumnSourceManager
                     null // No attributes to provide (not add-only or append-only, because locations can grow)
             ) {
                 {
-                    setFlat();
                     setRefreshing(isRefreshing);
                 }
             };
