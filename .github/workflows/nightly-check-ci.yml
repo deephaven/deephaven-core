@@ -7,7 +7,7 @@ on:
     # 2AM EST == 6AM UTC
     - cron:  '0 6 * * *'
   push:
-    branches: [ 'nightly/**', 'release/v*', 'dependabot/**', 'coverage/**']
+    branches: [ 'nightly/**', 'release/v*', 'dependabot/**', 'coverage/**', 'rc/v*']
 
 jobs:
   nightly:
