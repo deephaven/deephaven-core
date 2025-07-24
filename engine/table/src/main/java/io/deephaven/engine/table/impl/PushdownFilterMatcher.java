@@ -30,6 +30,9 @@ public interface PushdownFilterMatcher {
      * {@link PushdownResult#METADATA_STATS_COST}) and should be used as a baseline for estimating the cost of newly
      * implemented pushdown operations.
      *
+     * <p>
+     * A no-op implementation should simply complete with {@link Long#MAX_VALUE}.
+     *
      * @param filter The {@link Filter filter} to test.
      * @param selection The set of rows to tests.
      * @param usePrev Whether to use the previous result
@@ -61,7 +64,7 @@ public interface PushdownFilterMatcher {
      * ownership passes to {@code onComplete}.
      *
      * <p>
-     * A no-op implementation should simply complete with {@code PushdownResult.maybeMatch(selection)}..
+     * A no-op implementation should simply complete with {@code PushdownResult.maybeMatch(selection)}.
      *
      * @param filter The {@link Filter filter} to apply.
      * @param selection The set of rows to test.

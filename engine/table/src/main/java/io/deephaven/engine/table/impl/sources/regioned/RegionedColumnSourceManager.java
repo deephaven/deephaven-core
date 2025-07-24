@@ -1085,13 +1085,18 @@ public class RegionedColumnSourceManager
 
     private final class PushdownJobBuilder extends JobBuilder {
         private final Consumer<PushdownResult> onPushdownComplete;
-        private final PushdownResult[] pushdownResults;
+
+        private long totalSelectionSize;
+        private final WritableRowSet[] matches;
+        private final WritableRowSet[] maybeMatches;
 
         public PushdownJobBuilder(WritableRowSet selection, int[] regionIndices,
                 Consumer<PushdownResult> onPushdownComplete, Consumer<Exception> onPushdownError) {
             super(selection, regionIndices, onPushdownError);
             this.onPushdownComplete = Objects.requireNonNull(onPushdownComplete);
-            this.pushdownResults = new PushdownResult[regionIndices.length];
+            this.totalSelectionSize = 0;
+            this.matches = new WritableRowSet[regionIndices.length];
+            this.maybeMatches = new WritableRowSet[regionIndices.length];
         }
 
         public void iterateParallel(
@@ -1103,37 +1108,49 @@ public class RegionedColumnSourceManager
             iterateParallel(jobScheduler, new PushdownJobRunner(filter, usePrev, context, jobScheduler, costCeiling));
         }
 
-        private synchronized void addResult(final int ix, final PushdownResult result) {
-            this.pushdownResults[ix] = result;
+        private void addResult(final int ix, final PushdownResult result) {
+            // Note: we are assuming that the lower-layer location pushdown logic is correct and using this assumption
+            // to build our results more efficiently because of that assumption. As such, we are destructuring the
+            // PushdownResult so that we can keep just the matches and maybeMatches and close selection since we don't
+            // _need_ it.
+            //
+            // If we ever need to be more defensive because we are seeing unexpected behavior, or we need to better
+            // validate this assumption for debugging purposes, it is easy to re-work this implementation so that this
+            // keeps the full PushdownResult and does a more thorough check in buildResults.
+            try (final WritableRowSet selectionSubset = result.selection()) {
+                addResult(ix, selectionSubset.size(), result.match(), result.maybeMatch());
+            }
+            // Note: not closing result; we've already closed selection, and match / maybeMatch are now owned by this.
+        }
+
+        private synchronized void addResult(
+                final int jobIndex,
+                final long selectionSize,
+                final WritableRowSet matchSubset,
+                final WritableRowSet maybeMatchSubset) {
+            this.totalSelectionSize += selectionSize;
+            this.matches[jobIndex] = matchSubset;
+            this.maybeMatches[jobIndex] = maybeMatchSubset;
         }
 
         private synchronized PushdownResult buildResults() {
-            long selectionSize = 0;
-            long matchSize = 0;
-            long maybeMatchSize = 0;
-            for (final PushdownResult result : pushdownResults) {
-                selectionSize += result.selection().size();
-                matchSize += result.match().size();
-                maybeMatchSize += result.maybeMatch().size();
-            }
-            Assert.eq(selection.size(), "selection.size()", selectionSize, "selectionSize");
-            if (matchSize == selectionSize) {
-                Assert.eqZero(maybeMatchSize, "maybeMatchSize");
+            final long totalMatchSize = Stream.of(matches).mapToLong(RowSet::size).sum();
+            final long totalMaybeMatchSize = Stream.of(maybeMatches).mapToLong(RowSet::size).sum();
+            Assert.eq(selection.size(), "selection.size()", totalSelectionSize, "totalSelectionSize");
+            if (totalMatchSize == totalSelectionSize) {
+                Assert.eqZero(totalMaybeMatchSize, "totalMaybeMatchSize");
                 return PushdownResult.match(selection);
             }
-            if (maybeMatchSize == selectionSize) {
-                Assert.eqZero(matchSize, "matchSize");
+            if (totalMaybeMatchSize == totalSelectionSize) {
+                Assert.eqZero(totalMatchSize, "totalMatchSize");
                 return PushdownResult.maybeMatch(selection);
             }
-            if (matchSize == 0 && maybeMatchSize == 0) {
+            if (totalMatchSize == 0 && totalMaybeMatchSize == 0) {
                 return PushdownResult.noMatch(selection);
             }
             try (
-                    final WritableRowSet match = RowSetFactory
-                            .union(Stream.of(pushdownResults).map(PushdownResult::match).collect(Collectors.toList()));
-                    final WritableRowSet maybeMatch = RowSetFactory
-                            .union(Stream.of(pushdownResults).map(PushdownResult::maybeMatch)
-                                    .collect(Collectors.toList()))) {
+                    final WritableRowSet match = RowSetFactory.union(Arrays.asList(matches));
+                    final WritableRowSet maybeMatch = RowSetFactory.union(Arrays.asList(maybeMatches))) {
                 return PushdownResult.ofUnsafe(selection, match, maybeMatch);
             }
         }
@@ -1150,7 +1167,11 @@ public class RegionedColumnSourceManager
 
         @Override
         protected void cleanupImpl() {
-            selection.close();
+            SafeCloseable.closeAll(
+                    Stream.concat(Stream.of(selection),
+                            Stream.concat(
+                                    Stream.of(matches),
+                                    Stream.of(maybeMatches))));
         }
 
         final class PushdownJobRunner extends JobRunner {
