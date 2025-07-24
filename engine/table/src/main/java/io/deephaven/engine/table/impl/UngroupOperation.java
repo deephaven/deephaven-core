@@ -172,7 +172,7 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
 
             for (int ci = 0; ci < ungroupSources.length; ++ci) {
                 if (ungroupableColumnSources[ci] == null) {
-                    // noinspection resource
+                    // noinspection resource,DataFlowIssue
                     getContexts[ci] = ungroupSources[ci].makeGetContext(chunkSize);
                 } else {
                     // noinspection resource,DataFlowIssue
