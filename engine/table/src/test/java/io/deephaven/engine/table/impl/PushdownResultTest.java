@@ -5,14 +5,12 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.WritableRowSet;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.Arrays;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@Ignore
 public class PushdownResultTest {
 
     @Test

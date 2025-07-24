@@ -41,7 +41,7 @@ public final class PushdownResult implements SafeCloseable {
     public static final long DEFERRED_DATA_INDEX_COST = 50_000L;
 
     private static final boolean FORCE_VALIDATION =
-            Configuration.getInstance().getBooleanWithDefault("PushdownResult.forceValidation", true);
+            Configuration.getInstance().getBooleanWithDefault("PushdownResult.forceValidation", false);
 
     /**
      * The selection. Retaining selection here makes the pushdown result "self-contained" which helps with composability
