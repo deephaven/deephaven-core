@@ -36,6 +36,7 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
     final ColumnSource<?>[] ungroupSources;
     final UngroupableColumnSource[] ungroupableColumnSources;
     final boolean anyUngroupable;
+    final boolean allUngroupable;
     final UngroupSizeKernel[] sizeKernels;
 
     public UngroupOperation(final QueryTable parent, final boolean nullFill, final String[] columnsToUngroupBy) {
@@ -47,11 +48,17 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
         ungroupableColumnSources = new UngroupableColumnSource[columnsToUngroupBy.length];
         sizeKernels = new UngroupSizeKernel[columnsToUngroupBy.length];
 
+        boolean localAnyUngroupable = false;
+        boolean localAllUngroupable = true;
+
         for (int columnIndex = 0; columnIndex < columnsToUngroupBy.length; columnIndex++) {
             final String name = columnsToUngroupBy[columnIndex];
             final ColumnSource<?> column = parent.getColumnSource(name);
             if (UngroupableColumnSource.isUngroupable(column)) {
                 ungroupableColumnSources[columnIndex] = (UngroupableColumnSource) column;
+                localAnyUngroupable = true;
+            } else {
+                localAllUngroupable = false;
             }
             ungroupSources[columnIndex] = column;
             if (column.getType().isArray()) {
@@ -62,7 +69,8 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
                 throw new InvalidColumnException("Column " + name + " is not an array or Vector");
             }
         }
-        anyUngroupable = Arrays.stream(ungroupableColumnSources).anyMatch(Objects::nonNull);
+        anyUngroupable = localAnyUngroupable;
+        allUngroupable = localAllUngroupable;
     }
 
     @Override
@@ -147,7 +155,7 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
 
         final int chunkSize = (int) Math.min(CHUNK_SIZE, rowSet.size());
 
-        final ChunkSource.GetContext[] getContexts = new ChunkSource.GetContext[columnsToUngroupBy.length];
+        final ChunkSource.GetContext[] getContexts = allUngroupable ? null : new ChunkSource.GetContext[columnsToUngroupBy.length];
         final ChunkSource.FillContext[] fillContexts =
                 anyUngroupable ? new ChunkSource.FillContext[columnsToUngroupBy.length] : null;
         try (final SafeCloseableArray<ChunkSource.GetContext> ignored = new SafeCloseableArray<>(getContexts);
@@ -172,7 +180,8 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
 
             int offset = 0;
             while (rsit.hasMore()) {
-                final RowSequence rsChunk = rsit.getNextRowSequenceWithLength(CHUNK_SIZE);
+                final RowSequence rsChunk = rsit.getNextRowSequenceWithLength(chunkSize);
+                final int actualChunkSize = rsChunk.intSize();
                 sharedContext.reset();
 
                 for (int columnIndex = 0; columnIndex < ungroupSources.length; columnIndex++) {
@@ -208,7 +217,7 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
                             }
                         }
                     } else if (columnIndex == 0) {
-                        resettable.resetFromArray(sizes, offset, rsChunk.intSize());
+                        resettable.resetFromArray(sizes, offset, actualChunkSize);
                         if (usePrev) {
                             ungroupableColumnSources[columnIndex].getUngroupedPrevSize(fillContexts[columnIndex],
                                     rsChunk, resettable);
@@ -217,7 +226,7 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
                                     resettable);
                         }
 
-                        for (int ii = 0; ii < resettable.size(); ii++) {
+                        for (int ii = 0; ii < actualChunkSize; ii++) {
                             maxSize = Math.max(resettable.get(ii), maxSize);
                         }
                     } else {
@@ -229,7 +238,7 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
                                     currentSizes);
                         }
 
-                        for (int ii = 0; ii < currentSizes.size(); ii++) {
+                        for (int ii = 0; ii < actualChunkSize; ii++) {
                             final long currentSize = currentSizes.get(ii);
                             if (nullFill) {
                                 if (currentSize > sizes[offset + ii]) {

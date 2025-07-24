@@ -47,7 +47,7 @@ interface UngroupSizeKernel {
      * @param sizesInAndOut the output array
      * @param offset the position in the output array of the first result
      *
-     * @return the maximum size encountered in this region of sizesInAndOut and chunk
+     * @return the maximum increased size encountered in this region of sizesInAndOut and chunk
      */
     long maybeIncreaseSize(final ObjectChunk<Object, ?> chunk, final long[] sizesInAndOut, final int offset);
 
