@@ -270,10 +270,12 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
 
     private void computePrevSize(final RowSet prevResultRowset,
             final int base,
-            final RowSet parentRowset,
+            final RowSet prevRowsetInParent,
             final long[] sizes) {
+        Assert.assertion(prevRowsetInParent.isNonempty(), "prevRowsetInParent.isNonempty()");
+
         final RowSet.RangeIterator prevIt = prevResultRowset.rangeIterator();
-        final RowSet.Iterator parentIt = parentRowset.iterator();
+        final RowSet.Iterator parentIt = prevRowsetInParent.iterator();
         long nextKey = 0;
 
         for (int pos = 0; pos < sizes.length; ++pos) {

@@ -85,7 +85,7 @@ interface UngroupSizeKernel {
         @Override
         public long maybeIncreaseSize(final ObjectChunk<Object, ?> chunk, final long[] sizesInAndOut,
                 final int offset) {
-            long maxSize = 0;
+            long maxIncreasedSize = 0;
             final int chunkSize = chunk.size();
             for (int ii = 0; ii < chunkSize; ++ii) {
                 final Object array = chunk.get(ii);
@@ -93,10 +93,10 @@ interface UngroupSizeKernel {
                 final long existing = sizesInAndOut[ii + offset];
                 if (size > existing) {
                     sizesInAndOut[ii + offset] = size;
-                    maxSize = Math.max(size, maxSize);
+                    maxIncreasedSize = Math.max(size, maxIncreasedSize);
                 }
             }
-            return maxSize;
+            return maxIncreasedSize;
         }
 
     }
@@ -135,7 +135,7 @@ interface UngroupSizeKernel {
         @Override
         public long maybeIncreaseSize(final ObjectChunk<Object, ?> chunk, final long[] sizesInAndOut,
                 final int offset) {
-            long maxSize = 0;
+            long maxIncreasedSize = 0;
             final int chunkSize = chunk.size();
             for (int ii = 0; ii < chunkSize; ++ii) {
                 final Vector<?> vector = (Vector<?>) chunk.get(ii);
@@ -143,10 +143,10 @@ interface UngroupSizeKernel {
                 final long existing = sizesInAndOut[ii + offset];
                 if (size > existing) {
                     sizesInAndOut[ii + offset] = size;
-                    maxSize = Math.max(size, maxSize);
+                    maxIncreasedSize = Math.max(size, maxIncreasedSize);
                 }
             }
-            return maxSize;
+            return maxIncreasedSize;
         }
     }
 }
