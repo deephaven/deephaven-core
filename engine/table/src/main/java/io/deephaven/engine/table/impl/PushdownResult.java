@@ -8,6 +8,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.annotations.VisibleForTesting;
 
 import java.util.Objects;
 
@@ -40,8 +41,16 @@ public final class PushdownResult implements SafeCloseable {
      */
     public static final long DEFERRED_DATA_INDEX_COST = 50_000L;
 
-    private static final boolean FORCE_VALIDATION =
-            Configuration.getInstance().getBooleanWithDefault("PushdownResult.forceValidation", false);
+    private static final boolean IS_CI = "true".equalsIgnoreCase(System.getenv().get("CI"));
+
+    /**
+     * Forces additional safety checks in {@link #ofUnsafe(RowSet, RowSet, RowSet)}. Controlled via configuration
+     * property "PushdownResult.forceValidation". Not a user-documented feature. {@code false} by default, except when
+     * environment variable "CI" is {@code true}.
+     */
+    @VisibleForTesting
+    static final boolean FORCE_VALIDATION =
+            Configuration.getInstance().getBooleanWithDefault("PushdownResult.forceValidation", IS_CI);
 
     /**
      * The selection. Retaining selection here makes the pushdown result "self-contained" which helps with composability
@@ -66,7 +75,9 @@ public final class PushdownResult implements SafeCloseable {
      * @return the result
      */
     public static PushdownResult maybeMatch(final RowSet selection) {
-        return new PushdownResult(selection.copy(), RowSetFactory.empty(), selection.copy());
+        try (final WritableRowSet empty = RowSetFactory.empty()) {
+            return copy(selection, empty, selection);
+        }
     }
 
     /**
@@ -76,7 +87,9 @@ public final class PushdownResult implements SafeCloseable {
      * @return the result
      */
     public static PushdownResult match(final RowSet selection) {
-        return new PushdownResult(selection.copy(), selection.copy(), RowSetFactory.empty());
+        try (final WritableRowSet empty = RowSetFactory.empty()) {
+            return copy(selection, selection, empty);
+        }
     }
 
     /**
@@ -86,7 +99,9 @@ public final class PushdownResult implements SafeCloseable {
      * @return the result
      */
     public static PushdownResult noMatch(final RowSet selection) {
-        return new PushdownResult(selection.copy(), RowSetFactory.empty(), RowSetFactory.empty());
+        try (final WritableRowSet empty = RowSetFactory.empty()) {
+            return copy(selection, empty, empty);
+        }
     }
 
     /**
@@ -113,7 +128,7 @@ public final class PushdownResult implements SafeCloseable {
         if (match.overlaps(maybeMatch)) {
             throw new IllegalArgumentException("match and maybeMatch should be non-overlapping row sets");
         }
-        return new PushdownResult(selection.copy(), match.copy(), maybeMatch.copy());
+        return copy(selection, match, maybeMatch);
     }
 
     /**
@@ -140,7 +155,33 @@ public final class PushdownResult implements SafeCloseable {
                     String.format("Invalid PushdownResult, matchSize + maybeMatchSize > selectionSize, %d + %d > %d",
                             matchSize, maybeMatchSize, selectionSize));
         }
-        return new PushdownResult(selection.copy(), match.copy(), maybeMatch.copy());
+        return copy(selection, match, maybeMatch);
+    }
+
+    private static PushdownResult copy(final RowSet selection, final RowSet match, final RowSet maybeMatch) {
+        // This is pedantic, but necessary for technically correct & prompt cleanup in exceptional cases.
+        final WritableRowSet selectionCopy = selection.copy();
+        try {
+            final WritableRowSet matchCopy = match.copy();
+            try {
+                final WritableRowSet maybeMatchCopy = maybeMatch.copy();
+                try {
+                    return new PushdownResult(selectionCopy, matchCopy, maybeMatchCopy);
+                } catch (final RuntimeException e) {
+                    try (maybeMatchCopy) {
+                        throw e;
+                    }
+                }
+            } catch (final RuntimeException e) {
+                try (matchCopy) {
+                    throw e;
+                }
+            }
+        } catch (final RuntimeException e) {
+            try (selectionCopy) {
+                throw e;
+            }
+        }
     }
 
     private PushdownResult(
@@ -222,7 +263,7 @@ public final class PushdownResult implements SafeCloseable {
      * @return the copy
      */
     public PushdownResult copy() {
-        return new PushdownResult(selection.copy(), match.copy(), maybeMatch.copy());
+        return copy(selection, match, maybeMatch);
     }
 
     /**

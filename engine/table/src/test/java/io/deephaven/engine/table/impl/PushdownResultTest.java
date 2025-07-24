@@ -94,8 +94,16 @@ public class PushdownResultTest {
             } catch (IllegalArgumentException e) {
                 assertThat(e).hasMessageContaining("match and maybeMatch should be non-overlapping row sets");
             }
-            // Not testing the result of this besides the fact that it does not throw an error
-            PushdownResult.ofUnsafe(selection, match, maybeMatch);
+            if (PushdownResult.FORCE_VALIDATION) {
+                try {
+                    PushdownResult.ofUnsafe(selection, match, maybeMatch);
+                } catch (IllegalArgumentException e) {
+                    assertThat(e).hasMessageContaining("match and maybeMatch should be non-overlapping row sets");
+                }
+            } else {
+                // Not testing the result of this besides the fact that it does not throw an error
+                PushdownResult.ofUnsafe(selection, match, maybeMatch).close();
+            }
         }
     }
 
@@ -110,8 +118,16 @@ public class PushdownResultTest {
             } catch (IllegalArgumentException e) {
                 assertThat(e).hasMessageContaining("match must be a subset of selection");
             }
-            // Not testing the result of this besides the fact that it does not throw an error
-            PushdownResult.ofUnsafe(selection, match, maybeMatch);
+            if (PushdownResult.FORCE_VALIDATION) {
+                try {
+                    PushdownResult.ofUnsafe(selection, match, maybeMatch);
+                } catch (IllegalArgumentException e) {
+                    assertThat(e).hasMessageContaining("match must be a subset of selection");
+                }
+            } else {
+                // Not testing the result of this besides the fact that it does not throw an error
+                PushdownResult.ofUnsafe(selection, match, maybeMatch).close();
+            }
         }
     }
 
@@ -126,8 +142,16 @@ public class PushdownResultTest {
             } catch (IllegalArgumentException e) {
                 assertThat(e).hasMessageContaining("maybeMatch must be a subset of selection");
             }
-            // Not testing the result of this besides the fact that it does not throw an error
-            PushdownResult.ofUnsafe(selection, match, maybeMatch);
+            if (PushdownResult.FORCE_VALIDATION) {
+                try {
+                    PushdownResult.ofUnsafe(selection, match, maybeMatch);
+                } catch (IllegalArgumentException e) {
+                    assertThat(e).hasMessageContaining("maybeMatch must be a subset of selection");
+                }
+            } else {
+                // Not testing the result of this besides the fact that it does not throw an error
+                PushdownResult.ofUnsafe(selection, match, maybeMatch).close();
+            }
         }
     }
 
@@ -142,10 +166,18 @@ public class PushdownResultTest {
             } catch (IllegalArgumentException e) {
                 assertThat(e).hasMessageContaining("match must be a subset of selection");
             }
-            try {
-                PushdownResult.ofUnsafe(selection, match, maybeMatch);
-            } catch (IllegalArgumentException e) {
-                assertThat(e).hasMessageContaining("matchSize + maybeMatchSize > selectionSize, 31 + 0 > 30");
+            if (PushdownResult.FORCE_VALIDATION) {
+                try {
+                    PushdownResult.ofUnsafe(selection, match, maybeMatch);
+                } catch (IllegalArgumentException e) {
+                    assertThat(e).hasMessageContaining("match must be a subset of selection");
+                }
+            } else {
+                try {
+                    PushdownResult.ofUnsafe(selection, match, maybeMatch);
+                } catch (IllegalArgumentException e) {
+                    assertThat(e).hasMessageContaining("matchSize + maybeMatchSize > selectionSize, 31 + 0 > 30");
+                }
             }
         }
     }
@@ -161,10 +193,18 @@ public class PushdownResultTest {
             } catch (IllegalArgumentException e) {
                 assertThat(e).hasMessageContaining("maybeMatch must be a subset of selection");
             }
-            try {
-                PushdownResult.ofUnsafe(selection, match, maybeMatch);
-            } catch (IllegalArgumentException e) {
-                assertThat(e).hasMessageContaining("matchSize + maybeMatchSize > selectionSize, 0 + 31 > 30");
+            if (PushdownResult.FORCE_VALIDATION) {
+                try {
+                    PushdownResult.ofUnsafe(selection, match, maybeMatch);
+                } catch (IllegalArgumentException e) {
+                    assertThat(e).hasMessageContaining("maybeMatch must be a subset of selection");
+                }
+            } else {
+                try {
+                    PushdownResult.ofUnsafe(selection, match, maybeMatch);
+                } catch (IllegalArgumentException e) {
+                    assertThat(e).hasMessageContaining("matchSize + maybeMatchSize > selectionSize, 0 + 31 > 30");
+                }
             }
         }
     }

@@ -406,7 +406,7 @@ public class RegionedColumnSourceManager
         // Sort the removed locations by region index, so that we can process them in order.
         removedTableLocations.sort(Comparator.comparingInt(e -> e.regionIndex));
         for (final IncludedTableLocationEntry removedLocation : removedTableLocations) {
-            final long regionFirstKey = RegionedColumnSource.getFirstRowKey(removedLocation.regionIndex);
+            final long regionFirstKey = removedLocation.firstRowKey();
             removedRowSetBuilder.appendRowSequenceWithOffset(removedLocation.rowSetAtLastUpdate, regionFirstKey);
             removedRegionBuilder.appendKey(removedLocation.regionIndex);
         }
