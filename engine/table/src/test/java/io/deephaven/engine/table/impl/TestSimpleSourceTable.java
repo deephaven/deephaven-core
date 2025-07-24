@@ -140,6 +140,7 @@ public class TestSimpleSourceTable extends RefreshingTableTestCase {
             {
                 oneOf(componentFactory).createColumnSourceManager(
                         with(false),
+                        with(false),
                         with(ColumnToCodecMappings.EMPTY),
                         with(equal(TABLE_DEFINITION.getColumns())));
                 will(returnValue(columnSourceManager));
@@ -251,6 +252,7 @@ public class TestSimpleSourceTable extends RefreshingTableTestCase {
             {
                 oneOf(componentFactory).createColumnSourceManager(
                         with(false),
+                        with(false),
                         with(ColumnToCodecMappings.EMPTY),
                         with(equal(getIncludedColumnDefs(includedColumnIndices1))));
                 will(returnValue(columnSourceManager));
@@ -283,6 +285,7 @@ public class TestSimpleSourceTable extends RefreshingTableTestCase {
         checking(new Expectations() {
             {
                 oneOf(componentFactory).createColumnSourceManager(
+                        with(false),
                         with(false),
                         with(ColumnToCodecMappings.EMPTY),
                         with(equal(getIncludedColumnDefs(includedColumnIndices2))));
@@ -326,6 +329,7 @@ public class TestSimpleSourceTable extends RefreshingTableTestCase {
         checking(new Expectations() {
             {
                 oneOf(componentFactory).createColumnSourceManager(
+                        with(false),
                         with(false),
                         with(ColumnToCodecMappings.EMPTY),
                         with(equal(getIncludedColumnDefs(includedColumnIndices3))));
