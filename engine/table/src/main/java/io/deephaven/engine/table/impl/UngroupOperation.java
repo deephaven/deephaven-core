@@ -159,7 +159,8 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
                 allUngroupable ? null : new ChunkSource.GetContext[columnsToUngroupBy.length];
         final ChunkSource.FillContext[] fillContexts =
                 anyUngroupable ? new ChunkSource.FillContext[columnsToUngroupBy.length] : null;
-        try (final SafeCloseableArray<ChunkSource.GetContext> ignored = new SafeCloseableArray<>(getContexts);
+        try (final SafeCloseableArray<ChunkSource.GetContext> ignored =
+                allUngroupable ? null : new SafeCloseableArray<>(getContexts);
                 final SafeCloseableArray<ChunkSource.FillContext> ignored2 =
                         anyUngroupable ? new SafeCloseableArray<>(fillContexts) : null;
                 final SharedContext sharedContext = SharedContext.makeSharedContext();
