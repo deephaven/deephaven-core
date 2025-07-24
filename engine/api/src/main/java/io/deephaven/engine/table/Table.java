@@ -551,16 +551,17 @@ public interface Table extends
      * without the attribute, restoring standard semantics for aggregation operations.
      *
      * <p>
-     * Removing the {@link #BLINK_TABLE_ATTRIBUTE blink attribute} does not change the underlying update pattern of the table. On each
-     * cycle, all existing rows are removed. When used with an aggregation this has the effect of providing the aggregated
-     * values for only this cycle, because aggregating the result table will no longer apply special blink semantics.
+     * Removing the {@link #BLINK_TABLE_ATTRIBUTE blink attribute} does not change the underlying update pattern of the
+     * table. On each cycle, all existing rows are removed. When used with an aggregation this has the effect of
+     * providing the aggregated values for only this cycle, because aggregating the result table will no longer apply
+     * special blink semantics.
      * </p>
      *
      * <p>
-     * Some aggregations (in particular {@link #groupBy} and {@link #partitionBy} cannot provide the
-     * desired blink table aggregation semantics because doing so would require storing the entire stream of blink updates in
-     * memory. If that behavior is desired, use {@code blinkToAppendOnly}. If on the other hand, you would like to
-     * group or partition only values from the current update, remove the blink attribute with this method.
+     * Some aggregations (in particular {@link #groupBy} and {@link #partitionBy} cannot provide the desired blink table
+     * aggregation semantics because doing so would require storing the entire stream of blink updates in memory. If
+     * that behavior is desired, use {@code blinkToAppendOnly}. If on the other hand, you would like to group or
+     * partition only values from the current update, remove the blink attribute with this method.
      * </p>
      *
      * <p>
@@ -594,6 +595,12 @@ public interface Table extends
      * that does not conform to add-only semantics, then the returned table will notify of an error and cease updating.
      * </p>
      *
+     * <p>
+     * If the engine can identify a table as add only, then some query operations may be optimized (for example, a
+     * lastBy operation need only track the current last row per-group rather than all of the rows in a group). In
+     * formulas, the {@code k} variable (for the current row key) can be used safely.
+     * </p>
+     *
      * @return A child table with the add-only attribute set, or this table if the attribute is already set.
      */
     @ConcurrentMethod
@@ -604,8 +611,17 @@ public interface Table extends
      *
      * <p>
      * This table must already produce an update pattern that conforms to append-only semantics. If it produces an
-     * update that does not conform to append-only semantics, then the returned table will notify of an error and cease updating.
+     * update that does not conform to append-only semantics, then the returned table will notify of an error and cease
+     * updating.
      * </p>
+     *
+     * <p>
+     * If the engine can identify a table as append only, then some query operations may be optimized (for example, a
+     * lastBy operation need only track the current last row per-group rather than all of the rows in a group). In
+     * formulas, the {@code i} (for the current row position), {@code ii} (for the current row position), and {@code k}
+     * (for the current row key) variables can be used safely.
+     * </p>
+     *
      *
      * @return A child table with the append-only attribute set, or this table if the attribute is already set.
      */
