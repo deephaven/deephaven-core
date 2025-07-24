@@ -745,13 +745,6 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
             Assert.assertion(updateToSend.shifted().empty(), "updateToSend.shifted.empty()");
         }
 
-        final boolean hasNoListeners = !hasListeners();
-        if (hasNoListeners) {
-            lastNotificationStep = currentStep;
-            updateToSend.release();
-            return;
-        }
-
         // First validate that each rowSet is in a sane state.
         if (VALIDATE_UPDATE_INDICES) {
             updateToSend.added().validate();

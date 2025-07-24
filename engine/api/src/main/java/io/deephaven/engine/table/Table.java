@@ -551,20 +551,20 @@ public interface Table extends
      * without the attribute, restoring standard semantics for aggregation operations.
      *
      * <p>
-     * Removing the {@link #BLINK_TABLE_ATTRIBUTE} does not change the underlying update pattern of the table. On each
-     * cycle, all exist rows are removed. When used with an aggregation, this has the effect of providing the aggregated
-     * values for only this cycle.
+     * Removing the {@link #BLINK_TABLE_ATTRIBUTE blink attribute} does not change the underlying update pattern of the table. On each
+     * cycle, all existing rows are removed. When used with an aggregation this has the effect of providing the aggregated
+     * values for only this cycle, because aggregating the result table will no longer apply special blink semantics.
      * </p>
      *
      * <p>
-     * Some aggregations (in particular {@link #groupBy()} and {@link #partitionBy(String...)} cannot provide the
-     * desired blink table aggregation semantics; because it would require storing the entire stream of blink updates in
-     * memory. If that behavior is desired, use {@code blinkToAppendOnly()}. If on the other hand, you would like to
+     * Some aggregations (in particular {@link #groupBy} and {@link #partitionBy} cannot provide the
+     * desired blink table aggregation semantics because doing so would require storing the entire stream of blink updates in
+     * memory. If that behavior is desired, use {@code blinkToAppendOnly}. If on the other hand, you would like to
      * group or partition only values from the current update, remove the blink attribute with this method.
      * </p>
      *
      * <p>
-     * To add the blink attribute back to a table that generates updates consistent with blink semantics, use
+     * To add the blink attribute to a table that generates updates consistent with blink semantics, use
      * {@link #assertBlink()}.
      * </p>
      *
@@ -578,7 +578,7 @@ public interface Table extends
      *
      * <p>
      * This table must already produce an update pattern that conforms to blink semantics. If it produces an update that
-     * does not conform to blink semantics, then the returned table will notify of an error.
+     * does not conform to blink semantics, then the returned table will notify of an error and cease updating.
      * </p>
      *
      * @return A child table with the blink attribute set, or this table if already a blink table.
@@ -591,10 +591,10 @@ public interface Table extends
      *
      * <p>
      * This table must already produce an update pattern that conforms to add-only semantics. If it produces an update
-     * that does not conform to add-only semantics, then the returned table will notify of an error.
+     * that does not conform to add-only semantics, then the returned table will notify of an error and cease updating.
      * </p>
      *
-     * @return A child table with the add-only attribute set, or this table if already an add-only table.
+     * @return A child table with the add-only attribute set, or this table if the attribute is already set.
      */
     @ConcurrentMethod
     Table assertAddOnly();
@@ -604,10 +604,10 @@ public interface Table extends
      *
      * <p>
      * This table must already produce an update pattern that conforms to append-only semantics. If it produces an
-     * update that does not conform to append-only semantics, then the returned table will notify of an error.
+     * update that does not conform to append-only semantics, then the returned table will notify of an error and cease updating.
      * </p>
      *
-     * @return A child table with the append-only attribute set, or this table if already an add-only table.
+     * @return A child table with the append-only attribute set, or this table if the attribute is already set.
      */
     @ConcurrentMethod
     Table assertAppendOnly();
