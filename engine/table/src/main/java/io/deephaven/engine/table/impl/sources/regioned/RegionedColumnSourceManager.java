@@ -1128,6 +1128,14 @@ public class RegionedColumnSourceManager
                 final long selectionSize,
                 final WritableRowSet matchSubset,
                 final WritableRowSet maybeMatchSubset) {
+            // Note: we could consider a strategy where we incrementally compute the results via RowSet#insert or
+            // RowSetBuilderRandom#addRowSet. Without doing benchmarking, it is hard to say whether that would be a
+            // better approach.
+            //
+            // The justification for the current approach:
+            // 1. Very short time in addResult, meaning we won't block other jobs from completing / new jobs from
+            // running
+            // 2. In the case where the result represent the full selection, we can skip the building
             this.totalSelectionSize += selectionSize;
             this.matches[jobIndex] = matchSubset;
             this.maybeMatches[jobIndex] = maybeMatchSubset;
@@ -1148,9 +1156,12 @@ public class RegionedColumnSourceManager
             if (totalMatchSize == 0 && totalMaybeMatchSize == 0) {
                 return PushdownResult.noMatch(selection);
             }
+            // Note: it's not obvious what the best approach for building these RowSets is; that is, sequential
+            // insertion vs sequential builder. We know that the individual results are ordered and non-overlapping.
+            // If this becomes important, we can do more benchmarking.
             try (
-                    final WritableRowSet match = RowSetFactory.union(Arrays.asList(matches));
-                    final WritableRowSet maybeMatch = RowSetFactory.union(Arrays.asList(maybeMatches))) {
+                    final WritableRowSet match = RowSetFactory.unionInsert(Arrays.asList(matches));
+                    final WritableRowSet maybeMatch = RowSetFactory.unionInsert(Arrays.asList(maybeMatches))) {
                 return PushdownResult.ofUnsafe(selection, match, maybeMatch);
             }
         }

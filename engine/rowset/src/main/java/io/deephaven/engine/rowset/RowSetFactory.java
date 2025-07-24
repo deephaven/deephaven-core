@@ -109,7 +109,7 @@ public abstract class RowSetFactory {
      * @param rowSets the input row sets
      * @return the new row set
      */
-    public static WritableRowSet union(final Collection<RowSet> rowSets) {
+    public static WritableRowSet unionInsert(final Collection<RowSet> rowSets) {
         try (final Stream<RowSet> stream = rowSets.stream().filter(RowSet::isNonempty)) {
             final Iterator<RowSet> it = stream.iterator();
             if (!it.hasNext()) {
