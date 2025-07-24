@@ -14,7 +14,7 @@ import java.lang.reflect.Array;
  */
 interface UngroupSizeKernel {
     /**
-     * Determine the size of each element in chunk. Write results beginning at offset in sizesOut. Additionally, returns
+     * Determine the size of each element in {@code chunk}. Write results beginning at {@code offset} in {@code sizesOut}. Additionally, returns
      * the maximum size seen.
      *
      * @param chunk the input chunk
@@ -27,7 +27,7 @@ interface UngroupSizeKernel {
 
 
     /**
-     * Compare the size of the size of each element in chunk to sizes in.
+     * Compare the size of the size of each element in {@code chunk} to {@code sizesIn}.
      * 
      * @param chunk the input chunk
      * @param sizesIn the array of expected sizes
@@ -39,13 +39,13 @@ interface UngroupSizeKernel {
             MutableLong encounteredSize);
 
     /**
-     * Determine the size of each element in chunk. Write the maximum of the existing size in sizesInAndOut and the
-     * newly calculated size for each element into sizesInAndOut. Additionally, returns the maximum size over all
+     * Determine the size of each element in {@code chunk}. Write the maximum of the existing size in {@code sizesInAndOut} and the
+     * newly calculated size for each element into {@code sizesInAndOut}. Additionally, returns the maximum size over all
      * elements.
      *
      * @param chunk the input chunk
-     * @param sizesInAndOut the output array
-     * @param offset the position in the output array of the first result
+     * @param sizesInAndOut array containing existing sizes to be overwritten with new sizes
+     * @param offset the position in sizesInAndOut of the first result
      *
      * @return the maximum increased size encountered in this region of sizesInAndOut and chunk
      */
