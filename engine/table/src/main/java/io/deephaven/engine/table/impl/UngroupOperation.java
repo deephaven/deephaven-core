@@ -339,7 +339,7 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
         public UngroupListener(final QueryTable result, final CrossJoinShiftState shiftState,
                 final TrackingRowSet parentRowset,
                 final Map<String, ColumnSource<?>> resultMap) {
-            super("ungroup(" + UngroupOperation.this.getDescription() + ')', UngroupOperation.this.parent, result);
+            super("ungroup(" + getDescription() + ')', UngroupOperation.this.parent, result);
             this.result = result;
             this.shiftState = shiftState;
             this.parentRowset = parentRowset;
@@ -426,18 +426,18 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
                 return;
             }
 
-            try (final RowSet.RangeIterator rsit = resultRowset.rangeIterator()) {
+            try (final RowSet.RangeIterator rit = resultRowset.rangeIterator()) {
                 // there must be at least one thing in the result rowset, otherwise we would have followed the clear
                 // logic instead of this logic
-                rsit.next();
-                long nextResultKey = rsit.currentRangeStart();
+                rit.next();
+                long nextResultKey = rit.currentRangeStart();
                 long nextSourceKey = nextResultKey >> requiredBase;
 
                 final long lastRowKeyOffset = (1L << requiredBase) - 1;
 
                 final RowSetShiftData upstreamShift = upstream.shifted();
                 final long shiftSize = upstreamShift.size();
-                SHIFT_LOOP: for (int ii = 0; ii < shiftSize; ++ii) {
+                for (int ii = 0; ii < shiftSize; ++ii) {
                     final long begin = upstreamShift.getBeginRange(ii);
                     final long end = upstreamShift.getEndRange(ii);
                     final long shiftDelta = upstreamShift.getShiftDelta(ii);
@@ -447,29 +447,28 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
                     for (long rk = Math.max(begin, nextSourceKey); rk <= end; rk =
                             Math.max(rk + 1, nextSourceKey)) {
                         final long oldRangeStart = rk << (long) requiredBase;
-                        final long oldRangeEnd = (rk << (long) requiredBase) + lastRowKeyOffset;
+                        final long oldRangeEnd = oldRangeStart + lastRowKeyOffset;
 
-                        if (!rsit.advance(oldRangeStart)) {
-                            break SHIFT_LOOP;
+                        if (!rit.advance(oldRangeStart)) {
+                            return;
                         }
                         // we successfully advanced
-                        nextResultKey = rsit.currentRangeStart();
+                        nextResultKey = rit.currentRangeStart();
                         nextSourceKey = nextResultKey >> requiredBase;
 
                         if (nextResultKey > oldRangeEnd) {
-                            // no need to shift things that don't exist anymore
+                            // no need to shift things that don't exist
                             continue;
                         }
 
                         // get the range from our result rowset
-                        Assert.eq(oldRangeStart, "oldRangeStart", rsit.currentRangeStart(),
+                        Assert.eq(oldRangeStart, "oldRangeStart", rit.currentRangeStart(),
                                 "rsit.currentRangeStart()");
-                        final long actualRangeEnd = Math.min(rsit.currentRangeEnd(), oldRangeEnd);
+                        final long actualRangeEnd = Math.min(rit.currentRangeEnd(), oldRangeEnd);
                         shiftBuilder.shiftRange(oldRangeStart, actualRangeEnd, resultShiftAmount);
                         removedByShiftBuilder.addRange(oldRangeStart, actualRangeEnd);
                         addedByShiftBuilder.addRange(oldRangeStart + resultShiftAmount,
                                 actualRangeEnd + resultShiftAmount);
-
                     }
                 }
             }
@@ -493,7 +492,9 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
             evaluateRemoved(upstream.removed(), removedBuilder);
 
             final WritableRowSet removedRowSet = removedBuilder.build();
-            removedRowSet.insert(removedByModifiesBuilder.build());
+            try (final WritableRowSet removedByModifies = removedByModifiesBuilder.build()) {
+                removedRowSet.insert(removedByModifies);
+            }
             // we want to remove everything that is no longer relevant for our shift
             final TrackingWritableRowSet resultRowset = result.getRowSet().writableCast();
             resultRowset.remove(removedRowSet);
@@ -516,7 +517,7 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
 
                     for (long oldSlotStart = startRange; oldSlotStart <= endRange; oldSlotStart += maxOldSlotSize) {
                         final long oldSlotEnd = Math.min(oldSlotStart + maxOldSlotSize - 1, endRange);
-                        final long existingSlotSize = oldSlotEnd - oldSlotStart + 1;
+                        final long oldSlotSize = oldSlotEnd - oldSlotStart + 1;
 
                         final long oldSourceKey = oldSlotStart >> prevBase;
                         final long newSourceKey;
@@ -528,17 +529,20 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
                         }
 
                         final long newSlotStart = newSourceKey << newBase;
-                        final long newSlotEnd = newSlotStart + existingSlotSize - 1;
+                        final long newSlotEnd = newSlotStart + oldSlotSize - 1;
 
                         shiftBuilder.shiftRange(oldSlotStart, oldSlotEnd, newSlotStart - oldSlotStart);
                         builder.appendRange(newSlotStart, newSlotEnd);
                     }
                 }
             }
-            resultRowset.resetTo(builder.build());
+            try (final WritableRowSet built = builder.build()) {
+                resultRowset.resetTo(built);
+            }
             final WritableRowSet added = addedBuilder.build();
-            final RowSet addedByModifies = addedByModifiesBuilder.build();
-            added.insert(addedByModifies);
+            try (final RowSet addedByModifies = addedByModifiesBuilder.build()) {
+                added.insert(addedByModifies);
+            }
 
             resultRowset.insert(added);
 
@@ -594,6 +598,8 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
 
                 while (pos < shiftData.size()) {
                     if (advanceTo <= shiftData.getEndRange(pos)) {
+                        // TODO: this nextKey should be advanceTo, we want to cover a case where we have more shift data
+                        // in this range
                         nextKey = Math.max(shiftData.getBeginRange(pos), nextKey);
                         return nextKey == advanceTo;
                     }
@@ -627,7 +633,8 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
             shiftState.setNumShiftBitsAndUpdatePrev(newBase);
         }
 
-        private int evaluateAdded(final RowSet rowSet, @NotNull final RowSetBuilderSequential ungroupBuilder,
+        private int evaluateAdded(final RowSet rowSet,
+                @NotNull final RowSetBuilderSequential ungroupBuilder,
                 final int existingBase,
                 final boolean alwaysBuild) {
             if (rowSet.isEmpty()) {
@@ -657,8 +664,8 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
 
         /**
          *
-         * @param modified the modified index, in post-shift space
-         * @param modifiedPreShift the modified index, in pre-shift space
+         * @param modified the modified rowset, in post-shift space
+         * @param modifiedPreShift the modified rowset, in pre-shift space
          * @param addedBuilder the builder for rows added by modifications
          * @param removedBuilder the builder for rows removed by modifications
          * @param modifyBuilder the builder for rows modified by modifications
@@ -686,22 +693,22 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
                 final int minBase = determineRequiredBase(maxSize);
                 if (minBase > base) {
                     // If we are going to force a rebase, there is no need to compute the entire rowset, but the caller
-                    // would
-                    // like our copy of the sizes we computed
+                    // would like our copy of the sizes we computed
                     currentSizes.setValue(sizes);
                     return minBase;
                 }
             } else {
                 sizes = currentSizes.get();
+                Assert.eq(sizes.length, "sizes.length", size, "modified.intSize(\"ungroup\")");
+                // noinspection OptionalGetWithoutIsPresent
                 maxSize = Arrays.stream(sizes).max().getAsLong();
                 final int minBase = determineRequiredBase(maxSize);
-                Assert.leq(minBase, "minBase", minBase, "maxBase");
+                Assert.leq(minBase, "minBase", base, "base");
             }
 
-
             final long[] prevSizes = new long[size];
-            computePrevSize(result.getRowSet().prev(), shiftState.getPrevNumShiftBits(), modifiedPreShift, prevSizes);
             final int prevBase = shiftState.getPrevNumShiftBits();
+            computePrevSize(result.getRowSet().prev(), prevBase, modifiedPreShift, prevSizes);
 
             final RowSet.Iterator iterator = modified.iterator();
             final RowSet.Iterator iteratorPreShift = modifiedPreShift.iterator();
