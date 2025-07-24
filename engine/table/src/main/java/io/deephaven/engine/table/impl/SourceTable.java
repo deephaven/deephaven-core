@@ -100,9 +100,11 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
         this.updateSourceRegistrar = updateSourceRegistrar;
 
         final boolean isRefreshing = updateSourceRegistrar != null;
+        final boolean removeAllowed = locationProvider.getLocationUpdateMode().removeAllowed();
         try (final SafeCloseable ignored = isRefreshing ? LivenessScopeStack.open() : null) {
             columnSourceManager = componentFactory.createColumnSourceManager(
                     isRefreshing,
+                    removeAllowed,
                     ColumnToCodecMappings.EMPTY,
                     definition.getColumns() // This is the *re-written* definition passed to the super-class constructor
             );
