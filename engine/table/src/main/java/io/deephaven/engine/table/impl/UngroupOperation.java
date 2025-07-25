@@ -720,9 +720,10 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
                 Assert.leq(minBase, "minBase", base, "base");
             }
 
-            // If the base had changed, we would be using the rebase code path.
+            // This function is used from both the normal and the rebase path.
             final long[] prevSizes = new long[size];
-            computePrevSize(result.getRowSet().prev(), base, modifiedPreShift, prevSizes);
+            final int prevBase = shiftState.getPrevNumShiftBits();
+            computePrevSize(result.getRowSet().prev(), prevBase, modifiedPreShift, prevSizes);
 
             final RowSet.Iterator iterator = modified.iterator();
             final RowSet.Iterator iteratorPreShift = modifiedPreShift.iterator();
@@ -731,7 +732,7 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
                 final long previousRowKey = iteratorPreShift.nextLong();
 
                 updateRowsetForRow(addedBuilder, removedBuilder, modifyBuilder, sizes[idx], prevSizes[idx],
-                        currentRowKey, previousRowKey, base, base);
+                        currentRowKey, previousRowKey, base, prevBase);
             }
 
             return base;
