@@ -701,6 +701,8 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
                 sizes = currentSizes.get();
                 Assert.eq(sizes.length, "sizes.length", size, "modified.intSize(\"ungroup\")");
                 // noinspection OptionalGetWithoutIsPresent
+                Assert.eq(sizes.length, "sizes.length", size, "modified.intSize()");
+                //noinspection OptionalGetWithoutIsPresent
                 maxSize = Arrays.stream(sizes).max().getAsLong();
                 final int minBase = determineRequiredBase(maxSize);
                 Assert.leq(minBase, "minBase", base, "base");
