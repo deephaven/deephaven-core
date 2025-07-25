@@ -309,12 +309,16 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
             final RowSet rowSet) {
         Assert.geqZero(base, "base");
         Assert.leq(base, "base", 62);
-        final long mask = ((1L << base) - 1) << (64 - base);
         final long lastKey = rowSet.lastRowKey();
-        if ((lastKey > 0) && ((lastKey & mask) != 0)) {
-            throw new IllegalStateException(
-                    "Key overflow detected, perhaps you should flatten your table before calling ungroup: lastRowKey="
-                            + lastKey + ", base=" + base);
+        if (lastKey >= 0) {
+            final long lastSlotStart = lastKey << base;
+            final long lastSlotRestored = lastSlotStart >> base;
+            final long slotSize = 1L << base;
+            if (lastSlotRestored != lastKey || (lastSlotStart + slotSize) < 0) {
+                throw new IllegalStateException(
+                        "Key overflow detected, perhaps you should flatten your table before calling ungroup: lastRowKey="
+                                + lastKey + ", base=" + base);
+            }
         }
 
         int pos = 0;

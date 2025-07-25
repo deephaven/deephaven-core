@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.Pair;
+import io.deephaven.base.verify.AssertionFailure;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.context.ExecutionContext;
@@ -575,9 +576,8 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
         final IntVectorColumnWrapper cw = new IntVectorColumnWrapper(withSingle.getColumnSource("X"), withSingle.getRowSet(), 0, 0);
         final IntVectorColumnWrapper cw2 = new IntVectorColumnWrapper(withSingle2.getColumnSource("X"), withSingle.getRowSet(), 0, 0);
         final ObjectArraySource<IntVector> oas = new ObjectArraySource<>(IntVector.class);
-        oas.ensureCapacity(1);
-        oas.set(0, cw);
         oas.ensureCapacity(2);
+        oas.set(0, cw);
         oas.set(1, cw2);
         final Map<String, ColumnSource<?>> columns = new LinkedHashMap<>();
         columns.put("X", oas);
@@ -596,22 +596,28 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
 
         final QueryTable fakeGrouped2 = new QueryTable(i(0, 1).toTracking(), columns);
         TableTools.showWithRowSet(fakeGrouped2);
-        final QueryTable ungrouped2 = (QueryTable) fakeGrouped2.ungroup();
-        //noinspection SizeReplaceableByIsEmpty
-        final long size = ungrouped2.size();
-        System.out.println("Size:" + size);
-        assertTrue(size > 0);
-        assertEquals(1L<<63, ungrouped2.size());
-
-        for (int ii = 0; ii <= 61; ++ii) {
-            assertEquals(1, ungrouped2.getColumnSource("X").get(1L << ii));
-            assertEquals(2, ungrouped2.getColumnSource("X").get((1L<<62) + (1L << ii)));
-        }
-        assertEquals(1, ungrouped.getColumnSource("X").get((1L << 62) - 1L));
-        assertEquals(2, ungrouped.getColumnSource("X").get((1L << 62)));
-        assertEquals(2, ungrouped.getColumnSource("X").get((1L << 63) - 1L));
+        final IllegalStateException ise = Assert.assertThrows (IllegalStateException.class, () -> fakeGrouped2.ungroup());
+        assertEquals("Key overflow detected, perhaps you should flatten your table before calling ungroup: lastRowKey=1, base=62", ise.getMessage());
     }
 
+    public void testBaseTooBig() {
+        final QueryTable table = testTable(RowSetFactory.flat((1L << 63) - 1).toTracking());
+        //noinspection SizeReplaceableByIsEmpty
+        assertTrue(table.size() > 0);
+        final Table withSingle = table.update("X=1");
+
+        final IntVectorColumnWrapper cw = new IntVectorColumnWrapper(withSingle.getColumnSource("X"), withSingle.getRowSet(), 0, 0);
+        final ObjectArraySource<IntVector> oas = new ObjectArraySource<>(IntVector.class);
+        oas.ensureCapacity(1);
+        oas.set(0, cw);
+        final Map<String, ColumnSource<?>> columns = new LinkedHashMap<>();
+        columns.put("X", oas);
+        final QueryTable fakeGrouped = new QueryTable(i(0).toTracking(), columns);
+        TableTools.showWithRowSet(fakeGrouped);
+
+        final AssertionFailure af = Assert.assertThrows(AssertionFailure.class, fakeGrouped::ungroup);
+        assertEquals("Assertion failed: asserted newNumShiftBits < 63, instead newNumShiftBits == 63, 63 == 63.", af.getMessage());
+    }
 
     public void testUngroupWithRebase() {
         final int minimumUngroupBase = QueryTable.setMinimumUngroupBase(2);
