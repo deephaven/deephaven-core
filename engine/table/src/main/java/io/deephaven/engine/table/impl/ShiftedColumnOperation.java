@@ -3,7 +3,6 @@
 //
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -13,7 +12,7 @@ import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
-import io.deephaven.engine.table.impl.select.MatchPairFactory;
+import io.deephaven.engine.table.impl.select.ShiftedColumnDefinition;
 import io.deephaven.engine.table.impl.sources.ShiftedColumnSource;
 import io.deephaven.util.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
@@ -21,8 +20,10 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Tools for creating a new ShiftedColumn(s) for a given input table and a source column(s)
@@ -36,74 +37,91 @@ public class ShiftedColumnOperation {
      * Creates a new table that has all the columns of the source table plus includes the new shifted column(s).
      *
      * @param source source table
-     * @param shift the positive or negative shift value
-     * @param matchColumns the source and shifted column pair(s) as shifted=source for example "X1=X", "Y1=Y"...
+     * @param shifted the shifted column definition(s) that define the operation
      * @return a new Table that includes the shifted column
      */
-    public static Table addShiftedColumns(@NotNull Table source, long shift, @NotNull String... matchColumns) {
-        String nuggetName = "addShiftedColumns ( " + shift + " , " + String.join(",", matchColumns) + ") ";
-        return getShiftedColumnsUsingNugget(nuggetName, source, shift, MatchPairFactory.getExpressions(matchColumns));
+    public static Table addShiftedColumns(
+            final @NotNull Table source,
+            final @NotNull ShiftedColumnDefinition... shifted) {
+        final String shiftedName = Arrays.stream(shifted)
+                .map(Object::toString)
+                .collect(Collectors.joining(","));
+        final String nuggetName = "addShiftedColumns ( " + shiftedName + ") ";
+        return getShiftedColumnsUsingNugget(nuggetName, source,
+                new LinkedHashSet<>(Arrays.stream(shifted).collect(Collectors.toList())));
     }
 
     /**
      * Creates a new table that has all the columns of the source table plus includes the new shifted column(s).
      *
-     * @param source the source table, used to create new table with the shifted column
-     * @param shift the constant shift value
-     * @param matchPairs the source and shifted column pair(s) as shifted=source match pairs
-     * @return a new Table that has all columns from source table plus additional shifted column(s) that are created
-     *         using the shift from their source column(s)
+     * @param source source table
+     * @param shifted the shifted column definition(s) that define the operation
+     * @return a new Table that includes the shifted column
      */
-    public static Table addShiftedColumns(@NotNull Table source, long shift,
-            @NotNull MatchPair... matchPairs) {
-        String nuggetName = "addShiftedColumns ( shift , matchPairs )";
-        return getShiftedColumnsUsingNugget(nuggetName, source, shift, matchPairs);
+    public static Table addShiftedColumns(
+            final @NotNull Table source,
+            final @NotNull Set<ShiftedColumnDefinition> shifted) {
+        final String shiftedName = shifted.stream()
+                .map(Object::toString)
+                .collect(Collectors.joining(","));
+        final String nuggetName = "addShiftedColumns ( " + shiftedName + ") ";
+        return getShiftedColumnsUsingNugget(nuggetName, source, shifted);
     }
 
     /**
-     * Delegates to {@link ShiftedColumnOperation#getShiftedColumns(Table, long, MatchPair...)} using
-     * QueryPerformanceRecorder.
+     * Delegates to {@link ShiftedColumnOperation#getShiftedColumns(Table, Set)} using QueryPerformanceRecorder.
      *
      * @param source the source table, used to create new table with the shifted column
-     * @param shift the constant shift value
-     * @param pairs the source and shifted column pair(s) as shifted=source match pairs
+     * @param shifted the shifted column definition(s) that define the operation
      * @return a new Table that has all columns from source table plus additional shifted column(s) that are created
      *         using the shift from their source column(s)
      */
     @NotNull
     private static Table getShiftedColumnsUsingNugget(
-            @NotNull String nuggetName, @NotNull Table source, long shift, @NotNull MatchPair... pairs) {
+            final @NotNull String nuggetName,
+            final @NotNull Table source,
+            final @NotNull Set<ShiftedColumnDefinition> shifted) {
         return QueryPerformanceRecorder.withNugget(nuggetName, source.sizeForInstrumentation(),
-                () -> getShiftedColumns(source, shift, pairs));
+                () -> getShiftedColumns(source, shifted));
     }
 
     /**
-     * Encapsulates the logic to create and return a new Table that has all the columns from input table plus an
-     * additional shifted column(s) that is based on the given source column(s) and the shift.
+     * Encapsulates the logic to create and return a new Table that has all the columns from input table plus any
+     * additional shifted column(s).
      *
      * @param source the source table, used to create new table with the shifted column
-     * @param shift the constant shift value, must be non-zero
-     * @param pairs the source and shifted column pair(s) as shifted=source match pairs
-     * @return a new Table that has all columns from input table plus additional shifted column(s) that are created
-     *         using the shift from their source column(s)
+     * @param shifted the shifted column definition(s) that define the operation
+     * @return a new Table that has all columns from input table plus additional shifted column(s) created from the
+     *         provided definition(s)
      */
     @NotNull
-    private static Table getShiftedColumns(@NotNull Table source, long shift, @NotNull MatchPair... pairs) {
-        Assert.neqZero(shift, "shift");
+    private static Table getShiftedColumns(
+            final @NotNull Table source,
+            final @NotNull Set<ShiftedColumnDefinition> shifted) {
 
         final Map<String, ColumnSource<?>> columnSourceMap = new LinkedHashMap<>(source.getColumnSourceMap());
         final Map<String, Set<String>> sourceToShiftModColSetMap = new LinkedHashMap<>();
         final Set<String> sourceColumns = new LinkedHashSet<>();
         final Set<String> shiftedColumns = new LinkedHashSet<>();
 
-        Arrays.stream(pairs).forEach(pair -> {
-            columnSourceMap.put(pair.leftColumn, new ShiftedColumnSource<>(
-                    source.getRowSet(), source.getColumnSource(pair.rightColumn), shift));
-            Set<String> set = sourceToShiftModColSetMap.computeIfAbsent(pair.rightColumn, s -> new LinkedHashSet<>());
-            set.add(pair.rightColumn);
-            set.add(pair.leftColumn);
-            sourceColumns.add(pair.rightColumn);
-            shiftedColumns.add(pair.leftColumn);
+        final long minShift = shifted.stream()
+                .mapToLong(ShiftedColumnDefinition::getShiftAmount)
+                .min()
+                .orElse(0);
+        final long maxShift = shifted.stream()
+                .mapToLong(ShiftedColumnDefinition::getShiftAmount)
+                .max()
+                .orElse(0);
+
+        shifted.forEach(column -> {
+            columnSourceMap.put(column.getResultColumnName(), new ShiftedColumnSource<>(
+                    source.getRowSet(), source.getColumnSource(column.getColumnName()), column.getShiftAmount()));
+            final Set<String> columnsToDirty = sourceToShiftModColSetMap.computeIfAbsent(
+                    column.getColumnName(), s -> new LinkedHashSet<>(List.of(column.getColumnName())));
+            columnsToDirty.add(column.getColumnName());
+            columnsToDirty.add(column.getResultColumnName());
+            sourceColumns.add(column.getColumnName());
+            shiftedColumns.add(column.getResultColumnName());
         });
 
         final QueryTable result = new QueryTable(source.getRowSet(), columnSourceMap);
@@ -141,7 +159,7 @@ public class ShiftedColumnOperation {
                     if (upstream.removed().isNonempty()) {
                         try (final RowSet prevRowSet = source.getRowSet().copyPrev();
                                 final WritableRowSet dirtyRowSet = computeDirtyModifiedRowSetInPositionSpace(
-                                        prevRowSet, upstream.removed(), shift)) {
+                                        prevRowSet, upstream.removed(), minShift, maxShift)) {
                             if (dirtyRowSet.isNonempty()) {
                                 modifiedRows = prevRowSet.subSetForPositions(dirtyRowSet);
                                 dirtyModifiedColumnSet = true;
@@ -161,10 +179,10 @@ public class ShiftedColumnOperation {
                     // we'll combine adds and mods to coalesce ranges prior to subSetForPositions
                     if (haveAdds || haveMods) {
                         try (final WritableRowSet dirtyFromAdds = haveAdds ? computeDirtyModifiedRowSetInPositionSpace(
-                                source.getRowSet(), upstream.added(), shift) : null;
+                                source.getRowSet(), upstream.added(), minShift, maxShift) : null;
                                 final WritableRowSet dirtyFromMods =
                                         haveMods ? computeDirtyModifiedRowSetInPositionSpace(
-                                                source.getRowSet(), upstream.modified(), shift) : null) {
+                                                source.getRowSet(), upstream.modified(), minShift, maxShift) : null) {
 
                             if (haveAdds && dirtyFromAdds.isNonempty()) {
                                 dirtyModifiedColumnSet = true;
@@ -223,8 +241,39 @@ public class ShiftedColumnOperation {
      *
      * @param sourceRowSet the source's row set
      * @param updatedRowSet the updated row set (removed, updated, or modified)
+     * @param minShift the maximum negative shift value
+     * @param maxShift the maximum positive shift value
+     * @return the effective updatedRowSet in position space of the sourceRowSet after applying both shifts
+     */
+    private static WritableRowSet computeDirtyModifiedRowSetInPositionSpace(
+            final @NotNull RowSet sourceRowSet,
+            final @NotNull RowSet updatedRowSet,
+            final long minShift,
+            final long maxShift) {
+        if (minShift == 0 && maxShift == 0) {
+            return RowSetFactory.empty();
+        }
+        if (minShift == maxShift || maxShift == 0) {
+            return computeDirtyModifiedRowSetInPositionSpace(sourceRowSet, updatedRowSet, minShift);
+        }
+        if (minShift == 0) {
+            return computeDirtyModifiedRowSetInPositionSpace(sourceRowSet, updatedRowSet, maxShift);
+        }
+
+        WritableRowSet result = computeDirtyModifiedRowSetInPositionSpace(sourceRowSet, updatedRowSet, minShift);
+        result = computeDirtyModifiedRowSetInPositionSpace(sourceRowSet, result, maxShift);
+        return result;
+    }
+
+    /**
+     * Computes the modified rowSet based on the sourceRowSet and the updatedRowSet. The provided rowSets must be in the
+     * same keyspace (previous, or current). The resulting rowSet is in position space and will not include any rows
+     * that are in the updatedRowSet.
+     *
+     * @param sourceRowSet the source's row set
+     * @param updatedRowSet the updated row set (removed, updated, or modified)
      * @param shift the shift value
-     * @return the effective modified row set in position space of the same keyspace (previous, or current)
+     * @return the effective updatedRowSet in position space of the sourceRowSet after applying the shift
      */
     private static WritableRowSet computeDirtyModifiedRowSetInPositionSpace(
             @NotNull RowSet sourceRowSet, @NotNull RowSet updatedRowSet, long shift) {

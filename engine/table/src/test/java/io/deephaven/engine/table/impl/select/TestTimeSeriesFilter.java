@@ -133,12 +133,18 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
     }
 
     public void testIncremental() throws ParseException {
-        Random random = new Random(0);
+        for (int seed = 0; seed < 5; ++seed) {
+            testIncremental(seed, 100, 24);
+        }
+    }
+
+    @SuppressWarnings("SameParameterValue")
+    private void testIncremental(final int seed, final int size, final int maxSteps) throws ParseException {
+        Random random = new Random(seed);
 
         final SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
 
         ColumnInfo<?, ?>[] columnInfo;
-        int size = 100;
         final Date startDate = format.parse("2015-03-23");
         Date endDate = format.parse("2015-03-24");
         final QueryTable table = getTable(size, random, columnInfo = initColumnInfos(new String[] {"Date", "C1"},
@@ -159,13 +165,16 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
         EvalNugget[] en = makeNuggets(table, inclusionFilter, filtersToRefresh, updateGraph, exclusionFilter);
 
 
-        int updatesPerTick = 3;
-        for (int ii = 0; ii < 24 * (updatesPerTick + 1); ++ii) {
-            if (ii % (updatesPerTick + 1) > 0) {
+        final int updatesPerTick = 3;
+        for (int steps = 0; steps < maxSteps * (updatesPerTick + 1); ++steps) {
+            if (RefreshingTableTestCase.printTableUpdates) {
+                System.out.println("seed=" + seed + ", step=" + steps);
+            }
+            if (steps % (updatesPerTick + 1) > 0) {
                 simulateShiftAwareStep(size, random, table, columnInfo, en);
             } else {
                 updateGraph.runWithinUnitTestCycle(() -> refreshFilters(testClock, filtersToRefresh, 3600 * 1000));
-                TstUtils.validate("time update " + ii, en);
+                TstUtils.validate("time update " + steps, en);
             }
         }
     }
@@ -241,7 +250,12 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
             if (refreshFilter == null) {
                 collectedRefs.add(ref);
             } else {
-                refreshFilter.runForUnitTests();
+                if (refreshFilter.tryRetainReference()) {
+                    refreshFilter.runForUnitTests();
+                    refreshFilter.dropReference();
+                } else {
+                    collectedRefs.add(ref);
+                }
             }
         }
         filtersToRefresh.removeAll(collectedRefs);

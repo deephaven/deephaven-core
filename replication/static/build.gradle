@@ -96,5 +96,7 @@ task replicateAllSafe {
 task replicateAllUnsafe {
     dependsOn Tasks.registerMainExecTask(project, 'replicateParquetChunkedWriters', 'io.deephaven.replicators.ReplicateParquetChunkedWriters')
 
+    dependsOn Tasks.registerMainExecTask(project, 'replicateParquetPushdownHandlers', 'io.deephaven.replicators.ReplicateParquetPushdownHandlers')
+
     dependsOn Tasks.registerMainExecTask(project, 'replicateTableLocationKey', 'io.deephaven.replicators.ReplicateTableLocationKey')
 }

@@ -118,7 +118,7 @@ public class ReplicateRegionsAndRegionedSources {
                 "    @Override",
                 "    protected <ALTERNATE_DATA_TYPE> ColumnSource<ALTERNATE_DATA_TYPE> doReinterpret(@NotNull Class<ALTERNATE_DATA_TYPE> alternateDataType) {",
                 "        //noinspection unchecked",
-                "        return (ColumnSource<ALTERNATE_DATA_TYPE>) new RegionedColumnSourceBoolean((RegionedColumnSourceByte<Values>)this);",
+                "        return (ColumnSource<ALTERNATE_DATA_TYPE>) new RegionedColumnSourceBoolean(manager, (RegionedColumnSourceByte<Values>)this);",
                 "    }"));
 
         FileUtils.writeLines(new File(path), lines);
@@ -161,13 +161,13 @@ public class ReplicateRegionsAndRegionedSources {
                 "",
                 "    public ColumnSource<Instant> toInstant() {",
                 "        //noinspection unchecked",
-                "        return new RegionedColumnSourceInstant((RegionedColumnSourceLong<Values>) this);",
+                "        return new RegionedColumnSourceInstant(manager, (RegionedColumnSourceLong<Values>) this);",
                 "    }",
                 "",
                 "    @Override",
                 "    public ColumnSource<ZonedDateTime> toZonedDateTime(ZoneId zone) {",
                 "        //noinspection unchecked",
-                "        return new RegionedColumnSourceZonedDateTime(zone, (RegionedColumnSourceLong<Values>) this);",
+                "        return new RegionedColumnSourceZonedDateTime(manager, zone, (RegionedColumnSourceLong<Values>) this);",
                 "    }",
                 "",
                 "    @Override",

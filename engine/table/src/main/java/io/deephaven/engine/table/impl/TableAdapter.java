@@ -309,6 +309,16 @@ public interface TableAdapter extends TableDefaults {
     }
 
     @Override
+    default Table assertAddOnly() {
+        return throwUnsupported();
+    }
+
+    @Override
+    default Table assertAppendOnly() {
+        return throwUnsupported();
+    }
+
+    @Override
     default PartitionedTable partitionBy(boolean dropKeys, String... keyColumnNames) {
         return throwUnsupported();
     }

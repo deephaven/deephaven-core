@@ -68,59 +68,46 @@ import com.github.javaparser.ast.type.VarType;
 import com.github.javaparser.ast.type.VoidType;
 import com.github.javaparser.ast.type.WildcardType;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
-import com.google.common.collect.Streams;
-import io.deephaven.api.ColumnName;
-import io.deephaven.api.Selectable;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.base.Pair;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.filter.ExtractShiftedColumnDefinitions;
+import io.deephaven.engine.table.impl.filter.TransformToFinalFormula;
 import io.deephaven.engine.table.impl.lang.JavaExpressionParser;
 import io.deephaven.engine.table.impl.lang.QueryLanguageParser;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
+import io.deephaven.engine.table.impl.select.ConjunctiveFilter;
 import io.deephaven.engine.table.impl.select.FormulaColumn;
+import io.deephaven.engine.table.impl.select.ShiftedColumnDefinition;
 import io.deephaven.engine.table.impl.select.WhereFilter;
-import io.deephaven.engine.table.impl.select.WhereFilterFactory;
 import io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer;
 import io.deephaven.util.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 public class ShiftedColumnsFactory extends VoidVisitorAdapter<ShiftedColumnsFactory.ShiftedColumnAttributes> {
 
     public static final String SHIFTED_COL_PREFIX = "_Shifted";
-    private static final String MINUS = "_Minus_";
-    private static final String PLUS = "_Plus_";
 
     /**
-     * Returns a Pair object consisting of final formula string and shift to column MatchPairs. If the formula /
-     * expression has Array Access that conforms to "i +/- &lt;constant&gt;" or "ii +/- &lt;constant&gt;".
+     * Returns a Map from inner-formula-expression to ShiftedColumnDefinitions that are required to perform the where
+     * operation on the source.
      *
-     * @param expression column expression.
-     * @return Pair of final formula string and shift to column MatchPairs.
+     * @param expression expression to analyze for ShiftedColumnDefinitions
+     * @return Mappings from inner-formula-expression to ShiftedColumnDefinition
      */
-    public static Pair<String, Map<Long, List<MatchPair>>> getShiftToColPairsMap(@NotNull Expression expression) {
-        ShiftedColumnAttributes formulaAttributes = new ShiftedColumnAttributes();
-        final ShiftedColumnsFactory visitor = new ShiftedColumnsFactory();
-        expression.accept(visitor, formulaAttributes);
-
-        Map<Long, List<MatchPair>> shiftToColPairMap = new LinkedHashMap<>();
-        for (Pair<Long, MatchPair> pair : formulaAttributes.shiftedColsMap.values()) {
-            List<MatchPair> colPairs = shiftToColPairMap.computeIfAbsent(pair.getFirst(), list -> new LinkedList<>());
-            colPairs.add(pair.getSecond());
-        }
-
-        return shiftToColPairMap.isEmpty() ? null
-                : new Pair<>(formulaAttributes.formulaBuilder.toString(), shiftToColPairMap);
+    public static Pair<String, Set<ShiftedColumnDefinition>> getShiftedColumnDefinitions(
+            @NotNull Expression expression) {
+        final ShiftedColumnAttributes formulaAttributes = new ShiftedColumnAttributes();
+        expression.accept(new ShiftedColumnsFactory(), formulaAttributes);
+        return formulaAttributes.shifted.isEmpty()
+                ? null
+                : new Pair(formulaAttributes.formulaBuilder.toString(), formulaAttributes.shifted);
     }
 
     /**
@@ -148,67 +135,29 @@ public class ShiftedColumnsFactory extends VoidVisitorAdapter<ShiftedColumnsFact
      * with only the original display columns.
      *
      * @param source input table
-     * @param shiftColPairs list of formula to shift column pairs
-     * @param currFilters filters list
+     * @param filters filters list; at least one of which has a constant array access expression
      * @return result table of expected where operation
      */
     public static Table where(
             @NotNull Table source,
-            @NotNull List<Pair<String, Map<Long, List<MatchPair>>>> shiftColPairs,
-            @NotNull List<WhereFilter> currFilters) {
-        String nuggetName = "where(" +
-                currFilters.stream().map(Object::toString).collect(Collectors.joining(", ")) +
-                "; " +
-                shiftColPairs.stream().map(pair -> pair.first).collect(Collectors.joining(", ")) +
+            @NotNull List<WhereFilter> filters) {
+        String nuggetName = "shiftedWhere(" +
+                filters.stream().map(Object::toString).collect(Collectors.joining(", ")) +
                 ')';
 
         return QueryPerformanceRecorder.withNugget(nuggetName, source.sizeForInstrumentation(), () -> {
-            String[] displayColumns = source.getDefinition().getColumnNamesArray();
-            Pair<Table, Filter[]> resultPair = getShiftedTableFilterPair(source, shiftColPairs);
-            final List<Filter> filters = Streams.concat(currFilters.stream(), Arrays.stream(resultPair.second))
-                    .collect(Collectors.toList());
-            Table result = resultPair.getFirst().where(Filter.and(filters));
-            return result.view(Selectable.from(displayColumns));
-        });
-    }
+            final WhereFilter aggFilter = ConjunctiveFilter.of(filters.toArray(WhereFilter[]::new));
+            final Set<ShiftedColumnDefinition> shifted = ExtractShiftedColumnDefinitions.of(aggFilter);
 
-    /**
-     * Returns Pair with table that includes all shifted columns used in filters, and the list of filter formulas
-     * updated with appropriate shifted column names.
-     *
-     * @param source input table
-     * @param shiftColPairs list of formula to shift column pairs
-     * @return Pair with shifted table and list of SelectFilters using Shifted Formulas
-     */
-    private static Pair<Table, Filter[]> getShiftedTableFilterPair(
-            @NotNull Table source,
-            @NotNull List<Pair<String, Map<Long, List<MatchPair>>>> shiftColPairs) {
-        List<String> filterFormulas = new LinkedList<>();
-        Map<Long, Set<MatchPair>> allShiftToColPairs = new LinkedHashMap<>();
-        for (Pair<String, Map<Long, List<MatchPair>>> formulaMapPair : shiftColPairs) {
-            String updatedFormula = formulaMapPair.first;
-            for (Map.Entry<Long, List<MatchPair>> entry : formulaMapPair.getSecond().entrySet()) {
-                for (MatchPair matchPair : entry.getValue()) {
-                    if (entry.getKey() == 0) {
-                        updatedFormula = updatedFormula.replaceAll(matchPair.leftColumn, matchPair.rightColumn);
-                    } else {
-                        String shift = entry.getKey() < 0 ? MINUS + -entry.getKey() : PLUS + entry.getKey();
-                        String shiftedColName = matchPair.rightColumn + shift + matchPair.leftColumn;
-                        updatedFormula = updatedFormula.replaceAll(matchPair.leftColumn, shiftedColName);
-                        allShiftToColPairs.computeIfAbsent(entry.getKey(), dummy -> new LinkedHashSet<>())
-                                .add(new MatchPair(shiftedColName, matchPair.rightColumn));
-                    }
-                }
-            }
-            filterFormulas.add(updatedFormula);
-        }
-        Table tableSoFar = source;
-        for (Map.Entry<Long, Set<MatchPair>> entry : allShiftToColPairs.entrySet()) {
-            tableSoFar = ShiftedColumnOperation.addShiftedColumns(tableSoFar, entry.getKey(),
-                    entry.getValue().toArray(MatchPair[]::new));
-        }
-        Filter[] shiftedFilters = WhereFilterFactory.getExpressions(filterFormulas);
-        return new Pair<>(tableSoFar, shiftedFilters);
+            final String[] columnsToDrop = shifted.stream()
+                    .map(ShiftedColumnDefinition::getResultColumnName)
+                    .toArray(String[]::new);
+
+            return ShiftedColumnOperation
+                    .addShiftedColumns(source, shifted)
+                    .where(TransformToFinalFormula.of(aggFilter))
+                    .dropColumns(columnsToDrop);
+        });
     }
 
     /**
@@ -227,30 +176,18 @@ public class ShiftedColumnsFactory extends VoidVisitorAdapter<ShiftedColumnsFact
         String nuggetName = "getShiftedColumnsTable( " + formulaColumn + ", " + updateFlavor + ") ";
         return QueryPerformanceRecorder.withNugget(nuggetName, source.sizeForInstrumentation(), () -> {
             Table tableSoFar = source;
-            Pair<String, Map<Long, List<MatchPair>>> formulaMapPair = formulaColumn.getFormulaShiftColPair();
-            final List<String> columnsToDrop = new ArrayList<>();
-            for (Map.Entry<Long, List<MatchPair>> entry : formulaMapPair.getSecond().entrySet()) {
-                if (entry.getKey() == 0) {
-                    // if there is no shift, then just add an alias to the table
-                    List<Selectable> colPairs = entry.getValue().stream()
-                            .map(matchPair -> Selectable.of(
-                                    ColumnName.of(formulaColumn.getName() + matchPair.leftColumn),
-                                    ColumnName.of(matchPair.rightColumn)))
-                            .collect(Collectors.toList());
-                    colPairs.forEach(selectable -> columnsToDrop.add(selectable.newColumn().name()));
-                    tableSoFar = tableSoFar.updateView(colPairs);
-                } else {
-                    // Add formulaColName as prefix to ShiftedCols
-                    MatchPair[] colPairs = entry.getValue().stream()
-                            .map(matchPair -> new MatchPair(formulaColumn.getName() + matchPair.leftColumn,
-                                    matchPair.rightColumn))
-                            .toArray(MatchPair[]::new);
-                    Arrays.stream(colPairs).forEach(matchPair -> columnsToDrop.add(matchPair.leftColumn));
-                    tableSoFar = ShiftedColumnOperation.addShiftedColumns(tableSoFar, entry.getKey(), colPairs);
-                }
-            }
-            String resultColFormula = formulaColumn.getName() + " = " + formulaMapPair.getFirst()
-                    .replaceAll(SHIFTED_COL_PREFIX, formulaColumn.getName() + SHIFTED_COL_PREFIX);
+            final Set<ShiftedColumnDefinition> shiftedColumnDefinitions =
+                    formulaColumn.getFormulaShiftedColumnDefinitions();
+
+            final String[] columnsToDrop = shiftedColumnDefinitions.stream()
+                    .map(ShiftedColumnDefinition::getResultColumnName)
+                    .filter(name -> !name.equals(formulaColumn.getName()))
+                    .toArray(String[]::new);
+
+            // invoke SCO#addShiftedColumns with the shifted column definitions
+            tableSoFar = ShiftedColumnOperation.addShiftedColumns(tableSoFar, shiftedColumnDefinitions);
+
+            final String resultColFormula = formulaColumn.getName() + " = " + formulaColumn.getShiftedFormulaString();
             switch (updateFlavor) {
                 case Select:
                 case Update:
@@ -263,18 +200,18 @@ public class ShiftedColumnsFactory extends VoidVisitorAdapter<ShiftedColumnsFact
                 case LazyUpdate:
                     tableSoFar = tableSoFar.lazyUpdate(resultColFormula);
             }
-            return tableSoFar.dropColumns(columnsToDrop.toArray(new String[0]));
+            return tableSoFar.dropColumns(columnsToDrop);
         });
     }
 
     /**
      * Returns null if the ArrayAccessExpression is NOT of type "i +/- &lt;constant&gt;" or "ii +/- &lt;constant&gt;"
-     * Otherwise builds a Pair containing shift and sourceColumn.
+     * Otherwise builds a ShiftedColumnDefinition containing shift and sourceColumn.
      *
      * @param expression is a ArrayAccessExpr
      * @return null or Pair containing shift value and sourceColumn.
      */
-    private static Pair<Long, String> parseForConstantArrayAccessAttributes(@NotNull ArrayAccessExpr expression) {
+    private static ShiftedColumnDefinition parseForConstantArrayAccessAttributes(@NotNull ArrayAccessExpr expression) {
         final List<String> validLeftValues = List.of("i", "ii");
         if (expression.getIndex() instanceof NameExpr) {
             final String name = ((NameExpr) expression.getIndex()).getNameAsString();
@@ -282,7 +219,7 @@ public class ShiftedColumnsFactory extends VoidVisitorAdapter<ShiftedColumnsFact
                 String sourceCol = expression.getName().toString();
                 if (sourceCol.endsWith("_")) {
                     sourceCol = sourceCol.substring(0, sourceCol.length() - 1);
-                    return new Pair<>(0L, sourceCol);
+                    return new ShiftedColumnDefinition(sourceCol, 0);
                 }
             }
             return null;
@@ -320,26 +257,17 @@ public class ShiftedColumnsFactory extends VoidVisitorAdapter<ShiftedColumnsFact
         long rightValue = Long.parseLong(((IntegerLiteralExpr) (binaryExpr.getRight())).getValue());
         Long shift = binaryExpr.getOperator() == BinaryExpr.Operator.MINUS ? -rightValue : rightValue;
 
-        return new Pair<>(shift, sourceCol);
+        return new ShiftedColumnDefinition(sourceCol, shift);
     }
 
     // GenericVisitor overrides below
     // ----------------------------------------------------------------------------------------------------------------
     @Override
     public void visit(ArrayAccessExpr expr, ShiftedColumnAttributes attributes) {
-
-        Pair<Long, MatchPair> shiftAndMatchPair = attributes.shiftedColsMap.get(expr.toString());
-        if (shiftAndMatchPair != null) {
-            attributes.formulaBuilder.append(shiftAndMatchPair.getSecond().leftColumn);
-            return;
-        }
-
-        Pair<Long, String> attributePair = parseForConstantArrayAccessAttributes(expr);
-        if (attributePair != null) {
-            final String shiftedColName = SHIFTED_COL_PREFIX + attributes.index.getAndIncrement();
-            MatchPair matchPair = new MatchPair(shiftedColName, attributePair.getSecond());
-            attributes.formulaBuilder.append(shiftedColName);
-            attributes.shiftedColsMap.put(expr.toString(), new Pair<>(attributePair.getFirst(), matchPair));
+        ShiftedColumnDefinition shifted = parseForConstantArrayAccessAttributes(expr);
+        if (shifted != null) {
+            attributes.formulaBuilder.append(shifted.getResultColumnName());
+            attributes.shifted.add(shifted);
             return;
         }
 
@@ -883,12 +811,12 @@ public class ShiftedColumnsFactory extends VoidVisitorAdapter<ShiftedColumnsFact
     public static class ShiftedColumnAttributes {
         final MutableInt index;
         final StringBuilder formulaBuilder;
-        final Map<String, Pair<Long, MatchPair>> shiftedColsMap;
+        final Set<ShiftedColumnDefinition> shifted;
 
         public ShiftedColumnAttributes() {
             this.index = new MutableInt(1);
             this.formulaBuilder = new StringBuilder();
-            this.shiftedColsMap = new LinkedHashMap<>();
+            this.shifted = new HashSet<>();
         }
     }
 }

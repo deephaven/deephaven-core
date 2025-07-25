@@ -459,6 +459,16 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
         return withAttributes(Map.of(BLINK_TABLE_ATTRIBUTE, true));
     }
 
+    @Override
+    public Table assertAddOnly() {
+        return withAttributes(Map.of(ADD_ONLY_TABLE_ATTRIBUTE, true));
+    }
+
+    @Override
+    public Table assertAppendOnly() {
+        return withAttributes(Map.of(APPEND_ONLY_TABLE_ATTRIBUTE, true));
+    }
+
     // ------------------------------------------------------------------------------------------------------------------
     // Implementation for update propagation support
     // ------------------------------------------------------------------------------------------------------------------
@@ -709,13 +719,6 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
         }
 
         maybeSignal();
-
-        final boolean hasNoListeners = !hasListeners();
-        if (hasNoListeners) {
-            lastNotificationStep = currentStep;
-            updateToSend.release();
-            return;
-        }
 
         Assert.neqNull(updateToSend.added(), "added");
         Assert.neqNull(updateToSend.removed(), "removed");

@@ -1792,7 +1792,7 @@ public class QueryTableTest extends QueryTableTestBase {
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.runWithinUnitTestCycle(() -> {
-            base.notifyListeners(i(), i(), i(20));
+            base.notifyListeners(i(), i(), i(10));
             trigger.notifyListeners(i(), i(), i(0));
         });
 

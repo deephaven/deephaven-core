@@ -3,11 +3,7 @@
 //
 package io.deephaven.engine.table.impl.select;
 
-import io.deephaven.base.Pair;
-import io.deephaven.engine.table.impl.MatchPair;
-
-import java.util.List;
-import java.util.Map;
+import java.util.Set;
 
 public interface FormulaColumn extends SelectColumn {
 
@@ -41,17 +37,27 @@ public interface FormulaColumn extends SelectColumn {
      * @return true or false
      */
     default boolean hasConstantArrayAccess() {
-        return getFormulaShiftColPair() != null;
+        return getFormulaShiftedColumnDefinitions() != null && !getFormulaShiftedColumnDefinitions().isEmpty();
     }
 
     /**
-     * Returns a Pair object consisting of formula string and shift to column MatchPairs. If the column formula or
-     * expression has Array Access that conforms to "i +/- &lt;constant&gt;" or "ii +/- &lt;constant&gt;". If there is a
-     * parsing error for the expression null is returned.
+     * Returns a Set of ShiftedColumnDefinitions. If the column formula or expression has Array Access that conforms to
+     * "i +/- &lt;constant&gt;" or "ii +/- &lt;constant&gt;". If there is a parsing error for the expression, this
+     * method's result is undefined.
      *
-     * @return Pair of final formula string and shift to column MatchPairs.
+     * @return the Set of ShiftedColumnDefinitions or null if there is no constant array access
      */
-    default Pair<String, Map<Long, List<MatchPair>>> getFormulaShiftColPair() {
+    default Set<ShiftedColumnDefinition> getFormulaShiftedColumnDefinitions() {
+        return null;
+    }
+
+    /**
+     * Returns a String representation of the formula expression with the shifted column names replaced by the
+     * corresponding ShiftedColumnDefinition.getResultColumnName() values.
+     *
+     * @return the shifted formula string or null if there is no constant array access
+     */
+    default String getShiftedFormulaString() {
         return null;
     }
 }

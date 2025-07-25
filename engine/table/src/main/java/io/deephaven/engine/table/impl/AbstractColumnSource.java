@@ -43,8 +43,9 @@ import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Map;
+import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.LongConsumer;
 
 public abstract class AbstractColumnSource<T> implements
         ColumnSource<T>,
@@ -352,21 +353,22 @@ public abstract class AbstractColumnSource<T> implements
     }
 
     @Override
-    public long estimatePushdownFilterCost(
+    public void estimatePushdownFilterCost(
             final WhereFilter filter,
-            final Map<String, String> renameMap,
             final RowSet selection,
             final RowSet fullSet,
             final boolean usePrev,
-            final PushdownFilterContext context) {
+            final PushdownFilterContext context,
+            final JobScheduler jobScheduler,
+            final LongConsumer onComplete,
+            final Consumer<Exception> onError) {
         // Default to having no benefit by pushing down.
-        return Long.MAX_VALUE;
+        onComplete.accept(Long.MAX_VALUE);
     }
 
     @Override
     public void pushdownFilter(
             final WhereFilter filter,
-            final Map<String, String> renameMap,
             final RowSet selection,
             final RowSet fullSet,
             final boolean usePrev,
@@ -380,13 +382,9 @@ public abstract class AbstractColumnSource<T> implements
     }
 
     @Override
-    public Map<String, String> renameMap(final WhereFilter filter, final ColumnSource<?>[] filterSources) {
-        // Default to returning an empty map
-        return Map.of();
-    }
-
-    @Override
-    public PushdownFilterContext makePushdownFilterContext() {
+    public PushdownFilterContext makePushdownFilterContext(
+            final WhereFilter filter,
+            final List<ColumnSource<?>> filterSources) {
         return PushdownFilterContext.NO_PUSHDOWN_CONTEXT;
     }
 
