@@ -28,8 +28,7 @@ import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
 import io.deephaven.engine.table.impl.chunkfilter.IntRangeComparator;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.select.*;
-import io.deephaven.engine.table.impl.sources.RowKeyColumnSource;
-import io.deephaven.engine.table.impl.sources.UnionRedirection;
+import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.table.impl.verify.TableAssertions;
 import io.deephaven.engine.table.vectors.ColumnVectors;
@@ -80,6 +79,7 @@ import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.testutil.testcase.RefreshingTableTestCase.printTableUpdates;
 import static io.deephaven.engine.testutil.testcase.RefreshingTableTestCase.simulateShiftAwareStep;
 import static io.deephaven.engine.util.TableTools.*;
+import static io.deephaven.time.DateTimeUtils.parseInstant;
 import static org.junit.Assert.*;
 import static org.junit.Assert.assertEquals;
 
@@ -2659,6 +2659,227 @@ public abstract class QueryTableWhereTest {
         assertEquals(25_001, res1.size());
 
         TstUtils.assertTableEquals(res0, res1);
+    }
+
+    @Test
+    public void testRowKeyAgnosticColumnSources() {
+        // Boolean Source
+        SingleValueColumnSource<Boolean> booleanSource =
+                SingleValueColumnSource.getSingleValueColumnSource(boolean.class);
+        booleanSource.set(true);
+        testRowKeyAgnosticColumnSource(booleanSource, "A", "A = true", "A = false");
+        booleanSource.set(false); // change the value
+        testRowKeyAgnosticColumnSource(booleanSource, "A", "A = false", "A = true");
+
+        // Byte Source
+        SingleValueColumnSource<?> byteSource = SingleValueColumnSource.getSingleValueColumnSource(byte.class);
+        byteSource.set((byte) 42);
+        testRowKeyAgnosticColumnSource(byteSource, "A", "A = 42", "A = 0");
+        byteSource.set((byte) 0); // change the value
+        testRowKeyAgnosticColumnSource(byteSource, "A", "A = 0", "A = 42");
+
+        // Char Source
+        SingleValueColumnSource<?> charSource = SingleValueColumnSource.getSingleValueColumnSource(char.class);
+        charSource.set('A');
+        testRowKeyAgnosticColumnSource(charSource, "A", "A = 'A'", "A = 'B'");
+        charSource.set('B'); // change the value
+        testRowKeyAgnosticColumnSource(charSource, "A", "A = 'B'", "A = 'A'");
+
+        // Short Source
+        SingleValueColumnSource<?> shortSource = SingleValueColumnSource.getSingleValueColumnSource(short.class);
+        shortSource.set((short) 42);
+        testRowKeyAgnosticColumnSource(shortSource, "A", "A = 42", "A = 0");
+        shortSource.set((short) 0); // change the value
+        testRowKeyAgnosticColumnSource(shortSource, "A", "A = 0", "A = 42");
+
+        // Int Source
+        SingleValueColumnSource<?> intSource = SingleValueColumnSource.getSingleValueColumnSource(int.class);
+        intSource.set(42);
+        testRowKeyAgnosticColumnSource(intSource, "A", "A = 42", "A = 0");
+        intSource.set(0); // change the value
+        testRowKeyAgnosticColumnSource(intSource, "A", "A = 0", "A = 42");
+
+        // Long Source
+        SingleValueColumnSource<?> longSource = SingleValueColumnSource.getSingleValueColumnSource(long.class);
+        longSource.set(42L);
+        testRowKeyAgnosticColumnSource(longSource, "A", "A = 42", "A = 0");
+        longSource.set(0L); // change the value
+        testRowKeyAgnosticColumnSource(longSource, "A", "A = 0", "A = 42");
+
+        // Float Source
+        SingleValueColumnSource<?> floatSource = SingleValueColumnSource.getSingleValueColumnSource(float.class);
+        floatSource.set(42.0f);
+        testRowKeyAgnosticColumnSource(floatSource, "A", "A = 42.0", "A = 0.0");
+        floatSource.set(0.0f); // change the value
+        testRowKeyAgnosticColumnSource(floatSource, "A", "A = 0.0", "A = 42.0");
+
+        // Double Source
+        SingleValueColumnSource<?> doubleSource = SingleValueColumnSource.getSingleValueColumnSource(double.class);
+        doubleSource.set(42.0);
+        testRowKeyAgnosticColumnSource(doubleSource, "A", "A = 42.0", "A = 0.0");
+        doubleSource.set(0.0); // change the value
+        testRowKeyAgnosticColumnSource(doubleSource, "A", "A = 0.0", "A = 42.0");
+
+        // Object Source
+        SingleValueColumnSource<String> objectSource = SingleValueColumnSource.getSingleValueColumnSource(String.class);
+        objectSource.set("AAA");
+        testRowKeyAgnosticColumnSource(objectSource, "A", "A = `AAA`", "A = `BBB`");
+        objectSource.set("BBB"); // change the value
+        testRowKeyAgnosticColumnSource(objectSource, "A", "A = `BBB`", "A = `AAA`");
+
+        // Instant Source
+        SingleValueColumnSource<Instant> instantSource =
+                SingleValueColumnSource.getSingleValueColumnSource(Instant.class);
+        instantSource.set(parseInstant("2020-01-01T00:00:00 NY"));
+        testRowKeyAgnosticColumnSource(instantSource, "A", "A <= '2020-01-01T00:00:00 NY'",
+                "A > '2020-01-01T00:00:00 NY'");
+        instantSource.set(parseInstant("2020-01-02T00:00:00 NY")); // change the value
+        testRowKeyAgnosticColumnSource(instantSource, "A", "A <= '2020-01-02T00:00:00 NY'",
+                "A > '2020-01-02T00:00:00 NY'");
+    }
+
+    @Test
+    public void testImmutableRowKeyAgnosticColumnSources() {
+        // Immutable Byte Source
+        testRowKeyAgnosticColumnSource(
+                InMemoryColumnSource.makeImmutableConstantSource(byte.class, null, (byte) 42),
+                "A", "A = 42", "A = 0");
+
+        // Immutable Char Source
+        testRowKeyAgnosticColumnSource(
+                InMemoryColumnSource.makeImmutableConstantSource(char.class, null, 'A'),
+                "A", "A = 'A'", "A = 'B'");
+
+        // Immutable Short Source
+        testRowKeyAgnosticColumnSource(
+                InMemoryColumnSource.makeImmutableConstantSource(short.class, null, (short) 42),
+                "A", "A = 42", "A = 0");
+
+        // Immutable Int Source
+        testRowKeyAgnosticColumnSource(
+                InMemoryColumnSource.makeImmutableConstantSource(int.class, null, 42),
+                "A", "A = 42", "A = 0");
+
+        // Immutable Long Source
+        testRowKeyAgnosticColumnSource(
+                InMemoryColumnSource.makeImmutableConstantSource(long.class, null, 42L),
+                "A", "A = 42", "A = 0");
+
+        // Immutable Float Source
+        testRowKeyAgnosticColumnSource(
+                InMemoryColumnSource.makeImmutableConstantSource(float.class, null, 42.0f),
+                "A", "A = 42", "A = 0");
+
+        // Immutable Double Source
+        testRowKeyAgnosticColumnSource(
+                InMemoryColumnSource.makeImmutableConstantSource(double.class, null, 42.0),
+                "A", "A = 42", "A = 0");
+
+        // Immutable Object Source
+        testRowKeyAgnosticColumnSource(
+                InMemoryColumnSource.makeImmutableConstantSource(String.class, null, "AAA"),
+                "A", "A = `AAA`", "A = `BBB`");
+
+        // Immutable Instant Source
+        testRowKeyAgnosticColumnSource(
+                InMemoryColumnSource.makeImmutableConstantSource(Instant.class, null,
+                        parseInstant("2020-01-01T00:00:00 NY")),
+                "A", "A <= '2020-01-01T00:00:00 NY'", "A > '2020-01-01T00:00:00 NY'");
+    }
+
+    @Test
+    public void testNullRowKeyAgnosticColumnSources() {
+        // Null Byte Source
+        testRowKeyAgnosticColumnSource(
+                NullValueColumnSource.getInstance(byte.class, null),
+                "A", "A = null", "A != null");
+
+        // Null Char Source
+        testRowKeyAgnosticColumnSource(
+                NullValueColumnSource.getInstance(char.class, null),
+                "A", "A = null", "A != null");
+
+        // Null Short Source
+        testRowKeyAgnosticColumnSource(
+                NullValueColumnSource.getInstance(short.class, null),
+                "A", "A = null", "A != null");
+
+        // Null Int Source
+        testRowKeyAgnosticColumnSource(
+                NullValueColumnSource.getInstance(int.class, null),
+                "A", "A = null", "A != null");
+
+        // Null Long Source
+        testRowKeyAgnosticColumnSource(
+                NullValueColumnSource.getInstance(long.class, null),
+                "A", "A = null", "A != null");
+
+        // Null Float Source
+        testRowKeyAgnosticColumnSource(
+                NullValueColumnSource.getInstance(float.class, null),
+                "A", "A = null", "A != null");
+
+        // Null Double Source
+        testRowKeyAgnosticColumnSource(
+                NullValueColumnSource.getInstance(double.class, null),
+                "A", "A = null", "A != null");
+
+        // Null Boolean Source
+        testRowKeyAgnosticColumnSource(
+                NullValueColumnSource.getInstance(Boolean.class, null),
+                "A", "A = null", "A != null");
+
+        // Null String Source
+        testRowKeyAgnosticColumnSource(
+                NullValueColumnSource.getInstance(String.class, null),
+                "A", "A = null", "A != null");
+
+        // Null Instant Source
+        testRowKeyAgnosticColumnSource(
+                NullValueColumnSource.getInstance(Instant.class, null),
+                "A", "A = null", "A != null");
+    }
+
+    private void testRowKeyAgnosticColumnSource(
+            final ColumnSource<?> columnSource,
+            final String columnName,
+            final String filterAllPass,
+            final String filterNonePass) {
+
+        final Map<String, ColumnSource<?>> columnSourceMap = Map.of(columnName, columnSource);
+        final QueryTable source = new QueryTable(RowSetFactory.flat(100_000).toTracking(), columnSourceMap);
+        source.setRefreshing(true);
+
+        final RowSetCapturingFilter preFilter = new RowSetCapturingFilter();
+        final RowSetCapturingFilter filter0 = new RowSetCapturingFilter(RawString.of(filterAllPass));
+        final RowSetCapturingFilter postFilter = new RowSetCapturingFilter();
+
+        // force pre and post filters to run when expected using barriers
+        final Table res0 = source.where(Filter.and(
+                preFilter.withBarriers("1"),
+                filter0.respectsBarriers("1").withBarriers("2"),
+                postFilter.respectsBarriers("2")));
+        assertEquals(100_000, preFilter.numRowsProcessed());
+        assertEquals(1, filter0.numRowsProcessed());
+        assertEquals(100_000, postFilter.numRowsProcessed()); // All rows passed
+
+        assertEquals(100_000, res0.size());
+
+        preFilter.reset();
+        postFilter.reset();
+
+        final RowSetCapturingFilter filter1 = new RowSetCapturingFilter(RawString.of(filterNonePass));
+
+        // force pre and post filters to run when expected using barriers
+        final Table res1 = source.where(Filter.and(
+                preFilter.withBarriers("1"),
+                filter1.respectsBarriers("1").withBarriers("2"),
+                postFilter.respectsBarriers("2")));
+        assertEquals(100_000, preFilter.numRowsProcessed());
+        assertEquals(1, filter1.numRowsProcessed());
+        assertEquals(0, postFilter.numRowsProcessed()); // No rows passed
+
+        assertEquals(0, res1.size());
     }
 
     protected static TLongList getAndSortSizes(final RowSetCapturingFilter filter) {
