@@ -109,14 +109,13 @@ abstract class RegionedColumnSourceBase<DATA_TYPE, ATTR extends Values, REGION_T
     public void estimatePushdownFilterCost(
             final WhereFilter filter,
             final RowSet selection,
-            final RowSet fullSet,
             final boolean usePrev,
             final PushdownFilterContext context,
             final JobScheduler jobScheduler,
             final LongConsumer onComplete,
             final Consumer<Exception> onError) {
         // Delegate to the manager.
-        manager.estimatePushdownFilterCost(filter, selection, fullSet, usePrev, context, jobScheduler,
+        manager.estimatePushdownFilterCost(filter, selection, usePrev, context, jobScheduler,
                 onComplete, onError);
     }
 
@@ -124,7 +123,6 @@ abstract class RegionedColumnSourceBase<DATA_TYPE, ATTR extends Values, REGION_T
     public void pushdownFilter(
             final WhereFilter filter,
             final RowSet selection,
-            final RowSet fullSet,
             final boolean usePrev,
             final PushdownFilterContext context,
             final long costCeiling,
@@ -132,7 +130,7 @@ abstract class RegionedColumnSourceBase<DATA_TYPE, ATTR extends Values, REGION_T
             final Consumer<PushdownResult> onComplete,
             final Consumer<Exception> onError) {
         // Delegate to the manager.
-        manager.pushdownFilter(filter, selection, fullSet, usePrev, context, costCeiling, jobScheduler,
+        manager.pushdownFilter(filter, selection, usePrev, context, costCeiling, jobScheduler,
                 onComplete, onError);
     }
 

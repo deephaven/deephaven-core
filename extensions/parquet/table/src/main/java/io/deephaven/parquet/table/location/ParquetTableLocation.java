@@ -439,19 +439,17 @@ public class ParquetTableLocation extends AbstractTableLocation {
     public void estimatePushdownFilterCost(
             final WhereFilter filter,
             final RowSet selection,
-            final RowSet fullSet,
             final boolean usePrev,
             final PushdownFilterContext context,
             final JobScheduler jobScheduler,
             final LongConsumer onComplete,
             final Consumer<Exception> onError) {
-        onComplete.accept(estimatePushdownFilterCost(filter, selection, fullSet, usePrev, context));
+        onComplete.accept(estimatePushdownFilterCost(filter, selection, usePrev, context));
     }
 
     private long estimatePushdownFilterCost(
             final WhereFilter filter,
             final RowSet selection,
-            final RowSet fullSet,
             final boolean usePrev,
             final PushdownFilterContext context) {
         if (selection.isEmpty()) {
@@ -620,7 +618,6 @@ public class ParquetTableLocation extends AbstractTableLocation {
     public void pushdownFilter(
             final WhereFilter filter,
             final RowSet selection,
-            final RowSet fullSet,
             final boolean usePrev,
             final PushdownFilterContext context,
             final long costCeiling,
@@ -629,7 +626,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
             final Consumer<Exception> onError) {
         if (selection.isEmpty()) {
             log.warn().append("Pushdown filter called with empty selection for table ").append(getTableKey()).endl();
-            onComplete.accept(PushdownResult.of(RowSetFactory.empty(), RowSetFactory.empty()));
+            onComplete.accept(PushdownResult.noMatch(selection));
             return;
         }
 
@@ -649,7 +646,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
                 ((MatchFilter) filter).getFailoverFilterIfCached() == null;
 
         // Initialize the pushdown result with the selection rowset as "maybe" rows
-        PushdownResult result = PushdownResult.of(RowSetFactory.empty(), selection.copy());
+        PushdownResult result = PushdownResult.maybeMatch(selection);
 
         final Map<String, String> renameMap = ctx.renameMap();
         final Optional<List<ResolvedColumnInfo>> maybeResolvedColumns = resolveColumns(filter, renameMap);
@@ -836,8 +833,14 @@ public class ParquetTableLocation extends AbstractTableLocation {
                 maybeCount.add(rs.size());
             }
         });
-        return PushdownResult.of(result.match().copy(),
-                maybeCount.get() == result.maybeMatch().size() ? result.maybeMatch().copy() : maybeBuilder.build());
+
+        if (maybeCount.get() == result.maybeMatch().size()) {
+            return result.copy();
+        }
+
+        try (final WritableRowSet maybeMatch = maybeBuilder.build()) {
+            return PushdownResult.ofUnsafe(result.selection(), result.match(), maybeMatch);
+        }
     }
 
     /**
@@ -876,14 +879,17 @@ public class ParquetTableLocation extends AbstractTableLocation {
                 }
             } catch (final Exception e) {
                 // Exception occurs here if we have a data type mismatch between the index and the filter.
-                // Just swallow the exception and declare all the rows as maybe matches.
-                return PushdownResult.of(result.match().copy(), result.maybeMatch().copy());
+                // Just swallow the exception return a copy of the original input
+                return result.copy();
             }
         }
         // Retain only the maybe rows and add the previously found matches.
-        final WritableRowSet matching = matchingBuilder.build();
-        matching.insert(result.match());
-        return PushdownResult.of(matching, RowSetFactory.empty());
+        try (
+                final WritableRowSet matching = matchingBuilder.build();
+                final WritableRowSet empty = RowSetFactory.empty()) {
+            matching.insert(result.match());
+            return PushdownResult.ofUnsafe(result.selection(), matching, empty);
+        }
     }
 
     // endregion Pushdown Filtering
