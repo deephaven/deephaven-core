@@ -19,6 +19,7 @@ import io.deephaven.util.mutable.MutableLong;
 import io.deephaven.vector.Vector;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 
@@ -373,7 +374,8 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
 
             final MutableObject<long[]> modifiedCurrentSizes = new MutableObject<>();
 
-            int requiredBase = evaluateAdded(upstream.added(), added, shiftState.getNumShiftBits(), false);
+            int requiredBase = evaluateAdded(upstream.added(), added, shiftState.getNumShiftBits());
+            final int addedBase = requiredBase;
             if (requiredBase == shiftState.getNumShiftBits()) {
                 requiredBase = evaluateModified(upstream.modified(),
                         upstream.getModifiedPreShift(),
@@ -388,7 +390,9 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
                 requiredBase = Math.max(determineRequiredBase(maxModSize), requiredBase);
             }
             if (requiredBase != shiftState.getNumShiftBits()) {
-                rebase(requiredBase, upstream, modifiedCurrentSizes.get());
+                try (final WritableRowSet addedRowsetInOldBase = added.build()) {
+                    rebase(requiredBase, upstream, addedRowsetInOldBase, addedBase, modifiedCurrentSizes.get());
+                }
                 return;
             }
 
@@ -486,19 +490,43 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
             }
         }
 
-        private void rebase(final int newBase, final TableUpdate upstream, final long[] modifiedCurrentSizes) {
-            final RowSetBuilderSequential addedBuilder = RowSetFactory.builderSequential();
+        private void rebase(final int newBase,
+                final TableUpdate upstream,
+                final WritableRowSet addedRowSet,
+                final int addedRowsetBase,
+                final long[] modifiedCurrentSizes) {
             final RowSetBuilderSequential removedBuilder = RowSetFactory.builderSequential();
 
             final RowSetBuilderSequential addedByModifiesBuilder = RowSetFactory.builderSequential();
             final RowSetBuilderSequential removedByModifiesBuilder = RowSetFactory.builderSequential();
             final RowSetBuilderSequential modifiedByModifiesBuilder = RowSetFactory.builderSequential();
 
-            final int computedAddBase = evaluateAdded(upstream.added(), addedBuilder, newBase, false);
+            final WritableRowSet added;
+            if (addedRowsetBase == newBase) {
+                added = addedRowSet.copy();
+            } else {
+                final RowSetBuilderSequential addedBuilder = RowSetFactory.builderSequential();
+
+                final RowSet.RangeIterator rit = addedRowSet.rangeIterator();
+                while (rit.hasNext()) {
+                    rit.next();
+                    final long slotMaxSize = 1L << addedRowsetBase;
+                    final long rangeStart = rit.currentRangeStart();
+                    final long rangeEnd = rit.currentRangeEnd();
+
+                    for (long rk = rangeStart; rk <= rangeEnd; rk += slotMaxSize) {
+                        final long slotSize = Math.min(rangeEnd, rk + slotMaxSize) - rk + 1;
+                        final long sourceKey = rk >> addedRowsetBase;
+                        final long newSourceKey = sourceKey << newBase;
+                        addedBuilder.appendRange(newSourceKey, newSourceKey + slotSize - 1);
+                    }
+                }
+                added = addedBuilder.build();
+            }
+
             final int computedModifiedBase = evaluateModified(upstream.modified(), upstream.getModifiedPreShift(),
                     addedByModifiesBuilder, removedByModifiesBuilder, modifiedByModifiesBuilder, newBase,
                     new MutableObject<>(modifiedCurrentSizes));
-            Assert.leq(computedAddBase, "computedAddBase", newBase, "newBase");
             Assert.leq(computedModifiedBase, "computedAddBase", newBase, "newBase");
 
             evaluateRemoved(upstream.removed(), removedBuilder);
@@ -551,7 +579,6 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
             try (final WritableRowSet built = builder.build()) {
                 resultRowset.resetTo(built);
             }
-            final WritableRowSet added = addedBuilder.build();
             try (final RowSet addedByModifies = addedByModifiesBuilder.build()) {
                 added.insert(addedByModifies);
             }
@@ -624,7 +651,7 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
 
         private void clearAndRecompute(final TableUpdate upstream) {
             final RowSetBuilderSequential added = RowSetFactory.builderSequential();
-            final int newBase = evaluateAdded(upstream.added(), added, QueryTable.minimumUngroupBase, true);
+            final int newBase = evaluateAdded(upstream.added(), added, QueryTable.minimumUngroupBase);
 
             final WritableRowSet newRowset = added.build();
             final TrackingWritableRowSet resultRowset = result.getRowSet().writableCast();
@@ -647,19 +674,16 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
 
         private int evaluateAdded(final RowSet rowSet,
                 @NotNull final RowSetBuilderSequential ungroupBuilder,
-                final int existingBase,
-                final boolean alwaysBuild) {
+                final int existingBase) {
             if (rowSet.isEmpty()) {
                 return existingBase;
             }
-            final long[] sizes = new long[rowSet.intSize("ungroup")];
-            final long maxSize = computeMaxSize(rowSet, sizes, false);
+            final long[] sizes;
+            final long maxSize;
+            sizes = new long[rowSet.intSize("ungroup")];
+            maxSize = computeMaxSize(rowSet, sizes, false);
             final int minBase = determineRequiredBase(maxSize);
 
-            if (!alwaysBuild && minBase > existingBase) {
-                // If we are going to change the base, there is no point in creating this rowset
-                return minBase;
-            }
             final int resultBase = Math.max(existingBase, minBase);
             getUngroupRowset(sizes, ungroupBuilder, resultBase, rowSet);
             return resultBase;
@@ -711,8 +735,6 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
                 }
             } else {
                 sizes = currentSizes.get();
-                Assert.eq(sizes.length, "sizes.length", size, "modified.intSize(\"ungroup\")");
-                // noinspection OptionalGetWithoutIsPresent
                 Assert.eq(sizes.length, "sizes.length", size, "modified.intSize()");
                 // noinspection OptionalGetWithoutIsPresent
                 maxSize = Arrays.stream(sizes).max().getAsLong();
