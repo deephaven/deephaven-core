@@ -166,11 +166,13 @@ public class RegionedColumnSourceManager
      * Construct a column manager with the specified component factory and definitions.
      *
      * @param isRefreshing Whether the table using this column source manager is refreshing
+     * @param removeAllowed Whether the table using this column source manager may remove locations
      * @param componentFactory The component factory
      * @param columnDefinitions The column definitions
      */
     RegionedColumnSourceManager(
             final boolean isRefreshing,
+            final boolean removeAllowed,
             @NotNull final RegionedTableComponentFactory componentFactory,
             @NotNull final ColumnToCodecMappings codecMappings,
             @NotNull final List<ColumnDefinition<?>> columnDefinitions) {
@@ -235,7 +237,9 @@ public class RegionedColumnSourceManager
                     null // No attributes to provide (not add-only or append-only, because locations can grow)
             ) {
                 {
-                    setFlat();
+                    if (!removeAllowed) {
+                        setFlat();
+                    }
                     setRefreshing(isRefreshing);
                 }
             };

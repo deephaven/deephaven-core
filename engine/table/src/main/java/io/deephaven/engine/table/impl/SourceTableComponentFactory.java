@@ -14,6 +14,7 @@ public interface SourceTableComponentFactory {
 
     ColumnSourceManager createColumnSourceManager(
             boolean isRefreshing,
+            boolean removeAllowed,
             ColumnToCodecMappings codecMappings,
             List<ColumnDefinition<?>> columnDefinitions);
 }

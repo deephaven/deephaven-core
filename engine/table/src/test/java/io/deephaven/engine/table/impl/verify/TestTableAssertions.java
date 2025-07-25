@@ -3,8 +3,10 @@
 //
 package io.deephaven.engine.table.impl.verify;
 
+import io.deephaven.base.verify.AssertionFailure;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.SortedColumnsAttribute;
 import io.deephaven.engine.table.impl.SortingOrder;
@@ -14,6 +16,7 @@ import io.deephaven.engine.testutil.generator.SortedLongGenerator;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.util.QueryConstants;
+import io.deephaven.util.SafeCloseable;
 import junit.framework.TestCase;
 import org.junit.Rule;
 import org.junit.Test;
@@ -23,10 +26,146 @@ import java.util.Random;
 
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.*;
+import static junit.framework.TestCase.*;
 
 public class TestTableAssertions {
     @Rule
     public final EngineCleanup base = new EngineCleanup();
+
+    @Test
+    public void testBlink() {
+        final QueryTable test = TstUtils.testRefreshingTable(intCol("Sentinel"));
+
+        final Table blink = test.assertBlink();
+        final Table blink2 = blink.assertBlink();
+        assertNotSame(blink, test);
+        assertSame(blink, blink2);
+
+        final ControlledUpdateGraph cug = ExecutionContext.getContext().getUpdateGraph().cast();
+        cug.runWithinUnitTestCycle(() -> {
+            TstUtils.addToTable(test, i(5), intCol("Sentinel", 5));
+            test.notifyListeners(i(5), i(), i());
+        });
+
+        assertFalse(blink.isFailed());
+
+        cug.runWithinUnitTestCycle(() -> {
+            TstUtils.removeRows(test, i(5));
+            TstUtils.addToTable(test, i(8), intCol("Sentinel", 8));
+            test.notifyListeners(i(8), i(5), i());
+        });
+
+        assertFalse(blink.isFailed());
+        assertTableEquals(test, blink);
+
+        try (final SafeCloseable ignored = () -> base.setExpectError(false)) {
+            base.setExpectError(true);
+
+            cug.runWithinUnitTestCycle(() -> {
+                TstUtils.addToTable(test, i(9), intCol("Sentinel", 9));
+                test.notifyListeners(i(9), i(), i());
+            });
+            assertFalse(test.isFailed());
+            assertTrue(blink.isFailed());
+
+            assertEquals(1, base.getUpdateErrors().size());
+            assertTrue(base.getUpdateErrors().get(0) instanceof AssertionFailure);
+            assertEquals(
+                    "Assertion failed: asserted added size == current table size, instead added size == 1, current table size == 2.",
+                    base.getUpdateErrors().get(0).getMessage());
+        }
+    }
+
+    @Test
+    public void testAddOnly() {
+        final QueryTable test = TstUtils.testRefreshingTable(intCol("Sentinel"));
+
+        final Table ao1 = test.assertAddOnly();
+        final Table ao2 = ao1.assertAddOnly();
+        assertNotSame(ao1, test);
+        assertSame(ao1, ao2);
+
+        final ControlledUpdateGraph cug = ExecutionContext.getContext().getUpdateGraph().cast();
+        cug.runWithinUnitTestCycle(() -> {
+            TstUtils.addToTable(test, i(5), intCol("Sentinel", 5));
+            test.notifyListeners(i(5), i(), i());
+        });
+
+        // differentiate from append only
+        cug.runWithinUnitTestCycle(() -> {
+            TstUtils.addToTable(test, i(4), intCol("Sentinel", 4));
+            test.notifyListeners(i(4), i(), i());
+        });
+
+        assertFalse(ao1.isFailed());
+
+        try (final SafeCloseable ignored = () -> base.setExpectError(false)) {
+            base.setExpectError(true);
+
+            cug.runWithinUnitTestCycle(() -> {
+                TstUtils.removeRows(test, i(5));
+                TstUtils.addToTable(test, i(8), intCol("Sentinel", 8));
+                test.notifyListeners(i(8), i(5), i());
+            });
+
+            assertFalse(test.isFailed());
+            assertTrue(ao1.isFailed());
+
+            assertEquals(1, base.getUpdateErrors().size());
+            assertTrue(base.getUpdateErrors().get(0) instanceof AssertionFailure);
+            assertEquals("Assertion failed: asserted updateToSend.removed.empty().",
+                    base.getUpdateErrors().get(0).getMessage());
+        }
+    }
+
+    @Test
+    public void testAppendOnly() {
+        final QueryTable test = TstUtils.testRefreshingTable(intCol("Sentinel"));
+
+        final Table test2 = TstUtils.testRefreshingTable(intCol("Sentinel")).assertAddOnly();
+        ((QueryTable) (test2)).setFlat();
+        assertTrue(((QueryTable) (test2)).isAddOnly());
+        assertTrue(((QueryTable) (test2)).isAppendOnly());
+        // test2 is append only, but doesn't have the attribute set; so we will return a new table
+        assertNotSame(test2.assertAppendOnly(), test2);
+        assertSame(test2.assertAddOnly(), test2);
+
+        final Table ao1 = test.assertAppendOnly();
+        final Table ao2 = ao1.assertAppendOnly();
+        assertNotSame(ao1, test);
+        assertSame(ao1, ao2);
+
+        final ControlledUpdateGraph cug = ExecutionContext.getContext().getUpdateGraph().cast();
+        cug.runWithinUnitTestCycle(() -> {
+            TstUtils.addToTable(test, i(5), intCol("Sentinel", 5));
+            test.notifyListeners(i(5), i(), i());
+        });
+
+        cug.runWithinUnitTestCycle(() -> {
+            TstUtils.addToTable(test, i(6), intCol("Sentinel", 6));
+            test.notifyListeners(i(6), i(), i());
+        });
+
+        assertFalse(ao1.isFailed());
+
+        try (final SafeCloseable ignored = () -> base.setExpectError(false)) {
+            base.setExpectError(true);
+
+            cug.runWithinUnitTestCycle(() -> {
+                TstUtils.addToTable(test, i(2), intCol("Sentinel", 2));
+                test.notifyListeners(i(2), i(), i());
+            });
+
+            assertFalse(test.isFailed());
+            assertTrue(ao1.isFailed());
+
+            assertEquals(1, base.getUpdateErrors().size());
+            assertTrue(base.getUpdateErrors().get(0) instanceof AssertionFailure);
+            assertEquals(
+                    "Assertion failed: asserted getRowSet().lastRowKeyPrev() < updateToSend.added().firstRowKey().",
+                    base.getUpdateErrors().get(0).getMessage());
+        }
+    }
 
     @Test
     public void testStatic() {
