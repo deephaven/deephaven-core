@@ -9,6 +9,7 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.VisibleForTesting;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Objects;
 
@@ -41,16 +42,13 @@ public final class PushdownResult implements SafeCloseable {
      */
     public static final long DEFERRED_DATA_INDEX_COST = 50_000L;
 
-    private static final boolean IS_CI = "true".equalsIgnoreCase(System.getenv().get("CI"));
-
     /**
      * Forces additional safety checks in {@link #ofUnsafe(RowSet, RowSet, RowSet)}. Controlled via configuration
-     * property "PushdownResult.forceValidation". Not a user-documented feature. {@code false} by default, except when
-     * environment variable "CI" is {@code true}.
+     * property "PushdownResult.forceValidation". Not a user-documented feature. {@code false} by default.
      */
     @VisibleForTesting
     static final boolean FORCE_VALIDATION =
-            Configuration.getInstance().getBooleanWithDefault("PushdownResult.forceValidation", IS_CI);
+            Configuration.getInstance().getBooleanWithDefault("PushdownResult.forceValidation", false);
 
     /**
      * The selection. Retaining selection here makes the pushdown result "self-contained" which helps with composability
@@ -69,38 +67,40 @@ public final class PushdownResult implements SafeCloseable {
     private final WritableRowSet maybeMatch;
 
     /**
-     * Constructs a new result with all of {@code selection} as {@link #maybeMatch() maybeMatch}.
+     * Constructs a new result with all of {@code input} as {@link #maybeMatch() maybeMatch} and {@link #selection()
+     * selection}.
      *
-     * @param selection the selection
+     * @param input the input
      * @return the result
      */
-    public static PushdownResult maybeMatch(final RowSet selection) {
+    public static PushdownResult maybeMatch(@NotNull final RowSet input) {
         try (final WritableRowSet empty = RowSetFactory.empty()) {
-            return copy(selection, empty, selection);
+            return copy(input, empty, input);
         }
     }
 
     /**
-     * Constructs a new result with all of {@code selection} as {@link #match() match}.
+     * Constructs a new result with all of {@code input} as {@link #match() match} and {@link #selection() selection}.
      *
-     * @param selection the selection
+     * @param input the input
      * @return the result
      */
-    public static PushdownResult match(final RowSet selection) {
+    public static PushdownResult match(@NotNull final RowSet input) {
         try (final WritableRowSet empty = RowSetFactory.empty()) {
-            return copy(selection, selection, empty);
+            return copy(input, input, empty);
         }
     }
 
     /**
-     * Constructs a new result with all of {@code selection} as {@link #noMatchCopy() noMatch}.
+     * Constructs a new result with all of {@code input} as {@link #noMatchCopy() noMatch} and {@link #selection()
+     * selection}.
      *
-     * @param selection the selection
+     * @param input the input
      * @return the result
      */
-    public static PushdownResult noMatch(final RowSet selection) {
+    public static PushdownResult noMatch(@NotNull final RowSet input) {
         try (final WritableRowSet empty = RowSetFactory.empty()) {
-            return copy(selection, empty, empty);
+            return copy(input, empty, empty);
         }
     }
 
@@ -116,9 +116,9 @@ public final class PushdownResult implements SafeCloseable {
      * @return the result
      */
     public static PushdownResult of(
-            final RowSet selection,
-            final RowSet match,
-            final RowSet maybeMatch) {
+            @NotNull final RowSet selection,
+            @NotNull final RowSet match,
+            @NotNull final RowSet maybeMatch) {
         if (!match.subsetOf(selection)) {
             throw new IllegalArgumentException("match must be a subset of selection");
         }
@@ -141,9 +141,9 @@ public final class PushdownResult implements SafeCloseable {
      * @return the result
      */
     public static PushdownResult ofUnsafe(
-            final RowSet selection,
-            final RowSet match,
-            final RowSet maybeMatch) {
+            @NotNull final RowSet selection,
+            @NotNull final RowSet match,
+            @NotNull final RowSet maybeMatch) {
         if (FORCE_VALIDATION) {
             return of(selection, match, maybeMatch);
         }
