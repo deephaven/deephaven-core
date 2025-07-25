@@ -670,7 +670,7 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
          * @param removedBuilder the builder for rows removed by modifications
          * @param modifyBuilder the builder for rows modified by modifications
          * @param currentSizes an input parameter if non-null, else an output parameter to allow re-use of retrieved
-         *                    sizes when we determine a change of base is necessary
+         *        sizes when we determine a change of base is necessary
          * @return the necessary base
          */
         private int evaluateModified(final RowSet modified,
@@ -702,7 +702,7 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
                 Assert.eq(sizes.length, "sizes.length", size, "modified.intSize(\"ungroup\")");
                 // noinspection OptionalGetWithoutIsPresent
                 Assert.eq(sizes.length, "sizes.length", size, "modified.intSize()");
-                //noinspection OptionalGetWithoutIsPresent
+                // noinspection OptionalGetWithoutIsPresent
                 maxSize = Arrays.stream(sizes).max().getAsLong();
                 final int minBase = determineRequiredBase(maxSize);
                 Assert.leq(minBase, "minBase", base, "base");
