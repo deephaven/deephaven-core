@@ -12,9 +12,11 @@ import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
+import io.deephaven.engine.table.impl.sources.ObjectArraySource;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.table.vectors.ColumnVectors;
+import io.deephaven.engine.table.vectors.IntVectorColumnWrapper;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.*;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
@@ -561,6 +563,53 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
                 fail("!errorListener.originalException.getMessage().startsWith(\"Key overflow detected\")");
             }
         }
+    }
+
+    public void testUngroupMaxBase() {
+        final QueryTable table = testTable(RowSetFactory.flat(1L << 62).toTracking());
+        final Table withSingle = table.update("X=1");
+
+        final Table withSingle2 = table.update("X=2");
+        TableTools.showWithRowSet(withSingle);
+
+        final IntVectorColumnWrapper cw = new IntVectorColumnWrapper(withSingle.getColumnSource("X"), withSingle.getRowSet(), 0, 0);
+        final IntVectorColumnWrapper cw2 = new IntVectorColumnWrapper(withSingle2.getColumnSource("X"), withSingle.getRowSet(), 0, 0);
+        final ObjectArraySource<IntVector> oas = new ObjectArraySource<>(IntVector.class);
+        oas.ensureCapacity(1);
+        oas.set(0, cw);
+        oas.ensureCapacity(2);
+        oas.set(1, cw2);
+        final Map<String, ColumnSource<?>> columns = new LinkedHashMap<>();
+        columns.put("X", oas);
+        final QueryTable fakeGrouped = new QueryTable(i(0).toTracking(), columns);
+        TableTools.showWithRowSet(fakeGrouped);
+
+        final QueryTable ungrouped = (QueryTable) fakeGrouped.ungroup();
+        TableTools.showWithRowSet(ungrouped);
+        assertEquals(1L<<62, ungrouped.size());
+
+        // we are not going to actually check the entire table, which will take until the heat death of the universe.  We're just going to pick a few values
+        for (int ii = 0; ii <= 61; ++ii) {
+            assertEquals(1, ungrouped.getColumnSource("X").get(1L << ii));
+        }
+        assertEquals(1, ungrouped.getColumnSource("X").get((1L << 62) - 1L));
+
+        final QueryTable fakeGrouped2 = new QueryTable(i(0, 1).toTracking(), columns);
+        TableTools.showWithRowSet(fakeGrouped2);
+        final QueryTable ungrouped2 = (QueryTable) fakeGrouped2.ungroup();
+        //noinspection SizeReplaceableByIsEmpty
+        final long size = ungrouped2.size();
+        System.out.println("Size:" + size);
+        assertTrue(size > 0);
+        assertEquals(1L<<63, ungrouped2.size());
+
+        for (int ii = 0; ii <= 61; ++ii) {
+            assertEquals(1, ungrouped2.getColumnSource("X").get(1L << ii));
+            assertEquals(2, ungrouped2.getColumnSource("X").get((1L<<62) + (1L << ii)));
+        }
+        assertEquals(1, ungrouped.getColumnSource("X").get((1L << 62) - 1L));
+        assertEquals(2, ungrouped.getColumnSource("X").get((1L << 62)));
+        assertEquals(2, ungrouped.getColumnSource("X").get((1L << 63) - 1L));
     }
 
 

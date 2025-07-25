@@ -308,7 +308,7 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
     private void getUngroupRowset(final long[] sizes, final RowSetBuilderSequential builder, final long base,
             final RowSet rowSet) {
         Assert.geqZero(base, "base");
-        Assert.leq(base, "base", 63);
+        Assert.leq(base, "base", 62);
         final long mask = ((1L << base) - 1) << (64 - base);
         final long lastKey = rowSet.lastRowKey();
         if ((lastKey > 0) && ((lastKey & mask) != 0)) {
