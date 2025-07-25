@@ -142,7 +142,7 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
      */
     private static int determineRequiredBase(final long maxSize) {
         if (maxSize == 0) {
-            // to avoid edge cases we always assign one value; even though we should have an empty index
+            // to avoid edge cases we always assign one value; even though we should have an empty rowset
             return 1;
         }
         // if we have a size of e.g. 4, then we should determine how many leading zeros are present for 3; because we
@@ -418,7 +418,7 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
 
         private void processShifts(final TableUpdate upstream,
                 final TrackingWritableRowSet resultRowset,
-                final int requiredBase,
+                final int base,
                 final RowSetShiftData.Builder shiftBuilder,
                 final RowSetBuilderRandom removedByShiftBuilder,
                 final RowSetBuilderRandom addedByShiftBuilder) {
@@ -431,9 +431,9 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
                 // logic instead of this logic
                 rit.next();
                 long nextResultKey = rit.currentRangeStart();
-                long nextSourceKey = nextResultKey >> requiredBase;
+                long nextSourceKey = nextResultKey >> base;
 
-                final long lastRowKeyOffset = (1L << requiredBase) - 1;
+                final long lastRowKeyOffset = (1L << base) - 1;
 
                 final RowSetShiftData upstreamShift = upstream.shifted();
                 final long shiftSize = upstreamShift.size();
@@ -442,11 +442,11 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
                     final long end = upstreamShift.getEndRange(ii);
                     final long shiftDelta = upstreamShift.getShiftDelta(ii);
 
-                    final long resultShiftAmount = shiftDelta << (long) requiredBase;
+                    final long resultShiftAmount = shiftDelta << (long) base;
 
                     for (long rk = Math.max(begin, nextSourceKey); rk <= end; rk =
                             Math.max(rk + 1, nextSourceKey)) {
-                        final long oldRangeStart = rk << (long) requiredBase;
+                        final long oldRangeStart = rk << (long) base;
                         final long oldRangeEnd = oldRangeStart + lastRowKeyOffset;
 
                         if (!rit.advance(oldRangeStart)) {
@@ -454,7 +454,7 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
                         }
                         // we successfully advanced
                         nextResultKey = rit.currentRangeStart();
-                        nextSourceKey = nextResultKey >> requiredBase;
+                        nextSourceKey = nextResultKey >> base;
 
                         if (nextResultKey > oldRangeEnd) {
                             // no need to shift things that don't exist
@@ -706,9 +706,9 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
                 Assert.leq(minBase, "minBase", base, "base");
             }
 
+            // If the base had changed, we would be using the rebase code path.
             final long[] prevSizes = new long[size];
-            final int prevBase = shiftState.getPrevNumShiftBits();
-            computePrevSize(result.getRowSet().prev(), prevBase, modifiedPreShift, prevSizes);
+            computePrevSize(result.getRowSet().prev(), base, modifiedPreShift, prevSizes);
 
             final RowSet.Iterator iterator = modified.iterator();
             final RowSet.Iterator iteratorPreShift = modifiedPreShift.iterator();
@@ -717,7 +717,7 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
                 final long previousRowKey = iteratorPreShift.nextLong();
 
                 updateRowsetForRow(addedBuilder, removedBuilder, modifyBuilder, sizes[idx], prevSizes[idx],
-                        currentRowKey, previousRowKey, base, prevBase);
+                        currentRowKey, previousRowKey, base, base);
             }
 
             return base;
