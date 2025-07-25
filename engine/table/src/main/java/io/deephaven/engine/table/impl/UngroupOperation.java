@@ -637,9 +637,7 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
 
                 while (pos < shiftData.size()) {
                     if (advanceTo <= shiftData.getEndRange(pos)) {
-                        // TODO: this nextKey should be advanceTo, we want to cover a case where we have more shift data
-                        // in this range
-                        nextKey = Math.max(shiftData.getBeginRange(pos), nextKey);
+                        nextKey = Math.max(shiftData.getBeginRange(pos), advanceTo);
                         return nextKey == advanceTo;
                     }
                     pos++;
