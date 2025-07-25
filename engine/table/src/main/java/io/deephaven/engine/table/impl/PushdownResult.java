@@ -75,6 +75,4 @@ public class PushdownResult implements SafeCloseable {
         match.close();
         maybeMatch.close();
     }
-
-
 }
