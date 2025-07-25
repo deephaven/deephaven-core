@@ -573,8 +573,10 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
         final Table withSingle2 = table.update("X=2");
         TableTools.showWithRowSet(withSingle);
 
-        final IntVectorColumnWrapper cw = new IntVectorColumnWrapper(withSingle.getColumnSource("X"), withSingle.getRowSet(), 0, 0);
-        final IntVectorColumnWrapper cw2 = new IntVectorColumnWrapper(withSingle2.getColumnSource("X"), withSingle.getRowSet(), 0, 0);
+        final IntVectorColumnWrapper cw =
+                new IntVectorColumnWrapper(withSingle.getColumnSource("X"), withSingle.getRowSet(), 0, 0);
+        final IntVectorColumnWrapper cw2 =
+                new IntVectorColumnWrapper(withSingle2.getColumnSource("X"), withSingle.getRowSet(), 0, 0);
         final ObjectArraySource<IntVector> oas = new ObjectArraySource<>(IntVector.class);
         oas.ensureCapacity(2);
         oas.set(0, cw);
@@ -586,9 +588,10 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
 
         final QueryTable ungrouped = (QueryTable) fakeGrouped.ungroup();
         TableTools.showWithRowSet(ungrouped);
-        assertEquals(1L<<62, ungrouped.size());
+        assertEquals(1L << 62, ungrouped.size());
 
-        // we are not going to actually check the entire table, which will take until the heat death of the universe.  We're just going to pick a few values
+        // we are not going to actually check the entire table, which will take until the heat death of the universe.
+        // We're just going to pick a few values
         for (int ii = 0; ii <= 61; ++ii) {
             assertEquals(1, ungrouped.getColumnSource("X").get(1L << ii));
         }
@@ -596,17 +599,21 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
 
         final QueryTable fakeGrouped2 = new QueryTable(i(0, 1).toTracking(), columns);
         TableTools.showWithRowSet(fakeGrouped2);
-        final IllegalStateException ise = Assert.assertThrows (IllegalStateException.class, () -> fakeGrouped2.ungroup());
-        assertEquals("Key overflow detected, perhaps you should flatten your table before calling ungroup: lastRowKey=1, base=62", ise.getMessage());
+        final IllegalStateException ise =
+                Assert.assertThrows(IllegalStateException.class, () -> fakeGrouped2.ungroup());
+        assertEquals(
+                "Key overflow detected, perhaps you should flatten your table before calling ungroup: lastRowKey=1, base=62",
+                ise.getMessage());
     }
 
     public void testBaseTooBig() {
         final QueryTable table = testTable(RowSetFactory.flat((1L << 63) - 1).toTracking());
-        //noinspection SizeReplaceableByIsEmpty
+        // noinspection SizeReplaceableByIsEmpty
         assertTrue(table.size() > 0);
         final Table withSingle = table.update("X=1");
 
-        final IntVectorColumnWrapper cw = new IntVectorColumnWrapper(withSingle.getColumnSource("X"), withSingle.getRowSet(), 0, 0);
+        final IntVectorColumnWrapper cw =
+                new IntVectorColumnWrapper(withSingle.getColumnSource("X"), withSingle.getRowSet(), 0, 0);
         final ObjectArraySource<IntVector> oas = new ObjectArraySource<>(IntVector.class);
         oas.ensureCapacity(1);
         oas.set(0, cw);
@@ -616,7 +623,8 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
         TableTools.showWithRowSet(fakeGrouped);
 
         final AssertionFailure af = Assert.assertThrows(AssertionFailure.class, fakeGrouped::ungroup);
-        assertEquals("Assertion failed: asserted newNumShiftBits < 63, instead newNumShiftBits == 63, 63 == 63.", af.getMessage());
+        assertEquals("Assertion failed: asserted newNumShiftBits < 63, instead newNumShiftBits == 63, 63 == 63.",
+                af.getMessage());
     }
 
     public void testUngroupWithRebase() {

@@ -397,8 +397,12 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
             final WritableRowSet addedRowSet = added.build();
             final WritableRowSet removedRowSet = removed.build();
 
-            addedRowSet.insert(addedByModifies.build());
-            removedRowSet.insert(removedByModifies.build());
+            try (final WritableRowSet built = addedByModifies.build()) {
+                addedRowSet.insert(built);
+            }
+            try (final WritableRowSet built = removedByModifies.build()) {
+                removedRowSet.insert(built);
+            }
 
             final TrackingWritableRowSet resultRowset = result.getRowSet().writableCast();
             resultRowset.remove(removedRowSet);
@@ -408,8 +412,12 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
             processShifts(upstream, resultRowset, requiredBase, shiftBuilder, removedByShiftBuilder,
                     addedByShiftBuilder);
 
-            resultRowset.remove(removedByShiftBuilder.build());
-            resultRowset.insert(addedByShiftBuilder.build());
+            try (final WritableRowSet built = removedByShiftBuilder.build()) {
+                resultRowset.remove(built);
+            }
+            try (final WritableRowSet built = addedByShiftBuilder.build()) {
+                resultRowset.insert(built);
+            }
             resultRowset.insert(addedRowSet);
 
             // TODO: we should examine the MCS to avoid work on columns that have not changed
