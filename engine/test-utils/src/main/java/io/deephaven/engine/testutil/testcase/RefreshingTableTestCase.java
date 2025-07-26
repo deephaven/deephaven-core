@@ -141,6 +141,19 @@ abstract public class RefreshingTableTestCase extends BaseArrayTestCase implemen
         this.expectError = expectError;
     }
 
+    public class ExpectingError implements SafeCloseable {
+        final boolean originalExpectError = getExpectError();
+
+        public ExpectingError() {
+            setExpectError(true);
+        }
+
+        @Override
+        public void close() {
+            setExpectError(originalExpectError);
+        }
+    }
+
     public <T> T allowingError(Supplier<T> function, Predicate<List<Throwable>> errorsAcceptable) {
         final boolean original = getExpectError();
         T retval;

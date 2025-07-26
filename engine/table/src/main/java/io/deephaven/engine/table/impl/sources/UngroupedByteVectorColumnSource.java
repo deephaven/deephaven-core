@@ -27,8 +27,7 @@ public class UngroupedByteVectorColumnSource extends UngroupedColumnSource<Byte>
     public UngroupedByteVectorColumnSource(ColumnSource<ByteVector> innerSource) {
         super(Byte.class);
         this.innerSource = innerSource;
-        this.isUngroupable = innerSource instanceof UngroupableColumnSource
-                && ((UngroupableColumnSource) innerSource).isUngroupable();
+        this.isUngroupable = UngroupableColumnSource.isUngroupable(innerSource);
     }
 
     @Override

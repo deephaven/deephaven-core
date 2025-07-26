@@ -256,7 +256,7 @@ public class ShiftedColumnSource<T> extends AbstractColumnSource<T>
 
     @Override
     public boolean isUngroupable() {
-        return innerSource instanceof UngroupableColumnSource && asUngroupableSource().isUngroupable();
+        return UngroupableColumnSource.isUngroupable(innerSource);
     }
 
     @Override

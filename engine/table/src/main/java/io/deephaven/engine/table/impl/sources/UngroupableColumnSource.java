@@ -3,10 +3,25 @@
 //
 package io.deephaven.engine.table.impl.sources;
 
+import io.deephaven.chunk.WritableLongChunk;
+import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.table.ChunkSource;
+import io.deephaven.engine.table.ColumnSource;
+
 /**
  * Interface for ColumnSources of vectors that allow retrieving single elements by offset.
  */
 public interface UngroupableColumnSource {
+    /**
+     * Returns true if the specified column is an UngroupableColumnSource, and it is ungroupable.
+     *
+     * @param source the source to check
+     * @return true if the column source is an UngroupableColumnSource and it is ungroupable
+     */
+    static boolean isUngroupable(final ColumnSource<?> source) {
+        return source instanceof UngroupableColumnSource && ((UngroupableColumnSource) source).isUngroupable();
+    }
 
     /**
      * Does this particular ColumnSource support ungrouping?
@@ -32,6 +47,36 @@ public interface UngroupableColumnSource {
      * @return The size of the vector at {@code groupRowKey} as of the end of the previous update cycle
      */
     long getUngroupedPrevSize(long groupRowKey);
+
+    /**
+     * Get the size of the vectors at each row key.
+     *
+     * <p>
+     * This method is equivalent to calling {@link #getUngroupedSize(long)} on each row key in the row sequence.
+     * </p>
+     *
+     * @param rowSequence the row keys to fetch
+     * @param sizes the sizes of the vectors
+     */
+    default void getUngroupedSize(ChunkSource.FillContext fillContext, RowSequence rowSequence,
+            WritableLongChunk<Values> sizes) {
+        ungroupedSizeByIteration(this, rowSequence, sizes);
+    }
+
+    /**
+     * Get the previous size of the vectors at each row key.
+     *
+     * <p>
+     * This method is equivalent to calling {@link #getUngroupedPrevSize(long)} on each row key in the row sequence.
+     * </p>
+     *
+     * @param rowSequence the row keys to fetch
+     * @param sizes the sizes of the vectors
+     */
+    default void getUngroupedPrevSize(ChunkSource.FillContext fillContext, RowSequence rowSequence,
+            WritableLongChunk<Values> sizes) {
+        ungroupedPrevSizeByIteration(this, rowSequence, sizes);
+    }
 
     /**
      * Reach into a grouped column source and pull one Object element out of the vector.
@@ -203,4 +248,36 @@ public interface UngroupableColumnSource {
      * @return Equivalent to ((LongVector)columnSource.getPrev(groupRowKey)).get(offsetInGroup)
      */
     long getUngroupedPrevLong(long groupRowKey, int offsetInGroup);
+
+    /**
+     * Helper method for a naive implementation of
+     * {@link #getUngroupedSize(ChunkSource.FillContext, RowSequence, WritableLongChunk)}.
+     *
+     * @param ungroupableColumnSource the ungroupable column source
+     * @param rowSequence the rowsequence of keys to determine vector sizes
+     * @param sizes the output chunk of vector sizes
+     */
+    static void ungroupedSizeByIteration(final UngroupableColumnSource ungroupableColumnSource,
+            final RowSequence rowSequence, final WritableLongChunk<Values> sizes) {
+        sizes.setSize(0);
+        rowSequence.forAllRowKeys(rk -> {
+            sizes.add(ungroupableColumnSource.getUngroupedSize(rk));
+        });
+    }
+
+    /**
+     * Helper method for a naive implementation of
+     * {@link #getUngroupedPrevSize(ChunkSource.FillContext, RowSequence, WritableLongChunk)}.
+     *
+     * @param ungroupableColumnSource the ungroupable column source
+     * @param rowSequence the rowsequence of keys to determine vector sizes
+     * @param sizes the output chunk of vector sizes
+     */
+    static void ungroupedPrevSizeByIteration(final UngroupableColumnSource ungroupableColumnSource,
+            final RowSequence rowSequence, final WritableLongChunk<Values> sizes) {
+        sizes.setSize(0);
+        rowSequence.forAllRowKeys(rk -> {
+            sizes.add(ungroupableColumnSource.getUngroupedPrevSize(rk));
+        });
+    }
 }

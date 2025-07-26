@@ -27,8 +27,7 @@ public class UngroupedFloatVectorColumnSource extends UngroupedColumnSource<Floa
     public UngroupedFloatVectorColumnSource(ColumnSource<FloatVector> innerSource) {
         super(Float.class);
         this.innerSource = innerSource;
-        this.isUngroupable = innerSource instanceof UngroupableColumnSource
-                && ((UngroupableColumnSource) innerSource).isUngroupable();
+        this.isUngroupable = UngroupableColumnSource.isUngroupable(innerSource);
     }
 
     @Override

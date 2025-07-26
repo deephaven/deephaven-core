@@ -3,6 +3,8 @@
 //
 package io.deephaven.engine.table;
 
+import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.util.TableTools;
 import io.deephaven.util.type.ArrayTypeUtils;
 import org.junit.Test;
 
@@ -11,6 +13,7 @@ import java.util.BitSet;
 import java.util.HashMap;
 import java.util.Map;
 
+import static io.deephaven.engine.util.TableTools.intCol;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -43,5 +46,14 @@ public class ModifiedColumnSetTest {
         dirtyColumnNames = mcs.dirtyColumnNames();
         assertArrayEquals(dirtyColumnNames, ArrayTypeUtils.EMPTY_STRING_ARRAY);
 
+    }
+
+    @Test
+    public void testModifiedColumnSetAll() {
+        final QueryTable table =
+                (QueryTable) TableTools.newTable(intCol("A", 1, 2), intCol("B", 3, 4), intCol("C", 5, 6));
+        final ModifiedColumnSet bAndC = table.newModifiedColumnSet("B", "C");
+        assertTrue(ModifiedColumnSet.ALL.containsAny(bAndC));
+        assertTrue(ModifiedColumnSet.ALL.containsAll(bAndC));
     }
 }

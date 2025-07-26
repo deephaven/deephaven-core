@@ -102,7 +102,7 @@ public class ModifiedColumnSet {
 
         @Override
         public boolean containsAll(ModifiedColumnSet columnSet) {
-            return columnSet.equals(this);
+            return true;
         }
 
         @Override

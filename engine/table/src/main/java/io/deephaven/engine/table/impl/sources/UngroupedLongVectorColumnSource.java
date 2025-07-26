@@ -27,8 +27,7 @@ public class UngroupedLongVectorColumnSource extends UngroupedColumnSource<Long>
     public UngroupedLongVectorColumnSource(ColumnSource<LongVector> innerSource) {
         super(Long.class);
         this.innerSource = innerSource;
-        this.isUngroupable = innerSource instanceof UngroupableColumnSource
-                && ((UngroupableColumnSource) innerSource).isUngroupable();
+        this.isUngroupable = UngroupableColumnSource.isUngroupable(innerSource);
     }
 
     @Override

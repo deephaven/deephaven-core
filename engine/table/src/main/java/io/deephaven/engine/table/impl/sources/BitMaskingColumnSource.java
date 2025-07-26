@@ -208,8 +208,7 @@ public class BitMaskingColumnSource<T> extends AbstractColumnSource<T> implement
 
     @Override
     public boolean isUngroupable() {
-        return innerSource instanceof UngroupableColumnSource
-                && ((UngroupableColumnSource) innerSource).isUngroupable();
+        return UngroupableColumnSource.isUngroupable(innerSource);
     }
 
     @Override

@@ -27,8 +27,7 @@ public class UngroupedDoubleVectorColumnSource extends UngroupedColumnSource<Dou
     public UngroupedDoubleVectorColumnSource(ColumnSource<DoubleVector> innerSource) {
         super(Double.class);
         this.innerSource = innerSource;
-        this.isUngroupable = innerSource instanceof UngroupableColumnSource
-                && ((UngroupableColumnSource) innerSource).isUngroupable();
+        this.isUngroupable = UngroupableColumnSource.isUngroupable(innerSource);
     }
 
     @Override

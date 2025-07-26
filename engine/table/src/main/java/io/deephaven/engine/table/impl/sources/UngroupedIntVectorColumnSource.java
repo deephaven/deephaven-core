@@ -27,8 +27,7 @@ public class UngroupedIntVectorColumnSource extends UngroupedColumnSource<Intege
     public UngroupedIntVectorColumnSource(ColumnSource<IntVector> innerSource) {
         super(Integer.class);
         this.innerSource = innerSource;
-        this.isUngroupable = innerSource instanceof UngroupableColumnSource
-                && ((UngroupableColumnSource) innerSource).isUngroupable();
+        this.isUngroupable = UngroupableColumnSource.isUngroupable(innerSource);
     }
 
     @Override

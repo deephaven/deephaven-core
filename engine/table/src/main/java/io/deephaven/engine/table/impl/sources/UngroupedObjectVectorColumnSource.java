@@ -22,8 +22,7 @@ public class UngroupedObjectVectorColumnSource<T> extends UngroupedColumnSource<
         // noinspection unchecked
         super((Class<T>) innerSource.getComponentType());
         this.innerSource = innerSource;
-        this.isUngroupable = innerSource instanceof UngroupableColumnSource
-                && ((UngroupableColumnSource) innerSource).isUngroupable();
+        this.isUngroupable = UngroupableColumnSource.isUngroupable(innerSource);
     }
 
     @Override
@@ -37,7 +36,8 @@ public class UngroupedObjectVectorColumnSource<T> extends UngroupedColumnSource<
             // noinspection unchecked
             return (T) ((UngroupableColumnSource) innerSource).getUngrouped(segment, (int) offset);
         } else {
-            return (innerSource.get(segment)).get((int) offset);
+            final ObjectVector<T> vector = innerSource.get(segment);
+            return vector == null ? null : vector.get((int) offset);
         }
     }
 
@@ -54,9 +54,8 @@ public class UngroupedObjectVectorColumnSource<T> extends UngroupedColumnSource<
             return (T) ((UngroupableColumnSource) innerSource).getUngroupedPrev(segment, (int) offset);
         } else {
             Assert.neqNull(innerSource, "innerSource");
-            ObjectVector<T> prevArray = innerSource.getPrev(segment);
-            Assert.neqNull(prevArray, "prevArray");
-            return prevArray.get((int) offset);
+            final ObjectVector<T> prevArray = innerSource.getPrev(segment);
+            return prevArray == null ? null : prevArray.get((int) offset);
         }
     }
 
