@@ -9,7 +9,6 @@ import io.deephaven.base.SleepUtil;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
-import io.deephaven.engine.liveness.Liveness;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -58,8 +57,7 @@ import static org.junit.Assert.assertArrayEquals;
 
 @Category(OutOfBandTest.class)
 public class TestConcurrentInstantiation extends QueryTableTestBase {
-    // TODO: NOCOMMIT: BAD NUMBER
-    private static final int TIMEOUT_LENGTH = 1000;
+    private static final int TIMEOUT_LENGTH = 10;
     private static final TimeUnit TIMEOUT_UNIT = TimeUnit.SECONDS;
 
     private ExecutorService pool;
@@ -669,6 +667,58 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         assertTableEquals(tableUpdate3, ungroupv4);
     }
 
+    public void testUngroupBadSize() throws ExecutionException, InterruptedException, TimeoutException {
+        testUngroupBadSize(t -> t);
+        testUngroupBadSize(t -> QueryTableUngroupTest.convertToUngroupable(t, "Value", "Value2"));
+    }
+
+    private void testUngroupBadSize(final Function<Table, Table> transform)
+            throws ExecutionException, InterruptedException, TimeoutException {
+        final QueryTable table = TstUtils.testRefreshingTable(i(2, 4).toTracking(),
+                intCol("Key", 1, 2),
+                col("Value", new int[] {101}, new int[] {201}),
+                col("Value2", new int[] {1001}, new int[] {2001, 2002}));
+        final Table transformed = transform.apply(table);
+
+        updateGraph.startCycleForUnitTests(false);
+
+        final Future<Table> submit1 = pool.submit(() -> transformed.ungroup());
+        // we need to complete the cycle, because when a snapshot fails with previous values we attempt with a lock
+        Thread.sleep(TIMEOUT_LENGTH / 2);
+
+        TstUtils.addToTable(table, i(8), intCol("Key", 4), col("Value", new int[] {401}),
+                col("Value2", new int[] {4001}));
+
+        final Future<Table> submit2 = pool.submit(() -> transformed.ungroup());
+
+        table.notifyListeners(i(8), i(), i());
+        updateGraph.markSourcesRefreshedForUnitTests();
+
+        final Future<Table> submit3 = pool.submit(() -> transformed.ungroup());
+        Thread.sleep(TIMEOUT_LENGTH / 2);
+
+        while (((BaseTable) transformed).getLastNotificationStep() < updateGraph.clock().currentStep()) {
+            updateGraph.flushOneNotificationForUnitTests();
+        }
+        final Future<Table> submit4 = pool.submit(() -> transformed.ungroup());
+        Thread.sleep(TIMEOUT_LENGTH / 2);
+
+        updateGraph.completeCycleForUnitTests();
+
+        checkUngroupSizeError(submit1);
+        checkUngroupSizeError(submit2);
+        checkUngroupSizeError(submit3);
+        checkUngroupSizeError(submit4);
+    }
+
+    private static void checkUngroupSizeError(final Future<Table> future) {
+        final ExecutionException ee1 = org.junit.Assert.assertThrows(ExecutionException.class,
+                () -> future.get(TIMEOUT_LENGTH, TIMEOUT_UNIT));
+        final IllegalStateException ise1 = (IllegalStateException) ee1.getCause();
+        assertEquals("Array sizes differ at row key 4 (position 1), Value has size 1, Value2 has size 2",
+                ise1.getMessage());
+    }
+
     public void testUngroupSizeChanges() throws ExecutionException, InterruptedException, TimeoutException {
         testUngroupTransformed(false, t -> t.update("Value=new io.deephaven.vector.IntVectorDirect(Value)"));
         testUngroupTransformed(false, t -> t.update("Value2=new io.deephaven.vector.DoubleVectorDirect(Value2)"));
@@ -683,20 +733,8 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
     private void testUngroupUngroupableColumnSource(final boolean nullFill)
             throws ExecutionException, InterruptedException, TimeoutException {
-        testUngroupTransformed(nullFill, t -> {
-            final Map<String, ColumnSource<?>> value =
-                    Map.of("Value", new SimulateUngroupableColumnSource<>(t.getColumnSource("Value")));
-            final QueryTable result = ((QueryTable) t).withAdditionalColumns(value);
-            t.addUpdateListener(new BaseTable.ListenerImpl("Add Simulated Ungroupable", t, result));
-            return result;
-        });
-        testUngroupTransformed(nullFill, t -> {
-            final Map<String, ColumnSource<?>> value =
-                    Map.of("Value2", new SimulateUngroupableColumnSource<>(t.getColumnSource("Value2")));
-            final QueryTable result = ((QueryTable) t).withAdditionalColumns(value);
-            t.addUpdateListener(new BaseTable.ListenerImpl("Add Simulated Ungroupable", t, result));
-            return result;
-        });
+        testUngroupTransformed(nullFill, t -> QueryTableUngroupTest.convertToUngroupable(t, "Value"));
+        testUngroupTransformed(nullFill, t -> QueryTableUngroupTest.convertToUngroupable(t, "Value2"));
     }
 
     private void testUngroupTransformed(final boolean nullFill, final Function<Table, Table> transformation)

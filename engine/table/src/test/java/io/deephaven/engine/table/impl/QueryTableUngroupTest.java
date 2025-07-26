@@ -379,13 +379,151 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
                 ColumnVectors.ofObject(t1, "Y", String.class).toArray());
     }
 
+    public void testSomeSizesChanged() {
+        final int[][] dataY1 = new int[][] {new int[] {4, 5, 6}, new int[0], new int[] {7, 8}};
+        final double[][] dataZ1 =
+                new double[][] {new double[] {10.1, 10.2, 10.3}, new double[0], new double[] {11.1, 11.2}};
+        final QueryTable table = testRefreshingTable(col("X", 1, 2, 3),
+                col("Y", dataY1),
+                col("Z", dataZ1));
+
+        final Table withUngroupable = convertToUngroupable(table, "Y", "Z");
+
+        final Table t1 = table.ungroup();
+        final Table t2 = withUngroupable.ungroup();
+        final TableUpdateValidator tuv = TableUpdateValidator.make("t1", (QueryTable) t1);
+        final TableUpdateValidator tuv2 = TableUpdateValidator.make("t2", (QueryTable) t2);
+
+        final Table expected = TableTools.newTable(intCol("X", 1, 1, 1, 3, 3), intCol("Y", 4, 5, 6, 7, 8),
+                doubleCol("Z", 10.1, 10.2, 10.3, 11.1, 11.2));
+        assertTableEquals(expected, t1);
+        assertTableEquals(expected, t2);
+
+        // change just "Z", preserving the size
+        final int[][] dataY2 = new int[][] {dataY1[0]};
+        final double[][] dataZ2 = new double[][] {new double[] {20.1, 20.2, 20.3}};
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(table, i(0), intCol("X", 1), col("Y", dataY2), col("Z", dataZ2));
+
+            final ModifiedColumnSet mcs = table.getModifiedColumnSetForUpdates();
+            mcs.clear();
+            mcs.setAll("Z");
+            table.notifyListeners(new TableUpdateImpl(i(), i(), i(0), RowSetShiftData.EMPTY, mcs));
+        });
+        final Table expected2 = TableTools.newTable(intCol("X", 1, 1, 1, 3, 3), intCol("Y", 4, 5, 6, 7, 8),
+                doubleCol("Z", 20.1, 20.2, 20.3, 11.1, 11.2));
+        assertTableEquals(expected2, t1);
+        assertTableEquals(expected2, t2);
+        assertFalse(tuv.getResultTable().isFailed());
+        assertFalse(tuv2.getResultTable().isFailed());
+
+        // now do the same for "Y", leaving "Z" alone, so that we have a different reference column (but not breaking it
+        // yet)
+        final int[][] dataY3 = new int[][] {new int[] {9, 10}};
+        final double[][] dataZ3 = new double[][] {dataZ1[2]};
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(table, i(2), intCol("X", 4), col("Y", dataY3), col("Z", dataZ3));
+
+            final ModifiedColumnSet mcs = table.getModifiedColumnSetForUpdates();
+            mcs.clear();
+            mcs.setAll("X", "Y");
+            table.notifyListeners(new TableUpdateImpl(i(), i(), i(2), RowSetShiftData.EMPTY, mcs));
+        });
+        final Table expected3 = TableTools.newTable(intCol("X", 1, 1, 1, 4, 4), intCol("Y", 4, 5, 6, 9, 10),
+                doubleCol("Z", 20.1, 20.2, 20.3, 11.1, 11.2));
+        assertTableEquals(expected3, t1);
+        assertTableEquals(expected3, t2);
+        assertFalse(tuv.getResultTable().isFailed());
+        assertFalse(tuv2.getResultTable().isFailed());
+
+        // now we'll break the "Y" column, using "Z" as a reference
+        final int[][] dataY4 = new int[][] {new int[] {12}};
+        final double[][] dataZ4 = new double[][] {dataZ1[1]};
+        try (final ExpectingError ignored = new ExpectingError()) {
+            final ErrorListener errorListener1 = new ErrorListener(t1);
+            t1.addUpdateListener(errorListener1);
+            final ErrorListener errorListener2 = new ErrorListener(t2);
+            t2.addUpdateListener(errorListener2);
+            updateGraph.runWithinUnitTestCycle(() -> {
+                addToTable(table, i(1), intCol("X", 5), col("Y", dataY4), col("Z", dataZ4));
+
+                final ModifiedColumnSet mcs = table.getModifiedColumnSetForUpdates();
+                mcs.clear();
+                mcs.setAll("X", "Y");
+                table.notifyListeners(new TableUpdateImpl(i(), i(), i(1), RowSetShiftData.EMPTY, mcs));
+            });
+            assertTrue(tuv.getResultTable().isFailed());
+            assertTrue(tuv2.getResultTable().isFailed());
+            final Throwable ex1 = errorListener1.originalException();
+            final Throwable ex2 = errorListener2.originalException();
+
+            assertTrue(ex1 instanceof IllegalStateException);
+            assertTrue(ex2 instanceof IllegalStateException);
+            assertEquals("Array sizes differ at row key 1 (position 1), Z has size 0, Y has size 1", ex1.getMessage());
+            assertEquals("Array sizes differ at row key 1 (position 1), Z has size 0, Y has size 1", ex2.getMessage());
+        }
+
+        // now fix things up so we can actually get good data out again
+        final double[][] dataZ5 = new double[][] {new double[] {30.1}};
+        addToTable(table, i(1), intCol("X", 5), col("Y", dataY4), col("Z", dataZ5));
+        final Table t3 = table.ungroup();
+        final Table t4 = withUngroupable.ungroup();
+        final TableUpdateValidator tuv3 = TableUpdateValidator.make("t4", (QueryTable) t3);
+        final TableUpdateValidator tuv4 = TableUpdateValidator.make("t4", (QueryTable) t4);
+
+        final Table expected5 = TableTools.newTable(intCol("X", 1, 1, 1, 5, 4, 4), intCol("Y", 4, 5, 6, 12, 9, 10),
+                doubleCol("Z", 20.1, 20.2, 20.3, 30.1, 11.1, 11.2));
+        TableTools.show(table);
+        TableTools.show(t3);
+        assertTableEquals(expected5, t3);
+        assertTableEquals(expected5, t4);
+        assertFalse(tuv3.getResultTable().isFailed());
+        assertFalse(tuv4.getResultTable().isFailed());
+
+
+        // now we'll break the "Z" column, using "Y" as an (unmodified) reference
+        final double[][] dataZ6 = new double[][] {dataZ1[1]};
+        try (final ExpectingError ignored2 = new ExpectingError()) {
+            final ErrorListener errorListener3 = new ErrorListener(t3);
+            t3.addUpdateListener(errorListener3);
+            final ErrorListener errorListener4 = new ErrorListener(t4);
+            t4.addUpdateListener(errorListener4);
+            updateGraph.runWithinUnitTestCycle(() -> {
+                addToTable(table, i(1), intCol("X", 7), col("Y", dataY4), col("Z", dataZ6));
+
+                final ModifiedColumnSet mcs = table.getModifiedColumnSetForUpdates();
+                mcs.clear();
+                mcs.setAll("X", "Z");
+                table.notifyListeners(new TableUpdateImpl(i(), i(), i(1), RowSetShiftData.EMPTY, mcs));
+            });
+            assertTrue(tuv3.getResultTable().isFailed());
+            assertTrue(tuv4.getResultTable().isFailed());
+            final Throwable ex3 = errorListener3.originalException();
+            final Throwable ex4 = errorListener4.originalException();
+            assertTrue(ex3 instanceof IllegalStateException);
+            assertTrue(ex4 instanceof IllegalStateException);
+            assertEquals("Array sizes differ at row key 1 (position 1), Y has size 1, Z has size 0", ex3.getMessage());
+            assertEquals("Array sizes differ at row key 1 (position 1), Y has size 1, Z has size 0", ex4.getMessage());
+        }
+    }
+
     public static Table convertToUngroupable(final Table table, final String... columns) {
         final Map<String, ColumnSource<?>> columnSources = new LinkedHashMap<>();
         for (final String column : columns) {
             columnSources.put(column, new SimulateUngroupableColumnSource<>(table.getColumnSource(column)));
         }
         final QueryTable result = ((QueryTable) table).withAdditionalColumns(columnSources);
-        table.addUpdateListener(new BaseTable.ListenerImpl("Add Simulated Ungroupable", table, result));
+        final ModifiedColumnSet.Transformer transformer =
+                ((QueryTable) table).newModifiedColumnSetIdentityTransformer(result);
+        table.addUpdateListener(new BaseTable.ListenerImpl("Add Simulated Ungroupable", table, result) {
+            @Override
+            public void onUpdate(final TableUpdate upstream) {
+                transformer.clearAndTransform(upstream.modifiedColumnSet(), result.getModifiedColumnSetForUpdates());
+                final TableUpdate downstream = TableUpdateImpl.copy(upstream, result.getModifiedColumnSetForUpdates());
+                result.notifyListeners(downstream);
+            }
+        });
         return result;
     }
 

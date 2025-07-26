@@ -33,6 +33,14 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
     private final QueryTable parent;
     private final boolean nullFill;
     private final String[] columnsToUngroupBy;
+    /**
+     * A modified column set indicating that any of our sizes may have changed.
+     */
+    private final ModifiedColumnSet allUngroupColumns;
+    /**
+     * An arrya parallel to columnsToUngroupBy of a modified column set for each input.
+     */
+    private final ModifiedColumnSet[] ungroupColumnModifiedColumnSets;
 
     final ColumnSource<?>[] ungroupSources;
     final UngroupableColumnSource[] ungroupableColumnSources;
@@ -47,6 +55,7 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
 
         ungroupSources = new ColumnSource[columnsToUngroupBy.length];
         ungroupableColumnSources = new UngroupableColumnSource[columnsToUngroupBy.length];
+        ungroupColumnModifiedColumnSets = new ModifiedColumnSet[columnsToUngroupBy.length];
         sizeKernels = new UngroupSizeKernel[columnsToUngroupBy.length];
 
         boolean localAnyUngroupable = false;
@@ -69,7 +78,9 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
             } else {
                 throw new InvalidColumnException("Column " + name + " is not an array or Vector");
             }
+            ungroupColumnModifiedColumnSets[columnIndex] = parent.newModifiedColumnSet(columnsToUngroupBy[columnIndex]);
         }
+        allUngroupColumns = parent.newModifiedColumnSet(columnsToUngroupBy);
         anyUngroupable = localAnyUngroupable;
         allUngroupable = localAllUngroupable;
     }
@@ -97,7 +108,7 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
 
         final RowSet initRowSet = usePrev ? parentRowset.prev() : parentRowset;
 
-        final long maxSize = computeMaxSize(initRowSet, sizes, usePrev);
+        final long maxSize = computeMaxSize(initRowSet, sizes, usePrev, null);
         final int initialBase = Math.max(determineRequiredBase(maxSize), QueryTable.minimumUngroupBase);
 
         final CrossJoinShiftState shiftState = new CrossJoinShiftState(initialBase, true);
@@ -151,10 +162,12 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
         return 64 - Long.numberOfLeadingZeros(maxSize - 1);
     }
 
-    private long computeMaxSize(final RowSet rowSet, final long[] sizes, final boolean usePrev) {
+    private long computeMaxSize(final RowSet rowSet, final long[] sizes, final boolean usePrev,
+            @Nullable final boolean[] computeSizeForColumn) {
         long maxSize = 0;
 
         final int chunkSize = (int) Math.min(CHUNK_SIZE, rowSet.size());
+        String referenceColumn = columnsToUngroupBy[0];
 
         final ChunkSource.GetContext[] getContexts =
                 allUngroupable ? null : new ChunkSource.GetContext[columnsToUngroupBy.length];
@@ -172,6 +185,12 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
                         anyUngroupable ? ResettableWritableLongChunk.makeResettableChunk() : null) {
 
             for (int ci = 0; ci < ungroupSources.length; ++ci) {
+                if (computeSizeForColumn != null && !computeSizeForColumn[ci]) {
+                    if (referenceColumn.equals(columnsToUngroupBy[0])) {
+                        referenceColumn = columnsToUngroupBy[ci];
+                    }
+                    continue;
+                }
                 if (ungroupableColumnSources[ci] == null) {
                     // noinspection resource,DataFlowIssue
                     getContexts[ci] = ungroupSources[ci].makeGetContext(chunkSize);
@@ -188,6 +207,10 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
                 sharedContext.reset();
 
                 for (int columnIndex = 0; columnIndex < ungroupSources.length; columnIndex++) {
+                    if (computeSizeForColumn != null && !computeSizeForColumn[columnIndex]) {
+                        continue;
+                    }
+
                     final ColumnSource<?> arrayColumn = ungroupSources[columnIndex];
                     final String name = columnsToUngroupBy[columnIndex];
                     final UngroupableColumnSource ungroupable = ungroupableColumnSources[columnIndex];
@@ -196,7 +219,7 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
                         final Chunk<? extends Values> chunk =
                                 usePrev ? arrayColumn.getPrevChunk(getContexts[columnIndex], rsChunk)
                                         : arrayColumn.getChunk(getContexts[columnIndex], rsChunk);
-                        if (columnIndex == 0) {
+                        if (columnIndex == 0 && computeSizeForColumn == null) {
                             maxSize = Math.max(sizeKernels[0].maxSize(chunk.asObjectChunk(), sizes, offset), maxSize);
                         } else if (nullFill) {
                             final long maxSizeForChunk =
@@ -210,16 +233,22 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
                             if (firstDifferenceChunkOffset >= 0) {
                                 try (final RowSet rowset = rsChunk.asRowSet()) {
                                     final long correspondingRowKey = rowset.get(firstDifferenceChunkOffset);
+                                    final long positionInTable;
+                                    if (usePrev) {
+                                        positionInTable = parent.getRowSet().findPrev(correspondingRowKey);
+                                    } else {
+                                        positionInTable = parent.getRowSet().find(correspondingRowKey);
+                                    }
                                     final String message = String.format(
-                                            "Array sizes differ at row key %d (position %d), %s has size %d, %s has size %d",
-                                            correspondingRowKey, offset + firstDifferenceChunkOffset,
-                                            columnsToUngroupBy[0],
+                                            "Array sizes differ at row key %d (%sposition %d), %s has size %d, %s has size %d",
+                                            correspondingRowKey, usePrev ? "previous " : "", positionInTable,
+                                            referenceColumn,
                                             sizes[offset + firstDifferenceChunkOffset], name, mismatchedSize.get());
                                     throw new IllegalStateException(message);
                                 }
                             }
                         }
-                    } else if (columnIndex == 0) {
+                    } else if (columnIndex == 0 && computeSizeForColumn == null) {
                         resettable.resetFromArray(sizes, offset, actualChunkSize);
                         if (usePrev) {
                             ungroupableColumnSources[columnIndex].getUngroupedPrevSize(fillContexts[columnIndex],
@@ -251,9 +280,16 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
                             } else if (currentSize != sizes[offset + ii]) {
                                 try (final RowSet rowset = rsChunk.asRowSet()) {
                                     final long correspondingRowKey = rowset.get(ii);
+                                    final long positionInTable;
+                                    if (usePrev) {
+                                        positionInTable = parent.getRowSet().findPrev(correspondingRowKey);
+                                    } else {
+                                        positionInTable = parent.getRowSet().find(correspondingRowKey);
+                                    }
                                     final String message = String.format(
-                                            "Array sizes differ at row key %d (position %d), %s has size %d, %s has size %d",
-                                            correspondingRowKey, offset + ii, columnsToUngroupBy[0],
+                                            "Array sizes differ at row key %d (%sposition %d), %s has size %d, %s has size %d",
+                                            correspondingRowKey, usePrev ? "previous " : "", positionInTable,
+                                            referenceColumn,
                                             sizes[offset + ii], name, currentSize);
                                     throw new IllegalStateException(message);
                                 }
@@ -269,14 +305,14 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
         return maxSize;
     }
 
-    private void computePrevSize(final RowSet prevResultRowset,
+    private void computeSizeFromResultRowset(final RowSet resultRowSet,
             final int base,
-            final RowSet prevRowsetInParent,
+            final RowSet rowsetInParent,
             final long[] sizes) {
-        Assert.assertion(prevRowsetInParent.isNonempty(), "prevRowsetInParent.isNonempty()");
+        Assert.assertion(rowsetInParent.isNonempty(), "rowsetInParent.isNonempty()");
 
-        final RowSet.RangeIterator prevIt = prevResultRowset.rangeIterator();
-        final RowSet.Iterator parentIt = prevRowsetInParent.iterator();
+        final RowSet.RangeIterator prevIt = resultRowSet.rangeIterator();
+        final RowSet.Iterator parentIt = rowsetInParent.iterator();
         long nextKey = 0;
 
         for (int pos = 0; pos < sizes.length; ++pos) {
@@ -377,8 +413,7 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
             int requiredBase = evaluateAdded(upstream.added(), added, shiftState.getNumShiftBits());
             final int addedBase = requiredBase;
             if (requiredBase == shiftState.getNumShiftBits()) {
-                requiredBase = evaluateModified(upstream.modified(),
-                        upstream.getModifiedPreShift(),
+                requiredBase = evaluateModified(upstream,
                         addedByModifies,
                         removedByModifies,
                         modifiedByModifies,
@@ -386,7 +421,8 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
                         modifiedCurrentSizes);
             } else {
                 modifiedCurrentSizes.setValue(new long[upstream.modified().intSize()]);
-                final long maxModSize = computeMaxSize(upstream.modified(), modifiedCurrentSizes.get(), false);
+                // TODO: MCS
+                final long maxModSize = computeMaxSize(upstream.modified(), modifiedCurrentSizes.get(), false, null);
                 requiredBase = Math.max(determineRequiredBase(maxModSize), requiredBase);
             }
             if (requiredBase != shiftState.getNumShiftBits()) {
@@ -424,7 +460,6 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
             }
             resultRowset.insert(addedRowSet);
 
-            // TODO: we should examine the MCS to avoid work on columns that have not changed
             final RowSet modifiedRowSet = modifiedByModifies.build();
             transformer.clearAndTransform(upstream.modifiedColumnSet(), result.getModifiedColumnSetForUpdates());
             final TableUpdateImpl downstream = new TableUpdateImpl(addedRowSet, removedRowSet, modifiedRowSet,
@@ -524,8 +559,11 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
                 added = addedBuilder.build();
             }
 
-            final int computedModifiedBase = evaluateModified(upstream.modified(), upstream.getModifiedPreShift(),
-                    addedByModifiesBuilder, removedByModifiesBuilder, modifiedByModifiesBuilder, newBase,
+            final int computedModifiedBase = evaluateModified(upstream,
+                    addedByModifiesBuilder,
+                    removedByModifiesBuilder,
+                    modifiedByModifiesBuilder,
+                    newBase,
                     new MutableObject<>(modifiedCurrentSizes));
             Assert.leq(computedModifiedBase, "computedAddBase", newBase, "newBase");
 
@@ -679,7 +717,7 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
             final long[] sizes;
             final long maxSize;
             sizes = new long[rowSet.intSize("ungroup")];
-            maxSize = computeMaxSize(rowSet, sizes, false);
+            maxSize = computeMaxSize(rowSet, sizes, false, null);
             final int minBase = determineRequiredBase(maxSize);
 
             final int resultBase = Math.max(existingBase, minBase);
@@ -692,14 +730,13 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
                 return;
             }
             final long[] sizes = new long[rowSet.intSize("ungroup")];
-            computePrevSize(result.getRowSet().prev(), shiftState.getPrevNumShiftBits(), rowSet, sizes);
+            computeSizeFromResultRowset(result.getRowSet().prev(), shiftState.getPrevNumShiftBits(), rowSet, sizes);
             getUngroupRowset(sizes, builder, shiftState.getPrevNumShiftBits(), rowSet);
         }
 
         /**
          *
-         * @param modified the modified rowset, in post-shift space
-         * @param modifiedPreShift the modified rowset, in pre-shift space
+         * @param upstream the upstream table update
          * @param addedBuilder the builder for rows added by modifications
          * @param removedBuilder the builder for rows removed by modifications
          * @param modifyBuilder the builder for rows modified by modifications
@@ -707,29 +744,48 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
          *        sizes when we determine a change of base is necessary
          * @return the necessary base
          */
-        private int evaluateModified(final RowSet modified,
-                final RowSet modifiedPreShift,
+        private int evaluateModified(final TableUpdate upstream,
                 final RowSetBuilderSequential addedBuilder,
                 final RowSetBuilderSequential removedBuilder,
                 final RowSetBuilderSequential modifyBuilder,
                 final int base,
                 final MutableObject<long[]> currentSizes) {
+            final RowSet modified = upstream.modified();
             if (modified.isEmpty()) {
                 return base;
             }
 
+            final int prevBase = shiftState.getPrevNumShiftBits();
+            final boolean noModifiedArrays = !upstream.modifiedColumnSet().containsAny(allUngroupColumns);
+            final boolean allArraysModified = upstream.modifiedColumnSet().containsAll(allUngroupColumns);
+
+            final RowSet modifiedPreShift = upstream.getModifiedPreShift();
             final int size = modified.intSize("ungroup");
             final long[] sizes;
             final long maxSize;
             if (currentSizes.get() == null) {
                 sizes = new long[size];
-                maxSize = computeMaxSize(modified, sizes, false);
-                final int minBase = determineRequiredBase(maxSize);
-                if (minBase > base) {
-                    // If we are going to force a rebase, there is no need to compute the entire rowset, but the caller
-                    // would like our copy of the sizes we computed
-                    currentSizes.setValue(sizes);
-                    return minBase;
+                if (noModifiedArrays) {
+                    computeSizeFromResultRowset(result.getRowSet(), base, modifiedPreShift, sizes);
+                } else {
+                    if (allArraysModified || nullFill) {
+                        maxSize = computeMaxSize(modified, sizes, false, null);
+                    } else {
+                        // make an array of booleans for columns we will recompute
+                        final boolean[] computeSizeForColumn = getColumnsToRecompute(upstream);
+                        // get the reference size from our previous index
+                        computeSizeFromResultRowset(result.getRowSet(), prevBase, modifiedPreShift, sizes);
+                        // now actually compute the max
+                        maxSize = computeMaxSize(modified, sizes, false, computeSizeForColumn);
+                    }
+                    final int minBase = determineRequiredBase(maxSize);
+                    if (minBase > base) {
+                        // If we are going to force a rebase, there is no need to compute the entire rowset, but the
+                        // caller
+                        // would like our copy of the sizes we computed
+                        currentSizes.setValue(sizes);
+                        return minBase;
+                    }
                 }
             } else {
                 sizes = currentSizes.get();
@@ -742,8 +798,7 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
 
             // This function is used from both the normal and the rebase path.
             final long[] prevSizes = new long[size];
-            final int prevBase = shiftState.getPrevNumShiftBits();
-            computePrevSize(result.getRowSet().prev(), prevBase, modifiedPreShift, prevSizes);
+            computeSizeFromResultRowset(result.getRowSet().prev(), prevBase, modifiedPreShift, prevSizes);
 
             final RowSet.Iterator iterator = modified.iterator();
             final RowSet.Iterator iteratorPreShift = modifiedPreShift.iterator();
@@ -756,6 +811,15 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
             }
 
             return base;
+        }
+
+        private boolean @NotNull [] getColumnsToRecompute(TableUpdate upstream) {
+            final boolean[] computeSizeForColumn = new boolean[ungroupColumnModifiedColumnSets.length];
+            for (int ii = 0; ii < ungroupColumnModifiedColumnSets.length; ii++) {
+                computeSizeForColumn[ii] =
+                        upstream.modifiedColumnSet().containsAny(ungroupColumnModifiedColumnSets[ii]);
+            }
+            return computeSizeForColumn;
         }
     }
 
