@@ -1913,7 +1913,7 @@ public abstract class QueryTableWhereTest {
                             final WritableRowSet addedRowSet = matches.subSetByPositionRange(0, maybeSize);
                             final WritableRowSet maybeRowSet = matches.subSetByPositionRange(maybeSize, size)) {
                         // Obvious these row sets do not overlap
-                        onComplete.accept(PushdownResult.ofUnsafe(matches, addedRowSet, maybeRowSet));
+                        onComplete.accept(PushdownResult.ofUnsafe(selection, addedRowSet, maybeRowSet));
                     }
                 }
             }
@@ -2138,16 +2138,16 @@ public abstract class QueryTableWhereTest {
             if (table == null) {
                 throw new IllegalStateException("Table not assigned to TestPPM");
             }
-            try (final SafeCloseable ignored = LivenessScopeStack.open()) {
-                try (final WritableRowSet matches = filter.filter(selection, selection, table, usePrev)) {
-                    final long size = matches.size();
-                    final long maybeSize = (long) (size * maybePercentage);
-                    try (
-                            final WritableRowSet addedRowSet = matches.subSetByPositionRange(0, maybeSize);
-                            final WritableRowSet maybeRowSet = matches.subSetByPositionRange(maybeSize, size)) {
-                        // Obvious these row sets do not overlap
-                        onComplete.accept(PushdownResult.ofUnsafe(matches, addedRowSet, maybeRowSet));
-                    }
+            try (
+                    final SafeCloseable ignored = LivenessScopeStack.open();
+                    final WritableRowSet matches = filter.filter(selection, table.getRowSet(), table, usePrev)) {
+                final long size = matches.size();
+                final long maybeSize = (long) (size * maybePercentage);
+                try (
+                        final WritableRowSet addedRowSet = matches.subSetByPositionRange(0, maybeSize);
+                        final WritableRowSet maybeRowSet = matches.subSetByPositionRange(maybeSize, size)) {
+                    // Obvious these row sets do not overlap
+                    onComplete.accept(PushdownResult.ofUnsafe(selection, addedRowSet, maybeRowSet));
                 }
             }
         }
