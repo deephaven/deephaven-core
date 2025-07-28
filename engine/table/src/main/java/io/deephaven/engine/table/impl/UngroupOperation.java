@@ -169,7 +169,7 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
      * @param sizes an array to fill with sizes; if computeSizeForColumn is not-null, then this array already contains
      *        the expected sizes for each element.
      * @param usePrev should we use previous values for the input columns
-     * @param computeSizeForColumn an array of columns that we must compute sizes for
+     * @param computeSizeForColumn an array of columns that we must compute sizes for, or {@code null} if we must compute sizes for all array columns
      * @return the maximum size of an element, not valid when {@code computeSizeForColumn != null}
      */
     private long computeMaxSize(final RowSet rowSet,
