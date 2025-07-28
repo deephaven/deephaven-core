@@ -2916,6 +2916,20 @@ public abstract class QueryTableWhereTest {
                 "A", "A = null", "A != null");
     }
 
+    /**
+     * Private helper to force parallelization of the RowSetCapturingFilter.
+     */
+    private class ParallelizedRowSetCapturingFilter extends RowSetCapturingFilter {
+        public ParallelizedRowSetCapturingFilter(Filter filter) {
+            super(filter);
+        }
+
+        @Override
+        public boolean permitParallelization() {
+            return true;
+        }
+    }
+
     private void testRowKeyAgnosticColumnSource(
             final ColumnSource<?> columnSource,
             final String columnName,
@@ -2927,7 +2941,7 @@ public abstract class QueryTableWhereTest {
         source.setRefreshing(true);
 
         final RowSetCapturingFilter preFilter = new RowSetCapturingFilter();
-        final RowSetCapturingFilter filter0 = new RowSetCapturingFilter(RawString.of(filterAllPass), true);
+        final RowSetCapturingFilter filter0 = new ParallelizedRowSetCapturingFilter(RawString.of(filterAllPass));
         final RowSetCapturingFilter postFilter = new RowSetCapturingFilter();
 
         // force pre and post filters to run when expected using barriers
@@ -2944,7 +2958,7 @@ public abstract class QueryTableWhereTest {
         preFilter.reset();
         postFilter.reset();
 
-        final RowSetCapturingFilter filter1 = new RowSetCapturingFilter(RawString.of(filterNonePass), true);
+        final RowSetCapturingFilter filter1 = new ParallelizedRowSetCapturingFilter(RawString.of(filterNonePass));
 
         // force pre and post filters to run when expected using barriers
         final Table res1 = source.where(Filter.and(
