@@ -1080,7 +1080,8 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
 
         final int stepSize = (int) Math.ceil(Math.sqrt(tableSize));
         for (int step = 0; step < maxSteps; step++) {
-            simulateShiftAwareStep(FEWER_MODS, "Seed == " + seed + ", Step == " + step, stepSize, random, table, columnInfo, en);
+            simulateShiftAwareStep(FEWER_MODS, "Seed == " + seed + ", Step == " + step, stepSize, random, table,
+                    columnInfo, en);
         }
     }
 
