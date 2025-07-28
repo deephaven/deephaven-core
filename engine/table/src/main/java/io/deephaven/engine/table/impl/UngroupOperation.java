@@ -443,11 +443,20 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
                         modifiedByModifies,
                         shiftState.getNumShiftBits(),
                         modifiedCurrentSizes);
-            } else {
+            } else if (upstream.modified().isNonempty()) {
                 modifiedCurrentSizes.setValue(new long[upstream.modified().intSize()]);
-                // TODO: MCS
-                final long maxModSize = computeMaxSize(upstream.modified(), modifiedCurrentSizes.get(), false, null);
-                requiredBase = Math.max(determineRequiredBase(maxModSize), requiredBase);
+
+                final boolean allArraysModified = upstream.modifiedColumnSet().containsAll(allUngroupColumns);
+                if (!allArraysModified && !nullFill) {
+                    // cannot increase base when we have not modified all the arrays
+                    computeSizeFromResultRowset(result.getRowSet(), shiftState.getPrevNumShiftBits(),
+                            upstream.getModifiedPreShift(), modifiedCurrentSizes.get());
+                } else {
+                    // need to compute all values across the arrays
+                    final long maxModSize =
+                            computeMaxSize(upstream.modified(), modifiedCurrentSizes.get(), false, null);
+                    requiredBase = Math.max(determineRequiredBase(maxModSize), requiredBase);
+                }
             }
             if (requiredBase != shiftState.getNumShiftBits()) {
                 try (final WritableRowSet addedRowsetInOldBase = added.build()) {
