@@ -30,12 +30,13 @@ import java.util.List;
 public class RowSetCapturingFilter extends WhereFilterImpl implements SafeCloseable {
     private final List<RowSet> rowSets;
     private final WhereFilter innerFilter;
+    private final boolean forceParallelization;
 
     /**
      * Creates a RowSetCapturingFilter that assumes an always-true filter.
      */
     public RowSetCapturingFilter() {
-        this(null, new ArrayList<>());
+        this(null);
     }
 
     /**
@@ -44,7 +45,16 @@ public class RowSetCapturingFilter extends WhereFilterImpl implements SafeClosea
      * @param filter the filter to wrap, may be null
      */
     public RowSetCapturingFilter(final Filter filter) {
-        this(filter == null ? null : WhereFilter.of(filter), new ArrayList<>());
+        this(filter == null ? null : WhereFilter.of(filter), new ArrayList<>(), false);
+    }
+
+    /**
+     * Creates a RowSetCapturingFilter that wraps the provided filter.
+     *
+     * @param filter the filter to wrap, may be null
+     */
+    public RowSetCapturingFilter(final Filter filter, final boolean forceParallelization) {
+        this(filter == null ? null : WhereFilter.of(filter), new ArrayList<>(), forceParallelization);
     }
 
     /**
@@ -54,9 +64,13 @@ public class RowSetCapturingFilter extends WhereFilterImpl implements SafeClosea
      * @param filter the filter to wrap, may be null
      *
      */
-    private RowSetCapturingFilter(final WhereFilter filter, final List<RowSet> rowSets) {
+    private RowSetCapturingFilter(
+            final WhereFilter filter,
+            final List<RowSet> rowSets,
+            final boolean forceParallelization) {
         this.rowSets = rowSets;
         this.innerFilter = filter;
+        this.forceParallelization = forceParallelization;
     }
 
     @Override
@@ -104,7 +118,7 @@ public class RowSetCapturingFilter extends WhereFilterImpl implements SafeClosea
 
     @Override
     public boolean permitParallelization() {
-        return innerFilter == null || innerFilter.permitParallelization();
+        return forceParallelization || innerFilter == null || innerFilter.permitParallelization();
     }
 
     @Override
@@ -120,7 +134,7 @@ public class RowSetCapturingFilter extends WhereFilterImpl implements SafeClosea
             final WhereFilter newInner = innerFilter.copy();
             if (newInner != innerFilter) {
                 // note we share the rowset collection
-                return new RowSetCapturingFilter(newInner, rowSets);
+                return new RowSetCapturingFilter(newInner, rowSets, forceParallelization);
             }
         }
         return this;

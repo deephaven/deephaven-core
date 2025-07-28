@@ -2663,128 +2663,204 @@ public abstract class QueryTableWhereTest {
 
     @Test
     public void testRowKeyAgnosticColumnSources() {
+        SingleValueColumnSource<?> src;
+
         // Boolean Source
-        SingleValueColumnSource<Boolean> booleanSource =
-                SingleValueColumnSource.getSingleValueColumnSource(boolean.class);
-        booleanSource.set(true);
-        testRowKeyAgnosticColumnSource(booleanSource, "A", "A = true", "A = false");
-        booleanSource.set(false); // change the value
-        testRowKeyAgnosticColumnSource(booleanSource, "A", "A = false", "A = true");
+        src = SingleValueColumnSource.getSingleValueColumnSource(boolean.class);
+        ((SingleValueColumnSource<Boolean>) src).set(true);
+        testRowKeyAgnosticColumnSource(src, "A", "A != null", "A == null"); // null
+        testRowKeyAgnosticColumnSource(src, "A", "A = true", "A = false"); // match
+        ((SingleValueColumnSource<Boolean>) src).set(false); // change the value
+        testRowKeyAgnosticColumnSource(src, "A", "A = false", "A = true"); // match
 
         // Byte Source
-        SingleValueColumnSource<?> byteSource = SingleValueColumnSource.getSingleValueColumnSource(byte.class);
-        byteSource.set((byte) 42);
-        testRowKeyAgnosticColumnSource(byteSource, "A", "A = 42", "A = 0");
-        byteSource.set((byte) 0); // change the value
-        testRowKeyAgnosticColumnSource(byteSource, "A", "A = 0", "A = 42");
+        src = SingleValueColumnSource.getSingleValueColumnSource(byte.class);
+        src.set((byte) 42);
+        testRowKeyAgnosticColumnSource(src, "A", "A != null", "A == null"); // null
+        testRowKeyAgnosticColumnSource(src, "A", "A = 42", "A = 0"); // match
+        testRowKeyAgnosticColumnSource(src, "A", "A >= 42", "A < 42"); // range
+        testRowKeyAgnosticColumnSource(src, "A", "A + 1 >= 43", "A + 1 < 43"); // condition
+        src.set((byte) 0); // change the value
+        testRowKeyAgnosticColumnSource(src, "A", "A = 0", "A = 42"); // match
+        testRowKeyAgnosticColumnSource(src, "A", "A >= 0", "A < 0"); // range
+        testRowKeyAgnosticColumnSource(src, "A", "A + 1 >= 1", "A + 1 < 1"); // condition
 
         // Char Source
-        SingleValueColumnSource<?> charSource = SingleValueColumnSource.getSingleValueColumnSource(char.class);
-        charSource.set('A');
-        testRowKeyAgnosticColumnSource(charSource, "A", "A = 'A'", "A = 'B'");
-        charSource.set('B'); // change the value
-        testRowKeyAgnosticColumnSource(charSource, "A", "A = 'B'", "A = 'A'");
+        src = SingleValueColumnSource.getSingleValueColumnSource(char.class);
+        src.set('A');
+        testRowKeyAgnosticColumnSource(src, "A", "A != null", "A == null"); // null
+        testRowKeyAgnosticColumnSource(src, "A", "A = 'A'", "A = 'B'"); // match
+        testRowKeyAgnosticColumnSource(src, "A", "A >= 'A'", "A < 'A'"); // range
+        testRowKeyAgnosticColumnSource(src, "A", "A + 1 >= 'B'", "A + 1 < 'B'"); // condition
+        src.set('B'); // change the value
+        testRowKeyAgnosticColumnSource(src, "A", "A = 'B'", "A = 'A'"); // match
+        testRowKeyAgnosticColumnSource(src, "A", "A >= 'B'", "A < 'B'"); // range
+        testRowKeyAgnosticColumnSource(src, "A", "A + 1 >= 'C'", "A + 1 < 'C'"); // condition
 
         // Short Source
-        SingleValueColumnSource<?> shortSource = SingleValueColumnSource.getSingleValueColumnSource(short.class);
-        shortSource.set((short) 42);
-        testRowKeyAgnosticColumnSource(shortSource, "A", "A = 42", "A = 0");
-        shortSource.set((short) 0); // change the value
-        testRowKeyAgnosticColumnSource(shortSource, "A", "A = 0", "A = 42");
+        src = SingleValueColumnSource.getSingleValueColumnSource(short.class);
+        src.set((short) 42);
+        testRowKeyAgnosticColumnSource(src, "A", "A != null", "A == null"); // null
+        testRowKeyAgnosticColumnSource(src, "A", "A = 42", "A = 0"); // match
+        testRowKeyAgnosticColumnSource(src, "A", "A >= 42", "A < 42"); // range
+        testRowKeyAgnosticColumnSource(src, "A", "A + 1 >= 43", "A + 1 < 43"); // condition
+        src.set((short) 0); // change the value
+        testRowKeyAgnosticColumnSource(src, "A", "A = 0", "A = 42"); // match
+        testRowKeyAgnosticColumnSource(src, "A", "A >= 0", "A < 0"); // range
+        testRowKeyAgnosticColumnSource(src, "A", "A + 1 >= 1", "A + 1 < 1"); // condition
 
         // Int Source
-        SingleValueColumnSource<?> intSource = SingleValueColumnSource.getSingleValueColumnSource(int.class);
-        intSource.set(42);
-        testRowKeyAgnosticColumnSource(intSource, "A", "A = 42", "A = 0");
-        intSource.set(0); // change the value
-        testRowKeyAgnosticColumnSource(intSource, "A", "A = 0", "A = 42");
+        src = SingleValueColumnSource.getSingleValueColumnSource(int.class);
+        src.set(42);
+        testRowKeyAgnosticColumnSource(src, "A", "A != null", "A == null"); // null
+        testRowKeyAgnosticColumnSource(src, "A", "A = 42", "A = 0"); // match
+        testRowKeyAgnosticColumnSource(src, "A", "A >= 42", "A < 42"); // range
+        testRowKeyAgnosticColumnSource(src, "A", "A + 1 >= 43", "A + 1 < 43"); // condition
+        src.set(0); // change the value
+        testRowKeyAgnosticColumnSource(src, "A", "A = 0", "A = 42"); // match
+        testRowKeyAgnosticColumnSource(src, "A", "A >= 0", "A < 0"); // range
+        testRowKeyAgnosticColumnSource(src, "A", "A + 1 >= 1", "A + 1 < 1"); // condition
 
         // Long Source
-        SingleValueColumnSource<?> longSource = SingleValueColumnSource.getSingleValueColumnSource(long.class);
-        longSource.set(42L);
-        testRowKeyAgnosticColumnSource(longSource, "A", "A = 42", "A = 0");
-        longSource.set(0L); // change the value
-        testRowKeyAgnosticColumnSource(longSource, "A", "A = 0", "A = 42");
+        src = SingleValueColumnSource.getSingleValueColumnSource(long.class);
+        src.set(42L);
+        testRowKeyAgnosticColumnSource(src, "A", "A != null", "A == null"); // null
+        testRowKeyAgnosticColumnSource(src, "A", "A = 42", "A = 0"); // match
+        testRowKeyAgnosticColumnSource(src, "A", "A >= 42", "A < 42"); // range
+        testRowKeyAgnosticColumnSource(src, "A", "A + 1 >= 43", "A + 1 < 43"); // condition
+        src.set(0L); // change the value
+        testRowKeyAgnosticColumnSource(src, "A", "A = 0", "A = 42"); // match
+        testRowKeyAgnosticColumnSource(src, "A", "A >= 0", "A < 0"); // range
+        testRowKeyAgnosticColumnSource(src, "A", "A + 1 >= 1", "A + 1 < 1"); // condition
 
         // Float Source
-        SingleValueColumnSource<?> floatSource = SingleValueColumnSource.getSingleValueColumnSource(float.class);
-        floatSource.set(42.0f);
-        testRowKeyAgnosticColumnSource(floatSource, "A", "A = 42.0", "A = 0.0");
-        floatSource.set(0.0f); // change the value
-        testRowKeyAgnosticColumnSource(floatSource, "A", "A = 0.0", "A = 42.0");
+        src = SingleValueColumnSource.getSingleValueColumnSource(float.class);
+        src.set(42.0f);
+        testRowKeyAgnosticColumnSource(src, "A", "A != null", "A == null"); // null
+        testRowKeyAgnosticColumnSource(src, "A", "A = 42", "A = 0"); // match
+        testRowKeyAgnosticColumnSource(src, "A", "A >= 42", "A < 42"); // range
+        testRowKeyAgnosticColumnSource(src, "A", "A + 1 >= 43", "A + 1 < 43"); // condition
+        src.set(0.0f); // change the value
+        testRowKeyAgnosticColumnSource(src, "A", "A = 0", "A = 42"); // match
+        testRowKeyAgnosticColumnSource(src, "A", "A >= 0", "A < 0"); // range
+        testRowKeyAgnosticColumnSource(src, "A", "A + 1 >= 1", "A + 1 < 1"); // condition
 
         // Double Source
-        SingleValueColumnSource<?> doubleSource = SingleValueColumnSource.getSingleValueColumnSource(double.class);
-        doubleSource.set(42.0);
-        testRowKeyAgnosticColumnSource(doubleSource, "A", "A = 42.0", "A = 0.0");
-        doubleSource.set(0.0); // change the value
-        testRowKeyAgnosticColumnSource(doubleSource, "A", "A = 0.0", "A = 42.0");
+        src = SingleValueColumnSource.getSingleValueColumnSource(double.class);
+        src.set(42.0);
+        testRowKeyAgnosticColumnSource(src, "A", "A != null", "A == null"); // null
+        testRowKeyAgnosticColumnSource(src, "A", "A = 42", "A = 0"); // match
+        testRowKeyAgnosticColumnSource(src, "A", "A >= 42", "A < 42"); // range
+        testRowKeyAgnosticColumnSource(src, "A", "A + 1 >= 43", "A + 1 < 43"); // condition
+        src.set(0.0); // change the value
+        testRowKeyAgnosticColumnSource(src, "A", "A = 0", "A = 42"); // match
+        testRowKeyAgnosticColumnSource(src, "A", "A >= 0", "A < 0"); // range
+        testRowKeyAgnosticColumnSource(src, "A", "A + 1 >= 1", "A + 1 < 1"); // condition
 
         // Object Source
         SingleValueColumnSource<String> objectSource = SingleValueColumnSource.getSingleValueColumnSource(String.class);
         objectSource.set("AAA");
-        testRowKeyAgnosticColumnSource(objectSource, "A", "A = `AAA`", "A = `BBB`");
+        testRowKeyAgnosticColumnSource(objectSource, "A", "A != null", "A == null"); // null
+        testRowKeyAgnosticColumnSource(objectSource, "A", "A = `AAA`", "A = `BBB`"); // match
+        testRowKeyAgnosticColumnSource(objectSource, "A", "A >= `AAA`", "A < `AAA`"); // range
+        testRowKeyAgnosticColumnSource(objectSource, "A", "A + `BBB` >= `AAABBB`", "A + `BBB` < `AAABBB`"); // condition
         objectSource.set("BBB"); // change the value
-        testRowKeyAgnosticColumnSource(objectSource, "A", "A = `BBB`", "A = `AAA`");
+        testRowKeyAgnosticColumnSource(objectSource, "A", "A = `BBB`", "A = `AAA`"); // match
+        testRowKeyAgnosticColumnSource(objectSource, "A", "A >= `BBB`", "A < `BBB`"); // range
+        testRowKeyAgnosticColumnSource(objectSource, "A", "A + `CCC` >= `BBBCCC`", "A + `CCC` < `BBBCCC`"); // condition
 
         // Instant Source
         SingleValueColumnSource<Instant> instantSource =
                 SingleValueColumnSource.getSingleValueColumnSource(Instant.class);
         instantSource.set(parseInstant("2020-01-01T00:00:00 NY"));
+        testRowKeyAgnosticColumnSource(instantSource, "A", "A != null", "A == null"); // null
+        testRowKeyAgnosticColumnSource(instantSource, "A", "A = '2020-01-01T00:00:00 NY'",
+                "A = '2020-01-02T00:00:00 NY'"); // match
         testRowKeyAgnosticColumnSource(instantSource, "A", "A <= '2020-01-01T00:00:00 NY'",
-                "A > '2020-01-01T00:00:00 NY'");
+                "A > '2020-01-01T00:00:00 NY'"); // range
+        testRowKeyAgnosticColumnSource(instantSource, "A",
+                "A >= '2020-01-01T00:00:00 NY' && A <= '2020-01-01T00:00:00 NY'",
+                "A >= '2020-01-02T00:00:00 NY' && A <= '2020-01-02T00:00:00 NY'"); // condition
         instantSource.set(parseInstant("2020-01-02T00:00:00 NY")); // change the value
+        testRowKeyAgnosticColumnSource(instantSource, "A", "A = '2020-01-02T00:00:00 NY'",
+                "A = '2020-01-01T00:00:00 NY'"); // match
         testRowKeyAgnosticColumnSource(instantSource, "A", "A <= '2020-01-02T00:00:00 NY'",
-                "A > '2020-01-02T00:00:00 NY'");
+                "A > '2020-01-02T00:00:00 NY'"); // range
+        testRowKeyAgnosticColumnSource(instantSource, "A",
+                "A >= '2020-01-02T00:00:00 NY' && A <= '2020-01-02T00:00:00 NY'",
+                "A >= '2020-01-01T00:00:00 NY' && A <= '2020-01-01T00:00:00 NY'"); // condition
     }
 
     @Test
     public void testImmutableRowKeyAgnosticColumnSources() {
+        ColumnSource<?> src;
+
         // Immutable Byte Source
-        testRowKeyAgnosticColumnSource(
-                InMemoryColumnSource.makeImmutableConstantSource(byte.class, null, (byte) 42),
-                "A", "A = 42", "A = 0");
+        src = InMemoryColumnSource.makeImmutableConstantSource(byte.class, null, (byte) 42);
+        testRowKeyAgnosticColumnSource(src, "A", "A != null", "A = null"); // null
+        testRowKeyAgnosticColumnSource(src, "A", "A = 42", "A = 0"); // match
+        testRowKeyAgnosticColumnSource(src, "A", "A >= 42", "A < 42"); // range
+        testRowKeyAgnosticColumnSource(src, "A", "A + 1 >= 43", "A + 1 < 43"); // condition
 
         // Immutable Char Source
-        testRowKeyAgnosticColumnSource(
-                InMemoryColumnSource.makeImmutableConstantSource(char.class, null, 'A'),
-                "A", "A = 'A'", "A = 'B'");
+        src = InMemoryColumnSource.makeImmutableConstantSource(char.class, null, 'A');
+        testRowKeyAgnosticColumnSource(src, "A", "A != null", "A = null"); // null
+        testRowKeyAgnosticColumnSource(src, "A", "A = 'A'", "A = 'B'"); // match
+        testRowKeyAgnosticColumnSource(src, "A", "A >= 'A'", "A < 'A'"); // range
+        testRowKeyAgnosticColumnSource(src, "A", "A + 1 >= 'B'", "A + 1 < 'B'"); // condition
 
         // Immutable Short Source
-        testRowKeyAgnosticColumnSource(
-                InMemoryColumnSource.makeImmutableConstantSource(short.class, null, (short) 42),
-                "A", "A = 42", "A = 0");
+        src = InMemoryColumnSource.makeImmutableConstantSource(short.class, null, (short) 42);
+        testRowKeyAgnosticColumnSource(src, "A", "A != null", "A = null"); // null
+        testRowKeyAgnosticColumnSource(src, "A", "A = 42", "A = 0"); // match
+        testRowKeyAgnosticColumnSource(src, "A", "A >= 42", "A < 42"); // range
+        testRowKeyAgnosticColumnSource(src, "A", "A + 1 >= 43", "A + 1 < 43"); // condition
 
         // Immutable Int Source
-        testRowKeyAgnosticColumnSource(
-                InMemoryColumnSource.makeImmutableConstantSource(int.class, null, 42),
-                "A", "A = 42", "A = 0");
+        src = InMemoryColumnSource.makeImmutableConstantSource(int.class, null, 42);
+        testRowKeyAgnosticColumnSource(src, "A", "A != null", "A = null"); // null
+        testRowKeyAgnosticColumnSource(src, "A", "A = 42", "A = 0"); // match
+        testRowKeyAgnosticColumnSource(src, "A", "A >= 42", "A < 42"); // range
+        testRowKeyAgnosticColumnSource(src, "A", "A + 1 >= 43", "A + 1 < 43"); // condition
 
         // Immutable Long Source
-        testRowKeyAgnosticColumnSource(
-                InMemoryColumnSource.makeImmutableConstantSource(long.class, null, 42L),
-                "A", "A = 42", "A = 0");
+        src = InMemoryColumnSource.makeImmutableConstantSource(long.class, null, 42L);
+        testRowKeyAgnosticColumnSource(src, "A", "A != null", "A = null"); // null
+        testRowKeyAgnosticColumnSource(src, "A", "A = 42", "A = 0"); // match
+        testRowKeyAgnosticColumnSource(src, "A", "A >= 42", "A < 42"); // range
+        testRowKeyAgnosticColumnSource(src, "A", "A + 1 >= 43", "A + 1 < 43"); // condition
 
         // Immutable Float Source
-        testRowKeyAgnosticColumnSource(
-                InMemoryColumnSource.makeImmutableConstantSource(float.class, null, 42.0f),
-                "A", "A = 42", "A = 0");
+        src = InMemoryColumnSource.makeImmutableConstantSource(float.class, null, 42.0f);
+        testRowKeyAgnosticColumnSource(src, "A", "A != null", "A = null"); // null
+        testRowKeyAgnosticColumnSource(src, "A", "A = 42", "A = 0"); // match
+        testRowKeyAgnosticColumnSource(src, "A", "A >= 42", "A < 42"); // range
+        testRowKeyAgnosticColumnSource(src, "A", "A + 1 >= 43", "A + 1 < 43"); // condition
 
         // Immutable Double Source
-        testRowKeyAgnosticColumnSource(
-                InMemoryColumnSource.makeImmutableConstantSource(double.class, null, 42.0),
-                "A", "A = 42", "A = 0");
+        src = InMemoryColumnSource.makeImmutableConstantSource(double.class, null, 42.0);
+        testRowKeyAgnosticColumnSource(src, "A", "A != null", "A = null"); // null
+        testRowKeyAgnosticColumnSource(src, "A", "A = 42", "A = 0"); // match
+        testRowKeyAgnosticColumnSource(src, "A", "A >= 42", "A < 42"); // range
+        testRowKeyAgnosticColumnSource(src, "A", "A + 1 >= 43", "A + 1 < 43"); // condition
 
         // Immutable Object Source
-        testRowKeyAgnosticColumnSource(
-                InMemoryColumnSource.makeImmutableConstantSource(String.class, null, "AAA"),
-                "A", "A = `AAA`", "A = `BBB`");
+        src = InMemoryColumnSource.makeImmutableConstantSource(String.class, null, "AAA");
+        testRowKeyAgnosticColumnSource(src, "A", "A != null", "A = null"); // null
+        testRowKeyAgnosticColumnSource(src, "A", "A = `AAA`", "A = `BBB`"); // match
+        testRowKeyAgnosticColumnSource(src, "A", "A >= `AAA`", "A < `AAA`"); // range
+        testRowKeyAgnosticColumnSource(src, "A", "A + `BBB` >= `AAABBB`", "A + `BBB` < `AAABBB`"); // condition
 
         // Immutable Instant Source
-        testRowKeyAgnosticColumnSource(
-                InMemoryColumnSource.makeImmutableConstantSource(Instant.class, null,
-                        parseInstant("2020-01-01T00:00:00 NY")),
-                "A", "A <= '2020-01-01T00:00:00 NY'", "A > '2020-01-01T00:00:00 NY'");
+        src = InMemoryColumnSource.makeImmutableConstantSource(Instant.class, null,
+                parseInstant("2020-01-01T00:00:00 NY"));
+        testRowKeyAgnosticColumnSource(src, "A", "A != null", "A = null"); // null
+        testRowKeyAgnosticColumnSource(src, "A", "A = '2020-01-01T00:00:00 NY'",
+                "A = '2020-01-02T00:00:00 NY'"); // match
+        testRowKeyAgnosticColumnSource(src, "A", "A <= '2020-01-01T00:00:00 NY'", "A > '2020-01-01T00:00:00 NY'"); // range
+        testRowKeyAgnosticColumnSource(src, "A",
+                "A >= '2020-01-01T00:00:00 NY' && A <= '2020-01-01T00:00:00 NY'",
+                "A >= '2020-01-02T00:00:00 NY' && A <= '2020-01-02T00:00:00 NY'"); // condition
     }
 
     @Test
@@ -2851,7 +2927,7 @@ public abstract class QueryTableWhereTest {
         source.setRefreshing(true);
 
         final RowSetCapturingFilter preFilter = new RowSetCapturingFilter();
-        final RowSetCapturingFilter filter0 = new RowSetCapturingFilter(RawString.of(filterAllPass));
+        final RowSetCapturingFilter filter0 = new RowSetCapturingFilter(RawString.of(filterAllPass), true);
         final RowSetCapturingFilter postFilter = new RowSetCapturingFilter();
 
         // force pre and post filters to run when expected using barriers
@@ -2868,7 +2944,7 @@ public abstract class QueryTableWhereTest {
         preFilter.reset();
         postFilter.reset();
 
-        final RowSetCapturingFilter filter1 = new RowSetCapturingFilter(RawString.of(filterNonePass));
+        final RowSetCapturingFilter filter1 = new RowSetCapturingFilter(RawString.of(filterNonePass), true);
 
         // force pre and post filters to run when expected using barriers
         final Table res1 = source.where(Filter.and(
