@@ -6,6 +6,7 @@ package io.deephaven.engine.table.impl;
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.AssertionFailure;
 import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
@@ -20,12 +21,15 @@ import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.table.vectors.IntVectorColumnWrapper;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.*;
+import io.deephaven.engine.testutil.sources.ObjectTestSource;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.util.TickSuppressor;
+import io.deephaven.qst.type.Type;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.mutable.MutableInt;
 import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.vector.*;
 import org.jetbrains.annotations.NotNull;
@@ -986,6 +990,7 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
         final List<EvalNuggetInterface> nuggets = new ArrayList<>(Arrays.asList(
                 EvalNugget.from(() -> table.groupBy().ungroup(nullFill)),
                 new UpdateValidatorNugget(table.groupBy().ungroup(nullFill)),
+
                 EvalNugget.from(() -> table.view("KeyCol", "C1").ungroup(nullFill)),
                 EvalNugget.from(() -> table.view("KeyCol", "C2").ungroup(nullFill)),
                 EvalNugget.from(() -> table
@@ -1016,6 +1021,187 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
                 System.out.println("Seed == " + seed + ", Step == " + step);
             }
             simulateShiftAwareStep(stepSize, random, table, columnInfo, en);
+        }
+    }
+
+
+    public void testUngroupIncrementalPartialModificationsRebase() {
+        final int minimumUngroupBase = QueryTable.setMinimumUngroupBase(2);
+        try (final SafeCloseable ignored2 = () -> QueryTable.setMinimumUngroupBase(minimumUngroupBase)) {
+            for (int seed = 0; seed < 20; ++seed) {
+                try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+                    testUngroupIncrementalPartialModificationsRebase(10, false, seed, 10);
+                }
+                try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+                    testUngroupIncrementalPartialModificationsRebase(10, true, seed, 10);
+                }
+            }
+        }
+    }
+
+    @SuppressWarnings("SameParameterValue")
+    private void testUngroupIncrementalPartialModificationsRebase(final int tableSize,
+            final boolean nullFill,
+            final int seed,
+            final int maxSteps) {
+        final Random random = new Random(seed);
+        QueryScope.addParam("f", new SimpleDateFormat("dd HH:mm:ss"));
+
+        final ColumnInfo<?, ?>[] columnInfo;
+        final QueryTable table = getTable(tableSize, random,
+                columnInfo = initColumnInfos(
+                        new String[] {"Sentinel", "MiddleArray", "SmallSize", "MiddleSize"},
+                        new IntGenerator(0, 100),
+                        new BooleanGenerator(0.05),
+                        new IntGenerator(0, 3),
+                        new IntGenerator(4, 7)));
+
+
+        final QueryTable withArrays =
+                addRandomizedArrays(table.update("ArraySize=MiddleArray ? MiddleSize: SmallSize"),
+                        "ArraySize", List.of(ColumnDefinition.of("IA", Type.find(int[].class)),
+                                ColumnDefinition.of("DA", Type.find(double[].class)),
+                                ColumnDefinition.of("LA", Type.find(long[].class)),
+                                ColumnDefinition.of("SA", Type.find(String[].class))),
+                        seed);
+
+        final Table validated = TableUpdateValidator.make("withArrays", withArrays).getResultTable();
+
+        final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
+                EvalNugget.from(() -> validated.ungroup(nullFill)),
+        };
+
+        final GenerateTableUpdates.SimulationProfile FEWER_MODS =
+                new GenerateTableUpdates.SimulationProfile() {
+                    {
+                        MOD_ADDITIONAL_COLUMN = 10;
+                    }
+                };
+
+        final int stepSize = (int) Math.ceil(Math.sqrt(tableSize));
+        for (int step = 0; step < maxSteps; step++) {
+            simulateShiftAwareStep(FEWER_MODS, "Seed == " + seed + ", Step == " + step, stepSize, random, table, columnInfo, en);
+        }
+    }
+
+
+    public static QueryTable addRandomizedArrays(final Table parent, final String sizeColumn,
+            final List<ColumnDefinition<?>> outputColumns, final int seed) {
+        final Random random = new Random(seed);
+        final Map<String, ColumnSource<?>> columnSources = new LinkedHashMap<>(parent.getColumnSourceMap());
+        final ColumnSource<Integer> sizeColumnSource = parent.getColumnSource(sizeColumn, int.class);
+        for (final ColumnDefinition<?> columnDefinition : outputColumns) {
+            final ObjectTestSource<?> objectTestSource = new ObjectTestSource<>(columnDefinition.getDataType());
+            if (columnDefinition.getComponentType() == int.class || columnDefinition.getComponentType() == double.class
+                    || columnDefinition.getComponentType() == String.class
+                    || columnDefinition.getComponentType() == long.class) {
+                columnSources.put(columnDefinition.getName(), objectTestSource);
+                generateArrayValue(random,
+                        columnDefinition,
+                        parent.getRowSet(),
+                        sizeColumnSource,
+                        objectTestSource);
+            } else {
+                throw new UnsupportedOperationException();
+            }
+        }
+        assertEquals(parent.getColumnSourceMap().size() + outputColumns.size(), columnSources.size());
+        final QueryTable result = new QueryTable(parent.getRowSet(), columnSources);
+        final ModifiedColumnSet.Transformer identityTransformer = ((QueryTable) parent)
+                .newModifiedColumnSetTransformer(result, parent.getColumnSourceMap().keySet().toArray(new String[0]));
+
+        final ModifiedColumnSet sizeMcs = ((QueryTable) parent).newModifiedColumnSet(sizeColumn);
+        final InstrumentedTableUpdateListener listener =
+                new BaseTable.ListenerImpl("addRandomizedArrays", parent, result) {
+                    @Override
+                    public void onUpdate(final TableUpdate upstream) {
+                        final ModifiedColumnSet modifiedColumnSet = result.getModifiedColumnSetForUpdates();
+                        identityTransformer.clearAndTransform(upstream.modifiedColumnSet(), modifiedColumnSet);
+
+                        final boolean sizeChanged = upstream.modifiedColumnSet().containsAny(sizeMcs);
+
+                        for (int ii = 0; ii < outputColumns.size(); ++ii) {
+                            final ColumnDefinition<?> columnDefinition = outputColumns.get(ii);
+                            final ObjectTestSource<?> outputSource =
+                                    (ObjectTestSource<?>) columnSources.get(columnDefinition.getName());
+                            outputSource.remove(upstream.removed());
+
+
+                            upstream.shifted().apply(outputSource::shift);
+
+                            generateArrayValue(random,
+                                    columnDefinition,
+                                    upstream.added(),
+                                    sizeColumnSource,
+                                    outputSource);
+
+                            if (upstream.modified().isEmpty()) {
+                                continue;
+                            }
+
+                            if (!sizeChanged && random.nextBoolean()) {
+                                // occasionally skip changing the sizes for some columns
+                                continue;
+                            }
+                            generateArrayValue(random,
+                                    columnDefinition,
+                                    upstream.modified(),
+                                    sizeColumnSource,
+                                    outputSource);
+                            modifiedColumnSet.setAll(columnDefinition.getName());
+                        }
+
+                        final TableUpdateImpl downstream = new TableUpdateImpl(upstream.added().copy(),
+                                upstream.removed().copy(),
+                                upstream.modified().copy(),
+                                upstream.shifted(),
+                                modifiedColumnSet);
+                        result.notifyListeners(downstream);
+                    }
+                };
+        result.manage(listener);
+        parent.addUpdateListener(listener);
+        return result;
+    }
+
+    private static void generateArrayValue(final Random random,
+            final ColumnDefinition<?> columnDefinition,
+            final RowSet rowSet,
+            final ColumnSource<Integer> sizeColumn,
+            final ObjectTestSource<?> objectTestSource) {
+        try (final WritableObjectChunk<Object, Values> output =
+                WritableObjectChunk.makeWritableChunk(rowSet.intSize())) {
+            final MutableInt pos = new MutableInt();
+            rowSet.forAllRowKeys(rk -> {
+                final int size = sizeColumn.getInt(rk);
+                if (columnDefinition.getComponentType() == int.class) {
+                    final int[] ret = new int[size];
+                    for (int ii = 0; ii < size; ++ii) {
+                        ret[ii] = random.nextInt();
+                    }
+                    output.set(pos.getAndIncrement(), ret);
+                } else if (columnDefinition.getComponentType() == long.class) {
+                    final long[] ret = new long[size];
+                    for (int ii = 0; ii < size; ++ii) {
+                        ret[ii] = random.nextInt();
+                    }
+                    output.set(pos.getAndIncrement(), ret);
+                } else if (columnDefinition.getComponentType() == double.class) {
+                    final double[] ret = new double[size];
+                    for (int ii = 0; ii < size; ++ii) {
+                        ret[ii] = random.nextDouble();
+                    }
+                    output.set(pos.getAndIncrement(), ret);
+                } else if (columnDefinition.getComponentType() == String.class) {
+                    final String[] ret = new String[size];
+                    for (int ii = 0; ii < size; ++ii) {
+                        final long value = random.nextInt();
+                        ret[ii] = Long.toString(value, 'z' - 'a' + 10);
+                    }
+                    output.set(pos.getAndIncrement(), ret);
+                }
+            });
+            objectTestSource.add(rowSet, output);
         }
     }
 
