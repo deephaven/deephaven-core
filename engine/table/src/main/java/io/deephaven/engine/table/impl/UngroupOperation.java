@@ -167,15 +167,15 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
      * 
      * @param rowSet the rowset to compute output sizes for
      * @param sizes an array to fill with sizes; if computeSizeForColumn is not-null, then this array already contains
-     *              the expected sizes for each element.
+     *        the expected sizes for each element.
      * @param usePrev should we use previous values for the input columns
      * @param computeSizeForColumn an array of columns that we must compute sizes for
      * @return the maximum size of an element, not computed when we have an input reference column
      */
     private long computeMaxSize(final RowSet rowSet,
-                                final long[] sizes,
-                                final boolean usePrev,
-                                @Nullable final boolean[] computeSizeForColumn) {
+            final long[] sizes,
+            final boolean usePrev,
+            @Nullable final boolean[] computeSizeForColumn) {
         long maxSize = 0;
 
         final int chunkSize = (int) Math.min(CHUNK_SIZE, rowSet.size());
