@@ -51,12 +51,6 @@ public final class PushdownResult implements SafeCloseable {
             Configuration.getInstance().getBooleanWithDefault("PushdownResult.forceValidation", false);
 
     /**
-     * The selection. Retaining selection here makes the pushdown result "self-contained" which helps with composability
-     * and potential safety checks when results are combined.
-     */
-    private final WritableRowSet selection;
-
-    /**
      * Rows that match the predicate.
      */
     private final WritableRowSet match;
@@ -67,40 +61,38 @@ public final class PushdownResult implements SafeCloseable {
     private final WritableRowSet maybeMatch;
 
     /**
-     * Constructs a new result with all of {@code input} as {@link #maybeMatch() maybeMatch} and {@link #selection()
-     * selection}.
+     * Constructs a new result with all of {@code input} as {@link #maybeMatch() maybeMatch} and {@code selection}.
      *
      * @param input the input
      * @return the result
      */
     public static PushdownResult maybeMatch(@NotNull final RowSet input) {
         try (final WritableRowSet empty = RowSetFactory.empty()) {
-            return copy(input, empty, input);
+            return copy(empty, input);
         }
     }
 
     /**
-     * Constructs a new result with all of {@code input} as {@link #match() match} and {@link #selection() selection}.
+     * Constructs a new result with all of {@code input} as {@link #match() match} and {@code selection}.
      *
      * @param input the input
      * @return the result
      */
     public static PushdownResult match(@NotNull final RowSet input) {
         try (final WritableRowSet empty = RowSetFactory.empty()) {
-            return copy(input, input, empty);
+            return copy(input, empty);
         }
     }
 
     /**
-     * Constructs a new result with all of {@code input} as {@link #noMatchCopy() noMatch} and {@link #selection()
-     * selection}.
+     * Constructs a new result with all of {@code input} as {@code noMatch} and {@code selection}.
      *
      * @param input the input
      * @return the result
      */
-    public static PushdownResult noMatch(@NotNull final RowSet input) {
+    public static PushdownResult noMatch(@SuppressWarnings("unused") @NotNull final RowSet input) {
         try (final WritableRowSet empty = RowSetFactory.empty()) {
-            return copy(input, empty, empty);
+            return copy(empty, empty);
         }
     }
 
@@ -128,7 +120,7 @@ public final class PushdownResult implements SafeCloseable {
         if (match.overlaps(maybeMatch)) {
             throw new IllegalArgumentException("match and maybeMatch should be non-overlapping row sets");
         }
-        return copy(selection, match, maybeMatch);
+        return copy(match, maybeMatch);
     }
 
     /**
@@ -155,106 +147,51 @@ public final class PushdownResult implements SafeCloseable {
                     String.format("Invalid PushdownResult, matchSize + maybeMatchSize > selectionSize, %d + %d > %d",
                             matchSize, maybeMatchSize, selectionSize));
         }
-        return copy(selection, match, maybeMatch);
+        return copy(match, maybeMatch);
     }
 
-    private static PushdownResult copy(final RowSet selection, final RowSet match, final RowSet maybeMatch) {
+    private static PushdownResult copy(final RowSet match, final RowSet maybeMatch) {
         // This is pedantic, but necessary for technically correct & prompt cleanup in exceptional cases.
-        final WritableRowSet selectionCopy = selection.copy();
+        final WritableRowSet matchCopy = match.copy();
         try {
-            final WritableRowSet matchCopy = match.copy();
+            final WritableRowSet maybeMatchCopy = maybeMatch.copy();
             try {
-                final WritableRowSet maybeMatchCopy = maybeMatch.copy();
-                try {
-                    return new PushdownResult(selectionCopy, matchCopy, maybeMatchCopy);
-                } catch (final RuntimeException e) {
-                    try (maybeMatchCopy) {
-                        throw e;
-                    }
-                }
+                return new PushdownResult(matchCopy, maybeMatchCopy);
             } catch (final RuntimeException e) {
-                try (matchCopy) {
+                try (maybeMatchCopy) {
                     throw e;
                 }
             }
         } catch (final RuntimeException e) {
-            try (selectionCopy) {
+            try (matchCopy) {
                 throw e;
             }
         }
     }
 
     private PushdownResult(
-            final WritableRowSet selection,
             final WritableRowSet match,
             final WritableRowSet maybeMatch) {
-        this.selection = Objects.requireNonNull(selection);
         this.match = Objects.requireNonNull(match);
         this.maybeMatch = Objects.requireNonNull(maybeMatch);
     }
 
     /**
-     * The set of rows considered for this pushdown result. Each row key from this selection will be in exactly one of
-     * {@link #match() match}, {@link #maybeMatch() maybeMatch}, or {@link #noMatchCopy() noMatch}. Ownership does
+     * Rows that are known to match. Is a {@link RowSet#subsetOf(RowSet) subset of} the {@code selection}. Does not
+     * {@link RowSet#overlaps(RowSet) overlap} with {@link #maybeMatch() maybeMatch} nor {@code noMatch}. Ownership does
      * <b>not</b> transfer to the caller.
-     */
-    public WritableRowSet selection() {
-        return selection;
-    }
-
-    /**
-     * Rows that are known to match. Is a {@link RowSet#subsetOf(RowSet) subset of} {@link #selection() selection}. Does
-     * not {@link RowSet#overlaps(RowSet) overlap} with {@link #maybeMatch() maybeMatch} nor {@link #noMatchCopy()
-     * noMatch}. Ownership does <b>not</b> transfer to the caller.
      */
     public WritableRowSet match() {
         return match;
     }
 
     /**
-     * Rows that may match. Is a {@link RowSet#subsetOf(RowSet) subset of} {@link #selection() selection}. Does not
-     * {@link RowSet#overlaps(RowSet) overlap} with {@link #match() match} nor {@link #noMatchCopy() noMatch}. Ownership
-     * does <b>not</b> transfer to the caller.
+     * Rows that may match. Is a {@link RowSet#subsetOf(RowSet) subset of} {@code selection}. Does not
+     * {@link RowSet#overlaps(RowSet) overlap} with {@link #match() match} nor {@code noMatch}. Ownership does
+     * <b>not</b> transfer to the caller.
      */
     public WritableRowSet maybeMatch() {
         return maybeMatch;
-    }
-
-    /**
-     * Rows that are known to <b>not</b> match. Is a {@link RowSet#subsetOf(RowSet) subset of} {@link #selection()
-     * selection}. Does not {@link RowSet#overlaps(RowSet) overlap} with {@link #match() match} nor {@link #maybeMatch()
-     * maybeMatch}. Ownership <b>does</b> transfer to the caller.
-     *
-     * <p>
-     * Note: this result is computed as {@code selection - match - maybeMatch} and is provided for documentation and
-     * completeness purposes, and is not typically used outside of testing or debugging.
-     */
-    @SuppressWarnings("unused")
-    public WritableRowSet noMatchCopy() {
-        final WritableRowSet noMatch = selection.copy();
-        if (match.isNonempty()) {
-            noMatch.remove(match);
-        }
-        if (maybeMatch.isNonempty()) {
-            noMatch.remove(maybeMatch);
-        }
-        return noMatch;
-    }
-
-    /**
-     * The size of {@link #noMatchCopy() noMatch}.
-     */
-    public long noMatchSize() {
-        return selection.size() - match.size() - maybeMatch.size();
-    }
-
-    /**
-     * A finished result is one in which there are no {@link #maybeMatch() maybeMatch rows}.
-     *
-     * @return if the result is finished
-     */
-    public boolean isFinished() {
-        return maybeMatch.isEmpty();
     }
 
     /**
@@ -263,14 +200,14 @@ public final class PushdownResult implements SafeCloseable {
      * @return the copy
      */
     public PushdownResult copy() {
-        return copy(selection, match, maybeMatch);
+        return copy(match, maybeMatch);
     }
 
     /**
-     * Closes {@link #selection()}, {@link #match()}, and {@link #maybeMatch()}.
+     * Closes {@link #match()} and {@link #maybeMatch()}.
      */
     @Override
     public void close() {
-        SafeCloseable.closeAll(selection, match, maybeMatch);
+        SafeCloseable.closeAll(match, maybeMatch);
     }
 }

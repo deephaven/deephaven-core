@@ -763,9 +763,6 @@ public class RegionedColumnSourceManager
         }
 
         void unshiftIntoRegionSpace(final PushdownResult result) {
-            if (result.selection().isNonempty()) {
-                unshiftIntoRegionSpace(result.selection());
-            }
             if (result.match().isNonempty()) {
                 unshiftIntoRegionSpace(result.match());
             }
@@ -1086,7 +1083,6 @@ public class RegionedColumnSourceManager
     private final class PushdownJobBuilder extends JobBuilder {
         private final Consumer<PushdownResult> onPushdownComplete;
 
-        private long totalSelectionSize;
         private final WritableRowSet[] matches;
         private final WritableRowSet[] maybeMatches;
 
@@ -1094,7 +1090,6 @@ public class RegionedColumnSourceManager
                 Consumer<PushdownResult> onPushdownComplete, Consumer<Exception> onPushdownError) {
             super(selection, regionIndices, onPushdownError);
             this.onPushdownComplete = Objects.requireNonNull(onPushdownComplete);
-            this.totalSelectionSize = 0;
             this.matches = new WritableRowSet[regionIndices.length];
             this.maybeMatches = new WritableRowSet[regionIndices.length];
         }
@@ -1117,15 +1112,13 @@ public class RegionedColumnSourceManager
             // If we ever need to be more defensive because we are seeing unexpected behavior, or we need to better
             // validate this assumption for debugging purposes, it is easy to re-work this implementation so that this
             // keeps the full PushdownResult and does a more thorough check in buildResults.
-            try (final WritableRowSet selectionSubset = result.selection()) {
-                addResult(ix, selectionSubset.size(), result.match(), result.maybeMatch());
-            }
+            addResult(ix, result.match(), result.maybeMatch());
+
             // Note: not closing result; we've already closed selection, and match / maybeMatch are now owned by this.
         }
 
         private synchronized void addResult(
                 final int jobIndex,
-                final long selectionSize,
                 final WritableRowSet matchSubset,
                 final WritableRowSet maybeMatchSubset) {
             // Note: we could consider a strategy where we incrementally compute the results via RowSet#insert or
@@ -1136,7 +1129,6 @@ public class RegionedColumnSourceManager
             // 1. Very short time in addResult, meaning we won't block other jobs from completing / new jobs from
             // running
             // 2. In the case where the result represent the full selection, we can skip the building
-            this.totalSelectionSize += selectionSize;
             this.matches[jobIndex] = matchSubset;
             this.maybeMatches[jobIndex] = maybeMatchSubset;
         }
@@ -1144,12 +1136,12 @@ public class RegionedColumnSourceManager
         private synchronized PushdownResult buildResults() {
             final long totalMatchSize = Stream.of(matches).mapToLong(RowSet::size).sum();
             final long totalMaybeMatchSize = Stream.of(maybeMatches).mapToLong(RowSet::size).sum();
-            Assert.eq(selection.size(), "selection.size()", totalSelectionSize, "totalSelectionSize");
-            if (totalMatchSize == totalSelectionSize) {
+            final long selectionSize = selection.size();
+            if (totalMatchSize == selectionSize) {
                 Assert.eqZero(totalMaybeMatchSize, "totalMaybeMatchSize");
                 return PushdownResult.match(selection);
             }
-            if (totalMaybeMatchSize == totalSelectionSize) {
+            if (totalMaybeMatchSize == selectionSize) {
                 Assert.eqZero(totalMatchSize, "totalMatchSize");
                 return PushdownResult.maybeMatch(selection);
             }

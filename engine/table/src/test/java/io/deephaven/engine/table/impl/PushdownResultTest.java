@@ -18,14 +18,8 @@ public class PushdownResultTest {
         try (
                 final WritableRowSet selection = RowSetFactory.fromRange(0, 29);
                 final PushdownResult r = PushdownResult.match(selection)) {
-            assertThat(r.isFinished()).isTrue();
-            assertThat(r.selection()).isEqualTo(selection);
             assertThat(r.match()).isEqualTo(selection);
             assertThat(r.maybeMatch().isEmpty()).isTrue();
-            try (final WritableRowSet noMatchCopy = r.noMatchCopy()) {
-                assertThat(noMatchCopy.isEmpty()).isTrue();
-            }
-            assertThat(r.noMatchSize()).isZero();
         }
     }
 
@@ -34,14 +28,8 @@ public class PushdownResultTest {
         try (
                 final WritableRowSet selection = RowSetFactory.fromRange(0, 29);
                 final PushdownResult r = PushdownResult.maybeMatch(selection)) {
-            assertThat(r.isFinished()).isFalse();
-            assertThat(r.selection()).isEqualTo(selection);
             assertThat(r.match().isEmpty()).isTrue();
             assertThat(r.maybeMatch()).isEqualTo(selection);
-            try (final WritableRowSet noMatchCopy = r.noMatchCopy()) {
-                assertThat(noMatchCopy.isEmpty()).isTrue();
-            }
-            assertThat(r.noMatchSize()).isZero();
         }
     }
 
@@ -50,14 +38,8 @@ public class PushdownResultTest {
         try (
                 final WritableRowSet selection = RowSetFactory.fromRange(0, 29);
                 final PushdownResult r = PushdownResult.noMatch(selection)) {
-            assertThat(r.isFinished()).isTrue();
-            assertThat(r.selection()).isEqualTo(selection);
             assertThat(r.match().isEmpty()).isTrue();
             assertThat(r.maybeMatch().isEmpty()).isTrue();
-            try (final WritableRowSet noMatchCopy = r.noMatchCopy()) {
-                assertThat(noMatchCopy).isEqualTo(selection);
-            }
-            assertThat(r.noMatchSize()).isEqualTo(30);
         }
     }
 
@@ -67,18 +49,11 @@ public class PushdownResultTest {
                 final WritableRowSet selection = RowSetFactory.fromRange(0, 29);
                 final WritableRowSet match = RowSetFactory.fromRange(0, 9);
                 final WritableRowSet maybeMatch = RowSetFactory.fromRange(10, 19);
-                final WritableRowSet noMatch = RowSetFactory.fromRange(20, 29);
                 final PushdownResult r1 = PushdownResult.of(selection, match, maybeMatch);
                 final PushdownResult r2 = PushdownResult.ofUnsafe(selection, match, maybeMatch)) {
             for (final PushdownResult r : Arrays.asList(r1, r2)) {
-                assertThat(r.isFinished()).isFalse();
-                assertThat(r.selection()).isEqualTo(selection);
                 assertThat(r.match()).isEqualTo(match);
                 assertThat(r.maybeMatch()).isEqualTo(maybeMatch);
-                try (final WritableRowSet noMatchCopy = r.noMatchCopy()) {
-                    assertThat(noMatchCopy).isEqualTo(noMatch);
-                }
-                assertThat(r.noMatchSize()).isEqualTo(10);
             }
         }
     }

@@ -673,8 +673,8 @@ public class ParquetTableLocation extends AbstractTableLocation {
                 PushdownResult.METADATA_STATS_COST, executedFilterCost, costCeiling)
                 && (isAbstractRangeFilter || isRangeFilter || isMatchFilter)) {
             try (final PushdownResult ignored = result) {
-                result = pushdownRowGroupMetadata(isRangeFilter ? ((RangeFilter) filter).getRealFilter() : filter,
-                        columnIndices, result);
+                result = pushdownRowGroupMetadata(selection,
+                        isRangeFilter ? ((RangeFilter) filter).getRealFilter() : filter, columnIndices, result);
             }
             if (result.maybeMatch().isEmpty()) {
                 // No maybe rows remaining, so no reason to continue filtering.
@@ -691,7 +691,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
             if (dataIndex != null) {
                 // No maybe rows remaining, so no reason to continue filtering.
                 try (final PushdownResult ignored = result) {
-                    onComplete.accept(pushdownDataIndex(filter, renameMap, dataIndex, result));
+                    onComplete.accept(pushdownDataIndex(selection, filter, renameMap, dataIndex, result));
                     return;
                 }
             }
@@ -704,7 +704,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
             if (dataIndex != null) {
                 // No maybe rows remaining, so no reason to continue filtering.
                 try (final PushdownResult ignored = result) {
-                    onComplete.accept(pushdownDataIndex(filter, renameMap, dataIndex, result));
+                    onComplete.accept(pushdownDataIndex(selection, filter, renameMap, dataIndex, result));
                     return;
                 }
             }
@@ -758,6 +758,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
      */
     @NotNull
     private PushdownResult pushdownRowGroupMetadata(
+            final RowSet selection,
             final WhereFilter filter,
             final List<Integer> columnIndices,
             final PushdownResult result) {
@@ -833,13 +834,11 @@ public class ParquetTableLocation extends AbstractTableLocation {
                 maybeCount.add(rs.size());
             }
         });
-
         if (maybeCount.get() == result.maybeMatch().size()) {
             return result.copy();
         }
-
         try (final WritableRowSet maybeMatch = maybeBuilder.build()) {
-            return PushdownResult.ofUnsafe(result.selection(), result.match(), maybeMatch);
+            return PushdownResult.ofUnsafe(selection, result.match(), maybeMatch);
         }
     }
 
@@ -848,6 +847,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
      */
     @NotNull
     private PushdownResult pushdownDataIndex(
+            final RowSet selection,
             final WhereFilter filter,
             final Map<String, String> renameMap,
             final BasicDataIndex dataIndex,
@@ -888,7 +888,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
                 final WritableRowSet matching = matchingBuilder.build();
                 final WritableRowSet empty = RowSetFactory.empty()) {
             matching.insert(result.match());
-            return PushdownResult.ofUnsafe(result.selection(), matching, empty);
+            return PushdownResult.ofUnsafe(selection, matching, empty);
         }
     }
 
