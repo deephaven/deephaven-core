@@ -157,6 +157,8 @@ public class GenerateTableUpdates {
             final ColumnInfo<?, ?>[] columnInfo) {
         profile.validate();
 
+        final boolean isBlink = table.isBlink();
+
         try (final WritableRowSet rowSet = table.getRowSet().copy()) {
             final ColumnInfo<?, ?>[] mutableColumns =
                     Arrays.stream(columnInfo).filter(ci -> !ci.immutable).toArray(ColumnInfo[]::new);
@@ -166,9 +168,13 @@ public class GenerateTableUpdates {
 
             // Removes in pre-shift keyspace.
             if (rowSet.isNonempty()) {
-                update.removed =
-                        TstUtils.selectSubIndexSet(Math.min(rowSet.intSize(), random.nextInt(targetUpdateSize)),
-                                rowSet, random);
+                if (isBlink) {
+                    update.removed = rowSet.copy();
+                } else {
+                    update.removed =
+                            TstUtils.selectSubIndexSet(Math.min(rowSet.intSize(), random.nextInt(targetUpdateSize)),
+                                    rowSet, random);
+                }
                 rowSet.remove(update.removed()); // remove blatted and explicit removals
             } else {
                 update.removed = TstUtils.i();
@@ -176,10 +182,10 @@ public class GenerateTableUpdates {
 
             // Generate Shifts.
             final RowSetShiftData.Builder shiftBuilder = new RowSetShiftData.Builder();
-            if (!hasImmutableColumns) {
-                MutableLong lastDest = new MutableLong();
+            if (!hasImmutableColumns && !isBlink) {
+                final MutableLong lastDest = new MutableLong();
 
-                BiConsumer<Long, Long> shiftConsumer = (first, last) -> {
+                final BiConsumer<Long, Long> shiftConsumer = (first, last) -> {
                     if (first < 0 || last < 0 || last < first)
                         return;
 
