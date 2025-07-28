@@ -121,12 +121,9 @@ public abstract class RowSetFactory {
                     union.insert(it.next());
                 }
             } catch (final RuntimeException e) {
-                try {
-                    union.close();
-                } catch (final RuntimeException e2) {
-                    e.addSuppressed(e2);
+                try (union) {
+                    throw e;
                 }
-                throw e;
             }
             return union;
         }
