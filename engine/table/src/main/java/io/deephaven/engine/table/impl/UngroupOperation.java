@@ -38,7 +38,7 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
      */
     private final ModifiedColumnSet allUngroupColumns;
     /**
-     * An arrya parallel to columnsToUngroupBy of a modified column set for each input.
+     * An array parallel to columnsToUngroupBy of a modified column set for each input.
      */
     private final ModifiedColumnSet[] ungroupColumnModifiedColumnSets;
 
