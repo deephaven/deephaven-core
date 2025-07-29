@@ -1527,7 +1527,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                     } else if (setRefreshing) {
                         distinctValues = rightTable.selectDistinct(MatchPair.getRightColumns(columnsToMatch));
                     } else {
-                        distinctValues = rightTable;
+                        distinctValues = rightTable.coalesce();
                     }
 
                     final DynamicWhereFilter dynamicWhereFilter =

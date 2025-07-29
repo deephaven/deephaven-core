@@ -20,10 +20,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
-import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.DataIndex;
-import io.deephaven.engine.table.ShiftObliviousListener;
-import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
 import io.deephaven.engine.table.impl.chunkfilter.IntRangeComparator;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
@@ -51,6 +48,7 @@ import io.deephaven.util.datastructures.CachingSupplier;
 import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.mutable.MutableObject;
+import org.jetbrains.annotations.NotNull;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -71,6 +69,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.IntUnaryOperator;
 import java.util.function.LongConsumer;
 import java.util.stream.IntStream;
@@ -749,6 +748,35 @@ public abstract class QueryTableWhereTest {
 
         TableTools.show(setTable);
         TableTools.show(filteredTable);
+    }
+
+    private static class TestUncoalescedTable extends UncoalescedTable<TestUncoalescedTable> {
+        private final Table delegate;
+
+        public TestUncoalescedTable(final Table delegate) {
+            super(delegate.getDefinition(), "TestUncoalescedTable");
+            this.delegate = delegate;
+        }
+
+        @Override
+        protected Table doCoalesce() {
+            return delegate.coalesce();
+        }
+
+        @Override
+        protected TestUncoalescedTable copy() {
+            return this;
+        }
+    }
+
+    @Test
+    public void testWhereInUncoalesced() {
+        final Table table = TableTools.newTable(intCol("x", 1, 2, 3), intCol("y", 2, 4, 6));
+        final Table setTable = TableTools.newTable(intCol("x", 3));
+
+        final Table expected = table.whereIn(setTable, "x");
+        final Table result = table.whereIn(new TestUncoalescedTable(setTable), "x");
+        assertTableEquals(expected, result);
     }
 
     @Test
