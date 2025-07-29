@@ -503,14 +503,13 @@ abstract class AbstractFilterExecution {
                 } else {
                     executor = null;
                 }
-                // Create a context for the executor, if it is not null.
-                final PushdownFilterContext context = executor != null
-                        ? executor.makePushdownFilterContext(filter, filter.getColumns().stream()
-                                .map(sourceTable::getColumnSource)
-                                .collect(Collectors.toList()))
-                        : null;
-                statelessFilters[ii] = new StatelessFilter(ii, filter, executor, context, barrierDependencies);
-
+                if (executor != null) {
+                    final PushdownFilterContext context = executor.makePushdownFilterContext(filter, filter.getColumns()
+                            .stream().map(sourceTable::getColumnSource).collect(Collectors.toList()));
+                    statelessFilters[ii] = new StatelessFilter(ii, filter, executor, context, barrierDependencies);
+                } else {
+                    statelessFilters[ii] = new StatelessFilter(ii, filter, null, null, barrierDependencies);
+                }
                 for (Object barrier : statelessFilters[ii].declaredBarriers) {
                     if (barrierDependencies.containsKey(barrier)) {
                         throw new IllegalArgumentException("Duplicate barrier declared: " + barrier);
