@@ -102,14 +102,22 @@ public class TestTreeTable extends RefreshingTableTestCase {
 
     @Test
     public void testMismatchedParentAndId() {
-        final Table source = emptyTable(10).update("ID=ii", "Parent=ii == 0 ? null : 63 - Long.numberOfLeadingZeros(ii)");
+        final Table source =
+                emptyTable(10).update("ID=ii", "Parent=ii == 0 ? null : 63 - Long.numberOfLeadingZeros(ii)");
 
-        final NoSuchColumnException missingParent = Assert.assertThrows(NoSuchColumnException.class, () -> source.tree("ID", "FooBar"));
-        assertEquals("tree parent column: Unknown column names [FooBar], available column names are [ID, Parent]", missingParent.getMessage());
-        final NoSuchColumnException missingId = Assert.assertThrows(NoSuchColumnException.class, () ->  source.tree("FooBar", "Parent"));
-        assertEquals("tree identifier column: Unknown column names [FooBar], available column names are [ID, Parent]", missingId.getMessage());
+        final NoSuchColumnException missingParent =
+                Assert.assertThrows(NoSuchColumnException.class, () -> source.tree("ID", "FooBar"));
+        assertEquals("tree parent column: Unknown column names [FooBar], available column names are [ID, Parent]",
+                missingParent.getMessage());
+        final NoSuchColumnException missingId =
+                Assert.assertThrows(NoSuchColumnException.class, () -> source.tree("FooBar", "Parent"));
+        assertEquals("tree identifier column: Unknown column names [FooBar], available column names are [ID, Parent]",
+                missingId.getMessage());
 
-        final InvalidColumnException ice = Assert.assertThrows(InvalidColumnException.class, () -> source.tree("ID", "Parent"));
-        assertEquals("tree parent and identifier columns must have the same data type, but parent is [Parent, int] and identifier is [ID, long]", ice.getMessage());
+        final InvalidColumnException ice =
+                Assert.assertThrows(InvalidColumnException.class, () -> source.tree("ID", "Parent"));
+        assertEquals(
+                "tree parent and identifier columns must have the same data type, but parent is [Parent, int] and identifier is [ID, long]",
+                ice.getMessage());
     }
 }

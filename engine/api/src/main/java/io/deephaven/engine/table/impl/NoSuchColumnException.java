@@ -126,7 +126,8 @@ public class NoSuchColumnException extends IllegalArgumentException {
      * @param presentColumns the column names present in the table
      * @param missingColumn the request column name that was not found
      */
-    public NoSuchColumnException(final String messagePrefix, final List<String> presentColumns, final String missingColumn) {
+    public NoSuchColumnException(final String messagePrefix, final List<String> presentColumns,
+            final String missingColumn) {
         this(messagePrefix + String.format(DEFAULT_FORMAT_STR,
                 missingColumn,
                 String.join(DELIMITER, presentColumns)));
