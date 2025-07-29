@@ -1143,14 +1143,14 @@ public class RegionedColumnSourceManager
             final long selectionSize = selection.size();
             if (totalMatchSize == selectionSize) {
                 Assert.eqZero(totalMaybeMatchSize, "totalMaybeMatchSize");
-                return PushdownResult.match(selection);
+                return PushdownResult.allMatch(selection);
             }
             if (totalMaybeMatchSize == selectionSize) {
                 Assert.eqZero(totalMatchSize, "totalMatchSize");
-                return PushdownResult.maybeMatch(selection);
+                return PushdownResult.allMaybeMatch(selection);
             }
             if (totalMatchSize == 0 && totalMaybeMatchSize == 0) {
-                return PushdownResult.noMatch(selection);
+                return PushdownResult.allNoMatch(selection);
             }
             // Note: it's not obvious what the best approach for building these RowSets is; that is, sequential
             // insertion vs sequential builder. We know that the individual results are ordered and non-overlapping.
@@ -1158,7 +1158,7 @@ public class RegionedColumnSourceManager
             try (
                     final WritableRowSet match = RowSetFactory.unionInsert(Arrays.asList(matches));
                     final WritableRowSet maybeMatch = RowSetFactory.unionInsert(Arrays.asList(maybeMatches))) {
-                return PushdownResult.ofUnsafe(selection, match, maybeMatch);
+                return PushdownResult.of(selection, match, maybeMatch);
             }
         }
 

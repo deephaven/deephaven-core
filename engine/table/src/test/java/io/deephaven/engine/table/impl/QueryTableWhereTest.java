@@ -1913,7 +1913,7 @@ public abstract class QueryTableWhereTest {
                             final WritableRowSet addedRowSet = matches.subSetByPositionRange(0, maybeSize);
                             final WritableRowSet maybeRowSet = matches.subSetByPositionRange(maybeSize, size)) {
                         // Obvious these row sets do not overlap
-                        onComplete.accept(PushdownResult.ofUnsafe(selection, addedRowSet, maybeRowSet));
+                        onComplete.accept(PushdownResult.of(selection, addedRowSet, maybeRowSet));
                     }
                 }
             }
@@ -2147,7 +2147,7 @@ public abstract class QueryTableWhereTest {
                         final WritableRowSet addedRowSet = matches.subSetByPositionRange(0, maybeSize);
                         final WritableRowSet maybeRowSet = matches.subSetByPositionRange(maybeSize, size)) {
                     // Obvious these row sets do not overlap
-                    onComplete.accept(PushdownResult.ofUnsafe(selection, addedRowSet, maybeRowSet));
+                    onComplete.accept(PushdownResult.of(selection, addedRowSet, maybeRowSet));
                 }
             }
         }

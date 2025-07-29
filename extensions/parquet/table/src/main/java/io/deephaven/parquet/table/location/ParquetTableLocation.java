@@ -626,7 +626,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
             final Consumer<Exception> onError) {
         if (selection.isEmpty()) {
             log.warn().append("Pushdown filter called with empty selection for table ").append(getTableKey()).endl();
-            onComplete.accept(PushdownResult.noMatch(selection));
+            onComplete.accept(PushdownResult.allNoMatch(selection));
             return;
         }
 
@@ -646,7 +646,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
                 ((MatchFilter) filter).getFailoverFilterIfCached() == null;
 
         // Initialize the pushdown result with the selection rowset as "maybe" rows
-        PushdownResult result = PushdownResult.maybeMatch(selection);
+        PushdownResult result = PushdownResult.allMaybeMatch(selection);
 
         final Map<String, String> renameMap = ctx.renameMap();
         final Optional<List<ResolvedColumnInfo>> maybeResolvedColumns = resolveColumns(filter, renameMap);
@@ -838,7 +838,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
             return result.copy();
         }
         try (final WritableRowSet maybeMatch = maybeBuilder.build()) {
-            return PushdownResult.ofUnsafe(selection, result.match(), maybeMatch);
+            return PushdownResult.of(selection, result.match(), maybeMatch);
         }
     }
 
@@ -888,7 +888,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
                 final WritableRowSet matching = matchingBuilder.build();
                 final WritableRowSet empty = RowSetFactory.empty()) {
             matching.insert(result.match());
-            return PushdownResult.ofUnsafe(selection, matching, empty);
+            return PushdownResult.of(selection, matching, empty);
         }
     }
 

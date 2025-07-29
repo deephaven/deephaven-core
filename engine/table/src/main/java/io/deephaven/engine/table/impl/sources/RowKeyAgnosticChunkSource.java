@@ -49,7 +49,7 @@ public interface RowKeyAgnosticChunkSource<ATTR extends Any> extends FillUnorder
             final Consumer<Exception> onError) {
 
         if (selection.isEmpty()) {
-            onComplete.accept(PushdownResult.noMatch(selection));
+            onComplete.accept(PushdownResult.allNoMatch(selection));
             return;
         }
 
@@ -65,10 +65,10 @@ public interface RowKeyAgnosticChunkSource<ATTR extends Any> extends FillUnorder
             try (final RowSet result = filter.filter(rowSet, rowSet, dummyTable, usePrev)) {
                 if (result.isEmpty()) {
                     // No rows match the filter, return empty selection
-                    onComplete.accept(PushdownResult.noMatch(selection));
+                    onComplete.accept(PushdownResult.allNoMatch(selection));
                 } else {
                     // All rows match this filter, return the original selection as `match` rows.
-                    onComplete.accept(PushdownResult.match(selection));
+                    onComplete.accept(PushdownResult.allMatch(selection));
                 }
             }
         }

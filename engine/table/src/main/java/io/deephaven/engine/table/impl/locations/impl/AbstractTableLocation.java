@@ -319,7 +319,7 @@ public abstract class AbstractTableLocation
             final Consumer<PushdownResult> onComplete,
             final Consumer<Exception> onError) {
         // Default to returning all results as "maybe"
-        onComplete.accept(PushdownResult.maybeMatch(selection));
+        onComplete.accept(PushdownResult.allMaybeMatch(selection));
     }
 
     @Override
