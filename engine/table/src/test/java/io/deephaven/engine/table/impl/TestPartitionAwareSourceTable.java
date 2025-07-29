@@ -184,7 +184,8 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
 
         checking(new Expectations() {
             {
-                oneOf(componentFactory).createColumnSourceManager(with(true), with(ColumnToCodecMappings.EMPTY),
+                oneOf(componentFactory).createColumnSourceManager(with(true), with(true),
+                        with(ColumnToCodecMappings.EMPTY),
                         with(equal(TABLE_DEFINITION.getColumns())));
                 will(returnValue(columnSourceManager));
                 allowing(columnSourceManager).tryRetainReference();
@@ -520,7 +521,8 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
         // Setup the table
         checking(new Expectations() {
             {
-                oneOf(componentFactory).createColumnSourceManager(with(true), with(ColumnToCodecMappings.EMPTY),
+                oneOf(componentFactory).createColumnSourceManager(with(true), with(true),
+                        with(ColumnToCodecMappings.EMPTY),
                         with(equal(includedColumns1)));
                 will(returnValue(columnSourceManager));
             }
@@ -561,7 +563,8 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
                 DOUBLE_COLUMN_DEFINITION);
         checking(new Expectations() {
             {
-                oneOf(componentFactory).createColumnSourceManager(with(true), with(ColumnToCodecMappings.EMPTY),
+                oneOf(componentFactory).createColumnSourceManager(with(true), with(true),
+                        with(ColumnToCodecMappings.EMPTY),
                         with(equal(includedColumns2)));
                 will(returnValue(columnSourceManager));
             }
@@ -611,7 +614,8 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
                 PARTITIONING_COLUMN_DEFINITION);
         checking(new Expectations() {
             {
-                oneOf(componentFactory).createColumnSourceManager(with(true), with(ColumnToCodecMappings.EMPTY),
+                oneOf(componentFactory).createColumnSourceManager(with(true), with(true),
+                        with(ColumnToCodecMappings.EMPTY),
                         with(equal(includedColumns3)));
                 will(returnValue(columnSourceManager));
             }
@@ -712,7 +716,7 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
         doInitializeCheck(locationKeysSlice(0, 2, 5), makePassingLocations(0, 2, 5), false, false);
         checking(new Expectations() {
             {
-                oneOf(componentFactory).createColumnSourceManager(true, ColumnToCodecMappings.EMPTY,
+                oneOf(componentFactory).createColumnSourceManager(true, true, ColumnToCodecMappings.EMPTY,
                         TABLE_DEFINITION.getColumns());
                 will(returnValue(columnSourceManager));
             }
@@ -773,7 +777,7 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
         doInitializeCheck(tableLocationKeys, makePassingLocations(0, 2, 5), false, false);
         checking(new Expectations() {
             {
-                oneOf(componentFactory).createColumnSourceManager(true, ColumnToCodecMappings.EMPTY,
+                oneOf(componentFactory).createColumnSourceManager(true, true, ColumnToCodecMappings.EMPTY,
                         TABLE_DEFINITION.getColumns());
                 will(returnValue(columnSourceManager));
                 allowing(columnSources[3]).getInt(with(any(long.class)));

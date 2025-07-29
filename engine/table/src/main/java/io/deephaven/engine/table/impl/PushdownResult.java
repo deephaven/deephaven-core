@@ -22,6 +22,10 @@ public final class PushdownResult implements SafeCloseable {
     // Larger numbers indicate operations that are expected to touch more data or incur higher I/O latency; the values
     // are strictly relative.
     /**
+     * The entire column contains a single value, so a single read is sufficient to determine matches.
+     */
+    public static final long SINGLE_VALUE_COLUMN_COST = 1_000L;
+    /**
      * Only table/row-group statistics are checked, assuming the metadata is already loaded
      */
     public static final long METADATA_STATS_COST = 10_000L;

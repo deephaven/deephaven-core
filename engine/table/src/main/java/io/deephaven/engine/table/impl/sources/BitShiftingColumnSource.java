@@ -209,8 +209,7 @@ public class BitShiftingColumnSource<T> extends AbstractColumnSource<T> implemen
 
     @Override
     public boolean isUngroupable() {
-        return innerSource instanceof UngroupableColumnSource
-                && ((UngroupableColumnSource) innerSource).isUngroupable();
+        return UngroupableColumnSource.isUngroupable(innerSource);
     }
 
     @Override

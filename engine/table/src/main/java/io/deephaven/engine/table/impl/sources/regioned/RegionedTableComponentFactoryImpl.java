@@ -43,9 +43,10 @@ public class RegionedTableComponentFactoryImpl implements RegionedTableComponent
     @Override
     public ColumnSourceManager createColumnSourceManager(
             final boolean isRefreshing,
+            final boolean removeAllowed,
             @NotNull final ColumnToCodecMappings codecMappings,
             @NotNull final List<ColumnDefinition<?>> columnDefinitions) {
-        return new RegionedColumnSourceManager(isRefreshing, this, codecMappings, columnDefinitions);
+        return new RegionedColumnSourceManager(isRefreshing, removeAllowed, this, codecMappings, columnDefinitions);
     }
 
     /**

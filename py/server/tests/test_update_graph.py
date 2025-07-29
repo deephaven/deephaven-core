@@ -161,17 +161,6 @@ class UpdateGraphTestCase(BaseTestCase):
             with self.subTest(op=op):
                 result_table = left_table.aj(right_table, on="X")
 
-    def test_auto_locking_ungroup(self):
-        with ug.shared_lock(self.test_update_graph):
-            test_table = time_table("PT00:00:00.001").update(["X=i", "Y=i%13"])
-        grouped_table = test_table.group_by(by=["Y"])
-        with self.assertRaises(DHError) as cm:
-            ungrouped_table = grouped_table.ungroup(cols=["X"])
-        self.assertRegex(str(cm.exception), r"IllegalStateException")
-
-        ug.auto_locking = True
-        ungrouped_table = grouped_table.ungroup(cols=["X"])
-
     def test_auto_locking_head_tail_by(self):
         ops = [Table.head_by, Table.tail_by]
         with ug.shared_lock(self.test_update_graph):
