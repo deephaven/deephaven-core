@@ -307,7 +307,7 @@ public class QueryTable extends BaseTable<QueryTable> {
      * to be processed in parallel by the engine.
      */
     public static boolean STATELESS_FILTERS_BY_DEFAULT =
-            Configuration.getInstance().getBooleanWithDefault("QueryTable.statelessFiltersByDefault", false);
+            Configuration.getInstance().getBooleanWithDefault("QueryTable.statelessFiltersByDefault", true);
 
 
     @VisibleForTesting

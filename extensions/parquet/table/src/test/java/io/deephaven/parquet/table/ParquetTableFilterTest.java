@@ -43,7 +43,7 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
+import java.util.function.BiFunction;
 
 import static io.deephaven.base.FileUtils.convertToURI;
 import static io.deephaven.engine.table.impl.select.WhereFilterFactory.getExpression;
@@ -1399,5 +1399,25 @@ public final class ParquetTableFilterTest {
         filterAndVerifyResultsAllowEmpty(diskTable, memTable, "Doubles == null");
         filterAndVerifyResultsAllowEmpty(diskTable, memTable, "Doubles > 1");
         filterAndVerifyResultsAllowEmpty(diskTable, memTable, "Doubles <= 1");
+    }
+
+    @Test
+    public void testFilteringVirtualRowVariables() {
+        final BiFunction<Long, Long, Boolean> function = (i, j) -> i > j;
+        QueryScope.addParam("testFunction", function);
+
+        final String destPath = Path.of(rootFile.getPath(), "ParquetTest_virtualRowVariables") + ".parquet";
+        final int tableSize = 100_000;
+
+        final Table largeTable = TableTools.emptyTable(tableSize).update("val = ii % 50000");
+
+        ParquetTools.writeTable(largeTable, destPath);
+
+        final Table diskTable = ParquetTools.readTable(destPath);
+        final Table memTable = diskTable.select();
+
+        assertTableEquals(diskTable, memTable);
+
+        filterAndVerifyResults(diskTable, memTable, "(boolean)testFunction.apply(ii, val)");
     }
 }
