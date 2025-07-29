@@ -409,10 +409,8 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
             TableTools.showWithRowSet(chunkedCrossJoin, 100);
         }
 
-        QueryTable.USE_CHUNKED_CROSS_JOIN = false;
         final Table nonChunkedCrossJoin =
                 left.join(right, List.of(JoinMatch.parse("sharedKey")), emptyList(), numRightBitsToReserve);
-        QueryTable.USE_CHUNKED_CROSS_JOIN = true;
         TstUtils.assertTableEquals(nonChunkedCrossJoin, chunkedCrossJoin);
 
         Assert.eq(expectedSize, "expectedSize", chunkedCrossJoin.size(), "chunkedCrossJoin.size()");
