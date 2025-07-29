@@ -6,7 +6,9 @@ package io.deephaven.engine.table.impl;
 import com.google.common.collect.Lists;
 import gnu.trove.list.TLongList;
 import gnu.trove.list.array.TLongArrayList;
+import io.deephaven.api.ColumnName;
 import io.deephaven.api.RawString;
+import io.deephaven.api.Selectable;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.*;
@@ -48,7 +50,6 @@ import io.deephaven.util.datastructures.CachingSupplier;
 import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.mutable.MutableObject;
-import org.jetbrains.annotations.NotNull;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -69,7 +70,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.function.IntUnaryOperator;
 import java.util.function.LongConsumer;
 import java.util.stream.IntStream;
@@ -752,6 +752,7 @@ public abstract class QueryTableWhereTest {
 
     private static class TestUncoalescedTable extends UncoalescedTable<TestUncoalescedTable> {
         private final Table delegate;
+        private final List<Collection<? extends Selectable>> selectDistinctColumns = new ArrayList<>();
 
         public TestUncoalescedTable(final Table delegate) {
             super(delegate.getDefinition(), "TestUncoalescedTable");
@@ -767,6 +768,12 @@ public abstract class QueryTableWhereTest {
         protected TestUncoalescedTable copy() {
             return this;
         }
+
+        @Override
+        public Table selectDistinct(final Collection<? extends Selectable> columns) {
+            selectDistinctColumns.add(columns);
+            return super.selectDistinct(columns);
+        }
     }
 
     @Test
@@ -777,6 +784,30 @@ public abstract class QueryTableWhereTest {
         final Table expected = table.whereIn(setTable, "x");
         final Table result = table.whereIn(new TestUncoalescedTable(setTable), "x");
         assertTableEquals(expected, result);
+    }
+
+    @Test
+    public void testWhereInUncoalescedPartitioned() {
+        final Table table = TableTools.newTable(intCol("x", 1, 2, 3), intCol("y", 2, 4, 6));
+        final Table setTableRaw = TableTools.newTable(intCol("x", 3), intCol("y", 2));
+        final TableDefinition definition =
+                TableDefinition.of(setTableRaw.getDefinition().getColumn("x").withPartitioning(),
+                        setTableRaw.getDefinition().getColumn("y"));
+        final Table setTable = new QueryTable(definition, setTableRaw.getRowSet(), setTableRaw.getColumnSourceMap());
+
+        final Table expected1 = table.whereIn(setTable, "x");
+        final Table expected2 = table.whereIn(setTable, "y");
+
+        final TestUncoalescedTable uncoalesced = new TestUncoalescedTable(setTable);
+        final Table resultPart = table.whereIn(uncoalesced, "x");
+        assertTableEquals(expected1, resultPart);
+        assertEquals(1, uncoalesced.selectDistinctColumns.size());
+        assertEquals(List.of(ColumnName.of("x")), uncoalesced.selectDistinctColumns.get(0));
+        uncoalesced.selectDistinctColumns.clear();
+
+        final Table resultNoPart = table.whereIn(uncoalesced, "y");
+        assertTableEquals(expected2, resultNoPart);
+        assertEquals(0, uncoalesced.selectDistinctColumns.size());
     }
 
     @Test

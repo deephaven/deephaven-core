@@ -1519,15 +1519,22 @@ public class QueryTable extends BaseTable<QueryTable> {
                     final Table distinctValues;
                     final boolean setRefreshing = rightTable.isRefreshing();
 
-                    final String[] columnNames = MatchPair.getRightColumns(columnsToMatch);
-                    final DataIndex rightIndex = DataIndexer.getDataIndex(rightTable, columnNames);
+                    final String[] rightColumnNames = MatchPair.getRightColumns(columnsToMatch);
+                    final DataIndex rightIndex = DataIndexer.getDataIndex(rightTable, rightColumnNames);
                     if (rightIndex != null) {
                         // We have a distinct index table, let's use it.
                         distinctValues = rightIndex.table();
                     } else if (setRefreshing) {
-                        distinctValues = rightTable.selectDistinct(MatchPair.getRightColumns(columnsToMatch));
+                        distinctValues = rightTable.selectDistinct(rightColumnNames);
                     } else {
-                        distinctValues = rightTable.coalesce();
+                        final TableDefinition rightDef = rightTable.getDefinition();
+                        final boolean allPartitions =
+                                Arrays.stream(rightColumnNames).allMatch(cn -> rightDef.getColumn(cn).isPartitioning());
+                        if (allPartitions) {
+                            distinctValues = rightTable.selectDistinct(rightColumnNames);
+                        } else {
+                            distinctValues = rightTable.coalesce();
+                        }
                     }
 
                     final DynamicWhereFilter dynamicWhereFilter =
