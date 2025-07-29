@@ -16,8 +16,6 @@ import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.updategraph.OperationInitializer;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.proto.backplane.grpc.GetTableRequest;
-import io.deephaven.server.auth.AuthorizationProvider;
-import io.deephaven.server.session.NoopTicketResolverAuthorization;
 import io.deephaven.server.session.SessionService;
 import io.deephaven.server.session.TicketRouter;
 import io.deephaven.util.SafeCloseable;
@@ -172,18 +170,10 @@ public class TestPartitionedTableService extends BaseCachedJMockTestCase {
     private @NotNull PartitionedTableServiceGrpcImpl makeService() {
         final TicketRouter ticketRouter = mock(TicketRouter.class);
         final SessionService sessionService = mock(SessionService.class);
-        final AuthorizationProvider authorizationProvider = mock(AuthorizationProvider.class);
-        final NoopTicketResolverAuthorization ticketResolverAuthorization = new NoopTicketResolverAuthorization();
-        checking(new Expectations() {
-            {
-                oneOf(authorizationProvider).getTicketResolverAuthorization();
-                will(returnValue(ticketResolverAuthorization));
-            }
-        });
         final PartitionedTableServiceContextualAuthWiring authWiring =
                 mock(PartitionedTableServiceContextualAuthWiring.class);
 
 
-        return new PartitionedTableServiceGrpcImpl(ticketRouter, sessionService, authorizationProvider, authWiring);
+        return new PartitionedTableServiceGrpcImpl(ticketRouter, sessionService, authWiring);
     }
 }
