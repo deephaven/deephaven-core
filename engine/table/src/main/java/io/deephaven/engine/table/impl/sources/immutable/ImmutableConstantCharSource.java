@@ -97,7 +97,6 @@ public class ImmutableConstantCharSource
     public void estimatePushdownFilterCost(
             final WhereFilter filter,
             final RowSet selection,
-            final RowSet fullSet,
             final boolean usePrev,
             final PushdownFilterContext context,
             final JobScheduler jobScheduler,
@@ -105,14 +104,13 @@ public class ImmutableConstantCharSource
             final Consumer<Exception> onError) {
         // Delegate to the shared code for RowKeyAgnosticChunkSource
         RowKeyAgnosticChunkSource.estimatePushdownFilterCostHelper(
-                filter, selection, fullSet, usePrev, context, jobScheduler, onComplete, onError);
+                filter, selection, usePrev, context, jobScheduler, onComplete, onError);
     }
 
     @Override
     public void pushdownFilter(
             final WhereFilter filter,
             final RowSet selection,
-            final RowSet fullSet,
             final boolean usePrev,
             final PushdownFilterContext context,
             final long costCeiling,
@@ -120,7 +118,7 @@ public class ImmutableConstantCharSource
             final Consumer<PushdownResult> onComplete,
             final Consumer<Exception> onError) {
         // Delegate to the shared code for RowKeyAgnosticChunkSource
-        RowKeyAgnosticChunkSource.pushdownFilterHelper(this, filter, selection, fullSet, usePrev, context, costCeiling,
+        RowKeyAgnosticChunkSource.pushdownFilterHelper(this, filter, selection, usePrev, context, costCeiling,
                 jobScheduler, onComplete, onError);
     }
 

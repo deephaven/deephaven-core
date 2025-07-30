@@ -1113,7 +1113,6 @@ public final class ParquetTableFilterTest {
         location.estimatePushdownFilterCost(
                 filter,
                 source.getRowSet(),
-                source.getRowSet(),
                 false,
                 TEST_PUSHDOWN_FILTER_CONTEXT,
                 new ImmediateJobScheduler(),

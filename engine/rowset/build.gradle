@@ -28,6 +28,8 @@ dependencies {
             project(path: ':configs'),
             project(path: ':test-configs')
     testRuntimeOnly libs.slf4j.simple
+
+    testImplementation libs.assertj
 }
 
 TestTools.addEngineOutOfBandTest(project)

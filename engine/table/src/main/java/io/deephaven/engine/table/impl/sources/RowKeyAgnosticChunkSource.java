@@ -29,7 +29,6 @@ public interface RowKeyAgnosticChunkSource<ATTR extends Any> extends FillUnorder
     static void estimatePushdownFilterCostHelper(
             final WhereFilter filter,
             final RowSet selection,
-            final RowSet fullSet,
             final boolean usePrev,
             final PushdownFilterContext context,
             final JobScheduler jobScheduler,
@@ -42,7 +41,6 @@ public interface RowKeyAgnosticChunkSource<ATTR extends Any> extends FillUnorder
             final ColumnSource<?> columnSource,
             final WhereFilter filter,
             final RowSet selection,
-            final RowSet fullSet,
             final boolean usePrev,
             final PushdownFilterContext context,
             final long costCeiling,
@@ -51,7 +49,7 @@ public interface RowKeyAgnosticChunkSource<ATTR extends Any> extends FillUnorder
             final Consumer<Exception> onError) {
 
         if (selection.isEmpty()) {
-            onComplete.accept(PushdownResult.of(RowSetFactory.empty(), RowSetFactory.empty()));
+            onComplete.accept(PushdownResult.allNoMatch(selection));
             return;
         }
 
@@ -67,10 +65,10 @@ public interface RowKeyAgnosticChunkSource<ATTR extends Any> extends FillUnorder
             try (final RowSet result = filter.filter(rowSet, rowSet, dummyTable, usePrev)) {
                 if (result.isEmpty()) {
                     // No rows match the filter, return empty selection
-                    onComplete.accept(PushdownResult.of(RowSetFactory.empty(), RowSetFactory.empty()));
+                    onComplete.accept(PushdownResult.allNoMatch(selection));
                 } else {
                     // All rows match this filter, return the original selection as `match` rows.
-                    onComplete.accept(PushdownResult.of(selection.copy(), RowSetFactory.empty()));
+                    onComplete.accept(PushdownResult.allMatch(selection));
                 }
             }
         }

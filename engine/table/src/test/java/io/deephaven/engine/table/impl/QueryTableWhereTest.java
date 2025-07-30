@@ -1959,7 +1959,6 @@ public abstract class QueryTableWhereTest {
         static void pushdownFilter(
                 final WhereFilter filter,
                 final RowSet selection,
-                final RowSet fullSet,
                 final boolean usePrev,
                 final ColumnSource<?> source,
                 final double maybePercentage,
@@ -1967,16 +1966,17 @@ public abstract class QueryTableWhereTest {
             try (final SafeCloseable ignored = LivenessScopeStack.open()) {
                 final String colName = filter.getColumns().get(0);
                 final Map<String, ColumnSource<?>> csMap = Collections.singletonMap(colName, source);
-                final Table dummy = new QueryTable(fullSet.copy().toTracking(), csMap);
+                final Table dummy = new QueryTable(selection.copy().toTracking(), csMap);
 
-                try (final RowSet matches = filter.filter(selection, fullSet, dummy, usePrev)) {
+                try (final WritableRowSet matches = filter.filter(selection, selection, dummy, usePrev)) {
                     final long size = matches.size();
                     final long maybeSize = (long) (size * maybePercentage);
-                    final WritableRowSet addedRowSet = matches.subSetByPositionRange(0, maybeSize);
-                    final WritableRowSet maybeRowSet = matches.subSetByPositionRange(maybeSize, size);
-
-                    // Default to returning all results as maybe
-                    onComplete.accept(PushdownResult.of(addedRowSet, maybeRowSet));
+                    try (
+                            final WritableRowSet addedRowSet = matches.subSetByPositionRange(0, maybeSize);
+                            final WritableRowSet maybeRowSet = matches.subSetByPositionRange(maybeSize, size)) {
+                        // Obvious these row sets do not overlap
+                        onComplete.accept(PushdownResult.of(selection, addedRowSet, maybeRowSet));
+                    }
                 }
             }
         }
@@ -1997,7 +1997,7 @@ public abstract class QueryTableWhereTest {
         }
 
         @Override
-        public void estimatePushdownFilterCost(WhereFilter filter, RowSet selection, RowSet fullSet, boolean usePrev,
+        public void estimatePushdownFilterCost(WhereFilter filter, RowSet selection, boolean usePrev,
                 PushdownFilterContext context, JobScheduler jobScheduler, LongConsumer onComplete,
                 Consumer<Exception> onError) {
             onComplete.accept(pushdownCost);
@@ -2005,12 +2005,11 @@ public abstract class QueryTableWhereTest {
 
         @Override
         public void pushdownFilter(final WhereFilter filter, final RowSet input,
-                final RowSet fullSet, final boolean usePrev, final PushdownFilterContext context,
+                final boolean usePrev, final PushdownFilterContext context,
                 final long costCeiling, final JobScheduler jobScheduler, final Consumer<PushdownResult> onComplete,
                 final Consumer<Exception> onError) {
             encounterOrder = counter.getAndIncrement();
-            PushdownColumnSourceHeler.pushdownFilter(filter, input, fullSet, usePrev, this, maybePercentage,
-                    onComplete);
+            PushdownColumnSourceHeler.pushdownFilter(filter, input, usePrev, this, maybePercentage, onComplete);
         }
 
         public static void resetCounter() {
@@ -2180,7 +2179,6 @@ public abstract class QueryTableWhereTest {
         public void estimatePushdownFilterCost(
                 final WhereFilter filter,
                 final RowSet selection,
-                final RowSet fullSet,
                 final boolean usePrev,
                 final PushdownFilterContext context,
                 final JobScheduler jobScheduler,
@@ -2193,7 +2191,6 @@ public abstract class QueryTableWhereTest {
         public void pushdownFilter(
                 final WhereFilter filter,
                 final RowSet selection,
-                final RowSet fullSet,
                 final boolean usePrev,
                 final PushdownFilterContext context,
                 final long costCeiling,
@@ -2203,14 +2200,16 @@ public abstract class QueryTableWhereTest {
             if (table == null) {
                 throw new IllegalStateException("Table not assigned to TestPPM");
             }
-            try (final SafeCloseable ignored = LivenessScopeStack.open()) {
-                try (final RowSet matches = filter.filter(selection, fullSet, table, usePrev)) {
-                    final long size = matches.size();
-                    final long maybeSize = (long) (size * maybePercentage);
-                    final WritableRowSet addedRowSet = matches.subSetByPositionRange(0, maybeSize);
-                    final WritableRowSet maybeRowSet = matches.subSetByPositionRange(maybeSize, size);
-
-                    onComplete.accept(PushdownResult.of(addedRowSet, maybeRowSet));
+            try (
+                    final SafeCloseable ignored = LivenessScopeStack.open();
+                    final WritableRowSet matches = filter.filter(selection, table.getRowSet(), table, usePrev)) {
+                final long size = matches.size();
+                final long maybeSize = (long) (size * maybePercentage);
+                try (
+                        final WritableRowSet addedRowSet = matches.subSetByPositionRange(0, maybeSize);
+                        final WritableRowSet maybeRowSet = matches.subSetByPositionRange(maybeSize, size)) {
+                    // Obvious these row sets do not overlap
+                    onComplete.accept(PushdownResult.of(selection, addedRowSet, maybeRowSet));
                 }
             }
         }
