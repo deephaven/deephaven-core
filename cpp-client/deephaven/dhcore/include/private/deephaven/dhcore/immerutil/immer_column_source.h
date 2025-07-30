@@ -177,9 +177,11 @@ protected:
   ElementType element_type_;
 };
 
+#ifdef _WIN32
 // Avoid Visual Studio warning about "inherits via dominance" for diamond inheritance pattern.
 #pragma warning(push)
 #pragma warning(disable: 4250)
+#endif
 template<typename T>
 class NumericImmerColumnSource final : public ImmerColumnSource,
     public deephaven::dhcore::column::GenericColumnSource<T>,
@@ -220,11 +222,15 @@ public:
 private:
   immer::flex_vector<T> data_;
 };
+#ifdef _WIN32
 #pragma warning(pop)
+#endif
 
+#ifdef _WIN32
 // Avoid Visual Studio warning about "inherits via dominance" for diamond inheritance pattern.
 #pragma warning(push)
 #pragma warning(disable: 4250)
+#endif
 template<typename T>
 class GenericImmerColumnSource final : public ImmerColumnSource,
     public deephaven::dhcore::column::GenericColumnSource<T>,
@@ -263,5 +269,7 @@ private:
   immer::flex_vector<T> data_;
   immer::flex_vector<bool> null_flags_;
 };
+#ifdef _WIN32
 #pragma warning(pop)
+#endif
 }  // namespace deephaven::dhcore::immerutil
