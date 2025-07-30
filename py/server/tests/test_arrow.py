@@ -3,7 +3,8 @@
 #
 import os
 import unittest
-from datetime import datetime
+from datetime import datetime, date
+from decimal import Decimal
 from typing import List, Any
 
 import numpy as np
@@ -110,7 +111,7 @@ class ArrowTestCase(BaseTestCase):
 
         pa_data = [
             pa.array([1_000_001, 1_000_002]),
-            pa.array([datetime(2022, 12, 7), datetime(2022, 12, 30)]),
+            pa.array([date(2022, 12, 7), date(2022, 12, 30)]),
         ]
         self.verify_type_conversion(pa_types=pa_types, pa_data=pa_data)
 
@@ -150,6 +151,94 @@ class ArrowTestCase(BaseTestCase):
         pa_data = [
             pa.array(["foo", "bar"]),
         ]
+        self.verify_type_conversion(pa_types=pa_types, pa_data=pa_data)
+
+    def test_arrow_types_null(self):
+        pa_types = [pa.null()]
+        pa_data = [pa.array([None, None], type=pa.null())]
+        self.verify_type_conversion(pa_types=pa_types, pa_data=pa_data)
+
+    def test_arrow_types_uint8(self):
+        pa_types = [pa.uint8()]
+        pa_data = [pa.array([2**8 - 1, 0], type=pa.uint8())]
+        self.verify_type_conversion(pa_types=pa_types, pa_data=pa_data)
+
+    def test_arrow_types_uint32(self):
+        pa_types = [pa.uint32()]
+        pa_data = [pa.array([2**32 - 1, 0], type=pa.uint32())]
+        self.verify_type_conversion(pa_types=pa_types, pa_data=pa_data)
+
+    def test_arrow_types_uint64(self):
+        pa_types = [pa.uint64()]
+        pa_data = [pa.array([2**64 - 1, 0], type=pa.uint64())]
+        self.verify_type_conversion(pa_types=pa_types, pa_data=pa_data)
+
+    def test_arrow_types_float16(self):
+        pa_types = [pa.float16()]
+        # pyarrow requires numpy float16 instances for float16 arrays
+        pa_data = [pa.array(np.array([1.5, -2.5], dtype=np.float16()), type=pa.float16())]
+        self.verify_type_conversion(pa_types=pa_types, pa_data=pa_data)
+
+    def test_arrow_types_time32_s(self):
+        pa_types = [pa.time32('s')]
+        pa_data = [pa.array([1000, 2000], type=pa.time32('s'))]
+        self.verify_type_conversion(pa_types=pa_types, pa_data=pa_data)
+
+    def test_arrow_types_time32_ms(self):
+        pa_types = [pa.time32('ms')]
+        pa_data = [pa.array([1000, 2000], type=pa.time32('ms'))]
+        self.verify_type_conversion(pa_types=pa_types, pa_data=pa_data)
+
+    def test_arrow_types_time64_us(self):
+        pa_types = [pa.time64('us')]
+        pa_data = [pa.array([1000000, 2000000], type=pa.time64('us'))]
+        self.verify_type_conversion(pa_types=pa_types, pa_data=pa_data)
+
+    def test_arrow_types_date32(self):
+        pa_types = [pa.date32()]
+        # use numpy datetime64[D] since pyarrow expects numpy types for date32
+        dates = np.array(['2022-12-07', '2022-12-30'], dtype='datetime64[D]')
+        pa_data = [pa.array(dates, type=pa.date32())]
+        self.verify_type_conversion(pa_types=pa_types, pa_data=pa_data)
+
+    def test_arrow_types_duration_s(self):
+        pa_types = [pa.duration('s')]
+        pa_data = [pa.array([30, 60], type=pa.duration('s'))]
+        self.verify_type_conversion(pa_types=pa_types, pa_data=pa_data)
+
+    def test_arrow_types_duration_ms(self):
+        pa_types = [pa.duration('ms')]
+        pa_data = [pa.array([1000, 2000], type=pa.duration('ms'))]
+        self.verify_type_conversion(pa_types=pa_types, pa_data=pa_data)
+
+    def test_arrow_types_duration_us(self):
+        pa_types = [pa.duration('us')]
+        pa_data = [pa.array([100000, 200000], type=pa.duration('us'))]
+        self.verify_type_conversion(pa_types=pa_types, pa_data=pa_data)
+
+    def test_arrow_types_duration_ns(self):
+        pa_types = [pa.duration('ns')]
+        pa_data = [pa.array([1000000000, 2000000000], type=pa.duration('ns'))]
+        self.verify_type_conversion(pa_types=pa_types, pa_data=pa_data)
+
+    def test_arrow_types_month_day_nano(self):
+        pa_types = [pa.month_day_nano_interval()]
+        pa_data = [pa.array([(1, 15, 100), (2, 20, 200)], type=pa.month_day_nano_interval())]
+        self.verify_type_conversion(pa_types=pa_types, pa_data=pa_data)
+
+    def test_arrow_types_binary(self):
+        pa_types = [pa.binary()]
+        pa_data = [pa.array([b'\x00\x01', b'\x02\x03'], type=pa.binary())]
+        self.verify_type_conversion(pa_types=pa_types, pa_data=pa_data)
+
+    def test_arrow_types_decimal128(self):
+        pa_types = [pa.decimal128(10, 2)]
+        pa_data = [pa.array([Decimal('123.45'), Decimal('-67.89')], type=pa.decimal128(10, 2))]
+        self.verify_type_conversion(pa_types=pa_types, pa_data=pa_data)
+
+    def test_arrow_types_decimal256(self):
+        pa_types = [pa.decimal256(20, 5)]
+        pa_data = [pa.array([Decimal('123456.78901'), Decimal('-98765.43210')], type=pa.decimal256(20, 5))]
         self.verify_type_conversion(pa_types=pa_types, pa_data=pa_data)
 
     def test_against_parquet(self):
