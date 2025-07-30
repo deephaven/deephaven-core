@@ -26,6 +26,7 @@ import io.deephaven.proto.backplane.grpc.NotCondition;
 import io.deephaven.proto.backplane.grpc.Reference;
 import io.deephaven.proto.backplane.grpc.Value;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.text.DecimalFormat;
 import java.util.List;
@@ -224,12 +225,14 @@ public class FilterFactory implements FilterVisitor<WhereFilter> {
     }
 
     @Override
-    public WhereFilter onInvoke(String method, Value target, List<Value> argumentsList) {
-        return generateConditionFilter(Condition.newBuilder().setInvoke(InvokeCondition.newBuilder()
+    public WhereFilter onInvoke(String method, @Nullable Value target, List<Value> argumentsList) {
+        InvokeCondition.Builder partialInvoke = InvokeCondition.newBuilder()
                 .setMethod(method)
-                .setTarget(target)
-                .addAllArguments(argumentsList)
-                .build()).build());
+                .addAllArguments(argumentsList);
+        if (target != null) {
+            partialInvoke.setTarget(target);
+        }
+        return generateConditionFilter(Condition.newBuilder().setInvoke(partialInvoke).build());
     }
 
     @Override
