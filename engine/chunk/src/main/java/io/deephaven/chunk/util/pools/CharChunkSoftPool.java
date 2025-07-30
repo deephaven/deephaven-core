@@ -3,9 +3,15 @@
 //
 package io.deephaven.chunk.util.pools;
 
+import io.deephaven.chunk.CharChunk;
+import io.deephaven.chunk.ResettableCharChunk;
+import io.deephaven.chunk.ResettableReadOnlyChunk;
+import io.deephaven.chunk.ResettableWritableCharChunk;
+import io.deephaven.chunk.ResettableWritableChunk;
+import io.deephaven.chunk.WritableCharChunk;
+import io.deephaven.chunk.WritableChunk;
 import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.chunk.attributes.Any;
-import io.deephaven.chunk.*;
 import io.deephaven.util.datastructures.SegmentedSoftPool;
 
 import static io.deephaven.chunk.util.pools.ChunkPoolConstants.*;

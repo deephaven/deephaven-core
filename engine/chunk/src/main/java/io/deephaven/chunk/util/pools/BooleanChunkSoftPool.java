@@ -7,11 +7,16 @@
 // @formatter:off
 package io.deephaven.chunk.util.pools;
 
+import io.deephaven.chunk.BooleanChunk;
+import io.deephaven.chunk.ResettableBooleanChunk;
+import io.deephaven.chunk.ResettableReadOnlyChunk;
+import io.deephaven.chunk.ResettableWritableBooleanChunk;
+import io.deephaven.chunk.ResettableWritableChunk;
+import io.deephaven.chunk.WritableBooleanChunk;
+import io.deephaven.chunk.WritableChunk;
 import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.chunk.attributes.Any;
-import io.deephaven.chunk.*;
 import io.deephaven.util.datastructures.SegmentedSoftPool;
-import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.chunk.util.pools.ChunkPoolConstants.*;
 
@@ -21,7 +26,8 @@ import static io.deephaven.chunk.util.pools.ChunkPoolConstants.*;
 @SuppressWarnings("rawtypes")
 public final class BooleanChunkSoftPool implements BooleanChunkPool {
 
-    private final WritableBooleanChunk<Any> EMPTY = WritableBooleanChunk.writableChunkWrap(ArrayTypeUtils.EMPTY_BOOLEAN_ARRAY);
+    private static final WritableBooleanChunk<Any> EMPTY =
+            WritableBooleanChunk.writableChunkWrap(ArrayTypeUtils.EMPTY_BOOLEAN_ARRAY);
 
     /**
      * Sub-pools by power-of-two sizes for {@link WritableBooleanChunk}s.
@@ -42,21 +48,37 @@ public final class BooleanChunkSoftPool implements BooleanChunkPool {
         // noinspection unchecked
         writableBooleanChunks = new SegmentedSoftPool[NUM_POOLED_CHUNK_CAPACITIES];
         for (int pcci = 0; pcci < NUM_POOLED_CHUNK_CAPACITIES; ++pcci) {
-            final int chunkLog2Capacity = pcci + SMALLEST_POOLED_CHUNK_LOG2_CAPACITY;
+            final int poolIndex = pcci;
+            final int chunkLog2Capacity = poolIndex + SMALLEST_POOLED_CHUNK_LOG2_CAPACITY;
             final int chunkCapacity = 1 << chunkLog2Capacity;
-            writableBooleanChunks[pcci] = new SegmentedSoftPool<>(
+            writableBooleanChunks[poolIndex] = new SegmentedSoftPool<>(
                     SUB_POOL_SEGMENT_CAPACITY,
-                    () -> ChunkPoolInstrumentation
-                            .getAndRecord(() -> WritableBooleanChunk.makeWritableChunkForPool(chunkCapacity)),
+                    () -> ChunkPoolInstrumentation.getAndRecord(
+                            () -> new WritableBooleanChunk(BooleanChunk.makeArray(chunkCapacity), 0, chunkCapacity) {
+                                @Override
+                                public void close() {
+                                    writableBooleanChunks[poolIndex].give(ChunkPoolReleaseTracking.onGive(this));
+                                }
+                            }),
                     (final WritableBooleanChunk chunk) -> chunk.setSize(chunkCapacity));
         }
         resettableBooleanChunks = new SegmentedSoftPool<>(
                 SUB_POOL_SEGMENT_CAPACITY,
-                () -> ChunkPoolInstrumentation.getAndRecord(ResettableBooleanChunk::makeResettableChunkForPool),
+                () -> ChunkPoolInstrumentation.getAndRecord(() -> new ResettableBooleanChunk() {
+                    @Override
+                    public void close() {
+                        resettableBooleanChunks.give(ChunkPoolReleaseTracking.onGive(this));
+                    }
+                }),
                 ResettableBooleanChunk::clear);
         resettableWritableBooleanChunks = new SegmentedSoftPool<>(
                 SUB_POOL_SEGMENT_CAPACITY,
-                () -> ChunkPoolInstrumentation.getAndRecord(ResettableWritableBooleanChunk::makeResettableChunkForPool),
+                () -> ChunkPoolInstrumentation.getAndRecord(() -> new ResettableWritableBooleanChunk() {
+                    @Override
+                    public void close() {
+                        resettableWritableBooleanChunks.give(ChunkPoolReleaseTracking.onGive(this));
+                    }
+                }),
                 ResettableWritableBooleanChunk::clear);
     }
 
@@ -69,30 +91,13 @@ public final class BooleanChunkSoftPool implements BooleanChunkPool {
             }
 
             @Override
-            public <ATTR extends Any> void giveWritableChunk(@NotNull final WritableChunk<ATTR> writableChunk) {
-                giveWritableBooleanChunk(writableChunk.asWritableBooleanChunk());
-            }
-
-            @Override
             public <ATTR extends Any> ResettableReadOnlyChunk<ATTR> takeResettableChunk() {
                 return takeResettableBooleanChunk();
             }
 
             @Override
-            public <ATTR extends Any> void giveResettableChunk(
-                    @NotNull final ResettableReadOnlyChunk<ATTR> resettableChunk) {
-                giveResettableBooleanChunk(resettableChunk.asResettableBooleanChunk());
-            }
-
-            @Override
             public <ATTR extends Any> ResettableWritableChunk<ATTR> takeResettableWritableChunk() {
                 return takeResettableWritableBooleanChunk();
-            }
-
-            @Override
-            public <ATTR extends Any> void giveResettableWritableChunk(
-                    @NotNull final ResettableWritableChunk<ATTR> resettableWritableChunk) {
-                giveResettableWritableBooleanChunk(resettableWritableChunk.asResettableWritableBooleanChunk());
             }
         };
     }
@@ -111,21 +116,13 @@ public final class BooleanChunkSoftPool implements BooleanChunkPool {
             // noinspection unchecked
             return ChunkPoolReleaseTracking.onTake(result);
         }
-        // noinspection unchecked
-        return ChunkPoolReleaseTracking.onTake(WritableBooleanChunk.makeWritableChunkForPool(capacity));
-    }
-
-    @Override
-    public void giveWritableBooleanChunk(@NotNull final WritableBooleanChunk<?> writableBooleanChunk) {
-        if (writableBooleanChunk == EMPTY || writableBooleanChunk.isAlias(EMPTY)) {
-            return;
-        }
-        ChunkPoolReleaseTracking.onGive(writableBooleanChunk);
-        final int capacity = writableBooleanChunk.capacity();
-        final int poolIndexForGive = getPoolIndexForGive(checkCapacityBounds(capacity));
-        if (poolIndexForGive >= 0) {
-            writableBooleanChunks[poolIndexForGive].give(writableBooleanChunk);
-        }
+        return ChunkPoolReleaseTracking.onTake(
+                new WritableBooleanChunk<>(BooleanChunk.makeArray(capacity), 0, capacity) {
+                    @Override
+                    public void close() {
+                        ChunkPoolReleaseTracking.onGive(this);
+                    }
+                });
     }
 
     @Override
@@ -135,19 +132,8 @@ public final class BooleanChunkSoftPool implements BooleanChunkPool {
     }
 
     @Override
-    public void giveResettableBooleanChunk(@NotNull final ResettableBooleanChunk resettableBooleanChunk) {
-        resettableBooleanChunks.give(ChunkPoolReleaseTracking.onGive(resettableBooleanChunk));
-    }
-
-    @Override
     public <ATTR extends Any> ResettableWritableBooleanChunk<ATTR> takeResettableWritableBooleanChunk() {
         // noinspection unchecked
         return ChunkPoolReleaseTracking.onTake(resettableWritableBooleanChunks.take());
-    }
-
-    @Override
-    public void giveResettableWritableBooleanChunk(
-            @NotNull final ResettableWritableBooleanChunk resettableWritableBooleanChunk) {
-        resettableWritableBooleanChunks.give(ChunkPoolReleaseTracking.onGive(resettableWritableBooleanChunk));
     }
 }

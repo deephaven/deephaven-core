@@ -3,11 +3,16 @@
 //
 package io.deephaven.chunk.util.pools;
 
+import io.deephaven.chunk.ObjectChunk;
+import io.deephaven.chunk.ResettableObjectChunk;
+import io.deephaven.chunk.ResettableReadOnlyChunk;
+import io.deephaven.chunk.ResettableWritableChunk;
+import io.deephaven.chunk.ResettableWritableObjectChunk;
+import io.deephaven.chunk.WritableChunk;
+import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.chunk.attributes.Any;
-import io.deephaven.chunk.*;
 import io.deephaven.util.datastructures.SegmentedSoftPool;
-import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.chunk.util.pools.ChunkPoolConstants.*;
 
@@ -15,7 +20,7 @@ import static io.deephaven.chunk.util.pools.ChunkPoolConstants.*;
  * {@link ChunkPool} implementation for chunks of objects.
  */
 @SuppressWarnings("rawtypes")
-public final class ObjectChunkSoftPool implements ChunkPool, ObjectChunkPool {
+public final class ObjectChunkSoftPool implements ObjectChunkPool {
 
     private final WritableObjectChunk<?, Any> EMPTY =
             WritableObjectChunk.writableChunkWrap(ArrayTypeUtils.EMPTY_OBJECT_ARRAY);
@@ -40,12 +45,18 @@ public final class ObjectChunkSoftPool implements ChunkPool, ObjectChunkPool {
         writableObjectChunks =
                 (SegmentedSoftPool<WritableObjectChunk>[]) new SegmentedSoftPool[NUM_POOLED_CHUNK_CAPACITIES];
         for (int pcci = 0; pcci < NUM_POOLED_CHUNK_CAPACITIES; ++pcci) {
-            final int chunkLog2Capacity = pcci + SMALLEST_POOLED_CHUNK_LOG2_CAPACITY;
+            final int poolIndex = pcci;
+            final int chunkLog2Capacity = poolIndex + SMALLEST_POOLED_CHUNK_LOG2_CAPACITY;
             final int chunkCapacity = 1 << chunkLog2Capacity;
-            writableObjectChunks[pcci] = new SegmentedSoftPool<>(
+            writableObjectChunks[poolIndex] = new SegmentedSoftPool<>(
                     SUB_POOL_SEGMENT_CAPACITY,
-                    () -> ChunkPoolInstrumentation
-                            .getAndRecord(() -> WritableObjectChunk.makeWritableChunkForPool(chunkCapacity)),
+                    () -> ChunkPoolInstrumentation.getAndRecord(
+                            () -> new WritableObjectChunk<>(ObjectChunk.makeArray(chunkCapacity), 0, chunkCapacity) {
+                                @Override
+                                public void close() {
+                                    writableObjectChunks[poolIndex].give(ChunkPoolReleaseTracking.onGive(this));
+                                }
+                            }),
                     (final WritableObjectChunk chunk) -> {
                         chunk.fillWithNullValue(0, chunkCapacity);
                         chunk.setSize(chunkCapacity);
@@ -53,11 +64,21 @@ public final class ObjectChunkSoftPool implements ChunkPool, ObjectChunkPool {
         }
         resettableObjectChunks = new SegmentedSoftPool<>(
                 SUB_POOL_SEGMENT_CAPACITY,
-                () -> ChunkPoolInstrumentation.getAndRecord(ResettableObjectChunk::makeResettableChunkForPool),
+                () -> ChunkPoolInstrumentation.getAndRecord(() -> new ResettableObjectChunk() {
+                    @Override
+                    public void close() {
+                        resettableObjectChunks.give(ChunkPoolReleaseTracking.onGive(this));
+                    }
+                }),
                 ResettableObjectChunk::clear);
         resettableWritableObjectChunks = new SegmentedSoftPool<>(
                 SUB_POOL_SEGMENT_CAPACITY,
-                () -> ChunkPoolInstrumentation.getAndRecord(ResettableWritableObjectChunk::makeResettableChunkForPool),
+                () -> ChunkPoolInstrumentation.getAndRecord(() -> new ResettableWritableObjectChunk() {
+                    @Override
+                    public void close() {
+                        resettableWritableObjectChunks.give(ChunkPoolReleaseTracking.onGive(this));
+                    }
+                }),
                 ResettableWritableObjectChunk::clear);
     }
 
@@ -70,63 +91,15 @@ public final class ObjectChunkSoftPool implements ChunkPool, ObjectChunkPool {
             }
 
             @Override
-            public <ATTR extends Any> void giveWritableChunk(@NotNull final WritableChunk<ATTR> writableChunk) {
-                giveWritableObjectChunk(writableChunk.asWritableObjectChunk());
-            }
-
-            @Override
             public <ATTR extends Any> ResettableReadOnlyChunk<ATTR> takeResettableChunk() {
                 return takeResettableObjectChunk();
-            }
-
-            @Override
-            public <ATTR extends Any> void giveResettableChunk(
-                    @NotNull final ResettableReadOnlyChunk<ATTR> resettableChunk) {
-                giveResettableObjectChunk(resettableChunk.asResettableObjectChunk());
             }
 
             @Override
             public <ATTR extends Any> ResettableWritableChunk<ATTR> takeResettableWritableChunk() {
                 return takeResettableWritableObjectChunk();
             }
-
-            @Override
-            public <ATTR extends Any> void giveResettableWritableChunk(
-                    @NotNull final ResettableWritableChunk<ATTR> resettableWritableChunk) {
-                giveResettableWritableObjectChunk(resettableWritableChunk.asResettableWritableObjectChunk());
-            }
         };
-    }
-
-    @Override
-    public <ATTR extends Any> WritableChunk<ATTR> takeWritableChunk(final int capacity) {
-        return takeWritableObjectChunk(capacity);
-    }
-
-    @Override
-    public <ATTR extends Any> void giveWritableChunk(@NotNull final WritableChunk<ATTR> writableChunk) {
-        giveWritableObjectChunk(writableChunk.asWritableObjectChunk());
-    }
-
-    @Override
-    public <ATTR extends Any> ResettableReadOnlyChunk<ATTR> takeResettableChunk() {
-        return takeResettableObjectChunk();
-    }
-
-    @Override
-    public <ATTR extends Any> void giveResettableChunk(@NotNull final ResettableReadOnlyChunk<ATTR> resettableChunk) {
-        giveResettableObjectChunk(resettableChunk.asResettableObjectChunk());
-    }
-
-    @Override
-    public <ATTR extends Any> ResettableWritableChunk<ATTR> takeResettableWritableChunk() {
-        return takeResettableWritableObjectChunk();
-    }
-
-    @Override
-    public <ATTR extends Any> void giveResettableWritableChunk(
-            @NotNull final ResettableWritableChunk<ATTR> resettableWritableChunk) {
-        giveResettableWritableObjectChunk(resettableWritableChunk.asResettableWritableObjectChunk());
     }
 
     @Override
@@ -143,21 +116,13 @@ public final class ObjectChunkSoftPool implements ChunkPool, ObjectChunkPool {
             // noinspection unchecked
             return ChunkPoolReleaseTracking.onTake(result);
         }
-        // noinspection unchecked
-        return ChunkPoolReleaseTracking.onTake(WritableObjectChunk.makeWritableChunkForPool(capacity));
-    }
-
-    @Override
-    public void giveWritableObjectChunk(@NotNull final WritableObjectChunk<?, ?> writableObjectChunk) {
-        if (writableObjectChunk == EMPTY || writableObjectChunk.isAlias(EMPTY)) {
-            return;
-        }
-        ChunkPoolReleaseTracking.onGive(writableObjectChunk);
-        final int capacity = writableObjectChunk.capacity();
-        final int poolIndexForGive = getPoolIndexForGive(checkCapacityBounds(capacity));
-        if (poolIndexForGive >= 0) {
-            writableObjectChunks[poolIndexForGive].give(writableObjectChunk);
-        }
+        return ChunkPoolReleaseTracking.onTake(
+                new WritableObjectChunk<>(ObjectChunk.makeArray(capacity), 0, capacity) {
+                    @Override
+                    public void close() {
+                        ChunkPoolReleaseTracking.onGive(this);
+                    }
+                });
     }
 
     @Override
@@ -167,19 +132,8 @@ public final class ObjectChunkSoftPool implements ChunkPool, ObjectChunkPool {
     }
 
     @Override
-    public void giveResettableObjectChunk(@NotNull final ResettableObjectChunk resettableObjectChunk) {
-        resettableObjectChunks.give(ChunkPoolReleaseTracking.onGive(resettableObjectChunk));
-    }
-
-    @Override
     public <TYPE, ATTR extends Any> ResettableWritableObjectChunk<TYPE, ATTR> takeResettableWritableObjectChunk() {
         // noinspection unchecked
         return ChunkPoolReleaseTracking.onTake(resettableWritableObjectChunks.take());
-    }
-
-    @Override
-    public void giveResettableWritableObjectChunk(
-            @NotNull final ResettableWritableObjectChunk resettableWritableObjectChunk) {
-        resettableWritableObjectChunks.give(ChunkPoolReleaseTracking.onGive(resettableWritableObjectChunk));
     }
 }
