@@ -1528,9 +1528,9 @@ public class QueryTable extends BaseTable<QueryTable> {
                         distinctValues = rightTable.selectDistinct(rightColumnNames);
                     } else {
                         final TableDefinition rightDef = rightTable.getDefinition();
-                        final boolean allPartitions =
+                        final boolean allPartitioning =
                                 Arrays.stream(rightColumnNames).allMatch(cn -> rightDef.getColumn(cn).isPartitioning());
-                        if (allPartitions) {
+                        if (allPartitioning) {
                             distinctValues = rightTable.selectDistinct(rightColumnNames);
                         } else {
                             distinctValues = rightTable.coalesce();
