@@ -109,8 +109,8 @@ TEST_CASE("List Types", "[newtable]") {
   });
   maker.AddColumn<std::optional<std::vector<std::optional<float>>>>("Floats", {
       {}, // a null list
-      { { 0, 123.456 } }, // a non-null list
-      { { 0, 123.456, {} } } // a non-null list with a null entry
+      { { 0.0F, 123.456F } }, // a non-null list
+      { { 0.0F, 123.456F, {} } } // a non-null list with a null entry
   });
   maker.AddColumn<std::optional<std::vector<std::optional<double>>>>("Doubles", {
       {}, // a null list

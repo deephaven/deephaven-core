@@ -167,7 +167,7 @@ struct ImmerColumnSourceImpls {
 
 class ImmerColumnSource : public virtual deephaven::dhcore::column::ColumnSource {
 public:
-  explicit ImmerColumnSource(const ElementType &elementType) : element_type_(elementType) {}
+  explicit ImmerColumnSource(const ElementType &element_type) : element_type_(element_type) {}
 
   const ElementType &GetElementType() const final {
     return element_type_;
@@ -177,6 +177,9 @@ protected:
   ElementType element_type_;
 };
 
+// Avoid Visual Studio warning about "inherits via dominance" for diamond inheritance pattern.
+#pragma warning(push)
+#pragma warning(disable: 4250)
 template<typename T>
 class NumericImmerColumnSource final : public ImmerColumnSource,
     public deephaven::dhcore::column::GenericColumnSource<T>,
@@ -217,13 +220,18 @@ public:
 private:
   immer::flex_vector<T> data_;
 };
+#pragma warning(pop)
 
+// Avoid Visual Studio warning about "inherits via dominance" for diamond inheritance pattern.
+#pragma warning(push)
+#pragma warning(disable: 4250)
 template<typename T>
 class GenericImmerColumnSource final : public ImmerColumnSource,
     public deephaven::dhcore::column::GenericColumnSource<T>,
     std::enable_shared_from_this<GenericImmerColumnSource<T>> {
   struct Private {};
   using ColumnSourceVisitor = deephaven::dhcore::column::ColumnSourceVisitor;
+
 public:
   static std::shared_ptr<GenericImmerColumnSource> Create(const ElementType &element_type,
       immer::flex_vector<T> data, immer::flex_vector<bool> null_flags) {
@@ -255,4 +263,5 @@ private:
   immer::flex_vector<T> data_;
   immer::flex_vector<bool> null_flags_;
 };
+#pragma warning(pop)
 }  // namespace deephaven::dhcore::immerutil
