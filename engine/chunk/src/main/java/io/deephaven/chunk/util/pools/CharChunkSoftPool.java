@@ -9,6 +9,9 @@ import io.deephaven.chunk.*;
 import io.deephaven.util.datastructures.SegmentedSoftPool;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.function.IntFunction;
+import java.util.function.Supplier;
+
 import static io.deephaven.chunk.util.pools.ChunkPoolConstants.*;
 
 /**
@@ -17,7 +20,18 @@ import static io.deephaven.chunk.util.pools.ChunkPoolConstants.*;
 @SuppressWarnings("rawtypes")
 public final class CharChunkSoftPool implements CharChunkPool {
 
-    private final WritableCharChunk<Any> EMPTY = WritableCharChunk.writableChunkWrap(ArrayTypeUtils.EMPTY_CHAR_ARRAY);
+    private static final WritableCharChunk<Any> EMPTY = WritableCharChunk.writableChunkWrap(ArrayTypeUtils.EMPTY_CHAR_ARRAY);
+
+    public interface PooledChunkFactory {
+
+        WritableCharChunk<Any> makeWritableChunk(int capacity);
+
+        ResettableCharChunk<Any> makeResettableChunk();
+
+        ResettableWritableCharChunk<Any> makeResettableWritableChunk();
+    }
+
+    private final IntFunction<WritableCharChunk<Any>> chunkFactory;
 
     /**
      * Sub-pools by power-of-two sizes for {@link WritableCharChunk}s.
@@ -34,7 +48,8 @@ public final class CharChunkSoftPool implements CharChunkPool {
      */
     private final SegmentedSoftPool<ResettableWritableCharChunk> resettableWritableCharChunks;
 
-    CharChunkSoftPool() {
+    CharChunkSoftPool(final IntFunction<WritableCharChunk<Any>> chunkFactory) {
+        this.chunkFactory = chunkFactory;
         // noinspection unchecked
         writableCharChunks = new SegmentedSoftPool[NUM_POOLED_CHUNK_CAPACITIES];
         for (int pcci = 0; pcci < NUM_POOLED_CHUNK_CAPACITIES; ++pcci) {
@@ -43,7 +58,7 @@ public final class CharChunkSoftPool implements CharChunkPool {
             writableCharChunks[pcci] = new SegmentedSoftPool<>(
                     SUB_POOL_SEGMENT_CAPACITY,
                     () -> ChunkPoolInstrumentation
-                            .getAndRecord(() -> WritableCharChunk.makeWritableChunkForPool(chunkCapacity)),
+                            .getAndRecord(() -> chunkFactory.apply(chunkCapacity)),
                     (final WritableCharChunk chunk) -> chunk.setSize(chunkCapacity));
         }
         resettableCharChunks = new SegmentedSoftPool<>(
@@ -108,7 +123,7 @@ public final class CharChunkSoftPool implements CharChunkPool {
             return ChunkPoolReleaseTracking.onTake(result);
         }
         // noinspection unchecked
-        return ChunkPoolReleaseTracking.onTake(WritableCharChunk.makeWritableChunkForPool(capacity));
+        return ChunkPoolReleaseTracking.onTake(chunkFactory.apply(capacity));
     }
 
     @Override

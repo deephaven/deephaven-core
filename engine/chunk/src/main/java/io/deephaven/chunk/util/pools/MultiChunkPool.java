@@ -59,7 +59,7 @@ public final class MultiChunkPool implements BooleanChunkPool, ByteChunkPool, Ch
     }
 
     private final BooleanChunkPool booleanChunkPool = new BooleanChunkSoftPool();
-    private final CharChunkPool charChunkPool = new CharChunkSoftPool();
+    private final CharChunkPool charChunkPool = new CharChunkSoftPool(MultiChunkPool::makeWritableCharChunkForPool);
     private final ByteChunkPool byteChunkPool = new ByteChunkSoftPool();
     private final ShortChunkPool shortChunkPool = new ShortChunkSoftPool();
     private final IntChunkPool intChunkPool = new IntChunkSoftPool();
@@ -406,5 +406,86 @@ public final class MultiChunkPool implements BooleanChunkPool, ByteChunkPool, Ch
     public void giveResettableWritableObjectChunk(
             @NotNull ResettableWritableObjectChunk<?, ?> resettableWritableObjectChunk) {
         objectChunkPool.giveResettableWritableObjectChunk(resettableWritableObjectChunk);
+    }
+
+    private static <ATTR extends Any> WritableBooleanChunk<ATTR> makeWritableBooleanChunkForPool(final int size) {
+        return new WritableBooleanChunk<>(WritableBooleanChunk.makeArray(size), 0, size) {
+            @Override
+            public void close() {
+                forThisThread().giveWritableBooleanChunk(this);
+            }
+        };
+    }
+
+    private static <ATTR extends Any> WritableCharChunk<ATTR> makeWritableCharChunkForPool(final int size) {
+        return new WritableCharChunk<>(WritableCharChunk.makeArray(size), 0, size) {
+            @Override
+            public void close() {
+                forThisThread().giveWritableCharChunk(this);
+            }
+        };
+    }
+
+    private static <ATTR extends Any> WritableByteChunk<ATTR> makeWritableByteChunkForPool(final int size) {
+        return new WritableByteChunk<>(WritableByteChunk.makeArray(size), 0, size) {
+            @Override
+            public void close() {
+                forThisThread().giveWritableByteChunk(this);
+            }
+        };
+    }
+
+    private static <ATTR extends Any> WritableShortChunk<ATTR> makeWritableShortChunkForPool(final int size) {
+        return new WritableShortChunk<>(WritableShortChunk.makeArray(size), 0, size) {
+            @Override
+            public void close() {
+                forThisThread().giveWritableShortChunk(this);
+            }
+        };
+    }
+
+    private static <ATTR extends Any> WritableIntChunk<ATTR> makeWritableIntChunkForPool(final int size) {
+        return new WritableIntChunk<>(WritableIntChunk.makeArray(size), 0, size) {
+            @Override
+            public void close() {
+                forThisThread().giveWritableIntChunk(this);
+            }
+        };
+    }
+
+    private static <ATTR extends Any> WritableLongChunk<ATTR> makeWritableLongChunkForPool(final int size) {
+        return new WritableLongChunk<>(WritableLongChunk.makeArray(size), 0, size) {
+            @Override
+            public void close() {
+                forThisThread().giveWritableLongChunk(this);
+            }
+        };
+    }
+
+    private static <ATTR extends Any> WritableFloatChunk<ATTR> makeWritableFloatChunkForPool(final int size) {
+        return new WritableFloatChunk<>(WritableFloatChunk.makeArray(size), 0, size) {
+            @Override
+            public void close() {
+                forThisThread().giveWritableFloatChunk(this);
+            }
+        };
+    }
+
+    private static <ATTR extends Any> WritableDoubleChunk<ATTR> makeWritableDoubleChunkForPool(final int size) {
+        return new WritableDoubleChunk<>(WritableDoubleChunk.makeArray(size), 0, size) {
+            @Override
+            public void close() {
+                forThisThread().giveWritableDoubleChunk(this);
+            }
+        };
+    }
+
+    private static <T, ATTR extends Any> WritableObjectChunk<T, ATTR> makeWritableChunkForPool(final int size) {
+        return new WritableObjectChunk<>(WritableObjectChunk.makeArray(size), 0, size) {
+            @Override
+            public void close() {
+                forThisThread().giveWritableObjectChunk(this);
+            }
+        };
     }
 }
