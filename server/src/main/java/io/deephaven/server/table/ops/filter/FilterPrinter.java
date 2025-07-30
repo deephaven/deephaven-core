@@ -11,6 +11,7 @@ import io.deephaven.proto.backplane.grpc.MatchType;
 import io.deephaven.proto.backplane.grpc.Reference;
 import io.deephaven.proto.backplane.grpc.Value;
 import org.apache.commons.text.StringEscapeUtils;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
@@ -164,7 +165,7 @@ public class FilterPrinter implements FilterVisitor<Void> {
     }
 
     @Override
-    public Void onInvoke(String method, Value target, List<Value> argumentsList) {
+    public Void onInvoke(String method, @Nullable Value target, List<Value> argumentsList) {
         if (target != null) {
             accept(target);
             sb.append(".");
