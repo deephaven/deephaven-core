@@ -59,7 +59,7 @@ public final class MultiChunkPool implements BooleanChunkPool, ByteChunkPool, Ch
     }
 
     private final BooleanChunkPool booleanChunkPool = new BooleanChunkSoftPool();
-    private final CharChunkPool charChunkPool = new CharChunkSoftPool(MultiChunkPool::makeWritableCharChunkForPool);
+    private final CharChunkPool charChunkPool = new CharChunkSoftPool();
     private final ByteChunkPool byteChunkPool = new ByteChunkSoftPool();
     private final ShortChunkPool shortChunkPool = new ShortChunkSoftPool();
     private final IntChunkPool intChunkPool = new IntChunkSoftPool();
