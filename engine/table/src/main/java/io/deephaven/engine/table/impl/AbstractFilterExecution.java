@@ -485,27 +485,31 @@ abstract class AbstractFilterExecution {
             for (int ii = 0; ii < filters.size(); ii++) {
                 final WhereFilter filter = filters.get(ii);
                 final PushdownFilterMatcher executor;
-                if (filter.getColumns().size() > 1) {
+
+                // Select the executor to use for this filter (or assign null if pushdown is not supported).
+                if (filter.hasVirtualRowVariables() || !filter.getColumnArrays().isEmpty()) {
+                    // TODO: should this pushdown ability test be promoted to a more common/accessible location?
+                    // Maybe WhereFilter or one of the Pushdown classes?
+                    executor = null;
+                } else if (filter.getColumns().size() > 1) {
                     executor = PushdownPredicateManager.getSharedPPM(filter.getColumns().stream()
                             .map(sourceTable::getColumnSource)
                             .collect(Collectors.toList()));
                 } else if (filter.getColumns().size() == 1) {
-                    final ColumnSource<?> columnSource =
-                            sourceTable.getColumnSource(filter.getColumns().get(0));
+                    final ColumnSource<?> columnSource = sourceTable.getColumnSource(filter.getColumns().get(0));
                     executor = (columnSource instanceof AbstractColumnSource)
                             ? (AbstractColumnSource<?>) columnSource
                             : null;
                 } else {
                     executor = null;
                 }
-                final List<ColumnSource<?>> filterSources = filter.getColumns().stream()
-                        .map(sourceTable::getColumnSource)
-                        .collect(Collectors.toList());
-                final PushdownFilterContext context = executor != null
-                        ? executor.makePushdownFilterContext(filter, filterSources)
-                        : null;
-                statelessFilters[ii] = new StatelessFilter(ii, filter, executor, context, barrierDependencies);
-
+                if (executor != null) {
+                    final PushdownFilterContext context = executor.makePushdownFilterContext(filter, filter.getColumns()
+                            .stream().map(sourceTable::getColumnSource).collect(Collectors.toList()));
+                    statelessFilters[ii] = new StatelessFilter(ii, filter, executor, context, barrierDependencies);
+                } else {
+                    statelessFilters[ii] = new StatelessFilter(ii, filter, null, null, barrierDependencies);
+                }
                 for (Object barrier : statelessFilters[ii].declaredBarriers) {
                     if (barrierDependencies.containsKey(barrier)) {
                         throw new IllegalArgumentException("Duplicate barrier declared: " + barrier);

@@ -1067,7 +1067,9 @@ public abstract class QueryTableWhereTest {
         final Thread t = new Thread(() -> {
             final long start1 = System.currentTimeMillis();
             try (final SafeCloseable ignored = executionContext.open()) {
-                tableToFilter.where("slowCounter.applyAsInt(X) % 2 == 0", "fastCounter.applyAsInt(X) % 3 == 0");
+                tableToFilter.where(Filter.and(
+                        RawString.of("slowCounter.applyAsInt(X) % 2 == 0").withSerial(),
+                        RawString.of("fastCounter.applyAsInt(X) % 3 == 0").withSerial()));
             } catch (Exception e) {
                 log.error().append("extra thread caught ").append(e).endl();
                 caught.setValue(e);

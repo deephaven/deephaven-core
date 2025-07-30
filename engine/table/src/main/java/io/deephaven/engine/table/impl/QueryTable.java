@@ -1433,12 +1433,12 @@ public class QueryTable extends BaseTable<QueryTable> {
                                         try {
                                             currentMapping = currentMappingFuture.get();
                                         } catch (ExecutionException | InterruptedException e) {
-                                            if (e instanceof InterruptedException) {
-                                                throw new CancellationException("interrupted while filtering");
-                                            }
+                                            final Throwable cause = (e instanceof InterruptedException)
+                                                    ? new CancellationException("interrupted while filtering")
+                                                    : e.getCause();
                                             throw new TableInitializationException(whereDescription,
                                                     "an exception occurred while performing the initial filter",
-                                                    e.getCause());
+                                                    cause);
                                         } finally {
                                             // account for work done in alternative threads
                                             final BasePerformanceEntry basePerformanceEntry =
