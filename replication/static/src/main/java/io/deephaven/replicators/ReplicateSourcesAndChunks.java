@@ -597,8 +597,6 @@ public class ReplicateSourcesAndChunks {
         classLines = ReplicationUtils.removeRegion(classLines, "CopyToBuffer");
         classLines = ReplicationUtils.removeRegion(classLines, "BinarySearchImports");
         classLines = ReplicationUtils.removeRegion(classLines, "BinarySearch");
-        classLines = ReplicationUtils.removeRegion(classLines, "NULL_definition");
-        classLines = ReplicationUtils.removeRegion(classLines, "getNullChunk");
         classLines = ReplicationUtils.replaceRegion(classLines, "isNull", Arrays.asList(
                 "    public final boolean isNull(int index) {",
                 "        return false;",
@@ -619,8 +617,7 @@ public class ReplicateSourcesAndChunks {
                 "ObjectChunk<[?] ", "ObjectChunk<T, ? ",
                 "ObjectChunk<Any> EMPTY", "ObjectChunk<Object, Any> EMPTY",
                 "static T\\[\\] makeArray", "static <T> T[] makeArray",
-                "QueryConstants.NULL_OBJECT", "null",
-                "ArrayTypeUtils.ObjectNullArray", "ArrayTypeUtils.objectNullArray");
+                "QueryConstants.NULL_OBJECT", "null");
 
         lines = replaceRegion(lines, "makeArray", Arrays.asList(
                 "    public static <T> T[] makeArray(int capacity) {",
@@ -874,9 +871,6 @@ public class ReplicateSourcesAndChunks {
                 "engine/chunk/src/main/java/io/deephaven/chunk/util/factories/CharChunkFactory.java");
         final File classFile = new File(className);
         List<String> classLines = FileUtils.readLines(classFile, Charset.defaultCharset());
-        classLines = globalReplacements(classLines,
-                "return BooleanChunk.getNullChunk\\(\\)",
-                "throw new UnsupportedOperationException(\"BooleanChunk does not support null values\")");
         FileUtils.writeLines(classFile, classLines);
     }
 

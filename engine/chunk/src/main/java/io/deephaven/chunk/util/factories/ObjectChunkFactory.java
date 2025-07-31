@@ -6,7 +6,6 @@ package io.deephaven.chunk.util.factories;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Any;
 
-import io.deephaven.util.type.ArrayTypeUtils;
 import org.jetbrains.annotations.NotNull;
 import java.util.function.IntFunction;
 
@@ -27,13 +26,6 @@ public final class ObjectChunkFactory<T> implements ChunkFactory {
     @Override
     public final <ATTR extends Any> ObjectChunk<T, ATTR> getEmptyChunk() {
         return ObjectChunk.getEmptyChunk();
-    }
-
-    @NotNull
-    @Override
-    public final <ATTR extends Any> ObjectChunk<T, ATTR> getNullChunk() {
-        // noinspection unchecked
-        return (ObjectChunk<T, ATTR>) ObjectChunk.chunkWrap(ArrayTypeUtils.objectNullArray(1), 0, 1);
     }
 
     @NotNull

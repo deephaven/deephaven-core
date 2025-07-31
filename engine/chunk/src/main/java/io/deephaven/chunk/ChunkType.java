@@ -61,12 +61,6 @@ public enum ChunkType implements ChunkFactory {
 
     @NotNull
     @Override
-    public <ATTR extends Any> Chunk<ATTR> getNullChunk() {
-        return factory.getNullChunk();
-    }
-
-    @NotNull
-    @Override
     public <ATTR extends Any> ChunkChunk<ATTR> getEmptyChunkChunk() {
         return factory.getEmptyChunkChunk();
     }
