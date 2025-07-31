@@ -5,6 +5,7 @@ package io.deephaven.chunk.util.pools;
 
 import io.deephaven.base.MathUtil;
 import io.deephaven.base.verify.Require;
+import io.deephaven.configuration.Configuration;
 import io.deephaven.util.annotations.VisibleForTesting;
 
 /**
@@ -12,11 +13,13 @@ import io.deephaven.util.annotations.VisibleForTesting;
  */
 public final class ChunkPoolConstants {
 
-    static final int SMALLEST_POOLED_CHUNK_LOG2_CAPACITY = 5;
+    static final int SMALLEST_POOLED_CHUNK_LOG2_CAPACITY = Configuration.getInstance().getIntegerForClassWithDefault(
+            ChunkPoolConstants.class, "smallestPooledChunkLog2Capacity", 5);
     public static final int SMALLEST_POOLED_CHUNK_CAPACITY = 1 << SMALLEST_POOLED_CHUNK_LOG2_CAPACITY;
 
     @VisibleForTesting
-    static final int LARGEST_POOLED_CHUNK_LOG2_CAPACITY = 16;
+    static final int LARGEST_POOLED_CHUNK_LOG2_CAPACITY = Configuration.getInstance().getIntegerForClassWithDefault(
+            ChunkPoolConstants.class, "largestPooledChunkLog2Capacity", 16);
     public static final int LARGEST_POOLED_CHUNK_CAPACITY = 1 << LARGEST_POOLED_CHUNK_LOG2_CAPACITY;
 
     static final int NUM_POOLED_CHUNK_CAPACITIES =
@@ -24,6 +27,15 @@ public final class ChunkPoolConstants {
 
     public static final boolean POOL_RESETTABLE_CHUNKS = false;
     public static final boolean POOL_WRITABLE_CHUNKS = true;
+
+    static {
+        if (SMALLEST_POOLED_CHUNK_LOG2_CAPACITY < 0
+                || LARGEST_POOLED_CHUNK_LOG2_CAPACITY > 30
+                || SMALLEST_POOLED_CHUNK_LOG2_CAPACITY > LARGEST_POOLED_CHUNK_LOG2_CAPACITY) {
+            throw new IllegalArgumentException("Pooled chunk log capacity bounds must be in the range [0, 30], were ["
+                    + SMALLEST_POOLED_CHUNK_LOG2_CAPACITY + ", " + LARGEST_POOLED_CHUNK_LOG2_CAPACITY + ']');
+        }
+    }
 
     static int checkCapacityBounds(final int chunkCapacity) {
         return Require.geqZero(chunkCapacity, "chunkCapacity");

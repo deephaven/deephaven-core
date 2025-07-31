@@ -10,6 +10,7 @@ dependencies {
     api project(':Util')
     api project(':codec-api:')
     implementation project(':Base')
+    implementation project(':Configuration')
 
     testImplementation libs.junit4
 
