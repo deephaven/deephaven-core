@@ -6,10 +6,10 @@ dependencies {
     implementation project(':Base')
     implementation project(':Util')
     implementation project(":util-pool")
-    testRuntimeOnly project(path: ':configs')
-    testRuntimeOnly project(path: ':test-configs')
+    testRuntimeOnly project(':configs')
+    testRuntimeOnly project(':test-configs')
 
-    runtimeOnly project(path: ':configs')
+    runtimeOnly project(':configs')
 
     testRuntimeOnly project(':log-to-slf4j')
     testRuntimeOnly libs.slf4j.simple
