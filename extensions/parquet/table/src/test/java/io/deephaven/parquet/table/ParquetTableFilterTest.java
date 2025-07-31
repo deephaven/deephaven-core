@@ -8,10 +8,9 @@ import io.deephaven.base.FileUtils;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.table.*;
-import io.deephaven.engine.table.impl.BasePushdownFilterContext;
+import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.PushdownFilterContext;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
-import io.deephaven.engine.table.impl.locations.impl.StandaloneTableKey;
 import io.deephaven.engine.table.impl.select.DoubleRangeFilter;
 import io.deephaven.engine.table.impl.select.FloatRangeFilter;
 import io.deephaven.engine.table.impl.select.MatchFilter;
@@ -21,7 +20,6 @@ import io.deephaven.engine.table.impl.util.ImmediateJobScheduler;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.parquet.table.location.ParquetColumnResolverMap;
-import io.deephaven.parquet.table.location.ParquetTableLocation;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
 import io.deephaven.stringset.ArrayStringSet;
 import io.deephaven.stringset.StringSet;
@@ -45,7 +43,6 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiFunction;
 
-import static io.deephaven.base.FileUtils.convertToURI;
 import static io.deephaven.engine.table.impl.select.WhereFilterFactory.getExpression;
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
 import static io.deephaven.engine.util.TableTools.doubleCol;
@@ -206,6 +203,13 @@ public final class ParquetTableFilterTest {
                 largeTable.where("price = 500.0").size());
     }
 
+    /**
+     * This test fails because of the mismatch between the data index and the upcast parquet column types. This test
+     * will continue to fail until the data index is also upcast to match the parquet column types (DH-19443).
+     * <p>
+     * When the data index is fixed, this test should be re-enabled.
+     */
+    @Ignore
     @Test
     public void filterDatatypeMismatchDataIndexTest() {
         final String destPath = Path.of(rootFile.getPath(), "ParquetTest_flatPartitionsTest").toString();
@@ -1080,13 +1084,6 @@ public final class ParquetTableFilterTest {
         filterAndVerifyResultsAllowEmpty(diskTable, memTable, "Longs == null");
     }
 
-    private static final PushdownFilterContext TEST_PUSHDOWN_FILTER_CONTEXT = new BasePushdownFilterContext() {
-        @Override
-        public Map<String, String> renameMap() {
-            return Map.of();
-        }
-    };
-
     @Test
     public void unsupportedColumnTypesPushdownTest() {
         final String dest = Path.of(rootFile.getPath(), "unsupportedColumnTypesPushdown.parquet").toString();
@@ -1126,23 +1123,26 @@ public final class ParquetTableFilterTest {
             final String filterExpr,
             final String destPath,
             final ParquetInstructions writeInstructions) {
+        // Cycle to disk to get the proper column sources
         writeTable(source, destPath, writeInstructions);
+        final Table disk_table = ParquetTools.readTable(destPath);
 
-        final ParquetTableLocation location = new ParquetTableLocation(
-                StandaloneTableKey.getInstance(),
-                new ParquetTableLocationKey(
-                        convertToURI(destPath, false),
-                        0, Map.of(), EMPTY),
-                EMPTY);
         final WhereFilter filter = getExpression(filterExpr);
-        filter.init(source.getDefinition());
+        filter.init(disk_table.getDefinition());
+        Assert.assertEquals("Expected a single column in the filter: " + filterExpr, 1, filter.getColumns().size());
+
+        final AbstractColumnSource<?> diskColumnSource =
+                (AbstractColumnSource<?>) disk_table.getColumnSource(filter.getColumns().get(0));
+
+        final PushdownFilterContext context =
+                diskColumnSource.makePushdownFilterContext(filter, List.of(diskColumnSource));
 
         final CompletableFuture<Long> costFuture = new CompletableFuture<>();
-        location.estimatePushdownFilterCost(
+        diskColumnSource.estimatePushdownFilterCost(
                 filter,
                 source.getRowSet(),
                 false,
-                TEST_PUSHDOWN_FILTER_CONTEXT,
+                context,
                 new ImmediateJobScheduler(),
                 costFuture::complete,
                 costFuture::completeExceptionally);

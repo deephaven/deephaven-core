@@ -19,7 +19,6 @@ import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
 import io.deephaven.engine.table.impl.select.*;
 import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
 import io.deephaven.util.SafeCloseable;
-import io.deephaven.util.SafeCloseableList;
 import org.jetbrains.annotations.MustBeInvokedByOverriders;
 
 import java.util.List;
@@ -36,9 +35,7 @@ public class BasePushdownFilterContext implements PushdownFilterContext {
     private final boolean isRangeFilter;
     private final boolean isMatchFilter;
     private final boolean supportsChunkFilter;
-    private final Boolean filterIncludesNulls;
-
-    protected final SafeCloseableList closeList = new SafeCloseableList();
+    private final boolean filterIncludesNulls;
 
     private long executedFilterCost;
 
@@ -63,7 +60,8 @@ public class BasePushdownFilterContext implements PushdownFilterContext {
         if (isSingleColumn) {
             isRangeFilter = filter instanceof RangeFilter
                     && ((RangeFilter) filter).getRealFilter() instanceof AbstractRangeFilter;
-            isMatchFilter = filter instanceof MatchFilter;
+            isMatchFilter = filter instanceof MatchFilter &&
+                    ((MatchFilter) filter).getFailoverFilterIfCached() == null;
             supportsChunkFilter =
                     (filter instanceof ExposesChunkFilter && ((ExposesChunkFilter) filter).chunkFilter().isPresent())
                             || filter instanceof ConditionFilter;
@@ -76,7 +74,7 @@ public class BasePushdownFilterContext implements PushdownFilterContext {
             final Map<String, ColumnSource<?>> columnSourceMap =
                     Map.of(filter.getColumns().get(0), nullValueColumnSource);
             try (final SafeCloseable ignored = LivenessScopeStack.open();
-                 final TrackingWritableRowSet rowSet = RowSetFactory.flat(1).toTracking()) {
+                    final TrackingWritableRowSet rowSet = RowSetFactory.flat(1).toTracking()) {
                 final Table dummyTable = new QueryTable(rowSet, columnSourceMap);
                 try (final RowSet result = filter.filter(rowSet, rowSet, dummyTable, false)) {
                     filterIncludesNulls = !result.isEmpty();
@@ -86,7 +84,7 @@ public class BasePushdownFilterContext implements PushdownFilterContext {
             isRangeFilter = false;
             isMatchFilter = false;
             supportsChunkFilter = false;
-            filterIncludesNulls = false; // Unknown for multi-column filters
+            filterIncludesNulls = false; // N/A for multi-column filters
         }
     }
 
@@ -129,8 +127,8 @@ public class BasePushdownFilterContext implements PushdownFilterContext {
     }
 
     /**
-     * Create a {@link UnifiedChunkFilter} for this filter that efficiently filters chunks of data. Every thread that
-     * uses this filter should create its own instance and must close it after use.
+     * Create a {@link UnifiedChunkFilter} for the {@link WhereFilter} that efficiently filters chunks of data. Every
+     * thread that uses this should create its own instance and must close it after use.
      *
      * @param maxChunkSize the maximum size of the chunk that will be filtered
      * @return the initialized {@link UnifiedChunkFilter}
@@ -141,11 +139,13 @@ public class BasePushdownFilterContext implements PushdownFilterContext {
         }
         final UnifiedChunkFilter unifiedChunkFilter;
         if (filter instanceof ExposesChunkFilter) {
-            // We need to create a WritableLongChunk to hold the results of the chunk filter.
-            final WritableLongChunk<OrderedRowKeys> resultChunk = WritableLongChunk.makeWritableChunk(maxChunkSize);
             final ChunkFilter chunkFilter = ((ExposesChunkFilter) filter).chunkFilter()
                     .orElseThrow(() -> new IllegalStateException("ExposesChunkFilter#chunkFilter() returned null."));
             unifiedChunkFilter = new UnifiedChunkFilter() {
+                // We need to create a WritableLongChunk to hold the results of the chunk filter.
+                private final WritableLongChunk<OrderedRowKeys> resultChunk =
+                        WritableLongChunk.makeWritableChunk(maxChunkSize);
+
                 @Override
                 public LongChunk<OrderedRowKeys> filter(Chunk<? extends Values> values,
                         LongChunk<OrderedRowKeys> keys) {
@@ -158,7 +158,7 @@ public class BasePushdownFilterContext implements PushdownFilterContext {
                     resultChunk.close();
                 }
             };
-        } else {
+        } else if (filter instanceof ConditionFilter) {
             // Create and store a dummy table to use for initializing the ConditionFilter.
             if (dummyTable == null) {
                 synchronized (this) {
@@ -175,9 +175,12 @@ public class BasePushdownFilterContext implements PushdownFilterContext {
                 final ConditionFilter conditionFilter = (ConditionFilter) filter;
                 final AbstractConditionFilter.Filter acfFilter =
                         conditionFilter.getFilter(dummyTable, dummyTable.getRowSet());
-                final ConditionFilter.FilterKernel.Context conditionFilterContext = acfFilter.getContext(maxChunkSize);
 
                 unifiedChunkFilter = new UnifiedChunkFilter() {
+                    // Create the context for the ConditionFilter, which will be used to filter chunks.
+                    private final ConditionFilter.FilterKernel.Context conditionFilterContext =
+                            acfFilter.getContext(maxChunkSize);
+
                     @Override
                     public LongChunk<OrderedRowKeys> filter(Chunk<? extends Values> values,
                             LongChunk<OrderedRowKeys> keys) {
@@ -195,6 +198,9 @@ public class BasePushdownFilterContext implements PushdownFilterContext {
             } catch (final Exception e) {
                 throw new IllegalArgumentException("Error creating condition filter in BasePushdownFilterContext", e);
             }
+        } else {
+            throw new UnsupportedOperationException(
+                    "Filter does not support chunk filtering: " + Strings.of(filter));
         }
         return unifiedChunkFilter;
     }
@@ -212,7 +218,6 @@ public class BasePushdownFilterContext implements PushdownFilterContext {
     @MustBeInvokedByOverriders
     @Override
     public void close() {
-        closeList.close();
         dummyTable = null;
     }
 }
