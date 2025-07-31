@@ -47,7 +47,7 @@ public final class ObjectChunkSoftPool implements ObjectChunkPool {
             final int poolIndex = pcci;
             final int chunkLog2Capacity = poolIndex + SMALLEST_POOLED_CHUNK_LOG2_CAPACITY;
             final int chunkCapacity = 1 << chunkLog2Capacity;
-            //noinspection unchecked
+            // noinspection unchecked
             writableObjectChunks[poolIndex] = new SegmentedSoftPool<>(
                     SUB_POOL_SEGMENT_CAPACITY,
                     () -> ChunkPoolInstrumentation.getAndRecord(
