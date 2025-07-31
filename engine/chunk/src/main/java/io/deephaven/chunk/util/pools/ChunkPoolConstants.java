@@ -65,7 +65,7 @@ public final class ChunkPoolConstants {
             ChunkPoolConstants.class, "poolWritableChunks", true);
 
     /**
-     * The array size used in the sub-pool segments. This is an implementation detail of the chunk pool that dictates
+     * The array size used in the subpool segments. This is an implementation detail of the chunk pool that dictates
      * how many chunks should be kept together under a single softly reachable array.
      */
     static final int SUB_POOL_SEGMENT_CAPACITY = Configuration.getInstance().getIntegerForClassWithDefault(
