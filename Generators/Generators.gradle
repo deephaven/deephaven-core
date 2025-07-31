@@ -29,6 +29,9 @@ dependencies {
 
     testImplementation project(path: ':Base', configuration: 'tests')
 
+    testRuntimeOnly project(':configs')
+    testRuntimeOnly project(':test-configs')
+
     combinedJavadoc project(path: ':combined-javadoc', targetConfiguration: 'combinedJavadoc')
 }
 
