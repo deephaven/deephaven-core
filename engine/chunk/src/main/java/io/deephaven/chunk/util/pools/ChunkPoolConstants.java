@@ -40,8 +40,9 @@ public final class ChunkPoolConstants {
         if (SMALLEST_POOLED_CHUNK_LOG2_CAPACITY < 0
                 || LARGEST_POOLED_CHUNK_LOG2_CAPACITY > 30
                 || SMALLEST_POOLED_CHUNK_LOG2_CAPACITY > LARGEST_POOLED_CHUNK_LOG2_CAPACITY) {
-            throw new IllegalArgumentException("Pooled chunk log capacity bounds must be in the range [0, 30], were ["
-                    + SMALLEST_POOLED_CHUNK_LOG2_CAPACITY + ", " + LARGEST_POOLED_CHUNK_LOG2_CAPACITY + ']');
+            throw new IllegalArgumentException(
+                    "Pooled chunk log capacity bounds must uncontradictory and in the range [0, 30], were ["
+                            + SMALLEST_POOLED_CHUNK_LOG2_CAPACITY + ", " + LARGEST_POOLED_CHUNK_LOG2_CAPACITY + ']');
         }
     }
 
@@ -65,8 +66,8 @@ public final class ChunkPoolConstants {
             ChunkPoolConstants.class, "poolWritableChunks", true);
 
     /**
-     * The array size used in the subpool segments. This is an implementation detail of the chunk pool that dictates
-     * how many chunks should be kept together under a single softly reachable array.
+     * The array size used in the subpool segments. This is an implementation detail of the chunk pool that dictates how
+     * many chunks should be kept together under a single softly reachable array.
      */
     static final int SUB_POOL_SEGMENT_CAPACITY = Configuration.getInstance().getIntegerForClassWithDefault(
             ChunkPoolConstants.class, "subPoolSegmentCapacity", 10);;
