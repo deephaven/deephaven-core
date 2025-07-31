@@ -3,14 +3,18 @@
 //
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.api.Strings;
 import io.deephaven.chunk.Chunk;
-import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.liveness.LivenessScopeStack;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
 import io.deephaven.engine.table.impl.select.*;
 import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
@@ -28,6 +32,7 @@ public class BasePushdownFilterContext implements PushdownFilterContext {
     private final WhereFilter filter;
     private final List<ColumnSource<?>> columnSources;
 
+    private final boolean isSingleColumn;
     private final boolean isRangeFilter;
     private final boolean isMatchFilter;
     private final boolean supportsChunkFilter;
@@ -54,37 +59,34 @@ public class BasePushdownFilterContext implements PushdownFilterContext {
         executedFilterCost = 0;
 
         // Compute useful properties of the filter
-        isRangeFilter = filter instanceof RangeFilter
-                && ((RangeFilter) filter).getRealFilter() instanceof AbstractRangeFilter;
-        isMatchFilter = filter instanceof MatchFilter;
-        if (columnSources.size() == 1) {
+        isSingleColumn = columnSources.size() == 1;
+        if (isSingleColumn) {
+            isRangeFilter = filter instanceof RangeFilter
+                    && ((RangeFilter) filter).getRealFilter() instanceof AbstractRangeFilter;
+            isMatchFilter = filter instanceof MatchFilter;
             supportsChunkFilter =
                     (filter instanceof ExposesChunkFilter && ((ExposesChunkFilter) filter).chunkFilter().isPresent())
                             || filter instanceof ConditionFilter;
-            if (supportsChunkFilter) {
-                // Run the filter over a chunk containing only null values and check if nulls pass the filter.
-                final ChunkType chunkType = columnSources.get(0).getChunkType();
-                if (chunkType == ChunkType.Boolean) {
-                    // BooleanChunk does not support nulls, so we can skip this check.
-                    filterIncludesNulls = false;
-                } else {
-                    final Chunk<? extends Values> nullChunk = chunkType.getNullChunk();
-                    try (final UnifiedChunkFilter unifiedChunkFilter = createChunkFilter(1);
-                            final WritableLongChunk<OrderedRowKeys> nullChunkKeys =
-                                    WritableLongChunk.makeWritableChunk(1)) {
-                        nullChunkKeys.set(0, 0);
-                        final LongChunk<OrderedRowKeys> matchingKeys =
-                                unifiedChunkFilter.filter(nullChunk, nullChunkKeys);
-                        filterIncludesNulls = matchingKeys.size() > 0;
-                    }
+
+            // Create a dummy table with a NullValueColumnSource and test the filter against it.
+            // TODO: Should we defer this computation until requested. Maybe not, this is used frequently.
+            final ColumnSource<?> columnSource = columnSources.get(0);
+            final NullValueColumnSource<?> nullValueColumnSource =
+                    NullValueColumnSource.getInstance(columnSource.getType(), columnSource.getComponentType());
+            final Map<String, ColumnSource<?>> columnSourceMap =
+                    Map.of(filter.getColumns().get(0), nullValueColumnSource);
+            try (final SafeCloseable ignored = LivenessScopeStack.open();
+                 final TrackingWritableRowSet rowSet = RowSetFactory.flat(1).toTracking()) {
+                final Table dummyTable = new QueryTable(rowSet, columnSourceMap);
+                try (final RowSet result = filter.filter(rowSet, rowSet, dummyTable, false)) {
+                    filterIncludesNulls = !result.isEmpty();
                 }
-            } else {
-                // If we don't support chunk filtering, we can't easily determine if filter includes nulls.
-                filterIncludesNulls = null;
             }
         } else {
+            isRangeFilter = false;
+            isMatchFilter = false;
             supportsChunkFilter = false;
-            filterIncludesNulls = null; // Unknown for multi-column filters
+            filterIncludesNulls = false; // Unknown for multi-column filters
         }
     }
 
@@ -128,17 +130,18 @@ public class BasePushdownFilterContext implements PushdownFilterContext {
 
     /**
      * Create a {@link UnifiedChunkFilter} for this filter that efficiently filters chunks of data. Every thread that
-     * uses this filter should create its own instance of the filter and must close it after use.
+     * uses this filter should create its own instance and must close it after use.
      *
      * @param maxChunkSize the maximum size of the chunk that will be filtered
      * @return the initialized {@link UnifiedChunkFilter}
      */
     public final UnifiedChunkFilter createChunkFilter(int maxChunkSize) {
         if (!supportsChunkFilter) {
-            return null;
+            throw new UnsupportedOperationException("Filter does not support chunk filtering: " + Strings.of(filter));
         }
         final UnifiedChunkFilter unifiedChunkFilter;
         if (filter instanceof ExposesChunkFilter) {
+            // We need to create a WritableLongChunk to hold the results of the chunk filter.
             final WritableLongChunk<OrderedRowKeys> resultChunk = WritableLongChunk.makeWritableChunk(maxChunkSize);
             final ChunkFilter chunkFilter = ((ExposesChunkFilter) filter).chunkFilter()
                     .orElseThrow(() -> new IllegalStateException("ExposesChunkFilter#chunkFilter() returned null."));
