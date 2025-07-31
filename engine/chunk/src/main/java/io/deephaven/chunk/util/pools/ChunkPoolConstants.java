@@ -22,7 +22,7 @@ public final class ChunkPoolConstants {
     static final int NUM_POOLED_CHUNK_CAPACITIES =
             LARGEST_POOLED_CHUNK_LOG2_CAPACITY - SMALLEST_POOLED_CHUNK_LOG2_CAPACITY + 1;
 
-    public static final boolean POOL_RESETTABLE_CHUNKS = false;
+    public static final boolean POOL_RESETTABLE_CHUNKS = true;
     public static final boolean POOL_WRITABLE_CHUNKS = true;
 
     static int checkCapacityBounds(final int chunkCapacity) {
