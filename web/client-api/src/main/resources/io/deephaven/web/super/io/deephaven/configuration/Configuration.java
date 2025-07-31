@@ -30,25 +30,25 @@ public class Configuration {
         return defaultValue;
     }
 
-    public boolean getBooleanForClassWithDefault(final Class clazz, final String propertyName,
+    public boolean getBooleanForClassWithDefault(final Class<?> clazz, final String propertyName,
             final boolean defaultValue) {
         return defaultValue;
     }
 
-    public int getIntegerForClassWithDefault(final Class clazz, final String propertyName, final int defaultValue) {
+    public int getIntegerForClassWithDefault(final Class<?> clazz, final String propertyName, final int defaultValue) {
         return defaultValue;
     }
 
-    public long getLongForClassWithDefault(final Class clazz, final String propertyName, final long defaultValue) {
+    public long getLongForClassWithDefault(final Class<?> clazz, final String propertyName, final long defaultValue) {
         return defaultValue;
     }
 
-    public double getDoubleForClassWithDefault(final Class clazz, final String propertyName,
+    public double getDoubleForClassWithDefault(final Class<?> clazz, final String propertyName,
             final double defaultValue) {
         return defaultValue;
     }
 
-    public String getStringForClassWithDefault(final Class clazz, final String propertyName,
+    public String getStringForClassWithDefault(final Class<?> clazz, final String propertyName,
             final String defaultValue) {
         return defaultValue;
     }
