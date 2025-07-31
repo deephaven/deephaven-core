@@ -134,7 +134,7 @@ public final class MultiChunkPool implements BooleanChunkPool, ByteChunkPool, Ch
     }
 
     @Override
-    public <ATTR extends Any> WritableBooleanChunk<ATTR> takeWritableBooleanChunk(int capacity) {
+    public <ATTR extends Any> WritableBooleanChunk<ATTR> takeWritableBooleanChunk(final int capacity) {
         return booleanChunkPool.takeWritableBooleanChunk(capacity);
     }
 
@@ -149,7 +149,7 @@ public final class MultiChunkPool implements BooleanChunkPool, ByteChunkPool, Ch
     }
 
     @Override
-    public <ATTR extends Any> WritableCharChunk<ATTR> takeWritableCharChunk(int capacity) {
+    public <ATTR extends Any> WritableCharChunk<ATTR> takeWritableCharChunk(final int capacity) {
         return charChunkPool.takeWritableCharChunk(capacity);
     }
 
@@ -164,7 +164,7 @@ public final class MultiChunkPool implements BooleanChunkPool, ByteChunkPool, Ch
     }
 
     @Override
-    public <ATTR extends Any> WritableByteChunk<ATTR> takeWritableByteChunk(int capacity) {
+    public <ATTR extends Any> WritableByteChunk<ATTR> takeWritableByteChunk(final int capacity) {
         return byteChunkPool.takeWritableByteChunk(capacity);
     }
 
@@ -179,7 +179,7 @@ public final class MultiChunkPool implements BooleanChunkPool, ByteChunkPool, Ch
     }
 
     @Override
-    public <ATTR extends Any> WritableShortChunk<ATTR> takeWritableShortChunk(int capacity) {
+    public <ATTR extends Any> WritableShortChunk<ATTR> takeWritableShortChunk(final int capacity) {
         return shortChunkPool.takeWritableShortChunk(capacity);
     }
 
@@ -194,7 +194,7 @@ public final class MultiChunkPool implements BooleanChunkPool, ByteChunkPool, Ch
     }
 
     @Override
-    public <ATTR extends Any> WritableIntChunk<ATTR> takeWritableIntChunk(int capacity) {
+    public <ATTR extends Any> WritableIntChunk<ATTR> takeWritableIntChunk(final int capacity) {
         return intChunkPool.takeWritableIntChunk(capacity);
     }
 
@@ -209,7 +209,7 @@ public final class MultiChunkPool implements BooleanChunkPool, ByteChunkPool, Ch
     }
 
     @Override
-    public <ATTR extends Any> WritableLongChunk<ATTR> takeWritableLongChunk(int capacity) {
+    public <ATTR extends Any> WritableLongChunk<ATTR> takeWritableLongChunk(final int capacity) {
         return longChunkPool.takeWritableLongChunk(capacity);
     }
 
@@ -224,7 +224,7 @@ public final class MultiChunkPool implements BooleanChunkPool, ByteChunkPool, Ch
     }
 
     @Override
-    public <ATTR extends Any> WritableFloatChunk<ATTR> takeWritableFloatChunk(int capacity) {
+    public <ATTR extends Any> WritableFloatChunk<ATTR> takeWritableFloatChunk(final int capacity) {
         return floatChunkPool.takeWritableFloatChunk(capacity);
     }
 
@@ -239,7 +239,7 @@ public final class MultiChunkPool implements BooleanChunkPool, ByteChunkPool, Ch
     }
 
     @Override
-    public <ATTR extends Any> WritableDoubleChunk<ATTR> takeWritableDoubleChunk(int capacity) {
+    public <ATTR extends Any> WritableDoubleChunk<ATTR> takeWritableDoubleChunk(final int capacity) {
         return doubleChunkPool.takeWritableDoubleChunk(capacity);
     }
 
@@ -254,7 +254,7 @@ public final class MultiChunkPool implements BooleanChunkPool, ByteChunkPool, Ch
     }
 
     @Override
-    public <TYPE, ATTR extends Any> WritableObjectChunk<TYPE, ATTR> takeWritableObjectChunk(int capacity) {
+    public <TYPE, ATTR extends Any> WritableObjectChunk<TYPE, ATTR> takeWritableObjectChunk(final int capacity) {
         return objectChunkPool.takeWritableObjectChunk(capacity);
     }
 

@@ -30,17 +30,17 @@ public final class DoubleChunkSoftPool implements DoubleChunkPool {
             WritableDoubleChunk.writableChunkWrap(ArrayTypeUtils.EMPTY_DOUBLE_ARRAY);
 
     /**
-     * Sub-pools by power-of-two sizes for {@link WritableDoubleChunk}s.
+     * Subpools by power-of-two sizes for {@link WritableDoubleChunk WritableDoubleChunks}.
      */
     private final SegmentedSoftPool<WritableDoubleChunk>[] writableDoubleChunks;
 
     /**
-     * Sub-pool of {@link ResettableDoubleChunk}s.
+     * Subpool of {@link ResettableDoubleChunk ResettableDoubleChunks}.
      */
     private final SegmentedSoftPool<ResettableDoubleChunk> resettableDoubleChunks;
 
     /**
-     * Sub-pool of {@link ResettableWritableDoubleChunk}s.
+     * Subpool of {@link ResettableWritableDoubleChunk ResettableWritableDoubleChunks}.
      */
     private final SegmentedSoftPool<ResettableWritableDoubleChunk> resettableWritableDoubleChunks;
 
@@ -110,14 +110,13 @@ public final class DoubleChunkSoftPool implements DoubleChunkPool {
         }
         final int poolIndexForTake = getPoolIndexForTake(checkCapacityBounds(capacity));
         if (poolIndexForTake >= 0) {
-            // noinspection resource
-            final WritableDoubleChunk result = writableDoubleChunks[poolIndexForTake].take();
+            // noinspection resource,unchecked
+            final WritableDoubleChunk<ATTR> result = writableDoubleChunks[poolIndexForTake].take();
             result.setSize(capacity);
-            // noinspection unchecked
             return ChunkPoolReleaseTracking.onTake(result);
         }
         return ChunkPoolReleaseTracking.onTake(
-                new WritableDoubleChunk<>(DoubleChunk.makeArray(capacity), 0, capacity) {
+                new WritableDoubleChunk<ATTR>(DoubleChunk.makeArray(capacity), 0, capacity) {
                     @Override
                     public void close() {
                         ChunkPoolReleaseTracking.onGive(this);

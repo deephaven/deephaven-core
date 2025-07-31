@@ -30,17 +30,17 @@ public final class ShortChunkSoftPool implements ShortChunkPool {
             WritableShortChunk.writableChunkWrap(ArrayTypeUtils.EMPTY_SHORT_ARRAY);
 
     /**
-     * Sub-pools by power-of-two sizes for {@link WritableShortChunk}s.
+     * Subpools by power-of-two sizes for {@link WritableShortChunk WritableShortChunks}.
      */
     private final SegmentedSoftPool<WritableShortChunk>[] writableShortChunks;
 
     /**
-     * Sub-pool of {@link ResettableShortChunk}s.
+     * Subpool of {@link ResettableShortChunk ResettableShortChunks}.
      */
     private final SegmentedSoftPool<ResettableShortChunk> resettableShortChunks;
 
     /**
-     * Sub-pool of {@link ResettableWritableShortChunk}s.
+     * Subpool of {@link ResettableWritableShortChunk ResettableWritableShortChunks}.
      */
     private final SegmentedSoftPool<ResettableWritableShortChunk> resettableWritableShortChunks;
 
@@ -110,14 +110,13 @@ public final class ShortChunkSoftPool implements ShortChunkPool {
         }
         final int poolIndexForTake = getPoolIndexForTake(checkCapacityBounds(capacity));
         if (poolIndexForTake >= 0) {
-            // noinspection resource
-            final WritableShortChunk result = writableShortChunks[poolIndexForTake].take();
+            // noinspection resource,unchecked
+            final WritableShortChunk<ATTR> result = writableShortChunks[poolIndexForTake].take();
             result.setSize(capacity);
-            // noinspection unchecked
             return ChunkPoolReleaseTracking.onTake(result);
         }
         return ChunkPoolReleaseTracking.onTake(
-                new WritableShortChunk<>(ShortChunk.makeArray(capacity), 0, capacity) {
+                new WritableShortChunk<ATTR>(ShortChunk.makeArray(capacity), 0, capacity) {
                     @Override
                     public void close() {
                         ChunkPoolReleaseTracking.onGive(this);

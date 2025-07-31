@@ -26,32 +26,32 @@ public final class ObjectChunkSoftPool implements ObjectChunkPool {
             WritableObjectChunk.writableChunkWrap(ArrayTypeUtils.EMPTY_OBJECT_ARRAY);
 
     /**
-     * Sub-pools by power-of-two sizes for {@link WritableObjectChunk}s.
+     * Subpools by power-of-two sizes for {@link WritableObjectChunk WritableObjectChunks}.
      */
     private final SegmentedSoftPool<WritableObjectChunk>[] writableObjectChunks;
 
     /**
-     * Sub-pool of {@link ResettableObjectChunk}s.
+     * Subpool of {@link ResettableObjectChunk ResettableObjectChunks}.
      */
     private final SegmentedSoftPool<ResettableObjectChunk> resettableObjectChunks;
 
     /**
-     * Sub-pool of {@link ResettableWritableObjectChunk}s.
+     * Subpool of {@link ResettableWritableObjectChunk ResettableWritableObjectChunks}.
      */
     private final SegmentedSoftPool<ResettableWritableObjectChunk> resettableWritableObjectChunks;
 
     ObjectChunkSoftPool() {
         // noinspection unchecked
-        writableObjectChunks =
-                (SegmentedSoftPool<WritableObjectChunk>[]) new SegmentedSoftPool[NUM_POOLED_CHUNK_CAPACITIES];
+        writableObjectChunks = new SegmentedSoftPool[NUM_POOLED_CHUNK_CAPACITIES];
         for (int pcci = 0; pcci < NUM_POOLED_CHUNK_CAPACITIES; ++pcci) {
             final int poolIndex = pcci;
             final int chunkLog2Capacity = poolIndex + SMALLEST_POOLED_CHUNK_LOG2_CAPACITY;
             final int chunkCapacity = 1 << chunkLog2Capacity;
+            //noinspection unchecked
             writableObjectChunks[poolIndex] = new SegmentedSoftPool<>(
                     SUB_POOL_SEGMENT_CAPACITY,
                     () -> ChunkPoolInstrumentation.getAndRecord(
-                            () -> new WritableObjectChunk<>(ObjectChunk.makeArray(chunkCapacity), 0, chunkCapacity) {
+                            () -> new WritableObjectChunk(ObjectChunk.makeArray(chunkCapacity), 0, chunkCapacity) {
                                 @Override
                                 public void close() {
                                     writableObjectChunks[poolIndex].give(ChunkPoolReleaseTracking.onGive(this));
@@ -110,14 +110,13 @@ public final class ObjectChunkSoftPool implements ObjectChunkPool {
         }
         final int poolIndexForTake = getPoolIndexForTake(checkCapacityBounds(capacity));
         if (poolIndexForTake >= 0) {
-            // noinspection resource
-            final WritableObjectChunk result = writableObjectChunks[poolIndexForTake].take();
+            // noinspection resource,unchecked
+            final WritableObjectChunk<TYPE, ATTR> result = writableObjectChunks[poolIndexForTake].take();
             result.setSize(capacity);
-            // noinspection unchecked
             return ChunkPoolReleaseTracking.onTake(result);
         }
         return ChunkPoolReleaseTracking.onTake(
-                new WritableObjectChunk<>(ObjectChunk.makeArray(capacity), 0, capacity) {
+                new WritableObjectChunk<TYPE, ATTR>(ObjectChunk.makeArray(capacity), 0, capacity) {
                     @Override
                     public void close() {
                         ChunkPoolReleaseTracking.onGive(this);

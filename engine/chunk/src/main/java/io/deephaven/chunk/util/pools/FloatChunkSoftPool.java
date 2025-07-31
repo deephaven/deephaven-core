@@ -30,17 +30,17 @@ public final class FloatChunkSoftPool implements FloatChunkPool {
             WritableFloatChunk.writableChunkWrap(ArrayTypeUtils.EMPTY_FLOAT_ARRAY);
 
     /**
-     * Sub-pools by power-of-two sizes for {@link WritableFloatChunk}s.
+     * Subpools by power-of-two sizes for {@link WritableFloatChunk WritableFloatChunks}.
      */
     private final SegmentedSoftPool<WritableFloatChunk>[] writableFloatChunks;
 
     /**
-     * Sub-pool of {@link ResettableFloatChunk}s.
+     * Subpool of {@link ResettableFloatChunk ResettableFloatChunks}.
      */
     private final SegmentedSoftPool<ResettableFloatChunk> resettableFloatChunks;
 
     /**
-     * Sub-pool of {@link ResettableWritableFloatChunk}s.
+     * Subpool of {@link ResettableWritableFloatChunk ResettableWritableFloatChunks}.
      */
     private final SegmentedSoftPool<ResettableWritableFloatChunk> resettableWritableFloatChunks;
 
@@ -110,14 +110,13 @@ public final class FloatChunkSoftPool implements FloatChunkPool {
         }
         final int poolIndexForTake = getPoolIndexForTake(checkCapacityBounds(capacity));
         if (poolIndexForTake >= 0) {
-            // noinspection resource
-            final WritableFloatChunk result = writableFloatChunks[poolIndexForTake].take();
+            // noinspection resource,unchecked
+            final WritableFloatChunk<ATTR> result = writableFloatChunks[poolIndexForTake].take();
             result.setSize(capacity);
-            // noinspection unchecked
             return ChunkPoolReleaseTracking.onTake(result);
         }
         return ChunkPoolReleaseTracking.onTake(
-                new WritableFloatChunk<>(FloatChunk.makeArray(capacity), 0, capacity) {
+                new WritableFloatChunk<ATTR>(FloatChunk.makeArray(capacity), 0, capacity) {
                     @Override
                     public void close() {
                         ChunkPoolReleaseTracking.onGive(this);

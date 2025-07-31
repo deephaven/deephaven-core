@@ -26,17 +26,17 @@ public final class CharChunkSoftPool implements CharChunkPool {
             WritableCharChunk.writableChunkWrap(ArrayTypeUtils.EMPTY_CHAR_ARRAY);
 
     /**
-     * Sub-pools by power-of-two sizes for {@link WritableCharChunk}s.
+     * Subpools by power-of-two sizes for {@link WritableCharChunk WritableCharChunks}.
      */
     private final SegmentedSoftPool<WritableCharChunk>[] writableCharChunks;
 
     /**
-     * Sub-pool of {@link ResettableCharChunk}s.
+     * Subpool of {@link ResettableCharChunk ResettableCharChunks}.
      */
     private final SegmentedSoftPool<ResettableCharChunk> resettableCharChunks;
 
     /**
-     * Sub-pool of {@link ResettableWritableCharChunk}s.
+     * Subpool of {@link ResettableWritableCharChunk ResettableWritableCharChunks}.
      */
     private final SegmentedSoftPool<ResettableWritableCharChunk> resettableWritableCharChunks;
 
@@ -106,14 +106,13 @@ public final class CharChunkSoftPool implements CharChunkPool {
         }
         final int poolIndexForTake = getPoolIndexForTake(checkCapacityBounds(capacity));
         if (poolIndexForTake >= 0) {
-            // noinspection resource
-            final WritableCharChunk result = writableCharChunks[poolIndexForTake].take();
+            // noinspection resource,unchecked
+            final WritableCharChunk<ATTR> result = writableCharChunks[poolIndexForTake].take();
             result.setSize(capacity);
-            // noinspection unchecked
             return ChunkPoolReleaseTracking.onTake(result);
         }
         return ChunkPoolReleaseTracking.onTake(
-                new WritableCharChunk<>(CharChunk.makeArray(capacity), 0, capacity) {
+                new WritableCharChunk<ATTR>(CharChunk.makeArray(capacity), 0, capacity) {
                     @Override
                     public void close() {
                         ChunkPoolReleaseTracking.onGive(this);
