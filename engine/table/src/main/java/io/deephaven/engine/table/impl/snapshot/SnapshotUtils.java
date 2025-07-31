@@ -127,22 +127,35 @@ public class SnapshotUtils {
     }
 
     @NotNull
-    public static Map<String, ChunkSource.WithPrev<? extends Values>> generateSnapshotDataColumns(Table table) {
+    public static Map<String, ChunkSource.WithPrev<? extends Values>> generateSnapshotDataColumns(final Table table) {
         final Map<String, ? extends ColumnSource<?>> sourceColumns = table.getColumnSourceMap();
         final Map<String, ChunkSource.WithPrev<? extends Values>> snapshotDataColumns =
                 new LinkedHashMap<>(sourceColumns.size());
 
-        for (Map.Entry<String, ? extends ColumnSource<?>> entry : sourceColumns.entrySet()) {
+        for (final Map.Entry<String, ? extends ColumnSource<?>> entry : sourceColumns.entrySet()) {
             final ColumnSource<?> columnSource = entry.getValue();
-            final ChunkSource.WithPrev<? extends Values> maybeTransformed;
-            if (Vector.class.isAssignableFrom(columnSource.getType())) {
-                maybeTransformed = new VectorChunkAdapter<>(columnSource);
-            } else {
-                maybeTransformed = columnSource;
-            }
+            final ChunkSource.WithPrev<? extends Values> maybeTransformed = maybeWrapVector(columnSource);
             snapshotDataColumns.put(entry.getKey(), maybeTransformed);
         }
         return snapshotDataColumns;
+    }
+
+    /**
+     * If columnSource's type is a vector, wrap it with a {@link VectorChunkAdapter} so that copying from it produces
+     * direct arrays suitable for snapshots.
+     *
+     * @param columnSource the column source to wrap
+     * @return the original column source or a VectorChunkAdapter as appropriate
+     */
+    @NotNull
+    public static ChunkSource.WithPrev<? extends Values> maybeWrapVector(@NotNull final ColumnSource<?> columnSource) {
+        final ChunkSource.WithPrev<? extends Values> maybeTransformed;
+        if (Vector.class.isAssignableFrom(columnSource.getType())) {
+            maybeTransformed = new VectorChunkAdapter<>(columnSource);
+        } else {
+            maybeTransformed = columnSource;
+        }
+        return maybeTransformed;
     }
 
     @NotNull

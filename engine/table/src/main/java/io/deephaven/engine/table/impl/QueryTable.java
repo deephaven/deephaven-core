@@ -31,6 +31,9 @@ import io.deephaven.engine.table.hierarchical.RollupTable;
 import io.deephaven.engine.table.hierarchical.TreeTable;
 import io.deephaven.engine.table.impl.MemoizedOperationKey.SelectUpdateViewOrUpdateView.Flavor;
 import io.deephaven.engine.table.impl.by.*;
+import io.deephaven.engine.table.impl.filter.ExtractBarriers;
+import io.deephaven.engine.table.impl.filter.ExtractShiftedColumnDefinitions;
+import io.deephaven.engine.table.impl.filter.ExtractRespectedBarriers;
 import io.deephaven.engine.table.impl.hierarchical.RollupTableImpl;
 import io.deephaven.engine.table.impl.hierarchical.TreeTableImpl;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
@@ -1276,13 +1279,43 @@ public class QueryTable extends BaseTable<QueryTable> {
 
         // Initialize our filters immediately so we can examine the columns they use. Note that filter
         // initialization is safe to invoke repeatedly.
+        final Set<Object> knownBarriers = new HashSet<>();
         for (final WhereFilter filter : filters) {
             filter.init(getDefinition(), compilationProcessor);
+
+            // Add barriers declared by this filter; filters may appear to depend on themselves when examined in
+            // aggregate.
+            final Collection<Object> newBarriers = ExtractBarriers.of(filter);
+            final Optional<Object> dupBarrier = newBarriers.stream().filter(knownBarriers::contains).findFirst();
+            if (dupBarrier.isPresent()) {
+                throw new IllegalArgumentException("Filter Barriers must be unique! Found duplicate: " +
+                        dupBarrier.get());
+            }
+            knownBarriers.addAll(newBarriers);
+
+            for (final Object respectedBarrier : ExtractRespectedBarriers.of(filter)) {
+                if (!knownBarriers.contains(respectedBarrier)) {
+                    throw new IllegalArgumentException("Filter " + filter + " respects barrier " + respectedBarrier +
+                            " that is not declared by any filter so far.");
+                }
+            }
         }
         compilationProcessor.compile();
 
+        final Set<Object> priorityBarriers = new HashSet<>();
         for (int fi = 0; fi < numFilters; ++fi) {
             final WhereFilter filter = filters[fi];
+
+            if (!filter.permitParallelization()) {
+                // serial filters are guaranteed to see the expected rowset as if all previous filters were applied
+                // thus, we're not allowed to reorder any remaining filters
+                break;
+            }
+
+            if (!priorityBarriers.containsAll(ExtractRespectedBarriers.of(filter))) {
+                // this filter is not permitted to be reordered as it depends on a filter that has not been prioritized
+                continue;
+            }
 
             // Simple filters against indexed columns get priority
             if (dataIndexer != null
@@ -1290,6 +1323,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                     && filter.isSimpleFilter()
                     && DataIndexer.hasDataIndex(this, filter.getColumns().toArray(String[]::new))) {
                 priorityFilterIndexes.set(fi);
+                priorityBarriers.addAll(ExtractBarriers.of(filter));
             }
         }
 
@@ -1356,19 +1390,16 @@ public class QueryTable extends BaseTable<QueryTable> {
                         return result;
                     }
 
-                    final List<WhereFilter> whereFilters = new LinkedList<>();
-                    final List<io.deephaven.base.Pair<String, Map<Long, List<MatchPair>>>> shiftColPairs =
-                            new LinkedList<>();
+                    boolean hasConstArrayOffsetFilter = false;
                     for (final WhereFilter filter : filters) {
-                        if (filter instanceof AbstractConditionFilter
-                                && ((AbstractConditionFilter) filter).hasConstantArrayAccess()) {
-                            shiftColPairs.add(((AbstractConditionFilter) filter).getFormulaShiftColPair());
-                        } else {
-                            whereFilters.add(filter);
+                        final Set<ShiftedColumnDefinition> shifted = ExtractShiftedColumnDefinitions.of(filter);
+                        if (shifted != null && !shifted.isEmpty()) {
+                            hasConstArrayOffsetFilter = true;
+                            break;
                         }
                     }
-                    if (!shiftColPairs.isEmpty()) {
-                        return (QueryTable) ShiftedColumnsFactory.where(this, shiftColPairs, whereFilters);
+                    if (hasConstArrayOffsetFilter) {
+                        return (QueryTable) ShiftedColumnsFactory.where(this, Arrays.asList(filters));
                     }
 
                     return memoizeResult(MemoizedOperationKey.filter(filters), () -> {
@@ -1409,12 +1440,12 @@ public class QueryTable extends BaseTable<QueryTable> {
                                         try {
                                             currentMapping = currentMappingFuture.get();
                                         } catch (ExecutionException | InterruptedException e) {
-                                            if (e instanceof InterruptedException) {
-                                                throw new CancellationException("interrupted while filtering");
-                                            }
+                                            final Throwable cause = (e instanceof InterruptedException)
+                                                    ? new CancellationException("interrupted while filtering")
+                                                    : e.getCause();
                                             throw new TableInitializationException(whereDescription,
                                                     "an exception occurred while performing the initial filter",
-                                                    e.getCause());
+                                                    cause);
                                         } finally {
                                             // account for work done in alternative threads
                                             final BasePerformanceEntry basePerformanceEntry =
@@ -1495,15 +1526,22 @@ public class QueryTable extends BaseTable<QueryTable> {
                     final Table distinctValues;
                     final boolean setRefreshing = rightTable.isRefreshing();
 
-                    final String[] columnNames = MatchPair.getRightColumns(columnsToMatch);
-                    final DataIndex rightIndex = DataIndexer.getDataIndex(rightTable, columnNames);
+                    final String[] rightColumnNames = MatchPair.getRightColumns(columnsToMatch);
+                    final DataIndex rightIndex = DataIndexer.getDataIndex(rightTable, rightColumnNames);
                     if (rightIndex != null) {
                         // We have a distinct index table, let's use it.
                         distinctValues = rightIndex.table();
                     } else if (setRefreshing) {
-                        distinctValues = rightTable.selectDistinct(MatchPair.getRightColumns(columnsToMatch));
+                        distinctValues = rightTable.selectDistinct(rightColumnNames);
                     } else {
-                        distinctValues = rightTable;
+                        final TableDefinition rightDef = rightTable.getDefinition();
+                        final boolean allPartitioning =
+                                Arrays.stream(rightColumnNames).allMatch(cn -> rightDef.getColumn(cn).isPartitioning());
+                        if (allPartitioning) {
+                            distinctValues = rightTable.selectDistinct(rightColumnNames);
+                        } else {
+                            distinctValues = rightTable.coalesce();
+                        }
                     }
 
                     final DynamicWhereFilter dynamicWhereFilter =
@@ -2829,7 +2867,7 @@ public class QueryTable extends BaseTable<QueryTable> {
      * 2^minimumUngroupBase rows in the output table at startup. If rows are added to the table, this base may need to
      * grow. If a single row in the input has more than 2^base rows, then the base must change for all of the rows.
      */
-    private static int minimumUngroupBase = 10;
+    static int minimumUngroupBase = 10;
 
     /**
      * For unit testing, it can be useful to reduce the minimum ungroup base.
@@ -2859,7 +2897,7 @@ public class QueryTable extends BaseTable<QueryTable> {
 
 
     @Override
-    public Table ungroup(boolean nullFill, Collection<? extends ColumnName> columnsToUngroup) {
+    public Table ungroup(final boolean nullFill, final Collection<? extends ColumnName> columnsToUngroup) {
         final UpdateGraph updateGraph = getUpdateGraph();
         try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
             final String[] columnsToUngroupBy;
@@ -2872,609 +2910,13 @@ public class QueryTable extends BaseTable<QueryTable> {
             } else {
                 columnsToUngroupBy = columnsToUngroup.stream().map(ColumnName::name).toArray(String[]::new);
             }
-            return QueryPerformanceRecorder.withNugget("ungroup(" + Arrays.toString(columnsToUngroupBy) + ")",
-                    sizeForInstrumentation(), () -> {
-                        if (columnsToUngroupBy.length == 0) {
-                            return prepareReturnThis();
-                        }
 
-                        checkInitiateOperation();
-
-                        final Map<String, ColumnSource<?>> arrayColumns = new HashMap<>();
-                        final Map<String, ColumnSource<?>> vectorColumns = new HashMap<>();
-                        for (String name : columnsToUngroupBy) {
-                            ColumnSource<?> column = getColumnSource(name);
-                            if (column.getType().isArray()) {
-                                arrayColumns.put(name, column);
-                            } else if (Vector.class.isAssignableFrom(column.getType())) {
-                                vectorColumns.put(name, column);
-                            } else {
-                                throw new RuntimeException("Column " + name + " is not an array");
-                            }
-                        }
-                        final long[] sizes = new long[intSize("ungroup")];
-                        long maxSize = computeMaxSize(rowSet, arrayColumns, vectorColumns, null, sizes, nullFill);
-                        final int initialBase = Math.max(64 - Long.numberOfLeadingZeros(maxSize), minimumUngroupBase);
-
-                        final CrossJoinShiftState shiftState = new CrossJoinShiftState(initialBase, true);
-
-                        final Map<String, ColumnSource<?>> resultMap = new LinkedHashMap<>();
-                        for (Map.Entry<String, ColumnSource<?>> es : getColumnSourceMap().entrySet()) {
-                            final ColumnSource<?> column = es.getValue();
-                            final String name = es.getKey();
-                            final ColumnSource<?> result;
-                            if (vectorColumns.containsKey(name) || arrayColumns.containsKey(name)) {
-                                final UngroupedColumnSource<?> ungroupedSource =
-                                        UngroupedColumnSource.getColumnSource(column);
-                                ungroupedSource.initializeBase(initialBase);
-                                result = ungroupedSource;
-                            } else {
-                                result = BitShiftingColumnSource.maybeWrap(shiftState, column);
-                            }
-                            resultMap.put(name, result);
-                        }
-                        final QueryTable result = new QueryTable(
-                                getUngroupIndex(sizes, RowSetFactory.builderRandom(), initialBase, rowSet)
-                                        .build().toTracking(),
-                                resultMap);
-                        if (isRefreshing()) {
-                            startTrackingPrev(resultMap.values());
-
-                            addUpdateListener(new ShiftObliviousListenerImpl(
-                                    "ungroup(" + Arrays.deepToString(columnsToUngroupBy) + ')',
-                                    this, result) {
-
-                                @Override
-                                public void onUpdate(final RowSet added, final RowSet removed, final RowSet modified) {
-                                    intSize("ungroup");
-
-                                    int newBase = shiftState.getNumShiftBits();
-                                    RowSetBuilderRandom ungroupAdded = RowSetFactory.builderRandom();
-                                    RowSetBuilderRandom ungroupModified = RowSetFactory.builderRandom();
-                                    RowSetBuilderRandom ungroupRemoved = RowSetFactory.builderRandom();
-                                    newBase = evaluateIndex(added, ungroupAdded, newBase);
-                                    newBase = evaluateModified(modified, ungroupModified, ungroupAdded, ungroupRemoved,
-                                            newBase);
-                                    if (newBase > shiftState.getNumShiftBits()) {
-                                        rebase(newBase + 1);
-                                    } else {
-                                        evaluateRemovedIndex(removed, ungroupRemoved);
-                                        final RowSet removedRowSet = ungroupRemoved.build();
-                                        final RowSet addedRowSet = ungroupAdded.build();
-                                        result.getRowSet().writableCast().update(addedRowSet, removedRowSet);
-                                        final RowSet modifiedRowSet = ungroupModified.build();
-
-                                        if (!modifiedRowSet.subsetOf(result.getRowSet())) {
-                                            final RowSet missingModifications =
-                                                    modifiedRowSet.minus(result.getRowSet());
-                                            log.error().append("Result TrackingWritableRowSet: ")
-                                                    .append(result.getRowSet().toString())
-                                                    .endl();
-                                            log.error().append("Missing modifications: ")
-                                                    .append(missingModifications.toString()).endl();
-                                            log.error().append("Added: ").append(addedRowSet.toString()).endl();
-                                            log.error().append("Modified: ").append(modifiedRowSet.toString()).endl();
-                                            log.error().append("Removed: ").append(removedRowSet.toString()).endl();
-
-                                            for (Map.Entry<String, ColumnSource<?>> es : arrayColumns.entrySet()) {
-                                                ColumnSource<?> arrayColumn = es.getValue();
-                                                String name = es.getKey();
-
-                                                RowSet.Iterator iterator = rowSet.iterator();
-                                                for (int i = 0; i < rowSet.size(); i++) {
-                                                    final long next = iterator.nextLong();
-                                                    int size = (arrayColumn.get(next) == null ? 0
-                                                            : Array.getLength(arrayColumn.get(next)));
-                                                    int prevSize = (arrayColumn.getPrev(next) == null ? 0
-                                                            : Array.getLength(arrayColumn.getPrev(next)));
-                                                    log.error().append(name).append("[").append(i).append("] ")
-                                                            .append(size)
-                                                            .append(" -> ").append(prevSize).endl();
-                                                }
-                                            }
-
-                                            for (Map.Entry<String, ColumnSource<?>> es : vectorColumns.entrySet()) {
-                                                ColumnSource<?> arrayColumn = es.getValue();
-                                                String name = es.getKey();
-                                                RowSet.Iterator iterator = rowSet.iterator();
-
-                                                for (int i = 0; i < rowSet.size(); i++) {
-                                                    final long next = iterator.nextLong();
-                                                    long size = (arrayColumn.get(next) == null ? 0
-                                                            : ((Vector<?>) arrayColumn.get(next)).size());
-                                                    long prevSize = (arrayColumn.getPrev(next) == null ? 0
-                                                            : ((Vector<?>) arrayColumn.getPrev(next)).size());
-                                                    log.error().append(name).append("[").append(i).append("] ")
-                                                            .append(size)
-                                                            .append(" -> ").append(prevSize).endl();
-                                                }
-                                            }
-
-                                            Assert.assertion(false, "modifiedRowSet.subsetOf(result.build())",
-                                                    modifiedRowSet, "modifiedRowSet", result.getRowSet(),
-                                                    "result.build()",
-                                                    shiftState.getNumShiftBits(), "shiftState.getNumShiftBits()",
-                                                    newBase,
-                                                    "newBase");
-                                        }
-
-                                        for (ColumnSource<?> source : resultMap.values()) {
-                                            if (source instanceof UngroupedColumnSource) {
-                                                ((UngroupedColumnSource<?>) source).setBase(newBase);
-                                            }
-                                        }
-
-                                        result.notifyListeners(addedRowSet, removedRowSet, modifiedRowSet);
-                                    }
-                                }
-
-                                private void rebase(final int newBase) {
-                                    final WritableRowSet newRowSet = getUngroupIndex(
-                                            computeSize(getRowSet(), arrayColumns, vectorColumns, nullFill),
-                                            RowSetFactory.builderRandom(), newBase, getRowSet())
-                                            .build();
-                                    final TrackingWritableRowSet rowSet = result.getRowSet().writableCast();
-                                    final RowSet added = newRowSet.minus(rowSet);
-                                    final RowSet removed = rowSet.minus(newRowSet);
-                                    final WritableRowSet modified = newRowSet;
-                                    modified.retain(rowSet);
-                                    rowSet.update(added, removed);
-                                    for (ColumnSource<?> source : resultMap.values()) {
-                                        if (source instanceof UngroupedColumnSource) {
-                                            ((UngroupedColumnSource<?>) source).setBase(newBase);
-                                        }
-                                    }
-                                    shiftState.setNumShiftBitsAndUpdatePrev(newBase);
-                                    result.notifyListeners(added, removed, modified);
-                                }
-
-                                private int evaluateIndex(final RowSet rowSet, final RowSetBuilderRandom ungroupBuilder,
-                                        final int newBase) {
-                                    if (rowSet.size() > 0) {
-                                        final long[] modifiedSizes = new long[rowSet.intSize("ungroup")];
-                                        final long maxSize = computeMaxSize(rowSet, arrayColumns, vectorColumns, null,
-                                                modifiedSizes, nullFill);
-                                        final int minBase = 64 - Long.numberOfLeadingZeros(maxSize);
-                                        getUngroupIndex(modifiedSizes, ungroupBuilder, shiftState.getNumShiftBits(),
-                                                rowSet);
-                                        return Math.max(newBase, minBase);
-                                    }
-                                    return newBase;
-                                }
-
-                                private void evaluateRemovedIndex(final RowSet rowSet,
-                                        final RowSetBuilderRandom ungroupBuilder) {
-                                    if (rowSet.size() > 0) {
-                                        final long[] modifiedSizes = new long[rowSet.intSize("ungroup")];
-                                        computePrevSize(rowSet, arrayColumns, vectorColumns, modifiedSizes, nullFill);
-                                        getUngroupIndex(modifiedSizes, ungroupBuilder, shiftState.getNumShiftBits(),
-                                                rowSet);
-                                    }
-                                }
-
-                                private int evaluateModified(final RowSet rowSet,
-                                        final RowSetBuilderRandom modifyBuilder,
-                                        final RowSetBuilderRandom addedBuilded,
-                                        final RowSetBuilderRandom removedBuilder,
-                                        final int newBase) {
-                                    if (rowSet.size() > 0) {
-                                        final long maxSize = computeModifiedIndicesAndMaxSize(rowSet, arrayColumns,
-                                                vectorColumns, null, modifyBuilder, addedBuilded, removedBuilder,
-                                                shiftState.getNumShiftBits(), nullFill);
-                                        final int minBase = 64 - Long.numberOfLeadingZeros(maxSize);
-                                        return Math.max(newBase, minBase);
-                                    }
-                                    return newBase;
-                                }
-                            });
-                        }
-                        return result;
-                    });
-        }
-    }
-
-    private long computeModifiedIndicesAndMaxSize(RowSet rowSet, Map<String, ColumnSource<?>> arrayColumns,
-            Map<String, ColumnSource<?>> vectorColumns, String referenceColumn, RowSetBuilderRandom modifyBuilder,
-            RowSetBuilderRandom addedBuilded, RowSetBuilderRandom removedBuilder, long base, boolean nullFill) {
-        if (nullFill) {
-            return computeModifiedIndicesAndMaxSizeNullFill(rowSet, arrayColumns, vectorColumns, referenceColumn,
-                    modifyBuilder, addedBuilded, removedBuilder, base);
-        }
-        return computeModifiedIndicesAndMaxSizeNormal(rowSet, arrayColumns, vectorColumns, referenceColumn,
-                modifyBuilder, addedBuilded, removedBuilder, base);
-    }
-
-    private long computeModifiedIndicesAndMaxSizeNullFill(RowSet rowSet, Map<String, ColumnSource<?>> arrayColumns,
-            Map<String, ColumnSource<?>> vectorColumns, String referenceColumn, RowSetBuilderRandom modifyBuilder,
-            RowSetBuilderRandom addedBuilded, RowSetBuilderRandom removedBuilder, long base) {
-        long maxSize = 0;
-        final RowSet.Iterator iterator = rowSet.iterator();
-        for (int i = 0; i < rowSet.size(); i++) {
-            long maxCur = 0;
-            long maxPrev = 0;
-            final long next = iterator.nextLong();
-            for (Map.Entry<String, ColumnSource<?>> es : arrayColumns.entrySet()) {
-                final ColumnSource<?> arrayColumn = es.getValue();
-                Object array = arrayColumn.get(next);
-                final int size = (array == null ? 0 : Array.getLength(array));
-                maxCur = Math.max(maxCur, size);
-                Object prevArray = arrayColumn.getPrev(next);
-                final int prevSize = (prevArray == null ? 0 : Array.getLength(prevArray));
-                maxPrev = Math.max(maxPrev, prevSize);
+            if (columnsToUngroupBy.length == 0) {
+                return prepareReturnThis();
             }
-            for (Map.Entry<String, ColumnSource<?>> es : vectorColumns.entrySet()) {
-                final ColumnSource<?> arrayColumn = es.getValue();
-                Vector<?> array = (Vector<?>) arrayColumn.get(next);
-                final long size = (array == null ? 0 : array.size());
-                maxCur = Math.max(maxCur, size);
-                Vector<?> prevArray = (Vector<?>) arrayColumn.getPrev(next);
-                final long prevSize = (prevArray == null ? 0 : prevArray.size());
-                maxPrev = Math.max(maxPrev, prevSize);
-            }
-            maxSize = maxAndIndexUpdateForRow(modifyBuilder, addedBuilded, removedBuilder, maxSize, maxCur, next,
-                    maxPrev, base);
+
+            return getResult(new UngroupOperation(this, nullFill, columnsToUngroupBy));
         }
-        return maxSize;
-    }
-
-    private long computeModifiedIndicesAndMaxSizeNormal(RowSet rowSet, Map<String, ColumnSource<?>> arrayColumns,
-            Map<String, ColumnSource<?>> vectorColumns, String referenceColumn, RowSetBuilderRandom modifyBuilder,
-            RowSetBuilderRandom addedBuilded, RowSetBuilderRandom removedBuilder, long base) {
-        long maxSize = 0;
-        boolean sizeIsInitialized = false;
-        long[] sizes = new long[rowSet.intSize("ungroup")];
-        for (Map.Entry<String, ColumnSource<?>> es : arrayColumns.entrySet()) {
-            ColumnSource<?> arrayColumn = es.getValue();
-            String name = es.getKey();
-            if (!sizeIsInitialized) {
-                sizeIsInitialized = true;
-                referenceColumn = name;
-                RowSet.Iterator iterator = rowSet.iterator();
-                for (int i = 0; i < rowSet.size(); i++) {
-                    final long next = iterator.nextLong();
-                    Object array = arrayColumn.get(next);
-                    sizes[i] = (array == null ? 0 : Array.getLength(array));
-                    Object prevArray = arrayColumn.getPrev(next);
-                    int prevSize = (prevArray == null ? 0 : Array.getLength(prevArray));
-                    maxSize = maxAndIndexUpdateForRow(modifyBuilder, addedBuilded, removedBuilder, maxSize, sizes[i],
-                            next, prevSize, base);
-                }
-            } else {
-                RowSet.Iterator iterator = rowSet.iterator();
-                for (int i = 0; i < rowSet.size(); i++) {
-                    long k = iterator.nextLong();
-                    final Object array = arrayColumn.get(k);
-                    final int size = array == null ? 0 : Array.getLength(array);
-                    Assert.assertion(sizes[i] == size,
-                            "sizes[i] == Array.getLength(arrayColumn.get(k))",
-                            referenceColumn, "referenceColumn", name, "name", k, "row");
-                }
-
-            }
-        }
-        for (Map.Entry<String, ColumnSource<?>> es : vectorColumns.entrySet()) {
-            ColumnSource<?> arrayColumn = es.getValue();
-            String name = es.getKey();
-            if (!sizeIsInitialized) {
-                sizeIsInitialized = true;
-                referenceColumn = name;
-                RowSet.Iterator iterator = rowSet.iterator();
-                for (int i = 0; i < rowSet.size(); i++) {
-                    final long next = iterator.nextLong();
-                    Vector<?> array = (Vector<?>) arrayColumn.get(next);
-                    sizes[i] = (array == null ? 0 : array.size());
-                    Vector<?> prevArray = (Vector<?>) arrayColumn.getPrev(next);
-                    long prevSize = (prevArray == null ? 0 : prevArray.size());
-                    maxSize = maxAndIndexUpdateForRow(modifyBuilder, addedBuilded, removedBuilder, maxSize, sizes[i],
-                            next, prevSize, base);
-                }
-            } else {
-                RowSet.Iterator iterator = rowSet.iterator();
-                for (int i = 0; i < rowSet.size(); i++) {
-                    final long next = iterator.nextLong();
-                    Assert.assertion(sizes[i] == 0 && arrayColumn.get(next) == null ||
-                            sizes[i] == ((Vector<?>) arrayColumn.get(next)).size(),
-                            "sizes[i] == ((Vector)arrayColumn.get(i)).size()",
-                            referenceColumn, "referenceColumn", name, "arrayColumn.getName()", i, "row");
-                }
-            }
-        }
-        return maxSize;
-    }
-
-    private long maxAndIndexUpdateForRow(RowSetBuilderRandom modifyBuilder, RowSetBuilderRandom addedBuilded,
-            RowSetBuilderRandom removedBuilder, long maxSize, long size, long rowKey, long prevSize, long base) {
-        rowKey = rowKey << base;
-        Require.requirement(rowKey >= 0 && (size == 0 || (rowKey + size - 1 >= 0)),
-                "rowKey >= 0 && (size == 0 || (rowKey + size - 1 >= 0))");
-        if (size == prevSize) {
-            if (size > 0) {
-                modifyBuilder.addRange(rowKey, rowKey + size - 1);
-            }
-        } else if (size < prevSize) {
-            if (size > 0) {
-                modifyBuilder.addRange(rowKey, rowKey + size - 1);
-            }
-            removedBuilder.addRange(rowKey + size, rowKey + prevSize - 1);
-        } else {
-            if (prevSize > 0) {
-                modifyBuilder.addRange(rowKey, rowKey + prevSize - 1);
-            }
-            addedBuilded.addRange(rowKey + prevSize, rowKey + size - 1);
-        }
-        maxSize = Math.max(maxSize, size);
-        return maxSize;
-    }
-
-    @SuppressWarnings("SameParameterValue")
-    private static long computeMaxSize(RowSet rowSet, Map<String, ColumnSource<?>> arrayColumns,
-            Map<String, ColumnSource<?>> vectorColumns, String referenceColumn, long[] sizes, boolean nullFill) {
-        if (nullFill) {
-            return computeMaxSizeNullFill(rowSet, arrayColumns, vectorColumns, sizes);
-        }
-
-        return computeMaxSizeNormal(rowSet, arrayColumns, vectorColumns, referenceColumn, sizes);
-    }
-
-    private static long computeMaxSizeNullFill(RowSet rowSet, Map<String, ColumnSource<?>> arrayColumns,
-            Map<String, ColumnSource<?>> vectorColumns, long[] sizes) {
-        long maxSize = 0;
-        final RowSet.Iterator iterator = rowSet.iterator();
-        for (int i = 0; i < rowSet.size(); i++) {
-            long localMax = 0;
-            final long nextIndex = iterator.nextLong();
-            for (Map.Entry<String, ColumnSource<?>> es : arrayColumns.entrySet()) {
-                final ColumnSource<?> arrayColumn = es.getValue();
-                final Object array = arrayColumn.get(nextIndex);
-                final long size = (array == null ? 0 : Array.getLength(array));
-                maxSize = Math.max(maxSize, size);
-                localMax = Math.max(localMax, size);
-
-            }
-            for (Map.Entry<String, ColumnSource<?>> es : vectorColumns.entrySet()) {
-                final ColumnSource<?> arrayColumn = es.getValue();
-                final boolean isUngroupable = arrayColumn instanceof UngroupableColumnSource
-                        && ((UngroupableColumnSource) arrayColumn).isUngroupable();
-                final long size;
-                if (isUngroupable) {
-                    size = ((UngroupableColumnSource) arrayColumn).getUngroupedSize(nextIndex);
-                } else {
-                    final Vector<?> vector = (Vector<?>) arrayColumn.get(nextIndex);
-                    size = vector != null ? vector.size() : 0;
-                }
-                maxSize = Math.max(maxSize, size);
-                localMax = Math.max(localMax, size);
-            }
-            sizes[i] = localMax;
-        }
-        return maxSize;
-    }
-
-
-    private static long computeMaxSizeNormal(RowSet rowSet, Map<String, ColumnSource<?>> arrayColumns,
-            Map<String, ColumnSource<?>> vectorColumns, String referenceColumn, long[] sizes) {
-        long maxSize = 0;
-        boolean sizeIsInitialized = false;
-        for (Map.Entry<String, ColumnSource<?>> es : arrayColumns.entrySet()) {
-            ColumnSource<?> arrayColumn = es.getValue();
-            String name = es.getKey();
-            if (!sizeIsInitialized) {
-                sizeIsInitialized = true;
-                referenceColumn = name;
-                RowSet.Iterator iterator = rowSet.iterator();
-                for (int i = 0; i < rowSet.size(); i++) {
-                    Object array = arrayColumn.get(iterator.nextLong());
-                    sizes[i] = (array == null ? 0 : Array.getLength(array));
-                    maxSize = Math.max(maxSize, sizes[i]);
-                }
-            } else {
-                RowSet.Iterator iterator = rowSet.iterator();
-                for (int i = 0; i < rowSet.size(); i++) {
-                    final Object array = arrayColumn.get(iterator.nextLong());
-                    final int size = array == null ? 0 : Array.getLength(array);
-                    Assert.assertion(sizes[i] == size,
-                            "sizes[i] == Array.getLength(arrayColumn.get(i))",
-                            referenceColumn, "referenceColumn", name, "name", i, "row");
-                }
-
-            }
-        }
-        for (Map.Entry<String, ColumnSource<?>> es : vectorColumns.entrySet()) {
-            final ColumnSource<?> arrayColumn = es.getValue();
-            final String name = es.getKey();
-            final boolean isUngroupable = arrayColumn instanceof UngroupableColumnSource
-                    && ((UngroupableColumnSource) arrayColumn).isUngroupable();
-
-            if (!sizeIsInitialized) {
-                sizeIsInitialized = true;
-                referenceColumn = name;
-                RowSet.Iterator iterator = rowSet.iterator();
-                for (int ii = 0; ii < rowSet.size(); ii++) {
-                    if (isUngroupable) {
-                        sizes[ii] = ((UngroupableColumnSource) arrayColumn).getUngroupedSize(iterator.nextLong());
-                    } else {
-                        final Vector<?> vector = (Vector<?>) arrayColumn.get(iterator.nextLong());
-                        sizes[ii] = vector != null ? vector.size() : 0;
-                    }
-                    maxSize = Math.max(maxSize, sizes[ii]);
-                }
-            } else {
-                RowSet.Iterator iterator = rowSet.iterator();
-                for (int i = 0; i < rowSet.size(); i++) {
-                    final long expectedSize;
-                    if (isUngroupable) {
-                        expectedSize = ((UngroupableColumnSource) arrayColumn).getUngroupedSize(iterator.nextLong());
-                    } else {
-                        final Vector<?> vector = (Vector<?>) arrayColumn.get(iterator.nextLong());
-                        expectedSize = vector != null ? vector.size() : 0;
-                    }
-                    Assert.assertion(sizes[i] == expectedSize, "sizes[i] == ((Vector)arrayColumn.get(i)).size()",
-                            referenceColumn, "referenceColumn", name, "arrayColumn.getName()", i, "row");
-                }
-            }
-        }
-        return maxSize;
-    }
-
-    private static void computePrevSize(RowSet rowSet, Map<String, ColumnSource<?>> arrayColumns,
-            Map<String, ColumnSource<?>> vectorColumns, long[] sizes, boolean nullFill) {
-        if (nullFill) {
-            computePrevSizeNullFill(rowSet, arrayColumns, vectorColumns, sizes);
-        } else {
-            computePrevSizeNormal(rowSet, arrayColumns, vectorColumns, sizes);
-        }
-    }
-
-    private static void computePrevSizeNullFill(RowSet rowSet, Map<String, ColumnSource<?>> arrayColumns,
-            Map<String, ColumnSource<?>> vectorColumns, long[] sizes) {
-        final RowSet.Iterator iterator = rowSet.iterator();
-        for (int i = 0; i < rowSet.size(); i++) {
-            long localMax = 0;
-            final long nextIndex = iterator.nextLong();
-            for (Map.Entry<String, ColumnSource<?>> es : arrayColumns.entrySet()) {
-                final ColumnSource<?> arrayColumn = es.getValue();
-                final Object array = arrayColumn.getPrev(nextIndex);
-                final long size = (array == null ? 0 : Array.getLength(array));
-                localMax = Math.max(localMax, size);
-
-            }
-            for (Map.Entry<String, ColumnSource<?>> es : vectorColumns.entrySet()) {
-                final ColumnSource<?> arrayColumn = es.getValue();
-                final boolean isUngroupable = arrayColumn instanceof UngroupableColumnSource
-                        && ((UngroupableColumnSource) arrayColumn).isUngroupable();
-                final long size;
-                if (isUngroupable) {
-                    size = ((UngroupableColumnSource) arrayColumn).getUngroupedPrevSize(nextIndex);
-                } else {
-                    final Vector<?> vector = (Vector<?>) arrayColumn.getPrev(nextIndex);
-                    size = vector != null ? vector.size() : 0;
-                }
-                localMax = Math.max(localMax, size);
-            }
-            sizes[i] = localMax;
-        }
-    }
-
-    private static void computePrevSizeNormal(RowSet rowSet, Map<String, ColumnSource<?>> arrayColumns,
-            Map<String, ColumnSource<?>> vectorColumns, long[] sizes) {
-        for (ColumnSource<?> arrayColumn : arrayColumns.values()) {
-            RowSet.Iterator iterator = rowSet.iterator();
-            for (int i = 0; i < rowSet.size(); i++) {
-                Object array = arrayColumn.getPrev(iterator.nextLong());
-                sizes[i] = (array == null ? 0 : Array.getLength(array));
-            }
-            return; // TODO: WTF??
-        }
-        for (ColumnSource<?> arrayColumn : vectorColumns.values()) {
-            final boolean isUngroupable = arrayColumn instanceof UngroupableColumnSource
-                    && ((UngroupableColumnSource) arrayColumn).isUngroupable();
-
-            RowSet.Iterator iterator = rowSet.iterator();
-            for (int i = 0; i < rowSet.size(); i++) {
-                if (isUngroupable) {
-                    sizes[i] = ((UngroupableColumnSource) arrayColumn).getUngroupedPrevSize(iterator.nextLong());
-                } else {
-                    Vector<?> array = (Vector<?>) arrayColumn.getPrev(iterator.nextLong());
-                    sizes[i] = array == null ? 0 : array.size();
-                }
-            }
-            return; // TODO: WTF??
-        }
-    }
-
-    private static long[] computeSize(RowSet rowSet, Map<String, ColumnSource<?>> arrayColumns,
-            Map<String, ColumnSource<?>> vectorColumns, boolean nullFill) {
-        if (nullFill) {
-            return computeSizeNullFill(rowSet, arrayColumns, vectorColumns);
-        }
-
-        return computeSizeNormal(rowSet, arrayColumns, vectorColumns);
-    }
-
-    private static long[] computeSizeNullFill(RowSet rowSet, Map<String, ColumnSource<?>> arrayColumns,
-            Map<String, ColumnSource<?>> vectorColumns) {
-        final long[] sizes = new long[rowSet.intSize("ungroup")];
-        final RowSet.Iterator iterator = rowSet.iterator();
-        for (int i = 0; i < rowSet.size(); i++) {
-            long localMax = 0;
-            final long nextIndex = iterator.nextLong();
-            for (Map.Entry<String, ColumnSource<?>> es : arrayColumns.entrySet()) {
-                final ColumnSource<?> arrayColumn = es.getValue();
-                final Object array = arrayColumn.get(nextIndex);
-                final long size = (array == null ? 0 : Array.getLength(array));
-                localMax = Math.max(localMax, size);
-
-            }
-            for (Map.Entry<String, ColumnSource<?>> es : vectorColumns.entrySet()) {
-                final ColumnSource<?> arrayColumn = es.getValue();
-                final boolean isUngroupable = arrayColumn instanceof UngroupableColumnSource
-                        && ((UngroupableColumnSource) arrayColumn).isUngroupable();
-                final long size;
-                if (isUngroupable) {
-                    size = ((UngroupableColumnSource) arrayColumn).getUngroupedSize(nextIndex);
-                } else {
-                    final Vector<?> vector = (Vector<?>) arrayColumn.get(nextIndex);
-                    size = vector != null ? vector.size() : 0;
-                }
-                localMax = Math.max(localMax, size);
-            }
-            sizes[i] = localMax;
-        }
-        return sizes;
-    }
-
-    private static long[] computeSizeNormal(RowSet rowSet, Map<String, ColumnSource<?>> arrayColumns,
-            Map<String, ColumnSource<?>> vectorColumns) {
-        final long[] sizes = new long[rowSet.intSize("ungroup")];
-        for (ColumnSource<?> arrayColumn : arrayColumns.values()) {
-            RowSet.Iterator iterator = rowSet.iterator();
-            for (int i = 0; i < rowSet.size(); i++) {
-                Object array = arrayColumn.get(iterator.nextLong());
-                sizes[i] = (array == null ? 0 : Array.getLength(array));
-            }
-            return sizes; // TODO: WTF??
-        }
-        for (ColumnSource<?> arrayColumn : vectorColumns.values()) {
-            final boolean isUngroupable = arrayColumn instanceof UngroupableColumnSource
-                    && ((UngroupableColumnSource) arrayColumn).isUngroupable();
-
-            RowSet.Iterator iterator = rowSet.iterator();
-            for (int i = 0; i < rowSet.size(); i++) {
-                if (isUngroupable) {
-                    sizes[i] = ((UngroupableColumnSource) arrayColumn).getUngroupedSize(iterator.nextLong());
-                } else {
-                    Vector<?> array = (Vector<?>) arrayColumn.get(iterator.nextLong());
-                    sizes[i] = array == null ? 0 : array.size();
-                }
-            }
-            return sizes; // TODO: WTF??
-        }
-        return null;
-    }
-
-    private RowSetBuilderRandom getUngroupIndex(
-            final long[] sizes, final RowSetBuilderRandom indexBuilder, final long base, final RowSet rowSet) {
-        Assert.assertion(base >= 0 && base <= 63, "base >= 0 && base <= 63", base, "base");
-        long mask = ((1L << base) - 1) << (64 - base);
-        long lastKey = rowSet.lastRowKey();
-        if ((lastKey > 0) && ((lastKey & mask) != 0)) {
-            throw new IllegalStateException(
-                    "Key overflow detected, perhaps you should flatten your table before calling ungroup.  "
-                            + ",lastRowKey=" + lastKey + ", base=" + base);
-        }
-
-        int pos = 0;
-        for (RowSet.Iterator iterator = rowSet.iterator(); iterator.hasNext();) {
-            long next = iterator.nextLong();
-            long nextShift = next << base;
-            if (sizes[pos] != 0) {
-                Assert.assertion(nextShift >= 0, "nextShift >= 0", nextShift, "nextShift", base, "base", next, "next");
-                indexBuilder.addRange(nextShift, nextShift + sizes[pos++] - 1);
-            } else {
-                pos++;
-            }
-        }
-        return indexBuilder;
     }
 
     @Override

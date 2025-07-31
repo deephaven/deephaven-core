@@ -45,6 +45,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.LongConsumer;
 
 public abstract class AbstractColumnSource<T> implements
         ColumnSource<T>,
@@ -352,21 +353,22 @@ public abstract class AbstractColumnSource<T> implements
     }
 
     @Override
-    public long estimatePushdownFilterCost(
+    public void estimatePushdownFilterCost(
             final WhereFilter filter,
             final RowSet selection,
-            final RowSet fullSet,
             final boolean usePrev,
-            final PushdownFilterContext context) {
+            final PushdownFilterContext context,
+            final JobScheduler jobScheduler,
+            final LongConsumer onComplete,
+            final Consumer<Exception> onError) {
         // Default to having no benefit by pushing down.
-        return Long.MAX_VALUE;
+        onComplete.accept(Long.MAX_VALUE);
     }
 
     @Override
     public void pushdownFilter(
             final WhereFilter filter,
             final RowSet selection,
-            final RowSet fullSet,
             final boolean usePrev,
             final PushdownFilterContext context,
             final long costCeiling,
@@ -374,7 +376,7 @@ public abstract class AbstractColumnSource<T> implements
             final Consumer<PushdownResult> onComplete,
             final Consumer<Exception> onError) {
         // Default to returning all results as "maybe"
-        onComplete.accept(PushdownResult.of(RowSetFactory.empty(), selection.copy()));
+        onComplete.accept(PushdownResult.allMaybeMatch(selection));
     }
 
     @Override

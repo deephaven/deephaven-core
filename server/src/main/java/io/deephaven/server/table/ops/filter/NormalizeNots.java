@@ -10,6 +10,7 @@ import io.deephaven.proto.backplane.grpc.MatchType;
 import io.deephaven.proto.backplane.grpc.Reference;
 import io.deephaven.proto.backplane.grpc.Value;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
@@ -139,8 +140,11 @@ public class NormalizeNots extends AbstractNormalizeFilters {
         }
 
         @Override
-        public Condition onInvoke(String method, Value target, List<Value> argumentsList) {
+        public Condition onInvoke(String method, @Nullable Value target, List<Value> argumentsList) {
             // This operation doesn't have a corresponding NOT, we have to wrap them as before
+            if (target == null) {
+                return NormalizeFilterUtil.doInvert(NormalizeFilterUtil.doInvoke(method, argumentsList));
+            }
             return NormalizeFilterUtil.doInvert(NormalizeFilterUtil.doInvoke(method, target, argumentsList));
         }
 

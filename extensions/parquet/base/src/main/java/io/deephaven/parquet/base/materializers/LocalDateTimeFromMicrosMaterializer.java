@@ -9,10 +9,12 @@ package io.deephaven.parquet.base.materializers;
 
 import io.deephaven.parquet.base.PageMaterializer;
 import io.deephaven.parquet.base.PageMaterializerFactory;
-import io.deephaven.parquet.base.ParquetTimeUtils;
 import org.apache.parquet.column.values.ValuesReader;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+
+import static io.deephaven.parquet.base.materializers.ParquetMaterializerUtils.MICRO;
 
 public class LocalDateTimeFromMicrosMaterializer extends ObjectMaterializerBase<LocalDateTime>
         implements PageMaterializer {
@@ -29,6 +31,17 @@ public class LocalDateTimeFromMicrosMaterializer extends ObjectMaterializerBase<
         }
     };
 
+    /**
+     * Converts microseconds from the Epoch to a {@link LocalDateTime} in UTC timezone.
+     *
+     * @param value microseconds since Epoch
+     * @return The input microseconds from the Epoch converted to a {@link LocalDateTime} in UTC timezone
+     */
+    public static LocalDateTime convertValue(long value) {
+        return LocalDateTime.ofEpochSecond(value / 1_000_000L, (int) ((value % 1_000_000L) * MICRO),
+                ZoneOffset.UTC);
+    }
+
     private final ValuesReader dataReader;
 
     private LocalDateTimeFromMicrosMaterializer(ValuesReader dataReader, int numValues) {
@@ -44,7 +57,7 @@ public class LocalDateTimeFromMicrosMaterializer extends ObjectMaterializerBase<
     @Override
     public void fillValues(int startIndex, int endIndex) {
         for (int ii = startIndex; ii < endIndex; ii++) {
-            data[ii] = ParquetTimeUtils.epochMicrosToLocalDateTimeUTC(dataReader.readLong());
+            data[ii] = convertValue(dataReader.readLong());
         }
     }
 }

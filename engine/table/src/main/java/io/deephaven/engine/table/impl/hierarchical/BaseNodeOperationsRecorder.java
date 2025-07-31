@@ -8,6 +8,7 @@ import io.deephaven.api.SortColumn;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.hierarchical.RollupTable;
@@ -261,6 +262,18 @@ abstract class BaseNodeOperationsRecorder<TYPE> {
                     .collect(Collectors.toList());
             if (!unknownColumns.isEmpty()) {
                 throw new NoSuchColumnException(existingColumns, unknownColumns);
+            }
+
+            for (final SortColumn sc : columnsToSortBy) {
+                String columnName = sc.column().name();
+                if (AbsoluteSortColumnConventions.isAbsoluteColumnName(columnName)) {
+                    columnName = AbsoluteSortColumnConventions.absoluteColumnNameToBaseName(columnName);
+                }
+                final ColumnDefinition<Object> defToSort = getDefinition().getColumn(columnName);
+                final Class<Object> dataType = defToSort.getDataType();
+                if (!dataType.isPrimitive() && !Comparable.class.isAssignableFrom(dataType)) {
+                    throw new NotSortableColumnException(columnName + " is not a sortable type: " + dataType);
+                }
             }
 
             this.sortColumns = columnsToSortBy;

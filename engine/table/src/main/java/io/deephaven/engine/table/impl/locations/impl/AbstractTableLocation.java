@@ -4,20 +4,17 @@
 package io.deephaven.engine.table.impl.locations.impl;
 
 import io.deephaven.base.verify.Require;
-import io.deephaven.engine.liveness.DelegatingLivenessReferent;
-import io.deephaven.engine.liveness.LivenessReferent;
-import io.deephaven.engine.liveness.ReferenceCountedLivenessReferent;
-import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.liveness.*;
 import io.deephaven.engine.table.BasicDataIndex;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.PushdownFilterContext;
 import io.deephaven.engine.table.impl.PushdownResult;
-import io.deephaven.engine.table.impl.locations.*;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.util.FieldUtils;
 import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.util.string.StringUtils;
+import io.deephaven.engine.table.impl.locations.*;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.util.annotations.InternalUseOnly;
@@ -31,6 +28,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Consumer;
+import java.util.function.LongConsumer;
 
 /**
  * Partial TableLocation implementation for use by TableDataService implementations.
@@ -298,21 +296,22 @@ public abstract class AbstractTableLocation
     public abstract BasicDataIndex loadDataIndex(@NotNull String... columns);
 
     @Override
-    public long estimatePushdownFilterCost(
+    public void estimatePushdownFilterCost(
             final WhereFilter filter,
             final RowSet selection,
-            final RowSet fullSet,
             final boolean usePrev,
-            final PushdownFilterContext context) {
+            final PushdownFilterContext context,
+            final JobScheduler jobScheduler,
+            final LongConsumer onComplete,
+            final Consumer<Exception> onError) {
         // Default to having no benefit by pushing down.
-        return Long.MAX_VALUE;
+        onComplete.accept(Long.MAX_VALUE);
     }
 
     @Override
     public void pushdownFilter(
             final WhereFilter filter,
             final RowSet selection,
-            final RowSet fullSet,
             final boolean usePrev,
             final PushdownFilterContext context,
             final long costCeiling,
@@ -320,7 +319,7 @@ public abstract class AbstractTableLocation
             final Consumer<PushdownResult> onComplete,
             final Consumer<Exception> onError) {
         // Default to returning all results as "maybe"
-        onComplete.accept(PushdownResult.of(RowSetFactory.empty(), selection.copy()));
+        onComplete.accept(PushdownResult.allMaybeMatch(selection));
     }
 
     @Override

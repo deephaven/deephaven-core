@@ -1,6 +1,9 @@
 #
 # Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
+ #
+# Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+#
 import random
 import unittest
 from types import SimpleNamespace
@@ -219,6 +222,17 @@ class TableTestCase(BaseTestCase):
         self.assertLessEqual(filtered_table.size, self.test_table.size)
 
         filtered_table = self.test_table.where(filters="a > 10")
+        self.assertLessEqual(filtered_table.size, self.test_table.size)
+
+    def test_where_pushdown_virtualrowvariables(self):
+        filtered_table = self.test_table.where(filters="ii % 2 == 0")
+        self.assertLessEqual(filtered_table.size, self.test_table.size)
+
+        # Test a virtual function that uses a real column and a virtual column
+        def pyfunc_bool(p1, p2) -> bool:
+            return p1 < p2
+
+        filtered_table = self.test_table.where(filters="pyfunc_bool(a, ii)")
         self.assertLessEqual(filtered_table.size, self.test_table.size)
 
     def test_where_in(self):

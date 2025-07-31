@@ -9,6 +9,7 @@ import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.MatchPair;
+import io.deephaven.engine.table.impl.snapshot.SnapshotUtils;
 import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
@@ -44,7 +45,7 @@ public abstract class BaseBlinkFirstOrLastChunkedOperator
      * <p>
      * These are the source columns from the upstream table, reinterpreted to primitives where applicable.
      */
-    protected final ColumnSource<?>[] inputColumns;
+    protected final ChunkSource.WithPrev<?>[] inputColumns;
     /**
      * <p>
      * Output columns, parallel to {@link #inputColumns} and {@link #resultColumns}.
@@ -66,7 +67,7 @@ public abstract class BaseBlinkFirstOrLastChunkedOperator
             @NotNull final MatchPair[] resultPairs,
             @NotNull final Table blinkTable) {
         numResultColumns = resultPairs.length;
-        inputColumns = new ColumnSource[numResultColumns];
+        inputColumns = new ChunkSource.WithPrev[numResultColumns];
         outputColumns = new WritableColumnSource[numResultColumns];
         final Map<String, WritableColumnSource<?>> resultColumnsMutable = new LinkedHashMap<>(numResultColumns);
         for (int ci = 0; ci < numResultColumns; ++ci) {
@@ -75,7 +76,7 @@ public abstract class BaseBlinkFirstOrLastChunkedOperator
             final WritableColumnSource<?> resultSource = ArrayBackedColumnSource.getMemoryColumnSource(0,
                     streamSource.getType(), streamSource.getComponentType());
             resultColumnsMutable.put(resultPair.leftColumn(), resultSource);
-            inputColumns[ci] = ReinterpretUtils.maybeConvertToPrimitive(streamSource);
+            inputColumns[ci] = SnapshotUtils.maybeWrapVector(ReinterpretUtils.maybeConvertToPrimitive(streamSource));
             // Note that ArrayBackedColumnSources implementations reinterpret very efficiently where applicable.
             outputColumns[ci] = (WritableColumnSource<?>) ReinterpretUtils.maybeConvertToPrimitive(resultSource);
             Assert.eq(inputColumns[ci].getChunkType(), "inputColumns[ci].getChunkType()",

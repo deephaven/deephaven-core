@@ -98,6 +98,20 @@ public class NormalizeNotsTest extends AbstractNormalizingFilterTest {
         assertFilterEquals("not(INVERTED) == REGULAR", not(aNotInB), aInB);
     }
 
+    @Test
+    public void testInvokeStatic() {
+        Condition invoke = invoke("java.lang.Double.isNaN", null, literal(7));
+        assertFilterEquals("not(not(invoke))", not(not(invoke)), invoke);
+    }
+
+    @Test
+    public void testNotInvokeStatic() {
+        // Here we aren't testing if the not is normalized away, but both that it is retained and that there
+        // are no errors producing/normalizing it.
+        Condition invoke = invoke("java.lang.Double.isNaN", null, literal(7));
+        assertFilterEquals("not(invoke)", not(invoke), not(invoke));
+    }
+
     @Override
     protected Condition execute(Condition f) {
         return NormalizeNots.exec(f);

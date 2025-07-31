@@ -3,11 +3,8 @@
 //
 package io.deephaven.engine.util;
 
-import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.base.verify.AssertionFailure;
 import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.table.impl.util.ImmediateJobScheduler;
 import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.table.impl.util.UpdateGraphJobScheduler;
@@ -19,9 +16,15 @@ import junit.framework.TestCase;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
+import java.time.Duration;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import static org.junit.Assert.assertNotNull;
 
@@ -31,15 +34,21 @@ public final class TestJobScheduler {
     public final EngineCleanup cleanup = new EngineCleanup();
 
     @Test
-    public void testParallel() {
-        final CompletableFuture<Void> waitForResult = new CompletableFuture<>();
-
+    public void testParallel() throws InterruptedException, TimeoutException {
+        final boolean[] completed = new boolean[100];
+        final Observer observer = new Observer(() -> {
+            // verify the set for the first 50
+            for (int ii = 0; ii < 50; ii++) {
+                Assert.eqTrue(completed[ii], "completed[" + ii + "]");
+            }
+            for (int ii = 50; ii < completed.length; ii++) {
+                Assert.eqFalse(completed[ii], "completed[" + ii + "]");
+            }
+        }, null, null);
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.resetForUnitTests(false, true, 0, 4, 10, 5);
         // verify the set for the first 50
         updateGraph.runWithinUnitTestCycle(() -> {
-            final boolean[] completed = new boolean[100];
-
             final JobScheduler scheduler = new UpdateGraphJobScheduler(updateGraph);
             scheduler.iterateParallel(
                     ExecutionContext.getContext(),
@@ -48,40 +57,30 @@ public final class TestJobScheduler {
                     0,
                     50,
                     (context, idx, nec) -> completed[idx] = true,
-                    () -> {
-                        // verify the set for the first 50
-                        for (int ii = 0; ii < 50; ii++) {
-                            Assert.eqTrue(completed[ii], "completed[" + ii + "]");
-                        }
-                        for (int ii = 50; ii < completed.length; ii++) {
-                            Assert.eqFalse(completed[ii], "completed[" + ii + "]");
-                        }
-                        waitForResult.complete(null);
-                    },
-                    exception -> waitForResult.completeExceptionally(new AssertionFailure("unexpected error")));
+                    observer::onComplete,
+                    observer::cleanup,
+                    observer::onError);
         });
-
-        try {
-            // need to wait until this future is complete
-            waitForResult.get();
-        } catch (InterruptedException e) {
-            throw new CancellationException("interrupted while processing test");
-        } catch (ExecutionException e) {
-            // rethrow the error
-            throw new UncheckedDeephavenException("failure while processing test", e.getCause());
-        }
+        observer.awaitFinished(Duration.ofSeconds(10));
+        observer.assertSuccess();
     }
 
     @Test
-    public void testParallelWithResume() {
-        final CompletableFuture<Void> waitForResult = new CompletableFuture<>();
-
+    public void testParallelWithResume() throws InterruptedException, TimeoutException {
+        final boolean[] completed = new boolean[100];
+        final Observer observer = new Observer(() -> {
+            // verify the set for the first 50
+            for (int ii = 0; ii < 50; ii++) {
+                Assert.eqTrue(completed[ii], "completed[" + ii + "]");
+            }
+            for (int ii = 50; ii < completed.length; ii++) {
+                Assert.eqFalse(completed[ii], "completed[" + ii + "]");
+            }
+        }, null, null);
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.resetForUnitTests(false, true, 0, 4, 10, 5);
         // verify the set for the first 50
         updateGraph.runWithinUnitTestCycle(() -> {
-            final boolean[] completed = new boolean[100];
-
             final JobScheduler scheduler = new UpdateGraphJobScheduler(updateGraph);
             scheduler.iterateParallel(
                     ExecutionContext.getContext(),
@@ -93,34 +92,27 @@ public final class TestJobScheduler {
                         completed[idx] = true;
                         resume.run();
                     },
-                    () -> {
-                        // verify the set for the first 50
-                        for (int ii = 0; ii < 50; ii++) {
-                            Assert.eqTrue(completed[ii], "completed[" + ii + "]");
-                        }
-                        for (int ii = 50; ii < completed.length; ii++) {
-                            Assert.eqFalse(completed[ii], "completed[" + ii + "]");
-                        }
-                        waitForResult.complete(null);
-                    },
-                    exception -> waitForResult.completeExceptionally(new AssertionFailure("unexpected error")));
+                    observer::onComplete,
+                    observer::cleanup,
+                    observer::onError);
         });
-
-        try {
-            // need to wait until this future is complete
-            waitForResult.get();
-        } catch (InterruptedException e) {
-            throw new CancellationException("interrupted while processing test");
-        } catch (ExecutionException e) {
-            // rethrow the error
-            throw new UncheckedDeephavenException("failure while processing test", e.getCause());
-        }
+        observer.awaitFinished(Duration.ofSeconds(10));
+        observer.assertSuccess();
     }
 
     @Test
-    public void testParallelWithContext() {
-        final CompletableFuture<Void> waitForResult = new CompletableFuture<>();
-        final AtomicInteger openCount = new AtomicInteger(0);
+    public void testParallelWithContext() throws InterruptedException, TimeoutException {
+        final boolean[] completed = new boolean[100];
+        final Observer observer = new Observer(() -> {
+            // verify true for the first 50
+            for (int ii = 0; ii < 50; ii++) {
+                Assert.eqTrue(completed[ii], "completed[" + ii + "]");
+            }
+            // verify false for the next 50
+            for (int ii = 50; ii < completed.length; ii++) {
+                Assert.eqFalse(completed[ii], "completed[" + ii + "]");
+            }
+        }, null, null);
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.resetForUnitTests(false, true, 0, 4, 10, 5);
@@ -128,71 +120,46 @@ public final class TestJobScheduler {
         // verify true for the first 50
         // verify false for the next 50
         updateGraph.runWithinUnitTestCycle(() -> {
-
-            class TestJobThreadContext implements JobScheduler.JobThreadContext {
-                TestJobThreadContext() {
-                    openCount.incrementAndGet();
-                }
-
-                @Override
-                public void close() {
-                    openCount.decrementAndGet();
-                }
-            }
-
-            final boolean[] completed = new boolean[100];
-
             final JobScheduler scheduler = new UpdateGraphJobScheduler(updateGraph);
             scheduler.iterateParallel(
                     ExecutionContext.getContext(),
                     null,
-                    TestJobThreadContext::new,
+                    observer,
                     0,
                     50,
                     (context, idx, nec, resume) -> {
                         assertNotNull(context);
-
                         completed[idx] = true;
                         resume.run();
                     },
-                    () -> {
-                        // verify true for the first 50
-                        for (int ii = 0; ii < 50; ii++) {
-                            Assert.eqTrue(completed[ii], "completed[" + ii + "]");
-                        }
-                        // verify false for the next 50
-                        for (int ii = 50; ii < completed.length; ii++) {
-                            Assert.eqFalse(completed[ii], "completed[" + ii + "]");
-                        }
-                        waitForResult.complete(null);
-                    },
-                    exception -> waitForResult.completeExceptionally(new AssertionFailure("unexpected error")));
+                    observer::onComplete,
+                    observer::cleanup,
+                    observer::onError);
         });
-
-        try {
-            // need to wait until this future is complete
-            waitForResult.get();
-            // make sure all the contexts were closed
-            Assert.eqZero(openCount.get(), "openCount");
-        } catch (InterruptedException e) {
-            throw new CancellationException("interrupted while processing test");
-        } catch (ExecutionException e) {
-            // rethrow the error
-            throw new UncheckedDeephavenException("failure while processing test", e.getCause());
-        }
+        observer.awaitFinished(Duration.ofSeconds(10));
+        observer.assertSuccess();
+        observer.assertNoOpenContexts();
     }
 
     @Test
-    public void testSerialWithResume() {
-        final CompletableFuture<Void> waitForResult = new CompletableFuture<>();
+    public void testSerialWithResume() throws InterruptedException, TimeoutException {
+        final boolean[] completed = new boolean[100];
+        final Observer observer = new Observer(() -> {
+            // verify true for the first 50
+            for (int ii = 0; ii < 50; ii++) {
+                Assert.eqTrue(completed[ii], "completed[" + ii + "]");
+            }
+            // verify false for the next 50
+            for (int ii = 50; ii < completed.length; ii++) {
+                Assert.eqFalse(completed[ii], "completed[" + ii + "]");
+            }
+        }, null, null);
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.resetForUnitTests(false, true, 0, 4, 10, 5);
         // verify true for the first 50
         // verify false for the next 50
         updateGraph.runWithinUnitTestCycle(() -> {
-            final boolean[] completed = new boolean[100];
-
             final JobScheduler scheduler = new UpdateGraphJobScheduler(updateGraph);
             scheduler.iterateSerial(
                     ExecutionContext.getContext(),
@@ -204,35 +171,27 @@ public final class TestJobScheduler {
                         completed[idx] = true;
                         resume.run();
                     },
-                    () -> {
-                        // verify true for the first 50
-                        for (int ii = 0; ii < 50; ii++) {
-                            Assert.eqTrue(completed[ii], "completed[" + ii + "]");
-                        }
-                        // verify false for the next 50
-                        for (int ii = 50; ii < completed.length; ii++) {
-                            Assert.eqFalse(completed[ii], "completed[" + ii + "]");
-                        }
-                        waitForResult.complete(null);
-                    },
-                    exception -> waitForResult.completeExceptionally(new AssertionFailure("unexpected error")));
+                    observer::onComplete,
+                    observer::cleanup,
+                    observer::onError);
         });
-
-        try {
-            // need to wait until this future is complete
-            waitForResult.get();
-        } catch (InterruptedException e) {
-            throw new CancellationException("interrupted while processing test");
-        } catch (ExecutionException e) {
-            // rethrow the error
-            throw new UncheckedDeephavenException("failure while processing test", e.getCause());
-        }
+        observer.awaitFinished(Duration.ofSeconds(10));
+        observer.assertSuccess();
     }
 
     @Test
-    public void testSerialWithContext() {
-        final CompletableFuture<Void> waitForResult = new CompletableFuture<>();
-        final AtomicInteger openCount = new AtomicInteger(0);
+    public void testSerialWithContext() throws InterruptedException, TimeoutException {
+        final boolean[] completed = new boolean[100];
+        final Observer observer = new Observer(() -> {
+            // verify true for the first 50
+            for (int ii = 0; ii < 50; ii++) {
+                Assert.eqTrue(completed[ii], "completed[" + ii + "]");
+            }
+            // verify false for the next 50
+            for (int ii = 50; ii < completed.length; ii++) {
+                Assert.eqFalse(completed[ii], "completed[" + ii + "]");
+            }
+        }, null, null);
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.resetForUnitTests(false, true, 0, 4, 10, 5);
@@ -240,25 +199,11 @@ public final class TestJobScheduler {
         // verify true for the first 50
         // verify false for the next 50
         updateGraph.runWithinUnitTestCycle(() -> {
-
-            class TestJobThreadContext implements JobScheduler.JobThreadContext {
-                TestJobThreadContext() {
-                    openCount.incrementAndGet();
-                }
-
-                @Override
-                public void close() {
-                    openCount.decrementAndGet();
-                }
-            }
-
-            final boolean[] completed = new boolean[100];
-
             final JobScheduler scheduler = new UpdateGraphJobScheduler(updateGraph);
             scheduler.iterateSerial(
                     ExecutionContext.getContext(),
                     null,
-                    TestJobThreadContext::new,
+                    observer,
                     0,
                     50,
                     (context, idx, nec, resume) -> {
@@ -267,37 +212,18 @@ public final class TestJobScheduler {
                         completed[idx] = true;
                         resume.run();
                     },
-                    () -> {
-                        // verify true for the first 50
-                        for (int ii = 0; ii < 50; ii++) {
-                            Assert.eqTrue(completed[ii], "completed[" + ii + "]");
-                        }
-                        // verify false for the next 50
-                        for (int ii = 50; ii < completed.length; ii++) {
-                            Assert.eqFalse(completed[ii], "completed[" + ii + "]");
-                        }
-                        waitForResult.complete(null);
-                    },
-                    exception -> waitForResult.completeExceptionally(new AssertionFailure("unexpected error")));
+                    observer::onComplete,
+                    observer::cleanup,
+                    observer::onError);
         });
-
-        try {
-            // need to wait until this future is complete
-            waitForResult.get();
-            // make sure all the contexts were closed
-            Assert.eqZero(openCount.get(), "openCount");
-        } catch (InterruptedException e) {
-            throw new CancellationException("interrupted while processing test");
-        } catch (ExecutionException e) {
-            // rethrow the error
-            throw new UncheckedDeephavenException("failure while processing test", e.getCause());
-        }
+        observer.awaitFinished(Duration.ofSeconds(10));
+        observer.assertSuccess();
+        observer.assertNoOpenContexts();
     }
 
     @Test
-    public void testSerialEmpty() {
-        final CompletableFuture<Void> waitForResult = new CompletableFuture<>();
-
+    public void testSerialEmpty() throws InterruptedException, TimeoutException {
+        final Observer observer = new Observer(null, null, null);
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.resetForUnitTests(false, true, 0, 4, 10, 5);
         // nop
@@ -313,31 +239,49 @@ public final class TestJobScheduler {
                     (context, idx, nec, resume) -> {
                         // nop
                     },
-                    () -> waitForResult.complete(null),
-                    exception -> waitForResult.completeExceptionally(new AssertionFailure("unexpected error")));
+                    observer::onComplete,
+                    observer::cleanup,
+                    observer::onError);
         });
-
-        try {
-            // need to wait until this future is complete
-            waitForResult.get();
-        } catch (InterruptedException e) {
-            throw new CancellationException("interrupted while processing test");
-        } catch (ExecutionException e) {
-            // rethrow the error
-            throw new UncheckedDeephavenException("failure while processing test", e.getCause());
-        }
+        observer.awaitFinished(Duration.ofSeconds(10));
+        observer.assertSuccess();
     }
 
     @Test
-    public void testParallelEmpty() {
-        final CompletableFuture<Void> waitForResult = new CompletableFuture<>();
+    public void testSerialEmptyWithOnCompleteError() throws InterruptedException, TimeoutException {
+        final Observer observer = new Observer(() -> {
+            throw new RuntimeException("oops");
+        }, null, null);
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.resetForUnitTests(false, true, 0, 4, 10, 5);
+        // nop
+        updateGraph.runWithinUnitTestCycle(() -> {
+            final JobScheduler scheduler = new UpdateGraphJobScheduler(updateGraph);
+            scheduler.iterateSerial(
+                    ExecutionContext.getContext(),
+                    null,
+                    JobScheduler.DEFAULT_CONTEXT_FACTORY,
+                    0,
+                    0,
+                    (context, idx, nec, resume) -> {
+                        // nop
+                    },
+                    observer::onComplete,
+                    observer::cleanup,
+                    observer::onError);
+        });
+        observer.awaitFinished(Duration.ofSeconds(10));
+        Assert.eqTrue(observer.error().getMessage().contains("oops"), "oops");
+    }
 
+    @Test
+    public void testParallelEmpty() throws InterruptedException, TimeoutException {
+        final Observer observer = new Observer(null, null, null);
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.resetForUnitTests(false, true, 0, 4, 10, 5);
         // nop
         UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
         updateGraph1.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
-
             final JobScheduler scheduler = new UpdateGraphJobScheduler(updateGraph);
             scheduler.iterateParallel(
                     ExecutionContext.getContext(),
@@ -348,25 +292,46 @@ public final class TestJobScheduler {
                     (context, idx, resume) -> {
                         // nop
                     },
-                    () -> waitForResult.complete(null),
-                    exception -> waitForResult.completeExceptionally(new AssertionFailure("unexpected error")));
+                    observer::onComplete,
+                    observer::cleanup,
+                    observer::onError);
         });
-
-        try {
-            // need to wait until this future is complete
-            waitForResult.get();
-        } catch (InterruptedException e) {
-            throw new CancellationException("interrupted while processing test");
-        } catch (ExecutionException e) {
-            // rethrow the error
-            throw new UncheckedDeephavenException("failure while processing test", e.getCause());
-        }
+        observer.awaitFinished(Duration.ofSeconds(10));
+        observer.assertSuccess();
     }
 
     @Test
-    public void testParallelError() {
-        final CompletableFuture<Void> waitForResult = new CompletableFuture<>();
-        final AtomicInteger openCount = new AtomicInteger(0);
+    public void testParallelEmptyWithOnCompleteError() throws InterruptedException, TimeoutException {
+        final Observer observer = new Observer(() -> {
+            throw new RuntimeException("oops");
+        }, null, null);
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.resetForUnitTests(false, true, 0, 4, 10, 5);
+        // nop
+        UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
+        updateGraph1.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+            final JobScheduler scheduler = new UpdateGraphJobScheduler(updateGraph);
+            scheduler.iterateParallel(
+                    ExecutionContext.getContext(),
+                    null,
+                    JobScheduler.DEFAULT_CONTEXT_FACTORY,
+                    0,
+                    0,
+                    (context, idx, resume) -> {
+                        // nop
+                    },
+                    observer::onComplete,
+                    observer::cleanup,
+                    observer::onError);
+        });
+        observer.awaitFinished(Duration.ofSeconds(10));
+        Assert.eqTrue(observer.error().getMessage().contains("oops"), "oops");
+    }
+
+    @Test
+    public void testParallelError() throws InterruptedException, TimeoutException {
+        final Observer observer = new Observer(null, null, null);
+        final boolean[] completed = new boolean[50];
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.resetForUnitTests(false, true, 0, 4, 10, 5);
@@ -374,24 +339,12 @@ public final class TestJobScheduler {
         // throw before "doing work" to make verification easy
         // if this is called, we failed the test
         updateGraph.runWithinUnitTestCycle(() -> {
-            final boolean[] completed = new boolean[50];
-
-            class TestJobThreadContext implements JobScheduler.JobThreadContext {
-                TestJobThreadContext() {
-                    openCount.incrementAndGet();
-                }
-
-                @Override
-                public void close() {
-                    openCount.decrementAndGet();
-                }
-            }
 
             final JobScheduler scheduler = new UpdateGraphJobScheduler(updateGraph);
             scheduler.iterateParallel(
                     ExecutionContext.getContext(),
                     null,
-                    TestJobThreadContext::new,
+                    observer,
                     0,
                     50,
                     (context, idx, nec) -> {
@@ -404,38 +357,21 @@ public final class TestJobScheduler {
 
                         completed[idx] = true;
                     },
-                    () -> {
-                        // if this is called, we failed the test
-                        waitForResult.completeExceptionally(new AssertionFailure("Exception not thrown"));
-                    },
-                    exception -> {
-                        if (!(exception instanceof IndexOutOfBoundsException)) {
-                            waitForResult.completeExceptionally(new AssertionFailure("Unexpected exception thrown"));
-                        }
-                        if (completed[10]) {
-                            waitForResult.completeExceptionally(new AssertionFailure("Processed unexpected index"));
-                        }
-                        waitForResult.complete(null);
-                    });
+                    observer::onComplete,
+                    observer::cleanup,
+                    observer::onError);
         });
-
-        try {
-            // need to wait until this future is complete
-            waitForResult.get();
-            // make sure all the contexts were closed
-            Assert.eqZero(openCount.get(), "openCount");
-        } catch (InterruptedException e) {
-            throw new CancellationException("Interrupted while processing test");
-        } catch (ExecutionException e) {
-            // rethrow the error
-            throw new UncheckedDeephavenException("Failure while processing test", e.getCause());
-        }
+        observer.awaitFinished(Duration.ofSeconds(10));
+        observer.assertDidNotCallComplete();
+        Assert.neqNull(observer.error(), "observer.error()");
+        observer.assertNoOpenContexts();
+        Assert.eqFalse(completed[10], "completed[10]");
     }
 
     @Test
-    public void testSerialError() {
-        final CompletableFuture<Void> waitForResult = new CompletableFuture<>();
-        final AtomicInteger openCount = new AtomicInteger(0);
+    public void testSerialError() throws InterruptedException, TimeoutException {
+        final Observer observer = new Observer(null, null, null);
+        final boolean[] completed = new boolean[100];
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.resetForUnitTests(false, true, 0, 4, 10, 5);
@@ -444,24 +380,11 @@ public final class TestJobScheduler {
         // if this is called, we failed the test
         // assert that the job was terminated before all tasks were executed (one is still false)
         updateGraph.runWithinUnitTestCycle(() -> {
-            final boolean[] completed = new boolean[100];
-
-            class TestJobThreadContext implements JobScheduler.JobThreadContext {
-                TestJobThreadContext() {
-                    openCount.incrementAndGet();
-                }
-
-                @Override
-                public void close() {
-                    openCount.decrementAndGet();
-                }
-            }
-
             final JobScheduler scheduler = new UpdateGraphJobScheduler(updateGraph);
             scheduler.iterateSerial(
                     ExecutionContext.getContext(),
                     null,
-                    TestJobThreadContext::new,
+                    observer,
                     0,
                     50,
                     (context, idx, nec, resume) -> {
@@ -475,45 +398,28 @@ public final class TestJobScheduler {
                         }
                         resume.run();
                     },
-                    () -> {
-                        // if this is called, we failed the test
-                        waitForResult
-                                .completeExceptionally(new AssertionFailure("IndexOutOfBoundsException not thrown"));
-                    },
-                    exception -> {
-                        if (!(exception instanceof IndexOutOfBoundsException)) {
-                            waitForResult.completeExceptionally(
-                                    new AssertionFailure("IndexOutOfBoundsException not thrown"));
-                        }
-
-                        // assert that the job was terminated before all tasks were executed (one is still false)
-                        for (int ii = 0; ii < 50; ii++) {
-                            if (!completed[ii]) {
-                                waitForResult.complete(null);
-                                return;
-                            }
-                        }
-                        waitForResult.completeExceptionally(new AssertionFailure("Tasks not terminated"));
-                    });
+                    observer::onComplete,
+                    observer::cleanup,
+                    observer::onError);
         });
-
-        try {
-            // need to wait until this future is complete
-            waitForResult.get();
-            // make sure all the contexts were closed
-            Assert.eqZero(openCount.get(), "openCount");
-        } catch (InterruptedException e) {
-            throw new CancellationException("interrupted while processing test");
-        } catch (ExecutionException e) {
-            // rethrow the error
-            throw new UncheckedDeephavenException("failure while processing test", e.getCause());
+        observer.awaitFinished(Duration.ofSeconds(10));
+        observer.assertDidNotCallComplete();
+        Assert.neqNull(observer.error(), "observer.error()");
+        observer.assertNoOpenContexts();
+        for (int i = 0; i < 100; ++i) {
+            if (i <= 10) {
+                Assert.eqTrue(completed[i], "completed[i]");
+            } else {
+                Assert.eqFalse(completed[i], "completed[i]");
+            }
         }
     }
 
     @Test
-    public void testNestedParallelError() {
-        final CompletableFuture<Void> waitForResult = new CompletableFuture<>();
+    public void testNestedParallelError() throws InterruptedException, TimeoutException {
+        final Observer observer = new Observer(null, null, null);
         final AtomicInteger openCount = new AtomicInteger(0);
+        final boolean[][] completed = new boolean[50][60];
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.resetForUnitTests(false, true, 0, 4, 10, 5);
@@ -521,31 +427,18 @@ public final class TestJobScheduler {
         // throw before "doing work" to make verification easy
         // if this is called, we failed the test
         updateGraph.runWithinUnitTestCycle(() -> {
-            final boolean[][] completed = new boolean[50][60];
-
-            class TestJobThreadContext implements JobScheduler.JobThreadContext {
-                TestJobThreadContext() {
-                    openCount.incrementAndGet();
-                }
-
-                @Override
-                public void close() {
-                    openCount.decrementAndGet();
-                }
-            }
-
             final JobScheduler scheduler = new UpdateGraphJobScheduler(updateGraph);
             scheduler.iterateParallel(
                     ExecutionContext.getContext(),
                     null,
-                    TestJobThreadContext::new,
+                    observer,
                     0,
                     50,
                     (context1, idx1, nec1, r1) -> {
                         scheduler.iterateParallel(
                                 ExecutionContext.getContext(),
                                 null,
-                                TestJobThreadContext::new,
+                                observer,
                                 0,
                                 60,
                                 (context2, idx2, nec2) -> {
@@ -557,64 +450,35 @@ public final class TestJobScheduler {
                                     }
 
                                     completed[idx1][idx2] = true;
-                                }, r1, nec1);
+                                }, r1, () -> {
+                                }, nec1);
                     },
-                    () -> {
-                        // if this is called, we failed the test
-                        waitForResult.completeExceptionally(new AssertionFailure("Exception not thrown"));
-                    },
-                    exception -> {
-                        if (!(exception instanceof IndexOutOfBoundsException)) {
-                            waitForResult.completeExceptionally(new AssertionFailure("Unexpected exception thrown"));
-                        }
-                        if (completed[10][10]) {
-                            waitForResult.completeExceptionally(new AssertionFailure("Processed unexpected index"));
-                        }
-                        waitForResult.complete(null);
-                    });
+                    observer::onComplete,
+                    observer::cleanup,
+                    observer::onError);
         });
-
-        try {
-            // need to wait until this future is complete
-            waitForResult.get();
-            // make sure all the contexts were closed
-            Assert.eqZero(openCount.get(), "openCount");
-        } catch (InterruptedException e) {
-            throw new CancellationException("Interrupted while processing test");
-        } catch (ExecutionException e) {
-            // rethrow the error
-            throw new UncheckedDeephavenException("Failure while processing test", e.getCause());
-        }
+        observer.awaitFinished(Duration.ofSeconds(10));
+        observer.assertDidNotCallComplete();
+        Assert.neqNull(observer.error(), "observer.error()");
+        observer.assertNoOpenContexts();
+        Assert.eqFalse(completed[10][10], "completed[10][10]");
     }
 
     @Test
-    public void testNestedParallelChainedError() {
-        final CompletableFuture<Void> waitForResult = new CompletableFuture<>();
-        final AtomicInteger openCount = new AtomicInteger(0);
+    public void testNestedParallelChainedError() throws InterruptedException, TimeoutException {
+        final Observer observer = new Observer(null, null, null);
+        final boolean[][] completed = new boolean[50][60];
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.resetForUnitTests(false, true, 0, 4, 10, 5);
         // verify the type is correct
         // if this is called, we failed the test
         updateGraph.runWithinUnitTestCycle(() -> {
-            final boolean[][] completed = new boolean[50][60];
-
-            class TestJobThreadContext implements JobScheduler.JobThreadContext {
-                TestJobThreadContext() {
-                    openCount.incrementAndGet();
-                }
-
-                @Override
-                public void close() {
-                    openCount.decrementAndGet();
-                }
-            }
-
             final JobScheduler scheduler = new UpdateGraphJobScheduler(updateGraph);
             scheduler.iterateParallel(
                     ExecutionContext.getContext(),
                     null,
-                    TestJobThreadContext::new,
+                    observer,
                     0,
                     50,
                     (context1, idx1, nec1, r1) -> {
@@ -624,119 +488,74 @@ public final class TestJobScheduler {
                         scheduler.iterateParallel(
                                 ExecutionContext.getContext(),
                                 null,
-                                TestJobThreadContext::new,
+                                observer,
                                 0,
                                 60,
                                 (context2, idx2, nec2) -> {
                                     assertNotNull(context2);
                                     completed[idx1][idx2] = true;
-                                }, r1, nec1);
+                                }, r1, () -> {
+                                }, nec1);
                     },
-                    () -> {
-                        // if this is called, we failed the test
-                        waitForResult.completeExceptionally(new AssertionFailure("Exception not thrown"));
-                    },
-                    exception -> {
-                        if (!(exception instanceof IndexOutOfBoundsException)) {
-                            waitForResult.completeExceptionally(new AssertionFailure("Unexpected exception thrown"));
-                        }
-                        if (completed[40][0]) {
-                            waitForResult.completeExceptionally(new AssertionFailure("Processed unexpected index"));
-                        }
-                        waitForResult.complete(null);
-                    });
+                    observer::onComplete,
+                    observer::cleanup,
+                    observer::onError);
         });
-
-        try {
-            // need to wait until this future is complete
-            waitForResult.get();
-            // make sure all the contexts were closed
-            Assert.eqZero(openCount.get(), "openCount");
-        } catch (InterruptedException e) {
-            throw new CancellationException("Interrupted while processing test");
-        } catch (ExecutionException e) {
-            // rethrow the error
-            throw new UncheckedDeephavenException("Failure while processing test", e.getCause());
-        }
+        observer.awaitFinished(Duration.ofSeconds(10));
+        observer.assertDidNotCallComplete();
+        Assert.neqNull(observer.error(), "observer.error()");
+        observer.assertNoOpenContexts();
+        Assert.eqFalse(completed[40][0], "completed[10][10]");
     }
 
     @Test
-    public void testNestedParallelChainedOnCompleteError() {
-        final CompletableFuture<Void> waitForResult = new CompletableFuture<>();
-        final AtomicInteger openCount = new AtomicInteger(0);
+    public void testNestedParallelChainedOnCompleteError() throws InterruptedException, TimeoutException {
+        final Observer observer = new Observer(null, null, null);
+        final boolean[][] completed = new boolean[50][60];
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.resetForUnitTests(false, true, 0, 4, 10, 5);
         // verify the type is correct
         updateGraph.runWithinUnitTestCycle(() -> {
-            final boolean[][] completed = new boolean[50][60];
-
-            class TestJobThreadContext implements JobScheduler.JobThreadContext {
-                TestJobThreadContext() {
-                    openCount.incrementAndGet();
-                }
-
-                @Override
-                public void close() {
-                    openCount.decrementAndGet();
-                }
-            }
-
             final JobScheduler scheduler = new UpdateGraphJobScheduler(updateGraph);
             scheduler.iterateParallel(
                     ExecutionContext.getContext(),
                     null,
-                    TestJobThreadContext::new,
+                    observer,
                     0,
                     50,
                     (context1, idx1, nec1, r1) -> {
                         scheduler.iterateParallel(
                                 ExecutionContext.getContext(),
                                 null,
-                                TestJobThreadContext::new,
+                                observer,
                                 0,
                                 60,
                                 (context2, idx2, nec2) -> {
                                     assertNotNull(context2);
                                     completed[idx1][idx2] = true;
-                                }, r1, nec1);
+                                }, r1, () -> {
+                                }, nec1);
                     },
-                    () -> {
-                        throw new IllegalStateException("Intentional completion failure");
-                    },
-                    exception -> {
-                        if (!(exception instanceof IllegalStateException)) {
-                            waitForResult.completeExceptionally(new AssertionFailure("Unexpected exception thrown"));
-                        }
-                        for (int ii = 0; ii < 50; ++ii) {
-                            for (int jj = 0; jj < 60; ++jj) {
-                                if (!completed[ii][jj]) {
-                                    waitForResult.completeExceptionally(new AssertionFailure(
-                                            String.format("Failed to process index [%d][%d]", ii, jj)));
-                                }
-                            }
-                        }
-                        waitForResult.complete(null);
-                    });
+                    observer::onComplete,
+                    observer::cleanup,
+                    observer::onError);
         });
-
-        try {
-            // need to wait until this future is complete
-            waitForResult.get();
-            // make sure all the contexts were closed
-            Assert.eqZero(openCount.get(), "openCount");
-        } catch (InterruptedException e) {
-            throw new CancellationException("Interrupted while processing test");
-        } catch (ExecutionException e) {
-            // rethrow the error
-            throw new UncheckedDeephavenException("Failure while processing test", e.getCause());
+        observer.awaitFinished(Duration.ofSeconds(10));
+        observer.assertSuccess();
+        observer.assertNoOpenContexts();
+        for (int ii = 0; ii < 50; ++ii) {
+            for (int jj = 0; jj < 60; ++jj) {
+                Assert.eqTrue(completed[ii][jj], "completed[ii][jj]");
+            }
         }
     }
 
     @Test
     public void testParallelErrorError() {
-        final CompletableFuture<Void> waitForResult = new CompletableFuture<>();
-        final AtomicInteger openCount = new AtomicInteger(0);
+        final Observer observer = new Observer(null, null, exception -> {
+            throw new IllegalStateException("Intentional error failure");
+        });
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.resetForUnitTests(false, true, 0, 4, 10, 5);
@@ -745,22 +564,11 @@ public final class TestJobScheduler {
             updateGraph.runWithinUnitTestCycle(() -> {
                 final boolean[] completed = new boolean[50];
 
-                class TestJobThreadContext implements JobScheduler.JobThreadContext {
-                    TestJobThreadContext() {
-                        openCount.incrementAndGet();
-                    }
-
-                    @Override
-                    public void close() {
-                        openCount.decrementAndGet();
-                    }
-                }
-
                 final JobScheduler scheduler = new ImmediateJobScheduler();
                 scheduler.iterateParallel(
                         ExecutionContext.getContext(),
                         null,
-                        TestJobThreadContext::new,
+                        observer,
                         0,
                         50,
                         (context, idx, nec) -> {
@@ -773,24 +581,26 @@ public final class TestJobScheduler {
 
                             completed[idx] = true;
                         },
-                        () -> {
-                            // if this is called, we failed the test
-                            waitForResult.completeExceptionally(new AssertionFailure("Exception not thrown"));
-                        },
-                        exception -> {
-                            throw new IllegalStateException("Intentional error failure");
-                        });
+                        observer::onComplete,
+                        observer::cleanup,
+                        observer::onError);
             });
             TestCase.fail("Expected exception");
         } catch (FakeProcessEnvironment.FakeFatalException expected) {
-            TestCase.assertEquals("Intentional error failure", expected.getCause().getCause().getMessage());
+            TestCase.assertEquals("Intentional error failure", expected.getCause().getMessage());
         }
     }
 
     @Test
     public void testParallelCompleteErrorError() {
-        final CompletableFuture<Void> waitForResult = new CompletableFuture<>();
-        final AtomicInteger openCount = new AtomicInteger(0);
+        final Observer observer = new Observer(
+                () -> {
+                    throw new IllegalStateException("Intentional completion failure");
+                },
+                null,
+                exception -> {
+                    throw new IllegalStateException("Intentional error failure");
+                });
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.resetForUnitTests(false, true, 0, 4, 10, 5);
@@ -799,39 +609,138 @@ public final class TestJobScheduler {
             updateGraph.runWithinUnitTestCycle(() -> {
                 final boolean[] completed = new boolean[50];
 
-                class TestJobThreadContext implements JobScheduler.JobThreadContext {
-                    TestJobThreadContext() {
-                        openCount.incrementAndGet();
-                    }
-
-                    @Override
-                    public void close() {
-                        openCount.decrementAndGet();
-                    }
-                }
-
                 final JobScheduler scheduler = new ImmediateJobScheduler();
                 scheduler.iterateParallel(
                         ExecutionContext.getContext(),
                         null,
-                        TestJobThreadContext::new,
+                        observer,
                         0,
                         50,
                         (context, idx, nec) -> {
                             assertNotNull(context);
                             completed[idx] = true;
                         },
-                        () -> {
-                            throw new IllegalStateException("Intentional completion failure");
-                        },
-                        exception -> {
-                            throw new IllegalStateException("Intentional error failure");
-                        });
+                        observer::onComplete,
+                        observer::cleanup,
+                        observer::onError);
             });
             TestCase.fail("Expected exception");
         } catch (FakeProcessEnvironment.FakeFatalException expected) {
             // This actually goes through the FakeFatalErrorReporter twice; that's an artifact of the test design
-            TestCase.assertEquals("Intentional error failure", expected.getCause().getCause().getCause().getMessage());
+            TestCase.assertEquals("Intentional error failure", expected.getCause().getMessage());
+        }
+    }
+
+    private static class Observer extends ContextFactory {
+
+        private final Runnable onComplete;
+        private final Runnable cleanup;
+        private final Consumer<Exception> onError;
+
+        private final AtomicBoolean onCompleteInvoked;
+        private final AtomicBoolean cleanupInvoked;
+        private final AtomicReference<Exception> onErrorInvoked;
+        private final CountDownLatch finished;
+
+        public Observer(Runnable onComplete, Runnable cleanup, Consumer<Exception> onError) {
+            this.onComplete = onComplete;
+            this.cleanup = cleanup;
+            this.onError = onError;
+            onCompleteInvoked = new AtomicBoolean(false);
+            cleanupInvoked = new AtomicBoolean(false);
+            onErrorInvoked = new AtomicReference<>();
+            finished = new CountDownLatch(1);
+        }
+
+        public void onComplete() {
+            if (!onCompleteInvoked.compareAndSet(false, true)) {
+                throw new IllegalStateException("onComplete call more than once");
+            }
+            if (onComplete != null) {
+                onComplete.run();
+            }
+        }
+
+        public void cleanup() {
+            if (!onCompleteInvoked.get()) {
+                throw new IllegalStateException("cleanup called, but onComplete not called");
+            }
+            if (onErrorInvoked.get() != null) {
+                throw new IllegalStateException("cleanup called, but onError has already been called");
+            }
+            if (!cleanupInvoked.compareAndSet(false, true)) {
+                throw new IllegalStateException("cleanup called more than once");
+            }
+            try {
+                if (cleanup != null) {
+                    cleanup.run();
+                }
+            } finally {
+                finished.countDown();
+            }
+        }
+
+        public void onError(Exception e) {
+            if (cleanupInvoked.get()) {
+                throw new IllegalStateException("onError called, but cleanup has already been called");
+            }
+            if (!onErrorInvoked.compareAndSet(null, e)) {
+                throw new IllegalStateException("onError called more than once");
+            }
+            try {
+                if (onError != null) {
+                    onError.accept(e);
+                }
+            } finally {
+                finished.countDown();
+            }
+        }
+
+        public void awaitFinished(Duration timeout) throws InterruptedException, TimeoutException {
+            if (!finished.await(timeout.toNanos(), TimeUnit.NANOSECONDS)) {
+                throw new TimeoutException();
+            }
+        }
+
+        public void assertDidNotCallComplete() {
+            Assert.eqZero(finished.getCount(), "finished.getCount");
+            Assert.eqFalse(onCompleteInvoked.get(), "onCompleteInvoked.get()");
+        }
+
+        public void assertSuccess() {
+            Assert.eqZero(finished.getCount(), "finished.getCount");
+            Assert.eqNull(onErrorInvoked.get(), "onErrorInvoked.get()");
+        }
+
+        public Exception error() {
+            return onErrorInvoked.get();
+        }
+    }
+
+    private static class ContextFactory implements Supplier<JobScheduler.JobThreadContext> {
+        private final AtomicInteger openCount;
+
+        public ContextFactory() {
+            openCount = new AtomicInteger(0);
+        }
+
+        public void assertNoOpenContexts() {
+            Assert.eqZero(openCount.get(), "openCount.get()");
+        }
+
+        @Override
+        public JobScheduler.JobThreadContext get() {
+            final JobThreadContextImpl ctx = new JobThreadContextImpl();
+            openCount.incrementAndGet();
+            return ctx;
+        }
+
+        class JobThreadContextImpl implements JobScheduler.JobThreadContext {
+
+            @Override
+            public void close() {
+                openCount.decrementAndGet();
+            }
         }
     }
 }

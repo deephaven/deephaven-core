@@ -63,11 +63,6 @@ public class WhereNoneFilter extends WhereFilterImpl {
     }
 
     @Override
-    public boolean isRefreshing() {
-        return false;
-    }
-
-    @Override
     public boolean canMemoize() {
         return true;
     }

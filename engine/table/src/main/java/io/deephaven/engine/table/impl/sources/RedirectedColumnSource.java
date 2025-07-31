@@ -252,8 +252,7 @@ public class RedirectedColumnSource<T> extends AbstractColumnSource<T>
 
     @Override
     public boolean isUngroupable() {
-        return innerSource instanceof UngroupableColumnSource
-                && ((UngroupableColumnSource) innerSource).isUngroupable();
+        return UngroupableColumnSource.isUngroupable(innerSource);
     }
 
     @Override
