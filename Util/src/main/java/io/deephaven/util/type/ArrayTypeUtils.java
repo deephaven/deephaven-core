@@ -97,12 +97,6 @@ public class ArrayTypeUtils {
         return result;
     }
 
-    public static Object[] objectNullArray(int size) {
-        Object[] result = new Object[size];
-        Arrays.fill(result, null);
-        return result;
-    }
-
     public static Character[] getBoxedArray(char[] referenceData) {
         Character[] result = new Character[referenceData.length];
         for (int i = 0; i < result.length; i++) {

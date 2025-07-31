@@ -20,9 +20,6 @@ public interface ChunkFactory {
     <ATTR extends Any> Chunk<ATTR> getEmptyChunk();
 
     @NotNull
-    <ATTR extends Any> Chunk<ATTR> getNullChunk();
-
-    @NotNull
     <ATTR extends Any> ChunkChunk<ATTR> getEmptyChunkChunk();
 
     @NotNull

@@ -33,22 +33,10 @@ public class FloatChunk<ATTR extends Any> extends ChunkBase<ATTR> {
     @SuppressWarnings("rawtypes")
     private static final FloatChunk EMPTY = new FloatChunk<>(ArrayTypeUtils.EMPTY_FLOAT_ARRAY, 0, 0);
 
-    // region NULL_definition
-    @SuppressWarnings("rawtypes")
-    private static final FloatChunk NULL = new FloatChunk<>(ArrayTypeUtils.floatNullArray(1), 0, 1);
-    // endregion NULL_definition
-
     public static <ATTR extends Any> FloatChunk<ATTR> getEmptyChunk() {
         // noinspection unchecked
         return EMPTY;
     }
-
-    // region getNullChunk
-    public static <ATTR extends Any> FloatChunk<ATTR> getNullChunk() {
-        // noinspection unchecked
-        return NULL;
-    }
-    // endregion getNullChunk
 
     @SuppressWarnings("rawtypes")
     private static final FloatChunk[] EMPTY_FLOAT_CHUNK_ARRAY = new FloatChunk[0];

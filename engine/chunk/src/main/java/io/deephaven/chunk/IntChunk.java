@@ -33,22 +33,10 @@ public class IntChunk<ATTR extends Any> extends ChunkBase<ATTR> {
     @SuppressWarnings("rawtypes")
     private static final IntChunk EMPTY = new IntChunk<>(ArrayTypeUtils.EMPTY_INT_ARRAY, 0, 0);
 
-    // region NULL_definition
-    @SuppressWarnings("rawtypes")
-    private static final IntChunk NULL = new IntChunk<>(ArrayTypeUtils.intNullArray(1), 0, 1);
-    // endregion NULL_definition
-
     public static <ATTR extends Any> IntChunk<ATTR> getEmptyChunk() {
         // noinspection unchecked
         return EMPTY;
     }
-
-    // region getNullChunk
-    public static <ATTR extends Any> IntChunk<ATTR> getNullChunk() {
-        // noinspection unchecked
-        return NULL;
-    }
-    // endregion getNullChunk
 
     @SuppressWarnings("rawtypes")
     private static final IntChunk[] EMPTY_INT_CHUNK_ARRAY = new IntChunk[0];

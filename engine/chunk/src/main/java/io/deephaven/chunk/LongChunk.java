@@ -33,22 +33,10 @@ public class LongChunk<ATTR extends Any> extends ChunkBase<ATTR> {
     @SuppressWarnings("rawtypes")
     private static final LongChunk EMPTY = new LongChunk<>(ArrayTypeUtils.EMPTY_LONG_ARRAY, 0, 0);
 
-    // region NULL_definition
-    @SuppressWarnings("rawtypes")
-    private static final LongChunk NULL = new LongChunk<>(ArrayTypeUtils.longNullArray(1), 0, 1);
-    // endregion NULL_definition
-
     public static <ATTR extends Any> LongChunk<ATTR> getEmptyChunk() {
         // noinspection unchecked
         return EMPTY;
     }
-
-    // region getNullChunk
-    public static <ATTR extends Any> LongChunk<ATTR> getNullChunk() {
-        // noinspection unchecked
-        return NULL;
-    }
-    // endregion getNullChunk
 
     @SuppressWarnings("rawtypes")
     private static final LongChunk[] EMPTY_LONG_CHUNK_ARRAY = new LongChunk[0];

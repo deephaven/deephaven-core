@@ -34,12 +34,6 @@ public class BooleanChunkFactory implements ChunkFactory {
 
     @NotNull
     @Override
-    public final <ATTR extends Any> BooleanChunk<ATTR> getNullChunk() {
-        throw new UnsupportedOperationException("BooleanChunk does not support null values");
-    }
-
-    @NotNull
-    @Override
     public final <ATTR extends Any> BooleanChunkChunk<ATTR> getEmptyChunkChunk() {
         return BooleanChunkChunk.getEmptyChunk();
     }

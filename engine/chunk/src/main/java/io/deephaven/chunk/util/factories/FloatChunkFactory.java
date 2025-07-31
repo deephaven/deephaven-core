@@ -34,12 +34,6 @@ public class FloatChunkFactory implements ChunkFactory {
 
     @NotNull
     @Override
-    public final <ATTR extends Any> FloatChunk<ATTR> getNullChunk() {
-        return FloatChunk.getNullChunk();
-    }
-
-    @NotNull
-    @Override
     public final <ATTR extends Any> FloatChunkChunk<ATTR> getEmptyChunkChunk() {
         return FloatChunkChunk.getEmptyChunk();
     }

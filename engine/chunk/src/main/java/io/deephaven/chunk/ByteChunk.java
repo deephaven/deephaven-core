@@ -34,22 +34,10 @@ public class ByteChunk<ATTR extends Any> extends ChunkBase<ATTR> {
     @SuppressWarnings("rawtypes")
     private static final ByteChunk EMPTY = new ByteChunk<>(ArrayTypeUtils.EMPTY_BYTE_ARRAY, 0, 0);
 
-    // region NULL_definition
-    @SuppressWarnings("rawtypes")
-    private static final ByteChunk NULL = new ByteChunk<>(ArrayTypeUtils.byteNullArray(1), 0, 1);
-    // endregion NULL_definition
-
     public static <ATTR extends Any> ByteChunk<ATTR> getEmptyChunk() {
         // noinspection unchecked
         return EMPTY;
     }
-
-    // region getNullChunk
-    public static <ATTR extends Any> ByteChunk<ATTR> getNullChunk() {
-        // noinspection unchecked
-        return NULL;
-    }
-    // endregion getNullChunk
 
     @SuppressWarnings("rawtypes")
     private static final ByteChunk[] EMPTY_BYTE_CHUNK_ARRAY = new ByteChunk[0];

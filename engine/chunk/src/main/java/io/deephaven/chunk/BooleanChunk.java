@@ -30,16 +30,10 @@ public class BooleanChunk<ATTR extends Any> extends ChunkBase<ATTR> {
     @SuppressWarnings("rawtypes")
     private static final BooleanChunk EMPTY = new BooleanChunk<>(ArrayTypeUtils.EMPTY_BOOLEAN_ARRAY, 0, 0);
 
-    // region NULL_definition
-    // endregion NULL_definition
-
     public static <ATTR extends Any> BooleanChunk<ATTR> getEmptyChunk() {
         // noinspection unchecked
         return EMPTY;
     }
-
-    // region getNullChunk
-    // endregion getNullChunk
 
     @SuppressWarnings("rawtypes")
     private static final BooleanChunk[] EMPTY_BOOLEAN_CHUNK_ARRAY = new BooleanChunk[0];

@@ -29,22 +29,10 @@ public class CharChunk<ATTR extends Any> extends ChunkBase<ATTR> {
     @SuppressWarnings("rawtypes")
     private static final CharChunk EMPTY = new CharChunk<>(ArrayTypeUtils.EMPTY_CHAR_ARRAY, 0, 0);
 
-    // region NULL_definition
-    @SuppressWarnings("rawtypes")
-    private static final CharChunk NULL = new CharChunk<>(ArrayTypeUtils.charNullArray(1), 0, 1);
-    // endregion NULL_definition
-
     public static <ATTR extends Any> CharChunk<ATTR> getEmptyChunk() {
         // noinspection unchecked
         return EMPTY;
     }
-
-    // region getNullChunk
-    public static <ATTR extends Any> CharChunk<ATTR> getNullChunk() {
-        // noinspection unchecked
-        return NULL;
-    }
-    // endregion getNullChunk
 
     @SuppressWarnings("rawtypes")
     private static final CharChunk[] EMPTY_CHAR_CHUNK_ARRAY = new CharChunk[0];
