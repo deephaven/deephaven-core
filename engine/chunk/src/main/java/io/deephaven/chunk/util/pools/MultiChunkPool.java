@@ -91,38 +91,47 @@ public final class MultiChunkPool implements BooleanChunkPool, ByteChunkPool, Ch
         return pools.get(chunkType);
     }
 
+    @SuppressWarnings("unused")
     public BooleanChunkPool getBooleanChunkPool() {
         return booleanChunkPool;
     }
 
+    @SuppressWarnings("unused")
     public CharChunkPool getCharChunkPool() {
         return charChunkPool;
     }
 
+    @SuppressWarnings("unused")
     public ByteChunkPool getByteChunkPool() {
         return byteChunkPool;
     }
 
+    @SuppressWarnings("unused")
     public ShortChunkPool getShortChunkPool() {
         return shortChunkPool;
     }
 
+    @SuppressWarnings("unused")
     public IntChunkPool getIntChunkPool() {
         return intChunkPool;
     }
 
+    @SuppressWarnings("unused")
     public LongChunkPool getLongChunkPool() {
         return longChunkPool;
     }
 
+    @SuppressWarnings("unused")
     public FloatChunkPool getFloatChunkPool() {
         return floatChunkPool;
     }
 
+    @SuppressWarnings("unused")
     public DoubleChunkPool getDoubleChunkPool() {
         return doubleChunkPool;
     }
 
+    @SuppressWarnings("unused")
     public ObjectChunkPool getObjectChunkPool() {
         return objectChunkPool;
     }
