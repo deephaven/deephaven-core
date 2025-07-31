@@ -39,8 +39,8 @@ public interface ObjectChunkPool {
      * Take a {@link ResettableWritableObjectChunk} of at least the specified {@code capacity}. The result belongs to
      * the caller until {@link ResettableWritableObjectChunk#close() closed}.
      *
-     *   * @return A {@link ResettableWritableObjectChunk} of at least the specified {@code capacity} that belongs to
-     * the caller until {@link ResettableWritableObjectChunk#close() closed}
+     * @return A {@link ResettableWritableObjectChunk} of at least the specified {@code capacity} that belongs to the
+     *         caller until {@link ResettableWritableObjectChunk#close() closed}
      */
     <TYPE, ATTR extends Any> ResettableWritableObjectChunk<TYPE, ATTR> takeResettableWritableObjectChunk();
 }
