@@ -328,14 +328,11 @@ public class CountWhereOperator implements IterativeChunkedAggregationOperator {
     private void updateChunkSources(final BaseContext ctx, final boolean usePrev) {
         if (updateChunkSourceTable) {
             for (int ii = 0; ii < chunkColumnSources.length; ii++) {
-                chunkColumnSources[ii].clear();
+                chunkColumnSources[ii].clear(false);
                 final Chunk<? extends Values> chunk = usePrev
                         ? recorders[ii].getPrevValueChunk()
                         : recorders[ii].getValueChunk();
-                // ChunkColumnSource releases the chunks it acquires, so give it a copy.
-                final WritableChunk<? extends Values> tmpValues =
-                        (WritableChunk<? extends Values>) chunk.slice(0, chunk.size());
-                chunkColumnSources[ii].addChunk(tmpValues);
+                chunkColumnSources[ii].addChunk(chunk);
             }
         }
 

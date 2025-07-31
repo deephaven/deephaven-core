@@ -322,8 +322,8 @@ public class CountWhereOperator extends BaseLongUpdateByOperator {
                 // Update the chunk source table chunks if needed.
                 if (chunkSourceTableRequired) {
                     for (int i = 0; i < inputColumnNames.length; i++) {
-                        chunkColumnSources[i].clear();
-                        chunkColumnSources[i].addChunk((WritableChunk<? extends Values>) valueChunks[i]);
+                        chunkColumnSources[i].clear(false);
+                        chunkColumnSources[i].addChunk(valueChunks[i]);
                     }
                 }
 
