@@ -21,9 +21,9 @@ import io.deephaven.util.datastructures.SegmentedSoftPool;
 import static io.deephaven.chunk.util.pools.ChunkPoolConstants.*;
 
 /**
- * {@link ChunkPool} implementation for chunks of doubles.
+ * {@link DoubleChunkPool} implementation that pools chunks of doubles in a data structure that only enforces soft
+ * reachability.
  */
-@SuppressWarnings("rawtypes")
 public final class DoubleChunkSoftPool implements DoubleChunkPool {
 
     private static final WritableDoubleChunk<Any> EMPTY =
@@ -32,17 +32,17 @@ public final class DoubleChunkSoftPool implements DoubleChunkPool {
     /**
      * Subpools by power-of-two sizes for {@link WritableDoubleChunk WritableDoubleChunks}.
      */
-    private final SegmentedSoftPool<WritableDoubleChunk>[] writableDoubleChunks;
+    private final SegmentedSoftPool<WritableDoubleChunk<Any>>[] writableDoubleChunks;
 
     /**
      * Subpool of {@link ResettableDoubleChunk ResettableDoubleChunks}.
      */
-    private final SegmentedSoftPool<ResettableDoubleChunk> resettableDoubleChunks;
+    private final SegmentedSoftPool<ResettableDoubleChunk<Any>> resettableDoubleChunks;
 
     /**
      * Subpool of {@link ResettableWritableDoubleChunk ResettableWritableDoubleChunks}.
      */
-    private final SegmentedSoftPool<ResettableWritableDoubleChunk> resettableWritableDoubleChunks;
+    private final SegmentedSoftPool<ResettableWritableDoubleChunk<Any>> resettableWritableDoubleChunks;
 
     DoubleChunkSoftPool() {
         // noinspection unchecked
@@ -54,17 +54,17 @@ public final class DoubleChunkSoftPool implements DoubleChunkPool {
             writableDoubleChunks[poolIndex] = new SegmentedSoftPool<>(
                     SUB_POOL_SEGMENT_CAPACITY,
                     () -> ChunkPoolInstrumentation.getAndRecord(
-                            () -> new WritableDoubleChunk(DoubleChunk.makeArray(chunkCapacity), 0, chunkCapacity) {
+                            () -> new WritableDoubleChunk<Any>(DoubleChunk.makeArray(chunkCapacity), 0, chunkCapacity) {
                                 @Override
                                 public void close() {
                                     writableDoubleChunks[poolIndex].give(ChunkPoolReleaseTracking.onGive(this));
                                 }
                             }),
-                    (final WritableDoubleChunk chunk) -> chunk.setSize(chunkCapacity));
+                    (final WritableDoubleChunk<Any> chunk) -> chunk.setSize(chunkCapacity));
         }
         resettableDoubleChunks = new SegmentedSoftPool<>(
                 SUB_POOL_SEGMENT_CAPACITY,
-                () -> ChunkPoolInstrumentation.getAndRecord(() -> new ResettableDoubleChunk() {
+                () -> ChunkPoolInstrumentation.getAndRecord(() -> new ResettableDoubleChunk<Any>() {
                     @Override
                     public void close() {
                         resettableDoubleChunks.give(ChunkPoolReleaseTracking.onGive(this));
@@ -73,7 +73,7 @@ public final class DoubleChunkSoftPool implements DoubleChunkPool {
                 ResettableDoubleChunk::clear);
         resettableWritableDoubleChunks = new SegmentedSoftPool<>(
                 SUB_POOL_SEGMENT_CAPACITY,
-                () -> ChunkPoolInstrumentation.getAndRecord(() -> new ResettableWritableDoubleChunk() {
+                () -> ChunkPoolInstrumentation.getAndRecord(() -> new ResettableWritableDoubleChunk<Any>() {
                     @Override
                     public void close() {
                         resettableWritableDoubleChunks.give(ChunkPoolReleaseTracking.onGive(this));
@@ -111,12 +111,13 @@ public final class DoubleChunkSoftPool implements DoubleChunkPool {
         final int poolIndexForTake = getPoolIndexForTake(checkCapacityBounds(capacity));
         if (poolIndexForTake >= 0) {
             // noinspection resource,unchecked
-            final WritableDoubleChunk<ATTR> result = writableDoubleChunks[poolIndexForTake].take();
+            final WritableDoubleChunk<ATTR> result =
+                    (WritableDoubleChunk<ATTR>) writableDoubleChunks[poolIndexForTake].take();
             result.setSize(capacity);
             return ChunkPoolReleaseTracking.onTake(result);
         }
         return ChunkPoolReleaseTracking.onTake(
-                new WritableDoubleChunk<ATTR>(DoubleChunk.makeArray(capacity), 0, capacity) {
+                new WritableDoubleChunk<>(DoubleChunk.makeArray(capacity), 0, capacity) {
                     @Override
                     public void close() {
                         ChunkPoolReleaseTracking.onGive(this);
@@ -127,12 +128,12 @@ public final class DoubleChunkSoftPool implements DoubleChunkPool {
     @Override
     public <ATTR extends Any> ResettableDoubleChunk<ATTR> takeResettableDoubleChunk() {
         // noinspection unchecked
-        return ChunkPoolReleaseTracking.onTake(resettableDoubleChunks.take());
+        return (ResettableDoubleChunk<ATTR>) ChunkPoolReleaseTracking.onTake(resettableDoubleChunks.take());
     }
 
     @Override
     public <ATTR extends Any> ResettableWritableDoubleChunk<ATTR> takeResettableWritableDoubleChunk() {
         // noinspection unchecked
-        return ChunkPoolReleaseTracking.onTake(resettableWritableDoubleChunks.take());
+        return (ResettableWritableDoubleChunk<ATTR>) ChunkPoolReleaseTracking.onTake(resettableWritableDoubleChunks.take());
     }
 }

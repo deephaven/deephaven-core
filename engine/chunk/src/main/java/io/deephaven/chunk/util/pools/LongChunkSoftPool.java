@@ -21,9 +21,9 @@ import io.deephaven.util.datastructures.SegmentedSoftPool;
 import static io.deephaven.chunk.util.pools.ChunkPoolConstants.*;
 
 /**
- * {@link ChunkPool} implementation for chunks of longs.
+ * {@link LongChunkPool} implementation that pools chunks of longs in a data structure that only enforces soft
+ * reachability.
  */
-@SuppressWarnings("rawtypes")
 public final class LongChunkSoftPool implements LongChunkPool {
 
     private static final WritableLongChunk<Any> EMPTY =
@@ -32,17 +32,17 @@ public final class LongChunkSoftPool implements LongChunkPool {
     /**
      * Subpools by power-of-two sizes for {@link WritableLongChunk WritableLongChunks}.
      */
-    private final SegmentedSoftPool<WritableLongChunk>[] writableLongChunks;
+    private final SegmentedSoftPool<WritableLongChunk<Any>>[] writableLongChunks;
 
     /**
      * Subpool of {@link ResettableLongChunk ResettableLongChunks}.
      */
-    private final SegmentedSoftPool<ResettableLongChunk> resettableLongChunks;
+    private final SegmentedSoftPool<ResettableLongChunk<Any>> resettableLongChunks;
 
     /**
      * Subpool of {@link ResettableWritableLongChunk ResettableWritableLongChunks}.
      */
-    private final SegmentedSoftPool<ResettableWritableLongChunk> resettableWritableLongChunks;
+    private final SegmentedSoftPool<ResettableWritableLongChunk<Any>> resettableWritableLongChunks;
 
     LongChunkSoftPool() {
         // noinspection unchecked
@@ -54,17 +54,17 @@ public final class LongChunkSoftPool implements LongChunkPool {
             writableLongChunks[poolIndex] = new SegmentedSoftPool<>(
                     SUB_POOL_SEGMENT_CAPACITY,
                     () -> ChunkPoolInstrumentation.getAndRecord(
-                            () -> new WritableLongChunk(LongChunk.makeArray(chunkCapacity), 0, chunkCapacity) {
+                            () -> new WritableLongChunk<Any>(LongChunk.makeArray(chunkCapacity), 0, chunkCapacity) {
                                 @Override
                                 public void close() {
                                     writableLongChunks[poolIndex].give(ChunkPoolReleaseTracking.onGive(this));
                                 }
                             }),
-                    (final WritableLongChunk chunk) -> chunk.setSize(chunkCapacity));
+                    (final WritableLongChunk<Any> chunk) -> chunk.setSize(chunkCapacity));
         }
         resettableLongChunks = new SegmentedSoftPool<>(
                 SUB_POOL_SEGMENT_CAPACITY,
-                () -> ChunkPoolInstrumentation.getAndRecord(() -> new ResettableLongChunk() {
+                () -> ChunkPoolInstrumentation.getAndRecord(() -> new ResettableLongChunk<Any>() {
                     @Override
                     public void close() {
                         resettableLongChunks.give(ChunkPoolReleaseTracking.onGive(this));
@@ -73,7 +73,7 @@ public final class LongChunkSoftPool implements LongChunkPool {
                 ResettableLongChunk::clear);
         resettableWritableLongChunks = new SegmentedSoftPool<>(
                 SUB_POOL_SEGMENT_CAPACITY,
-                () -> ChunkPoolInstrumentation.getAndRecord(() -> new ResettableWritableLongChunk() {
+                () -> ChunkPoolInstrumentation.getAndRecord(() -> new ResettableWritableLongChunk<Any>() {
                     @Override
                     public void close() {
                         resettableWritableLongChunks.give(ChunkPoolReleaseTracking.onGive(this));
@@ -111,12 +111,13 @@ public final class LongChunkSoftPool implements LongChunkPool {
         final int poolIndexForTake = getPoolIndexForTake(checkCapacityBounds(capacity));
         if (poolIndexForTake >= 0) {
             // noinspection resource,unchecked
-            final WritableLongChunk<ATTR> result = writableLongChunks[poolIndexForTake].take();
+            final WritableLongChunk<ATTR> result =
+                    (WritableLongChunk<ATTR>) writableLongChunks[poolIndexForTake].take();
             result.setSize(capacity);
             return ChunkPoolReleaseTracking.onTake(result);
         }
         return ChunkPoolReleaseTracking.onTake(
-                new WritableLongChunk<ATTR>(LongChunk.makeArray(capacity), 0, capacity) {
+                new WritableLongChunk<>(LongChunk.makeArray(capacity), 0, capacity) {
                     @Override
                     public void close() {
                         ChunkPoolReleaseTracking.onGive(this);
@@ -127,12 +128,12 @@ public final class LongChunkSoftPool implements LongChunkPool {
     @Override
     public <ATTR extends Any> ResettableLongChunk<ATTR> takeResettableLongChunk() {
         // noinspection unchecked
-        return ChunkPoolReleaseTracking.onTake(resettableLongChunks.take());
+        return (ResettableLongChunk<ATTR>) ChunkPoolReleaseTracking.onTake(resettableLongChunks.take());
     }
 
     @Override
     public <ATTR extends Any> ResettableWritableLongChunk<ATTR> takeResettableWritableLongChunk() {
         // noinspection unchecked
-        return ChunkPoolReleaseTracking.onTake(resettableWritableLongChunks.take());
+        return (ResettableWritableLongChunk<ATTR>) ChunkPoolReleaseTracking.onTake(resettableWritableLongChunks.take());
     }
 }

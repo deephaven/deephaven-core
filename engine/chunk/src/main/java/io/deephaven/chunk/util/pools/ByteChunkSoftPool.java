@@ -21,9 +21,9 @@ import io.deephaven.util.datastructures.SegmentedSoftPool;
 import static io.deephaven.chunk.util.pools.ChunkPoolConstants.*;
 
 /**
- * {@link ChunkPool} implementation for chunks of bytes.
+ * {@link ByteChunkPool} implementation that pools chunks of bytes in a data structure that only enforces soft
+ * reachability.
  */
-@SuppressWarnings("rawtypes")
 public final class ByteChunkSoftPool implements ByteChunkPool {
 
     private static final WritableByteChunk<Any> EMPTY =
@@ -32,17 +32,17 @@ public final class ByteChunkSoftPool implements ByteChunkPool {
     /**
      * Subpools by power-of-two sizes for {@link WritableByteChunk WritableByteChunks}.
      */
-    private final SegmentedSoftPool<WritableByteChunk>[] writableByteChunks;
+    private final SegmentedSoftPool<WritableByteChunk<Any>>[] writableByteChunks;
 
     /**
      * Subpool of {@link ResettableByteChunk ResettableByteChunks}.
      */
-    private final SegmentedSoftPool<ResettableByteChunk> resettableByteChunks;
+    private final SegmentedSoftPool<ResettableByteChunk<Any>> resettableByteChunks;
 
     /**
      * Subpool of {@link ResettableWritableByteChunk ResettableWritableByteChunks}.
      */
-    private final SegmentedSoftPool<ResettableWritableByteChunk> resettableWritableByteChunks;
+    private final SegmentedSoftPool<ResettableWritableByteChunk<Any>> resettableWritableByteChunks;
 
     ByteChunkSoftPool() {
         // noinspection unchecked
@@ -54,17 +54,17 @@ public final class ByteChunkSoftPool implements ByteChunkPool {
             writableByteChunks[poolIndex] = new SegmentedSoftPool<>(
                     SUB_POOL_SEGMENT_CAPACITY,
                     () -> ChunkPoolInstrumentation.getAndRecord(
-                            () -> new WritableByteChunk(ByteChunk.makeArray(chunkCapacity), 0, chunkCapacity) {
+                            () -> new WritableByteChunk<Any>(ByteChunk.makeArray(chunkCapacity), 0, chunkCapacity) {
                                 @Override
                                 public void close() {
                                     writableByteChunks[poolIndex].give(ChunkPoolReleaseTracking.onGive(this));
                                 }
                             }),
-                    (final WritableByteChunk chunk) -> chunk.setSize(chunkCapacity));
+                    (final WritableByteChunk<Any> chunk) -> chunk.setSize(chunkCapacity));
         }
         resettableByteChunks = new SegmentedSoftPool<>(
                 SUB_POOL_SEGMENT_CAPACITY,
-                () -> ChunkPoolInstrumentation.getAndRecord(() -> new ResettableByteChunk() {
+                () -> ChunkPoolInstrumentation.getAndRecord(() -> new ResettableByteChunk<Any>() {
                     @Override
                     public void close() {
                         resettableByteChunks.give(ChunkPoolReleaseTracking.onGive(this));
@@ -73,7 +73,7 @@ public final class ByteChunkSoftPool implements ByteChunkPool {
                 ResettableByteChunk::clear);
         resettableWritableByteChunks = new SegmentedSoftPool<>(
                 SUB_POOL_SEGMENT_CAPACITY,
-                () -> ChunkPoolInstrumentation.getAndRecord(() -> new ResettableWritableByteChunk() {
+                () -> ChunkPoolInstrumentation.getAndRecord(() -> new ResettableWritableByteChunk<Any>() {
                     @Override
                     public void close() {
                         resettableWritableByteChunks.give(ChunkPoolReleaseTracking.onGive(this));
@@ -111,12 +111,13 @@ public final class ByteChunkSoftPool implements ByteChunkPool {
         final int poolIndexForTake = getPoolIndexForTake(checkCapacityBounds(capacity));
         if (poolIndexForTake >= 0) {
             // noinspection resource,unchecked
-            final WritableByteChunk<ATTR> result = writableByteChunks[poolIndexForTake].take();
+            final WritableByteChunk<ATTR> result =
+                    (WritableByteChunk<ATTR>) writableByteChunks[poolIndexForTake].take();
             result.setSize(capacity);
             return ChunkPoolReleaseTracking.onTake(result);
         }
         return ChunkPoolReleaseTracking.onTake(
-                new WritableByteChunk<ATTR>(ByteChunk.makeArray(capacity), 0, capacity) {
+                new WritableByteChunk<>(ByteChunk.makeArray(capacity), 0, capacity) {
                     @Override
                     public void close() {
                         ChunkPoolReleaseTracking.onGive(this);
@@ -127,12 +128,12 @@ public final class ByteChunkSoftPool implements ByteChunkPool {
     @Override
     public <ATTR extends Any> ResettableByteChunk<ATTR> takeResettableByteChunk() {
         // noinspection unchecked
-        return ChunkPoolReleaseTracking.onTake(resettableByteChunks.take());
+        return (ResettableByteChunk<ATTR>) ChunkPoolReleaseTracking.onTake(resettableByteChunks.take());
     }
 
     @Override
     public <ATTR extends Any> ResettableWritableByteChunk<ATTR> takeResettableWritableByteChunk() {
         // noinspection unchecked
-        return ChunkPoolReleaseTracking.onTake(resettableWritableByteChunks.take());
+        return (ResettableWritableByteChunk<ATTR>) ChunkPoolReleaseTracking.onTake(resettableWritableByteChunks.take());
     }
 }
