@@ -38,20 +38,18 @@ public class WritableFloatChunk<ATTR extends Any> extends FloatChunk<ATTR> imple
         return EMPTY_WRITABLE_FLOAT_CHUNK_ARRAY;
     }
 
+    /**
+     * Get a {@link WritableFloatChunk} with {@link #size()} of {@code size} for use by the caller until it is
+     * {@link #close() closed}.
+     *
+     * @param size The {@link #size()} and minimum capacity of the returned chunk
+     * @return The chunk
+     */
     public static <ATTR extends Any> WritableFloatChunk<ATTR> makeWritableChunk(int size) {
         if (POOL_WRITABLE_CHUNKS) {
             return MultiChunkPool.forThisThread().takeWritableFloatChunk(size);
         }
         return new WritableFloatChunk<>(makeArray(size), 0, size);
-    }
-
-    public static <ATTR extends Any> WritableFloatChunk<ATTR> makeWritableChunkForPool(int size) {
-        return new WritableFloatChunk<>(makeArray(size), 0, size) {
-            @Override
-            public void close() {
-                MultiChunkPool.forThisThread().giveWritableFloatChunk(this);
-            }
-        };
     }
 
     public static <ATTR extends Any> WritableFloatChunk<ATTR> writableChunkWrap(float[] data) {

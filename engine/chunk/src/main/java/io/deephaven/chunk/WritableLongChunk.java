@@ -38,20 +38,18 @@ public class WritableLongChunk<ATTR extends Any> extends LongChunk<ATTR> impleme
         return EMPTY_WRITABLE_LONG_CHUNK_ARRAY;
     }
 
+    /**
+     * Get a {@link WritableLongChunk} with {@link #size()} of {@code size} for use by the caller until it is
+     * {@link #close() closed}.
+     *
+     * @param size The {@link #size()} and minimum capacity of the returned chunk
+     * @return The chunk
+     */
     public static <ATTR extends Any> WritableLongChunk<ATTR> makeWritableChunk(int size) {
         if (POOL_WRITABLE_CHUNKS) {
             return MultiChunkPool.forThisThread().takeWritableLongChunk(size);
         }
         return new WritableLongChunk<>(makeArray(size), 0, size);
-    }
-
-    public static <ATTR extends Any> WritableLongChunk<ATTR> makeWritableChunkForPool(int size) {
-        return new WritableLongChunk<>(makeArray(size), 0, size) {
-            @Override
-            public void close() {
-                MultiChunkPool.forThisThread().giveWritableLongChunk(this);
-            }
-        };
     }
 
     public static <ATTR extends Any> WritableLongChunk<ATTR> writableChunkWrap(long[] data) {

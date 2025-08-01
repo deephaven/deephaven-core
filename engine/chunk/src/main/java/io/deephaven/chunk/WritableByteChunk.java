@@ -38,20 +38,18 @@ public class WritableByteChunk<ATTR extends Any> extends ByteChunk<ATTR> impleme
         return EMPTY_WRITABLE_BYTE_CHUNK_ARRAY;
     }
 
+    /**
+     * Get a {@link WritableByteChunk} with {@link #size()} of {@code size} for use by the caller until it is
+     * {@link #close() closed}.
+     *
+     * @param size The {@link #size()} and minimum capacity of the returned chunk
+     * @return The chunk
+     */
     public static <ATTR extends Any> WritableByteChunk<ATTR> makeWritableChunk(int size) {
         if (POOL_WRITABLE_CHUNKS) {
             return MultiChunkPool.forThisThread().takeWritableByteChunk(size);
         }
         return new WritableByteChunk<>(makeArray(size), 0, size);
-    }
-
-    public static <ATTR extends Any> WritableByteChunk<ATTR> makeWritableChunkForPool(int size) {
-        return new WritableByteChunk<>(makeArray(size), 0, size) {
-            @Override
-            public void close() {
-                MultiChunkPool.forThisThread().giveWritableByteChunk(this);
-            }
-        };
     }
 
     public static <ATTR extends Any> WritableByteChunk<ATTR> writableChunkWrap(byte[] data) {

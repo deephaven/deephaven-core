@@ -38,20 +38,18 @@ public class WritableObjectChunk<T, ATTR extends Any> extends ObjectChunk<T, ATT
         return EMPTY_WRITABLE_OBJECT_CHUNK_ARRAY;
     }
 
+    /**
+     * Get a {@link WritableObjectChunk} with {@link #size()} of {@code size} for use by the caller until it is
+     * {@link #close() closed}.
+     *
+     * @param size The {@link #size()} and minimum capacity of the returned chunk
+     * @return The chunk
+     */
     public static <T, ATTR extends Any> WritableObjectChunk<T, ATTR> makeWritableChunk(int size) {
         if (POOL_WRITABLE_CHUNKS) {
             return MultiChunkPool.forThisThread().takeWritableObjectChunk(size);
         }
         return new WritableObjectChunk<>(makeArray(size), 0, size);
-    }
-
-    public static <T, ATTR extends Any> WritableObjectChunk<T, ATTR> makeWritableChunkForPool(int size) {
-        return new WritableObjectChunk<>(makeArray(size), 0, size) {
-            @Override
-            public void close() {
-                MultiChunkPool.forThisThread().giveWritableObjectChunk(this);
-            }
-        };
     }
 
     public static <T, ATTR extends Any> WritableObjectChunk<T, ATTR> writableChunkWrap(T[] data) {

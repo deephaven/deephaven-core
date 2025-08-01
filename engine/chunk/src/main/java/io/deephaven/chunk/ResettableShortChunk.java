@@ -27,20 +27,11 @@ public class ResettableShortChunk<ATTR_UPPER extends Any>
         return new ResettableShortChunk<>();
     }
 
-    public static <ATTR_BASE extends Any> ResettableShortChunk<ATTR_BASE> makeResettableChunkForPool() {
-        return new ResettableShortChunk<>() {
-            @Override
-            public void close() {
-                MultiChunkPool.forThisThread().giveResettableShortChunk(this);
-            }
-        };
-    }
-
     private ResettableShortChunk(short[] data, int offset, int capacity) {
         super(data, offset, capacity);
     }
 
-    private ResettableShortChunk() {
+    protected ResettableShortChunk() {
         this(ArrayTypeUtils.EMPTY_SHORT_ARRAY, 0, 0);
     }
 
