@@ -38,20 +38,18 @@ public class WritableDoubleChunk<ATTR extends Any> extends DoubleChunk<ATTR> imp
         return EMPTY_WRITABLE_DOUBLE_CHUNK_ARRAY;
     }
 
+    /**
+     * Get a {@link WritableDoubleChunk} with {@link #size()} of {@code size} for use by the caller until it is
+     * {@link #close() closed}.
+     *
+     * @param size The {@link #size()} and minimum capacity of the returned chunk
+     * @return The chunk
+     */
     public static <ATTR extends Any> WritableDoubleChunk<ATTR> makeWritableChunk(int size) {
         if (POOL_WRITABLE_CHUNKS) {
             return MultiChunkPool.forThisThread().takeWritableDoubleChunk(size);
         }
         return new WritableDoubleChunk<>(makeArray(size), 0, size);
-    }
-
-    public static <ATTR extends Any> WritableDoubleChunk<ATTR> makeWritableChunkForPool(int size) {
-        return new WritableDoubleChunk<>(makeArray(size), 0, size) {
-            @Override
-            public void close() {
-                MultiChunkPool.forThisThread().giveWritableDoubleChunk(this);
-            }
-        };
     }
 
     public static <ATTR extends Any> WritableDoubleChunk<ATTR> writableChunkWrap(double[] data) {

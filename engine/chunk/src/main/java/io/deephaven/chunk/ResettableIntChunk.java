@@ -27,20 +27,11 @@ public class ResettableIntChunk<ATTR_UPPER extends Any>
         return new ResettableIntChunk<>();
     }
 
-    public static <ATTR_BASE extends Any> ResettableIntChunk<ATTR_BASE> makeResettableChunkForPool() {
-        return new ResettableIntChunk<>() {
-            @Override
-            public void close() {
-                MultiChunkPool.forThisThread().giveResettableIntChunk(this);
-            }
-        };
-    }
-
     private ResettableIntChunk(int[] data, int offset, int capacity) {
         super(data, offset, capacity);
     }
 
-    private ResettableIntChunk() {
+    protected ResettableIntChunk() {
         this(ArrayTypeUtils.EMPTY_INT_ARRAY, 0, 0);
     }
 

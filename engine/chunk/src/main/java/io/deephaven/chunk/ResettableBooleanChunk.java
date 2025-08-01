@@ -27,20 +27,11 @@ public class ResettableBooleanChunk<ATTR_UPPER extends Any>
         return new ResettableBooleanChunk<>();
     }
 
-    public static <ATTR_BASE extends Any> ResettableBooleanChunk<ATTR_BASE> makeResettableChunkForPool() {
-        return new ResettableBooleanChunk<>() {
-            @Override
-            public void close() {
-                MultiChunkPool.forThisThread().giveResettableBooleanChunk(this);
-            }
-        };
-    }
-
     private ResettableBooleanChunk(boolean[] data, int offset, int capacity) {
         super(data, offset, capacity);
     }
 
-    private ResettableBooleanChunk() {
+    protected ResettableBooleanChunk() {
         this(ArrayTypeUtils.EMPTY_BOOLEAN_ARRAY, 0, 0);
     }
 
