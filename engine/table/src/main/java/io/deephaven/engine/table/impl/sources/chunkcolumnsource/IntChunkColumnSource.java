@@ -11,6 +11,7 @@ import gnu.trove.list.array.TLongArrayList;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.chunk.util.pools.PoolableChunk;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.impl.DefaultGetContext;
 import io.deephaven.engine.table.SharedContext;
@@ -19,7 +20,6 @@ import io.deephaven.engine.table.impl.ImmutableColumnSourceGetDefaults;
 import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.util.QueryConstants;
-import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 
@@ -34,7 +34,7 @@ import java.util.ArrayList;
  */
 public class IntChunkColumnSource extends AbstractColumnSource<Integer>
         implements ImmutableColumnSourceGetDefaults.ForInt, ChunkColumnSource<Integer> {
-    private final ArrayList<WritableIntChunk<? extends Values>> data = new ArrayList<>();
+    private final ArrayList<IntChunk<? extends Values>> data = new ArrayList<>();
     private final TLongArrayList firstOffsetForData;
     private long totalSize = 0;
 
@@ -174,7 +174,7 @@ public class IntChunkColumnSource extends AbstractColumnSource<Integer>
      *
      * @param chunk the chunk of data to add
      */
-    public void addChunk(@NotNull final WritableIntChunk<? extends Values> chunk) {
+    public void addChunk(@NotNull final IntChunk<? extends Values> chunk) {
         Assert.gtZero(chunk.size(), "chunk.size()");
         data.add(chunk);
         if (data.size() > firstOffsetForData.size()) {
@@ -184,14 +184,16 @@ public class IntChunkColumnSource extends AbstractColumnSource<Integer>
     }
 
     @Override
-    public void addChunk(@NotNull final WritableChunk<? extends Values> chunk) {
-        addChunk(chunk.asWritableIntChunk());
+    public void addChunk(@NotNull final Chunk<? extends Values> chunk) {
+        addChunk(chunk.asIntChunk());
     }
 
     @Override
-    public synchronized void clear() {
+    public synchronized void clear(final boolean closeChunks) {
         totalSize = 0;
-        data.forEach(SafeCloseable::close);
+        if (closeChunks) {
+            data.forEach(PoolableChunk::closeIfPoolable);
+        }
         data.clear();
         firstOffsetForData.resetQuick();
     }
