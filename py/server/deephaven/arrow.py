@@ -16,35 +16,35 @@ _JTableToArrowConverter = jpy.get_type("io.deephaven.extensions.barrage.util.Tab
 _JArrowWrapperTools = jpy.get_type("io.deephaven.extensions.arrow.ArrowWrapperTools")
 
 _ARROW_DH_DATA_TYPE_MAPPING = {
-    pa.null(): '',
+    pa.null(): 'java.lang.Object',
     pa.bool_(): 'java.lang.Boolean',
     pa.int8(): 'byte',
     pa.int16(): 'short',
     pa.int32(): 'int',
     pa.int64(): 'long',
-    pa.uint8(): '',
+    pa.uint8(): 'short',
     pa.uint16(): 'char',
-    pa.uint32(): '',
-    pa.uint64(): '',
-    pa.float16(): '',
+    pa.uint32(): 'long',
+    pa.uint64(): 'java.math.BigInteger',
+    pa.float16(): 'float',
     pa.float32(): 'float',
     pa.float64(): 'double',
-    pa.time32('s'): '',
-    pa.time32('ms'): '',
-    pa.time64('us'): '',
+    pa.time32('s'): 'java.time.LocalTime',
+    pa.time32('ms'): 'java.time.LocalTime',
+    pa.time64('us'): 'java.time.LocalTime',
     pa.time64('ns'): 'java.time.LocalTime',
-    pa.timestamp('s'): '',
-    pa.timestamp('ms'): '',
-    pa.timestamp('us'): '',
+    pa.timestamp('s'): 'java.time.Instant',
+    pa.timestamp('ms'): 'java.time.Instant',
+    pa.timestamp('us'): 'java.time.Instant',
     pa.timestamp('ns'): 'java.time.Instant',
-    pa.date32(): '',
+    pa.date32(): 'java.time.LocalDate',
     pa.date64(): 'java.time.LocalDate',
-    pa.duration('s'): '',
-    pa.duration('ms'): '',
-    pa.duration('us'): '',
-    pa.duration('ns'): '',
-    pa.month_day_nano_interval(): '',
-    pa.binary(): '',
+    pa.duration('s'): 'java.time.Duration',
+    pa.duration('ms'): 'java.time.Duration',
+    pa.duration('us'): 'java.time.Duration',
+    pa.duration('ns'): 'java.time.Duration',
+    pa.month_day_nano_interval(): 'org.apache.arrow.vector.PeriodDuration',
+    pa.binary(): 'byte[]',
     pa.string(): 'java.lang.String',
     pa.utf8(): 'java.lang.String',
     pa.large_binary(): '',
@@ -68,6 +68,10 @@ def _map_arrow_type(arrow_type) -> Dict[str, str]:
         # if this is a case of timestamp with tz specified
         if isinstance(arrow_type, pa.TimestampType):
             dh_type = "java.time.Instant"
+        if isinstance(arrow_type, pa.Decimal128Type):
+            dh_type = "java.math.BigDecimal"
+        if isinstance(arrow_type, pa.Decimal256Type):
+            dh_type = "java.math.BigDecimal"
 
     if not dh_type:
         raise DHError(message=f'unsupported arrow data type : {arrow_type}, refer to '
