@@ -138,7 +138,7 @@ public interface ChunkColumnSource<T> extends ColumnSource<T> {
      * <p>
      * Clear will discard the currently held chunks. This should not be called if a table will continue to reference the
      * column source, as it violates the immutability contract.
-     * 
+     *
      * @param closeChunks If true, close the chunks that are currently held by this column source
      */
     void clear(boolean closeChunks);
