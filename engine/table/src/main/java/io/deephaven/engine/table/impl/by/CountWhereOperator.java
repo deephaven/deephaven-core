@@ -198,7 +198,8 @@ public class CountWhereOperator implements IterativeChunkedAggregationOperator {
             if (!forcedWhereFilter && filter instanceof ConditionFilter) {
                 final ConditionFilter conditionFilter = (ConditionFilter) filter;
                 if (conditionFilter.hasVirtualRowVariables()) {
-                    throw new UnsupportedOperationException("AggCountWhere does not support refreshing filters");
+                    throw new UnsupportedOperationException(
+                            "Count-where does not support filters that reference virtual row variables (i, ii, k)");
                 }
                 try {
                     countFilter = new CountWhereOperator.CountFilter(
@@ -328,7 +329,6 @@ public class CountWhereOperator implements IterativeChunkedAggregationOperator {
     private void updateChunkSources(final BaseContext ctx, final boolean usePrev) {
         if (updateChunkSourceTable) {
             for (int ii = 0; ii < chunkColumnSources.length; ii++) {
-                chunkColumnSources[ii].clear(false);
                 final Chunk<? extends Values> chunk = usePrev
                         ? recorders[ii].getPrevValueChunk()
                         : recorders[ii].getValueChunk();
@@ -347,6 +347,17 @@ public class CountWhereOperator implements IterativeChunkedAggregationOperator {
         }
     }
 
+    private void clearInputChunks(final BaseContext ctx) {
+        if (updateChunkSourceTable) {
+            for (int ii = 0; ii < chunkColumnSources.length; ii++) {
+                chunkColumnSources[ii].clear(false);
+            }
+        }
+        for (int fi = 0; fi < filters.length; fi++) {
+            Arrays.fill(ctx.filterChunks[fi], null);
+        }
+    }
+
     /**
      * Count the number of rows for each destination that pass the filters and store into the {@code destCountChunk}.
      */
@@ -360,8 +371,8 @@ public class CountWhereOperator implements IterativeChunkedAggregationOperator {
             final boolean usePrev) {
 
         updateChunkSources(ctx, usePrev);
-
         applyFilters(ctx, chunkSize, true);
+        clearInputChunks(ctx);
 
         // fill the destination count chunk with the number of rows that passed the filter
         for (int dest = 0; dest < startPositions.size(); dest++) {
@@ -379,8 +390,11 @@ public class CountWhereOperator implements IterativeChunkedAggregationOperator {
             final int chunkSize,
             final boolean usePrev) {
         updateChunkSources(ctx, usePrev);
-
-        return applyFilters(ctx, chunkSize, false);
+        try {
+            return applyFilters(ctx, chunkSize, false);
+        } finally {
+            clearInputChunks(ctx);
+        }
     }
 
     @Override

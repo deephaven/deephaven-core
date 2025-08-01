@@ -322,7 +322,6 @@ public class CountWhereOperator extends BaseLongUpdateByOperator {
                 // Update the chunk source table chunks if needed.
                 if (chunkSourceTableRequired) {
                     for (int i = 0; i < inputColumnNames.length; i++) {
-                        chunkColumnSources[i].clear(false);
                         chunkColumnSources[i].addChunk(valueChunks[i]);
                     }
                 }
@@ -347,6 +346,17 @@ public class CountWhereOperator extends BaseLongUpdateByOperator {
                         }
                     }
                 }
+            }
+        }
+
+        private void clearInputChunks() {
+            if (chunkSourceTableRequired) {
+                for (int i = 0; i < inputColumnNames.length; i++) {
+                    chunkColumnSources[i].clear(false);
+                }
+            }
+            for (int fi = 0; fi < filters.length; fi++) {
+                Arrays.fill(filterChunks[fi], null);
             }
         }
 
@@ -420,8 +430,8 @@ public class CountWhereOperator extends BaseLongUpdateByOperator {
 
             assignInputChunksToFilters(influencerValueChunkArr, influencerCount);
             setPosChunks(affectedPosChunk, influencerPosChunk);
-
             applyFilters(influencerCount);
+            clearInputChunks();
 
             int pushIndex = 0;
 
@@ -463,6 +473,7 @@ public class CountWhereOperator extends BaseLongUpdateByOperator {
 
             assignInputChunksToFilters(valueChunkArr, len);
             applyFilters(len);
+            clearInputChunks();
 
             // chunk processing
             for (int ii = 0; ii < len; ii++) {
