@@ -41,6 +41,10 @@ public final class PushdownResult implements SafeCloseable {
      */
     public static final long IN_MEMORY_DATA_INDEX_COST = 30_000L;
     /**
+     * Requires reading a dictionary to determine matches
+     */
+    public static final long DICTIONARY_DATA_COST = 35_000L;
+    /**
      * Requires using binary search on sorted data
      */
     public static final long SORTED_DATA_COST = 40_000L;
