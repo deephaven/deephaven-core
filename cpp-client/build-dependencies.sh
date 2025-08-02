@@ -795,8 +795,8 @@ if [ "$CLONE_IMMER" = "yes" ]; then
   echo
   echo "*** Clone immer"
   cd $SRC
-  # Previously used version: SHA e5d79ed80ec74d511cc4f52fb68feeac66507f2c.
-  git clone $GIT_FLAGS -b v0.8.1 "${GITHUB_BASE_URL}/arximboldi/immer.git"
+  # Previously used version: v0.8.1
+  git clone $GIT_FLAGS -b df6ef46d97e1fe81f397015b9aeb32505cef653b "${GITHUB_BASE_URL}/arximboldi/immer.git"
   echo "*** Clonning immer DONE"
 fi
 if [ "$BUILD_IMMER" = "yes" ]; then
