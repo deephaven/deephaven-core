@@ -491,21 +491,8 @@ if [ "$CLONE_ABSEIL" = "yes" ]; then
   echo "*** Clone abseil"
   cd $SRC
   # Previously used version: 20211102.0
-  git clone $GIT_FLAGS -b 20240116.0 --depth 1 "${GITHUB_BASE_URL}/abseil/abseil-cpp.git"
+  git clone $GIT_FLAGS -b 20240116.3 --depth 1 "${GITHUB_BASE_URL}/abseil/abseil-cpp.git"
   echo "*** Cloning abseil DONE"
-  if [ "$fedora38" = "yes" ]; then
-  echo "*** Patching abseil for Fedora 38"
-    patch -p0 <<'END'
---- abseil-cpp/absl/strings/internal/str_format/extension.h.orig        2023-09-21 03:15:05.004224385 +0000
-+++ abseil-cpp/absl/strings/internal/str_format/extension.h     2023-09-21 03:15:23.408208301 +0000
-@@ -19,6 +19,7 @@
- #include <limits.h>
-
- #include <cstddef>
-+#include <cstdint>
- #include <cstring>
-END
-  fi
 fi
 if [ "$BUILD_ABSEIL" = "yes" ]; then
   echo
