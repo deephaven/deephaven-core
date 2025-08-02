@@ -149,8 +149,6 @@ target_link_libraries(${PROJECT_NAME} PUBLIC ArrowFlight::arrow_flight_shared)
 target_link_libraries(${PROJECT_NAME} PUBLIC Arrow::arrow_shared)
 target_link_libraries(${PROJECT_NAME} PRIVATE protobuf::libprotobuf)
 target_link_libraries(${PROJECT_NAME} PRIVATE gRPC::grpc++)
-target_link_libraries(${PROJECT_NAME} PRIVATE Threads::Threads)
+target_link_libraries(${PROJECT_NAME} PUBLIC Threads::Threads)
 # Required for GCC before 9.1 on some platforms, harmless on the rest.
 target_link_libraries(${PROJECT_NAME} PRIVATE stdc++fs)
-target_link_libraries(${PROJECT_NAME} PRIVATE Threads::Threads)
-
