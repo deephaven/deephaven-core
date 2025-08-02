@@ -190,10 +190,10 @@ TEST_CASE("SlicesToColumnSource", "[cython]") {
   auto actual_vector = ContainerColumnSourceToVector<std::string>(*actual, slice_lengths_size);
 
   std::vector<std::optional<std::vector<std::optional<std::string>>>> expected_vector = {
-    { { "a", "b", "c"} },
+    { { "a", "b", "c" } },
     std::nullopt,
-    { {std::in_place} },
-    { {"d", "e", "f", std::nullopt, "g" }},
+    std::optional(std::in_place. {}),
+    { {"d", "e", "f", std::nullopt, "g" } },
   };
 
   CHECK(expected_vector == actual_vector);
