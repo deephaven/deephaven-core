@@ -490,7 +490,7 @@ if [ "$CLONE_ABSEIL" = "yes" ]; then
   echo
   echo "*** Clone abseil"
   cd $SRC
-  # Previously used version: 20211102.0
+  # Previously used version: 20240116.0
   git clone $GIT_FLAGS -b 20240116.3 --depth 1 "${GITHUB_BASE_URL}/abseil/abseil-cpp.git"
   echo "*** Cloning abseil DONE"
 fi
