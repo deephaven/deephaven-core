@@ -76,10 +76,11 @@ TEST_CASE("Test case for group example", "[group]") {
   auto tm = TableMakerForTests::Create();
 
   TableMaker maker;
+  std::vector<std::optional<std::string>> empty_vector = { {} };
   maker.AddColumn<std::optional<std::vector<std::optional<std::string>>>>("Value", {
       { {"a", "b", "c"} },  // [a, b, c]
       std::nullopt, // null
-      std::optional(std::in_place, std::vector()), // []
+      empty_vector, // []
       {{"d", "e", "f", std::nullopt, "g"}}  // [d, e, f, null, g]
   });
   auto t = maker.MakeTable(tm.Client().GetManager());
