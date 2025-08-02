@@ -79,7 +79,7 @@ TEST_CASE("Test case for group example", "[group]") {
   maker.AddColumn<std::optional<std::vector<std::optional<std::string>>>>("Value", {
       { {"a", "b", "c"} },  // [a, b, c]
       std::nullopt, // null
-      std::optional(std::in_place, {}), // []
+      std::optional({}), // []
       {{"d", "e", "f", std::nullopt, "g"}}  // [d, e, f, null, g]
   });
   auto t = maker.MakeTable(tm.Client().GetManager());
