@@ -192,7 +192,7 @@ TEST_CASE("SlicesToColumnSource", "[cython]") {
   std::vector<std::optional<std::vector<std::optional<std::string>>>> expected_vector = {
     { { "a", "b", "c" } },
     std::nullopt,
-    std::optional({}),
+    std::optional(std::in_place, std::vector()),
     { {"d", "e", "f", std::nullopt, "g" } },
   };
 
