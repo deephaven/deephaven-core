@@ -57,7 +57,7 @@ public final class ChunkPoolConstants {
      * ResettableReadOnlyChunk} or {@link io.deephaven.chunk.ResettableWritableChunk ResettableWritableChunk} instances.
      */
     public static final boolean POOL_RESETTABLE_CHUNKS = Configuration.getInstance().getBooleanForClassWithDefault(
-            ChunkPoolConstants.class, "poolResettableChunks", true);
+            ChunkPoolConstants.class, "poolResettableChunks", false);
     /**
      * Whether the chunk pool should pool writable chunks, i.e., {@link io.deephaven.chunk.WritableChunk WritableChunk
      * WritableChunk} instances.
