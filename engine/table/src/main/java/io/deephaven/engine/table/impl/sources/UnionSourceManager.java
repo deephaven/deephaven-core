@@ -797,7 +797,7 @@ public class UnionSourceManager implements PushdownPredicateManager {
                 0,
                 ctx.constituents.size(),
                 (localContext, idx, nec, resume) -> {
-                    final PushdownFilterMatcher executor = ctx.excutors.get(idx);
+                    final PushdownFilterMatcher executor = ctx.executors.get(idx);
                     if (executor == null) {
                         // If there is no executor for this constituent, we cannot push down the filter.
                         resume.run();
@@ -855,7 +855,7 @@ public class UnionSourceManager implements PushdownPredicateManager {
                 0,
                 ctx.constituents.size(),
                 (localContext, idx, nec, resume) -> {
-                    final PushdownFilterMatcher executor = ctx.excutors.get(idx);
+                    final PushdownFilterMatcher executor = ctx.executors.get(idx);
                     if (executor == null) {
                         matches[idx] = RowSetFactory.empty();
                         maybeMatches[idx] = RowSetFactory.empty();
@@ -902,7 +902,7 @@ public class UnionSourceManager implements PushdownPredicateManager {
 
 
     public static class PushdownFilterContext extends BasePushdownFilterContext {
-        final List<PushdownFilterMatcher> excutors;
+        final List<PushdownFilterMatcher> executors;
         final List<io.deephaven.engine.table.impl.PushdownFilterContext> contexts;
         final List<Table> constituents;
         final List<RowSet> constituentRowSets;
@@ -915,7 +915,7 @@ public class UnionSourceManager implements PushdownPredicateManager {
                 final boolean usePrev) {
             this.constituents = Require.neqNull(constituents, "constituents");
             this.constituentRowSets = Require.neqNull(constituentRowSets, "constituentRowSets");
-            excutors = new ArrayList<>(constituents.size());
+            executors = new ArrayList<>(constituents.size());
             contexts = new ArrayList<>(constituents.size());
 
             for (final Table constituent : constituents) {
@@ -924,7 +924,7 @@ public class UnionSourceManager implements PushdownPredicateManager {
 
                 final PushdownFilterMatcher executor =
                         PushdownFilterMatcher.getPushdownFilterMatcher(filter, filterSources);
-                excutors.add(executor);
+                executors.add(executor);
                 if (executor != null) {
                     contexts.add(executor.makePushdownFilterContext(filter, filterSources, usePrev));
                 } else {
