@@ -7,6 +7,7 @@ import io.deephaven.engine.exceptions.ArgumentException;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.util.List;
@@ -53,6 +54,19 @@ public interface InputTableUpdater {
                 .filter(colName -> !keyNames.contains(colName))
                 .collect(Collectors.toList());
     }
+
+    /**
+     * If there are client-side defined restrictions on this column; return them as a JSON string to be interpreted by
+     * the client for properly displaying the edit field.
+     *
+     * @param columnName the column name to query
+     * @return a string representing the restrictions for this column, or null if no client-side restrictions are
+     *         supplied for this column
+     */
+    @Nullable
+    default String getColumnRestrictions(final String columnName) {
+        return null;
+    };
 
     /**
      * Get the underlying Table definition (which includes the names and types of all of the columns).
