@@ -90,10 +90,48 @@ public interface PushdownFilterMatcher {
      *
      * @param filter the filter to use while making the context
      * @param filterSources the column sources that match the filter column names
+     * @param usePrev whether to use the previous values for the filter evaluation
      *
      * @return the created filter context
      */
     PushdownFilterContext makePushdownFilterContext(
             final WhereFilter filter,
-            final List<ColumnSource<?>> filterSources);
+            final List<ColumnSource<?>> filterSources,
+            final boolean usePrev);
+
+    /**
+     * Given a filter and a list of column sources, return the appropriate {@link PushdownFilterMatcher} to use for
+     * pushing down the filter (or null when pushdown is not supported).
+     *
+     * @param filter The {@link WhereFilter filter} to match.
+     * @param filterSources The list of {@link ColumnSource column sources} that match the filter columns.
+     * @return The {@link PushdownFilterMatcher} to use for pushing down the filter, or null if pushdown is not
+     *         supported.
+     */
+    static PushdownFilterMatcher getPushdownFilterMatcher(
+            final WhereFilter filter,
+            final List<ColumnSource<?>> filterSources) {
+        // Select the executor to use for this filter (or assign null if pushdown is not supported).
+        if (!PushdownFilterMatcher.canPushdownFilter(filter)) {
+            return null;
+        } else if (filter.getColumns().size() > 1) {
+            return PushdownPredicateManager.getSharedPPM(filterSources);
+        } else if (filter.getColumns().size() == 1) {
+            final ColumnSource<?> columnSource = filterSources.get(0);
+            return (columnSource instanceof AbstractColumnSource)
+                    ? (AbstractColumnSource<?>) columnSource
+                    : null;
+        }
+        return null;
+    }
+
+    /**
+     * Check if the given filter can be pushed down.
+     *
+     * @param filter The {@link WhereFilter filter} to check.
+     * @return {@code true} if the filter can be pushed down, {@code false} otherwise.
+     */
+    static boolean canPushdownFilter(final WhereFilter filter) {
+        return !filter.hasVirtualRowVariables() && filter.getColumnArrays().isEmpty();
+    }
 }

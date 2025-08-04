@@ -325,7 +325,8 @@ public abstract class AbstractTableLocation
     @Override
     public PushdownFilterContext makePushdownFilterContext(
             final WhereFilter filter,
-            final List<ColumnSource<?>> filterSources) {
+            final List<ColumnSource<?>> filterSources,
+            final boolean usePrev) {
         throw new UnsupportedOperationException(
                 "makePushdownFilterContext() not supported for AbstractTableLocation");
     }

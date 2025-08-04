@@ -382,7 +382,8 @@ public abstract class AbstractColumnSource<T> implements
     @Override
     public PushdownFilterContext makePushdownFilterContext(
             final WhereFilter filter,
-            final List<ColumnSource<?>> filterSources) {
+            final List<ColumnSource<?>> filterSources,
+            final boolean usePrev) {
         return PushdownFilterContext.NO_PUSHDOWN_CONTEXT;
     }
 

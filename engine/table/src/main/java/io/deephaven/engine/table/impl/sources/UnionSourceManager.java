@@ -3,7 +3,9 @@
 //
 package io.deephaven.engine.table.impl.sources;
 
+import gnu.trove.list.array.TIntArrayList;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.base.verify.Require;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.rowset.*;
@@ -11,6 +13,8 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.partitioned.TableTransformationColumn;
+import io.deephaven.engine.table.impl.select.WhereFilter;
+import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.table.iterators.ChunkedObjectColumnIterator;
 import io.deephaven.engine.table.iterators.ObjectColumnIterator;
 import io.deephaven.engine.updategraph.UpdateCommitter;
@@ -19,10 +23,13 @@ import io.deephaven.util.MultiException;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedNode;
 import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedQueue;
+import io.deephaven.util.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
+import java.util.function.Consumer;
+import java.util.function.LongConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -31,7 +38,7 @@ import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
 import static io.deephaven.engine.table.impl.sources.UnionRedirection.checkOverflow;
 import static io.deephaven.engine.table.impl.sources.UnionRedirection.keySpaceFor;
 
-public class UnionSourceManager {
+public class UnionSourceManager implements PushdownPredicateManager {
 
     /**
      * Re-usable empty table update to simplify update processing for listeners with no recorded update.
@@ -760,5 +767,210 @@ public class UnionSourceManager {
         private ColumnSource<T> sourceFromTable(@NotNull final Table table) {
             return table.getColumnSource(columnName);
         }
+    }
+
+    @Override
+    public void estimatePushdownFilterCost(
+            final WhereFilter filter,
+            final RowSet selection,
+            final boolean usePrev,
+            final io.deephaven.engine.table.impl.PushdownFilterContext context,
+            final JobScheduler jobScheduler,
+            final LongConsumer onComplete,
+            final Consumer<Exception> onError) {
+
+        if (filter.getColumns().isEmpty()) {
+            onComplete.accept(Long.MAX_VALUE);
+            return;
+        }
+
+        // Use the PushdownFilterContext to access the executors and constituent row sets and determine the minimum cost
+        // across all tables.
+
+        final PushdownFilterContext ctx = (PushdownFilterContext) context;
+        final MutableLong minCost = new MutableLong(Long.MAX_VALUE);
+
+        jobScheduler.iterateParallel(
+                ExecutionContext.getContext(),
+                logOutput -> logOutput.append(""),
+                JobScheduler.DEFAULT_CONTEXT_FACTORY,
+                0,
+                ctx.constituents.size(),
+                (localContext, idx, nec, resume) -> {
+                    final PushdownFilterMatcher executor = ctx.excutors.get(idx);
+                    if (executor == null) {
+                        // If there is no executor for this constituent, we cannot push down the filter.
+                        resume.run();
+                        return;
+                    }
+                    final RowSet localRowSet = ctx.constituentRowSets.get(idx);
+                    try (final WritableRowSet localSelection = selection.intersect(localRowSet)) {
+                        if (localSelection.isEmpty()) {
+                            // No rows remain for this constituent, so we can skip it.
+                            resume.run();
+                            return;
+                        }
+                        // Shift to local space and delegate to the constituent executor.
+                        localSelection.shiftInPlace(-localRowSet.firstRowKey());
+                        executor.estimatePushdownFilterCost(
+                                filter, selection, usePrev, context, jobScheduler,
+                                cost -> {
+                                    synchronized (minCost) {
+                                        minCost.set(Math.min(minCost.get(), cost));
+                                    }
+                                    resume.run();
+                                }, nec);
+                    }
+                },
+                () -> onComplete.accept(minCost.get()),
+                () -> {
+                }, // no cleanup needed
+                onError);
+    }
+
+    @Override
+    public void pushdownFilter(
+            final WhereFilter filter,
+            final RowSet selection,
+            final boolean usePrev,
+            final io.deephaven.engine.table.impl.PushdownFilterContext context,
+            final long costCeiling,
+            final JobScheduler jobScheduler,
+            final Consumer<PushdownResult> onComplete,
+            final Consumer<Exception> onError) {
+        if (filter.getColumns().isEmpty()) {
+            onComplete.accept(PushdownResult.allNoMatch(selection));
+            return;
+        }
+
+        final PushdownFilterContext ctx = (PushdownFilterContext) context;
+
+        final WritableRowSet[] matches = new WritableRowSet[ctx.constituents.size()];
+        final WritableRowSet[] maybeMatches = new WritableRowSet[ctx.constituents.size()];
+
+        jobScheduler.iterateSerial(
+                ExecutionContext.getContext(),
+                logOutput -> logOutput.append(""),
+                JobScheduler.DEFAULT_CONTEXT_FACTORY,
+                0,
+                ctx.constituents.size(),
+                (localContext, idx, nec, resume) -> {
+                    final PushdownFilterMatcher executor = ctx.excutors.get(idx);
+                    if (executor == null) {
+                        matches[idx] = RowSetFactory.empty();
+                        maybeMatches[idx] = RowSetFactory.empty();
+                        resume.run();
+                        return;
+                    }
+                    final RowSet localRowSet = ctx.constituentRowSets.get(idx);
+                    try (final WritableRowSet localSelection = selection.intersect(localRowSet)) {
+                        if (localSelection.isEmpty()) {
+                            matches[idx] = RowSetFactory.empty();
+                            maybeMatches[idx] = RowSetFactory.empty();
+                            resume.run();
+                            return;
+                        }
+                        final long offset = localRowSet.firstRowKey();
+                        localSelection.shiftInPlace(-offset);
+                        executor.pushdownFilter(
+                                filter, localSelection, usePrev, ctx.contexts.get(idx), costCeiling, jobScheduler,
+                                result -> {
+                                    result.match().shiftInPlace(offset);
+                                    result.maybeMatch().shiftInPlace(offset);
+
+                                    matches[idx] = result.match();
+                                    maybeMatches[idx] = result.maybeMatch();
+                                    resume.run();
+                                }, nec);
+                    }
+                },
+                () -> {
+                    // Note: it's not obvious what the best approach for building these RowSets is; that is, sequential
+                    // insertion vs sequential builder. We know that the individual results are ordered and
+                    // non-overlapping.
+                    // If this becomes important, we can do more benchmarking.
+                    try (final WritableRowSet match = RowSetFactory.unionInsert(Arrays.asList(matches));
+                            final WritableRowSet maybeMatch = RowSetFactory.unionInsert(Arrays.asList(maybeMatches))) {
+                        onComplete.accept(PushdownResult.of(selection, match, maybeMatch));
+                    }
+                },
+                () -> {
+                }, // no cleanup needed
+                onError);
+    }
+
+
+
+    public static class PushdownFilterContext extends BasePushdownFilterContext {
+        final List<PushdownFilterMatcher> excutors;
+        final List<io.deephaven.engine.table.impl.PushdownFilterContext> contexts;
+        final List<Table> constituents;
+        final List<RowSet> constituentRowSets;
+
+        public PushdownFilterContext(
+                @NotNull final WhereFilter filter,
+                @NotNull final List<ColumnSource<?>> columnSources,
+                @NotNull final List<Table> constituents,
+                @NotNull final List<RowSet> constituentRowSets,
+                final boolean usePrev) {
+            this.constituents = Require.neqNull(constituents, "constituents");
+            this.constituentRowSets = Require.neqNull(constituentRowSets, "constituentRowSets");
+            excutors = new ArrayList<>(constituents.size());
+            contexts = new ArrayList<>(constituents.size());
+
+            for (final Table constituent : constituents) {
+                final List<ColumnSource<?>> filterSources = filter.getColumns().stream()
+                        .map(constituent::getColumnSource).collect(Collectors.toList());
+
+                final PushdownFilterMatcher executor =
+                        PushdownFilterMatcher.getPushdownFilterMatcher(filter, filterSources);
+                excutors.add(executor);
+                if (executor != null) {
+                    contexts.add(executor.makePushdownFilterContext(filter, filterSources, usePrev));
+                } else {
+                    contexts.add(null);
+                }
+            }
+        }
+
+        @Override
+        public Map<String, String> renameMap() {
+            return Map.of();
+        }
+
+        @Override
+        public void close() {
+            constituentRowSets.forEach(RowSet::close);
+            super.close();
+        }
+    }
+
+    @Override
+    public PushdownFilterContext makePushdownFilterContext(
+            final WhereFilter filter,
+            final List<ColumnSource<?>> filterSources,
+            final boolean usePrev) {
+
+        // We must identify which tables are constituents of the union, and which row sets in the outer RowKey space
+        // map to these tables. Whether to use previous values is very important for UnionSourceManager because will
+        // likely contain refreshing constituent tables.
+
+        final RowSet rowSetToUse = usePrev ? constituentRows.prev() : constituentRows;
+        final TIntArrayList tableSlots = new TIntArrayList(rowSetToUse.intSize());
+        rowSetToUse.forAllRowKeys(slot -> tableSlots.add((int) slot)); // Can't overflow, slots are dense
+
+        final List<Table> constituents = new ArrayList<>(tableSlots.size());
+        tableSlots.forEach(slot -> constituents.add(usePrev
+                ? constituentTables.getPrev(slot)
+                : constituentTables.get(slot)));
+
+        final List<RowSet> constituentRowSets = new ArrayList<>(tableSlots.size());
+        tableSlots.forEach(slot -> constituentRowSets.add(usePrev
+                ? RowSetFactory.fromRange(unionRedirection.prevFirstRowKeyForSlot(slot),
+                        unionRedirection.prevLastRowKeyForSlot(slot))
+                : RowSetFactory.fromRange(unionRedirection.currFirstRowKeyForSlot(slot),
+                        unionRedirection.currLastRowKeyForSlot(slot))));
+
+        return new PushdownFilterContext(filter, filterSources, constituents, constituentRowSets, usePrev);
     }
 }
