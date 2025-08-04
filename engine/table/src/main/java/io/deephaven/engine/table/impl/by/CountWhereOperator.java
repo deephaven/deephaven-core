@@ -371,8 +371,11 @@ public class CountWhereOperator implements IterativeChunkedAggregationOperator {
             final boolean usePrev) {
 
         updateChunkSources(ctx, usePrev);
-        applyFilters(ctx, chunkSize, true);
-        clearInputChunks(ctx);
+        try {
+            applyFilters(ctx, chunkSize, true);
+        } finally {
+            clearInputChunks(ctx);
+        }
 
         // fill the destination count chunk with the number of rows that passed the filter
         for (int dest = 0; dest < startPositions.size(); dest++) {

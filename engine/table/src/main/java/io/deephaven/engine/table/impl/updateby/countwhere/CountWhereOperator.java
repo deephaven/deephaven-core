@@ -429,9 +429,12 @@ public class CountWhereOperator extends BaseLongUpdateByOperator {
                 final int influencerCount) {
 
             assignInputChunksToFilters(influencerValueChunkArr, influencerCount);
-            setPosChunks(affectedPosChunk, influencerPosChunk);
-            applyFilters(influencerCount);
-            clearInputChunks();
+            try {
+                setPosChunks(affectedPosChunk, influencerPosChunk);
+                applyFilters(influencerCount);
+            } finally {
+                clearInputChunks();
+            }
 
             int pushIndex = 0;
 
@@ -472,8 +475,11 @@ public class CountWhereOperator extends BaseLongUpdateByOperator {
                 final int len) {
 
             assignInputChunksToFilters(valueChunkArr, len);
-            applyFilters(len);
-            clearInputChunks();
+            try {
+                applyFilters(len);
+            } finally {
+                clearInputChunks();
+            }
 
             // chunk processing
             for (int ii = 0; ii < len; ii++) {
