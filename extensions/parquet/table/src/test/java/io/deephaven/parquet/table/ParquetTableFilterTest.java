@@ -1449,9 +1449,9 @@ public final class ParquetTableFilterTest {
                 "symbol = ii % 119 == 0 ? null : String.format(`s%03d`, randomInt(0,1_000))");
 
         final Instant baseTime3 = parseInstant("2015-01-03T00:00:00 NY");
-        QueryScope.addParam("baseTime2", baseTime2);
+        QueryScope.addParam("baseTime3", baseTime3);
         final Table largeTable3 = TableTools.emptyTable(tableSize).update(
-                "Timestamp = baseTime2 + i * 1_000_000_000L",
+                "Timestamp = baseTime3 + i * 1_000_000_000L",
                 "sequential_val = 999999L", // with nulls
                 "symbol = `sZZZZ`");
 
@@ -1462,6 +1462,7 @@ public final class ParquetTableFilterTest {
 
         // Timestamp range and match filters
         filterAndVerifyResults(mergedTable, memTable, "Timestamp < '2023-01-01T01:00:00 NY'");
+        filterAndVerifyResults(mergedTable, memTable, "Timestamp > '2023-01-01T01:00:00 NY'");
         filterAndVerifyResults(mergedTable, memTable, "Timestamp = '2023-01-01T01:00:00 NY'");
 
         // string range and match filters
@@ -1486,6 +1487,7 @@ public final class ParquetTableFilterTest {
 
         // Timestamp range and match filters
         filterAndVerifyResults(mergedTable, memTable, "Timestamp < '2023-01-01T01:00:00 NY'");
+        filterAndVerifyResults(mergedTable, memTable, "Timestamp > '2023-01-01T01:00:00 NY'");
         filterAndVerifyResults(mergedTable, memTable, "Timestamp = '2023-01-01T01:00:00 NY'");
 
         // string range and match filters
