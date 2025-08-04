@@ -635,7 +635,14 @@ public class BarrageUtil {
                 putMetadata(metadata, "description", columnDescription);
             }
             if (inputTableUpdater != null) {
-                putMetadata(metadata, "inputtable.isKey", inputTableUpdater.getKeyNames().contains(name) + "");
+                putMetadata(metadata, "inputtable.isKey",
+                        Boolean.toString(inputTableUpdater.getKeyNames().contains(name)));
+                putMetadata(metadata, "inputtable.isValue",
+                        Boolean.toString(inputTableUpdater.getValueNames().contains(name)));
+                final String columnRestrictions = inputTableUpdater.getColumnRestrictions(name);
+                if (columnRestrictions != null) {
+                    putMetadata(metadata, "inputtable.restrictions", columnRestrictions);
+                }
             }
 
             if (field != null) {
