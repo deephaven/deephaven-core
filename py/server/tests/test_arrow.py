@@ -241,6 +241,83 @@ class ArrowTestCase(BaseTestCase):
         pa_data = [pa.array([Decimal('123456.78901'), Decimal('-98765.43210')], type=pa.decimal256(20, 5))]
         self.verify_type_conversion(pa_types=pa_types, pa_data=pa_data)
 
+    def test_arrow_fixed_size_binary(self):
+        pa_types = [pa.fixed_size_binary(2)]
+        pa_data = [
+            pa.array([b'\x00\x01', b'\x02\x03'],
+                     type=pa.fixed_size_binary(2))
+        ]
+        self.verify_type_conversion(pa_types=pa_types, pa_data=pa_data)
+
+    def test_arrow_list_int(self):
+        list_t = pa.list_(pa.int32())
+        pa_types = [list_t]
+        pa_data = [
+            pa.array([[1, 2], [3, 4]], type=list_t)
+        ]
+        self.verify_type_conversion(pa_types=pa_types, pa_data=pa_data)
+
+    def test_arrow_list_view_int(self):
+        lv_t = pa.list_view(pa.int32())
+        pa_types = [lv_t]
+        pa_data = [
+            pa.array([[5, 6], [7]], type=lv_t)
+        ]
+        self.verify_type_conversion(pa_types=pa_types, pa_data=pa_data)
+
+    def test_arrow_fixed_sized_list_int(self):
+        fsl_t = pa.fixed_size_list(pa.int32(), 3)
+        pa_types = [fsl_t]
+        pa_data = [
+            pa.array([[1, 2, 3], [4, 5, 6]], type=fsl_t)
+        ]
+        self.verify_type_conversion(pa_types=pa_types, pa_data=pa_data)
+
+    def test_arrow_map_string_int(self):
+        map_t = pa.map_(pa.string(), pa.int32())
+        pa_types = [map_t]
+        pa_data = [
+            pa.array([{'a': 1, 'b': 2}, {'c': 3}], type=map_t)
+        ]
+        self.verify_type_conversion(pa_types=pa_types, pa_data=pa_data)
+
+    def test_arrow_dense_union_string_int(self):
+        union_t = pa.union(
+            [pa.field('str', pa.string()),
+             pa.field('int', pa.int32())],
+            type_codes=[0, 1],
+            mode='dense'
+        )
+        pa_types = [union_t]
+        pa_data = [
+            pa.UnionArray.from_dense(
+                tags=pa.array([0, 1], type=pa.int8()),
+                offsets=pa.array([0, 0], type=pa.int32()),
+                children=[pa.array(['x', 'y']), pa.array([10, 20])],
+                field_names=['str', 'int'],
+                type_codes=[0, 1]
+            )
+        ]
+        self.verify_type_conversion(pa_types=pa_types, pa_data=pa_data)
+
+    def test_arrow_sparse_union_string_int(self):
+        union_t = pa.union(
+            [pa.field('str', pa.string()),
+             pa.field('int', pa.int32())],
+            type_codes=[0, 1],
+            mode='sparse'
+        )
+        pa_types = [union_t]
+        pa_data = [
+            pa.UnionArray.from_sparse(
+                tags=pa.array([1, 0], type=pa.int8()),
+                children=[pa.array(['m', 'n']), pa.array([7, 8])],
+                field_names=['str', 'int'],
+                type_codes=[0, 1]
+            )
+        ]
+        self.verify_type_conversion(pa_types=pa_types, pa_data=pa_data)
+
     def test_against_parquet(self):
         arrow_table = papq.read_table("tests/data/crypto_trades.parquet")
         dh_table = dharrow.to_table(arrow_table, cols=["t_ts", "t_instrument", "t_price"])

@@ -41,28 +41,30 @@ _ARROW_DH_DATA_TYPE_MAPPING = {
     pa.large_binary(): '',
     pa.large_string(): '',
     pa.large_utf8(): '',
-    # decimal128(int precision, int scale=0)
-    # list_(value_type, int list_size=-1)
-    # large_list(value_type)
-    # map_(key_type, item_type[, keys_sorted])
-    # struct(fields)
-    # dictionary(index_type, value_type, …)
 }
 
+_SUPPORTED_ARROW_PARAMETERIZABLE_TYPES = {
+    pa.TimestampType,
+    pa.FixedSizeBinaryType,
+    pa.Decimal128Type,
+    pa.Decimal256Type,
+    pa.ListType,
+    pa.ListViewType,
+    pa.FixedSizeListType,
+    pa.MapType,
+    pa.DenseUnionType,
+    pa.SparseUnionType,
+}
 
 def map_arrow_type(arrow_type: pa.DataType) -> Dict[str, str]:
     """Maps an Arrow type to the corresponding Deephaven column data type."""
     dh_type = _ARROW_DH_DATA_TYPE_MAPPING.get(arrow_type)
-    if not dh_type:
-        # if this is a case of timestamp with tz specified
-        if isinstance(arrow_type, pa.TimestampType):
-            dh_type = "java.time.Instant"
-        if isinstance(arrow_type, pa.Decimal128Type):
-            dh_type = "java.math.BigDecimal"
-        if isinstance(arrow_type, pa.Decimal256Type):
-            dh_type = "java.math.BigDecimal"
 
     if not dh_type:
+        if type(arrow_type) in _SUPPORTED_ARROW_PARAMETERIZABLE_TYPES:
+            # For parameterizable types let the server handle the mapping
+            return {}
+
         raise DHError(message=f'unsupported arrow data type : {arrow_type}, refer to '
                               f'deephaven.arrow.SUPPORTED_ARROW_TYPES for the list of supported Arrow types.')
 
