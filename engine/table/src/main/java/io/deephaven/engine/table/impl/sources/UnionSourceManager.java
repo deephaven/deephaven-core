@@ -778,16 +778,11 @@ public class UnionSourceManager implements PushdownPredicateManager {
             final JobScheduler jobScheduler,
             final LongConsumer onComplete,
             final Consumer<Exception> onError) {
-
-        if (filter.getColumns().isEmpty()) {
-            onComplete.accept(Long.MAX_VALUE);
-            return;
-        }
-
         // Use the PushdownFilterContext to access the executors and constituent row sets and determine the minimum cost
         // across all tables.
 
         final PushdownFilterContext ctx = (PushdownFilterContext) context;
+        ctx.initialize(selection, usePrev);
         final MutableLong minCost = new MutableLong(Long.MAX_VALUE);
 
         jobScheduler.iterateParallel(
@@ -795,7 +790,7 @@ public class UnionSourceManager implements PushdownPredicateManager {
                 logOutput -> logOutput.append(""),
                 JobScheduler.DEFAULT_CONTEXT_FACTORY,
                 0,
-                ctx.constituents.size(),
+                ctx.executors.size(),
                 (localContext, idx, nec, resume) -> {
                     final PushdownFilterMatcher executor = ctx.executors.get(idx);
                     if (executor == null) {
@@ -813,7 +808,7 @@ public class UnionSourceManager implements PushdownPredicateManager {
                         // Shift to local space and delegate to the constituent executor.
                         localSelection.shiftInPlace(-localRowSet.firstRowKey());
                         executor.estimatePushdownFilterCost(
-                                filter, selection, usePrev, context, jobScheduler,
+                                filter, selection, usePrev, ctx.contexts.get(idx), jobScheduler,
                                 cost -> {
                                     synchronized (minCost) {
                                         minCost.set(Math.min(minCost.get(), cost));
@@ -838,35 +833,36 @@ public class UnionSourceManager implements PushdownPredicateManager {
             final JobScheduler jobScheduler,
             final Consumer<PushdownResult> onComplete,
             final Consumer<Exception> onError) {
+
         if (filter.getColumns().isEmpty()) {
             onComplete.accept(PushdownResult.allNoMatch(selection));
             return;
         }
 
         final PushdownFilterContext ctx = (PushdownFilterContext) context;
+        ctx.initialize(selection, usePrev);
 
-        final WritableRowSet[] matches = new WritableRowSet[ctx.constituents.size()];
-        final WritableRowSet[] maybeMatches = new WritableRowSet[ctx.constituents.size()];
+        final WritableRowSet[] matches = new WritableRowSet[ctx.executors.size()];
+        final WritableRowSet[] maybeMatches = new WritableRowSet[ctx.executors.size()];
 
-        jobScheduler.iterateSerial(
+        jobScheduler.iterateParallel(
                 ExecutionContext.getContext(),
                 logOutput -> logOutput.append(""),
                 JobScheduler.DEFAULT_CONTEXT_FACTORY,
                 0,
-                ctx.constituents.size(),
+                ctx.executors.size(),
                 (localContext, idx, nec, resume) -> {
                     final PushdownFilterMatcher executor = ctx.executors.get(idx);
-                    if (executor == null) {
-                        matches[idx] = RowSetFactory.empty();
-                        maybeMatches[idx] = RowSetFactory.empty();
-                        resume.run();
-                        return;
-                    }
                     final RowSet localRowSet = ctx.constituentRowSets.get(idx);
                     try (final WritableRowSet localSelection = selection.intersect(localRowSet)) {
                         if (localSelection.isEmpty()) {
                             matches[idx] = RowSetFactory.empty();
                             maybeMatches[idx] = RowSetFactory.empty();
+                            resume.run();
+                            return;
+                        } else if (executor == null) {
+                            matches[idx] = RowSetFactory.empty();
+                            maybeMatches[idx] = localSelection.copy(); // can't push down
                             resume.run();
                             return;
                         }
@@ -899,38 +895,80 @@ public class UnionSourceManager implements PushdownPredicateManager {
                 onError);
     }
 
-
-
     public static class PushdownFilterContext extends BasePushdownFilterContext {
-        final List<PushdownFilterMatcher> executors;
-        final List<io.deephaven.engine.table.impl.PushdownFilterContext> contexts;
-        final List<Table> constituents;
-        final List<RowSet> constituentRowSets;
+        final WhereFilter filter;
+        final UnionSourceManager manager;
+
+        boolean initialized = false;
+        List<PushdownFilterMatcher> executors;
+        List<RowSet> constituentRowSets;
+        List<io.deephaven.engine.table.impl.PushdownFilterContext> contexts;
 
         public PushdownFilterContext(
                 @NotNull final WhereFilter filter,
                 @NotNull final List<ColumnSource<?>> columnSources,
-                @NotNull final List<Table> constituents,
-                @NotNull final List<RowSet> constituentRowSets,
-                final boolean usePrev) {
-            this.constituents = Require.neqNull(constituents, "constituents");
-            this.constituentRowSets = Require.neqNull(constituentRowSets, "constituentRowSets");
-            executors = new ArrayList<>(constituents.size());
-            contexts = new ArrayList<>(constituents.size());
+                @NotNull final UnionSourceManager manager) {
+            this.filter = Require.neqNull(filter, "filter");
+            this.manager = Require.neqNull(manager, "manager");
+        }
 
-            for (final Table constituent : constituents) {
-                final List<ColumnSource<?>> filterSources = filter.getColumns().stream()
-                        .map(constituent::getColumnSource).collect(Collectors.toList());
-
-                final PushdownFilterMatcher executor =
-                        PushdownFilterMatcher.getPushdownFilterMatcher(filter, filterSources);
-                executors.add(executor);
-                if (executor != null) {
-                    contexts.add(executor.makePushdownFilterContext(filter, filterSources, usePrev));
-                } else {
-                    contexts.add(null);
-                }
+        /**
+         * Initialize the context with the selection and whether to use previous values. This must be called before
+         * using the context.
+         *
+         * @param selection The selection of row keys to filter
+         * @param usePrev Whether to use previous values for filtering
+         */
+        public void initialize(final RowSet selection, final boolean usePrev) {
+            if (initialized) {
+                return;
             }
+            initialized = true;
+
+            // We must identify which tables are constituents of the union, and which row sets in the outer RowKey space
+            // map to these tables. Whether to use previous values is very important for UnionSourceManager because will
+            // likely contain refreshing constituent tables.
+
+            final RowSet rowSetToUse = usePrev ? manager.constituentRows.prev() : manager.constituentRows;
+            final TIntArrayList tableSlots = new TIntArrayList(rowSetToUse.intSize());
+            rowSetToUse.forAllRowKeys(slot -> tableSlots.add((int) slot)); // Can't overflow, slots are dense
+
+            executors = new ArrayList<>(tableSlots.size());
+            contexts = new ArrayList<>(tableSlots.size());
+            constituentRowSets = new ArrayList<>(tableSlots.size());
+
+            tableSlots.forEach(slot -> {
+                final RowSet rowSet = usePrev
+                        ? RowSetFactory.fromRange(manager.unionRedirection.prevFirstRowKeyForSlot(slot),
+                                manager.unionRedirection.prevLastRowKeyForSlot(slot))
+                        : RowSetFactory.fromRange(manager.unionRedirection.currFirstRowKeyForSlot(slot),
+                                manager.unionRedirection.currLastRowKeyForSlot(slot));
+
+                // If there is no overlap, we can ignore this table completely.
+                if (rowSet.overlaps(selection)) {
+                    final Table constituent = usePrev
+                            ? manager.constituentTables.getPrev(slot)
+                            : manager.constituentTables.get(slot);
+
+                    final List<ColumnSource<?>> filterSources = filter.getColumns().stream()
+                            .map(constituent::getColumnSource).collect(Collectors.toList());
+
+                    final PushdownFilterMatcher executor =
+                            PushdownFilterMatcher.getPushdownFilterMatcher(filter, filterSources);
+
+                    if (executor != null) {
+                        executors.add(executor);
+                        contexts.add(executor.makePushdownFilterContext(filter, filterSources));
+                    } else {
+                        // We can't skip the table, but a null executor means we can't push down the filter and
+                        // normal filtering must be used.
+                        executors.add(null);
+                        contexts.add(null);
+                    }
+                    constituentRowSets.add(rowSet);
+                }
+                return true;
+            });
         }
 
         @Override
@@ -948,29 +986,7 @@ public class UnionSourceManager implements PushdownPredicateManager {
     @Override
     public PushdownFilterContext makePushdownFilterContext(
             final WhereFilter filter,
-            final List<ColumnSource<?>> filterSources,
-            final boolean usePrev) {
-
-        // We must identify which tables are constituents of the union, and which row sets in the outer RowKey space
-        // map to these tables. Whether to use previous values is very important for UnionSourceManager because will
-        // likely contain refreshing constituent tables.
-
-        final RowSet rowSetToUse = usePrev ? constituentRows.prev() : constituentRows;
-        final TIntArrayList tableSlots = new TIntArrayList(rowSetToUse.intSize());
-        rowSetToUse.forAllRowKeys(slot -> tableSlots.add((int) slot)); // Can't overflow, slots are dense
-
-        final List<Table> constituents = new ArrayList<>(tableSlots.size());
-        tableSlots.forEach(slot -> constituents.add(usePrev
-                ? constituentTables.getPrev(slot)
-                : constituentTables.get(slot)));
-
-        final List<RowSet> constituentRowSets = new ArrayList<>(tableSlots.size());
-        tableSlots.forEach(slot -> constituentRowSets.add(usePrev
-                ? RowSetFactory.fromRange(unionRedirection.prevFirstRowKeyForSlot(slot),
-                        unionRedirection.prevLastRowKeyForSlot(slot))
-                : RowSetFactory.fromRange(unionRedirection.currFirstRowKeyForSlot(slot),
-                        unionRedirection.currLastRowKeyForSlot(slot))));
-
-        return new PushdownFilterContext(filter, filterSources, constituents, constituentRowSets, usePrev);
+            final List<ColumnSource<?>> filterSources) {
+        return new PushdownFilterContext(filter, filterSources, this);
     }
 }

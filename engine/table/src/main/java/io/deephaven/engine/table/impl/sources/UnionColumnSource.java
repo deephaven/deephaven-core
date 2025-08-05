@@ -813,9 +813,8 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
     @Override
     public PushdownFilterContext makePushdownFilterContext(
             final WhereFilter filter,
-            final List<ColumnSource<?>> filterSources,
-            final boolean usePrev) {
+            final List<ColumnSource<?>> filterSources) {
         // Delegate to the manager.
-        return unionSourceManager.makePushdownFilterContext(filter, filterSources, usePrev);
+        return unionSourceManager.makePushdownFilterContext(filter, filterSources);
     }
 }

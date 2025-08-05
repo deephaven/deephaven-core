@@ -909,8 +909,7 @@ public class RegionedColumnSourceManager
     @Override
     public io.deephaven.engine.table.impl.PushdownFilterContext makePushdownFilterContext(
             final WhereFilter filter,
-            final List<ColumnSource<?>> filterSources,
-            final boolean usePrev) {
+            final List<ColumnSource<?>> filterSources) {
         return new PushdownFilterContext(this, filter, filterSources);
     }
 

@@ -90,18 +90,16 @@ public interface PushdownFilterMatcher {
      *
      * @param filter the filter to use while making the context
      * @param filterSources the column sources that match the filter column names
-     * @param usePrev whether to use the previous values for the filter evaluation
      *
      * @return the created filter context
      */
     PushdownFilterContext makePushdownFilterContext(
             final WhereFilter filter,
-            final List<ColumnSource<?>> filterSources,
-            final boolean usePrev);
+            final List<ColumnSource<?>> filterSources);
 
     /**
      * Given a filter and a list of column sources, return the appropriate {@link PushdownFilterMatcher} to use for
-     * pushing down the filter (or null when pushdown is not supported).
+     * pushing down the filter (or {@code null} when pushdown is not supported).
      *
      * @param filter The {@link WhereFilter filter} to match.
      * @param filterSources The list of {@link ColumnSource column sources} that match the filter columns.

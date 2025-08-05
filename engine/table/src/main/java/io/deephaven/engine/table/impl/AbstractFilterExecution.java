@@ -491,7 +491,7 @@ abstract class AbstractFilterExecution {
                         PushdownFilterMatcher.getPushdownFilterMatcher(filter, filterSources);
                 if (executor != null) {
                     final PushdownFilterContext context = executor.makePushdownFilterContext(filter, filter.getColumns()
-                            .stream().map(sourceTable::getColumnSource).collect(Collectors.toList()), usePrev);
+                            .stream().map(sourceTable::getColumnSource).collect(Collectors.toList()));
                     statelessFilters[ii] = new StatelessFilter(ii, filter, executor, context, barrierDependencies);
                 } else {
                     statelessFilters[ii] = new StatelessFilter(ii, filter, null, null, barrierDependencies);

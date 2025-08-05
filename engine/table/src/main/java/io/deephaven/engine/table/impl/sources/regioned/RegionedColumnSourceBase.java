@@ -137,9 +137,8 @@ abstract class RegionedColumnSourceBase<DATA_TYPE, ATTR extends Values, REGION_T
     @Override
     public PushdownFilterContext makePushdownFilterContext(
             final WhereFilter filter,
-            final List<ColumnSource<?>> filterSources,
-            final boolean usePrev) {
+            final List<ColumnSource<?>> filterSources) {
         // Delegate to the manager.
-        return manager.makePushdownFilterContext(filter, filterSources, usePrev);
+        return manager.makePushdownFilterContext(filter, filterSources);
     }
 }
