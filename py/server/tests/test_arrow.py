@@ -283,8 +283,8 @@ class ArrowTestCase(BaseTestCase):
 
     def test_arrow_dense_union_string_int(self):
         union_t = pa.union(
-            [pa.field('str', pa.string()),
-             pa.field('int', pa.int32())],
+            [pa.field('s', pa.string()),
+             pa.field('x', pa.int64())],
             type_codes=[0, 1],
             mode='dense'
         )
@@ -294,7 +294,7 @@ class ArrowTestCase(BaseTestCase):
                 pa.array([0, 1], type=pa.int8()),
                 pa.array([0, 0], type=pa.int32()),
                 children=[pa.array(['x', 'y']), pa.array([10, 20])],
-                field_names=['str', 'int'],
+                field_names=['s', 'x'],
                 type_codes=[0, 1]
             )
         ]
@@ -302,8 +302,8 @@ class ArrowTestCase(BaseTestCase):
 
     def test_arrow_sparse_union_string_int(self):
         union_t = pa.union(
-            [pa.field('str', pa.string()),
-             pa.field('int', pa.int32())],
+            [pa.field('s', pa.string()),
+             pa.field('x', pa.int64())],
             type_codes=[0, 1],
             mode='sparse'
         )
@@ -312,7 +312,7 @@ class ArrowTestCase(BaseTestCase):
             pa.UnionArray.from_sparse(
                 pa.array([1, 0], type=pa.int8()),
                 [pa.array(['m', 'n']), pa.array([7, 8])],
-                field_names=['str', 'int'],
+                field_names=['s', 'x'],
                 type_codes=[0, 1]
             )
         ]
