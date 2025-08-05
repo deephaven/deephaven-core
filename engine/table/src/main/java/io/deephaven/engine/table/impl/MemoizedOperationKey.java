@@ -90,6 +90,10 @@ public abstract class MemoizedOperationKey {
         return new Sort(sortPairs);
     }
 
+    static MemoizedOperationKey ungroup(final boolean nullFill, String[] columns) {
+        return new Ungroup(nullFill, columns);
+    }
+
     static MemoizedOperationKey dropColumns(String[] columns) {
         return new DropColumns(columns);
     }
@@ -717,6 +721,40 @@ public abstract class MemoizedOperationKey {
         @Override
         public int hashCode() {
             return 31 * key.hashCode() + Long.hashCode(sizeLimit);
+        }
+
+        @Override
+        BaseTable.CopyAttributeOperation copyType() {
+            return BaseTable.CopyAttributeOperation.None;
+        }
+    }
+
+    private static class Ungroup extends AttributeAgnosticMemoizedOperationKey {
+        private final boolean nullFill;
+        private final HashSet<String> columns;
+
+        private Ungroup(boolean nullFill, String[] columns) {
+            this.nullFill = nullFill;
+            this.columns = new HashSet<>(Arrays.asList(columns));
+        }
+
+        @Override
+        public boolean equals(final Object other) {
+            if (this == other) {
+                return true;
+            }
+            if (other == null || getClass() != other.getClass()) {
+                return false;
+            }
+
+            final Ungroup ungroup = (Ungroup) other;
+
+            return nullFill == ungroup.nullFill && columns.equals(ungroup.columns);
+        }
+
+        @Override
+        public int hashCode() {
+            return Boolean.hashCode(nullFill) ^ columns.hashCode();
         }
 
         @Override

@@ -17,6 +17,7 @@ dependencies {
     testImplementation libs.jmock.junit4
     testImplementation libs.jmock.imposters
     testImplementation project(":base-test-utils")
+    testImplementation libs.assertj
 }
 
 // TODO (core#116): Gradle test fixtures

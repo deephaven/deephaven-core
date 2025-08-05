@@ -229,8 +229,7 @@ public class CrossJoinRightColumnSource<T> extends AbstractColumnSource<T> imple
 
     @Override
     public boolean isUngroupable() {
-        return innerSource instanceof UngroupableColumnSource
-                && ((UngroupableColumnSource) innerSource).isUngroupable();
+        return UngroupableColumnSource.isUngroupable(innerSource);
     }
 
     @Override

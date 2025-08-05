@@ -12,13 +12,20 @@ import io.deephaven.chunk.WritableObjectChunk;
 
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.table.impl.PushdownFilterContext;
+import io.deephaven.engine.table.impl.PushdownResult;
+import io.deephaven.engine.table.impl.select.WhereFilter;
+import io.deephaven.engine.table.impl.util.JobScheduler;
 import org.jetbrains.annotations.NotNull;
+
+import java.util.function.Consumer;
+import java.util.function.LongConsumer;
 
 import static io.deephaven.util.QueryConstants.NULL_BOOLEAN;
 
@@ -27,7 +34,7 @@ import static io.deephaven.util.QueryConstants.NULL_BOOLEAN;
  * <p>
  * The C-haracterSingleValueSource is replicated to all other types with
  * io.deephaven.engine.table.impl.sources.Replicate.
- *
+ * <p>
  * (C-haracter is deliberately spelled that way in order to prevent Replicate from altering this very comment).
  */
 public class BooleanSingleValueSource extends SingleValueColumnSource<Boolean>
@@ -91,7 +98,7 @@ public class BooleanSingleValueSource extends SingleValueColumnSource<Boolean>
     @Override
     public final void fillFromChunk(@NotNull FillFromContext context, @NotNull Chunk<? extends Values> src,
             @NotNull RowSequence rowSequence) {
-        if (rowSequence.size() == 0) {
+        if (rowSequence.isEmpty()) {
             return;
         }
         // We can only hold one value anyway, so arbitrarily take the first value in the chunk and ignore the rest.
@@ -149,5 +156,34 @@ public class BooleanSingleValueSource extends SingleValueColumnSource<Boolean>
     @Override
     public boolean providesFillUnordered() {
         return true;
+    }
+
+    @Override
+    public void estimatePushdownFilterCost(
+            final WhereFilter filter,
+            final RowSet selection,
+            final boolean usePrev,
+            final PushdownFilterContext context,
+            final JobScheduler jobScheduler,
+            final LongConsumer onComplete,
+            final Consumer<Exception> onError) {
+        // Delegate to the shared code for RowKeyAgnosticChunkSource
+        RowKeyAgnosticChunkSource.estimatePushdownFilterCostHelper(
+                filter, selection, usePrev, context, jobScheduler, onComplete, onError);
+    }
+
+    @Override
+    public void pushdownFilter(
+            final WhereFilter filter,
+            final RowSet selection,
+            final boolean usePrev,
+            final PushdownFilterContext context,
+            final long costCeiling,
+            final JobScheduler jobScheduler,
+            final Consumer<PushdownResult> onComplete,
+            final Consumer<Exception> onError) {
+        // Delegate to the shared code for RowKeyAgnosticChunkSource
+        RowKeyAgnosticChunkSource.pushdownFilterHelper(this, filter, selection, usePrev, context, costCeiling,
+                jobScheduler, onComplete, onError);
     }
 }
