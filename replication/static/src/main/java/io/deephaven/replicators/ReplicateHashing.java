@@ -101,7 +101,7 @@ public class ReplicateHashing {
                 "            counts.set(wpos, falseValues);",
                 "        }"));
 
-        lines = replaceRegion(lines, "shouldIgnore", Collections.singletonList("        return false;"));
+        lines = replaceRegion(lines, "isNullOrNan", Collections.singletonList("        return false;"));
 
         lines = removeImport(lines, "\\s*import io.deephaven.util.compare.BooleanComparisons;");
         lines = removeImport(lines, "\\s*import static.*QueryConstants.*;");
@@ -125,7 +125,7 @@ public class ReplicateHashing {
     private static void fixupFloatCompact(String doublePath, String typeOfFloat) throws IOException {
         final File objectFile = new File(doublePath);
         List<String> lines = FileUtils.readLines(objectFile, Charset.defaultCharset());
-        lines = replaceRegion(lines, "shouldIgnore", Collections.singletonList(
+        lines = replaceRegion(lines, "isNullOrNan", Collections.singletonList(
                 "        return value == NULL_" + typeOfFloat.toUpperCase() + " || " + typeOfFloat + ".isNaN(value);"));
         FileUtils.writeLines(objectFile, lines);
     }
