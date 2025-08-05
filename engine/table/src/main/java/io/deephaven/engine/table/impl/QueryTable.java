@@ -2326,7 +2326,8 @@ public class QueryTable extends BaseTable<QueryTable> {
                 joinType);
     }
 
-    private Table naturalJoinImpl(
+    @VisibleForTesting
+    Table naturalJoinImpl(
             final Table rightTable,
             final MatchPair[] columnsToMatch,
             final MatchPair[] columnsToAdd,
@@ -2351,7 +2352,8 @@ public class QueryTable extends BaseTable<QueryTable> {
         return NaturalJoinHelper.naturalJoin(this, rightTableCoalesced, columnsToMatch, columnsToAdd, joinType);
     }
 
-    private MatchPair[] createColumnsToAddIfMissing(Table rightTable, MatchPair[] columnsToMatch,
+    @VisibleForTesting
+    static MatchPair[] createColumnsToAddIfMissing(Table rightTable, MatchPair[] columnsToMatch,
             MatchPair[] columnsToAdd) {
         if (columnsToAdd.length == 0) {
             final Set<String> matchColumns = Arrays.stream(columnsToMatch).map(matchPair -> matchPair.leftColumn)
