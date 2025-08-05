@@ -309,11 +309,6 @@ public class QueryTable extends BaseTable<QueryTable> {
     public static boolean STATELESS_FILTERS_BY_DEFAULT =
             Configuration.getInstance().getBooleanWithDefault("QueryTable.statelessFiltersByDefault", false);
 
-
-    @VisibleForTesting
-    public static boolean USE_CHUNKED_CROSS_JOIN =
-            Configuration.getInstance().getBooleanWithDefault("QueryTable.chunkedJoin", true);
-
     private static final AtomicReferenceFieldUpdater<QueryTable, ModifiedColumnSet> MODIFIED_COLUMN_SET_UPDATER =
             AtomicReferenceFieldUpdater.newUpdater(QueryTable.class, ModifiedColumnSet.class, "modifiedColumnSet");
     private static final AtomicReferenceFieldUpdater<QueryTable, Map> CACHED_OPERATIONS_UPDATER =
@@ -2331,7 +2326,8 @@ public class QueryTable extends BaseTable<QueryTable> {
                 joinType);
     }
 
-    private Table naturalJoinImpl(
+    @VisibleForTesting
+    Table naturalJoinImpl(
             final Table rightTable,
             final MatchPair[] columnsToMatch,
             final MatchPair[] columnsToAdd,
@@ -2356,7 +2352,8 @@ public class QueryTable extends BaseTable<QueryTable> {
         return NaturalJoinHelper.naturalJoin(this, rightTableCoalesced, columnsToMatch, columnsToAdd, joinType);
     }
 
-    private MatchPair[] createColumnsToAddIfMissing(Table rightTable, MatchPair[] columnsToMatch,
+    @VisibleForTesting
+    static MatchPair[] createColumnsToAddIfMissing(Table rightTable, MatchPair[] columnsToMatch,
             MatchPair[] columnsToAdd) {
         if (columnsToAdd.length == 0) {
             final Set<String> matchColumns = Arrays.stream(columnsToMatch).map(matchPair -> matchPair.leftColumn)
@@ -2414,62 +2411,12 @@ public class QueryTable extends BaseTable<QueryTable> {
         final MatchPair[] realColumnsToAdd =
                 createColumnsToAddIfMissing(rightTableCandidate, columnsToMatch, columnsToAdd);
 
-        if (USE_CHUNKED_CROSS_JOIN) {
-            final QueryTable coalescedRightTable = (QueryTable) rightTableCandidate.coalesce();
-            return QueryPerformanceRecorder.withNugget(
-                    "join(" + matchString(columnsToMatch) + ", " + matchString(realColumnsToAdd) + ", "
-                            + numRightBitsToReserve + ")",
-                    () -> CrossJoinHelper.join(this, coalescedRightTable, columnsToMatch, realColumnsToAdd,
-                            numRightBitsToReserve));
-        }
-
-        final Set<String> columnsToMatchSet =
-                Arrays.stream(columnsToMatch).map(MatchPair::rightColumn)
-                        .collect(Collectors.toCollection(HashSet::new));
-
-        final Map<String, Selectable> columnsToAddSelectColumns = new LinkedHashMap<>();
-        final List<String> columnsToUngroupBy = new ArrayList<>();
-        final String[] rightColumnsToMatch = new String[columnsToMatch.length];
-        for (int i = 0; i < rightColumnsToMatch.length; i++) {
-            rightColumnsToMatch[i] = columnsToMatch[i].rightColumn;
-            columnsToAddSelectColumns.put(columnsToMatch[i].rightColumn, ColumnName.of(columnsToMatch[i].rightColumn));
-        }
-        final ArrayList<MatchPair> columnsToAddAfterRename = new ArrayList<>(realColumnsToAdd.length);
-        for (MatchPair matchPair : realColumnsToAdd) {
-            columnsToAddAfterRename.add(new MatchPair(matchPair.leftColumn, matchPair.leftColumn));
-            if (!columnsToMatchSet.contains(matchPair.leftColumn)) {
-                columnsToUngroupBy.add(matchPair.leftColumn);
-            }
-            columnsToAddSelectColumns.put(matchPair.leftColumn,
-                    Selectable.of(ColumnName.of(matchPair.leftColumn), ColumnName.of(matchPair.rightColumn)));
-        }
-
-        return QueryPerformanceRecorder
-                .withNugget("join(" + matchString(columnsToMatch) + ", " + matchString(realColumnsToAdd) + ")", () -> {
-                    boolean sentinelAdded = false;
-                    final Table rightTable;
-                    if (columnsToUngroupBy.isEmpty()) {
-                        rightTable = rightTableCandidate.updateView("__sentinel__=null");
-                        columnsToUngroupBy.add("__sentinel__");
-                        columnsToAddSelectColumns.put("__sentinel__", ColumnName.of("__sentinel__"));
-                        columnsToAddAfterRename.add(new MatchPair("__sentinel__", "__sentinel__"));
-                        sentinelAdded = true;
-                    } else {
-                        rightTable = rightTableCandidate;
-                    }
-
-                    final Table rightGrouped = rightTable.groupBy(rightColumnsToMatch)
-                            .view(columnsToAddSelectColumns.values());
-                    final Table naturalJoinResult = naturalJoinImpl(rightGrouped, columnsToMatch,
-                            columnsToAddAfterRename.toArray(MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY),
-                            NaturalJoinType.ERROR_ON_DUPLICATE);
-                    final QueryTable ungroupedResult = (QueryTable) naturalJoinResult
-                            .ungroup(columnsToUngroupBy.toArray(String[]::new));
-
-                    maybeCopyColumnDescriptions(ungroupedResult, rightTable, columnsToMatch, realColumnsToAdd);
-
-                    return sentinelAdded ? ungroupedResult.dropColumns("__sentinel__") : ungroupedResult;
-                });
+        final QueryTable coalescedRightTable = (QueryTable) rightTableCandidate.coalesce();
+        return QueryPerformanceRecorder.withNugget(
+                "join(" + matchString(columnsToMatch) + ", " + matchString(realColumnsToAdd) + ", "
+                        + numRightBitsToReserve + ")",
+                () -> CrossJoinHelper.join(this, coalescedRightTable, columnsToMatch, realColumnsToAdd,
+                        numRightBitsToReserve));
     }
 
     @Override
