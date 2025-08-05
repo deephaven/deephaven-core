@@ -242,10 +242,10 @@ class ArrowTestCase(BaseTestCase):
         self.verify_type_conversion(pa_types=pa_types, pa_data=pa_data)
 
     def test_arrow_fixed_size_binary(self):
-        pa_types = [pa.fixed_size_binary(2)]
+        pa_types = [pa.binary(2)]
         pa_data = [
             pa.array([b'\x00\x01', b'\x02\x03'],
-                     type=pa.fixed_size_binary(2))
+                     type=pa.binary(2))
         ]
         self.verify_type_conversion(pa_types=pa_types, pa_data=pa_data)
 
@@ -266,7 +266,7 @@ class ArrowTestCase(BaseTestCase):
         self.verify_type_conversion(pa_types=pa_types, pa_data=pa_data)
 
     def test_arrow_fixed_sized_list_int(self):
-        fsl_t = pa.fixed_size_list(pa.int32(), 3)
+        fsl_t = pa.list_(pa.int32(), 3)
         pa_types = [fsl_t]
         pa_data = [
             pa.array([[1, 2, 3], [4, 5, 6]], type=fsl_t)
@@ -291,8 +291,8 @@ class ArrowTestCase(BaseTestCase):
         pa_types = [union_t]
         pa_data = [
             pa.UnionArray.from_dense(
-                tags=pa.array([0, 1], type=pa.int8()),
-                offsets=pa.array([0, 0], type=pa.int32()),
+                pa.array([0, 1], type=pa.int8()),
+                pa.array([0, 0], type=pa.int32()),
                 children=[pa.array(['x', 'y']), pa.array([10, 20])],
                 field_names=['str', 'int'],
                 type_codes=[0, 1]
@@ -310,8 +310,8 @@ class ArrowTestCase(BaseTestCase):
         pa_types = [union_t]
         pa_data = [
             pa.UnionArray.from_sparse(
-                tags=pa.array([1, 0], type=pa.int8()),
-                children=[pa.array(['m', 'n']), pa.array([7, 8])],
+                pa.array([1, 0], type=pa.int8()),
+                [pa.array(['m', 'n']), pa.array([7, 8])],
                 field_names=['str', 'int'],
                 type_codes=[0, 1]
             )
