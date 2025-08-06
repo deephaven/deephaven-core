@@ -287,7 +287,7 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
      * @return The page stores
      */
     @NotNull
-    private ColumnChunkPageStore<ATTR>[] getPageStores(
+    ColumnChunkPageStore<ATTR>[] getPageStores(
             @NotNull final ColumnDefinition<?> columnDefinition) {
         initializePages(columnDefinition);
         return pageStores;
@@ -299,7 +299,7 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
      * @param columnDefinition The {@link ColumnDefinition} used to lookup type information
      * @return The dictionary values chunk suppliers, or null if none exist
      */
-    private Supplier<Chunk<ATTR>>[] getDictionaryChunkSuppliers(
+    Supplier<Chunk<ATTR>>[] getDictionaryChunkSuppliers(
             @NotNull final ColumnDefinition<?> columnDefinition) {
         initializePages(columnDefinition);
         return dictionaryChunkSuppliers;
@@ -312,7 +312,7 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
      * @param columnDefinition The {@link ColumnDefinition} used to lookup type information
      * @return The page stores
      */
-    private ColumnChunkPageStore<DictionaryKeys>[] getDictionaryKeysPageStores(
+    ColumnChunkPageStore<DictionaryKeys>[] getDictionaryKeysPageStores(
             @NotNull final ColumnDefinition<?> columnDefinition) {
         initializePages(columnDefinition);
         return dictionaryKeysPageStores;
