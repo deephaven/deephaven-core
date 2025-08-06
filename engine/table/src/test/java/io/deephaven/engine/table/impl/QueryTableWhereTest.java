@@ -3079,6 +3079,49 @@ public abstract class QueryTableWhereTest {
     }
 
     @Test
+    public void testInterestingMergedTableSources() {
+        // Filter the merged table sources before merging
+        final Table source1 = testRefreshingTable(RowSetFactory.flat(100_000).toTracking())
+                .update("A = ii").where("ii % 3 == 0");
+        final Table source2 = testRefreshingTable(RowSetFactory.flat(100_000).toTracking())
+                .update("A = 42L").where("ii % 7 == 0");
+
+        final RowSetCapturingFilter preFilter = new RowSetCapturingFilter();
+        final RowSetCapturingFilter filter = new ParallelizedRowSetCapturingFilter(RawString.of("A = 42"));
+        final RowSetCapturingFilter postFilter = new RowSetCapturingFilter();
+
+        Table merged;
+
+        merged = TableTools.merge(source1, source2);
+
+        // force pre and post filters to run when expected using barriers
+        final Table res0 = merged.where(Filter.and(
+                preFilter.withBarriers("1"),
+                filter.respectsBarriers("1").withBarriers("2"),
+                postFilter.respectsBarriers("2")));
+        assertEquals(47620, preFilter.numRowsProcessed()); // 33334 from source1, 14286 from source2
+        assertEquals(33335, filter.numRowsProcessed()); // 33334 from source1, 1 from source2
+        assertEquals(14287, postFilter.numRowsProcessed()); // 1 from source1, 14286 from source2
+
+        assertEquals(14287, res0.size()); // 1 from source1, 100_000 from source2
+
+        preFilter.reset();
+        postFilter.reset();
+
+        // Filter the merged table and add it (twice) to a new merged table
+        merged = TableTools.merge(source1, merged, source2, merged).where("ii % 11 == 0");
+        final Table memoryTable = merged.select();
+
+        assertTableEquals(memoryTable, merged);
+
+        // Compare filters against an in-memory table
+        assertTableEquals(memoryTable.where("A > 50"), merged.where("A > 50"));
+        assertTableEquals(memoryTable.where("A < 10"), merged.where("A < 10"));
+        assertTableEquals(memoryTable.where("A = 10"), merged.where("A = 10"));
+        assertTableEquals(memoryTable.where("A = 42"), merged.where("A = 42"));
+    }
+
+    @Test
     public void testNestedMergedTables() {
         final Table source1 = testRefreshingTable(RowSetFactory.flat(100_000).toTracking())
                 .update("A = ii");

@@ -130,6 +130,8 @@ public interface PushdownFilterMatcher {
      * @return {@code true} if the filter can be pushed down, {@code false} otherwise.
      */
     static boolean canPushdownFilter(final WhereFilter filter) {
-        return !filter.hasVirtualRowVariables() && filter.getColumnArrays().isEmpty();
+        return !filter.getColumns().isEmpty()
+                && !filter.hasVirtualRowVariables()
+                && filter.getColumnArrays().isEmpty();
     }
 }

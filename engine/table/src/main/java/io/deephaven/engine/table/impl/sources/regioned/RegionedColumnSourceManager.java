@@ -870,10 +870,10 @@ public class RegionedColumnSourceManager
         return columnSourceToName;
     }
 
-    public static class PushdownFilterContext extends BasePushdownFilterContext {
+    public static class RegionedColumnSourcePushdownFilterContext extends BasePushdownFilterContext {
         private final Map<String, String> renameMap;
 
-        public PushdownFilterContext(
+        public RegionedColumnSourcePushdownFilterContext(
                 final RegionedColumnSourceManager manager,
                 final WhereFilter filter,
                 final List<ColumnSource<?>> columnSources) {
@@ -907,10 +907,10 @@ public class RegionedColumnSourceManager
     }
 
     @Override
-    public io.deephaven.engine.table.impl.PushdownFilterContext makePushdownFilterContext(
+    public PushdownFilterContext makePushdownFilterContext(
             final WhereFilter filter,
             final List<ColumnSource<?>> filterSources) {
-        return new PushdownFilterContext(this, filter, filterSources);
+        return new RegionedColumnSourcePushdownFilterContext(this, filter, filterSources);
     }
 
     private abstract class JobBuilder {

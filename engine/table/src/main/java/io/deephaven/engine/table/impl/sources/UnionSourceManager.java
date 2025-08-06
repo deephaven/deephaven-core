@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl.sources;
 
 import gnu.trove.list.array.TIntArrayList;
+import gnu.trove.list.array.TLongArrayList;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.context.ExecutionContext;
@@ -782,34 +783,35 @@ public class UnionSourceManager implements PushdownPredicateManager {
 
         // Determine the minimum cost across all tables that contain rows from `selection`
 
-        final PushdownFilterContext ctx = (PushdownFilterContext) context;
+        final UnionSourcePushdownFilterContext ctx = (UnionSourcePushdownFilterContext) context;
         ctx.initialize(selection, usePrev);
         final MutableLong minCost = new MutableLong(Long.MAX_VALUE);
 
         jobScheduler.iterateParallel(
                 ExecutionContext.getContext(),
-                logOutput -> logOutput.append(""),
+                logOutput -> logOutput.append("UnionSourceManager#estimatePushdownFilterCost"),
                 JobScheduler.DEFAULT_CONTEXT_FACTORY,
                 0,
-                ctx.executors.size(),
+                ctx.matchers.size(),
                 (localContext, idx, nec, resume) -> {
-                    final PushdownFilterMatcher executor = ctx.executors.get(idx);
-                    if (executor == null) {
-                        // If there is no executor for this constituent, we cannot push down the filter.
+                    final PushdownFilterMatcher matcher = ctx.matchers.get(idx);
+                    if (matcher == null) {
+                        // If there is no matcher for this constituent, we cannot push down the filter.
                         resume.run();
                         return;
                     }
-                    final RowSet localRowSet = ctx.constituentRowSets.get(idx);
-                    try (final WritableRowSet localSelection = selection.intersect(localRowSet)) {
+                    final long firstRowKey = ctx.firstRowKeys.get(idx);
+                    final long lastRowKey = ctx.lastRowKeys.get(idx);
+                    try (final WritableRowSet localSelection = selection.subSetByKeyRange(firstRowKey, lastRowKey)) {
                         if (localSelection.isEmpty()) {
                             // No rows remain for this constituent, so we can skip it.
                             resume.run();
                             return;
                         }
-                        // Shift to local space and delegate to the constituent executor.
-                        localSelection.shiftInPlace(-localRowSet.firstRowKey());
+                        // Shift to local space and delegate to the constituent matcher.
+                        localSelection.shiftInPlace(-firstRowKey);
                         final RowSet localSelectionCopy = localSelection.copy();
-                        executor.estimatePushdownFilterCost(
+                        matcher.estimatePushdownFilterCost(
                                 filter, localSelectionCopy, usePrev, ctx.contexts.get(idx), jobScheduler,
                                 cost -> {
                                     synchronized (minCost) {
@@ -837,46 +839,41 @@ public class UnionSourceManager implements PushdownPredicateManager {
             final Consumer<PushdownResult> onComplete,
             final Consumer<Exception> onError) {
 
-        if (filter.getColumns().isEmpty()) {
-            onComplete.accept(PushdownResult.allNoMatch(selection));
-            return;
-        }
-
-        final PushdownFilterContext ctx = (PushdownFilterContext) context;
+        final UnionSourcePushdownFilterContext ctx = (UnionSourcePushdownFilterContext) context;
         ctx.initialize(selection, usePrev);
 
-        final WritableRowSet[] matches = new WritableRowSet[ctx.executors.size()];
-        final WritableRowSet[] maybeMatches = new WritableRowSet[ctx.executors.size()];
+        final WritableRowSet[] matches = new WritableRowSet[ctx.matchers.size()];
+        final WritableRowSet[] maybeMatches = new WritableRowSet[ctx.matchers.size()];
 
         jobScheduler.iterateParallel(
                 ExecutionContext.getContext(),
-                logOutput -> logOutput.append(""),
+                logOutput -> logOutput.append("UnionSourceManager#pushdownFilter"),
                 JobScheduler.DEFAULT_CONTEXT_FACTORY,
                 0,
-                ctx.executors.size(),
+                ctx.matchers.size(),
                 (localContext, idx, nec, resume) -> {
-                    final PushdownFilterMatcher executor = ctx.executors.get(idx);
-                    final RowSet localRowSet = ctx.constituentRowSets.get(idx);
-                    try (final WritableRowSet localSelection = selection.intersect(localRowSet)) {
+                    final PushdownFilterMatcher matcher = ctx.matchers.get(idx);
+                    final long firstRowKey = ctx.firstRowKeys.get(idx);
+                    final long lastRowKey = ctx.lastRowKeys.get(idx);
+                    try (final WritableRowSet localSelection = selection.subSetByKeyRange(firstRowKey, lastRowKey)) {
                         if (localSelection.isEmpty()) {
                             matches[idx] = RowSetFactory.empty();
                             maybeMatches[idx] = RowSetFactory.empty();
                             resume.run();
                             return;
-                        } else if (executor == null) {
+                        } else if (matcher == null) {
                             matches[idx] = RowSetFactory.empty();
                             maybeMatches[idx] = localSelection.copy(); // can't push down
                             resume.run();
                             return;
                         }
-                        final long offset = localRowSet.firstRowKey();
-                        localSelection.shiftInPlace(-offset);
+                        localSelection.shiftInPlace(-firstRowKey);
                         final RowSet localSelectionCopy = localSelection.copy();
-                        executor.pushdownFilter(
+                        matcher.pushdownFilter(
                                 filter, localSelectionCopy, usePrev, ctx.contexts.get(idx), costCeiling, jobScheduler,
                                 result -> {
-                                    result.match().shiftInPlace(offset);
-                                    result.maybeMatch().shiftInPlace(offset);
+                                    result.match().shiftInPlace(firstRowKey);
+                                    result.maybeMatch().shiftInPlace(firstRowKey);
 
                                     matches[idx] = result.match();
                                     maybeMatches[idx] = result.maybeMatch();
@@ -903,16 +900,17 @@ public class UnionSourceManager implements PushdownPredicateManager {
                 onError);
     }
 
-    public static class PushdownFilterContext extends BasePushdownFilterContext {
+    public static class UnionSourcePushdownFilterContext extends BasePushdownFilterContext {
         final WhereFilter filter;
         final UnionSourceManager manager;
 
         boolean initialized = false;
-        List<PushdownFilterMatcher> executors;
-        List<RowSet> constituentRowSets;
+        List<PushdownFilterMatcher> matchers;
+        TLongArrayList firstRowKeys;
+        TLongArrayList lastRowKeys;
         List<io.deephaven.engine.table.impl.PushdownFilterContext> contexts;
 
-        public PushdownFilterContext(
+        public UnionSourcePushdownFilterContext(
                 @NotNull final WhereFilter filter,
                 @NotNull final List<ColumnSource<?>> columnSources,
                 @NotNull final UnionSourceManager manager) {
@@ -940,19 +938,21 @@ public class UnionSourceManager implements PushdownPredicateManager {
             final TIntArrayList tableSlots = new TIntArrayList(rowSetToUse.intSize());
             rowSetToUse.forAllRowKeys(slot -> tableSlots.add((int) slot)); // Can't overflow, slots are dense
 
-            executors = new ArrayList<>(tableSlots.size());
+            matchers = new ArrayList<>(tableSlots.size());
             contexts = new ArrayList<>(tableSlots.size());
-            constituentRowSets = new ArrayList<>(tableSlots.size());
+            firstRowKeys = new TLongArrayList(tableSlots.size());
+            lastRowKeys = new TLongArrayList(tableSlots.size());
 
             tableSlots.forEach(slot -> {
-                final RowSet rowSet = usePrev
-                        ? RowSetFactory.fromRange(manager.unionRedirection.prevFirstRowKeyForSlot(slot),
-                                manager.unionRedirection.prevLastRowKeyForSlot(slot))
-                        : RowSetFactory.fromRange(manager.unionRedirection.currFirstRowKeyForSlot(slot),
-                                manager.unionRedirection.currLastRowKeyForSlot(slot));
+                final long firstKey = usePrev
+                        ? manager.unionRedirection.prevFirstRowKeyForSlot(slot)
+                        : manager.unionRedirection.currFirstRowKeyForSlot(slot);
+                final long lastKey = usePrev
+                        ? manager.unionRedirection.prevLastRowKeyForSlot(slot)
+                        : manager.unionRedirection.currLastRowKeyForSlot(slot);
 
                 // If there is no overlap, we can ignore this table completely.
-                if (rowSet.overlaps(selection)) {
+                if (selection.overlapsRange(firstKey, lastKey)) {
                     final Table constituent = usePrev
                             ? manager.constituentTables.getPrev(slot)
                             : manager.constituentTables.get(slot);
@@ -960,19 +960,20 @@ public class UnionSourceManager implements PushdownPredicateManager {
                     final List<ColumnSource<?>> filterSources = filter.getColumns().stream()
                             .map(constituent::getColumnSource).collect(Collectors.toList());
 
-                    final PushdownFilterMatcher executor =
+                    final PushdownFilterMatcher matcher =
                             PushdownFilterMatcher.getPushdownFilterMatcher(filter, filterSources);
 
-                    if (executor != null) {
-                        executors.add(executor);
-                        contexts.add(executor.makePushdownFilterContext(filter, filterSources));
+                    if (matcher != null) {
+                        matchers.add(matcher);
+                        contexts.add(matcher.makePushdownFilterContext(filter, filterSources));
                     } else {
-                        // We can't skip the table, but a null executor means we can't push down the filter and
+                        // We can't skip the table, but a null matcher means we can't push down the filter and
                         // normal filtering must be used.
-                        executors.add(null);
+                        matchers.add(null);
                         contexts.add(null);
                     }
-                    constituentRowSets.add(rowSet);
+                    firstRowKeys.add(firstKey);
+                    lastRowKeys.add(lastKey);
                 }
                 return true;
             });
@@ -985,15 +986,15 @@ public class UnionSourceManager implements PushdownPredicateManager {
 
         @Override
         public void close() {
-            constituentRowSets.forEach(RowSet::close);
+            contexts.forEach(io.deephaven.engine.table.impl.PushdownFilterContext::close);
             super.close();
         }
     }
 
     @Override
-    public PushdownFilterContext makePushdownFilterContext(
+    public UnionSourcePushdownFilterContext makePushdownFilterContext(
             final WhereFilter filter,
             final List<ColumnSource<?>> filterSources) {
-        return new PushdownFilterContext(filter, filterSources, this);
+        return new UnionSourcePushdownFilterContext(filter, filterSources, this);
     }
 }
