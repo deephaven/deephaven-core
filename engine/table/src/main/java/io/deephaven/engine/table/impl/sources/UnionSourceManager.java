@@ -933,9 +933,8 @@ public class UnionSourceManager implements PushdownPredicateManager {
             }
             initialized = true;
 
-            // We must identify which tables are constituents of the union, and which row sets in the outer RowKey space
-            // map to these tables. Whether to use previous values is very important for UnionSourceManager because will
-            // likely contain refreshing constituent tables.
+            // We must identify which constituents contain rows from `selection`. Also, whether to use previous values
+            // is very important for UnionSourceManager because will likely contain refreshing constituent tables.
 
             final RowSet rowSetToUse = usePrev ? manager.constituentRows.prev() : manager.constituentRows;
             final TIntArrayList tableSlots = new TIntArrayList(rowSetToUse.intSize());
