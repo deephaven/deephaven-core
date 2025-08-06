@@ -21,6 +21,7 @@ import io.deephaven.engine.updategraph.UpdateCommitter;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.util.MultiException;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.SafeCloseableArray;
 import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedNode;
 import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedQueue;
 import io.deephaven.util.mutable.MutableLong;
@@ -778,8 +779,8 @@ public class UnionSourceManager implements PushdownPredicateManager {
             final JobScheduler jobScheduler,
             final LongConsumer onComplete,
             final Consumer<Exception> onError) {
-        // Use the PushdownFilterContext to access the executors and constituent row sets and determine the minimum cost
-        // across all tables.
+
+        // Determine the minimum cost across all tables that contain rows from `selection`
 
         final PushdownFilterContext ctx = (PushdownFilterContext) context;
         ctx.initialize(selection, usePrev);
@@ -891,7 +892,9 @@ public class UnionSourceManager implements PushdownPredicateManager {
                     }
                 },
                 () -> {
-                }, // no cleanup needed
+                    SafeCloseableArray.close(matches);
+                    SafeCloseableArray.close(maybeMatches);
+                },
                 onError);
     }
 

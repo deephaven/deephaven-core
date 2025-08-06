@@ -103,7 +103,7 @@ public interface PushdownFilterMatcher {
      *
      * @param filter The {@link WhereFilter filter} to match.
      * @param filterSources The list of {@link ColumnSource column sources} that match the filter columns.
-     * @return The {@link PushdownFilterMatcher} to use for pushing down the filter, or null if pushdown is not
+     * @return The {@link PushdownFilterMatcher} to use for pushing down the filter, or {@code null} if pushdown is not
      *         supported.
      */
     static PushdownFilterMatcher getPushdownFilterMatcher(
