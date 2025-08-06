@@ -808,12 +808,14 @@ public class UnionSourceManager implements PushdownPredicateManager {
                         }
                         // Shift to local space and delegate to the constituent executor.
                         localSelection.shiftInPlace(-localRowSet.firstRowKey());
+                        final RowSet localSelectionCopy = localSelection.copy();
                         executor.estimatePushdownFilterCost(
-                                filter, localSelection, usePrev, ctx.contexts.get(idx), jobScheduler,
+                                filter, localSelectionCopy, usePrev, ctx.contexts.get(idx), jobScheduler,
                                 cost -> {
                                     synchronized (minCost) {
                                         minCost.set(Math.min(minCost.get(), cost));
                                     }
+                                    localSelectionCopy.close();
                                     resume.run();
                                 }, nec);
                     }
@@ -869,14 +871,17 @@ public class UnionSourceManager implements PushdownPredicateManager {
                         }
                         final long offset = localRowSet.firstRowKey();
                         localSelection.shiftInPlace(-offset);
+                        final RowSet localSelectionCopy = localSelection.copy();
                         executor.pushdownFilter(
-                                filter, localSelection, usePrev, ctx.contexts.get(idx), costCeiling, jobScheduler,
+                                filter, localSelectionCopy, usePrev, ctx.contexts.get(idx), costCeiling, jobScheduler,
                                 result -> {
                                     result.match().shiftInPlace(offset);
                                     result.maybeMatch().shiftInPlace(offset);
 
                                     matches[idx] = result.match();
                                     maybeMatches[idx] = result.maybeMatch();
+
+                                    localSelectionCopy.close();
                                     resume.run();
                                 }, nec);
                     }
