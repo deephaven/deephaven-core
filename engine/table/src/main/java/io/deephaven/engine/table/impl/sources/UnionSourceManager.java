@@ -809,7 +809,7 @@ public class UnionSourceManager implements PushdownPredicateManager {
                         // Shift to local space and delegate to the constituent executor.
                         localSelection.shiftInPlace(-localRowSet.firstRowKey());
                         executor.estimatePushdownFilterCost(
-                                filter, selection, usePrev, ctx.contexts.get(idx), jobScheduler,
+                                filter, localSelection, usePrev, ctx.contexts.get(idx), jobScheduler,
                                 cost -> {
                                     synchronized (minCost) {
                                         minCost.set(Math.min(minCost.get(), cost));

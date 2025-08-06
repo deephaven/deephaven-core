@@ -1998,12 +1998,12 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
                 RowSetFactory.flat(10).toTracking(),
                 col("Sentinel", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10));
 
-        SingleValueColumnSource<?> srcSentinal = SingleValueColumnSource.getSingleValueColumnSource(int.class);
-        final Map<String, ColumnSource<?>> columnSourceMap = Map.of("Sentinel", srcSentinal);
+        SingleValueColumnSource<?> srcSentinel = SingleValueColumnSource.getSingleValueColumnSource(int.class);
+        final Map<String, ColumnSource<?>> columnSourceMap = Map.of("Sentinel", srcSentinel);
         // set the initial value
-        srcSentinal.set(11);
+        srcSentinel.set(11);
         // start tracking prev values
-        srcSentinal.startTrackingPrevValues();
+        srcSentinel.startTrackingPrevValues();
 
         final QueryTable source2 = new QueryTable(RowSetFactory.flat(10).toTracking(), columnSourceMap);
         source2.setRefreshing(true);
@@ -2024,7 +2024,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         TstUtils.addToTable(source1,
                 i(10),
                 col("Sentinel", 11));
-        srcSentinal.set(12);
+        srcSentinel.set(12);
 
         // Test after the change, but before the notification (still in prev state)
         final Table filtered2 = pool.submit(callable).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
