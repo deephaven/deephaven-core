@@ -28,7 +28,6 @@ import io.deephaven.engine.table.impl.chunkfilter.IntRangeComparator;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.select.*;
 import io.deephaven.engine.table.impl.sources.*;
-import io.deephaven.engine.table.impl.updateby.BaseUpdateByTest;
 import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.table.impl.verify.TableAssertions;
 import io.deephaven.engine.table.vectors.ColumnVectors;
@@ -3079,47 +3078,62 @@ public abstract class QueryTableWhereTest {
         postFilter.reset();
     }
 
-    private void testMergedSources(
-            final ColumnSource<?> columnSource,
-            final String columnName,
-            final String filterAllPass,
-            final String filterNonePass) {
+    @Test
+    public void testNestedMergedTables() {
+        final Table source1 = testRefreshingTable(RowSetFactory.flat(100_000).toTracking())
+                .update("A = ii");
+        final Table source2 = testRefreshingTable(RowSetFactory.flat(100_000).toTracking())
+                .update("A = 42L"); // RowKeyAgnosticColumnSource
 
-        final Map<String, ColumnSource<?>> columnSourceMap = Map.of(columnName, columnSource);
-        final QueryTable source = new QueryTable(RowSetFactory.flat(100_000).toTracking(), columnSourceMap);
-        source.setRefreshing(true);
+        final Table merged1 = TableTools.merge(source1, source2);
+
+        final Table source3 = testRefreshingTable(RowSetFactory.flat(100_000).toTracking())
+                .update("A = ii + 200000");
+        final Table source4 = testRefreshingTable(RowSetFactory.flat(100_000).toTracking())
+                .update("A = 43L"); // RowKeyAgnosticColumnSource
+
+        final Table merged2 = TableTools.merge(source3, source4);
 
         final RowSetCapturingFilter preFilter = new RowSetCapturingFilter();
-        final RowSetCapturingFilter filter0 = new ParallelizedRowSetCapturingFilter(RawString.of(filterAllPass));
+        final RowSetCapturingFilter filter0 = new ParallelizedRowSetCapturingFilter(RawString.of("A = 42"));
+        final RowSetCapturingFilter filter1 = new ParallelizedRowSetCapturingFilter(RawString.of("A <= 43"));
         final RowSetCapturingFilter postFilter = new RowSetCapturingFilter();
 
+        Table merged;
+
+        merged = TableTools.merge(merged1, merged2);
+
         // force pre and post filters to run when expected using barriers
-        final Table res0 = source.where(Filter.and(
+        final Table res0 = merged.where(Filter.and(
                 preFilter.withBarriers("1"),
                 filter0.respectsBarriers("1").withBarriers("2"),
                 postFilter.respectsBarriers("2")));
-        assertEquals(100_000, preFilter.numRowsProcessed());
-        assertEquals(1, filter0.numRowsProcessed());
-        assertEquals(100_000, postFilter.numRowsProcessed()); // All rows passed
+        assertEquals(400_000, preFilter.numRowsProcessed());
+        // 100_000 from source1, 1 from source2, 100_000 from source3, 1 from source4
+        assertEquals(200_002, filter0.numRowsProcessed());
+        assertEquals(100_001, postFilter.numRowsProcessed()); // 1 from source1, 100_000 from source2
 
-        assertEquals(100_000, res0.size());
+        assertEquals(100_001, res0.size()); // 1 from source1, 100_000 from source2
 
         preFilter.reset();
         postFilter.reset();
 
-        final RowSetCapturingFilter filter1 = new ParallelizedRowSetCapturingFilter(RawString.of(filterNonePass));
-
         // force pre and post filters to run when expected using barriers
-        final Table res1 = source.where(Filter.and(
+        final Table res1 = merged.where(Filter.and(
                 preFilter.withBarriers("1"),
                 filter1.respectsBarriers("1").withBarriers("2"),
                 postFilter.respectsBarriers("2")));
-        assertEquals(100_000, preFilter.numRowsProcessed());
-        assertEquals(1, filter1.numRowsProcessed());
-        assertEquals(0, postFilter.numRowsProcessed()); // No rows passed
+        assertEquals(400_000, preFilter.numRowsProcessed());
+        // 100_000 from source1, 1 from source2, 100_000 from source3, 1 from source4
+        assertEquals(200_002, filter1.numRowsProcessed());
+        // 44 from source1, 100_000 from source2, 100_000 from source4
+        assertEquals(200044, postFilter.numRowsProcessed());
+        assertEquals(200044, res1.size());
 
-        assertEquals(0, res1.size());
+        preFilter.reset();
+        postFilter.reset();
     }
+
 
     protected static TLongList getAndSortSizes(final RowSetCapturingFilter filter) {
         final List<RowSet> rowSets = filter.rowSets();
