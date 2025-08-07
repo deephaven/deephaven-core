@@ -1,0 +1,212 @@
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
+package io.deephaven.engine.table.impl;
+
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.WritableChunk;
+import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.WritableRowSet;
+import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.DataIndex;
+import io.deephaven.engine.table.SharedContext;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+/**
+ * This is a helper class for column sources that does not extend {@link AbstractColumnSource} and will be excluded from
+ * pushdown operation.
+ */
+public class NoPushdownColumnSourceWrapper<T> implements ColumnSource<T> {
+    private final ColumnSource<T> delegate;
+
+    public NoPushdownColumnSourceWrapper(ColumnSource<T> delegate) {
+        this.delegate = delegate;
+    }
+
+    @Override
+    public Class<T> getType() {
+        return delegate.getType();
+    }
+
+    @Override
+    public Class<?> getComponentType() {
+        return delegate.getComponentType();
+    }
+
+    @Override
+    public WritableRowSet match(
+            boolean invertMatch,
+            boolean usePrev,
+            boolean caseInsensitive,
+            @Nullable final DataIndex dataIndex,
+            @NotNull RowSet mapper,
+            Object... keys) {
+        return delegate.match(invertMatch, usePrev, caseInsensitive, dataIndex, mapper, keys);
+    }
+
+    @Override
+    public void startTrackingPrevValues() {
+        delegate.startTrackingPrevValues();
+    }
+
+    @Override
+    public boolean isImmutable() {
+        return delegate.isImmutable();
+    }
+
+    @Override
+    public <ALTERNATE_DATA_TYPE> boolean allowsReinterpret(@NotNull Class<ALTERNATE_DATA_TYPE> alternateDataType) {
+        return delegate.allowsReinterpret(alternateDataType);
+    }
+
+    @Override
+    public <ALTERNATE_DATA_TYPE> ColumnSource<ALTERNATE_DATA_TYPE> reinterpret(
+            @NotNull Class<ALTERNATE_DATA_TYPE> alternateDataType) throws IllegalArgumentException {
+        return delegate.reinterpret(alternateDataType);
+    }
+
+    @Override
+    public ColumnSource<T> getPrevSource() {
+        return delegate.getPrevSource();
+    }
+
+    @Override
+    public Chunk<? extends Values> getChunk(@NotNull GetContext context, @NotNull RowSequence rowSequence) {
+        return delegate.getChunk(context, rowSequence);
+    }
+
+    @Override
+    public Chunk<? extends Values> getChunk(@NotNull GetContext context, long firstKey, long lastKey) {
+        return delegate.getChunk(context, firstKey, lastKey);
+    }
+
+    @Override
+    public void fillChunk(@NotNull FillContext context, @NotNull WritableChunk<? super Values> destination,
+            @NotNull RowSequence rowSequence) {
+        delegate.fillChunk(context, destination, rowSequence);
+    }
+
+    @Override
+    public Chunk<? extends Values> getPrevChunk(@NotNull GetContext context, @NotNull RowSequence rowSequence) {
+        return delegate.getPrevChunk(context, rowSequence);
+    }
+
+    @Override
+    public Chunk<? extends Values> getPrevChunk(@NotNull GetContext context, long firstKey, long lastKey) {
+        return delegate.getPrevChunk(context, firstKey, lastKey);
+    }
+
+    @Override
+    public void fillPrevChunk(@NotNull FillContext context, @NotNull WritableChunk<? super Values> destination,
+            @NotNull RowSequence rowSequence) {
+        delegate.fillPrevChunk(context, destination, rowSequence);
+    }
+
+    @Override
+    public T get(long rowKey) {
+        return delegate.get(rowKey);
+    }
+
+    @Override
+    public Boolean getBoolean(long rowKey) {
+        return delegate.getBoolean(rowKey);
+    }
+
+    @Override
+    public byte getByte(long rowKey) {
+        return delegate.getByte(rowKey);
+    }
+
+    @Override
+    public char getChar(long rowKey) {
+        return delegate.getChar(rowKey);
+    }
+
+    @Override
+    public double getDouble(long rowKey) {
+        return delegate.getDouble(rowKey);
+    }
+
+    @Override
+    public float getFloat(long rowKey) {
+        return delegate.getFloat(rowKey);
+    }
+
+    @Override
+    public int getInt(long rowKey) {
+        return delegate.getInt(rowKey);
+    }
+
+    @Override
+    public long getLong(long rowKey) {
+        return delegate.getLong(rowKey);
+    }
+
+    @Override
+    public short getShort(long rowKey) {
+        return delegate.getShort(rowKey);
+    }
+
+    @Override
+    public T getPrev(long rowKey) {
+        return delegate.getPrev(rowKey);
+    }
+
+    @Override
+    public FillContext makeFillContext(int chunkCapacity, SharedContext sharedContext) {
+        return delegate.makeFillContext(chunkCapacity, sharedContext);
+    }
+
+    @Override
+    public GetContext makeGetContext(int chunkCapacity, SharedContext sharedContext) {
+        return delegate.makeGetContext(chunkCapacity, sharedContext);
+    }
+
+    @Override
+    public Boolean getPrevBoolean(long rowKey) {
+        return delegate.getPrevBoolean(rowKey);
+    }
+
+    @Override
+    public byte getPrevByte(long rowKey) {
+        return delegate.getPrevByte(rowKey);
+    }
+
+    @Override
+    public char getPrevChar(long rowKey) {
+        return delegate.getPrevChar(rowKey);
+    }
+
+    @Override
+    public double getPrevDouble(long rowKey) {
+        return delegate.getPrevDouble(rowKey);
+    }
+
+    @Override
+    public float getPrevFloat(long rowKey) {
+        return delegate.getPrevFloat(rowKey);
+    }
+
+    @Override
+    public int getPrevInt(long rowKey) {
+        return delegate.getPrevInt(rowKey);
+    }
+
+    @Override
+    public long getPrevLong(long rowKey) {
+        return delegate.getPrevLong(rowKey);
+    }
+
+    @Override
+    public short getPrevShort(long rowKey) {
+        return delegate.getPrevShort(rowKey);
+    }
+
+    @Override
+    public boolean isStateless() {
+        return delegate.isStateless();
+    }
+}

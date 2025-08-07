@@ -9,10 +9,12 @@ import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSequenceFactory;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.impl.ShiftedRowSequence;
 import io.deephaven.engine.table.*;
-import io.deephaven.engine.table.impl.AbstractColumnSource;
-import io.deephaven.engine.table.impl.DefaultGetContext;
+import io.deephaven.engine.table.impl.*;
+import io.deephaven.engine.table.impl.select.WhereFilter;
+import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
@@ -24,6 +26,8 @@ import org.jetbrains.annotations.Nullable;
 
 import java.lang.ref.WeakReference;
 import java.util.*;
+import java.util.function.Consumer;
+import java.util.function.LongConsumer;
 import java.util.stream.Stream;
 
 import static io.deephaven.util.QueryConstants.*;
@@ -770,5 +774,47 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
         try (final Stream<ColumnSource<T>> sources = sourceLookup.currSources()) {
             return sources.allMatch(ColumnSource::isStateless);
         }
+    }
+
+    @Override
+    public PushdownPredicateManager pushdownManager() {
+        return unionSourceManager;
+    }
+
+    @Override
+    public void estimatePushdownFilterCost(
+            final WhereFilter filter,
+            final RowSet selection,
+            final boolean usePrev,
+            final PushdownFilterContext context,
+            final JobScheduler jobScheduler,
+            final LongConsumer onComplete,
+            final Consumer<Exception> onError) {
+        // Delegate to the manager.
+        unionSourceManager.estimatePushdownFilterCost(filter, selection, usePrev, context, jobScheduler,
+                onComplete, onError);
+    }
+
+    @Override
+    public void pushdownFilter(
+            final WhereFilter filter,
+            final RowSet selection,
+            final boolean usePrev,
+            final PushdownFilterContext context,
+            final long costCeiling,
+            final JobScheduler jobScheduler,
+            final Consumer<PushdownResult> onComplete,
+            final Consumer<Exception> onError) {
+        // Delegate to the manager.
+        unionSourceManager.pushdownFilter(filter, selection, usePrev, context, costCeiling, jobScheduler,
+                onComplete, onError);
+    }
+
+    @Override
+    public PushdownFilterContext makePushdownFilterContext(
+            final WhereFilter filter,
+            final List<ColumnSource<?>> filterSources) {
+        // Delegate to the manager.
+        return unionSourceManager.makePushdownFilterContext(filter, filterSources);
     }
 }

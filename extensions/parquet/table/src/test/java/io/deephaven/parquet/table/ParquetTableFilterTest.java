@@ -1419,4 +1419,89 @@ public final class ParquetTableFilterTest {
 
         filterAndVerifyResults(diskTable, memTable, "(boolean)testFunction.apply(ii, val)");
     }
+
+    @Test
+    public void testMergedTableWithParquet() {
+        final String destPath = Path.of(rootFile.getPath(), "ParquetTest_testMergedTableWithParquet").toString();
+        final int tableSize = 100_000;
+
+        final Instant baseTime = parseInstant("2023-01-01T00:00:00 NY");
+        QueryScope.addParam("baseTime", baseTime);
+
+        final Table largeTable = TableTools.emptyTable(tableSize).update(
+                "Timestamp = baseTime + i * 1_000_000_000L",
+                "sequential_val = ii % 117 == 0 ? null : ii", // with nulls
+                "symbol = ii % 119 == 0 ? null : String.format(`s%03d`, randomInt(0,1_000))");
+
+        final int partitionCount = 5;
+        final Table[] randomPartitions = splitTable(largeTable, partitionCount, true);
+        writeTables(destPath, randomPartitions, EMPTY);
+
+        final Table diskTable = ParquetTools.readTable(destPath);
+
+        // Create another in-memory table to merge with the parquet table.
+        final Instant baseTime2 = parseInstant("2015-01-02T00:00:00 NY");
+        QueryScope.addParam("baseTime2", baseTime2);
+
+        final Table largeTable2 = TableTools.emptyTable(tableSize).update(
+                "Timestamp = baseTime2 + i * 1_000_000_000L",
+                "sequential_val = ii % 117 == 0 ? null : ii", // with nulls
+                "symbol = ii % 119 == 0 ? null : String.format(`s%03d`, randomInt(0,1_000))");
+
+        final Instant baseTime3 = parseInstant("2015-01-03T00:00:00 NY");
+        QueryScope.addParam("baseTime3", baseTime3);
+        final Table largeTable3 = TableTools.emptyTable(tableSize).update(
+                "Timestamp = baseTime3 + i * 1_000_000_000L",
+                "sequential_val = 999999L", // with nulls
+                "symbol = `sZZZZ`");
+
+        Table mergedTable = TableTools.merge(diskTable, largeTable2, largeTable3);
+        Table memTable = mergedTable.select();
+
+        assertTableEquals(mergedTable, memTable);
+
+        // Timestamp range and match filters
+        filterAndVerifyResults(mergedTable, memTable, "Timestamp < '2023-01-01T01:00:00 NY'");
+        filterAndVerifyResults(mergedTable, memTable, "Timestamp > '2023-01-01T01:00:00 NY'");
+        filterAndVerifyResults(mergedTable, memTable, "Timestamp = '2023-01-01T01:00:00 NY'");
+
+        // string range and match filters
+        filterAndVerifyResultsAllowEmpty(mergedTable, memTable, "symbol = null");
+        filterAndVerifyResultsAllowEmpty(mergedTable, memTable, "symbol != null");
+        filterAndVerifyResultsAllowEmpty(mergedTable, memTable, "symbol = `1000`");
+        filterAndVerifyResultsAllowEmpty(mergedTable, memTable, "symbol < `1000`");
+        filterAndVerifyResultsAllowEmpty(mergedTable, memTable, "symbol = `5000`");
+
+        // long range and match filters
+        filterAndVerifyResultsAllowEmpty(mergedTable, memTable, "sequential_val = null");
+        filterAndVerifyResultsAllowEmpty(mergedTable, memTable, "sequential_val != null");
+        filterAndVerifyResultsAllowEmpty(mergedTable, memTable, "sequential_val <= 500");
+        filterAndVerifyResultsAllowEmpty(mergedTable, memTable, "sequential_val <= 5000", "sequential_val > 3000");
+        filterAndVerifyResultsAllowEmpty(mergedTable, memTable, "sequential_val = 500");
+
+        // Reverse the table order and run the filters again
+        mergedTable = TableTools.merge(largeTable3, largeTable2, diskTable);
+        memTable = mergedTable.select();
+
+        assertTableEquals(mergedTable, memTable);
+
+        // Timestamp range and match filters
+        filterAndVerifyResults(mergedTable, memTable, "Timestamp < '2023-01-01T01:00:00 NY'");
+        filterAndVerifyResults(mergedTable, memTable, "Timestamp > '2023-01-01T01:00:00 NY'");
+        filterAndVerifyResults(mergedTable, memTable, "Timestamp = '2023-01-01T01:00:00 NY'");
+
+        // string range and match filters
+        filterAndVerifyResultsAllowEmpty(mergedTable, memTable, "symbol = null");
+        filterAndVerifyResultsAllowEmpty(mergedTable, memTable, "symbol != null");
+        filterAndVerifyResultsAllowEmpty(mergedTable, memTable, "symbol = `1000`");
+        filterAndVerifyResultsAllowEmpty(mergedTable, memTable, "symbol < `1000`");
+        filterAndVerifyResultsAllowEmpty(mergedTable, memTable, "symbol = `5000`");
+
+        // long range and match filters
+        filterAndVerifyResultsAllowEmpty(mergedTable, memTable, "sequential_val = null");
+        filterAndVerifyResultsAllowEmpty(mergedTable, memTable, "sequential_val != null");
+        filterAndVerifyResultsAllowEmpty(mergedTable, memTable, "sequential_val <= 500");
+        filterAndVerifyResultsAllowEmpty(mergedTable, memTable, "sequential_val <= 5000", "sequential_val > 3000");
+        filterAndVerifyResultsAllowEmpty(mergedTable, memTable, "sequential_val = 500");
+    }
 }

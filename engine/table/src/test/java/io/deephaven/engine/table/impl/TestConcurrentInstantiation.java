@@ -20,6 +20,7 @@ import io.deephaven.engine.table.impl.hierarchical.TreeTableImpl;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.select.*;
+import io.deephaven.engine.table.impl.sources.SingleValueColumnSource;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.testutil.*;
@@ -1990,5 +1991,55 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
             addToTable(tickTable, i(1), intCol("Ticking", 2));
             tickTable.notifyListeners(i(1), i(), i());
         });
+    }
+
+    public void testMergedTableFilterPushdown() throws ExecutionException, InterruptedException, TimeoutException {
+        final QueryTable source1 = TstUtils.testRefreshingTable(
+                RowSetFactory.flat(10).toTracking(),
+                col("Sentinel", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10));
+
+        SingleValueColumnSource<?> srcSentinel = SingleValueColumnSource.getSingleValueColumnSource(int.class);
+        final Map<String, ColumnSource<?>> columnSourceMap = Map.of("Sentinel", srcSentinel);
+        // set the initial value
+        srcSentinel.set(11);
+        // start tracking prev values
+        srcSentinel.startTrackingPrevValues();
+
+        final QueryTable source2 = new QueryTable(RowSetFactory.flat(10).toTracking(), columnSourceMap);
+        source2.setRefreshing(true);
+
+        final Table merged = TableTools.merge(source1, source2);
+
+        final Callable<Table> callable = () -> merged.where("Sentinel <= 11");
+
+        updateGraph.startCycleForUnitTests(false);
+
+        final Table filtered1 = pool.submit(callable).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
+
+        // Test before change.
+        assertEquals(20, filtered1.size());
+        assertArrayEquals(new int[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11},
+                ColumnVectors.ofInt(filtered1, "Sentinel").toArray());
+
+        TstUtils.addToTable(source1,
+                i(10),
+                col("Sentinel", 11));
+        srcSentinel.set(12);
+
+        // Test after the change, but before the notification (still in prev state)
+        final Table filtered2 = pool.submit(callable).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
+        assertEquals(20, filtered2.size());
+
+        source1.notifyListeners(i(10), i(), i());
+        source2.notifyListeners(i(), i(), ir(0, 9));
+
+        updateGraph.markSourcesRefreshedForUnitTests();
+        updateGraph.completeCycleForUnitTests();
+
+        // Test after the change and notification.
+        final Table filtered3 = pool.submit(callable).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
+        assertEquals(11, filtered3.size());
+        assertArrayEquals(new int[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11},
+                ColumnVectors.ofInt(filtered3, "Sentinel").toArray());
     }
 }
