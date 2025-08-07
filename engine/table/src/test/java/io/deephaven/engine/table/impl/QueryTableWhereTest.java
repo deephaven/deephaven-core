@@ -60,12 +60,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Instant;
 import java.time.ZonedDateTime;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -3177,6 +3172,60 @@ public abstract class QueryTableWhereTest {
         postFilter.reset();
     }
 
+    @Test
+    public void testNoPushdownWrapperMergedTables() {
+        final Table source1_raw = testRefreshingTable(RowSetFactory.flat(100_000).toTracking())
+                .update("A = ii");
+
+        final Map<String, ColumnSource<?>> columnSourceMap1 = new LinkedHashMap<>();
+        source1_raw.getColumnSourceMap().forEach(
+                (name, source) -> columnSourceMap1.put(name, new NoPushdownColumnSourceWrapper<>(source)));
+        final Table source1 = new QueryTable(source1_raw.getRowSet(), columnSourceMap1);
+
+        final Table source2_raw = testRefreshingTable(RowSetFactory.flat(100_000).toTracking())
+                .update("A = 42L"); // RowKeyAgnosticColumnSource
+
+        final Map<String, ColumnSource<?>> columnSourceMap2 = new LinkedHashMap<>();
+        source2_raw.getColumnSourceMap().forEach(
+                (name, source) -> columnSourceMap2.put(name, new NoPushdownColumnSourceWrapper<>(source)));
+        final Table source2 = new QueryTable(source2_raw.getRowSet(), columnSourceMap2);
+
+        final RowSetCapturingFilter preFilter = new RowSetCapturingFilter();
+        final RowSetCapturingFilter filter0 = new ParallelizedRowSetCapturingFilter(RawString.of("A = 42"));
+        final RowSetCapturingFilter postFilter = new RowSetCapturingFilter();
+
+        Table merged;
+
+        merged = TableTools.merge(source1, source2);
+
+        // force pre and post filters to run when expected using barriers
+        final Table res0 = merged.where(Filter.and(
+                preFilter.withBarriers("1"),
+                filter0.respectsBarriers("1").withBarriers("2"),
+                postFilter.respectsBarriers("2")));
+        assertEquals(200_000, preFilter.numRowsProcessed());
+        assertEquals(200_000, filter0.numRowsProcessed()); // 100_000 from source1, 100_000 from source2
+        assertEquals(100_001, postFilter.numRowsProcessed()); // 1 from source1, 100_000 from source2
+
+        assertEquals(100_001, res0.size()); // 1 from source1, 100_000 from source2
+
+        preFilter.reset();
+        postFilter.reset();
+
+        // force pre and post filters to run when expected using barriers
+        final Table res1 = merged.where(Filter.and(
+                preFilter.withBarriers("1"),
+                RawString.of("A != 42").respectsBarriers("1").withBarriers("2"),
+                postFilter.respectsBarriers("2")));
+        assertEquals(200_000, preFilter.numRowsProcessed());
+        assertEquals(200_000, filter0.numRowsProcessed()); // 100_000 from source1, 1 from source2
+        assertEquals(99_999, postFilter.numRowsProcessed()); // 99_000 from source1, 0 from source2
+
+        assertEquals(99_999, res1.size());
+
+        preFilter.reset();
+        postFilter.reset();
+    }
 
     protected static TLongList getAndSortSizes(final RowSetCapturingFilter filter) {
         final List<RowSet> rowSets = filter.rowSets();

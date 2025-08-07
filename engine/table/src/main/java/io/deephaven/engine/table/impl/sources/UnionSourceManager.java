@@ -795,11 +795,6 @@ public class UnionSourceManager implements PushdownPredicateManager {
                 ctx.matchers.size(),
                 (localContext, idx, nec, resume) -> {
                     final PushdownFilterMatcher matcher = ctx.matchers.get(idx);
-                    if (matcher == null) {
-                        // If there is no matcher for this constituent, we cannot push down the filter.
-                        resume.run();
-                        return;
-                    }
                     final long firstRowKey = ctx.firstRowKeys.get(idx);
                     final long lastRowKey = ctx.lastRowKeys.get(idx);
                     try (final WritableRowSet localSelection = selection.subSetByKeyRange(firstRowKey, lastRowKey)) {
@@ -861,11 +856,6 @@ public class UnionSourceManager implements PushdownPredicateManager {
                             maybeMatches[idx] = RowSetFactory.empty();
                             resume.run();
                             return;
-                        } else if (matcher == null) {
-                            matches[idx] = RowSetFactory.empty();
-                            maybeMatches[idx] = localSelection.copy(); // can't push down
-                            resume.run();
-                            return;
                         }
                         localSelection.shiftInPlace(-firstRowKey);
                         final RowSet localSelectionCopy = localSelection.copy();
@@ -890,6 +880,8 @@ public class UnionSourceManager implements PushdownPredicateManager {
                     // If this becomes important, we can do more benchmarking.
                     try (final WritableRowSet match = RowSetFactory.unionInsert(Arrays.asList(matches));
                             final WritableRowSet maybeMatch = RowSetFactory.unionInsert(Arrays.asList(maybeMatches))) {
+                        // Insert the rows from the constituents that don't support pushdown.
+                        maybeMatch.insert(ctx.maybeMatch);
                         onComplete.accept(PushdownResult.of(selection, match, maybeMatch));
                     }
                 },
@@ -903,6 +895,7 @@ public class UnionSourceManager implements PushdownPredicateManager {
     public static class UnionSourcePushdownFilterContext extends BasePushdownFilterContext {
         final WhereFilter filter;
         final UnionSourceManager manager;
+        final WritableRowSet maybeMatch;
 
         boolean initialized = false;
         List<PushdownFilterMatcher> matchers;
@@ -916,6 +909,7 @@ public class UnionSourceManager implements PushdownPredicateManager {
                 @NotNull final UnionSourceManager manager) {
             this.filter = Require.neqNull(filter, "filter");
             this.manager = Require.neqNull(manager, "manager");
+            maybeMatch = RowSetFactory.empty();
         }
 
         /**
@@ -966,14 +960,14 @@ public class UnionSourceManager implements PushdownPredicateManager {
                     if (matcher != null) {
                         matchers.add(matcher);
                         contexts.add(matcher.makePushdownFilterContext(filter, filterSources));
+                        firstRowKeys.add(firstKey);
+                        lastRowKeys.add(lastKey);
                     } else {
-                        // We can't skip the table, but a null matcher means we can't push down the filter and
-                        // normal filtering must be used.
-                        matchers.add(null);
-                        contexts.add(null);
+                        // Skip this table, but save the rows from this constituent as "maybe"
+                        try (final RowSet localSelection = selection.subSetByKeyRange(firstKey, lastKey)) {
+                            maybeMatch.insert(localSelection);
+                        }
                     }
-                    firstRowKeys.add(firstKey);
-                    lastRowKeys.add(lastKey);
                 }
                 return true;
             });
