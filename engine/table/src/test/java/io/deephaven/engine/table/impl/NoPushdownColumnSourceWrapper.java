@@ -15,15 +15,12 @@ import io.deephaven.engine.table.SharedContext;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import javax.annotation.OverridingMethodsMustInvokeSuper;
-
 /**
  * This is a helper class for column sources that does not extend {@link AbstractColumnSource} and will be excluded from
  * pushdown operation.
  */
 public class NoPushdownColumnSourceWrapper<T> implements ColumnSource<T> {
-    final ColumnSource<T> delegate;
-
+    private final ColumnSource<T> delegate;
 
     public NoPushdownColumnSourceWrapper(ColumnSource<T> delegate) {
         this.delegate = delegate;
@@ -58,12 +55,6 @@ public class NoPushdownColumnSourceWrapper<T> implements ColumnSource<T> {
     @Override
     public boolean isImmutable() {
         return delegate.isImmutable();
-    }
-
-    @Override
-    @OverridingMethodsMustInvokeSuper
-    public void releaseCachedResources() {
-        delegate.releaseCachedResources();
     }
 
     @Override
