@@ -76,7 +76,7 @@ TEST_CASE("Test case for group example", "[group]") {
   auto tm = TableMakerForTests::Create();
 
   TableMaker maker;
-  std::vector<std::optional<std::string>> empty_vector = { {} };
+  std::vector<std::optional<std::string>> empty_vector = { };
   maker.AddColumn<std::optional<std::vector<std::optional<std::string>>>>("Value", {
       { {"a", "b", "c"} },  // [a, b, c]
       std::nullopt, // null
