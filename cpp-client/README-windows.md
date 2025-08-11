@@ -75,11 +75,6 @@ cd %HOMEDRIVE%%HOMEPATH%
 curl -O https://raw.githubusercontent.com/deephaven/deephaven-core/refs/heads/main/cpp-client/build-windows-clients.bat`
 ```
 
-**NOTE TO REVIEWERS USE THIS FOR NOW**
-```
-`curl -O https://raw.githubusercontent.com/kosak/deephaven-core/refs/heads/kosak_consolidated-client-build-readmes/cpp-client/build-windows-clients.bat`
-```
-
 ## Building the clients
 
 To build the clients, first consult this table to determine the keyword of the client
