@@ -3,7 +3,6 @@
 //
 package io.deephaven.util.codec;
 
-import io.deephaven.base.string.EncodingInfo;
 import org.jetbrains.annotations.NotNull;
 
 import java.nio.BufferOverflowException;
@@ -13,6 +12,8 @@ import java.nio.CharBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CharsetEncoder;
+import java.nio.charset.CodingErrorAction;
+import java.nio.charset.StandardCharsets;
 
 class CodecUtil {
     public static final byte[] ZERO_LENGTH_BYTE_ARRAY = new byte[0];
@@ -31,7 +32,9 @@ class CodecUtil {
     public static void putUtf8String(@NotNull final ByteBuffer destination, @NotNull final String value) {
         final int initialPosition = destination.position();
         destination.position(initialPosition + Integer.BYTES);
-        final CharsetEncoder encoder = EncodingInfo.UTF_8.getEncoder().reset();
+        final CharsetEncoder encoder = StandardCharsets.UTF_8.newEncoder()
+                .onMalformedInput(CodingErrorAction.REPLACE)
+                .onUnmappableCharacter(CodingErrorAction.REPLACE);
         if (!encoder.encode(CharBuffer.wrap(value), destination, true).isUnderflow()
                 || !encoder.flush(destination).isUnderflow()) {
             throw new BufferOverflowException();
@@ -51,7 +54,9 @@ class CodecUtil {
     public static String getUtf8String(@NotNull final ByteBuffer source) {
         final int length = source.getInt();
         final int initialLimit = source.limit();
-        final CharsetDecoder decoder = EncodingInfo.UTF_8.getDecoder().reset();
+        final CharsetDecoder decoder = StandardCharsets.UTF_8.newDecoder()
+                .onMalformedInput(CodingErrorAction.REPLACE)
+                .onUnmappableCharacter(CodingErrorAction.REPLACE);
         if (length > source.remaining()) {
             throw new BufferUnderflowException();
         }

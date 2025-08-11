@@ -38,11 +38,7 @@ public class LogInit {
     @Inject
     public void run() {
         checkLogSinkIsSingleton();
-        try {
-            standardStreamState.setupRedirection();
-        } catch (final UnsupportedEncodingException e) {
-            throw new RuntimeException(e);
-        }
+        standardStreamState.setupRedirection();
         configureLoggerSink();
         Logger errLog = LoggerFactory.getLogger(AsyncClientErrorNotifier.class);
         AsyncClientErrorNotifier
