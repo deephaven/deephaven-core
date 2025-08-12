@@ -30,7 +30,7 @@ Here is a sample bash script to generate the provided authorizing wiring if you 
 DEEPHAVEN_VERSION="$(./gradlew printVersion -q)"
 OUT_DIR=authorization/src/main/java/
 PROTO_DIR=proto/proto-backplane-grpc/src/main/proto/
-ROOT_DIR=$PROTO_DIR/deephaven/proto
+ROOT_DIR=$PROTO_DIR/deephaven_core/proto
 
 DEEPHAVEN_VERSION=${DEEPHAVEN_VERSION} PATH=authorization-codegen:$PATH protoc --service-auth-wiring_out=$OUT_DIR -I $PROTO_DIR    \
      $ROOT_DIR/application.proto                                        \

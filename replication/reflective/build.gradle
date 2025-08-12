@@ -8,7 +8,7 @@ description 'Reflective Replicators: Source code generators and replicators with
 dependencies {
     implementation project(':replication-util')
     implementation project(':engine-table')
-    implementation libs.squareup.javapoet
+    implementation libs.javapoet
     implementation libs.trove
     implementation libs.commons.io
     implementation libs.commons.lang3
