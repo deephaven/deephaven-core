@@ -842,8 +842,7 @@ public class TypedHasherFactory {
         for (int ii = 0; ii < chunkTypes.length; ++ii) {
             builder.addStatement("destKeyArray$L[destinationTableLocation] = k$L", ii, ii);
         }
-        builder.addStatement("destState[destinationTableLocation] = originalStateArray[sourceBucket]",
-                hasherConfig.mainStateName);
+        builder.addStatement("destState[destinationTableLocation] = originalStateArray[sourceBucket]");
         if (!hasherConfig.alwaysMoveMain) {
             builder.beginControlFlow("if (sourceBucket != destinationTableLocation)");
         }
