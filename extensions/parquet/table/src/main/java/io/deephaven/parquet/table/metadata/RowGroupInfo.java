@@ -8,6 +8,8 @@ import io.deephaven.engine.util.TableTools;
 import io.deephaven.util.annotations.ScriptApi;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.function.Function;
+
 import static io.deephaven.engine.util.TableTools.merge;
 
 public abstract class RowGroupInfo {
@@ -47,7 +49,8 @@ public abstract class RowGroupInfo {
     }
 
     /**
-     * Splits each unique group into a RowGroup
+     * Splits each unique group into a RowGroup. If the input table does not have all values for the group(s)
+     * contiguously, then an exception will be thrown during the `writeTable(...)` call
      *
      * @param groups Grouping column name(s)
      * @return a {@link RowGroupInfo} which includes a single RowGroup per unique grouping-value
@@ -55,6 +58,18 @@ public abstract class RowGroupInfo {
     @ScriptApi
     public static RowGroupInfo byGroup(final String... groups) {
         return new SplitByGroups(groups);
+    }
+
+    /**
+     * Allows for custom breakdown of RowGroups. If the ordering of the `.merge(...)` of the Tables does not match the
+     * input-table, then an exception will be thrown during the `writeTable(...)` call
+     *
+     * @param func a function that splits the input `Table` into a `Table[]` without changing row-ordering
+     * @return a {@link RowGroupInfo} which will perform a custom split of groups
+     */
+    @ScriptApi
+    public static RowGroupInfo customFunction(final Function<Table, Table[]> func) {
+        return new CustomSplit(func);
     }
 
     /**
@@ -127,24 +142,43 @@ public abstract class RowGroupInfo {
         }
     }
 
-    private static class SplitByGroups extends RowGroupInfo {
-        private final String[] groups;
-
+    private static class SplitByGroups extends CustomSplit {
         private SplitByGroups(final String[] groups) {
+            super(table -> table.partitionBy(groups).constituents());
             if (groups == null || groups.length == 0) {
-                throw new IllegalArgumentException("Requires at lease one group");
+                throw new IllegalArgumentException("Requires at least one group");
             }
-            this.groups = groups;
+        }
+    }
+
+    private static class CustomSplit extends RowGroupInfo {
+        final Function<Table, Table[]> customFunction;
+
+        private CustomSplit(final Function<Table, Table[]> customFunction) {
+            if (customFunction == null) {
+                throw new IllegalArgumentException("null Function not permitted");
+            }
+            this.customFunction = customFunction;
         }
 
         @Override
         public Table[] splitForRowGroups(@NotNull final Table input) {
-            final Table[] grouped = input.partitionBy(groups).constituents();
-            final String diff = TableTools.diff(merge(grouped), input, 1);
-            if (!diff.isEmpty()) {
-                throw new IllegalStateException("Grouped value(s) must be contiguous; " + diff);
-            }
-            return grouped;
+            final Table[] splitTables = customFunction.apply(input);
+            RowGroupInfo.ensureConsistentOrdering(input, splitTables);
+            return splitTables;
+        }
+    }
+
+    /**
+     * Ensure that table-ordering has not changed
+     *
+     * @param origTbl the original (pre-split) table
+     * @param ordered the array-split table
+     */
+    private static void ensureConsistentOrdering(@NotNull final Table origTbl, @NotNull final Table[] ordered) {
+        final String diff = TableTools.diff(merge(ordered), origTbl, 1);
+        if (!diff.isEmpty()) {
+            throw new IllegalStateException("Grouped value(s) must be contiguous; " + diff);
         }
     }
 }
