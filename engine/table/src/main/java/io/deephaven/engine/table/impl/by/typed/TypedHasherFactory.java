@@ -4,7 +4,7 @@
 package io.deephaven.engine.table.impl.by.typed;
 
 import com.google.common.io.BaseEncoding;
-import com.squareup.javapoet.*;
+import com.palantir.javapoet.*;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.api.NaturalJoinType;
 import io.deephaven.base.verify.Assert;
@@ -729,7 +729,7 @@ public class TypedHasherFactory {
             TypeSpec.Builder hasherBuilder) {
         CodeBlock.Builder constructorCodeBuilder = CodeBlock.builder();
         final String extraSuper = hasherConfig.extraConstructorParameters.isEmpty() ? ""
-                : ", " + hasherConfig.extraConstructorParameters.stream().map(spec -> spec.name)
+                : ", " + hasherConfig.extraConstructorParameters.stream().map(ParameterSpec::name)
                         .collect(Collectors.joining(", "));
 
         if (hasherConfig.includeOriginalSources) {
@@ -1012,7 +1012,7 @@ public class TypedHasherFactory {
     private static @NotNull String getExtraMigrateParams(List<ParameterSpec> hasherConfig) {
         final String extraParamNames;
         if (!hasherConfig.isEmpty()) {
-            extraParamNames = ", " + hasherConfig.stream().map(ps -> ps.name)
+            extraParamNames = ", " + hasherConfig.stream().map(ParameterSpec::name)
                     .collect(Collectors.joining(", "));
         } else {
             extraParamNames = "";

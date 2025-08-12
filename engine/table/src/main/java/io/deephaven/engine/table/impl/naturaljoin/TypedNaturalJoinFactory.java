@@ -3,7 +3,7 @@
 //
 package io.deephaven.engine.table.impl.naturaljoin;
 
-import com.squareup.javapoet.CodeBlock;
+import com.palantir.javapoet.CodeBlock;
 import io.deephaven.api.NaturalJoinType;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.LongChunk;
