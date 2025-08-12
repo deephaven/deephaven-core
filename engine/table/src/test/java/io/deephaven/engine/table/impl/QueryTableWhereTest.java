@@ -3190,22 +3190,25 @@ public abstract class QueryTableWhereTest {
                 (name, source) -> columnSourceMap2.put(name, new NoPushdownColumnSourceWrapper<>(source)));
         final Table source2 = new QueryTable(source2_raw.getRowSet(), columnSourceMap2);
 
+        final Table source3 = testRefreshingTable(RowSetFactory.flat(100_000).toTracking())
+                .update("A = 2L"); // RowKeyAgnosticColumnSource
+
         final RowSetCapturingFilter preFilter = new RowSetCapturingFilter();
         final RowSetCapturingFilter filter0 = new ParallelizedRowSetCapturingFilter(RawString.of("A = 42"));
         final RowSetCapturingFilter postFilter = new RowSetCapturingFilter();
 
         Table merged;
 
-        merged = TableTools.merge(source1, source2);
+        merged = TableTools.merge(source1, source2, source3);
 
         // force pre and post filters to run when expected using barriers
         final Table res0 = merged.where(Filter.and(
                 preFilter.withBarriers("1"),
                 filter0.respectsBarriers("1").withBarriers("2"),
                 postFilter.respectsBarriers("2")));
-        assertEquals(200_000, preFilter.numRowsProcessed());
-        assertEquals(200_000, filter0.numRowsProcessed()); // 100_000 from source1, 100_000 from source2
-        assertEquals(100_001, postFilter.numRowsProcessed()); // 1 from source1, 100_000 from source2
+        assertEquals(300_000, preFilter.numRowsProcessed());
+        assertEquals(200_001, filter0.numRowsProcessed()); // 100_000 source1, 100_000 source2, 1 source3
+        assertEquals(100_001, postFilter.numRowsProcessed()); // 1 source1, 100_000 source2, 0 source3
 
         assertEquals(100_001, res0.size()); // 1 from source1, 100_000 from source2
 
@@ -3217,11 +3220,11 @@ public abstract class QueryTableWhereTest {
                 preFilter.withBarriers("1"),
                 RawString.of("A != 42").respectsBarriers("1").withBarriers("2"),
                 postFilter.respectsBarriers("2")));
-        assertEquals(200_000, preFilter.numRowsProcessed());
-        assertEquals(200_000, filter0.numRowsProcessed()); // 100_000 from source1, 1 from source2
-        assertEquals(99_999, postFilter.numRowsProcessed()); // 99_000 from source1, 0 from source2
+        assertEquals(300_000, preFilter.numRowsProcessed());
+        assertEquals(200_001, filter0.numRowsProcessed()); // 100_000 source1, 1 source2, 100_000 source3
+        assertEquals(199_999, postFilter.numRowsProcessed()); // 99_999 source1, 0 source2, 100_000 source3
 
-        assertEquals(99_999, res1.size());
+        assertEquals(199_999, res1.size());
 
         preFilter.reset();
         postFilter.reset();
