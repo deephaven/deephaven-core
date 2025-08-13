@@ -287,7 +287,7 @@ class MergedDataIndex extends AbstractDataIndex implements DataIndexer.Retainabl
                 Assert.assertion(groupedByKeyColumns.isFlat(), "groupedByKeyColumns.isFlat()");
                 final RowSetCacher rowsetCacher = new RowSetCacher(vectorColumnSource, groupedByKeyColumns.intSize());
                 combined = groupedByKeyColumns
-                        .view(List.of(SelectColumn.ofStateless(new MultiSourceFunctionalColumn<>(List.of(),
+                        .updateView(List.of(SelectColumn.ofStateless(new MultiSourceFunctionalColumn<>(List.of(),
                                 ROW_SET_COLUMN_NAME, RowSet.class, (k, v) -> rowsetCacher.get(k)))));
 
                 lazyPartitionedTable = partitionedTable;
