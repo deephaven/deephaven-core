@@ -760,7 +760,11 @@ public class UnionSourceManager implements PushdownPredicateManager {
 
         @Override
         public ColumnSource<T> slotToCurrSource(final int slot) {
-            return sourceFromTable(constituentTables.get(constituentRows.get(slot)));
+            try {
+                return sourceFromTable(constituentTables.get(constituentRows.get(slot)));
+            } catch (NullPointerException npe) {
+                throw npe;
+            }
         }
 
         @Override

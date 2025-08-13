@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl.sources;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.Values;
@@ -278,17 +279,30 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
 
     private abstract class SlotState<SLOT_CONTEXT_TYPE extends Context> implements SafeCloseable {
 
-        int slot = -1;
+        private static final int NULL_SLOT = -1;
+        private static final int NULL_SHIFT = -1;
+
+        // Fields set in prepareContext
+        private int slot = NULL_SLOT;
         private DataVersion dataVersion;
-        long shift;
-        ColumnSource<T> source;
-        SLOT_CONTEXT_TYPE context;
-        int capacity;
+        private long shift = NULL_SHIFT;
+        protected ColumnSource<T> source;
+
+        // Fields set in makeContext
+        protected SLOT_CONTEXT_TYPE context;
+        protected int capacity;
+
+        int lastAccessedSlot() {
+            return slot == NULL_SLOT ? 0 : slot;
+        }
 
         void prepare(final int sliceSlot, final DataVersion sliceDataVersion, final int sliceSize) {
-            final boolean updateSource = sliceSlot != slot || dataVersion != sliceDataVersion;
-            final boolean updateContext = updateSource || context == null || capacity < sliceSize;
-            if (updateSource) {
+            Require.geqZero(sliceSlot, "sliceSlot");
+            Require.gtZero(sliceSize, "sliceSize");
+            Require.neqNull(sliceDataVersion, "dataVersion");
+
+            final ColumnSource<T> oldSource = source;
+            if (sliceSlot != slot || sliceDataVersion != dataVersion) {
                 slot = sliceSlot;
                 dataVersion = sliceDataVersion;
                 switch (dataVersion) {
@@ -300,30 +314,45 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
                         shift = unionRedirection.prevFirstRowKeyForSlot(sliceSlot);
                         source = sourceLookup.slotToPrevSource(sliceSlot);
                         break;
+                    default:
+                        throw new IllegalStateException("Unexpected data version: " + dataVersion);
                 }
             }
-            if (updateContext) {
+
+            if (oldSource != source || context == null || capacity < sliceSize) {
                 closeContext();
                 makeContext(sliceSize);
             }
         }
 
-        abstract void makeContext(int sliceSize);
+        long getShift() {
+            return shift;
+        }
+
+        ColumnSource<T> getSource() {
+            return source;
+        }
+
+        SLOT_CONTEXT_TYPE getContext() {
+            return context;
+        }
+
+        protected abstract void makeContext(int sliceSize);
 
         private void closeContext() {
-            if (context != null) {
-                context.close();
+            try (final SafeCloseable ignored = context) {
                 context = null;
+                capacity = 0;
             }
         }
 
         @Override
         public void close() {
-            slot = -1;
+            slot = NULL_SLOT;
             dataVersion = null;
+            shift = NULL_SHIFT;
             source = null;
             closeContext();
-            capacity = 0;
         }
     }
 
@@ -343,6 +372,10 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
             context = source.makeGetContext(sliceSize);
             capacity = sliceSize;
         }
+
+        void getChunk()
+            return slotState.getSource().getChunk(slotState.getContext(), sourceRowSequence(outerRowSequence));
+
     }
 
     private class FillContext implements ChunkSource.FillContext {
@@ -358,11 +391,11 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
         }
 
         private int lastSlot() {
-            return Math.max(slotState.slot, 0);
+            return slotState.lastAccessedSlot();
         }
 
         private RowSequence sourceRowSequence(@NotNull final RowSequence rowSequence) {
-            return sourceRowSequence.reset(rowSequence, -slotState.shift);
+            return sourceRowSequence.reset(rowSequence, -slotState.getShift());
         }
 
         private void fillChunkAppend(
@@ -373,7 +406,7 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
             slotState.prepare(slot, DataVersion.CURR, sliceSize);
             final int offset = destination.size();
             destination.setSize(offset + sliceSize);
-            slotState.source.fillChunk(slotState.context,
+            slotState.getSource().fillChunk(slotState.getContext(),
                     sliceDestination.resetFromChunk(destination, offset, sliceSize),
                     sourceRowSequence(outerRowSequence));
         }
@@ -386,7 +419,7 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
             slotState.prepare(slot, DataVersion.PREV, sliceSize);
             final int offset = destination.size();
             destination.setSize(offset + sliceSize);
-            slotState.source.fillPrevChunk(slotState.context,
+            slotState.getSource().fillPrevChunk(slotState.getContext(),
                     sliceDestination.resetFromChunk(destination, offset, sliceSize),
                     sourceRowSequence(outerRowSequence));
         }
@@ -415,34 +448,34 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
         }
 
         private int lastSlot() {
-            return Math.max(slotState.slot, 0);
+            return slotState.lastAccessedSlot();
         }
 
         private RowSequence sourceRowSequence(@NotNull final RowSequence rowSequence) {
-            return getFillContext().sourceRowSequence.reset(rowSequence, -slotState.shift);
+            return getFillContext().sourceRowSequence.reset(rowSequence, -slotState.getShift());
         }
 
         private Chunk<? extends Values> getChunk(final int slot, @NotNull final RowSequence outerRowSequence) {
             slotState.prepare(slot, DataVersion.CURR, outerRowSequence.intSize());
-            return slotState.source.getChunk(slotState.context, sourceRowSequence(outerRowSequence));
+            return slotState.getSource().getChunk(slotState.getContext(), sourceRowSequence(outerRowSequence));
         }
 
         private Chunk<? extends Values> getChunk(final int slot, final long firstOuterKey, final long lastOuterKey) {
             slotState.prepare(slot, DataVersion.CURR, Math.toIntExact(lastOuterKey - firstOuterKey + 1));
-            return slotState.source.getChunk(slotState.context,
-                    firstOuterKey - slotState.shift, lastOuterKey - slotState.shift);
+            return slotState.source.getChunk(slotState.getContext(),
+                    firstOuterKey - slotState.getShift(), lastOuterKey - slotState.getShift());
         }
 
         private Chunk<? extends Values> getPrevChunk(final int slot, @NotNull final RowSequence outerRowSequence) {
             slotState.prepare(slot, DataVersion.PREV, outerRowSequence.intSize());
-            return slotState.source.getPrevChunk(slotState.context, sourceRowSequence(outerRowSequence));
+            return slotState.getSource().getPrevChunk(slotState.getContext(), sourceRowSequence(outerRowSequence));
         }
 
         private Chunk<? extends Values> getPrevChunk(final int slot, final long firstOuterKey,
                 final long lastOuterKey) {
             slotState.prepare(slot, DataVersion.PREV, Math.toIntExact(lastOuterKey - firstOuterKey + 1));
-            return slotState.source.getPrevChunk(slotState.context,
-                    firstOuterKey - slotState.shift, lastOuterKey - slotState.shift);
+            return slotState.getSource().getPrevChunk(slotState.getContext(),
+                    firstOuterKey - slotState.getShift(), lastOuterKey - slotState.getShift());
         }
 
         @Override

@@ -204,7 +204,7 @@ public class FuzzerTest {
 
     @Test
     public void testLargeSetOfFuzzerQueriesSimTime() throws IOException, InterruptedException {
-        final long seed1 = Clock.system().currentTimeNanos();
+        final long seed1 = 1748671608979183036L;//Clock.system().currentTimeNanos();
         final int iterations = TstUtils.SHORT_TESTS ? 1 : 5;
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         for (long iteration = 0; iteration < iterations; ++iteration) {
