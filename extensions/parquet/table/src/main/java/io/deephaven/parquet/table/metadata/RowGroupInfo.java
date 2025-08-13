@@ -3,14 +3,12 @@
 //
 package io.deephaven.parquet.table.metadata;
 
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.util.TableTools;
 import io.deephaven.util.annotations.ScriptApi;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.function.Function;
-
-import static io.deephaven.engine.util.TableTools.merge;
 
 public abstract class RowGroupInfo {
     private static final RowGroupInfo DEFAULT = new SingleRowGroup();
@@ -105,10 +103,9 @@ public abstract class RowGroupInfo {
 
             long startOffset = 0;
             for (int ii = 0; ii < numRowGroups; ii++) {
-                final long tailSz = input.size() - startOffset;
-                final long headSz = suggestedRowGroupSize + (ii < fractionalGroups ? 1 : 0);
-                ret[ii] = input.tail(tailSz).head(headSz);
-                startOffset += headSz;
+                final long subSize = suggestedRowGroupSize + (ii < fractionalGroups ? 1 : 0);
+                ret[ii] = subTable(input, startOffset, subSize);
+                startOffset += subSize;
             }
 
             return ret;
@@ -132,10 +129,9 @@ public abstract class RowGroupInfo {
 
             long startOffset = 0;
             for (int ii = 0; ii < numRowGroups; ii++) {
-                final long tailSz = input.size() - startOffset;
-                final long headSz = maxRows;
-                ret[ii] = input.tail(tailSz).head(headSz);
-                startOffset += headSz;
+                final long subSize = maxRows;
+                ret[ii] = subTable(input, startOffset, subSize);
+                startOffset += subSize;
             }
 
             return ret;
@@ -176,9 +172,29 @@ public abstract class RowGroupInfo {
      * @param ordered the array-split table
      */
     private static void ensureConsistentOrdering(@NotNull final Table origTbl, @NotNull final Table[] ordered) {
-        final String diff = TableTools.diff(merge(ordered), origTbl, 1);
-        if (!diff.isEmpty()) {
-            throw new IllegalStateException("Grouped value(s) must be contiguous; " + diff);
+        long startOffset = 0;
+        for (final Table rowSet : ordered) {
+            final RowSet orderedRows = rowSet.getRowSet();
+            final long subSize = orderedRows.size();
+
+            final RowSet origRows = subTable(origTbl, startOffset, subSize).getRowSet();
+
+            if (orderedRows.intersect(origRows).size() != subSize) {
+                throw new IllegalStateException(String
+                        .format("Subtable ordering mismatch;\n  Expected: %s\n  Received: %s", origRows, orderedRows));
+            }
+
+            startOffset += subSize;
+        }
+
+        if (origTbl.size() != startOffset) {
+            throw new IllegalStateException(String.format("Subtable dropped rows;\n  Expected: %,d\n  Received: %,d",
+                    origTbl.size(), startOffset));
         }
     }
+
+    private static Table subTable(@NotNull final Table tbl, final long offset, final long length) {
+        return tbl.tail(tbl.size() - offset).head(length);
+    }
+
 }

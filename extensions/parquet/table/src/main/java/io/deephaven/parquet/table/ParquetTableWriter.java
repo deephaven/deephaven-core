@@ -151,15 +151,18 @@ public class ParquetTableWriter {
                     tableInfoBuilder.addDataIndexes(DataIndexInfo.of(
                             destDir.relativize(info.dest).getPath(),
                             info.parquetColumnNames));
-                    final ParquetInstructions writeInstructionsToUse;
+                    // we should always use a single RowGroup for the index-table
+                    final ParquetInstructions.Builder indexWIBuilder = new ParquetInstructions.Builder()
+                            .withRowGroupInfo(RowGroupInfo.defaultRowGroupInfo());
+                    final ParquetInstructions writeInstructionsForIndex;
                     if (INDEX_ROW_SET_COLUMN_NAME.equals(dataIndex.rowSetColumnName())) {
-                        writeInstructionsToUse = writeInstructions;
+                        writeInstructionsForIndex = indexWIBuilder.build();
                     } else {
-                        writeInstructionsToUse = new ParquetInstructions.Builder(writeInstructions)
+                        writeInstructionsForIndex = indexWIBuilder
                                 .addColumnNameMapping(INDEX_ROW_SET_COLUMN_NAME, dataIndex.rowSetColumnName())
                                 .build();
                     }
-                    write(indexTable, indexTable.getDefinition(), writeInstructionsToUse, info.dest,
+                    write(indexTable, indexTable.getDefinition(), writeInstructionsForIndex, info.dest,
                             info.destOutputStream, Collections.emptyMap(), indexTableInfoBuilder,
                             NullParquetMetadataFileWriter.INSTANCE, computedCache);
                 }
