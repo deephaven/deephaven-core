@@ -3,7 +3,7 @@
 //
 package io.deephaven.engine.table.impl.asofjoin;
 
-import com.palantir.javapoet.CodeBlock;
+import com.squareup.javapoet.CodeBlock;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.impl.by.typed.HasherConfig;
 import io.deephaven.util.QueryConstants;

@@ -3,7 +3,7 @@
 //
 package io.deephaven.engine.table.impl.naturaljoin;
 
-import com.palantir.javapoet.CodeBlock;
+import com.squareup.javapoet.CodeBlock;
 import io.deephaven.api.NaturalJoinType;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.LongChunk;
@@ -273,7 +273,7 @@ public class TypedNaturalJoinFactory {
 
     public static void rightIncrementalModify(HasherConfig<?> hasherConfig, boolean alternate,
             CodeBlock.Builder builder) {
-        builder.addStatement("final long oldRightRow = rightRowKey.getUnsafe(tableLocation)");
+        builder.addStatement("final long oldRightRow = rightRowKey.getUnsafe(tableLocation)", RowSet.class);
         builder.addStatement(
                 "modifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMain(modifiedTrackerCookieSource.getUnsafe(tableLocation), tableLocation, oldRightRow, $T.FLAG_RIGHT_MODIFY_PROBE))",
                 NaturalJoinModifiedSlotTracker.class);
@@ -365,7 +365,7 @@ public class TypedNaturalJoinFactory {
         builder.addStatement("final long duplicateLocation = duplicateLocationFromRowKey(existingRightRowKey)");
         builder.addStatement(
                 "rightSideDuplicateRowSets.getUnsafe(duplicateLocation).insert(rowKeyChunk.get(chunkPosition))");
-        builder.nextControlFlow("else");
+        builder.nextControlFlow("else", RowSet.class);
 
         builder.beginControlFlow("if (addOnly && joinType == NaturalJoinType.FIRST_MATCH) ");
         builder.addStatement("// nop, we already have the first match");

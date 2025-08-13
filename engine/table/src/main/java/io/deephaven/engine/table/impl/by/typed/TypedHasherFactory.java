@@ -4,7 +4,7 @@
 package io.deephaven.engine.table.impl.by.typed;
 
 import com.google.common.io.BaseEncoding;
-import com.palantir.javapoet.*;
+import com.squareup.javapoet.*;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.api.NaturalJoinType;
 import io.deephaven.base.verify.Assert;
@@ -729,7 +729,7 @@ public class TypedHasherFactory {
             TypeSpec.Builder hasherBuilder) {
         CodeBlock.Builder constructorCodeBuilder = CodeBlock.builder();
         final String extraSuper = hasherConfig.extraConstructorParameters.isEmpty() ? ""
-                : ", " + hasherConfig.extraConstructorParameters.stream().map(ParameterSpec::name)
+                : ", " + hasherConfig.extraConstructorParameters.stream().map(spec -> spec.name)
                         .collect(Collectors.joining(", "));
 
         if (hasherConfig.includeOriginalSources) {
@@ -842,7 +842,8 @@ public class TypedHasherFactory {
         for (int ii = 0; ii < chunkTypes.length; ++ii) {
             builder.addStatement("destKeyArray$L[destinationTableLocation] = k$L", ii, ii);
         }
-        builder.addStatement("destState[destinationTableLocation] = originalStateArray[sourceBucket]");
+        builder.addStatement("destState[destinationTableLocation] = originalStateArray[sourceBucket]",
+                hasherConfig.mainStateName);
         if (!hasherConfig.alwaysMoveMain) {
             builder.beginControlFlow("if (sourceBucket != destinationTableLocation)");
         }
@@ -1011,7 +1012,7 @@ public class TypedHasherFactory {
     private static @NotNull String getExtraMigrateParams(List<ParameterSpec> hasherConfig) {
         final String extraParamNames;
         if (!hasherConfig.isEmpty()) {
-            extraParamNames = ", " + hasherConfig.stream().map(ParameterSpec::name)
+            extraParamNames = ", " + hasherConfig.stream().map(ps -> ps.name)
                     .collect(Collectors.joining(", "));
         } else {
             extraParamNames = "";
