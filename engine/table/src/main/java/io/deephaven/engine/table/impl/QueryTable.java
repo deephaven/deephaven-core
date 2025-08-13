@@ -2802,6 +2802,24 @@ public class QueryTable extends BaseTable<QueryTable> {
         }
     }
 
+    public Table sort(Collection<SortColumn> columnsToSortBy, Collection<Comparator<Object>> comparators) {
+        final UpdateGraph updateGraph = getUpdateGraph();
+        try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
+            final SortPair[] sortPairs = SortPair.from(columnsToSortBy);
+            if (sortPairs.length == 0) {
+                return prepareReturnThis();
+            } else if (sortPairs.length == 1) {
+                final String columnName = sortPairs[0].getColumn();
+                final SortingOrder order = sortPairs[0].getOrder();
+                if (SortedColumnsAttribute.isSortedBy(this, columnName, order)) {
+                    return prepareReturnThis();
+                }
+            }
+
+            return getResult(new SortOperation(this, sortPairs, comparators));
+        }
+    }
+
     /**
      * This is the smallest "base" that is used by the ungroup function. Each row from the input table is allocated
      * 2^minimumUngroupBase rows in the output table at startup. If rows are added to the table, this base may need to

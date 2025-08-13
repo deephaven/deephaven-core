@@ -7,6 +7,7 @@ import io.deephaven.api.ColumnName;
 import io.deephaven.api.SortColumn;
 import io.deephaven.base.FileUtils;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.csv.util.MutableObject;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -32,6 +33,7 @@ import gnu.trove.list.array.TIntArrayList;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.math.BigInteger;
 import java.nio.file.Files;
 import java.time.Instant;
@@ -417,7 +419,7 @@ public class QueryTableSortTest extends QueryTableTestBase {
         final ColumnInfo<?, ?>[] columnInfo = getIncrementalColumnInfo();
         final QueryTable queryTable = getTable(size, random, columnInfo);
 
-        final EvalNugget[] en = new EvalNugget[] {
+        final EvalNugget[] en = new EvalNugget[]{
                 EvalNugget.from(() -> queryTable.sort("Sym")),
                 EvalNugget.from(() -> queryTable.update("x = Indices").sortDescending("intCol")),
                 EvalNugget.from(() -> queryTable.updateView("x = Indices").sort("Sym", "intCol"))
@@ -454,6 +456,85 @@ public class QueryTableSortTest extends QueryTableTestBase {
                 EvalNugget.from(() -> queryTable.sort(List.of(SortColumn.desc(ColumnName.of("charCol"))))),
                 EvalNugget.from(() -> queryTable.sort(List.of(SortColumn.desc(ColumnName.of("bigI"))))),
                 EvalNugget.from(() -> queryTable.sort(List.of(SortColumn.desc(ColumnName.of("bigD"))))),
+        };
+
+        for (numSteps.set(0); numSteps.get() < maxSteps; numSteps.increment()) {
+            simulateShiftAwareStep(ctxt + " step == " + numSteps.get(), size, random, queryTable, columnInfo, en);
+        }
+    }
+
+    public void testComparators() {
+        final int[] sizes = {10, 100, 1000};
+        for (int size : sizes) {
+            testComparators("size == " + size, size, 0, new MutableInt(50));
+        }
+    }
+
+    private ColumnInfo<?, ?>[] getComparatorColumnInfo() {
+        return initColumnInfos(
+                new String[] {"Sym", "ArrCol", "bigI", "bigD"},
+                new SetGenerator<>("a", "b", "c", "d"),
+                new SetGenerator<>(new int[0], new int[]{1, 3, 5}, new int[]{4, 8}, new int[]{9, 10, 11, 12, 13}, new int[]{12, 13}),
+                new BigIntegerGenerator(BigInteger.valueOf(100000), BigInteger.valueOf(100100)),
+                new BigDecimalGenerator(BigInteger.valueOf(100000), BigInteger.valueOf(100100)));
+    }
+
+    private void testComparators(final String ctxt, final int size, int seed, MutableInt numSteps) {
+        final int maxSteps = numSteps.get();
+        final Random random = new Random(seed);
+        final ColumnInfo<?, ?>[] columnInfo = getComparatorColumnInfo();
+        final QueryTable queryTable = getTable(size, random, columnInfo);
+
+        final List<Comparator<Object>> comparators = List.of((Comparator)Comparator.nullsFirst(Comparator.naturalOrder()));
+        final List<Comparator<Object>> comparators2 = List.of((Comparator)Comparator.nullsFirst(Comparator.naturalOrder()), (Comparator)Comparator.nullsLast(Comparator.reverseOrder()));
+        final List<Comparator<Object>> arrayLength = List.of((l, r) -> {
+            final int ll = Array.getLength(l);
+            final int rl = Array.getLength(r);
+            return ll - rl;
+        });
+        final List<Comparator<Object>> vecLength = List.of((l, r) -> {
+            final long ll = ((io.deephaven.vector.Vector<?>)l).size();
+            final long rl = ((io.deephaven.vector.Vector<?>)r).size();
+            return Long.compare(ll, rl);
+        });
+
+        final List<Comparator<Object>> arrayLex = List.of((l, r) -> Arrays.compare((int[])l, (int[])r));
+
+        final QueryTable grouped = (QueryTable)(queryTable.groupBy("Sym"));
+        final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
+                new TableComparator(queryTable.sort(List.of(SortColumn.asc(ColumnName.of("bigD")))), "Default Sort", queryTable.sort(List.of(SortColumn.asc(ColumnName.of("bigD"))), comparators), "Comparator Sort"),
+                new TableComparator(queryTable.sort(List.of(SortColumn.desc(ColumnName.of("bigD")))), "Default Sort", queryTable.sort(List.of(SortColumn.desc(ColumnName.of("bigD"))), comparators), "Comparator Sort"),
+                new TableComparator(queryTable.sort(List.of(SortColumn.asc(ColumnName.of("Sym")), SortColumn.desc(ColumnName.of("bigD")))), "Default Sort", queryTable.sort(List.of(SortColumn.asc(ColumnName.of("Sym")), SortColumn.asc(ColumnName.of("bigD"))), comparators2), "Comparator Sort"),
+                EvalNugget.from(() -> grouped.sort(List.of(SortColumn.asc(ColumnName.of("bigI"))), vecLength)),
+                new TableComparator(grouped.sort(List.of(SortColumn.asc(ColumnName.of("bigI"))), vecLength), "comparator", grouped.update("L=bigI.size()").sort("L").dropColumns("L"), "len"),
+                EvalNugget.from(() -> queryTable.sort(List.of(SortColumn.asc(ColumnName.of("ArrCol"))), arrayLength)),
+                new TableComparator(queryTable.sort(List.of(SortColumn.asc(ColumnName.of("ArrCol"))), arrayLength), "comparator", queryTable.update("L=java.lang.reflect.Array.getLength(ArrCol)").sort("L").dropColumns("L"), "len"),
+                EvalNugget.from(() -> queryTable.sort(List.of(SortColumn.asc(ColumnName.of("ArrCol"))), arrayLength)),
+                EvalNugget.from(() -> queryTable.sort(List.of(SortColumn.asc(ColumnName.of("ArrCol"))), arrayLex)),
+                new EvalNuggetInterface() {
+                    final Table lexSort = queryTable.sort(List.of(SortColumn.asc(ColumnName.of("ArrCol"))), arrayLex);
+
+                    @Override
+                    public void validate(String msg) {
+                        final MutableObject<int[]> last = new MutableObject<>();
+                        lexSort.columnIterator("ArrCol").forEachRemaining(ia -> {
+                            final int[] cv = (int[]) ia;
+                            final int[] lv = last.getValue();
+                            if (lv == null) {
+                                last.setValue(cv);
+                            } else {
+                                if (Arrays.compare(lv, cv) > 0) {
+                                    throw new IllegalStateException(msg + ": array is not sorted by ArrCol lexicographically.");
+                                }
+                            }
+                        });
+                    }
+
+                    @Override
+                    public void show() throws IOException {
+                        TableTools.showWithRowSet(lexSort);
+                    }
+                }
         };
 
         for (numSteps.set(0); numSteps.get() < maxSteps; numSteps.increment()) {

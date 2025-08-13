@@ -4,7 +4,6 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.engine.rowset.*;
@@ -49,6 +48,7 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
     private final SortPair[] sortPairs;
     private final SortingOrder[] sortOrder;
     private final String[] sortColumnNames;
+    private final Comparator [] comparators;
     /** Stores original column sources. */
     private final ColumnSource<Comparable<?>>[] originalSortColumns;
     /** Stores reinterpreted column sources. */
@@ -56,11 +56,12 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
 
     private final DataIndex dataIndex;
 
-    public SortOperation(QueryTable parent, SortPair[] sortPairs) {
+    public SortOperation(QueryTable parent, SortPair[] sortPairs, Collection<Comparator<Object>> comparators) {
         this.parent = parent;
         this.sortPairs = sortPairs;
         this.sortOrder = Arrays.stream(sortPairs).map(SortPair::getOrder).toArray(SortingOrder[]::new);
         this.sortColumnNames = Arrays.stream(sortPairs).map(SortPair::getColumn).toArray(String[]::new);
+        this.comparators = comparators == null ? null : comparators.stream().toArray(Comparator[]::new);
 
         // noinspection unchecked
         originalSortColumns = new ColumnSource[sortColumnNames.length];
@@ -74,9 +75,16 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
                     (ColumnSource<Comparable<?>>) ReinterpretUtils.maybeConvertToPrimitive(originalSortColumns[ii]);
 
             final Class<?> columnType = sortColumns[ii].getType();
-            final boolean isSortable = Comparable.class.isAssignableFrom(columnType) || columnType.isPrimitive();
-            if (!isSortable) {
-                throw new NotSortableColumnException(sortColumnNames[ii] + " is not a sortable type: " + columnType);
+
+            if (this.comparators != null && this.comparators[ii] != null) {
+                if (columnType.isPrimitive()) {
+                    throw new NotSortableColumnException(sortColumnNames[ii] + " is a primitive column, therefore cannot accept a Comparator" + columnType);
+                }
+            } else {
+                final boolean isSortable = Comparable.class.isAssignableFrom(columnType) || columnType.isPrimitive();
+                if (!isSortable) {
+                    throw new NotSortableColumnException(sortColumnNames[ii] + " is not a sortable type: " + columnType);
+                }
             }
         }
 
@@ -84,6 +92,10 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
 
         // This sort operation might leverage a data index.
         dataIndex = optimalIndex(parent);
+    }
+
+    public SortOperation(QueryTable parent, SortPair[] sortPairs) {
+        this(parent, sortPairs, null);
     }
 
     @Override
@@ -200,7 +212,7 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
                         }
 
                         final SortHelpers.SortMapping updateSortedKeys =
-                                SortHelpers.getSortedKeys(sortOrder, originalSortColumns, sortColumns, null,
+                                SortHelpers.getSortedKeys(sortOrder, originalSortColumns, sortColumns, comparators, null,
                                         upstream.added(), false, false);
                         final LongChunkColumnSource recycled = recycledInnerRedirectionSource.getValue();
                         recycledInnerRedirectionSource.setValue(null);
@@ -241,14 +253,14 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
     public Result<QueryTable> initialize(boolean usePrev, long beforeClock) {
         if (!parent.isRefreshing()) {
             final SortHelpers.SortMapping sortedKeys =
-                    SortHelpers.getSortedKeys(sortOrder, originalSortColumns, sortColumns, dataIndex,
+                    SortHelpers.getSortedKeys(sortOrder, originalSortColumns, sortColumns, comparators, dataIndex,
                             parent.getRowSet(), false);
             return new Result<>(historicalSort(sortedKeys));
         }
         if (parent.isBlink()) {
             final RowSet rowSetToUse = usePrev ? parent.getRowSet().prev() : parent.getRowSet();
             final SortHelpers.SortMapping sortedKeys = SortHelpers.getSortedKeys(
-                    sortOrder, originalSortColumns, sortColumns, dataIndex, rowSetToUse, usePrev);
+                    sortOrder, originalSortColumns, sortColumns, comparators, dataIndex, rowSetToUse, usePrev);
             return blinkTableSort(sortedKeys);
         }
 
@@ -264,7 +276,7 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
             }
 
             final long[] sortedKeys = SortHelpers.getSortedKeys(
-                    sortOrder, originalSortColumns, sortColumns, dataIndex, rowSetToSort, usePrev).getArrayMapping();
+                    sortOrder, originalSortColumns, sortColumns, comparators, dataIndex, rowSetToSort, usePrev).getArrayMapping();
 
             final HashMapK4V4 reverseLookup = new HashMapLockFreeK4V4(sortedKeys.length, .75f, -3);
             sortMapping = SortHelpers.createSortRowRedirection();
@@ -308,7 +320,7 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
             });
 
             final SortListener listener = new SortListener(parent, resultTable, reverseLookup,
-                    originalSortColumns, sortColumns, sortOrder,
+                    originalSortColumns, sortColumns, sortOrder, comparators,
                     sortMapping.writableCast(), sortedColumnsToSortBy,
                     parent.newModifiedColumnSetIdentityTransformer(resultTable),
                     parent.newModifiedColumnSet(sortColumnNames));
