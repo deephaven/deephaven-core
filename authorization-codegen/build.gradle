@@ -13,7 +13,7 @@ dependencies {
     implementation platform(libs.grpc.bom)
     implementation libs.grpc.services
 
-    implementation libs.javapoet
+    implementation libs.squareup.javapoet
 
     implementation libs.protobuf.java
 }

@@ -75,7 +75,7 @@ rdblue = "0.1.1"
 selenium = "4.30.0"
 slf4j = "2.0.17"
 snappy = "1.1.10.8"
-javapoet = "0.7.0"
+squareup = "1.13.0"
 sslcontext = "9.1.0"
 tdunning = "3.3"
 trove = "3.0.3"
@@ -304,7 +304,7 @@ slf4j-simple = { module = "org.slf4j:slf4j-simple", version.ref = "slf4j" }
 
 snappy-java = { module = "org.xerial.snappy:snappy-java", version.ref = "snappy" }
 
-javapoet = { module = "com.palantir.javapoet:javapoet", version.ref = "javapoet" }
+squareup-javapoet = { module = "com.squareup:javapoet", version.ref = "squareup" }
 
 sslcontext-kickstart = { module = "io.github.hakky54:sslcontext-kickstart", version.ref = "sslcontext" }
 sslcontext-kickstart-jetty = { module = "io.github.hakky54:sslcontext-kickstart-for-jetty", version.ref = "sslcontext" }
