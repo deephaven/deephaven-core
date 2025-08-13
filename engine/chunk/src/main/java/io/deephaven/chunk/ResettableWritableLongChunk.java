@@ -27,20 +27,11 @@ public class ResettableWritableLongChunk<ATTR_BASE extends Any>
         return new ResettableWritableLongChunk<>();
     }
 
-    public static <ATTR_BASE extends Any> ResettableWritableLongChunk<ATTR_BASE> makeResettableChunkForPool() {
-        return new ResettableWritableLongChunk<>() {
-            @Override
-            public void close() {
-                MultiChunkPool.forThisThread().giveResettableWritableLongChunk(this);
-            }
-        };
-    }
-
     private ResettableWritableLongChunk(long[] data, int offset, int capacity) {
         super(data, offset, capacity);
     }
 
-    private ResettableWritableLongChunk() {
+    protected ResettableWritableLongChunk() {
         this(ArrayTypeUtils.EMPTY_LONG_ARRAY, 0, 0);
     }
 

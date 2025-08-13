@@ -64,8 +64,8 @@ dependencies {
     testImplementation libs.testcontainers.minio
 
     testRuntimeOnly project(':log-to-slf4j'),
-            project(path: ':configs'),
-            project(path: ':test-configs')
+            project(':configs'),
+            project(':test-configs')
     testRuntimeOnly libs.slf4j.simple
 
     runtimeOnly project(':extensions-trackedfile')
@@ -73,8 +73,8 @@ dependencies {
     brotliTestImplementation project(':extensions-parquet-table')
     brotliTestImplementation(libs.rdblue.brotli.codec)
     brotliTestRuntimeOnly project(':log-to-slf4j'),
-                         project(path: ':configs'),
-                         project(path: ':test-configs')
+                         project(':configs'),
+                         project(':test-configs')
 }
 
 // if architecture is x86, run the brotli test

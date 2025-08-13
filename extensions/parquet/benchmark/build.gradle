@@ -23,8 +23,8 @@ dependencies {
     testAnnotationProcessor libs.jmh.generator.annprocess
     testCompileOnly libs.jmh.generator.annprocess
 
-    testRuntimeOnly project(path: ':configs')
-    testRuntimeOnly project(path: ':test-configs')
+    testRuntimeOnly project(':configs')
+    testRuntimeOnly project(':test-configs')
 }
 
 task jmhRun(type: JavaExec)  {

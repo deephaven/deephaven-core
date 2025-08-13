@@ -91,38 +91,47 @@ public final class MultiChunkPool implements BooleanChunkPool, ByteChunkPool, Ch
         return pools.get(chunkType);
     }
 
+    @SuppressWarnings("unused")
     public BooleanChunkPool getBooleanChunkPool() {
         return booleanChunkPool;
     }
 
+    @SuppressWarnings("unused")
     public CharChunkPool getCharChunkPool() {
         return charChunkPool;
     }
 
+    @SuppressWarnings("unused")
     public ByteChunkPool getByteChunkPool() {
         return byteChunkPool;
     }
 
+    @SuppressWarnings("unused")
     public ShortChunkPool getShortChunkPool() {
         return shortChunkPool;
     }
 
+    @SuppressWarnings("unused")
     public IntChunkPool getIntChunkPool() {
         return intChunkPool;
     }
 
+    @SuppressWarnings("unused")
     public LongChunkPool getLongChunkPool() {
         return longChunkPool;
     }
 
+    @SuppressWarnings("unused")
     public FloatChunkPool getFloatChunkPool() {
         return floatChunkPool;
     }
 
+    @SuppressWarnings("unused")
     public DoubleChunkPool getDoubleChunkPool() {
         return doubleChunkPool;
     }
 
+    @SuppressWarnings("unused")
     public ObjectChunkPool getObjectChunkPool() {
         return objectChunkPool;
     }
@@ -134,13 +143,8 @@ public final class MultiChunkPool implements BooleanChunkPool, ByteChunkPool, Ch
     }
 
     @Override
-    public <ATTR extends Any> WritableBooleanChunk<ATTR> takeWritableBooleanChunk(int capacity) {
+    public <ATTR extends Any> WritableBooleanChunk<ATTR> takeWritableBooleanChunk(final int capacity) {
         return booleanChunkPool.takeWritableBooleanChunk(capacity);
-    }
-
-    @Override
-    public void giveWritableBooleanChunk(@NotNull WritableBooleanChunk<?> writableBooleanChunk) {
-        booleanChunkPool.giveWritableBooleanChunk(writableBooleanChunk);
     }
 
     @Override
@@ -149,29 +153,13 @@ public final class MultiChunkPool implements BooleanChunkPool, ByteChunkPool, Ch
     }
 
     @Override
-    public void giveResettableBooleanChunk(@NotNull ResettableBooleanChunk<?> resettableBooleanChunk) {
-        booleanChunkPool.giveResettableBooleanChunk(resettableBooleanChunk);
-    }
-
-    @Override
     public <ATTR extends Any> ResettableWritableBooleanChunk<ATTR> takeResettableWritableBooleanChunk() {
         return booleanChunkPool.takeResettableWritableBooleanChunk();
     }
 
     @Override
-    public void giveResettableWritableBooleanChunk(
-            @NotNull ResettableWritableBooleanChunk<?> resettableWritableBooleanChunk) {
-        booleanChunkPool.giveResettableWritableBooleanChunk(resettableWritableBooleanChunk);
-    }
-
-    @Override
-    public <ATTR extends Any> WritableCharChunk<ATTR> takeWritableCharChunk(int capacity) {
+    public <ATTR extends Any> WritableCharChunk<ATTR> takeWritableCharChunk(final int capacity) {
         return charChunkPool.takeWritableCharChunk(capacity);
-    }
-
-    @Override
-    public void giveWritableCharChunk(@NotNull WritableCharChunk<?> writableCharChunk) {
-        charChunkPool.giveWritableCharChunk(writableCharChunk);
     }
 
     @Override
@@ -180,28 +168,13 @@ public final class MultiChunkPool implements BooleanChunkPool, ByteChunkPool, Ch
     }
 
     @Override
-    public void giveResettableCharChunk(@NotNull ResettableCharChunk<?> resettableCharChunk) {
-        charChunkPool.giveResettableCharChunk(resettableCharChunk);
-    }
-
-    @Override
     public <ATTR extends Any> ResettableWritableCharChunk<ATTR> takeResettableWritableCharChunk() {
         return charChunkPool.takeResettableWritableCharChunk();
     }
 
     @Override
-    public void giveResettableWritableCharChunk(@NotNull ResettableWritableCharChunk<?> resettableWritableCharChunk) {
-        charChunkPool.giveResettableWritableCharChunk(resettableWritableCharChunk);
-    }
-
-    @Override
-    public <ATTR extends Any> WritableByteChunk<ATTR> takeWritableByteChunk(int capacity) {
+    public <ATTR extends Any> WritableByteChunk<ATTR> takeWritableByteChunk(final int capacity) {
         return byteChunkPool.takeWritableByteChunk(capacity);
-    }
-
-    @Override
-    public void giveWritableByteChunk(@NotNull WritableByteChunk<?> writableByteChunk) {
-        byteChunkPool.giveWritableByteChunk(writableByteChunk);
     }
 
     @Override
@@ -210,28 +183,13 @@ public final class MultiChunkPool implements BooleanChunkPool, ByteChunkPool, Ch
     }
 
     @Override
-    public void giveResettableByteChunk(@NotNull ResettableByteChunk<?> resettableByteChunk) {
-        byteChunkPool.giveResettableByteChunk(resettableByteChunk);
-    }
-
-    @Override
     public <ATTR extends Any> ResettableWritableByteChunk<ATTR> takeResettableWritableByteChunk() {
         return byteChunkPool.takeResettableWritableByteChunk();
     }
 
     @Override
-    public void giveResettableWritableByteChunk(@NotNull ResettableWritableByteChunk<?> resettableWritableByteChunk) {
-        byteChunkPool.giveResettableWritableByteChunk(resettableWritableByteChunk);
-    }
-
-    @Override
-    public <ATTR extends Any> WritableShortChunk<ATTR> takeWritableShortChunk(int capacity) {
+    public <ATTR extends Any> WritableShortChunk<ATTR> takeWritableShortChunk(final int capacity) {
         return shortChunkPool.takeWritableShortChunk(capacity);
-    }
-
-    @Override
-    public void giveWritableShortChunk(@NotNull WritableShortChunk<?> writableShortChunk) {
-        shortChunkPool.giveWritableShortChunk(writableShortChunk);
     }
 
     @Override
@@ -240,29 +198,13 @@ public final class MultiChunkPool implements BooleanChunkPool, ByteChunkPool, Ch
     }
 
     @Override
-    public void giveResettableShortChunk(@NotNull ResettableShortChunk<?> resettableShortChunk) {
-        shortChunkPool.giveResettableShortChunk(resettableShortChunk);
-    }
-
-    @Override
     public <ATTR extends Any> ResettableWritableShortChunk<ATTR> takeResettableWritableShortChunk() {
         return shortChunkPool.takeResettableWritableShortChunk();
     }
 
     @Override
-    public void giveResettableWritableShortChunk(
-            @NotNull ResettableWritableShortChunk<?> resettableWritableShortChunk) {
-        shortChunkPool.giveResettableWritableShortChunk(resettableWritableShortChunk);
-    }
-
-    @Override
-    public <ATTR extends Any> WritableIntChunk<ATTR> takeWritableIntChunk(int capacity) {
+    public <ATTR extends Any> WritableIntChunk<ATTR> takeWritableIntChunk(final int capacity) {
         return intChunkPool.takeWritableIntChunk(capacity);
-    }
-
-    @Override
-    public void giveWritableIntChunk(@NotNull WritableIntChunk<?> writableIntChunk) {
-        intChunkPool.giveWritableIntChunk(writableIntChunk);
     }
 
     @Override
@@ -271,28 +213,13 @@ public final class MultiChunkPool implements BooleanChunkPool, ByteChunkPool, Ch
     }
 
     @Override
-    public void giveResettableIntChunk(@NotNull ResettableIntChunk<?> resettableIntChunk) {
-        intChunkPool.giveResettableIntChunk(resettableIntChunk);
-    }
-
-    @Override
     public <ATTR extends Any> ResettableWritableIntChunk<ATTR> takeResettableWritableIntChunk() {
         return intChunkPool.takeResettableWritableIntChunk();
     }
 
     @Override
-    public void giveResettableWritableIntChunk(@NotNull ResettableWritableIntChunk<?> resettableWritableIntChunk) {
-        intChunkPool.giveResettableWritableIntChunk(resettableWritableIntChunk);
-    }
-
-    @Override
-    public <ATTR extends Any> WritableLongChunk<ATTR> takeWritableLongChunk(int capacity) {
+    public <ATTR extends Any> WritableLongChunk<ATTR> takeWritableLongChunk(final int capacity) {
         return longChunkPool.takeWritableLongChunk(capacity);
-    }
-
-    @Override
-    public void giveWritableLongChunk(@NotNull WritableLongChunk<?> writableLongChunk) {
-        longChunkPool.giveWritableLongChunk(writableLongChunk);
     }
 
     @Override
@@ -301,28 +228,13 @@ public final class MultiChunkPool implements BooleanChunkPool, ByteChunkPool, Ch
     }
 
     @Override
-    public void giveResettableLongChunk(@NotNull ResettableLongChunk<?> resettableLongChunk) {
-        longChunkPool.giveResettableLongChunk(resettableLongChunk);
-    }
-
-    @Override
     public <ATTR extends Any> ResettableWritableLongChunk<ATTR> takeResettableWritableLongChunk() {
         return longChunkPool.takeResettableWritableLongChunk();
     }
 
     @Override
-    public void giveResettableWritableLongChunk(@NotNull ResettableWritableLongChunk<?> resettableWritableLongChunk) {
-        longChunkPool.giveResettableWritableLongChunk(resettableWritableLongChunk);
-    }
-
-    @Override
-    public <ATTR extends Any> WritableFloatChunk<ATTR> takeWritableFloatChunk(int capacity) {
+    public <ATTR extends Any> WritableFloatChunk<ATTR> takeWritableFloatChunk(final int capacity) {
         return floatChunkPool.takeWritableFloatChunk(capacity);
-    }
-
-    @Override
-    public void giveWritableFloatChunk(@NotNull WritableFloatChunk<?> writableFloatChunk) {
-        floatChunkPool.giveWritableFloatChunk(writableFloatChunk);
     }
 
     @Override
@@ -331,29 +243,13 @@ public final class MultiChunkPool implements BooleanChunkPool, ByteChunkPool, Ch
     }
 
     @Override
-    public void giveResettableFloatChunk(@NotNull ResettableFloatChunk<?> resettableFloatChunk) {
-        floatChunkPool.giveResettableFloatChunk(resettableFloatChunk);
-    }
-
-    @Override
     public <ATTR extends Any> ResettableWritableFloatChunk<ATTR> takeResettableWritableFloatChunk() {
         return floatChunkPool.takeResettableWritableFloatChunk();
     }
 
     @Override
-    public void giveResettableWritableFloatChunk(
-            @NotNull ResettableWritableFloatChunk<?> resettableWritableFloatChunk) {
-        floatChunkPool.giveResettableWritableFloatChunk(resettableWritableFloatChunk);
-    }
-
-    @Override
-    public <ATTR extends Any> WritableDoubleChunk<ATTR> takeWritableDoubleChunk(int capacity) {
+    public <ATTR extends Any> WritableDoubleChunk<ATTR> takeWritableDoubleChunk(final int capacity) {
         return doubleChunkPool.takeWritableDoubleChunk(capacity);
-    }
-
-    @Override
-    public void giveWritableDoubleChunk(@NotNull WritableDoubleChunk<?> writableDoubleChunk) {
-        doubleChunkPool.giveWritableDoubleChunk(writableDoubleChunk);
     }
 
     @Override
@@ -362,29 +258,13 @@ public final class MultiChunkPool implements BooleanChunkPool, ByteChunkPool, Ch
     }
 
     @Override
-    public void giveResettableDoubleChunk(@NotNull ResettableDoubleChunk<?> resettableDoubleChunk) {
-        doubleChunkPool.giveResettableDoubleChunk(resettableDoubleChunk);
-    }
-
-    @Override
     public <ATTR extends Any> ResettableWritableDoubleChunk<ATTR> takeResettableWritableDoubleChunk() {
         return doubleChunkPool.takeResettableWritableDoubleChunk();
     }
 
     @Override
-    public void giveResettableWritableDoubleChunk(
-            @NotNull ResettableWritableDoubleChunk<?> resettableWritableDoubleChunk) {
-        doubleChunkPool.giveResettableWritableDoubleChunk(resettableWritableDoubleChunk);
-    }
-
-    @Override
-    public <TYPE, ATTR extends Any> WritableObjectChunk<TYPE, ATTR> takeWritableObjectChunk(int capacity) {
+    public <TYPE, ATTR extends Any> WritableObjectChunk<TYPE, ATTR> takeWritableObjectChunk(final int capacity) {
         return objectChunkPool.takeWritableObjectChunk(capacity);
-    }
-
-    @Override
-    public void giveWritableObjectChunk(@NotNull WritableObjectChunk<?, ?> writableObjectChunk) {
-        objectChunkPool.giveWritableObjectChunk(writableObjectChunk);
     }
 
     @Override
@@ -393,18 +273,7 @@ public final class MultiChunkPool implements BooleanChunkPool, ByteChunkPool, Ch
     }
 
     @Override
-    public void giveResettableObjectChunk(@NotNull ResettableObjectChunk<?, ?> resettableObjectChunk) {
-        objectChunkPool.giveResettableObjectChunk(resettableObjectChunk);
-    }
-
-    @Override
     public <TYPE, ATTR extends Any> ResettableWritableObjectChunk<TYPE, ATTR> takeResettableWritableObjectChunk() {
         return objectChunkPool.takeResettableWritableObjectChunk();
-    }
-
-    @Override
-    public void giveResettableWritableObjectChunk(
-            @NotNull ResettableWritableObjectChunk<?, ?> resettableWritableObjectChunk) {
-        objectChunkPool.giveResettableWritableObjectChunk(resettableWritableObjectChunk);
     }
 }
