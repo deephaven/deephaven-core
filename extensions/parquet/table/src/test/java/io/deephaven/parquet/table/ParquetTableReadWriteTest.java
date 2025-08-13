@@ -455,31 +455,39 @@ public final class ParquetTableReadWriteTest {
 
     @Test
     public void testLazyDataIndex() {
-        final String destPath = Path.of(rootFile.getPath(), "ParquetTest_indexRetention_test").toString();
-        final int tableSize = 10_000;
-        QueryScope.addParam("syms", List.of("TSLA", "NVDA", "AAPL", "MSFT"));
-        final Table testTable = TableTools.emptyTable(tableSize).update(
-                "symbol = randomInt(0,4)",
-                "indexed_str = (String)syms.get(i % syms.size())",
-                "sentinel_val = ii");
-        final ParquetInstructions writeInstructions = ParquetInstructions.builder()
-                .setGenerateMetadataFiles(true)
-                .addIndexColumns("indexed_str")
-                .build();
-        final PartitionedTable partitionedTable = testTable.partitionBy("symbol");
-        ParquetTools.writeKeyValuePartitionedTable(partitionedTable, destPath, writeInstructions);
+        testLazyDataIndex(false);
+        testLazyDataIndex(true);
+    }
 
-        final Table fromDisk = ParquetTools.readTable(destPath);
-        final Table filtered = fromDisk.where("indexed_str icase in `nvDa`");
-        final Table inMemory = fromDisk.select("symbol", "indexed_str=indexed_str.toUpperCase()", "sentinel_val")
-                .where("indexed_str in `NVDA`");
-        assertTableEquals(inMemory, filtered);
+    private void testLazyDataIndex(final boolean disablePushdown) {
+        final boolean restore = QueryTable.DISABLE_WHERE_PUSHDOWN_DATA_INDEX;
+        try (final SafeCloseable ignored = () -> QueryTable.DISABLE_WHERE_PUSHDOWN_DATA_INDEX = restore) {
+            QueryTable.DISABLE_WHERE_PUSHDOWN_DATA_INDEX = disablePushdown;
+            final String destPath = Path.of(rootFile.getPath(), "ParquetTest_indexRetention_test").toString();
+            final int tableSize = 10_000;
+            QueryScope.addParam("syms", List.of("TSLA", "NVDA", "AAPL", "MSFT"));
+            final Table testTable = TableTools.emptyTable(tableSize).update(
+                    "symbol = randomInt(0,4)",
+                    "indexed_str = (String)syms.get(i % syms.size())",
+                    "sentinel_val = ii");
+            final ParquetInstructions writeInstructions = ParquetInstructions.builder()
+                    .setGenerateMetadataFiles(true)
+                    .addIndexColumns("indexed_str")
+                    .build();
+            final PartitionedTable partitionedTable = testTable.partitionBy("symbol");
+            ParquetTools.writeKeyValuePartitionedTable(partitionedTable, destPath, writeInstructions);
 
-        final Table filtered2 = fromDisk.where("indexed_str icase in `Aapl`, `nvda`");
-        final Table inMemory2 = fromDisk.select("symbol", "indexed_str=indexed_str.toUpperCase()", "sentinel_val")
-                .where("indexed_str in `AAPL`, `NVDA`");
-        assertTableEquals(inMemory2, filtered2);
+            final Table fromDisk = ParquetTools.readTable(destPath);
+            final Table filtered = fromDisk.where("indexed_str icase in `nvDa`");
+            final Table inMemory = fromDisk.select("symbol", "indexed_str=indexed_str.toUpperCase()", "sentinel_val")
+                    .where("indexed_str in `NVDA`");
+            assertTableEquals(inMemory, filtered);
 
+            final Table filtered2 = fromDisk.where("indexed_str icase in `Aapl`, `nvda`");
+            final Table inMemory2 = fromDisk.select("symbol", "indexed_str=indexed_str.toUpperCase()", "sentinel_val")
+                    .where("indexed_str in `AAPL`, `NVDA`");
+            assertTableEquals(inMemory2, filtered2);
+        }
     }
 
     @Test
