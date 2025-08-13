@@ -110,6 +110,9 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
 
     @Override
     public MemoizedOperationKey getMemoizedOperationKey() {
+        if (comparators != null && Arrays.stream(comparators).anyMatch(Objects::nonNull)) {
+            return null;
+        }
         return MemoizedOperationKey.sort(sortPairs);
     }
 
