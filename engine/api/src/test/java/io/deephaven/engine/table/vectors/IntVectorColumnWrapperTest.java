@@ -16,6 +16,8 @@ import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
+import static io.deephaven.util.QueryConstants.NULL_INT;
+
 /**
  * {@link IntVectorTest} implementation for {@link io.deephaven.engine.table.vectors.IntVectorColumnWrapper}.
  */
@@ -54,6 +56,24 @@ public class IntVectorColumnWrapperTest extends IntVectorTest {
     @Test
     public void testComparisonValues() {
         final int[] small = new int[] {(int) 10, (int) 20};
+        final int[] medium = new int[] {(int) 10, (int) 30};
+        final int[] large = new int[] {(int) 10, (int) 40};
+        final IntVectorDirect cvd0 = new IntVectorDirect(small);
+        final IntVectorDirect cvd1 = new IntVectorDirect(medium);
+        final IntVectorDirect cvd3 = new IntVectorDirect(large);
+        final IntVector cvw0 = makeTestVector(small);
+        final IntVector cvw1 = makeTestVector(medium);
+        final IntVector cvw3 = makeTestVector(large);
+
+        checkPairs(cvd0, cvd1, cvd3, cvd0, cvd1, cvd3);
+        checkPairs(cvd0, cvd1, cvd3, cvw0, cvw1, cvw3);
+        checkPairs(cvw0, cvw1, cvw3, cvw0, cvw1, cvw3);
+        checkPairs(cvw0, cvw1, cvw3, cvd0, cvd1, cvd3);
+    }
+
+    @Test
+    public void testComparisonNullValues() {
+        final int[] small = new int[] {(int) 10, NULL_INT};
         final int[] medium = new int[] {(int) 10, (int) 30};
         final int[] large = new int[] {(int) 10, (int) 40};
         final IntVectorDirect cvd0 = new IntVectorDirect(small);

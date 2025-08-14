@@ -32,10 +32,12 @@ public class ReplicateVectorColumnWrappers {
     private static void fixupObject(@NotNull final String path) throws IOException {
         final File file = new File(path);
         List<String> lines = FileUtils.readLines(file, Charset.defaultCharset());
+        lines = ReplicationUtils.removeImport(lines, ".*NULL_OBJECT.*");
         lines = ReplicationUtils.globalReplacements(lines,
                 "ObjectVector ", "ObjectVector<Object> ",
                 "new ObjectVectorColumnWrapper", "new ObjectVectorColumnWrapper<>",
-                "getMemoryColumnSource\\(data\\)", "getMemoryColumnSource(data, Object.class, null)");
+                "getMemoryColumnSource\\(data\\)", "getMemoryColumnSource(data, Object.class, null)",
+                "NULL_OBJECT", "null");
         FileUtils.writeLines(file, lines);
     }
 }

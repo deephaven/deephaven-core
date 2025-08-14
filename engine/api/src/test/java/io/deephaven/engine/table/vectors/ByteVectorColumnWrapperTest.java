@@ -16,6 +16,8 @@ import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
+import static io.deephaven.util.QueryConstants.NULL_BYTE;
+
 /**
  * {@link ByteVectorTest} implementation for {@link io.deephaven.engine.table.vectors.ByteVectorColumnWrapper}.
  */
@@ -54,6 +56,24 @@ public class ByteVectorColumnWrapperTest extends ByteVectorTest {
     @Test
     public void testComparisonValues() {
         final byte[] small = new byte[] {(byte) 10, (byte) 20};
+        final byte[] medium = new byte[] {(byte) 10, (byte) 30};
+        final byte[] large = new byte[] {(byte) 10, (byte) 40};
+        final ByteVectorDirect cvd0 = new ByteVectorDirect(small);
+        final ByteVectorDirect cvd1 = new ByteVectorDirect(medium);
+        final ByteVectorDirect cvd3 = new ByteVectorDirect(large);
+        final ByteVector cvw0 = makeTestVector(small);
+        final ByteVector cvw1 = makeTestVector(medium);
+        final ByteVector cvw3 = makeTestVector(large);
+
+        checkPairs(cvd0, cvd1, cvd3, cvd0, cvd1, cvd3);
+        checkPairs(cvd0, cvd1, cvd3, cvw0, cvw1, cvw3);
+        checkPairs(cvw0, cvw1, cvw3, cvw0, cvw1, cvw3);
+        checkPairs(cvw0, cvw1, cvw3, cvd0, cvd1, cvd3);
+    }
+
+    @Test
+    public void testComparisonNullValues() {
+        final byte[] small = new byte[] {(byte) 10, NULL_BYTE};
         final byte[] medium = new byte[] {(byte) 10, (byte) 30};
         final byte[] large = new byte[] {(byte) 10, (byte) 40};
         final ByteVectorDirect cvd0 = new ByteVectorDirect(small);

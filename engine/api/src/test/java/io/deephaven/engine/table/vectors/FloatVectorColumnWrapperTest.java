@@ -16,6 +16,8 @@ import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
+import static io.deephaven.util.QueryConstants.NULL_FLOAT;
+
 /**
  * {@link FloatVectorTest} implementation for {@link io.deephaven.engine.table.vectors.FloatVectorColumnWrapper}.
  */
@@ -54,6 +56,24 @@ public class FloatVectorColumnWrapperTest extends FloatVectorTest {
     @Test
     public void testComparisonValues() {
         final float[] small = new float[] {(float) 10, (float) 20};
+        final float[] medium = new float[] {(float) 10, (float) 30};
+        final float[] large = new float[] {(float) 10, (float) 40};
+        final FloatVectorDirect cvd0 = new FloatVectorDirect(small);
+        final FloatVectorDirect cvd1 = new FloatVectorDirect(medium);
+        final FloatVectorDirect cvd3 = new FloatVectorDirect(large);
+        final FloatVector cvw0 = makeTestVector(small);
+        final FloatVector cvw1 = makeTestVector(medium);
+        final FloatVector cvw3 = makeTestVector(large);
+
+        checkPairs(cvd0, cvd1, cvd3, cvd0, cvd1, cvd3);
+        checkPairs(cvd0, cvd1, cvd3, cvw0, cvw1, cvw3);
+        checkPairs(cvw0, cvw1, cvw3, cvw0, cvw1, cvw3);
+        checkPairs(cvw0, cvw1, cvw3, cvd0, cvd1, cvd3);
+    }
+
+    @Test
+    public void testComparisonNullValues() {
+        final float[] small = new float[] {(float) 10, NULL_FLOAT};
         final float[] medium = new float[] {(float) 10, (float) 30};
         final float[] large = new float[] {(float) 10, (float) 40};
         final FloatVectorDirect cvd0 = new FloatVectorDirect(small);

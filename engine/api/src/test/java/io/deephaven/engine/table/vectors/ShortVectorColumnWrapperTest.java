@@ -16,6 +16,8 @@ import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
+import static io.deephaven.util.QueryConstants.NULL_SHORT;
+
 /**
  * {@link ShortVectorTest} implementation for {@link io.deephaven.engine.table.vectors.ShortVectorColumnWrapper}.
  */
@@ -54,6 +56,24 @@ public class ShortVectorColumnWrapperTest extends ShortVectorTest {
     @Test
     public void testComparisonValues() {
         final short[] small = new short[] {(short) 10, (short) 20};
+        final short[] medium = new short[] {(short) 10, (short) 30};
+        final short[] large = new short[] {(short) 10, (short) 40};
+        final ShortVectorDirect cvd0 = new ShortVectorDirect(small);
+        final ShortVectorDirect cvd1 = new ShortVectorDirect(medium);
+        final ShortVectorDirect cvd3 = new ShortVectorDirect(large);
+        final ShortVector cvw0 = makeTestVector(small);
+        final ShortVector cvw1 = makeTestVector(medium);
+        final ShortVector cvw3 = makeTestVector(large);
+
+        checkPairs(cvd0, cvd1, cvd3, cvd0, cvd1, cvd3);
+        checkPairs(cvd0, cvd1, cvd3, cvw0, cvw1, cvw3);
+        checkPairs(cvw0, cvw1, cvw3, cvw0, cvw1, cvw3);
+        checkPairs(cvw0, cvw1, cvw3, cvd0, cvd1, cvd3);
+    }
+
+    @Test
+    public void testComparisonNullValues() {
+        final short[] small = new short[] {(short) 10, NULL_SHORT};
         final short[] medium = new short[] {(short) 10, (short) 30};
         final short[] large = new short[] {(short) 10, (short) 40};
         final ShortVectorDirect cvd0 = new ShortVectorDirect(small);

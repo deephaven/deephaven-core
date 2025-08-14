@@ -16,6 +16,8 @@ import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
+import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
+
 /**
  * {@link DoubleVectorTest} implementation for {@link io.deephaven.engine.table.vectors.DoubleVectorColumnWrapper}.
  */
@@ -54,6 +56,24 @@ public class DoubleVectorColumnWrapperTest extends DoubleVectorTest {
     @Test
     public void testComparisonValues() {
         final double[] small = new double[] {(double) 10, (double) 20};
+        final double[] medium = new double[] {(double) 10, (double) 30};
+        final double[] large = new double[] {(double) 10, (double) 40};
+        final DoubleVectorDirect cvd0 = new DoubleVectorDirect(small);
+        final DoubleVectorDirect cvd1 = new DoubleVectorDirect(medium);
+        final DoubleVectorDirect cvd3 = new DoubleVectorDirect(large);
+        final DoubleVector cvw0 = makeTestVector(small);
+        final DoubleVector cvw1 = makeTestVector(medium);
+        final DoubleVector cvw3 = makeTestVector(large);
+
+        checkPairs(cvd0, cvd1, cvd3, cvd0, cvd1, cvd3);
+        checkPairs(cvd0, cvd1, cvd3, cvw0, cvw1, cvw3);
+        checkPairs(cvw0, cvw1, cvw3, cvw0, cvw1, cvw3);
+        checkPairs(cvw0, cvw1, cvw3, cvd0, cvd1, cvd3);
+    }
+
+    @Test
+    public void testComparisonNullValues() {
+        final double[] small = new double[] {(double) 10, NULL_DOUBLE};
         final double[] medium = new double[] {(double) 10, (double) 30};
         final double[] large = new double[] {(double) 10, (double) 40};
         final DoubleVectorDirect cvd0 = new DoubleVectorDirect(small);

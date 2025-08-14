@@ -16,6 +16,8 @@ import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
+import static io.deephaven.util.QueryConstants.NULL_LONG;
+
 /**
  * {@link LongVectorTest} implementation for {@link io.deephaven.engine.table.vectors.LongVectorColumnWrapper}.
  */
@@ -54,6 +56,24 @@ public class LongVectorColumnWrapperTest extends LongVectorTest {
     @Test
     public void testComparisonValues() {
         final long[] small = new long[] {(long) 10, (long) 20};
+        final long[] medium = new long[] {(long) 10, (long) 30};
+        final long[] large = new long[] {(long) 10, (long) 40};
+        final LongVectorDirect cvd0 = new LongVectorDirect(small);
+        final LongVectorDirect cvd1 = new LongVectorDirect(medium);
+        final LongVectorDirect cvd3 = new LongVectorDirect(large);
+        final LongVector cvw0 = makeTestVector(small);
+        final LongVector cvw1 = makeTestVector(medium);
+        final LongVector cvw3 = makeTestVector(large);
+
+        checkPairs(cvd0, cvd1, cvd3, cvd0, cvd1, cvd3);
+        checkPairs(cvd0, cvd1, cvd3, cvw0, cvw1, cvw3);
+        checkPairs(cvw0, cvw1, cvw3, cvw0, cvw1, cvw3);
+        checkPairs(cvw0, cvw1, cvw3, cvd0, cvd1, cvd3);
+    }
+
+    @Test
+    public void testComparisonNullValues() {
+        final long[] small = new long[] {(long) 10, NULL_LONG};
         final long[] medium = new long[] {(long) 10, (long) 30};
         final long[] large = new long[] {(long) 10, (long) 40};
         final LongVectorDirect cvd0 = new LongVectorDirect(small);

@@ -16,6 +16,7 @@ import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
+
 /**
  * {@link ObjectVectorTest} implementation for {@link io.deephaven.engine.table.vectors.ObjectVectorColumnWrapper}.
  */
@@ -54,6 +55,24 @@ public class ObjectVectorColumnWrapperTest extends ObjectVectorTest {
     @Test
     public void testComparisonValues() {
         final Object[] small = new Object[] {(Object) 10, (Object) 20};
+        final Object[] medium = new Object[] {(Object) 10, (Object) 30};
+        final Object[] large = new Object[] {(Object) 10, (Object) 40};
+        final ObjectVectorDirect cvd0 = new ObjectVectorDirect(small);
+        final ObjectVectorDirect cvd1 = new ObjectVectorDirect(medium);
+        final ObjectVectorDirect cvd3 = new ObjectVectorDirect(large);
+        final ObjectVector<Object> cvw0 = makeTestVector(small);
+        final ObjectVector<Object> cvw1 = makeTestVector(medium);
+        final ObjectVector<Object> cvw3 = makeTestVector(large);
+
+        checkPairs(cvd0, cvd1, cvd3, cvd0, cvd1, cvd3);
+        checkPairs(cvd0, cvd1, cvd3, cvw0, cvw1, cvw3);
+        checkPairs(cvw0, cvw1, cvw3, cvw0, cvw1, cvw3);
+        checkPairs(cvw0, cvw1, cvw3, cvd0, cvd1, cvd3);
+    }
+
+    @Test
+    public void testComparisonNullValues() {
+        final Object[] small = new Object[] {(Object) 10, null};
         final Object[] medium = new Object[] {(Object) 10, (Object) 30};
         final Object[] large = new Object[] {(Object) 10, (Object) 40};
         final ObjectVectorDirect cvd0 = new ObjectVectorDirect(small);
