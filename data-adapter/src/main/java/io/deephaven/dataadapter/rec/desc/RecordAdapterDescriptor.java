@@ -38,7 +38,7 @@ public interface RecordAdapterDescriptor<T> {
     /**
      * Creates a RecordAdapterDescriptor for a record adapter that stores the {@code columns} in a HashMap.
      *
-     * @param tableDefinition
+     * @param tableDefinition The table definition, used for mapping the columns to their data types.
      * @param columns The columns to include in the map.
      * @return A RecordAdapterDescriptor that converts each row of a table into a HashMaps.
      */

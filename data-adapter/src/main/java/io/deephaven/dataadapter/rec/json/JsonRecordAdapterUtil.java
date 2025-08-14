@@ -3,19 +3,14 @@
 //
 package io.deephaven.dataadapter.rec.json;
 
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.PartitionedTable;
-import io.deephaven.engine.table.Table;
 import io.deephaven.dataadapter.rec.desc.RecordAdapterDescriptor;
-import io.deephaven.dataadapter.rec.desc.RecordAdapterDescriptorBuilder;
 import io.deephaven.dataadapter.rec.updaters.*;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableDefinition;
 import org.jetbrains.annotations.NotNull;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -26,70 +21,67 @@ import java.util.*;
  * Adapter to convert table data into JSON records.
  */
 public class JsonRecordAdapterUtil {
-    static final Set<Class<?>> CONVERTIBLE_TO_STRING_CLASSES = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
-            Instant.class,
-            LocalDate.class,
-            LocalTime.class,
-            LocalDateTime.class)));
+    /**
+     * Classes that are safe/reasonable to convert to a String representation when storing in a JSON {@code ObjectNode}.
+     */
+    protected static final Set<Class<?>> CONVERTIBLE_TO_STRING_CLASSES =
+            Set.of(Instant.class, LocalDate.class, LocalTime.class, LocalDateTime.class);
 
     /**
-     * Creates a RecordAdapterDescriptor for a record adapter that stores the {@code columns} in a HashMap.
+     * Creates a RecordAdapterDescriptor for representing rows of a table as JSON ObjectNodes. All columns of the table
+     * are included.
      *
-     * @param columns The columns to include in the map.
      * @return A RecordAdapterDescriptor that converts each row of a table into a JSON ObjectNode.
      */
     @NotNull
     public static RecordAdapterDescriptor<ObjectNode> createJsonRecordAdapterDescriptor(
-            @NotNull final Table sourceTable,
+            @NotNull final Table sourceTable) {
+        final TableDefinition tableDefinition = sourceTable.getDefinition();
+        return createJsonRecordAdapterDescriptor(tableDefinition, tableDefinition.getColumnNames());
+    }
+
+    /**
+     * Creates a RecordAdapterDescriptor for a record adapter that stores the {@code columns} in a JSON ObjectNode.
+     *
+     * @param tableDefinition The table definition, used for mapping the columns to their data types.
+     * @param columns The columns to include in the JSON ObjectNode.
+     * @return A RecordAdapterDescriptor that converts each row of a table into a JSON ObjectNode.
+     */
+    @NotNull
+    public static RecordAdapterDescriptor<ObjectNode> createJsonRecordAdapterDescriptor(
+            @NotNull final TableDefinition tableDefinition,
             @NotNull final List<String> columns) {
-        final RecordAdapterDescriptorBuilder<ObjectNode> descriptorBuilder =
-                RecordAdapterDescriptorBuilder.create(() -> new ObjectNode(JsonNodeFactory.instance));
+        tableDefinition.checkHasColumns(columns);
+        final List<Class<?>> colTypes = new ArrayList<>();
+        for (String sourceName : columns) {
+            Class<?> type = tableDefinition.getColumn(sourceName).getDataType();
+            colTypes.add(type);
+        }
+        return createJsonRecordAdapterDescriptor(columns, colTypes);
+    }
 
-        for (String colName : columns) {
-            final ColumnSource<?> colSource = sourceTable.getColumnSource(colName);
-            final Class<?> colType = colSource.getType();
-            final RecordUpdater<ObjectNode, ?> updater = getObjectNodeUpdater(colName, colType);
-
-            descriptorBuilder.addColumnAdapter(colName, updater);
+    @NotNull
+    public static RecordAdapterDescriptor<ObjectNode> createJsonRecordAdapterDescriptor(
+            @NotNull final List<String> columnNames,
+            @NotNull final List<Class<?>> colTypes) {
+        if (columnNames.size() != colTypes.size()) {
+            throw new IllegalArgumentException("Column names and column types must have the same size: "
+                    + columnNames.size() + " != " + colTypes.size());
         }
 
-        // Configure the descriptor to create generated JsonRecordAdapters instead of using DefaultMultiRowRecordAdapter
-        descriptorBuilder.setMultiRowAdapterSupplier((table, descriptor) -> {
+        // These RecordUpdaters are only used for updating key column values in KeyedRecordAdapter.
+        // For data extracted from a table, the generated populateRecords() method is used to directly populate
+        // the ObjectNodes from the data arrays.
+        final Map<String, RecordUpdater<ObjectNode, ?>> columnAdapters = new LinkedHashMap<>(columnNames.size());
+        for (int i = 0; i < columnNames.size(); i++) {
+            final String colName = columnNames.get(i);
+            final Class<?> colType = colTypes.get(i);
+            final RecordUpdater<ObjectNode, ?> updater = getObjectNodeUpdater(colName, colType);
 
-            // Generate a class that creates JSON records from the data arrays
-            Class<? extends BaseJsonRecordAdapter> c = new JsonRecordAdapterGenerator(descriptor).generate();
-            final Constructor<? extends BaseJsonRecordAdapter> constructor;
-            try {
-                constructor = c.getConstructor(Table.class, RecordAdapterDescriptor.class);
-            } catch (NoSuchMethodException e) {
-                throw new RuntimeException("Could not find constructor for generated JsonRecordAdapter", e);
-            }
+            columnAdapters.put(colName, updater);
+        }
 
-            try {
-                return constructor.newInstance(table, descriptor);
-            } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
-                throw new RuntimeException("Could not instantiate generated JsonRecordAdapter", e);
-            }
-        });
-        descriptorBuilder.setMultiRowPartitionedTableAdapterSupplier((partitionedTable, descriptor) -> {
-
-            // Generate a class that creates JSON records from the data arrays
-            Class<? extends BaseJsonRecordAdapter> c = new JsonRecordAdapterGenerator(descriptor).generate();
-            final Constructor<? extends BaseJsonRecordAdapter> constructor;
-            try {
-                constructor = c.getConstructor(PartitionedTable.class, RecordAdapterDescriptor.class);
-            } catch (NoSuchMethodException e) {
-                throw new RuntimeException("Could not find constructor for generated JsonRecordAdapter", e);
-            }
-
-            try {
-                return constructor.newInstance(partitionedTable, descriptor);
-            } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
-                throw new RuntimeException("Could not instantiate generated JsonRecordAdapter", e);
-            }
-        });
-
-        return descriptorBuilder.build();
+        return new JsonRecordAdapterDescriptor(columnAdapters);
     }
 
     private static <T> RecordUpdater<ObjectNode, ?> getObjectNodeUpdater(

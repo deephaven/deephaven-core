@@ -6,25 +6,35 @@ package io.deephaven.dataadapter.rec;
 import io.deephaven.dataadapter.datafetch.bulk.TableDataArrayRetriever;
 
 /**
+ * An adapter to convert rows from a table into instances of {@code T}. Each MultiRowRecordAdapter instance is tied to
+ * one specific table object (through its {@link #getTableDataArrayRetriever() table data array retriever}).
+ *
  * @param <T> The record data type
  */
 public interface MultiRowRecordAdapter<T> {
 
     /**
-     * Creates a new record of type {@code T}.
+     * Creates a new record of type {@code T}, to be populated by {@link #populateRecords(T[], Object[])} (or, from
+     * {@link io.deephaven.dataadapter.KeyedRecordAdapter}, {@link io.deephaven.dataadapter.rec.updaters.RecordUpdater
+     * RecordUpdaters}).
      *
      * @return A new instance of {@code T}
      */
     T createEmptyRecord();
 
     /**
-     * Creates an array to hold {@code nRecords} instances of {@code T}. The returned array will be empty.
+     * Creates a typed array to hold {@code nRecords} instances of {@code T}. The returned array will be empty.
      *
-     * @param nRecords Target array size
-     * @return An empty array
+     * @param nRecords Target array size.
+     * @return An empty array with component type {@code T} and length {@code nRecords}.
      */
     T[] createEmptyRecordsArr(int nRecords);
 
+    /**
+     * The table data array retriever used to fetch data from the column sources.
+     *
+     * @return The table data array retriever for this adapter.
+     */
     TableDataArrayRetriever getTableDataArrayRetriever();
 
     /**

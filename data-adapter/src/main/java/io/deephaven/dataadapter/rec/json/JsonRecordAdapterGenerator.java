@@ -9,6 +9,8 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.AssertionFailure;
 import io.deephaven.dataadapter.datafetch.bulk.PartitionedTableDataArrayRetrieverImpl;
 import io.deephaven.dataadapter.datafetch.bulk.TableDataArrayRetriever;
+import io.deephaven.dataadapter.rec.desc.RecordAdapterDescriptor;
+import io.deephaven.dataadapter.rec.updaters.RecordUpdater;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryCompilerImpl;
 import io.deephaven.engine.context.QueryCompilerRequest;
@@ -18,8 +20,6 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.util.codegen.CodeGenerator;
-import io.deephaven.dataadapter.rec.desc.RecordAdapterDescriptor;
-import io.deephaven.dataadapter.rec.updaters.RecordUpdater;
 import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.dataadapter.rec.json.JsonRecordAdapterUtil.CONVERTIBLE_TO_STRING_CLASSES;
@@ -30,11 +30,12 @@ import static io.deephaven.dataadapter.rec.json.JsonRecordAdapterUtil.CONVERTIBL
 public class JsonRecordAdapterGenerator {
 
     private static final String COMPILED_CLASS_NAME = "JsonRecordAdapter";
+    private static final boolean PRINT_CLASS_BODY = true;
     private final String[] colNames;
     private final String[] colTypeNames;
     private final Class<?>[] colTypes;
 
-    public JsonRecordAdapterGenerator(RecordAdapterDescriptor<ObjectNode> recordAdapterDescriptor) {
+    public JsonRecordAdapterGenerator(RecordAdapterDescriptor<?> recordAdapterDescriptor) {
         colNames = recordAdapterDescriptor.getColumnNames().toArray(new String[0]);
 
         final RecordUpdater<?, ?>[] recordUpdaters = recordAdapterDescriptor
@@ -66,12 +67,15 @@ public class JsonRecordAdapterGenerator {
     public Class<? extends BaseJsonRecordAdapter> generate() {
         final String classBody = generateClassBody().build();
         final String desc = "JsonRecordAdapter[" + String.join(", ", colTypeNames);
+        if (PRINT_CLASS_BODY) {
+            System.out.println("Generated class body for " + desc + ":\n" + classBody);
+        }
         // noinspection unchecked
         return (Class<? extends BaseJsonRecordAdapter>) compile(desc, classBody);
     }
 
     private Class<?> compile(final String desc, final String classBody) {
-        try (final QueryPerformanceNugget nugget = QueryPerformanceRecorder.getInstance()
+        try (final QueryPerformanceNugget ignored = QueryPerformanceRecorder.getInstance()
                 .getNugget(JsonRecordAdapterGenerator.class.getName() + "Compile: " + desc)) {
             // Compilation needs to take place with elevated privileges, but the created object should not have them.
             return ExecutionContext.getContext().getQueryCompiler().compile(

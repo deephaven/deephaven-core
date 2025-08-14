@@ -85,7 +85,7 @@ public class KeyedRecordAdapterTest extends KeyedRecordAdapterTestBase {
         final KeyedRecordAdapter<List<?>, ObjectNode> keyedRecordAdapter =
                 KeyedRecordAdapter.makeRecordAdapterCompositeKey(
                         source,
-                        JsonRecordAdapterUtil.createJsonRecordAdapterDescriptor(source,
+                        JsonRecordAdapterUtil.createJsonRecordAdapterDescriptor(source.getDefinition(),
                                 Arrays.asList("KeyCol1", "KeyCol2", "StringCol", "CharCol", "ByteCol", "ShortCol",
                                         "IntCol", "FloatCol", "LongCol", "DoubleCol")),
                         "KeyCol1", "KeyCol2");
@@ -495,7 +495,7 @@ public class KeyedRecordAdapterTest extends KeyedRecordAdapterTestBase {
                         "KeyCol1", "KeyCol2");
 
         updateGraph.runWithinUnitTestCycle(() -> {
-            TstUtils.addToTable(source, i(4).copy().toTracking(),
+            TstUtils.addToTable(source, i(4).toTracking(),
                     TableTools.col("KeyCol1", "KeyB"),
                     TableTools.col("KeyCol2", 0),
                     TableTools.col("KeyCol3", baseInstant.plusSeconds(1)),
@@ -621,7 +621,7 @@ public class KeyedRecordAdapterTest extends KeyedRecordAdapterTestBase {
                 KeyedRecordAdapter.makeRecordAdapterCompositeKey(
                         source,
                         (TableBackedDataIndex) dataIndex,
-                        JsonRecordAdapterUtil.createJsonRecordAdapterDescriptor(source,
+                        JsonRecordAdapterUtil.createJsonRecordAdapterDescriptor(source.getDefinition(),
                                 Arrays.asList("KeyCol1", "StringCol")));
                 fail("should have thrown an exception");
             } catch (IllegalArgumentException ex) {
@@ -638,7 +638,7 @@ public class KeyedRecordAdapterTest extends KeyedRecordAdapterTestBase {
                 KeyedRecordAdapter.makeRecordAdapterSimpleKey(
                         source,
                         (TableBackedDataIndex) dataIndex,
-                        JsonRecordAdapterUtil.createJsonRecordAdapterDescriptor(source,
+                        JsonRecordAdapterUtil.createJsonRecordAdapterDescriptor(source.getDefinition(),
                                 Arrays.asList("KeyCol1", "StringCol")),
                         String.class);
                 fail("should have thrown an exception");
@@ -656,7 +656,8 @@ public class KeyedRecordAdapterTest extends KeyedRecordAdapterTestBase {
                 KeyedRecordAdapter.makeRecordAdapterSimpleKey(
                         source,
                         (TableBackedDataIndex) dataIndex,
-                        JsonRecordAdapterUtil.createJsonRecordAdapterDescriptor(source, List.of("KeyCol1")),
+                        JsonRecordAdapterUtil.createJsonRecordAdapterDescriptor(source.getDefinition(),
+                                List.of("KeyCol1")),
                         Integer.class);
                 fail("should have thrown an exception");
             } catch (IllegalArgumentException ex) {
@@ -671,7 +672,7 @@ public class KeyedRecordAdapterTest extends KeyedRecordAdapterTestBase {
             try {
                 KeyedRecordAdapter.makeRecordAdapterSimpleKey(
                         source,
-                        JsonRecordAdapterUtil.createJsonRecordAdapterDescriptor(source,
+                        JsonRecordAdapterUtil.createJsonRecordAdapterDescriptor(source.getDefinition(),
                                 Arrays.asList("KeyCol1", "MissingCol123ABC")),
                         "KeyCol1",
                         Integer.class);
@@ -877,7 +878,6 @@ public class KeyedRecordAdapterTest extends KeyedRecordAdapterTestBase {
         assertEquals(recordA0, keyedRecordAdapter.getRecordCompositeKey("KeyA", baseInstant));
 
         // test missing key:
-        final Instant missingInstantKey = Instant.parse("2000-01-01T00:00:00Z");
         assertNull(keyedRecordAdapter.getRecord(Arrays.asList("MissingKey", baseInstant)));
 
         // test invalid key:

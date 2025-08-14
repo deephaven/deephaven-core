@@ -70,7 +70,7 @@ public class KeyedRecordAdapter<K, T> {
     /**
      * Function to convert a list of user-friendly keys to a list of lookup keys that can be used with a
      * {@link DataIndex} or {@link AggregationRowLookup} (which operate on the base storage types for reinterpreted
-     * types -- see {@link ReinterpretUtils} or {@link #getKeyReinterpreter}. The "user-friendly keys" must be either a
+     * types -- see {@link ReinterpretUtils} or {@link #getKeyReinterpreter}). The "user-friendly keys" must be either a
      * {@code List<K>} (if there is one {@link #keyColumns key column}) or a {@code List<List<?>>} (if there are
      * multiple key columns).
      */
@@ -124,14 +124,29 @@ public class KeyedRecordAdapter<K, T> {
     }
 
     /**
+     * Internal constructor for creating a KeyedRecordAdapter, from either a regular table ({@code theTable}) or a
+     * partitioned table ({@code thePartitionedTable}). The following configurations are supported:
+     * <ul>
+     * <li>Regular table with a data index.</li>
+     * <li>Regular table with an AggregationRowLookup (e.g. an aggregation result).</li>
+     * <li>Regular table <i>without</i>, an AggregationRowLookup, in which case we automatically call .lastBy() on
+     * it.</li>
+     * <li>Partitioned table with an AggregationRowLookup (i.e., created with {@link Table#partitionBy})</li>
+     * </ul>
      *
-     * @param theTable
-     * @param dataIndex
-     * @param rowRecordAdapterDescriptor
-     * @param keyColumns
+     * @param theTable The table whose data will be used to create records. Exactly one of {@code theTable} and
+     *        {@code thePartitionedTable} must be non-null.
+     * @param thePartitionedTable The partitioned table whose data will be used to create records. Exactly one of
+     *        {@code theTable} and {@code thePartitionedTable} must be non-null.
+     * @param dataIndex The data index to use for looking up rows corresponding to data keys.
+     * @param rowRecordAdapterDescriptor The descriptor used to build the record adapter for reading data from the
+     *        table.
+     * @param keyColumns The key columns to use when retrieving data. These values in these columns are the "data keys"
+     *        (to differentiate from row keys).
      */
-    private KeyedRecordAdapter(final Table theTable,
-            final PartitionedTable thePartitionedTable,
+    private KeyedRecordAdapter(
+            @Nullable final Table theTable,
+            @Nullable final PartitionedTable thePartitionedTable,
             @Nullable final DataIndex dataIndex,
             @NotNull final RecordAdapterDescriptor<T> rowRecordAdapterDescriptor,
             @NotNull final String... keyColumns) {
@@ -152,19 +167,25 @@ public class KeyedRecordAdapter<K, T> {
                     dataIndex.keyColumnNames().equals(Arrays.asList(keyColumns)),
                     "dataIndex.keyColumnNames().equals(Arrays.asList(keyColumns))");
             sourceTable = theTable;
-            // TODO: assert that the dataIndex is actually on 'theTable'?
+            // TODO: assert that the dataIndex is actually built on 'theTable'?
         } else if (thePartitionedTable != null) {
             // TODO: for partitioned tables we need to worry about constituentChangesPermitted, which is independent of
             // refreshingness of the constituent
             sourceTable = thePartitionedTable.table();
+
+            // Partitioned tables must have an AggregationRowLookup.
+            Assert.eqTrue(sourceTable.hasAttribute(Table.AGGREGATION_ROW_LOOKUP_ATTRIBUTE),
+                    "sourceTable.hasAttribute(Table.AGGREGATION_ROW_LOOKUP_ATTRIBUTE)");
+
             // make sure we have the expected keys
-            Arrays.asList(keyColumns).forEach(colName -> Require.contains(
-                    thePartitionedTable.table().getDefinition().getColumnNameSet(),
-                    "thePartitionedTable.table().getDefinition().getColumnNameSet()",
-                    colName,
-                    "colName"));
+            sourceTable.getDefinition().checkHasColumns(List.of(keyColumns));
         } else {
-            sourceTable = theTable.lastBy(keyColumns);
+            Objects.requireNonNull(theTable, "theTable");
+            if (theTable.hasAttribute(Table.AGGREGATION_ROW_LOOKUP_ATTRIBUTE)) {
+                sourceTable = theTable;
+            } else {
+                sourceTable = theTable.lastBy(keyColumns);
+            }
         }
 
         isSingleKeyCol = keyColumns.length == 1;
@@ -178,6 +199,7 @@ public class KeyedRecordAdapter<K, T> {
                         .map(ReinterpretUtils::maybeConvertToPrimitive)
                         .toArray(ColumnSource[]::new);
 
+        // There must be either a data index or an AggregationRowLookup.
         if (dataIndex != null) {
             final DataIndex.RowKeyLookup rowKeyLookup = dataIndex.rowKeyLookup(keyColumnSourcesReinterpreted);
             final ColumnSource<RowSet> dataIndexRowSetColSource =
@@ -191,16 +213,13 @@ public class KeyedRecordAdapter<K, T> {
                     dataIndexRowSetColSource,
                     usePrev,
                     keysList);
-        } else if (sourceTable.hasAttribute(Table.AGGREGATION_ROW_LOOKUP_ATTRIBUTE)) {
+        } else {
             final AggregationRowLookup rowLookup = AggregationProcessor.getRowLookup(sourceTable);
             targetRowSetRetriever = (keysList, usePrev) -> getRowSetForKeysFromAggregatedTable(
                     sourceTable,
                     rowLookup,
                     usePrev,
                     keysList);
-        } else {
-            throw new UnsupportedOperationException(
-                    "Only tables with Data Indexes or an AggregationRowLookup are supported. Partitioned tables not created with .partitionBy() are unsupported.");
         }
 
         final NotificationStepSource[] notificationSources;
@@ -417,7 +436,7 @@ public class KeyedRecordAdapter<K, T> {
         return new KeyedRecordAdapter<>(sourceTable, null, dataIndex, genericRecordAdapterDescriptor, keyColumns);
     }
 
-    public static <T> KeyedRecordAdapter<List<?>, Map<String, Object>> makeRecordAdapterCompositeKey(
+    public static KeyedRecordAdapter<List<?>, Map<String, Object>> makeRecordAdapterCompositeKey(
             PartitionedTable sourceTable,
             List<String> valueColumns) {
         final List<String> keyColumnsList = new ArrayList<>(sourceTable.keyColumnNames());
@@ -576,7 +595,9 @@ public class KeyedRecordAdapter<K, T> {
      * @return A record containing data for the key, if the key is present in the table. Otherwise, {@code null}.
      */
     public T getRecord(K dataKey) {
-        return getRecords(dataKey).get(dataKey);
+        // noinspection unchecked
+        final Map<K, T> records = getRecords(dataKey);
+        return records.get(dataKey);
     }
 
     @SuppressWarnings("unchecked")
@@ -617,7 +638,9 @@ public class KeyedRecordAdapter<K, T> {
      *         {@code null}.
      */
     public List<T> getRecordList(K dataKey) {
-        return getRecordsLists(dataKey).get(dataKey);
+        // noinspection unchecked
+        final Map<K, List<T>> recordsLists = getRecordsLists(dataKey);
+        return recordsLists.get(dataKey);
     }
 
     @SuppressWarnings("unchecked")
@@ -886,7 +909,8 @@ public class KeyedRecordAdapter<K, T> {
      *        {@code dataKeys}
      * @param usePrev Whether to use previous values
      * @param dataKeys The data keys to search for
-     * @return
+     * @return The row keys corresponding to the given data keys, and a map of those row keys to the position of the
+     *         corresponding data key in the {@code dataKeys} list.
      */
     @NotNull
     private RowSetForKeysResult getRowSetForKeysFromAggregatedTable(
@@ -931,7 +955,8 @@ public class KeyedRecordAdapter<K, T> {
      *        index's underlying table}
      * @param usePrev Whether to use previous values
      * @param dataKeys The data keys to search for
-     * @return
+     * @return The row keys corresponding to the given data keys, and a map of those row keys to the position of the
+     *         corresponding data key in the {@code dataKeys} list.
      */
     @NotNull
     private RowSetForKeysResult getRowSetForKeysWithDataIndex(
@@ -974,39 +999,6 @@ public class KeyedRecordAdapter<K, T> {
 
         return new RowSetForKeysResult(builder.build(), rowKeyToDataKeyPositionMap);
     }
-
-    private RowSetForKeysResult getRowSetForKeysFromPartitionedTable(
-            final AggregationRowLookup aggregationRowLookup,
-            final ColumnSource<Table> partitionedTableConstituentColSource,
-            final boolean usePrev,
-            final List<?> dataKeys) {
-        // TODO: this is a bit of a trickier case because the actual data I'm getting is from a zillion different tables
-        // (each constituent)...which potentially means the SnapshotControl has more/different sources to consider?
-        if (true) {
-            throw new UnsupportedOperationException("method not yet implemented");
-        }
-        final int nKeys = dataKeys.size();
-        PartitionedTable x;
-
-        // TODO: use constituentFor(), or do a straight-up where() on the PartitionedTable.table(), or use the
-        // AggregationRowLookup (assuming it was produced with .partitionBy() rather than being a source table)
-
-        final TLongIntMap rowKeyToDataKeyPositionMap = new TLongIntHashMap(nKeys);
-        final RowSetBuilderRandom builder = RowSetFactory.builderRandom();
-        int ii = 0;
-
-        for (Object dataKey : dataKeys) {
-            final long constituentRowKey = aggregationRowLookup.get(dataKey);
-            if (constituentRowKey != RowSequence.NULL_ROW_KEY) {
-                builder.addKey(constituentRowKey);
-                rowKeyToDataKeyPositionMap.put(constituentRowKey, ii);
-            }
-            ii++;
-        }
-
-        return new RowSetForKeysResult(builder.build(), rowKeyToDataKeyPositionMap);
-    }
-
 
     /**
      * Holder for the result of a {@link RowSetRetriever}. Consists of a {@code rowSet}, and a {code

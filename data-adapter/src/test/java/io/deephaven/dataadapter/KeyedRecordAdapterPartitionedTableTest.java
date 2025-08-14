@@ -545,7 +545,7 @@ public class KeyedRecordAdapterPartitionedTableTest extends KeyedRecordAdapterTe
         final KeyedRecordAdapter<List<?>, ObjectNode> keyedRecordAdapter =
                 KeyedRecordAdapter.makeRecordAdapterCompositeKey(
                         sourcePartitioned,
-                        JsonRecordAdapterUtil.createJsonRecordAdapterDescriptor(source,
+                        JsonRecordAdapterUtil.createJsonRecordAdapterDescriptor(source.getDefinition(),
                                 Arrays.asList("KeyCol1", "KeyCol2", "StringCol", "CharCol", "ByteCol", "ShortCol",
                                         "IntCol", "FloatCol", "LongCol", "DoubleCol")));
 

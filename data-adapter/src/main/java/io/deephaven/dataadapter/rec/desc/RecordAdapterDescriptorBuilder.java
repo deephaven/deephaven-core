@@ -3,12 +3,11 @@
 //
 package io.deephaven.dataadapter.rec.desc;
 
-import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.table.PartitionedTable;
-import io.deephaven.engine.table.Table;
 import io.deephaven.dataadapter.datafetch.bulk.DefaultMultiRowRecordAdapter;
 import io.deephaven.dataadapter.rec.MultiRowRecordAdapter;
 import io.deephaven.dataadapter.rec.updaters.*;
+import io.deephaven.engine.table.PartitionedTable;
+import io.deephaven.engine.table.Table;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collections;
@@ -132,18 +131,8 @@ public class RecordAdapterDescriptorBuilder<R> {
         return colNameToAdapterMap.remove(colName);
     }
 
-    public void setMultiRowAdapterSupplier(
-            @NotNull BiFunction<Table, RecordAdapterDescriptor<R>, MultiRowRecordAdapter<R>> multiRowAdapterSupplier) {
-        this.multiRowAdapterSupplier = multiRowAdapterSupplier;
-    }
-
-    public void setMultiRowPartitionedTableAdapterSupplier(
-            @NotNull BiFunction<PartitionedTable, RecordAdapterDescriptor<R>, MultiRowRecordAdapter<R>> multiRowPartitionedTableAdapterSupplier) {
-        this.multiRowPartitionedTableAdapterSupplier = multiRowPartitionedTableAdapterSupplier;
-    }
-
     public RecordAdapterDescriptor<R> build() {
-        return new RecordAdapterDescriptorImpl<R>(
+        return new RecordAdapterDescriptorImpl<>(
                 Collections.unmodifiableMap(new LinkedHashMap<>(colNameToAdapterMap)),
                 emptyRecordSupplier,
                 multiRowAdapterSupplier,

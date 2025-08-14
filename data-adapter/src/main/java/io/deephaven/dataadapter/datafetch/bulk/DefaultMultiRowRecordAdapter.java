@@ -4,16 +4,14 @@
 package io.deephaven.dataadapter.datafetch.bulk;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.PartitionedTable;
-import io.deephaven.engine.table.Table;
 import io.deephaven.dataadapter.rec.desc.RecordAdapterDescriptor;
 import io.deephaven.dataadapter.rec.updaters.RecordUpdater;
+import io.deephaven.engine.table.PartitionedTable;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.Array;
-import java.util.ArrayList;
 import java.util.Map;
 
 /**
@@ -26,12 +24,11 @@ public class DefaultMultiRowRecordAdapter<T> extends BaseMultiRowRecordAdapter<T
     protected final RecordAdapterDescriptor<T> descriptor;
 
     /**
-     * An array of array-to-record adapters (parallel to the TableDataArrayRetriever's columns
-     * {@link TableDataArrayRetriever#getColumnNames}) tableDataArrayRetriever colum sources}) used to update a record
-     * of type {@code T} with values from arrays of data retrieved from the column sources via the
-     * TableDataArrayRetriever.
+     * An array of array-to-record adapters (parallel to the {@link TableDataArrayRetriever#getColumnNames
+     * TableDataArrayRetriever's columns}) used to update a record of type {@code T} with values from arrays of data
+     * retrieved from the column sources via the TableDataArrayRetriever.
      * <p>
-     * These order of the columns is determined by the {@link #descriptor}.
+     * The order of the columns is determined by the {@link #descriptor}.
      */
     @SuppressWarnings("rawtypes")
     private final ArrayToRecordsAdapter[] arrayToRecordAdapters;

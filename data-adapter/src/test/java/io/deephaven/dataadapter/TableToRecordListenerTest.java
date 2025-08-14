@@ -84,7 +84,7 @@ public class TableToRecordListenerTest extends RefreshingTableTestCase {
                 .computeLocked(() -> new TableToRecordListener<>(
                         "desc",
                         source,
-                        JsonRecordAdapterUtil.createJsonRecordAdapterDescriptor(source,
+                        JsonRecordAdapterUtil.createJsonRecordAdapterDescriptor(source.getDefinition(),
                                 Arrays.asList("KeyCol1", "KeyCol2", "StringCol", "CharCol", "ByteCol", "ShortCol",
                                         "IntCol", "FloatCol", "LongCol", "DoubleCol")),
                         addedModified::add,
