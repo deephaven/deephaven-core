@@ -25,6 +25,10 @@ public class IntFromUnsignedShortMaterializer extends IntMaterializerBase implem
         }
     };
 
+    public static int convertValue(int value) {
+        return Short.toUnsignedInt((short) value);
+    }
+
     private final ValuesReader dataReader;
 
     private IntFromUnsignedShortMaterializer(ValuesReader dataReader, int numValues) {
@@ -39,7 +43,7 @@ public class IntFromUnsignedShortMaterializer extends IntMaterializerBase implem
     @Override
     public void fillValues(int startIndex, int endIndex) {
         for (int ii = startIndex; ii < endIndex; ii++) {
-            data[ii] = Short.toUnsignedInt((short) dataReader.readInteger());
+            data[ii] = convertValue(dataReader.readInteger());
         }
     }
 }

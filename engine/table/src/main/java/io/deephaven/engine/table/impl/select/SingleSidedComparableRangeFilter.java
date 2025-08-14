@@ -18,11 +18,24 @@ import org.jetbrains.annotations.NotNull;
 public class SingleSidedComparableRangeFilter extends AbstractRangeFilter {
     private final Comparable<?> pivot;
     private final boolean isGreaterThan;
+    private Class<?> columnType;
 
     SingleSidedComparableRangeFilter(String columnName, Comparable<?> val, boolean inclusive, boolean isGreaterThan) {
         super(columnName, inclusive, inclusive);
         this.isGreaterThan = isGreaterThan;
         pivot = val;
+    }
+
+    public Comparable<?> getPivot() {
+        return pivot;
+    }
+
+    public boolean isGreaterThan() {
+        return isGreaterThan;
+    }
+
+    public Class<?> getColumnType() {
+        return columnType;
     }
 
     @TestUseOnly
@@ -42,9 +55,9 @@ public class SingleSidedComparableRangeFilter extends AbstractRangeFilter {
             throw new RuntimeException("Column \"" + columnName + "\" doesn't exist in this table, available columns: "
                     + tableDefinition.getColumnNames());
         }
-
-        Assert.assertion(Comparable.class.isAssignableFrom(def.getDataType()),
-                "Comparable.class.isAssignableFrom(def.getDataType())", def.getDataType(), "def.getDataType()");
+        columnType = def.getDataType();
+        Assert.assertion(Comparable.class.isAssignableFrom(columnType), "Comparable.class.isAssignableFrom(columnType)",
+                columnType, "columnType");
 
         chunkFilter = makeComparableChunkFilter(pivot, lowerInclusive, isGreaterThan);
     }
@@ -71,6 +84,7 @@ public class SingleSidedComparableRangeFilter extends AbstractRangeFilter {
                 new SingleSidedComparableRangeFilter(columnName, pivot, lowerInclusive, isGreaterThan);
         copy.chunkFilter = chunkFilter;
         copy.longFilter = longFilter;
+        copy.columnType = columnType;
         return copy;
     }
 
@@ -154,31 +168,6 @@ public class SingleSidedComparableRangeFilter extends AbstractRangeFilter {
             return selection.subSetByPositionRange(0, lowerBoundMin);
         } else {
             return selection.subSetByPositionRange(lowerBoundMin, selection.size());
-        }
-    }
-
-    @Override
-    public boolean overlaps(
-            @NotNull final Object lower,
-            @NotNull final Object upper,
-            final boolean lowerInclusive,
-            final boolean upperInclusive) {
-        if (isGreaterThan) {
-            final int c = CompareUtils.compare(pivot, upper);
-            return c < 0 || (c == 0 && this.lowerInclusive);
-        } else {
-            final int c = CompareUtils.compare(lower, pivot);
-            return c < 0 || (c == 0 && this.lowerInclusive);
-        }
-    }
-
-    @Override
-    public boolean contains(@NotNull final Object value) {
-        final int c = CompareUtils.compare(pivot, value);
-        if (isGreaterThan) {
-            return c < 0 || (c == 0 && this.lowerInclusive);
-        } else {
-            return c > 0 || (c == 0 && this.lowerInclusive);
         }
     }
 }

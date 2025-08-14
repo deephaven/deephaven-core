@@ -25,8 +25,8 @@ dependencies {
     testImplementation project(':engine-test-utils')
     testImplementation project(path: ':Base', configuration: 'tests')
 
-    testRuntimeOnly project(path: ':configs')
-    testRuntimeOnly project(path: ':test-configs')
+    testRuntimeOnly project(':configs')
+    testRuntimeOnly project(':test-configs')
     testRuntimeOnly project(':Numerics')
 
     testRuntimeOnly project(':log-to-slf4j')

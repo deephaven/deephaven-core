@@ -19,8 +19,8 @@ dependencies {
     testImplementation libs.commons.lang3
     testRuntimeOnly libs.slf4j.simple
     testRuntimeOnly project(':log-to-slf4j'),
-            project(path: ':configs'),
-            project(path: ':test-configs')
+            project(':configs'),
+            project(':test-configs')
 }
 
 test {

@@ -108,3 +108,7 @@ authentication.anonymous.warn=false
 deephaven.console.type=none
 
 BaseTable.validateUpdateIndices=true
+
+PerformanceEntry.requireAuthContext=true
+
+PushdownResult.forceValidation=true

@@ -224,16 +224,7 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
 
     @Override
     public TreeTable rebase(@NotNull final Table newSource) {
-        if (!newSource.getDefinition().equals(source.getDefinition())) {
-            if (newSource.getDefinition().equalsIgnoreOrder(source.getDefinition())) {
-                throw new IllegalArgumentException(
-                        "Cannot rebase a TreeTable with a new source definition, column order is not identical");
-            }
-            final String differenceDescription = newSource.getDefinition()
-                    .getDifferenceDescription(source.getDefinition(), "new source", "existing source", ",");
-            throw new IllegalArgumentException(
-                    "Cannot rebase a TreeTable with a new source definition: " + differenceDescription);
-        }
+        checkRebaseDefinition("TreeTable", source, newSource);
 
         final QueryTable newSourceQueryTable = (QueryTable) newSource.coalesce();
 
@@ -258,6 +249,22 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
             final Set<ColumnName> nodeFilterColumns,
             @Nullable final TreeNodeOperationsRecorder nodeOperations,
             @Nullable final List<ColumnDefinition<?>> availableColumnDefinitions) {
+        final ColumnDefinition<?> idDef = source.getDefinition().getColumn(identifierColumn.name());
+        if (idDef == null) {
+            throw new NoSuchColumnException("tree identifier column: ", source.getDefinition().getColumnNames(),
+                    identifierColumn.name());
+        }
+        final ColumnDefinition<?> parentDef = source.getDefinition().getColumn(parentIdentifierColumn.name());
+        if (parentDef == null) {
+            throw new NoSuchColumnException("tree parent column: ", source.getDefinition().getColumnNames(),
+                    parentIdentifierColumn.name());
+        }
+        if (!idDef.hasCompatibleDataType(parentDef)) {
+            throw new InvalidColumnException(
+                    "tree parent and identifier columns must have the same data type, but parent is "
+                            + parentDef.describeForCompatibility() + " and identifier is "
+                            + idDef.describeForCompatibility());
+        }
         final QueryTable tree = computeTree(source, parentIdentifierColumn);
         final QueryTable sourceRowLookupTable = computeSourceRowLookupTable(source, identifierColumn);
         final TreeSourceRowLookup sourceRowLookup = new TreeSourceRowLookup(source, sourceRowLookupTable);

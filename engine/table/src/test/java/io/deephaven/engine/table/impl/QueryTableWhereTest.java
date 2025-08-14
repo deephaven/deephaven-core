@@ -3,7 +3,12 @@
 //
 package io.deephaven.engine.table.impl;
 
+import com.google.common.collect.Lists;
+import gnu.trove.list.TLongList;
+import gnu.trove.list.array.TLongArrayList;
+import io.deephaven.api.ColumnName;
 import io.deephaven.api.RawString;
+import io.deephaven.api.Selectable;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.*;
@@ -17,20 +22,18 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
-import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.ShiftObliviousListener;
-import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
 import io.deephaven.engine.table.impl.chunkfilter.IntRangeComparator;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.select.*;
-import io.deephaven.engine.table.impl.sources.RowKeyColumnSource;
-import io.deephaven.engine.table.impl.sources.UnionRedirection;
+import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.table.impl.verify.TableAssertions;
 import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.QueryTableTestBase.TableComparator;
+import io.deephaven.engine.testutil.filters.RowSetCapturingFilter;
 import io.deephaven.engine.testutil.generator.*;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.testutil.sources.IntTestSource;
@@ -47,6 +50,9 @@ import io.deephaven.util.datastructures.CachingSupplier;
 import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.mutable.MutableObject;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -54,28 +60,50 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Instant;
 import java.time.ZonedDateTime;
-import java.util.Collections;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.IntUnaryOperator;
+import java.util.function.LongConsumer;
 import java.util.stream.IntStream;
 
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.testutil.testcase.RefreshingTableTestCase.printTableUpdates;
 import static io.deephaven.engine.testutil.testcase.RefreshingTableTestCase.simulateShiftAwareStep;
 import static io.deephaven.engine.util.TableTools.*;
+import static io.deephaven.time.DateTimeUtils.parseInstant;
 import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 public abstract class QueryTableWhereTest {
     private final Logger log = LoggerFactory.getLogger(QueryTableWhereTest.class);
 
     @Rule
     public final EngineCleanup base = new EngineCleanup();
+
+    private boolean oldParallel;
+    private boolean oldDisable;
+    private int oldSegments;
+    private long oldSize;
+
+    @Before
+    public void setUp() throws Exception {
+        oldParallel = QueryTable.FORCE_PARALLEL_WHERE;
+        oldDisable = QueryTable.DISABLE_PARALLEL_WHERE;
+        oldSegments = QueryTable.PARALLEL_WHERE_SEGMENTS;
+        oldSize = QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT;
+    }
+
+    @After
+    public void tearDown() throws Exception {
+        QueryTable.FORCE_PARALLEL_WHERE = oldParallel;
+        QueryTable.DISABLE_PARALLEL_WHERE = oldDisable;
+        QueryTable.PARALLEL_WHERE_SEGMENTS = oldSegments;
+        QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT = oldSize;
+    }
 
     @Test
     public void testWhere() {
@@ -718,6 +746,66 @@ public abstract class QueryTableWhereTest {
         TableTools.show(filteredTable);
     }
 
+    private static class TestUncoalescedTable extends UncoalescedTable<TestUncoalescedTable> {
+        private final Table delegate;
+        private final List<Collection<? extends Selectable>> selectDistinctColumns = new ArrayList<>();
+
+        public TestUncoalescedTable(final Table delegate) {
+            super(delegate.getDefinition(), "TestUncoalescedTable");
+            this.delegate = delegate;
+        }
+
+        @Override
+        protected Table doCoalesce() {
+            return delegate.coalesce();
+        }
+
+        @Override
+        protected TestUncoalescedTable copy() {
+            return this;
+        }
+
+        @Override
+        public Table selectDistinct(final Collection<? extends Selectable> columns) {
+            selectDistinctColumns.add(columns);
+            return super.selectDistinct(columns);
+        }
+    }
+
+    @Test
+    public void testWhereInUncoalesced() {
+        final Table table = TableTools.newTable(intCol("x", 1, 2, 3), intCol("y", 2, 4, 6));
+        final Table setTable = TableTools.newTable(intCol("x", 3));
+
+        final Table expected = table.whereIn(setTable, "x");
+        final Table result = table.whereIn(new TestUncoalescedTable(setTable), "x");
+        assertTableEquals(expected, result);
+    }
+
+    @Test
+    public void testWhereInUncoalescedPartitioned() {
+        final Table table = TableTools.newTable(intCol("x", 1, 2, 3), intCol("y", 2, 4, 6));
+        final Table setTableRaw = TableTools.newTable(intCol("x", 3), intCol("y", 2));
+        final TableDefinition definition =
+                TableDefinition.of(setTableRaw.getDefinition().getColumn("x").withPartitioning(),
+                        setTableRaw.getDefinition().getColumn("y"));
+        final Table setTable = new QueryTable(definition, setTableRaw.getRowSet(), setTableRaw.getColumnSourceMap());
+
+        final Table expected1 = table.whereIn(setTable, "x");
+        final Table expected2 = table.whereIn(setTable, "y");
+
+        final TestUncoalescedTable uncoalesced = new TestUncoalescedTable(setTable);
+        final Table resultPart = table.whereIn(uncoalesced, "x");
+        assertTableEquals(expected1, resultPart);
+        assertEquals(1, uncoalesced.selectDistinctColumns.size());
+        assertEquals(List.of(ColumnName.of("x")), uncoalesced.selectDistinctColumns.get(0));
+        uncoalesced.selectDistinctColumns.clear();
+
+        final Table resultNoPart = table.whereIn(uncoalesced, "y");
+        assertTableEquals(expected2, resultNoPart);
+        assertEquals(0, uncoalesced.selectDistinctColumns.size());
+    }
+
     @Test
     public void testWhereNotInEmpty() {
         final Table x = newTable(intCol("X", 1, 2, 3));
@@ -974,7 +1062,9 @@ public abstract class QueryTableWhereTest {
         final Thread t = new Thread(() -> {
             final long start1 = System.currentTimeMillis();
             try (final SafeCloseable ignored = executionContext.open()) {
-                tableToFilter.where("slowCounter.applyAsInt(X) % 2 == 0", "fastCounter.applyAsInt(X) % 3 == 0");
+                tableToFilter.where(Filter.and(
+                        RawString.of("slowCounter.applyAsInt(X) % 2 == 0").withSerial(),
+                        RawString.of("fastCounter.applyAsInt(X) % 3 == 0").withSerial()));
             } catch (Exception e) {
                 log.error().append("extra thread caught ").append(e).endl();
                 caught.setValue(e);
@@ -1864,7 +1954,6 @@ public abstract class QueryTableWhereTest {
         static void pushdownFilter(
                 final WhereFilter filter,
                 final RowSet selection,
-                final RowSet fullSet,
                 final boolean usePrev,
                 final ColumnSource<?> source,
                 final double maybePercentage,
@@ -1872,16 +1961,17 @@ public abstract class QueryTableWhereTest {
             try (final SafeCloseable ignored = LivenessScopeStack.open()) {
                 final String colName = filter.getColumns().get(0);
                 final Map<String, ColumnSource<?>> csMap = Collections.singletonMap(colName, source);
-                final Table dummy = new QueryTable(fullSet.copy().toTracking(), csMap);
+                final Table dummy = new QueryTable(selection.copy().toTracking(), csMap);
 
-                try (final RowSet matches = filter.filter(selection, fullSet, dummy, usePrev)) {
+                try (final WritableRowSet matches = filter.filter(selection, selection, dummy, usePrev)) {
                     final long size = matches.size();
                     final long maybeSize = (long) (size * maybePercentage);
-                    final WritableRowSet addedRowSet = matches.subSetByPositionRange(0, maybeSize);
-                    final WritableRowSet maybeRowSet = matches.subSetByPositionRange(maybeSize, size);
-
-                    // Default to returning all results as maybe
-                    onComplete.accept(PushdownResult.of(addedRowSet, maybeRowSet));
+                    try (
+                            final WritableRowSet addedRowSet = matches.subSetByPositionRange(0, maybeSize);
+                            final WritableRowSet maybeRowSet = matches.subSetByPositionRange(maybeSize, size)) {
+                        // Obvious these row sets do not overlap
+                        onComplete.accept(PushdownResult.of(selection, addedRowSet, maybeRowSet));
+                    }
                 }
             }
         }
@@ -1902,19 +1992,19 @@ public abstract class QueryTableWhereTest {
         }
 
         @Override
-        public long estimatePushdownFilterCost(WhereFilter filter, RowSet selection, RowSet fullSet, boolean usePrev,
-                final PushdownFilterContext context) {
-            return pushdownCost;
+        public void estimatePushdownFilterCost(WhereFilter filter, RowSet selection, boolean usePrev,
+                PushdownFilterContext context, JobScheduler jobScheduler, LongConsumer onComplete,
+                Consumer<Exception> onError) {
+            onComplete.accept(pushdownCost);
         }
 
         @Override
-        public void pushdownFilter(final WhereFilter filter, final Map<String, String> renameMap, final RowSet input,
-                final RowSet fullSet, final boolean usePrev, final PushdownFilterContext context,
+        public void pushdownFilter(final WhereFilter filter, final RowSet input,
+                final boolean usePrev, final PushdownFilterContext context,
                 final long costCeiling, final JobScheduler jobScheduler, final Consumer<PushdownResult> onComplete,
                 final Consumer<Exception> onError) {
             encounterOrder = counter.getAndIncrement();
-            PushdownColumnSourceHeler.pushdownFilter(filter, input, fullSet, usePrev, this, maybePercentage,
-                    onComplete);
+            PushdownColumnSourceHeler.pushdownFilter(filter, input, usePrev, this, maybePercentage, onComplete);
         }
 
         public static void resetCounter() {
@@ -1940,37 +2030,37 @@ public abstract class QueryTableWhereTest {
         final WhereFilter f1 = WhereFilterFactory.getExpression("A <= 4");
         result = source.where(f1);
         try (final RowSet expected = i(0, 1, 2, 3)) {
-            assertTrue("result.getRowSet().equals(expected)", result.getRowSet().equals(expected));
+            assertEquals("result.getRowSet().equals(expected)", result.getRowSet(), expected);
         }
 
         final WhereFilter f2 = WhereFilterFactory.getExpression("A >= 2");
         result = source.where(Filter.and(f1, f2));
         try (final RowSet expected = i(1, 2, 3)) {
-            assertTrue("result.getRowSet().equals(expected)", result.getRowSet().equals(expected));
+            assertEquals("result.getRowSet().equals(expected)", result.getRowSet(), expected);
         }
 
         final WhereFilter f3 = WhereFilterFactory.getExpression("B <= 4");
         result = source.where(f3);
         try (final RowSet expected = i(0, 1, 2, 3)) {
-            assertTrue("result.getRowSet().equals(expected)", result.getRowSet().equals(expected));
+            assertEquals("result.getRowSet().equals(expected)", result.getRowSet(), expected);
         }
 
         final WhereFilter f4 = WhereFilterFactory.getExpression("B >= 2");
         result = source.where(Filter.and(f3, f4));
         try (final RowSet expected = i(1, 2, 3)) {
-            assertTrue("result.getRowSet().equals(expected)", result.getRowSet().equals(expected));
+            assertEquals("result.getRowSet().equals(expected)", result.getRowSet(), expected);
         }
 
         final WhereFilter f5 = WhereFilterFactory.getExpression("C <= 4");
         result = source.where(f5);
         try (final RowSet expected = i(0, 1, 2, 3)) {
-            assertTrue("result.getRowSet().equals(expected)", result.getRowSet().equals(expected));
+            assertEquals("result.getRowSet().equals(expected)", result.getRowSet(), expected);
         }
 
         final WhereFilter f6 = WhereFilterFactory.getExpression("C >= 2");
         result = source.where(Filter.and(f5, f6));
         try (final RowSet expected = i(1, 2, 3)) {
-            assertTrue("result.getRowSet().equals(expected)", result.getRowSet().equals(expected));
+            assertEquals("result.getRowSet().equals(expected)", result.getRowSet(), expected);
         }
     }
 
@@ -1998,7 +2088,7 @@ public abstract class QueryTableWhereTest {
         PushdownIntTestSource.resetCounter();
         result = source.where("A <= 4", "B >= 2");
         try (final RowSet expected = i(2, 3, 4)) {
-            assertTrue("result.getRowSet().equals(expected)", result.getRowSet().equals(expected));
+            assertEquals("result.getRowSet().equals(expected)", result.getRowSet(), expected);
         }
         Assert.eqTrue(sourceA.getEncounterOrder() == 0, "sourceA.getEncounterOrder()");
         Assert.eqTrue(sourceB.getEncounterOrder() == 1, "sourceB.getEncounterOrder()");
@@ -2007,7 +2097,7 @@ public abstract class QueryTableWhereTest {
         PushdownIntTestSource.resetCounter();
         result = source.where("B >= 2", "A <= 4");
         try (final RowSet expected = i(2, 3, 4)) {
-            assertTrue("result.getRowSet().equals(expected)", result.getRowSet().equals(expected));
+            assertEquals("result.getRowSet().equals(expected)", result.getRowSet(), expected);
         }
         Assert.eqTrue(sourceB.getEncounterOrder() == 0, "sourceB.getEncounterOrder()");
         Assert.eqTrue(sourceA.getEncounterOrder() == 1, "sourceA.getEncounterOrder()");
@@ -2016,7 +2106,7 @@ public abstract class QueryTableWhereTest {
         PushdownIntTestSource.resetCounter();
         result = source.where("C = 3", "A <= 4");
         try (final RowSet expected = i(3)) {
-            assertTrue("result.getRowSet().equals(expected)", result.getRowSet().equals(expected));
+            assertEquals("result.getRowSet().equals(expected)", result.getRowSet(), expected);
         }
         Assert.eqTrue(sourceC.getEncounterOrder() == 0, "sourceC.getEncounterOrder()");
         Assert.eqTrue(sourceA.getEncounterOrder() == 1, "sourceA.getEncounterOrder()");
@@ -2025,7 +2115,7 @@ public abstract class QueryTableWhereTest {
         PushdownIntTestSource.resetCounter();
         result = source.where("A <= 4", "B >= 2", "C=3");
         try (final RowSet expected = i(3)) {
-            assertTrue("result.getRowSet().equals(expected)", result.getRowSet().equals(expected));
+            assertEquals("result.getRowSet().equals(expected)", result.getRowSet(), expected);
         }
         Assert.eqTrue(sourceA.getEncounterOrder() == 0, "sourceA.getEncounterOrder()");
         Assert.eqTrue(sourceB.getEncounterOrder() == 1, "sourceB.getEncounterOrder()");
@@ -2035,7 +2125,7 @@ public abstract class QueryTableWhereTest {
         PushdownIntTestSource.resetCounter();
         result = source.where("B >= 2", "A <= 4", "C=3");
         try (final RowSet expected = i(3)) {
-            assertTrue("result.getRowSet().equals(expected)", result.getRowSet().equals(expected));
+            assertEquals("result.getRowSet().equals(expected)", result.getRowSet(), expected);
         }
         Assert.eqTrue(sourceB.getEncounterOrder() == 0, "sourceB.getEncounterOrder()");
         Assert.eqTrue(sourceA.getEncounterOrder() == 1, "sourceA.getEncounterOrder()");
@@ -2045,7 +2135,7 @@ public abstract class QueryTableWhereTest {
         PushdownIntTestSource.resetCounter();
         result = source.where("C=3", "A <= 4", "B >= 2");
         try (final RowSet expected = i(3)) {
-            assertTrue("result.getRowSet().equals(expected)", result.getRowSet().equals(expected));
+            assertEquals("result.getRowSet().equals(expected)", result.getRowSet(), expected);
         }
         Assert.eqTrue(sourceC.getEncounterOrder() == 0, "sourceC.getEncounterOrder()");
         Assert.eqTrue(sourceA.getEncounterOrder() == 1, "sourceA.getEncounterOrder()");
@@ -2055,7 +2145,7 @@ public abstract class QueryTableWhereTest {
         PushdownIntTestSource.resetCounter();
         result = source.where("A <= 4", "C=3", "B >= 2");
         try (final RowSet expected = i(3)) {
-            assertTrue("result.getRowSet().equals(expected)", result.getRowSet().equals(expected));
+            assertEquals("result.getRowSet().equals(expected)", result.getRowSet(), expected);
         }
         Assert.eqTrue(sourceA.getEncounterOrder() == 0, "sourceA.getEncounterOrder()");
         Assert.eqTrue(sourceC.getEncounterOrder() == 1, "sourceC.getEncounterOrder()");
@@ -2081,21 +2171,21 @@ public abstract class QueryTableWhereTest {
         }
 
         @Override
-        public long estimatePushdownFilterCost(
+        public void estimatePushdownFilterCost(
                 final WhereFilter filter,
                 final RowSet selection,
-                final RowSet fullSet,
                 final boolean usePrev,
-                final PushdownFilterContext context) {
-            return pushdownCost;
+                final PushdownFilterContext context,
+                final JobScheduler jobScheduler,
+                final LongConsumer onComplete,
+                final Consumer<Exception> onError) {
+            onComplete.accept(pushdownCost);
         }
 
         @Override
         public void pushdownFilter(
                 final WhereFilter filter,
-                final Map<String, String> renameMap,
                 final RowSet selection,
-                final RowSet fullSet,
                 final boolean usePrev,
                 final PushdownFilterContext context,
                 final long costCeiling,
@@ -2105,25 +2195,24 @@ public abstract class QueryTableWhereTest {
             if (table == null) {
                 throw new IllegalStateException("Table not assigned to TestPPM");
             }
-            try (final SafeCloseable ignored = LivenessScopeStack.open()) {
-                try (final RowSet matches = filter.filter(selection, fullSet, table, usePrev)) {
-                    final long size = matches.size();
-                    final long maybeSize = (long) (size * maybePercentage);
-                    final WritableRowSet addedRowSet = matches.subSetByPositionRange(0, maybeSize);
-                    final WritableRowSet maybeRowSet = matches.subSetByPositionRange(maybeSize, size);
-
-                    onComplete.accept(PushdownResult.of(addedRowSet, maybeRowSet));
+            try (
+                    final SafeCloseable ignored = LivenessScopeStack.open();
+                    final WritableRowSet matches = filter.filter(selection, table.getRowSet(), table, usePrev)) {
+                final long size = matches.size();
+                final long maybeSize = (long) (size * maybePercentage);
+                try (
+                        final WritableRowSet addedRowSet = matches.subSetByPositionRange(0, maybeSize);
+                        final WritableRowSet maybeRowSet = matches.subSetByPositionRange(maybeSize, size)) {
+                    // Obvious these row sets do not overlap
+                    onComplete.accept(PushdownResult.of(selection, addedRowSet, maybeRowSet));
                 }
             }
         }
 
         @Override
-        public Map<String, String> renameMap(WhereFilter filter, ColumnSource<?>[] filterSources) {
-            return Map.of();
-        }
-
-        @Override
-        public PushdownFilterContext makePushdownFilterContext() {
+        public PushdownFilterContext makePushdownFilterContext(
+                final WhereFilter filter,
+                final List<ColumnSource<?>> filterSources) {
             return PushdownFilterContext.NO_PUSHDOWN_CONTEXT;
         }
     }
@@ -2163,13 +2252,997 @@ public abstract class QueryTableWhereTest {
 
         result = source.where(Filter.or(f1, f2));
         try (final RowSet expected = i(0, 4)) {
-            assertTrue("result.getRowSet().equals(expected)", result.getRowSet().equals(expected));
+            assertEquals("result.getRowSet().equals(expected)", result.getRowSet(), expected);
         }
 
         final WhereFilter f3 = WhereFilterFactory.getExpression("C = 3");
         result = source.where(Filter.or(f1, f2, f3));
         try (final RowSet expected = i(0, 2, 4)) {
-            assertTrue("result.getRowSet().equals(expected)", result.getRowSet().equals(expected));
+            assertEquals("result.getRowSet().equals(expected)", result.getRowSet(), expected);
         }
+    }
+
+    @Test
+    public void testDataIndexNoBarrierPrioritizes() {
+        // this is a baseline test for the barrier related tests that follow
+        QueryTable.PARALLEL_WHERE_SEGMENTS = 10;
+        QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT = 10_000;
+        final QueryTable source = testRefreshingTable(RowSetFactory.flat(100_000).toTracking());
+        final QueryTable sourceWithData = (QueryTable) source.update("A = ii");
+        DataIndexer.getOrCreateDataIndex(sourceWithData, "A");
+
+        final RowSetCapturingFilter preFilter = new RowSetCapturingFilter();
+        final RowSetCapturingFilter postFilter = new RowSetCapturingFilter();
+
+        final Table result = sourceWithData.where(
+                Filter.and(preFilter, RawString.of("A < 50000"), postFilter));
+
+        // we expect the pre-filter to see after the raw-string filter
+        assertEquals(50_000, numRowsFiltered(preFilter));
+        assertEquals(50_000, numRowsFiltered(postFilter));
+        assertEquals(50_000, result.size());
+    }
+
+    @Test
+    public void testDataIndexSerialDoesNotPrioritize() {
+        QueryTable.PARALLEL_WHERE_SEGMENTS = 10;
+        QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT = 10_000;
+        final QueryTable source = testRefreshingTable(RowSetFactory.flat(100_000).toTracking());
+        final QueryTable sourceWithData = (QueryTable) source.update("A = ii");
+        DataIndexer.getOrCreateDataIndex(sourceWithData, "A");
+
+        final RowSetCapturingFilter preFilter = new RowSetCapturingFilter();
+        final RowSetCapturingFilter postFilter = new RowSetCapturingFilter();
+
+        final Table result = sourceWithData.where(
+                Filter.and(preFilter, RawString.of("A < 50000").withSerial(), postFilter));
+
+        assertEquals(100_000, numRowsFiltered(preFilter));
+        assertEquals(50_000, numRowsFiltered(postFilter));
+        assertEquals(50_000, result.size());
+    }
+
+    @Test
+    public void testDataIndexRespectBarrierDoesNotPrioritize() {
+        QueryTable.PARALLEL_WHERE_SEGMENTS = 10;
+        QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT = 10_000;
+        final QueryTable source = testRefreshingTable(RowSetFactory.flat(100_000).toTracking());
+        final QueryTable sourceWithData = (QueryTable) source.update("A = ii");
+        DataIndexer.getOrCreateDataIndex(sourceWithData, "A");
+
+        final RowSetCapturingFilter preFilter = new RowSetCapturingFilter();
+        final RowSetCapturingFilter postFilter = new RowSetCapturingFilter();
+
+        final Object barrier = new Object(); // dummy barrier object for testing
+        final Table result = sourceWithData.where(
+                Filter.and(
+                        preFilter.withBarriers(barrier),
+                        RawString.of("A < 50000").respectsBarriers(barrier),
+                        postFilter));
+
+        assertEquals(100_000, numRowsFiltered(preFilter));
+        assertEquals(50_000, numRowsFiltered(postFilter));
+        assertEquals(50_000, result.size());
+    }
+
+    @Test
+    @Ignore
+    public void testDataIndexRespectBarrierPartialPrioritization() {
+        QueryTable.PARALLEL_WHERE_SEGMENTS = 10;
+        QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT = 10_000;
+        final QueryTable source = testRefreshingTable(RowSetFactory.flat(100_000).toTracking());
+        final QueryTable sourceWithData = (QueryTable) source.update("A = ii");
+        final DataIndex dataIndex = DataIndexer.getOrCreateDataIndex(sourceWithData, "A");
+
+        final RowSetCapturingFilter preFilter = new RowSetCapturingFilter();
+        final RowSetCapturingFilter preFilter2 = new RowSetCapturingFilter();
+        final RowSetCapturingFilter postFilter = new RowSetCapturingFilter();
+
+        final Object barrier = new Object(); // dummy barrier object for testing
+        // we are looking to see the RawString prioritize over preFilter2
+        final Table result = sourceWithData.where(
+                Filter.and(
+                        preFilter.withBarriers(barrier),
+                        preFilter2,
+                        RawString.of("A < 50000").respectsBarriers(barrier),
+                        postFilter));
+
+        assertEquals(100_000, numRowsFiltered(preFilter));
+        assertEquals(50_000, numRowsFiltered(preFilter2)); // raw-string prioritizes over prefilter2
+        assertEquals(50_000, numRowsFiltered(postFilter));
+        assertEquals(50_000, result.size());
+    }
+
+    @Test
+    public void testDataIndexRespectBarrierDeepEqValidates() {
+        QueryTable.PARALLEL_WHERE_SEGMENTS = 10;
+        QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT = 10_000;
+        final QueryTable source = testRefreshingTable(RowSetFactory.flat(100_000).toTracking());
+        final QueryTable sourceWithData = (QueryTable) source.update("A = ii");
+        DataIndexer.getOrCreateDataIndex(sourceWithData, "A");
+
+        final RowSetCapturingFilter preFilter = new RowSetCapturingFilter();
+        final RowSetCapturingFilter postFilter = new RowSetCapturingFilter();
+
+        final class DeepEqBarrier {
+            final String name;
+
+            DeepEqBarrier(String name) {
+                this.name = name;
+            }
+
+            @Override
+            public boolean equals(Object obj) {
+                if (this == obj)
+                    return true;
+                if (!(obj instanceof DeepEqBarrier))
+                    return false;
+                final DeepEqBarrier other = (DeepEqBarrier) obj;
+                return name.equals(other.name);
+            }
+
+            @Override
+            public int hashCode() {
+                return name.hashCode();
+            }
+        }
+
+        final Table result = sourceWithData.where(
+                Filter.and(
+                        preFilter.withBarriers(new DeepEqBarrier("my_test_barrier")),
+                        RawString.of("A < 50000").respectsBarriers(new DeepEqBarrier("my_test_barrier")),
+                        postFilter));
+
+        assertEquals(100_000, numRowsFiltered(preFilter));
+        assertEquals(50_000, numRowsFiltered(postFilter));
+        assertEquals(50_000, result.size());
+    }
+
+    @Test
+    public void testDataIndexRespectBarrierThrowsIfNotFound() {
+        QueryTable.PARALLEL_WHERE_SEGMENTS = 10;
+        QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT = 10_000;
+        final QueryTable source = testRefreshingTable(RowSetFactory.flat(100_000).toTracking());
+        final QueryTable sourceWithData = (QueryTable) source.update("A = ii");
+        DataIndexer.getOrCreateDataIndex(sourceWithData, "A");
+
+        final RowSetCapturingFilter preFilter = new RowSetCapturingFilter();
+        final RowSetCapturingFilter postFilter = new RowSetCapturingFilter();
+
+        final IllegalArgumentException err = assertThrows(IllegalArgumentException.class, () -> {
+            sourceWithData.where(Filter.and(
+                    preFilter.withBarriers(new Object()),
+                    RawString.of("A < 50000").respectsBarriers(new Object()),
+                    postFilter));
+        });
+        assertTrue(err.getMessage().contains("respects barrier"));
+        assertTrue(err.getMessage().contains("that is not declared by any filter"));
+
+        // filters should not have run at all
+        assertEquals(0, getAndSortSizes(preFilter).size());
+        assertEquals(0, getAndSortSizes(postFilter).size());
+    }
+
+    @Test
+    public void testDuplicateBarrierDeclarationThrows() {
+        QueryTable.PARALLEL_WHERE_SEGMENTS = 10;
+        QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT = 10_000;
+        final QueryTable source = testRefreshingTable(RowSetFactory.flat(100_000).toTracking());
+        final QueryTable sourceWithData = (QueryTable) source.update("A = ii");
+        DataIndexer.getOrCreateDataIndex(sourceWithData, "A");
+
+        final Object barrier = new Object(); // dummy barrier object for testing
+        final RowSetCapturingFilter preFilter = new RowSetCapturingFilter();
+        final RowSetCapturingFilter postFilter = new RowSetCapturingFilter();
+
+        final IllegalArgumentException err = assertThrows(IllegalArgumentException.class, () -> {
+            sourceWithData.where(Filter.and(
+                    preFilter.withBarriers(barrier),
+                    RawString.of("A < 50000").withBarriers(barrier),
+                    postFilter));
+        });
+        assertTrue(err.getMessage().contains("Filter Barriers must be unique!"));
+
+        // filters should not have run at all
+        assertEquals(0, getAndSortSizes(preFilter).size());
+        assertEquals(0, getAndSortSizes(postFilter).size());
+    }
+
+    @Test
+    public void testDataIndexPrioritizesBarriersAndDependees() {
+        QueryTable.PARALLEL_WHERE_SEGMENTS = 10;
+        QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT = 10_000;
+        final QueryTable source = testRefreshingTable(RowSetFactory.flat(100_000).toTracking());
+        final QueryTable sourceWithData = (QueryTable) source.update("A = ii");
+        DataIndexer.getOrCreateDataIndex(sourceWithData, "A");
+
+        final Object barrier = new Object();
+        final RowSetCapturingFilter preFilter = new RowSetCapturingFilter();
+        final RowSetCapturingFilter midFilter = new RowSetCapturingFilter();
+        final RowSetCapturingFilter postFilter = new RowSetCapturingFilter();
+
+        final Table result = sourceWithData.where(
+                Filter.and(
+                        preFilter,
+                        RawString.of("A < 50000").withBarriers(barrier),
+                        midFilter.respectsBarriers(barrier),
+                        RawString.of("A < 25000").respectsBarriers(barrier),
+                        postFilter));
+
+        // note that while the mid-filter respects the barrier, but will not be prioritized
+        assertEquals(25_000, numRowsFiltered(preFilter));
+        assertEquals(25_000, numRowsFiltered(midFilter));
+        assertEquals(25_000, numRowsFiltered(postFilter));
+    }
+
+    @Test
+    public void testDataIndexBarriersRespectTransitiveDependencies() {
+        QueryTable.PARALLEL_WHERE_SEGMENTS = 10;
+        QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT = 10_000;
+        final QueryTable source = testRefreshingTable(RowSetFactory.flat(100_000).toTracking());
+        final QueryTable sourceWithData = (QueryTable) source.update("A = ii");
+        DataIndexer.getOrCreateDataIndex(sourceWithData, "A");
+
+        final Object barrier = new Object();
+        final RowSetCapturingFilter preFilter = new RowSetCapturingFilter();
+        final RowSetCapturingFilter midFilter = new RowSetCapturingFilter();
+        final RowSetCapturingFilter postFilter = new RowSetCapturingFilter();
+
+        final RowSetCapturingFilter filter1 = new RowSetCapturingFilter(RawString.of("A < 50000"));
+        final RowSetCapturingFilter filter2 = new RowSetCapturingFilter(RawString.of("A < 25000"));
+
+        final Table result = sourceWithData.where(
+                Filter.and(
+                        preFilter,
+                        filter1.withSerial().withBarriers(barrier),
+                        midFilter.withBarriers("mid_barrier").respectsBarriers(barrier),
+                        filter2.respectsBarriers("mid_barrier"),
+                        postFilter));
+
+        // note that while the mid-filter respects the barrier, but will not be prioritized
+        assertEquals(100_000, numRowsFiltered(preFilter));
+        assertEquals(100_000, numRowsFiltered(filter1));
+        assertEquals(50_000, numRowsFiltered(midFilter));
+        assertEquals(50_000, numRowsFiltered(filter2));
+        assertEquals(25_000, numRowsFiltered(postFilter));
+    }
+
+    @Test
+    public void testPushdownBarriersAndSerial() {
+        QueryTable.PARALLEL_WHERE_SEGMENTS = 10;
+        QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT = 10_000;
+
+        final int[] columnData = new int[100_000];
+        for (int ii = 0; ii < columnData.length; ++ii) {
+            columnData[ii] = ii;
+        }
+
+        final WritableRowSet rowSet = RowSetFactory.flat(columnData.length);
+        final Map<String, ColumnSource<?>> csMap = Map.of(
+                "A", new PushdownIntTestSource(rowSet, 100L, 1.0, columnData),
+                "B", new PushdownIntTestSource(rowSet, 90L, 1.0, columnData),
+                "C", new PushdownIntTestSource(rowSet, 80L, 1.0, columnData));
+
+        final Table source = new QueryTable(rowSet.toTracking(), csMap);
+        final QueryTable sourceWithData = (QueryTable) source.update("I = ii");
+        DataIndexer.getOrCreateDataIndex(sourceWithData, "I");
+
+        final Object barrier = new Object();
+        final RowSetCapturingFilter preFilter = new RowSetCapturingFilter();
+        final RowSetCapturingFilter midFilter = new RowSetCapturingFilter();
+        final RowSetCapturingFilter postFilter = new RowSetCapturingFilter();
+
+        final RowSetCapturingFilter filter1 = new RowSetCapturingFilter(RawString.of("A >= 20000"));
+        final RowSetCapturingFilter filter2 = new RowSetCapturingFilter(RawString.of("C < 25000"));
+
+        final ArrayList<RowSetCapturingFilter> allFilters =
+                Lists.newArrayList(preFilter, midFilter, postFilter, filter1, filter2);
+
+        // total reorder filter2 in front of filter1
+        sourceWithData.where(Filter.and(
+                preFilter,
+                filter1,
+                midFilter,
+                filter2,
+                postFilter));
+        // should bubble up filter2, then filter1, finally remaining three filters
+        assertEquals(5_000, numRowsFiltered(preFilter));
+        assertEquals(25_000, numRowsFiltered(filter1));
+        assertEquals(5_000, numRowsFiltered(midFilter));
+        assertEquals(100_000, numRowsFiltered(filter2));
+        assertEquals(5_000, numRowsFiltered(postFilter));
+
+        // partial reorder filter2 right behind filter1
+        allFilters.forEach(RowSetCapturingFilter::reset);
+        sourceWithData.where(Filter.and(
+                preFilter,
+                filter1.withBarriers(barrier),
+                midFilter,
+                filter2.respectsBarriers(barrier),
+                postFilter));
+        // should bubble up filter1, then filter2, finally remaining three filters
+        assertEquals(5_000, numRowsFiltered(preFilter));
+        assertEquals(100_000, numRowsFiltered(filter1));
+        assertEquals(5_000, numRowsFiltered(midFilter));
+        assertEquals(80_000, numRowsFiltered(filter2));
+        assertEquals(5_000, numRowsFiltered(postFilter));
+
+        // partial reorder where filter2 bumps up to the serial filter, but not up to the respected barrier
+        allFilters.forEach(RowSetCapturingFilter::reset);
+        sourceWithData.where(Filter.and(
+                preFilter,
+                filter1.withBarriers(barrier),
+                midFilter.withSerial(),
+                postFilter,
+                filter2.respectsBarriers(barrier)));
+        // should bubble up filter 1, preFilter, midFilter, then filter2 and postFilter
+        assertEquals(80_000, numRowsFiltered(preFilter));
+        assertEquals(100_000, numRowsFiltered(filter1));
+        assertEquals(80_000, numRowsFiltered(midFilter));
+        assertEquals(80_000, numRowsFiltered(filter2));
+        assertEquals(5_000, numRowsFiltered(postFilter));
+
+        // partial reorder where filter 1 cannot move, and filter 2 bumps up to the serial filter
+        allFilters.forEach(RowSetCapturingFilter::reset);
+        sourceWithData.where(Filter.and(
+                preFilter.withBarriers(preFilter),
+                filter1.respectsBarriers(preFilter).withBarriers(barrier),
+                midFilter.withSerial(),
+                postFilter,
+                filter2.respectsBarriers(barrier)));
+        // should bubble up preFilter, filter 1, midFilter, then filter2 and postFilter
+        assertEquals(100_000, numRowsFiltered(preFilter));
+        assertEquals(100_000, numRowsFiltered(filter1));
+        assertEquals(80_000, numRowsFiltered(midFilter));
+        assertEquals(80_000, numRowsFiltered(filter2));
+        assertEquals(5_000, numRowsFiltered(postFilter));
+    }
+
+    @Test
+    public void testPushdownTransitiveBarriers() {
+        QueryTable.PARALLEL_WHERE_SEGMENTS = 10;
+        QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT = 10_000;
+
+        final int[] columnData = new int[100_000];
+        for (int ii = 0; ii < columnData.length; ++ii) {
+            columnData[ii] = ii;
+        }
+
+        final WritableRowSet rowSet = RowSetFactory.flat(columnData.length);
+        final Map<String, ColumnSource<?>> csMap = Map.of(
+                "A", new PushdownIntTestSource(rowSet, 100L, 1.0, columnData),
+                "B", new PushdownIntTestSource(rowSet, 90L, 1.0, columnData),
+                "C", new PushdownIntTestSource(rowSet, 80L, 1.0, columnData));
+
+        final Table source = new QueryTable(rowSet.toTracking(), csMap);
+        final QueryTable sourceWithData = (QueryTable) source.update("I = ii");
+        DataIndexer.getOrCreateDataIndex(sourceWithData, "I");
+
+        final RowSetCapturingFilter preFilter = new RowSetCapturingFilter();
+        final RowSetCapturingFilter postFilter = new RowSetCapturingFilter();
+
+        final RowSetCapturingFilter filter1 = new RowSetCapturingFilter(RawString.of("A >= 20000"));
+        final RowSetCapturingFilter filter2 = new RowSetCapturingFilter(RawString.of("B < 50000"));
+        final RowSetCapturingFilter filter3 = new RowSetCapturingFilter(RawString.of("C < 25000"));
+
+        sourceWithData.where(Filter.and(
+                preFilter,
+                filter1.withBarriers("1"),
+                filter2.respectsBarriers("1").withBarriers("2"),
+                filter3.respectsBarriers("2"),
+                postFilter));
+        // should be f1, f2, f3, pre, then post
+        assertEquals(5_000, numRowsFiltered(preFilter));
+        assertEquals(100_000, numRowsFiltered(filter1));
+        assertEquals(80_000, numRowsFiltered(filter2));
+        assertEquals(30_000, numRowsFiltered(filter3));
+        assertEquals(5_000, numRowsFiltered(postFilter));
+    }
+
+    @Test
+    public void testSerialOnConstantArrayAccess() {
+        QueryTable.PARALLEL_WHERE_SEGMENTS = 10;
+        QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT = 10_000;
+        final QueryTable source = testRefreshingTable(RowSetFactory.flat(100_000).toTracking());
+        final QueryTable sourceWithData = (QueryTable) source.update("A = ii");
+        final DataIndex dataIndex = DataIndexer.getOrCreateDataIndex(sourceWithData, "A");
+
+        final RowSetCapturingFilter filter0 = new RowSetCapturingFilter(RawString.of("A < 50000"));
+        final RowSetCapturingFilter filter1 = new RowSetCapturingFilter(RawString.of("A > 15000"));
+
+        final Table res0 = sourceWithData.where(Filter.and(
+                filter0,
+                RawString.of("A_[ii - 1] < 25000").withSerial(),
+                filter1));
+        assertEquals(filter0.numRowsProcessed(), 100000);
+        assertEquals(10_000, res0.size());
+        assertEquals(filter1.numRowsProcessed(), 25001);
+    }
+
+
+    @Test
+    public void testBarrierOnConstantArrayAccess() {
+        QueryTable.PARALLEL_WHERE_SEGMENTS = 10;
+        QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT = 10_000;
+        final QueryTable source = testRefreshingTable(RowSetFactory.flat(100_000).toTracking());
+        final QueryTable sourceWithData = (QueryTable) source.update("A = ii");
+        final DataIndex dataIndex = DataIndexer.getOrCreateDataIndex(sourceWithData, "A");
+
+        final Object barrier = new Object();
+        final RowSetCapturingFilter filter0 = new RowSetCapturingFilter(RawString.of("A < 50000"));
+        final RowSetCapturingFilter filter1 = new RowSetCapturingFilter(RawString.of("A > 15000"));
+
+        final Table res0 = sourceWithData.where(Filter.and(
+                filter0,
+                RawString.of("A_[ii - 1] < 25000").withBarriers(barrier),
+                filter1.respectsBarriers(barrier)));
+        assertEquals(filter0.numRowsProcessed(), 100000);
+        assertEquals(10_000, res0.size());
+        assertEquals(filter1.numRowsProcessed(), 25001);
+    }
+
+    @Test
+    public void testRespectsBarrierOnConstantArrayAccess() {
+        QueryTable.PARALLEL_WHERE_SEGMENTS = 10;
+        QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT = 10_000;
+        final QueryTable source = testRefreshingTable(RowSetFactory.flat(100_000).toTracking());
+        final QueryTable sourceWithData = (QueryTable) source.update("A = ii");
+
+        final Object barrier = new Object();
+        final RowSetCapturingFilter filter0 = new RowSetCapturingFilter(RawString.of("A < 50000"));
+        // note that we can't fetch the inner filter from RowSetCapturingFilter
+        final RowSetCapturingFilter preFilter = new RowSetCapturingFilter();
+
+        // ensure that we get what we expect without the respectsBarrier first
+        final Table res0 = sourceWithData.where(Filter.and(
+                filter0.withBarriers(barrier),
+                preFilter,
+                RawString.of("A_[ii - 1] < 25000")));
+        assertEquals(filter0.numRowsProcessed(), 100000);
+        assertEquals(preFilter.numRowsProcessed(), 50000);
+        assertEquals(25_001, res0.size());
+
+        filter0.reset();
+        preFilter.reset();
+
+        // TODO: this respectsBarrier could be lost and we wouldn't know it!
+        final Table res1 = sourceWithData.where(Filter.and(
+                filter0.withBarriers(barrier),
+                preFilter,
+                RawString.of("A_[ii - 1] < 25000").respectsBarriers(barrier)));
+        assertEquals(filter0.numRowsProcessed(), 100000);
+        assertEquals(preFilter.numRowsProcessed(), 50000);
+        assertEquals(25_001, res1.size());
+
+        TstUtils.assertTableEquals(res0, res1);
+    }
+
+    @Test
+    public void testRowKeyAgnosticColumnSources() {
+        SingleValueColumnSource<?> src;
+
+        // Boolean Source
+        src = SingleValueColumnSource.getSingleValueColumnSource(boolean.class);
+        ((SingleValueColumnSource<Boolean>) src).set(true);
+        testRowKeyAgnosticColumnSource(src, "A", "A != null", "A == null"); // null
+        testRowKeyAgnosticColumnSource(src, "A", "A = true", "A = false"); // match
+        ((SingleValueColumnSource<Boolean>) src).set(false); // change the value
+        testRowKeyAgnosticColumnSource(src, "A", "A = false", "A = true"); // match
+
+        // Byte Source
+        src = SingleValueColumnSource.getSingleValueColumnSource(byte.class);
+        src.set((byte) 42);
+        testRowKeyAgnosticColumnSource(src, "A", "A != null", "A == null"); // null
+        testRowKeyAgnosticColumnSource(src, "A", "A = 42", "A = 0"); // match
+        testRowKeyAgnosticColumnSource(src, "A", "A >= 42", "A < 42"); // range
+        testRowKeyAgnosticColumnSource(src, "A", "A + 1 >= 43", "A + 1 < 43"); // condition
+        src.set((byte) 0); // change the value
+        testRowKeyAgnosticColumnSource(src, "A", "A = 0", "A = 42"); // match
+        testRowKeyAgnosticColumnSource(src, "A", "A >= 0", "A < 0"); // range
+        testRowKeyAgnosticColumnSource(src, "A", "A + 1 >= 1", "A + 1 < 1"); // condition
+
+        // Char Source
+        src = SingleValueColumnSource.getSingleValueColumnSource(char.class);
+        src.set('A');
+        testRowKeyAgnosticColumnSource(src, "A", "A != null", "A == null"); // null
+        testRowKeyAgnosticColumnSource(src, "A", "A = 'A'", "A = 'B'"); // match
+        testRowKeyAgnosticColumnSource(src, "A", "A >= 'A'", "A < 'A'"); // range
+        testRowKeyAgnosticColumnSource(src, "A", "A + 1 >= 'B'", "A + 1 < 'B'"); // condition
+        src.set('B'); // change the value
+        testRowKeyAgnosticColumnSource(src, "A", "A = 'B'", "A = 'A'"); // match
+        testRowKeyAgnosticColumnSource(src, "A", "A >= 'B'", "A < 'B'"); // range
+        testRowKeyAgnosticColumnSource(src, "A", "A + 1 >= 'C'", "A + 1 < 'C'"); // condition
+
+        // Short Source
+        src = SingleValueColumnSource.getSingleValueColumnSource(short.class);
+        src.set((short) 42);
+        testRowKeyAgnosticColumnSource(src, "A", "A != null", "A == null"); // null
+        testRowKeyAgnosticColumnSource(src, "A", "A = 42", "A = 0"); // match
+        testRowKeyAgnosticColumnSource(src, "A", "A >= 42", "A < 42"); // range
+        testRowKeyAgnosticColumnSource(src, "A", "A + 1 >= 43", "A + 1 < 43"); // condition
+        src.set((short) 0); // change the value
+        testRowKeyAgnosticColumnSource(src, "A", "A = 0", "A = 42"); // match
+        testRowKeyAgnosticColumnSource(src, "A", "A >= 0", "A < 0"); // range
+        testRowKeyAgnosticColumnSource(src, "A", "A + 1 >= 1", "A + 1 < 1"); // condition
+
+        // Int Source
+        src = SingleValueColumnSource.getSingleValueColumnSource(int.class);
+        src.set(42);
+        testRowKeyAgnosticColumnSource(src, "A", "A != null", "A == null"); // null
+        testRowKeyAgnosticColumnSource(src, "A", "A = 42", "A = 0"); // match
+        testRowKeyAgnosticColumnSource(src, "A", "A >= 42", "A < 42"); // range
+        testRowKeyAgnosticColumnSource(src, "A", "A + 1 >= 43", "A + 1 < 43"); // condition
+        src.set(0); // change the value
+        testRowKeyAgnosticColumnSource(src, "A", "A = 0", "A = 42"); // match
+        testRowKeyAgnosticColumnSource(src, "A", "A >= 0", "A < 0"); // range
+        testRowKeyAgnosticColumnSource(src, "A", "A + 1 >= 1", "A + 1 < 1"); // condition
+
+        // Long Source
+        src = SingleValueColumnSource.getSingleValueColumnSource(long.class);
+        src.set(42L);
+        testRowKeyAgnosticColumnSource(src, "A", "A != null", "A == null"); // null
+        testRowKeyAgnosticColumnSource(src, "A", "A = 42", "A = 0"); // match
+        testRowKeyAgnosticColumnSource(src, "A", "A >= 42", "A < 42"); // range
+        testRowKeyAgnosticColumnSource(src, "A", "A + 1 >= 43", "A + 1 < 43"); // condition
+        src.set(0L); // change the value
+        testRowKeyAgnosticColumnSource(src, "A", "A = 0", "A = 42"); // match
+        testRowKeyAgnosticColumnSource(src, "A", "A >= 0", "A < 0"); // range
+        testRowKeyAgnosticColumnSource(src, "A", "A + 1 >= 1", "A + 1 < 1"); // condition
+
+        // Float Source
+        src = SingleValueColumnSource.getSingleValueColumnSource(float.class);
+        src.set(42.0f);
+        testRowKeyAgnosticColumnSource(src, "A", "A != null", "A == null"); // null
+        testRowKeyAgnosticColumnSource(src, "A", "A = 42", "A = 0"); // match
+        testRowKeyAgnosticColumnSource(src, "A", "A >= 42", "A < 42"); // range
+        testRowKeyAgnosticColumnSource(src, "A", "A + 1 >= 43", "A + 1 < 43"); // condition
+        src.set(0.0f); // change the value
+        testRowKeyAgnosticColumnSource(src, "A", "A = 0", "A = 42"); // match
+        testRowKeyAgnosticColumnSource(src, "A", "A >= 0", "A < 0"); // range
+        testRowKeyAgnosticColumnSource(src, "A", "A + 1 >= 1", "A + 1 < 1"); // condition
+
+        // Double Source
+        src = SingleValueColumnSource.getSingleValueColumnSource(double.class);
+        src.set(42.0);
+        testRowKeyAgnosticColumnSource(src, "A", "A != null", "A == null"); // null
+        testRowKeyAgnosticColumnSource(src, "A", "A = 42", "A = 0"); // match
+        testRowKeyAgnosticColumnSource(src, "A", "A >= 42", "A < 42"); // range
+        testRowKeyAgnosticColumnSource(src, "A", "A + 1 >= 43", "A + 1 < 43"); // condition
+        src.set(0.0); // change the value
+        testRowKeyAgnosticColumnSource(src, "A", "A = 0", "A = 42"); // match
+        testRowKeyAgnosticColumnSource(src, "A", "A >= 0", "A < 0"); // range
+        testRowKeyAgnosticColumnSource(src, "A", "A + 1 >= 1", "A + 1 < 1"); // condition
+
+        // Object Source
+        SingleValueColumnSource<String> objectSource = SingleValueColumnSource.getSingleValueColumnSource(String.class);
+        objectSource.set("AAA");
+        testRowKeyAgnosticColumnSource(objectSource, "A", "A != null", "A == null"); // null
+        testRowKeyAgnosticColumnSource(objectSource, "A", "A = `AAA`", "A = `BBB`"); // match
+        testRowKeyAgnosticColumnSource(objectSource, "A", "A >= `AAA`", "A < `AAA`"); // range
+        testRowKeyAgnosticColumnSource(objectSource, "A", "A + `BBB` >= `AAABBB`", "A + `BBB` < `AAABBB`"); // condition
+        objectSource.set("BBB"); // change the value
+        testRowKeyAgnosticColumnSource(objectSource, "A", "A = `BBB`", "A = `AAA`"); // match
+        testRowKeyAgnosticColumnSource(objectSource, "A", "A >= `BBB`", "A < `BBB`"); // range
+        testRowKeyAgnosticColumnSource(objectSource, "A", "A + `CCC` >= `BBBCCC`", "A + `CCC` < `BBBCCC`"); // condition
+
+        // Instant Source
+        SingleValueColumnSource<Instant> instantSource =
+                SingleValueColumnSource.getSingleValueColumnSource(Instant.class);
+        instantSource.set(parseInstant("2020-01-01T00:00:00 NY"));
+        testRowKeyAgnosticColumnSource(instantSource, "A", "A != null", "A == null"); // null
+        testRowKeyAgnosticColumnSource(instantSource, "A", "A = '2020-01-01T00:00:00 NY'",
+                "A = '2020-01-02T00:00:00 NY'"); // match
+        testRowKeyAgnosticColumnSource(instantSource, "A", "A <= '2020-01-01T00:00:00 NY'",
+                "A > '2020-01-01T00:00:00 NY'"); // range
+        testRowKeyAgnosticColumnSource(instantSource, "A",
+                "A >= '2020-01-01T00:00:00 NY' && A <= '2020-01-01T00:00:00 NY'",
+                "A >= '2020-01-02T00:00:00 NY' && A <= '2020-01-02T00:00:00 NY'"); // condition
+        instantSource.set(parseInstant("2020-01-02T00:00:00 NY")); // change the value
+        testRowKeyAgnosticColumnSource(instantSource, "A", "A = '2020-01-02T00:00:00 NY'",
+                "A = '2020-01-01T00:00:00 NY'"); // match
+        testRowKeyAgnosticColumnSource(instantSource, "A", "A <= '2020-01-02T00:00:00 NY'",
+                "A > '2020-01-02T00:00:00 NY'"); // range
+        testRowKeyAgnosticColumnSource(instantSource, "A",
+                "A >= '2020-01-02T00:00:00 NY' && A <= '2020-01-02T00:00:00 NY'",
+                "A >= '2020-01-01T00:00:00 NY' && A <= '2020-01-01T00:00:00 NY'"); // condition
+    }
+
+    @Test
+    public void testImmutableRowKeyAgnosticColumnSources() {
+        ColumnSource<?> src;
+
+        // Immutable Byte Source
+        src = InMemoryColumnSource.makeImmutableConstantSource(byte.class, null, (byte) 42);
+        testRowKeyAgnosticColumnSource(src, "A", "A != null", "A = null"); // null
+        testRowKeyAgnosticColumnSource(src, "A", "A = 42", "A = 0"); // match
+        testRowKeyAgnosticColumnSource(src, "A", "A >= 42", "A < 42"); // range
+        testRowKeyAgnosticColumnSource(src, "A", "A + 1 >= 43", "A + 1 < 43"); // condition
+
+        // Immutable Char Source
+        src = InMemoryColumnSource.makeImmutableConstantSource(char.class, null, 'A');
+        testRowKeyAgnosticColumnSource(src, "A", "A != null", "A = null"); // null
+        testRowKeyAgnosticColumnSource(src, "A", "A = 'A'", "A = 'B'"); // match
+        testRowKeyAgnosticColumnSource(src, "A", "A >= 'A'", "A < 'A'"); // range
+        testRowKeyAgnosticColumnSource(src, "A", "A + 1 >= 'B'", "A + 1 < 'B'"); // condition
+
+        // Immutable Short Source
+        src = InMemoryColumnSource.makeImmutableConstantSource(short.class, null, (short) 42);
+        testRowKeyAgnosticColumnSource(src, "A", "A != null", "A = null"); // null
+        testRowKeyAgnosticColumnSource(src, "A", "A = 42", "A = 0"); // match
+        testRowKeyAgnosticColumnSource(src, "A", "A >= 42", "A < 42"); // range
+        testRowKeyAgnosticColumnSource(src, "A", "A + 1 >= 43", "A + 1 < 43"); // condition
+
+        // Immutable Int Source
+        src = InMemoryColumnSource.makeImmutableConstantSource(int.class, null, 42);
+        testRowKeyAgnosticColumnSource(src, "A", "A != null", "A = null"); // null
+        testRowKeyAgnosticColumnSource(src, "A", "A = 42", "A = 0"); // match
+        testRowKeyAgnosticColumnSource(src, "A", "A >= 42", "A < 42"); // range
+        testRowKeyAgnosticColumnSource(src, "A", "A + 1 >= 43", "A + 1 < 43"); // condition
+
+        // Immutable Long Source
+        src = InMemoryColumnSource.makeImmutableConstantSource(long.class, null, 42L);
+        testRowKeyAgnosticColumnSource(src, "A", "A != null", "A = null"); // null
+        testRowKeyAgnosticColumnSource(src, "A", "A = 42", "A = 0"); // match
+        testRowKeyAgnosticColumnSource(src, "A", "A >= 42", "A < 42"); // range
+        testRowKeyAgnosticColumnSource(src, "A", "A + 1 >= 43", "A + 1 < 43"); // condition
+
+        // Immutable Float Source
+        src = InMemoryColumnSource.makeImmutableConstantSource(float.class, null, 42.0f);
+        testRowKeyAgnosticColumnSource(src, "A", "A != null", "A = null"); // null
+        testRowKeyAgnosticColumnSource(src, "A", "A = 42", "A = 0"); // match
+        testRowKeyAgnosticColumnSource(src, "A", "A >= 42", "A < 42"); // range
+        testRowKeyAgnosticColumnSource(src, "A", "A + 1 >= 43", "A + 1 < 43"); // condition
+
+        // Immutable Double Source
+        src = InMemoryColumnSource.makeImmutableConstantSource(double.class, null, 42.0);
+        testRowKeyAgnosticColumnSource(src, "A", "A != null", "A = null"); // null
+        testRowKeyAgnosticColumnSource(src, "A", "A = 42", "A = 0"); // match
+        testRowKeyAgnosticColumnSource(src, "A", "A >= 42", "A < 42"); // range
+        testRowKeyAgnosticColumnSource(src, "A", "A + 1 >= 43", "A + 1 < 43"); // condition
+
+        // Immutable Object Source
+        src = InMemoryColumnSource.makeImmutableConstantSource(String.class, null, "AAA");
+        testRowKeyAgnosticColumnSource(src, "A", "A != null", "A = null"); // null
+        testRowKeyAgnosticColumnSource(src, "A", "A = `AAA`", "A = `BBB`"); // match
+        testRowKeyAgnosticColumnSource(src, "A", "A >= `AAA`", "A < `AAA`"); // range
+        testRowKeyAgnosticColumnSource(src, "A", "A + `BBB` >= `AAABBB`", "A + `BBB` < `AAABBB`"); // condition
+
+        // Immutable Instant Source
+        src = InMemoryColumnSource.makeImmutableConstantSource(Instant.class, null,
+                parseInstant("2020-01-01T00:00:00 NY"));
+        testRowKeyAgnosticColumnSource(src, "A", "A != null", "A = null"); // null
+        testRowKeyAgnosticColumnSource(src, "A", "A = '2020-01-01T00:00:00 NY'",
+                "A = '2020-01-02T00:00:00 NY'"); // match
+        testRowKeyAgnosticColumnSource(src, "A", "A <= '2020-01-01T00:00:00 NY'", "A > '2020-01-01T00:00:00 NY'"); // range
+        testRowKeyAgnosticColumnSource(src, "A",
+                "A >= '2020-01-01T00:00:00 NY' && A <= '2020-01-01T00:00:00 NY'",
+                "A >= '2020-01-02T00:00:00 NY' && A <= '2020-01-02T00:00:00 NY'"); // condition
+    }
+
+    @Test
+    public void testNullRowKeyAgnosticColumnSources() {
+        // Null Byte Source
+        testRowKeyAgnosticColumnSource(
+                NullValueColumnSource.getInstance(byte.class, null),
+                "A", "A = null", "A != null");
+
+        // Null Char Source
+        testRowKeyAgnosticColumnSource(
+                NullValueColumnSource.getInstance(char.class, null),
+                "A", "A = null", "A != null");
+
+        // Null Short Source
+        testRowKeyAgnosticColumnSource(
+                NullValueColumnSource.getInstance(short.class, null),
+                "A", "A = null", "A != null");
+
+        // Null Int Source
+        testRowKeyAgnosticColumnSource(
+                NullValueColumnSource.getInstance(int.class, null),
+                "A", "A = null", "A != null");
+
+        // Null Long Source
+        testRowKeyAgnosticColumnSource(
+                NullValueColumnSource.getInstance(long.class, null),
+                "A", "A = null", "A != null");
+
+        // Null Float Source
+        testRowKeyAgnosticColumnSource(
+                NullValueColumnSource.getInstance(float.class, null),
+                "A", "A = null", "A != null");
+
+        // Null Double Source
+        testRowKeyAgnosticColumnSource(
+                NullValueColumnSource.getInstance(double.class, null),
+                "A", "A = null", "A != null");
+
+        // Null Boolean Source
+        testRowKeyAgnosticColumnSource(
+                NullValueColumnSource.getInstance(Boolean.class, null),
+                "A", "A = null", "A != null");
+
+        // Null String Source
+        testRowKeyAgnosticColumnSource(
+                NullValueColumnSource.getInstance(String.class, null),
+                "A", "A = null", "A != null");
+
+        // Null Instant Source
+        testRowKeyAgnosticColumnSource(
+                NullValueColumnSource.getInstance(Instant.class, null),
+                "A", "A = null", "A != null");
+    }
+
+    /**
+     * Private helper to force parallelization of the RowSetCapturingFilter.
+     */
+    private class ParallelizedRowSetCapturingFilter extends RowSetCapturingFilter {
+        public ParallelizedRowSetCapturingFilter(Filter filter) {
+            super(filter);
+        }
+
+        @Override
+        public boolean permitParallelization() {
+            return true;
+        }
+    }
+
+    private void testRowKeyAgnosticColumnSource(
+            final ColumnSource<?> columnSource,
+            final String columnName,
+            final String filterAllPass,
+            final String filterNonePass) {
+
+        final Map<String, ColumnSource<?>> columnSourceMap = Map.of(columnName, columnSource);
+        final QueryTable source = new QueryTable(RowSetFactory.flat(100_000).toTracking(), columnSourceMap);
+        source.setRefreshing(true);
+
+        final RowSetCapturingFilter preFilter = new RowSetCapturingFilter();
+        final RowSetCapturingFilter filter0 = new ParallelizedRowSetCapturingFilter(RawString.of(filterAllPass));
+        final RowSetCapturingFilter postFilter = new RowSetCapturingFilter();
+
+        // force pre and post filters to run when expected using barriers
+        final Table res0 = source.where(Filter.and(
+                preFilter.withBarriers("1"),
+                filter0.respectsBarriers("1").withBarriers("2"),
+                postFilter.respectsBarriers("2")));
+        assertEquals(100_000, preFilter.numRowsProcessed());
+        assertEquals(1, filter0.numRowsProcessed());
+        assertEquals(100_000, postFilter.numRowsProcessed()); // All rows passed
+
+        assertEquals(100_000, res0.size());
+
+        preFilter.reset();
+        postFilter.reset();
+
+        final RowSetCapturingFilter filter1 = new ParallelizedRowSetCapturingFilter(RawString.of(filterNonePass));
+
+        // force pre and post filters to run when expected using barriers
+        final Table res1 = source.where(Filter.and(
+                preFilter.withBarriers("1"),
+                filter1.respectsBarriers("1").withBarriers("2"),
+                postFilter.respectsBarriers("2")));
+        assertEquals(100_000, preFilter.numRowsProcessed());
+        assertEquals(1, filter1.numRowsProcessed());
+        assertEquals(0, postFilter.numRowsProcessed()); // No rows passed
+
+        assertEquals(0, res1.size());
+    }
+
+    @Test
+    public void testMergedTableSources() {
+        final Table source1 = testRefreshingTable(RowSetFactory.flat(100_000).toTracking())
+                .update("A = ii");
+        final Table source2 = testRefreshingTable(RowSetFactory.flat(100_000).toTracking())
+                .update("A = 42L"); // RowKeyAgnosticColumnSource
+
+        final RowSetCapturingFilter preFilter = new RowSetCapturingFilter();
+        final RowSetCapturingFilter filter0 = new ParallelizedRowSetCapturingFilter(RawString.of("A = 42"));
+        final RowSetCapturingFilter filter1 = new ParallelizedRowSetCapturingFilter(RawString.of("A != 42"));
+        final RowSetCapturingFilter postFilter = new RowSetCapturingFilter();
+
+        Table merged;
+
+        merged = TableTools.merge(source1, source2);
+
+        // force pre and post filters to run when expected using barriers
+        final Table res0 = merged.where(Filter.and(
+                preFilter.withBarriers("1"),
+                filter0.respectsBarriers("1").withBarriers("2"),
+                postFilter.respectsBarriers("2")));
+        assertEquals(200_000, preFilter.numRowsProcessed());
+        assertEquals(100_001, filter0.numRowsProcessed()); // 100_000 from source1, 1 from source2
+        assertEquals(100_001, postFilter.numRowsProcessed()); // 1 from source1, 100_000 from source2
+
+        assertEquals(100_001, res0.size()); // 1 from source1, 100_000 from source2
+
+        preFilter.reset();
+        postFilter.reset();
+
+        // force pre and post filters to run when expected using barriers
+        final Table res1 = merged.where(Filter.and(
+                preFilter.withBarriers("1"),
+                filter1.respectsBarriers("1").withBarriers("2"),
+                postFilter.respectsBarriers("2")));
+        assertEquals(200_000, preFilter.numRowsProcessed());
+        assertEquals(100_001, filter1.numRowsProcessed()); // 100_000 from source1, 1 from source2
+        assertEquals(99_999, postFilter.numRowsProcessed()); // 99_000 from source1, 0 from source2
+
+        assertEquals(99_999, res1.size());
+
+        preFilter.reset();
+        postFilter.reset();
+    }
+
+    @Test
+    public void testInterestingMergedTableSources() {
+        // Filter the merged table sources before merging
+        final Table source1 = testRefreshingTable(RowSetFactory.flat(100_000).toTracking())
+                .update("A = ii").where("ii % 3 == 0");
+        final Table source2 = testRefreshingTable(RowSetFactory.flat(100_000).toTracking())
+                .update("A = 42L").where("ii % 7 == 0");
+
+        final RowSetCapturingFilter preFilter = new RowSetCapturingFilter();
+        final RowSetCapturingFilter filter = new ParallelizedRowSetCapturingFilter(RawString.of("A = 42"));
+        final RowSetCapturingFilter postFilter = new RowSetCapturingFilter();
+
+        Table merged;
+
+        merged = TableTools.merge(source1, source2);
+
+        // force pre and post filters to run when expected using barriers
+        final Table res0 = merged.where(Filter.and(
+                preFilter.withBarriers("1"),
+                filter.respectsBarriers("1").withBarriers("2"),
+                postFilter.respectsBarriers("2")));
+        assertEquals(47620, preFilter.numRowsProcessed()); // 33334 from source1, 14286 from source2
+        assertEquals(33335, filter.numRowsProcessed()); // 33334 from source1, 1 from source2
+        assertEquals(14287, postFilter.numRowsProcessed()); // 1 from source1, 14286 from source2
+
+        assertEquals(14287, res0.size()); // 1 from source1, 100_000 from source2
+
+        preFilter.reset();
+        postFilter.reset();
+
+        // Filter the merged table and add it (twice) to a new merged table
+        merged = TableTools.merge(source1, merged, source2, merged).where("ii % 11 == 0");
+        final Table memoryTable = merged.select();
+
+        assertTableEquals(memoryTable, merged);
+
+        // Compare filters against an in-memory table
+        assertTableEquals(memoryTable.where("A > 50"), merged.where("A > 50"));
+        assertTableEquals(memoryTable.where("A < 10"), merged.where("A < 10"));
+        assertTableEquals(memoryTable.where("A = 10"), merged.where("A = 10"));
+        assertTableEquals(memoryTable.where("A = 42"), merged.where("A = 42"));
+    }
+
+    @Test
+    public void testNestedMergedTables() {
+        final Table source1 = testRefreshingTable(RowSetFactory.flat(100_000).toTracking())
+                .update("A = ii");
+        final Table source2 = testRefreshingTable(RowSetFactory.flat(100_000).toTracking())
+                .update("A = 42L"); // RowKeyAgnosticColumnSource
+
+        final Table merged1 = TableTools.merge(source1, source2);
+
+        final Table source3 = testRefreshingTable(RowSetFactory.flat(100_000).toTracking())
+                .update("A = ii + 200000");
+        final Table source4 = testRefreshingTable(RowSetFactory.flat(100_000).toTracking())
+                .update("A = 43L"); // RowKeyAgnosticColumnSource
+
+        final Table merged2 = TableTools.merge(source3, source4);
+
+        final RowSetCapturingFilter preFilter = new RowSetCapturingFilter();
+        final RowSetCapturingFilter filter0 = new ParallelizedRowSetCapturingFilter(RawString.of("A = 42"));
+        final RowSetCapturingFilter filter1 = new ParallelizedRowSetCapturingFilter(RawString.of("A <= 43"));
+        final RowSetCapturingFilter postFilter = new RowSetCapturingFilter();
+
+        Table merged;
+
+        merged = TableTools.merge(merged1, merged2);
+
+        // force pre and post filters to run when expected using barriers
+        final Table res0 = merged.where(Filter.and(
+                preFilter.withBarriers("1"),
+                filter0.respectsBarriers("1").withBarriers("2"),
+                postFilter.respectsBarriers("2")));
+        assertEquals(400_000, preFilter.numRowsProcessed());
+        // 100_000 from source1, 1 from source2, 100_000 from source3, 1 from source4
+        assertEquals(200_002, filter0.numRowsProcessed());
+        assertEquals(100_001, postFilter.numRowsProcessed()); // 1 from source1, 100_000 from source2
+
+        assertEquals(100_001, res0.size()); // 1 from source1, 100_000 from source2
+
+        preFilter.reset();
+        postFilter.reset();
+
+        // force pre and post filters to run when expected using barriers
+        final Table res1 = merged.where(Filter.and(
+                preFilter.withBarriers("1"),
+                filter1.respectsBarriers("1").withBarriers("2"),
+                postFilter.respectsBarriers("2")));
+        assertEquals(400_000, preFilter.numRowsProcessed());
+        // 100_000 from source1, 1 from source2, 100_000 from source3, 1 from source4
+        assertEquals(200_002, filter1.numRowsProcessed());
+        // 44 from source1, 100_000 from source2, 100_000 from source4
+        assertEquals(200044, postFilter.numRowsProcessed());
+        assertEquals(200044, res1.size());
+
+        preFilter.reset();
+        postFilter.reset();
+    }
+
+    @Test
+    public void testNoPushdownWrapperMergedTables() {
+        final Table source1_raw = testRefreshingTable(RowSetFactory.flat(100_000).toTracking())
+                .update("A = ii");
+
+        final Map<String, ColumnSource<?>> columnSourceMap1 = new LinkedHashMap<>();
+        source1_raw.getColumnSourceMap().forEach(
+                (name, source) -> columnSourceMap1.put(name, new NoPushdownColumnSourceWrapper<>(source)));
+        final Table source1 = new QueryTable(source1_raw.getRowSet(), columnSourceMap1);
+
+        final Table source2_raw = testRefreshingTable(RowSetFactory.flat(100_000).toTracking())
+                .update("A = 42L"); // RowKeyAgnosticColumnSource
+
+        final Map<String, ColumnSource<?>> columnSourceMap2 = new LinkedHashMap<>();
+        source2_raw.getColumnSourceMap().forEach(
+                (name, source) -> columnSourceMap2.put(name, new NoPushdownColumnSourceWrapper<>(source)));
+        final Table source2 = new QueryTable(source2_raw.getRowSet(), columnSourceMap2);
+
+        final Table source3 = testRefreshingTable(RowSetFactory.flat(100_000).toTracking())
+                .update("A = 2L"); // RowKeyAgnosticColumnSource
+
+        final RowSetCapturingFilter preFilter = new RowSetCapturingFilter();
+        final RowSetCapturingFilter filter0 = new ParallelizedRowSetCapturingFilter(RawString.of("A = 42"));
+        final RowSetCapturingFilter postFilter = new RowSetCapturingFilter();
+
+        Table merged;
+
+        merged = TableTools.merge(source1, source2, source3);
+
+        // force pre and post filters to run when expected using barriers
+        final Table res0 = merged.where(Filter.and(
+                preFilter.withBarriers("1"),
+                filter0.respectsBarriers("1").withBarriers("2"),
+                postFilter.respectsBarriers("2")));
+        assertEquals(300_000, preFilter.numRowsProcessed());
+        assertEquals(200_001, filter0.numRowsProcessed()); // 100_000 source1, 100_000 source2, 1 source3
+        assertEquals(100_001, postFilter.numRowsProcessed()); // 1 source1, 100_000 source2, 0 source3
+
+        assertEquals(100_001, res0.size()); // 1 from source1, 100_000 from source2
+
+        preFilter.reset();
+        postFilter.reset();
+
+        // force pre and post filters to run when expected using barriers
+        final Table res1 = merged.where(Filter.and(
+                preFilter.withBarriers("1"),
+                RawString.of("A != 42").respectsBarriers("1").withBarriers("2"),
+                postFilter.respectsBarriers("2")));
+        assertEquals(300_000, preFilter.numRowsProcessed());
+        assertEquals(200_001, filter0.numRowsProcessed()); // 100_000 source1, 1 source2, 100_000 source3
+        assertEquals(199_999, postFilter.numRowsProcessed()); // 99_999 source1, 0 source2, 100_000 source3
+
+        assertEquals(199_999, res1.size());
+
+        preFilter.reset();
+        postFilter.reset();
+    }
+
+    protected static TLongList getAndSortSizes(final RowSetCapturingFilter filter) {
+        final List<RowSet> rowSets = filter.rowSets();
+        TLongList sizes = new TLongArrayList(rowSets.size());
+        filter.rowSets().stream()
+                .mapToLong(RowSet::size)
+                .forEach(sizes::add);
+        sizes.sort();
+        return sizes;
+    }
+
+    protected static long numRowsFiltered(final RowSetCapturingFilter filter) {
+        return filter.rowSets().stream()
+                .mapToLong(RowSet::size)
+                .sum();
     }
 }

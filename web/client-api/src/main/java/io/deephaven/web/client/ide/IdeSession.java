@@ -116,12 +116,14 @@ public class IdeSession extends HasEventHandling {
 
     /**
      * Load the named table, with columns and size information already fully populated.
-     * 
-     * @param name
-     * @param applyPreviewColumns optional boolean
-     * @return {@link Promise} of {@link JsTable}
+     *
+     * @param name the name of the table to fetch
+     * @param applyPreviewColumns false to disable previews, defaults to true
+     * @return a {@link Promise} that will resolve to the table, or reject with an error if it cannot be loaded.
+     * @deprecated Added to resolve a specific issue, in the future preview will be applied as part of the subscription.
      */
     // TODO (deephaven-core#188): improve usage of subscriptions (w.r.t. this optional param)
+    @Deprecated
     public Promise<JsTable> getTable(String name, @JsOptional Boolean applyPreviewColumns) {
         return connection.getVariableDefinition(name, JsVariableType.TABLE).then(varDef -> {
             final Promise<JsTable> table = connection.getTable(varDef, applyPreviewColumns);

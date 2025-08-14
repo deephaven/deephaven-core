@@ -16,11 +16,16 @@ import org.junit.Test;
 public class SortedRangesRowSequenceTest extends RowSequenceTestBase {
     @Override
     protected RowSequence create(long... values) {
-        SortedRanges sar = SortedRanges.makeForKnownRange(values[0], values[values.length - 1], true);
+        SortedRanges sar;
+        if (values.length != 0) {
+            sar = SortedRanges.makeForKnownRange(values[0], values[values.length - 1], true);
+        } else {
+            sar = SortedRanges.makeEmpty();
+        }
         if (sar == null) {
             throw new IllegalStateException();
         }
-        for (long v : values) {
+        for (final long v : values) {
             sar = sar.add(v);
             if (sar == null) {
                 throw new IllegalStateException();

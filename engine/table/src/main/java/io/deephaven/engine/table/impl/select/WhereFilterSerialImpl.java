@@ -37,6 +37,6 @@ public class WhereFilterSerialImpl extends WhereFilterDelegatingBase {
 
     @Override
     public String toString() {
-        return "serial(" + filter + ")";
+        return "serial{" + filter + "}";
     }
 }

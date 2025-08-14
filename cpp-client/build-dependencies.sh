@@ -490,22 +490,9 @@ if [ "$CLONE_ABSEIL" = "yes" ]; then
   echo
   echo "*** Clone abseil"
   cd $SRC
-  # Previously used version: 20211102.0
-  git clone $GIT_FLAGS -b 20240116.0 --depth 1 "${GITHUB_BASE_URL}/abseil/abseil-cpp.git"
+  # Previously used version: 20240116.0
+  git clone $GIT_FLAGS -b 20240116.3 --depth 1 "${GITHUB_BASE_URL}/abseil/abseil-cpp.git"
   echo "*** Cloning abseil DONE"
-  if [ "$fedora38" = "yes" ]; then
-  echo "*** Patching abseil for Fedora 38"
-    patch -p0 <<'END'
---- abseil-cpp/absl/strings/internal/str_format/extension.h.orig        2023-09-21 03:15:05.004224385 +0000
-+++ abseil-cpp/absl/strings/internal/str_format/extension.h     2023-09-21 03:15:23.408208301 +0000
-@@ -19,6 +19,7 @@
- #include <limits.h>
-
- #include <cstddef>
-+#include <cstdint>
- #include <cstring>
-END
-  fi
 fi
 if [ "$BUILD_ABSEIL" = "yes" ]; then
   echo
@@ -808,8 +795,9 @@ if [ "$CLONE_IMMER" = "yes" ]; then
   echo
   echo "*** Clone immer"
   cd $SRC
-  # Previously used version: SHA e5d79ed80ec74d511cc4f52fb68feeac66507f2c.
-  git clone $GIT_FLAGS -b v0.8.1 "${GITHUB_BASE_URL}/arximboldi/immer.git"
+  # Previously used version: v0.8.1
+  git clone $GIT_FLAGS "${GITHUB_BASE_URL}/arximboldi/immer.git"
+  (cd immer && git checkout df6ef46d97e1fe81f397015b9aeb32505cef653b)
   echo "*** Clonning immer DONE"
 fi
 if [ "$BUILD_IMMER" = "yes" ]; then

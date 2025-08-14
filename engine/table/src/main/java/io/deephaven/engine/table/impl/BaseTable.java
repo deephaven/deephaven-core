@@ -454,6 +454,21 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
         return withoutAttributes(Set.of(BLINK_TABLE_ATTRIBUTE));
     }
 
+    @Override
+    public Table assertBlink() {
+        return withAttributes(Map.of(BLINK_TABLE_ATTRIBUTE, true));
+    }
+
+    @Override
+    public Table assertAddOnly() {
+        return withAttributes(Map.of(ADD_ONLY_TABLE_ATTRIBUTE, true));
+    }
+
+    @Override
+    public Table assertAppendOnly() {
+        return withAttributes(Map.of(APPEND_ONLY_TABLE_ATTRIBUTE, true));
+    }
+
     // ------------------------------------------------------------------------------------------------------------------
     // Implementation for update propagation support
     // ------------------------------------------------------------------------------------------------------------------
@@ -705,13 +720,6 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
 
         maybeSignal();
 
-        final boolean hasNoListeners = !hasListeners();
-        if (hasNoListeners) {
-            lastNotificationStep = currentStep;
-            updateToSend.release();
-            return;
-        }
-
         Assert.neqNull(updateToSend.added(), "added");
         Assert.neqNull(updateToSend.removed(), "removed");
         Assert.neqNull(updateToSend.modified(), "modified");
@@ -765,17 +773,20 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
     private void validateUpdateOverlaps(final TableUpdate update) {
         final boolean currentMissingAdds = !update.added().subsetOf(getRowSet());
         final boolean currentMissingModifications = !update.modified().subsetOf(getRowSet());
-        final boolean previousMissingRemovals;
-        try (final RowSet prevIndex = getRowSet().copyPrev()) {
-            previousMissingRemovals = !update.removed().subsetOf(prevIndex);
-        }
+        final boolean previousMissingRemovals = !update.removed().subsetOf(getRowSet().prev());
         final boolean currentContainsRemovals;
-        try (final RowSet removedMinusAdded = update.removed().minus(update.added())) {
-            currentContainsRemovals = removedMinusAdded.overlaps(getRowSet());
+
+        if (!update.shifted().empty()) {
+            // we cannot perform a cheap rm/add overlapping check when shifts are present, so we'll skip it
+            currentContainsRemovals = false;
+        } else {
+            try (final RowSet removedMinusAdded = update.removed().minus(update.added())) {
+                currentContainsRemovals = removedMinusAdded.overlaps(getRowSet());
+            }
         }
 
         if (!previousMissingRemovals && !currentMissingAdds && !currentMissingModifications &&
-                (!currentContainsRemovals || !update.shifted().empty())) {
+                !currentContainsRemovals) {
             return;
         }
 
@@ -802,8 +813,8 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
                     }
                 };
 
-                append.accept("build().copyPrev=", getRowSet().copyPrev());
-                append.accept("build()=", getRowSet().copyPrev());
+                append.accept("build().prev=", getRowSet().prev());
+                append.accept("build()=", getRowSet());
                 append.accept("added=", update.added());
                 append.accept("removed=", update.removed());
                 append.accept("modified=", update.modified());
@@ -815,15 +826,15 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
         }
 
         // If we're still here, we know that things are off the rails, and we want to fire the assertion
-        final RowSet removalsMinusPrevious = update.removed().minus(getRowSet().copyPrev());
+        final RowSet removalsMinusPrevious = update.removed().minus(getRowSet().prev());
         final RowSet addedMinusCurrent = update.added().minus(getRowSet());
         final RowSet removedIntersectCurrent = update.removed().intersect(getRowSet());
         final RowSet modifiedMinusCurrent = update.modified().minus(getRowSet());
 
-        // Everything is messed up for this table, print out the indices in an easy to understand way
+        // Everything is messed up for this table, print out the indices in an easy-to-understand way
         final LogOutput logOutput = new LogOutputStringImpl()
                 .append("RowSet update error detected: ")
-                .append(LogOutput::nl).append("\t          previousIndex=").append(getRowSet().copyPrev())
+                .append(LogOutput::nl).append("\t          previousIndex=").append(getRowSet().prev())
                 .append(LogOutput::nl).append("\t           currentIndex=").append(getRowSet())
                 .append(LogOutput::nl).append("\t                  added=").append(update.added())
                 .append(LogOutput::nl).append("\t                removed=").append(update.removed())

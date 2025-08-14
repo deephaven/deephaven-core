@@ -7,13 +7,21 @@ import io.deephaven.base.stats.State;
 import io.deephaven.base.stats.Stats;
 import io.deephaven.base.stats.Value;
 import io.deephaven.base.verify.Require;
+import io.deephaven.configuration.Configuration;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.FileChannel;
 import java.nio.channels.SeekableByteChannel;
+import java.nio.file.Files;
+import java.nio.file.OpenOption;
+import java.nio.file.Path;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.util.Objects;
+import java.util.function.Supplier;
 
 /**
  * <p>
@@ -57,8 +65,68 @@ public final class FileHandle implements SeekableByteChannel {
     private static final Value FORCE_DURATION_NANOS =
             Stats.makeItem("FileHandle", "forceDurationNanos", State.FACTORY).getValue();
 
+    static final String SAFETY_CHECK_PROPERTY = "FileHandle.safetyCheckEnabled";
+
+    private static final boolean SAFETY_CHECK_ENABLED =
+            Configuration.getInstance().getBooleanWithDefault(SAFETY_CHECK_PROPERTY, true);
+
     private final FileChannel fileChannel;
     private final Runnable postCloseProcedure;
+    private final Object fileKey;
+
+    /**
+     * Creates a new file handle by wrapping up the results of an {@link FileChannel#open(Path, OpenOption...)}.
+     *
+     * <p>
+     * If the {@link Runnable} created from {@code postCloseProcedureSupplier} throws an exception, that exception may
+     * suppress {@link ClosedChannelException}s that trigger {@code postCloseProcedure} invocation.
+     *
+     * <p>
+     * By default, the returned file handle will contain its {@link BasicFileAttributes#fileKey() file key} to act as a
+     * safety check during refreshes of the file handle as part of {@link FileHandleAccessor}. To disable this safety
+     * check, the configuration property {@value SAFETY_CHECK_PROPERTY} can be set to {@code false}.
+     *
+     * @param path The path to the file
+     * @param postCloseProcedureSupplier A supplier for a procedure to invoke if it's detected that the
+     *        {@link FileChannel} is closed - the procedure must be idempotent. The supplier will be called exactly once
+     *        after the {@link FileChannel} has been successfully created.
+     * @param options the open options
+     * @return the file handle
+     * @throws IOException if an IO exception occurs
+     */
+    public static FileHandle open(
+            @NotNull final Path path,
+            @NotNull final Supplier<Runnable> postCloseProcedureSupplier,
+            @NotNull final OpenOption... options)
+            throws IOException {
+        final FileChannel fileChannel = FileChannel.open(path, options);
+        final Object fileKey;
+        if (!SAFETY_CHECK_ENABLED) {
+            fileKey = null;
+        } else {
+            // Note: there is a chance for a race here (that the attributes read here are for a different file that what
+            // is represented by fileChannel); Java does not provide an API for getting file attributes from an already
+            // open FileChannel. (Arguably, this is something Java could provide in the future with an
+            // https://linux.die.net/man/2/fstat call, which they already use internally in some cases.). That said, a
+            // race here at worst will lead to our old behavior of not doing a safety check. If we really wanted to, we
+            // could work around the race by sandwiching two readAttribute calls around the open call, and verifying
+            // that the two readAttribute call keys were the same (and if not, retrying until success).
+            final BasicFileAttributes attributes;
+            try {
+                attributes = Files.readAttributes(path, BasicFileAttributes.class);
+            } catch (final RuntimeException e) {
+                try {
+                    fileChannel.close();
+                } catch (final RuntimeException e2) {
+                    e.addSuppressed(e2);
+                }
+                throw e;
+            }
+            // May be null here still
+            fileKey = attributes.fileKey();
+        }
+        return new FileHandle(fileChannel, postCloseProcedureSupplier.get(), fileKey);
+    }
 
     /**
      * <p>
@@ -70,10 +138,49 @@ public final class FileHandle implements SeekableByteChannel {
      * @param fileChannel The {@link FileChannel}
      * @param postCloseProcedure A procedure to invoke if its detected that the {@link FileChannel} is closed - must be
      *        idempotent
+     * @deprecated prefer {@link #open(Path, Supplier, OpenOption...)}
      */
+    @Deprecated
     public FileHandle(@NotNull final FileChannel fileChannel, @NotNull final Runnable postCloseProcedure) {
+        this(fileChannel, postCloseProcedure, null);
+    }
+
+    private FileHandle(
+            @NotNull final FileChannel fileChannel,
+            @NotNull final Runnable postCloseProcedure,
+            @Nullable final Object fileKey) {
         this.fileChannel = Require.neqNull(fileChannel, "fileChannel");
         this.postCloseProcedure = Require.neqNull(postCloseProcedure, "postCloseProcedure");
+        this.fileKey = fileKey;
+    }
+
+    /**
+     * Checks if two file handles are equal based on their {@link BasicFileAttributes#fileKey()} on a best-effort basis.
+     * This method should only return {@code false} when it is known that the file handles refer to different files -
+     * that is, the bias is for this method to return {@code true}. The exact semantics of "file key equivalence" is
+     * filesystem-dependant, but the general expectation is that UNIX filesystems will use <em>device ID</em> and
+     * <em>inode</em> to accomplish this. (A UNIX filesystem may choose to re-use <em>device ID</em> and <em>inode</em>
+     * after a file has been deleted. In this case, it is possible for two file handles that referenced two separate
+     * files to have "file key equivalence", and is one of the reason why this method must be biased in the {@code true}
+     * direction.)
+     *
+     * <p>
+     * If the configuration property {@value #SAFETY_CHECK_PROPERTY} is {@code false}, this method will always return
+     * {@code true}.
+     *
+     * @param other the other file handle
+     * @return true if the file keys are equal
+     */
+    public boolean equalsFileKey(@NotNull final FileHandle other) {
+        return Objects.equals(fileKey, other.fileKey);
+    }
+
+    FileChannel fileChannel() {
+        return fileChannel;
+    }
+
+    Runnable postCloseProcedure() {
+        return postCloseProcedure;
     }
 
     /**

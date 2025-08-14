@@ -8,6 +8,7 @@ import com.github.javaparser.ast.expr.ArrayInitializerExpr;
 import com.github.javaparser.ast.expr.AssignExpr;
 import com.github.javaparser.ast.expr.ConditionalExpr;
 import com.github.javaparser.ast.expr.Expression;
+import com.google.common.collect.Sets;
 import io.deephaven.base.Pair;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
@@ -17,6 +18,7 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.lang.JavaExpressionParser;
+import io.deephaven.engine.table.impl.select.ShiftedColumnDefinition;
 import io.deephaven.engine.table.impl.sources.ShiftedColumnSource;
 import io.deephaven.engine.table.impl.sources.SingleValueColumnSource;
 import io.deephaven.engine.table.impl.sources.ViewColumnSource;
@@ -38,18 +40,17 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
-import java.util.HashSet;
-import java.util.LinkedHashMap;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.ListIterator;
-import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 
 import static io.deephaven.engine.table.impl.MemoizedOperationKey.SelectUpdateViewOrUpdateView.*;
+import static io.deephaven.engine.table.impl.ShiftedColumnOperationTest.shiftColName;
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.testutil.testcase.RefreshingTableTestCase.simulateShiftAwareStep;
 import static io.deephaven.engine.util.TableTools.*;
@@ -305,47 +306,39 @@ public class TestFormulaArrayEvaluation {
                 "C=true"
         };
 
+        final ShiftedColumnDefinition d0 = new ShiftedColumnDefinition("A", -1);
+        final ShiftedColumnDefinition d1 = new ShiftedColumnDefinition("A", 1);
+        final ShiftedColumnDefinition d2 = new ShiftedColumnDefinition("B", -2);
         Table source = emptyTable(tableSize);
         Table shiftedTable = emptyTable(tableSize);
-
         switch (flavor) {
             case Update: {
                 source = source.update(formulas);
-                shiftedTable = ShiftedColumnOperation
-                        .addShiftedColumns(shiftedTable.update("A=k * 10", "B=i * 2"), -1, "Z=A");
-                shiftedTable = ShiftedColumnOperation.addShiftedColumns(shiftedTable, 1, "DS1=A");
-                shiftedTable = ShiftedColumnOperation.addShiftedColumns(shiftedTable, -2, "DS2=B")
-                        .view("A", "B", "Z", "D=DS1 * DS2", "C=true");
+                shiftedTable = shiftedTable.update("A=k * 10", "B=i * 2");
                 break;
             }
             case UpdateView: {
                 source = source.updateView(formulas);
-                shiftedTable = ShiftedColumnOperation
-                        .addShiftedColumns(shiftedTable.updateView("A=k * 10", "B=i * 2"), -1, "Z=A");
-                shiftedTable = ShiftedColumnOperation.addShiftedColumns(shiftedTable, 1, "DS1=A");
-                shiftedTable = ShiftedColumnOperation.addShiftedColumns(shiftedTable, -2, "DS2=B")
-                        .view("A", "B", "Z", "D=DS1 * DS2", "C=true");
+                shiftedTable = shiftedTable.updateView("A=k * 10", "B=i * 2");
                 break;
             }
             case Select: {
                 source = source.select(formulas);
-                shiftedTable = ShiftedColumnOperation
-                        .addShiftedColumns(shiftedTable.updateView("A=k * 10", "B=i * 2"), -1, "Z=A");
-                shiftedTable = ShiftedColumnOperation.addShiftedColumns(shiftedTable, 1, "DS1=A");
-                shiftedTable = ShiftedColumnOperation.addShiftedColumns(shiftedTable, -2, "DS2=B")
-                        .view("A", "B", "Z", "D=DS1 * DS2", "C=true");
+                shiftedTable = shiftedTable.select("A=k * 10", "B=i * 2");
                 break;
             }
             case View: {
                 source = source.view(formulas);
-                shiftedTable = ShiftedColumnOperation
-                        .addShiftedColumns(shiftedTable.view("A=k * 10", "B=i * 2"), -1, "Z=A");
-                shiftedTable = ShiftedColumnOperation.addShiftedColumns(shiftedTable, 1, "DS1=A");
-                shiftedTable = ShiftedColumnOperation.addShiftedColumns(shiftedTable, -2, "DS2=B")
-                        .view("A", "B", "Z", "D=DS1 * DS2", "C=true");
+                shiftedTable = shiftedTable.view("A=k * 10", "B=i * 2");
                 break;
             }
         }
+
+        shiftedTable = ShiftedColumnOperation.addShiftedColumns(shiftedTable, d0);
+        shiftedTable = ShiftedColumnOperation.addShiftedColumns(shiftedTable, d1);
+        shiftedTable = ShiftedColumnOperation.addShiftedColumns(shiftedTable, d2);
+        shiftedTable = shiftedTable.view("A", "B", "Z=__A_Shifted_Minus_1__",
+                "D = __A_Shifted_Plus_1__ * __B_Shifted_Minus_2__", "C=true");
 
         showTableWithRowSet(source, Math.min(tableSize, displayTableSize));
         showTableWithRowSet(shiftedTable, Math.min(tableSize, displayTableSize));
@@ -443,32 +436,38 @@ public class TestFormulaArrayEvaluation {
         Table source = emptyTable(tableSize);
         Table shiftedTable = emptyTable(tableSize);
 
+        final ShiftedColumnDefinition d0 = new ShiftedColumnDefinition("A", -1);
+
         switch (flavor) {
             case Update: {
                 source = source.update(formulas);
                 shiftedTable = ShiftedColumnOperation
-                        .addShiftedColumns(shiftedTable.update("A=k * 10", "B=i * 2"), -1, "Z=A")
+                        .addShiftedColumns(shiftedTable.update("A=k * 10", "B=i * 2"), d0)
+                        .renameColumns("Z = __A_Shifted_Minus_1__")
                         .update("D=i", "C=true");
                 break;
             }
             case UpdateView: {
                 source = source.updateView(formulas);
                 shiftedTable = ShiftedColumnOperation
-                        .addShiftedColumns(shiftedTable.updateView("A=k * 10", "B=i * 2"), -1, "Z=A")
+                        .addShiftedColumns(shiftedTable.updateView("A=k * 10", "B=i * 2"), d0)
+                        .renameColumns("Z = __A_Shifted_Minus_1__")
                         .updateView("D=i", "C=true");
                 break;
             }
             case Select: {
                 source = source.select(formulas);
                 shiftedTable = ShiftedColumnOperation
-                        .addShiftedColumns(shiftedTable.select("A=k * 10", "B=i * 2"), -1, "Z=A")
+                        .addShiftedColumns(shiftedTable.select("A=k * 10", "B=i * 2"), d0)
+                        .renameColumns("Z = __A_Shifted_Minus_1__")
                         .view("A", "B", "Z", "D=i", "C=true");
                 break;
             }
             case View: {
                 source = source.view(formulas);
                 shiftedTable = ShiftedColumnOperation
-                        .addShiftedColumns(shiftedTable.view("A=k * 10", "B=i * 2"), -1, "Z=A")
+                        .addShiftedColumns(shiftedTable.view("A=k * 10", "B=i * 2"), d0)
+                        .renameColumns("Z = __A_Shifted_Minus_1__")
                         .view("A", "B", "Z", "D=i", "C=true");
                 break;
             }
@@ -646,254 +645,228 @@ public class TestFormulaArrayEvaluation {
         // singleResultColumnTest
         String[] expressions = new String[] {"Y_[i-1]", "Y_[ii-1]", "Y_[i - 1]", "Y_[ii - 1]", "Y_[ i - 1 ]",
                 "Y_[ ii - 1 ]"};
-        singleResultColumnTest(expressions, -1L, "Y", shiftedPrefix + "1");
+        singleResultColumnTest(expressions, -1L, "Y");
 
         expressions = new String[] {"(Y_[i-1]) * B", "(Y_[ii-1]) * B", "(Y_[i - 1]) * B", "(Y_[ii - 1]) * B",
                 "(Y_[ i - 1]) * B", "(Y_[ ii - 1 ]) * B"};
-        singleResultColumnTest(expressions, -1L, "Y", "(" + shiftedPrefix + "1) * B");
+        singleResultColumnTest(expressions, -1L, "Y");
 
         expressions = new String[] {"Y_[i+1]", "Y_[ii+1]", "Y_[i + 1]", "Y_[ii + 1]", "Y_[ i + 1 ]", "Y_[ ii + 1 ]"};
-        singleResultColumnTest(expressions, 1L, "Y", shiftedPrefix + "1");
+        singleResultColumnTest(expressions, 1L, "Y");
 
         expressions = new String[] {"(Y_[i+1]) * B", "(Y_[ii+1]) * B", "(Y_[i + 1]) * B", "(Y_[ii + 1]) * B",
                 "(Y_[ i + 1]) * B", "(Y_[ ii + 1 ]) * B"};
-        singleResultColumnTest(expressions, 1L, "Y", "(" + shiftedPrefix + "1) * B");
+        singleResultColumnTest(expressions, 1L, "Y");
 
         expressions = new String[] {"Y_[i-2]", "Y_[ii-2]", "Y_[i - 2]", "Y_[ii - 2]", "Y_[ i - 2 ]", "Y_[ ii - 2 ]"};
-        singleResultColumnTest(expressions, -2L, "Y", shiftedPrefix + "1");
+        singleResultColumnTest(expressions, -2L, "Y");
 
         expressions = new String[] {"(Y_[i-2]) * B", "(Y_[ii-2]) * B", "(Y_[i - 2]) * B", "(Y_[ii - 2]) * B",
                 "(Y_[ i - 2]) * B", "(Y_[ ii - 2 ]) * B"};
-        singleResultColumnTest(expressions, -2L, "Y", "(" + shiftedPrefix + "1) * B");
+        singleResultColumnTest(expressions, -2L, "Y");
 
         expressions = new String[] {"Y_[i+2]", "Y_[ii+2]", "Y_[i + 2]", "Y_[ii + 2]", "Y_[ i + 2 ]", "Y_[ ii + 2 ]"};
-        singleResultColumnTest(expressions, 2L, "Y", shiftedPrefix + "1");
+        singleResultColumnTest(expressions, 2L, "Y");
 
         expressions = new String[] {"(Y_[i+2]) * B", "(Y_[ii+2]) * B", "(Y_[i + 2]) * B", "(Y_[ii + 2]) * B",
                 "(Y_[ i + 2]) * B", "(Y_[ ii + 2 ]) * B"};
-        singleResultColumnTest(expressions, 2L, "Y", "(" + shiftedPrefix + "1) * B");
+        singleResultColumnTest(expressions, 2L, "Y");
 
         // singleShiftMultiColumnTest
         String[] sourceColumns = new String[] {"Y", "B"};
         expressions = new String[] {"(Y_[i-1]) * (B_[i-1])", "(Y_[ii-1]) * (B_[ii-1])", "(Y_[i - 1]) * (B_[i - 1])",
                 "(Y_[ii - 1]) * (B_[ii - 1])", "(Y_[ i - 1]) * (B_[ i - 1 ])", "(Y_[ ii - 1 ]) * (B_[ ii - 1 ])"};
-        singleShiftMultiColumnTest(expressions, -1L, sourceColumns,
-                "(" + shiftedPrefix + "1) * (" + shiftedPrefix + "2)");
+        singleShiftMultiColumnTest(expressions, -1L, sourceColumns);
 
         expressions = new String[] {"Y_[i-1] * B_[i-1]", "Y_[ii-1] * B_[ii-1]", "Y_[i - 1] * B_[i - 1]",
                 "Y_[ii - 1] * B_[ii - 1]", "Y_[ i - 1] * B_[ i - 1 ]", "Y_[ ii - 1 ] * B_[ ii - 1 ]"};
-        singleShiftMultiColumnTest(expressions, -1L, sourceColumns, shiftedPrefix + "1 * " + shiftedPrefix + "2");
+        singleShiftMultiColumnTest(expressions, -1L, sourceColumns);
 
         expressions = new String[] {"(Y_[i+1]) * (B_[i+1])", "(Y_[ii+1]) * (B_[ii+1])", "(Y_[i + 1]) * (B_[i + 1])",
                 "(Y_[ii + 1]) * (B_[ii + 1])", "(Y_[ i + 1]) * (B_[ i + 1 ])", "(Y_[ ii + 1 ]) * (B_[ ii + 1 ])"};
-        singleShiftMultiColumnTest(expressions, 1L, sourceColumns,
-                "(" + shiftedPrefix + "1) * (" + shiftedPrefix + "2)");
+        singleShiftMultiColumnTest(expressions, 1L, sourceColumns);
 
         expressions = new String[] {"Y_[i+1] * B_[i+1]", "Y_[ii+1] * B_[ii+1]", "Y_[i + 1] * B_[i + 1]",
                 "Y_[ii + 1] * B_[ii + 1]", "Y_[ i + 1] * B_[ i + 1 ]", "Y_[ ii + 1 ] * B_[ ii + 1 ]"};
-        singleShiftMultiColumnTest(expressions, 1L, sourceColumns, shiftedPrefix + "1 * " + shiftedPrefix + "2");
+        singleShiftMultiColumnTest(expressions, 1L, sourceColumns);
 
         expressions = new String[] {"(Y_[i-2]) * (B_[i-2])", "(Y_[ii-2]) * (B_[ii-2])", "(Y_[i - 2]) * (B_[i - 2])",
                 "(Y_[ii - 2]) * (B_[ii - 2])", "(Y_[ i - 2]) * (B_[ i - 2 ])", "(Y_[ ii - 2 ]) * (B_[ ii - 2 ])"};
-        singleShiftMultiColumnTest(expressions, -2L, sourceColumns,
-                "(" + shiftedPrefix + "1) * (" + shiftedPrefix + "2)");
+        singleShiftMultiColumnTest(expressions, -2L, sourceColumns);
 
         expressions = new String[] {"Y_[i-2] * B_[i-2]", "Y_[ii-2] * B_[ii-2]", "Y_[i - 2] * B_[i - 2]",
                 "Y_[ii - 2] * B_[ii - 2]", "Y_[ i - 2] * B_[ i - 2 ]", "Y_[ ii - 2 ] * B_[ ii - 2 ]"};
-        singleShiftMultiColumnTest(expressions, -2L, sourceColumns, shiftedPrefix + "1 * " + shiftedPrefix + "2");
+        singleShiftMultiColumnTest(expressions, -2L, sourceColumns);
 
         expressions = new String[] {"(Y_[i+2]) * (B_[i+2])", "(Y_[ii+2]) * (B_[ii+2])", "(Y_[i + 2]) * (B_[i + 2])",
                 "(Y_[ii + 2]) * (B_[ii + 2])", "(Y_[ i + 2]) * (B_[ i + 2 ])", "(Y_[ ii + 2 ]) * (B_[ ii + 2 ])"};
-        singleShiftMultiColumnTest(expressions, 2L, sourceColumns,
-                "(" + shiftedPrefix + "1) * (" + shiftedPrefix + "2)");
+        singleShiftMultiColumnTest(expressions, 2L, sourceColumns);
 
         expressions = new String[] {"Y_[i+2] * B_[i+2]", "Y_[ii+2] * B_[ii+2]", "Y_[i + 2] * B_[i + 2]",
                 "Y_[ii + 2] * B_[ii + 2]", "Y_[ i + 2] * B_[ i + 2 ]", "Y_[ ii + 2 ] * B_[ ii + 2 ]"};
-        singleShiftMultiColumnTest(expressions, 2L, sourceColumns, shiftedPrefix + "1 * " + shiftedPrefix + "2");
+        singleShiftMultiColumnTest(expressions, 2L, sourceColumns);
 
         // multiShiftSingleColumnTest
         long[] shift = new long[] {-1L, 1L};
         expressions = new String[] {"(Y_[i-1]) * (Y_[i+1])", "(Y_[ii-1]) * (Y_[ii+1])", "(Y_[i - 1]) * (Y_[i + 1])",
                 "(Y_[ii - 1]) * (Y_[ii + 1])", "(Y_[ i - 1]) * (Y_[ i + 1 ])", "(Y_[ ii - 1 ]) * (Y_[ ii + 1 ])"};
-        multiShiftSingleColumnTest(expressions, shift, "Y", "(" + shiftedPrefix + "1) * (" + shiftedPrefix + "2)");
+        multiShiftSingleColumnTest(expressions, shift, "Y");
 
         shift = new long[] {2L, -2L};
         expressions = new String[] {"(Y_[i+2]) * (Y_[i-2])", "(Y_[ii+2]) * (Y_[ii-2])", "(Y_[i + 2]) * (Y_[i - 2])",
                 "(Y_[ii + 2]) * (Y_[ii - 2])", "(Y_[ i + 2]) * (Y_[ i - 2 ])", "(Y_[ ii + 2 ]) * (Y_[ ii - 2 ])"};
-        multiShiftSingleColumnTest(expressions, shift, "Y", "(" + shiftedPrefix + "1) * (" + shiftedPrefix + "2)");
+        multiShiftSingleColumnTest(expressions, shift, "Y");
 
         shift = new long[] {1L, -2L};
         expressions = new String[] {"Y_[i+1] * Y_[i-2]", "Y_[ii+1] * Y_[ii-2]", "Y_[i + 1] * Y_[i - 2]",
                 "Y_[ii + 1] * Y_[ii - 2]", "Y_[ i + 1] * Y_[ i - 2 ]", "Y_[ ii + 1 ] * Y_[ ii - 2 ]"};
-        multiShiftSingleColumnTest(expressions, shift, "Y", shiftedPrefix + "1 * " + shiftedPrefix + "2");
+        multiShiftSingleColumnTest(expressions, shift, "Y");
 
         // multiShiftMultiColumnTest
         shift = new long[] {-1L, 1L, -2L, 2L};
-        MatchPair[] expectedColPairs = new MatchPair[] {
-                new MatchPair(shiftedPrefix + "1", "Y"),
-                new MatchPair(shiftedPrefix + "2", "B"),
-                new MatchPair(shiftedPrefix + "3", "Y"),
-                new MatchPair(shiftedPrefix + "4", "B")};
+        Set<ShiftedColumnDefinition> expectedColPairs = Sets.newHashSet(
+                new ShiftedColumnDefinition("Y", 1),
+                new ShiftedColumnDefinition("Y", -1),
+                new ShiftedColumnDefinition("B", 2),
+                new ShiftedColumnDefinition("B", 2));
         expressions = new String[] {"(Y_[i+1] * B_[ i - 2] ) + (Y_[ii - 1] * B_[ii + 2]) + (Y_[i + 1] * B_[i - 2])"};
-        multiShiftMultiColumnTest(expressions, shift, expectedColPairs,
-                "(" + shiftedPrefix + "1 * " + shiftedPrefix + "2) + (" + shiftedPrefix + "3 * " + shiftedPrefix
-                        + "4) + (" + shiftedPrefix + "1 * " + shiftedPrefix + "2)");
+        multiShiftMultiColumnTest(expressions, shift, new String[] {"Y", "Y", "B", "B"});
 
         // singleResultColumnTest - different expressions
         expressions = new String[] {"Y_[i-1] * true"};
-        singleResultColumnTest(expressions, -1L, "Y", shiftedPrefix + "1 * true");
+        singleResultColumnTest(expressions, -1L, "Y");
 
         expressions = new String[] {"Y_[i-1] * 0.5f"};
-        singleResultColumnTest(expressions, -1L, "Y", shiftedPrefix + "1 * 0.5f");
+        singleResultColumnTest(expressions, -1L, "Y");
 
         expressions = new String[] {"Y_[i-1] + \"test\""};
-        singleResultColumnTest(expressions, -1L, "Y", shiftedPrefix + "1 + \"test\"");
+        singleResultColumnTest(expressions, -1L, "Y");
 
         expressions = new String[] {"Y_[i-1] + 10"};
-        singleResultColumnTest(expressions, -1L, "Y", shiftedPrefix + "1 + 10");
+        singleResultColumnTest(expressions, -1L, "Y");
 
         expressions = new String[] {"Y_[i-1] + 10L"};
-        singleResultColumnTest(expressions, -1L, "Y", shiftedPrefix + "1 + 10L");
+        singleResultColumnTest(expressions, -1L, "Y");
 
         expressions = new String[] {"Y_[i-1] + 'C'"};
-        singleResultColumnTest(expressions, -1L, "Y", shiftedPrefix + "1 + 'C'");
+        singleResultColumnTest(expressions, -1L, "Y");
 
         expressions = new String[] {"Y_[i-1] + " + null};
-        singleResultColumnTest(expressions, -1L, "Y", shiftedPrefix + "1 + null");
+        singleResultColumnTest(expressions, -1L, "Y");
 
         expressions = new String[] {"Y_[i-1] + " + Integer.MIN_VALUE};
-        singleResultColumnTest(expressions, -1L, "Y", shiftedPrefix + "1 + " + Integer.MIN_VALUE);
+        singleResultColumnTest(expressions, -1L, "Y");
 
         // tests UnaryExpr
         expressions = new String[] {"Y_[ii-1] + " + Long.MIN_VALUE};
-        singleResultColumnTest(expressions, -1L, "Y", shiftedPrefix + "1 + " + Long.MIN_VALUE);
+        singleResultColumnTest(expressions, -1L, "Y");
 
         // tests LongLiteralMinValueExpr
         expressions = new String[] {"Y_[ii-1] + " + Long.MIN_VALUE + "L"};
-        singleResultColumnTest(expressions, -1L, "Y", shiftedPrefix + "1 + " + Long.MIN_VALUE + "L");
+        singleResultColumnTest(expressions, -1L, "Y");
 
         // tests MethodReferenceExpr
         expressions = new String[] {"Y_[ii-1] + random.nextInt(1000000)"};
-        singleResultColumnTest(expressions, -1L, "Y", shiftedPrefix + "1 + random.nextInt(1000000)");
+        singleResultColumnTest(expressions, -1L, "Y");
 
         // tests FieldAccessExpression
         expressions = new String[] {"Y_[ii-1] + expectedColPairs.length"};
-        singleResultColumnTest(expressions, -1L, "Y", shiftedPrefix + "1 + expectedColPairs.length");
+        singleResultColumnTest(expressions, -1L, "Y");
 
         // tests CastExpr
         expressions = new String[] {"Y_[ii-1] + ((long)random.nextInt(1000000))"};
-        singleResultColumnTest(expressions, -1L, "Y", shiftedPrefix + "1 + ((long) random.nextInt(1000000))");
+        singleResultColumnTest(expressions, -1L, "Y");
 
         // tests ArrayCreationExpr
         expressions = new String[] {"Y_[ii-1] + new long[] { 1L, 2L}"};
-        singleResultColumnTest(expressions, -1L, "Y", shiftedPrefix + "1 + new long[] { 1L, 2L }");
+        singleResultColumnTest(expressions, -1L, "Y");
 
         // tests ObjectCreationExpr
         expressions = new String[] {"Y_[ii-1] + new Boolean(true)"};
         // ObjectCreationExpression toString has two spaces between new and expression
-        singleResultColumnTest(expressions, -1L, "Y", shiftedPrefix + "1 + new Boolean(true)");
+        singleResultColumnTest(expressions, -1L, "Y");
     }
 
     @SuppressWarnings("SameParameterValue")
-    private void singleResultColumnTest(String[] singleResultColumn, long shift, String sourceCol,
-            String expectedFormula) {
+    private void singleResultColumnTest(String[] singleResultColumn, long shift, String sourceCol) {
         try {
-            MatchPair expectedColPair = new MatchPair(ShiftedColumnsFactory.SHIFTED_COL_PREFIX + 1, sourceCol);
             for (String expression : singleResultColumn) {
-                Expression expr = JavaExpressionParser.parseExpression(expression);
-                Pair<String, Map<Long, List<MatchPair>>> pair = ShiftedColumnsFactory.getShiftToColPairsMap(expr);
+                final Expression expr = JavaExpressionParser.parseExpression(expression);
+                final Pair<String, Set<ShiftedColumnDefinition>> shifted =
+                        ShiftedColumnsFactory.getShiftedColumnDefinitions(expr);
+                Assert.assertNotNull(shifted);
 
-                Assert.assertNotNull(pair);
-                Assert.assertEquals(expectedFormula, pair.getFirst());
-                Map<Long, List<MatchPair>> map = pair.getSecond();
-                Assert.assertNotNull(map);
-                Assert.assertEquals(1, map.size());
-                List<MatchPair> colPairs = map.get(shift);
-                Assert.assertNotNull(colPairs);
-                Assert.assertEquals(1, colPairs.size());
-                Assert.assertEquals(expectedColPair, colPairs.get(0));
+                final Set<ShiftedColumnDefinition> definitions = shifted.getSecond();
+                Assert.assertEquals(1, definitions.size());
+                final ShiftedColumnDefinition definition = definitions.iterator().next();
+                Assert.assertNotNull(definition);
+                Assert.assertEquals(shift, definition.getShiftAmount());
+                Assert.assertEquals(sourceCol, definition.getColumnName());
             }
 
         } catch (Exception exception) {
-            Assert.fail(exception.getMessage());
             exception.printStackTrace();
+            Assert.fail(exception.getMessage());
         }
     }
 
     @SuppressWarnings("SameParameterValue")
-    private void singleShiftMultiColumnTest(String[] expressions, long shift, String[] sourceCol,
-            String expectedFormula) {
+    private void singleShiftMultiColumnTest(String[] expressions, long shift, String[] sourceCol) {
         try {
+            final Set<String> sourceSet = Arrays.stream(sourceCol).collect(Collectors.toSet());
             for (String expression : expressions) {
-                Expression expr = JavaExpressionParser.parseExpression(expression);
-                Pair<String, Map<Long, List<MatchPair>>> pair = ShiftedColumnsFactory.getShiftToColPairsMap(expr);
-                Assert.assertNotNull(pair);
-                Assert.assertEquals(expectedFormula, pair.getFirst());
-                Assert.assertEquals(1, pair.getSecond().size());
-                Assert.assertNotNull(pair.getSecond().get(shift));
-                Assert.assertEquals(sourceCol.length, pair.getSecond().get(shift).size());
-                for (int i = 1; i <= sourceCol.length; i++) {
-                    MatchPair matchPair = pair.getSecond().get(shift).get(i - 1);
-                    Assert.assertEquals("verify shifted column name suffix",
-                            ShiftedColumnsFactory.SHIFTED_COL_PREFIX + i, matchPair.leftColumn);
-                    Assert.assertEquals("verify source column name", sourceCol[i - 1], matchPair.rightColumn);
-                }
+                final Expression expr = JavaExpressionParser.parseExpression(expression);
+                final Pair<String, Set<ShiftedColumnDefinition>> shifted =
+                        ShiftedColumnsFactory.getShiftedColumnDefinitions(expr);
+                Assert.assertNotNull(shifted);
+                Assert.assertEquals(sourceCol.length, shifted.getSecond().size());
+                Assert.assertTrue(
+                        shifted.getSecond().stream().allMatch(col -> sourceSet.contains(col.getColumnName())));
+                Assert.assertTrue(shifted.getSecond().stream().allMatch(col -> col.getShiftAmount() == shift));
             }
         } catch (Exception exception) {
-            Assert.fail(exception.getMessage());
             exception.printStackTrace();
+            Assert.fail(exception.getMessage());
         }
     }
 
     @SuppressWarnings("SameParameterValue")
-    private void multiShiftSingleColumnTest(String[] expressions, long[] shift, String sourceCol,
-            String expectedFormula) {
+    private void multiShiftSingleColumnTest(String[] expressions, long[] shift, String sourceCol) {
         try {
+            final Set<Long> shiftSet = Arrays.stream(shift).boxed().collect(Collectors.toSet());
             for (String expression : expressions) {
-                Expression expr = JavaExpressionParser.parseExpression(expression);
-                Pair<String, Map<Long, List<MatchPair>>> pair = ShiftedColumnsFactory.getShiftToColPairsMap(expr);
-                Assert.assertNotNull(pair);
-                Assert.assertEquals(expectedFormula, pair.getFirst());
-                Assert.assertNotNull(pair.getSecond());
-                Assert.assertEquals(shift.length, pair.getSecond().size());
-                for (int i = 0; i < shift.length; i++) {
-                    Assert.assertNotNull(pair.getSecond().get(shift[i]));
-                    Assert.assertEquals(1, pair.getSecond().get(shift[i]).size());
-                    MatchPair matchPair = pair.getSecond().get(shift[i]).get(0);
-                    Assert.assertEquals("verify shifted column name suffix",
-                            ShiftedColumnsFactory.SHIFTED_COL_PREFIX + (i + 1), matchPair.leftColumn);
-                    Assert.assertEquals("verify source column name", sourceCol, matchPair.rightColumn);
-                }
+                final Expression expr = JavaExpressionParser.parseExpression(expression);
+                final Pair<String, Set<ShiftedColumnDefinition>> shifted =
+                        ShiftedColumnsFactory.getShiftedColumnDefinitions(expr);
+                Assert.assertNotNull(shifted);
+                Assert.assertEquals(shift.length, shifted.getSecond().size());
+                Assert.assertTrue(
+                        shifted.getSecond().stream().allMatch(col -> shiftSet.contains(col.getShiftAmount())));
+                Assert.assertTrue(shifted.getSecond().stream().allMatch(col -> col.getColumnName().equals(sourceCol)));
             }
         } catch (Exception exception) {
-            Assert.fail(exception.getMessage());
             exception.printStackTrace();
+            Assert.fail(exception.getMessage());
         }
     }
 
     @SuppressWarnings("SameParameterValue")
-    private void multiShiftMultiColumnTest(String[] expressions, long[] shift, MatchPair[] expectedColPairs,
-            String expectedFormula) {
+    private void multiShiftMultiColumnTest(String[] expressions, long[] shift, String[] sourceCol) {
         try {
+            Assert.assertEquals(shift.length, sourceCol.length);
+            final ShiftedColumnDefinition[] expectedDefinitions = new ShiftedColumnDefinition[shift.length];
+            for (int i = 0; i < shift.length; ++i) {
+                expectedDefinitions[i] = new ShiftedColumnDefinition(sourceCol[i], shift[i]);
+            }
             for (String expression : expressions) {
-                Expression expr = JavaExpressionParser.parseExpression(expression);
-                Pair<String, Map<Long, List<MatchPair>>> pair = ShiftedColumnsFactory.getShiftToColPairsMap(expr);
-                Assert.assertNotNull(pair);
-                Assert.assertEquals(expectedFormula, pair.getFirst());
-                Assert.assertEquals(shift.length, pair.getSecond().size());
-                Set<MatchPair> allResultColumns = new HashSet<>();
-                for (long l : shift) {
-                    Assert.assertNotNull(pair.getSecond().get(l));
-                    allResultColumns.addAll(pair.getSecond().get(l));
-                }
-                Assert.assertEquals(expectedColPairs.length, allResultColumns.size());
-                for (MatchPair expectedCol : expectedColPairs) {
-                    Assert.assertTrue(allResultColumns.contains(expectedCol));
-                }
+                final Expression expr = JavaExpressionParser.parseExpression(expression);
+                final Pair<String, Set<ShiftedColumnDefinition>> shifted =
+                        ShiftedColumnsFactory.getShiftedColumnDefinitions(expr);
+                assertShiftedColumnDefinitionsMatch(shifted.getSecond(), expectedDefinitions);
             }
         } catch (Exception exception) {
-            Assert.fail(exception.getMessage());
             exception.printStackTrace();
+            Assert.fail(exception.getMessage());
         }
     }
 
@@ -905,34 +878,21 @@ public class TestFormulaArrayEvaluation {
                 "((4 + 3) - (7 -95) + (3 * (5 + (8 - g))))"
         };
 
-        String[] resultFormulaArray = new String[] {
-                ShiftedColumnsFactory.SHIFTED_COL_PREFIX + 1,
-                ShiftedColumnsFactory.SHIFTED_COL_PREFIX + 2,
-                ShiftedColumnsFactory.SHIFTED_COL_PREFIX + 3,
-                ShiftedColumnsFactory.SHIFTED_COL_PREFIX + 4,
-                "random.nextInt(1000000)", "((4 + 3) - (7 - 95) + (3 * (5 + (g - 8))))",
-                "((4 + 3) - (7 - 95) + (3 * (5 + (8 - g))))"
+        ShiftedColumnDefinition[] expectedDefinitions = new ShiftedColumnDefinition[] {
+                new ShiftedColumnDefinition("Y", -1),
+                new ShiftedColumnDefinition("Y", -2),
+                new ShiftedColumnDefinition("Y", 1),
+                new ShiftedColumnDefinition("Y", 2),
         };
 
-        long[] expectedShift = new long[] {-1L, -2L, 1L, 2L};
-        MatchPair[] expectedColPairs = new MatchPair[] {
-                new MatchPair(ShiftedColumnsFactory.SHIFTED_COL_PREFIX + 1, "Y"),
-                new MatchPair(ShiftedColumnsFactory.SHIFTED_COL_PREFIX + 2, "Y"),
-                new MatchPair(ShiftedColumnsFactory.SHIFTED_COL_PREFIX + 3, "Y"),
-                new MatchPair(ShiftedColumnsFactory.SHIFTED_COL_PREFIX + 4, "Y"),
-        };
+        evaluateArrayInitializer(expressions, expectedDefinitions);
 
-        evaluateArrayInitializer(expressions, resultFormulaArray, expectedShift, expectedColPairs);
-
-        evaluateArrayInitializer(new String[0], new String[0], new long[0], MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY);
+        evaluateArrayInitializer(new String[0], new ShiftedColumnDefinition[0]);
     }
 
     private void evaluateArrayInitializer(
             final String[] expressions,
-            final String[] resultFormulaArray,
-            final long[] expectedShift,
-            final MatchPair[] expectedColPairs) {
-        String expectedResult = buildArrayInitializerResult(resultFormulaArray);
+            final ShiftedColumnDefinition[] expectedDefinitions) {
         NodeList<Expression> expressionList = new NodeList<>();
         for (String expression : expressions) {
             Expression expr = JavaExpressionParser.parseExpression(expression);
@@ -940,39 +900,35 @@ public class TestFormulaArrayEvaluation {
         }
         ArrayInitializerExpr arrayInitializerExpr = new ArrayInitializerExpr(expressionList);
 
-        Pair<String, Map<Long, List<MatchPair>>> pair =
-                ShiftedColumnsFactory.getShiftToColPairsMap(arrayInitializerExpr);
-        if (expectedShift.length > 0) {
-            Assert.assertNotNull(pair);
-            Assert.assertEquals("formula comparison", expectedResult, pair.getFirst());
-            Assert.assertEquals("compare number of shifts", expectedShift.length, pair.getSecond().size());
-            for (int i = 0; i < expectedShift.length; i++) {
-                Assert.assertNotNull(pair.getSecond().get(expectedShift[i]));
-                Assert.assertEquals("verify expected col pair size", 1,
-                        pair.getSecond().get(expectedShift[i]).size());
-                Assert.assertEquals("compare expected col pair", expectedColPairs[i],
-                        pair.getSecond().get(expectedShift[i]).get(0));
-            }
+        final Pair<String, Set<ShiftedColumnDefinition>> shifted =
+                ShiftedColumnsFactory.getShiftedColumnDefinitions(arrayInitializerExpr);
+        Assert.assertEquals(shifted == null ? 0 : shifted.getSecond().size(), expectedDefinitions.length);
+        if (expectedDefinitions.length > 0) {
+            assertShiftedColumnDefinitionsMatch(shifted.getSecond(), expectedDefinitions);
         } else {
-            Assert.assertNull(pair);
+            Assert.assertNull(shifted);
         }
     }
 
-    private String buildArrayInitializerResult(String[] resultFormulaArray) {
-        if (resultFormulaArray == null || resultFormulaArray.length == 0) {
-            return "{ }";
+    private void assertShiftedColumnDefinitionsMatch(
+            final Set<ShiftedColumnDefinition> shifted,
+            final ShiftedColumnDefinition[] expectedDefinitions) {
+        Assert.assertNotNull(shifted);
+        Assert.assertEquals("compare number of shifts", expectedDefinitions.length, shifted.size());
+
+        for (int i = 0; i < expectedDefinitions.length; i++) {
+            final boolean[] used = new boolean[expectedDefinitions.length];
+            Assert.assertTrue(shifted.stream().allMatch(col -> {
+                for (int ii = 0; ii < expectedDefinitions.length; ++ii) {
+                    if (used[ii] || !col.equals(expectedDefinitions[ii])) {
+                        continue;
+                    }
+                    used[ii] = true;
+                    return true;
+                }
+                return false;
+            }));
         }
-        StringBuilder builder = new StringBuilder();
-        for (String str : resultFormulaArray) {
-            if (builder.length() == 0) {
-                builder.append('{');
-            } else {
-                builder.append(',');
-            }
-            builder.append(' ').append(str);
-        }
-        builder.append(' ').append('}');
-        return builder.toString();
     }
 
     @Test
@@ -984,68 +940,32 @@ public class TestFormulaArrayEvaluation {
                 new ImmutableTriple<>("A == D", "B * Y", "C_[2-i]")
         };
 
-        // noinspection unchecked
-        Pair<String, Boolean>[] expectedFormulas = new Pair[] {
-                new Pair<>("A == D ? " + ShiftedColumnsFactory.SHIFTED_COL_PREFIX + 1 + " : "
-                        + ShiftedColumnsFactory.SHIFTED_COL_PREFIX + 2, true),
-                new Pair<>("A == D ? B : " + ShiftedColumnsFactory.SHIFTED_COL_PREFIX + 1, true),
-                new Pair<>("A == D ? B * Y : ", false)
-        };
+        evaluateConditionExpressions(conditionalTriples[0], Set.of(
+                new ShiftedColumnDefinition("B", -1),
+                new ShiftedColumnDefinition("C", -2)));
 
-        Map<Long, List<MatchPair>> shiftToMatchPair = new LinkedHashMap<>();
-        List<MatchPair> matchPairList = new LinkedList<>();
-        matchPairList.add(new MatchPair(ShiftedColumnsFactory.SHIFTED_COL_PREFIX + 1, "B"));
-        shiftToMatchPair.put(-1L, matchPairList);
+        evaluateConditionExpressions(conditionalTriples[1], Set.of(
+                new ShiftedColumnDefinition("C", -2)));
 
-        List<MatchPair> matchPairList2 = new LinkedList<>();
-        matchPairList2.add(new MatchPair(ShiftedColumnsFactory.SHIFTED_COL_PREFIX + 2, "C"));
-        shiftToMatchPair.put(-2L, matchPairList2);
-
-        evaluateConditionExpressions(conditionalTriples[0], expectedFormulas[0], shiftToMatchPair);
-
-        shiftToMatchPair = new LinkedHashMap<>();
-        matchPairList = new LinkedList<>();
-        matchPairList.add(new MatchPair(ShiftedColumnsFactory.SHIFTED_COL_PREFIX + 1, "C"));
-        shiftToMatchPair.put(-2L, matchPairList);
-        evaluateConditionExpressions(conditionalTriples[1], expectedFormulas[1], shiftToMatchPair);
-
-        evaluateConditionExpressions(conditionalTriples[2], expectedFormulas[2], null);
+        evaluateConditionExpressions(conditionalTriples[2], Set.of());
     }
 
-    private void evaluateConditionExpressions(Triple<String, String, String> conditionalTriple,
-            Pair<String, Boolean> expectedFormula, Map<Long, List<MatchPair>> shiftToMatchPair) {
+    private void evaluateConditionExpressions(
+            Triple<String, String, String> conditionalTriple,
+            Set<ShiftedColumnDefinition> expectedShifts) {
         Expression condition = JavaExpressionParser.parseExpression(conditionalTriple.getLeft());
         Expression then = JavaExpressionParser.parseExpression(conditionalTriple.getMiddle());
         Expression elseExpr = JavaExpressionParser.parseExpression(conditionalTriple.getRight());
         ConditionalExpr conditionalExpr = new ConditionalExpr(condition, then, elseExpr);
-        Pair<String, Map<Long, List<MatchPair>>> pair = ShiftedColumnsFactory.getShiftToColPairsMap(conditionalExpr);
-        if (expectedFormula.getSecond()) {
-            Assert.assertNotNull(pair);
-            Assert.assertEquals("compare formula", expectedFormula.getFirst(), pair.getFirst());
-            Assert.assertNotNull(pair.getSecond());
-            Assert.assertEquals("compare map sizes", shiftToMatchPair.size(), pair.getSecond().size());
-            for (Map.Entry<Long, List<MatchPair>> entry : shiftToMatchPair.entrySet()) {
-                Assert.assertNotNull(pair.getSecond().get(entry.getKey()));
-                Assert.assertEquals("compare expected shifted cols for same shift", entry.getValue().size(),
-                        pair.getSecond().get(entry.getKey()).size());
-                ListIterator<MatchPair> expectedIt = entry.getValue().listIterator();
-                ListIterator<MatchPair> actualIt = pair.getSecond().get(entry.getKey()).listIterator();
-                while (expectedIt.hasNext() && actualIt.hasNext()) {
-                    MatchPair expectedMp = expectedIt.next();
-                    MatchPair actualMp = actualIt.next();
-                    Assert.assertEquals("compare match pairs left column", expectedMp.leftColumn, actualMp.leftColumn);
-                    Assert.assertEquals("compare match pairs right column", expectedMp.rightColumn,
-                            actualMp.rightColumn);
-                }
-                if (expectedIt.hasNext()) {
-                    Assert.fail("expected match pair list still has elements");
-                }
-                if (actualIt.hasNext()) {
-                    Assert.fail("actual match pair list still has elements");
-                }
-            }
+        final Pair<String, Set<ShiftedColumnDefinition>> shifted =
+                ShiftedColumnsFactory.getShiftedColumnDefinitions(conditionalExpr);
+        if (!expectedShifts.isEmpty()) {
+            Assert.assertNotNull(shifted);
+            Assert.assertEquals("compare map sizes", expectedShifts.size(), shifted.getSecond().size());
+            assertShiftedColumnDefinitionsMatch(
+                    shifted.getSecond(), expectedShifts.toArray(new ShiftedColumnDefinition[0]));
         } else {
-            Assert.assertNull(pair);
+            Assert.assertNull(shifted);
         }
     }
 
@@ -1103,8 +1023,9 @@ public class TestFormulaArrayEvaluation {
     private void constantArrayAccessTest(String[] expressions, boolean assertTrue) {
         for (String expression : expressions) {
             final Expression expr = JavaExpressionParser.parseExpression(expression);
-            final Pair<String, Map<Long, List<MatchPair>>> pair = ShiftedColumnsFactory.getShiftToColPairsMap(expr);
-            final boolean hasConstantArrayAccess = pair != null;
+            final Pair<String, Set<ShiftedColumnDefinition>> shifted =
+                    ShiftedColumnsFactory.getShiftedColumnDefinitions(expr);
+            final boolean hasConstantArrayAccess = shifted != null && !shifted.getSecond().isEmpty();
 
             if (assertTrue) {
                 Assert.assertTrue("\"" + expression + "\" has Constant ArrayAccess Expression",
@@ -1129,22 +1050,22 @@ public class TestFormulaArrayEvaluation {
 
         String[][] formulas = new String[][] {
                 {"Y=Y_[i-1] && A=A_[i-1]",
-                        "Y == " + ShiftedColumnsFactory.SHIFTED_COL_PREFIX + 1 + " && A == "
-                                + ShiftedColumnsFactory.SHIFTED_COL_PREFIX + 2},
+                        "Y == " + shiftColName("Y", -1) + " && A == "
+                                + shiftColName("A", -1)},
                 {"Y_[i-1]==A_[i-1]",
-                        ShiftedColumnsFactory.SHIFTED_COL_PREFIX + 1 + " == "
-                                + ShiftedColumnsFactory.SHIFTED_COL_PREFIX + 2},
-                {"Y_[1-i]==A_[i-1]", "Y_[1 - i] == " + ShiftedColumnsFactory.SHIFTED_COL_PREFIX + 1},
+                        shiftColName("Y", -1) + " == "
+                                + shiftColName("A", -1)},
+                {"Y_[1-i]==A_[i-1]", "Y_[1 - i] == " + shiftColName("A", -1)},
                 {"Y=Y_[i-1] && A=A_[ii-1]",
-                        "Y == " + ShiftedColumnsFactory.SHIFTED_COL_PREFIX + 1 + " && A == "
-                                + ShiftedColumnsFactory.SHIFTED_COL_PREFIX + 2},
+                        "Y == " + shiftColName("Y", -1) + " && A == "
+                                + shiftColName("A", -1)},
                 {"(Y==Y_[i-1]) && (A==A_[ii-1])",
-                        "(Y == " + ShiftedColumnsFactory.SHIFTED_COL_PREFIX + 1 + ") && (A == "
-                                + ShiftedColumnsFactory.SHIFTED_COL_PREFIX + 2 + ")"},
+                        "(Y == " + shiftColName("Y", -1) + ") && (A == "
+                                + shiftColName("A", -1) + ")"},
                 {"(Y==Y_[i-k]) && (A==A_[2-ii])", "(Y == Y_[i - k]) && (A == A_[2 - ii])"},
                 {"(1 <= Y_[i - 1] && Y_[i - 1] > 10)",
-                        "(1 <= " + ShiftedColumnsFactory.SHIFTED_COL_PREFIX + 1 + " && "
-                                + ShiftedColumnsFactory.SHIFTED_COL_PREFIX + 1 + " > 10)"}
+                        "(1 <= " + shiftColName("Y", -1) + " && "
+                                + shiftColName("Y", -1) + " > 10)"}
         };
 
 

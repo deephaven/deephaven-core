@@ -20,8 +20,8 @@ dependencies {
     implementation libs.groovy
     implementation libs.groovy.json
 
-    runtimeOnly project(path: ':configs')
-    runtimeOnly project(path: ':test-configs')
+    runtimeOnly project(':configs')
+    runtimeOnly project(':test-configs')
     runtimeOnly project(':extensions-kafka')
 
     runtimeOnly project(':log-to-slf4j')
@@ -29,8 +29,8 @@ dependencies {
 
     testImplementation project(path: ':Base', configuration: 'tests')
 
-    testRuntimeOnly project(path: ':configs')
-    testRuntimeOnly project(path: ':test-configs')
+    testRuntimeOnly project(':configs')
+    testRuntimeOnly project(':test-configs')
 
     combinedJavadoc project(path: ':combined-javadoc', targetConfiguration: 'combinedJavadoc')
 }

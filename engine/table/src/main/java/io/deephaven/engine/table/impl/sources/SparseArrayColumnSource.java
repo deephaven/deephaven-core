@@ -9,6 +9,7 @@ import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.WritableSourceWithPrepareForParallelPopulation;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.rowset.RowSetShiftCallback;
+import io.deephaven.util.annotations.TestUseOnly;
 import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.attributes.Values;
@@ -147,6 +148,17 @@ public abstract class SparseArrayColumnSource<T>
      */
     boolean immutable = false;
 
+    /**
+     * The blocks to clear on the next terminal notification
+     */
+    RowSet blocksToClear;
+    RowSet blocks2ToClear;
+    RowSet blocks1ToClear;
+    /**
+     * If the overall result is empty, we can clear block0 in addition to the intermediate blocks.
+     */
+    Boolean emptyResult;
+
     SparseArrayColumnSource(Class<T> type, Class<?> componentType) {
         super(type, componentType);
     }
@@ -192,6 +204,31 @@ public abstract class SparseArrayColumnSource<T>
 
     public void remove(RowSet toRemove) {
         setNull(toRemove);
+    }
+
+    /**
+     * At the end of this cycle, clear the provided rowsets of blocks by releasing the blocks back to the recyclers.
+     *
+     * @param blocksToClear the lowest level blocks to clear
+     * @param removeBlocks2 Block2 structures to clear from the Block1 structures
+     * @param removeBlocks1 Block1 structures to clear from the Block0 structure
+     * @param empty if the resulting table is empty
+     */
+    public void clearBlocks(final RowSet blocksToClear,
+            final RowSet removeBlocks2,
+            final RowSet removeBlocks1,
+            final boolean empty) {
+        if (this.blocksToClear != null) {
+            throw new IllegalStateException("Cannot call blocksToClear multiple times on the same cycle!");
+        }
+        Assert.eqNull(blocks2ToClear, "blocks2ToClear");
+        Assert.eqNull(blocks1ToClear, "blocks1ToClear");
+        Assert.eqNull(emptyResult, "emptyResult");
+
+        this.blocksToClear = blocksToClear.copy();
+        this.blocks2ToClear = removeBlocks2.copy();
+        this.blocks1ToClear = removeBlocks1.copy();
+        this.emptyResult = empty;
     }
 
     public static <T> WritableColumnSource<T> getSparseMemoryColumnSource(Collection<T> data, Class<T> type) {
@@ -477,4 +514,17 @@ public abstract class SparseArrayColumnSource<T>
     public boolean providesFillUnordered() {
         return true;
     }
+
+    /**
+     * Return an estimate of the heap size taken by the current values within this sparse array source.
+     *
+     * <p>
+     * Only leaf nodes and the size arrays of references are included in this estimate. Intermediate objects are
+     * ignored, and an array of references is assumed to take 8 bytes per element with no overhead.
+     * </p>
+     *
+     * @return an estimate of the size of this column source's current data
+     */
+    @TestUseOnly
+    abstract public long estimateSize();
 }

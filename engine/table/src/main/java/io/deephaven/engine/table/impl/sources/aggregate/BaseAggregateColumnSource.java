@@ -3,6 +3,10 @@
 //
 package io.deephaven.engine.table.impl.sources.aggregate;
 
+import io.deephaven.chunk.ObjectChunk;
+import io.deephaven.chunk.WritableLongChunk;
+import io.deephaven.chunk.WritableObjectChunk;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.vector.Vector;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
@@ -87,6 +91,36 @@ abstract class BaseAggregateColumnSource<VECTOR_TYPE extends Vector<VECTOR_TYPE>
         return groupRowSetPrev.isTracking()
                 ? groupRowSetPrev.trackingCast().sizePrev()
                 : groupRowSetPrev.size();
+    }
+
+    @Override
+    public void getUngroupedSize(FillContext fillContext, RowSequence rowSequence, WritableLongChunk<Values> sizes) {
+        final AggregateFillContext afc = (AggregateFillContext) fillContext;
+        final ObjectChunk<RowSet, ? extends Values> rowsetChunk =
+                groupRowSetSource.getChunk(afc.groupRowSetGetContext, rowSequence).asObjectChunk();
+        final int size = rowsetChunk.size();
+        for (int ii = 0; ii < size; ++ii) {
+            sizes.set(ii, rowsetChunk.get(ii).size());
+        }
+        sizes.setSize(size);
+    }
+
+    @Override
+    public void getUngroupedPrevSize(FillContext fillContext, RowSequence rowSequence,
+            WritableLongChunk<Values> sizes) {
+        final AggregateFillContext afc = (AggregateFillContext) fillContext;
+        final ObjectChunk<RowSet, ? extends Values> rowsetChunk =
+                groupRowSetSource.getPrevChunk(afc.groupRowSetGetContext, rowSequence).asObjectChunk();
+        final int size = rowsetChunk.size();
+        for (int ii = 0; ii < size; ++ii) {
+            final RowSet groupRowSetPrev = rowsetChunk.get(ii);
+            if (groupRowSetPrev.isTracking()) {
+                sizes.set(ii, groupRowSetPrev.trackingCast().sizePrev());
+            } else {
+                sizes.set(ii, groupRowSetPrev.size());
+            }
+        }
+        sizes.setSize(size);
     }
 
     private long getPrevRowKey(final long groupIndexKey, final int offsetInGroup) {

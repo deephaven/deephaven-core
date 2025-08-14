@@ -40,7 +40,7 @@ TEST_CASE("Scalar Types", "[newtable]") {
   maker.AddColumn<std::optional<bool>>("Bools",
       { {}, false, true, false, false, true });
   maker.AddColumn<std::optional<char16_t>>("Chars",
-      { {}, 0, 'a', u'ᐾ', DeephavenConstants::kMinChar, DeephavenConstants::kMaxChar });
+      { {}, 0, 'a', u'\u143E', DeephavenConstants::kMinChar, DeephavenConstants::kMaxChar });
   maker.AddColumn<std::optional<int8_t>>("Bytes",
       { {}, 0, 1, -1, DeephavenConstants::kMinByte, DeephavenConstants::kMaxByte });
   maker.AddColumn<std::optional<int16_t>>("Shorts",
@@ -84,8 +84,8 @@ TEST_CASE("List Types", "[newtable]") {
   });
   maker.AddColumn<std::optional<std::vector<std::optional<char16_t>>>>("Chars", {
       {}, // a null list
-      { { 'a', u'ᐾ' } }, // a non-null list
-      { { 'a', u'ᐾ', {} } } // a non-null list with a null entry
+      { { 'a', u'\u143E' } }, // a non-null list
+      { { 'a', u'\u143E', {} } } // a non-null list with a null entry
   });
   maker.AddColumn<std::optional<std::vector<std::optional<int8_t>>>>("Bytes", {
       {}, // a null list
@@ -109,8 +109,8 @@ TEST_CASE("List Types", "[newtable]") {
   });
   maker.AddColumn<std::optional<std::vector<std::optional<float>>>>("Floats", {
       {}, // a null list
-      { { 0, 123.456 } }, // a non-null list
-      { { 0, 123.456, {} } } // a non-null list with a null entry
+      { { 0.0F, 123.456F } }, // a non-null list
+      { { 0.0F, 123.456F, {} } } // a non-null list with a null entry
   });
   maker.AddColumn<std::optional<std::vector<std::optional<double>>>>("Doubles", {
       {}, // a null list

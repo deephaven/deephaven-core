@@ -10,11 +10,12 @@ dependencies {
     api project(':Util')
     api project(':codec-api:')
     implementation project(':Base')
+    implementation project(':Configuration')
 
     testImplementation libs.junit4
 
     testRuntimeOnly project(':log-to-slf4j')
-    testRuntimeOnly project(path: ':configs')
-    testRuntimeOnly project(path: ':test-configs')
+    testRuntimeOnly project(':configs')
+    testRuntimeOnly project(':test-configs')
     testRuntimeOnly libs.slf4j.simple
 }

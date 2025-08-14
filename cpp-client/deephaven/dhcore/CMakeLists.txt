@@ -132,7 +132,7 @@ foreach (whichlib dhcore dhcore_static)
   set_property(TARGET ${whichlib} PROPERTY POSITION_INDEPENDENT_CODE ON)
 
   if (LINUX)
-    target_compile_options(${whichlib} PRIVATE -Wall -Werror -Wno-deprecated-declarations)
+    target_compile_options(${whichlib} PRIVATE -Wall -Werror -Wno-deprecated-declarations -Wno-tautological-compare)
   endif()
 
   if (WIN32)

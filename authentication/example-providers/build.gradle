@@ -1,3 +1,5 @@
+import io.deephaven.project.util.PublishingTools
+
 plugins {
     id 'io.deephaven.project.register'
 }
@@ -13,9 +15,6 @@ project.subprojects { Project p ->
         shadow project(':log-factory')
     }
 
-    // ensure we build the shadow jar as part of simple builds
-    p.tasks.findByName('assemble').dependsOn(p.tasks.named('shadowJar'))
-
-    // Let projects be named consistently
-    p.base.archivesName = "deephaven-${p.name}-authentication-provider"
+    // We know all of the subprojects have io.deephaven.project.ProjectType=JAVA_PUBLIC_SHADOW
+    PublishingTools.setupShadowName(p, "deephaven-${p.name}-authentication-provider")
 }

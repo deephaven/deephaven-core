@@ -9,10 +9,15 @@ import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
+import io.deephaven.engine.table.impl.PushdownFilterContext;
+import io.deephaven.engine.table.impl.PushdownResult;
+import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.sources.*;
+import io.deephaven.engine.table.impl.util.JobScheduler;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.Instant;
@@ -20,6 +25,8 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.util.function.Consumer;
+import java.util.function.LongConsumer;
 
 public abstract class ImmutableConstantNanosBasedTimeSource<TIME_TYPE> extends AbstractColumnSource<TIME_TYPE>
         implements InMemoryColumnSource, RowKeyAgnosticChunkSource<Values>,
@@ -163,4 +170,33 @@ public abstract class ImmutableConstantNanosBasedTimeSource<TIME_TYPE> extends A
         return nanoSource;
     }
     // endregion Reinterpretation
+
+    @Override
+    public void estimatePushdownFilterCost(
+            final WhereFilter filter,
+            final RowSet selection,
+            final boolean usePrev,
+            final PushdownFilterContext context,
+            final JobScheduler jobScheduler,
+            final LongConsumer onComplete,
+            final Consumer<Exception> onError) {
+        // Delegate to the shared code for RowKeyAgnosticChunkSource
+        RowKeyAgnosticChunkSource.estimatePushdownFilterCostHelper(
+                filter, selection, usePrev, context, jobScheduler, onComplete, onError);
+    }
+
+    @Override
+    public void pushdownFilter(
+            final WhereFilter filter,
+            final RowSet selection,
+            final boolean usePrev,
+            final PushdownFilterContext context,
+            final long costCeiling,
+            final JobScheduler jobScheduler,
+            final Consumer<PushdownResult> onComplete,
+            final Consumer<Exception> onError) {
+        // Delegate to the shared code for RowKeyAgnosticChunkSource
+        RowKeyAgnosticChunkSource.pushdownFilterHelper(this, filter, selection, usePrev, context, costCeiling,
+                jobScheduler, onComplete, onError);
+    }
 }

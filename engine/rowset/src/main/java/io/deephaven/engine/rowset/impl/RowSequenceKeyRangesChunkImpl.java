@@ -97,7 +97,8 @@ public class RowSequenceKeyRangesChunkImpl implements RowSequence {
 
     private class OffsetHelper {
         public int offset = 0;
-        public long currKeyValue = Math.max(backingChunk.get(offset), minKeyValue);
+        public long currKeyValue =
+                backingChunk.size() > 0 ? Math.max(backingChunk.get(offset), minKeyValue) : RowSet.NULL_ROW_KEY;
 
         /**
          * Advances {@code offset} and {@code currKeyValue} to the new values after skipping {@code numberOfKeys} items.
@@ -154,6 +155,9 @@ public class RowSequenceKeyRangesChunkImpl implements RowSequence {
 
         @Override
         public long peekNextKey() {
+            if (helper.isEmpty()) {
+                return RowSet.NULL_ROW_KEY;
+            }
             return helper.currKeyValue;
         }
 

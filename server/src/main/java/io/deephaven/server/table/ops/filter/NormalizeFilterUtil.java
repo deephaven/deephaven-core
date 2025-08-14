@@ -18,6 +18,7 @@ import io.deephaven.proto.backplane.grpc.OrCondition;
 import io.deephaven.proto.backplane.grpc.Reference;
 import io.deephaven.proto.backplane.grpc.SearchCondition;
 import io.deephaven.proto.backplane.grpc.Value;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -93,7 +94,7 @@ public class NormalizeFilterUtil {
                 .build()).build();
     }
 
-    public static Condition doInvoke(String method, Value target, List<Value> argumentsList) {
+    public static Condition doInvoke(String method, @NotNull Value target, List<Value> argumentsList) {
         return Condition.newBuilder().setInvoke(InvokeCondition.newBuilder()
                 .setMethod(method)
                 .setTarget(target)

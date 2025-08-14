@@ -145,6 +145,7 @@ public class TimeSeriesFilter
     private final long periodNanos;
     private final boolean invert;
     private final Clock clock;
+    private Boolean isRefreshing;
 
     private RecomputeListener listener;
 
@@ -244,7 +245,9 @@ public class TimeSeriesFilter
     public void setRecomputeListener(RecomputeListener listener) {
         Assert.eqNull(this.listener, "this.listener");
         this.listener = listener;
-        listener.setIsRefreshing(true);
+        if (isRefreshing()) {
+            listener.setIsRefreshing(true);
+        }
     }
 
     @Override
@@ -264,7 +267,10 @@ public class TimeSeriesFilter
 
     @Override
     public boolean isRefreshing() {
-        return true;
+        if (isRefreshing == null) {
+            throw new IllegalStateException("isRefreshing must be set by beginOperation before calling isRefreshing()");
+        }
+        return isRefreshing;
     }
 
     @Override
@@ -340,7 +346,7 @@ public class TimeSeriesFilter
     }
 
     @Override
-    public SafeCloseable beginOperation(@NotNull Table sourceTable) {
+    public SafeCloseable beginOperation(@NotNull final Table sourceTable) {
         String windowSourceName = "__Window_" + columnName;
         while (sourceTable.hasColumns(windowSourceName)) {
             windowSourceName = "_" + windowSourceName;
@@ -349,13 +355,21 @@ public class TimeSeriesFilter
         final Pair<Table, WindowCheck.TimeWindowListener> pair = WindowCheck.addTimeWindowInternal(clock,
                 (QueryTable) sourceTable, columnName, periodNanos + 1, windowSourceName, true);
         final QueryTable tableWithWindow = (QueryTable) pair.first;
-        refreshFunctionForUnitTests = pair.second;
 
         windowListener = new TimeSeriesFilterWindowListener(
                 "TimeSeriesFilter(" + columnName + ", " + Duration.ofNanos(periodNanos) + ", " + invert + ")",
                 tableWithWindow, windowSourceName);
-        tableWithWindow.addUpdateListener(windowListener);
-        manage(windowListener);
+
+        if (tableWithWindow.isRefreshing()) {
+            refreshFunctionForUnitTests = pair.second;
+            tableWithWindow.addUpdateListener(windowListener);
+            manage(windowListener);
+            isRefreshing = true;
+        } else {
+            refreshFunctionForUnitTests = () -> {
+            };
+            isRefreshing = false;
+        }
 
         // we are doing the first match, which is based on the entire set of values in the table
         windowListener.insertMatched(sourceTable.getRowSet());
