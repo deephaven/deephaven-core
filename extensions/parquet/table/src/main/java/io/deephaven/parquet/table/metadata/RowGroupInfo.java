@@ -3,7 +3,9 @@
 //
 package io.deephaven.parquet.table.metadata;
 
+import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.util.annotations.ScriptApi;
 import org.jetbrains.annotations.NotNull;
@@ -24,17 +26,6 @@ public abstract class RowGroupInfo {
     }
 
     /**
-     * Split evenly into a pre-defined number of RowGroups
-     *
-     * @param numRowGroups the number of RowGroups to write
-     * @return A {@link RowGroupInfo} which splits the input into a pre-defined number of RowGroups
-     */
-    @ScriptApi
-    public static RowGroupInfo splitEvenly(final int numRowGroups) {
-        return numRowGroups <= 1 ? defaultRowGroupInfo() : new SplitEvenly(numRowGroups);
-    }
-
-    /**
      * Splits into a number of RowGroups, each of which has no more than {@code maxRows} rows
      *
      * @param maxRows the maximum number of rows in each RowGroup
@@ -47,6 +38,17 @@ public abstract class RowGroupInfo {
     }
 
     /**
+     * Split evenly into a pre-defined number of RowGroups
+     *
+     * @param numRowGroups the number of RowGroups to write
+     * @return A {@link RowGroupInfo} which splits the input into a pre-defined number of RowGroups
+     */
+    @ScriptApi
+    public static RowGroupInfo splitEvenly(final int numRowGroups) {
+        return numRowGroups <= 1 ? defaultRowGroupInfo() : new SplitEvenly(numRowGroups);
+    }
+
+    /**
      * Splits each unique group into a RowGroup. If the input table does not have all values for the group(s)
      * contiguously, then an exception will be thrown during the `writeTable(...)` call
      *
@@ -55,7 +57,20 @@ public abstract class RowGroupInfo {
      */
     @ScriptApi
     public static RowGroupInfo byGroup(final String... groups) {
-        return new SplitByGroups(groups);
+        return new SplitByGroups(Long.MAX_VALUE, groups);
+    }
+
+    /**
+     * Splits each unique group into a number of RowGroups. If the input table does not have all values for the group(s)
+     * contiguously, then an exception will be thrown during the `writeTable(...)` call
+     *
+     * @param maxRows the maximum number of rows in each RowGroup
+     * @param groups Grouping column name(s)
+     * @return a {@link RowGroupInfo} which includes a number of RowGroups per unique grouping-value
+     */
+    @ScriptApi
+    public static RowGroupInfo byGroup(final long maxRows, final String... groups) {
+        return new SplitByGroups(maxRows, groups);
     }
 
     /**
@@ -79,36 +94,105 @@ public abstract class RowGroupInfo {
      */
     public abstract Table[] splitForRowGroups(@NotNull final Table input);
 
+    /**
+     * Splits a {@link Table} evenly into a defined number of sub-Tables
+     *
+     * @param input the {@link Table} to be split
+     * @param numSubTables the desired number of sub-Tables
+     * @return an Array of {@code numSubTables} length of {@link Table} instances
+     */
+    public static Table[] splitEvenly(@NotNull final Table input, final int numSubTables) {
+        if (numSubTables <= 1) {
+            return new Table[] {input};
+        }
+
+        final long impliedRowGroupSz = input.size() / numSubTables;
+        // number of groups which will have 1 additional row because rows are not evenly divisible by numSubTables
+        final long fractionalGroups = input.size() % numSubTables;
+
+        final Table[] ret = new Table[numSubTables];
+        final RowSet rawRowSet = input.getRowSet();
+
+        long startOffset = 0;
+        for (int ii = 0; ii < numSubTables; ii++) {
+            final long nextSz = impliedRowGroupSz + (ii < fractionalGroups ? 1 : 0);
+            final WritableRowSet nextRowSet = rawRowSet.subSetByPositionRange(startOffset, startOffset += nextSz);
+            ret[ii] = input.getSubTable(nextRowSet.toTracking());
+        }
+
+        if (!rawRowSet.subSetByPositionRange(startOffset, Long.MAX_VALUE).isEmpty()) {
+            throw new IllegalStateException(
+                    "Has more rows: " + rawRowSet.subSetByPositionRange(startOffset, Long.MAX_VALUE));
+        }
+
+        return ret;
+    }
+
+    // @formatter:off
+    /*
+    public static Table[] splitEvenly(@NotNull final Table input, final int numSubTables) {
+        if (numSubTables <= 1) {
+            return new Table[] {input};
+        }
+
+        final long suggestedRowGroupSize = input.size() / numSubTables;
+        // number of groups which will have 1 additional row because rows are not evenly divisible by numSubTables
+        final long fractionalGroups = input.size() % numSubTables;
+
+        final Table[] ret = new Table[numSubTables];
+
+        final RowSequence.Iterator it = input.getRowSet().getRowSequenceIterator();
+        for (int ii = 0; ii < numSubTables; ii++) {
+            if (!it.hasMore()) {
+                throw new IllegalStateException("No more rows!");
+            }
+
+            final long nextSz = suggestedRowGroupSize + (ii < fractionalGroups ? 1 : 0);
+            final RowSequence next = it.getNextRowSequenceWithLength(nextSz);
+            try (final RowSet nextRowSet = next.asRowSet()) {
+                ret[ii] = input.getSubTable(nextRowSet.copy().toTracking());
+            }
+        }
+
+        if (it.hasMore()) {
+            throw new IllegalStateException("Has more rows!");
+        }
+
+        return ret;
+    }
+     */
+    // @formatter:on
+
+    /**
+     * Ensure that table-ordering has not changed
+     *
+     * @param origTbl the original (pre-split) table
+     * @param ordered the array-split table
+     */
+    private static void ensureConsistentOrdering(@NotNull final Table origTbl, @NotNull final Table[] ordered) {
+        final RowSequence.Iterator it = origTbl.getRowSet().getRowSequenceIterator();
+        for (final Table rowSet : ordered) {
+            final RowSet newRows = rowSet.getRowSet();
+            final long subSize = newRows.size();
+
+            try (final RowSet origRows = it.getNextRowSequenceWithLength(subSize).asRowSet()) {
+                if (!newRows.equals(origRows)) {
+                    throw new IllegalStateException(String
+                            .format("Subtable ordering mismatch;\n  Expected: %s\n  Received: %s", origRows, newRows));
+                }
+            }
+        }
+
+        if (it.hasMore()) {
+            throw new IllegalStateException(String.format("Subtable dropped rows; Iterator has more: %s",
+                    it.getNextRowSequenceWithLength(Long.MAX_VALUE).asRowSet()));
+        }
+    }
+
     private static class SingleRowGroup extends RowGroupInfo {
         @Override
         public Table[] splitForRowGroups(@NotNull final Table input) {
             return new Table[] {input};
-        }
-    }
-
-    private static class SplitEvenly extends RowGroupInfo {
-        private final int numRowGroups;
-
-        private SplitEvenly(int numRowGroups) {
-            this.numRowGroups = numRowGroups;
-        }
-
-        @Override
-        public Table[] splitForRowGroups(@NotNull final Table input) {
-            final long suggestedRowGroupSize = input.size() / numRowGroups;
-            // number of groups which will have 1 additional row because rows are not evenly divisible by numRowGroups
-            final long fractionalGroups = input.size() % numRowGroups;
-
-            final Table[] ret = new Table[numRowGroups];
-
-            long startOffset = 0;
-            for (int ii = 0; ii < numRowGroups; ii++) {
-                final long subSize = suggestedRowGroupSize + (ii < fractionalGroups ? 1 : 0);
-                ret[ii] = subTable(input, startOffset, subSize);
-                startOffset += subSize;
-            }
-
-            return ret;
         }
     }
 
@@ -121,29 +205,63 @@ public abstract class RowGroupInfo {
 
         @Override
         public Table[] splitForRowGroups(@NotNull final Table input) {
-            final int numRowGroups = (int) (input.size() / maxRows) + 1;
-            if (numRowGroups == 1) {
-                return new Table[] {input};
-            }
-            final Table[] ret = new Table[numRowGroups];
+            return splitEvenly(input, (int) (input.size() / maxRows) + 1);
+        }
+    }
 
-            long startOffset = 0;
-            for (int ii = 0; ii < numRowGroups; ii++) {
-                final long subSize = maxRows;
-                ret[ii] = subTable(input, startOffset, subSize);
-                startOffset += subSize;
-            }
+    private static class SplitEvenly extends RowGroupInfo {
+        private final int numRowGroups;
 
-            return ret;
+        private SplitEvenly(int numRowGroups) {
+            this.numRowGroups = numRowGroups;
+        }
+
+        @Override
+        public Table[] splitForRowGroups(@NotNull final Table input) {
+            return splitEvenly(input, numRowGroups);
         }
     }
 
     private static class SplitByGroups extends CustomSplit {
-        private SplitByGroups(final String[] groups) {
-            super(table -> table.partitionBy(groups).constituents());
+        private SplitByGroups(final long maxRows, final String[] groups) {
+            super(table -> splitByGroups(table, maxRows, groups));
             if (groups == null || groups.length == 0) {
                 throw new IllegalArgumentException("Requires at least one group");
             }
+        }
+
+        private static Table[] splitByGroups(@NotNull final Table input, final long maxRows, final String[] groups) {
+            final Table[] partitionedTables = input.partitionBy(groups).constituents();
+
+            if (maxRows == Long.MAX_VALUE) {
+                return partitionedTables;
+            }
+
+            int rowGroupCnt = 0;
+            final Table[][] maxSplit = new Table[partitionedTables.length][];
+            for (int ii = 0; ii < partitionedTables.length; ii++) {
+                final Table groupTable = partitionedTables[ii];
+                if (groupTable.size() < maxRows) {
+                    maxSplit[ii] = new Table[] {groupTable};
+                } else {
+                    maxSplit[ii] = splitEvenly(groupTable, (int) (groupTable.size() / maxRows) + 1);
+                }
+                rowGroupCnt += maxSplit[ii].length;
+            }
+
+            if (rowGroupCnt == partitionedTables.length) {
+                // all RowGroups already fir within `maxRows`
+                return partitionedTables;
+            }
+
+            final Table[] retTables = new Table[rowGroupCnt];
+            int nextTarget = 0;
+            for (final Table[] tables : maxSplit) {
+                System.arraycopy(tables, 0, retTables, nextTarget, tables.length);
+                nextTarget += tables.length;
+            }
+
+            return retTables;
         }
     }
 
@@ -164,37 +282,4 @@ public abstract class RowGroupInfo {
             return splitTables;
         }
     }
-
-    /**
-     * Ensure that table-ordering has not changed
-     *
-     * @param origTbl the original (pre-split) table
-     * @param ordered the array-split table
-     */
-    private static void ensureConsistentOrdering(@NotNull final Table origTbl, @NotNull final Table[] ordered) {
-        long startOffset = 0;
-        for (final Table rowSet : ordered) {
-            final RowSet orderedRows = rowSet.getRowSet();
-            final long subSize = orderedRows.size();
-
-            final RowSet origRows = subTable(origTbl, startOffset, subSize).getRowSet();
-
-            if (orderedRows.intersect(origRows).size() != subSize) {
-                throw new IllegalStateException(String
-                        .format("Subtable ordering mismatch;\n  Expected: %s\n  Received: %s", origRows, orderedRows));
-            }
-
-            startOffset += subSize;
-        }
-
-        if (origTbl.size() != startOffset) {
-            throw new IllegalStateException(String.format("Subtable dropped rows;\n  Expected: %,d\n  Received: %,d",
-                    origTbl.size(), startOffset));
-        }
-    }
-
-    private static Table subTable(@NotNull final Table tbl, final long offset, final long length) {
-        return tbl.tail(tbl.size() - offset).head(length);
-    }
-
 }
