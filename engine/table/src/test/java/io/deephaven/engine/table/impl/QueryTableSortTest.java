@@ -975,4 +975,33 @@ public class QueryTableSortTest extends QueryTableTestBase {
         final Table sd = t.sortDescending("Key");
         assertNotSame(t.getRowSet(), sd.getRowSet());
     }
+
+    public void testComparator() {
+        final Random random = new Random(0);
+        final QueryTable queryTable = getTable(false, 10_000_000, random,
+                initColumnInfos(new String[] {"Value1", "Sentinel"},
+                        new StringGenerator(),
+                        new IntGenerator(0, 100000)));
+
+        final List<Table> results = new ArrayList<>();
+
+        final List<SortColumn> asc = List.of(SortColumn.asc(ColumnName.of("Value1")));
+        final Comparator naturalOrder = Comparator.nullsFirst(Comparator.naturalOrder());
+        final Comparator reverseOrder = Comparator.nullsFirst(Comparator.naturalOrder()).reversed();
+
+        System.out.println("Ascending,Descending,ComparatorAsc,ComparatorDesc");
+        for (int iter = 0; iter < 10; ++iter) {
+            final long t0 = System.nanoTime();
+            results.add(queryTable.sort("Value1"));
+            final long t1 = System.nanoTime();
+            results.add(queryTable.sortDescending("Value1"));
+            final long t2 = System.nanoTime();
+            results.add(queryTable.sort(asc, List.of(naturalOrder)));
+            final long t3 = System.nanoTime();
+            results.add(queryTable.sort(asc, List.of(reverseOrder)));
+            final long t4 = System.nanoTime();
+            System.out.println((t1 - t0) + "," + (t2 - t1) + "," + (t3 - t2) + "," + (t4 - t3));
+            results.clear();
+        }
+    }
 }
