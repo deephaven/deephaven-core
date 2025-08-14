@@ -547,8 +547,8 @@ public class SortHelpers {
         if (comparator == null) {
             return LongSortKernel.makeContext(columnSource.getChunkType(), order, chunkSize, preserveValues);
         }
-        final ComparatorLongTimsortKernel comparatorTimsortKernel = new ComparatorLongTimsortKernel(order == SortingOrder.Ascending ? comparator : comparator.reversed());
-        return comparatorTimsortKernel.createContext(chunkSize);
+        final Comparator useComparator = order == SortingOrder.Ascending ? comparator : comparator.reversed();
+        return ComparatorLongTimsortKernel.createContext(chunkSize, useComparator);
     }
 
     private static SortMapping getSortMappingIndexed(SortingOrder[] order, ColumnSource<Comparable<?>>[] columnSources,
@@ -638,7 +638,7 @@ public class SortHelpers {
             final ColumnSource<Comparable<?>> indexColumn =
                     (ColumnSource<Comparable<?>>) ReinterpretUtils.maybeConvertToPrimitive(originalIndexKeyColumn);
 
-            final SortMapping indexMapping = getSortMappingOne(order[0], indexColumn, comparators[0], indexRowSet, usePrev);
+            final SortMapping indexMapping = getSortMappingOne(order[0], indexColumn, comparators == null ? null : comparators[0], indexRowSet, usePrev);
 
             final String rowSetColumnName = dataIndex.rowSetColumnName();
             final ColumnSource<RowSet> rawRowSetColumn =

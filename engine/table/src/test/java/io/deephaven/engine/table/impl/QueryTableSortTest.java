@@ -976,9 +976,9 @@ public class QueryTableSortTest extends QueryTableTestBase {
         assertNotSame(t.getRowSet(), sd.getRowSet());
     }
 
-    public void testComparator() {
+    public void testComparatorPerformance() {
         final Random random = new Random(0);
-        final QueryTable queryTable = getTable(false, 10_000_000, random,
+        final QueryTable queryTable = getTable(false, 1_000_000, random,
                 initColumnInfos(new String[] {"Value1", "Sentinel"},
                         new StringGenerator(),
                         new IntGenerator(0, 100000)));
@@ -990,7 +990,7 @@ public class QueryTableSortTest extends QueryTableTestBase {
         final Comparator reverseOrder = Comparator.nullsFirst(Comparator.naturalOrder()).reversed();
 
         System.out.println("Ascending,Descending,ComparatorAsc,ComparatorDesc");
-        for (int iter = 0; iter < 10; ++iter) {
+        for (int iter = 0; iter < 3; ++iter) {
             final long t0 = System.nanoTime();
             results.add(queryTable.sort("Value1"));
             final long t1 = System.nanoTime();

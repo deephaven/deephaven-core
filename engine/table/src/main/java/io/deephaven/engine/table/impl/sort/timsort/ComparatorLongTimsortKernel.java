@@ -1,18 +1,21 @@
 //
 // Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
-// Manually copied from ObjectLongTimSortKernel
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharLongTimsortKernel and run "./gradlew replicateSortKernel" to regenerate
 //
 // @formatter:off
 package io.deephaven.engine.table.impl.sort.timsort;
 
-import io.deephaven.chunk.*;
+import java.util.Comparator;
+
+
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.engine.table.impl.sort.LongSortKernel;
+import io.deephaven.chunk.*;
 import io.deephaven.util.annotations.VisibleForTesting;
-import io.deephaven.util.compare.ObjectComparisons;import java.util.Comparator;
 
 /**
  * This implements a timsort kernel for Objects.
@@ -20,16 +23,17 @@ import io.deephaven.util.compare.ObjectComparisons;import java.util.Comparator;
  * <a href="https://bugs.python.org/file4451/timsort.txt">bugs.python.org</a> and
  * <a href="https://en.wikipedia.org/wiki/Timsort">Wikipedia</a> do a decent job of describing the algorithm.
  */
-public class ComparatorLongTimsortKernel {
-
+public final class ComparatorLongTimsortKernel {
+    // region constructor
     private final Comparator comparator;
 
     public ComparatorLongTimsortKernel(final Comparator comparator) {
         this.comparator = comparator;
     }
+    // endregion constructor
 
     // region Context
-    public class ComparatorLongSortKernelContext<SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any>
+    public class ObjectLongSortKernelContext<SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any>
             implements LongSortKernel<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> {
 
         int minGallop;
@@ -39,7 +43,7 @@ public class ComparatorLongTimsortKernel {
         private final WritableLongChunk<PERMUTE_VALUES_ATTR> temporaryKeys;
         private final WritableObjectChunk<Object, SORT_VALUES_ATTR> temporaryValues;
 
-        private ComparatorLongSortKernelContext(int size) {
+        private ObjectLongSortKernelContext(int size) {
             temporaryKeys = WritableLongChunk.makeWritableChunk((size + 2) / 2);
             temporaryValues = WritableObjectChunk.makeWritableChunk((size + 2) / 2);
             runStarts = new int[(size + 31) / 32];
@@ -68,13 +72,26 @@ public class ComparatorLongTimsortKernel {
             temporaryKeys.close();
             temporaryValues.close();
         }
+
+        private ComparatorLongTimsortKernel kernel() {
+            return ComparatorLongTimsortKernel.this;
+        }
     }
     // endregion Context
 
-    public <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> ComparatorLongSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> createContext(
-            int size) {
-        return new ComparatorLongSortKernelContext<>(size);
+    // region createContextInstance
+    public <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> ObjectLongSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> createContextInstance(int size) {
+        return new ObjectLongSortKernelContext<>(size);
     }
+    // endregion createContextInstance
+
+    // region createContextStatic
+
+    public static <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> ObjectLongSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> createContext(final int size, Comparator comparator) {
+        return new ComparatorLongTimsortKernel(comparator).createContextInstance(size);
+    }
+
+    // endregion createContextStatic
 
     /**
      * Sort the values in valuesToSort permuting the valuesToPermute chunk in the same way.
@@ -83,8 +100,8 @@ public class ComparatorLongTimsortKernel {
      * length of the runs. This allows the kernel to be used for a secondary column sort, chaining it together with
      * fewer runs sorted on each pass.
      */
-    <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> void sort(
-            ComparatorLongSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> context,
+    static <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> void sort(
+            ObjectLongSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> context,
             WritableLongChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
             WritableObjectChunk<Object, SORT_VALUES_ATTR> valuesToSort,
             IntChunk<? extends ChunkPositions> offsetsIn,
@@ -94,7 +111,7 @@ public class ComparatorLongTimsortKernel {
             final int offset = offsetsIn.get(run);
             final int length = lengthsIn.get(run);
 
-            timSort(context, valuesToPermute, valuesToSort, offset, length);
+            context.kernel().timSort(context, valuesToPermute, valuesToSort, offset, length);
         }
     }
 
@@ -105,15 +122,15 @@ public class ComparatorLongTimsortKernel {
      * length of the runs. This allows the kernel to be used for a secondary column sort, chaining it together with
      * fewer runs sorted on each pass.
      */
-    <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> void sort(
-            ComparatorLongSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> context,
+    public static <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> void sort(
+            ObjectLongSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> context,
             WritableLongChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
             WritableObjectChunk<Object, SORT_VALUES_ATTR> valuesToSort) {
-        timSort(context, valuesToPermute, valuesToSort, 0, valuesToPermute.size());
+        context.kernel().timSort(context, valuesToPermute, valuesToSort, 0, valuesToPermute.size());
     }
 
     private <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> void timSort(
-            ComparatorLongSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> context,
+            ObjectLongSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> context,
             WritableLongChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
             WritableObjectChunk<Object, SORT_VALUES_ATTR> valuesToSort,
             int offset,
@@ -202,12 +219,12 @@ public class ComparatorLongTimsortKernel {
     }
 
     // region comparison functions
-    // ascending comparison
     private int doComparison(Object lhs, Object rhs) {
         return comparator.compare(lhs, rhs);
     }
     // endregion comparison functions
 
+    // region compare ops
     @VisibleForTesting
     boolean gt(Object lhs, Object rhs) {
         return doComparison(lhs, rhs) > 0;
@@ -227,6 +244,7 @@ public class ComparatorLongTimsortKernel {
     boolean leq(Object lhs, Object rhs) {
         return doComparison(lhs, rhs) <= 0;
     }
+    // endregion compare ops
 
     /**
      * <p>
@@ -252,7 +270,7 @@ public class ComparatorLongTimsortKernel {
      * fresh occurrence of runs in cache memory and making merge decisions relatively simple.
      */
     private <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> void ensureMergeInvariants(
-            ComparatorLongSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> context,
+            ObjectLongSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> context,
             WritableLongChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
             WritableObjectChunk<Object, SORT_VALUES_ATTR> valuesToSort) {
         while (context.runCount > 1) {
@@ -300,7 +318,7 @@ public class ComparatorLongTimsortKernel {
     }
 
     private <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> void merge(
-            ComparatorLongSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> context,
+            ObjectLongSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> context,
             WritableLongChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
             WritableObjectChunk<Object, SORT_VALUES_ATTR> valuesToSort,
             int start1,
@@ -350,7 +368,7 @@ public class ComparatorLongTimsortKernel {
      * We eventually need to do galloping here, but are skipping that for now
      */
     private <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> void frontMerge(
-            ComparatorLongSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> context,
+            ObjectLongSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> context,
             WritableLongChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
             WritableObjectChunk<Object, SORT_VALUES_ATTR> valuesToSort,
             final int mergeStartPosition,
@@ -460,7 +478,7 @@ public class ComparatorLongTimsortKernel {
      * We eventually need to do galloping here, but are skipping that for now
      */
     private <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> void backMerge(
-            ComparatorLongSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> context,
+            ObjectLongSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> context,
             WritableLongChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
             WritableObjectChunk<Object, SORT_VALUES_ATTR> valuesToSort,
             final int mergeStartPosition,
@@ -568,7 +586,7 @@ public class ComparatorLongTimsortKernel {
     }
 
     private static <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> void copyToTemporary(
-            ComparatorLongSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> context,
+            ObjectLongSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> context,
             WritableLongChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
             WritableObjectChunk<Object, SORT_VALUES_ATTR> valuesToSort,
             int mergeStartPosition,
