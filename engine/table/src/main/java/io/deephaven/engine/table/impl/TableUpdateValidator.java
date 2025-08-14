@@ -36,7 +36,7 @@ public class TableUpdateValidator implements QueryTable.Operation<QueryTable> {
             .getBooleanForClassWithDefault(TableUpdateValidator.class, "useSharedContext", true);
     private static final boolean aggressiveUpdateValidation = Configuration.getInstance()
             .getBooleanForClassWithDefault(TableUpdateValidator.class, "aggressiveUpdateValidation", false);
-    private static final int CHUNK_SIZE = ChunkUtils.DEFAULT_CHUNK_SIZE;
+    private static final int CHUNK_SIZE = 4096;
 
     public static TableUpdateValidator make(final QueryTable tableToValidate) {
         return make(null, tableToValidate);

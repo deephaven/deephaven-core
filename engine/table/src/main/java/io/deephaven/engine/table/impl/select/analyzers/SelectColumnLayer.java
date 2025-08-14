@@ -338,7 +338,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
             final SelectAndViewAnalyzer.UpdateHelper helper,
             @Nullable final LivenessNode liveResultOwner,
             final long startOffset) {
-        final int PAGE_SIZE = ChunkUtils.DEFAULT_CHUNK_SIZE;
+        final int PAGE_SIZE = 4096;
         final LongToIntFunction contextSize = (long size) -> size > PAGE_SIZE ? PAGE_SIZE : (int) size;
 
         final boolean modifiesAffectUs =

@@ -20,9 +20,6 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Objects;
 
 public class ChunkUtils {
-
-    public static final int DEFAULT_CHUNK_SIZE = 4096;
-
     private static final int COPY_DATA_CHUNK_SIZE = 16384;
 
     /**

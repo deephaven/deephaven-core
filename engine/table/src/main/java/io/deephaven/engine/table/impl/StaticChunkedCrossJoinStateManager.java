@@ -56,7 +56,7 @@ class StaticChunkedCrossJoinStateManager
     // endregion extensions
 {
     // region constants
-    private static final int CHUNK_SIZE = ChunkUtils.DEFAULT_CHUNK_SIZE;
+    private static final int CHUNK_SIZE = 4096;
     private static final int MINIMUM_INITIAL_HASH_SIZE = CHUNK_SIZE;
     private static final long MAX_TABLE_SIZE = 1L << 30;
     // endregion constants

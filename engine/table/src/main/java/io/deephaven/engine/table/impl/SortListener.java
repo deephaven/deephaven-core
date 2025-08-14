@@ -621,7 +621,7 @@ public class SortListener extends BaseTable.ListenerImpl {
         SortMappingAggregator() {
             keys = new ExposedTLongArrayList();
             values = new ExposedTLongArrayList();
-            chunkSize = ChunkUtils.DEFAULT_CHUNK_SIZE;
+            chunkSize = 4096;
             keysChunk = WritableLongChunk.makeWritableChunk(chunkSize);
             valuesChunk = WritableLongChunk.makeWritableChunk(chunkSize);
             fillFromContext = sortMapping.makeFillFromContext(chunkSize);

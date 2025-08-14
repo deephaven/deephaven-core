@@ -16,7 +16,6 @@ import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.by.alternatingcolumnsource.AlternatingColumnSource;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableIntArraySource;
-import io.deephaven.engine.table.impl.util.ChunkUtils;
 import io.deephaven.engine.table.impl.util.TypedHasherUtil;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
@@ -27,7 +26,7 @@ import static io.deephaven.engine.table.impl.util.TypedHasherUtil.getKeyChunks;
 import static io.deephaven.engine.table.impl.util.TypedHasherUtil.getPrevKeyChunks;
 
 public abstract class UpdateByStateManagerTypedBase extends UpdateByStateManager {
-    private static final int CHUNK_SIZE = ChunkUtils.DEFAULT_CHUNK_SIZE;
+    private static final int CHUNK_SIZE = 4096;
     private static final long MAX_TABLE_SIZE = 1 << 30; // maximum array size
 
     protected static final int EMPTY_RIGHT_VALUE = QueryConstants.NULL_INT;

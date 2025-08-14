@@ -16,7 +16,6 @@ import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.sized.SizedLongChunk;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
-import io.deephaven.engine.table.impl.util.ChunkUtils;
 
 import java.util.function.Consumer;
 
@@ -30,7 +29,7 @@ class CrossJoinModifiedSlotTracker {
     static final long NULL_COOKIE = 0;
 
     private static final int START_SLOT_CHUNK_SIZE = 32;
-    private static final int CHUNK_SIZE = ChunkUtils.DEFAULT_CHUNK_SIZE;
+    private static final int CHUNK_SIZE = 4096;
 
     private int maxSlotChunkCapacity = START_SLOT_CHUNK_SIZE;
 
