@@ -14,6 +14,7 @@ import io.deephaven.qst.type.IntType;
 import io.deephaven.qst.type.PrimitiveVectorType;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.FinalDefault;
+import io.deephaven.util.compare.IntComparisons;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -103,6 +104,21 @@ public interface IntVector extends Vector<IntVector>, Iterable<Integer> {
         return toString(this, prefixLength);
     }
 
+    /**
+     * <p>
+     * Compare this vector with another vector.
+     * </p>
+     *
+     * <p>
+     * The vectors are ordered lexicographically, producing an order consistent with
+     * {@link Arrays#compare(int[], int[])}.
+     * </p>
+     *
+     * {@inheritDoc}
+     */
+    @Override
+    int compareTo(Vector o);
+
     static String intValToString(final Object val) {
         return val == null ? NULL_ELEMENT_STRING : primitiveIntValToString((Integer) val);
     }
@@ -173,6 +189,37 @@ public interface IntVector extends Vector<IntVector>, Iterable<Integer> {
     }
 
     /**
+     * Helper method for {@link Comparable#compareTo(Object)} for a generic IntVector.
+     * 
+     * @param aVector the first vector (this in compareTo)
+     * @param bVector the second vector ("o" or other in compareTo)
+     * @return -1, 0, or 1 if aVector is less than, equal to, or greater than bVector (respectively)
+     */
+    static int compareTo(final IntVector aVector, final IntVector bVector) {
+        if (aVector == bVector) {
+            return 0;
+        }
+        try (final CloseablePrimitiveIteratorOfInt aIterator = aVector.iterator();
+                final CloseablePrimitiveIteratorOfInt bIterator = bVector.iterator()) {
+            while (aIterator.hasNext()) {
+                if (!bIterator.hasNext()) {
+                    return 1;
+                }
+                final int aValue = aIterator.nextInt();
+                final int bValue = bIterator.nextInt();
+                final int compare = IntComparisons.compare(aValue, bValue);
+                if (compare != 0) {
+                    return compare;
+                }
+            }
+            if (bIterator.hasNext()) {
+                return -1;
+            }
+        }
+        return 0;
+    }
+
+    /**
      * Helper method for implementing {@link Object#hashCode()}. Follows the pattern in {@link Arrays#hashCode(int[])}.
      *
      * @param vector The IntVector to hash
@@ -232,6 +279,11 @@ public interface IntVector extends Vector<IntVector>, Iterable<Integer> {
         @Override
         public final int hashCode() {
             return IntVector.hashCode(this);
+        }
+
+        @Override
+        public int compareTo(final Vector o) {
+            return IntVector.compareTo(this, (IntVector) o);
         }
 
         protected final Object writeReplace() {

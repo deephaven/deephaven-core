@@ -34,6 +34,7 @@ public class ReplicateSegmentedSortedMultiset {
                 ReplicateSegmentedSortedMultiset::fixupTHashes,
                 ReplicateSegmentedSortedMultiset::fixupSsmConstructor,
                 ReplicateSegmentedSortedMultiset::fixupObjectCompare,
+                ReplicateSegmentedSortedMultiset::fixupObjectCompareTo,
                 ReplicateSegmentedSortedMultiset::fixupKeyArrayAllocation);
 
         charToAllButBoolean(TASK,
@@ -244,6 +245,13 @@ public class ReplicateSegmentedSortedMultiset {
                                 +
                                 "                    return false;\n" +
                                 "                }"));
+    }
+
+    private static List<String> fixupObjectCompareTo(List<String> lines) {
+        return insertRegion(lines, "compareTo", Collections.singletonList("    @Override\n" +
+                "    public int compareTo(Object o) {\n" +
+                "        return ObjectVector.compareTo(this, (ObjectVector) o);\n" +
+                "    }\n"));
     }
 
     private static void insertInstantExtensions(String longPath) throws IOException {

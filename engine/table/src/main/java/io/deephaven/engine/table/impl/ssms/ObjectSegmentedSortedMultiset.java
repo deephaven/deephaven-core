@@ -29,6 +29,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.util.mutable.MutableInt;
 import io.deephaven.util.mutable.MutableLong;
+import io.deephaven.vector.Vector;
 
 import java.util.Arrays;
 import java.util.Objects;
@@ -2502,6 +2503,18 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
 
         return true;
     }
+
+    // region compareTo
+    @Override
+    public int compareTo(Object o) {
+        return ObjectVector.compareTo(this, (ObjectVector) o);
+    }
+
+    @Override
+    public int compareTo(Vector o) {
+        return ObjectVector.compareTo(this, (ObjectVector) o);
+    }
+    // endregion compareTo
 
     @Override
     public int hashCode() {

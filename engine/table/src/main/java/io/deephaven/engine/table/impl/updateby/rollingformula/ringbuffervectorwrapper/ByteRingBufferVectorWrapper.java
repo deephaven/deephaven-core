@@ -8,10 +8,7 @@
 package io.deephaven.engine.table.impl.updateby.rollingformula.ringbuffervectorwrapper;
 
 import io.deephaven.base.ringbuffer.ByteRingBuffer;
-import io.deephaven.vector.ByteSubVector;
-import io.deephaven.vector.ByteVector;
-import io.deephaven.vector.ByteVectorDirect;
-import io.deephaven.vector.ByteVectorSlice;
+import io.deephaven.vector.*;
 
 public class ByteRingBufferVectorWrapper implements ByteVector, RingBufferVectorWrapper<ByteVector> {
     private final ByteRingBuffer ringBuffer;
@@ -52,5 +49,15 @@ public class ByteRingBufferVectorWrapper implements ByteVector, RingBufferVector
     @Override
     public ByteVector getDirect() {
         return new ByteVectorDirect(ringBuffer.getAll());
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        return ByteVector.equals(this, obj);
+    }
+
+    @Override
+    public int compareTo(Vector o) {
+        return ByteVector.compareTo(this, (ByteVector) o);
     }
 }

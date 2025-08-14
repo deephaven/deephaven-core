@@ -4,10 +4,7 @@
 package io.deephaven.engine.table.impl.updateby.rollingformula.ringbuffervectorwrapper;
 
 import io.deephaven.base.ringbuffer.CharRingBuffer;
-import io.deephaven.vector.CharSubVector;
-import io.deephaven.vector.CharVector;
-import io.deephaven.vector.CharVectorDirect;
-import io.deephaven.vector.CharVectorSlice;
+import io.deephaven.vector.*;
 
 public class CharRingBufferVectorWrapper implements CharVector, RingBufferVectorWrapper<CharVector> {
     private final CharRingBuffer ringBuffer;
@@ -48,5 +45,15 @@ public class CharRingBufferVectorWrapper implements CharVector, RingBufferVector
     @Override
     public CharVector getDirect() {
         return new CharVectorDirect(ringBuffer.getAll());
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        return CharVector.equals(this, obj);
+    }
+
+    @Override
+    public int compareTo(Vector o) {
+        return CharVector.compareTo(this, (CharVector) o);
     }
 }

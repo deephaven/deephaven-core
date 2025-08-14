@@ -10,6 +10,7 @@ import io.deephaven.qst.type.CharType;
 import io.deephaven.qst.type.PrimitiveVectorType;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.FinalDefault;
+import io.deephaven.util.compare.CharComparisons;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -99,6 +100,21 @@ public interface CharVector extends Vector<CharVector>, Iterable<Character> {
         return toString(this, prefixLength);
     }
 
+    /**
+     * <p>
+     * Compare this vector with another vector.
+     * </p>
+     *
+     * <p>
+     * The vectors are ordered lexicographically, producing an order consistent with
+     * {@link Arrays#compare(char[], char[])}.
+     * </p>
+     *
+     * {@inheritDoc}
+     */
+    @Override
+    int compareTo(Vector o);
+
     static String charValToString(final Object val) {
         return val == null ? NULL_ELEMENT_STRING : primitiveCharValToString((Character) val);
     }
@@ -169,6 +185,37 @@ public interface CharVector extends Vector<CharVector>, Iterable<Character> {
     }
 
     /**
+     * Helper method for {@link Comparable#compareTo(Object)} for a generic CharVector.
+     * 
+     * @param aVector the first vector (this in compareTo)
+     * @param bVector the second vector ("o" or other in compareTo)
+     * @return -1, 0, or 1 if aVector is less than, equal to, or greater than bVector (respectively)
+     */
+    static int compareTo(final CharVector aVector, final CharVector bVector) {
+        if (aVector == bVector) {
+            return 0;
+        }
+        try (final CloseablePrimitiveIteratorOfChar aIterator = aVector.iterator();
+                final CloseablePrimitiveIteratorOfChar bIterator = bVector.iterator()) {
+            while (aIterator.hasNext()) {
+                if (!bIterator.hasNext()) {
+                    return 1;
+                }
+                final char aValue = aIterator.nextChar();
+                final char bValue = bIterator.nextChar();
+                final int compare = CharComparisons.compare(aValue, bValue);
+                if (compare != 0) {
+                    return compare;
+                }
+            }
+            if (bIterator.hasNext()) {
+                return -1;
+            }
+        }
+        return 0;
+    }
+
+    /**
      * Helper method for implementing {@link Object#hashCode()}. Follows the pattern in {@link Arrays#hashCode(char[])}.
      *
      * @param vector The CharVector to hash
@@ -228,6 +275,11 @@ public interface CharVector extends Vector<CharVector>, Iterable<Character> {
         @Override
         public final int hashCode() {
             return CharVector.hashCode(this);
+        }
+
+        @Override
+        public int compareTo(final Vector o) {
+            return CharVector.compareTo(this, (CharVector) o);
         }
 
         protected final Object writeReplace() {

@@ -93,6 +93,14 @@ public final class FloatVectorDirect implements FloatVector {
     }
 
     @Override
+    public int compareTo(Vector o) {
+        if (o instanceof FloatVectorDirect) {
+            return Arrays.compare(data, ((FloatVectorDirect) o).data);
+        }
+        return FloatVector.compareTo(this, (FloatVector) o);
+    }
+
+    @Override
     public int hashCode() {
         return FloatVector.hashCode(this);
     }

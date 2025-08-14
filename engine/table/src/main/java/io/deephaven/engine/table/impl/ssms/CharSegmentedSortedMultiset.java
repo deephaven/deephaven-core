@@ -19,6 +19,7 @@ import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.util.mutable.MutableInt;
 import io.deephaven.util.mutable.MutableLong;
 import gnu.trove.set.hash.TCharHashSet;
+import io.deephaven.vector.Vector;
 
 import java.util.Arrays;
 import java.util.Objects;
@@ -2521,6 +2522,13 @@ public final class CharSegmentedSortedMultiset implements SegmentedSortedMultiSe
 
         return true;
     }
+
+    // region compareTo
+    @Override
+    public int compareTo(Vector o) {
+        return CharVector.compareTo(this, (CharVector) o);
+    }
+    // endregion compareTo
 
     @Override
     public int hashCode() {

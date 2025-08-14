@@ -14,6 +14,7 @@ import io.deephaven.qst.type.DoubleType;
 import io.deephaven.qst.type.PrimitiveVectorType;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.FinalDefault;
+import io.deephaven.util.compare.DoubleComparisons;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -103,6 +104,21 @@ public interface DoubleVector extends Vector<DoubleVector>, Iterable<Double> {
         return toString(this, prefixLength);
     }
 
+    /**
+     * <p>
+     * Compare this vector with another vector.
+     * </p>
+     *
+     * <p>
+     * The vectors are ordered lexicographically, producing an order consistent with
+     * {@link Arrays#compare(double[], double[])}.
+     * </p>
+     *
+     * {@inheritDoc}
+     */
+    @Override
+    int compareTo(Vector o);
+
     static String doubleValToString(final Object val) {
         return val == null ? NULL_ELEMENT_STRING : primitiveDoubleValToString((Double) val);
     }
@@ -173,6 +189,37 @@ public interface DoubleVector extends Vector<DoubleVector>, Iterable<Double> {
     }
 
     /**
+     * Helper method for {@link Comparable#compareTo(Object)} for a generic DoubleVector.
+     * 
+     * @param aVector the first vector (this in compareTo)
+     * @param bVector the second vector ("o" or other in compareTo)
+     * @return -1, 0, or 1 if aVector is less than, equal to, or greater than bVector (respectively)
+     */
+    static int compareTo(final DoubleVector aVector, final DoubleVector bVector) {
+        if (aVector == bVector) {
+            return 0;
+        }
+        try (final CloseablePrimitiveIteratorOfDouble aIterator = aVector.iterator();
+                final CloseablePrimitiveIteratorOfDouble bIterator = bVector.iterator()) {
+            while (aIterator.hasNext()) {
+                if (!bIterator.hasNext()) {
+                    return 1;
+                }
+                final double aValue = aIterator.nextDouble();
+                final double bValue = bIterator.nextDouble();
+                final int compare = DoubleComparisons.compare(aValue, bValue);
+                if (compare != 0) {
+                    return compare;
+                }
+            }
+            if (bIterator.hasNext()) {
+                return -1;
+            }
+        }
+        return 0;
+    }
+
+    /**
      * Helper method for implementing {@link Object#hashCode()}. Follows the pattern in {@link Arrays#hashCode(double[])}.
      *
      * @param vector The DoubleVector to hash
@@ -232,6 +279,11 @@ public interface DoubleVector extends Vector<DoubleVector>, Iterable<Double> {
         @Override
         public final int hashCode() {
             return DoubleVector.hashCode(this);
+        }
+
+        @Override
+        public int compareTo(final Vector o) {
+            return DoubleVector.compareTo(this, (DoubleVector) o);
         }
 
         protected final Object writeReplace() {

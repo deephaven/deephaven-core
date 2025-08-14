@@ -8,10 +8,7 @@
 package io.deephaven.engine.table.impl.updateby.rollingformula.ringbuffervectorwrapper;
 
 import io.deephaven.base.ringbuffer.ShortRingBuffer;
-import io.deephaven.vector.ShortSubVector;
-import io.deephaven.vector.ShortVector;
-import io.deephaven.vector.ShortVectorDirect;
-import io.deephaven.vector.ShortVectorSlice;
+import io.deephaven.vector.*;
 
 public class ShortRingBufferVectorWrapper implements ShortVector, RingBufferVectorWrapper<ShortVector> {
     private final ShortRingBuffer ringBuffer;
@@ -52,5 +49,15 @@ public class ShortRingBufferVectorWrapper implements ShortVector, RingBufferVect
     @Override
     public ShortVector getDirect() {
         return new ShortVectorDirect(ringBuffer.getAll());
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        return ShortVector.equals(this, obj);
+    }
+
+    @Override
+    public int compareTo(Vector o) {
+        return ShortVector.compareTo(this, (ShortVector) o);
     }
 }

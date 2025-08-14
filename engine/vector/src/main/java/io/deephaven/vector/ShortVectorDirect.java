@@ -93,6 +93,14 @@ public final class ShortVectorDirect implements ShortVector {
     }
 
     @Override
+    public int compareTo(Vector o) {
+        if (o instanceof ShortVectorDirect) {
+            return Arrays.compare(data, ((ShortVectorDirect) o).data);
+        }
+        return ShortVector.compareTo(this, (ShortVector) o);
+    }
+
+    @Override
     public int hashCode() {
         return ShortVector.hashCode(this);
     }

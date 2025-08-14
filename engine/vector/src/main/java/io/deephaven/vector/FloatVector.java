@@ -14,6 +14,7 @@ import io.deephaven.qst.type.FloatType;
 import io.deephaven.qst.type.PrimitiveVectorType;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.FinalDefault;
+import io.deephaven.util.compare.FloatComparisons;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -103,6 +104,21 @@ public interface FloatVector extends Vector<FloatVector>, Iterable<Float> {
         return toString(this, prefixLength);
     }
 
+    /**
+     * <p>
+     * Compare this vector with another vector.
+     * </p>
+     *
+     * <p>
+     * The vectors are ordered lexicographically, producing an order consistent with
+     * {@link Arrays#compare(float[], float[])}.
+     * </p>
+     *
+     * {@inheritDoc}
+     */
+    @Override
+    int compareTo(Vector o);
+
     static String floatValToString(final Object val) {
         return val == null ? NULL_ELEMENT_STRING : primitiveFloatValToString((Float) val);
     }
@@ -173,6 +189,37 @@ public interface FloatVector extends Vector<FloatVector>, Iterable<Float> {
     }
 
     /**
+     * Helper method for {@link Comparable#compareTo(Object)} for a generic FloatVector.
+     * 
+     * @param aVector the first vector (this in compareTo)
+     * @param bVector the second vector ("o" or other in compareTo)
+     * @return -1, 0, or 1 if aVector is less than, equal to, or greater than bVector (respectively)
+     */
+    static int compareTo(final FloatVector aVector, final FloatVector bVector) {
+        if (aVector == bVector) {
+            return 0;
+        }
+        try (final CloseablePrimitiveIteratorOfFloat aIterator = aVector.iterator();
+                final CloseablePrimitiveIteratorOfFloat bIterator = bVector.iterator()) {
+            while (aIterator.hasNext()) {
+                if (!bIterator.hasNext()) {
+                    return 1;
+                }
+                final float aValue = aIterator.nextFloat();
+                final float bValue = bIterator.nextFloat();
+                final int compare = FloatComparisons.compare(aValue, bValue);
+                if (compare != 0) {
+                    return compare;
+                }
+            }
+            if (bIterator.hasNext()) {
+                return -1;
+            }
+        }
+        return 0;
+    }
+
+    /**
      * Helper method for implementing {@link Object#hashCode()}. Follows the pattern in {@link Arrays#hashCode(float[])}.
      *
      * @param vector The FloatVector to hash
@@ -232,6 +279,11 @@ public interface FloatVector extends Vector<FloatVector>, Iterable<Float> {
         @Override
         public final int hashCode() {
             return FloatVector.hashCode(this);
+        }
+
+        @Override
+        public int compareTo(final Vector o) {
+            return FloatVector.compareTo(this, (FloatVector) o);
         }
 
         protected final Object writeReplace() {

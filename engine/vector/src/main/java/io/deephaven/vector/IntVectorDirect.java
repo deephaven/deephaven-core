@@ -93,6 +93,14 @@ public final class IntVectorDirect implements IntVector {
     }
 
     @Override
+    public int compareTo(Vector o) {
+        if (o instanceof IntVectorDirect) {
+            return Arrays.compare(data, ((IntVectorDirect) o).data);
+        }
+        return IntVector.compareTo(this, (IntVector) o);
+    }
+
+    @Override
     public int hashCode() {
         return IntVector.hashCode(this);
     }

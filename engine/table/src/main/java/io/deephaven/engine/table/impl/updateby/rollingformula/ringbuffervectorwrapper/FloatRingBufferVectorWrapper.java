@@ -8,10 +8,7 @@
 package io.deephaven.engine.table.impl.updateby.rollingformula.ringbuffervectorwrapper;
 
 import io.deephaven.base.ringbuffer.FloatRingBuffer;
-import io.deephaven.vector.FloatSubVector;
-import io.deephaven.vector.FloatVector;
-import io.deephaven.vector.FloatVectorDirect;
-import io.deephaven.vector.FloatVectorSlice;
+import io.deephaven.vector.*;
 
 public class FloatRingBufferVectorWrapper implements FloatVector, RingBufferVectorWrapper<FloatVector> {
     private final FloatRingBuffer ringBuffer;
@@ -52,5 +49,15 @@ public class FloatRingBufferVectorWrapper implements FloatVector, RingBufferVect
     @Override
     public FloatVector getDirect() {
         return new FloatVectorDirect(ringBuffer.getAll());
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        return FloatVector.equals(this, obj);
+    }
+
+    @Override
+    public int compareTo(Vector o) {
+        return FloatVector.compareTo(this, (FloatVector) o);
     }
 }

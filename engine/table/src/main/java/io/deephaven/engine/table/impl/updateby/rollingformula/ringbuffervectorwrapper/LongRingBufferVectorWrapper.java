@@ -8,10 +8,7 @@
 package io.deephaven.engine.table.impl.updateby.rollingformula.ringbuffervectorwrapper;
 
 import io.deephaven.base.ringbuffer.LongRingBuffer;
-import io.deephaven.vector.LongSubVector;
-import io.deephaven.vector.LongVector;
-import io.deephaven.vector.LongVectorDirect;
-import io.deephaven.vector.LongVectorSlice;
+import io.deephaven.vector.*;
 
 public class LongRingBufferVectorWrapper implements LongVector, RingBufferVectorWrapper<LongVector> {
     private final LongRingBuffer ringBuffer;
@@ -52,5 +49,15 @@ public class LongRingBufferVectorWrapper implements LongVector, RingBufferVector
     @Override
     public LongVector getDirect() {
         return new LongVectorDirect(ringBuffer.getAll());
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        return LongVector.equals(this, obj);
+    }
+
+    @Override
+    public int compareTo(Vector o) {
+        return LongVector.compareTo(this, (LongVector) o);
     }
 }

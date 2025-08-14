@@ -9,8 +9,8 @@ import io.deephaven.engine.primitive.value.iterator.ValueIterator;
 import io.deephaven.qst.type.GenericVectorType;
 import io.deephaven.qst.type.GenericType;
 import io.deephaven.util.annotations.FinalDefault;
+import io.deephaven.util.compare.ObjectComparisons;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
-import io.deephaven.util.type.ArrayTypeUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -26,7 +26,7 @@ public interface ObjectVector<COMPONENT_TYPE> extends Vector<ObjectVector<COMPON
 
     long serialVersionUID = 2691131699080413017L;
 
-    static <T> GenericVectorType<ObjectVector<T>, T> type(GenericType<T> genericType) {
+    static <T> GenericVectorType<ObjectVector<T>, T> type(final GenericType<T> genericType) {
         // noinspection unchecked
         return GenericVectorType.of((Class<ObjectVector<T>>) (Class<?>) ObjectVector.class, genericType);
     }
@@ -94,6 +94,22 @@ public interface ObjectVector<COMPONENT_TYPE> extends Vector<ObjectVector<COMPON
             }
         };
     }
+
+
+    /**
+     * <p>
+     * Compare this vector with another vector.
+     * </p>
+     *
+     * <p>
+     * The vectors must {@link Comparable} elements. The vectors are ordered lexicographically, producing an order
+     * consistent with {@link Arrays#compare(Comparable[], Comparable[])}.
+     * </p>
+     *
+     * {@inheritDoc}
+     */
+    @Override
+    int compareTo(Vector o);
 
     @Override
     @FinalDefault
@@ -164,6 +180,38 @@ public interface ObjectVector<COMPONENT_TYPE> extends Vector<ObjectVector<COMPON
             }
         }
         return true;
+    }
+
+
+    /**
+     * Implements {@link Comparable#compareTo(Object)} for a generic CharVector.
+     * 
+     * @param aVector the first vector (this in compareTo)
+     * @param bVector the second vector ("o" or other in compareTo)
+     * @return -1, 0, or 1 if aVector is less than, equal to, or greater than bVector (respectively)
+     */
+    static <T> int compareTo(final ObjectVector<T> aVector, final ObjectVector<T> bVector) {
+        if (aVector == bVector) {
+            return 0;
+        }
+        try (final ValueIterator<T> aIterator = aVector.iterator();
+                final ValueIterator<T> bIterator = bVector.iterator()) {
+            while (aIterator.hasNext()) {
+                if (!bIterator.hasNext()) {
+                    return 1;
+                }
+                final T aValue = aIterator.next();
+                final T bValue = bIterator.next();
+                final int compare = ObjectComparisons.compare(aValue, bValue);
+                if (compare != 0) {
+                    return compare;
+                }
+            }
+            if (bIterator.hasNext()) {
+                return -1;
+            }
+        }
+        return 0;
     }
 
     /**
@@ -241,6 +289,12 @@ public interface ObjectVector<COMPONENT_TYPE> extends Vector<ObjectVector<COMPON
         @Override
         public final boolean equals(final Object obj) {
             return ObjectVector.equals(this, obj);
+        }
+
+        @Override
+        public int compareTo(final Vector o) {
+            // noinspection rawtypes
+            return ObjectVector.compareTo(this, (ObjectVector) o);
         }
 
         @Override
