@@ -10,7 +10,6 @@ import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.ColumnSourceGetDefaults;
 import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
 import io.deephaven.engine.table.impl.ssms.LongSegmentedSortedMultiset;
-import io.deephaven.vector.Vector;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.Instant;

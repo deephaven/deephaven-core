@@ -8,7 +8,10 @@
 package io.deephaven.engine.table.impl.updateby.rollingformula.ringbuffervectorwrapper;
 
 import io.deephaven.base.ringbuffer.ByteRingBuffer;
-import io.deephaven.vector.*;
+import io.deephaven.vector.ByteSubVector;
+import io.deephaven.vector.ByteVector;
+import io.deephaven.vector.ByteVectorDirect;
+import io.deephaven.vector.ByteVectorSlice;
 
 public class ByteRingBufferVectorWrapper implements ByteVector, RingBufferVectorWrapper<ByteVector> {
     private final ByteRingBuffer ringBuffer;

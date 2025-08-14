@@ -4,7 +4,10 @@
 package io.deephaven.engine.table.impl.updateby.rollingformula.ringbuffervectorwrapper;
 
 import io.deephaven.base.ringbuffer.CharRingBuffer;
-import io.deephaven.vector.*;
+import io.deephaven.vector.CharSubVector;
+import io.deephaven.vector.CharVector;
+import io.deephaven.vector.CharVectorDirect;
+import io.deephaven.vector.CharVectorSlice;
 
 public class CharRingBufferVectorWrapper implements CharVector, RingBufferVectorWrapper<CharVector> {
     private final CharRingBuffer ringBuffer;

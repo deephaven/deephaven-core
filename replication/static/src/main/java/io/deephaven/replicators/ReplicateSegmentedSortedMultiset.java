@@ -31,10 +31,10 @@ public class ReplicateSegmentedSortedMultiset {
         String objectSsm = charToObject(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/ssms/CharSegmentedSortedMultiset.java");
         fixupObjectSsm(objectSsm, ReplicateSegmentedSortedMultiset::fixupNulls,
+                ReplicateSegmentedSortedMultiset::fixupObjectGeneric,
                 ReplicateSegmentedSortedMultiset::fixupTHashes,
                 ReplicateSegmentedSortedMultiset::fixupSsmConstructor,
                 ReplicateSegmentedSortedMultiset::fixupObjectCompare,
-                ReplicateSegmentedSortedMultiset::fixupObjectCompareTo,
                 ReplicateSegmentedSortedMultiset::fixupKeyArrayAllocation);
 
         charToAllButBoolean(TASK,
@@ -220,6 +220,10 @@ public class ReplicateSegmentedSortedMultiset {
                         "    }"));
     }
 
+    private static List<String> fixupObjectGeneric(List<String> lines) {
+        return globalReplacements(lines, "ObjectVector \\{", "ObjectVector<Object> \\{");
+    }
+
     private static List<String> fixupSourceConstructor(List<String> lines) {
         return replaceRegion(lines, "Constructor",
                 Collections.singletonList("    public ObjectSsmBackedSource(Class type) {\n" +
@@ -245,13 +249,6 @@ public class ReplicateSegmentedSortedMultiset {
                                 +
                                 "                    return false;\n" +
                                 "                }"));
-    }
-
-    private static List<String> fixupObjectCompareTo(List<String> lines) {
-        return insertRegion(lines, "compareTo", Collections.singletonList("    @Override\n" +
-                "    public int compareTo(Object o) {\n" +
-                "        return ObjectVector.compareTo(this, (ObjectVector) o);\n" +
-                "    }\n"));
     }
 
     private static void insertInstantExtensions(String longPath) throws IOException {

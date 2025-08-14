@@ -8,7 +8,10 @@
 package io.deephaven.engine.table.impl.updateby.rollingformula.ringbuffervectorwrapper;
 
 import io.deephaven.base.ringbuffer.LongRingBuffer;
-import io.deephaven.vector.*;
+import io.deephaven.vector.LongSubVector;
+import io.deephaven.vector.LongVector;
+import io.deephaven.vector.LongVectorDirect;
+import io.deephaven.vector.LongVectorSlice;
 
 public class LongRingBufferVectorWrapper implements LongVector, RingBufferVectorWrapper<LongVector> {
     private final LongRingBuffer ringBuffer;

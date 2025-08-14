@@ -23,7 +23,6 @@ import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.util.mutable.MutableInt;
 import io.deephaven.util.mutable.MutableLong;
 import gnu.trove.set.hash.TFloatHashSet;
-import io.deephaven.vector.Vector;
 
 import java.util.Arrays;
 import java.util.Objects;
@@ -2526,9 +2525,6 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
 
         return true;
     }
-
-    // region compareTo
-    // endregion compareTo
 
     @Override
     public int hashCode() {
