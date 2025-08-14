@@ -55,9 +55,4 @@ public class LongRingBufferVectorWrapper implements LongVector, RingBufferVector
     public boolean equals(Object obj) {
         return LongVector.equals(this, obj);
     }
-
-    @Override
-    public int compareTo(Vector o) {
-        return LongVector.compareTo(this, (LongVector) o);
-    }
 }

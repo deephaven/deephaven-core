@@ -55,9 +55,4 @@ public class ShortRingBufferVectorWrapper implements ShortVector, RingBufferVect
     public boolean equals(Object obj) {
         return ShortVector.equals(this, obj);
     }
-
-    @Override
-    public int compareTo(Vector o) {
-        return ShortVector.compareTo(this, (ShortVector) o);
-    }
 }

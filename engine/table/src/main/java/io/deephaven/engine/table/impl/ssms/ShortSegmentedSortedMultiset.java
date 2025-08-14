@@ -2528,10 +2528,6 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
     }
 
     // region compareTo
-    @Override
-    public int compareTo(Vector o) {
-        return ShortVector.compareTo(this, (ShortVector) o);
-    }
     // endregion compareTo
 
     @Override

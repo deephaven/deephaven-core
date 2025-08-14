@@ -110,14 +110,15 @@ public interface ShortVector extends Vector<ShortVector>, Iterable<Short> {
      * </p>
      *
      * <p>
-     * The vectors are ordered lexicographically, producing an order consistent with
-     * {@link Arrays#compare(short[], short[])}.
+     * The vectors are ordered lexicographically using Deephaven sorting rules.
      * </p>
      *
-     * {@inheritDoc}
+     * {@see Comparable#compareTo}
      */
     @Override
-    int compareTo(Vector o);
+    default int compareTo(final ShortVector o) {
+        return compareTo(this, o);
+    }
 
     static String shortValToString(final Object val) {
         return val == null ? NULL_ELEMENT_STRING : primitiveShortValToString((Short) val);
@@ -279,11 +280,6 @@ public interface ShortVector extends Vector<ShortVector>, Iterable<Short> {
         @Override
         public final int hashCode() {
             return ShortVector.hashCode(this);
-        }
-
-        @Override
-        public int compareTo(final Vector o) {
-            return ShortVector.compareTo(this, (ShortVector) o);
         }
 
         protected final Object writeReplace() {

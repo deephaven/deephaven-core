@@ -93,14 +93,6 @@ public final class LongVectorDirect implements LongVector {
     }
 
     @Override
-    public int compareTo(Vector o) {
-        if (o instanceof LongVectorDirect) {
-            return Arrays.compare(data, ((LongVectorDirect) o).data);
-        }
-        return LongVector.compareTo(this, (LongVector) o);
-    }
-
-    @Override
     public int hashCode() {
         return LongVector.hashCode(this);
     }

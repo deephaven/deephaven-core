@@ -148,11 +148,6 @@ public class InstantSsmSourceWrapper extends AbstractColumnSource<ObjectVector>
         }
 
         @Override
-        public int compareTo(final Vector o) {
-            return ObjectVector.compareTo(this, (ObjectVector<Instant>) o);
-        }
-
-        @Override
         public int hashCode() {
             return Objects.hash(underlying);
         }

@@ -30,8 +30,8 @@ public class IntVectorColumnWrapperTest extends IntVectorTest {
 
 
     /**
-     * We are actually testing both the direct and wrapper versions here; so that we can get all combinations of
-     * direct and a non-direct vector covered. This test exercises arrays of different sizes; but with equal elements.
+     * We are actually testing both the direct and wrapper versions here; so that we can get all combinations of direct
+     * and a non-direct vector covered. This test exercises arrays of different sizes; but with equal elements.
      */
     @Test
     public void testComparisonSize() {

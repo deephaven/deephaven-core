@@ -55,9 +55,4 @@ public class IntRingBufferVectorWrapper implements IntVector, RingBufferVectorWr
     public boolean equals(Object obj) {
         return IntVector.equals(this, obj);
     }
-
-    @Override
-    public int compareTo(Vector o) {
-        return IntVector.compareTo(this, (IntVector) o);
-    }
 }

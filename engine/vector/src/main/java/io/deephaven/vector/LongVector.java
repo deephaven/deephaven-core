@@ -110,14 +110,15 @@ public interface LongVector extends Vector<LongVector>, Iterable<Long> {
      * </p>
      *
      * <p>
-     * The vectors are ordered lexicographically, producing an order consistent with
-     * {@link Arrays#compare(long[], long[])}.
+     * The vectors are ordered lexicographically using Deephaven sorting rules.
      * </p>
      *
-     * {@inheritDoc}
+     * {@see Comparable#compareTo}
      */
     @Override
-    int compareTo(Vector o);
+    default int compareTo(final LongVector o) {
+        return compareTo(this, o);
+    }
 
     static String longValToString(final Object val) {
         return val == null ? NULL_ELEMENT_STRING : primitiveLongValToString((Long) val);
@@ -279,11 +280,6 @@ public interface LongVector extends Vector<LongVector>, Iterable<Long> {
         @Override
         public final int hashCode() {
             return LongVector.hashCode(this);
-        }
-
-        @Override
-        public int compareTo(final Vector o) {
-            return LongVector.compareTo(this, (LongVector) o);
         }
 
         protected final Object writeReplace() {

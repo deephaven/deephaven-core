@@ -93,14 +93,6 @@ public final class DoubleVectorDirect implements DoubleVector {
     }
 
     @Override
-    public int compareTo(Vector o) {
-        if (o instanceof DoubleVectorDirect) {
-            return Arrays.compare(data, ((DoubleVectorDirect) o).data);
-        }
-        return DoubleVector.compareTo(this, (DoubleVector) o);
-    }
-
-    @Override
     public int hashCode() {
         return DoubleVector.hashCode(this);
     }

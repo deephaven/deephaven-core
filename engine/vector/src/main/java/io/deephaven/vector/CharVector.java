@@ -106,14 +106,15 @@ public interface CharVector extends Vector<CharVector>, Iterable<Character> {
      * </p>
      *
      * <p>
-     * The vectors are ordered lexicographically, producing an order consistent with
-     * {@link Arrays#compare(char[], char[])}.
+     * The vectors are ordered lexicographically using Deephaven sorting rules.
      * </p>
      *
-     * {@inheritDoc}
+     * {@see Comparable#compareTo}
      */
     @Override
-    int compareTo(Vector o);
+    default int compareTo(final CharVector o) {
+        return compareTo(this, o);
+    }
 
     static String charValToString(final Object val) {
         return val == null ? NULL_ELEMENT_STRING : primitiveCharValToString((Character) val);
@@ -275,11 +276,6 @@ public interface CharVector extends Vector<CharVector>, Iterable<Character> {
         @Override
         public final int hashCode() {
             return CharVector.hashCode(this);
-        }
-
-        @Override
-        public int compareTo(final Vector o) {
-            return CharVector.compareTo(this, (CharVector) o);
         }
 
         protected final Object writeReplace() {

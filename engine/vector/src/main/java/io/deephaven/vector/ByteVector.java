@@ -110,14 +110,15 @@ public interface ByteVector extends Vector<ByteVector>, Iterable<Byte> {
      * </p>
      *
      * <p>
-     * The vectors are ordered lexicographically, producing an order consistent with
-     * {@link Arrays#compare(byte[], byte[])}.
+     * The vectors are ordered lexicographically using Deephaven sorting rules.
      * </p>
      *
-     * {@inheritDoc}
+     * {@see Comparable#compareTo}
      */
     @Override
-    int compareTo(Vector o);
+    default int compareTo(final ByteVector o) {
+        return compareTo(this, o);
+    }
 
     static String byteValToString(final Object val) {
         return val == null ? NULL_ELEMENT_STRING : primitiveByteValToString((Byte) val);
@@ -279,11 +280,6 @@ public interface ByteVector extends Vector<ByteVector>, Iterable<Byte> {
         @Override
         public final int hashCode() {
             return ByteVector.hashCode(this);
-        }
-
-        @Override
-        public int compareTo(final Vector o) {
-            return ByteVector.compareTo(this, (ByteVector) o);
         }
 
         protected final Object writeReplace() {

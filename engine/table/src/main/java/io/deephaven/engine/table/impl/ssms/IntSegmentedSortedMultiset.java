@@ -2528,10 +2528,6 @@ public final class IntSegmentedSortedMultiset implements SegmentedSortedMultiSet
     }
 
     // region compareTo
-    @Override
-    public int compareTo(Vector o) {
-        return IntVector.compareTo(this, (IntVector) o);
-    }
     // endregion compareTo
 
     @Override

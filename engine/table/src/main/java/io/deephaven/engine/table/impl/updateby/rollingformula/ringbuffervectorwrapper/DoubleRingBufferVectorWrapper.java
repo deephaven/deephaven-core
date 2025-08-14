@@ -55,9 +55,4 @@ public class DoubleRingBufferVectorWrapper implements DoubleVector, RingBufferVe
     public boolean equals(Object obj) {
         return DoubleVector.equals(this, obj);
     }
-
-    @Override
-    public int compareTo(Vector o) {
-        return DoubleVector.compareTo(this, (DoubleVector) o);
-    }
 }

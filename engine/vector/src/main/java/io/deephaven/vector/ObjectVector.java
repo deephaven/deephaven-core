@@ -109,7 +109,9 @@ public interface ObjectVector<COMPONENT_TYPE> extends Vector<ObjectVector<COMPON
      * {@inheritDoc}
      */
     @Override
-    int compareTo(Vector o);
+    default int compareTo(ObjectVector<COMPONENT_TYPE> o) {
+        return compareTo(this, o);
+    }
 
     @Override
     @FinalDefault
@@ -289,12 +291,6 @@ public interface ObjectVector<COMPONENT_TYPE> extends Vector<ObjectVector<COMPON
         @Override
         public final boolean equals(final Object obj) {
             return ObjectVector.equals(this, obj);
-        }
-
-        @Override
-        public int compareTo(final Vector o) {
-            // noinspection rawtypes
-            return ObjectVector.compareTo(this, (ObjectVector) o);
         }
 
         @Override

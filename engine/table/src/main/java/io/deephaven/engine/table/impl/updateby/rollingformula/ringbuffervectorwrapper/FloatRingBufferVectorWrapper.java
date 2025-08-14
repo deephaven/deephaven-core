@@ -55,9 +55,4 @@ public class FloatRingBufferVectorWrapper implements FloatVector, RingBufferVect
     public boolean equals(Object obj) {
         return FloatVector.equals(this, obj);
     }
-
-    @Override
-    public int compareTo(Vector o) {
-        return FloatVector.compareTo(this, (FloatVector) o);
-    }
 }

@@ -110,14 +110,15 @@ public interface DoubleVector extends Vector<DoubleVector>, Iterable<Double> {
      * </p>
      *
      * <p>
-     * The vectors are ordered lexicographically, producing an order consistent with
-     * {@link Arrays#compare(double[], double[])}.
+     * The vectors are ordered lexicographically using Deephaven sorting rules.
      * </p>
      *
-     * {@inheritDoc}
+     * {@see Comparable#compareTo}
      */
     @Override
-    int compareTo(Vector o);
+    default int compareTo(final DoubleVector o) {
+        return compareTo(this, o);
+    }
 
     static String doubleValToString(final Object val) {
         return val == null ? NULL_ELEMENT_STRING : primitiveDoubleValToString((Double) val);
@@ -279,11 +280,6 @@ public interface DoubleVector extends Vector<DoubleVector>, Iterable<Double> {
         @Override
         public final int hashCode() {
             return DoubleVector.hashCode(this);
-        }
-
-        @Override
-        public int compareTo(final Vector o) {
-            return DoubleVector.compareTo(this, (DoubleVector) o);
         }
 
         protected final Object writeReplace() {

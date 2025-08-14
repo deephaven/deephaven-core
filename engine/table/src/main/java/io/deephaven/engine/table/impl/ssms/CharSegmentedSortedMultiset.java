@@ -2524,10 +2524,6 @@ public final class CharSegmentedSortedMultiset implements SegmentedSortedMultiSe
     }
 
     // region compareTo
-    @Override
-    public int compareTo(Vector o) {
-        return CharVector.compareTo(this, (CharVector) o);
-    }
     // endregion compareTo
 
     @Override

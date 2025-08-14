@@ -2528,10 +2528,6 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
     }
 
     // region compareTo
-    @Override
-    public int compareTo(Vector o) {
-        return FloatVector.compareTo(this, (FloatVector) o);
-    }
     // endregion compareTo
 
     @Override

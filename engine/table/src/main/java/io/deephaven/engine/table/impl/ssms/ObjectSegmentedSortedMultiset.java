@@ -2510,10 +2510,6 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
         return ObjectVector.compareTo(this, (ObjectVector) o);
     }
 
-    @Override
-    public int compareTo(Vector o) {
-        return ObjectVector.compareTo(this, (ObjectVector) o);
-    }
     // endregion compareTo
 
     @Override

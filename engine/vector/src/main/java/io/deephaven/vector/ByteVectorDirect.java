@@ -93,14 +93,6 @@ public final class ByteVectorDirect implements ByteVector {
     }
 
     @Override
-    public int compareTo(Vector o) {
-        if (o instanceof ByteVectorDirect) {
-            return Arrays.compare(data, ((ByteVectorDirect) o).data);
-        }
-        return ByteVector.compareTo(this, (ByteVector) o);
-    }
-
-    @Override
     public int hashCode() {
         return ByteVector.hashCode(this);
     }

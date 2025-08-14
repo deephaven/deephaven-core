@@ -110,14 +110,15 @@ public interface IntVector extends Vector<IntVector>, Iterable<Integer> {
      * </p>
      *
      * <p>
-     * The vectors are ordered lexicographically, producing an order consistent with
-     * {@link Arrays#compare(int[], int[])}.
+     * The vectors are ordered lexicographically using Deephaven sorting rules.
      * </p>
      *
-     * {@inheritDoc}
+     * {@see Comparable#compareTo}
      */
     @Override
-    int compareTo(Vector o);
+    default int compareTo(final IntVector o) {
+        return compareTo(this, o);
+    }
 
     static String intValToString(final Object val) {
         return val == null ? NULL_ELEMENT_STRING : primitiveIntValToString((Integer) val);
@@ -279,11 +280,6 @@ public interface IntVector extends Vector<IntVector>, Iterable<Integer> {
         @Override
         public final int hashCode() {
             return IntVector.hashCode(this);
-        }
-
-        @Override
-        public int compareTo(final Vector o) {
-            return IntVector.compareTo(this, (IntVector) o);
         }
 
         protected final Object writeReplace() {

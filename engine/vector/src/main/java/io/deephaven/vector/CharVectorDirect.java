@@ -89,14 +89,6 @@ public final class CharVectorDirect implements CharVector {
     }
 
     @Override
-    public int compareTo(Vector o) {
-        if (o instanceof CharVectorDirect) {
-            return Arrays.compare(data, ((CharVectorDirect) o).data);
-        }
-        return CharVector.compareTo(this, (CharVector) o);
-    }
-
-    @Override
     public int hashCode() {
         return CharVector.hashCode(this);
     }

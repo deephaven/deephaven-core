@@ -2528,10 +2528,6 @@ public final class ByteSegmentedSortedMultiset implements SegmentedSortedMultiSe
     }
 
     // region compareTo
-    @Override
-    public int compareTo(Vector o) {
-        return ByteVector.compareTo(this, (ByteVector) o);
-    }
     // endregion compareTo
 
     @Override

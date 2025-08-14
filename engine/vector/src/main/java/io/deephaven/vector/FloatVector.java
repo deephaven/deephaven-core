@@ -110,14 +110,15 @@ public interface FloatVector extends Vector<FloatVector>, Iterable<Float> {
      * </p>
      *
      * <p>
-     * The vectors are ordered lexicographically, producing an order consistent with
-     * {@link Arrays#compare(float[], float[])}.
+     * The vectors are ordered lexicographically using Deephaven sorting rules.
      * </p>
      *
-     * {@inheritDoc}
+     * {@see Comparable#compareTo}
      */
     @Override
-    int compareTo(Vector o);
+    default int compareTo(final FloatVector o) {
+        return compareTo(this, o);
+    }
 
     static String floatValToString(final Object val) {
         return val == null ? NULL_ELEMENT_STRING : primitiveFloatValToString((Float) val);
@@ -279,11 +280,6 @@ public interface FloatVector extends Vector<FloatVector>, Iterable<Float> {
         @Override
         public final int hashCode() {
             return FloatVector.hashCode(this);
-        }
-
-        @Override
-        public int compareTo(final Vector o) {
-            return FloatVector.compareTo(this, (FloatVector) o);
         }
 
         protected final Object writeReplace() {

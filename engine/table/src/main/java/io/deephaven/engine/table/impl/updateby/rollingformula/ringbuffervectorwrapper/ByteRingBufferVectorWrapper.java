@@ -55,9 +55,4 @@ public class ByteRingBufferVectorWrapper implements ByteVector, RingBufferVector
     public boolean equals(Object obj) {
         return ByteVector.equals(this, obj);
     }
-
-    @Override
-    public int compareTo(Vector o) {
-        return ByteVector.compareTo(this, (ByteVector) o);
-    }
 }

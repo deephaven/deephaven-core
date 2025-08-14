@@ -51,9 +51,4 @@ public class CharRingBufferVectorWrapper implements CharVector, RingBufferVector
     public boolean equals(Object obj) {
         return CharVector.equals(this, obj);
     }
-
-    @Override
-    public int compareTo(Vector o) {
-        return CharVector.compareTo(this, (CharVector) o);
-    }
 }

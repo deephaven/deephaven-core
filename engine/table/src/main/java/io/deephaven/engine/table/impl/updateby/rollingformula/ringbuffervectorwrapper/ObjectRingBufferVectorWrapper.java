@@ -56,11 +56,6 @@ public class ObjectRingBufferVectorWrapper<T> implements ObjectVector<T>, RingBu
     }
 
     @Override
-    public int compareTo(final Vector o) {
-        return ObjectVector.compareTo(this, (ObjectVector<T>) o);
-    }
-
-    @Override
     public boolean equals(Object obj) {
         return ObjectVector.equals(this, obj);
     }

@@ -12,6 +12,8 @@ import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
+import static io.deephaven.util.QueryConstants.NULL_CHAR;
+
 /**
  * {@link CharVectorTest} implementation for {@link io.deephaven.engine.table.vectors.CharVectorColumnWrapper}.
  */
@@ -50,6 +52,24 @@ public class CharVectorColumnWrapperTest extends CharVectorTest {
     @Test
     public void testComparisonValues() {
         final char[] small = new char[] {(char) 10, (char) 20};
+        final char[] medium = new char[] {(char) 10, (char) 30};
+        final char[] large = new char[] {(char) 10, (char) 40};
+        final CharVectorDirect cvd0 = new CharVectorDirect(small);
+        final CharVectorDirect cvd1 = new CharVectorDirect(medium);
+        final CharVectorDirect cvd3 = new CharVectorDirect(large);
+        final CharVector cvw0 = makeTestVector(small);
+        final CharVector cvw1 = makeTestVector(medium);
+        final CharVector cvw3 = makeTestVector(large);
+
+        checkPairs(cvd0, cvd1, cvd3, cvd0, cvd1, cvd3);
+        checkPairs(cvd0, cvd1, cvd3, cvw0, cvw1, cvw3);
+        checkPairs(cvw0, cvw1, cvw3, cvw0, cvw1, cvw3);
+        checkPairs(cvw0, cvw1, cvw3, cvd0, cvd1, cvd3);
+    }
+
+    @Test
+    public void testComparisonNullValues() {
+        final char[] small = new char[] {(char) 10, NULL_CHAR};
         final char[] medium = new char[] {(char) 10, (char) 30};
         final char[] large = new char[] {(char) 10, (char) 40};
         final CharVectorDirect cvd0 = new CharVectorDirect(small);

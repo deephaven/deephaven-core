@@ -2533,10 +2533,6 @@ public final class LongSegmentedSortedMultiset implements SegmentedSortedMultiSe
     }
 
     // region compareTo
-    @Override
-    public int compareTo(Vector o) {
-        return LongVector.compareTo(this, (LongVector) o);
-    }
     // endregion compareTo
 
     @Override

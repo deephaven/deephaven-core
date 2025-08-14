@@ -2528,10 +2528,6 @@ public final class DoubleSegmentedSortedMultiset implements SegmentedSortedMulti
     }
 
     // region compareTo
-    @Override
-    public int compareTo(Vector o) {
-        return DoubleVector.compareTo(this, (DoubleVector) o);
-    }
     // endregion compareTo
 
     @Override

@@ -97,11 +97,6 @@ public final class ObjectVectorDirect<COMPONENT_TYPE> implements ObjectVector<CO
     }
 
     @Override
-    public int compareTo(Vector o) {
-        return ObjectVector.compareTo(this, (ObjectVector<COMPONENT_TYPE>) o);
-    }
-
-    @Override
     public int hashCode() {
         return ObjectVector.hashCode(this);
     }
