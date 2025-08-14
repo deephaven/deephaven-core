@@ -227,12 +227,16 @@ public class ReplicateSortKernel {
         lines = addImport(lines, java.util.Comparator.class);
         lines = removeImport(lines, java.util.Objects.class, ObjectComparisons.class);
 
-        lines = replaceRegion(lines, "compare ops", l -> l.stream().map(line -> line.replace("static boolean", "boolean")).collect(Collectors.toList()));
-        lines = replaceRegion(lines, "createContextStatic", l -> l.stream().map(line -> line.replace("final int size", "final int size, Comparator comparator").replace("()", "(comparator)")).collect(Collectors.toList()));
+        lines = replaceRegion(lines, "compare ops",
+                l -> l.stream().map(line -> line.replace("static boolean", "boolean")).collect(Collectors.toList()));
+        lines = replaceRegion(lines, "createContextStatic",
+                l -> l.stream().map(line -> line.replace("final int size", "final int size, Comparator comparator")
+                        .replace("()", "(comparator)")).collect(Collectors.toList()));
 
-        lines = replaceRegion(lines, "comparison functions", List.of("    private int doComparison(Object lhs, Object rhs) {\n" +
-                "        return comparator.compare(lhs, rhs);\n" +
-                "    }"));
+        lines = replaceRegion(lines, "comparison functions",
+                List.of("    private int doComparison(Object lhs, Object rhs) {\n" +
+                        "        return comparator.compare(lhs, rhs);\n" +
+                        "    }"));
         lines = replaceRegion(lines, "constructor", List.of("    private final Comparator comparator;\n" +
                 "\n" +
                 "    public ComparatorLongTimsortKernel(final Comparator comparator) {\n" +

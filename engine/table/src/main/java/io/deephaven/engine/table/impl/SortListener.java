@@ -50,7 +50,7 @@ public class SortListener extends BaseTable.ListenerImpl {
     private final WritableRowSet resultRowSet;
     private final SortingOrder[] order;
     // optioanl comparators for Objects
-    private final Comparator [] comparators;
+    private final Comparator[] comparators;
     private final WritableRowRedirection sortMapping;
     private final ColumnSource<Comparable<?>>[] sortedColumnsToSortBy;
     private final EffortTracker effortTracker;
@@ -67,7 +67,7 @@ public class SortListener extends BaseTable.ListenerImpl {
             final ColumnSource<Comparable<?>>[] originalColumnsToSortBy,
             final ColumnSource<Comparable<?>>[] columnsToSortBy,
             final SortingOrder[] order,
-            final Comparator [] comparators,
+            final Comparator[] comparators,
             final WritableRowRedirection sortMapping,
             final ColumnSource<Comparable<?>>[] sortedColumnsToSortBy,
             final ModifiedColumnSet.Transformer mcsTransformer,
@@ -581,7 +581,8 @@ public class SortListener extends BaseTable.ListenerImpl {
             this.comparators = new ColumnComparatorFactory.IComparator[columnsToSortBy.length];
             for (int ii = 0; ii < columnsToSortBy.length; ii++) {
                 comparators[ii] = ColumnComparatorFactory.createComparatorLeftCurrRightPrev(columnsToSortBy[ii],
-                        sortedColumnsToSortBy[ii], SortListener.this.comparators == null ? null : SortListener.this.comparators[ii]);
+                        sortedColumnsToSortBy[ii],
+                        SortListener.this.comparators == null ? null : SortListener.this.comparators[ii]);
             }
             setTarget(-1);
         }

@@ -419,7 +419,7 @@ public class QueryTableSortTest extends QueryTableTestBase {
         final ColumnInfo<?, ?>[] columnInfo = getIncrementalColumnInfo();
         final QueryTable queryTable = getTable(size, random, columnInfo);
 
-        final EvalNugget[] en = new EvalNugget[]{
+        final EvalNugget[] en = new EvalNugget[] {
                 EvalNugget.from(() -> queryTable.sort("Sym")),
                 EvalNugget.from(() -> queryTable.update("x = Indices").sortDescending("intCol")),
                 EvalNugget.from(() -> queryTable.updateView("x = Indices").sort("Sym", "intCol"))
@@ -474,7 +474,8 @@ public class QueryTableSortTest extends QueryTableTestBase {
         return initColumnInfos(
                 new String[] {"Sym", "ArrCol", "bigI", "bigD"},
                 new SetGenerator<>("a", "b", "c", "d"),
-                new SetGenerator<>(new int[0], new int[]{1, 3, 5}, new int[]{4, 8}, new int[]{9, 10, 11, 12, 13}, new int[]{12, 13}),
+                new SetGenerator<>(new int[0], new int[] {1, 3, 5}, new int[] {4, 8}, new int[] {9, 10, 11, 12, 13},
+                        new int[] {12, 13}),
                 new BigIntegerGenerator(BigInteger.valueOf(100000), BigInteger.valueOf(100100)),
                 new BigDecimalGenerator(BigInteger.valueOf(100000), BigInteger.valueOf(100100)));
     }
@@ -485,30 +486,48 @@ public class QueryTableSortTest extends QueryTableTestBase {
         final ColumnInfo<?, ?>[] columnInfo = getComparatorColumnInfo();
         final QueryTable queryTable = getTable(size, random, columnInfo);
 
-        final List<Comparator<Object>> comparators = List.of((Comparator)Comparator.nullsFirst(Comparator.naturalOrder()));
-        final List<Comparator<Object>> comparators2 = List.of((Comparator)Comparator.nullsFirst(Comparator.naturalOrder()), (Comparator)Comparator.nullsLast(Comparator.reverseOrder()));
+        final List<Comparator<Object>> comparators =
+                List.of((Comparator) Comparator.nullsFirst(Comparator.naturalOrder()));
+        final List<Comparator<Object>> comparators2 =
+                List.of((Comparator) Comparator.nullsFirst(Comparator.naturalOrder()),
+                        (Comparator) Comparator.nullsLast(Comparator.reverseOrder()));
         final List<Comparator<Object>> arrayLength = List.of((l, r) -> {
             final int ll = Array.getLength(l);
             final int rl = Array.getLength(r);
             return ll - rl;
         });
         final List<Comparator<Object>> vecLength = List.of((l, r) -> {
-            final long ll = ((io.deephaven.vector.Vector<?>)l).size();
-            final long rl = ((io.deephaven.vector.Vector<?>)r).size();
+            final long ll = ((io.deephaven.vector.Vector<?>) l).size();
+            final long rl = ((io.deephaven.vector.Vector<?>) r).size();
             return Long.compare(ll, rl);
         });
 
-        final List<Comparator<Object>> arrayLex = List.of((l, r) -> Arrays.compare((int[])l, (int[])r));
+        final List<Comparator<Object>> arrayLex = List.of((l, r) -> Arrays.compare((int[]) l, (int[]) r));
 
-        final QueryTable grouped = (QueryTable)(queryTable.groupBy("Sym"));
+        final QueryTable grouped = (QueryTable) (queryTable.groupBy("Sym"));
         final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
-                new TableComparator(queryTable.sort(List.of(SortColumn.asc(ColumnName.of("bigD")))), "Default Sort", queryTable.sort(List.of(SortColumn.asc(ColumnName.of("bigD"))), comparators), "Comparator Sort"),
-                new TableComparator(queryTable.sort(List.of(SortColumn.desc(ColumnName.of("bigD")))), "Default Sort", queryTable.sort(List.of(SortColumn.desc(ColumnName.of("bigD"))), comparators), "Comparator Sort"),
-                new TableComparator(queryTable.sort(List.of(SortColumn.asc(ColumnName.of("Sym")), SortColumn.desc(ColumnName.of("bigD")))), "Default Sort", queryTable.sort(List.of(SortColumn.asc(ColumnName.of("Sym")), SortColumn.asc(ColumnName.of("bigD"))), comparators2), "Comparator Sort"),
+                new TableComparator(queryTable.sort(List.of(SortColumn.asc(ColumnName.of("bigD")))), "Default Sort",
+                        queryTable.sort(List.of(SortColumn.asc(ColumnName.of("bigD"))), comparators),
+                        "Comparator Sort"),
+                new TableComparator(queryTable.sort(List.of(SortColumn.desc(ColumnName.of("bigD")))), "Default Sort",
+                        queryTable.sort(List.of(SortColumn.desc(ColumnName.of("bigD"))), comparators),
+                        "Comparator Sort"),
+                new TableComparator(
+                        queryTable.sort(
+                                List.of(SortColumn.asc(ColumnName.of("Sym")), SortColumn.desc(ColumnName.of("bigD")))),
+                        "Default Sort",
+                        queryTable.sort(
+                                List.of(SortColumn.asc(ColumnName.of("Sym")), SortColumn.asc(ColumnName.of("bigD"))),
+                                comparators2),
+                        "Comparator Sort"),
                 EvalNugget.from(() -> grouped.sort(List.of(SortColumn.asc(ColumnName.of("bigI"))), vecLength)),
-                new TableComparator(grouped.sort(List.of(SortColumn.asc(ColumnName.of("bigI"))), vecLength), "comparator", grouped.update("L=bigI.size()").sort("L").dropColumns("L"), "len"),
+                new TableComparator(grouped.sort(List.of(SortColumn.asc(ColumnName.of("bigI"))), vecLength),
+                        "comparator", grouped.update("L=bigI.size()").sort("L").dropColumns("L"), "len"),
                 EvalNugget.from(() -> queryTable.sort(List.of(SortColumn.asc(ColumnName.of("ArrCol"))), arrayLength)),
-                new TableComparator(queryTable.sort(List.of(SortColumn.asc(ColumnName.of("ArrCol"))), arrayLength), "comparator", queryTable.update("L=java.lang.reflect.Array.getLength(ArrCol)").sort("L").dropColumns("L"), "len"),
+                new TableComparator(queryTable.sort(List.of(SortColumn.asc(ColumnName.of("ArrCol"))), arrayLength),
+                        "comparator",
+                        queryTable.update("L=java.lang.reflect.Array.getLength(ArrCol)").sort("L").dropColumns("L"),
+                        "len"),
                 EvalNugget.from(() -> queryTable.sort(List.of(SortColumn.asc(ColumnName.of("ArrCol"))), arrayLength)),
                 EvalNugget.from(() -> queryTable.sort(List.of(SortColumn.asc(ColumnName.of("ArrCol"))), arrayLex)),
                 new EvalNuggetInterface() {
@@ -524,7 +543,8 @@ public class QueryTableSortTest extends QueryTableTestBase {
                                 last.setValue(cv);
                             } else {
                                 if (Arrays.compare(lv, cv) > 0) {
-                                    throw new IllegalStateException(msg + ": array is not sorted by ArrCol lexicographically.");
+                                    throw new IllegalStateException(
+                                            msg + ": array is not sorted by ArrCol lexicographically.");
                                 }
                             }
                         });

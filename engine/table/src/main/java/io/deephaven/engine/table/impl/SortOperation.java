@@ -48,7 +48,7 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
     private final SortPair[] sortPairs;
     private final SortingOrder[] sortOrder;
     private final String[] sortColumnNames;
-    private final Comparator [] comparators;
+    private final Comparator[] comparators;
     /** Stores original column sources. */
     private final ColumnSource<Comparable<?>>[] originalSortColumns;
     /** Stores reinterpreted column sources. */
@@ -78,12 +78,14 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
 
             if (this.comparators != null && this.comparators[ii] != null) {
                 if (columnType.isPrimitive()) {
-                    throw new NotSortableColumnException(sortColumnNames[ii] + " is a primitive column, therefore cannot accept a Comparator" + columnType);
+                    throw new NotSortableColumnException(sortColumnNames[ii]
+                            + " is a primitive column, therefore cannot accept a Comparator" + columnType);
                 }
             } else {
                 final boolean isSortable = Comparable.class.isAssignableFrom(columnType) || columnType.isPrimitive();
                 if (!isSortable) {
-                    throw new NotSortableColumnException(sortColumnNames[ii] + " is not a sortable type: " + columnType);
+                    throw new NotSortableColumnException(
+                            sortColumnNames[ii] + " is not a sortable type: " + columnType);
                 }
             }
         }
@@ -215,7 +217,8 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
                         }
 
                         final SortHelpers.SortMapping updateSortedKeys =
-                                SortHelpers.getSortedKeys(sortOrder, originalSortColumns, sortColumns, comparators, null,
+                                SortHelpers.getSortedKeys(sortOrder, originalSortColumns, sortColumns, comparators,
+                                        null,
                                         upstream.added(), false, false);
                         final LongChunkColumnSource recycled = recycledInnerRedirectionSource.getValue();
                         recycledInnerRedirectionSource.setValue(null);
@@ -279,7 +282,8 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
             }
 
             final long[] sortedKeys = SortHelpers.getSortedKeys(
-                    sortOrder, originalSortColumns, sortColumns, comparators, dataIndex, rowSetToSort, usePrev).getArrayMapping();
+                    sortOrder, originalSortColumns, sortColumns, comparators, dataIndex, rowSetToSort, usePrev)
+                    .getArrayMapping();
 
             final HashMapK4V4 reverseLookup = new HashMapLockFreeK4V4(sortedKeys.length, .75f, -3);
             sortMapping = SortHelpers.createSortRowRedirection();
