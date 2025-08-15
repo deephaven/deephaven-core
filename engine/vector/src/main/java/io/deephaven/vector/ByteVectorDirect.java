@@ -92,6 +92,19 @@ public final class ByteVectorDirect implements ByteVector {
         return ByteVector.equals(this, obj);
     }
 
+    // region compareTo
+    @Override
+    public int compareTo(final ByteVector o) {
+        if (o instanceof ByteVectorDirect) {
+            // the byte, short, integer, and long versions can use direct vector comparisons
+            // float and double, we are being chicken around NaN values
+            return Arrays.compare(data, ((ByteVectorDirect) o).data);
+        }
+        return ByteVector.super.compareTo(o);
+    }
+
+    // endregion compareTo
+
     @Override
     public int hashCode() {
         return ByteVector.hashCode(this);

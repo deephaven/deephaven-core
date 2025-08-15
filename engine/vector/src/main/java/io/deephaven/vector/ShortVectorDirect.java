@@ -92,6 +92,19 @@ public final class ShortVectorDirect implements ShortVector {
         return ShortVector.equals(this, obj);
     }
 
+    // region compareTo
+    @Override
+    public int compareTo(final ShortVector o) {
+        if (o instanceof ShortVectorDirect) {
+            // the byte, short, integer, and long versions can use direct vector comparisons
+            // float and double, we are being chicken around NaN values
+            return Arrays.compare(data, ((ShortVectorDirect) o).data);
+        }
+        return ShortVector.super.compareTo(o);
+    }
+
+    // endregion compareTo
+
     @Override
     public int hashCode() {
         return ShortVector.hashCode(this);

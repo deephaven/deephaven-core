@@ -92,6 +92,19 @@ public final class FloatVectorDirect implements FloatVector {
         return FloatVector.equals(this, obj);
     }
 
+    // region compareTo
+    @Override
+    public int compareTo(final FloatVector o) {
+        if (o instanceof FloatVectorDirect) {
+            // the byte, short, integer, and long versions can use direct vector comparisons
+            // float and double, we are being chicken around NaN values
+            // UNCOMMENT FOR INTEGRALS: return Arrays.compare(data, ((FloatVectorDirect) o).data);
+        }
+        return FloatVector.super.compareTo(o);
+    }
+
+    // endregion compareTo
+
     @Override
     public int hashCode() {
         return FloatVector.hashCode(this);

@@ -106,7 +106,7 @@ public interface ObjectVector<COMPONENT_TYPE> extends Vector<ObjectVector<COMPON
      * consistent with {@link Arrays#compare(Comparable[], Comparable[])}.
      * </p>
      *
-     * {@inheritDoc}
+     * {@see Comparable#compareTo}
      */
     @Override
     default int compareTo(ObjectVector<COMPONENT_TYPE> o) {

@@ -92,6 +92,19 @@ public final class LongVectorDirect implements LongVector {
         return LongVector.equals(this, obj);
     }
 
+    // region compareTo
+    @Override
+    public int compareTo(final LongVector o) {
+        if (o instanceof LongVectorDirect) {
+            // the byte, short, integer, and long versions can use direct vector comparisons
+            // float and double, we are being chicken around NaN values
+            return Arrays.compare(data, ((LongVectorDirect) o).data);
+        }
+        return LongVector.super.compareTo(o);
+    }
+
+    // endregion compareTo
+
     @Override
     public int hashCode() {
         return LongVector.hashCode(this);

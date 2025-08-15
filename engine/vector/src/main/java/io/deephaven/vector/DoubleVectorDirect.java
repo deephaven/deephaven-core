@@ -92,6 +92,19 @@ public final class DoubleVectorDirect implements DoubleVector {
         return DoubleVector.equals(this, obj);
     }
 
+    // region compareTo
+    @Override
+    public int compareTo(final DoubleVector o) {
+        if (o instanceof DoubleVectorDirect) {
+            // the byte, short, integer, and long versions can use direct vector comparisons
+            // float and double, we are being chicken around NaN values
+            // UNCOMMENT FOR INTEGRALS: return Arrays.compare(data, ((DoubleVectorDirect) o).data);
+        }
+        return DoubleVector.super.compareTo(o);
+    }
+
+    // endregion compareTo
+
     @Override
     public int hashCode() {
         return DoubleVector.hashCode(this);

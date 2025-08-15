@@ -88,6 +88,19 @@ public final class CharVectorDirect implements CharVector {
         return CharVector.equals(this, obj);
     }
 
+    // region compareTo
+    @Override
+    public int compareTo(final CharVector o) {
+        if (o instanceof CharVectorDirect) {
+            // the byte, short, integer, and long versions can use direct vector comparisons
+            // float and double, we are being chicken around NaN values
+            // UNCOMMENT FOR INTEGRALS: return Arrays.compare(data, ((CharVectorDirect) o).data);
+        }
+        return CharVector.super.compareTo(o);
+    }
+
+    // endregion compareTo
+
     @Override
     public int hashCode() {
         return CharVector.hashCode(this);

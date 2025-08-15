@@ -14,6 +14,7 @@ import java.nio.charset.Charset;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 public class ReplicateVectors {
     private static final String TASK = "replicateVectors";
@@ -32,9 +33,14 @@ public class ReplicateVectors {
         fixupCharToFloat(ReplicatePrimitiveCode.charToFloat(TASK, charVectorJavaPath, serialVersionUIDs));
         fixupCharToDouble(ReplicatePrimitiveCode.charToDouble(TASK, charVectorJavaPath, serialVersionUIDs));
 
-        ReplicatePrimitiveCode.charToAllButBoolean(TASK,
+        final List<String> directVectors = ReplicatePrimitiveCode.charToAllButBoolean(TASK,
                 "engine/vector/src/main/java/io/deephaven/vector/CharVectorDirect.java",
                 serialVersionUIDs);
+        for (final String directVectorPath : directVectors) {
+            if (Stream.of("Byte", "Int", "Short", "Long").anyMatch(directVectorPath::contains)) {
+                fixupIntegral(directVectorPath);
+            }
+        }
         ReplicatePrimitiveCode.charToAllButBoolean(TASK,
                 "engine/vector/src/main/java/io/deephaven/vector/CharVectorSlice.java",
                 serialVersionUIDs);
@@ -58,6 +64,15 @@ public class ReplicateVectors {
         lines = ReplicationUtils.simpleFixup(lines, "ElementEquals",
                 "aIterator\\.nextFloat\\(\\) != bIterator\\.nextFloat\\(\\)",
                 "Float.floatToIntBits(aIterator.nextFloat()) != Float.floatToIntBits(bIterator.nextFloat())");
+        FileUtils.writeLines(file, lines);
+    }
+
+    public static void fixupIntegral(@NotNull final String path) throws IOException {
+        final File file = new File(path);
+        List<String> lines = FileUtils.readLines(file, Charset.defaultCharset());
+        lines = ReplicationUtils.simpleFixup(lines, "compareTo",
+                "// UNCOMMENT FOR INTEGRALS: ",
+                "");
         FileUtils.writeLines(file, lines);
     }
 }
