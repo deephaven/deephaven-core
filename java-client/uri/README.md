@@ -3,7 +3,7 @@
 The deephaven-uri package canonicalizes a [URI](https://en.wikipedia.org/wiki/Uniform_Resource_Identifier) format for
 [Deephaven target](src/main/java/io/deephaven/uri/DeephavenTarget.java) and
 [resource](src/main/java/io/deephaven/uri/StructuredUri.java) identification.
-The goal is to provide a string format that can be easy referenced and shared across client and server contexts.
+The goal is to provide a string format that can be easily referenced and shared across client and server contexts.
 
 ### Deephaven target
 
