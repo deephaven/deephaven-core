@@ -15,7 +15,6 @@ import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.table.impl.util.ChunkUtils;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.Array;
@@ -26,7 +25,7 @@ import java.util.function.IntFunction;
 
 
 public abstract class AbstractTableDataArrayRetrieverImpl implements TableDataArrayRetriever {
-    protected static final int MAX_CHUNK_SIZE = ChunkUtils.DEFAULT_CHUNK_SIZE;
+    protected static final int MAX_CHUNK_SIZE = 4096;
 
     private final List<String> colNamesToRetrieve;
 
