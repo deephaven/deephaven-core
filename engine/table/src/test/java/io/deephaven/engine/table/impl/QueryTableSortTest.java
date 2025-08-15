@@ -486,52 +486,48 @@ public class QueryTableSortTest extends QueryTableTestBase {
         final ColumnInfo<?, ?>[] columnInfo = getComparatorColumnInfo();
         final QueryTable queryTable = getTable(size, random, columnInfo);
 
-        final List<Comparator<Object>> comparators =
-                List.of((Comparator) Comparator.nullsFirst(Comparator.naturalOrder()));
-        final List<Comparator<Object>> comparators2 =
-                List.of((Comparator) Comparator.nullsFirst(Comparator.naturalOrder()),
-                        (Comparator) Comparator.nullsLast(Comparator.reverseOrder()));
-        final List<Comparator<Object>> arrayLength = List.of((l, r) -> {
+        final Comparator<?> naturalOrder = Comparator.nullsFirst(Comparator.naturalOrder());
+        final Comparator<?> reverseOrder = Comparator.nullsLast(Comparator.reverseOrder());
+        final Comparator<Object> arrayLength = (l, r) -> {
             final int ll = Array.getLength(l);
             final int rl = Array.getLength(r);
             return ll - rl;
-        });
-        final List<Comparator<Object>> vecLength = List.of((l, r) -> {
+        };
+        final Comparator<Object> vecLength = ((l, r) -> {
             final long ll = ((io.deephaven.vector.Vector<?>) l).size();
             final long rl = ((io.deephaven.vector.Vector<?>) r).size();
             return Long.compare(ll, rl);
         });
 
-        final List<Comparator<Object>> arrayLex = List.of((l, r) -> Arrays.compare((int[]) l, (int[]) r));
+        final Comparator<Object> arrayLex = (l, r) -> Arrays.compare((int[]) l, (int[]) r);
 
         final QueryTable grouped = (QueryTable) (queryTable.groupBy("Sym"));
         final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
                 new TableComparator(queryTable.sort(List.of(SortColumn.asc(ColumnName.of("bigD")))), "Default Sort",
-                        queryTable.sort(List.of(SortColumn.asc(ColumnName.of("bigD"))), comparators),
+                        queryTable.sort(List.of(ComparatorSortColumn.asc("bigD", naturalOrder, true))),
                         "Comparator Sort"),
                 new TableComparator(queryTable.sort(List.of(SortColumn.desc(ColumnName.of("bigD")))), "Default Sort",
-                        queryTable.sort(List.of(SortColumn.desc(ColumnName.of("bigD"))), comparators),
+                        queryTable.sort(List.of(ComparatorSortColumn.desc("bigD", naturalOrder, true))),
                         "Comparator Sort"),
                 new TableComparator(
                         queryTable.sort(
                                 List.of(SortColumn.asc(ColumnName.of("Sym")), SortColumn.desc(ColumnName.of("bigD")))),
                         "Default Sort",
                         queryTable.sort(
-                                List.of(SortColumn.asc(ColumnName.of("Sym")), SortColumn.asc(ColumnName.of("bigD"))),
-                                comparators2),
+                                List.of(ComparatorSortColumn.asc("Sym", naturalOrder), ComparatorSortColumn.asc("bigD", reverseOrder))),
                         "Comparator Sort"),
-                EvalNugget.from(() -> grouped.sort(List.of(SortColumn.asc(ColumnName.of("bigI"))), vecLength)),
-                new TableComparator(grouped.sort(List.of(SortColumn.asc(ColumnName.of("bigI"))), vecLength),
+                EvalNugget.from(() -> grouped.sort(List.of(ComparatorSortColumn.asc("bigI", vecLength)))),
+                new TableComparator(grouped.sort(List.of(ComparatorSortColumn.asc("bigI", vecLength))),
                         "comparator", grouped.update("L=bigI.size()").sort("L").dropColumns("L"), "len"),
-                EvalNugget.from(() -> queryTable.sort(List.of(SortColumn.asc(ColumnName.of("ArrCol"))), arrayLength)),
-                new TableComparator(queryTable.sort(List.of(SortColumn.asc(ColumnName.of("ArrCol"))), arrayLength),
+                EvalNugget.from(() -> queryTable.sort(List.of(ComparatorSortColumn.asc("ArrCol", arrayLength)))),
+                new TableComparator(queryTable.sort(List.of(ComparatorSortColumn.asc("ArrCol", arrayLength))),
                         "comparator",
                         queryTable.update("L=java.lang.reflect.Array.getLength(ArrCol)").sort("L").dropColumns("L"),
                         "len"),
-                EvalNugget.from(() -> queryTable.sort(List.of(SortColumn.asc(ColumnName.of("ArrCol"))), arrayLength)),
-                EvalNugget.from(() -> queryTable.sort(List.of(SortColumn.asc(ColumnName.of("ArrCol"))), arrayLex)),
+                EvalNugget.from(() -> queryTable.sort(List.of(ComparatorSortColumn.asc("ArrCol", arrayLength)))),
+                EvalNugget.from(() -> queryTable.sort(List.of(ComparatorSortColumn.asc("ArrCol", arrayLex)))),
                 new EvalNuggetInterface() {
-                    final Table lexSort = queryTable.sort(List.of(SortColumn.asc(ColumnName.of("ArrCol"))), arrayLex);
+                    final Table lexSort = queryTable.sort(List.of(ComparatorSortColumn.asc("ArrCol", arrayLex)));
 
                     @Override
                     public void validate(String msg) {
@@ -1005,9 +1001,8 @@ public class QueryTableSortTest extends QueryTableTestBase {
 
         final List<Table> results = new ArrayList<>();
 
-        final List<SortColumn> asc = List.of(SortColumn.asc(ColumnName.of("Value1")));
         final Comparator naturalOrder = Comparator.nullsFirst(Comparator.naturalOrder());
-        final Comparator reverseOrder = Comparator.nullsFirst(Comparator.naturalOrder()).reversed();
+        final Comparator reverseOrder = naturalOrder.reversed();
 
         System.out.println("Ascending,Descending,ComparatorAsc,ComparatorDesc");
         for (int iter = 0; iter < 3; ++iter) {
@@ -1016,9 +1011,9 @@ public class QueryTableSortTest extends QueryTableTestBase {
             final long t1 = System.nanoTime();
             results.add(queryTable.sortDescending("Value1"));
             final long t2 = System.nanoTime();
-            results.add(queryTable.sort(asc, List.of(naturalOrder)));
+            results.add(queryTable.sort(List.of(ComparatorSortColumn.asc("Value1", naturalOrder, true))));
             final long t3 = System.nanoTime();
-            results.add(queryTable.sort(asc, List.of(reverseOrder)));
+            results.add(queryTable.sort(List.of(ComparatorSortColumn.asc("Value1", reverseOrder, true))));
             final long t4 = System.nanoTime();
             System.out.println((t1 - t0) + "," + (t2 - t1) + "," + (t3 - t2) + "," + (t4 - t3));
             results.clear();

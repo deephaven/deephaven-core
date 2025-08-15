@@ -3,8 +3,6 @@
 //
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.api.ColumnName;
-import io.deephaven.api.SortColumn;
 import io.deephaven.csv.CsvTools;
 import io.deephaven.csv.util.CsvReaderException;
 import io.deephaven.engine.table.Table;
@@ -36,7 +34,6 @@ public class QueryTableSortComparatorPerformanceTest extends QueryTableTestBase 
                         new StringGenerator(),
                         new IntGenerator(0, 100000)));
 
-        final List<SortColumn> asc = List.of(SortColumn.asc(ColumnName.of("Value1")));
         final Comparator naturalOrder = Comparator.nullsFirst(Comparator.naturalOrder());
         final Comparator reverseOrder = Comparator.nullsFirst(Comparator.naturalOrder()).reversed();
 
@@ -51,11 +48,9 @@ public class QueryTableSortComparatorPerformanceTest extends QueryTableTestBase 
             final long t1 = System.nanoTime();
             results.add(queryTable.sortDescending("Value1"));
             final long t2 = System.nanoTime();
-            // noinspection unchecked
-            results.add(queryTable.sort(asc, List.of(naturalOrder)));
+            results.add(queryTable.sort(List.of(ComparatorSortColumn.asc("Value1", naturalOrder, true))));
             final long t3 = System.nanoTime();
-            // noinspection unchecked
-            results.add(queryTable.sort(asc, List.of(reverseOrder)));
+            results.add(queryTable.sort(List.of(ComparatorSortColumn.asc("Value1", reverseOrder, true))));
             final long t4 = System.nanoTime();
             csvBuilder.append(t1 - t0).append(",").append(t2 - t1).append(",").append(t3 - t2).append(",")
                     .append(t4 - t3).append("\n");

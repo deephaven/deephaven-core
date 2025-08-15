@@ -2787,36 +2787,20 @@ public class QueryTable extends BaseTable<QueryTable> {
     public Table sort(Collection<SortColumn> columnsToSortBy) {
         final UpdateGraph updateGraph = getUpdateGraph();
         try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
-            final SortPair[] sortPairs = SortPair.from(columnsToSortBy);
-            if (sortPairs.length == 0) {
+            if (columnsToSortBy.isEmpty()) {
                 return prepareReturnThis();
-            } else if (sortPairs.length == 1) {
-                final String columnName = sortPairs[0].getColumn();
-                final SortingOrder order = sortPairs[0].getOrder();
+            }
+            final SortColumn[] sortColumns = columnsToSortBy.toArray(new SortColumn[columnsToSortBy.size()]);
+
+            if (sortColumns.length == 1) {
+                final String columnName = sortColumns[0].column().name();
+                final SortingOrder order = SortingOrder.from(sortColumns[0]);
                 if (SortedColumnsAttribute.isSortedBy(this, columnName, order)) {
                     return prepareReturnThis();
                 }
             }
 
-            return getResult(new SortOperation(this, sortPairs));
-        }
-    }
-
-    public Table sort(Collection<SortColumn> columnsToSortBy, Collection<Comparator<Object>> comparators) {
-        final UpdateGraph updateGraph = getUpdateGraph();
-        try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
-            final SortPair[] sortPairs = SortPair.from(columnsToSortBy);
-            if (sortPairs.length == 0) {
-                return prepareReturnThis();
-            } else if (sortPairs.length == 1) {
-                final String columnName = sortPairs[0].getColumn();
-                final SortingOrder order = sortPairs[0].getOrder();
-                if (SortedColumnsAttribute.isSortedBy(this, columnName, order)) {
-                    return prepareReturnThis();
-                }
-            }
-
-            return getResult(new SortOperation(this, sortPairs, comparators));
+            return getResult(new SortOperation(this, sortColumns));
         }
     }
 

@@ -51,6 +51,7 @@ public class SortListener extends BaseTable.ListenerImpl {
     private final SortingOrder[] order;
     // optioanl comparators for Objects
     private final Comparator[] comparators;
+    private final boolean comparatorsRespectEquality;
     private final WritableRowRedirection sortMapping;
     private final ColumnSource<Comparable<?>>[] sortedColumnsToSortBy;
     private final EffortTracker effortTracker;
@@ -68,6 +69,7 @@ public class SortListener extends BaseTable.ListenerImpl {
             final ColumnSource<Comparable<?>>[] columnsToSortBy,
             final SortingOrder[] order,
             final Comparator[] comparators,
+            final boolean comparatorsRespectEquality,
             final WritableRowRedirection sortMapping,
             final ColumnSource<Comparable<?>>[] sortedColumnsToSortBy,
             final ModifiedColumnSet.Transformer mcsTransformer,
@@ -81,6 +83,7 @@ public class SortListener extends BaseTable.ListenerImpl {
         this.resultRowSet = result.getRowSet().writableCast();
         this.order = order;
         this.comparators = comparators;
+        this.comparatorsRespectEquality = comparatorsRespectEquality;
         this.sortMapping = sortMapping;
         this.sortedColumnsToSortBy = sortedColumnsToSortBy;
         this.effortTracker = REBALANCE_EFFORT_TRACKER_ENABLED ? new EffortTracker(100) : null;
@@ -237,7 +240,7 @@ public class SortListener extends BaseTable.ListenerImpl {
             final RowSet addedAndModified =
                     modifiedNeedsSorting ? closer.add(upstream.added().union(upstream.modified())) : upstream.added();
             final long[] addedInputKeys = SortHelpers.getSortedKeys(order, originalColumnsToSortBy, columnsToSortBy,
-                    comparators, null, addedAndModified, false, false).getArrayMapping();
+                    comparators, comparatorsRespectEquality, null, addedAndModified, false, false).getArrayMapping();
             final long[] addedOutputKeys = new long[addedInputKeys.length];
             final long[] propagatedModOutputKeys = modifiedNeedsSorting ? new long[upstream.modified().intSize()]
                     : ArrayTypeUtils.EMPTY_LONG_ARRAY;
