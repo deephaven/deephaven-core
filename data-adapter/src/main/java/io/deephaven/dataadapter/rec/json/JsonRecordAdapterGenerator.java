@@ -30,7 +30,7 @@ import static io.deephaven.dataadapter.rec.json.JsonRecordAdapterUtil.CONVERTIBL
 public class JsonRecordAdapterGenerator {
 
     private static final String COMPILED_CLASS_NAME = "JsonRecordAdapter";
-    private static final boolean PRINT_CLASS_BODY = true;
+    private static final boolean PRINT_CLASS_BODY = false;
     private final String[] colNames;
     private final String[] colTypeNames;
     private final Class<?>[] colTypes;
