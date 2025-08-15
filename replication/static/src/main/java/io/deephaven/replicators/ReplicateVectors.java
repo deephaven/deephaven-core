@@ -38,7 +38,7 @@ public class ReplicateVectors {
                 serialVersionUIDs);
         for (final String directVectorPath : directVectors) {
             if (Stream.of("Byte", "Int", "Short", "Long").anyMatch(directVectorPath::contains)) {
-                fixupIntegral(directVectorPath);
+                fixupNumber(directVectorPath);
             }
         }
         ReplicatePrimitiveCode.charToAllButBoolean(TASK,
@@ -67,7 +67,7 @@ public class ReplicateVectors {
         FileUtils.writeLines(file, lines);
     }
 
-    public static void fixupIntegral(@NotNull final String path) throws IOException {
+    public static void fixupNumber(@NotNull final String path) throws IOException {
         final File file = new File(path);
         List<String> lines = FileUtils.readLines(file, Charset.defaultCharset());
         lines = ReplicationUtils.simpleFixup(lines, "compareTo",
