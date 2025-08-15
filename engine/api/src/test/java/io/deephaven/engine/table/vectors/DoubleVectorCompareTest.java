@@ -80,8 +80,8 @@ public class DoubleVectorCompareTest {
 
     @Test
     public void testPositiveAndNegativeZero() {
-        final double[] v1 = new double[] {(double) 10, (double)-0.0};
-        final double[] v2 = new double[] {(double) 10, (double)0.0};
+        final double[] v1 = new double[] {(double) 10, (double) -0.0};
+        final double[] v2 = new double[] {(double) 10, (double) 0.0};
         final double[] v3 = new double[] {(double) 10, 1};
         final DoubleVectorDirect cvd0 = new DoubleVectorDirect(v1);
         final DoubleVectorDirect cvd1 = new DoubleVectorDirect(v2);

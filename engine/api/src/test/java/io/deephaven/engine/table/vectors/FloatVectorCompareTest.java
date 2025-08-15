@@ -76,8 +76,8 @@ public class FloatVectorCompareTest {
 
     @Test
     public void testPositiveAndNegativeZero() {
-        final float[] v1 = new float[] {(float) 10, (float)-0.0};
-        final float[] v2 = new float[] {(float) 10, (float)0.0};
+        final float[] v1 = new float[] {(float) 10, (float) -0.0};
+        final float[] v2 = new float[] {(float) 10, (float) 0.0};
         final float[] v3 = new float[] {(float) 10, 1};
         final FloatVectorDirect cvd0 = new FloatVectorDirect(v1);
         final FloatVectorDirect cvd1 = new FloatVectorDirect(v2);

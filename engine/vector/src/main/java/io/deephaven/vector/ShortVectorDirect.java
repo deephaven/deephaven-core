@@ -98,7 +98,7 @@ public final class ShortVectorDirect implements ShortVector {
         if (o instanceof ShortVectorDirect) {
             // the byte, short, integer, and long versions can use direct vector comparisons as our order matches the
             // natural order of numbers
-            // float and double can not use direct vector comparisons.  Although NaN works because Float.compare and
+            // float and double can not use direct vector comparisons. Although NaN works because Float.compare and
             // Double.compare sort NaNs last, as we do for Deephaven values; and the Arrays.compare is defined to work
             // as Float.compare; and Float.compare(0f,-0) does not produce 0 but rather ranks -0 as less than 0.
             return Arrays.compare(data, ((ShortVectorDirect) o).data);
