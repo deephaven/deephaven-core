@@ -15,7 +15,8 @@ import java.util.stream.LongStream;
 /**
  * Logical data structure representing an ordered list of elements.
  */
-public interface Vector<VECTOR_TYPE extends Vector<VECTOR_TYPE>> extends Serializable, LongSizedDataStructure {
+public interface Vector<VECTOR_TYPE extends Vector<VECTOR_TYPE>>
+        extends Serializable, LongSizedDataStructure, Comparable<VECTOR_TYPE> {
 
     long serialVersionUID = -2429677814745466454L;
 

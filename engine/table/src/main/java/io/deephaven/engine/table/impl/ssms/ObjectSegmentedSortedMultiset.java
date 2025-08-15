@@ -34,7 +34,7 @@ import java.util.Arrays;
 import java.util.Objects;
 
 
-public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMultiSet<Object>, ObjectVector {
+public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMultiSet<Object>, ObjectVector<Object> {
     private final int leafSize;
     private int leafCount;
     private int size;
