@@ -100,6 +100,6 @@ abstract class ComparatorSortColumn implements SortColumn {
     }
 
     public static ComparatorSortColumn desc(String name, Comparator comparator, boolean respectsEquality) {
-        return ImmutableComparatorSortColumn.of(ColumnName.of(name), Order.ASCENDING, respectsEquality, comparator);
+        return ImmutableComparatorSortColumn.of(ColumnName.of(name), Order.DESCENDING, respectsEquality, comparator);
     }
 }
