@@ -3,10 +3,12 @@
 //
 package io.deephaven.parquet.table.metadata;
 
+import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.Table;
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.ScriptApi;
 import org.jetbrains.annotations.NotNull;
 
@@ -111,18 +113,21 @@ public abstract class RowGroupInfo {
         final long fractionalGroups = input.size() % numSubTables;
 
         final Table[] ret = new Table[numSubTables];
-        final RowSet rawRowSet = input.getRowSet();
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            final RowSet rawRowSet = input.getRowSet();
 
-        long startOffset = 0;
-        for (int ii = 0; ii < numSubTables; ii++) {
-            final long nextSz = impliedRowGroupSz + (ii < fractionalGroups ? 1 : 0);
-            final WritableRowSet nextRowSet = rawRowSet.subSetByPositionRange(startOffset, startOffset += nextSz);
-            ret[ii] = input.getSubTable(nextRowSet.toTracking());
-        }
+            long startOffset = 0;
+            for (int ii = 0; ii < numSubTables; ii++) {
+                final long nextSz = impliedRowGroupSz + (ii < fractionalGroups ? 1 : 0);
+                final WritableRowSet nextRows = rawRowSet.subSetByPositionRange(startOffset, startOffset += nextSz);
+                ret[ii] = input.getSubTable(nextRows.toTracking());
+            }
 
-        if (!rawRowSet.subSetByPositionRange(startOffset, Long.MAX_VALUE).isEmpty()) {
-            throw new IllegalStateException(
-                    "Has more rows: " + rawRowSet.subSetByPositionRange(startOffset, Long.MAX_VALUE));
+            try (final RowSet leftoverRows = rawRowSet.subSetByPositionRange(startOffset, Long.MAX_VALUE)) {
+                if (!leftoverRows.isEmpty()) {
+                    throw new IllegalStateException("Has more rows: " + leftoverRows);
+                }
+            }
         }
 
         return ret;
@@ -171,8 +176,8 @@ public abstract class RowGroupInfo {
      */
     private static void ensureConsistentOrdering(@NotNull final Table origTbl, @NotNull final Table[] ordered) {
         final RowSequence.Iterator it = origTbl.getRowSet().getRowSequenceIterator();
-        for (final Table rowSet : ordered) {
-            final RowSet newRows = rowSet.getRowSet();
+        for (final Table subTable : ordered) {
+            final RowSet newRows = subTable.getRowSet();
             final long subSize = newRows.size();
 
             try (final RowSet origRows = it.getNextRowSequenceWithLength(subSize).asRowSet()) {
@@ -184,8 +189,10 @@ public abstract class RowGroupInfo {
         }
 
         if (it.hasMore()) {
-            throw new IllegalStateException(String.format("Subtable dropped rows; Iterator has more: %s",
-                    it.getNextRowSequenceWithLength(Long.MAX_VALUE).asRowSet()));
+            try (final RowSet leftoverRows = it.getNextRowSequenceWithLength(Long.MAX_VALUE).asRowSet()) {
+                throw new IllegalStateException(String.format("Subtable dropped rows; Iterator has more: %s",
+                        leftoverRows));
+            }
         }
     }
 
