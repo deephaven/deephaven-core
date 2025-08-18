@@ -3,8 +3,6 @@
 //
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.api.ColumnName;
-import io.deephaven.api.SortColumn;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.*;
@@ -221,25 +219,6 @@ public class SortHelpers {
     }
 
     static private final SortMapping EMPTY_SORT_MAPPING = new ArraySortMapping(ArrayTypeUtils.EMPTY_LONG_ARRAY);
-
-    /**
-     * Note that if usePrev is true, then rowSetToSort is the previous RowSet; not the current RowSet, and we should not
-     * need to call prev().
-     */
-    static SortMapping getSortedKeys(
-            final SortingOrder[] order,
-            final ColumnSource<Comparable<?>>[] originalColumnsToSortBy,
-            final ColumnSource<Comparable<?>>[] columnsToSortBy,
-            final Comparator[] comparators,
-            final boolean comparatorsRespectEquality,
-            final DataIndex dataIndex,
-            final RowSet rowSetToSort,
-            final boolean usePrev) {
-        return getSortedKeys(order, originalColumnsToSortBy, columnsToSortBy, comparators, comparatorsRespectEquality,
-                dataIndex, rowSetToSort,
-                usePrev,
-                sortBySymbolTable);
-    }
 
     /**
      * Note that if usePrev is true, then rowSetToSort is the previous RowSet; not the current RowSet, and we should not
@@ -497,7 +476,7 @@ public class SortHelpers {
         if (sortSize >= megaSortSize) {
             if (comparator != null) {
                 throw new UnsupportedOperationException(
-                        "Cannot sort with more than " + megaSortSize + " rows with a comparator.");
+                        "Cannot sort more than " + megaSortSize + " rows with a comparator");
             }
             return doMegaSortOne(order, columnSource, rowSet, usePrev, sortSize);
         } else {

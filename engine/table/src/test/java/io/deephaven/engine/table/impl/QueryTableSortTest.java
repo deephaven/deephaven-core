@@ -1055,4 +1055,23 @@ public class QueryTableSortTest extends QueryTableTestBase {
         final Table s = x.sort("DoubleArray");
         assertTableEquals(x.sort("Sentinel"), s);
     }
+
+    public void testBadComparator() {
+        final Table x = TableTools.newTable(intCol("Sentinel", 20, 10, 50, 40, 30, 15, 100, 75),
+                col("ObjArray", new Object[] {10}, new Object[] {}, new Object[] {20}, new Object[] {10, 20, 30},
+                        new Object[] {10, 20}, new Object[] {NULL_DOUBLE}, new Object[] {Double.NaN},
+                        new Object[] {Double.POSITIVE_INFINITY}));
+        final IllegalArgumentException iae = org.junit.Assert.assertThrows(IllegalArgumentException.class, () -> x.sort(List.of(ComparatorSortColumn.asc("Sentinel", (o1, o2) -> 0))));
+        assertEquals("Sentinel is a primitive column (int), therefore cannot accept a Comparator", iae.getMessage());
+
+        final IllegalArgumentException iae2 = org.junit.Assert.assertThrows(IllegalArgumentException.class, () -> x.sort("ObjArray"));
+        assertEquals("ObjArray is not a sortable type: class [Ljava.lang.Object;", iae2.getMessage());
+    }
+
+    public void testAlreadySortedEmpty() {
+        final Table x = TableTools.newTable(intCol("Sentinel"), intCol("Value"));
+        final Table s = x.sort("Value");
+        assertTrue(s instanceof QueryTable.CopiedTable);
+        assertTrue(((QueryTable.CopiedTable) s).checkParent(x));
+    }
 }

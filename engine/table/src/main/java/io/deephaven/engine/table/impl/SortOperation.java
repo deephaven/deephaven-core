@@ -107,7 +107,7 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
             if (this.comparators != null && this.comparators[ii] != null) {
                 if (columnType.isPrimitive()) {
                     throw new NotSortableColumnException(sortColumnNames[ii]
-                            + " is a primitive column, therefore cannot accept a Comparator" + columnType);
+                            + " is a primitive column (" + columnType + "), therefore cannot accept a Comparator");
                 }
             } else {
                 final Comparator<?> defaultComparator = ComparatorRegistry.INSTANCE.getComparator(columnType);
