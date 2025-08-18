@@ -18,7 +18,9 @@ import java.util.Map;
 /**
  * The ComparatorRegistry is a set of default comparators for sort operations.
  *
- * <p>Only types that are not themselves Comparable (meaning they do not have their own natural order) may be registered.</p>
+ * <p>
+ * Only types that are not themselves Comparable (meaning they do not have their own natural order) may be registered.
+ * </p>
  */
 public class ComparatorRegistry {
     static final ComparatorRegistry INSTANCE = new ComparatorRegistry();

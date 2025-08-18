@@ -146,9 +146,11 @@ public class QueryTableHugeSortTest {
 
             final long bigSize = (long) SortHelpers.megaSortSize * 2L;
             final int smallSize = SortHelpers.megaSortSize / 64;
-            final Table smallTable = TableTools.emptyTable(smallSize).updateView("SortCol=Byte.toString((byte)(ii%100))", "Sentinel=k");
+            final Table smallTable =
+                    TableTools.emptyTable(smallSize).updateView("SortCol=Byte.toString((byte)(ii%100))", "Sentinel=k");
 
-            final List<SortColumn> sortBy = List.of(ComparatorSortColumn.asc("SortCol", new NumericStringComparator(), true));
+            final List<SortColumn> sortBy =
+                    List.of(ComparatorSortColumn.asc("SortCol", new NumericStringComparator(), true));
 
             final Table sorted = smallTable.sort(sortBy);
 
@@ -168,10 +170,13 @@ public class QueryTableHugeSortTest {
 
             assertTableEquals(expected, sorted);
 
-            final Table bigTable = TableTools.emptyTable(bigSize).updateView("SortCol=Byte.toString((byte)(ii%100))", "Sentinel=k");
+            final Table bigTable =
+                    TableTools.emptyTable(bigSize).updateView("SortCol=Byte.toString((byte)(ii%100))", "Sentinel=k");
 
-            final UnsupportedOperationException iae2 = org.junit.Assert.assertThrows(UnsupportedOperationException.class, () -> bigTable.sort(sortBy));
-            assertEquals("Cannot sort more than " + SortHelpers.megaSortSize + " rows with a comparator", iae2.getMessage());
+            final UnsupportedOperationException iae2 =
+                    org.junit.Assert.assertThrows(UnsupportedOperationException.class, () -> bigTable.sort(sortBy));
+            assertEquals("Cannot sort more than " + SortHelpers.megaSortSize + " rows with a comparator",
+                    iae2.getMessage());
 
         } finally {
             SortHelpers.megaSortSize = megaSortSize;
