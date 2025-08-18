@@ -66,12 +66,19 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
                 .toArray(SortingOrder[]::new);
         this.sortColumnNames = Arrays.stream(sortColumns).map(sc -> sc.column().name()).toArray(String[]::new);
 
-        final boolean hasComparators = Arrays.stream(sortColumns).anyMatch(sc -> sc instanceof ComparatorSortColumn);
+        final boolean hasComparators = Arrays.stream(sortColumns).anyMatch(sc -> {
+            if (sc instanceof ComparatorSortColumn) {
+                return true;
+            }
+            final Class<Object> type = parent.getColumnSource(sc.column().name()).getType();
+            return !type.isPrimitive() && !Comparable.class.isAssignableFrom(type);
+        });
+
         if (hasComparators) {
             this.comparators = new Comparator[sortColumns.length];
             boolean respectsEquality = true;
             for (int ii = 0; ii < comparators.length; ii++) {
-                if (sortColumns[ii] instanceof ComparatorSortColumn) {
+                if (ComparatorSortColumn.hasComparator(sortColumns[ii])) {
                     comparators[ii] = ((ComparatorSortColumn) sortColumns[ii]).getComparator();
                     respectsEquality &= ((ComparatorSortColumn) sortColumns[ii]).respectsEquality();
                 } else {
@@ -103,10 +110,17 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
                             + " is a primitive column, therefore cannot accept a Comparator" + columnType);
                 }
             } else {
-                final boolean isSortable = Comparable.class.isAssignableFrom(columnType) || columnType.isPrimitive();
-                if (!isSortable) {
-                    throw new NotSortableColumnException(
-                            sortColumnNames[ii] + " is not a sortable type: " + columnType);
+                final Comparator<?> defaultComparator = ComparatorRegistry.INSTANCE.getComparator(columnType);
+                if (defaultComparator == null) {
+                    final boolean isSortable =
+                            Comparable.class.isAssignableFrom(columnType) || columnType.isPrimitive();
+                    if (!isSortable) {
+                        throw new NotSortableColumnException(
+                                sortColumnNames[ii] + " is not a sortable type: " + columnType);
+                    }
+                } else {
+                    // noinspection DataFlowIssue
+                    this.comparators[ii] = defaultComparator;
                 }
             }
         }

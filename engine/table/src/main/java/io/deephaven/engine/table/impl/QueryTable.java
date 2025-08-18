@@ -2792,7 +2792,7 @@ public class QueryTable extends BaseTable<QueryTable> {
             }
             final SortColumn[] sortColumns = columnsToSortBy.toArray(new SortColumn[columnsToSortBy.size()]);
 
-            if (sortColumns.length == 1) {
+            if (sortColumns.length == 1 && !ComparatorSortColumn.hasComparator(sortColumns[0])) {
                 final String columnName = sortColumns[0].column().name();
                 final SortingOrder order = SortingOrder.from(sortColumns[0]);
                 if (SortedColumnsAttribute.isSortedBy(this, columnName, order)) {

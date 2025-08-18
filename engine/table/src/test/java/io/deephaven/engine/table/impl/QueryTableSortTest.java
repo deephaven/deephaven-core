@@ -27,6 +27,8 @@ import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.select.IncrementalReleaseFilter;
 import io.deephaven.engine.table.impl.util.*;
 import io.deephaven.test.types.OutOfBandTest;
+import io.deephaven.util.QueryConstants;
+import io.deephaven.util.compare.ObjectComparisons;
 import io.deephaven.util.mutable.MutableInt;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
@@ -514,7 +516,8 @@ public class QueryTableSortTest extends QueryTableTestBase {
                                 List.of(SortColumn.asc(ColumnName.of("Sym")), SortColumn.desc(ColumnName.of("bigD")))),
                         "Default Sort",
                         queryTable.sort(
-                                List.of(ComparatorSortColumn.asc("Sym", naturalOrder), ComparatorSortColumn.asc("bigD", reverseOrder))),
+                                List.of(ComparatorSortColumn.asc("Sym", naturalOrder),
+                                        ComparatorSortColumn.asc("bigD", reverseOrder))),
                         "Comparator Sort"),
                 EvalNugget.from(() -> grouped.sort(List.of(ComparatorSortColumn.asc("bigI", vecLength)))),
                 new TableComparator(grouped.sort(List.of(ComparatorSortColumn.asc("bigI", vecLength))),
@@ -992,31 +995,64 @@ public class QueryTableSortTest extends QueryTableTestBase {
         assertNotSame(t.getRowSet(), sd.getRowSet());
     }
 
-    public void testComparatorPerformance() {
-        final Random random = new Random(0);
-        final QueryTable queryTable = getTable(false, 1_000_000, random,
-                initColumnInfos(new String[] {"Value1", "Sentinel"},
-                        new StringGenerator(),
-                        new IntGenerator(0, 100000)));
+    /**
+     * Lexicographicaly compares two arrays using Deephaven ordering for the elements.
+     */
+    public class CaseInsensitiveStringArrayComparator implements Comparator<String[]> {
+        @Override
+        public int compare(final String[] o1, final String[] o2) {
+            if (o1 == o2) {
+                return 0;
 
-        final List<Table> results = new ArrayList<>();
+            }
+            if (o1 == null) {
+                return -1;
+            }
+            if (o2 == null) {
+                return 1;
+            }
 
-        final Comparator naturalOrder = Comparator.nullsFirst(Comparator.naturalOrder());
-        final Comparator reverseOrder = naturalOrder.reversed();
+            final int len = Math.min(o1.length, o2.length);
+            for (int ii = 0; ii < len; ++ii) {
+                final int cmp = String.CASE_INSENSITIVE_ORDER.compare(o1[ii], o2[ii]);
+                if (cmp != 0) {
+                    return cmp;
+                }
+            }
 
-        System.out.println("Ascending,Descending,ComparatorAsc,ComparatorDesc");
-        for (int iter = 0; iter < 3; ++iter) {
-            final long t0 = System.nanoTime();
-            results.add(queryTable.sort("Value1"));
-            final long t1 = System.nanoTime();
-            results.add(queryTable.sortDescending("Value1"));
-            final long t2 = System.nanoTime();
-            results.add(queryTable.sort(List.of(ComparatorSortColumn.asc("Value1", naturalOrder, true))));
-            final long t3 = System.nanoTime();
-            results.add(queryTable.sort(List.of(ComparatorSortColumn.asc("Value1", reverseOrder, true))));
-            final long t4 = System.nanoTime();
-            System.out.println((t1 - t0) + "," + (t2 - t1) + "," + (t3 - t2) + "," + (t4 - t3));
-            results.clear();
+            return o1.length - o2.length;
         }
+    }
+
+    public void testStringArrays() {
+        // Use the registry for somethign that is not a comparable
+        final Table x = TableTools.newTable(intCol("Sentinel", 20, 10, 50, 40, 30, 15, 21),
+                col("StrArray", new String[] {"a"}, new String[] {}, new String[] {"b"}, new String[] {"a", "b", "c"},
+                        new String[] {"a", "b"}, new String[] {"A"}, new String[] {"a"}));
+        final Table s = x.sort("StrArray");
+        assertTableEquals(x.sort("Sentinel"), s);
+
+        // Make sure the comaprator still overrides the registry
+        final Table s2 =
+                x.sort(List.of(ComparatorSortColumn.asc("StrArray", new CaseInsensitiveStringArrayComparator())));
+        assertTableEquals(x.update("Sentinel=Sentinel==15 ? 25 : Sentinel==21 ? 26 : Sentinel").sort("Sentinel")
+                .update("Sentinel=Sentinel==25 ? 15 : Sentinel==26 ? 21 : Sentinel"), s2);
+    }
+
+    public void testIntArray() {
+        final Table x = TableTools.newTable(intCol("Sentinel", 20, 10, 50, 40, 30, 15),
+                col("IntArray", new int[] {10}, new int[] {}, new int[] {20}, new int[] {10, 20, 30},
+                        new int[] {10, 20}, new int[] {QueryConstants.NULL_INT}));
+        final Table s = x.sort("IntArray");
+        assertTableEquals(x.sort("Sentinel"), s);
+    }
+
+    public void testDoubleArray() {
+        final Table x = TableTools.newTable(intCol("Sentinel", 20, 10, 50, 40, 30, 15, 100, 75),
+                col("DoubleArray", new double[] {10}, new double[] {}, new double[] {20}, new double[] {10, 20, 30},
+                        new double[] {10, 20}, new double[] {NULL_DOUBLE}, new double[] {Double.NaN},
+                        new double[] {Double.POSITIVE_INFINITY}));
+        final Table s = x.sort("DoubleArray");
+        assertTableEquals(x.sort("Sentinel"), s);
     }
 }

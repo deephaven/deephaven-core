@@ -70,7 +70,7 @@ abstract class ComparatorSortColumn implements SortColumn {
      * @param comparator the comparator
      * @return a new ComparatorSortColumn
      */
-    public static ComparatorSortColumn of(SortColumn sortColumn, Comparator comparator) {
+    public static ComparatorSortColumn of(final SortColumn sortColumn, final Comparator comparator) {
         return ImmutableComparatorSortColumn.of(sortColumn.column(), sortColumn.order(), false, comparator);
     }
 
@@ -83,23 +83,31 @@ abstract class ComparatorSortColumn implements SortColumn {
      *        zero and respectsEquality is true, then results are undefined.
      * @return a new ComparatorSortColumn
      */
-    public static ComparatorSortColumn of(SortColumn sortColumn, Comparator comparator, boolean respectsEquality) {
+    public static ComparatorSortColumn of(final SortColumn sortColumn, final Comparator comparator,
+            final boolean respectsEquality) {
         return ImmutableComparatorSortColumn.of(sortColumn.column(), sortColumn.order(), respectsEquality, comparator);
     }
 
-    public static ComparatorSortColumn asc(String name, Comparator comparator) {
+    public static ComparatorSortColumn asc(final String name, final Comparator comparator) {
         return asc(name, comparator, false);
     }
 
-    public static ComparatorSortColumn desc(String name, Comparator comparator) {
+    public static ComparatorSortColumn desc(final String name, final Comparator comparator) {
         return desc(name, comparator, false);
     }
 
-    public static ComparatorSortColumn asc(String name, Comparator comparator, boolean respectsEquality) {
+    public static ComparatorSortColumn asc(final String name, final Comparator comparator,
+            final boolean respectsEquality) {
         return ImmutableComparatorSortColumn.of(ColumnName.of(name), Order.ASCENDING, respectsEquality, comparator);
     }
 
-    public static ComparatorSortColumn desc(String name, Comparator comparator, boolean respectsEquality) {
+    public static ComparatorSortColumn desc(final String name, final Comparator comparator,
+            final boolean respectsEquality) {
         return ImmutableComparatorSortColumn.of(ColumnName.of(name), Order.DESCENDING, respectsEquality, comparator);
+    }
+
+    public static boolean hasComparator(final SortColumn sortColumn) {
+        return sortColumn instanceof ComparatorSortColumn
+                && ((ComparatorSortColumn) sortColumn).getComparator() != null;
     }
 }
