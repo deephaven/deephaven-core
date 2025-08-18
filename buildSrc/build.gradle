@@ -34,7 +34,7 @@ dependencies {
         because('needed by plugin java-coding-conventions')
     }
 
-    implementation "com.gradleup.shadow:shadow-gradle-plugin:8.3.8"
+    implementation "com.gradleup.shadow:shadow-gradle-plugin:9.0.2"
 
     implementation('com.vanniktech.maven.publish:com.vanniktech.maven.publish.gradle.plugin:0.34.0') {
         because('needed by plugin java-publishing-conventions')
