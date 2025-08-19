@@ -1,0 +1,330 @@
+name: windows_client_builds
+run-name: "Build Windows C++, Python Static, Python Ticking; and cross-platform C# Clients"
+on: [push, workflow_dispatch]
+permissions:
+  packages: write
+
+env:
+  # Not sure this will work
+  GH_PACKAGES_USERNAME: ${{ github.repository_owner }}
+  GH_PACKAGES_FEED: https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json
+  DHINSTALL: ${{ github.workspace }}/dhinstall
+
+#===============================================================================
+# A note about GitHub caching: in this workflow there are three different kinds
+# of caching going on:
+# 1. The normal Github 10G per-repository/per-branch cache, accessible from
+#    https://github.com/deephaven/deephaven-core/actions/caches
+#    and controlled via "uses: actions/cache".
+#    We use this cache to hold the C++ build artifacts (its INSTALL directory)
+# 2. Github Packages, which is a NuGet-compatible repo accessible from
+#    https://github.com/orgs/deephaven/packages?repo_name=deephaven-core
+#    and controlled via the NuGet API.
+#    We use this package repository to hold the binaries of the built
+#    C++ dependencies. It is managed automatically for us by cmake/vcpkg/nuget.
+# 3. Github Build artifacts, attached to every action run. These artifacts
+#    can be downloaded from e.g.
+#    https://github.com/deephaven/deephaven-core/actions/runs/17416308139
+#    but the specific URL depends on the build.
+#    We use this to upload
+#    - The C++ INSTALL directory (the same thing we cached in step 1)
+#    - The .whl file for the static Python client
+#    - The .whl file for the ticking Python client
+#    - The built, signed, packaged, and signed again Deephaven.Core.Client nupkg
+
+jobs:
+  #============================================================================
+  # Here is the logic of this job, in pseudocode. For clarity we present the job
+  # steps in this way, but this is not exactly how they are implemented.
+  # Specifically, there are no "subroutines" in the github steps. Instead, each
+  # step in the logical "subroutine" is controlled by an "if" statement which
+  # either lets it run or not, depending on a conditional.
+  #
+  # 1. [step id: cache-cpp-install]
+  #    Try to fetch the whole installation directory (the final product of the
+  #    build) from the Github Cache. The key to this cache is, in part, derived
+  #    from the hash of the contents of the files in the cpp-client and proto
+  #    directories.
+  # 2. If the files were not found, run the psuedocode subroutine BUILD_IT_ALL
+  #    defined below.
+  # 3. [step id: upload-install-directory]
+  #    Once you get here, you you either had a successful cache fetch, or you
+  #    built the install directory via BUILD_IT_ALL. Now upload them Github as a
+  #    "build artifact" with key "cpp-client-install".
+  # 4. [This is an implicit step created as a post-run action of step 1]
+  #    Update the Github Cache specified in step 1 with these files.
+  # 5. END
+  #
+  # This is the pseudocode for the "subroutine" BUILD_IT_ALL:
+  #
+  # The C++ build is responsible for fetching and building dependent libraries,
+  # then building its own code. To speed things up, the build outputs for the
+  # each of these dependent libraries are also cached.
+  #
+  # These are the players:
+  # cmake - controls the build, runs vcpkg
+  # vcpkg - manages the dependent packages, runs nuget for caching the build outputs
+  # nuget - caches the build outputs; configured to use a Deephaven-private nuget
+  #         repo at Github (not the main nuget repo at nuget.org)
+  #
+  # 1. [step id: checkout-vcpkg and following steps]
+  #    Check out and "bootstrap" the vcpkg tool by fetching it from github,
+  #    then running its bootstrap-vcpkg.bat file
+  # 2. Configure nuget to use github to cache built dependencies in its
+  #    "packages" repo.
+  # 3. Run cmake to build all the dependencies. If the nuget cache is populated,
+  #    this will be quick. If it is not populated, this could take up to 90 minutes
+  #    on a github 2-core Windows machine.
+  # 4. Run cmake again to do the build of our code. I think we could combine these
+  #    two cmake commands into one, but it's fine the way it is.
+  # 5. RETURN FROM SUBROUTINE BUILD_IT_ALL
+  #============================================================================
+  cpp_job:
+    name: Build C++ client or fetch from cache
+    runs-on: windows-2025
+
+    steps:
+      - name: Check out this repo
+        uses: actions/checkout@v5
+
+      - name: Try to restore (or begin the creation of) the cached installation directory
+        id: cache-cpp-install
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.DHINSTALL }}
+          key: ${{ runner.os }}-cpp-client-${{ hashfiles('cpp-client/**', 'proto/**') }}
+
+      - name: Check out vcpkg
+        id: checkout-vcpkg
+        if: steps.cache-cpp-install.outputs.cache-hit != 'true'
+        uses: actions/checkout@v5
+        with:
+          repository: microsoft/vcpkg
+          path: vcpkg
+
+      - name: Bootstrap vcpkg
+        if: steps.cache-cpp-install.outputs.cache-hit != 'true'
+        shell: cmd
+        run: ./vcpkg/bootstrap-vcpkg.bat
+
+      # See https://learn.microsoft.com/en-us/vcpkg/consume/binary-caching-github-packages
+      # Note the following hard-earned lesson: this approach should work ok if
+      # this repository is the only one creating nuget packages and storing them
+      # in github. If you have two different repos competing on creating nuget
+      # packages, you will have a problem because the GITHUB_TOKEN is scoped to
+      # a repository. One repo might create and own a package and the other one
+      # might not be able to read that package or write a new version of it one.
+      # If this ever becomes a problem you can either manually edit the
+      # packages to be owned # by both repositories, or you can make a Personal
+      # Access Token which will be powerful enough to work across repositories.
+      - name: Configure nuget to know how to download (or upload) each cached package that we need (or create)
+        if: steps.cache-cpp-install.outputs.cache-hit != 'true'
+        shell: pwsh
+        # Note this strangeness: the path to nuget.exe is not known
+        # a priori; it is the output of "vcpkg.exe fetch nuget".
+        run: |
+          $nuget_exe = & ./vcpkg/vcpkg.exe fetch nuget
+          & $nuget_exe sources add `
+          -Source "${{ env.GH_PACKAGES_FEED }}" `
+          -StorePasswordInClearText `
+          -Name GitHubPackages `
+          -UserName "${{ env.GH_PACKAGES_USERNAME }}" `
+          -Password "${{ secrets.GITHUB_TOKEN }}"
+          & $nuget_exe setapikey "${{ secrets.GITHUB_TOKEN }}" -Source "${{ env.GH_PACKAGES_FEED }}"
+
+      - name: Run cmake configuration. For dependent packages, cmake will use vcpkg, and vcpkg will use nuget
+        if: steps.cache-cpp-install.outputs.cache-hit != 'true'
+        shell: cmd
+        env:
+          VCPKG_BINARY_SOURCES: "clear;nuget,${{ env.GH_PACKAGES_FEED }},readwrite"
+        run: cmake -S cpp-client/deephaven -B cpp-client/deephaven/build --toolchain ${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake -DCMAKE_INSTALL_PREFIX=${{ env.DHINSTALL }} -DX_VCPKG_APPLOCAL_DEPS_INSTALL=ON
+
+      - name: Run cmake build
+        if: steps.cache-cpp-install.outputs.cache-hit != 'true'
+        shell: cmd
+        run: cmake --build cpp-client/deephaven/build --config RelWithDebInfo --target install
+
+      - name: Upload install directory as build artifact, to be used directly or by dependent clients like Python ticking
+        id: upload-install-directory
+        uses: actions/upload-artifact@v4
+        with:
+          name: cpp-client-install
+          path: ${{ env.DHINSTALL }}
+
+  #============================================================================
+  version_job:
+    name: Find the Deephaven version by grepping gradle.properties
+    runs-on: ubuntu-24.04
+    outputs:
+      dhc_version: ${{ steps.get-dhc-version.outputs.dhc_version }}
+
+    steps:
+      - name: Check out this repo
+        uses: actions/checkout@v5
+
+      - name: Output Deephaven Version
+        id: get-dhc-version
+        run: |
+          echo "dhc_version=$(grep ^deephavenBaseVersion= gradle.properties | cut -d'=' -f2)-$(grep ^deephavenBaseQualifier= gradle.properties | cut -d'=' -f2)" >> $GITHUB_OUTPUT
+
+  #============================================================================
+  python_static_job:
+    name: Python static client
+    runs-on: windows-2025
+    needs: [version_job]
+
+    steps:
+      - name: Check out this repo
+        uses: actions/checkout@v5
+
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install the 'wheel' package
+        shell: cmd
+        run: pip3 install wheel
+
+      - name: Install requirements-dev.txt
+        shell: cmd
+        run: |
+          cd .\py\client
+          pip3 install -r requirements-dev.txt
+
+      - name: Run setup.py
+        shell: cmd
+        env:
+          DEEPHAVEN_VERSION: ${{ needs.version_job.outputs.dhc_version }}
+        run: |
+          cd .\py\client
+          python setup.py bdist_wheel
+
+      - name: Upload static .whl file as build artifact, to be used directly or by dependent clients like Python ticking
+        uses: actions/upload-artifact@v4
+        with:
+          name: py-static-wheel
+          path: ./py/client/dist/*.whl
+
+  #============================================================================
+  python_ticking_job:
+    name: Python ticking client
+    runs-on: windows-2025
+    needs: [cpp_job, python_static_job, version_job]
+
+    steps:
+      - name: Check out this repo
+        uses: actions/checkout@v5
+
+      - name: Get the C++ installation as a build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: cpp-client-install
+          path: ${{ env.DHINSTALL }}
+
+      - name: Get the Python static installation as a build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: py-static-wheel
+          path: ./py/client/dist/
+
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install the 'wheel' and 'cython' packages
+        shell: cmd
+        run: pip3 install wheel cython
+
+      - name: Install requirements-dev.txt
+        shell: cmd
+        run: |
+          cd .\py\client
+          pip3 install -r requirements-dev.txt
+
+      - name: Install the static client
+        shell: pwsh
+        run: |
+          $wheel = (Get-ChildItem -Path .\py\client\dist\*.whl).FullName
+          pip3 install --force --no-deps $wheel
+
+      - name: setup PATH to be able to run Visual Studio tools like cl.exe
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Build cython code
+        shell: cmd
+        env:
+          DEEPHAVEN_VERSION: ${{ needs.version_job.outputs.dhc_version }}
+        run: |
+          cd .\py\client-ticking
+          python setup.py build_ext -i
+
+      - name: Run setup.py
+        shell: cmd
+        env:
+          DEEPHAVEN_VERSION: ${{ needs.version_job.outputs.dhc_version }}
+        run: |
+          cd .\py\client-ticking
+          python setup.py bdist_wheel
+
+      - name: Upload ticking .whl file as build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: py-ticking-wheel
+          path: ./py/client-ticking/dist/*.whl
+
+  #============================================================================
+  dotnet_job:
+    name: Build C# client and sign
+    runs-on: windows-2025
+    needs: version_job
+    env:
+      DEEPHAVEN_VERSION: ${{ needs.version_job.outputs.dhc_version }}
+      RELEASE_DIR: csharp\client\Dh_NetClient\bin\Release
+
+    steps:
+      - name: Check out this repo
+        uses: actions/checkout@v5
+
+      - name: Setup dotnet
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Build Deephaven Core C# Client
+        shell: cmd
+        run: |
+          cd csharp\client\Dh_NetClient
+          dotnet build -c Release
+
+      - name: setup PATH to be able to run Visual Studio tools like signtool.exe
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Decode PFX and Import Certificate
+        shell: powershell
+        run: |
+          $pfxContent = [System.Convert]::FromBase64String("${{ secrets.CODE_SIGNING_CERT_PFX_BASE64 }}")
+          [System.IO.File]::WriteAllBytes("code-signing-cert.pfx", $pfxContent)
+
+      - name: Sign the client
+        shell: cmd
+        run: |
+          signtool.exe sign /f code-signing-cert.pfx /t http://timestamp.digicert.com /fd sha256 %RELEASE_DIR%\net8.0\*.dll
+
+      - name: Create NuGet package
+        shell: cmd
+        run: |
+          cd csharp\client\Dh_NetClient
+          dotnet pack --no-build -c Release /p:Platform="Any CPU" /p:PackageVersion=%DEEPHAVEN_VERSION%
+
+      - name: Sign NuGet package
+        shell: cmd
+        run: |
+          dotnet nuget sign %RELEASE_DIR%\Deephaven.Core.Client.%DEEPHAVEN_VERSION%.nupkg --timestamper http://timestamp.digicert.com --certificate-path code-signing-cert.pfx
+
+      - name: Upload signed NuGet package as Github build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dotnet-nupkg
+          path: ${{ env.RELEASE_DIR }}\Deephaven.Core.Client.${{ env.DEEPHAVEN_VERSION }}.nupkg
