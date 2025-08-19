@@ -21,7 +21,7 @@ class CharVectorChunkFilter extends VectorChunkFilter {
     @Override
     public void filter(final Chunk<? extends Values> values, final LongChunk<OrderedRowKeys> keys,
             final WritableLongChunk<OrderedRowKeys> results) {
-        final ObjectChunk<Object, ? extends Values> objectChunk = values.asObjectChunk();
+        final ObjectChunk<CharVector, ? extends Values> objectChunk = values.asObjectChunk();
         results.setSize(0);
 
         temporaryValues.setSize(chunkSize);
@@ -31,7 +31,7 @@ class CharVectorChunkFilter extends VectorChunkFilter {
         long lastMatch = RowSet.NULL_ROW_KEY;
 
         for (int indexOfVector = 0; indexOfVector < objectChunk.size(); ++indexOfVector) {
-            final CharVector vector = (CharVector) objectChunk.get(indexOfVector);
+            final CharVector vector = objectChunk.get(indexOfVector);
             try (final ValueIteratorOfChar vi = vector.iterator()) {
                 while (vi.hasNext()) {
                     final char element = vi.next();

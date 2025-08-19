@@ -20,33 +20,56 @@ import java.util.function.Supplier;
 
 public class VectorComponentFilterWrapper extends WhereFilterImpl {
     private final String columnName;
+    private final boolean isArray;
     private final Class<?> componentType;
     private final WhereFilter componentFilter;
     ChunkFilter chunkFilter;
     Supplier<VectorChunkFilter> vectorChunkFilterFactory;
 
     public VectorComponentFilterWrapper(final String columnName,
-            final Class<?> componentType,
-            final WhereFilter componentFilter) {
+                                        final boolean isArray,
+                                        final Class<?> componentType,
+                                        final WhereFilter componentFilter) {
         this.columnName = columnName;
+        this.isArray = isArray;
         this.componentType = componentType;
         this.componentFilter = componentFilter;
-        if (componentType == char.class) {
-            vectorChunkFilterFactory = () -> new CharVectorChunkFilter(this, ChunkFilter.FILTER_CHUNK_SIZE);
-        } else if (componentType == byte.class) {
-            vectorChunkFilterFactory = () -> new ByteVectorChunkFilter(this, ChunkFilter.FILTER_CHUNK_SIZE);
-        } else if (componentType == short.class) {
-            vectorChunkFilterFactory = () -> new ShortVectorChunkFilter(this, ChunkFilter.FILTER_CHUNK_SIZE);
-        } else if (componentType == int.class) {
-            vectorChunkFilterFactory = () -> new IntVectorChunkFilter(this, ChunkFilter.FILTER_CHUNK_SIZE);
-        } else if (componentType == long.class) {
-            vectorChunkFilterFactory = () -> new LongVectorChunkFilter(this, ChunkFilter.FILTER_CHUNK_SIZE);
-        } else if (componentType == float.class) {
-            vectorChunkFilterFactory = () -> new FloatVectorChunkFilter(this, ChunkFilter.FILTER_CHUNK_SIZE);
-        } else if (componentType == double.class) {
-            vectorChunkFilterFactory = () -> new DoubleVectorChunkFilter(this, ChunkFilter.FILTER_CHUNK_SIZE);
+        if (isArray) {
+            if (componentType == char.class) {
+                vectorChunkFilterFactory = () -> new CharArrayChunkFilter(this, ChunkFilter.FILTER_CHUNK_SIZE);
+            } else if (componentType == byte.class) {
+                vectorChunkFilterFactory = () -> new ByteArrayChunkFilter(this, ChunkFilter.FILTER_CHUNK_SIZE);
+            } else if (componentType == short.class) {
+                vectorChunkFilterFactory = () -> new ShortArrayChunkFilter(this, ChunkFilter.FILTER_CHUNK_SIZE);
+            } else if (componentType == int.class) {
+                vectorChunkFilterFactory = () -> new IntArrayChunkFilter(this, ChunkFilter.FILTER_CHUNK_SIZE);
+            } else if (componentType == long.class) {
+                vectorChunkFilterFactory = () -> new LongArrayChunkFilter(this, ChunkFilter.FILTER_CHUNK_SIZE);
+            } else if (componentType == float.class) {
+                vectorChunkFilterFactory = () -> new FloatArrayChunkFilter(this, ChunkFilter.FILTER_CHUNK_SIZE);
+            } else if (componentType == double.class) {
+                vectorChunkFilterFactory = () -> new DoubleArrayChunkFilter(this, ChunkFilter.FILTER_CHUNK_SIZE);
+            } else {
+                vectorChunkFilterFactory = () -> new ObjectArrayChunkFilter(this, ChunkFilter.FILTER_CHUNK_SIZE);
+            }
         } else {
-            vectorChunkFilterFactory = () -> new ObjectVectorChunkFilter(this, ChunkFilter.FILTER_CHUNK_SIZE);
+            if (componentType == char.class) {
+                vectorChunkFilterFactory = () -> new CharVectorChunkFilter(this, ChunkFilter.FILTER_CHUNK_SIZE);
+            } else if (componentType == byte.class) {
+                vectorChunkFilterFactory = () -> new ByteVectorChunkFilter(this, ChunkFilter.FILTER_CHUNK_SIZE);
+            } else if (componentType == short.class) {
+                vectorChunkFilterFactory = () -> new ShortVectorChunkFilter(this, ChunkFilter.FILTER_CHUNK_SIZE);
+            } else if (componentType == int.class) {
+                vectorChunkFilterFactory = () -> new IntVectorChunkFilter(this, ChunkFilter.FILTER_CHUNK_SIZE);
+            } else if (componentType == long.class) {
+                vectorChunkFilterFactory = () -> new LongVectorChunkFilter(this, ChunkFilter.FILTER_CHUNK_SIZE);
+            } else if (componentType == float.class) {
+                vectorChunkFilterFactory = () -> new FloatVectorChunkFilter(this, ChunkFilter.FILTER_CHUNK_SIZE);
+            } else if (componentType == double.class) {
+                vectorChunkFilterFactory = () -> new DoubleVectorChunkFilter(this, ChunkFilter.FILTER_CHUNK_SIZE);
+            } else {
+                vectorChunkFilterFactory = () -> new ObjectVectorChunkFilter(this, ChunkFilter.FILTER_CHUNK_SIZE);
+            }
         }
     }
 
@@ -99,7 +122,7 @@ public class VectorComponentFilterWrapper extends WhereFilterImpl {
 
     @Override
     public WhereFilter copy() {
-        return new VectorComponentFilterWrapper(columnName, componentType, componentFilter.copy());
+        return new VectorComponentFilterWrapper(columnName, isArray, componentType, componentFilter.copy());
     }
 
     public static TableDefinition replaceDefinition(final String colName, final TableDefinition tableDefinition) {

@@ -10,13 +10,13 @@ import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
 import io.deephaven.util.SafeCloseable;
 
-abstract class VectorChunkFilter implements ChunkFilter, SafeCloseable {
+abstract class ArrayChunkFilter implements ChunkFilter, SafeCloseable {
     final VectorComponentFilterWrapper vectorComponentFilterWrapper;
     final WritableIntChunk<ChunkPositions> srcPos;
     final WritableBooleanChunk<Values> matched;
     final int chunkSize;
 
-    public VectorChunkFilter(final VectorComponentFilterWrapper vectorComponentFilterWrapper, final int chunkSize) {
+    public ArrayChunkFilter(final VectorComponentFilterWrapper vectorComponentFilterWrapper, final int chunkSize) {
         this.vectorComponentFilterWrapper = vectorComponentFilterWrapper;
         this.chunkSize = chunkSize;
         srcPos = WritableIntChunk.makeWritableChunk(chunkSize);

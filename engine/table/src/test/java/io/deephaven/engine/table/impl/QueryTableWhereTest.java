@@ -3249,9 +3249,20 @@ public abstract class QueryTableWhereTest {
 
     @Test
     public void testQuickFilterVector() {
-        final Table x = emptyTable(10).update("X=Long.toString(ii)", "Y=ii%2").groupBy("Y");
-        final WhereFilter[] whereFilters = WhereFilterFactory.expandQuickFilter(x.getDefinition(), "6", Set.of());
-        final Table y = x.where(Filter.or(whereFilters));
-        TableTools.show(y);
+        final Table v1 = emptyTable(10).update("X=Long.toString(ii)", "Y=ii%2").groupBy("Y");
+        final WhereFilter[] whereFilters = WhereFilterFactory.expandQuickFilter(v1.getDefinition(), "6", Set.of());
+        final Table f1 = v1.where(Filter.or(whereFilters));
+        assertTableEquals(v1.where("Y in 0"), f1);
+
+        final Table v2 = emptyTable(10).update("X=ii", "Y=ii%2").groupBy("Y");
+        final WhereFilter[] whereFilters2 = WhereFilterFactory.expandQuickFilter(v2.getDefinition(), "7", Set.of());
+        final Table f2 = v2.where(Filter.or(whereFilters2));
+        assertTableEquals(v2.where("Y in 1"), f2);
+
+        final Table a2 = v2.update("X=X.toArray()");
+        final WhereFilter[] whereFilters3 = WhereFilterFactory.expandQuickFilter(a2.getDefinition(), "7", Set.of());
+        final Table fa2 = a2.where(Filter.or(whereFilters3));
+        assertTableEquals(a2.where("Y in 1"), fa2);
+
     }
 }

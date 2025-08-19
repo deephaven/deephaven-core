@@ -25,7 +25,7 @@ class FloatVectorChunkFilter extends VectorChunkFilter {
     @Override
     public void filter(final Chunk<? extends Values> values, final LongChunk<OrderedRowKeys> keys,
             final WritableLongChunk<OrderedRowKeys> results) {
-        final ObjectChunk<Object, ? extends Values> objectChunk = values.asObjectChunk();
+        final ObjectChunk<FloatVector, ? extends Values> objectChunk = values.asObjectChunk();
         results.setSize(0);
 
         temporaryValues.setSize(chunkSize);
@@ -35,7 +35,7 @@ class FloatVectorChunkFilter extends VectorChunkFilter {
         long lastMatch = RowSet.NULL_ROW_KEY;
 
         for (int indexOfVector = 0; indexOfVector < objectChunk.size(); ++indexOfVector) {
-            final FloatVector vector = (FloatVector) objectChunk.get(indexOfVector);
+            final FloatVector vector = objectChunk.get(indexOfVector);
             try (final ValueIteratorOfFloat vi = vector.iterator()) {
                 while (vi.hasNext()) {
                     final float element = vi.next();

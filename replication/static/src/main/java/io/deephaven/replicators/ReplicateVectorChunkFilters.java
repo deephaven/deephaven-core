@@ -19,13 +19,16 @@ public class ReplicateVectorChunkFilters {
     private static final String CHUNK_FILTER_PATH =
             "engine/table/src/main/java/io/deephaven/engine/table/impl/select/vectorchunkFilter/";
     private static final String CHAR_VECTOR_CHUNK_FILTER = CHUNK_FILTER_PATH + "CharVectorChunkFilter.java";
+    private static final String CHAR_ARRAY_CHUNK_FILTER = CHUNK_FILTER_PATH + "CharArrayChunkFilter.java";
 
     public static void main(final String[] args) throws IOException {
         charToAllButBoolean(TASK, CHAR_VECTOR_CHUNK_FILTER);
         fixupObject(charToObject(TASK, CHAR_VECTOR_CHUNK_FILTER));
+        charToAllButBoolean(TASK, CHAR_ARRAY_CHUNK_FILTER);
+        fixupObject(charToObject(TASK, CHAR_ARRAY_CHUNK_FILTER));
     }
 
-    private static void fixupObject(String objectPath) throws IOException {
+    private static void fixupObject(final String objectPath) throws IOException {
         List<String> lines = FileUtils.readLines(new File(objectPath), Charset.defaultCharset());
         lines = ReplicationUtils.fixupChunkAttributes(lines);
         lines = ReplicationUtils.globalReplacements(lines, "ValueIteratorOfObject", "ValueIterator");
