@@ -69,10 +69,10 @@ public class ContextHolder implements Context {
 
     @Override
     public void close() {
-        for (final SafeCloseable closeable : fillContexts) {
+        for (final ChunkSource.FillContext closeable : fillContexts) {
             closeable.close();
         }
-        for (final SafeCloseable closeable : resettableChunks) {
+        for (final ResettableWritableChunk<?> closeable : resettableChunks) {
             closeable.close();
         }
         sharedContext.close();

@@ -176,9 +176,6 @@ public abstract class AbstractTableDataArrayRetrieverImpl implements TableDataAr
             } else {
                 colSrc.fillChunk(fillContext, chunk, rowSeq);
             }
-
-            // TODO: why clear()? who cares?
-            chunk.clear();
         }
     }
 
