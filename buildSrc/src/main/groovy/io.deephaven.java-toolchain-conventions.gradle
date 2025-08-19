@@ -18,11 +18,11 @@ def testRuntimeVendor = project.hasProperty('testRuntimeVendor') ?  JvmVendorSpe
 if (languageLevel > compilerVersion) {
   throw new IllegalArgumentException("languageLevel must be less than or equal to compilerVersion")
 }
-if (languageLevel < 11) {
-  throw new IllegalArgumentException("languageLevel must be greater than or equal to 11")
+if (languageLevel < 8) {
+  throw new IllegalArgumentException("languageLevel must be greater than or equal to 8")
 }
-if (testLanguageLevel < 11) {
-  throw new IllegalArgumentException("testLanguageLevel must be greater than or equal to 11")
+if (testLanguageLevel < 8) {
+  throw new IllegalArgumentException("testLanguageLevel must be greater than or equal to 8")
 }
 if (runtimeVersion < languageLevel) {
   project.logger.lifecycle("runtimeVersion was set to ${runtimeVersion}, updating to ${languageLevel} to match languageLevel")
