@@ -3,7 +3,6 @@
 //
 package io.deephaven.util.codec;
 
-import io.deephaven.base.string.EncodingInfo;
 import org.jetbrains.annotations.NotNull;
 
 import java.nio.BufferOverflowException;
@@ -31,7 +30,7 @@ class CodecUtil {
     public static void putUtf8String(@NotNull final ByteBuffer destination, @NotNull final String value) {
         final int initialPosition = destination.position();
         destination.position(initialPosition + Integer.BYTES);
-        final CharsetEncoder encoder = EncodingInfo.UTF_8.getEncoder().reset();
+        final CharsetEncoder encoder = EncodingInfoUtf8.getEncoder().reset();
         if (!encoder.encode(CharBuffer.wrap(value), destination, true).isUnderflow()
                 || !encoder.flush(destination).isUnderflow()) {
             throw new BufferOverflowException();
@@ -51,7 +50,7 @@ class CodecUtil {
     public static String getUtf8String(@NotNull final ByteBuffer source) {
         final int length = source.getInt();
         final int initialLimit = source.limit();
-        final CharsetDecoder decoder = EncodingInfo.UTF_8.getDecoder().reset();
+        final CharsetDecoder decoder = EncodingInfoUtf8.getDecoder().reset();
         if (length > source.remaining()) {
             throw new BufferUnderflowException();
         }
