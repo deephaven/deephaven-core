@@ -229,7 +229,9 @@ public interface CharVector extends Vector<CharVector>, Iterable<Character> {
         }
         try (final CloseablePrimitiveIteratorOfChar iterator = vector.iterator()) {
             while (iterator.hasNext()) {
+                // region ElementHash
                 result = 31 * result + Character.hashCode(iterator.nextChar());
+                // endregion ElementHash
             }
         }
         return result;

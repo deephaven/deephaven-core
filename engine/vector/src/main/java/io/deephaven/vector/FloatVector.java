@@ -7,6 +7,8 @@
 // @formatter:off
 package io.deephaven.vector;
 
+import io.deephaven.util.compare.FloatComparisons;
+
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfFloat;
 import io.deephaven.engine.primitive.value.iterator.ValueIteratorOfFloat;
@@ -180,7 +182,7 @@ public interface FloatVector extends Vector<FloatVector>, Iterable<Float> {
                 final CloseablePrimitiveIteratorOfFloat bIterator = bVector.iterator()) {
             while (aIterator.hasNext()) {
                 // region ElementEquals
-                if (Float.floatToIntBits(aIterator.nextFloat()) != Float.floatToIntBits(bIterator.nextFloat())) {
+                if (!FloatComparisons.eq(aIterator.nextFloat(), bIterator.nextFloat())) {
                     return false;
                 }
                 // endregion ElementEquals
@@ -233,7 +235,9 @@ public interface FloatVector extends Vector<FloatVector>, Iterable<Float> {
         }
         try (final CloseablePrimitiveIteratorOfFloat iterator = vector.iterator()) {
             while (iterator.hasNext()) {
-                result = 31 * result + Float.hashCode(iterator.nextFloat());
+                // region ElementHash
+                result = 31 * result + FloatComparisons.hashCode(iterator.nextFloat());
+                // endregion ElementHash
             }
         }
         return result;

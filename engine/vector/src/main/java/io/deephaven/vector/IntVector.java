@@ -233,7 +233,9 @@ public interface IntVector extends Vector<IntVector>, Iterable<Integer> {
         }
         try (final CloseablePrimitiveIteratorOfInt iterator = vector.iterator()) {
             while (iterator.hasNext()) {
+                // region ElementHash
                 result = 31 * result + Integer.hashCode(iterator.nextInt());
+                // endregion ElementHash
             }
         }
         return result;

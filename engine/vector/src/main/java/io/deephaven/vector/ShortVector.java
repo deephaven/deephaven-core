@@ -233,7 +233,9 @@ public interface ShortVector extends Vector<ShortVector>, Iterable<Short> {
         }
         try (final CloseablePrimitiveIteratorOfShort iterator = vector.iterator()) {
             while (iterator.hasNext()) {
+                // region ElementHash
                 result = 31 * result + Short.hashCode(iterator.nextShort());
+                // endregion ElementHash
             }
         }
         return result;

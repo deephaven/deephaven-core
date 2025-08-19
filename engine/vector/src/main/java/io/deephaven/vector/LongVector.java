@@ -233,7 +233,9 @@ public interface LongVector extends Vector<LongVector>, Iterable<Long> {
         }
         try (final CloseablePrimitiveIteratorOfLong iterator = vector.iterator()) {
             while (iterator.hasNext()) {
+                // region ElementHash
                 result = 31 * result + Long.hashCode(iterator.nextLong());
+                // endregion ElementHash
             }
         }
         return result;

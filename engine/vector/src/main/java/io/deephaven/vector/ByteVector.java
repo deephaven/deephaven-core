@@ -233,7 +233,9 @@ public interface ByteVector extends Vector<ByteVector>, Iterable<Byte> {
         }
         try (final CloseablePrimitiveIteratorOfByte iterator = vector.iterator()) {
             while (iterator.hasNext()) {
+                // region ElementHash
                 result = 31 * result + Byte.hashCode(iterator.nextByte());
+                // endregion ElementHash
             }
         }
         return result;

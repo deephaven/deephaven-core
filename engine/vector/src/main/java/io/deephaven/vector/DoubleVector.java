@@ -7,6 +7,8 @@
 // @formatter:off
 package io.deephaven.vector;
 
+import io.deephaven.util.compare.DoubleComparisons;
+
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfDouble;
 import io.deephaven.engine.primitive.value.iterator.ValueIteratorOfDouble;
@@ -180,7 +182,7 @@ public interface DoubleVector extends Vector<DoubleVector>, Iterable<Double> {
                 final CloseablePrimitiveIteratorOfDouble bIterator = bVector.iterator()) {
             while (aIterator.hasNext()) {
                 // region ElementEquals
-                if (Double.doubleToLongBits(aIterator.nextDouble()) != Double.doubleToLongBits(bIterator.nextDouble())) {
+                if (!DoubleComparisons.eq(aIterator.nextDouble(), bIterator.nextDouble())) {
                     return false;
                 }
                 // endregion ElementEquals
@@ -233,7 +235,9 @@ public interface DoubleVector extends Vector<DoubleVector>, Iterable<Double> {
         }
         try (final CloseablePrimitiveIteratorOfDouble iterator = vector.iterator()) {
             while (iterator.hasNext()) {
-                result = 31 * result + Double.hashCode(iterator.nextDouble());
+                // region ElementHash
+                result = 31 * result + DoubleComparisons.hashCode(iterator.nextDouble());
+                // endregion ElementHash
             }
         }
         return result;

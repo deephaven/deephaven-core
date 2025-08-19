@@ -5,6 +5,8 @@ package io.deephaven.replicators;
 
 import io.deephaven.replication.ReplicatePrimitiveCode;
 import io.deephaven.replication.ReplicationUtils;
+import io.deephaven.util.compare.DoubleComparisons;
+import io.deephaven.util.compare.FloatComparisons;
 import org.apache.commons.io.FileUtils;
 import org.jetbrains.annotations.NotNull;
 
@@ -52,18 +54,26 @@ public class ReplicateVectors {
     public static void fixupCharToDouble(@NotNull final String path) throws IOException {
         final File file = new File(path);
         List<String> lines = FileUtils.readLines(file, Charset.defaultCharset());
+        lines = ReplicationUtils.addImport(lines, DoubleComparisons.class);
         lines = ReplicationUtils.simpleFixup(lines, "ElementEquals",
                 "aIterator\\.nextDouble\\(\\) != bIterator\\.nextDouble\\(\\)",
-                "Double.doubleToLongBits(aIterator.nextDouble()) != Double.doubleToLongBits(bIterator.nextDouble())");
+                "!DoubleComparisons.eq(aIterator.nextDouble(), bIterator.nextDouble())");
+        lines = ReplicationUtils.simpleFixup(lines, "ElementHash",
+                "Double.hashCode\\(iterator.nextDouble\\(\\)\\)",
+                "DoubleComparisons.hashCode(iterator.nextDouble())");
         FileUtils.writeLines(file, lines);
     }
 
     public static void fixupCharToFloat(@NotNull final String path) throws IOException {
         final File file = new File(path);
         List<String> lines = FileUtils.readLines(file, Charset.defaultCharset());
+        lines = ReplicationUtils.addImport(lines, FloatComparisons.class);
         lines = ReplicationUtils.simpleFixup(lines, "ElementEquals",
                 "aIterator\\.nextFloat\\(\\) != bIterator\\.nextFloat\\(\\)",
-                "Float.floatToIntBits(aIterator.nextFloat()) != Float.floatToIntBits(bIterator.nextFloat())");
+                "!FloatComparisons.eq(aIterator.nextFloat(), bIterator.nextFloat())");
+        lines = ReplicationUtils.simpleFixup(lines, "ElementHash",
+                "Float.hashCode\\(iterator.nextFloat\\(\\)\\)",
+                "FloatComparisons.hashCode(iterator.nextFloat())");
         FileUtils.writeLines(file, lines);
     }
 
