@@ -39,6 +39,7 @@ import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.testutil.sources.IntTestSource;
 import io.deephaven.engine.util.PrintListener;
 import io.deephaven.engine.util.TableTools;
+import io.deephaven.gui.table.QuickFilterMode;
 import io.deephaven.gui.table.filters.Condition;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
@@ -3244,5 +3245,13 @@ public abstract class QueryTableWhereTest {
         return filter.rowSets().stream()
                 .mapToLong(RowSet::size)
                 .sum();
+    }
+
+    @Test
+    public void testQuickFilterVector() {
+        final Table x = emptyTable(10).update("X=Long.toString(ii)", "Y=ii%2").groupBy("Y");
+        final WhereFilter[] whereFilters = WhereFilterFactory.expandQuickFilter(x.getDefinition(), "6", Set.of());
+        final Table y = x.where(Filter.or(whereFilters));
+        TableTools.show(y);
     }
 }
