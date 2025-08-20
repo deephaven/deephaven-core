@@ -4,12 +4,12 @@
 package io.deephaven.api;
 
 import io.deephaven.annotations.SimpleStyle;
-import org.immutables.value.Value;
+import org.immutables.value.Value.Immutable;
 
 /**
  * Represents a {@link #column() column} and {@link #order() order} pair.
  */
-@Value.Immutable
+@Immutable
 @SimpleStyle
 public interface SortColumn {
 
