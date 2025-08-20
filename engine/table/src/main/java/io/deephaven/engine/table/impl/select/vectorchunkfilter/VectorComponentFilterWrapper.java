@@ -189,7 +189,8 @@ public class VectorComponentFilterWrapper extends WhereFilterImpl {
 
     @TestUseOnly
     public VectorComponentFilterWrapper breakChunkType() {
-        return new VectorComponentFilterWrapper(columnName, isArray, componentType, new TypeDiscardedFilter(componentFilter));
+        return new VectorComponentFilterWrapper(columnName, isArray, componentType,
+                new TypeDiscardedFilter(componentFilter));
     }
 
     private static class TypeDiscardedFilter extends WhereFilterImpl implements ExposesChunkFilter {

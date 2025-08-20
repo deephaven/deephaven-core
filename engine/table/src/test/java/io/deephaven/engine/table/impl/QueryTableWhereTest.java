@@ -2721,6 +2721,6 @@ public abstract class QueryTableWhereTest {
             throw new IllegalArgumentException("Filters must contain exactly one filter");
         }
         final VectorComponentFilterWrapper vectorComponentFilterWrapper = (VectorComponentFilterWrapper) filters[0];
-        return new WhereFilter[]{vectorComponentFilterWrapper.breakChunkType()};
+        return new WhereFilter[] {vectorComponentFilterWrapper.breakChunkType()};
     }
 }
