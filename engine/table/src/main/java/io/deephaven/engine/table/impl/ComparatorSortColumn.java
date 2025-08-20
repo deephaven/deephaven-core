@@ -57,10 +57,13 @@ abstract class ComparatorSortColumn implements SortColumn {
      * @return true if this comparator respects equality
      */
     @Value.Parameter
-    public abstract boolean respectsEquality();
+    abstract boolean respectsEquality();
 
+    /**
+     * @return the Comparator to use for sorting this column.
+     */
     @Value.Parameter
-    public abstract Comparator getComparator();
+    abstract Comparator getComparator();
 
     /**
      * Create a ComparatorSortColumn for the provided column and Comparator. The comparator is assumed to not respect
@@ -88,24 +91,70 @@ abstract class ComparatorSortColumn implements SortColumn {
         return ImmutableComparatorSortColumn.of(sortColumn.column(), sortColumn.order(), respectsEquality, comparator);
     }
 
+    /**
+     * Create an ascending ComparatorSortColumn for the provided column name and Comparator.
+     *
+     * <p>
+     * The Comparator is assumed to <b>not</b> respect equality.
+     * </p>
+     *
+     * @param name the name of the column
+     * @param comparator the comparator
+     * @return a new ComparatorSortColumn
+     */
     public static ComparatorSortColumn asc(final String name, final Comparator comparator) {
         return asc(name, comparator, false);
     }
 
+    /**
+     * Create a descending ComparatorSortColumn for the provided column name and Comparator.
+     *
+     * <p>
+     * The Comparator is assumed to <b>not</b> respect equality.
+     * </p>
+     *
+     * @param name the name of the column
+     * @param comparator the comparator
+     * @return a new ComparatorSortColumn
+     */
     public static ComparatorSortColumn desc(final String name, final Comparator comparator) {
         return desc(name, comparator, false);
     }
 
+    /**
+     * Create an asccending ComparatorSortColumn for the provided column name and Comparator.
+     *
+     * @param name the name of the column
+     * @param comparator the comparator
+     * @param respectsEquality true if the Comparator only returns 0 for values that are equal (see
+     *        {@link #respectsEquality()}).
+     * @return a new ComparatorSortColumn
+     */
     public static ComparatorSortColumn asc(final String name, final Comparator comparator,
             final boolean respectsEquality) {
         return ImmutableComparatorSortColumn.of(ColumnName.of(name), Order.ASCENDING, respectsEquality, comparator);
     }
 
+    /**
+     * Create a descending ComparatorSortColumn for the provided column name and Comparator.
+     *
+     * @param name the name of the column
+     * @param comparator the comparator
+     * @param respectsEquality true if the Comparator only returns 0 for values that are equal (see
+     *        {@link #respectsEquality()}).
+     * @return a new ComparatorSortColumn
+     */
     public static ComparatorSortColumn desc(final String name, final Comparator comparator,
             final boolean respectsEquality) {
         return ImmutableComparatorSortColumn.of(ColumnName.of(name), Order.DESCENDING, respectsEquality, comparator);
     }
 
+    /**
+     * Determine if the provided SortColumn has a comparator.
+     * 
+     * @param sortColumn the sort column to interrogate
+     * @return true if the sort column has a comparator defined
+     */
     public static boolean hasComparator(final SortColumn sortColumn) {
         return sortColumn instanceof ComparatorSortColumn
                 && ((ComparatorSortColumn) sortColumn).getComparator() != null;

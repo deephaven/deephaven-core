@@ -80,6 +80,15 @@ public class TestArrayComparators {
         final double[] pz = new double[] {1.0, 0.0, 3};
         final double[] nz = new double[] {1.0, -0.0, 3};
         assertEquals(0, comparator.compare(pz, nz));
+
+        final double[] nipi = new double[] {Double.NEGATIVE_INFINITY, 1};
+        final double[] nullpi = new double[] {QueryConstants.NULL_DOUBLE, Double.POSITIVE_INFINITY};
+        assertEquals(-1, comparator.compare(nullpi, nipi));
+        assertEquals(1, comparator.compare(nipi, nullpi));
+
+        final double[] abpi = new double[] {'a', 'b', Float.POSITIVE_INFINITY};
+        assertEquals(-1, comparator.compare(abpi, abnan));
+        assertEquals(1, comparator.compare(abnan, abpi));
     }
 
     @Test
@@ -121,6 +130,15 @@ public class TestArrayComparators {
         final float[] pz = new float[] {1.0f, 0.0f, 3};
         final float[] nz = new float[] {1.0f, -0.0f, 3};
         assertEquals(0, comparator.compare(pz, nz));
+
+        final float[] nipi = new float[] {Float.NEGATIVE_INFINITY, 1};
+        final float[] nullpi = new float[] {QueryConstants.NULL_FLOAT, Float.POSITIVE_INFINITY};
+        assertEquals(-1, comparator.compare(nullpi, nipi));
+        assertEquals(1, comparator.compare(nipi, nullpi));
+
+        final float[] abpi = new float[] {'a', 'b', Float.POSITIVE_INFINITY};
+        assertEquals(-1, comparator.compare(abpi, abnan));
+        assertEquals(1, comparator.compare(abnan, abpi));
     }
 
     @Test

@@ -58,18 +58,17 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
 
     private final DataIndex dataIndex;
 
-    public SortOperation(QueryTable parent, SortColumn[] sortColumns) {
+    public SortOperation(final QueryTable parent, final SortColumn[] sortColumns) {
         this.parent = parent;
         this.sortColumnsDefs = sortColumns;
-        this.sortOrder = Arrays.stream(sortColumns)
-                .map(sc -> sc.isAscending() ? SortingOrder.Ascending : SortingOrder.Descending)
-                .toArray(SortingOrder[]::new);
+        this.sortOrder = Arrays.stream(sortColumns).map(SortingOrder::from).toArray(SortingOrder[]::new);
         this.sortColumnNames = Arrays.stream(sortColumns).map(sc -> sc.column().name()).toArray(String[]::new);
 
         final boolean hasComparators = Arrays.stream(sortColumns).anyMatch(sc -> {
-            if (sc instanceof ComparatorSortColumn) {
+            if (ComparatorSortColumn.hasComparator(sc)) {
                 return true;
             }
+            // if we do not have a natural order, then we must have a comparator defined (or we'll fail later on)
             final Class<Object> type = parent.getColumnSource(sc.column().name()).getType();
             return !type.isPrimitive() && !Comparable.class.isAssignableFrom(type);
         });
