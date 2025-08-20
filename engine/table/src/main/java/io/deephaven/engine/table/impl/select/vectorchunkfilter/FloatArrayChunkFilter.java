@@ -40,6 +40,9 @@ class FloatArrayChunkFilter extends VectorChunkFilter {
         int fillPos = 0;
 
         for (int indexOfVector = 0; indexOfVector < objectChunk.size(); ++indexOfVector) {
+            if (!applyFilter.test(indexOfVector)) {
+                continue;
+            }
             final float[] array = objectChunk.get(indexOfVector);
             for (int ii = 0; ii < array.length; ++ii) {
                 final float element = array[ii];

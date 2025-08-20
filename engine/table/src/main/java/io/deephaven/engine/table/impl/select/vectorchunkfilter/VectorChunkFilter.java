@@ -58,7 +58,14 @@ abstract class VectorChunkFilter implements ChunkFilter, SafeCloseable {
 
     @Override
     public int filterAnd(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
-        return filterToBooleanChunk(values, results, results::get);
+        return filterToBooleanChunk(values, results, (x) -> {
+            final boolean shouldFilter = results.get(x);
+            if (shouldFilter) {
+                // set the value to false for now, if we have a match, we will reset it to true
+                results.set(x, false);
+            }
+            return shouldFilter;
+        });
     }
 
     private int filterToBooleanChunk(Chunk<? extends Values> values, WritableBooleanChunk<Values> results,

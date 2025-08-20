@@ -40,6 +40,9 @@ class IntArrayChunkFilter extends VectorChunkFilter {
         int fillPos = 0;
 
         for (int indexOfVector = 0; indexOfVector < objectChunk.size(); ++indexOfVector) {
+            if (!applyFilter.test(indexOfVector)) {
+                continue;
+            }
             final int[] array = objectChunk.get(indexOfVector);
             for (int ii = 0; ii < array.length; ++ii) {
                 final int element = array[ii];

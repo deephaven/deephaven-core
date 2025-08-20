@@ -40,6 +40,9 @@ class LongArrayChunkFilter extends VectorChunkFilter {
         int fillPos = 0;
 
         for (int indexOfVector = 0; indexOfVector < objectChunk.size(); ++indexOfVector) {
+            if (!applyFilter.test(indexOfVector)) {
+                continue;
+            }
             final long[] array = objectChunk.get(indexOfVector);
             for (int ii = 0; ii < array.length; ++ii) {
                 final long element = array[ii];
