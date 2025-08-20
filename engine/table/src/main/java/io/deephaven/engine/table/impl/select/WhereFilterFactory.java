@@ -318,10 +318,12 @@ public class WhereFilterFactory {
 
 
         if (io.deephaven.vector.Vector.class.isAssignableFrom(colClass)) {
-            return createVectorQuickFilter(tableDefinition, false, colName, colDef.getComponentType(), filterMode, quickFilter,
+            return createVectorQuickFilter(tableDefinition, false, colName, colDef.getComponentType(), filterMode,
+                    quickFilter,
                     typeData);
         } else if (colClass.isArray()) {
-            return createVectorQuickFilter(tableDefinition, true, colName, colDef.getComponentType(), filterMode, quickFilter,
+            return createVectorQuickFilter(tableDefinition, true, colName, colDef.getComponentType(), filterMode,
+                    quickFilter,
                     typeData);
         }
 
@@ -377,7 +379,7 @@ public class WhereFilterFactory {
     }
 
     private static WhereFilter createVectorQuickFilter(final TableDefinition tableDefinition,
-                                                       final boolean isArray,
+            final boolean isArray,
             final String colName,
             final Class<?> componentType,
             final QuickFilterMode filterMode,
@@ -392,7 +394,8 @@ public class WhereFilterFactory {
             componentFilter.init(VectorComponentFilterWrapper.replaceDefinition(colName, tableDefinition));
             final Optional<ChunkFilter> chunkFilter = ((ExposesChunkFilter) componentFilter).chunkFilter();
             return chunkFilter
-                    .map(cf -> new VectorComponentFilterWrapper(colName, isArray, componentType, componentFilter.copy()))
+                    .map(cf -> new VectorComponentFilterWrapper(colName, isArray, componentType,
+                            componentFilter.copy()))
                     .orElse(null);
         }
         return null;

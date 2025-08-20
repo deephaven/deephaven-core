@@ -14,6 +14,9 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.vector.LongVector;
 
+import java.util.function.IntConsumer;
+import java.util.function.IntPredicate;
+
 class LongArrayChunkFilter extends VectorChunkFilter {
     final WritableLongChunk<? extends Values> temporaryValues;
 
@@ -23,16 +26,14 @@ class LongArrayChunkFilter extends VectorChunkFilter {
     }
 
     @Override
-    public void filter(final Chunk<? extends Values> values, final LongChunk<OrderedRowKeys> keys,
-            final WritableLongChunk<OrderedRowKeys> results) {
+    void doFilter(final Chunk<? extends Values> values,
+                  final IntPredicate applyFilter,
+                  final IntConsumer matchConsumer) {
         final ObjectChunk<long [], ? extends Values> objectChunk = values.asObjectChunk();
-        results.setSize(0);
 
         temporaryValues.setSize(chunkSize);
         srcPos.setSize(chunkSize);
         int fillPos = 0;
-
-        long lastMatch = RowSet.NULL_ROW_KEY;
 
         for (int indexOfVector = 0; indexOfVector < objectChunk.size(); ++indexOfVector) {
             final long [] array = objectChunk.get(indexOfVector);
@@ -41,7 +42,7 @@ class LongArrayChunkFilter extends VectorChunkFilter {
                 srcPos.set(fillPos, indexOfVector);
                 temporaryValues.set(fillPos++, element);
                 if (fillPos == chunkSize) {
-                    lastMatch = flushMatches(keys, results, fillPos, lastMatch, temporaryValues);
+                    final long lastMatch = flushMatches(matchConsumer, fillPos, temporaryValues);
                     fillPos = 0;
                     if (lastMatch == indexOfVector) {
                         break;
@@ -49,17 +50,7 @@ class LongArrayChunkFilter extends VectorChunkFilter {
                 }
             }
         }
-        flushMatches(keys, results, fillPos, lastMatch, temporaryValues);
-    }
-
-    @Override
-    public int filter(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public int filterAnd(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
-        throw new UnsupportedOperationException();
+        flushMatches(matchConsumer, fillPos, temporaryValues);
     }
 
     @Override

@@ -27,9 +27,9 @@ public class VectorComponentFilterWrapper extends WhereFilterImpl {
     Supplier<VectorChunkFilter> vectorChunkFilterFactory;
 
     public VectorComponentFilterWrapper(final String columnName,
-                                        final boolean isArray,
-                                        final Class<?> componentType,
-                                        final WhereFilter componentFilter) {
+            final boolean isArray,
+            final Class<?> componentType,
+            final WhereFilter componentFilter) {
         this.columnName = columnName;
         this.isArray = isArray;
         this.componentType = componentType;
