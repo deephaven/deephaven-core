@@ -4,13 +4,13 @@
 package io.deephaven.engine.table.impl.util;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
+import io.deephaven.api.ColumnName;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.ErrorListener;
-import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.table.impl.TableUpdateValidator;
+import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
@@ -39,7 +39,7 @@ public class KeyedTransposeTest extends RefreshingTableTestCase {
                 stringCol("Date", "2025-08-05", "2025-08-05", "2025-08-06", "2025-08-07"),
                 stringCol("Level", "INFO", "INFO", "WARN", "ERROR"));
         Table t = KeyedTranspose.keyedTranspose(staticSource, List.of(AggCount("Count")),
-                new String[] {"Date"}, new String[] {"Level"});
+                colsOf("Date"), colsOf("Level"));
         Table ex = TableTools.newTable(stringCol("Date", "2025-08-05", "2025-08-06", "2025-08-07"),
                 longCol("INFO", 2, NULL_LONG, NULL_LONG),
                 longCol("WARN", NULL_LONG, 1, NULL_LONG),
@@ -50,8 +50,8 @@ public class KeyedTransposeTest extends RefreshingTableTestCase {
     public void testOneAggOneByColWithInitialGroups() {
         Table initialGroups = TableTools.newTable(stringCol("Level", "ERROR", "WARN", "INFO"))
                 .join(staticSource.selectDistinct("Date", "Host"));
-        Table t = KeyedTranspose.keyedTranspose(staticSource, List.of(AggCount("Count")), new String[] {"Date", "Host"},
-                new String[] {"Level"}, initialGroups);
+        Table t = KeyedTranspose.keyedTranspose(staticSource, List.of(AggCount("Count")), colsOf("Date", "Host"),
+                colsOf("Level"), initialGroups);
         Table ex = TableTools.newTable(
                 stringCol("Date", "2025-08-05", "2025-08-06", "2025-08-07", "2025-08-07", "2025-08-08"),
                 stringCol("Host", "h1", "h2", "h1", "h2", "h2"),
@@ -63,8 +63,8 @@ public class KeyedTransposeTest extends RefreshingTableTestCase {
 
     public void testOneAggOneByColNoInitialGroups() {
         Table initialGroups = TableTools.emptyTable(0);
-        Table t = KeyedTranspose.keyedTranspose(staticSource, List.of(AggCount("Count")), new String[] {"Date", "Host"},
-                new String[] {"Level"}, initialGroups);
+        Table t = KeyedTranspose.keyedTranspose(staticSource, List.of(AggCount("Count")), colsOf("Date", "Host"),
+                colsOf("Level"), initialGroups);
         Table ex = TableTools.newTable(
                 stringCol("Date", "2025-08-05", "2025-08-07", "2025-08-06", "2025-08-08", "2025-08-07"),
                 stringCol("Host", "h1", "h2", "h2", "h2", "h1"),
@@ -76,7 +76,7 @@ public class KeyedTransposeTest extends RefreshingTableTestCase {
 
     public void testTwoAggOneByCol() {
         Table t = KeyedTranspose.keyedTranspose(staticSource, List.of(AggCount("Count"), AggSum("Sum=Cat")),
-                new String[] {"Date", "Host"}, new String[] {"Level"});
+                colsOf("Date", "Host"), colsOf("Level"));
         Table ex = TableTools.newTable(
                 stringCol("Date", "2025-08-05", "2025-08-07", "2025-08-06", "2025-08-08", "2025-08-07"),
                 stringCol("Host", "h1", "h2", "h2", "h2", "h1"),
@@ -91,7 +91,7 @@ public class KeyedTransposeTest extends RefreshingTableTestCase {
 
     public void testOneAggTwoByCol() {
         Table t = KeyedTranspose.keyedTranspose(staticSource, List.of(AggCount("Count")),
-                new String[] {"Date", "Host"}, new String[] {"Level", "Cat"});
+                colsOf("Date", "Host"), colsOf("Level", "Cat"));
         Table ex = TableTools.newTable(
                 stringCol("Date", "2025-08-05", "2025-08-06", "2025-08-08", "2025-08-07", "2025-08-07"),
                 stringCol("Host", "h1", "h2", "h2", "h1", "h2"),
@@ -107,7 +107,7 @@ public class KeyedTransposeTest extends RefreshingTableTestCase {
         Table initialGroups = TableTools.newTable(stringCol("Level", "INFO", "WARN", "ERROR"),
                 intCol("Cat", 3, 2, 1)).join(staticSource.selectDistinct("Date", "Host"));
         Table t = KeyedTranspose.keyedTranspose(staticSource, List.of(AggCount("Count"), AggSum("Sum=Cat")),
-                new String[] {"Date", "Host"}, new String[] {"Level", "Cat"}, initialGroups);
+                colsOf("Date", "Host"), colsOf("Level", "Cat"), initialGroups);
         Table ex = TableTools.newTable(
                 stringCol("Date", "2025-08-05", "2025-08-06", "2025-08-07", "2025-08-07", "2025-08-08"),
                 stringCol("Host", "h1", "h2", "h1", "h2", "h2"),
@@ -128,7 +128,7 @@ public class KeyedTransposeTest extends RefreshingTableTestCase {
 
     public void testTwoAggTwoByColNoInitialGroups() {
         Table t = KeyedTranspose.keyedTranspose(staticSource, List.of(AggCount("Count"), AggSum("Sum=Cat")),
-                new String[] {"Date", "Host"}, new String[] {"Level", "Cat"});
+                colsOf("Date", "Host"), colsOf("Level", "Cat"));
         Table ex = TableTools.newTable(
                 stringCol("Date", "2025-08-05", "2025-08-06", "2025-08-08", "2025-08-07", "2025-08-07"),
                 stringCol("Host", "h1", "h2", "h2", "h1", "h2"),
@@ -150,7 +150,7 @@ public class KeyedTransposeTest extends RefreshingTableTestCase {
                 intCol("Cat", 3, 2, 1)).join(staticSource.selectDistinct("Date", "Host"));
         Table emptySource = staticSource.where("Date == `No Match`");
         Table t = KeyedTranspose.keyedTranspose(emptySource, List.of(AggCount("Count"), AggSum("Sum=Cat")),
-                new String[] {"Date", "Host"}, new String[] {"Level", "Cat"}, initialGroups);
+                colsOf("Date", "Host"), colsOf("Level", "Cat"), initialGroups);
         Table ex = TableTools.newTable(
                 stringCol("Date", "2025-08-05", "2025-08-06", "2025-08-07", "2025-08-07", "2025-08-08"),
                 stringCol("Host", "h1", "h2", "h1", "h2", "h2"),
@@ -167,9 +167,8 @@ public class KeyedTransposeTest extends RefreshingTableTestCase {
         Table initialGroups = TableTools.newTable(floatCol("BadInt", 0.1f, 20, NULL_FLOAT, -30),
                 stringCol("BadStr", "A-B", "C D", "E.F", NULL_STRING))
                 .join(staticSource.selectDistinct("Date"));
-        Table t = KeyedTranspose.keyedTranspose(staticSource, List.of(AggCount("Count")), new String[] {"Date"},
-                new String[] {"BadInt", "BadStr"}, initialGroups);
-        TableTools.show(t);
+        Table t = KeyedTranspose.keyedTranspose(staticSource, List.of(AggCount("Count")), colsOf("Date"),
+                colsOf("BadInt", "BadStr"), initialGroups);
         Table ex = TableTools.newTable(stringCol("Date", "2025-08-05", "2025-08-06", "2025-08-07", "2025-08-08"),
                 longCol("column_01_AB", 1, 0, 0, 0),
                 longCol("column_200_CD", 1, 0, 1, 0),
@@ -191,8 +190,8 @@ public class KeyedTransposeTest extends RefreshingTableTestCase {
                 TstUtils.testRefreshingTable(RowSetFactory.flat(7).toTracking(), intCol("Row", 1, 2, 3, 2, 3, 2, 3),
                         stringCol("Col", "Alpha", "Alpha", "Alpha", "Bravo", "Bravo", "Alpha", "Alpha"),
                         doubleCol("Value", 10.1, 20.2, 30.3, 40.4, 50.5, 60.6, 70.7));
-        final Table result = KeyedTranspose.keyedTranspose(source, List.of(AggSum("Value")), new String[] {"Row"},
-                new String[] {"Col"}, null, newColumnBehavior);
+        final Table result = KeyedTranspose.keyedTranspose(source, List.of(AggSum("Value")), colsOf("Row"),
+                colsOf("Col"), null, newColumnBehavior);
 
         final ErrorListener el = new ErrorListener(result);
         result.addUpdateListener(el);
@@ -250,13 +249,8 @@ public class KeyedTransposeTest extends RefreshingTableTestCase {
         }
     }
 
-
-    //
-    // public void testKeyTransposeIncremental() {
-    // Table source = getStaticTable();
-    // Table t = KeyedTranspose.keyedTranspose(source, List.of(AggCount("Count"), AggSum("Sum=Cat")),
-    // new String[]{"Date","Host"}, new String[]{});
-    // TableTools.show(t);
-    // }
+    private Collection<? extends ColumnName> colsOf(String... cols) {
+        return Arrays.stream(cols).map(ColumnName::of).collect(Collectors.toList());
+    }
 
 }

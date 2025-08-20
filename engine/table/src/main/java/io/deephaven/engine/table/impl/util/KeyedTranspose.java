@@ -113,7 +113,8 @@ public class KeyedTranspose {
      * @return A new transposed table with the specified aggregations applied.
      */
     public static Table keyedTranspose(final Table source, Collection<? extends Aggregation> aggregations,
-            final String[] rowByColumns, final String[] columnByColumns) {
+            final Collection<? extends ColumnName> rowByColumns,
+            final Collection<? extends ColumnName> columnByColumns) {
         return keyedTranspose(source, aggregations, rowByColumns, columnByColumns, null);
     }
 
@@ -131,7 +132,8 @@ public class KeyedTranspose {
      * @param initialGroups An optional initial set of groups to ensure all columns are present in the output.
      */
     public static Table keyedTranspose(final Table source, final Collection<? extends Aggregation> aggregations,
-            final String[] rowByColumns, final String[] columnByColumns, final Table initialGroups) {
+            final Collection<? extends ColumnName> rowByColumns, final Collection<? extends ColumnName> columnByColumns,
+            final Table initialGroups) {
         return keyedTranspose(source, aggregations, rowByColumns, columnByColumns, initialGroups,
                 NewColumnBehavior.FAIL);
     }
@@ -147,17 +149,18 @@ public class KeyedTranspose {
      * @param newColumnBehavior the behavior when a new column would be added
      */
     public static Table keyedTranspose(final Table source, final Collection<? extends Aggregation> aggregations,
-            final String[] rowByColumns, final String[] columnByColumns, final Table initialGroups,
+            final Collection<? extends ColumnName> rowByColumns, final Collection<? extends ColumnName> columnByColumns,
+            final Table initialGroups,
             final NewColumnBehavior newColumnBehavior) {
         final QueryTable querySource = (QueryTable) source.coalesce();
         if (querySource.isRefreshing()) {
             querySource.getUpdateGraph().checkInitiateSerialTableOperation();
         }
 
-        if (rowByColumns.length == 0) {
+        if (rowByColumns.isEmpty()) {
             throw new IllegalArgumentException("No rowByColumns defined");
         }
-        if (columnByColumns.length == 0) {
+        if (columnByColumns.isEmpty()) {
             throw new IllegalArgumentException("No columnByColumns defined");
         }
         if (aggregations.isEmpty()) {
@@ -167,13 +170,16 @@ public class KeyedTranspose {
         final Set<ColumnName> allByColumns = getAllByColumns(rowByColumns, columnByColumns);
         final Set<String> allByColumnNames = allByColumns.stream().map(ColumnName::name)
                 .collect(Collectors.toCollection(LinkedHashSet::new));
+        final String[] rowByColumnNames = rowByColumns.stream().map(ColumnName::name).toArray(String[]::new);
+        final String[] columnByColumnNames = columnByColumns.stream().map(ColumnName::name).toArray(String[]::new);
+
         Table aggregatedComplete;
         if (initialGroups == null || initialGroups.isEmpty()) {
             aggregatedComplete = source.aggBy(aggregations, allByColumns);
         } else {
             aggregatedComplete = source.aggBy(aggregations, true, initialGroups, allByColumns);
         }
-        final PartitionedTable partitionedTable = aggregatedComplete.partitionBy(columnByColumns);
+        final PartitionedTable partitionedTable = aggregatedComplete.partitionBy(columnByColumnNames);
         final Table tableOfTables = partitionedTable.table();
 
         final List<ColumnSource<Object>> nameSources = partitionedTable.keyColumnNames().stream()
@@ -189,7 +195,7 @@ public class KeyedTranspose {
             joinInfos.add(joinInfo);
         });
         final MultiJoinInput[] mji = legalizeJoinColumnNames(joinInfos).stream()
-                .map(j -> MultiJoinInput.of(j.constituentTable, rowByColumns, j.getColumnMappings()))
+                .map(j -> MultiJoinInput.of(j.constituentTable, rowByColumnNames, j.getColumnMappings()))
                 .toArray(MultiJoinInput[]::new);
         final Table multiJoinResult = MultiJoinFactory.of(mji).table();
         if (newColumnBehavior == NewColumnBehavior.IGNORE) {
@@ -255,9 +261,11 @@ public class KeyedTranspose {
         return copy;
     }
 
-    private static Set<ColumnName> getAllByColumns(final String[] rowByColumns, final String[] columnByColumns) {
-        return Stream.concat(Arrays.stream(rowByColumns), Arrays.stream(columnByColumns))
-                .map(ColumnName::of).collect(Collectors.toCollection(LinkedHashSet::new));
+    private static Set<ColumnName> getAllByColumns(final Collection<? extends ColumnName> rowByColumns,
+            final Collection<? extends ColumnName> columnByColumns) {
+        Set<ColumnName> columns = new LinkedHashSet<>(rowByColumns);
+        columns.addAll(columnByColumns);
+        return columns;
     }
 
     private static List<JoinInfo> legalizeJoinColumnNames(final List<JoinInfo> joinInfos) {
