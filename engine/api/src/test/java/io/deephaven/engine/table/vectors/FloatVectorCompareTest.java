@@ -5,7 +5,7 @@ package io.deephaven.engine.table.vectors;
 
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
-import io.deephaven.util.compare.FloatComparisons;
+import io.deephaven.util.QueryConstants;
 import io.deephaven.vector.FloatVector;
 import io.deephaven.vector.FloatVectorDirect;
 import junit.framework.TestCase;
@@ -27,15 +27,15 @@ public class FloatVectorCompareTest {
         final float[] large = new float[] {(float) 10, Float.NaN};
         final FloatVectorDirect cvd0 = new FloatVectorDirect(small);
         final FloatVectorDirect cvd1 = new FloatVectorDirect(medium);
-        final FloatVectorDirect cvd3 = new FloatVectorDirect(large);
+        final FloatVectorDirect cvd2 = new FloatVectorDirect(large);
         final FloatVector cvw0 = makeTestVector(small);
         final FloatVector cvw1 = makeTestVector(medium);
         final FloatVector cvw3 = makeTestVector(large);
 
-        checkPairs(cvd0, cvd1, cvd3, cvd0, cvd1, cvd3);
-        checkPairs(cvd0, cvd1, cvd3, cvw0, cvw1, cvw3);
+        checkPairs(cvd0, cvd1, cvd2, cvd0, cvd1, cvd2);
+        checkPairs(cvd0, cvd1, cvd2, cvw0, cvw1, cvw3);
         checkPairs(cvw0, cvw1, cvw3, cvw0, cvw1, cvw3);
-        checkPairs(cvw0, cvw1, cvw3, cvd0, cvd1, cvd3);
+        checkPairs(cvw0, cvw1, cvw3, cvd0, cvd1, cvd2);
     }
 
     @Test
@@ -75,6 +75,24 @@ public class FloatVectorCompareTest {
     }
 
     @Test
+    public void testInfinitiesAndNull() {
+        final float[] small = new float[] {(float) 10, QueryConstants.NULL_FLOAT};
+        final float[] medium = new float[] {(float) 10, Float.NEGATIVE_INFINITY};
+        final float[] large = new float[] {(float) 10, Float.POSITIVE_INFINITY};
+        final FloatVectorDirect cvd0 = new FloatVectorDirect(small);
+        final FloatVectorDirect cvd1 = new FloatVectorDirect(medium);
+        final FloatVectorDirect cvd3 = new FloatVectorDirect(large);
+        final FloatVector cvw0 = makeTestVector(small);
+        final FloatVector cvw1 = makeTestVector(medium);
+        final FloatVector cvw3 = makeTestVector(large);
+
+        checkPairs(cvd0, cvd1, cvd3, cvd0, cvd1, cvd3);
+        checkPairs(cvd0, cvd1, cvd3, cvw0, cvw1, cvw3);
+        checkPairs(cvw0, cvw1, cvw3, cvw0, cvw1, cvw3);
+        checkPairs(cvw0, cvw1, cvw3, cvd0, cvd1, cvd3);
+    }
+
+    @Test
     public void testPositiveAndNegativeZero() {
         final float[] v1 = new float[] {(float) 10, (float) -0.0};
         final float[] v2 = new float[] {(float) 10, (float) 0.0};
@@ -95,19 +113,40 @@ public class FloatVectorCompareTest {
     /**
      * 0 < 1 < 3
      */
-    private static void checkPairs(final FloatVector a0, final FloatVector a1, final FloatVector a3,
-            final FloatVector b0, final FloatVector b1, final FloatVector b3) {
+    private static void checkPairs(final FloatVector a0, final FloatVector a1, final FloatVector a2,
+            final FloatVector b0, final FloatVector b1, final FloatVector b2) {
         TestCase.assertEquals(0, a0.compareTo(b0));
         TestCase.assertTrue(a0.compareTo(b1) < 0);
-        TestCase.assertTrue(a0.compareTo(b3) < 0);
+        TestCase.assertTrue(a0.compareTo(b2) < 0);
 
         TestCase.assertTrue(a1.compareTo(b0) > 0);
         TestCase.assertEquals(0, a1.compareTo(b1));
-        TestCase.assertTrue(a1.compareTo(b3) < 0);
+        TestCase.assertTrue(a1.compareTo(b2) < 0);
 
-        TestCase.assertTrue(a3.compareTo(b0) > 0);
-        TestCase.assertTrue(a3.compareTo(b1) > 0);
-        TestCase.assertEquals(0, a3.compareTo(b3));
+        TestCase.assertTrue(a2.compareTo(b0) > 0);
+        TestCase.assertTrue(a2.compareTo(b1) > 0);
+        TestCase.assertEquals(0, a2.compareTo(b2));
+
+        TestCase.assertEquals(a0, a0);
+        TestCase.assertEquals(a0, b0);
+        TestCase.assertFalse(a0.equals(a1));
+        TestCase.assertFalse(a0.equals(a1));
+        TestCase.assertFalse(a0.equals(a2));
+        TestCase.assertFalse(a0.equals(b2));
+
+        TestCase.assertFalse(a1.equals(a0));
+        TestCase.assertFalse(a1.equals(b0));
+        TestCase.assertEquals(a1, a1);
+        TestCase.assertEquals(a1, b1);
+        TestCase.assertFalse(a1.equals(a2));
+        TestCase.assertFalse(a1.equals(b2));
+
+        TestCase.assertFalse(a2.equals(a0));
+        TestCase.assertFalse(a2.equals(b0));
+        TestCase.assertFalse(a2.equals(a1));
+        TestCase.assertFalse(a2.equals(b1));
+        TestCase.assertEquals(a2, a2);
+        TestCase.assertEquals(a2, b2);
     }
 
     /**
@@ -118,6 +157,10 @@ public class FloatVectorCompareTest {
         TestCase.assertEquals(0, a0.compareTo(b0));
         TestCase.assertEquals(0, a0.compareTo(b1));
         TestCase.assertTrue(a0.compareTo(b2) < 0);
+
+        TestCase.assertEquals(a0.hashCode(), a1.hashCode());
+        TestCase.assertEquals(a0.hashCode(), b0.hashCode());
+        TestCase.assertEquals(a0.hashCode(), b1.hashCode());
 
         TestCase.assertEquals(0, a1.compareTo(b0));
         TestCase.assertEquals(0, a1.compareTo(b1));
